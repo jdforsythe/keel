@@ -1,5 +1,6 @@
 // Eval harness: `pnpm eval --task <name> [--model <id>] [--runner claude|none] [--max-iter N] [--skill <name>] [--strict]`
-// or `pnpm eval --skill <name> [--runner claude|none]` for a skill eval.
+// or `pnpm eval --skill <name> [--runner claude|none]` for a skill eval (with --task, --skill names the skill to prepend;
+// otherwise `tasks/<task>/task.json` { "skill" } or `keel-package-dev`).
 import { execFile } from "node:child_process";
 import { access, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -124,10 +125,14 @@ function print(diags: Diag[], trailer: string, ok: boolean, ms: number): void {
 
 async function runTask(a: Args, task: string, now: Date, t0: number): Promise<boolean> {
   const dir = join(root, "evals", "tasks", task);
-  const skillName = a.skill ?? "keel-package-dev";
+  const cfgPath = join(dir, "task.json");
+  const cfgJson: unknown = (await exists(cfgPath)) ? JSON.parse(await readFile(cfgPath, "utf8")) : {};
+  const cfgSkill = isRecord(cfgJson) && typeof cfgJson["skill"] === "string" ? cfgJson["skill"] : undefined;
+  const skillName = a.skill ?? cfgSkill ?? "keel-package-dev";
   const taskMd = await readFile(join(dir, "TASK.md"), "utf8");
   const slice = await readFile(join(dir, "spec-slice.txt"), "utf8");
   const skillMd = await readFile(join(root, ".claude", "skills", skillName, "SKILL.md"), "utf8");
+  const specSections = (slice.split("\n")[0] ?? "").split(/[\s,]+/).filter((x) => x !== "");
   const passMod: unknown = await import(pathToFileURL(join(dir, "pass.ts")).href);
   const passFn = isRecord(passMod) ? passMod["default"] : undefined;
   if (typeof passFn !== "function") throw new Error(`${task}/pass.ts has no default export`);
@@ -170,6 +175,8 @@ async function runTask(a: Args, task: string, now: Date, t0: number): Promise<bo
   const modelName = a.runner === "none" ? "none" : (a.model ?? "default");
   await writeResult(`${dateStamp(now)}-${task}-${modelName}.json`, {
     task,
+    skill: skillName,
+    specSections,
     model: modelName,
     runner: a.runner,
     converged,
