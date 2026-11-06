@@ -7,4 +7,5 @@ export { Match } from "./intrinsics/Match.ts";
 export { mount } from "./mount.ts";
 export type { CaseNode } from "./types/CaseNode.ts";
 export type { Component } from "./types/Component.ts";
+export type { Slots } from "./types/Slots.ts";
 export type { UnexpectedError } from "./types/UnexpectedError.ts";

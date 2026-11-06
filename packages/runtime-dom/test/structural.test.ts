@@ -94,8 +94,10 @@ describe("list: keyed rows", () => {
     dispose();
   });
 
-  it("For (hand-built) renders keyed rows", () => {
-    const items = rootSignal([{ id: "a" }, { id: "b" }]);
+  it("For (hand-built) renders keyed rows with plain values; a move keeps the row", () => {
+    const a0 = { id: "a" };
+    const b0 = { id: "b" };
+    const items = rootSignal([a0, b0]);
     const host = document.createElement("div");
     const dispose = mount(() => {
       const ul = clone(UL);
@@ -105,9 +107,9 @@ describe("list: keyed rows", () => {
             return items.get();
           },
           key: "id",
-          children: (item) => {
+          children: (item, index) => {
             const li = clone(LI);
-            text(li, () => item().id);
+            text(li, () => `${item.id}${index}`);
             return li;
           },
         }),
@@ -115,9 +117,13 @@ describe("list: keyed rows", () => {
       return ul;
     }, host);
     const a = host.querySelector("li");
-    items.set([{ id: "b" }, { id: "a" }]);
-    expect([...host.querySelectorAll("li")].map((l) => l.textContent)).toEqual(["b", "a"]);
+    expect(a?.textContent).toBe("a0");
+    items.set([b0, a0]);
+    expect([...host.querySelectorAll("li")].map((l) => l.textContent?.[0])).toEqual(["b", "a"]);
     expect(host.querySelectorAll("li")[1]).toBe(a);
+    items.set([b0, { id: "a" }]);
+    expect(host.querySelectorAll("li")[1]).not.toBe(a);
+    expect(host.querySelectorAll("li")[1]?.textContent).toBe("a1");
     dispose();
   });
 });

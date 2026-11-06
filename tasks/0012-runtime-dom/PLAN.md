@@ -28,20 +28,21 @@
 - D12: `safeUrl(name, value)` lives in `src/internal/safeUrl.ts` and is exported as `@keel/runtime-dom/internal/safeUrl` for the compiler's server renderer; strips leading C0/space and ignores tab/CR/LF before scheme detection. Applied by `attr` and `prop`.
 - D13: test/setup.ts (vitest `setupFiles`): vitest's happy-dom env leaves Node's native `EventTarget` global while nodes extend happy-dom's; the setup aligns the global so `EventTarget.prototype` patches (conformance `trackListeners`) see DOM listeners. Environment fix only; no test edited.
 - D14: `mount` has no default Boundary; the generated entry wraps App in one (k.errors "app root has a default one").
+- D15 (compiler alignment): `Component<P = Record<string, never>> = (props: P, slots?: Slots) => Node`, `Slots = Readonly<Record<string, () => Node>>`. `mount` takes `Component<Readonly<Record<string, unknown>>>` and calls it with `{}`: compiler conformance render-purity types `Card` as `Parameters<typeof mount>[0]` and calls it with props, so the `never` default cannot be mount's parameter; a component that requires specific props still fails to type-check.
+- D16 (compiler alignment): intrinsic types use plain values: `For` children `(item: T, index: number) => Node`, `Case` children `(value: U) => Node`; the `list`/`match` ops keep accessors (compiled code rewrites reads). Hand-built runtime: a `For` row re-renders when its item object changes, a move keeps the row and passes the index at render time; a `Case` re-renders when the matched value changes.
 
-## Conformance issues (not changed; need rfc)
+## Conformance issues (resolved by conformance-writer after the WIP commit; not edited here)
 - E1203 conflict: attr-toggle.test.ts (3 tests), mount-dispose.test.ts "zero reactive subscriptions", boundary.test.ts "after a catch, no effect…" (2 tests) create `signal()` at test level; k.reactive conformance (rules.conformance.test.ts) requires that to throw E1203. Verified all six pass when the signal is created in a live root scope (temporary copies, deleted).
 - boundary.test.ts lines 39/45: `node()` is annotated `: Node` and then `.querySelector` is called -> TS2339, so `pnpm --filter @keel/runtime-dom check` fails in tsc. Fix: annotate `: Element` (clone returns Element).
 
 ## Verification
-- [ ] conformance green: 19 pass, 6 fail (E1203 conflict above), 9 todo
+- [x] conformance green (after conformance-writer's fixes): 25 pass, 9 todo
 - [x] properties present (test/: attr, delegation, mount-dispose, safeUrl, structural, resume): 21 pass
 - [x] biome clean (src, test, unsafe) · structure-lint clean for runtime-dom · build config compiles
-- [ ] `check`: tsc fails only on conformance/boundary.test.ts (TS2339 above)
-- compiler conformance (drives these ops via compiled code): `ok 29 tests, 0 failed, 1 skipped`
+- [x] `pnpm --filter @keel/runtime-dom check` clean · `pnpm --filter @keel/compiler check` clean · compiler test `ok 43 tests, 0 failed, 1 skipped`
 - Mutation: `mutate` is `echo skip`; 70% threshold not measured.
 
-Test trailer (`pnpm --filter @keel/runtime-dom test`): `fail 55 tests, 9 failed, 9 skipped (0.7s)` (reporter also counts 3 file-level errors from the same E1203 failures; verbose: 40 pass, 6 fail, 9 todo).
+Test trailer (`pnpm --filter @keel/runtime-dom test`): `ok 55 tests, 0 failed, 9 skipped (0.8s)` (9 skipped = it.todo for untestable rules).
 
 ## Next action
 review

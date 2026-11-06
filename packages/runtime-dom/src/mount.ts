@@ -7,10 +7,11 @@ import { withCx } from "./internal/withCx.ts";
 import type { Component } from "./types/Component.ts";
 
 /**
- * Render `component` client-side into `el` (generated entry only). Returns `dispose`: removes the rendered
+ * Render `component` client-side into `el` (generated entry only). The component takes no props: one that
+ * requires props does not type-check; it is called with an empty props object. Returns `dispose`: removes the rendered
  * nodes, every root listener, and every binding and subscription of the tree. Idempotent.
  */
-export function mount(component: Component, el: Element): () => void {
+export function mount(component: Component<Readonly<Record<string, unknown>>>, el: Element): () => void {
   const root = createRoot(el);
   const owner = createOwner(null, root, null);
   let nodes: Node[] = [];
@@ -24,7 +25,7 @@ export function mount(component: Component, el: Element): () => void {
   };
   try {
     sc = scope(() => {
-      const out = withCx(owner, null, component);
+      const out = withCx(owner, null, () => component({}));
       nodes = out.nodeType === 11 ? [...out.childNodes] : [out];
       el.appendChild(out);
     });
