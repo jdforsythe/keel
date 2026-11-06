@@ -1,10 +1,10 @@
 # k.store: Store and transactions
-status: proposed
+status: implemented
 
 **API.**
 ```ts
 export const cart = store(CartSchema, { items: [] })
-export const addItem = transaction('cart.addItem', s.object({ item: Item }), (state, { item }) => ({ ...state, items: [...state.items, item] }))
+export const addItem = transaction(cart, 'cart.addItem', s.object({ item: Item }), (state, { item }) => ({ ...state, items: [...state.items, item] }))
 ```
 Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx(addItem, payload)`. Log: `cart.log()` ordered entries `{ name, payload, at, id }`; `cart.snapshot()`, `cart.restore(snap)`, `cart.undo()`.
 

@@ -18,5 +18,9 @@
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*"
+  },
+  "dependencies": {
+    "@keel/reactive": "workspace:*",
+    "@keel/schema": "workspace:*"
   }
 }

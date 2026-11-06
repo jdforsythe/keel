@@ -132,6 +132,13 @@ importers:
         version: link:../../tooling
 
   packages/runtime-dom:
+    dependencies:
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
@@ -166,6 +173,13 @@ importers:
         version: link:../../tooling
 
   packages/store:
+    dependencies:
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*

@@ -3,14 +3,14 @@
 Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one context window. Claim with `/next`.
 
 - [x] 0001 factory: toolchain, scripts, hooks, subagents, commands, evals harness, budgets · repo · PRD A · G0 · none
-- [ ] 0002 schema: primitives, object, array, union, enum, id, optional vs nullable · schema · k.schema · G1 · 0001
-- [ ] 0003 schema: parse, encode, decode, Result · schema · k.schema · G1 · 0002
-- [ ] 0004 schema: generators and docs; type registry · schema · k.schema · G1 · 0003
-- [ ] 0005 reactive: wrap engine; signal, computed, effect, scopes · reactive · k.reactive · G1 · 0001
-- [ ] 0006 reactive: resource union; declared writes; cycle detection · reactive · k.reactive · G1 · 0005
+- [x] 0002 schema: primitives, object, array, union, enum, id, optional vs nullable · schema · k.schema · G1 · 0001
+- [x] 0003 schema: parse, encode, decode, Result · schema · k.schema · G1 · 0002
+- [x] 0004 schema: generators and docs; type registry · schema · k.schema · G1 · 0003
+- [x] 0005 reactive: wrap engine; signal, computed, effect, scopes · reactive · k.reactive · G1 · 0001
+- [x] 0006 reactive: resource union; declared writes; cycle detection · reactive · k.reactive · G1 · 0005
 - [ ] 0007 store: store, transaction, tx, log · store · k.store · G1 · 0004 0006
 - [ ] 0008 store: snapshot, restore, undo, ownership rule · store · k.store · G1 · 0007
-- [ ] 0009 ctx: registry; clock, random, net, storage; real and sim · ctx · k.ctx · G1 · 0001
+- [x] 0009 ctx: registry; clock, random, net, storage; real and sim · ctx · k.ctx · G1 · 0001
 - [ ] 0010 compiler: Vite plugin on oxc; JSX to DOM ops; If/For/Match · compiler · k.compiler · G1 · 0006
 - [ ] 0011 compiler: artifacts (deps, ids, a11y expectations); escaping by context · compiler · k.compiler · G1 · 0010
 - [ ] 0012 runtime-dom: nodes, delegation, islands resume · runtime-dom · k.runtime · G1 · 0010
@@ -38,3 +38,5 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0034 freeze review: one-way audit, extension points exercised, status flips · spec · all · G3 · 0033
 - [ ] 0035 tooling: size budgets measure an esbuild bundle of src/index.ts (minified, gzip), not tsc dist re-exports · tooling · PRD A · G1 · 0001
 - [ ] 0036 tooling: Stryker config per kernel package; `pnpm mutate` real; thresholds from docs/TESTING.md · tooling · PRD A · G1 · 0001
+- [ ] 0037 rfc: reactive exposes a current-scope token so store `uses` declarations bind to the calling scope exactly (store PLAN D10) · reactive, store · k.reactive · G1 · 0007
+- [ ] 0038 rfc: `tx(transaction, payload)` type-checks payload at call sites; conformance passes untyped values today (store PLAN D2) · store · k.store · G1 · 0007

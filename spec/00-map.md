@@ -21,7 +21,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | --- | --- | --- | --- |
 | k.schema | Schemas | implemented | declare once; types, validators, codecs, generators derive |
 | k.reactive | Reactivity | implemented | signal, computed, effect, resource; scopes dispose |
-| k.store | Store and transactions | proposed | named pure transactions, log, undo, ownership |
+| k.store | Store and transactions | implemented | named pure transactions, log, undo, ownership |
 | k.component | Components | proposed | one default export, schema props, named slots, If/For/Match |
 | k.compiler | Compiler and artifacts | proposed | JSX to DOM ops; dep graph, ID index, route table, a11y expectations |
 | k.runtime | DOM runtime and islands | proposed | fine-grained nodes, delegation, resume |
