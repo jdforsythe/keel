@@ -2,6 +2,7 @@ import MagicString from "magic-string";
 import { Visitor } from "oxc-parser";
 import type { RenameSpec } from "./RenameSpec.ts";
 import { callArgObject } from "./callArgObject.ts";
+import { idNames } from "./idNames.ts";
 import { importRefs } from "./importRefs.ts";
 import { keyName } from "./keyName.ts";
 import { parseSource } from "./parseSource.ts";
@@ -27,7 +28,8 @@ function routePathStarts(program: Parameters<typeof callArgObject>[0], id: strin
 /**
  * Apply a rename to one source file (AST-aware): relative import specifiers that name a renamed file;
  * identifiers that are bindings or references (not property names, member names, or JSX attribute names)
- * when `inScope`; string and template text via `rewriteString`. `path` is the file's current path, `next`
+ * when `inScope`, with shorthand properties expanded so data keys never change; a route leaf only as a
+ * `uses:` entry; string and template text via `rewriteString` (id positions marked). `path` is the file's current path, `next`
  * its path after the rename. Returns the source unchanged when it does not parse.
  */
 export function renameSource(
@@ -57,7 +59,7 @@ export function renameSource(
       const last = ref.spec.slice(cut);
       const dot = last.indexOf(".");
       const stem = dot < 0 ? last : last.slice(0, dot);
-      const to = spec.names.get(stem);
+      const to = idNames(spec).get(stem);
       if (to !== undefined) out = `${ref.spec.slice(0, cut)}${to}${dot < 0 ? "" : last.slice(dot)}`;
     }
     put(ref.start + 1, ref.end - 1, out);
@@ -65,12 +67,16 @@ export function renameSource(
   const exact = spec.exactAnywhere || /(^|\/)module\.ts$/.test(path);
   const routePaths = spec.route === null ? new Set<number>() : routePathStarts(program, spec.route.id);
   const skip = new Set<number>();
+  const uses = new Set<number>();
+  const ids = new Set<number>();
   const rename = (n: { name: string; start: number; end: number }): void => {
-    const to = spec.names.get(n.name);
-    if (inScope && to !== undefined && !skip.has(n.start)) put(n.start, n.end, to);
+    if (!inScope || skip.has(n.start)) return;
+    const leaf = spec.leaf !== null && uses.has(n.start) && n.name === spec.leaf[0] ? spec.leaf[1] : undefined;
+    const to = spec.names.get(n.name) ?? leaf;
+    if (to !== undefined) put(n.start, n.end, to);
   };
-  const text = (start: number, end: number, raw: string, isPath: boolean): void => {
-    let t = rewriteString(raw, spec, inScope, exact);
+  const text = (start: number, end: number, raw: string, isPath: boolean, isId: boolean): void => {
+    let t = rewriteString(raw, spec, inScope, exact, isId);
     if (isPath && spec.route !== null) {
       const { from, to } = spec.route;
       t = t
@@ -80,12 +86,33 @@ export function renameSource(
     }
     put(start, end, t);
   };
+  const markId = (n: { type: string; start: number } | undefined | null): void => {
+    if (n?.type === "Literal") ids.add(n.start);
+  };
   new Visitor({
     MemberExpression: (n) => {
       if (!n.computed) skip.add(n.property.start);
     },
     Property: (n) => {
-      if (!n.computed && !n.shorthand) skip.add(n.key.start);
+      if (n.computed || n.key.type !== "Identifier") return;
+      const key = n.key;
+      if (key.name === "id") markId(n.value);
+      if (key.name === "uses" && n.value.type === "ArrayExpression")
+        for (const e of n.value.elements) if (e?.type === "Identifier") uses.add(e.start);
+      if (!inScope) return;
+      if (n.shorthand) {
+        // `{ cart }` -> `{ cart: basket }`: the data key never changes, only the binding.
+        const to = spec.names.get(key.name);
+        if (to !== undefined) put(key.start, key.end, `${key.name}: ${to}`);
+        skip.add(key.start);
+        return;
+      }
+      skip.add(key.start);
+      // `{ cart: basket }` renamed back to `{ cart: cart }` collapses to the shorthand it came from.
+      if (n.value.type === "Identifier" && spec.names.get(n.value.name) === key.name) {
+        put(key.start, n.value.end, key.name);
+        skip.add(n.value.start);
+      }
     },
     MethodDefinition: (n) => {
       if (!n.computed) skip.add(n.key.start);
@@ -100,19 +127,32 @@ export function renameSource(
       if (!n.computed) skip.add(n.key.start);
     },
     TSQualifiedName: (n) => void skip.add(n.right.start),
-    JSXAttribute: (n) => void skip.add(n.name.start),
+    JSXAttribute: (n) => {
+      skip.add(n.name.start);
+      if (n.name.type === "JSXIdentifier" && n.name.name === "id") markId(n.value);
+    },
     JSXMemberExpression: (n) => void skip.add(n.property.start),
+    CallExpression: (n) => {
+      const c = n.callee;
+      const name =
+        c.type === "Identifier"
+          ? c.name
+          : c.type === "MemberExpression" && !c.computed && c.property.type === "Identifier"
+            ? c.property.name
+            : "";
+      if (name === "find" || name === "fire" || name === "a11y") markId(n.arguments[0]);
+    },
     Identifier: (n) => {
       if ("name" in n) rename(n);
     },
     JSXIdentifier: (n) => rename(n),
     Literal: (n) => {
       if (typeof n.value !== "string" || sources.has(n.start)) return;
-      text(n.start + 1, n.end - 1, src.slice(n.start + 1, n.end - 1), routePaths.has(n.start));
+      text(n.start + 1, n.end - 1, src.slice(n.start + 1, n.end - 1), routePaths.has(n.start), ids.has(n.start));
     },
     TemplateElement: (n) => {
       const start = n.start + 1;
-      text(start, start + n.value.raw.length, n.value.raw, false);
+      text(start, start + n.value.raw.length, n.value.raw, false, false);
     },
   }).visit(program);
   if (edits.size === 0) return src;

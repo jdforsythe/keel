@@ -1,7 +1,7 @@
 # k.scaffold: Scaffold and codemods
-status: proposed
+status: implemented
 
-**Operations.** Every structural edit is one operation. It computes a complete edit set from the project's artifacts (`.keel/ids.json`, `routes.json`, `deps.json`, module manifests), never from text search, and applies it atomically: all files or none. The same operations are MCP tools (k.cli). `--dry-run` prints the edit set as unified diffs and writes nothing.
+**Operations.** Every structural edit is one operation. It computes a complete edit set from the project's artifacts (`.keel/ids.json`, `routes.json`, `deps.json`, module manifests), never from text search, and applies it atomically: all files or none. The same operations are MCP tools (k.cli). `--dry-run` prints the edit set as unified diffs and writes nothing. An edit set is `{ files, created, changed, removed }`: the tree after the operation and the sorted paths it creates, changes, and deletes; a dry run returns the same edit set.
 ```sh
 keel scaffold project shop
 keel scaffold module orders
@@ -16,7 +16,7 @@ keel codemod add-field Order note 'string.optional'
 ```
 
 **Generators.** Each emits spec-conformant files only:
-- `project`: `package.json`, `tokens.ts`, `topology.ts`, `vite.config.ts`, module `app`, generated turbo and CI.
+- `project`: `package.json`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo and CI.
 - `module`: `modules/<id>/module.ts` and `routes.ts`; adds the module to `topology.ts`.
 - `route`: manifest entry, `*.server.ts` loader, page component, route test.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
@@ -32,7 +32,7 @@ keel codemod add-field Order note 'string.optional'
 
 **Guarantee.** If `keel check` was clean before an operation, it is clean after. Otherwise nothing is written and E1353 reports the first diagnostic the edit set would introduce.
 
-**Rules.** E1351 target id already exists (fix: use a codemod) · E1352 id violates naming: route, store, and transaction ids are dotted lowerCamel segments prefixed by the module id; components PascalCase · E1353 operation aborted, would break check; nothing written · E1354 `add-field` of a required field without `--default` while constructors exist.
+**Rules.** E1351 target id already exists (fix: use a codemod) · E1352 id violates naming: route, store, and transaction ids are dotted lowerCamel segments prefixed by the module id; components PascalCase · E1353 operation aborted, would break check; nothing written · E1354 `add-field` of a required field without `--default` while constructors exist. Input that fails the operation's schema, an unknown target, or a missing `topology.ts` reports k.cli E1052; an unknown operation E1051.
 
 **Conformance.**
 - Each generator run in a fresh project leaves `keel check` and `keel test` clean.

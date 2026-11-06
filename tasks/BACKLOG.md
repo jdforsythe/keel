@@ -24,8 +24,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0020 check: pipeline, diagnostic model, formatters, explain · check · k.check · G1 · 0011
 - [ ] 0021 check: fix diffs for top 30 codes; budgets; rule registry · check · k.check · G1 · 0020
 - [ ] 0022 cli: commands, formatter registry, mcp, lsp · cli · k.cli · G1 · 0020
-- [ ] 0023 scaffold: project, module, route, component, store; turbo emission · scaffold · k.scaffold · G1 · 0022
-- [ ] 0024 scaffold: codemods rename, move, add-field · scaffold · k.scaffold · G1 · 0023
+- [x] 0023 scaffold: project, module, route, component, store; turbo emission · scaffold · k.scaffold · G1 · 0022
+- [x] 0024 scaffold: codemods rename, move, add-field · scaffold · k.scaffold · G1 · 0023
 - [x] 0025 testing: harness, events by id, a11y tree, sim ctx · testing · k.testing · G1 · 0012 0009
 - [x] 0026 testing: schema-generated properties; invariants; ledger · testing · k.testing · G1 · 0025
 - [ ] 0027 golden app 1 (client-only) built by agent from spec + skill; record eval baseline · apps · all · G1 · 0001-0026

@@ -1,10 +1,7 @@
-/** Emitted specifier, not an import of this package (kept out of the S0003 import scan). */
-const TESTING = "@keel/testing";
-
 /** `<Name>.test.tsx` (k.testing): the component's generated-props property test. */
 export function componentTest(name: string): string {
   return [
-    `import { properties } from '${TESTING}'`,
+    "import { properties } from '@keel/testing'",
     "import { it } from 'vitest'",
     `import ${name} from './${name}.tsx'`,
     "",

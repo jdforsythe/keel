@@ -32,7 +32,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.errors | Results and boundaries | proposed | Result for expected, boundary for unexpected |
 | k.check | Checker and diagnostics | proposed | codes, fix diffs, budgets, rule registry |
 | k.cli | CLI, MCP, LSP | proposed | one engine, three surfaces, formatter registry |
-| k.scaffold | Scaffold and codemods | proposed | structural edits as operations |
+| k.scaffold | Scaffold and codemods | implemented | structural edits as operations |
 | k.testing | Harness and ledger | implemented | given state, do events, expect; rungs |
 | k.server | Thin server | proposed | loaders, actions, dev server, adapters, local topology |
 | k.services | Thin services | proposed | typed client from schema, timeouts, ApiError |

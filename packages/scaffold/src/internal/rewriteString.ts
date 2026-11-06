@@ -1,12 +1,16 @@
 import type { RenameSpec } from "./RenameSpec.ts";
 import { alternation } from "./alternation.ts";
+import { idNames } from "./idNames.ts";
+import { rewriteId } from "./rewriteId.ts";
 
 /**
- * Rename references inside one string's text. Dotted tokens anywhere (word-bounded). When `inScope`: a
- * name used as an element-id or dotted prefix (`OrderCard-root`, `cart.addItem`), and a string that is
- * exactly a name when `exact`. Prose (a bare lowercase word) is left alone.
+ * Rename references inside one string's text, only where the text has a known id shape. Anywhere: a dotted
+ * store/route id (`orders.cart`, `orders.cart.addItem`) as a whole token. When `inScope`: a string that is
+ * exactly a name when `exact`; an element id whose first `.`/`-` segment is a whole name, either the whole
+ * string in an id position (`isId`: JSX `id`, `id:` property, `find`/`fire`/`a11y` argument) or an
+ * `id="..."` attribute inside the text. Bare prefixes elsewhere (`cart-icon`, `cart.json`) never change.
  */
-export function rewriteString(text: string, spec: RenameSpec, inScope: boolean, exact: boolean): string {
+export function rewriteString(text: string, spec: RenameSpec, inScope: boolean, exact: boolean, isId: boolean): string {
   if (inScope && exact) {
     const whole = spec.names.get(text);
     if (whole !== undefined) return whole;
@@ -16,9 +20,11 @@ export function rewriteString(text: string, spec: RenameSpec, inScope: boolean, 
     const re = new RegExp(`(?<![\\w$.])(?:${alternation(spec.tokens.keys())})(?![\\w$])`, "g");
     t = t.replace(re, (m) => spec.tokens.get(m) ?? m);
   }
-  if (inScope && spec.names.size > 0) {
-    const re = new RegExp(`(?<![\\w$])(?:${alternation(spec.names.keys())})(?=[-.][\\w$])`, "g");
-    t = t.replace(re, (m) => spec.names.get(m) ?? m);
-  }
-  return t;
+  if (!inScope) return t;
+  const ids = idNames(spec);
+  if (isId) return rewriteId(t, ids);
+  return t.replace(
+    /(?<![\w$-])id=(["'])([^"']*)\1/g,
+    (_m, q: string, id: string) => `id=${q}${rewriteId(id, ids)}${q}`,
+  );
 }

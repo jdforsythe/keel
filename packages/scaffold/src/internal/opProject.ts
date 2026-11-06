@@ -18,11 +18,11 @@ import { inputs } from "./inputs.ts";
 
 const GENERATED = ["turbo.json", ".github/workflows/ci.yml", ".keel/.gitkeep"];
 
-/** `scaffold project <name>`: root config, tokens, topology, module `app`, generated turbo and CI. */
+/** `scaffold project <name> [--adapter client|node|static]` (default `client`): root config, tokens, topology, module `app`, generated turbo and CI. */
 export function opProject(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.project.parse(input);
   if (!r.ok) return badInput("project", r.error);
-  const { name } = r.value;
+  const { name, adapter = "client" } = r.value;
   if (!/^[a-z][a-z0-9-]*$/.test(name))
     return fail("E1352", "package.json", `project name ${name} must be lowercase letters, digits and dashes`);
   for (const p of ["package.json", "topology.ts", "modules/app/module.ts"])
@@ -31,7 +31,7 @@ export function opProject(input: unknown, files: ReadonlyMap<string, string>): R
     ["package.json", packageJson(name)],
     ["tsconfig.json", tsconfigJson()],
     ["tokens.ts", tokensTs()],
-    ["topology.ts", topologyTs(["app"])],
+    ["topology.ts", topologyTs(["app"], adapter)],
     ["vite.config.ts", viteConfigTs()],
     ["modules/app/module.ts", moduleTs("app")],
     ["modules/app/routes.ts", routesTs()],

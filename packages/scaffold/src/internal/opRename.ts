@@ -41,7 +41,8 @@ const spec = (
   paths: Map<string, string>,
   route: RenameSpec["route"],
   exactAnywhere: boolean,
-): RenameSpec => ({ names: new Map(names), tokens: new Map(tokens), paths, route, exactAnywhere });
+  leaf: RenameSpec["leaf"] = null,
+): RenameSpec => ({ names: new Map(names), leaf, tokens: new Map(tokens), paths, route, exactAnywhere });
 
 /**
  * `codemod rename <from> <to>` for a component, store, route or schema: the declaration, its files, every
@@ -104,11 +105,10 @@ export function opRename(input: unknown, files: ReadonlyMap<string, string>): Re
     [`${pa}Page.`, `${pb}Page.`],
   ]);
   const names: [string, string][] = [
-    [a.leaf, b.leaf],
     [`load${pa}`, `load${pb}`],
     [`${pa}Page`, `${pb}Page`],
   ];
   const lastOf = (id: string): string => id.slice(id.lastIndexOf(".") + 1);
   const route = { id: from, from: lastOf(from), to: lastOf(to) };
-  return applyRename(files, dir, spec(names, [[from, to]], paths, route, false));
+  return applyRename(files, dir, spec(names, [[from, to]], paths, route, false, [a.leaf, b.leaf]));
 }

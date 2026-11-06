@@ -1,13 +1,10 @@
-/** Emitted specifier, not an import of this package (kept out of the S0003 import scan). */
-const SERVER = "@keel/server";
-
-/** `topology.ts` (k.server): one `web` deployable on the node adapter holding `modules`. */
-export function topologyTs(modules: readonly string[]): string {
+/** `topology.ts` (k.server): one `web` deployable holding `modules` on `adapter` (`client`: no server). */
+export function topologyTs(modules: readonly string[], adapter: "client" | "node" | "static"): string {
   const list = modules.map((m) => `'${m}'`).join(", ");
   return [
-    `import { topology } from '${SERVER}'`,
+    "import { topology } from '@keel/server'",
     "",
-    `export default topology({ web: { modules: [${list}], adapter: 'node' } })`,
+    `export default topology({ web: { modules: [${list}], adapter: '${adapter}' } })`,
     "",
   ].join("\n");
 }
