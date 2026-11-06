@@ -36,6 +36,8 @@ describe("wire format", () => {
     expect(sent?.url).toBe("https://api.test/v1/orders/a%20b/notes?tags=x&tags=y&page.n=2");
     expect(sent?.method).toBe("POST");
     expect(sent?.headers.get("content-type")).toBe("application/json");
+    expect(sent?.headers.get("accept")).toBe("application/json");
+    expect(sent?.headers.get("x-keel")).toBe("1");
     expect(await sent?.json()).toEqual({ text: "hi" });
   });
 

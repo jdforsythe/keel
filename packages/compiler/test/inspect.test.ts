@@ -88,6 +88,7 @@ describe("inspectMiddleware", () => {
     const other = { graph: { nodes: [], edges: [] }, stores: {} };
     expect((await post(JSON.stringify(other), { origin: "http://evil.example" })).status).toBe(403);
     expect((await post(JSON.stringify(other), { origin: "http://localhost:1" })).status).toBe(403);
+    expect((await post(JSON.stringify(other), { origin: "http://127.0.0.1:1" })).status).toBe(403);
     expect((await post(JSON.stringify(other), { "content-type": "text/plain" })).status).toBe(403);
     expect((await post("{", {})).status).toBe(400);
     expect((await post(JSON.stringify({ graph: { nodes: [] }, stores: {} }))).status).toBe(400);
@@ -100,15 +101,42 @@ describe("inspectMiddleware", () => {
     expect((await get()).json).toMatchObject(REPORT);
   });
 
-  it("answers cross-origin reads for loopback origins only", async () => {
-    for (const origin of ["http://localhost:4182", "http://127.0.0.1:4182", "http://[::1]:9", "http://localhost"]) {
+  it("refuses every other origin by default, loopback ports included, for GET and POST alike (RFC 0022)", async () => {
+    for (const origin of ["http://localhost:4182", "http://127.0.0.1:1", "http://evil.example", "http://localhost"]) {
+      const { res, json } = await get({ origin });
+      expect(res.status, origin).toBe(403);
+      expect(res.headers.get("access-control-allow-origin"), origin).toBeNull();
+      expect(json).toMatchObject({ ok: false, error: { code: "keel.denied" } });
+    }
+    expect((await get({ origin: base })).res.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("answers listed origins (`:*` any port) with CORS, and refuses a non-loopback unlisted Host", async () => {
+    const s = server;
+    if (s !== undefined) await new Promise<void>((resolve) => s.close(() => resolve()));
+    const mw = inspectMiddleware(() => root, ["http://localhost:*", "http://dev.box:1"]);
+    server = http.createServer((req, res) => mw(req, res, () => res.end("next")));
+    const s2 = server;
+    await new Promise<void>((resolve) => s2.listen(0, "127.0.0.1", resolve));
+    const addr: AddressInfo | string | null = s2.address();
+    base = typeof addr === "object" && addr !== null ? `http://127.0.0.1:${addr.port}` : "";
+    for (const origin of ["http://localhost:4182", "http://localhost"]) {
       const { res } = await get({ origin });
       expect(res.headers.get("access-control-allow-origin"), origin).toBe(origin);
       expect(res.headers.get("vary")).toBe("origin");
     }
-    for (const origin of ["http://evil.example", "https://localhost:4182", "http://localhost.evil.example"]) {
-      expect((await get({ origin })).res.headers.get("access-control-allow-origin"), origin).toBeNull();
-    }
+    expect((await post(JSON.stringify(REPORT), { origin: "http://localhost:4182" })).status).toBe(204);
+    for (const origin of ["https://localhost:4182", "http://localhost.evil.example", "http://127.0.0.1:4182"])
+      expect((await get({ origin })).res.status, origin).toBe(403);
+    // DNS rebinding: the page's own origin, but a Host that is neither loopback nor listed.
+    const rebound = await new Promise<number>((resolve) => {
+      const r = http.request(`${base}/__keel/inspect`, { headers: { host: "rebound.example" } }, (res) => {
+        res.resume();
+        resolve(res.statusCode ?? 0);
+      });
+      r.end();
+    });
+    expect(rebound).toBe(403);
   });
 
   it("other methods are 405; other paths and a query on the path go to next / are served", async () => {

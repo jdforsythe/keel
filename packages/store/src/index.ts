@@ -1,4 +1,5 @@
 export { invariant } from "./invariant.ts";
+export { isolate } from "./isolate.ts";
 export { store } from "./store.ts";
 export { stores } from "./stores.ts";
 export { transaction } from "./transaction.ts";

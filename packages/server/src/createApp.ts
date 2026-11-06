@@ -1,12 +1,15 @@
 import { scope } from "@keel/reactive";
 import { compileRoutes, compileTable } from "@keel/router";
 import { attempt } from "@keel/schema";
+import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { INSPECT_PATH } from "./internal/INSPECT_PATH.ts";
 import type { Served } from "./internal/Served.ts";
 import { crashed } from "./internal/crashed.ts";
+import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
 import { handle } from "./internal/handle.ts";
+import { inspectAllowed } from "./internal/inspectAllowed.ts";
 import { inspectResponse } from "./internal/inspectResponse.ts";
 import { moduleOf } from "./internal/moduleOf.ts";
 import { reqLine } from "./internal/reqLine.ts";
@@ -19,9 +22,11 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * Rejects with an Error whose message starts with E1552 (the served deployable names a module no route belongs to,
  * or a module is in two deployables) or E1553 (a `static` deployable has a route with params or actions).
  * Each request follows the k.server Request flow and writes one `req` record (after any `diag`) to `log`.
- * Each request runs in its own scope: stores created in it appear in `#k-state` and are disposed after the
- * response; module-level stores are process-shared and appear only when listed in `expose`.
- * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.cli Inspect) before the route table.
+ * Each request runs in its own isolated scope (k.store `isolate`): stores created in it register in its own registry,
+ * appear in `#k-state` and are disposed after the response; module-level stores are process-shared and appear (state
+ * only, unless `log: true`) only when listed in `expose`. `mode` defaults to `production` (RFC 0022).
+ * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.cli Inspect) before the route table, to a loopback
+ * or listed host and an absent, same, or listed (`inspect.origins`) `Origin` only; others get 403 `keel.denied`.
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   const routes = opts.routes.routes;
@@ -30,26 +35,30 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
   const sv: Served = {
     table: selectDeployable(opts.topology, table, modules, opts.deployable),
     ctx: opts.ctx,
-    mode: opts.mode ?? "dev",
+    mode: opts.mode ?? "production",
     guards: new Map((opts.guards ?? []).map((g) => [g.name, g])),
-    expose: new Set((opts.expose ?? []).map((st) => st.id)),
+    expose: new Map(
+      (opts.expose ?? []).map((x): [string, boolean] => ("store" in x ? [x.store.id, x.log === true] : [x.id, false])),
+    ),
+    inspectOrigins: opts.inspect?.origins ?? [],
   };
   const log = opts.log;
   const hono = new Hono();
   hono.all("*", async (c) => {
     const raw = c.req.raw;
     const t0 = sv.ctx.clock.now();
-    const rq = { scope: scope(() => undefined), created: new Set<string>() };
+    const rq = { scope: scope(() => undefined) };
+    isolate(rq.scope);
     const path = new URL(raw.url).pathname;
     const inspecting = sv.mode === "dev" && raw.method === "GET" && path === INSPECT_PATH;
+    const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     const ran = await attempt(() =>
-      inspecting
-        ? inspectResponse(opts.artifacts, raw.headers.get("origin") ?? undefined).then((response) => ({
-            response,
-            route: undefined,
-            diags: [],
-          }))
-        : handle(sv, raw, rq),
+      gate === undefined
+        ? handle(sv, raw, rq)
+        : (gate.ok
+            ? inspectResponse(opts.artifacts, gate.allow)
+            : Promise.resolve(denied("inspect origin refused"))
+          ).then((response) => ({ response, route: undefined, diags: [] })),
     );
     rq.scope.dispose();
     const h = ran.ok ? ran.value : crashed(sv.mode, ran.error);

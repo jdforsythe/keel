@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // The dev inspect route of createApp (k.cli Inspect, RFC 0017): live graph and stores of the process, artifacts
-// from the `.keel` directory, loopback-only CORS, absent in production, one `req` record per request.
+// from the `.keel` directory, CORS only for an admitted origin, absent in production, one `req` record per request.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -74,15 +74,12 @@ describe("GET /__keel/inspect", () => {
     expect([doc.ids, doc.a11y, doc.routes]).toEqual([{}, {}, {}]);
   });
 
-  it("answers cross-origin reads for loopback origins only", async () => {
+  it("echoes only the origin the gate admitted (gating itself: hardening.test.ts, under Node)", async () => {
     // `origin` is a forbidden request header in the DOM environment, so the response builder is called directly.
-    const read = (origin: string | undefined) => inspectResponse(undefined, origin);
-    expect((await read("http://localhost:4182")).headers.get("access-control-allow-origin")).toBe(
-      "http://localhost:4182",
-    );
-    expect((await read("http://127.0.0.1:9")).headers.get("vary")).toBe("origin");
-    expect((await read("http://evil.example")).headers.get("access-control-allow-origin")).toBeNull();
-    expect((await read(undefined)).headers.get("access-control-allow-origin")).toBeNull();
+    const res = await inspectResponse(undefined, "http://localhost:4182");
+    expect(res.headers.get("access-control-allow-origin")).toBe("http://localhost:4182");
+    expect(res.headers.get("vary")).toBe("origin");
+    expect((await inspectResponse(undefined, undefined)).headers.get("access-control-allow-origin")).toBeNull();
   });
 
   it("production: the route table's 404; other verbs in dev go through the route table too", async () => {

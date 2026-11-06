@@ -668,6 +668,12 @@
     },
     {
       "pkg": "store",
+      "name": "isolate",
+      "file": "packages/store/src/isolate.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "store",
       "name": "store",
       "file": "packages/store/src/store.ts",
       "rung": "probabilistic"

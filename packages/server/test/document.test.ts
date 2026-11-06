@@ -4,7 +4,7 @@ import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { action, guard, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
-import { store, stores } from "@keel/store";
+import { store, stores, transaction, tx } from "@keel/store";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
@@ -27,7 +27,7 @@ const state = (html: string): unknown => {
 };
 
 type Opts = {
-  expose?: { id: string }[];
+  expose?: ({ id: string } | { store: { id: string }; log?: boolean })[];
   requestStore?: string;
   title?: string;
   mode?: "dev" | "production";
@@ -121,6 +121,30 @@ describe("document", () => {
     const parsed: unknown = state(html);
     const stores = typeof parsed === "object" && parsed !== null && "stores" in parsed ? parsed.stores : undefined;
     expect(Object.keys(typeof stores === "object" && stores !== null ? stores : {})).toEqual(["app.counter"]);
+    sc.dispose();
+  });
+
+  it("an exposed store carries its state only (no log, initial = state) unless exposed with `log: true`", async () => {
+    const Counter = s.object({ n: s.int() });
+    let counter: ReturnType<typeof store<{ n: number }>> | undefined;
+    const sc = scope(() => {
+      counter = store(Counter, { n: 0 }, { id: "app.logged" });
+      const bump = transaction(counter, "app.bump", s.object({}), (st) => ({ n: st.n + 1 }));
+      tx(bump, {});
+      tx(bump, {});
+    });
+    const plain = state(await (await (await build({ expose: [{ id: "app.logged" }] })).fetch(get("/"))).text());
+    expect(plain).toMatchObject({ stores: { "app.logged": { state: { n: 2 }, log: [], initial: { n: 2 } } } });
+    expect(JSON.stringify(plain)).not.toContain("app.bump");
+    const withLog = state(
+      await (await (await build({ expose: [{ store: { id: "app.logged" }, log: true }] })).fetch(get("/"))).text(),
+    );
+    expect(withLog).toMatchObject({
+      stores: {
+        "app.logged": { state: { n: 2 }, initial: { n: 0 }, log: [{ name: "app.bump" }, { name: "app.bump" }] },
+      },
+    });
+    expect(counter?.id).toBe("app.logged");
     sc.dispose();
   });
 

@@ -8,7 +8,7 @@ import { coreKey } from "./internal/coreKey.ts";
 import { counter } from "./internal/counter.ts";
 import { freeze } from "./internal/freeze.ts";
 import { logSchema } from "./internal/logSchema.ts";
-import { registry } from "./internal/registry.ts";
+import { registryOf } from "./internal/registryOf.ts";
 import { undeclared } from "./internal/undeclared.ts";
 import { violated } from "./internal/violated.ts";
 import type { Store } from "./types/Store.ts";
@@ -17,7 +17,8 @@ import type { Transaction } from "./types/Transaction.ts";
 /**
  * Create a store inside a scope (E1203 outside one). State is validated, copied and deep-frozen.
  * `clock` stamps log entries (default: a per-store counter). Undo replays the log from the snapshot base
- * (`initial`, or the `initial` of the last restored snapshot). `id` defaults to `store.<n>`; a live duplicate throws.
+ * (`initial`, or the `initial` of the last restored snapshot). `id` defaults to `store.<n>`; a live duplicate in the caller's registry
+ * (`stores()`, `isolate`) throws.
  */
 export function store<T extends object>(
   schema: Schema<T>,
@@ -25,6 +26,7 @@ export function store<T extends object>(
   options?: { readonly id?: string; readonly clock?: () => number },
 ): Store<T> {
   const id = options?.id ?? `store.${++counter.next}`;
+  const registry = registryOf(owner());
   if (registry.has(id)) throw new Error(`store ${id}: id already in use by a live store`);
   const clock = options?.clock;
   const start = copy(schema, initial);

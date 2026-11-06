@@ -27,7 +27,7 @@ const r = await api.getOrder({ params: { id } }, ctx) // Result<Order, ApiError>
 
 The client never throws; every failure is an `err`.
 
-**Encoding.** Path params are URL-encoded; `query` is encoded by its schema; `body` is JSON by its schema. Responses decode with `output`.
+**Encoding.** Path params are URL-encoded; `query` is encoded by its schema; `body` is JSON by its schema. Every request sends `accept: application/json` and `x-keel: 1` (the k.server same-site proof, RFC 0022). Responses decode with `output`.
 
 **Not here** (stdlib): retries, caching, auth and token refresh, interceptors.
 

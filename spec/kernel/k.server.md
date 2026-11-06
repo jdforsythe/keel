@@ -13,9 +13,9 @@ export const updateOrder = action(OrderEdit, async (input, { params }, ctx) => o
 
 **Request flow.** Match the path in the route table -> parse params (fail: 404) and search (fail: defaults) -> guard (deny: redirect) ->
 - GET: run every loader in the matched layout chain concurrently, then stream HTML with islands and serialized state (k.runtime). A loader `err` renders the route's `errorElement`.
-- POST, PUT, PATCH, DELETE: decode FormData with the action's input schema (a `content-type: application/json` body, as a k.services client sends, is parsed with it instead) (fail: `keel.fields`, action not called), run the action, then 303 to the target for a document request or return the `Result` as JSON for a runtime request.
+- POST, PUT, PATCH, DELETE: first the same-site check (RFC 0022): pass on `Sec-Fetch-Site` `same-origin` or `none`, an `Origin` equal to the request's, `accept: application/json` with `x-keel: 1` (a k.services client sends it), or neither `Origin` nor `Sec-Fetch-Site`; else 403 `keel.denied`, nothing runs. `_method` overrides POST only. Then decode FormData with the action's input schema (a `content-type: application/json` body, as a k.services client sends, is parsed with it instead) (fail: `keel.fields`, action not called), run the action, then 303 to the target for a document request or return the `Result` as JSON for a runtime request.
 
-Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · other `err` 400 · uncaught throw 500 as `keel.unexpected`. In production its message becomes `unexpected` and no stack leaves the server.
+Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · other `err` 400 · uncaught throw 500 as `keel.unexpected`. In production its message becomes `unexpected` and no stack leaves the server. `mode` defaults to `production`. `#k-state` holds every store created in the request scope and the module stores listed in `expose`, each of those as `{ state, log: [], initial: state }` unless exposed with `log: true` (RFC 0022).
 
 **Topology.**
 ```ts
@@ -24,7 +24,7 @@ export default topology({ web: { modules: ['app', 'orders'], adapter: 'node' } }
 ```
 Each deployable builds to one artifact. Adapters: `node` (Hono on Node), `static` (prerendered HTML only), and `client` (no server: loaders and actions run in the browser, the compiler generates the entry that calls `mount(App, el)` with the router's `App`, and `ctx` is `createCtx({ mode: 'real' })`; golden app 1 uses it). Local only: a deployable's modules run in one process; calls between deployables are stdlib (split topology).
 
-**Dev server.** `keel dev`: Vite and Hono in one process, HMR, real `ctx`. Log stream on stdout per OUTPUT.md, one record per event: `req` (compact `GET /orders/7 orders.show 200 12ms`), `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. In dev it also serves `GET /__keel/inspect` (k.cli Inspect).
+**Dev server.** `keel dev`: Vite and Hono in one process, HMR, real `ctx`. Log stream on stdout per OUTPUT.md, one record per event: `req` (compact `GET /orders/7 orders.show 200 12ms`), `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. In dev it also serves `GET /__keel/inspect` (k.cli Inspect) to a loopback or listed `Host` whose `Origin` is absent, its own, or in `createApp({ inspect: { origins } })` (`:*` any port); others get 403 `keel.denied` (RFC 0022).
 
 **Rules.** E1551 `loader` or `action` declared outside a `*.server.ts` file (in a client-only deployable those files are bundled to the browser; E1551 still applies) · E1552 topology names an unknown module or one module in two deployables · E1553 `static` deployable contains a route with params or actions · E1554 loader data fails its output schema (dev diagnostic; 500 in production).
 

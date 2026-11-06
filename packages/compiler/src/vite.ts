@@ -50,7 +50,7 @@ type Warn = (message: string) => void;
  * generated entry at `/@keel/entry.ts`.
  *
  * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
- * stores the open page's dev entry last posted.
+ * stores the open page's dev entry last posted, to the server's own origin and those `KEEL_INSPECT_ORIGINS` lists.
  */
 export default function (): {
   name: string;
@@ -74,7 +74,12 @@ export default function (): {
   let usageKeys = "";
   let warn: Warn = () => {};
   const modules = new Map<string, Entry>();
-  const inspect = inspectMiddleware(() => root);
+  // Extra origins the inspect endpoint answers (RFC 0022): comma-separated, e.g. `http://localhost:*`.
+  const origins = (process.env.KEEL_INSPECT_ORIGINS ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter((o) => o !== "");
+  const inspect = inspectMiddleware(() => root, origins);
   const written = new Map<string, string>();
 
   const relOf = (id: string): string | null => {

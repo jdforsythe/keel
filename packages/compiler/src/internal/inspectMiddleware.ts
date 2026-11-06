@@ -3,13 +3,30 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { INSPECT_PATH } from "./INSPECT_PATH.ts";
 
-/** Origins whose cross-origin reads are answered: loopback only, any port. */
-const LOOPBACK = /^http:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/;
+/** Hostnames the endpoint answers on without being listed (a non-loopback Host is DNS rebinding unless listed). */
+const LOOPBACK: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
 /** Largest live report a page may post. */
 const MAX_BODY = 8 * 1024 * 1024;
 
 type Middleware = (req: IncomingMessage, res: ServerResponse, next: () => void) => void;
 type Live = { readonly graph: unknown; readonly stores: unknown };
+
+/** Whether `origin` is in `list`; an entry ending in `:*` matches its scheme and host on any port (RFC 0022). */
+const listed = (list: readonly string[], origin: string): boolean =>
+  list.some((o) => {
+    if (!o.endsWith(":*")) return o === origin;
+    const base = o.slice(0, -2);
+    return origin === base || (origin.startsWith(`${base}:`) && /^\d{1,5}$/.test(origin.slice(base.length + 1)));
+  });
+
+/** A `Host` header value or an origin as a URL, or undefined when it does not parse. */
+const hostOf = (s: string): URL | undefined => {
+  try {
+    return new URL(s.includes("://") ? s : `http://${s}`);
+  } catch {
+    return undefined;
+  }
+};
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -51,15 +68,27 @@ const send = (res: ServerResponse, status: number, body?: unknown): void => {
  * `GET|POST /__keel/inspect` for the Vite dev and preview servers of a client-only app (k.cli Inspect, RFC 0017).
  * GET returns `{ live, graph, stores, ids, a11y, routes }`: artifacts read from `<root>/.keel/` per request, the live
  * half from the last report the open page posted (`live: false`, empty graph and stores, until one arrives). POST
- * takes that report, same-origin only. Cross-origin reads are answered for loopback origins only.
+ * takes that report as JSON. Both answer only (RFC 0022) a `Host` that is loopback or in `origins`, with an `Origin`
+ * that is absent, the server's own, or in `origins` (`:*` for any port); others get 403 `keel.denied`. A listed
+ * cross-origin `Origin` is echoed for CORS.
  */
-export function inspectMiddleware(root: () => string): Middleware {
+export function inspectMiddleware(root: () => string, origins: readonly string[] = []): Middleware {
   let live: Live | undefined;
   return (req, res, next) => {
     if ((req.url ?? "").split("?")[0] !== INSPECT_PATH) return next();
     const origin = req.headers.origin;
-    const loopback = typeof origin === "string" && LOOPBACK.test(origin);
-    if (loopback) {
+    const self = hostOf(req.headers.host ?? "");
+    const from = origin === undefined ? undefined : hostOf(origin);
+    const hostOk =
+      self !== undefined &&
+      (LOOPBACK.has(self.hostname) ||
+        listed(origins, `http://${self.host}`) ||
+        listed(origins, `https://${self.host}`));
+    const same = origin === undefined || (from !== undefined && from.host === self?.host);
+    const crossOk = origin !== undefined && !same && listed(origins, origin);
+    if (!hostOk || !(same || crossOk))
+      return send(res, 403, { ok: false, error: { code: "keel.denied", message: "inspect origin refused", data: {} } });
+    if (crossOk) {
       res.setHeader("access-control-allow-origin", origin);
       res.setHeader("vary", "origin");
     }
@@ -75,8 +104,7 @@ export function inspectMiddleware(root: () => string): Middleware {
       });
     }
     if (req.method !== "POST") return send(res, 405);
-    const sameOrigin = origin === undefined || (loopback && new URL(origin).host === req.headers.host);
-    if (!sameOrigin || !(req.headers["content-type"] ?? "").startsWith("application/json")) return send(res, 403);
+    if (!(req.headers["content-type"] ?? "").startsWith("application/json")) return send(res, 403);
     const chunks: Buffer[] = [];
     let size = 0;
     req.on("data", (c: Buffer) => {

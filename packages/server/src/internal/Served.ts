@@ -2,11 +2,15 @@ import type { Ctx } from "@keel/ctx";
 import type { Guard, Located } from "@keel/router";
 import type { Mode } from "./Mode.ts";
 
-/** A built deployable: its routes, `ctx`, mode, guards by name, and the ids of stores exposed to `#k-state`. */
+/**
+ * A built deployable: its routes, `ctx`, mode, guards by name, the stores exposed to `#k-state` (id to whether their
+ * log goes too), and the extra origins the dev inspect endpoint answers.
+ */
 export type Served = {
   readonly table: readonly Located[];
   readonly ctx: Ctx;
   readonly mode: Mode;
   readonly guards: ReadonlyMap<string, Guard>;
-  readonly expose: ReadonlySet<string>;
+  readonly expose: ReadonlyMap<string, boolean>;
+  readonly inspectOrigins: readonly string[];
 };
