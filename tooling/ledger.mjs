@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 // Builds tooling/ledger/ledger.json: every exported function in packages/*/src/*.ts and every export of apps/*/modules/** with its verification rung.
-// Usage: node tooling/ledger.mjs [--diff|--ci]   (--diff compares to the committed ledger, prints E1706 on regression)
+// Usage: node tooling/ledger.mjs [--diff|--ci] [--scope <prefix>]   (--diff compares to the committed ledger, prints E1706 on regression;
+// --scope golden-1: limits --diff to items keyed with that prefix and counts only unsafe calls in the matching app, so unrelated drift cannot fail it)
 // I/O shell only: rung rules are `ledger` and `ledgerDiff` from @keel/testing (k.testing Ledger), imported by path.
 import fs from "node:fs";
 import path from "node:path";
@@ -130,6 +131,20 @@ function committed() {
 const asRecords = (l) => l.exports.map((e) => ({ item: `${e.file}#${e.name}`, rung: e.rung }));
 
 const args = parseArgs();
+const scopeArg = args.values.get("scope");
+const scope = typeof scopeArg === "string" ? scopeArg : "";
+const inScope = (e) => `${e.file}#${e.name}`.startsWith(scope);
+
+/** Unsafe calls in `apps/<app>/` for every app whose `<app>:` key prefix matches `scope`. */
+function scopedUnsafe() {
+  const ap = path.join(root, "apps");
+  const apps = fs.existsSync(ap) ? fs.readdirSync(ap).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`)) : [];
+  let n = 0;
+  for (const a of apps)
+    for (const f of walk(path.join(ap, a)).filter((x) => CODE_EXT.test(x)))
+      for (const l of readCode(f)) n += (l.match(UNSAFE_CALL) ?? []).length;
+  return n;
+}
 const diff = args.flags.has("diff") || args.flags.has("ci");
 
 await run("ledger", () => {
@@ -138,7 +153,8 @@ await run("ledger", () => {
   if (diff) {
     const prev = committed();
     if (prev) {
-      for (const d of ledgerDiff(asRecords(prev), asRecords(next))) {
+      const keep = (l) => ({ ...l, exports: l.exports.filter(inScope) });
+      for (const d of ledgerDiff(asRecords(keep(prev)), asRecords(keep(next)))) {
         const [file, name] = d.item.split("#");
         diags.push({
           kind: "diag",
@@ -150,12 +166,14 @@ await run("ledger", () => {
           see: d.see,
         });
       }
-      if (next.unsafe > prev.unsafe)
+      const before = scope === "" ? prev.unsafe : 0;
+      const after = scope === "" ? next.unsafe : scopedUnsafe();
+      if (after > before)
         diags.push({
           kind: "diag",
           code: "L0001",
           path: LEDGER,
-          message: `unsafe count up ${prev.unsafe} -> ${next.unsafe}`,
+          message: `unsafe count up ${before} -> ${after}`,
         });
     }
   } else {

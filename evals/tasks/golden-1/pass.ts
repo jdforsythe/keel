@@ -50,12 +50,16 @@ const exists = (p: string): Promise<boolean> =>
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const tokens = (s: string): number => Math.ceil(s.length / 4);
 
-async function codeFiles(): Promise<string[]> {
-  const all = await readdir(app, { recursive: true });
-  return all
-    .map((f) => f.split("\\").join("/"))
-    .filter((f) => CODE.test(f) && !SKIP_DIR.test(f))
-    .sort();
+/** Walks the app without descending into node_modules, .keel, dist, coverage (a recursive readdir follows workspace links and exhausts memory). */
+async function codeFiles(dir = "", out: string[] = []): Promise<string[]> {
+  const entries = await readdir(join(app, dir), { withFileTypes: true });
+  for (const e of entries) {
+    const rel = dir === "" ? e.name : `${dir}/${e.name}`;
+    if (SKIP_DIR.test(rel)) continue;
+    if (e.isDirectory()) await codeFiles(rel, out);
+    else if (CODE.test(rel)) out.push(rel);
+  }
+  return out.sort();
 }
 
 async function outputBudget(key: string): Promise<number> {
@@ -94,6 +98,6 @@ export default async (): Promise<boolean> => {
   if (!check.ok || tokens(check.stdout) > (await outputBudget("check.injected10"))) return false;
   const test = await sh("pnpm", ["test", "--quiet", "--filter", "golden-1"]);
   if (!test.ok || tokens(test.stdout) > (await outputBudget("test.failing3"))) return false;
-  if (!(await sh("node", ["tooling/ledger.mjs", "--diff", "--quiet"])).ok) return false;
+  if (!(await sh("node", ["tooling/ledger.mjs", "--diff", "--quiet", "--scope", "golden-1:"])).ok) return false;
   return ledgerItemsProven();
 };

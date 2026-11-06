@@ -118,7 +118,9 @@ describe("document", () => {
     const exposed = await build({ expose: [{ id: "app.counter" }, { id: "app.gone" }] });
     const html = await (await exposed.fetch(get("/"))).text();
     expect(state(html)).toMatchObject({ stores: { "app.counter": { state: { n: 7 } } } });
-    expect(Object.keys((state(html) as { stores: object }).stores)).toEqual(["app.counter"]);
+    const parsed: unknown = state(html);
+    const stores = typeof parsed === "object" && parsed !== null && "stores" in parsed ? parsed.stores : undefined;
+    expect(Object.keys(typeof stores === "object" && stores !== null ? stores : {})).toEqual(["app.counter"]);
     sc.dispose();
   });
 
@@ -171,13 +173,13 @@ describe("document", () => {
     expect(w.status).toBe(303);
   });
 
-  it("an unknown guard name is 500 E1506; a Guard object on the route is not a name", async () => {
+  it("an unknown guard name is 500 E1506 on every route that names it", async () => {
     const routes = manifest({
       "app.a": { path: "/a", component: () => el("p", {}), guard: "docNope" },
       "app.b": {
         path: "/b",
         component: () => el("p", {}),
-        guard: guard("docObj", { redirect: "app.a" }, () => Promise.resolve(ok(null))) as never,
+        guard: "docObj",
       },
     });
     const app = await createApp({

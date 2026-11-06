@@ -29,9 +29,10 @@ k.store
 - component declares uses (k.component); calling an undeclared tx from a component is E1301; loaders and actions are unrestricted
 
 k.ctx
-- ctx.clock.now() ctx.random.uuid()/float() ctx.net.fetch(req) ctx.storage.get/set
+- ctx.clock.now() ctx.random.uuid()/float() ctx.random.id(brand) (branded id) ctx.net.fetch(req) ctx.storage.get/set
 - createCtx({ mode: 'sim', seed }) -> SimCtx with net.route(pattern, (req) => Response), clock.advance(ms)
 - Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
+- resources fetch with `new Request(new URL('/api/x', location.href))` (relative URLs throw)
 - ctx.net.fetch in app code is E1651 (k.services), not enforced until k.services is implemented; golden-1 calls it directly
 
 k.component
@@ -72,6 +73,7 @@ k.ui
 - tokens.ts: export const tokens = defineTokens({ color: { fg: { light, dark }, bg: {...}, accent, danger }, space, radius, font, fontSize, ... })
 - base elements from '@keel/ui': Box Text Heading Button Link Image Input TextArea Select Checkbox
 - required: Heading level; Image alt|decorative; label on Input/TextArea/Select/Checkbox; Link to: Href with text; Button text or label
+- event props: Button onClick, Checkbox onChange, Input onInput, Select onChange
 - Box as / Text as: section nav main ul li p span ...
 - style props take token names: p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap; states={{ hover, focusVisible, active, disabled }}
 - standard slots: loading () => JSX, empty () => JSX, error (e: KeelError) => JSX; For accepts empty
@@ -80,7 +82,7 @@ k.ui
 k.testing
 - import { render, renderRoute, properties } from '@keel/testing'
 - const t = render(TodoRow, { props, state: [[board, value]], ctx? }); t.fire(id, { type: 'click' }); t.find(id) -> { id, role, name, text, state }; t.state(board); t.a11y(id?); t.dispose()
-- await renderRoute('todos.list', { params, search, state, ctx })
+- const h = await renderRoute('todos.list', { routes, params, search, state, ctx })  // routes = the manifest; h.settle() runs microtask rounds until DOM and store are quiet
 - TestEvent: click | input { value } | change | keydown { key } | submit | focus | blur
 - properties(Component | transaction, { runs = 100, seed? }); transaction properties check every invariant and undo
 - no DOM queries in tests (E1701); unknown id E1705

@@ -8,10 +8,10 @@ await t.fire('cart.add', { type: 'click' })
 expect(t.state(cart).items).toHaveLength(1)
 expect(t.find('cart.total').name).toBe('Total 3')
 t.dispose()
-const r = await renderRoute('orders.show', { params: { id }, search: {}, state: [], ctx: sim })
+const r = await renderRoute('orders.show', { routes, params: { id }, search: {}, state: [], ctx: sim })
 ```
 - `render(Component, { props, state?, ctx? })` -> `{ a11y(id?), state(store?), fire(id, event), settle(), find(id), dispose() }`. `props` and each `[store, value]` in `state` are parsed by their schemas first.
-- `renderRoute(id, { params, search?, state?, ctx? })` runs the route's guards and loaders, then renders its chain; it resolves when the page is ready.
+- `renderRoute(id, { routes, params, search?, state?, ctx? })` (`routes`: the manifest) runs the route's guards and loaders, then renders its chain; it resolves when the page is ready.
 - `fire(id, event)` dispatches through the delegated table (k.runtime). `event` is a closed `TestEvent` union (`click`, `input` with `value`, `change`, `keydown` with `key`, `submit`, `focus`, `blur`). It resolves once effects, resources, and actions are quiescent.
 - `settle()` runs the loop `fire` uses without an event (microtask rounds until DOM and store logs are quiet, bounded, no timers), then the render checks; `renderRoute` handles have it too.
 - `find(id)` returns `{ id, role, name, text, state }`, never a DOM node. `state(store)` is that store's value; `state()` is every store keyed by store id.

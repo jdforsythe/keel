@@ -19,6 +19,6 @@ description: "Build a Keel app: schemas, stores, components, routes, forms, test
 
 **Rules:** no throw or try/catch (use `Result`, `attempt`); no `Date.now`, `Math.random`, bare `fetch`, `localStorage`, DOM APIs (use `ctx`); no `any`, casts, `@ts-ignore`.
 
-**Tests:** `render(Comp, { props, state, ctx })`, `t.fire('todos.add', { type: 'click' })`, `t.find(id)`, `t.state(store)`; `await renderRoute(id, {...})`; `properties(Comp | transaction, { runs: 100 })`. Never query the DOM. Every export is named in a test.
+**Tests:** `render(Comp, { props, state, ctx })`, `t.fire('todos.add', { type: 'click' })`, `t.find(id)`, `t.state(store)`; `await renderRoute(id, {...})`; `properties(Comp | transaction, { runs: 100 })`. `renderRoute` needs `routes` (the manifest) and `h.settle()` to flush. Resources fetch with `new Request(new URL('/api/x', location.href))`, never a relative URL. Never query the DOM. Every export is named in a test.
 
 **Output:** `pnpm check`, `pnpm test` print compact output; read the trailer, fix by code (`keel explain <code>`), no `--verbose`.

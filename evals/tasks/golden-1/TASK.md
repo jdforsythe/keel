@@ -1,6 +1,6 @@
 # Golden app 1 (client-only)
 
-Build `apps/golden-1/`: a todo app, client-only (`topology.ts`: one deployable, `adapter: 'client'`; the compiler generates the `mount` entry). Use only kernel APIs from the spec slice; read a full section with `pnpm spec <id>` (k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.forms k.ui k.testing k.module k.server k.scaffold k.check). Edit nothing outside `apps/golden-1/`. Prefer `keel scaffold`/`keel codemod` for structure. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; do not invent one.
+Build `apps/golden-1/`: a todo app, client-only (`topology.ts`: one deployable, `adapter: 'client'`; the compiler generates the `mount` entry). Use only kernel APIs from the spec slice; read a full section with `pnpm spec <id>` (k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.forms k.ui k.testing k.module k.server k.scaffold k.check). Edit nothing outside `apps/golden-1/`. Prefer `keel scaffold`/`keel codemod` for structure. Scaffold the project with `scaffold('project', { workspace: true })` (CLI: `keel scaffold project golden-1 --workspace`): it emits `index.html` and `vitest.config.ts` for an app inside the monorepo, which the files list below omits; keep them. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; do not invent one.
 
 ## Behavior
 - `/` (`todos.index`): every list with its open-todo count; a Form adding a list.
