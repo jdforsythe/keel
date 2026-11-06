@@ -18,5 +18,7 @@ test("E1003: a literal javascript: or data: URL in a URL attribute produces a di
 });
 
 test("E1003: a literal https: URL emits no E1003", () => {
-  expect(codes(`export default function C() { return <a href="https://example.com">x</a> }`).map((x) => x.code)).not.toContain("E1003");
+  expect(
+    codes(`export default function C() { return <a href="https://example.com">x</a> }`).map((x) => x.code),
+  ).not.toContain("E1003");
 });

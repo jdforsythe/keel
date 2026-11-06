@@ -31,21 +31,17 @@ describe("k.ui: p={{ base: '2', md: '3' }} yields the 2 rule unconditioned and t
 
   it("holds for every pair of distinct space tokens", () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom("0", "1", "2", "3"),
-        fc.constantFrom("0", "1", "2", "3"),
-        (a, b) => {
-          fc.pre(a !== b);
-          const { classes, css } = compileStyles({
-            tokens,
-            usages: [{ props: { p: a } }, { props: { p: b }, breakpoint: "md" }],
-          });
-          const inMedia = mediaBlocks(css, "(min-width:768px)").join("");
-          const outside = withoutMedia(css);
-          for (const c of classes[0] ?? []) expect(countRules(outside, c)).toBe(1);
-          for (const c of classes[1] ?? []) expect(countRules(inMedia, c)).toBe(1);
-        },
-      ),
+      fc.property(fc.constantFrom("0", "1", "2", "3"), fc.constantFrom("0", "1", "2", "3"), (a, b) => {
+        fc.pre(a !== b);
+        const { classes, css } = compileStyles({
+          tokens,
+          usages: [{ props: { p: a } }, { props: { p: b }, breakpoint: "md" }],
+        });
+        const inMedia = mediaBlocks(css, "(min-width:768px)").join("");
+        const outside = withoutMedia(css);
+        for (const c of classes[0] ?? []) expect(countRules(outside, c)).toBe(1);
+        for (const c of classes[1] ?? []) expect(countRules(inMedia, c)).toBe(1);
+      }),
       { seed: SEED, numRuns: 50 },
     );
   });

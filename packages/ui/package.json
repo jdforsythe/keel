@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./css": {
+      "types": "./src/css/index.ts",
+      "default": "./src/css/index.ts"
     }
   },
   "files": ["dist"],
@@ -15,6 +19,11 @@
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
+  },
+  "dependencies": {
+    "@keel/reactive": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*"
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*"

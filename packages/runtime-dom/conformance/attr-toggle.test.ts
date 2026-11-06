@@ -54,17 +54,23 @@ describe("k.runtime: attr(el, 'x', fn) removes x when fn returns false and resto
 
   it("attr tracks any sequence of values: present iff the last value is a string or true", async () => {
     await fc.assert(
-      fc.asyncProperty(fc.array(fc.oneof(fc.string({ minLength: 1 }), fc.boolean(), fc.constant(null)), { minLength: 1, maxLength: 8 }), async (seq) => {
-        const { s, p, dispose } = setup(false);
-        for (const v of seq) {
-          s.set(v);
-          await flush();
-        }
-        const last = seq[seq.length - 1];
-        if (last === false || last === null || last === undefined) expect(p.hasAttribute("x")).toBe(false);
-        else expect(p.getAttribute("x")).toBe(last === true ? "" : last);
-        dispose();
-      }),
+      fc.asyncProperty(
+        fc.array(fc.oneof(fc.string({ minLength: 1 }), fc.boolean(), fc.constant(null)), {
+          minLength: 1,
+          maxLength: 8,
+        }),
+        async (seq) => {
+          const { s, p, dispose } = setup(false);
+          for (const v of seq) {
+            s.set(v);
+            await flush();
+          }
+          const last = seq[seq.length - 1];
+          if (last === false || last === null || last === undefined) expect(p.hasAttribute("x")).toBe(false);
+          else expect(p.getAttribute("x")).toBe(last === true ? "" : last);
+          dispose();
+        },
+      ),
       { seed: SEED, numRuns: 25 },
     );
   });

@@ -13,17 +13,30 @@ export function trackListeners(): Tracker {
   const remove = proto.removeEventListener;
   const live = new Map<EventTarget, Set<string>>();
   const key = (type: string, l: unknown, opts: unknown): string => {
-    const capture = typeof opts === "boolean" ? opts : typeof opts === "object" && opts !== null && "capture" in opts && opts.capture === true;
+    const capture =
+      typeof opts === "boolean"
+        ? opts
+        : typeof opts === "object" && opts !== null && "capture" in opts && opts.capture === true;
     return `${type}|${capture}|${ids.get(l) ?? ids.set(l, ids.size).get(l)}`;
   };
   const ids = new Map<unknown, number>();
-  proto.addEventListener = function (this: EventTarget, type: string, l: EventListenerOrEventListenerObject | null, opts?: boolean | AddEventListenerOptions) {
+  proto.addEventListener = function (
+    this: EventTarget,
+    type: string,
+    l: EventListenerOrEventListenerObject | null,
+    opts?: boolean | AddEventListenerOptions,
+  ) {
     const set = live.get(this) ?? new Set<string>();
     set.add(key(type, l, opts));
     live.set(this, set);
     return add.call(this, type, l, opts);
   };
-  proto.removeEventListener = function (this: EventTarget, type: string, l: EventListenerOrEventListenerObject | null, opts?: boolean | EventListenerOptions) {
+  proto.removeEventListener = function (
+    this: EventTarget,
+    type: string,
+    l: EventListenerOrEventListenerObject | null,
+    opts?: boolean | EventListenerOptions,
+  ) {
     live.get(this)?.delete(key(type, l, opts));
     return remove.call(this, type, l, opts);
   };

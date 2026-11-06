@@ -1,0 +1,465 @@
+import MagicString from "magic-string";
+import type { Function as FunctionNode } from "oxc-parser";
+import type {
+  ArrowFunctionExpression,
+  Expression,
+  JSXAttributeValue,
+  JSXChild,
+  JSXElement,
+  JSXFragment,
+} from "oxc-parser";
+import type { Analysis } from "./Analysis.ts";
+import type { BindingInfo } from "./BindingInfo.ts";
+import type { Edit } from "./Edit.ts";
+import type { ElementInfo } from "./ElementInfo.ts";
+import type { Lowered } from "./Lowered.ts";
+import { RAW_HTML } from "./RAW_HTML.ts";
+import type { Span } from "./Span.ts";
+import { URL_ATTRS } from "./URL_ATTRS.ts";
+import { attrNameOf } from "./attrNameOf.ts";
+import { attrOf } from "./attrOf.ts";
+import { canNest } from "./canNest.ts";
+import { cleanJsxText } from "./cleanJsxText.ts";
+import { componentAt } from "./componentAt.ts";
+import { dangerousUrl } from "./dangerousUrl.ts";
+import { decodeEntities } from "./decodeEntities.ts";
+import { escapeHtml } from "./escapeHtml.ts";
+import { exprOf } from "./exprOf.ts";
+import { intrinsicOf } from "./intrinsicOf.ts";
+import { isHtmlTag } from "./isHtmlTag.ts";
+import { propsNameOf } from "./propsNameOf.ts";
+import { shapeAt } from "./shapeAt.ts";
+import { staticValueOf } from "./staticValueOf.ts";
+import { tagNameOf } from "./tagNameOf.ts";
+
+/** Module the generated code imports the ops from (k.runtime). */
+const OPS_MODULE = "@keel/runtime-dom/ops";
+const VOID: ReadonlySet<string> = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "source",
+  "track",
+  "wbr",
+]);
+/** Dynamic values of these are DOM properties, not attributes (they diverge after user input). */
+const PROPS: ReadonlySet<string> = new Set(["value", "checked", "selected", "indeterminate", "muted"]);
+const EVENT_ALIASES: Record<string, string> = { doubleclick: "dblclick" };
+const IDENT = /^[A-Za-z_$][\w$]*$/;
+/** Tags of a `resource` state (k.reactive); a `Match` over exactly these discriminates on `state`. */
+const RESOURCE_STATES: ReadonlySet<string> = new Set(["loading", "error", "ready"]);
+
+type Item =
+  | { kind: "text"; html: string; plain: string }
+  | { kind: "dyn"; expr: Expression }
+  | { kind: "el"; node: JSXElement }
+  | { kind: "flow"; node: JSXElement }
+  | { kind: "node"; code: () => string };
+
+type Template = { html: string; refs: string[]; ops: string[]; root: string; vars: Map<string, string> };
+
+const q = (s: string): string => JSON.stringify(s);
+
+function unparen(e: Expression): Expression {
+  return e.type === "ParenthesizedExpression" ? unparen(e.expression) : e;
+}
+
+function isSlotCall(e: Expression): boolean {
+  const x = e.type === "ChainExpression" ? e.expression : e;
+  if (x.type !== "CallExpression") return false;
+  const c = x.callee;
+  return c.type === "MemberExpression" && c.object.type === "Identifier" && c.object.name === "slots";
+}
+
+/**
+ * Lower every JSX expression of one analyzed file to k.runtime ops (k.compiler Output). Static subtrees
+ * become one hoisted `template(html)` per root, cloned once per render; each dynamic expression becomes
+ * exactly one `text`/`attr`/`prop`/`on` binding; components are called with getter props; `If`, `For`,
+ * `Match`, `Boundary` lower to `cond`/`list`/`match`/`boundary` at a comment anchor. Only JSX ranges,
+ * `edits`, intrinsic-only imports and the generated header change; all other text is kept byte for byte.
+ */
+export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial: readonly Edit[]): Lowered {
+  const src = a.source;
+  const edits: Edit[] = [...initial];
+  let ns = "__k";
+  while (src.includes(ns)) ns += "_";
+  const info = new Map(elements.map((e) => [e.start, e]));
+  const templates: string[] = [];
+  const bindings: BindingInfo[] = [];
+  let uid = 0;
+  const tmp = (p: string): string => `${ns}${p}${uid++}`;
+
+  const owner = (pos: number): string => {
+    let best: ElementInfo | undefined;
+    for (const e of elements) {
+      const j = a.jsx.find((x) => x.start === e.start);
+      if (j !== undefined && j.start <= pos && pos < j.end && (best === undefined || e.start > best.start)) best = e;
+    }
+    return best?.id ?? a.stem;
+  };
+
+  const record = (element: string, kind: BindingInfo["kind"], name: string, s: Span): void => {
+    const reads = new Set<string>();
+    for (const r of a.idents) if (r.start >= s.start && r.end <= s.end) reads.add(r.name);
+    const props = new Set<string>();
+    const pn = propsNameOf(componentAt(a, s.start));
+    if (pn !== undefined) {
+      const re = new RegExp(`(?<![\\w$.])${pn.replace(/\$/g, "\\$")}\\??\\.([A-Za-z_$][\\w$]*)`, "g");
+      for (const m of src.slice(s.start, s.end).matchAll(re)) if (m[1] !== undefined) props.add(m[1]);
+    }
+    bindings.push({ element, kind, name, reads: [...reads].sort(), props: [...props].sort() });
+  };
+
+  /** Source of [start, end) with nested JSX lowered and edits applied. */
+  const rewrite = (start: number, end: number): string => {
+    let out = "";
+    let pos = start;
+    for (const it of select(start, end)) {
+      out += src.slice(pos, it.start) + it.render();
+      pos = it.end;
+    }
+    return out + src.slice(pos, end);
+  };
+  const code = (e: Span): string => rewrite(e.start, e.end);
+
+  function select(start: number, end: number): (Span & { render: () => string })[] {
+    const items: (Span & { render: () => string })[] = [];
+    for (const j of a.jsx)
+      if (j.start >= start && j.end <= end) items.push({ start: j.start, end: j.end, render: () => lowerNode(j) });
+    for (const e of edits)
+      if (e.start >= start && e.end <= end) items.push({ start: e.start, end: e.end, render: () => e.text });
+    items.sort((x, y) => x.start - y.start || y.end - x.end);
+    const out: (Span & { render: () => string })[] = [];
+    let pos = start;
+    for (const it of items) {
+      if (it.start < pos) continue;
+      out.push(it);
+      pos = it.end;
+    }
+    return out;
+  }
+
+  function classify(children: JSXChild[], parentTag?: string, items: Item[] = []): Item[] {
+    const pushText = (html: string, plain: string): void => {
+      const last = items[items.length - 1];
+      if (last !== undefined && last.kind === "text") {
+        last.html += html;
+        last.plain += plain;
+      } else items.push({ kind: "text", html, plain });
+    };
+    for (const c of children) {
+      if (c.type === "JSXText") {
+        const t = cleanJsxText(c.value);
+        if (t !== "") pushText(t.replace(/</g, "&lt;"), decodeEntities(t));
+      } else if (c.type === "JSXFragment") classify(c.children, parentTag, items);
+      else if (c.type === "JSXSpreadChild") items.push({ kind: "dyn", expr: c.expression });
+      else if (c.type === "JSXExpressionContainer") {
+        if (c.expression.type === "JSXEmptyExpression") continue;
+        const e = unparen(c.expression);
+        if (e.type === "Literal") {
+          if (typeof e.value === "string" || typeof e.value === "number")
+            pushText(escapeHtml(String(e.value)), String(e.value));
+        } else if (e.type === "JSXElement" || e.type === "JSXFragment")
+          items.push({ kind: "node", code: () => lowerNode(e) });
+        else if (isSlotCall(e)) items.push({ kind: "node", code: () => `(${code(e)}) ?? ""` });
+        else items.push({ kind: "dyn", expr: c.expression });
+      } else if (isHtmlTag(tagNameOf(c.openingElement.name))) {
+        const nests = parentTag === undefined || canNest(parentTag, tagNameOf(c.openingElement.name));
+        items.push(nests ? { kind: "el", node: c } : { kind: "node", code: () => lowerElementRoot(c) });
+      } else if (intrinsicOf(a, c) !== undefined) items.push({ kind: "flow", node: c });
+      else items.push({ kind: "node", code: () => lowerComponent(c) });
+    }
+    return items;
+  }
+
+  function elRef(t: Template, id: string, isRoot: boolean): string {
+    if (isRoot) return t.root;
+    const known = t.vars.get(id);
+    if (known !== undefined) return known;
+    const v = tmp("e");
+    t.vars.set(id, v);
+    const sel = `[id="${id.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
+    t.refs.push(`const ${v} = ${t.root}.querySelector(${q(sel)});`);
+    return v;
+  }
+
+  function attrValueCode(v: JSXAttributeValue | null): string | undefined {
+    if (v === null || v.type === "Literal") return undefined;
+    if (v.type === "JSXExpressionContainer")
+      return v.expression.type === "JSXEmptyExpression" ? undefined : code(v.expression);
+    return lowerNode(v);
+  }
+
+  function emitElement(el: JSXElement, t: Template, isRoot: boolean): void {
+    const me = info.get(el.start);
+    const id = me?.id ?? `${a.stem}.?`;
+    const tag = tagNameOf(el.openingElement.name);
+    const ref = (): string => elRef(t, id, isRoot);
+    t.html += `<${tag}`;
+    if (me === undefined || !me.explicit) t.html += ` id="${escapeHtml(id)}"`;
+    for (const at of el.openingElement.attributes) {
+      if (at.type === "JSXSpreadAttribute") {
+        const s = tmp("s");
+        const k = tmp("k");
+        t.ops.push(
+          `{ const ${s} = (${code(at.argument)}); for (const ${k} in ${s}) ${ns}.attr(${ref()}, ${k}, () => ${s}[${k}]); }`,
+        );
+        record(id, "attr", "...", at.argument);
+        continue;
+      }
+      const name = attrNameOf(at.name);
+      if (RAW_HTML.has(name) || name === "key") continue;
+      const out = name === "className" ? "class" : name === "htmlFor" ? "for" : name;
+      if (/^on[A-Z]/.test(name)) {
+        const handler = exprOf(at);
+        if (handler === undefined) continue;
+        const lower = name.slice(2).toLowerCase();
+        const type = EVENT_ALIASES[lower] ?? lower;
+        t.ops.push(`${ns}.on(${q(id)}, ${q(type)}, (${code(handler)}));`);
+        record(id, "on", type, handler);
+        continue;
+      }
+      const sv = staticValueOf(at.value);
+      if (sv !== undefined) {
+        if (sv.bare) {
+          t.html += ` ${out}=""`;
+          continue;
+        }
+        const decoded = sv.encoded ? decodeEntities(sv.text) : sv.text;
+        let html = sv.encoded ? sv.text.replace(/"/g, "&quot;") : escapeHtml(sv.text);
+        if (URL_ATTRS.has(out) && dangerousUrl(decoded)) html = "about:blank";
+        t.html += ` ${out}="${html}"`;
+        continue;
+      }
+      const value = attrValueCode(at.value);
+      if (value === undefined || at.value === null) continue;
+      const kind = PROPS.has(out) ? "prop" : "attr";
+      t.ops.push(`${ns}.${kind}(${ref()}, ${q(out)}, () => (${value}));`);
+      record(id, kind, out, at.value);
+    }
+    t.html += ">";
+    if (VOID.has(tag)) return;
+    emitChildren(el.children, t, { id, tag, isRoot });
+    t.html += `</${tag}>`;
+  }
+
+  function emitChildren(children: JSXChild[], t: Template, parent: { id: string; tag: string; isRoot: boolean }): void {
+    const { id: parentId, isRoot: parentIsRoot } = parent;
+    let index = 0;
+    let prevText = false;
+    const childRef = (i: number): string => {
+      const parent = elRef(t, parentId, parentIsRoot);
+      const v = tmp("n");
+      t.refs.push(`const ${v} = ${parent}.childNodes[${i}];`);
+      return v;
+    };
+    const separate = (): void => {
+      if (!prevText) return;
+      t.html += "<!---->";
+      index++;
+    };
+    for (const it of classify(children, parent.tag)) {
+      if (it.kind === "text") {
+        separate();
+        t.html += it.html;
+        prevText = true;
+      } else if (it.kind === "dyn") {
+        separate();
+        t.html += " ";
+        const n = childRef(index);
+        t.ops.push(`${ns}.text(${n}, () => (${code(it.expr)}));`);
+        record(parentId, "text", "#text", it.expr);
+        prevText = true;
+      } else if (it.kind === "el") {
+        emitElement(it.node, t, false);
+        prevText = false;
+      } else {
+        t.html += "<!---->";
+        const n = childRef(index);
+        t.ops.push(it.kind === "flow" ? `${lowerFlow(it.node, n)};` : `${n}.replaceWith(${it.code()});`);
+        prevText = false;
+      }
+      index++;
+    }
+  }
+
+  function lowerElementRoot(el: JSXElement): string {
+    const t: Template = { html: "", refs: [], ops: [], root: tmp("r"), vars: new Map() };
+    emitElement(el, t, true);
+    const name = `${ns}t${templates.length}`;
+    templates.push(t.html);
+    const cloned = `${ns}.clone(${name})`;
+    if (t.refs.length === 0 && t.ops.length === 0) return cloned;
+    return `(() => { const ${t.root} = ${cloned}; ${[...t.refs, ...t.ops].join(" ")} return ${t.root}; })()`;
+  }
+
+  /**
+   * Row and case callbacks are written with plain values (`(item, i) => item.name`); the ops pass
+   * accessors so a row tracks its current item. Reads of an identifier parameter become calls
+   * (`item` -> `item()`); destructured parameters get a wrapper that unwraps the accessors once.
+   */
+  function accessorFn(fn: ArrowFunctionExpression | FunctionNode): string {
+    const ps = fn.params.slice(0, 2);
+    const body = fn.body;
+    if (body !== null && ps.every((p) => p.type === "Identifier")) {
+      for (const p of ps) {
+        if (p.type !== "Identifier") continue;
+        for (const r of a.idents) {
+          if (r.name !== p.name || r.start < body.start || r.end > body.end) continue;
+          edits.push({ start: r.start, end: r.end, text: r.shorthand ? `${r.name}: ${r.name}()` : `${r.name}()` });
+        }
+      }
+      return code(fn);
+    }
+    const x = tmp("x");
+    const i = tmp("i");
+    return `(${x}, ${i}) => (${code(fn)})(${x}(), ${i}())`;
+  }
+
+  /** A function returning the node(s) for children: the callback itself when the only child is one. */
+  function renderFn(children: JSXChild[]): string {
+    const real = children.filter((c) => c.type !== "JSXText" || cleanJsxText(c.value) !== "");
+    const only = real[0];
+    if (real.length === 1 && only !== undefined && only.type === "JSXExpressionContainer") {
+      const e = only.expression.type === "JSXEmptyExpression" ? undefined : unparen(only.expression);
+      if (e !== undefined && (e.type === "ArrowFunctionExpression" || e.type === "FunctionExpression"))
+        return accessorFn(e);
+    }
+    return `() => ${fragmentOf(children)}`;
+  }
+
+  /** Discriminant for `match`: explicit `key`, else the `Props` union's key, else `state` for resource tags, else `tag`. */
+  function matchKey(el: JSXElement, tags: string[]): string {
+    const explicit = staticValueOf(attrOf(el, "key")?.value ?? null);
+    if (explicit !== undefined && !explicit.bare && explicit.text !== "") return explicit.text;
+    const on = exprOf(attrOf(el, "on"));
+    const shape = on === undefined ? undefined : shapeAt(a, on, propsNameOf(componentAt(a, el.start)));
+    if (shape !== undefined && shape.kind === "union") return shape.key;
+    return tags.length > 0 && tags.every((t) => RESOURCE_STATES.has(t)) ? "state" : "tag";
+  }
+
+  function lowerFlow(el: JSXElement, anchor: string): string {
+    const kind = intrinsicOf(a, el);
+    const attrCode = (name: string, fallback: string): string => {
+      const at = attrOf(el, name);
+      if (at === undefined) return fallback;
+      const sv = staticValueOf(at.value);
+      if (sv !== undefined) return sv.bare ? "true" : q(sv.encoded ? decodeEntities(sv.text) : sv.text);
+      return attrValueCode(at.value) ?? fallback;
+    };
+    const tracked = { If: ["cond", "when"], For: ["list", "each"], Match: ["match", "on"] } as const;
+    if (kind === "If" || kind === "For" || kind === "Match") {
+      const [op, name] = tracked[kind];
+      const at = attrOf(el, name);
+      if (at?.value) record(owner(el.start), op, name, at.value);
+    }
+    switch (kind) {
+      case "If":
+        return `${ns}.cond(${anchor}, () => (${attrCode("when", "false")}), ${renderFn(el.children)})`;
+      case "For": {
+        const k = staticValueOf(attrOf(el, "key")?.value ?? null);
+        const v = tmp("v");
+        const key = k === undefined || k.bare ? `(${v}) => ${v}` : `(${v}) => ${v}[${q(k.text)}]`;
+        return `${ns}.list(${anchor}, () => (${attrCode("each", "[]")}), ${key}, ${renderFn(el.children)})`;
+      }
+      case "Match": {
+        const cases: string[] = [];
+        const tags: string[] = [];
+        for (const c of el.children) {
+          if (c.type !== "JSXElement" || intrinsicOf(a, c) !== "Case") continue;
+          const tag = staticValueOf(attrOf(c, "tag")?.value ?? null);
+          if (tag === undefined || tag.bare) continue;
+          const t = tag.encoded ? decodeEntities(tag.text) : tag.text;
+          tags.push(t);
+          cases.push(`${q(t)}: ${renderFn(c.children)}`);
+        }
+        const key = q(matchKey(el, tags));
+        return `${ns}.match(${anchor}, () => (${attrCode("on", "undefined")}), ${key}, { ${cases.join(", ")} })`;
+      }
+      case "Boundary":
+        return `${ns}.boundary(${anchor}, ${renderFn(el.children)}, ${attrCode("fallback", '() => document.createComment("")')})`;
+      default:
+        return `${anchor}.replaceWith(${fragmentOf(el.children)})`;
+    }
+  }
+
+  function fragmentOf(children: JSXChild[]): string {
+    const items = classify(children);
+    const only = items[0];
+    if (items.length === 1 && only !== undefined) {
+      if (only.kind === "el") return lowerElementRoot(only.node);
+      if (only.kind === "node") return only.code();
+    }
+    const f = tmp("f");
+    const stmts: string[] = [];
+    for (const it of items) {
+      if (it.kind === "text") stmts.push(`${f}.append(${q(it.plain)});`);
+      else if (it.kind === "dyn") {
+        const n = tmp("t");
+        stmts.push(
+          `const ${n} = document.createTextNode(""); ${ns}.text(${n}, () => (${code(it.expr)})); ${f}.append(${n});`,
+        );
+        record(owner(it.expr.start), "text", "#text", it.expr);
+      } else if (it.kind === "el") stmts.push(`${f}.append(${lowerElementRoot(it.node)});`);
+      else if (it.kind === "node") stmts.push(`${f}.append(${it.code()});`);
+      else {
+        const an = tmp("a");
+        stmts.push(`const ${an} = ${f}.appendChild(document.createComment("")); ${lowerFlow(it.node, an)};`);
+      }
+    }
+    return `(() => { const ${f} = document.createDocumentFragment(); ${stmts.join(" ")} return ${f}; })()`;
+  }
+
+  function lowerComponent(el: JSXElement): string {
+    const parts: string[] = [];
+    for (const at of el.openingElement.attributes) {
+      if (at.type === "JSXSpreadAttribute") {
+        parts.push(`...(${code(at.argument)})`);
+        continue;
+      }
+      const name = attrNameOf(at.name);
+      const key = IDENT.test(name) ? name : q(name);
+      const v = at.value;
+      if (v === null) parts.push(`${key}: true`);
+      else if (v.type === "Literal") parts.push(`${key}: ${q(decodeEntities(v.value))}`);
+      else if (v.type === "JSXExpressionContainer") {
+        if (v.expression.type === "JSXEmptyExpression") continue;
+        const e = unparen(v.expression);
+        if (e.type === "Literal" && !("regex" in e)) parts.push(`${key}: ${code(e)}`);
+        else parts.push(`get ${key}() { return (${code(v.expression)}); }`);
+      } else parts.push(`get ${key}() { return ${lowerNode(v)}; }`);
+    }
+    const props = parts.length === 0 ? "{}" : `{ ${parts.join(", ")} }`;
+    const slots = classify(el.children).length === 0 ? "" : `, { default: () => ${fragmentOf(el.children)} }`;
+    return `${tagNameOf(el.openingElement.name)}(${props}${slots})`;
+  }
+
+  function lowerNode(j: JSXElement | JSXFragment): string {
+    if (j.type === "JSXFragment") return fragmentOf(j.children);
+    if (isHtmlTag(tagNameOf(j.openingElement.name))) return lowerElementRoot(j);
+    if (intrinsicOf(a, j) !== undefined) return fragmentOf([j]);
+    return lowerComponent(j);
+  }
+
+  const ms = new MagicString(src);
+  for (const it of select(0, src.length)) ms.overwrite(it.start, it.end, it.render());
+  for (const i of a.imports) {
+    if (i.source.value !== "@keel/runtime-dom" || i.specifiers.length === 0) continue;
+    if (i.specifiers.every((s) => s.type === "ImportSpecifier" && a.intrinsics.has(s.local.name)))
+      ms.remove(i.start, i.end);
+  }
+  const body = ms.toString();
+  if (!body.includes(`${ns}.`)) return { code: body, bindings };
+  const header = [
+    `import * as ${ns} from ${q(OPS_MODULE)};`,
+    ...templates.map((html, i) => `const ${ns}t${i} = ${ns}.template(${q(html)});`),
+  ].join("\n");
+  return { code: `${header}\n${body}`, bindings };
+}

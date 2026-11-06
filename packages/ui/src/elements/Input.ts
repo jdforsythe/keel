@@ -1,0 +1,32 @@
+import type { Computed } from "@keel/reactive";
+import { prop } from "@keel/runtime-dom/ops";
+import { applyStyle } from "../internal/applyStyle.ts";
+import { controlId } from "../internal/controlId.ts";
+import { isReadable } from "../internal/isReadable.ts";
+import { labelled } from "../internal/labelled.ts";
+import type { StyleProps } from "../types/StyleProps.ts";
+
+type InputType = "text" | "email" | "password" | "number" | "search" | "tel" | "url" | "date";
+
+/**
+ * A text-like input with a visible `<label for>` (`label` required, E1802). Style props apply to the
+ * control. `id` defaults to one derived from the label; a reactive `value` binds the `value` property.
+ */
+export function Input(
+  props: StyleProps & {
+    readonly label: string;
+    readonly id?: string;
+    readonly name?: string;
+    readonly type?: InputType;
+    readonly value?: string | Computed<string>;
+  },
+): Node {
+  const el = document.createElement("input");
+  el.setAttribute("type", props.type ?? "text");
+  if (props.name !== undefined) el.setAttribute("name", props.name);
+  const v = props.value;
+  if (isReadable(v)) prop(el, "value", () => v.get());
+  else if (v !== undefined) el.setAttribute("value", v);
+  applyStyle(el, props);
+  return labelled(el, controlId("input", props.label, props.id), props.label, false);
+}

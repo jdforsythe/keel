@@ -114,7 +114,23 @@ importers:
         version: link:../../tooling
 
   packages/forms:
+    dependencies:
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
@@ -192,6 +208,16 @@ importers:
         version: link:../../tooling
 
   packages/ui:
+    dependencies:
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*

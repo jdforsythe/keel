@@ -7,6 +7,14 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./ops": {
+      "types": "./src/ops/index.ts",
+      "default": "./src/ops/index.ts"
+    },
+    "./internal/safeUrl": {
+      "types": "./src/internal/safeUrl.ts",
+      "default": "./src/internal/safeUrl.ts"
     }
   },
   "files": ["dist"],
@@ -15,6 +23,10 @@
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
+  },
+  "dependencies": {
+    "@keel/reactive": "workspace:*",
+    "@keel/schema": "workspace:*"
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*"

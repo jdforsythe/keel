@@ -110,7 +110,13 @@ export const a11yViolations = (root: Element): string[] => {
 /** WCAG 2.x relative luminance contrast, computed independently of the implementation. */
 export const hexToRgb = (hex: string): [number, number, number] => {
   const h = hex.replace("#", "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
   const n = Number.parseInt(full, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };

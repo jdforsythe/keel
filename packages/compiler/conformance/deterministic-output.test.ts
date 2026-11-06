@@ -15,14 +15,19 @@ export default function C() {
 
 test("Compiling the same sources twice yields byte-identical JS and artifacts", () => {
   fc.assert(
-    fc.property(fc.stringMatching(/^[a-z]{1,8}$/), fc.nat(1000), fc.constantFrom("client", "server"), (label, n, mode) => {
-      const files = [{ path: "C.tsx", source: tpl(label, n) }];
-      const a = compile(files, { mode });
-      const b = compile(files, { mode });
-      expect(JSON.stringify(a.outputs)).toBe(JSON.stringify(b.outputs));
-      expect(JSON.stringify(a.artifacts)).toBe(JSON.stringify(b.artifacts));
-      expect(JSON.stringify(a.diagnostics)).toBe(JSON.stringify(b.diagnostics));
-    }),
+    fc.property(
+      fc.stringMatching(/^[a-z]{1,8}$/),
+      fc.nat(1000),
+      fc.constantFrom("client", "server"),
+      (label, n, mode) => {
+        const files = [{ path: "C.tsx", source: tpl(label, n) }];
+        const a = compile(files, { mode });
+        const b = compile(files, { mode });
+        expect(JSON.stringify(a.outputs)).toBe(JSON.stringify(b.outputs));
+        expect(JSON.stringify(a.artifacts)).toBe(JSON.stringify(b.artifacts));
+        expect(JSON.stringify(a.diagnostics)).toBe(JSON.stringify(b.diagnostics));
+      },
+    ),
     { seed: 1337, numRuns: 50 },
   );
 });

@@ -7,6 +7,14 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./vite": {
+      "types": "./src/vite.ts",
+      "default": "./src/vite.ts"
+    },
+    "./testing": {
+      "types": "./src/testing/evaluate.ts",
+      "default": "./src/testing/evaluate.ts"
     }
   },
   "files": ["dist"],
@@ -16,7 +24,18 @@
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
   },
+  "dependencies": {
+    "@keel/reactive": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*",
+    "magic-string": "^1.4.5",
+    "oxc-parser": "^0.157.0"
+  },
   "devDependencies": {
-    "@keel/tooling": "workspace:*"
+    "@keel/tooling": "workspace:*",
+    "esbuild": "^0.28.2",
+    "fast-check": "^3",
+    "happy-dom": "^21.0.4"
   }
 }

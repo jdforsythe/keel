@@ -47,10 +47,13 @@ describe("k.runtime: inner handler runs before ancestor; stopPropagation prevent
 
   it("stopPropagation in the inner handler prevents the outer one", () => {
     fc.assert(
-      fc.property(fc.integer({ min: 2, max: 6 }).chain((d) => fc.tuple(fc.constant(d), fc.integer({ min: 0, max: d - 1 }))), ([depth, stop]) => {
-        const expected = Array.from({ length: depth - stop }, (_, k) => `n${depth - 1 - k}`);
-        expect(run(depth, stop)).toEqual(expected);
-      }),
+      fc.property(
+        fc.integer({ min: 2, max: 6 }).chain((d) => fc.tuple(fc.constant(d), fc.integer({ min: 0, max: d - 1 }))),
+        ([depth, stop]) => {
+          const expected = Array.from({ length: depth - stop }, (_, k) => `n${depth - 1 - k}`);
+          expect(run(depth, stop)).toEqual(expected);
+        },
+      ),
       { seed: SEED, numRuns: 30 },
     );
   });

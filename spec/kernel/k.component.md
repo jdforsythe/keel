@@ -1,5 +1,5 @@
 # k.component: Components
-status: implemented
+status: proposed
 
 **Shape.** One default export per file; filename equals name. `export const Props = s.object(...)`. Signature `(props: Props, slots?: { name: Slot }) => JSX`. Props are getters: destructuring is E1401 (compiler rewrites simple cases and emits the fix).
 
