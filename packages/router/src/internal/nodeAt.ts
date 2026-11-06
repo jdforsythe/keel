@@ -9,7 +9,7 @@ export function nodeAt(root: Node, segments: readonly (string | number)[]): Node
   for (const raw of segments) {
     if (node === undefined) return undefined;
     const seg = String(raw);
-    const n = unwrap(node);
+    const n = unwrapNode(node);
     if (n.kind === "object") node = Object.hasOwn(n.fields, seg) ? n.fields[seg] : undefined;
     else if (n.kind === "array") node = INDEX.test(seg) ? n.item : undefined;
     else if (n.kind === "record") node = seg === "" ? undefined : n.value;
