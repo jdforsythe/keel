@@ -1,10 +1,12 @@
 import type { JsonValue } from "../JsonValue.ts";
 import type { Node } from "./Node.ts";
+import { copyJson } from "./copyJson.ts";
 import { isRecord } from "./isRecord.ts";
 import { variantOf } from "./variantOf.ts";
 
 /** Copy an already-validated value into plain JSON, keeping only declared keys. Absent stays absent. */
 export function toJson(node: Node, value: unknown): JsonValue {
+  if (node.kind === "json") return copyJson(value);
   if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean")
     return value;
   if (node.kind === "optional" || node.kind === "nullable") return toJson(node.inner, value);

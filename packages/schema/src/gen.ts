@@ -25,6 +25,8 @@ function arbitrary(node: Node): fc.Arbitrary<unknown> {
       return fc.constant(node.value);
     case "enum":
       return fc.constantFrom(...node.values);
+    case "json":
+      return fc.jsonValue();
     case "id":
       return fc.string({ minLength: 1 });
     case "nullable":

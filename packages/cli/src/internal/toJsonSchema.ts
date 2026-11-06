@@ -20,6 +20,8 @@ export function toJsonSchema(node: SchemaNode): JsonSchema {
       return { const: node.value };
     case "enum":
       return { type: "string", enum: [...node.values] };
+    case "json":
+      return {};
     case "id":
       return { type: "string" };
     case "object": {

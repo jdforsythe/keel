@@ -1,6 +1,7 @@
 import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
 import { hasProtoKey } from "./hasProtoKey.ts";
+import { isJson } from "./isJson.ts";
 import { isRecord } from "./isRecord.ts";
 import { leafRule } from "./leafRule.ts";
 import { variantOf } from "./variantOf.ts";
@@ -15,6 +16,9 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
       break;
     case "optional":
       check(node.inner, x, path, issues);
+      break;
+    case "json":
+      if (!isJson(x, new Set())) issues.push({ path, rule: "type" });
       break;
     case "array":
       if (!Array.isArray(x)) issues.push({ path, rule: "type" });

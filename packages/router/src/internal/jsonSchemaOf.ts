@@ -27,6 +27,8 @@ export function jsonSchemaOf(node: SchemaNode): JsonValue {
       return sorted({ const: node.value });
     case "enum":
       return sorted({ type: "string", enum: [...node.values] });
+    case "json":
+      return {};
     case "id":
       return sorted({ type: "string", minLength: 1, "x-keel-id": node.brand });
     case "object": {

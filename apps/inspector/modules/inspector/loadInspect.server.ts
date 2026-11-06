@@ -16,9 +16,6 @@ const reason = (e: ApiError): string =>
         ? "timed out"
         : "is unreachable";
 
-/** `state` of a served store, any JSON, as text (k.schema has no JSON type; see InspectDoc). */
-const stateText = (entry: object): string => ("state" in entry ? (JSON.stringify(entry.state) ?? "") : "");
-
 /**
  * Fetch the inspect document of `search.url` (default: this page's origin, the inspector itself) and shape it for
  * the views. An unreachable target or a bad document is `inspector.unreachable`.
@@ -29,7 +26,7 @@ export const loadInspect = loader(Inspection, async ({ search }: { readonly sear
   if (!r.ok) return err({ code: "inspector.unreachable", message: `${url} ${reason(r.error)}`, data: { url } });
   const d = r.value;
   const stores = Object.fromEntries(
-    Object.entries(d.stores).map(([id, st]) => [id, { state: stateText(st), log: st.log }]),
+    Object.entries(d.stores).map(([id, st]) => [id, { state: JSON.stringify(st.state), log: st.log }]),
   );
   return ok({ url, live: d.live, graph: d.graph, stores, ids: d.ids, a11y: d.a11y, routes: d.routes });
 });

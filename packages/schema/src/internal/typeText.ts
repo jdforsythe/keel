@@ -11,6 +11,7 @@ export function typeText(node: Node): string {
         ? node.kind
         : `${node.kind}(${node.min ?? ""}..${node.max ?? ""})`;
     case "boolean":
+    case "json":
       return node.kind;
     case "literal":
       return JSON.stringify(node.value);

@@ -6,13 +6,13 @@ import { LogEntry } from "./LogEntry.schema.ts";
 import { RouteEntry } from "./RouteEntry.schema.ts";
 
 /**
- * `GET /__keel/inspect` as served (k.cli Inspect). A store's `state` is any JSON and k.schema has no type for it, so
- * only its `log` is declared here; `loadInspect` turns `state` into JSON text for `StoreView`.
+ * `GET /__keel/inspect` as served (k.cli Inspect). A store's `state` is any JSON (`s.json()`); `loadInspect` turns it
+ * into JSON text for `StoreView`.
  */
 export const InspectDoc = s.object({
   live: s.boolean(),
   graph: Graph,
-  stores: s.record(s.object({ log: s.array(LogEntry) })),
+  stores: s.record(s.object({ state: s.json(), log: s.array(LogEntry) })),
   ids: s.record(IdEntry),
   a11y: s.record(A11yEntry),
   routes: s.record(RouteEntry),

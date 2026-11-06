@@ -7,6 +7,7 @@ export type Node =
   | { readonly kind: "literal"; readonly value: string | number | boolean }
   | { readonly kind: "enum"; readonly values: readonly string[] }
   | { readonly kind: "id"; readonly brand: string }
+  | { readonly kind: "json" }
   | { readonly kind: "object"; readonly fields: Readonly<Record<string, Node>> }
   | { readonly kind: "array"; readonly item: Node }
   | { readonly kind: "record"; readonly value: Node }

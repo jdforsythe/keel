@@ -2,6 +2,7 @@ import type { Node } from "./Node.ts";
 import { leafFromString } from "./leafFromString.ts";
 
 type Entries = ReadonlyMap<string, readonly string[]>;
+const BAD_JSON = Symbol("not json");
 const LEAVES = ["string", "number", "int", "boolean", "literal", "enum", "id"];
 
 const under = (entries: Entries, key: string): string[] =>
@@ -29,6 +30,15 @@ export function fromStrings(node: Node, key: string, entries: Entries): unknown 
   if (node.kind === "nullable") {
     const v = fromStrings(node.inner, key, entries);
     return v === undefined || v === "" ? null : v;
+  }
+  if (node.kind === "json") {
+    const text = entries.get(key)?.[0];
+    if (text === undefined || text === "") return text;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return BAD_JSON;
+    }
   }
   if (LEAVES.includes(node.kind)) {
     const text = entries.get(key)?.[0];
