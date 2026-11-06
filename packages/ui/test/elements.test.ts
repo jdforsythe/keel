@@ -248,3 +248,12 @@ describe("base elements", () => {
     dispose();
   });
 });
+
+describe("children as a thunk (RFC 0008)", () => {
+  it("Box, Text, Button, Heading and Link render a Children thunk like plain children", () => {
+    const r = render(() => Box({ children: () => Text({ children: () => "hi" }) }));
+    expect(r.host.textContent).toBe("hi");
+    expect(render(() => Button({ children: () => "Go" })).host.textContent).toBe("Go");
+    expect(render(() => Heading({ level: 2, children: () => "T" })).host.textContent).toBe("T");
+  });
+});

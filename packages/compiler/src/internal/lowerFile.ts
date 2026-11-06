@@ -12,9 +12,11 @@ import type { Analysis } from "./Analysis.ts";
 import type { BindingInfo } from "./BindingInfo.ts";
 import type { Edit } from "./Edit.ts";
 import type { ElementInfo } from "./ElementInfo.ts";
+import type { FnInfo } from "./FnInfo.ts";
 import type { Lowered } from "./Lowered.ts";
 import { RAW_HTML } from "./RAW_HTML.ts";
 import type { Span } from "./Span.ts";
+import type { StyleRewrite } from "./StyleRewrite.ts";
 import { URL_ATTRS } from "./URL_ATTRS.ts";
 import { attrNameOf } from "./attrNameOf.ts";
 import { attrOf } from "./attrOf.ts";
@@ -22,6 +24,7 @@ import { bindsTo } from "./bindsTo.ts";
 import { canNest } from "./canNest.ts";
 import { cleanJsxText } from "./cleanJsxText.ts";
 import { componentAt } from "./componentAt.ts";
+import { componentFns } from "./componentFns.ts";
 import { dangerousUrl } from "./dangerousUrl.ts";
 import { decodeEntities } from "./decodeEntities.ts";
 import { escapeHtml } from "./escapeHtml.ts";
@@ -37,6 +40,8 @@ import { tagNameOf } from "./tagNameOf.ts";
 
 /** Module the generated code imports the ops from (k.runtime). */
 const OPS_MODULE = "@keel/runtime-dom/ops";
+/** Module the generated code imports `scope` from when a component file exports `uses` (k.store). */
+const REACTIVE_MODULE = "@keel/reactive";
 const VOID: ReadonlySet<string> = new Set([
   "area",
   "base",
@@ -86,15 +91,34 @@ function isSlotCall(e: Expression): boolean {
 /**
  * Lower every JSX expression of one analyzed file to k.runtime ops (k.compiler Output). Static subtrees
  * become one hoisted `template(html)` per root, cloned once per render; each dynamic expression becomes
- * exactly one `text`/`attr`/`prop`/`on` binding; components are called with getter props; `If`, `For`,
- * `Match`, `Boundary` lower to `cond`/`list`/`match`/`boundary` at a comment anchor. Only JSX ranges,
- * `edits`, intrinsic-only imports and the generated header change; all other text is kept byte for byte.
+ * exactly one `text`/`attr`/`prop`/`on` binding; components are called with getter props and the enclosing
+ * component's `ctx` as third argument (D27); `If`, `For`, `Match`, `Boundary` lower to
+ * `cond`/`list`/`match`/`boundary` at a comment anchor. `styles` rewrites static style props of base elements
+ * into `class` (D23). A file exporting `uses` runs its default-export component in its own scope that declares
+ * them (D26). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
+ * the generated header change; all other text is kept byte for byte.
  */
-export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial: readonly Edit[]): Lowered {
+export function lowerFile(
+  a: Analysis,
+  elements: readonly ElementInfo[],
+  initial: readonly Edit[],
+  styles: ReadonlyMap<number, StyleRewrite> = new Map(),
+): Lowered {
   const src = a.source;
   const edits: Edit[] = [...initial];
   let ns = "__k";
   while (src.includes(ns)) ns += "_";
+  const headerImports: string[] = [];
+  const fns = componentFns(a);
+  /** Innermost component function around `pos`. */
+  const componentFnAt = (pos: number): FnInfo | undefined => {
+    let best: FnInfo | undefined;
+    for (const f of fns)
+      if (f.start <= pos && pos < f.end && (best === undefined || f.end - f.start < best.end - best.start)) best = f;
+    return best;
+  };
+  const ctxNames = ctxParams(a, fns, componentFnAt, ns, edits);
+  usesScope(a, ns, edits, headerImports);
   const info = new Map(elements.map((e) => [e.start, e]));
   const templates: string[] = [];
   const bindings: BindingInfo[] = [];
@@ -161,7 +185,9 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
       if (e === undefined || e.start > end || (e.start === end && e.end > end)) break;
       if (e.end <= end) items.push({ start: e.start, end: e.end, render: () => e.text });
     }
-    items.sort((x, y) => x.start - y.start || y.end - x.end);
+    // insertions first at a position, then longer items first
+    const zero = (s: Span): number => (s.start === s.end ? 0 : 1);
+    items.sort((x, y) => x.start - y.start || zero(x) - zero(y) || y.end - x.end);
     const out: (Span & { render: () => string })[] = [];
     let pos = start;
     for (const it of items) {
@@ -462,11 +488,13 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
 
   function lowerComponent(el: JSXElement): string {
     const parts: string[] = [];
+    const style = styles.get(el.start);
     for (const at of el.openingElement.attributes) {
       if (at.type === "JSXSpreadAttribute") {
         parts.push(`...(${code(at.argument)})`);
         continue;
       }
+      if (style?.drop.has(at.start)) continue;
       const name = attrNameOf(at.name);
       const key = IDENT.test(name) ? name : q(name);
       const v = at.value;
@@ -479,9 +507,17 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
         else parts.push(`get ${key}() { return (${code(v.expression)}); }`);
       } else parts.push(`get ${key}() { return ${lowerNode(v)}; }`);
     }
+    if (style !== undefined && style.className !== "") parts.push(`class: ${q(style.className)}`);
+    // RFC 0008: JSX children are the default slot, delivered as a `children` thunk in props.
+    const kids = classify(el.children);
+    const only = kids[0];
+    if (kids.length === 1 && only !== undefined && only.kind === "text") parts.push(`children: () => ${q(only.plain)}`);
+    else if (kids.length > 0) parts.push(`children: () => ${fragmentOf(el.children)}`);
     const props = parts.length === 0 ? "{}" : `{ ${parts.join(", ")} }`;
-    const slots = classify(el.children).length === 0 ? "" : `, { default: () => ${fragmentOf(el.children)} }`;
-    return `${tagNameOf(el.openingElement.name)}(${props}${slots})`;
+    const f = componentFnAt(el.start);
+    const ctx = f === undefined ? undefined : ctxNames.get(f.start);
+    const tail = ctx === undefined ? "" : `, undefined, ${ctx}`;
+    return `${tagNameOf(el.openingElement.name)}(${props}${tail})`;
   }
 
   function lowerNode(j: JSXElement | JSXFragment): string {
@@ -492,17 +528,129 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
   }
 
   const ms = new MagicString(src);
-  for (const it of select(0, src.length)) ms.overwrite(it.start, it.end, it.render());
+  for (const it of select(0, src.length)) {
+    if (it.start === it.end) ms.appendLeft(it.start, it.render());
+    else ms.overwrite(it.start, it.end, it.render());
+  }
   for (const i of a.imports) {
     if (i.source.value !== "@keel/runtime-dom" || i.specifiers.length === 0) continue;
     if (i.specifiers.every((s) => s.type === "ImportSpecifier" && a.intrinsics.has(s.local.name)))
       ms.remove(i.start, i.end);
   }
   const body = ms.toString();
-  if (!body.includes(`${ns}.`)) return { code: body, bindings };
+  const ops = body.includes(`${ns}.`);
+  if (!ops && headerImports.length === 0) return { code: body, bindings };
   const header = [
-    `import * as ${ns} from ${q(OPS_MODULE)};`,
+    ...(ops ? [`import * as ${ns} from ${q(OPS_MODULE)};`] : []),
+    ...headerImports,
     ...templates.map((html, i) => `const ${ns}t${i} = ${ns}.template(${q(html)});`),
   ].join("\n");
   return { code: `${header}\n${body}`, bindings };
+}
+
+/**
+ * For each component function that renders a child component: the name of its `ctx` (third) parameter,
+ * adding `<ns>props, <ns>slots, <ns>ctx` parameters as needed (D27). A function with a rest parameter or a
+ * destructured third parameter passes no ctx.
+ */
+function ctxParams(
+  a: Analysis,
+  fns: readonly FnInfo[],
+  componentFnAt: (pos: number) => FnInfo | undefined,
+  ns: string,
+  edits: Edit[],
+): Map<number, string> {
+  const out = new Map<number, string>();
+  const seen = new Set<number>();
+  const src = a.source;
+  for (const j of a.jsx) {
+    if (j.type !== "JSXElement" || isHtmlTag(tagNameOf(j.openingElement.name)) || intrinsicOf(a, j) !== undefined)
+      continue;
+    const f = componentFnAt(j.start);
+    if (f === undefined || seen.has(f.start)) continue;
+    seen.add(f.start);
+    const ps = f.node.params;
+    const third = ps[2];
+    if (third !== undefined) {
+      const id = third.type === "AssignmentPattern" ? third.left : third;
+      if (id.type === "Identifier") out.set(f.start, id.name);
+      continue;
+    }
+    if (ps.some((p) => p.type === "RestElement")) continue;
+    const name = `${ns}ctx`;
+    const first = ps[0];
+    const last = ps[ps.length - 1];
+    if (first === undefined || last === undefined) {
+      const from = f.node.typeParameters?.end ?? (f.node.type === "ArrowFunctionExpression" ? f.start : f.node.id?.end);
+      const open = src.indexOf("(", from ?? f.start);
+      if (open < 0 || open >= f.end) continue;
+      edits.push({ start: open + 1, end: open + 1, text: `${ns}props, ${ns}slots, ${name}` });
+    } else if (
+      ps.length === 1 &&
+      f.node.type === "ArrowFunctionExpression" &&
+      !src.slice(f.start, first.start).includes("(")
+    ) {
+      edits.push({
+        start: first.start,
+        end: first.end,
+        text: `(${src.slice(first.start, first.end)}, ${ns}slots, ${name})`,
+      });
+    } else
+      edits.push({ start: last.end, end: last.end, text: ps.length === 1 ? `, ${ns}slots, ${name}` : `, ${name}` });
+    out.set(f.start, name);
+  }
+  return out;
+}
+
+/** The local name a file exports as `uses` (`export const uses = [...]` or `export { x as uses }`), if any. */
+function usesExport(a: Analysis): string | undefined {
+  for (const st of a.program.body) {
+    if (st.type !== "ExportNamedDeclaration" || st.exportKind === "type") continue;
+    const d = st.declaration;
+    if (d?.type === "VariableDeclaration")
+      for (const v of d.declarations) if (v.id.type === "Identifier" && v.id.name === "uses") return "uses";
+    if (st.source !== null) continue;
+    for (const sp of st.specifiers) {
+      const exported = sp.exported.type === "Identifier" ? sp.exported.name : sp.exported.value;
+      if (exported === "uses" && sp.local.type === "Identifier") return sp.local.name;
+    }
+  }
+  return undefined;
+}
+
+/** The default-export component function: declared inline, or a top-level function named by `export default X`. */
+function defaultComponent(a: Analysis): FnInfo | undefined {
+  for (const st of a.program.body) {
+    if (st.type !== "ExportDefaultDeclaration") continue;
+    const d = st.declaration;
+    if (d.type === "FunctionDeclaration" || d.type === "FunctionExpression" || d.type === "ArrowFunctionExpression")
+      return a.functions.find((f) => f.start === d.start);
+    if (d.type !== "Identifier") return undefined;
+    let best: FnInfo | undefined;
+    for (const f of a.functions)
+      if (f.name === d.name && (best === undefined || f.end - f.start > best.end - best.start)) best = f;
+    return best;
+  }
+  return undefined;
+}
+
+/**
+ * k.component `uses`: when the file exports `uses`, its default-export component body runs inside its own
+ * `scope` (k.reactive) that first declares each transaction on its store (`t.store.uses([t])`, k.store), so
+ * the declaration binds to this component instance and never restricts its parent or siblings (D26).
+ */
+function usesScope(a: Analysis, ns: string, edits: Edit[], headerImports: string[]): void {
+  const uses = usesExport(a);
+  const f = uses === undefined ? undefined : defaultComponent(a);
+  const body = f?.node.body;
+  if (uses === undefined || body === undefined || body === null) return;
+  const open = `${ns}scope(() => { for (const ${ns}u of ${uses}) ${ns}u.store.uses([${ns}u]); ${ns}v = `;
+  if (body.type === "BlockStatement") {
+    edits.push({ start: body.start + 1, end: body.start + 1, text: ` let ${ns}v; ${open}(() => {` });
+    edits.push({ start: body.end - 1, end: body.end - 1, text: `})(); }); return ${ns}v; ` });
+  } else {
+    edits.push({ start: body.start, end: body.start, text: `{ let ${ns}v; ${open}(` });
+    edits.push({ start: body.end, end: body.end, text: `); }); return ${ns}v; }` });
+  }
+  headerImports.push(`import { scope as ${ns}scope } from ${JSON.stringify(REACTIVE_MODULE)};`);
 }

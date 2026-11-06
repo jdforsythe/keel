@@ -44,6 +44,7 @@ Covers backlog 0017 (tokens, style props, atomic CSS, scoped styles) and 0018 (b
 - D21: Derived id = `k-<kind>-<label slug>` (hash if the slug is empty), then `-2`, `-3`, ... until the id is neither in `el.ownerDocument` nor issued earlier in the same synchronous render. Issued ids are tracked per document and cleared at the next microtask (siblings are not in the document while a render builds them). Deterministic for a given render order; never random.
 - D22: ui tests bind against a hand-built `Field` honoring the k.forms contract (test/field.test.ts); forms' own conformance covers `form()` end to end.
 - D23 (supersedes D1; principle 2): no `Register` augmentation. Style values are typed `TokenName`, a closed lexical shape (identifier, 1-2 digit key, `d.d`, digit-led word) with no app-specific names; existence is E1801 in `check`. `defineTokens` returns the typed tokens object only. Lexical rather than plain `string` because conformance `rules-e1801-e1802-types.test.ts` requires `{ p: "16px" }` and `{ bg: "#fff" }` to be type errors; with `string` that test fails tsc. Responsive breakpoint keys are any string. k.ui Style props text updated.
+- D24 (rfc:0008): `Children = () => Child`; base elements take `children` as a `Children` thunk or a plain `Child`, resolved by `internal/renderChildren`. Tests: elements.test.ts.
 
 ## Verification
 - [x] `pnpm --filter @keel/ui check` clean · structure-lint clean for ui · budgets ok · build ok

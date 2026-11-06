@@ -2,12 +2,14 @@ import type { Computed } from "@keel/reactive";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyDisabled } from "../internal/applyDisabled.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { renderChildren } from "../internal/renderChildren.ts";
 import type { Child } from "../types/Child.ts";
+import type { Children } from "../types/Children.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type Name =
-  | { readonly children: Child; readonly label?: string }
-  | { readonly label: string; readonly children?: Child };
+  | { readonly children: Child | Children; readonly label?: string }
+  | { readonly label: string; readonly children?: Child | Children };
 
 /**
  * A button named by its text or `label` (one is required, E1802). With children, `label` becomes
@@ -28,7 +30,7 @@ export function Button(
   if (props.children === undefined) appendChildren(el, props.label);
   else {
     if (props.label !== undefined) el.setAttribute("aria-label", props.label);
-    appendChildren(el, props.children);
+    appendChildren(el, renderChildren(props.children));
   }
   return el;
 }
