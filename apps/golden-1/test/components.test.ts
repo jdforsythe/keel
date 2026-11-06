@@ -2,6 +2,7 @@ import { createCtx } from "@keel/ctx";
 import { service } from "@keel/services";
 import { properties, render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { board } from "../modules/api/board.ts";
 import AppShell from "../modules/todos/AppShell.tsx";
 import EditTodoPage from "../modules/todos/EditTodoPage.tsx";
 import ListError from "../modules/todos/ListError.tsx";
@@ -9,13 +10,16 @@ import ListPage from "../modules/todos/ListPage.tsx";
 import ListsPage from "../modules/todos/ListsPage.tsx";
 import Suggestions from "../modules/todos/Suggestions.tsx";
 import TodoRow from "../modules/todos/TodoRow.tsx";
-import { board } from "../modules/todos/board.ts";
 import { suggestions } from "../modules/todos/suggestions.service.ts";
+import { view } from "../modules/todos/view.ts";
+import { simApi } from "./simApi.ts";
 import "../modules/todos/routes.ts";
 
 const base = board.snapshot();
+const shown = view.snapshot();
 afterEach(() => {
   expect(board.restore(base).ok).toBe(true);
+  expect(view.restore(shown).ok).toBe(true);
 });
 
 const L = { id: "l1", name: "Home" };
@@ -38,8 +42,36 @@ describe("TodoRow", () => {
     expect(t.find("todos.editLink.t1").name).toBe("Edit");
     t.dispose();
   });
+  it("the checkbox posts the toggle to the api and the row shows the re-read board", async () => {
+    const seed = { lists: [L], todos: [{ ...milk, done: false }] };
+    expect(board.restore({ state: seed, log: [], initial: seed }).ok).toBe(true);
+    const { ctx, sent } = await simApi();
+    const t = render(TodoRow, { props: { todo: { ...milk, done: false } }, ctx });
+    await t.fire("todos.toggle.t1", { type: "change" });
+    await t.settle();
+    expect(sent).toEqual(["POST /api/todos/t1/toggle", "GET /api/lists"]);
+    expect(t.state(view).todos[0]?.done).toBe(true);
+    t.dispose();
+  });
   it("holds its properties", async () => {
     await properties(TodoRow);
+  });
+});
+
+describe("AppShell", () => {
+  it("Undo is disabled until the api reports something to undo, then posts /api/undo", async () => {
+    const { ctx, sent } = await simApi();
+    const t = render(AppShell, { props: {}, ctx });
+    expect(t.find("todos.undo").state.disabled).toBe(true);
+    const value = { lists: [L], todos: [], canUndo: true };
+    const t2 = render(AppShell, { props: {}, ctx, state: [[view, value]] });
+    expect(t2.find("todos.undo").state.disabled).toBeUndefined();
+    await t2.fire("todos.undo", { type: "click" });
+    await t2.settle();
+    expect(sent).toEqual(["POST /api/undo", "GET /api/lists"]);
+    expect(t2.state(view).canUndo).toBe(false);
+    t2.dispose();
+    t.dispose();
   });
 });
 

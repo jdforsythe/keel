@@ -5,7 +5,7 @@ import { board } from "./board.ts";
 /** Append an open todo to list `listId`; an unknown list or a duplicate id leaves the board unchanged. */
 export const addTodo = transaction(
   board,
-  "todos.addTodo",
+  "api.addTodo",
   s.object({
     id: s.id("Todo"),
     listId: s.id("TodoList"),

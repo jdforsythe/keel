@@ -16,15 +16,19 @@ import { valuesOf } from "./valuesOf.ts";
 
 /**
  * POST, PUT, PATCH, DELETE (k.server Request flow): the verb is the method, or a POST's `_method` field (k.router
- * Form). FormData is decoded with the action's input schema (fail: `keel.fields`, 422, action not called);
+ * Form). FormData is decoded with the action's input schema; a `content-type: application/json` body (a k.services
+ * client) is parsed with it instead (either fail: `keel.fields`, 422, action not called);
  * the action runs; `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
  * the `Result` as JSON with the status of its code. A document `keel.fields` re-renders the page at 422
  * with the submitted values and messages (k.forms); any other `err` renders at the route's errorElement.
  */
 export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<Handled> {
   const { id, def, chain } = m.route;
-  const read = await attempt(() => r.raw.formData());
-  const form = read.ok ? read.value : new FormData();
+  const json = (r.raw.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json");
+  // A JSON body (a `@keel/services` client, k.services Encoding) is read once; it carries no `_method`.
+  const sent = json ? await attempt((): Promise<unknown> => r.raw.json()) : null;
+  const read = json ? null : await attempt(() => r.raw.formData());
+  const form = read?.ok === true ? read.value : new FormData();
   const override = r.method === "POST" ? form.get("_method") : null;
   const verb = typeof override === "string" ? override.toUpperCase() : r.method;
   form.delete("_method");
@@ -34,7 +38,8 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
     return { response: new Response(null, { status: 405, headers: { allow } }), route: id, diags: [] };
   }
   const values = valuesOf(form);
-  const decoded = action.input.decodeStrings(form);
+  const decoded =
+    sent === null ? action.input.decodeStrings(form) : action.input.parse(sent.ok ? sent.value : undefined);
   if (!decoded.ok) {
     const e = fieldsError(action.input.node, decoded.error);
     if (r.runtime) return { response: jsonResponse(422, err(e)), route: id, diags: [] };

@@ -4,11 +4,11 @@ import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Text } from "@keel/ui";
 import { ListDraft } from "./ListDraft.schema.ts";
-import { board } from "./board.ts";
+import { view } from "./view.ts";
 
 export const Props = s.object({});
 
-const openCount = (listId: string): number => board.get("todos").filter((t) => t.listId === listId && !t.done).length;
+const openCount = (listId: string): number => view.get("todos").filter((t) => t.listId === listId && !t.done).length;
 
 /** Route `todos.index`: every list with its open-todo count, and a Form adding a list. */
 export default function ListsPage(_props: Infer<typeof Props>) {
@@ -32,7 +32,7 @@ export default function ListsPage(_props: Infer<typeof Props>) {
         Lists
       </Heading>
       <Box as="ul" id="todos.lists.items">
-        <For each={board.get("lists")} key="id">
+        <For each={view.get("lists")} key="id">
           {(list) => (
             <Box as="li" id={`todos.listItem.${list.id}`} direction="row" gap="2">
               <Link id={`todos.listLink.${list.id}`} to={href("todos.list", { listId: list.id })}>

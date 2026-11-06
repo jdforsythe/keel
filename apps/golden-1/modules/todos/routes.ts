@@ -8,13 +8,20 @@ import ListsPage from "./ListsPage.tsx";
 import { createList } from "./createList.server.ts";
 import { createTodo } from "./createTodo.server.ts";
 import { editable } from "./editable.guard.ts";
+import { loadIndex } from "./loadIndex.server.ts";
 import { loadList } from "./loadList.server.ts";
 import { loadTodo } from "./loadTodo.server.ts";
 import { updateTodo } from "./updateTodo.server.ts";
 
 export const routes = manifest({
   "todos.shell": { component: AppShell },
-  "todos.index": { path: "/", actions: { POST: createList }, component: ListsPage, layout: "todos.shell" },
+  "todos.index": {
+    path: "/",
+    loader: loadIndex,
+    actions: { POST: createList },
+    component: ListsPage,
+    layout: "todos.shell",
+  },
   "todos.list": {
     path: "/lists/:listId",
     params: s.object({ listId: s.id("TodoList") }),

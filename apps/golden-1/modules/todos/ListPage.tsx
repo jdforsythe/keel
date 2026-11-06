@@ -8,7 +8,7 @@ import Suggestions from "./Suggestions.tsx";
 import { TodoDraft } from "./TodoDraft.schema.ts";
 import { TodoList } from "./TodoList.schema.ts";
 import TodoRow from "./TodoRow.tsx";
-import { board } from "./board.ts";
+import { view } from "./view.ts";
 
 export const Props = s.object({
   params: s.object({ listId: s.id("TodoList") }),
@@ -26,7 +26,7 @@ const PRIORITIES = [
 export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const f = form(TodoDraft, { initial: { priority: "normal" } });
   const shown = () =>
-    board
+    view
       .get("todos")
       .filter(
         (t) =>

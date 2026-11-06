@@ -1,37 +1,57 @@
-import { createCtx } from "@keel/ctx";
+import { type Ctx, createCtx } from "@keel/ctx";
+import { s } from "@keel/schema";
+import { service } from "@keel/services";
 import { properties } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { board } from "../modules/api/board.ts";
+import { ActionReply } from "../modules/todos/ActionReply.schema.ts";
 import { Board } from "../modules/todos/Board.schema.ts";
+import { BoardReply } from "../modules/todos/BoardReply.schema.ts";
+import { BoardView } from "../modules/todos/BoardView.schema.ts";
+import { FieldsReply } from "../modules/todos/FieldsReply.schema.ts";
 import { ListDraft } from "../modules/todos/ListDraft.schema.ts";
 import { Suggestion } from "../modules/todos/Suggestion.schema.ts";
 import { SuggestionsReply } from "../modules/todos/SuggestionsReply.schema.ts";
 import { Todo } from "../modules/todos/Todo.schema.ts";
 import { TodoDraft } from "../modules/todos/TodoDraft.schema.ts";
 import { TodoList } from "../modules/todos/TodoList.schema.ts";
-import { addList } from "../modules/todos/addList.ts";
-import { addTodo } from "../modules/todos/addTodo.ts";
-import { board } from "../modules/todos/board.ts";
 import { createList } from "../modules/todos/createList.server.ts";
 import { createTodo } from "../modules/todos/createTodo.server.ts";
-import { editTodo } from "../modules/todos/editTodo.ts";
 import { editable } from "../modules/todos/editable.guard.ts";
+import { hydrate } from "../modules/todos/hydrate.ts";
+import { loadIndex } from "../modules/todos/loadIndex.server.ts";
 import { loadList } from "../modules/todos/loadList.server.ts";
 import { loadTodo } from "../modules/todos/loadTodo.server.ts";
-import { toggleTodo } from "../modules/todos/toggleTodo.ts";
+import { refreshView } from "../modules/todos/refreshView.ts";
+import { syncAfter } from "../modules/todos/syncAfter.ts";
+import { todos } from "../modules/todos/todos.service.ts";
+import { todosApi } from "../modules/todos/todosApi.ts";
 import { updateTodo } from "../modules/todos/updateTodo.server.ts";
+import { view } from "../modules/todos/view.ts";
+import { simApi } from "./simApi.ts";
 import "../modules/todos/routes.ts";
 
-const base = board.snapshot();
+const served = board.snapshot();
+const shown = view.snapshot();
 afterEach(() => {
-  expect(board.restore(base).ok).toBe(true);
+  expect(board.restore(served).ok).toBe(true);
+  expect(view.restore(shown).ok).toBe(true);
 });
 
-const sim = () => createCtx({ mode: "sim", seed: 7 });
-const seed = { lists: [{ id: "l1", name: "Home" }], todos: [] };
+const L = { id: "l1", name: "Home" };
+const milk = { id: "t1", listId: "l1", title: "Milk", priority: "normal", done: false } as const;
+const seed = { lists: [L], todos: [milk] };
+const seedServer = () => expect(board.restore({ state: seed, log: [], initial: seed }).ok).toBe(true);
+const LISTS = new URL("/api/lists", location.href).href;
+/** `todos.toggleTodo` for `t1`: params parse into the branded id the endpoint takes. */
+const T1 = s.object({ todoId: s.id("Todo") }).parse({ todoId: milk.id });
+const toggleT1 = (ctx: Ctx) => (T1.ok ? todosApi().toggleTodo({ params: T1.value }, ctx) : Promise.resolve(T1));
 
 describe("schemas", () => {
-  it("Board, TodoList and Todo accept the model and reject bad values", () => {
+  it("Board, BoardView, TodoList and Todo accept the model and reject bad values", () => {
     expect(Board.parse({ lists: [], todos: [] }).ok).toBe(true);
+    expect(BoardView.parse({ lists: [], todos: [], canUndo: false }).ok).toBe(true);
+    expect(BoardView.parse({ lists: [], todos: [] }).ok).toBe(false);
     expect(TodoList.parse({ id: "l1", name: "" }).ok).toBe(false);
     expect(Todo.parse({ id: "t1", listId: "l1", title: "Milk", priority: "urgent", done: false }).ok).toBe(false);
   });
@@ -44,68 +64,106 @@ describe("schemas", () => {
     expect(SuggestionsReply.parse(reply).ok).toBe(true);
     expect(SuggestionsReply.parse([{ title: "Eggs" }]).ok).toBe(false);
   });
-});
-
-describe("transactions keep the board invariant", () => {
-  it("addList", async () => {
-    await properties(addList);
-  });
-  it("addTodo", async () => {
-    await properties(addTodo);
-  });
-  it("toggleTodo", async () => {
-    await properties(toggleTodo);
-  });
-  it("editTodo", async () => {
-    await properties(editTodo);
+  it("BoardReply, ActionReply and FieldsReply are the api runtime bodies", () => {
+    const value = { lists: [L], todos: [], canUndo: true };
+    expect(BoardReply.parse({ id: "api.lists", results: { "api.lists": { ok: true, value } } }).ok).toBe(true);
+    expect(BoardReply.parse({ id: "api.lists", results: { "api.lists": { ok: false, value } } }).ok).toBe(false);
+    expect(ActionReply.parse({ ok: true, value: null }).ok).toBe(true);
+    expect(ActionReply.parse({ ok: false, value: null }).ok).toBe(false);
+    const fields = { ok: false, error: { code: "keel.fields", message: "m", data: { title: "taken" } } };
+    expect(FieldsReply.parse(fields).ok).toBe(true);
   });
 });
 
-describe("actions, loaders, guard", () => {
-  it("createList adds a list with a ctx-minted id; undo restores the prior state", async () => {
-    const ctx = sim();
-    const r = await createList.run({ name: "Work" }, { params: {} }, ctx);
-    expect(r.ok).toBe(true);
-    expect(board.get("lists").map((l) => l.name)).toEqual(["Work"]);
-    expect(board.undo()).toBe(true);
-    expect(board.snapshot().state).toEqual({ lists: [], todos: [] });
+describe("todos.view", () => {
+  it("hydrate replaces the state for every generated payload", async () => {
+    await properties(hydrate);
   });
-  it("createTodo adds an open todo to the list", async () => {
-    expect((await createList.run({ name: "Home" }, { params: {} }, sim())).ok).toBe(true);
-    const listId = board.get("lists")[0]?.id ?? "";
-    const r = await createTodo.run({ title: "Milk", priority: "low" }, { params: { listId } }, sim());
-    expect(r.ok).toBe(true);
-    expect(board.get("todos")).toMatchObject([{ listId, title: "Milk", priority: "low", done: false }]);
+  it("refreshView reads GET /api/lists into the view; syncAfter writes then refreshes", async () => {
+    seedServer();
+    const { ctx, sent } = await simApi();
+    expect((await refreshView(ctx)).ok).toBe(true);
+    expect(view.get("lists")).toEqual([L]);
+    const r = await syncAfter(ctx, toggleT1(ctx));
+    expect(r.ok && r.value.todos[0]?.done).toBe(true);
+    expect(view.get("todos")[0]?.done).toBe(true);
+    expect(view.get("canUndo")).toBe(true);
+    expect(sent).toEqual(["GET /api/lists", "POST /api/todos/t1/toggle", "GET /api/lists"]);
   });
-  it("updateTodo rejects a duplicate title with keel.fields and saves otherwise", async () => {
-    expect(board.restore({ state: seed, log: [], initial: seed }).ok).toBe(true);
-    const at = { params: { listId: "l1" } };
-    const first = await createTodo.run({ title: "Milk", priority: "low" }, at, sim());
-    const second = await createTodo.run({ title: "Eggs", priority: "low" }, at, createCtx({ mode: "sim", seed: 8 }));
-    expect([first.ok, second.ok]).toEqual([true, true]);
-    const [milk] = board.get("todos");
-    const todoId = milk?.id ?? "";
-    const dup = await updateTodo.run({ title: "Eggs", priority: "high" }, { params: { listId: "l1", todoId } }, sim());
-    expect(dup.ok ? null : dup.error.code).toBe("keel.fields");
-    const saved = await updateTodo.run(
-      { title: "Oat milk", priority: "high" },
-      { params: { listId: "l1", todoId } },
-      sim(),
-    );
-    expect(saved.ok).toBe(true);
-    expect(board.get("todos")[0]).toMatchObject({ title: "Oat milk", priority: "high" });
+  it("a failed write is returned and nothing is re-read", async () => {
+    const { ctx, sent } = await simApi();
+    const r = await syncAfter(ctx, toggleT1(ctx));
+    expect(r.ok ? null : r.error).toMatchObject({ code: "api.status", data: { status: 404 } });
+    expect(sent).toEqual(["POST /api/todos/t1/toggle"]);
   });
-  it("loadList and loadTodo return keel.notFound for unknown ids", async () => {
-    expect(board.restore({ state: seed, log: [], initial: seed }).ok).toBe(true);
-    const found = await loadList.run({ params: { listId: "l1" }, search: {} }, sim());
-    expect(found.ok).toBe(true);
-    const missing = await loadList.run({ params: { listId: "nope" }, search: {} }, sim());
+  it("a failed read leaves the view unchanged", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    ctx.net.route(LISTS, () => new Response("boom", { status: 500 }));
+    const r = await refreshView(ctx);
+    expect(r.ok ? null : r.error.code).toBe("api.status");
+    expect(view.snapshot().state).toEqual(shown.state);
+  });
+});
+
+describe("todos service", () => {
+  it("sends accept and a JSON body, and decodes the Result", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    const seen: string[] = [];
+    ctx.net.route(LISTS, async (req) => {
+      seen.push(`${req.headers.get("accept")} ${req.headers.get("content-type")} ${await req.text()}`);
+      return new Response(JSON.stringify({ ok: true, value: null }));
+    });
+    const r = await service({ base: location.origin, schema: todos }).createList({ body: { name: "Work" } }, ctx);
+    expect(r).toEqual({ ok: true, value: { ok: true, value: null } });
+    expect(seen).toEqual(['application/json application/json {"name":"Work"}']);
+  });
+});
+
+describe("client loaders and actions (through the api deployable)", () => {
+  it("loadIndex hydrates; loadList and loadTodo find by id or return keel.notFound", async () => {
+    seedServer();
+    const { ctx } = await simApi();
+    const index = await loadIndex.run({ params: {}, search: {} }, ctx);
+    expect(index.ok && index.value.lists).toEqual([L]);
+    expect(await loadList.run({ params: { listId: "l1" }, search: {} }, ctx)).toEqual({ ok: true, value: L });
+    const missing = await loadList.run({ params: { listId: "nope" }, search: {} }, ctx);
     expect(missing.ok ? null : missing.error.code).toBe("keel.notFound");
-    const todo = await loadTodo.run({ params: { listId: "l1", todoId: "nope" }, search: {} }, sim());
+    expect((await loadTodo.run({ params: { listId: "l1", todoId: "t1" }, search: {} }, ctx)).ok).toBe(true);
+    const todo = await loadTodo.run({ params: { listId: "l1", todoId: "nope" }, search: {} }, ctx);
     expect(todo.ok ? null : todo.error.code).toBe("keel.notFound");
   });
+  it("createList and createTodo post to the api and answer ok(null)", async () => {
+    const { ctx, sent } = await simApi();
+    expect(await createList.run({ name: "Work" }, { params: {} }, ctx)).toEqual({ ok: true, value: null });
+    const listId = board.get("lists")[0]?.id ?? "";
+    const r = await createTodo.run({ title: "Milk", priority: "low" }, { params: { listId } }, ctx);
+    expect(r).toEqual({ ok: true, value: null });
+    expect(board.get("todos")).toMatchObject([{ listId, title: "Milk", priority: "low", done: false }]);
+    expect(sent).toEqual(["POST /api/lists", `POST /api/lists/${listId}/todos`]);
+  });
+  it("createTodo on an unknown list returns the api 404", async () => {
+    const { ctx } = await simApi();
+    const r = await createTodo.run({ title: "Milk", priority: "low" }, { params: { listId: "nope" } }, ctx);
+    expect(r.ok ? null : r.error).toMatchObject({ code: "api.status", data: { status: 404 } });
+  });
+  it("updateTodo passes on the api's keel.fields and goes to the list on success", async () => {
+    const both = { lists: [L], todos: [milk, { ...milk, id: "t2", title: "Eggs" }] };
+    expect(board.restore({ state: both, log: [], initial: both }).ok).toBe(true);
+    const { ctx } = await simApi();
+    const at = { params: { listId: "l1", todoId: "t1" } };
+    const dup = await updateTodo.run({ title: "Eggs", priority: "high" }, at, ctx);
+    expect(dup.ok ? null : dup.error).toMatchObject({
+      code: "keel.fields",
+      data: { title: "Another todo has this title" },
+    });
+    expect(await updateTodo.run({ title: "Oat milk", priority: "high" }, at, ctx)).toEqual({
+      ok: true,
+      value: "/lists/l1",
+    });
+    expect(board.get("todos")[0]).toMatchObject({ title: "Oat milk", priority: "high" });
+  });
   it("editable denies when ctx.storage todos.readOnly is 1", async () => {
-    const ctx = sim();
+    const ctx = createCtx({ mode: "sim", seed: 7 });
     expect((await editable.run({ url: "/" }, ctx)).ok).toBe(true);
     await ctx.storage.set("todos.readOnly", "1");
     const denied = await editable.run({ url: "/" }, ctx);

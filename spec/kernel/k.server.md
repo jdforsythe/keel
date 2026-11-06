@@ -13,7 +13,7 @@ export const updateOrder = action(OrderEdit, async (input, { params }, ctx) => o
 
 **Request flow.** Match the path in the route table -> parse params (fail: 404) and search (fail: defaults) -> guard (deny: redirect) ->
 - GET: run every loader in the matched layout chain concurrently, then stream HTML with islands and serialized state (k.runtime). A loader `err` renders the route's `errorElement`.
-- POST, PUT, PATCH, DELETE: decode FormData with the action's input schema (fail: `keel.fields`, action not called), run the action, then 303 to the target for a document request or return the `Result` as JSON for a runtime request.
+- POST, PUT, PATCH, DELETE: decode FormData with the action's input schema (a `content-type: application/json` body, as a k.services client sends, is parsed with it instead) (fail: `keel.fields`, action not called), run the action, then 303 to the target for a document request or return the `Result` as JSON for a runtime request.
 
 Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · other `err` 400 · uncaught throw 500 as `keel.unexpected`. In production its message becomes `unexpected` and no stack leaves the server.
 

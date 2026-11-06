@@ -5,7 +5,7 @@ import { board } from "./board.ts";
 /** Replace title and priority of todo `id`; an unknown id leaves the board unchanged. */
 export const editTodo = transaction(
   board,
-  "todos.editTodo",
+  "api.editTodo",
   s.object({
     id: s.id("Todo"),
     title: s.string({ min: 1, max: 120 }),

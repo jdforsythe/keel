@@ -10,6 +10,9 @@ Build `apps/golden-1/`: a todo app, client-only (`topology.ts`: one deployable, 
 - Layout `todos.shell` (`AppShell`): a `main`, a home Link, and an Undo Button that undoes the last transaction from the store log; disabled when the log is empty.
 - `Suggestions`: a `resource` whose fetcher closes over the component's third parameter `ctx` and calls `ctx.net.fetch` for `GET /api/suggestions` directly (E1651 is not enforced until k.services is implemented), rendered with `Match` on `loading`, `error` (message text), `ready` (titles).
 
+## Data ownership
+The reference app (`apps/golden-1`) keeps its data behind an API: a second deployable `api` (`adapter: 'node'`, module `api`, `server.ts`) owns the board store `api.board` with its invariant and the `api.*` transactions, and serves it as k.server runtime `Result` bodies (`GET /api/lists`; `POST /api/lists`, `/api/lists/:listId/todos`, `/api/todos/:todoId`, `/api/todos/:todoId/toggle`, `/api/undo`). The `todos` module declares those endpoints with `@keel/services` and holds only a view store `todos.view`, replaced by one transaction `todos.hydrate`; loaders re-read the board, and every write posts then re-reads, so a reload shows the same data. The Files and Model lists below describe the client-only baseline task.
+
 ## Model
 - Store `todos.board` in `board.ts`: `Board { lists: TodoList[], todos: Todo[] }`, initially empty. `invariant` beside it: ids unique, every `todo.listId` names a list.
 - Transactions `todos.addList`, `todos.addTodo`, `todos.toggleTodo`, `todos.editTodo`: pure; new ids arrive in the payload (actions mint them with `ctx.random.uuid()` and call `tx`; actions are exempt from E1301). A component calling `tx` exports `uses = [...]` beside `Props` (`TodoRow`: `toggleTodo`). Each keeps the invariant for every generated payload: an unknown or duplicate id returns the state unchanged.
