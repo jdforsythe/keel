@@ -1,4 +1,3 @@
-import type { Write } from "./internal/Write.ts";
 import { mcpHandle } from "./internal/mcpHandle.ts";
 import type { Io } from "./types/Io.ts";
 import type { StdioServer } from "./types/StdioServer.ts";
@@ -6,12 +5,10 @@ import type { StdioServer } from "./types/StdioServer.ts";
 /**
  * `keel mcp`: an MCP server over stdio framing (newline-delimited JSON-RPC 2.0). One tool per operation,
  * input schema = the operation's input as JSON Schema. `provide` is called per tool call, so the binary can
- * re-read the project each time; `apply` receives the file effects of successful scaffold/build calls. Hand-rolled framing: `@modelcontextprotocol/sdk` is not a dependency.
+ * re-read the project each time; effects of successful scaffold/build calls go to `io.apply`. Hand-rolled
+ * framing: `@modelcontextprotocol/sdk` is not a dependency.
  */
-export function mcp(
-  provide: () => Io | Promise<Io>,
-  apply: (writes: readonly Write[]) => void = () => {},
-): StdioServer {
+export function mcp(provide: () => Io | Promise<Io>): StdioServer {
   const decoder = new TextDecoder();
   let buffer = "";
   return {
@@ -23,7 +20,7 @@ export function mcp(
       const out: string[] = [];
       for (const l of lines) {
         if (l.trim() === "") continue;
-        const reply = await mcpHandle(l, provide, apply);
+        const reply = await mcpHandle(l, provide);
         if (reply !== undefined) out.push(`${JSON.stringify(reply)}\n`);
       }
       return out.join("");

@@ -1,6 +1,6 @@
-/** A JSON-RPC 2.0 message as received (request when `id` is present, else notification). */
-export type RpcMessage = {
-  readonly id: string | number | null | undefined;
-  readonly method: string | undefined;
-  readonly params: unknown;
-};
+/** One received JSON-RPC 2.0 message, classified (only requests and notifications are served). */
+export type RpcMessage =
+  | { readonly kind: "request"; readonly id: string | number | null; readonly method: string; readonly params: unknown }
+  | { readonly kind: "notification"; readonly method: string; readonly params: unknown }
+  | { readonly kind: "invalid"; readonly id: string | number | null; readonly message: string }
+  | { readonly kind: "unparsable" };

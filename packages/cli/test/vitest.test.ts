@@ -6,13 +6,15 @@ const tiny = new URL("./fixtures/tiny", import.meta.url).pathname;
 const lines = (out: string): string[] => out.split("\n").filter((l) => l !== "");
 
 describe("keel test", () => {
-  it("runs the project's tests: one T0001 per failure, trailer with counts, exit 1", async () => {
+  it("runs the project's tests: one T0001 per failure at its app frame, compact diff as fix, trailer, exit 1", async () => {
     const r = await run(["test"], { cwd: tiny, files: [{ path: "vitest.config.ts", source: "" }] });
     expect(r.code).toBe(1);
     const out = lines(r.stdout);
-    expect(out).toHaveLength(2);
-    expect(out[0]).toMatch(/^T0001 sum\.fixture\.ts:\d+:\d+ fails on purpose: /);
-    expect(out[1]).toBe("fail test 3 tests, 1 failed, 0 skipped");
+    const diags = out.filter((l) => l.startsWith("T0001 "));
+    expect(diags).toHaveLength(1);
+    expect(diags[0]).toMatch(/^T0001 sum\.fixture\.ts:12:17 fails on purpose: expected 2 to be 3/);
+    expect(out).toContain("  fix: - 3");
+    expect(out.at(-1)).toBe("fail test 3 tests, 1 failed, 0 skipped");
   }, 30_000);
 
   it("a project without tests is the empty run and never starts vitest", async () => {

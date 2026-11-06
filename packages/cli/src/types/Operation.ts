@@ -1,5 +1,6 @@
 import type { ObjectSchema, Schema } from "@keel/schema";
 import type { CommandName } from "./CommandName.ts";
+import type { FileScope } from "./FileScope.ts";
 import type { Input } from "./Input.ts";
 
 /**
@@ -13,4 +14,6 @@ export type Operation = {
   readonly input: ObjectSchema<Input>;
   readonly output: Schema<unknown>;
   readonly positional: readonly string[];
+  /** The project files it reads; the engine loads them (`Io.load`) when `Io.files` is absent. */
+  readonly scope: FileScope;
 };

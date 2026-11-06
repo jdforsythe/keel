@@ -31,7 +31,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.ctx | Capabilities | implemented | clock, random, net, storage; real, shell, simulated |
 | k.errors | Results and boundaries | proposed | Result for expected, boundary for unexpected |
 | k.check | Checker and diagnostics | implemented | codes, fix diffs, budgets, rule registry |
-| k.cli | CLI, MCP, LSP | proposed | one engine, three surfaces, formatter registry |
+| k.cli | CLI, MCP, LSP | implemented | one engine, three surfaces, formatter registry |
 | k.scaffold | Scaffold and codemods | implemented | structural edits as operations |
 | k.testing | Harness and ledger | implemented | given state, do events, expect; rungs |
 | k.server | Thin server | proposed | loaders, actions, dev server, adapters, local topology |

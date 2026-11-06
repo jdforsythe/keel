@@ -1,13 +1,21 @@
+import type { FileScope } from "./FileScope.ts";
 import type { SourceFile } from "./SourceFile.ts";
+import type { Write } from "./Write.ts";
 
 /**
- * Everything `run` may read. The engine never touches the process: the binary fills `files` from disk,
- * tests pass them directly. `tty` and `env.KEEL_AGENT` select the default format (OUTPUT.md).
+ * Everything `run` may read or hand back. Tests pass `files` directly; the binary passes `load`, and the engine
+ * asks it for the file scope of the operation it runs (`Operation.scope`). `apply` receives the file effects of a
+ * successful command (absent: they are dropped). `stdin` as a stream plus `emit` serve `mcp`/`lsp` incrementally;
+ * as a string they are served in one batch and the replies returned as stdout. `tty` and `env.KEEL_AGENT` select
+ * the default format (OUTPUT.md).
  */
 export type Io = {
   readonly cwd: string;
   readonly files?: readonly SourceFile[] | undefined;
-  readonly stdin?: string | undefined;
+  readonly load?: ((scope: FileScope) => readonly SourceFile[]) | undefined;
+  readonly apply?: ((writes: readonly Write[]) => void) | undefined;
+  readonly stdin?: string | AsyncIterable<string | Uint8Array> | undefined;
+  readonly emit?: ((text: string) => void) | undefined;
   readonly env?: Readonly<Record<string, string>> | undefined;
   readonly tty?: boolean | undefined;
 };

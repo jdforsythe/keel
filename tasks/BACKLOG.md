@@ -23,7 +23,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0019 errors: Result, boundaries, thrown-exception lint · schema · k.errors · G1 · 0003
 - [x] 0020 check: pipeline, diagnostic model, formatters, explain · check · k.check · G1 · 0011
 - [x] 0021 check: fix diffs for top 30 codes; budgets; rule registry · check · k.check · G1 · 0020
-- [ ] 0022 cli: commands, formatter registry, mcp, lsp · cli · k.cli · G1 · 0020
+- [x] 0022 cli: commands, formatter registry, mcp, lsp · cli · k.cli · G1 · 0020
 - [x] 0023 scaffold: project, module, route, component, store; turbo emission · scaffold · k.scaffold · G1 · 0022
 - [x] 0024 scaffold: codemods rename, move, add-field · scaffold · k.scaffold · G1 · 0023
 - [x] 0025 testing: harness, events by id, a11y tree, sim ctx · testing · k.testing · G1 · 0012 0009

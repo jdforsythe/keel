@@ -4,6 +4,7 @@ import { codeFiles } from "./codeFiles.ts";
 import { lspDiagnostic } from "./lspDiagnostic.ts";
 import { runCheck } from "./runCheck.ts";
 import { uriPath } from "./uriPath.ts";
+import { withFiles } from "./withFiles.ts";
 
 /**
  * Re-check the project with open documents overlaid and return one `textDocument/publishDiagnostics`
@@ -14,7 +15,7 @@ export function publishAll(state: LspState, io: Io, closed: readonly string[] = 
   const open = [...state.docs].map(([uri, source]) => ({ uri, path: uriPath(root, uri), source }));
   const paths = new Set(open.map((d) => d.path));
   const files = [
-    ...codeFiles(io, undefined).filter((f) => !paths.has(f.path)),
+    ...codeFiles(withFiles(io, "query"), undefined).filter((f) => !paths.has(f.path)),
     ...open.map((d) => ({ path: d.path, source: d.source })),
   ].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   const found = open.length === 0 ? [] : runCheck(root, files);

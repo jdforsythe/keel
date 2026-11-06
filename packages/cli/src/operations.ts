@@ -42,6 +42,7 @@ export const operations: readonly Operation[] = [
     input: s.object({ paths, ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
+    scope: "query",
   },
   {
     name: "test",
@@ -49,6 +50,7 @@ export const operations: readonly Operation[] = [
     input: s.object({ paths, ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
+    scope: "query",
   },
   {
     name: "build",
@@ -56,6 +58,7 @@ export const operations: readonly Operation[] = [
     input: s.object(diagnostic),
     output: outputOf(),
     positional: [],
+    scope: "query",
   },
   {
     name: "dev",
@@ -63,6 +66,7 @@ export const operations: readonly Operation[] = [
     input: s.object(diagnostic),
     output: outputOf(ReqSchema),
     positional: [],
+    scope: "none",
   },
   {
     name: "spec",
@@ -70,6 +74,7 @@ export const operations: readonly Operation[] = [
     input: s.object({ id: s.string().optional(), for: s.string().optional(), map: s.boolean().optional(), ...common }),
     output: outputOf(SectionSchema, CiteSchema),
     positional: ["id"],
+    scope: "query",
   },
   {
     name: "explain",
@@ -77,6 +82,7 @@ export const operations: readonly Operation[] = [
     input: s.object({ code: s.string().optional(), ...common }),
     output: outputOf(ExplainSchema),
     positional: ["code"],
+    scope: "none",
   },
   {
     name: "inspect",
@@ -88,6 +94,7 @@ export const operations: readonly Operation[] = [
     }),
     output: outputOf(A11ySchema, ReqSchema),
     positional: ["what"],
+    scope: "none",
   },
   {
     name: "render",
@@ -95,6 +102,7 @@ export const operations: readonly Operation[] = [
     input: s.object({ target: s.string().optional(), props: s.string().optional(), ...common }),
     output: outputOf(A11ySchema),
     positional: ["target"],
+    scope: "none",
   },
   {
     name: "scaffold",
@@ -102,6 +110,7 @@ export const operations: readonly Operation[] = [
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],
+    scope: "tree",
   },
   {
     name: "codemod",
@@ -109,6 +118,7 @@ export const operations: readonly Operation[] = [
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],
+    scope: "tree",
   },
   {
     name: "ledger",
@@ -116,5 +126,6 @@ export const operations: readonly Operation[] = [
     input: s.object({ diff: s.boolean().optional(), ...diagnostic }),
     output: outputOf(LedgerSchema),
     positional: [],
+    scope: "query",
   },
 ];

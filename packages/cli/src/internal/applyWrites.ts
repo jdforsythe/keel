@@ -1,14 +1,22 @@
 import { chmodSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import type { Write } from "./Write.ts";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
+import type { Write } from "../types/Write.ts";
 
 /**
- * Binary only: apply an edit set under `cwd`. Existing files keep their mode (generated read-only files are
- * made writable for the write, then restored); `readonly` writes end at 0444. `null` content removes the file.
+ * Binary only: apply an edit set under `cwd`, all or nothing on paths: any write that resolves outside `cwd`
+ * (absolute, `..`, or `cwd` itself) rejects the whole set before anything is written. Existing files keep their
+ * mode (generated read-only files are made writable for the write, then restored); `readonly` writes end at
+ * 0444. `null` content removes the file.
  */
 export function applyWrites(cwd: string, writes: readonly Write[]): void {
-  for (const w of writes) {
-    const abs = join(cwd, w.path);
+  const root = resolve(cwd);
+  const targets = writes.map((w) => ({ w, abs: resolve(root, w.path) }));
+  const outside = targets.find(({ abs }) => {
+    const rel = relative(root, abs);
+    return rel === "" || rel.split(/[\\/]/)[0] === ".." || isAbsolute(rel);
+  });
+  if (outside !== undefined) throw new Error(`refusing to write outside ${root}: ${outside.w.path}`);
+  for (const { w, abs } of targets) {
     const mode = existsSync(abs) ? statSync(abs).mode & 0o777 : undefined;
     if (w.content === null) {
       if (mode !== undefined) rmSync(abs, { force: true });
