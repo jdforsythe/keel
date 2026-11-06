@@ -1,0 +1,20 @@
+{
+  "order": [
+    "schema",
+    "reactive",
+    "store",
+    "compiler",
+    "runtime-dom",
+    "router",
+    "forms",
+    "ui",
+    "check",
+    "cli",
+    "scaffold",
+    "testing",
+    "server",
+    "services",
+    "ctx"
+  ],
+  "rule": "a package may import only packages earlier in order, plus ctx and tooling"
+}

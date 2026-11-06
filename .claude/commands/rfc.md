@@ -1,0 +1,1 @@
+Create docs/rfc/NNNN-<title>.md with sections Problem, Proposal, Alternatives, Spec diff, Conformance diff, Migration, Token impact. Fill from the argument. Mark status draft. Do not change spec or conformance files.

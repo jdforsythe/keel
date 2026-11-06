@@ -1,0 +1,1 @@
+Take the first unchecked, unblocked line in tasks/BACKLOG.md. Create `.worktrees/<id>` on branch `task/<id>`. Create tasks/<id>/PLAN.md from tasks/0001-factory/PLAN.md's structure: spec, deliverables, steps, decisions, verification, next action. Add the task to docs/HANDOFF.md. Then run the conformance-writer subagent for the spec section.

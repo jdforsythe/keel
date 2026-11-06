@@ -1,0 +1,38 @@
+# Backlog
+
+Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one context window. Claim with `/next`.
+
+- [ ] 0001 factory: toolchain, scripts, hooks, subagents, commands, evals harness, budgets · repo · PRD A · G0 · none
+- [ ] 0002 schema: primitives, object, array, union, enum, id, optional vs nullable · schema · k.schema · G1 · 0001
+- [ ] 0003 schema: parse, encode, decode, Result · schema · k.schema · G1 · 0002
+- [ ] 0004 schema: generators and docs; type registry · schema · k.schema · G1 · 0003
+- [ ] 0005 reactive: wrap engine; signal, computed, effect, scopes · reactive · k.reactive · G1 · 0001
+- [ ] 0006 reactive: resource union; declared writes; cycle detection · reactive · k.reactive · G1 · 0005
+- [ ] 0007 store: store, transaction, tx, log · store · k.store · G1 · 0004 0006
+- [ ] 0008 store: snapshot, restore, undo, ownership rule · store · k.store · G1 · 0007
+- [ ] 0009 ctx: registry; clock, random, net, storage; real and sim · ctx · k.ctx · G1 · 0001
+- [ ] 0010 compiler: Vite plugin on oxc; JSX to DOM ops; If/For/Match · compiler · k.compiler · G1 · 0006
+- [ ] 0011 compiler: artifacts (deps, ids, a11y expectations); escaping by context · compiler · k.compiler · G1 · 0010
+- [ ] 0012 runtime-dom: nodes, delegation, islands resume · runtime-dom · k.runtime · G1 · 0010
+- [ ] 0013 component: props schema, slots, ids, rules E14xx · compiler · k.component · G1 · 0011
+- [ ] 0014 router: manifest, params, search, href · router · k.router · G1 · 0013
+- [ ] 0015 router: loaders, actions by verb, Form, revalidation, guards, scroll and focus · router · k.router · G1 · 0014
+- [ ] 0016 forms: form(schema), bindings, validation, submit, server errors · forms · k.forms · G1 · 0015
+- [ ] 0017 ui: tokens, style props, atomic CSS, scoped styles · ui · k.ui · G1 · 0013
+- [ ] 0018 ui: base elements with a11y-required props; standard slots · ui · k.ui · G1 · 0017
+- [ ] 0019 errors: Result, boundaries, thrown-exception lint · schema · k.errors · G1 · 0003
+- [ ] 0020 check: pipeline, diagnostic model, formatters, explain · check · k.check · G1 · 0011
+- [ ] 0021 check: fix diffs for top 30 codes; budgets; rule registry · check · k.check · G1 · 0020
+- [ ] 0022 cli: commands, formatter registry, mcp, lsp · cli · k.cli · G1 · 0020
+- [ ] 0023 scaffold: project, module, route, component, store; turbo emission · scaffold · k.scaffold · G1 · 0022
+- [ ] 0024 scaffold: codemods rename, move, add-field · scaffold · k.scaffold · G1 · 0023
+- [ ] 0025 testing: harness, events by id, a11y tree, sim ctx · testing · k.testing · G1 · 0012 0009
+- [ ] 0026 testing: schema-generated properties; invariants; ledger · testing · k.testing · G1 · 0025
+- [ ] 0027 golden app 1 (client-only) built by agent from spec + skill; record eval baseline · apps · all · G1 · 0001-0026
+- [ ] 0028 server: Hono adapter, loaders and actions, dev server, log stream · server · k.server · G2 · 0015
+- [ ] 0029 services: typed client from OpenAPI, timeouts, ApiError · services · k.services · G2 · 0028
+- [ ] 0030 module manifest and cross-module check · check · k.module · G2 · 0021
+- [ ] 0031 inspector viewer built in Keel · apps · k.cli · G2 · 0027 0028
+- [ ] 0032 golden app 1 with real API; evals rerun · apps · all · G2 · 0029
+- [ ] 0033 user skill `keel` and domain skills with evals · skills · all · G2 · 0032
+- [ ] 0034 freeze review: one-way audit, extension points exercised, status flips · spec · all · G3 · 0033

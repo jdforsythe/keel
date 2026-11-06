@@ -1,0 +1,1 @@
+Read docs/HANDOFF.md. For the active task: `cd` to its worktree, run `git status --short`, `pnpm check --quiet`, `pnpm test --quiet`. Read tasks/<id>/PLAN.md. Continue from "Next action". Do not re-plan.

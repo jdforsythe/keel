@@ -1,0 +1,6 @@
+{
+  "name": "@keel/tooling",
+  "private": true,
+  "type": "module",
+  "main": "output.ts"
+}

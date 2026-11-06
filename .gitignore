@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+reports
+.turbo
+.worktrees
+.claude/.callcount
+evals/results/*.tmp

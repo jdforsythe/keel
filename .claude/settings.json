@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm -s biome format --write $CLAUDE_FILE_PATH >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node tooling/hooks/guard-conformance.mjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node tooling/hooks/nudge-handoff.mjs"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "KEEL_AGENT": "1"
+  }
+}

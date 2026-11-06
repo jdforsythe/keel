@@ -1,0 +1,13 @@
+{
+  "output": {
+    "check.injected10": 600,
+    "test.failing3": 400,
+    "spec.section": 1500,
+    "spec.map": 1200
+  },
+  "size": {
+    "@keel/runtime-dom": "6kb",
+    "@keel/reactive": "4kb",
+    "@keel/router": "8kb"
+  }
+}
