@@ -1,0 +1,16 @@
+import { check } from "@keel/check";
+import { test } from "vitest";
+import { one } from "./support.ts";
+test("probe", () => {
+  const U = "import { Box, Text, Link, Image, Button } from '@keel/ui'\n";
+  const B = (x: string) => U + "export default function C() { return " + x + " }";
+  for (const s of [
+    B('<Image src={"javascript:alert(1)"} alt="x" />'),
+    B('<Image src={`javascript:alert(1)`} alt="x" />'),
+    B('<Link to="/x">x</Link>'),
+    B('<Box as="section"><Text id="x">1</Text><Text id="x">2</Text></Box>'),
+    B('<Box as="section"><Button id="x">1</Button><Button id="x">2</Button></Box>'),
+    B('<Box as="section"><Box id="x"><Text>1</Text></Box><Box id="x"><Text>2</Text></Box></Box>'),
+  ])
+    console.log("R", JSON.stringify(check(one(s), {}).diagnostics.map((d) => d.code + ":" + d.message)));
+});

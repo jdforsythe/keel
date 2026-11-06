@@ -10,7 +10,10 @@ import { expect, test } from "vitest";
 import { one } from "./support.ts";
 
 const CASES: { code: string; source: string }[] = [
-  { code: "E1401", source: `export default function C({ name }) { return <p>{name}</p> }\n` },
+  {
+    code: "E1401",
+    source: `import { Text } from '@keel/ui'\nexport default function C({ name }) { return <Text>{name}</Text> }\n`,
+  },
   { code: "E1805", source: `export default function C() { return <div>hi</div> }\n` },
   { code: "E1601", source: `export const stamp = () => Date.now()\n` },
   { code: "E1451", source: `export function f() { throw new Error("x") }\n` },

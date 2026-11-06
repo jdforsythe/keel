@@ -19,33 +19,35 @@ export interface Fixture {
   clean: string;
 }
 
-/** Compiler and component codes, each with a triggering fixture and a clean counterpart. */
+const UI = `import { Box, Text, Heading, Button, Link, Image } from '@keel/ui'\n`;
+
+/** Compiler and component codes, each with a triggering fixture and a clean counterpart. Base elements only (no E1805). */
 export const FIXTURES: Fixture[] = [
   {
     code: "E1001",
-    bad: `${FOR_HEAD}export default function C(props) { return <ul><For each={props.items}>{(i) => <li>{i.name}</li>}</For></ul> }`,
-    clean: `${FOR_HEAD}export default function C(props) { return <ul><For each={props.items} key="id">{(i) => <li>{i.name}</li>}</For></ul> }`,
+    bad: `${UI}${FOR_HEAD}export default function C(props) { return <Box as="ul"><For each={props.items}>{(i) => <Box as="li">{i.name}</Box>}</For></Box> }`,
+    clean: `${UI}${FOR_HEAD}export default function C(props) { return <Box as="ul"><For each={props.items} key="id">{(i) => <Box as="li">{i.name}</Box>}</For></Box> }`,
   },
   {
     code: "E1003",
-    bad: `export default function C() { return <a href="javascript:alert(1)">x</a> }`,
-    clean: `export default function C() { return <a href="https://example.com">x</a> }`,
+    bad: `${UI}export default function C() { return <Image src="javascript:alert(1)" alt="x" /> }`,
+    clean: `${UI}export default function C() { return <Image alt="x" /> }`,
   },
   {
     code: "E1401",
-    bad: `export default function C({ name }) { return <p>{name}</p> }`,
-    clean: `export default function C(props) { return <p>{props.name}</p> }`,
+    bad: `${UI}export default function C({ name }) { return <Text>{name}</Text> }`,
+    clean: `${UI}export default function C(props) { return <Text>{props.name}</Text> }`,
   },
   {
     code: "E1403",
-    bad: `export default function C(props) { return <div>{props.a && <b/>}</div> }`,
-    clean: `import { If } from '@keel/runtime-dom'
-export default function C(props) { return <div><If when={props.a}><b/></If></div> }`,
+    bad: `${UI}export default function C(props) { return <Box as="section">{props.a && <Text>x</Text>}</Box> }`,
+    clean: `${UI}import { If } from '@keel/runtime-dom'
+export default function C(props) { return <Box as="section"><If when={props.a}><Text>x</Text></If></Box> }`,
   },
   {
     code: "E1404",
-    bad: `export default function C() { return <div><a id="cart.x">1</a><b id="cart.x">2</b></div> }`,
-    clean: `export default function C() { return <div><a id="cart.x">1</a><b id="cart.y">2</b></div> }`,
+    bad: `${UI}export default function C() { return <Box as="section"><Box id="x">1</Box><Box id="x">2</Box></Box> }`,
+    clean: `${UI}export default function C() { return <Box as="section"><Box id="x">1</Box><Box id="y">2</Box></Box> }`,
   },
 ];
 
