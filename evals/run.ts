@@ -2,7 +2,7 @@
 // or `pnpm eval --skill <name> [--runner claude|none]` for a skill eval (with --task, --skill names the skill to prepend;
 // otherwise `tasks/<task>/task.json` { "skill" } or `keel-package-dev`).
 import { execFile } from "node:child_process";
-import { access, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { access, appendFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { emit, mode } from "../tooling/output.ts";
@@ -78,6 +78,9 @@ async function callClaude(prompt: string, model: string | undefined): Promise<Us
     parsed = undefined;
   }
   const j = isRecord(parsed) ? parsed : {};
+  const logPath = process.env["KEEL_EVAL_LOG"];
+  if (logPath !== undefined)
+    await appendFile(logPath, `\n=== claude call ===\n${isRecord(parsed) ? String(j["result"] ?? "") : stdout}\n`);
   const u = isRecord(j["usage"]) ? j["usage"] : {};
   return {
     input: num(u["input_tokens"]) + num(u["cache_creation_input_tokens"]) + num(u["cache_read_input_tokens"]),
