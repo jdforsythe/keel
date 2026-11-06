@@ -5,8 +5,8 @@
 //  - history is in-memory { push(url), replace(url), current(), onPop(fn(url)) }; this file adds test-only
 //    back(), forward() and external(url) (a URL change from outside the router, delivered through onPop).
 //  - loader/action/guard/manifest/href/Form/createRouter all come from @keel/router.
-//  - components are (props) => Node; a layout receives { children: Node }; errorElement receives { error };
-//    Form is called as a function with props and a single Node as children.
+//  - components are (props) => Node; a layout receives { children } (RFC 0008: a thunk, a plain Node also tolerated);
+//    errorElement receives { error }; Form is called as a function with props and children (thunk or plain Node).
 import { createCtx } from "@keel/ctx";
 import { Form, action, createRouter, guard, href, loader, manifest } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
@@ -109,9 +109,14 @@ const errorElement =
     bump(`error:${id}`);
     return el("p", { "data-error": id, "data-code": p.error.code }, p.error.code);
   };
-const AppShell = (p: { children: Node }): Node => el("div", { "data-layout": "app.shell" }, el("main", {}, p.children));
-const OrdersShell = (p: { children: Node }): Node => el("div", { "data-layout": "orders.shell" }, p.children);
-const GuardedShell = (p: { children: Node }): Node => el("div", { "data-layout": "guarded.shell" }, p.children);
+type Kids = { children?: Node | (() => Node | Node[] | string) };
+const kids = (p: Kids): Node | Node[] | string => {
+  const c = p.children;
+  return typeof c === "function" ? c() : (c ?? []);
+};
+const AppShell = (p: Kids): Node => el("div", { "data-layout": "app.shell" }, el("main", {}, ...[kids(p)].flat()));
+const OrdersShell = (p: Kids): Node => el("div", { "data-layout": "orders.shell" }, ...[kids(p)].flat());
+const GuardedShell = (p: Kids): Node => el("div", { "data-layout": "guarded.shell" }, ...[kids(p)].flat());
 const OrderPage = (p: { params: Infer<typeof OrderParams>; search: unknown; data: unknown }): Node => {
   bump("render:orders.show");
   const fields = el(
@@ -123,7 +128,7 @@ const OrderPage = (p: { params: Infer<typeof OrderParams>; search: unknown; data
   return el(
     "section",
     { "data-page": "orders.show" },
-    Form({ method: control.verb, action: "orders.show", params: p.params, children: fields }),
+    Form({ method: control.verb, action: "orders.show", params: p.params, children: () => [fields] }),
   );
 };
 
