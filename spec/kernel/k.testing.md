@@ -1,5 +1,5 @@
 # k.testing: Harness and ledger
-status: proposed
+status: implemented
 
 **Harness.** From `@keel/testing`:
 ```ts

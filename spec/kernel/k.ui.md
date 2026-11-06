@@ -24,7 +24,7 @@ The compiler emits one atomic class per (prop, token, breakpoint, state), dedupl
 
 **Scoped styles.** `const css = styles({ card: { p: '3', radius: '1' } })` in a component file, applied with `class={css.card}`. Same vocabulary, same atomic output, file-local.
 
-**Standard slots.** `loading: () => JSX`, `empty: () => JSX`, `error: (e: KeelError) => JSX`. These names carry these signatures everywhere; `For` accepts `empty`.
+**Standard slots.** JSX children are the default slot and arrive as `props.children` (k.component); base elements accept a thunk or a plain string/Node. `loading: () => JSX`, `empty: () => JSX`, `error: (e: KeelError) => JSX`. These names carry these signatures everywhere; `For` accepts `empty`.
 
 **Rules.** E1801 raw value where a token is required (fix: nearest token) · E1802 missing a11y-required prop · E1803 `style` attribute or exported `styles` · E1804 an element setting `fg` and `bg` below 4.5:1 contrast (3:1 at `fontSize` >= 24px), checked per color scheme · E1805 lowercase intrinsic element in app code (fix: matching base element) · E1806 standard slot name with another signature · E1807 `tokens.ts` fails `TokenSchema`.
 

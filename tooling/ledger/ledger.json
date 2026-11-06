@@ -297,6 +297,12 @@
       "rung": "probabilistic"
     },
     {
+      "pkg": "testing",
+      "name": "renderRoute",
+      "file": "packages/testing/src/renderRoute.ts",
+      "rung": "example"
+    },
+    {
       "pkg": "ui",
       "name": "defineTokens",
       "file": "packages/ui/src/defineTokens.ts",

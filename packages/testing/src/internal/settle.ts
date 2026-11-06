@@ -13,9 +13,10 @@ const logSizes = (): string => [...stores()].map(([id, st]) => `${id}:${st.log()
 /**
  * Run `act`, then wait without timers until triggered work is quiescent: rounds of microtask hops, done after
  * two consecutive rounds with no DOM mutation under `root` (MutationObserver) and no change in any store's log
- * length. More than 50 rounds throws `keel.unexpected` "fire did not settle". Deterministic: no clock, no timers.
+ * length, while `busy()` is false (e.g. a router navigation in flight). More than 50 rounds throws `keel.unexpected`
+ * "fire did not settle". Deterministic: no clock, no timers.
  */
-export async function settle(root: Element, act: () => void): Promise<void> {
+export async function settle(root: Element, act: () => void, busy: () => boolean = () => false): Promise<void> {
   let mutations = 0;
   const observer = new MutationObserver((records) => {
     mutations += records.length;
@@ -29,7 +30,7 @@ export async function settle(root: Element, act: () => void): Promise<void> {
       for (let hop = 0; hop < ROUND_HOPS; hop++) await Promise.resolve();
       mutations += observer.takeRecords().length;
       const sizes = logSizes();
-      const active = mutations > 0 || sizes !== last;
+      const active = mutations > 0 || sizes !== last || busy();
       mutations = 0;
       last = sizes;
       quiet = active ? 0 : quiet + 1;

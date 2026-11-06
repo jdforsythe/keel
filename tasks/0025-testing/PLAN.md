@@ -8,7 +8,8 @@
 - [x] `properties(component | transaction, { runs, seed? })` with E1704 failure output and `KEEL_SEED` replay (0026)
 - [x] pure `ledger(items)` and `ledgerDiff(before, after)` (E1706) (0026)
 - [x] property tests (a11y names over generated labels; ledger rung monotonicity); README; changeset
-- [ ] E1702 (`a11y.json` comparison; spec now has an artifacts option, ea3e73e), `renderRoute`, axe-core: not implemented (see D11)
+- [x] E1702 via `render(C, { artifacts })` (D22); `renderRoute` (D23)
+- [ ] axe-core: minimal rules only (D9)
 
 ## Steps
 1. [x] conformance-writer wrote packages/testing/conformance from k.testing (commit c72e0ff).
@@ -17,7 +18,8 @@
 4. [x] Package tests in test/ (seed 1337); smoke test removed; README; changeset.
 5. [x] Fixture fix committed under rfc:0000 (eb7256d); WIP committed (ea3e73e).
 6. [x] Review round 1 applied (D15-D19), then RFC 0007 items (D20-D21).
-7. [ ] Re-review; spec status -> implemented.
+7. [x] Review round 2 committed (0d81407); E1702 and `renderRoute` added (D22-D23).
+8. [ ] Re-review; spec status -> implemented.
 
 ## Decisions
 - D1: conformance/fixtures.ts calls `store(...)` at module top level; since rfc:0003 `store` requires a scope (E1203), so the fixture throws at import and every conformance file importing it (19 of 21) fails to load. Not changed (read-only). Fix for an rfc:NNNN PR: create the three stores inside `scope(() => ...)` (a never-disposed module scope). With that one change the suite is 66 passed, 2 skipped (E1701 static lint, E1702).
@@ -42,15 +44,18 @@
 - D20 (RFC 0007): root-Boundary catches come from `mount(..., { ctx, onError })`; `render` and `fire` throw the first as `keel.unexpected at <at>: <message>` (data kept). The DOM scrape (`rootError.ts`) is removed.
 - D21 (RFC 0007): `properties(transaction)` generates `(state, payload)` pairs with `gen(t.store.schema)` and `gen(t.schema)`, one pair per run (`runs` pairs; fast-check shrinks both). Stores do not expose invariants, so a generated state counts only if it holds them: `holds(store, state)` commits an identity transaction `keel.testing.holds` (defined once per store via the public `transaction()`) from that state and reads `store.invariant`; failing states are skipped with `fc.pre`; too many skips is E1704 "too few generated states satisfy the invariants". Each case restores the store's prior snapshot. Failure output: `payload:` then `state:` lines. Side effect: each probed store gains the transaction name `keel.testing.holds` (never left in its log). A cleaner path is an RFC exposing an invariant check on `Store`. Components still generate `Props` only (the stores a component reads are not known).
 
+- D22: E1702: `render`/`renderRoute` take `artifacts` (typed `Pick<Artifacts, "a11y.json">` from `@keel/compiler`, a type-only import). After the first render and after every `fire` (before E1703), every visible rendered element whose id is in `a11y.json` must have the expected role (skipped when the entry's role is `null`) and the expected name source. The rendered source is where the non-empty name came from: `aria` (aria-labelledby/aria-label), `label`, `alt`, `text` (name from content); button-like `value`, `title`, or an empty name are `none`, as the compiler models it. Ids missing on either side are skipped; up to 5 mismatches listed. Known divergences that will raise E1702 until the compiler and harness agree: compiler `img` for `alt=""` (harness `presentation`), compiler `region` for every `<section>` (harness `generic` when unnamed), compiler name-from-content list includes `listitem` and lacks `gridcell`, `menuitemcheckbox`, `menuitemradio`, `sectionhead`.
+- D23: `renderRoute(id, { routes, params?, search?, state?, ctx?, artifacts? })`: seeds state, creates `createRouter(routes, { ctx, history })` on an in-memory history (src/internal/memoryHistory.ts, the router tests' pattern without pop) starting at `href(id, params, search)`, so the router's initial navigation runs guards and loaders; mounts `router.App` through the shared harness (src/internal/openHarness.ts, also used by `render`), then settles until no navigation is pending and the DOM is quiet and runs the checks. Returns the `render` handle plus `route()` (`router.route.get()`); `fire` also waits while a navigation or action is pending; `dispose` disposes the router and restores seeded stores. Not started from `/` then navigated, so loaders run exactly once.
+
 ## Verification
 - [x] `tsc --noEmit` clean (includes conformance) · biome clean on src/test/unsafe · unsafe count 0
 - [x] conformance green (fixture fix eb7256d): 66 passed, 2 skipped (E1701 static lint, E1702)
 - [x] `pnpm --filter @keel/testing check` clean; structure-lint clean
 - [x] properties present: test/a11y-names.property.test.ts, test/ledger.property.test.ts, test/transaction.property.test.ts, test/harness.test.ts (seed 1337)
-- [ ] `node tooling/ledger.mjs --diff`: clean against the regenerated ledger.json; against HEAD 7 E1706 + 1 pre-existing L0001 until it is committed (D17)
+- [x] `node tooling/ledger.mjs --diff` clean (regenerated ledger committed in 0d81407; `renderRoute` entry added)
 - Mutation: `mutate` is `echo skip`; 70% threshold not measured.
 
-Test trailer (`pnpm --filter @keel/testing test`): `ok 91 tests, 0 failed, 2 skipped (1.4s)`
+Test trailer (`pnpm --filter @keel/testing test`): `ok 99 tests, 0 failed, 2 skipped (1.9s)`
 
 ## Next action
 review

@@ -26,8 +26,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0022 cli: commands, formatter registry, mcp, lsp · cli · k.cli · G1 · 0020
 - [ ] 0023 scaffold: project, module, route, component, store; turbo emission · scaffold · k.scaffold · G1 · 0022
 - [ ] 0024 scaffold: codemods rename, move, add-field · scaffold · k.scaffold · G1 · 0023
-- [ ] 0025 testing: harness, events by id, a11y tree, sim ctx · testing · k.testing · G1 · 0012 0009
-- [ ] 0026 testing: schema-generated properties; invariants; ledger · testing · k.testing · G1 · 0025
+- [x] 0025 testing: harness, events by id, a11y tree, sim ctx · testing · k.testing · G1 · 0012 0009
+- [x] 0026 testing: schema-generated properties; invariants; ledger · testing · k.testing · G1 · 0025
 - [ ] 0027 golden app 1 (client-only) built by agent from spec + skill; record eval baseline · apps · all · G1 · 0001-0026
 - [ ] 0028 server: Hono adapter, loaders and actions, dev server, log stream · server · k.server · G2 · 0015
 - [ ] 0029 services: typed client from OpenAPI, timeouts, ApiError · services · k.services · G2 · 0028
@@ -47,3 +47,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0043 rfc: reactive `Scope.run(fn)` to create nodes under an existing owner; removes runtime-dom's nursery chain of one-shot effects (runtime PLAN D4/D19) · reactive, runtime-dom · k.reactive · G1 · 0012
 - [ ] 0044 rfc: router guards by reference (`guard: authGuard`) and manifest-typed `routes.href` replacing the name table and the free `href`; scroll keyed by history entry (router PLAN D19, D20, D23) · router · k.router · G3 · 0014
 - [ ] 0045 rfc: `Store.check(state)` runs declared invariants without committing, so @keel/testing drops the `keel.testing.holds` probe transaction (testing PLAN D21) · store, testing · k.store · G1 · 0025
+- [ ] 0046 compiler: a11y.json role rules align with the harness (decorative img → presentation; unnamed section → generic; name-from-content role list per WAI-ARIA) so E1702 has no false alarms (testing PLAN D22) · compiler · k.compiler · G1 · 0025

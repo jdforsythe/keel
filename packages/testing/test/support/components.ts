@@ -118,3 +118,17 @@ export const Spin = Object.assign(
   },
   { Props: s.object({}) },
 );
+
+const ToggleT = template('<div><button id="tg.btn">Show</button></div>');
+
+/** Clicking gives the button an aria-label, moving its name source from text to aria. */
+export const Toggle = Object.assign(
+  (_props: Record<string, never>): Node => {
+    const root = clone(ToggleT);
+    const labelled = signal(false);
+    attr(byId(root, "tg.btn"), "aria-label", () => (labelled.get() ? "Hide" : null));
+    on("tg.btn", "click", () => labelled.set(true));
+    return root;
+  },
+  { Props: s.object({}) },
+);
