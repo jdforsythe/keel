@@ -19,14 +19,14 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 ## Kernel
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| k.schema | Schemas | implemented | declare once; types, validators, codecs, generators derive |
+| k.schema | Schemas | conformance-covered | declare once; types, validators, codecs, generators derive |
 | k.reactive | Reactivity | implemented | signal, computed, effect, resource; scopes dispose |
 | k.store | Store and transactions | implemented | named pure transactions, log, undo, ownership |
 | k.component | Components | implemented | one default export, schema props, named slots, If/For/Match |
 | k.compiler | Compiler and artifacts | implemented | JSX to DOM ops; dep graph, ID index, route table, a11y expectations |
 | k.runtime | DOM runtime and islands | implemented | fine-grained nodes, delegation, resume |
 | k.router | Routes | implemented | manifest, typed params and search, loaders, actions by verb, guards |
-| k.forms | Forms | implemented | form(schema): bindings, validation, submit, server errors |
+| k.forms | Forms | conformance-covered | form(schema): bindings, validation, submit, server errors |
 | k.ui | Tokens and styling | implemented | typed style props, atomic CSS, scoped, a11y-required props |
 | k.ctx | Capabilities | implemented | clock, random, net, storage; real, shell, simulated |
 | k.errors | Results and boundaries | proposed | Result for expected, boundary for unexpected |

@@ -1,5 +1,5 @@
 # k.schema: Schemas
-status: implemented
+status: conformance-covered
 
 **Purpose.** One declaration per data shape. Everything derives from it.
 
