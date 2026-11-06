@@ -2,11 +2,25 @@
 
 status key: proposed | implemented | conformance-covered | frozen. Budget: this file <= 1,200 tokens; each section <= 1,500. Retrieve with `pnpm spec <id>`.
 
+## Code ranges
+Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --for <code>` finds the owner.
+| block | owner | block | owner |
+| --- | --- | --- | --- |
+| E100x | k.compiler | E105x | k.cli |
+| E110x | k.schema | E115x | k.module |
+| E120x | k.reactive | E125x | k.runtime |
+| E130x | k.store | E135x | k.scaffold |
+| E140x | k.component | E145x | k.errors |
+| E150x | k.router | E155x | k.server |
+| E160x | k.ctx | E165x | k.services |
+| E170x | k.testing | E175x | reserved |
+| E18xx | k.ui | E19xx | k.forms |
+
 ## Kernel
 | id | section | status | one line |
 | --- | --- | --- | --- |
 | k.schema | Schemas | proposed | declare once; types, validators, codecs, generators derive |
-| k.reactive | Reactivity | proposed | signal, computed, effect, resource; scopes dispose |
+| k.reactive | Reactivity | implemented | signal, computed, effect, resource; scopes dispose |
 | k.store | Store and transactions | proposed | named pure transactions, log, undo, ownership |
 | k.component | Components | proposed | one default export, schema props, named slots, If/For/Match |
 | k.compiler | Compiler and artifacts | proposed | JSX to DOM ops; dep graph, ID index, route table, a11y expectations |
@@ -14,7 +28,7 @@ status key: proposed | implemented | conformance-covered | frozen. Budget: this 
 | k.router | Routes | proposed | manifest, typed params and search, loaders, actions by verb, guards |
 | k.forms | Forms | proposed | form(schema): bindings, validation, submit, server errors |
 | k.ui | Tokens and styling | proposed | typed style props, atomic CSS, scoped, a11y-required props |
-| k.ctx | Capabilities | proposed | clock, random, net, storage; real, shell, simulated |
+| k.ctx | Capabilities | implemented | clock, random, net, storage; real, shell, simulated |
 | k.errors | Results and boundaries | proposed | Result for expected, boundary for unexpected |
 | k.check | Checker and diagnostics | proposed | codes, fix diffs, budgets, rule registry |
 | k.cli | CLI, MCP, LSP | proposed | one engine, three surfaces, formatter registry |

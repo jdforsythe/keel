@@ -1,4 +1,37 @@
-# k.ui
+# k.ui: Tokens and styling
 status: proposed
 
-TODO: draft from docs/prd/01-kernel.md; keep under 1,500 tokens; include API, Rules (codes), Conformance.
+**Tokens.** `tokens.ts` at the project root, validated by `TokenSchema` from `@keel/ui`:
+```ts
+export const tokens = defineTokens({
+  color: { fg: { light: '#111', dark: '#eee' }, bg: { light: '#fff', dark: '#111' }, accent: '#0a5' },
+  space: { 0: '0', 1: '4px', 2: '8px', 3: '16px' }, radius: { 1: '4px' },
+  font: { body: 'system-ui' }, fontSize: { sm: '14px', md: '16px', lg: '24px' },
+  breakpoint: { md: '768px' }, motion: { fast: '120ms' },
+})
+```
+Groups are closed: `color`, `space`, `size`, `radius`, `font`, `fontSize`, `weight`, `shadow`, `breakpoint`, `motion`. A color is a value or `{ light, dark }`, chosen by `prefers-color-scheme`. Motion tokens resolve to `0ms` under `prefers-reduced-motion: reduce`.
+
+**Base elements.** From `@keel/ui`: `Box`, `Text`, `Heading`, `Button`, `Link`, `Image`, `Input`, `TextArea`, `Select`, `Checkbox`. Required a11y props are in the type: `Heading level`; `Image alt` or `decorative`; `label` on `Input`, `TextArea`, `Select`, `Checkbox`; `Link to: Href` with text; `Button` text or `label`. `Box as` and `Text as` take closed sets of structural tags (`section`, `nav`, `main`, `ul`, `li`, `p`, `span`, ...).
+
+**Style props.** Base elements take typed style props whose values are token names: `p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap`. Responsive values are keyed by breakpoint; states `hover`, `focusVisible`, `active`, `disabled` take a nested style object.
+```tsx
+<Box as="section" p={{ base: '2', md: '3' }} bg="bg" hover={{ bg: 'accent' }}>
+  <Heading level={2}>Orders</Heading>
+</Box>
+```
+The compiler emits one atomic class per (prop, token, breakpoint, state), deduplicated across the app, into one CSS file. Dynamic values switch classes; no inline style is generated.
+
+**Scoped styles.** `const css = styles({ card: { p: '3', radius: '1' } })` in a component file, applied with `class={css.card}`. Same vocabulary, same atomic output, file-local.
+
+**Standard slots.** `loading: () => JSX`, `empty: () => JSX`, `error: (e: KeelError) => JSX`. These names carry these signatures everywhere; `For` accepts `empty`.
+
+**Rules.** E1801 raw value where a token is required (fix: nearest token) · E1802 missing a11y-required prop · E1803 `style` attribute or exported `styles` · E1804 an element setting `fg` and `bg` below 4.5:1 contrast (3:1 at `fontSize` >= 24px), checked per color scheme · E1805 lowercase intrinsic element in app code (fix: matching base element) · E1806 standard slot name with another signature · E1807 `tokens.ts` fails `TokenSchema`.
+
+**Conformance.**
+- Two elements with identical style props get identical class lists, and the CSS file contains each atomic rule once.
+- `p={{ base: '2', md: '3' }}` yields the `2` rule unconditioned and the `3` rule inside `@media (min-width: 768px)`.
+- Under `prefers-reduced-motion: reduce` every motion token resolves to `0ms`.
+- Every base element rendered with only its required props has no axe violations.
+- A signal bound to a style prop changes only the element's class list; no element ever has a `style` attribute.
+- `fg="fg" bg="bg"` with the tokens above passes E1804 in both schemes; a pair at 3:1 fails it.

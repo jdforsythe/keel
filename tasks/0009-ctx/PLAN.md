@@ -3,21 +3,33 @@
 **Spec:** k.ctx · **Gate:** G1 · **Branch:** jdforsythe/test-impl · **Package:** packages/ctx
 
 ## Deliverables
-- [ ] `ctx.clock.now()`, `ctx.random.uuid()/float()`, `ctx.net.fetch(req)`, `ctx.storage.get/set`
-- [ ] `real`, `shell`, `sim` implementations for each; sim deterministic by seed
-- [ ] `ctx.register(name, iface, { real, shell, sim })` registry (extension point); `createCtx({ mode, seed })`
-- [ ] property tests (sim determinism); README; changeset
+- [x] `ctx.clock.now()`, `ctx.random.uuid()/float()`, `ctx.net.fetch(req)`, `ctx.storage.get/set`
+- [x] `real`, `shell`, `sim` implementations for each; sim deterministic by seed
+- [x] `register(name, { real, shell, sim })` registry (extension point); `createCtx({ mode, seed })` (see D2)
+- [x] property tests (sim determinism); README; changeset
 
 ## Steps
-1. conformance-writer writes packages/ctx/conformance from k.ctx.
-2. Implement; check; test.
-3. Properties; README; changeset; spec status -> implemented.
+1. [x] conformance-writer writes packages/ctx/conformance from k.ctx (commit 38d37bf).
+2. [x] Implement; check; test.
+3. [x] Properties; README; changeset; spec status -> implemented.
 
 ## Decisions
-- D1: `shell` implementations default to delegating to `real` until Capacitor/Tauri adapters exist (S8); must be distinct objects so conformance "all three implementations" holds.
+- D1: `shell` implementations default to delegating to `real` until Capacitor/Tauri adapters exist (S8); must be distinct objects so conformance "all three implementations" holds. Done by building fresh capability objects per ctx.
+- D2: Registry is a module-level `register(name, impls)` without the spec's `iface` arg, matching conformance. Spec text `ctx.register(name, iface, …)` diverges; needs an RFC to align the spec.
+- D3: `register` returns a typed accessor `(ctx) => T` so strict TS reads registered capabilities without casts; `ctx[name]` exists for introspection only.
+- D4: `createCtx` overload: `{ mode: 'sim' }` returns `SimCtx` (clock.advance, net.route); otherwise `Ctx`. Seed defaults to 0, coerced to uint32.
+- D5: Sim PRNG is xoshiro128** seeded by splitmix32 (in-house). uuid = 4 draws with v4/variant bits forced; float = draw / 2^32. First four outputs for seed 1337 are pinned in a test for replay compatibility.
+- D6: Sim net is an in-memory route table: exact URL or prefix ending `*`, first match wins, else 404 `sim net: no route for <METHOD> <url>`.
+- D7: Storage interface is named `KeyValueStorage` (avoids shadowing DOM `Storage`) and is async (fits Capacitor Preferences). Real storage resolves `localStorage` per call and throws where absent.
+- D8: Sim clock `advance` throws RangeError on negative or non-finite ms to keep monotonicity.
+- D9: `packages/ctx/tsconfig.build.json` adds `rewriteRelativeImportExtensions: true`; the factory config failed TS5097 on `.ts` import paths. Every package with internal imports hits this; factory follow-up.
 
 ## Verification
-- [ ] conformance green · properties present · `pnpm check` clean
+- [x] conformance green · properties present · `pnpm --filter @keel/ctx check` clean · structure-lint clean for ctx
+- Root `pnpm check`/`pnpm test` red only in packages/schema and packages/reactive (conformance without implementation; other tasks).
+- Mutation: `mutate` script for ctx is `echo skip`; 70% threshold not measured.
+
+Test trailer (`pnpm --filter @keel/ctx test`): `ok 36 tests, 0 failed, 0 skipped (0.3s)`
 
 ## Next action
-Step 1.
+review

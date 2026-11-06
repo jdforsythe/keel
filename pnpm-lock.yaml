@@ -101,6 +101,10 @@ importers:
         version: link:../../tooling
 
   packages/schema:
+    dependencies:
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*

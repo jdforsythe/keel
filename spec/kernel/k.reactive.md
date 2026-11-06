@@ -1,5 +1,5 @@
 # k.reactive: Reactivity
-status: proposed
+status: implemented
 
 **API.** `signal(initial)`, `computed(fn)`, `effect(fn, { writes: [] })`, `resource(fetcher)` returning `{ state: 'loading' } | { state: 'error', error } | { state: 'ready', value }`. All created inside an ownership scope (component or `scope(fn)`) and disposed with it.
 
