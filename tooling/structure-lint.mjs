@@ -97,9 +97,12 @@ for (const file of files) {
   if (isPkg && pkg) {
     const me = order.indexOf(pkg);
     text.forEach((l, i) => {
-      const m = /(?:from|import|require)\s*\(?\s*['"]@keel\/([\w-]+)/.exec(l);
+      // Only real import/export statements or require() calls at statement start; not package names inside template strings.
+      const m = /^\s*(?:import|export)\b[^'"`]*?\bfrom\s*['"]@keel\/([\w-]+)|^\s*import\s*['"]@keel\/([\w-]+)|\brequire\(\s*['"]@keel\/([\w-]+)|\bimport\(\s*['"]@keel\/([\w-]+)/.exec(l);
       if (!m) return;
-      const target = m[1];
+      const target0 = m[1] ?? m[2] ?? m[3] ?? m[4];
+      if (!target0) return;
+      const target = target0;
       if (target === "ctx" || target === "tooling" || target === pkg) return;
       const ti = order.indexOf(target);
       if (me >= 0 && ti > me)
