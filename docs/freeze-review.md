@@ -16,15 +16,15 @@
 | k.component | 5 | 0 | 5 | 0 | 0 | no | purity over equal state; full a11y snapshot (not `[id, role]`); every element via `find`; children thunk in child scope; real base element |
 | k.runtime | 11 | 8 | 1 | 2 | 0 | no | `state()` equals snapshot after resume (todo); no islands → no runtime JS (todo); post-resume `fire(id)` vs client-only state and DOM |
 | k.ui | 11 | 5 | 6 | 0 | 0 | no | `p={{ base, md }}` object prop; axe on base elements; E1804 reported by check (pass and fail); Button/Checkbox via harness `fire` |
-| k.router | 9 | 8 | 1 | 0 | 0 | no | E1502-E1506 fixtures (5 todos; codes already throw at `compileRoutes.ts:22-35`, `Form.ts:31`, `createRouter.ts:148`); E1501 diagnostic, not type only |
+| k.router | 9 | 8 | 1 | 0 | 0 | no | E1501 diagnostic, not type only (E1502-E1506 trigger + clean tests landed, rfc:0020, `rules-e1501-e1506.test.ts`) |
 | k.server | 7 | 6 | 0 | 1 | 0 | no | dev log stream: one `req` per request, json lines parse (todo) |
 | k.services | 9 | 8 | 0 | 1 | 0 | no | OpenAPI fixture client: one method per operation, types match (todo) |
-| k.check | 8 | 4 | 3 | 1 | 0 | no | explain + fixture for every Rules code read from spec (hardcoded list misses E1000, E1206, E1757); fix diffs for 30 codes (5 today); golden-1 + 10 injected errors ≤ 600 tokens; W-only tree exits 0 (skip) |
-| k.cli | 10 | 6 | 0 | 0 | 4 | no | json/MCP/LSP parity; MCP input schema equality; `/__keel/inspect` dev and prod; `keel inspect` E1056 (all four exist only as unit tests) |
+| k.check | 8 | 6 | 2 | 0 | 0 | no | fix diffs for 30 codes (5 today); golden-1 + 10 injected errors ≤ 600 tokens (explain + fixture per spec-derived code and W-only `summary.ok` landed, rfc:0020; explain-only codes listed in RFC 0020) |
+| k.cli | 10 | 9 | 0 | 0 | 1 | no | `GET /__keel/inspect` on a dev `createApp` and prod 404 (server side; parity, MCP schema fields/types, inspect client and E1056 landed, rfc:0020: `surfaces.test.ts`, `inspect.test.ts`) |
 | k.module | 7 | 6 | 1 | 0 | 0 | no | malformed stdlib manifest rejected by `ModuleSchema`; E1153, E1155-E1157 on a stdlib module |
 | k.scaffold | 7 | 4 | 3 | 0 | 0 | no | run `keel check` + `keel test` after every generator (proxy: imports resolve; transaction, service skipped); printed dry-run diff equals apply; `turbo.json` vs independently computed graph |
 | k.testing | 9 | 6 | 3 | 0 | 0 | no | default-sim render and a seed-dependent state; `fire` awaiting a triggered resource; rung promotion from real test runs |
-| **total** | **165** | **126** | **29** | **6** | **4** | 2 of 18 | |
+| **total** | **165** | **131** | **28** | **5** | **1** | 2 of 18 | |
 
 ## 2. One-way audit (principle 1)
 
@@ -61,7 +61,7 @@ No stdlib module exists, so the G3 criterion is 0 of 6.
 
 ## 4. Implemented but untested; tested but unstated
 
-**Implemented, no conformance test:** E1502-E1506 (runtime throws); E1054, E1056, I1055, surface parity, `/__keel/inspect` (unit only); `defineRule` `fix`; schema "parse never throws", re-register throws; Boundary for computed/effect throws and root default; E1301 static form; E1004 per-deployable exceptions; E1752 re-export clause.
+**Implemented, no conformance test:** E1054, I1055, `/__keel/inspect` server endpoint (unit only); `defineRule` `fix`; schema "parse never throws", re-register throws; Boundary for computed/effect throws and root default; E1301 static form; E1004 per-deployable exceptions; E1752 re-export clause.
 
 **Spec'd, not implemented or not triggered anywhere:** E1000, E1101-E1104, E1204, E1205, E1251, E1252, E1254, E1302, E1453, E1454, E1551, E1651-E1653, E1702, E1754, E1755, E1803, E1806, E1901, E1903, E1904.
 

@@ -1,5 +1,7 @@
 // Seed 1337
-import { test } from "vitest";
+import { check, defineRule } from "@keel/check";
+import { expect, test } from "vitest";
+import { findAll, one } from "./support.ts";
 
 // E1753 duplicate code: covered in define-rule.test.ts.
 // E1753 stdlib rule outside E2xxx/W2xxx: untestable, the public API has no marker distinguishing a stdlib rule from an app rule.
@@ -8,5 +10,20 @@ test.skip("E1753: a stdlib rule outside E2xxx/W2xxx is reported (untestable: no 
 test.skip("E1754: unsafe without a justification string is reported (untestable: unsafe syntax unspecified)", () => {});
 // E1755 budget exceeded: untestable, needs budgets.json and package/route measurements the check(files, opts) input has no slot for.
 test.skip("E1755: budget exceeded is reported (untestable: budgets.json input unspecified)", () => {});
-// Conformance "A tree with only W diagnostics exits 0": untestable here, exit codes belong to the CLI (k.cli), not @keel/check.
-test.skip("a tree with only W diagnostics exits 0 (untestable: exit code is a CLI concern)", () => {});
+// Conformance "A tree with only W diagnostics exits 0": the exit code is the CLI's (k.cli exitCode); here the check
+// summary says `ok: true` when the tree has W diagnostics and no E diagnostic.
+test("a tree with only W diagnostics reports summary.ok", () => {
+  defineRule({
+    code: "W2951",
+    message: "warned",
+    see: "k.check",
+    explain: "e",
+    check: ({ file }) => findAll(file, "warnName"),
+  });
+  const r = check(one("export const warnName = 1\n", "warnName.ts"), {});
+  expect(r.diagnostics.map((d) => d.code)).toEqual(["W2951"]);
+  expect(r.summary.ok).toBe(true);
+  expect(r.summary.warnings).toBe(1);
+  expect(r.summary.errors).toBe(0);
+  expect(check(one("export const a: number = 'x'\n", "a.ts"), {}).summary.ok).toBe(false);
+});
