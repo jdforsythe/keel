@@ -1,6 +1,7 @@
+import type { Ctx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { Form, href } from "@keel/router";
-import { For } from "@keel/runtime-dom";
+import { For, type Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Select, Text } from "@keel/ui";
 import Suggestions from "./Suggestions.tsx";
@@ -22,7 +23,7 @@ const PRIORITIES = [
 ];
 
 /** Route `todos.list`: the list's todos filtered by `search.filter`, filter links, an add-todo Form, Suggestions. */
-export default function ListPage(props: Infer<typeof Props>) {
+export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const f = form(TodoDraft, { initial: { priority: "normal" } });
   const shown = () =>
     board
@@ -33,21 +34,20 @@ export default function ListPage(props: Infer<typeof Props>) {
           (props.search.filter === "done" ? t.done : props.search.filter === "active" ? !t.done : true),
       );
   const listId = props.params.listId;
-  // Router `Form` expects Node children, not the compiler's children thunk, so it is called directly and
-  // inserted through a `children()` binding (compiler D31).
-  const children = (): Node => {
-    const title = <Input field={f.field("title")} label="Title" />;
-    const priority = <Select field={f.field("priority")} label="Priority" options={PRIORITIES} />;
-    const submit = <Button id="todos.addTodo" type="submit" label="Add todo" />;
-    return Form({
+  // `Form` is a function component returning an element; inserted through a `children()` binding (compiler D31).
+  const children = (): Node =>
+    Form({
       method: "POST",
       action: "todos.list",
       params: { listId },
       form: f,
       error: (e) => <Text fg="danger">{e.message}</Text>,
-      children: [title, priority, submit],
+      children: () => [
+        <Input field={f.field("title")} label="Title" />,
+        <Select field={f.field("priority")} label="Priority" options={PRIORITIES} />,
+        <Button id="todos.addTodo" type="submit" label="Add todo" />,
+      ],
     });
-  };
   return (
     <Box as="section" id="todos.list" gap="2">
       <Heading id="todos.list.title" level={1}>

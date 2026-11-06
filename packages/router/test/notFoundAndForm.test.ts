@@ -23,7 +23,7 @@ const tag = (name: string, kids: Node[] = []): HTMLElement => {
 };
 const page = (shell: Partial<RouteDef>, prefix: string) =>
   manifest({
-    [`${prefix}.shell`]: { component: (p) => tag("shell", p.children === undefined ? [] : [p.children]), ...shell },
+    [`${prefix}.shell`]: { component: (p) => tag("shell", p.children === undefined ? [] : [p.children()]), ...shell },
     [`${prefix}.page`]: {
       path: `/${prefix}/:n`,
       params: s.object({ n: s.int() }),

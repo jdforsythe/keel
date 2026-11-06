@@ -291,6 +291,25 @@ describe("binding lifecycle", () => {
     expect(title.value()).toBe("typed");
   });
 
+  it("an explicit element id wins: field.id and errorId derive from it", () => {
+    const r = rig();
+    const el = document.createElement("input");
+    el.id = "my-title";
+    const title = r.f.field("title");
+    const bare = document.createElement("input");
+    const email = r.f.field("email");
+    const sc = scope(() => {
+      title.bind(el);
+      email.bind(bare);
+    });
+    expect(el.id).toBe("my-title");
+    expect(title.id).toBe("my-title");
+    expect(title.errorId).toBe("my-title:error");
+    expect(bare.id).toBe(email.id);
+    expect(email.id).toMatch(/:email$/);
+    sc.dispose();
+  });
+
   it("the returned unbind detaches the element", () => {
     const r = rig();
     const el = document.createElement("input");

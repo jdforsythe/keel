@@ -55,6 +55,14 @@ describe("todos.list", () => {
     expect(rowIds(all.a11y("todos.items"))).toEqual(["todos.row.t1", "todos.row.t2"]);
     all.dispose();
   });
+  it("Suggestions inside the route receive ctx and show sim suggestions", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    ctx.net.route("http://localhost/api/suggestions", () => new Response(JSON.stringify([{ title: "Eggs" }])));
+    const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, state, ctx });
+    await r.fire("todos.suggestions.title", { type: "focus" });
+    expect(r.find("todos.suggestions.list").text).toBe("Eggs");
+    r.dispose();
+  });
   it("unknown listId renders ListError", async () => {
     const r = await renderRoute("todos.list", { routes, params: { listId: "nope" }, state });
     expect(r.find("todos.error.message").text).toBe("No list nope");
@@ -79,6 +87,20 @@ describe("todos.list", () => {
     expect(r.find("todos.undo").state.disabled).toBeUndefined();
     expect(board.undo()).toBe(true);
     expect(r.state(board)).toEqual(before);
+    r.dispose();
+  });
+});
+
+describe("event props (RFC 0009)", () => {
+  it("firing the row checkbox flips done; firing Undo restores the prior state", async () => {
+    const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, state });
+    const before = r.state(board);
+    await r.fire("todos.toggle.t1", { type: "change" });
+    expect(r.state(board).todos.map((t) => t.done)).toEqual([true, true]);
+    expect(r.find("todos.undo").state.disabled).toBeUndefined();
+    await r.fire("todos.undo", { type: "click" });
+    expect(r.state(board)).toEqual(before);
+    expect(r.state(board).todos.map((t) => t.done)).toEqual([false, true]);
     r.dispose();
   });
 });

@@ -6,5 +6,6 @@ export type RouteProps = {
   readonly params?: unknown;
   readonly search?: unknown;
   readonly data?: unknown;
-  readonly children?: Node;
+  /** A layout's page as the default-slot thunk (RFC 0008). */
+  readonly children?: () => Node;
 };

@@ -5,6 +5,7 @@ import { codedError } from "./internal/codedError.ts";
 import { findRouter } from "./internal/findRouter.ts";
 import { hrefIn } from "./internal/hrefIn.ts";
 import { latest } from "./internal/latest.ts";
+import { renderChildren } from "./internal/renderChildren.ts";
 import type { FormProps } from "./types/FormProps.ts";
 
 type Status = { readonly pending: boolean; readonly error: KeelError<string, unknown> | null };
@@ -41,8 +42,7 @@ export function Form(props: FormProps): HTMLFormElement {
     hidden.setAttribute("value", props.method);
     el.append(hidden);
   }
-  const kids = props.children;
-  if (kids !== undefined) el.append(...(kids instanceof Node ? [kids] : kids));
+  el.append(...renderChildren(props.children));
   if (core === null) return el;
   const status = signal<Status>({ pending: false, error: null });
   const { loading, error } = props;

@@ -96,8 +96,8 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
     const node = segs.length === 0 ? undefined : nodeAt(root, segs);
     if (node === undefined) throw fieldPathError(path);
     known.add(path);
-    const id = `${formId}:${path}`;
-    const errorId = `${id}:error`;
+    let id = `${formId}:${path}`;
+    let errorId = `${id}:error`;
     const write = (r: Reading): void =>
       batch(() => {
         const current = raw.get();
@@ -141,8 +141,12 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
     };
     return {
       name: path,
-      id,
-      errorId,
+      get id() {
+        return id;
+      },
+      get errorId() {
+        return errorId;
+      },
       value: () => asSchemaValue<V | undefined>(getAt(vals.get(), segs)),
       error: () => errs.get()[path],
       touched: () => touchedPaths.get().has(path),
@@ -150,7 +154,14 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
       blur,
       bind: (el) => {
         el.name = path;
-        if (!(el instanceof HTMLInputElement && el.type === "radio")) el.id = id;
+        if (!(el instanceof HTMLInputElement && el.type === "radio")) {
+          // An id already on the element wins over the counter-derived one (D19); errorId follows it.
+          if (el.id === "") el.id = id;
+          else {
+            id = el.id;
+            errorId = `${id}:error`;
+          }
+        }
         const els = bound.get(path) ?? new Set<Bindable>();
         els.add(el);
         bound.set(path, els);

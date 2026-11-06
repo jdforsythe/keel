@@ -12,5 +12,6 @@ export type FormProps = {
   readonly loading?: () => Node;
   /** Rendered for a non-field `err` (any `err` when there is no `form`). */
   readonly error?: (e: KeelError<string, unknown>) => Node;
-  readonly children?: Node | readonly Node[];
+  /** Compiled JSX passes a thunk (RFC 0008); hand-built calls may pass a node, string or array. */
+  readonly children?: (() => Node | readonly Node[] | string) | Node | readonly Node[] | string;
 };

@@ -236,11 +236,26 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       scope(() => {
         const me = owner();
         if (me !== undefined) routers.set(me, core);
+        if (typeof document !== "undefined") {
+          const onClick = (e: MouseEvent): void => {
+            const a = e.target instanceof Element ? e.target.closest("a[href]") : null;
+            if (a === null || !(a instanceof HTMLAnchorElement) || !(anchor?.parentNode?.contains(a) ?? false)) return;
+            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            const t = a.getAttribute("target");
+            if ((t !== null && t !== "" && t !== "_self") || a.hasAttribute("download")) return;
+            const u = new URL(a.href, document.baseURI);
+            if (u.origin !== new URL(document.baseURI).origin) return;
+            e.preventDefault();
+            void go(`${u.pathname}${u.search}${u.hash}`, "push", 0);
+          };
+          document.addEventListener("click", onClick);
+          me?.onDispose(() => document.removeEventListener("click", onClick));
+        }
         boundary(
           a,
           () => {
             const v = view.get();
-            return v === null ? document.createComment("") : renderView(v);
+            return v === null ? document.createComment("") : renderView(v, ctx);
           },
           (error, reset) => {
             resetRoot = reset;

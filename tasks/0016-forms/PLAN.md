@@ -38,6 +38,7 @@
 - D18 (review 5): unbind deletes a path's `bound` set when it empties; `focusFirstInvalid` ignores elements with `isConnected === false`.
 - D19: `unsafe/unsafe.ts` was removed by 878b495 while `unsafe/asSchemaValue.ts` imports it; restored by ce727ef (identical content). test/roundtrip.property.test.ts and tsconfig.build.json edits in the tree come from rfc:0006 (schema generators on a subpath), not this task.
 - D12: One `unsafe` (`unsafe/asSchemaValue.ts`): narrows stored values and the parse ok value to `Infer<S>`/`PathValue`; TS cannot relate a generic `S` to `Infer<S>`. Unsafe count 0 -> 1.
+- D19b (golden-1 bug 3): `bind(el)` keeps a non-empty `el.id` as the field id; `field.id`/`errorId` are getters that follow it (`<el.id>:error`), so `<label for>` and error ids match. Radios unchanged. Test in form.test.ts. (Numbered D19 in the brief; D19 already exists above.)
 
 ## Verification
 - [x] conformance green · properties present · `pnpm --filter @keel/forms check` clean (tsc, biome) · structure-lint clean for forms
