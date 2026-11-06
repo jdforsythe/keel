@@ -19,4 +19,8 @@ export interface Node {
   handle?: Scope;
   /** Scope nodes only: callbacks run on dispose. */
   hooks?: (() => void)[] | undefined;
+  /** Scope nodes only: receives errors thrown by effects/computeds it owns. */
+  onError?: ((error: unknown) => void) | undefined;
+  /** Effect-like nodes only: threw into an `onError`; never runs again. */
+  failed?: boolean;
 }

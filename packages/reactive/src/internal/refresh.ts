@@ -7,7 +7,7 @@ import { unlink } from "./unlink.ts";
 
 /** Bring `n` up to date: verify Check sources in order, rerun only if one actually changed. */
 export function refresh(n: Node): void {
-  if (n.gone) return;
+  if (n.gone || n.failed) return;
   // Sources in read order; stop at the first one whose change made `n` Dirty. Effects are never pulled.
   for (let i = 0; n.state === State.Check && i < n.sources.length; i++) {
     const s = n.sources[i];

@@ -8,8 +8,10 @@ import type { Scope } from "./types/Scope.ts";
 /**
  * Run `fn` inside a new ownership scope. Primitives created during `fn` (and inside their
  * computations) belong to it. If `fn` throws, the scope is disposed and the error rethrown.
+ * `onError` receives, after the commit, errors thrown by effects and computeds owned by this scope or
+ * its descendants (unless a nearer scope declares one); the throwing effect does not run again.
  */
-export function scope(fn: () => void): Scope {
+export function scope(fn: () => void, options?: { onError?: (error: unknown) => void }): Scope {
   const n = createNode("scope", undefined, []);
   const handle: Scope = {
     dispose: () => dispose(n),
@@ -20,6 +22,7 @@ export function scope(fn: () => void): Scope {
     },
   };
   n.handle = handle;
+  n.onError = options?.onError;
   const prev = rt.owner;
   rt.owner = n;
   try {
