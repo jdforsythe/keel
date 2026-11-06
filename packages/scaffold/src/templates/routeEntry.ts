@@ -1,7 +1,7 @@
 import { pascal } from "../internal/pascal.ts";
 
 /** The `s.id` entity a route param names: `listId` -> `List`, `id` -> the module's name; null for any other param. */
-export function paramEntity(param: string, mod: string): string | null {
+function paramEntity(param: string, mod: string): string | null {
   if (param === "id") return pascal(mod);
   return /^[a-z][a-zA-Z0-9]*Id$/.test(param) ? pascal(param.slice(0, -2)) : null;
 }
