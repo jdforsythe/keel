@@ -7,3 +7,5 @@ Keel is a full-stack web framework built for that author. It optimizes for predi
 The user writes four things: schemas for what the data is, transactions for what can happen to it, components for how it looks, and a route manifest for how it is organized. Everything else is a declaration or a derivation.
 
 The product is the spec, its conformance suite, and the feedback loop. Runtime implementations are borrowed where mature and replaced only when the spec demands it.
+
+verified: 959a568f16e924fac59329e75c1585fe38d4c00e

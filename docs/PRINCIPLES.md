@@ -14,3 +14,5 @@ Each principle names its consequence. Reviews cite these by number.
 10. **Pure core, effects at the edges, serializable state.** Every effect comes through `ctx`. Every test is "given state, do events, expect".
 11. **Claims lag machinery.** The ledger reports only rungs that exist. Marketing follows the ledger.
 12. **Tokens are a budget.** Docs, spec, and every tool output are measured in tokens and gated in CI.
+
+verified: 959a568f16e924fac59329e75c1585fe38d4c00e

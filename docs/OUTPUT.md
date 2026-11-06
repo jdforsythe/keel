@@ -29,3 +29,5 @@ Fields: `code` (stable, E/W/I prefix, never renumbered) · `path:line:col` · `m
 **Budgets, enforced in CI** (`tooling/budgets.json`): `keel check` on the golden app with 10 injected errors <= 600 tokens; `keel test` with 3 failures <= 400 tokens; `keel spec <section>` <= 1,500 tokens; spec map <= 1,200 tokens.
 
 **Internal rule.** Keel's own scripts, runners, and hooks obey this contract from task 0001.
+
+verified: 959a568f16e924fac59329e75c1585fe38d4c00e

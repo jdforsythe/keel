@@ -7,3 +7,5 @@ Commitments made without evidence. Never cite as findings.
 3. Companies will adopt a new framework when the code is agent-written and the ledger is the evidence.
 4. A frozen kernel plus an evolving stdlib is a stable enough contract for an in-context learner.
 5. Session-to-test closes the maintenance loop well enough to be a wedge against incumbents.
+
+verified: 959a568f16e924fac59329e75c1585fe38d4c00e
