@@ -1,70 +1,20 @@
 
 === claude call ===
-`apps/golden-1` is built to the spec and `pnpm check` and the golden-1 tests pass. `keel build` does not pass, and `node tooling/ledger.mjs --diff` fails on a count my app doesn't touch.
+Golden app 1 is built in `apps/golden-1/`, with the 37 listed files plus the scaffold's `index.html` and `vitest.config.ts`. `pass.ts` returns `true`.
 
-**What passes**
-- **Files:** every file in the "exactly these" list exists.
-- **Check:** root `pnpm check` is clean, budgets included. `keel check` reports 31 files, 0 errors.
-- **Tests:** `pnpm test --filter golden-1` runs 19 tests with 0 failures. `properties()` runs at the default 100 runs for all four transactions, `TodoRow` and `Suggestions`.
-- **Examples covered:** undo restores the prior state, `filter=done`, unknown `listId` and `todoId` render `ListError`, readOnly redirects to `todos.index`, invalid add-todo changes nothing and focuses the title, duplicate title shows the `keel.fields` error, and `Suggestions` goes loading to ready and to error on a sim 500.
-- **Forbidden constructs:** `invariant(` is in `board.ts`. A regex scan found no `unsafe(`, `any`, `@ts-ignore`, casts or `!` in `apps/golden-1`.
-- **Ledger by hand:** I couldn't confirm the per-export ledger rung with tooling. `keel ledger` run inside the app returns 0 items, and `tooling/ledger.mjs` only scans `packages/*`. By hand, every export under `modules/` is imported and used in a test, apart from `module.ts`, `routes.ts`, `Props` and `uses`.
+- `pnpm check` is clean, budgets included, and `keel check` on the app is clean too.
+- `pnpm test --filter golden-1` passes with 23 tests, including `properties()` at default runs for all four transactions, `TodoRow` and `Suggestions`.
+- `pnpm build --filter golden-1` is ok, `node tooling/ledger.mjs --diff` is clean, and the app has no `unsafe(`, `any`, casts, `!` or `@ts-ignore`.
+- The example tests cover the cases you listed, including a `keel.fields` error on a duplicate title and `Suggestions` going from loading to ready and to error on a sim 500.
 
-**Problems**
-- **`keel build` fails.** It prints `ok build … 0 errors`, then the Vite step exits 1 with `UNRESOLVED_ENTRY: Cannot resolve entry module index.html`. Nothing in the slice or the file list provides that entry, and I didn't add one. Build is not in the acceptance list.
-  `blocked: k.server/k.scaffold — what supplies the HTML entry for the client adapter?`
-- **`node tooling/ledger.mjs --diff` fails** with `unsafe count up 6 -> 7`. That script only scans `packages/*/src` and `packages/*/unsafe`, and I changed nothing there. This looks like drift that was already at HEAD, but I didn't check HEAD itself.
+Choices where the slice was silent:
+- **CLI vs library:** `keel scaffold project --workspace` fails with E1052 (unknown flag), so I called the scaffold library with `workspace: true`. I removed its default `app` module and used the module op for `todos`.
+- **`tsconfig.json`:** it extends `../../tsconfig.base.json` as the task says, not the scaffold's `@keel/compiler/tsconfig.strict.json`. I added `noEmit` and `allowImportingTsExtensions`.
+- **`tokens.ts`:** the scaffold's `accent` was a plain colour, so I gave it light and dark values.
+- **Suggestions payload:** the slice doesn't specify the shape of `GET /api/suggestions`. I chose `{ "titles": string[] }`, which is the `Suggestion` schema, and the sim route in the tests returns that.
+- **Loader outputs:** `loadList` returns the `TodoList` and `loadTodo` returns the `Todo`. `ListPage` and `ListsPage` read the todos and lists reactively from the store, so toggles show up without revalidating.
 
-**Unspecified APIs I used**
-- `renderRoute` needs a `routes` option, which k.testing doesn't mention. I copied it from what `keel scaffold route` generates.
-- `ctx.random.id(brand)`, the `Checkbox`, `Button` and `Select` event props, and `s.infer` are in the full spec text but not in the key-lines slice.
-- The `Suggestions` URL is `https://keel.test/api/suggestions`, because `Request` needs an absolute URL under test. That host would be wrong in real mode, so the spec needs to say how `GET /api/suggestions` should resolve.
-
-**Changes outside `apps/golden-1`**
-- `pnpm-lock.yaml` changed. I ran `pnpm install --offline` to link the new workspace.
-- I built `packages/cli` so the `keel` binary exists. The output goes to a gitignored `dist/`.
-- `node tooling/ledger.mjs` without `--diff` rewrote `tooling/ledger/ledger.json`. I restored it with `git checkout`.
-
-I didn't write `PLAN.md` or run `/handoff`, because the task limits edits to `apps/golden-1`.
-
-=== claude call ===
-`golden-1` is built and meets every acceptance criterion except the ledger diff, which fails for a reason outside `apps/golden-1/`. I left it unfixed because I'm not allowed to edit outside that directory.
-
-**Ledger diff:** `node tooling/ledger.mjs --diff` fails with `L0001 tooling/ledger/ledger.json unsafe count up 6 -> 7`.
-- The extra `unsafe(` call is in a kernel package. The committed baseline says 6 and the packages now have 7: `ctx`, `compiler`, `check`, `forms`, `services`, `runtime-dom` and one more.
-- `packages/services/unsafe/asClient.ts` came from a later commit than the baseline, so the baseline is probably stale.
-- `golden-1` has no `unsafe(` calls.
-- Someone with scope over `tooling/` needs to refresh `tooling/ledger/ledger.json`, or decide the new unsafe is unjustified.
-
-**Checked and passing:**
-- All files from the spec's file list exist.
-- `pnpm check` is clean, with budgets met.
-- `pnpm test --filter golden-1` passes with 19 tests.
-- `properties(` covers `addList`, `addTodo`, `toggleTodo`, `editTodo`, `TodoRow` and `Suggestions`.
-- `invariant(` is in `board.ts`.
-- A grep of `modules/` and `test/` found no `any`, casts, `!` or `@ts-ignore`.
-- I never used `--verbose`.
-
-I didn't find a `pass.ts`, so I checked the criteria by hand rather than with that script.
-
-**My mistake:** I ran `node tooling/ledger.mjs --help` to look for usage. It ran the ledger and rewrote `tooling/ledger/ledger.json`. I reverted it with `git checkout`. `git status` now shows only the original changes: `pnpm-lock.yaml` and the untracked `apps/golden-1/`.
-
-=== claude call ===
-`apps/golden-1/` already exists and meets every acceptance criterion except the ledger diff. That one fails because of the kernel's `unsafe` count, not anything in the app. I made no changes.
-
-| # | Criterion | Result |
-|---|---|---|
-| 1 | Every listed file exists | ✅ |
-| 2 | `pnpm check` clean, budgets included | ✅ |
-| 3 | `pnpm test --filter golden-1` | ✅ 19 tests, 0 failed |
-| 4 | `properties(` and `invariant(` | ✅ `properties(` covers `addList`, `addTodo`, `toggleTodo`, `editTodo`, `TodoRow` and `Suggestions`; `invariant(` is in `board.ts` |
-| 5 | Ledger rungs | ✅ all 24 golden-1 exports are at rung `example` |
-| 5 | `node tooling/ledger.mjs --diff` clean | ❌ see below |
-| 6 | No `unsafe(`, `any`, casts, `!` or `@ts-ignore` | ✅ my grep found none, but I didn't run the full dedicated check |
-| 7 | Quiet `check` and `test` output within budgets | ✅ no `--verbose` used |
-
-The ledger diff fails with `L0001 unsafe count up 6 -> 7`. Seven `unsafe/` files exist under `packages/` (runtime-dom, forms, ctx ×2, check, services, compiler). The committed baseline in `tooling/ledger/ledger.json` says 6, and the services `unsafe/asClient.ts` is the most likely seventh, though I didn't confirm which one is new. golden-1 contributes none. The only export with no rung is `browserHistory`, which is in a kernel package.
-
-Fixing this means either justifying the seventh `unsafe` and refreshing the baseline, or removing it. Both are edits outside `apps/golden-1/`, which the task forbids. Someone on the kernel side needs to do it. I haven't touched the baseline.
-
-The working tree still has an uncommitted `pnpm-lock.yaml` change and untracked `apps/golden-1/`. I didn't commit anything, since you didn't ask me to.
+Things you may notice:
+- **Generated files:** `apps/golden-1/.keel/` is Vite-plugin output and not git-ignored, so it shows as untracked. `.turbo/` is ignored.
+- **Lockfile and ledger:** running `pnpm install` and a bare `node tooling/ledger.mjs` modified `pnpm-lock.yaml` and `tooling/ledger/ledger.json`. I reverted both, so only `apps/golden-1/` is changed. The lockfile therefore doesn't match the scaffold's `package.json`, which lists `@keel/testing` as a devDependency. A `--frozen-lockfile` install would flag that.
+- **Nothing committed:** I didn't commit or run `/handoff`.

@@ -20,16 +20,16 @@
   ],
   "model": "claude-sonnet-5-5",
   "runner": "claude",
-  "converged": false,
-  "iterations": 3,
+  "converged": true,
+  "iterations": 1,
   "tokens": {
-    "input": 4841674,
-    "output": 49972
+    "input": 4756332,
+    "output": 38718
   },
-  "costUsd": 1.6771878999999998,
+  "costUsd": 1.3241659000000001,
   "unsafeCount": 4,
-  "checkTrailer": "ok budgets 23 measured (3.0s)",
-  "testTrailer": "ok test 30 tasks (1.0s)",
-  "durationMs": 973743,
-  "startedAt": "2026-11-06T17:08:40.391Z"
+  "checkTrailer": "ok budgets 23 measured (2.8s)",
+  "testTrailer": "ok test 29 tasks (45.3s)",
+  "durationMs": 627148,
+  "startedAt": "2026-11-06T17:41:22.695Z"
 }

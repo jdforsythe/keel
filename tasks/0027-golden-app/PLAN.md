@@ -47,5 +47,8 @@
 ## Browser verification (2026-11-06)
 Headless Chromium via tooling/smoke/{smoke,interact,todo-flow}.mjs: renders; add list via Form action; link navigation is client-side (store persists); add todo; toggle via Checkbox onChange; Undo via Button onClick restores; no page errors.
 
+## Baseline (2026-11-06)
+claude-sonnet-5-5, run 3 on HEAD 843b2e5: converged=true iter=1 tokens=4756332/38718 cost=$1.324 627s. Runs 1-2 failed only on the ledger gate (kernel unsafe drift), fixed by `--scope golden-1:`.
+
 ## Next action
 File backlog items for D12, D13, D14(a-c,e), D16 and the scaffold gaps (D15); then step 4 (two-model baseline) from a tree without `apps/golden-1/`. Still open: D7 follow-up.
