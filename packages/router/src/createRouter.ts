@@ -12,7 +12,6 @@ import { compileRoutes } from "./internal/compileRoutes.ts";
 import { compileTable } from "./internal/compileTable.ts";
 import { defaultError } from "./internal/defaultError.ts";
 import { fieldsError } from "./internal/fieldsError.ts";
-import { fieldsOf } from "./internal/fieldsOf.ts";
 import { guardTable } from "./internal/guardTable.ts";
 import { hrefIn } from "./internal/hrefIn.ts";
 import { isRouteStateOf } from "./internal/isRouteStateOf.ts";
@@ -134,10 +133,10 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   };
 
   const redirectTo = (id: string, next: string): Result<string, KeelError<string, unknown>> => {
-    const target = own.get(id)?.def.search;
-    const takesNext = target !== undefined && fieldsOf(target.node).some(([k]) => k === "next");
-    const r = attempt(() => hrefIn(own, id, {}, takesNext ? { next } : {}));
-    return r.ok ? ok(String(r.value)) : err(unexpected(`guard redirect to "${id}" failed: ${r.error.message}`));
+    const r = attempt(() => hrefIn(own, id, {}, {}));
+    if (!r.ok) return err(unexpected(`guard redirect to "${id}" failed: ${r.error.message}`));
+    const base = String(r.value);
+    return ok(`${base}${base.includes("?") ? "&" : "?"}next=${encodeURIComponent(next)}`);
   };
 
   const proceed = async (t: number, m: Match & { kind: "route" }, mode: Mode, hops: number): Promise<void> => {
@@ -205,7 +204,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       handle?.setPending(true);
       const decoded = act.input.decodeStrings(data);
       let result: Result<Href | null, KeelError<string, unknown>>;
-      if (!decoded.ok) result = err(fieldsError(decoded.error));
+      if (!decoded.ok) result = err(fieldsError(act.input.node, decoded.error));
       else {
         const ran = await attempt(() => act.run(decoded.value, { params: req.params }, ctx));
         result = ran.ok ? ran.value : ran;
