@@ -14,7 +14,7 @@ const f = form(OrderEdit, { initial: order }) // OrderEdit is an s.object in ord
 ```
 `form(schema, { initial? })` creates form state in the calling component's scope. The handle: `field(path)` (typed dotted path; array indexes allowed), `values()`, `errors()` (path to message), `pending()`, `reset()`. Reads are computeds.
 
-**Bindings.** A base input (k.ui) given `field` sets its `name`, `id`, `value`, and input handling, plus `aria-invalid` and `aria-describedby` pointing to the error text it renders. Values are typed; FormData coding derives from the schema (numbers, checkbox booleans, absent optionals).
+**Bindings.** `field(path)` returns a `Field`: `{ name, id, errorId, value(), error(), touched(), set(v), blur(), bind(el) }` where reads are computeds and `bind(el)` attaches to a plain `input`, `select`, or `textarea`: it sets `name`, `id`, `value`, listens to `input` and `blur`, and keeps `aria-invalid` and `aria-describedby` (naming `errorId`) in sync; it returns an unbind function and is disposed with the scope. A base input (k.ui) given `field` calls `bind` and renders the error text under `errorId`; that is the only way an element binds to a form. Values are typed; FormData coding derives from the schema (numbers, checkbox booleans, absent optionals).
 
 **Validation.** From the schema only. A field validates on blur, then on every input once it has shown an error; all fields validate on submit. Messages derive from `schema.invalid` issues (rule plus constraint).
 
