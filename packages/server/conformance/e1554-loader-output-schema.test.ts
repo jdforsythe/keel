@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Rule E1554: loader data fails its output schema (dev diagnostic; 500 in production).
 // ASSUMPTION: in dev the diagnostic code appears in the response body; the production body does not carry it.
 import { ok } from "@keel/schema";

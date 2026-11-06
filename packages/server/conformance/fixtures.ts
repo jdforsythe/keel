@@ -1,12 +1,14 @@
 // Fixtures for the k.server conformance suite. Seed for every property: 1337.
 // ASSUMPTION (spec does not name the server entry): `@keel/server` exports
 // `createApp({ topology, routes, ctx, mode?, log? })` returning `{ fetch(req): Promise<Response> }`,
-// `mode` is 'dev' | 'production' (default 'dev'). Components are plain functions returning HTML strings.
+// `mode` is 'dev' | 'production' (default 'dev').
+// Components build DOM nodes (RouteDef.component returns Node); test files that call build() run under happy-dom.
 // A runtime (JSON) request is a request with `accept: application/json`.
 import { createCtx } from "@keel/ctx";
 import { action, guard, href, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
-import type { Result } from "@keel/schema";
+import type { Href, RouteProps } from "@keel/router";
+import type { KeelError, Result } from "@keel/schema";
 import * as server from "@keel/server";
 import { topology } from "@keel/server";
 
@@ -22,6 +24,7 @@ export interface AppOptions {
   routes: unknown;
   ctx: unknown;
   mode?: Mode;
+  guards?: unknown;
 }
 export type CreateApp = (o: AppOptions) => App | Promise<App>;
 
@@ -55,11 +58,14 @@ export function deferred(): Deferred {
   return { promise, resolve };
 }
 
+// Behaviors may return data that violates the Page schema on purpose (E1554), so they are typed `unknown`.
+type PageResult = Promise<Result<unknown, KeelError<string, unknown>>>;
+type ActResult = Result<Href | null, KeelError<string, unknown>>;
 export interface Behavior {
-  show?: (args: { params: { kind: string } }) => Promise<Result<unknown, unknown>>;
-  shell?: () => Promise<Result<unknown, unknown>>;
-  root?: () => Promise<Result<unknown, unknown>>;
-  act?: (input: { kind: string; note: string }) => Result<unknown, unknown> | Promise<Result<unknown, unknown>>;
+  show?: (args: { params: { kind: string } }) => PageResult;
+  shell?: () => PageResult;
+  root?: () => PageResult;
+  act?: (input: { kind: string; note: string }) => ActResult | Promise<ActResult>;
   deny?: boolean;
 }
 export interface Counts {
@@ -70,21 +76,33 @@ export interface Counts {
   component: number;
 }
 
-const okPage = () => Promise.resolve(ok({ title: "T" }));
+const okPage = (): PageResult => Promise.resolve(ok({ title: "T" }));
+
+// Deliberately widens a behavior result to the loader's declared type: the server must catch the mismatch.
+function erase(v: PageResult) {
+  return Reflect.apply(Object, undefined, [v]);
+}
+
+function el(tag: string, attrs: Record<string, string>, ...kids: (Node | string)[]): Node {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  e.append(...kids);
+  return e;
+}
 
 export async function build(b: Behavior, mode: Mode = "production") {
   const n: Counts = { show: 0, shell: 0, root: 0, act: 0, component: 0 };
   const rootLoader = loader(Page, () => {
     n.root++;
-    return (b.root ?? okPage)();
+    return erase((b.root ?? okPage)());
   });
   const shellLoader = loader(Page, () => {
     n.shell++;
-    return (b.shell ?? okPage)();
+    return erase((b.shell ?? okPage)());
   });
   const showLoader = loader(Page, (a: { params: { kind: string } }) => {
     n.show++;
-    return (b.show ?? okPage)(a);
+    return erase((b.show ?? okPage)(a));
   });
   const act = action(Edit, (input: { kind: string; note: string }) => {
     n.act++;
@@ -94,9 +112,9 @@ export async function build(b: Behavior, mode: Mode = "production") {
     Promise.resolve(b.deny ? err(s.error("keel.denied", s.object({})).make({})) : ok(null)),
   );
   const routes = manifest({
-    "app.shell": { component: (p: { children: string }) => `<div id="app">${p.children}</div>`, loader: rootLoader },
+    "app.shell": { component: (p: RouteProps) => el("div", { id: "app" }, p.children?.() ?? ""), loader: rootLoader },
     "orders.shell": {
-      component: (p: { children: string }) => `<div id="orders">${p.children}</div>`,
+      component: (p: RouteProps) => el("div", { id: "orders" }, p.children?.() ?? ""),
       layout: "app.shell",
       loader: shellLoader,
     },
@@ -106,19 +124,19 @@ export async function build(b: Behavior, mode: Mode = "production") {
       search: Search,
       loader: showLoader,
       actions: { POST: act },
-      component: (p: { params: { kind: string } }) => `<main data-page="show">page ${p.params.kind}</main>`,
+      component: (p: RouteProps) => el("main", { "data-page": "show" }, `page ${String(Reflect.get(Object(p.params), "kind"))}`),
       layout: "orders.shell",
-      guard: auth,
-      errorElement: (p: { error: { code: string; message: string } }) =>
-        `<section data-error-element="1">${p.error.code}</section>`,
+      guard: "auth",
+      errorElement: (p: { readonly error: KeelError<string, unknown> }) => el("section", { "data-error-element": "1" }, p.error.code),
     },
-    "app.login": { path: "/login", component: () => "<main>login</main>" },
+    "app.login": { path: "/login", component: () => el("main", {}, "login") },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app", "orders"], adapter: "node" } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode,
+    guards: [auth],
   });
   return { app, n, routes, href };
 }

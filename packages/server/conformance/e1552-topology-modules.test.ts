@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Rule E1552. ASSUMPTION: building the deployable (createApp) with the topology reports the diagnostic (throw or rejection mentioning the code).
 // The known-module set is taken from the routes' module ids: 'app', 'orders'.
 import { createCtx } from "@keel/ctx";

@@ -9,7 +9,9 @@
       "default": "./src/index.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@keel/reactive": "workspace:*",
     "@keel/tooling": "workspace:*",
-    "fast-check": "^3"
+    "fast-check": "^3",
+    "happy-dom": "^21"
   }
 }

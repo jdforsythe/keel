@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Clause: A POST with invalid FormData returns 422, does not call the action, and lists the field errors.
 // Also covers k.forms: with the runtime absent, posting invalid FormData returns 422 HTML with submitted values and messages.
 import fc from "fast-check";

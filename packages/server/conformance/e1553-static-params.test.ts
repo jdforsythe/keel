@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Rule E1553. ASSUMPTION: building a `static` deployable (createApp) reports the diagnostic (throw or rejection mentioning the code).
 import { createCtx } from "@keel/ctx";
 import { describe, expect, it } from "vitest";

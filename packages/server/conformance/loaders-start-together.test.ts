@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Clause: All loaders of a matched chain start before any of them resolves.
 import { describe, expect, it } from "vitest";
 import { ok } from "@keel/schema";

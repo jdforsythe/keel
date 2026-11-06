@@ -349,6 +349,9 @@ importers:
       fast-check:
         specifier: ^3
         version: 3.23.2
+      happy-dom:
+        specifier: ^21
+        version: 21.0.4
 
   packages/services:
     dependencies:

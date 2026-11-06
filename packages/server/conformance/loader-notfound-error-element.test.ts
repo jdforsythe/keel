@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Clause: A loader returning `err` with `keel.notFound` yields 404 and the route's `errorElement` HTML.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
