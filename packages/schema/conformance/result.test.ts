@@ -1,7 +1,8 @@
+import { attempt, err, ok, s } from "@keel/schema";
+import { gen } from "@keel/schema/gen";
+import fc from "fast-check";
 // Clauses: k.errors Conformance sentences owned by @keel/schema. Seed 1337.
 import { describe, expect, it } from "vitest";
-import fc from "fast-check";
-import { s, ok, err, attempt } from "@keel/schema";
 import { RUNS, SEED } from "./fixtures";
 
 const OrderId = s.id("Order");
@@ -32,7 +33,7 @@ describe("k.errors: ok and err", () => {
 describe("k.errors: s.result round-trip", () => {
   it("s.result(T, E) round-trips generated ok and err values through encode/decode", () => {
     fc.assert(
-      fc.property(Res.gen(), (v) => {
+      fc.property(gen(Res), (v) => {
         const d = Res.decode(JSON.parse(JSON.stringify(Res.encode(v))));
         expect(d.ok).toBe(true);
         if (d.ok) expect(d.value).toEqual(v);
@@ -55,7 +56,7 @@ describe("k.errors: s.result round-trip", () => {
 
   it("s.result(T, E) round-trips an err value built with make", () => {
     fc.assert(
-      fc.property(OrderId.gen(), (id) => {
+      fc.property(gen(OrderId), (id) => {
         const v = err(OrderLocked.make({ id }));
         const d = Res.decode(JSON.parse(JSON.stringify(Res.encode(v))));
         expect(d.ok).toBe(true);
@@ -114,7 +115,7 @@ describe("k.errors: attempt", () => {
 describe("k.errors: s.error", () => {
   it("make(data) yields { code, message: code, data }", () => {
     fc.assert(
-      fc.property(OrderId.gen(), (id) => {
+      fc.property(gen(OrderId), (id) => {
         expect(OrderLocked.make({ id })).toEqual({
           code: "orders.locked",
           message: "orders.locked",
@@ -127,7 +128,7 @@ describe("k.errors: s.error", () => {
 
   it("make(data, 'msg') sets message", () => {
     fc.assert(
-      fc.property(OrderId.gen(), fc.string({ minLength: 1 }), (id, msg) => {
+      fc.property(gen(OrderId), fc.string({ minLength: 1 }), (id, msg) => {
         expect(OrderLocked.make({ id }, msg)).toEqual({
           code: "orders.locked",
           message: msg,
@@ -140,7 +141,7 @@ describe("k.errors: s.error", () => {
 
   it("the declared error schema parses its own made value", () => {
     fc.assert(
-      fc.property(OrderId.gen(), (id) => {
+      fc.property(gen(OrderId), (id) => {
         expect(OrderLocked.parse(OrderLocked.make({ id })).ok).toBe(true);
         expect(OrderLocked.parse(OrderLocked.make({ id }, "custom")).ok).toBe(true);
       }),

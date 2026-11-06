@@ -38,6 +38,7 @@ Covers backlog 0002 (primitives), 0003 (parse/encode/decode/Result), 0004 (gener
 - D17: `pathToString(path)` is `path.join('.')`, exported from `src/pathToString.ts`; `invalid()` reuses it.
 - D18: `packages/schema/unsafe/unsafe.ts` had no callers and was deleted (dir kept with `.gitkeep`); `tooling/ledger/ledger.json` regenerated so the baseline records unsafe = 1 (ctx, PLAN 0009 D10). Schema's own unsafe count stays 0.
 - D19 (rfc:0005): `s.number({ min?, max? })` and `s.int({ min?, max? })`, inclusive. Nodes carry `min`/`max` only when set. Construction throws on non-finite bounds, `min > max`, or (int) a range with no integer. Failing bound gives rule `min`/`max` after `type`/`finite`/`int`. `gen()` uses `fc.double`/`fc.integer` with the bounds; `doc()` renders `int(0..1000)`. `decodeStrings` unchanged.
+- D20 (rfc:0006): generators moved to the `@keel/schema/gen` subpath: `gen(schema): fc.Arbitrary<T>` (output unchanged: `arbitrary(node).filter(parse ok)`); `.gen()` removed from `Schema`/`make`. `arbitrary` is now private to `src/gen.ts`, the only file importing `fast-check`; fast-check is a peerDependency (+ devDependency). `exports["./gen"]` added. Index bundle (esbuild min+gzip) 29.7 kB -> 3.2 kB. `tsconfig.build.json` gained `rewriteRelativeImportExtensions` (build previously raised TS5097, as in other packages). All callers migrated mechanically.
 
 ## Verification
 - [x] conformance green (129 tests incl. result.test.ts) · properties present · `pnpm --filter @keel/schema check` clean · unsafe count 0 in schema

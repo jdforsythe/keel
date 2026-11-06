@@ -1,6 +1,7 @@
 // fast-check seed: 1337
 import { toFormData } from "@keel/forms";
 import { ok, s } from "@keel/schema";
+import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED } from "./fixtures.ts";
@@ -16,7 +17,7 @@ const Shape = s.object({
 
 test("for every generated valid value, FormData encode then decode by the schema returns an equal value", () => {
   fc.assert(
-    fc.property(Shape.gen(), (value) => {
+    fc.property(gen(Shape), (value) => {
       const fd = toFormData(Shape, value);
       expect(Shape.decodeStrings(fd)).toEqual(ok(value));
     }),

@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./gen": {
+      "types": "./src/gen.ts",
+      "default": "./src/gen.ts"
     }
   },
   "files": ["dist"],
@@ -16,10 +20,11 @@
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
   },
-  "dependencies": {
+  "peerDependencies": {
     "fast-check": "^3"
   },
   "devDependencies": {
+    "fast-check": "^3",
     "@keel/tooling": "workspace:*"
   }
 }

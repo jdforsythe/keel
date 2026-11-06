@@ -1,5 +1,6 @@
 // fast-check seed: 1337
 import { type ObjectSchema, type Schema, ok, s } from "@keel/schema";
+import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { toFormData } from "../src/index.ts";
@@ -37,7 +38,7 @@ const nested: fc.Arbitrary<ObjectSchema<object>> = fc
 it("decodeStrings(toFormData(schema, v)) is ok(v) for generated object schemas of primitives", () => {
   fc.assert(
     fc.property(
-      objectSchema.chain((schema) => schema.gen().map((value) => ({ schema, value }))),
+      objectSchema.chain((schema) => gen(schema).map((value) => ({ schema, value }))),
       ({ schema, value }) => {
         expect(schema.decodeStrings(toFormData(schema, value))).toEqual(ok(value));
       },
@@ -49,7 +50,7 @@ it("decodeStrings(toFormData(schema, v)) is ok(v) for generated object schemas o
 it("round-trips one level of nesting through dotted keys", () => {
   fc.assert(
     fc.property(
-      nested.chain((schema) => schema.gen().map((value) => ({ schema, value }))),
+      nested.chain((schema) => gen(schema).map((value) => ({ schema, value }))),
       ({ schema, value }) => {
         expect(schema.decodeStrings(toFormData(schema, value))).toEqual(ok(value));
       },
@@ -62,7 +63,7 @@ it("round-trips arrays of leaves through repeated keys", () => {
   const Tags = s.object({ tags: s.array(s.enum(["a", "b"])), n: s.array(s.int()) });
   fc.assert(
     fc.property(
-      Tags.gen().filter((v) => v.tags.length > 0 && v.n.length > 0),
+      gen(Tags).filter((v) => v.tags.length > 0 && v.n.length > 0),
       (value) => {
         const fd = toFormData(Tags, value);
         expect(fd.getAll("tags")).toEqual(value.tags);

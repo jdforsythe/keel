@@ -1,7 +1,8 @@
+import { s } from "@keel/schema";
+import { gen } from "@keel/schema/gen";
+import fc from "fast-check";
 // Clause: optional and nullable are distinct (E1102 reasoning). Seed 1337.
 import { describe, expect, expectTypeOf, it } from "vitest";
-import fc from "fast-check";
-import { s } from "@keel/schema";
 import { RUNS, SEED } from "./fixtures";
 
 const Opt = s.object({ a: s.string().optional() });
@@ -56,13 +57,13 @@ describe("k.schema optional vs nullable", () => {
 
   it("gen() for optional never yields null", () => {
     fc.assert(
-      fc.property(Opt.gen(), (v) => v.a !== null),
+      fc.property(gen(Opt), (v) => v.a !== null),
       { seed: SEED, numRuns: RUNS },
     );
   });
   it("gen() for nullable always has the key", () => {
     fc.assert(
-      fc.property(Nul.gen(), (v) => "a" in v),
+      fc.property(gen(Nul), (v) => "a" in v),
       { seed: SEED, numRuns: RUNS },
     );
   });

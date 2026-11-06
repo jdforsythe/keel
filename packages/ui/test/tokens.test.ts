@@ -1,4 +1,5 @@
 // TokenSchema and defineTokens beyond conformance. Seed 1337.
+import { gen } from "@keel/schema/gen";
 import { TokenSchema, defineTokens } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -21,7 +22,7 @@ describe("TokenSchema", () => {
 
   it("accepts every generated token file and encodes it to equal JSON", () => {
     fc.assert(
-      fc.property(TokenSchema.gen(), (t) => {
+      fc.property(gen(TokenSchema), (t) => {
         expect(TokenSchema.parse(t).ok).toBe(true);
         expect(TokenSchema.encode(t)).toEqual(JSON.parse(JSON.stringify(t)));
       }),

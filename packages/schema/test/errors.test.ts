@@ -1,6 +1,7 @@
 // Properties for KeelError helpers: s.error, s.result, attempt. fast-check seed 1337 (fixed for determinism).
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { gen } from "../src/gen.ts";
 import { type KeelError, type Result, attempt, err, ok, s } from "../src/index.ts";
 
 fc.configureGlobal({ seed: 1337, numRuns: 100 });
@@ -11,7 +12,7 @@ const Res = s.result(s.array(s.number()).nullable(), Locked);
 describe("s.error", () => {
   it("make builds a value its own schema parses; message defaults to the code", () => {
     fc.assert(
-      fc.property(Locked.gen(), fc.option(fc.string(), { nil: undefined }), (e, msg) => {
+      fc.property(gen(Locked), fc.option(fc.string(), { nil: undefined }), (e, msg) => {
         const made = msg === undefined ? Locked.make(e.data) : Locked.make(e.data, msg);
         expect(made).toEqual({ code: "orders.locked", message: msg ?? "orders.locked", data: e.data });
         expect(Locked.parse(made).ok).toBe(true);
@@ -20,7 +21,7 @@ describe("s.error", () => {
   });
   it("rejects a different code or bad data", () => {
     fc.assert(
-      fc.property(Locked.gen(), fc.string(), (e, code) => {
+      fc.property(gen(Locked), fc.string(), (e, code) => {
         expect(Locked.parse({ ...e, code }).ok).toBe(code === "orders.locked");
         expect(Locked.parse({ ...e, data: { id: "" } }).ok).toBe(false);
       }),
@@ -36,7 +37,7 @@ describe("s.error", () => {
 describe("s.result", () => {
   it("gen yields ok and err values that round-trip through JSON", () => {
     fc.assert(
-      fc.property(Res.gen(), (v) => {
+      fc.property(gen(Res), (v) => {
         const back = Res.decode(JSON.parse(JSON.stringify(Res.encode(v))));
         expect(back.ok && JSON.stringify(back.value)).toBe(JSON.stringify(v));
       }),
@@ -44,7 +45,7 @@ describe("s.result", () => {
   });
   it("accepts exactly ok(T) and err(E) shapes", () => {
     fc.assert(
-      fc.property(Locked.gen(), fc.array(fc.double({ noNaN: true, noDefaultInfinity: true })), (e, xs) => {
+      fc.property(gen(Locked), fc.array(fc.double({ noNaN: true, noDefaultInfinity: true })), (e, xs) => {
         expect(Res.parse(ok(xs)).ok).toBe(true);
         expect(Res.parse(ok(null)).ok).toBe(true);
         expect(Res.parse(err(e)).ok).toBe(true);

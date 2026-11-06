@@ -11,7 +11,7 @@ type User = s.infer<typeof User>
 ```
 Primitives: `string`, `number` (finite, `{ min, max }`), `int` (`{ min, max }`), `boolean`, `literal`, `enum`, `id(brand)`, `object`, `array`, `union` (discriminated), `record`. Modifiers: `optional()` (key may be absent) and `nullable()` (value may be null) are distinct. Registry: `s.register(name, type)` for stdlib types.
 
-**Derivations.** `User.parse(x): Result<User, SchemaError>` · `User.encode/decode` JSON · `User.gen()` fast-check arbitrary · `User.doc()`.
+**Derivations.** `User.parse(x): Result<User, SchemaError>` · `User.encode/decode` JSON · `gen(User)` fast-check arbitrary (`import { gen } from '@keel/schema/gen'`; fast-check is a peer dependency, absent from app bundles) · `User.doc()`.
 
 `decodeStrings(FormData | URLSearchParams | Record<string, string | string[]>)` (object schemas) coerces string input: numbers from numeric strings; booleans from `true|on|1` / `false|off|0`, absent boolean is false; empty string for an optional key is absent; arrays from repeated keys or `key[]`; nested objects by dotted keys; records from the remaining prefixed keys; literal/enum compared as strings. `decode` stays the JSON inverse of `encode`. `parse` rejects own `__proto__`, `constructor`, `prototype` keys; `pathToString(path)` gives `users.0.name`.
 

@@ -5,7 +5,6 @@ import { err } from "../err.ts";
 import { ok } from "../ok.ts";
 import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
-import { arbitrary } from "./arbitrary.ts";
 import { check } from "./check.ts";
 import { docOf } from "./docOf.ts";
 import { invalid } from "./invalid.ts";
@@ -30,7 +29,6 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
       if (!is(value)) throw new Error(issueText(issues));
       return toJson(node, value);
     },
-    gen: () => arbitrary(node).filter(is),
     doc: () => docOf(node),
     optional: () => make<T, true>(node.kind === "optional" ? node : { kind: "optional", inner: node }, true),
     nullable() {

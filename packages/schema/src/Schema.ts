@@ -1,4 +1,3 @@
-import type * as fc from "fast-check";
 import type { JsonValue } from "./JsonValue.ts";
 import type { Result } from "./Result.ts";
 import type { SchemaError } from "./SchemaError.ts";
@@ -15,7 +14,6 @@ export interface Schema<T, O extends boolean = false> {
   /** Validates first; throws an Error listing the issues when `value` does not fit (unexpected). */
   encode(value: unknown): JsonValue;
   decode(json: unknown): Result<T, SchemaError>;
-  gen(): fc.Arbitrary<T>;
   doc(): string;
   optional(): Schema<T, true>;
   nullable(): Schema<T | null, O>;

@@ -1,8 +1,9 @@
+import { s } from "@keel/schema";
+import { gen } from "@keel/schema/gen";
+import fc from "fast-check";
 // Clause: for number and int with bounds, every generated value is within bounds and parse
 // rejects values outside with rule min or max. Seed 1337, 100 runs.
 import { describe, expect, it } from "vitest";
-import fc from "fast-check";
-import { s } from "@keel/schema";
 import { RUNS, SEED } from "./fixtures";
 
 const Num = s.number({ min: -2.5, max: 10 });
@@ -16,10 +17,10 @@ describe("k.schema number and int bounds", () => {
   it("gen() stays within bounds", () => {
     fc.assert(
       fc.property(
-        Num.gen(),
-        Int.gen(),
-        OnlyMin.gen(),
-        OnlyMax.gen(),
+        gen(Num),
+        gen(Int),
+        gen(OnlyMin),
+        gen(OnlyMax),
         (a, b, c, d) =>
           a >= -2.5 && a <= 10 && Number.isInteger(b) && b >= 0 && b <= 1000 && Number.isInteger(c) && c >= 0 && d <= 5,
       ),

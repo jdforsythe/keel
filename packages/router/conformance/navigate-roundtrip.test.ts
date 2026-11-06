@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.router, clause "For every route and every generated params and search, navigate(href(id, p, q)) makes route() equal { id, params: p, search: q, pending: false }." Seed 1337.
 import { type Href, href } from "@keel/router";
+import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -23,7 +24,7 @@ const home = fc.constant<Case>({
   link: () => href("app.home"),
   expected: { id: "app.home", params: {}, search: {}, pending: false },
 });
-const list = ListSearch.gen().map(
+const list = gen(ListSearch).map(
   (q): Case => ({
     link: () => href("orders.list", {}, q),
     expected: { id: "orders.list", params: {}, search: q, pending: false },
@@ -31,8 +32,8 @@ const list = ListSearch.gen().map(
 );
 const show = fc
   .tuple(
-    OrderParams.gen().filter((p) => usableId(p.id)),
-    ShowSearch.gen(),
+    gen(OrderParams).filter((p) => usableId(p.id)),
+    gen(ShowSearch),
   )
   .map(
     ([p, q]): Case => ({
@@ -40,7 +41,7 @@ const show = fc
       expected: { id: "orders.show", params: p, search: q, pending: false },
     }),
   );
-const line = LineParams.gen()
+const line = gen(LineParams)
   .filter((p) => usableId(p.id))
   .map(
     (p): Case => ({

@@ -1,6 +1,7 @@
 // Properties for every s.* builder and Schema method. fast-check seed 1337 (fixed for determinism).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { gen } from "../src/gen.ts";
 import { type Schema, s } from "../src/index.ts";
 
 fc.configureGlobal({ seed: 1337, numRuns: 100 });
@@ -63,7 +64,7 @@ describe("every schema", () => {
     });
     it(`${name}: parse returns the input by reference`, () => {
       fc.assert(
-        fc.property(T.gen(), (v) => {
+        fc.property(gen(T), (v) => {
           const r = T.parse(v);
           expect(r.ok && r.value).toBe(v);
         }),
@@ -71,7 +72,7 @@ describe("every schema", () => {
     });
     it(`${name}: decode agrees with parse`, () => {
       fc.assert(
-        fc.property(fc.oneof(T.gen(), fc.anything()), (x) => {
+        fc.property(fc.oneof(gen(T), fc.anything()), (x) => {
           const a = T.parse(x);
           const b = T.decode(x);
           expect(b.ok).toBe(a.ok);
@@ -81,7 +82,7 @@ describe("every schema", () => {
     });
     it(`${name}: encode output is JSON-stable and decodes`, () => {
       fc.assert(
-        fc.property(T.gen(), (v) => {
+        fc.property(gen(T), (v) => {
           const j = T.encode(v);
           expect(wire(JSON.parse(wire(j)))).toBe(wire(j));
           expect(T.decode(j).ok).toBe(true);

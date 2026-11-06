@@ -1,8 +1,9 @@
+import { type SchemaError, pathToString, s } from "@keel/schema";
+import { gen } from "@keel/schema/gen";
+import fc from "fast-check";
 // Clause: object schemas decode string input (k.forms, k.router); parse hardening; construction guard. Seed 1337, 100 runs.
 import { describe, expect, it } from "vitest";
-import fc from "fast-check";
-import { s, pathToString, type SchemaError } from "@keel/schema";
-import { norm, RUNS, SEED } from "./fixtures";
+import { RUNS, SEED, norm } from "./fixtures";
 
 const Prim = s.object({
   name: s.string({ min: 0, max: 8 }),
@@ -21,7 +22,7 @@ const rulesOf = (r: { ok: true } | { ok: false; error: SchemaError }) => (r.ok ?
 describe("k.schema decodeStrings", () => {
   it("encode to URLSearchParams then decodeStrings returns an equal value", () => {
     fc.assert(
-      fc.property(Prim.gen(), (v) => {
+      fc.property(gen(Prim), (v) => {
         const wire = new URLSearchParams();
         for (const [k, x] of Object.entries(v)) wire.append(k, String(x));
         const r = Prim.decodeStrings(wire);
@@ -115,7 +116,7 @@ describe("k.schema decodeStrings", () => {
 
   it("decode stays the JSON inverse of encode", () => {
     fc.assert(
-      fc.property(Prim.gen(), (v) => {
+      fc.property(gen(Prim), (v) => {
         const r = Prim.decode(Prim.encode(v));
         expect(r.ok).toBe(true);
         if (r.ok) expect(norm(r.value)).toEqual(norm(v));
