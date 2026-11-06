@@ -46,3 +46,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0042 tooling: ledger scans apps/*/modules exports too · tooling · k.testing · G1 · 0026
 - [ ] 0043 rfc: reactive `Scope.run(fn)` to create nodes under an existing owner; removes runtime-dom's nursery chain of one-shot effects (runtime PLAN D4/D19) · reactive, runtime-dom · k.reactive · G1 · 0012
 - [ ] 0044 rfc: router guards by reference (`guard: authGuard`) and manifest-typed `routes.href` replacing the name table and the free `href`; scroll keyed by history entry (router PLAN D19, D20, D23) · router · k.router · G3 · 0014
+- [ ] 0045 rfc: `Store.check(state)` runs declared invariants without committing, so @keel/testing drops the `keel.testing.holds` probe transaction (testing PLAN D21) · store, testing · k.store · G1 · 0025

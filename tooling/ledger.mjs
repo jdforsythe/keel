@@ -1,23 +1,44 @@
 import { spawnSync } from "node:child_process";
 // Builds tooling/ledger/ledger.json: every exported function in packages/*/src/*.ts with its verification rung.
-// Usage: node tooling/ledger.mjs [--diff|--ci]   (--diff compares to the committed ledger, prints L0001 on regression)
+// Usage: node tooling/ledger.mjs [--diff|--ci]   (--diff compares to the committed ledger, prints E1706 on regression)
+// I/O shell only: rung rules are `ledger` and `ledgerDiff` from @keel/testing (k.testing Ledger), imported by path.
 import fs from "node:fs";
 import path from "node:path";
+import { ledger } from "../packages/testing/src/ledger.ts";
+import { ledgerDiff } from "../packages/testing/src/ledgerDiff.ts";
 import { parseArgs, run } from "./output.ts";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
 
 const root = path.join(import.meta.dirname, "..");
 const LEDGER = "tooling/ledger/ledger.json";
-const RUNGS = ["none", "example", "probabilistic", "exhaustive", "proven"];
 const FN_DECL = /^export\s+(?:async\s+)?function\*?\s+([A-Za-z_$][\w$]*)/;
 const FN_CONST =
   /^export\s+const\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*(?:async\s*)?(?:function\b|\(|[A-Za-z_$][\w$]*\s*=>)/;
 const UNSAFE_CALL = /(?<!function\s)\bunsafe\s*\(/g;
+/** fast-check runs a property 100 times unless `numRuns` says otherwise. */
+const FC_DEFAULT_RUNS = 100;
 const readCode = (f) => scrub(fs.readFileSync(f, "utf8")).code;
+
+/**
+ * Evidence one test file gives (static scan; the file is assumed passing, as CI runs tests before the ledger):
+ * a fast-check file is a property whose runs are its largest literal `numRuns` (else fast-check's default) and
+ * whose seed is the first literal seed it states (`seed: n`, `SEED = n`, or a `Seed: n` header); otherwise an example.
+ */
+function evidenceOf(src) {
+  if (!/fast-check/.test(src)) return { kind: "example", passed: true };
+  const runs = [...src.matchAll(/\b(?:numRuns|runs)\s*:\s*(\d[\d_]*)/g)].map((m) => Number(m[1].replaceAll("_", "")));
+  const seed = /\bseed\b\s*[:=]?\s*(-?\d+)/i.exec(src);
+  return {
+    kind: "property",
+    passed: true,
+    runs: runs.length === 0 ? FC_DEFAULT_RUNS : Math.max(...runs),
+    ...(seed === null ? {} : { seed: Number(seed[1]) }),
+  };
+}
 
 function build() {
   const pk = path.join(root, "packages");
-  const entries = [];
+  const found = [];
   let unsafe = 0;
   const pkgs = fs.existsSync(pk) ? fs.readdirSync(pk).sort() : [];
   for (const pkg of pkgs) {
@@ -26,7 +47,7 @@ function build() {
       .filter((f) => CODE_EXT.test(f))
       .map((f) => {
         const s = fs.readFileSync(f, "utf8");
-        return { s, prop: /fast-check/.test(s) };
+        return { s, ev: evidenceOf(s) };
       });
     for (const f of [...walk(path.join(base, "src")), ...walk(path.join(base, "unsafe"))].filter((x) =>
       CODE_EXT.test(x),
@@ -43,15 +64,17 @@ function build() {
       for (const l of readCode(file)) {
         const m = FN_DECL.exec(l) ?? FN_CONST.exec(l);
         if (!m) continue;
+        if (found.some((e) => e.file === rel(root, file) && e.name === m[1])) continue; // overload signatures
         const word = new RegExp(`\\b${m[1].replace(/\$/g, "\\$")}\\b`);
-        const hits = verif.filter((v) => word.test(v.s));
-        const rung = hits.some((v) => v.prop) ? "probabilistic" : hits.length ? "example" : "none";
-        entries.push({ pkg, name: m[1], file: rel(root, file), rung });
+        const evidence = verif.filter((v) => word.test(v.s)).map((v) => v.ev);
+        found.push({ pkg, name: m[1], file: rel(root, file), evidence });
       }
     }
   }
-  entries.sort((a, b) => (a.file + a.name).localeCompare(b.file + b.name));
-  return { version: 1, unsafe, exports: entries };
+  found.sort((a, b) => (a.file + a.name).localeCompare(b.file + b.name));
+  const records = ledger(found.map((e) => ({ item: `${e.file}#${e.name}`, evidence: e.evidence })));
+  const exports = found.map((e, i) => ({ pkg: e.pkg, name: e.name, file: e.file, rung: records[i]?.rung ?? "none" }));
+  return { version: 1, unsafe, exports };
 }
 
 function committed() {
@@ -60,6 +83,8 @@ function committed() {
   const p = path.join(root, LEDGER);
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
+
+const asRecords = (l) => l.exports.map((e) => ({ item: `${e.file}#${e.name}`, rung: e.rung }));
 
 const args = parseArgs();
 const diff = args.flags.has("diff") || args.flags.has("ci");
@@ -70,18 +95,17 @@ await run("ledger", () => {
   if (diff) {
     const prev = committed();
     if (prev) {
-      const before = new Map(prev.exports.map((e) => [`${e.file}#${e.name}`, e]));
-      for (const e of next.exports) {
-        const old = before.get(`${e.file}#${e.name}`);
-        if (old && RUNGS.indexOf(e.rung) < RUNGS.indexOf(old.rung))
-          diags.push({
-            kind: "diag",
-            code: "L0001",
-            path: e.file,
-            line: 1,
-            col: 1,
-            message: `${e.name} rung lowered ${old.rung} -> ${e.rung}`,
-          });
+      for (const d of ledgerDiff(asRecords(prev), asRecords(next))) {
+        const [file, name] = d.item.split("#");
+        diags.push({
+          kind: "diag",
+          code: d.code,
+          path: file,
+          line: 1,
+          col: 1,
+          message: `${name} rung lowered ${d.before} -> ${d.after}`,
+          see: d.see,
+        });
       }
       if (next.unsafe > prev.unsafe)
         diags.push({

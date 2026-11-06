@@ -88,3 +88,33 @@ export const Fragile = Object.assign(
   },
   { Props: s.object({ n: s.int() }) },
 );
+
+const NamesT = template(
+  '<div><label for="nm.both">For</label><label>Wrap <input id="nm.both"></label>' +
+    '<button id="nm.self" aria-labelledby="nm.self" aria-label="Own">text</button>' +
+    '<span id="nm.selfspan" role="button" aria-labelledby="nm.selfspan">Span</span>' +
+    '<p id="nm.para">Paragraph text</p><h2 id="nm.head">Heading</h2></div>',
+);
+
+/** accname edge cases: `for` plus wrapping label, aria-labelledby self-references, roles without name from content. */
+export const Names = Object.assign((_props: Record<string, never>): Node => clone(NamesT), { Props: s.object({}) });
+
+const SpinT = template('<div><button id="spin.go">Go</button><p id="spin.n">0</p></div>');
+
+/** Clicking starts a promise loop that never stops writing the DOM (until `spinning.stop`). */
+export const spinning = { stop: false };
+export const Spin = Object.assign(
+  (_props: Record<string, never>): Node => {
+    const root = clone(SpinT);
+    const n = signal(0);
+    text(byId(root, "spin.n"), () => String(n.get()));
+    const loop = (): void => {
+      if (spinning.stop) return;
+      n.set(n.get() + 1);
+      void Promise.resolve().then(loop);
+    };
+    on("spin.go", "click", () => loop());
+    return root;
+  },
+  { Props: s.object({}) },
+);

@@ -1,10 +1,13 @@
 import { LABELABLE } from "./LABELABLE.ts";
+import { NAME_FROM_CONTENT } from "./NAME_FROM_CONTENT.ts";
 import { contentText } from "./contentText.ts";
 import { labelText } from "./labelText.ts";
+import { refText } from "./refText.ts";
 
 /**
- * Accessible name, first non-empty of: `aria-labelledby` targets' text, `aria-label`, `<label>` (form controls),
- * `alt` (images), button-like `value`, content text (non-controls), `title`. Trimmed; `presentation`/`none`: "".
+ * Accessible name, first non-empty of: `aria-labelledby` targets (each via `refText`, so a self-reference uses the
+ * element's own label or content), `aria-label`, `<label>`s (form controls), `alt` (images), button-like `value`,
+ * content text (only for roles that allow name from content), `title`. Trimmed; `presentation`/`none`: "".
  */
 export function nameOf(el: Element, role: string): string {
   if (role === "presentation" || role === "none") return "";
@@ -17,7 +20,8 @@ export function nameOf(el: Element, role: string): string {
     () =>
       ids
         .map((id) => doc.getElementById(id))
-        .map((ref) => (ref === null ? "" : contentText(ref)))
+        .map((ref) => (ref === null ? "" : refText(ref).trim()))
+        .filter((t) => t !== "")
         .join(" "),
     () => el.getAttribute("aria-label") ?? "",
     () => (control ? labelText(el) : ""),
@@ -27,7 +31,7 @@ export function nameOf(el: Element, role: string): string {
       tag === "input" && (type === "button" || type === "submit" || type === "reset")
         ? (el.getAttribute("value") ?? "")
         : "",
-    () => (control ? "" : contentText(el)),
+    () => (!control && NAME_FROM_CONTENT.has(role) ? contentText(el) : ""),
     () => el.getAttribute("title") ?? "",
   ];
   for (const c of candidates) {

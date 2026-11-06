@@ -4,20 +4,20 @@ import { firstLine } from "./firstLine.ts";
 
 /**
  * The E1704 error for a failed property (k.testing Failure output): line one names the failure with the seed,
- * the failing run, and `shrunk`; line two is the shrunk case as JSON under `label` (`payload` or `props`).
+ * the failing run, and `shrunk`; then one line per shrunk input as JSON (`payload`, `state`, or `props`).
  */
 export function propertyFailure(
   subject: string,
   failure: unknown,
   seed: number,
   run: number,
-  label: "payload" | "props",
-  shrunk: string,
+  shrunk: readonly (readonly [label: string, json: string])[],
 ): Error {
   const reason = clip(firstLine(failure), 70);
-  return fail("E1704", `${subject}: ${reason} (seed ${seed}, run ${run}, shrunk)\n  ${label}: ${clip(shrunk, 300)}`, {
+  const lines = shrunk.map(([label, json]) => `\n  ${label}: ${clip(json, 300)}`).join("");
+  return fail("E1704", `${subject}: ${reason} (seed ${seed}, run ${run}, shrunk)${lines}`, {
     seed,
     run,
-    [label]: shrunk,
+    shrunk: Object.fromEntries(shrunk),
   });
 }

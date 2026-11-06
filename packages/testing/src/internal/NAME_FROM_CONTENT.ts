@@ -1,0 +1,22 @@
+/** Roles whose accessible name may come from their content (WAI-ARIA 1.2 "Name From: contents"). */
+export const NAME_FROM_CONTENT: ReadonlySet<string> = new Set([
+  "button",
+  "cell",
+  "checkbox",
+  "columnheader",
+  "gridcell",
+  "heading",
+  "link",
+  "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "option",
+  "radio",
+  "row",
+  "rowheader",
+  "sectionhead",
+  "switch",
+  "tab",
+  "tooltip",
+  "treeitem",
+]);

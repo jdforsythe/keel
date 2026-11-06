@@ -3,6 +3,7 @@ import type { Transaction } from "@keel/store";
 import * as fc from "fast-check";
 import { checkComponent } from "./internal/checkComponent.ts";
 import { checkTransaction } from "./internal/checkTransaction.ts";
+import { holds } from "./internal/holds.ts";
 import { jsonOf } from "./internal/jsonOf.ts";
 import { propertyFailure } from "./internal/propertyFailure.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
@@ -16,8 +17,8 @@ const DEFAULT_RUNS = 100;
 /**
  * Schema-generated properties (k.testing Properties). A component renders every generated `Props` value without
  * throwing or breaking an axe rule, and two renders with one seed are equal. A transaction, for every generated
- * payload from the live state, commits with every declared invariant holding, is undone exactly, and is
- * deterministic. The seed is `options.seed`, else `KEEL_SEED`, else 1337. A failure throws E1704 with the seed,
+ * store state satisfying the store's invariants and every generated payload, commits with every invariant holding,
+ * is undone exactly, and is deterministic; the shrunk (payload, state) pair is reported. The seed is `options.seed`, else `KEEL_SEED`, else 1337. A failure throws E1704 with the seed,
  * the failing run, and the shrunk case; success resolves `{ seed, runs }`.
  */
 export function properties<P>(target: TestComponent<P>, options?: PropertyOptions): Promise<PropertyResult>;
@@ -36,23 +37,28 @@ export async function properties<T, P>(
     );
     if (out.failed && out.counterexample !== null) {
       const name = target.name === "" ? "component" : target.name;
-      throw propertyFailure(name, out.errorInstance, seed, out.numRuns, "props", jsonOf(props, out.counterexample[0]));
+      throw propertyFailure(name, out.errorInstance, seed, out.numRuns, [
+        ["props", jsonOf(props, out.counterexample[0])],
+      ]);
     }
   } else {
-    const payload = target.payload;
+    const st = target.store;
     const out = fc.check(
-      fc.property(gen(payload), (p) => checkTransaction(target, p)),
+      fc.property(gen(st.schema), gen(target.schema), (state, p) => {
+        fc.pre(holds(st, state));
+        checkTransaction(target, state, p);
+      }),
       { seed, numRuns: runs },
     );
-    if (out.failed && out.counterexample !== null)
-      throw propertyFailure(
-        target.name,
-        out.errorInstance,
-        seed,
-        out.numRuns,
-        "payload",
-        jsonOf(payload, out.counterexample[0]),
-      );
+    if (out.failed && out.counterexample !== null) {
+      const [state, p] = out.counterexample;
+      throw propertyFailure(target.name, out.errorInstance, seed, out.numRuns, [
+        ["payload", jsonOf(target.schema, p)],
+        ["state", jsonOf(st.schema, state)],
+      ]);
+    }
+    if (out.failed)
+      throw propertyFailure(target.name, "too few generated states satisfy the invariants", seed, out.numRuns, []);
   }
   return { seed, runs };
 }

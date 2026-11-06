@@ -1,7 +1,37 @@
 {
   "version": 1,
-  "unsafe": 3,
+  "unsafe": 4,
   "exports": [
+    {
+      "pkg": "check",
+      "name": "check",
+      "file": "packages/check/src/check.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "check",
+      "name": "defineRule",
+      "file": "packages/check/src/defineRule.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "check",
+      "name": "explain",
+      "file": "packages/check/src/explain.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "check",
+      "name": "format",
+      "file": "packages/check/src/format.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "check",
+      "name": "rules",
+      "file": "packages/check/src/rules.ts",
+      "rung": "example"
+    },
     {
       "pkg": "cli",
       "name": "formatter",
@@ -12,19 +42,19 @@
       "pkg": "cli",
       "name": "lsp",
       "file": "packages/cli/src/lsp.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "cli",
       "name": "mcp",
       "file": "packages/cli/src/mcp.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "cli",
       "name": "run",
       "file": "packages/cli/src/run.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "compiler",
@@ -37,18 +67,6 @@
       "name": "capabilities",
       "file": "packages/ctx/src/capabilities.ts",
       "rung": "example"
-    },
-    {
-      "pkg": "ctx",
-      "name": "createCtx",
-      "file": "packages/ctx/src/createCtx.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "ctx",
-      "name": "createCtx",
-      "file": "packages/ctx/src/createCtx.ts",
-      "rung": "probabilistic"
     },
     {
       "pkg": "ctx",
@@ -138,7 +156,7 @@
       "pkg": "router",
       "name": "createRouter",
       "file": "packages/router/src/createRouter.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "router",
@@ -162,13 +180,13 @@
       "pkg": "router",
       "name": "loader",
       "file": "packages/router/src/loader.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "router",
       "name": "manifest",
       "file": "packages/router/src/manifest.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "router",
@@ -183,9 +201,15 @@
       "rung": "probabilistic"
     },
     {
-      "pkg": "schema",
-      "name": "attempt",
-      "file": "packages/schema/src/attempt.ts",
+      "pkg": "scaffold",
+      "name": "plan",
+      "file": "packages/scaffold/src/plan.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "scaffold",
+      "name": "scaffold",
+      "file": "packages/scaffold/src/scaffold.ts",
       "rung": "probabilistic"
     },
     {
@@ -268,18 +292,6 @@
     },
     {
       "pkg": "testing",
-      "name": "properties",
-      "file": "packages/testing/src/properties.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "testing",
-      "name": "properties",
-      "file": "packages/testing/src/properties.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "testing",
       "name": "render",
       "file": "packages/testing/src/render.ts",
       "rung": "probabilistic"
@@ -294,7 +306,7 @@
       "pkg": "ui",
       "name": "styles",
       "file": "packages/ui/src/styles.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     }
   ]
 }

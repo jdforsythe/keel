@@ -1,12 +1,18 @@
 import { contentText } from "./contentText.ts";
 
-/** Text of the `<label>`s naming a form control: `<label for=id>` in its document, or an enclosing label. */
+/**
+ * Text of the `<label>`s naming a form control, per accname: every `<label for=id>` in its document, in document
+ * order, then an enclosing label (unless it is already one of those), joined by a space.
+ */
 export function labelText(el: Element): string {
-  const parts: string[] = [];
+  const labels: Element[] = [];
   if (el.id !== "")
     for (const label of Array.from(el.ownerDocument.getElementsByTagName("label")))
-      if (label.getAttribute("for") === el.id) parts.push(contentText(label));
+      if (label.getAttribute("for") === el.id) labels.push(label);
   const wrap = el.closest("label");
-  if (wrap !== null && parts.length === 0) parts.push(contentText(wrap));
-  return parts.join(" ").trim();
+  if (wrap !== null && !labels.includes(wrap)) labels.push(wrap);
+  return labels
+    .map((l) => contentText(l).trim())
+    .filter((t) => t !== "")
+    .join(" ");
 }

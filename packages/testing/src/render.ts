@@ -2,6 +2,7 @@ import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
+import type { UnexpectedError } from "@keel/runtime-dom";
 import type { Store } from "@keel/store";
 import { assertAccessible } from "./internal/assertAccessible.ts";
 import { clip } from "./internal/clip.ts";
@@ -11,13 +12,13 @@ import { nameOf } from "./internal/nameOf.ts";
 import { nodeOf } from "./internal/nodeOf.ts";
 import { resolve } from "./internal/resolve.ts";
 import { roleOf } from "./internal/roleOf.ts";
-import { rootError } from "./internal/rootError.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import { seedStores } from "./internal/seedStores.ts";
 import { settle } from "./internal/settle.ts";
 import { stateOf } from "./internal/stateOf.ts";
 import { storeValues } from "./internal/storeValues.ts";
 import { treeOf } from "./internal/treeOf.ts";
+import { unexpected } from "./internal/unexpected.ts";
 import type { A11yNode } from "./types/A11yNode.ts";
 import type { Found } from "./types/Found.ts";
 import type { Harness } from "./types/Harness.ts";
@@ -30,31 +31,42 @@ import type { TestEvent } from "./types/TestEvent.ts";
  * `[store, value]` in `state` by its store schema before anything renders (`schema.invalid`). The render uses
  * `options.ctx`, else a sim ctx seeded from `KEEL_SEED` (default 1337), mounts through `@keel/runtime-dom`
  * inside a scope, and fails with E1703 when the result breaks an axe rule. A throw the mount's root Boundary
- * catches (render here, handlers and effects in `fire`) fails the call with `keel.unexpected`.
+ * catches (reported through `mount`'s `onError`: render here, handlers and effects in `fire`) fails the call with
+ * `keel.unexpected`. `dispose` puts every seeded store back to its snapshot from before the render.
  */
 export function render<P>(component: TestComponent<P>, options: RenderOptions): Harness {
   const parsed = component.Props.parse(options.props);
   if (!parsed.ok) throw fail("schema.invalid", `props: ${clip(parsed.error.message, 80)}`, parsed.error.data);
-  seedStores(options.state ?? []);
+  const seeded = seedStores(options.state ?? []);
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   const container = document.createElement("div");
   document.body.appendChild(container);
   let unmount: (() => void) | undefined;
   let owner: Scope | undefined;
   let gone = false;
+  const caught: UnexpectedError[] = [];
+  const takeCaught = (): void => {
+    const [first] = caught.splice(0);
+    if (first !== undefined) throw unexpected(first);
+  };
   const dispose = (): void => {
     if (gone) return;
     gone = true;
     unmount?.();
     owner?.dispose();
     container.remove();
+    for (const [st, snap] of seeded) st.restore(snap);
   };
   try {
     owner = scope(() => {
-      unmount = mount(() => component(parsed.value, undefined, ctx), container, { ctx });
+      unmount = mount(() => component(parsed.value, undefined, ctx), container, {
+        ctx,
+        onError: (error) => {
+          caught.push(error);
+        },
+      });
     });
-    const caught = rootError(container);
-    if (caught !== undefined) throw caught;
+    takeCaught();
     assertAccessible(container);
   } catch (error) {
     dispose();
@@ -96,17 +108,16 @@ export function render<P>(component: TestComponent<P>, options: RenderOptions): 
     const win = document.defaultView;
     win?.addEventListener("error", onError);
     try {
-      el.dispatchEvent(eventFor(el, event));
-      const quiet = await settle(() => `${container.innerHTML}\n${JSON.stringify(storeValues())}`);
-      if (!quiet) throw new Error(`k.testing: fire(${JSON.stringify(id)}, ${event.type}) did not settle in 100 turns`);
+      await settle(container, () => {
+        el.dispatchEvent(eventFor(el, event));
+      });
     } finally {
       win?.removeEventListener("error", onError);
     }
     const [first] = errors;
     if (errors.length > 0) throw first;
     if (gone) return;
-    const caught = rootError(container);
-    if (caught !== undefined) throw caught;
+    takeCaught();
     assertAccessible(container);
   };
 
