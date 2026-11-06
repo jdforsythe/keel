@@ -53,5 +53,5 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0049 testing: a way to await a resource after `render` without firing a synthetic event (golden-1 friction 8) · testing · k.testing · G1 · 0025
 - [ ] 0050 ctx: `random.uuid()` returns a branded id when given a brand (`ctx.random.id('Todo')`) so actions need no re-parse (golden-1 friction 7) · ctx · k.ctx · G1 · 0009
 - [ ] 0051 check: E1651 (`ctx.net.fetch` in app code, fix: declare an endpoint), E1652 (`:param` in `path` vs `params` fields), E1653 (`body` on GET/HEAD) on `endpoints({...})` literals; @keel/services ships without them (services PLAN D10) · check · k.services · G2 · 0029
-- [ ] 0052 rfc: k.ctx clock timer (`clock.after(ms): Promise<void>` resolved by sim `advance` / platform timer) so services timeouts stop polling a sim clock per macrotask (services PLAN D5) · ctx, services · k.ctx · G2 · 0029
+- [x] 0052 rfc: k.ctx clock timer (`clock.after(ms): Promise<void>` resolved by sim `advance` / platform timer) so services timeouts stop polling a sim clock per macrotask (services PLAN D5) · ctx, services · k.ctx · G2 · 0029
 - [x] 0053 rfc: k.services error code for invalid call input (today `api.decode` with `params`/`query`/`body` path prefix, services PLAN D4); spec union has no input code · services · k.services · G2 · 0029

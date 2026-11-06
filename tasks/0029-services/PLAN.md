@@ -24,6 +24,7 @@
 - D7: Query encoding: `query.encode(v)` then flattened to URLSearchParams (dotted keys for objects, repeated keys for primitive arrays, null skipped) as the inverse of `decodeStrings`. Path params: `params.encode(v)`, string as is, other JSON as its literal, then `encodeURIComponent`. Body: `JSON.stringify(body.encode(v))` with `content-type: application/json`.
 - D8: Never throws: each effect goes through `attempt`; a Request the platform refuses (bad URL, body on GET) or a rejected fetch is `api.network`; any residual unexpected throw in the call (e.g. a malformed ctx) is mapped to `api.network` by an outer `attempt`. `service(...)` itself throws at construction on a non-absolute `base` or a timeout that is not a finite ms > 0 (declaration bug, like `s.string` min > max).
 - D9: One `unsafe` (`unsafe/asClient.ts`): Object.fromEntries cannot be typed as the mapped `Client<D>`. Unsafe count 0 -> 1, justified.
+- D11 (rfc:0012): D5 superseded. The timeout is `ctx.clock.after(ms, signal)`; `deadline.ts` and the `"advance" in clock` duck-typing are gone, so a sim timeout fires only on `advance` and is unaffected by `vi.useFakeTimers()` (`test/timeout-fake-timers.test.ts`). A cancelled timer's rejection is swallowed.
 - D10: E1651-E1653 are static checker rules owned by `@keel/check`; not implemented here (backlog item).
 - D12: RFC 0013: invalid call input (and a param `encodeURIComponent` rejects) is `api.input { issues }`, paths prefixed `params`/`query`/`body`, nothing sent; supersedes D4. `api.decode` is response bodies only.
 

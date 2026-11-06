@@ -11,10 +11,12 @@ const flush = async (): Promise<void> => {
   for (let i = 0; i < 25; i++) await Promise.resolve();
 };
 
-
 describe("k.services: network failure", () => {
   it("A rejected `fetch` yields `api.network`", async () => {
-    const api = service({ base: BASE, schema: endpoints({ get: { method: "GET", path: "/x", output: s.object({}) } }) });
+    const api = service({
+      base: BASE,
+      schema: endpoints({ get: { method: "GET", path: "/x", output: s.object({}) } }),
+    });
     await fc.assert(
       fc.asyncProperty(fc.string(), async (msg) => {
         const ctx = createCtx({ mode: "sim", seed: 1337 });

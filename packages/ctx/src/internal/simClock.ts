@@ -1,13 +1,59 @@
 import type { SimClock } from "../SimClock.ts";
+import { checkMs } from "./checkMs.ts";
 
-/** Simulated clock at 0. `advance` rejects negative or non-finite ms so time stays monotonic. */
+interface Waiter {
+  readonly at: number;
+  readonly seq: number;
+  readonly resolve: () => void;
+}
+
+/**
+ * Simulated clock at 0. `advance` rejects negative or non-finite ms so time stays monotonic, then resolves
+ * every waiter whose deadline it crossed, in deadline order (ties by registration order), before returning.
+ * Time steps to each deadline while resolving, so `now()` never reads past a waiter's own deadline.
+ */
 export function simClock(): SimClock {
   let t = 0;
+  let seq = 0;
+  const waiters = new Set<Waiter>();
   return {
     now: () => t,
+    after: (ms, signal) =>
+      new Promise<void>((resolve, reject) => {
+        checkMs(ms);
+        if (signal?.aborted) {
+          reject(signal.reason);
+          return;
+        }
+        const w: Waiter = {
+          at: t + ms,
+          seq: seq++,
+          resolve: () => {
+            signal?.removeEventListener("abort", onAbort);
+            resolve();
+          },
+        };
+        const onAbort = (): void => {
+          waiters.delete(w);
+          reject(signal?.reason);
+        };
+        signal?.addEventListener("abort", onAbort, { once: true });
+        if (ms === 0) {
+          w.resolve();
+          return;
+        }
+        waiters.add(w);
+      }),
     advance: (ms) => {
-      if (!Number.isFinite(ms) || ms < 0) throw new RangeError(`advance(ms) needs a finite ms >= 0, got ${ms}`);
-      t += ms;
+      checkMs(ms);
+      const target = t + ms;
+      const due = [...waiters].filter((w) => w.at <= target).sort((a, b) => a.at - b.at || a.seq - b.seq);
+      for (const w of due) {
+        waiters.delete(w);
+        t = w.at;
+        w.resolve();
+      }
+      t = target;
     },
   };
 }

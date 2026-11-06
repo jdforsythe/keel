@@ -11,19 +11,23 @@ const flush = async (): Promise<void> => {
   for (let i = 0; i < 25; i++) await Promise.resolve();
 };
 
-
 describe("k.services: 2xx matching output yields ok", () => {
   it("A 2xx response whose body matches `output` yields `ok` with the decoded value", async () => {
     const Item = s.object({ n: s.int(), name: s.string() });
     const api = service({ base: BASE, schema: endpoints({ get: { method: "GET", path: "/items", output: Item } }) });
     await fc.assert(
-      fc.asyncProperty(fc.integer({ min: -1000, max: 1000 }), fc.string(), fc.constantFrom(200, 201, 200, 299), async (n, name, status) => {
-        const ctx = createCtx({ mode: "sim", seed: 1337 });
-        ctx.net.route(`${BASE}/items`, async () => new Response(JSON.stringify({ n, name }), { status }));
-        const r = await api.get({}, ctx);
-        expect(r.ok).toBe(true);
-        if (r.ok) expect(r.value).toEqual({ n, name });
-      }),
+      fc.asyncProperty(
+        fc.integer({ min: -1000, max: 1000 }),
+        fc.string(),
+        fc.constantFrom(200, 201, 200, 299),
+        async (n, name, status) => {
+          const ctx = createCtx({ mode: "sim", seed: 1337 });
+          ctx.net.route(`${BASE}/items`, async () => new Response(JSON.stringify({ n, name }), { status }));
+          const r = await api.get({}, ctx);
+          expect(r.ok).toBe(true);
+          if (r.ok) expect(r.value).toEqual({ n, name });
+        },
+      ),
       { seed: 1337 },
     );
   });

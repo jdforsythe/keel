@@ -11,11 +11,12 @@ const flush = async (): Promise<void> => {
   for (let i = 0; i < 25; i++) await Promise.resolve();
 };
 
-
 describe("k.services: encoding", () => {
   const api = service({
     base: BASE,
-    schema: endpoints({ get: { method: "GET", path: "/orders/:id", params: s.object({ id: s.string() }), output: s.object({}) } }),
+    schema: endpoints({
+      get: { method: "GET", path: "/orders/:id", params: s.object({ id: s.string() }), output: s.object({}) },
+    }),
   });
   const seen = async (id: string): Promise<string> => {
     const ctx = createCtx({ mode: "sim", seed: 1337 });

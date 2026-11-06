@@ -11,7 +11,6 @@ const flush = async (): Promise<void> => {
   for (let i = 0; i < 25; i++) await Promise.resolve();
 };
 
-
 describe("k.services: 2xx failing output yields api.decode", () => {
   it("A 2xx response whose body fails `output` yields `err` with `api.decode`, never `ok`", async () => {
     const Item = s.object({ n: s.int() });

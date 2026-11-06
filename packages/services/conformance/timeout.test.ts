@@ -11,13 +11,16 @@ const flush = async (): Promise<void> => {
   for (let i = 0; i < 25; i++) await Promise.resolve();
 };
 
-
 describe("k.services: timeout", () => {
   it("Under sim, with no response, advancing the clock to `timeout - 1` leaves the call pending; advancing to `timeout` yields `api.timeout` and aborts the request signal", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 2, max: 60000 }), async (timeout) => {
         const Out = s.object({ n: s.int() });
-        const api = service({ base: BASE, schema: endpoints({ get: { method: "GET", path: "/slow", output: Out, timeout } }), timeout: 10 ** 9 });
+        const api = service({
+          base: BASE,
+          schema: endpoints({ get: { method: "GET", path: "/slow", output: Out, timeout } }),
+          timeout: 10 ** 9,
+        });
         const ctx = createCtx({ mode: "sim", seed: 1337 });
         let aborted = false;
         ctx.net.route(`${BASE}/slow`, (req) => {
@@ -50,7 +53,10 @@ describe("k.services: timeout", () => {
   });
 
   it("service timeout defaults to 10,000 ms", async () => {
-    const api = service({ base: BASE, schema: endpoints({ get: { method: "GET", path: "/slow", output: s.object({}) } }) });
+    const api = service({
+      base: BASE,
+      schema: endpoints({ get: { method: "GET", path: "/slow", output: s.object({}) } }),
+    });
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     ctx.net.route(`${BASE}/slow`, () => new Promise<Response>(() => {}));
     let settled = false;
@@ -68,7 +74,11 @@ describe("k.services: timeout", () => {
   });
 
   it("an endpoint `timeout` overrides the service timeout", async () => {
-    const api = service({ base: BASE, timeout: 50000, schema: endpoints({ get: { method: "GET", path: "/slow", output: s.object({}), timeout: 100 } }) });
+    const api = service({
+      base: BASE,
+      timeout: 50000,
+      schema: endpoints({ get: { method: "GET", path: "/slow", output: s.object({}), timeout: 100 } }),
+    });
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     ctx.net.route(`${BASE}/slow`, () => new Promise<Response>(() => {}));
     const pending = api.get({}, ctx);

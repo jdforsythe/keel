@@ -25,6 +25,7 @@
 - D9: `packages/ctx/tsconfig.build.json` adds `rewriteRelativeImportExtensions: true`; the factory config failed TS5097 on `.ts` import paths. Every package with internal imports hits this; factory follow-up.
 - D10 (rfc:0001): accessor only; `ctx[name]` is no longer attached (Principle 1). Type restoration on idempotent re-register uses one justified `unsafe` in `unsafe/narrowAccessor.ts` (unsafe count +1).
 - D11 (rfc:0001): `register` is idempotent for the same name and identical impls object (reference equality); a different object throws E1602.
+- D13 (rfc:0012): `Clock.after(ms, signal?)`. Sim: waiters keyed by (deadline, registration seq); `advance` steps `now()` to each due deadline, resolving in order, then to the target. Abort rejects with `signal.reason` and drops the waiter. Real: `setTimeout` clamped to 2^31-1, cleared on abort. Shell delegates to real.
 - D12 (rfc:0001): each registered capability's seed = ctx seed xor FNV-1a(name), so streams do not correlate.
 
 ## Verification

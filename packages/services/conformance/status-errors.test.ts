@@ -11,12 +11,13 @@ const flush = async (): Promise<void> => {
   for (let i = 0; i < 25; i++) await Promise.resolve();
 };
 
-
 describe("k.services: non-2xx yields api.status", () => {
   const Conflict = s.object({ reason: s.string() });
   const api = service({
     base: BASE,
-    schema: endpoints({ act: { method: "POST", path: "/act", body: s.object({}), output: s.object({}), errors: { 409: Conflict } } }),
+    schema: endpoints({
+      act: { method: "POST", path: "/act", body: s.object({}), output: s.object({}), errors: { 409: Conflict } },
+    }),
   });
 
   it("A 409 with `errors: { 409: Conflict }` yields `api.status` with a decoded body", async () => {
@@ -38,17 +39,21 @@ describe("k.services: non-2xx yields api.status", () => {
 
   it("an undeclared 500 yields `api.status` with `body: null`", async () => {
     await fc.assert(
-      fc.asyncProperty(fc.integer({ min: 400, max: 599 }).filter((n) => n !== 409), fc.string(), async (status, text) => {
-        const ctx = createCtx({ mode: "sim", seed: 1337 });
-        ctx.net.route(`${BASE}/act`, async () => new Response(JSON.stringify({ text }), { status }));
-        const r = await api.act({ body: {} }, ctx);
-        expect(r.ok).toBe(false);
-        if (!r.ok) {
-          expect(r.error.code).toBe("api.status");
-          expect(r.error.data.status).toBe(status);
-          expect(r.error.data.body).toBeNull();
-        }
-      }),
+      fc.asyncProperty(
+        fc.integer({ min: 400, max: 599 }).filter((n) => n !== 409),
+        fc.string(),
+        async (status, text) => {
+          const ctx = createCtx({ mode: "sim", seed: 1337 });
+          ctx.net.route(`${BASE}/act`, async () => new Response(JSON.stringify({ text }), { status }));
+          const r = await api.act({ body: {} }, ctx);
+          expect(r.ok).toBe(false);
+          if (!r.ok) {
+            expect(r.error.code).toBe("api.status");
+            expect(r.error.data.status).toBe(status);
+            expect(r.error.data.body).toBeNull();
+          }
+        },
+      ),
       { seed: 1337 },
     );
   });
