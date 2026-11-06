@@ -81,11 +81,18 @@ function unparen(e: Expression): Expression {
   return e.type === "ParenthesizedExpression" ? unparen(e.expression) : e;
 }
 
+/**
+ * A call that renders a slot: `slots.<name>()`, `<props>.children()` (RFC 0008), or a `children` binding
+ * (`children()`); optional calls too. It returns nodes, so it is inserted as a node, never bound as text (D31).
+ */
 function isSlotCall(e: Expression): boolean {
   const x = e.type === "ChainExpression" ? e.expression : e;
   if (x.type !== "CallExpression") return false;
   const c = x.callee;
-  return c.type === "MemberExpression" && c.object.type === "Identifier" && c.object.name === "slots";
+  if (c.type === "Identifier") return c.name === "children";
+  if (c.type !== "MemberExpression" || c.computed) return false;
+  if (c.property.name === "children") return true;
+  return c.object.type === "Identifier" && c.object.name === "slots";
 }
 
 /**
@@ -119,6 +126,7 @@ export function lowerFile(
   };
   const ctxNames = ctxParams(a, fns, componentFnAt, ns, edits);
   usesScope(a, ns, edits, headerImports);
+  moduleScope(a, ns, edits, headerImports);
   const info = new Map(elements.map((e) => [e.start, e]));
   const templates: string[] = [];
   const bindings: BindingInfo[] = [];
@@ -542,7 +550,7 @@ export function lowerFile(
   if (!ops && headerImports.length === 0) return { code: body, bindings };
   const header = [
     ...(ops ? [`import * as ${ns} from ${q(OPS_MODULE)};`] : []),
-    ...headerImports,
+    ...new Set(headerImports),
     ...templates.map((html, i) => `const ${ns}t${i} = ${ns}.template(${q(html)});`),
   ].join("\n");
   return { code: `${header}\n${body}`, bindings };
@@ -653,4 +661,69 @@ function usesScope(a: Analysis, ns: string, edits: Edit[], headerImports: string
     edits.push({ start: body.end, end: body.end, text: `); }); return ${ns}v; }` });
   }
   headerImports.push(`import { scope as ${ns}scope } from ${JSON.stringify(REACTIVE_MODULE)};`);
+}
+
+/** Local names bound to `imported` from `source`. */
+function importedAs(a: Analysis, source: string, imported: string): Set<string> {
+  const out = new Set<string>();
+  for (const i of a.imports) {
+    if (i.source.value !== source || i.importKind === "type") continue;
+    for (const sp of i.specifiers) {
+      if (sp.type !== "ImportSpecifier" || sp.importKind === "type") continue;
+      const name = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
+      if (name === imported) out.add(sp.local.name);
+    }
+  }
+  return out;
+}
+
+/**
+ * Module-level reactive state (D30): a top-level `const x = store(...)` (k.store) or `signal`/`computed`/
+ * `resource` (k.reactive) is created inside a root scope that lives as long as the module, since the runtime
+ * rejects primitives outside any scope (E1203). An exported store under `modules/<id>/` without an explicit
+ * id gets `{ id: "<id>.<export>" }` (k.store Ids: the compiler fills it from the export name).
+ */
+function moduleScope(a: Analysis, ns: string, edits: Edit[], headerImports: string[]): void {
+  const stores = importedAs(a, "@keel/store", "store");
+  const reactive = new Set<string>();
+  for (const k of ["signal", "computed", "resource"])
+    for (const n of importedAs(a, REACTIVE_MODULE, k)) reactive.add(n);
+  if (stores.size === 0 && reactive.size === 0) return;
+  const segs = a.path.replace(/\\/g, "/").split("/");
+  const at = segs.indexOf("modules");
+  const mod = at >= 0 && at < segs.length - 2 ? segs[at + 1] : undefined;
+  let used = false;
+  for (const st of a.program.body) {
+    const exported = st.type === "ExportNamedDeclaration";
+    const d = st.type === "ExportNamedDeclaration" ? st.declaration : st;
+    if (d === null || d.type !== "VariableDeclaration") continue;
+    for (const v of d.declarations) {
+      const init = v.init;
+      if (init === null || init.type !== "CallExpression" || init.callee.type !== "Identifier") continue;
+      const callee = init.callee.name;
+      const isStore = stores.has(callee);
+      if (!isStore && !reactive.has(callee)) continue;
+      used = true;
+      edits.push({ start: init.start, end: init.start, text: `${ns}root(() => ` });
+      edits.push({ start: init.end, end: init.end, text: ")" });
+      if (!isStore || !exported || mod === undefined || v.id.type !== "Identifier") continue;
+      const id = JSON.stringify(`${mod}.${v.id.name}`);
+      const args = init.arguments;
+      const second = args[1];
+      const third = args[2];
+      if (args.length === 2 && second !== undefined && second.type !== "SpreadElement")
+        edits.push({ start: second.end, end: second.end, text: `, { id: ${id} }` });
+      else if (third !== undefined && third.type === "ObjectExpression") {
+        const named = third.properties.some(
+          (p) => p.type !== "Property" || p.computed || p.key.type !== "Identifier" || p.key.name === "id",
+        );
+        if (!named) edits.push({ start: third.start + 1, end: third.start + 1, text: ` id: ${id},` });
+      }
+    }
+  }
+  if (!used) return;
+  headerImports.push(
+    `import { scope as ${ns}scope } from ${JSON.stringify(REACTIVE_MODULE)};`,
+    `const ${ns}root = (f) => { let v; ${ns}scope(() => { v = f(); }); return v; };`,
+  );
 }

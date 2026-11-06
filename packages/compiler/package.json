@@ -15,11 +15,10 @@
     "./testing": {
       "types": "./src/testing/evaluate.ts",
       "default": "./src/testing/evaluate.ts"
-    }
+    },
+    "./tsconfig.strict.json": "./tsconfig.strict.json"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist", "tsconfig.strict.json"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",

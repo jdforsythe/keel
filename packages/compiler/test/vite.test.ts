@@ -39,6 +39,7 @@ describe("@keel/compiler/vite", () => {
       "deps.json",
       "ids.json",
       "routes.json",
+      "styles.json",
     ]);
     p.watchChange(b, { event: "delete" });
     expect(Object.keys(read("ids.json").data)).toEqual(["src.A.0"]);

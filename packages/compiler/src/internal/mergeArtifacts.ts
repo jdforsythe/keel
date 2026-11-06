@@ -3,13 +3,17 @@ import type { Artifacts } from "../types/Artifacts.ts";
 import type { DepsEdge } from "../types/DepsEdge.ts";
 import type { DepsNode } from "../types/DepsNode.ts";
 import type { IdEntry } from "../types/IdEntry.ts";
+import type { RouteEntry } from "../types/RouteEntry.ts";
+import type { StyleUsage } from "../types/StyleUsage.ts";
+import { canonicalJson } from "./canonicalJson.ts";
 
 const cmp = (x: string, y: string): number => (x < y ? -1 : x > y ? 1 : 0);
 
 /**
  * Union of per-module artifacts (as `compile` returns for one module each), sorted like `compile`'s
  * own output. Parts are taken in the given order; an element id claimed by an earlier part is kept
- * and reported in `duplicates` with the file of the later claim.
+ * and reported in `duplicates` with the file of the later claim. Style usages are deduplicated; for a
+ * route id in several parts the last one wins.
  */
 export function mergeArtifacts(parts: readonly Artifacts[]): {
   artifacts: Artifacts;
@@ -19,6 +23,8 @@ export function mergeArtifacts(parts: readonly Artifacts[]): {
   const a11y = new Map<string, A11yEntry>();
   const nodes = new Map<string, DepsNode>();
   const edges = new Map<string, DepsEdge>();
+  const routes = new Map<string, RouteEntry>();
+  const usages = new Map<string, StyleUsage>();
   const duplicates: { id: string; file: string }[] = [];
   for (const p of parts) {
     for (const id of Object.keys(p["ids.json"])) {
@@ -34,6 +40,8 @@ export function mergeArtifacts(parts: readonly Artifacts[]): {
     }
     for (const n of p["deps.json"].nodes) nodes.set(n.id, n);
     for (const e of p["deps.json"].edges) edges.set(`${e.from}\u0000${e.to}`, e);
+    for (const [id, r] of Object.entries(p["routes.json"])) routes.set(id, r);
+    for (const u of p["styles.json"].usages) usages.set(canonicalJson(u), u);
   }
   const record = <T>(m: Map<string, T>): Record<string, T> => {
     const out: Record<string, T> = Object.create(null);
@@ -51,7 +59,8 @@ export function mergeArtifacts(parts: readonly Artifacts[]): {
         nodes: [...nodes.values()].sort((x, y) => cmp(x.id, y.id)),
       },
       "ids.json": record(ids),
-      "routes.json": {},
+      "routes.json": record(routes),
+      "styles.json": { usages: [...usages.keys()].sort(cmp).flatMap((k) => usages.get(k) ?? []) },
     },
     duplicates,
   };

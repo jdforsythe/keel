@@ -66,6 +66,9 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
@@ -103,13 +106,22 @@ importers:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-    devDependencies:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/scaffold':
+        specifier: workspace:*
+        version: link:../scaffold
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.20.5)(happy-dom@21.0.4)(lightningcss@1.33.0)
+    devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

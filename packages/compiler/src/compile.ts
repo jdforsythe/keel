@@ -3,7 +3,10 @@ import type { BindingInfo } from "./internal/BindingInfo.ts";
 import type { ElementInfo } from "./internal/ElementInfo.ts";
 import { analyze } from "./internal/analyze.ts";
 import { buildDeps } from "./internal/buildDeps.ts";
+import { canonicalJson } from "./internal/canonicalJson.ts";
+import { clientOnly } from "./internal/clientOnly.ts";
 import { collectElements } from "./internal/collectElements.ts";
+import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
 import { hashOf } from "./internal/hashOf.ts";
 import { lowerFile } from "./internal/lowerFile.ts";
@@ -19,7 +22,9 @@ import type { CompileOptions } from "./types/CompileOptions.ts";
 import type { CompileResult } from "./types/CompileResult.ts";
 import type { Diagnostic } from "./types/Diagnostic.ts";
 import type { IdEntry } from "./types/IdEntry.ts";
+import type { RouteEntry } from "./types/RouteEntry.ts";
 import type { SourceFile } from "./types/SourceFile.ts";
+import type { StyleUsage } from "./types/StyleUsage.ts";
 
 const cmp = (x: string, y: string): number => (x < y ? -1 : x > y ? 1 : 0);
 
@@ -56,10 +61,12 @@ function duplicateIds(all: readonly { a: Analysis; elements: readonly ElementInf
  * Compile Keel sources (k.compiler): lower JSX to k.runtime ops, run the compile-time rules, and derive
  * the `.keel/` artifacts. Pure and deterministic: equal inputs give byte-identical results; nothing is
  * read from or written to disk. `mode: "server"` currently emits the same client module (see PLAN D9).
+ * `topology` exempts client-only deployables from E1004; `routes` is copied (sorted) into `routes.json`.
  */
 export function compile(files: readonly SourceFile[], options: CompileOptions = {}): CompileResult {
   void options.mode;
   const diagnostics: Diagnostic[] = [];
+  const usages = new Map<string, StyleUsage>();
   const done: { a: Analysis; elements: ElementInfo[]; bindings: BindingInfo[]; code: string }[] = [];
   for (const file of files) {
     const a = analyze(file);
@@ -69,14 +76,23 @@ export function compile(files: readonly SourceFile[], options: CompileOptions = 
     diagnostics.push(
       ...ruleRawHtml(a),
       ...ruleUrlLiteral(a),
-      ...ruleServerImport(a),
+      ...ruleServerImport(a, clientOnly(a.path, options.topology)),
       ...ruleAndJsx(a),
       ...ruleControlFlow(a),
       ...destructuring.diagnostics,
     );
     const elements = collectElements(a);
+    const styles = a.parseErrors.length > 0 ? undefined : collectStyles(a);
+    for (const u of styles?.usages ?? []) usages.set(canonicalJson(u), u);
     const lowered =
-      a.parseErrors.length > 0 ? { code: a.source, bindings: [] } : lowerFile(a, elements, destructuring.edits);
+      styles === undefined
+        ? { code: a.source, bindings: [] }
+        : lowerFile(
+            a,
+            elements.filter((e) => !e.base),
+            destructuring.edits,
+            styles.rewrites,
+          );
     done.push({ a, elements, bindings: lowered.bindings, code: lowered.code });
   }
   diagnostics.push(...duplicateIds(done));
@@ -89,11 +105,18 @@ export function compile(files: readonly SourceFile[], options: CompileOptions = 
     ids[e.id] = { col: e.col, component: e.component, file: e.file, line: e.line, role: e.role, tag: e.tag };
     a11y[e.id] = { name: e.name, role: e.role, tag: e.tag };
   }
+  const routes: Record<string, RouteEntry> = Object.create(null);
+  const given = options.routes ?? {};
+  for (const id of Object.keys(given).sort(cmp)) {
+    const entry = given[id];
+    if (entry !== undefined) routes[id] = entry;
+  }
   const artifacts: Artifacts = {
     "a11y.json": a11y,
     "deps.json": buildDeps(done),
     "ids.json": ids,
-    "routes.json": {},
+    "routes.json": routes,
+    "styles.json": { usages: [...usages.keys()].sort(cmp).flatMap((k) => usages.get(k) ?? []) },
   };
   return {
     artifacts,
@@ -103,6 +126,7 @@ export function compile(files: readonly SourceFile[], options: CompileOptions = 
       "deps.json": hashOf(artifacts["deps.json"]),
       "ids.json": hashOf(artifacts["ids.json"]),
       "routes.json": hashOf(artifacts["routes.json"]),
+      "styles.json": hashOf(artifacts["styles.json"]),
     },
     outputs: done.map((d) => ({ path: d.a.path, code: d.code })),
   };
