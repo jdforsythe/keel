@@ -89,6 +89,7 @@ export function store<T extends object>(
 
   const self: Store<T> = {
     id,
+    schema,
     get(key) {
       const cell = cells.get(key);
       if (cell === undefined) root.get();
@@ -169,7 +170,13 @@ export function store<T extends object>(
         };
         payloads.set(name, payload);
         binders.set(name, bind);
-        const t: Transaction<T, P> = { name, payload, [coreKey]: (raw) => run(t, bind(raw)) };
+        const t: Transaction<T, P> = {
+          name,
+          payload,
+          schema: payload,
+          store: self,
+          [coreKey]: (raw) => run(t, bind(raw)),
+        };
         return t;
       },
       guard(check) {

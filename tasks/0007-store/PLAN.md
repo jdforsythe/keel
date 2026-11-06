@@ -31,13 +31,14 @@
 - D16 (rfc:0003): `Snapshot` is `{ state, log, initial }`; `restore` validates `initial` against the schema (required) and replaces the base `undo` replays from. Snapshots without `initial` are `schema.invalid`. D5's precondition is gone.
 - D17 (rfc:0003): `uses` records declarations keyed by `owner()` (merged per scope, dropped via `Scope.onDispose`); outside a scope it throws E1203. `tx` unions the declarations of the caller's scope and its `parent` chain; none in the chain means unrestricted. Replaces the D10 probe (`liveness.ts` deleted). Test "Declarations are not enforced outside any scope" now holds in general. `test/examples` "uses declaration stops applying" rewritten for the new semantics (not a conformance test).
 - D18 (rfc:0003): default id `store.<n>` from a module counter (supersedes D14 default `"store"`); `stores()` returns a live registry Map (internal, `src/internal/registry.ts`), entries removed by `onDispose` of the creating scope; a live duplicate id throws before anything is created.
+- D19 (rfc:0007): `Store` exposes readonly `schema` and `id`; `Transaction` exposes readonly `schema` (alias of `payload`) and `store` (set after `self` exists; `define` runs only on call, so no TDZ). Tests: conformance/schema-exposed.test.ts.
 
 ## Verification
 - [x] conformance green (22 tests) · properties present · `pnpm --filter @keel/store check` clean · structure-lint clean for store · build ok
 - Root structure-lint red only outside store (`packages/forms/conformance/fixtures.ts` S0003; other task).
 - Mutation: `mutate` script for store is `echo skip`; the 80% threshold is not measured.
 
-Test trailer (`pnpm --filter @keel/store test`): `ok 35 tests, 0 failed, 0 skipped (0.5s)`
+Test trailer (`pnpm --filter @keel/store test`): `ok 49 tests, 0 failed, 0 skipped (0.5s)`
 
 ## Next action
 review

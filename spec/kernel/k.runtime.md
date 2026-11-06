@@ -7,7 +7,7 @@ import { mount } from '@keel/runtime-dom'
 const dispose = mount(App, document.getElementById('app'), { ctx: createCtx({ mode: 'real' }) }) // generated entry only; App takes no props
 dispose()
 ```
-`mount(Component, el, { ctx? })` renders a client-only tree into `el`, passing `ctx` (k.ctx) as the root component's third argument, and returns `dispose`. Server-rendered apps never call it: the generated entry calls `resume(root, components, { ctx?, stores? })` (`@keel/runtime-dom/ops`), which passes `ctx` to every island root.
+`mount(Component, el, { ctx?, onError? })` renders a client-only tree into `el`, passing `ctx` (k.ctx) as the root component's third argument, and returns `dispose`. When the default root Boundary catches an error, `onError(error)` (a `keel.unexpected` error, k.errors) is called in addition to rendering the fallback. Server-rendered apps never call it: the generated entry calls `resume(root, components, { ctx?, stores? })` (`@keel/runtime-dom/ops`), which passes `ctx` to every island root.
 
 **Ops.** Compiler-only (k.compiler): `template(html)`, `clone(t)`, `text(node, fn)`, `attr(el, name, fn)`, `prop(el, name, fn)`, `on(id, type, handler)`, `cond`, `list`, `match`, `boundary`. Each binding is an `effect` in the owning component's scope that writes exactly one DOM location; disposing the scope removes it. `attr` with `null` or `false` removes the attribute; `true` sets it empty.
 
@@ -31,4 +31,5 @@ Resume restores stores from the snapshot, finds bound nodes by `data-k`, attache
 - A page with no islands loads no runtime JS.
 - An event fired before its island resumes is applied exactly once after resume.
 - A handler on an inner element runs before one on its ancestor; `stopPropagation` in the inner handler prevents the outer one.
+- `mount` `onError` receives the error the root boundary rendered.
 - `attr(el, 'x', fn)` removes `x` when `fn` returns `false` and restores it when `fn` returns a string again.

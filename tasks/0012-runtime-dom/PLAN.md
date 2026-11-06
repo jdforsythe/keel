@@ -37,6 +37,7 @@
 - D20 (review 5): `mount` renders through a root `boundary` whose fallback is `<pre data-k-error="<at>">message</pre>` (anchor comment appended to `el`; dispose removes everything mount added). `safeUrl`: `poster`, `ping` (every space-separated URL must pass), `srcdoc` always `about:blank` (raw HTML sink, not a URL; a scheme check would pass `<script>`). `package.json` `sideEffects: ["./src/ops/resume.ts"]`.
 - D21 (rfc:0004): every render unit runs its render inside `scope(fn, { onError })` when it has a Boundary, routing throws of app-level effects and computeds created under it (delivered after the commit; the effect is marked failed) to the same catch path as render/handler throws: dispose subtree, fallback with `keel.unexpected` (`data.at` = the unit's anchor id), `reset()` re-creates. Nearest Boundary wins because each unit's scope is the nearest `onError`. Tests: boundary-effects.test.ts (effect throw on later write, computed read in effect, reset, root default Boundary).
 - D22 (k.component ctx): `Component<P> = (props: P, slots?: Slots, ctx?: Ctx) => Node`; `mount(App, el, { ctx? })` and `resume(root, components, { ctx?, stores? })` pass `ctx` (k.ctx) as the root/island component's third argument (`undefined` when omitted, so conformance calls without options still work). `resume`'s third parameter changed from a `stores` map to an options object (`stores` moved inside; supersedes D9's signature). Nested components get `ctx` from compiled code, not the runtime. Dependency `@keel/ctx` added. Tests: ctx.test.ts.
+- D23 (rfc:0007): `mount(App, el, { ctx?, onError? })`; the root Boundary fallback wrapper in `mount.ts` builds `rootFallback(error)` then calls `onError(error)` (same error object). A throw in `onError` goes to the effect/flush as an unhandled error (no enclosing boundary). Tests: conformance/mount-onerror.test.ts.
 
 ## Conformance issues (resolved by conformance-writer after the WIP commit; not edited here)
 - E1203 conflict: attr-toggle.test.ts (3 tests), mount-dispose.test.ts "zero reactive subscriptions", boundary.test.ts "after a catch, no effect…" (2 tests) create `signal()` at test level; k.reactive conformance (rules.conformance.test.ts) requires that to throw E1203. Verified all six pass when the signal is created in a live root scope (temporary copies, deleted).
@@ -49,7 +50,7 @@
 - [x] `pnpm --filter @keel/runtime-dom check` clean · `pnpm --filter @keel/compiler test`: `ok 52 tests, 0 failed, 1 skipped`
 - Mutation: `mutate` is `echo skip`; 70% threshold not measured.
 
-Test trailer (`pnpm --filter @keel/runtime-dom test`): `ok 65 tests, 0 failed, 9 skipped (1.2s)` (9 skipped = it.todo for untestable rules).
+Test trailer (`pnpm --filter @keel/runtime-dom test`): `ok 68 tests, 0 failed, 9 skipped (0.9s)` (9 skipped = it.todo for untestable rules).
 
 ## Next action
 review
