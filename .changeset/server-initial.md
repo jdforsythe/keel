@@ -1,0 +1,5 @@
+---
+"@keel/server": minor
+---
+
+k.server: `createApp({ topology, routes, ctx, mode?, deployable?, guards?, log? })` over Hono. Path matching like the router (trailing slash 308, params 404 at the nearest errorElement, search keys that fail are dropped). Guards run outermost first; a denial redirects with `?next=`. Chain loaders start together; an `err` maps to a status (404/403/422/400, 500 for keel.unexpected) and renders the nearest errorElement. Actions are picked by verb or `_method`; FormData is decoded with the action's input schema (422 with field messages, and on a document request the page re-renders with the submission). Results: 303 for documents, `Result` JSON for runtime requests. E1554 is 500 with a dev diag. Production hides `keel.unexpected` messages. The HTML document has one `#k-state` (store snapshots, island props) and `data-k-island` on element roots. The dev log stream writes one `req` record per request. `createApp` checks E1552 (unknown module, module in two deployables) and E1553 (static deployable with params or actions). Breaking: `topology()` no longer throws for a module in two deployables; `createApp` reports it.

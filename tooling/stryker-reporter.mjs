@@ -17,7 +17,15 @@ class KeelReporter {
     const ms = Date.now() - this.t0;
     if (process.env.KEEL_FORMAT === "json" || process.argv.some((a) => a === "--format=json")) {
       const counts = { killed: m.killed, survived: m.survived, timeout: m.timeout, noCoverage: m.noCoverage };
-      console.log(JSON.stringify({ kind: "summary", ok, name: `mutate ${pkg}`, counts: { ...counts, score: Number(score.toFixed(1)), threshold }, ms }));
+      console.log(
+        JSON.stringify({
+          kind: "summary",
+          ok,
+          name: `mutate ${pkg}`,
+          counts: { ...counts, score: Number(score.toFixed(1)), threshold },
+          ms,
+        }),
+      );
     } else {
       console.log(`${ok ? "ok" : "fail"} mutate ${pkg} score ${score.toFixed(1)}% (threshold ${threshold}%)`);
     }

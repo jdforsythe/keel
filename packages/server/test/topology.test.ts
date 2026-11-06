@@ -1,6 +1,8 @@
+import { createCtx } from "@keel/ctx";
+import { manifest } from "@keel/router";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { type Topology, topology } from "../src/index.ts";
+import { type Topology, createApp, topology } from "../src/index.ts";
 
 const SEED = 1337;
 const adapter = fc.constantFrom("node" as const, "static" as const, "client" as const);
@@ -37,12 +39,16 @@ describe("topology", () => {
     );
   });
 
-  it("throws E1552 when a module is in two deployables", () => {
-    fc.assert(
-      fc.property(fc.stringMatching(/^[a-z]{1,6}$/), adapter, adapter, (m, a, b) => {
-        expect(() => topology({ x: { modules: [m], adapter: a }, y: { modules: [m, "other"], adapter: b } })).toThrow(
-          /^E1552/,
-        );
+  it("createApp rejects with E1552 when a module is in two deployables (topology() accepts it)", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.stringMatching(/^[a-z]{1,6}$/), adapter, adapter, async (m, a, b) => {
+        const t = topology({ x: { modules: [m], adapter: a }, y: { modules: [m, "other"], adapter: b } });
+        const routes = manifest({ [`${m}.home`]: { path: `/a/${m}`, component: () => document.createElement("p") } });
+        const other = manifest({ "other.home": { path: "/b", component: () => document.createElement("p") } });
+        const all = manifest({ ...routes.routes, ...other.routes });
+        await expect(
+          createApp({ topology: t, routes: all, ctx: createCtx({ mode: "sim", seed: SEED }) }),
+        ).rejects.toThrow(/^E1552 module/);
       }),
       { seed: SEED, numRuns: 100 },
     );
