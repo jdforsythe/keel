@@ -12,9 +12,7 @@
   "bin": {
     "keel": "./dist/src/bin.js"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",

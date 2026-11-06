@@ -18,7 +18,10 @@
     },
     "./tsconfig.strict.json": "./tsconfig.strict.json"
   },
-  "files": ["dist", "tsconfig.strict.json"],
+  "files": [
+    "dist",
+    "tsconfig.strict.json"
+  ],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
@@ -43,6 +46,7 @@
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
     "esbuild": "^0.28.2",
     "fast-check": "^3",
     "happy-dom": "^21.0.4"
