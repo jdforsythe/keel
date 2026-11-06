@@ -3,7 +3,7 @@
 // `transaction(store, name, payloadSchema, fn)` binds a transaction to its store.
 import type { Ctx } from "@keel/ctx";
 import { createCtx } from "@keel/ctx";
-import { effect, signal } from "@keel/reactive";
+import { effect, scope, signal } from "@keel/reactive";
 import { attr, clone, on, template, text } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 import { invariant, store, transaction, tx } from "@keel/store";
@@ -93,29 +93,40 @@ export const ClockView = Object.assign(
 export const Item = s.object({ id: s.string(), qty: s.int() });
 export const CartSchema = s.object({ items: s.array(Item) });
 
-export const cart = store(CartSchema, { items: [] }, { id: "cart.cart" });
-export const addItem = transaction(cart, "cart.addItem", s.object({ item: Item }), (state, { item }) => ({
-  ...state,
-  items: [...state.items, item],
-}));
+// store() must run inside a reactive scope (E1203): one module-level root scope, never disposed.
+const makeStores = () => {
+  const cart = store(CartSchema, { items: [] }, { id: "cart.cart" });
+  const addItem = transaction(cart, "cart.addItem", s.object({ item: Item }), (state, { item }) => ({
+    ...state,
+    items: [...state.items, item],
+  }));
 
-// Stores whose invariant (qty >= 0 everywhere) a transaction may or may not respect.
-const nonNegative = (state: { readonly items: readonly { readonly qty: number }[] }): boolean =>
-  state.items.every((i) => i.qty >= 0);
+  // Stores whose invariant (qty >= 0 everywhere) a transaction may or may not respect.
+  const nonNegative = (state: { readonly items: readonly { readonly qty: number }[] }): boolean =>
+    state.items.every((i) => i.qty >= 0);
 
-export const badCart = store(CartSchema, { items: [] }, { id: "bad.cart" });
-invariant(badCart, nonNegative);
-export const addAny = transaction(badCart, "bad.addAny", s.object({ item: Item }), (state, { item }) => ({
-  ...state,
-  items: [...state.items, item],
-}));
+  const badCart = store(CartSchema, { items: [] }, { id: "bad.cart" });
+  invariant(badCart, nonNegative);
+  const addAny = transaction(badCart, "bad.addAny", s.object({ item: Item }), (state, { item }) => ({
+    ...state,
+    items: [...state.items, item],
+  }));
 
-export const goodCart = store(CartSchema, { items: [] }, { id: "good.cart" });
-invariant(goodCart, nonNegative);
-export const addClamped = transaction(goodCart, "good.addClamped", s.object({ item: Item }), (state, { item }) => ({
-  ...state,
-  items: [...state.items, { ...item, qty: Math.max(0, item.qty) }],
-}));
+  const goodCart = store(CartSchema, { items: [] }, { id: "good.cart" });
+  invariant(goodCart, nonNegative);
+  const addClamped = transaction(goodCart, "good.addClamped", s.object({ item: Item }), (state, { item }) => ({
+    ...state,
+    items: [...state.items, { ...item, qty: Math.max(0, item.qty) }],
+  }));
+  return { cart, addItem, badCart, addAny, goodCart, addClamped };
+};
+
+let made: ReturnType<typeof makeStores> | undefined;
+scope(() => {
+  made = makeStores();
+});
+if (made === undefined) throw new Error("fixture: store scope did not run");
+export const { cart, addItem, badCart, addAny, goodCart, addClamped } = made;
 
 // Cart view: #cart.add adds one item; #cart.total shows the count; #settled trails the count by async effect work.
 const CartT = template(
