@@ -10,7 +10,7 @@ import type { StyleProps } from "../types/StyleProps.ts";
 
 type Name =
   | { readonly children: Child | Children; readonly label?: string }
-  | { readonly label: string; readonly children?: Child | Children };
+  | { readonly label: string; readonly children?: Child | Children | undefined };
 
 /**
  * A button named by its text or `label` (one is required, E1802). With children, `label` becomes

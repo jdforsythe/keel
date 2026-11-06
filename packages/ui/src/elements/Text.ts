@@ -9,7 +9,7 @@ type TextTag = "span" | "p" | "strong" | "em" | "small" | "code" | "pre" | "bloc
 
 /** Inline or block text. `as` is a closed set of text tags (default `span`). */
 export function Text(
-  props: StyleProps & { readonly as?: TextTag; readonly id?: string; readonly children?: Child | Children },
+  props: StyleProps & { readonly as?: TextTag; readonly id?: string; readonly children?: Child | Children | undefined },
 ): Node {
   const el = document.createElement(props.as ?? "span");
   if (props.id !== undefined) el.setAttribute("id", props.id);

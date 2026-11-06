@@ -9,7 +9,7 @@ type BoxTag = "div" | "section" | "nav" | "main" | "header" | "footer" | "aside"
 
 /** A structural container. `as` is a closed set of structural tags (default `div`). */
 export function Box(
-  props: StyleProps & { readonly as?: BoxTag; readonly id?: string; readonly children?: Child | Children },
+  props: StyleProps & { readonly as?: BoxTag; readonly id?: string; readonly children?: Child | Children | undefined },
 ): Node {
   const el = document.createElement(props.as ?? "div");
   if (props.id !== undefined) el.setAttribute("id", props.id);
