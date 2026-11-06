@@ -10,6 +10,8 @@ export function For<T extends object>(props: {
   readonly each: readonly T[];
   readonly key: keyof T & string;
   readonly children: (item: T, index: number) => Node;
+  /** Standard slot: rendered while `each` is empty (k.ui). */
+  readonly empty?: () => Node;
 }): Node {
   const key = props.key;
   const keyOf = (item: T): unknown => Reflect.get(item, key);
@@ -23,9 +25,15 @@ export function For<T extends object>(props: {
     return xs;
   };
   return anchored((a) =>
-    list(a, each, keyOf, (item) => {
-      const value = item();
-      return props.children(value, indexOf.get(keyOf(value)) ?? 0);
-    }),
+    list(
+      a,
+      each,
+      keyOf,
+      (item) => {
+        const value = item();
+        return props.children(value, indexOf.get(keyOf(value)) ?? 0);
+      },
+      props.empty,
+    ),
   );
 }

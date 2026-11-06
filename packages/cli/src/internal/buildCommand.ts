@@ -6,6 +6,8 @@ import { TEST_FILE } from "./TEST_FILE.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { makeDiag } from "./makeDiag.ts";
+import { projectFiles } from "./projectFiles.ts";
+import { projectTopology } from "./projectTopology.ts";
 import { summary } from "./summary.ts";
 
 /** Artifacts `compile` derives on its own; `routes.json` needs `routes.ts` evaluated, which the Vite plugin does. */
@@ -20,7 +22,8 @@ export function buildCommand(io: Io): Outcome {
   const files = codeFiles(io, undefined).filter(
     (f) => !TEST_FILE.test(f.path) && !/(^|\/)[^/]*\.config\.[cm]?[jt]s$/.test(f.path) && !f.path.startsWith(".keel/"),
   );
-  const r = compile(files);
+  const topology = projectTopology(projectFiles(io));
+  const r = compile(files, topology === undefined ? {} : { topology });
   const diags: OutRecord[] = r.diagnostics.map((d) =>
     makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see, fix: d.fix }),
   );

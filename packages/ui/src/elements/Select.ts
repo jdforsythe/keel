@@ -39,7 +39,7 @@ export function Select(
   if (isReadable(v)) prop(el, "value", () => v.get());
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
-  const id = props.field?.id ?? controlId("select", props.label, props.id, el.ownerDocument);
+  const id = props.id ?? props.field?.id ?? controlId("select", props.label, undefined, el.ownerDocument);
   const out = labelled(el, id, props.label, false, props.field);
   const h = props.onChange;
   if (h !== undefined) listen(el, "change", () => h(el.value));

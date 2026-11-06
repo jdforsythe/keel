@@ -29,7 +29,7 @@ const fakeField = (path: string) => {
       blur: () => {},
       bind: (el) => {
         el.name = path;
-        el.id = `f:${path}`;
+        if (el.id === "") el.id = `f:${path}`;
         bound.push(el);
         return () => {};
       },
@@ -71,4 +71,18 @@ describe("base controls given a field", () => {
       f.dispose();
     });
   }
+});
+
+describe("explicit id prop with a field (ui D26)", () => {
+  it("id prop wins over field.id; the label points at it", () => {
+    const f = fakeField("note.title");
+    const host = document.createElement("div");
+    document.body.append(host);
+    const dispose = mount(() => Input({ label: "Title", id: "mine", field: f.field }), host);
+    expect(host.querySelector("input")?.id).toBe("mine");
+    expect(host.querySelector('label[for="mine"]')).not.toBeNull();
+    dispose();
+    host.remove();
+    f.dispose();
+  });
 });

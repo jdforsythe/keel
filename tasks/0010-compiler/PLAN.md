@@ -55,6 +55,7 @@ Covers backlog 0010 (oxc plugin, JSX to DOM ops, If/For/Match), 0011 (artifacts,
 - D36 (golden app 1): `Match` always lowers with an explicit discriminant decided statically (`matchKey`): `key` attribute, else the `on` expression's union key from a `Props` shape, else `state` when every `Case` tag is loading|error|ready, else `tag`. The runtime op never infers it (runtime D25). Tests: test/fixes.test.ts.
 - D37 (golden app 1): the Vite plugin ignores test code and tool configs in `transform` and `watchChange` (`NOT_APP` in vite.ts: `*.test|spec.[cm]?[jt]sx?`, `test/`, `tests/`, `__tests__/` path segments, `vitest*.config.*`), so E1002 and the other rules do not fire on tests (k.testing lint E1701 covers them). Test: test/fixes.test.ts.
 - D38 (golden app 1): a child expression `<slot call> ?? <fallback>` (slot call: `props.children()`, `children?.()`, `slots.x()`, optional or not) is inserted as a node like a bare slot call; the fallback renders when the thunk is absent. Test: test/integration.test.ts.
+- D39 (golden app 1): `<For empty={...}>` lowers to a fifth argument of `list` (the `empty` attribute value as written); omitted when absent. Test: test/integration.test.ts.
 
 ## Verification
 - [x] conformance green (17 files; keel-dir-tamper skipped by design) · properties present · biome clean · structure-lint clean for compiler · docs-freshness, budgets, generate ok

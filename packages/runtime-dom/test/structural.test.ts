@@ -255,3 +255,38 @@ describe("cond and match", () => {
     dispose();
   });
 });
+
+describe("list: empty slot (runtime D28)", () => {
+  it("renders while the list is empty and is removed when rows arrive, and back", () => {
+    const items = rootSignal<{ id: number }[]>([]);
+    const host = document.createElement("div");
+    const dispose = mount(() => {
+      const ul = clone(UL);
+      list(
+        anchorOf(ul),
+        () => items.get(),
+        (i) => i.id,
+        (item) => {
+          const li = clone(LI);
+          text(li, () => String(item().id));
+          return li;
+        },
+        () => {
+          const p = document.createElement("p");
+          p.textContent = "none";
+          return p;
+        },
+      );
+      return ul;
+    }, host);
+    expect(host.querySelectorAll("p").length).toBe(1);
+    items.set([{ id: 1 }]);
+    expect(host.querySelectorAll("p").length).toBe(0);
+    expect(host.querySelectorAll("li").length).toBe(1);
+    items.set([]);
+    expect(host.querySelectorAll("p").length).toBe(1);
+    expect(host.querySelectorAll("li").length).toBe(0);
+    dispose();
+    expect(host.querySelectorAll("p").length).toBe(0);
+  });
+});

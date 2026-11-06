@@ -196,3 +196,19 @@ export default board;`,
     expect(typeof b === "object" && b !== null ? Reflect.get(b, "id") : undefined).toBe("todos.board");
   });
 });
+
+describe("For empty slot (compiler D39)", () => {
+  it("lowers `empty` to the fifth argument of list", () => {
+    const { code } = one(
+      "A.tsx",
+      `import { For } from "@keel/runtime-dom";\nexport default (p: { xs: { id: string }[] }) => <ul><For each={p.xs} key="id" empty={() => <li>none</li>}>{(x) => <li>{x.id}</li>}</For></ul>;\n`,
+    );
+    expect(code).toMatch(/\.list\(/);
+    expect(code).toContain("none");
+    const noEmpty = one(
+      "B.tsx",
+      `import { For } from "@keel/runtime-dom";\nexport default (p: { xs: { id: string }[] }) => <ul><For each={p.xs} key="id">{(x) => <li>{x.id}</li>}</For></ul>;\n`,
+    ).code;
+    expect(noEmpty).not.toContain("none");
+  });
+});

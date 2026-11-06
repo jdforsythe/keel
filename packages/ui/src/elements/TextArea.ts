@@ -32,7 +32,7 @@ export function TextArea(
   else if (v !== undefined) el.appendChild(document.createTextNode(v));
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
-  const id = props.field?.id ?? controlId("textarea", props.label, props.id, el.ownerDocument);
+  const id = props.id ?? props.field?.id ?? controlId("textarea", props.label, undefined, el.ownerDocument);
   const out = labelled(el, id, props.label, false, props.field);
   const h = props.onInput;
   if (h !== undefined) listen(el, "input", () => h(el.value));

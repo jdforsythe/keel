@@ -31,7 +31,7 @@ export function Checkbox(
   else if (c === true) el.setAttribute("checked", "");
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
-  const id = props.field?.id ?? controlId("checkbox", props.label, props.id, el.ownerDocument);
+  const id = props.id ?? props.field?.id ?? controlId("checkbox", props.label, undefined, el.ownerDocument);
   const out = labelled(el, id, props.label, true, props.field);
   const h = props.onChange;
   if (h !== undefined) listen(el, "change", () => h(el.checked));

@@ -51,6 +51,7 @@
 - D28: `applyWrites` resolves every path against the cwd first and rejects the whole set (throws, nothing written) if any resolves outside it (absolute, `..`, or the cwd itself). A throw, not a diagnostic: `@keel/scaffold` never produces such paths, so it is an invariant breach (k.errors: boundary for the unexpected).
 - D29: JSON-RPC classification in `readRpc`: unparsable -32700; batch, non-object, missing `jsonrpc: "2.0"`, no string `method` (responses included), or a bad id type -32600 (with the id when readable); notifications get no reply. The LSP framer yields `{ body } | { error }`: a header block without Content-Length is skipped and answered with a -32700 error frame.
 - D30: `keel check` parses the project root `topology.ts` with `parseTopology` (now exported from `@keel/compiler`) and passes `{ topology, root: cwd }` to `check`; `root: cwd` lets the TS step resolve `@keel/*` from the project, not the process cwd. The topology is read from the whole project, not the `[paths]` subset. `test/golden.test.ts` runs the engine over apps/golden-1 (files via node:fs) and expects zero diagnostics.
+- D31 (golden app 1): `keel build` shares `projectTopology` (parses the root `topology.ts`) with `keel check` and passes `{ topology }` to `compile`, so `adapter: 'client'` deployables skip E1004 on `*.server.ts` imports. Test: test/buildTopology.test.ts.
 
 ## Verification
 - V1: `pnpm --filter @keel/cli check`: tsc + biome clean. `node tooling/structure-lint.mjs`: `ok structure-lint 1071 files`.

@@ -445,7 +445,8 @@ export function lowerFile(
         const k = staticValueOf(attrOf(el, "key")?.value ?? null);
         const v = tmp("v");
         const key = k === undefined || k.bare ? `(${v}) => ${v}` : `(${v}) => ${v}[${q(k.text)}]`;
-        return `${ns}.list(${anchor}, () => (${attrCode("each", "[]")}), ${key}, ${renderFn(el.children)})`;
+        const empty = attrOf(el, "empty") === undefined ? "" : `, ${attrCode("empty", "undefined")}`;
+        return `${ns}.list(${anchor}, () => (${attrCode("each", "[]")}), ${key}, ${renderFn(el.children)}${empty})`;
       }
       case "Match": {
         const cases: string[] = [];
