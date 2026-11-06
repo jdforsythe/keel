@@ -27,6 +27,24 @@ describe("scaffold and codemod", () => {
     expect(e.writes.map((w) => w.path)).toContain("topology.ts");
   });
 
+  it("scaffold project accepts --workspace and --adapter and emits the workspace files and .gitignore", async () => {
+    const e = await runEngine(["scaffold", "project", "shop", "--workspace", "--adapter", "node"], {
+      cwd: CWD,
+      files: [],
+    });
+    expect(e.result.code).toBe(0);
+    const paths = e.writes.map((w) => w.path);
+    expect(paths).toContain("vitest.config.ts");
+    expect(paths).not.toContain("turbo.json");
+    const ignore = e.writes.find((w) => w.path === ".gitignore")?.content ?? "";
+    expect(ignore.split("\n")).toEqual(
+      expect.arrayContaining(["dist", ".turbo", "coverage", "reports", ".stryker-tmp"]),
+    );
+    expect(ignore).not.toContain(".keel");
+    const bad = await runEngine(["scaffold", "project", "shop", "--adapter", "bogus"], { cwd: CWD, files: [] });
+    expect(bad.result.code).not.toBe(0);
+  });
+
   it("--dry-run writes nothing and prints exactly the diff a following apply writes", async () => {
     const files = await project();
     const io: Io = { cwd: CWD, files };

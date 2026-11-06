@@ -27,6 +27,7 @@ const structural = {
   "dry-run": s.boolean().optional(),
   kind: s.enum(["component", "store", "route", "schema"]).optional(),
   adapter: s.enum(["client", "node", "static"]).optional(),
+  workspace: s.boolean().optional(),
   path: s.string().optional(),
   file: s.string().optional(),
   openapi: s.string().optional(),

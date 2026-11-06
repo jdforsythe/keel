@@ -56,4 +56,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0052 rfc: k.ctx clock timer (`clock.after(ms): Promise<void>` resolved by sim `advance` / platform timer) so services timeouts stop polling a sim clock per macrotask (services PLAN D5) · ctx, services · k.ctx · G2 · 0029
 - [x] 0053 rfc: k.services error code for invalid call input (today `api.decode` with `params`/`query`/`body` path prefix, services PLAN D4); spec union has no input code · services · k.services · G2 · 0029
 - [ ] 0054 rfc: per-request store instances on the server (compiler emits store factories; createApp instantiates per request) · server, compiler, store · k.server · G2 · 0028
-- [ ] 0055 cli: `keel scaffold project --workspace` flag (E1052 today); scaffold emits `.keel/` into the app .gitignore; golden-1 package.json/lockfile drift after scaffold (baseline run 3 friction) · cli, scaffold · k.cli · G2 · 0048
+- [x] 0055 cli: `keel scaffold project --workspace` flag (E1052 today); scaffold emits `.keel/` into the app .gitignore; golden-1 package.json/lockfile drift after scaffold (baseline run 3 friction) · cli, scaffold · k.cli · G2 · 0048

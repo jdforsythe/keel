@@ -19,7 +19,7 @@ export function scaffoldInput(op: Op, input: Input): Record<string, unknown> {
     Object.fromEntries(Object.entries(entries).filter(([, v]) => v !== undefined));
   switch (op) {
     case "project":
-      return pick({ name: a, adapter: input.adapter });
+      return pick({ name: a, adapter: input.adapter, workspace: input.workspace });
     case "module":
     case "component":
     case "store":
