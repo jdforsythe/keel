@@ -1,7 +1,7 @@
+import type { Level } from "@keel/router";
 import { err } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
-import type { Level } from "./Level.ts";
 import type { Rec } from "./Rec.ts";
 import type { Req } from "./Req.ts";
 import { devMessageOf } from "./devMessageOf.ts";

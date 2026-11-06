@@ -1,13 +1,14 @@
+import type { Match } from "@keel/router";
 import { type JsonValue, type KeelError, attempt, err, ok } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
-import type { Match } from "./Match.ts";
 import type { Req } from "./Req.ts";
 import type { Submission } from "./Submission.ts";
 import { devMessageOf } from "./devMessageOf.ts";
 import { documentResponse } from "./documentResponse.ts";
 import { encodeOr } from "./encodeOr.ts";
 import { fieldSummary } from "./fieldSummary.ts";
+import { inRequest } from "./inRequest.ts";
 import { jsonResponse } from "./jsonResponse.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { publicError } from "./publicError.ts";
@@ -31,7 +32,7 @@ export async function page(
 ): Promise<Handled> {
   const { chain, def, id } = m.route;
   const publicize = (e: KeelError<string, unknown>) => publicError(e, r.sv.mode);
-  const outcomes = await runLoaders(chain, { params: m.params, search: m.search }, r.sv.ctx);
+  const outcomes = await inRequest(r.rq, () => runLoaders(chain, { params: m.params, search: m.search }, r.sv.ctx));
   const diags = outcomes.flatMap((o) => (o.diag === null ? [] : [o.diag]));
   const failedAt = outcomes.findIndex((o) => !o.result.ok);
   const failed = outcomes[failedAt]?.result;
@@ -59,17 +60,19 @@ export async function page(
     return { params, search, data: o?.ok === true ? o.value.json : null };
   };
   const rendered = attempt(() =>
-    renderChain({
-      chain,
-      params: m.params,
-      search: m.search,
-      data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
-      props,
-      failure: shown,
-      prepend: submission === null || shown !== null ? "" : fieldSummary(submission),
-      ctx: r.sv.ctx,
-      publicize,
-    }),
+    inRequest(r.rq, () =>
+      renderChain({
+        chain,
+        params: m.params,
+        search: m.search,
+        data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
+        props,
+        failure: shown,
+        prepend: submission === null || shown !== null ? "" : fieldSummary(submission),
+        ctx: r.sv.ctx,
+        publicize,
+      }),
+    ),
   );
   const extra = submission === null ? {} : { form: submission };
   if (!rendered.ok) {

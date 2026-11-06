@@ -14,7 +14,7 @@ export function documentResponse(
   extra: Readonly<Record<string, unknown>>,
   devMessage: string | null,
 ): Response {
-  const state = { stores: snapshotStores(), islands: rendered.islands, ...extra };
+  const state = { stores: snapshotStores(r), islands: rendered.islands, ...extra };
   const html = documentHtml(rendered.html, state, r.sv.mode === "dev" ? devMessage : null);
   return new Response(r.method === "HEAD" ? null : html, {
     status,

@@ -3,7 +3,7 @@
 **Spec:** k.server (also k.router Matching/Guards, k.forms Submit, k.runtime resume markup, k.errors) · **Gate:** G2 · **Branch:** jdforsythe/test-impl · **Package:** packages/server
 
 ## Deliverables
-- [x] `createApp({ topology, routes, ctx, mode?, deployable?, guards?, log? }) -> Promise<{ fetch }>` over Hono (`app.all("*")`)
+- [x] `createApp({ topology, routes, ctx, mode?, deployable?, guards?, expose?, log? }) -> Promise<{ fetch }>` over Hono (`app.all("*")`)
 - [x] Request flow: match (static beats param), trailing slash 308, params fail 404 at the nearest errorElement (bare when a layout above has a loader or guard), search failing keys dropped, guards outermost first (deny: 302, or 303 for writes, with `?next=`), chain loaders started together
 - [x] Status mapping: notFound 404 · denied 403 · fields 422 · unexpected 500 · other 400; production scrubs `keel.unexpected` (message `unexpected`, data `{}`); dev keeps it and adds a `data-k-dev` panel
 - [x] Actions by verb or `_method`; FormData decoded with `decodeStrings`; 422 (JSON `Result`, or HTML re-render with a field summary and `form` in `#k-state`); `ok(href)`/`ok(null)` 303; runtime `Result` JSON
@@ -25,8 +25,8 @@
 - D1: `createApp` is async (returns `Promise<ServerApp>`). Conformance fixtures call it inside promise chains and only handle rejections, so a sync throw for E1552/E1553 would fail them.
 - D2: E1552 "unknown module" means a topology module that no route id belongs to (route module = first dotted segment of the id, as in `routesArtifact`). Limitation: a module without routes cannot be named yet; the right source is the k.module manifests (compiler). Follow-up.
 - D3: The duplicate-module check moved from `topology()` to `createApp`. The conformance test builds the duplicate topology with `topology()` and expects `createApp` to report it. `topology()` still throws E1552 for a bad shape or empty `modules`. The old unit test was converted, not deleted. Changeset notes this as a breaking change.
-- D4: Router internals (`matchUrl`, `parseSearch`, `chainOf`, `guardTable`, `fieldsError`) are not public. Copied into `src/internal` (`matchPath`, `parseSearch`, `compileTable`, `fieldsOf`, `toRecord`, `needsBare`, `nearestErrorElement`). Copied from forms internals: `messageFor`, `nodeAt`, `unwrapNode`. Two copies of the matcher can drift. Follow-up: export a shared matcher from `@keel/router`.
-- D5: Guards. The router's name registry (`guardTable`) is internal. A route `guard` resolves as either the `Guard` object (the fixture writes `guard: auth`, though `RouteDef.guard` is typed `string`) or a name looked up in the new `guards` option. An unknown name gives 500 `E1506 unknown guard`.
+- D4 (superseded by D20): the router matcher and helpers were copied into `src/internal`; the copies are deleted.
+- D5: Guards. `RouteDef.guard` is a name only. It resolves in the `guards` option (registration list), then in the router registry (`guardTable`). The `Guard`-object-on-RouteDef path is removed. An unknown name gives 500 `E1506 unknown guard`.
 - D6: Guard redirect is `href(redirect)` plus `next=<path+query>`, always added. The client router only adds `next` when the target's search schema declares it. The conformance test requires `next` on `app.login`, which has no search schema. Router/server mismatch; RFC candidate.
 - D7: Trailing slash 308 only when the canonical path matches a pattern. An unmatched path is 404 directly, so we never redirect to a 404. This also covers fc paths like `/orders/.`, which URL parsing normalizes to `/orders/`.
 - D8: Status `keel.unexpected` maps to 500 whether it was thrown or returned as an `err`. Spec: "uncaught throw 500 as keel.unexpected"; a returned keel.unexpected is treated the same.
@@ -42,14 +42,19 @@
 - D18: The `@keel/runtime-dom` dependency was dropped as unused. HTML responses always set `text/html; charset=utf-8`; HEAD gets no body.
 - D19: `mode` defaults to `dev` (fixture assumption).
 
+- D20: Shared code. `@keel/router` now exports `matchUrl`, `parseSearch`, `compileRoutes`, `compileTable`, `fieldsError`, `needsBare`, `guardTable`, `runGuard` and types `Level`, `Located`, `Match`, `Segment`, `Table`; the server imports them (matcher tests moved to router/test/matching.test.ts). `@keel/forms` exports `messageFor` (router keeps its own copy, deps order; the server needs none because `fieldsError` is the router's). Server `matchUrl(path+query)` tolerates a trailing slash; `handle` still 308s before acting.
+- D21 (D-next): E1552 lives only in `createApp` (`topology()` keeps schema and empty-modules checks; it never had the duplicate check after D3).
+- D22 (D-next): Cross-request state. Module-level stores on a server are process-shared data (single-process dev/demo API). Per-request state is created inside the request scope (`createApp` opens a scope per request and disposes it after the response; the registry diff around each synchronous section records created ids). `#k-state.stores` holds only those plus `createApp({ expose: [store] })`. A store created after an `await` has no owner (E1203). Proper per-request instantiation: backlog 0054.
+- D23: Action responses (any status) and 302/303 redirects send `cache-control: no-store`; 308 does not.
+
 ## Blocked / for review
-- B1: `pnpm --filter @keel/server check` fails tsc only in `conformance/fixtures.ts` (10 errors; read-only). Loader/action fns return `Result<unknown, unknown>`, components return strings where `RouteDef` wants `Node`, and `guard: auth` is a `Guard` where `RouteDef.guard` is `string`. src/test are clean (tsc, biome, structure-lint). Fix: an `rfc:NNNN` PR to the fixtures, or widen `RouteDef` (`guard: string | Guard`; SSR component return type).
+- B1 (RESOLVED): fixtures pass `guard: "auth"` and `guards: [auth]`; tsc is green. Was: `pnpm --filter @keel/server check` fails tsc only in `conformance/fixtures.ts` (10 errors; read-only). Loader/action fns return `Result<unknown, unknown>`, components return strings where `RouteDef` wants `Node`, and `guard: auth` is a `Guard` where `RouteDef.guard` is `string`. src/test are clean (tsc, biome, structure-lint). Fix: an `rfc:NNNN` PR to the fixtures, or widen `RouteDef` (`guard: string | Guard`; SSR component return type).
 - B2: The dev-log-stream conformance clause is `it.todo` (no in-process API in the spec). `log` option proposed; covered by test/log.test.ts.
 - B3: Router/server divergences D6 and D13. RFC candidates.
 
 ## Verification
 - [x] conformance green (11 files; 2 todo: E1551 static, dev log stream) · properties present · biome clean · structure-lint clean · docs-freshness, budgets, generate --check ok
-- [ ] tsc: blocked by B1 (conformance fixtures only)
+- [x] tsc green (B1 resolved)
 - [x] mutation: `ok mutate server score 88.6% (threshold 70%)`
 - Unsafe count 0 (unchanged).
 

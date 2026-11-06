@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import type { Loader } from "@keel/router";
+import type { Level } from "@keel/router";
 import { attempt, err, ok, pathToString } from "@keel/schema";
-import type { Level } from "./Level.ts";
 import type { LoaderOutcome } from "./LoaderOutcome.ts";
 import type { Rec } from "./Rec.ts";
 import { unexpected } from "./unexpected.ts";

@@ -1,4 +1,4 @@
-import type { Level } from "./Level.ts";
+import type { Level } from "@keel/router";
 
 /** Nearest chain index at or above `from` whose route has an `errorElement`; -1 when none. */
 export function nearestErrorElement(chain: readonly Level[], from: number): number {

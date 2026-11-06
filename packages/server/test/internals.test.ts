@@ -1,27 +1,18 @@
 // @vitest-environment happy-dom
 // Unit and property tests (seed 1337) for the pure internals of the request flow.
-import { guard } from "@keel/router";
+import { type RouteDef, compileRoutes, compileTable, needsBare } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { codedError } from "../src/internal/codedError.ts";
-import { compileTable } from "../src/internal/compileTable.ts";
 import { devMessageOf } from "../src/internal/devMessageOf.ts";
 import { diagLine } from "../src/internal/diagLine.ts";
 import { documentHtml } from "../src/internal/documentHtml.ts";
 import { encodeOr } from "../src/internal/encodeOr.ts";
 import { escapeHtml } from "../src/internal/escapeHtml.ts";
 import { fieldSummary } from "../src/internal/fieldSummary.ts";
-import { fieldsError } from "../src/internal/fieldsError.ts";
-import { fieldsOf } from "../src/internal/fieldsOf.ts";
-import { isGuard } from "../src/internal/isGuard.ts";
-import { matchPath } from "../src/internal/matchPath.ts";
-import { messageFor } from "../src/internal/messageFor.ts";
 import { nearestErrorElement } from "../src/internal/nearestErrorElement.ts";
-import { needsBare } from "../src/internal/needsBare.ts";
-import { nodeAt } from "../src/internal/nodeAt.ts";
 import { notFound } from "../src/internal/notFound.ts";
-import { parseSearch } from "../src/internal/parseSearch.ts";
 import { publicError } from "../src/internal/publicError.ts";
 import { reqLine } from "../src/internal/reqLine.ts";
 import { selectDeployable } from "../src/internal/selectDeployable.ts";
@@ -29,86 +20,16 @@ import { stateJson } from "../src/internal/stateJson.ts";
 import { statusOf } from "../src/internal/statusOf.ts";
 import { stringRecord } from "../src/internal/stringRecord.ts";
 import { toHtml } from "../src/internal/toHtml.ts";
-import { toRecord } from "../src/internal/toRecord.ts";
-import { unwrapNode } from "../src/internal/unwrapNode.ts";
 import { valuesOf } from "../src/internal/valuesOf.ts";
 import { topology } from "../src/topology.ts";
 
 const SEED = 1337;
 const p = (): Node => document.createElement("p");
+const tableOf = (routes: Record<string, RouteDef>) => compileTable(compileRoutes(routes), routes);
 const loaderStub = { kind: "keel.loader" as const, output: s.object({}), run: () => Promise.resolve(ok({})) };
 
-describe("matchPath", () => {
-  const table = compileTable({
-    "o.shell": { component: p },
-    "o.root": { path: "/", component: p },
-    "o.new": { path: "/orders/new", component: p, layout: "o.shell" },
-    "o.show": { path: "/orders/:id", params: s.object({ id: s.int({ min: 1 }) }), component: p },
-    "o.list": { path: "/orders", search: s.object({ tab: s.enum(["a", "b"]).optional() }), component: p },
-  });
-
-  it("a static segment beats :param in either declaration order; chains list layouts first", () => {
-    const m = matchPath(table, "/orders/new", "");
-    expect(m).toMatchObject({ kind: "route", route: { id: "o.new" } });
-    expect(m.route?.chain.map((l) => l.id)).toEqual(["o.shell", "o.new"]);
-    const rev = compileTable({
-      "o.show": { path: "/orders/:id", component: p, params: s.object({ id: s.string() }) },
-      "o.new": { path: "/orders/new", component: p },
-    });
-    expect(matchPath(rev, "/orders/new", "").route?.id).toBe("o.new");
-    expect(matchPath(rev, "/orders/x", "").route?.id).toBe("o.show");
-  });
-
-  it("parses params, decodes segments, and drops failing search keys", () => {
-    expect(matchPath(table, "/orders/7", "")).toEqual(
-      expect.objectContaining({ kind: "route", params: { id: 7 }, search: {} }),
-    );
-    expect(matchPath(table, "/orders", "tab=b&x=1")).toMatchObject({ kind: "route", search: { tab: "b" } });
-    expect(matchPath(table, "/", "")).toMatchObject({ kind: "route", route: { id: "o.root" } });
-    expect(matchPath(table, "", "")).toMatchObject({ kind: "route", route: { id: "o.root" } });
-  });
-
-  it("notFound: params fail (route kept), no pattern, bad escapes, empty param", () => {
-    expect(matchPath(table, "/orders/0", "")).toMatchObject({ kind: "notFound", route: { id: "o.show" } });
-    expect(matchPath(table, "/nope", "")).toEqual({ kind: "notFound", route: null });
-    expect(matchPath(table, "/orders/%E0%A4%A", "")).toEqual({ kind: "notFound", route: null });
-    expect(matchPath(table, "/orders/", "")).toEqual({ kind: "notFound", route: null });
-    expect(matchPath(table, "/orders/new/x", "")).toEqual({ kind: "notFound", route: null });
-  });
-
-  it("compileTable rejects an unknown layout or a cycle with E1506", () => {
-    expect(() => compileTable({ "a.x": { path: "/x", component: p, layout: "a.missing" } })).toThrow(/^E1506/);
-    expect(() =>
-      compileTable({
-        "a.l1": { component: p, layout: "a.l2" },
-        "a.l2": { component: p, layout: "a.l1" },
-        "a.x": { path: "/x", component: p, layout: "a.l1" },
-      }),
-    ).toThrow(/^E1506 a\.x: unknown layout or cycle/);
-  });
-});
-
-describe("parseSearch", () => {
-  const S = s.object({ tab: s.enum(["a", "b"]).optional(), n: s.int().optional() });
-  it("keeps valid keys, drops failing and undeclared ones; no schema gives {}", () => {
-    expect(parseSearch(S, "tab=a&n=3")).toEqual({ tab: "a", n: 3 });
-    expect(parseSearch(S, "tab=z&n=3")).toEqual({ n: 3 });
-    expect(parseSearch(S, "tab=a&n=x")).toEqual({ tab: "a" });
-    expect(parseSearch(S, "tab=z&n=x&q=1")).toEqual({});
-    expect(parseSearch(undefined, "tab=a")).toEqual({});
-  });
-  it("property: the result always parses with the schema", () => {
-    fc.assert(
-      fc.property(fc.webQueryParameters(), (q) => {
-        expect(S.parse(parseSearch(S, q)).ok).toBe(true);
-      }),
-      { seed: SEED, numRuns: 200 },
-    );
-  });
-});
-
 describe("selectDeployable", () => {
-  const table = compileTable({
+  const table = tableOf({
     "app.home": { path: "/", component: p },
     "orders.show": { path: "/orders/:id", params: s.object({ id: s.string() }), component: p },
     "shop.list": {
@@ -149,7 +70,7 @@ describe("selectDeployable", () => {
     expect(() => selectDeployable(t({ w: { modules: ["shop"], adapter: "static" } }), table, mods, "w")).toThrow(
       "E1553 static deployable w: route shop.list has actions",
     );
-    const bare = compileTable({ "x.y": { path: "/y/:id", component: p } });
+    const bare = tableOf({ "x.y": { path: "/y/:id", params: s.object({ id: s.string() }), component: p } });
     expect(() => selectDeployable(t({ s: { modules: ["x"], adapter: "static" } }), bare, new Set(["x"]), "s")).toThrow(
       /^E1553 .* has params$/,
     );
@@ -164,90 +85,6 @@ describe("selectDeployable", () => {
 });
 
 describe("messages and fields", () => {
-  const S = s.object({
-    name: s.string({ min: 2, max: 5 }),
-    free: s.string(),
-    n: s.number(),
-    i: s.int(),
-    b: s.boolean(),
-    lit: s.literal("x"),
-    e: s.enum(["a", "b"]),
-    id: s.id("Order"),
-    opt: s.string({ min: 1 }).optional(),
-    nul: s.int().nullable(),
-    list: s.array(s.object({ q: s.int() })),
-    rec: s.record(s.boolean()),
-    u: s.union("t", [s.object({ t: s.literal("a"), x: s.int() }), s.object({ t: s.literal("b"), y: s.string() })]),
-  });
-  const at = (...path: (string | number)[]) => nodeAt(S.node, path);
-
-  it("nodeAt walks objects, arrays, records, unions and wrappers", () => {
-    expect(at("name")?.kind).toBe("string");
-    expect(at("list", 0, "q")?.kind).toBe("int");
-    expect(at("list", "x")).toBeUndefined();
-    expect(at("list", "01")).toBeUndefined();
-    expect(at("rec", "k")?.kind).toBe("boolean");
-    expect(at("rec", "")).toBeUndefined();
-    expect(at("u", "y")?.kind).toBe("string");
-    expect(at("u", "z")).toBeUndefined();
-    expect(at("opt")?.kind).toBe("optional");
-    expect(at("missing")).toBeUndefined();
-    expect(at("name", "deeper")).toBeUndefined();
-    expect(at("missing", "deeper")).toBeUndefined();
-    const optNode = at("opt");
-    expect(optNode === undefined ? undefined : unwrapNode(optNode).kind).toBe("string");
-    const nulNode = at("nul");
-    expect(nulNode === undefined ? undefined : unwrapNode(nulNode).kind).toBe("int");
-  });
-
-  it("messageFor gives the rule plus constraint", () => {
-    expect(messageFor(at("name"), "required")).toBe("Required");
-    expect(messageFor(at("name"), "nullable-absent")).toBe("Required");
-    expect(messageFor(at("name"), "optional-null")).toBe("Must not be null");
-    expect(messageFor(at("n"), "finite")).toBe("Must be a finite number");
-    expect(messageFor(at("i"), "int")).toBe("Must be a whole number");
-    expect(messageFor(at("name"), "min")).toBe("Must be at least 2 characters");
-    expect(messageFor(at("opt"), "min")).toBe("Must be at least 1 character");
-    expect(messageFor(at("i"), "min")).toBe("Required");
-    expect(messageFor(at("name"), "max")).toBe("Must be at most 5 characters");
-    expect(messageFor(at("free"), "max")).toBe("Too long");
-    expect(messageFor(at("i"), "max")).toBe("Too long");
-    expect(messageFor(at("lit"), "literal")).toBe('Must be "x"');
-    expect(messageFor(at("i"), "literal")).toBe("Invalid value");
-    expect(messageFor(at("e"), "enum")).toBe("Must be one of: a, b");
-    expect(messageFor(at("i"), "enum")).toBe("Invalid choice");
-    expect(messageFor(at("u"), "discriminant")).toBe("Invalid choice");
-    expect(messageFor(at("n"), "type")).toBe("Must be a number");
-    expect(messageFor(at("i"), "type")).toBe("Must be a number");
-    expect(messageFor(at("nul"), "type")).toBe("Must be a number");
-    expect(messageFor(at("b"), "type")).toBe("Must be true or false");
-    expect(messageFor(at("free"), "type")).toBe("Must be text");
-    expect(messageFor(at("id"), "type")).toBe("Must be text");
-    expect(messageFor(at("e"), "type")).toBe("Must be one of: a, b");
-    expect(messageFor(at("list"), "type")).toBe("Invalid value");
-    expect(messageFor(undefined, "type")).toBe("Invalid value");
-  });
-
-  it("fieldsError keys by path, first issue per path wins", () => {
-    const e = fieldsError(S.node, {
-      code: "schema.invalid",
-      message: "x",
-      data: {
-        issues: [
-          { path: ["name"], rule: "min" },
-          { path: ["name"], rule: "max" },
-          { path: ["list", 0, "q"], rule: "type" },
-          { path: [], rule: "type" },
-        ],
-      },
-    });
-    expect(e).toEqual({
-      code: "keel.fields",
-      message: "keel.fields",
-      data: { name: "Must be at least 2 characters", "list.0.q": "Must be a number", "": "Invalid value" },
-    });
-  });
-
   it("fieldSummary escapes and names the root path `form`", () => {
     expect(
       fieldSummary({ route: "a.b", method: "POST", values: {}, errors: { "": "Bad <x>", note: "Required" } }),
@@ -339,32 +176,14 @@ describe("small pure helpers", () => {
     expect(publicError(other, "production")).toBe(other);
   });
 
-  it("toRecord, stringRecord, fieldsOf, encodeOr", () => {
-    expect(toRecord({ a: 1 })).toEqual({ a: 1 });
-    expect(toRecord([1])).toEqual({});
-    expect(toRecord(null)).toEqual({});
-    expect(toRecord("s")).toEqual({});
+  it("stringRecord, encodeOr", () => {
     expect(stringRecord({ a: "x", b: 1, c: null })).toEqual({ a: "x" });
     expect(stringRecord(["x"])).toEqual({});
     expect(stringRecord(null)).toEqual({});
     expect(stringRecord(3)).toEqual({});
-    expect(fieldsOf(s.object({ a: s.int() }).node).map(([k]) => k)).toEqual(["a"]);
-    expect(fieldsOf(s.int().node)).toEqual([]);
     expect(encodeOr(undefined, 1)).toEqual({});
     expect(encodeOr(s.object({ a: s.int() }), { a: 2 })).toEqual({ a: 2 });
     expect(encodeOr(s.object({ a: s.int() }), { a: "x" })).toEqual({});
-  });
-
-  it("isGuard checks every field", () => {
-    const g = guard("internalsG", { redirect: "a.b" }, () => Promise.resolve(ok(null)));
-    expect(isGuard(g)).toBe(true);
-    expect(isGuard(null)).toBe(false);
-    expect(isGuard("internalsG")).toBe(false);
-    for (const k of ["kind", "name", "redirect", "run"]) {
-      expect(isGuard(Object.fromEntries(Object.entries(g).filter(([x]) => x !== k)))).toBe(false);
-      expect(isGuard({ ...g, [k]: 1 })).toBe(false);
-    }
-    expect(isGuard({ ...g, kind: "keel.loader" })).toBe(false);
   });
 
   it("needsBare and nearestErrorElement", () => {

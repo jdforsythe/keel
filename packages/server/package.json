@@ -18,13 +18,13 @@
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
     "hono": "^4.13.16"
   },
   "devDependencies": {
-    "@keel/reactive": "workspace:*",
     "@keel/tooling": "workspace:*",
     "fast-check": "^3",
     "happy-dom": "^21"

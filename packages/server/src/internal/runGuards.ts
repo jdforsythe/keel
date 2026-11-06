@@ -1,11 +1,10 @@
 import type { Ctx } from "@keel/ctx";
-import { type Guard, href } from "@keel/router";
+import { type Guard, guardTable, href, runGuard } from "@keel/router";
+import type { Level } from "@keel/router";
+import { needsBare } from "@keel/router";
 import { type KeelError, attempt } from "@keel/schema";
 import type { GuardOutcome } from "./GuardOutcome.ts";
-import type { Level } from "./Level.ts";
-import { isGuard } from "./isGuard.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
-import { needsBare } from "./needsBare.ts";
 import { unexpected } from "./unexpected.ts";
 
 const withNext = (to: string, next: string): string =>
@@ -14,8 +13,8 @@ const withNext = (to: string, next: string): string =>
 /**
  * Run every guard of `chain`, outermost first, before any loader (k.router Guards). `keel.denied` redirects
  * to the guard's `redirect` route with search `next` (the request path and query); any other `err`, a
- * throw, or an unknown guard name fails at that level. A route's `guard` is a name (resolved in `guards`)
- * or the `Guard` itself.
+ * throw, or an unknown guard name fails at that level. A route's `guard` is a name: resolved in `guards`
+ * (the `createApp` registration list), then in the router's registry.
  */
 export async function runGuards(
   chain: readonly Level[],
@@ -28,12 +27,11 @@ export async function runGuards(
     return { kind: "fail", failure: { level, bare: needsBare(chain, level), error } };
   };
   for (const [i, lvl] of chain.entries()) {
-    const raw: unknown = lvl.def.guard;
-    if (raw === undefined) continue;
-    const g = isGuard(raw) ? raw : typeof raw === "string" ? guards.get(raw) : undefined;
-    if (g === undefined) return fail(i, unexpected(`E1506 unknown guard "${String(raw)}"`));
-    const ran = await attempt(() => g.run({ url }, ctx));
-    const r = ran.ok ? ran.value : ran;
+    const name = lvl.def.guard;
+    if (name === undefined) continue;
+    const g = guards.get(name) ?? guardTable.get(name);
+    if (g === undefined) return fail(i, unexpected(`E1506 unknown guard "${name}"`));
+    const r = await runGuard(g, url, ctx);
     if (r.ok) continue;
     if (r.error.code !== "keel.denied") return fail(i, r.error);
     const to = attempt(() => href(g.redirect));

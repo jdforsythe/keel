@@ -1,6 +1,7 @@
+import type { Located } from "@keel/router";
 import type { Topology } from "../types/Topology.ts";
-import type { Located } from "./Located.ts";
 import { codedError } from "./codedError.ts";
+import { moduleOf } from "./moduleOf.ts";
 
 /**
  * Check the whole topology against the route table and pick the deployable to serve. E1552: a deployable
@@ -26,7 +27,7 @@ export function selectDeployable(
   const dep = picked === undefined || !Object.hasOwn(topology, picked) ? undefined : topology[picked];
   if (picked === undefined || dep === undefined)
     throw codedError("E1552", `pass deployable: one of ${names.join(", ") || "(none)"}${name ? `, not ${name}` : ""}`);
-  const served = table.filter((r) => dep.modules.includes(r.module));
+  const served = table.filter((r) => dep.modules.includes(moduleOf(r.id)));
   if (dep.adapter === "static")
     for (const r of served) {
       const params = r.def.params !== undefined || r.segments.some((s) => s.kind === "param");

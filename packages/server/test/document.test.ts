@@ -4,7 +4,7 @@ import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { action, guard, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
-import { store } from "@keel/store";
+import { store, stores } from "@keel/store";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
@@ -26,7 +26,14 @@ const state = (html: string): unknown => {
   return JSON.parse(m[0]?.[1] ?? "");
 };
 
-type Opts = { title?: string; mode?: "dev" | "production"; deny?: boolean; throwIn?: "page" | "shell" };
+type Opts = {
+  expose?: { id: string }[];
+  requestStore?: string;
+  title?: string;
+  mode?: "dev" | "production";
+  deny?: boolean;
+  throwIn?: "page" | "shell";
+};
 
 async function build(o: Opts = {}) {
   const auth = guard("docAuth", { redirect: "app.login" }, () =>
@@ -50,6 +57,7 @@ async function build(o: Opts = {}) {
       guard: "docAuth",
       component: ({ data }) => {
         if (o.throwIn === "page") throw new Error("page broke");
+        if (o.requestStore !== undefined) store(s.object({ n: s.int() }), { n: 3 }, { id: o.requestStore });
         const t = typeof data === "object" && data !== null && "title" in data ? String(data.title) : "?";
         return el("section", { "data-page": "home" }, el("h1", {}, t));
       },
@@ -63,6 +71,7 @@ async function build(o: Opts = {}) {
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: o.mode ?? "production",
     guards: [auth],
+    expose: o.expose ?? [],
   });
   return app;
 }
@@ -99,14 +108,42 @@ describe("document", () => {
     expect(html).not.toContain("<script>alert(1)");
   });
 
-  it("carries store snapshots keyed by store id", async () => {
+  it("module-level stores are process-shared: absent from #k-state unless listed in `expose`", async () => {
     const Counter = s.object({ n: s.int() });
     const sc = scope(() => {
       store(Counter, { n: 7 }, { id: "app.counter" });
     });
-    const html = await (await (await build()).fetch(get("/"))).text();
+    const app = await build();
+    expect(state(await (await app.fetch(get("/"))).text())).toMatchObject({ stores: {} });
+    const exposed = await build({ expose: [{ id: "app.counter" }, { id: "app.gone" }] });
+    const html = await (await exposed.fetch(get("/"))).text();
     expect(state(html)).toMatchObject({ stores: { "app.counter": { state: { n: 7 } } } });
+    expect(Object.keys((state(html) as { stores: object }).stores)).toEqual(["app.counter"]);
     sc.dispose();
+  });
+
+  it("a store created inside the request scope is in #k-state, then disposed with the request", async () => {
+    const Counter = s.object({ n: s.int() });
+    const app = await build({ requestStore: "app.perRequest" });
+    for (let i = 0; i < 2; i++) {
+      const html = await (await app.fetch(get("/"))).text();
+      expect(state(html)).toMatchObject({ stores: { "app.perRequest": { state: { n: 3 } } } });
+    }
+    expect(stores().has("app.perRequest")).toBe(false);
+    expect(Counter.node.kind).toBe("object");
+  });
+
+  it("actions and redirects are cache-control: no-store", async () => {
+    const app = await build();
+    const ok303 = await app.fetch(post("/", { note: "hello" }));
+    expect(ok303.status).toBe(303);
+    expect(ok303.headers.get("cache-control")).toBe("no-store");
+    const json = await app.fetch(post("/", { note: "hello" }, { accept: "application/json" }));
+    expect(json.headers.get("cache-control")).toBe("no-store");
+    const bad = await app.fetch(post("/", { note: "x" }));
+    expect(bad.status).toBe(422);
+    expect(bad.headers.get("cache-control")).toBe("no-store");
+    expect((await app.fetch(get("/"))).headers.get("cache-control")).toBeNull();
   });
 
   it("a throw in a route with an errorElement renders it with 500; production hides the message", async () => {
@@ -132,6 +169,45 @@ describe("document", () => {
     expect(res.headers.get("location")).toBe(`/login?next=${encodeURIComponent("/?a=1")}`);
     const w = await (await build({ deny: true })).fetch(post("/", { note: "abcd" }));
     expect(w.status).toBe(303);
+  });
+
+  it("an unknown guard name is 500 E1506; a Guard object on the route is not a name", async () => {
+    const routes = manifest({
+      "app.a": { path: "/a", component: () => el("p", {}), guard: "docNope" },
+      "app.b": {
+        path: "/b",
+        component: () => el("p", {}),
+        guard: guard("docObj", { redirect: "app.a" }, () => Promise.resolve(ok(null))) as never,
+      },
+    });
+    const app = await createApp({
+      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+      routes,
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+      mode: "dev",
+    });
+    const a = await app.fetch(get("/a"));
+    expect(a.status).toBe(500);
+    expect(await a.text()).toContain("E1506 unknown guard");
+    expect((await app.fetch(get("/b"))).status).toBe(500);
+  });
+
+  it("a guard() declared but not in `guards` resolves from the router registry", async () => {
+    guard("docRegistry", { redirect: "app.login" }, () =>
+      Promise.resolve(err({ code: "keel.denied", message: "no", data: {} })),
+    );
+    const routes = manifest({
+      "app.c": { path: "/c", component: () => el("p", {}), guard: "docRegistry" },
+      "app.login": { path: "/login", component: () => el("main", {}, "login") },
+    });
+    const app = await createApp({
+      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+      routes,
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+    });
+    const res = await app.fetch(get("/c"));
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(`/login?next=${encodeURIComponent("/c")}`);
   });
 
   it("a runtime GET returns each level's Result keyed by route id", async () => {

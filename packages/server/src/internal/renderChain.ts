@@ -1,6 +1,6 @@
+import type { Level } from "@keel/router";
 import { type JsonValue, type KeelError, attempt } from "@keel/schema";
 import type { ChainInput } from "./ChainInput.ts";
-import type { Level } from "./Level.ts";
 import type { Rendered } from "./Rendered.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 import { htmlToNode } from "./htmlToNode.ts";

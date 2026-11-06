@@ -1,5 +1,5 @@
 # k.server: Thin server
-status: proposed
+status: implemented
 
 **API.** Hono underneath; app code sees only `topology` from `@keel/server`; `loader(output, fn)` and `action(input, fn)` are declared by `@keel/router` (they run in-process in a client-only deployable) and the server executes them over HTTP.
 ```ts

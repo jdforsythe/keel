@@ -29,9 +29,9 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0025 testing: harness, events by id, a11y tree, sim ctx · testing · k.testing · G1 · 0012 0009
 - [x] 0026 testing: schema-generated properties; invariants; ledger · testing · k.testing · G1 · 0025
 - [ ] 0027 golden app 1 (client-only) built by agent from spec + skill; record eval baseline · apps · all · G1 · 0001-0026
-- [ ] 0028 server: Hono adapter, loaders and actions, dev server, log stream · server · k.server · G2 · 0015
+- [x] 0028 server: Hono adapter, loaders and actions, dev server, log stream · server · k.server · G2 · 0015
 - [x] 0029 services: typed client from OpenAPI, timeouts, ApiError · services · k.services · G2 · 0028
-- [ ] 0030 module manifest and cross-module check · check · k.module · G2 · 0021
+- [x] 0030 module manifest and cross-module check · check · k.module · G2 · 0021
 - [ ] 0031 inspector viewer built in Keel · apps · k.cli · G2 · 0027 0028
 - [ ] 0032 golden app 1 with real API; evals rerun · apps · all · G2 · 0029
 - [ ] 0033 user skill `keel` and domain skills with evals · skills · all · G2 · 0032
@@ -55,3 +55,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0051 check: E1651 (`ctx.net.fetch` in app code, fix: declare an endpoint), E1652 (`:param` in `path` vs `params` fields), E1653 (`body` on GET/HEAD) on `endpoints({...})` literals; @keel/services ships without them (services PLAN D10) · check · k.services · G2 · 0029
 - [x] 0052 rfc: k.ctx clock timer (`clock.after(ms): Promise<void>` resolved by sim `advance` / platform timer) so services timeouts stop polling a sim clock per macrotask (services PLAN D5) · ctx, services · k.ctx · G2 · 0029
 - [x] 0053 rfc: k.services error code for invalid call input (today `api.decode` with `params`/`query`/`body` path prefix, services PLAN D4); spec union has no input code · services · k.services · G2 · 0029
+- [ ] 0054 rfc: per-request store instances on the server (compiler emits store factories; createApp instantiates per request) · server, compiler, store · k.server · G2 · 0028

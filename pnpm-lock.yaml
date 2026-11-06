@@ -327,6 +327,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/router':
         specifier: workspace:*
         version: link:../router
@@ -340,9 +343,6 @@ importers:
         specifier: ^4.13.16
         version: 4.13.16
     devDependencies:
-      '@keel/reactive':
-        specifier: workspace:*
-        version: link:../reactive
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

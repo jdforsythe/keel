@@ -1,5 +1,6 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { form } from "./form.ts";
+export { messageFor } from "./internal/messageFor.ts";
 export { toFormData } from "./toFormData.ts";
 export type { DeepPartial } from "./types/DeepPartial.ts";
 export type { Field } from "./types/Field.ts";

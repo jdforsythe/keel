@@ -1,8 +1,9 @@
+import type { Match } from "@keel/router";
+import { fieldsError } from "@keel/router";
 import { attempt, err, ok } from "@keel/schema";
 import type { Handled } from "./Handled.ts";
-import type { Match } from "./Match.ts";
 import type { Req } from "./Req.ts";
-import { fieldsError } from "./fieldsError.ts";
+import { inRequest } from "./inRequest.ts";
 import { isVerb } from "./isVerb.ts";
 import { jsonResponse } from "./jsonResponse.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
@@ -39,7 +40,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
     if (r.runtime) return { response: jsonResponse(422, err(e)), route: id, diags: [] };
     return page(r, m, 422, null, { route: id, method: verb, values, errors: e.data });
   }
-  const ran = await attempt(() => action.run(decoded.value, { params: m.params }, r.sv.ctx));
+  const ran = await attempt(() => inRequest(r.rq, () => action.run(decoded.value, { params: m.params }, r.sv.ctx)));
   const result = ran.ok ? ran.value : ran;
   if (result.ok) {
     if (r.runtime) return { response: jsonResponse(200, ok(result.value)), route: id, diags: [] };

@@ -1,3 +1,4 @@
+import type { RequestScope } from "./RequestScope.ts";
 import type { Served } from "./Served.ts";
 
 /**
@@ -6,6 +7,7 @@ import type { Served } from "./Served.ts";
  */
 export type Req = {
   readonly sv: Served;
+  readonly rq: RequestScope;
   readonly raw: Request;
   readonly method: string;
   readonly here: string;

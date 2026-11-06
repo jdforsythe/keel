@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
+import type { Level } from "@keel/router";
 import type { JsonValue, KeelError } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
-import type { Level } from "./Level.ts";
 import type { Rec } from "./Rec.ts";
 
 /** What `renderChain` renders: the chain with its props, per-level loader data, and an optional failure. */
