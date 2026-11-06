@@ -1,5 +1,5 @@
 # k.compiler: Compiler and artifacts
-status: proposed
+status: implemented
 
 **API.** One Vite plugin on oxc, no options. Project shape comes from module manifests, `routes.ts`, `tokens.ts`, and `topology.ts`.
 ```ts

@@ -1,5 +1,5 @@
 # k.runtime: DOM runtime and islands
-status: proposed
+status: implemented
 
 **API.** App code uses only `mount` and the intrinsics `If`, `For`, `Match`, `Case`, `Boundary` from `@keel/runtime-dom`.
 ```ts

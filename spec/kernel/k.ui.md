@@ -14,9 +14,9 @@ Groups are closed: `color`, `space`, `size`, `radius`, `font`, `fontSize`, `weig
 
 **Base elements.** From `@keel/ui`: `Box`, `Text`, `Heading`, `Button`, `Link`, `Image`, `Input`, `TextArea`, `Select`, `Checkbox`. Required a11y props are in the type: `Heading level`; `Image alt` or `decorative`; `label` on `Input`, `TextArea`, `Select`, `Checkbox`; `Link to: Href` with text; `Button` text or `label`. `Box as` and `Text as` take closed sets of structural tags (`section`, `nav`, `main`, `ul`, `li`, `p`, `span`, ...).
 
-**Style props.** Base elements take typed style props whose values are token names: `p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap`. Responsive values are keyed by breakpoint; states `hover`, `focusVisible`, `active`, `disabled` take a nested style object.
+**Style props.** Base elements take typed style props whose values are token names: `p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap`. Responsive values are keyed by breakpoint. State styles live under one `states` prop: `states={{ hover, focusVisible, active, disabled }}`, each a nested style object; this keeps `disabled` free as the boolean attribute on form controls and `Button`.
 ```tsx
-<Box as="section" p={{ base: '2', md: '3' }} bg="bg" hover={{ bg: 'accent' }}>
+<Box as="section" p={{ base: '2', md: '3' }} bg="bg" states={{ hover: { bg: 'accent' } }}>
   <Heading level={2}>Orders</Heading>
 </Box>
 ```
