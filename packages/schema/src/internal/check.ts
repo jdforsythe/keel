@@ -4,6 +4,7 @@ import { hasProtoKey } from "./hasProtoKey.ts";
 import { isJson } from "./isJson.ts";
 import { isRecord } from "./isRecord.ts";
 import { leafRule } from "./leafRule.ts";
+import { scanExtras } from "./scanExtras.ts";
 import { variantOf } from "./variantOf.ts";
 
 type Path = (string | number)[];
@@ -33,6 +34,8 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
         issues.push({ path, rule: "type" });
         break;
       }
+      for (const key of Object.keys(x))
+        if (!Object.hasOwn(node.fields, key)) scanExtras(x[key], [...path, key], issues);
       for (const [key, field] of Object.entries(node.fields)) {
         const at = [...path, key];
         if (!Object.hasOwn(x, key)) {
