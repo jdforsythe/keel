@@ -12,7 +12,7 @@ import type { Signal } from "./types/Signal.ts";
  * changing `set` is its own commit; inside a computed, or an effect that did not declare it, it is E1201.
  */
 export function signal<T>(initial: T): Signal<T> {
-  const n = createNode(undefined, false, []);
+  const n = createNode("signal", undefined, []);
   let value = initial;
   const h: Signal<T> = {
     get: () => {

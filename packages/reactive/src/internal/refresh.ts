@@ -1,25 +1,24 @@
 import type { Node } from "./Node.ts";
 import { State } from "./State.ts";
-import { dispose } from "./dispose.ts";
+import { disposeOwned } from "./disposeOwned.ts";
+import { isEffect } from "./isEffect.ts";
 import { rt } from "./rt.ts";
 import { unlink } from "./unlink.ts";
 
 /** Bring `n` up to date: verify Check sources in order, rerun only if one actually changed. */
 export function refresh(n: Node): void {
   if (n.gone) return;
-  // Sources in read order; stop at the first one whose change made `n` Dirty.
+  // Sources in read order; stop at the first one whose change made `n` Dirty. Effects are never pulled.
   for (let i = 0; n.state === State.Check && i < n.sources.length; i++) {
     const s = n.sources[i];
-    if (s) refresh(s);
+    if (s && !isEffect(s)) refresh(s);
   }
   const fn = n.fn;
   if (n.state !== State.Dirty || fn === undefined) {
     if (n.state === State.Check) n.state = State.Clean;
     return;
   }
-  const kids = n.owned;
-  n.owned = [];
-  for (const k of kids) dispose(k);
+  disposeOwned(n);
   unlink(n);
   const prevReaction = rt.reaction;
   const prevOwner = rt.owner;
@@ -35,7 +34,12 @@ export function refresh(n: Node): void {
     rt.reaction = prevReaction;
     rt.owner = prevOwner;
     // A failed computed stays Dirty so the next read retries; a failed effect waits for its next change.
-    n.state = ok || n.effect ? State.Clean : State.Dirty;
+    n.state = ok || isEffect(n) ? State.Clean : State.Dirty;
+    // Disposed while running: free what the rest of the run created.
+    if (n.gone) {
+      disposeOwned(n);
+      unlink(n);
+    }
   }
   if (changed) for (const o of n.observers) if (o.state === State.Check) o.state = State.Dirty;
 }

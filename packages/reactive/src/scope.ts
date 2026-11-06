@@ -1,6 +1,6 @@
-import type { Node } from "./internal/Node.ts";
-import { State } from "./internal/State.ts";
+import { createNode } from "./internal/createNode.ts";
 import { dispose } from "./internal/dispose.ts";
+import { disposeOwned } from "./internal/disposeOwned.ts";
 import { rt } from "./internal/rt.ts";
 import type { Scope } from "./types/Scope.ts";
 
@@ -9,19 +9,8 @@ import type { Scope } from "./types/Scope.ts";
  * computations) belong to it. If `fn` throws, the scope is disposed and the error rethrown.
  */
 export function scope(fn: () => void): Scope {
-  const owner = rt.owner;
-  const n: Node = {
-    fn: undefined,
-    sources: [],
-    observers: [],
-    state: State.Clean,
-    effect: false,
-    owner,
-    owned: [],
-    writes: [],
-    gone: false,
-  };
-  owner?.owned.push(n);
+  const n = createNode("scope", undefined, []);
+  const prev = rt.owner;
   rt.owner = n;
   try {
     fn();
@@ -29,7 +18,9 @@ export function scope(fn: () => void): Scope {
     dispose(n);
     throw err;
   } finally {
-    rt.owner = owner;
+    rt.owner = prev;
   }
+  // Disposed from inside `fn`: free what the rest of `fn` created.
+  if (n.gone) disposeOwned(n);
   return { dispose: () => dispose(n) };
 }

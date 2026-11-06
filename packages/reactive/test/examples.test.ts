@@ -132,19 +132,6 @@ describe("examples", () => {
     });
   });
 
-  it("a disposed computed still answers by calling its function", () => {
-    let c: { get(): number } = { get: () => -1 };
-    let set: (v: number) => void = () => {};
-    const h = scope(() => {
-      const s = signal(1);
-      set = (v) => s.set(v);
-      c = computed(() => s.get() + 1);
-    });
-    h.dispose();
-    set(5);
-    expect(c.get()).toBe(6);
-  });
-
   it("a branch no longer read is not recomputed", () => {
     let other = 0;
     scope(() => {

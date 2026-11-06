@@ -11,4 +11,8 @@ export const rt: {
   flushing: boolean;
   /** Effects marked stale, waiting for the commit. */
   queue: Node[];
-} = { reaction: null, owner: null, depth: 0, flushing: false, queue: [] };
+  /** Last node id handed out. */
+  lastId: number;
+  /** Live (undisposed) nodes in creation order; read by `inspect`. */
+  nodes: Set<Node>;
+} = { reaction: null, owner: null, depth: 0, flushing: false, queue: [], lastId: 0, nodes: new Set() };
