@@ -5,17 +5,19 @@ const CLOSES_P: ReadonlySet<string> = new Set(
   ),
 );
 /** Table parts and the parents the parser keeps them under without inserting or dropping nodes. */
-const TABLE_PARTS: Record<string, readonly string[]> = {
-  caption: ["table"],
-  col: ["colgroup"],
-  colgroup: ["table"],
-  tbody: ["table"],
-  td: ["tr"],
-  tfoot: ["table"],
-  th: ["tr"],
-  thead: ["table"],
-  tr: ["tbody", "thead", "tfoot"],
-};
+const TABLE_PARTS: ReadonlyMap<string, readonly string[]> = new Map(
+  Object.entries({
+    caption: ["table"],
+    col: ["colgroup"],
+    colgroup: ["table"],
+    tbody: ["table"],
+    td: ["tr"],
+    tfoot: ["table"],
+    th: ["tr"],
+    thead: ["table"],
+    tr: ["tbody", "thead", "tfoot"],
+  }),
+);
 const NO_SELF_NEST: ReadonlySet<string> = new Set(["a", "button", "dd", "dt", "form", "li", "option", "optgroup"]);
 const HEADINGS: ReadonlySet<string> = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 
@@ -26,9 +28,9 @@ const HEADINGS: ReadonlySet<string> = new Set(["h1", "h2", "h3", "h4", "h5", "h6
  */
 export function canNest(parent: string, child: string): boolean {
   if (parent === "p" && CLOSES_P.has(child)) return false;
-  const allowed = TABLE_PARTS[child];
+  const allowed = TABLE_PARTS.get(child);
   if (allowed !== undefined && !allowed.includes(parent)) return false;
-  if (parent === "table" && !(child in TABLE_PARTS)) return false;
+  if (parent === "table" && !TABLE_PARTS.has(child)) return false;
   if (parent === child && NO_SELF_NEST.has(child)) return false;
   if (HEADINGS.has(parent) && HEADINGS.has(child)) return false;
   if ((parent === "dd" || parent === "dt") && (child === "dd" || child === "dt")) return false;

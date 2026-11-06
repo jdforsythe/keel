@@ -1,5 +1,5 @@
 # k.compiler: Compiler and artifacts
-status: proposed
+status: implemented
 
 **API.** One Vite plugin on oxc, no options. Project shape comes from module manifests, `routes.ts`, `tokens.ts`, and `topology.ts`.
 ```ts
@@ -18,7 +18,7 @@ export default { plugins: [keel()] }
 - `routes.json`: `{ [routeId]: { path, params, search, actions, layout, guard, module } }`; schemas as JSON Schema.
 - `a11y.json`: per element id, expected `role` and the source of its accessible name (`label`, `alt`, `text`, `aria`); read by `check` and the harness.
 
-**Rules.** E1001 `For` without `key`, or `key` not a field of the item · E1002 `innerHTML`, `outerHTML`, `insertAdjacentHTML`, or `dangerouslySetInnerHTML` in app code · E1003 literal `javascript:` or `data:` URL in a URL attribute · E1004 a `*.server.ts` module imported from client-reachable code (ADR-0006; not reported when the deployable declares no server: a client-only build bundles loaders and actions to the browser) · E1005 hand edit to generated output (`.keel/`, `turbo.json`, CI workflows, Dockerfiles, generated API schemas); fix: revert and regenerate.
+**Rules.** E1000 source does not parse (message is the parser error, under 90 chars) · E1001 `For` without `key`, or `key` not a field of the item · E1002 `innerHTML`, `outerHTML`, `insertAdjacentHTML`, or `dangerouslySetInnerHTML` in app code · E1003 literal `javascript:` or `data:` URL in a URL attribute · E1004 a `*.server.ts` module imported from client-reachable code (ADR-0006; not reported when the deployable declares no server: a client-only build bundles loaders and actions to the browser) · E1005 hand edit to generated output (`.keel/`, `turbo.json`, CI workflows, Dockerfiles, generated API schemas); fix: revert and regenerate.
 
 **Conformance.**
 - Compiling the same sources twice yields byte-identical JS and artifacts.

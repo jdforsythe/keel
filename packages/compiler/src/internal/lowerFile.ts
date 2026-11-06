@@ -18,6 +18,7 @@ import type { Span } from "./Span.ts";
 import { URL_ATTRS } from "./URL_ATTRS.ts";
 import { attrNameOf } from "./attrNameOf.ts";
 import { attrOf } from "./attrOf.ts";
+import { bindsTo } from "./bindsTo.ts";
 import { canNest } from "./canNest.ts";
 import { cleanJsxText } from "./cleanJsxText.ts";
 import { componentAt } from "./componentAt.ts";
@@ -27,6 +28,8 @@ import { escapeHtml } from "./escapeHtml.ts";
 import { exprOf } from "./exprOf.ts";
 import { intrinsicOf } from "./intrinsicOf.ts";
 import { isHtmlTag } from "./isHtmlTag.ts";
+import { lowerBound } from "./lowerBound.ts";
+import { patternNames } from "./patternNames.ts";
 import { propsNameOf } from "./propsNameOf.ts";
 import { shapeAt } from "./shapeAt.ts";
 import { staticValueOf } from "./staticValueOf.ts";
@@ -51,7 +54,9 @@ const VOID: ReadonlySet<string> = new Set([
 ]);
 /** Dynamic values of these are DOM properties, not attributes (they diverge after user input). */
 const PROPS: ReadonlySet<string> = new Set(["value", "checked", "selected", "indeterminate", "muted"]);
-const EVENT_ALIASES: Record<string, string> = { doubleclick: "dblclick" };
+const EVENT_ALIASES: ReadonlyMap<string, string> = new Map([["doubleclick", "dblclick"]]);
+/** Any `on*` attribute (any case) on an element is an event binding (D22). */
+const EVENT_ATTR = /^on[a-z]/i;
 const IDENT = /^[A-Za-z_$][\w$]*$/;
 /** Tags of a `resource` state (k.reactive); a `Match` over exactly these discriminates on `state`. */
 const RESOURCE_STATES: ReadonlySet<string> = new Set(["loading", "error", "ready"]);
@@ -96,18 +101,29 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
   let uid = 0;
   const tmp = (p: string): string => `${ns}${p}${uid++}`;
 
+  const jsxEnd = new Map(a.jsx.map((j) => [j.start, j.end]));
+  const els = [...elements].sort((x, y) => x.start - y.start);
+  /** Innermost element containing `pos` (its id), else the file's id prefix. */
   const owner = (pos: number): string => {
-    let best: ElementInfo | undefined;
-    for (const e of elements) {
-      const j = a.jsx.find((x) => x.start === e.start);
-      if (j !== undefined && j.start <= pos && pos < j.end && (best === undefined || e.start > best.start)) best = e;
+    for (let i = lowerBound(els, pos + 1) - 1; i >= 0; i--) {
+      const e = els[i];
+      if (e !== undefined && pos < (jsxEnd.get(e.start) ?? e.start)) return e.id;
     }
-    return best?.id ?? a.stem;
+    return a.idPrefix;
+  };
+  let editsSorted = false;
+  const addEdit = (e: Edit): void => {
+    edits.push(e);
+    editsSorted = false;
   };
 
   const record = (element: string, kind: BindingInfo["kind"], name: string, s: Span): void => {
     const reads = new Set<string>();
-    for (const r of a.idents) if (r.start >= s.start && r.end <= s.end) reads.add(r.name);
+    for (let i = lowerBound(a.idents, s.start); i < a.idents.length; i++) {
+      const r = a.idents[i];
+      if (r === undefined || r.start >= s.end) break;
+      if (r.end <= s.end) reads.add(r.name);
+    }
     const props = new Set<string>();
     const pn = propsNameOf(componentAt(a, s.start));
     if (pn !== undefined) {
@@ -131,10 +147,20 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
 
   function select(start: number, end: number): (Span & { render: () => string })[] {
     const items: (Span & { render: () => string })[] = [];
-    for (const j of a.jsx)
-      if (j.start >= start && j.end <= end) items.push({ start: j.start, end: j.end, render: () => lowerNode(j) });
-    for (const e of edits)
-      if (e.start >= start && e.end <= end) items.push({ start: e.start, end: e.end, render: () => e.text });
+    for (let i = lowerBound(a.jsx, start); i < a.jsx.length; i++) {
+      const j = a.jsx[i];
+      if (j === undefined || j.start >= end) break;
+      if (j.end <= end) items.push({ start: j.start, end: j.end, render: () => lowerNode(j) });
+    }
+    if (!editsSorted) {
+      edits.sort((x, y) => x.start - y.start || x.end - y.end);
+      editsSorted = true;
+    }
+    for (let i = lowerBound(edits, start); i < edits.length; i++) {
+      const e = edits[i];
+      if (e === undefined || e.start > end || (e.start === end && e.end > end)) break;
+      if (e.end <= end) items.push({ start: e.start, end: e.end, render: () => e.text });
+    }
     items.sort((x, y) => x.start - y.start || y.end - x.end);
     const out: (Span & { render: () => string })[] = [];
     let pos = start;
@@ -199,7 +225,7 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
 
   function emitElement(el: JSXElement, t: Template, isRoot: boolean): void {
     const me = info.get(el.start);
-    const id = me?.id ?? `${a.stem}.?`;
+    const id = me?.id ?? `${a.idPrefix}.?`;
     const tag = tagNameOf(el.openingElement.name);
     const ref = (): string => elRef(t, id, isRoot);
     t.html += `<${tag}`;
@@ -217,11 +243,11 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
       const name = attrNameOf(at.name);
       if (RAW_HTML.has(name) || name === "key") continue;
       const out = name === "className" ? "class" : name === "htmlFor" ? "for" : name;
-      if (/^on[A-Z]/.test(name)) {
+      if (EVENT_ATTR.test(name)) {
         const handler = exprOf(at);
         if (handler === undefined) continue;
         const lower = name.slice(2).toLowerCase();
-        const type = EVENT_ALIASES[lower] ?? lower;
+        const type = EVENT_ALIASES.get(lower) ?? lower;
         t.ops.push(`${ns}.on(${q(id)}, ${q(type)}, (${code(handler)}));`);
         record(id, "on", type, handler);
         continue;
@@ -302,25 +328,42 @@ export function lowerFile(a: Analysis, elements: readonly ElementInfo[], initial
 
   /**
    * Row and case callbacks are written with plain values (`(item, i) => item.name`); the ops pass
-   * accessors so a row tracks its current item. Reads of an identifier parameter become calls
-   * (`item` -> `item()`); destructured parameters get a wrapper that unwraps the accessors once.
+   * accessors so a row tracks its current item. A read that resolves to an identifier parameter becomes
+   * a call (`item` -> `item()`), scope-aware (an inner function redeclaring the name is left alone). A
+   * destructured parameter becomes an accessor `x`, and each read of a name it binds re-destructures the
+   * current value through a trailing default parameter `p = (<pattern>) => ({ names })`: `p(x()).name`.
    */
   function accessorFn(fn: ArrowFunctionExpression | FunctionNode): string {
-    const ps = fn.params.slice(0, 2);
     const body = fn.body;
-    if (body !== null && ps.every((p) => p.type === "Identifier")) {
-      for (const p of ps) {
-        if (p.type !== "Identifier") continue;
-        for (const r of a.idents) {
-          if (r.name !== p.name || r.start < body.start || r.end > body.end) continue;
-          edits.push({ start: r.start, end: r.end, text: r.shorthand ? `${r.name}: ${r.name}()` : `${r.name}()` });
-        }
+    if (body === null) return code(fn);
+    const scope = { start: fn.start, end: fn.end };
+    const ps = fn.params.slice(0, 2);
+    const rewriteReads = (name: string, text: string): void => {
+      for (const r of a.identsByName.get(name) ?? []) {
+        if (r.start < body.start || r.end > body.end || !bindsTo(a, name, r.start, scope)) continue;
+        addEdit({ start: r.start, end: r.end, text: r.shorthand ? `${name}: ${text}` : text });
       }
-      return code(fn);
+    };
+    const extra: string[] = [];
+    for (const p of ps) {
+      if (p.type === "Identifier") {
+        rewriteReads(p.name, `${p.name}()`);
+        continue;
+      }
+      if (p.type === "TSParameterProperty") continue;
+      const acc = tmp("x");
+      const pick = tmp("p");
+      const names = patternNames(p);
+      addEdit({ start: p.start, end: p.end, text: acc });
+      extra.push(`${pick} = (${src.slice(p.start, p.end)}) => ({ ${names.join(", ")} })`);
+      for (const n of names) rewriteReads(n, `${pick}(${acc}()).${n}`);
     }
-    const x = tmp("x");
-    const i = tmp("i");
-    return `(${x}, ${i}) => (${code(fn)})(${x}(), ${i}())`;
+    const last = ps[ps.length - 1];
+    if (extra.length > 0 && last !== undefined) {
+      const pad = ps.length < 2 ? `${tmp("u")}, ` : "";
+      addEdit({ start: last.end, end: last.end, text: `, ${pad}${extra.join(", ")}` });
+    }
+    return code(fn);
   }
 
   /** A function returning the node(s) for children: the callback itself when the only child is one. */

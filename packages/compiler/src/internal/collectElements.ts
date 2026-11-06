@@ -19,7 +19,8 @@ function literal(el: JSXElement, name: string): string | undefined {
 
 /**
  * Every intrinsic element in source order with its stable id: the literal `id` attribute when present,
- * else `<file stem>.<ordinal>` where the ordinal counts all intrinsic elements of the file from 0.
+ * else `<file>.<ordinal>`: `<file>` is the root-relative path without extension with `/` as `.`
+ * (`src/cart/Add.tsx` -> `src.cart.Add`), the ordinal counts all intrinsic elements of the file from 0.
  */
 export function collectElements(a: Analysis): ElementInfo[] {
   const els = a.jsx.filter(
@@ -34,7 +35,7 @@ export function collectElements(a: Analysis): ElementInfo[] {
   return els.map((el, index) => {
     const tag = tagNameOf(el.openingElement.name);
     const explicit = literal(el, "id");
-    const id = explicit ?? `${a.stem}.${index}`;
+    const id = explicit ?? `${a.idPrefix}.${index}`;
     const labelled = labelFor.has(id) || labels.some((l) => l !== el && l.start < el.start && el.end <= l.end);
     const { line, col } = lineCol(a.source, el.start);
     const role = roleOf(el, tag);

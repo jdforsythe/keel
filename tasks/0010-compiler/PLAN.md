@@ -13,7 +13,7 @@ Covers backlog 0010 (oxc plugin, JSX to DOM ops, If/For/Match), 0011 (artifacts,
 
 ## Steps
 1. [x] conformance written by conformance-writer (packages/compiler/conformance, uncommitted in tree).
-2. [x] Implement; `pnpm --filter @keel/compiler check`; `test` (conformance green; tsc blocked by render-purity type, see Verification).
+2. [x] Implement; `pnpm --filter @keel/compiler check`; `test` green.
 3. [x] Properties (test/properties.test.ts) and examples (test/lowering.test.ts); README; `.changeset/compiler-initial.md`; spec status left `proposed` pending review (coordinator).
 
 ## Decisions
@@ -44,6 +44,7 @@ Covers backlog 0010 (oxc plugin, JSX to DOM ops, If/For/Match), 0011 (artifacts,
 - [x] conformance green (17 files; keel-dir-tamper skipped by design) · properties present · biome clean · structure-lint clean for compiler · docs-freshness, budgets, generate ok
 - [x] `pnpm --filter @keel/compiler check` green (tsc + biome) after review fixes D17-D22.
 - Mutation: `mutate` script is `echo skip`; not measured.
+- Spec question for freeze (D19): derived-id ordinals shift when an element is inserted earlier in the file.
 - Open: server-mode HTML renderer (D9); E1000 needs a spec line (D11); E1004 client-only exemption needs the topology input; runtime-dom intrinsic types for `For`/`Case` children declare accessors (`item: () => T`) while compiler conformance writes plain values (D6): runtime types should say `(item: T, index: number) => Node`.
 
 Test trailer (`pnpm --filter @keel/compiler test`): `ok 55 tests, 0 failed, 1 skipped (1.4s)`

@@ -17,7 +17,9 @@
       "default": "./src/testing/evaluate.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
@@ -31,6 +33,14 @@
     "@keel/store": "workspace:*",
     "magic-string": "^1.4.5",
     "oxc-parser": "^0.157.0"
+  },
+  "peerDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "peerDependenciesMeta": {
+    "esbuild": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*",

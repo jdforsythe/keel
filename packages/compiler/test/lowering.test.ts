@@ -119,13 +119,120 @@ export default T`);
     const r = compile([{ path: "T.tsx", source: src }]);
     expect(r.diagnostics.map((d) => d.code)).toEqual(["E1401"]);
     expect(r.diagnostics[0]?.fix).toBe(
-      "-function Hi({ name }) { return <p>hi {name}</p> }\n+function Hi(props) { return <p>hi {props.name}</p> }",
+      [
+        "--- a/T.tsx",
+        "+++ b/T.tsx",
+        "@@ -1,2 +1,2 @@",
+        "-function Hi({ name }) { return <p>hi {name}</p> }",
+        "+function Hi(props) { return <p>hi {props.name}</p> }",
+        ' export default function T() { return <div><Hi name="x" /></div> }',
+        "\\ No newline at end of file",
+      ].join("\n"),
     );
     const T = evaluate(r.outputs[0]?.code ?? "");
     if (typeof T !== "function") throw new Error("no component");
     const { host, dispose } = render(() => T());
     expect(host.textContent).toBe("hi x");
     dispose();
+  });
+
+  it("leaves E1401 reads alone when an inner function redeclares the name", () => {
+    const src = "export default function T({ n }) { return <p title={[1].map((n) => n).join()}>{n}</p> }";
+    const fix = compile([{ path: "T.tsx", source: src }]).diagnostics[0]?.fix ?? "";
+    expect(fix).toContain(
+      "+export default function T(props) { return <p title={[1].map((n) => n).join()}>{props.n}</p> }",
+    );
+  });
+
+  it("rewrites For row reads scope-aware: an inner (item) => item.n keeps its own item", () => {
+    const { C, mod } = component(`
+import { signal } from '@keel/reactive'
+import { For } from '@keel/runtime-dom'
+const rows = signal([{ id: 'a', tags: [{ n: 1 }, { n: 2 }] }])
+function T() {
+  return <ul><For each={rows.get()} key="id">{(item) => <li>{item.id}:{item.tags.map((item) => item.n).join(",")}</li>}</For></ul>
+}
+T.rows = rows
+export default T`);
+    const { host, dispose } = render(C);
+    expect(host.querySelector("li")?.textContent).toBe("a:1,2");
+    const li = host.querySelector("li");
+    sig(mod, "rows").set([{ id: "a", tags: [{ n: 3 }] }]);
+    expect(host.querySelector("li")).toBe(li);
+    expect(li?.textContent).toBe("a:3");
+    dispose();
+  });
+
+  it("keeps rows with a destructured param live when the item for a key changes", () => {
+    const { C, mod } = component(`
+import { signal } from '@keel/reactive'
+import { For } from '@keel/runtime-dom'
+const rows = signal([{ id: 'a', name: 'x', meta: { n: 1 } }])
+function T() {
+  return <ul><For each={rows.get()} key="id">{({ id, name, meta: { n } }, i) => <li title={name}>{i}{id}{name}{n}</li>}</For></ul>
+}
+T.rows = rows
+export default T`);
+    const { host, dispose } = render(C);
+    const li = host.querySelector("li");
+    expect(li?.textContent).toBe("0ax1");
+    sig(mod, "rows").set([{ id: "a", name: "y", meta: { n: 2 } }]);
+    expect(host.querySelector("li")).toBe(li);
+    expect(li?.textContent).toBe("0ay2");
+    expect(li?.getAttribute("title")).toBe("y");
+    dispose();
+  });
+
+  it("keeps explicit ids that collide with Object.prototype names", () => {
+    const r = compile([
+      {
+        path: "P.tsx",
+        source: `export default function P() { return <div id="constructor"><b id="__proto__">x</b><i id="toString"/></div> }`,
+      },
+    ]);
+    expect(r.diagnostics).toEqual([]);
+    const ids = r.artifacts["ids.json"];
+    expect(Object.keys(ids).sort()).toEqual(["__proto__", "constructor", "toString"]);
+    expect(Object.hasOwn(ids, "__proto__") && ids.__proto__?.tag).toBe("b");
+    expect(JSON.stringify(ids)).toContain('"__proto__"');
+    expect(Object.keys(r.artifacts["a11y.json"]).length).toBe(3);
+  });
+
+  it("derives ids from the root-relative path, so same-named files in two folders do not collide", () => {
+    const r = compile([
+      { path: "a/index.tsx", source: "export default function A() { return <p>a</p> }" },
+      { path: "b/index.tsx", source: "export default function B() { return <p>b</p> }" },
+      {
+        path: "src/orders/OrderList.tsx",
+        source: "export default function OrderList() { return <ul><li>o</li></ul> }",
+      },
+    ]);
+    expect(r.diagnostics).toEqual([]);
+    expect(Object.keys(r.artifacts["ids.json"])).toEqual([
+      "a.index.0",
+      "b.index.0",
+      "src.orders.OrderList.0",
+      "src.orders.OrderList.1",
+    ]);
+  });
+
+  it("treats any-case on* attributes as event bindings and rejects inline handler strings", () => {
+    const { C, mod } = component(`
+import { signal } from '@keel/reactive'
+const n = signal(0)
+function T() { return <button onclick={() => n.set(n.get() + 1)}>go</button> }
+T.n = n
+export default T`);
+    const { host, dispose } = render(C);
+    host.querySelector("button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(sig(mod, "n").get()).toBe(1);
+    expect(host.querySelector("button")?.hasAttribute("onclick")).toBe(false);
+    dispose();
+    const r = compile([
+      { path: "S.tsx", source: `export default function S() { return <a onClick="alert(1)" onmouseover="x()">x</a> }` },
+    ]);
+    expect(r.diagnostics.map((d) => d.code)).toEqual(["E1002", "E1002"]);
+    expect(r.outputs[0]?.code).not.toContain("alert(1)");
   });
 
   it("keeps the JSX tree when HTML parsing would restructure it (p > div, table > tr)", () => {

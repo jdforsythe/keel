@@ -3,10 +3,9 @@ import type { BindingInfo } from "./internal/BindingInfo.ts";
 import type { ElementInfo } from "./internal/ElementInfo.ts";
 import { analyze } from "./internal/analyze.ts";
 import { buildDeps } from "./internal/buildDeps.ts";
-import { canonicalJson } from "./internal/canonicalJson.ts";
 import { collectElements } from "./internal/collectElements.ts";
 import { diag } from "./internal/diag.ts";
-import { fnv1a } from "./internal/fnv1a.ts";
+import { hashOf } from "./internal/hashOf.ts";
 import { lowerFile } from "./internal/lowerFile.ts";
 import { ruleAndJsx } from "./internal/rules/ruleAndJsx.ts";
 import { ruleControlFlow } from "./internal/rules/ruleControlFlow.ts";
@@ -82,11 +81,11 @@ export function compile(files: readonly SourceFile[], options: CompileOptions = 
   }
   diagnostics.push(...duplicateIds(done));
 
-  const ids: Record<string, IdEntry> = {};
-  const a11y: Record<string, A11yEntry> = {};
+  const ids: Record<string, IdEntry> = Object.create(null);
+  const a11y: Record<string, A11yEntry> = Object.create(null);
   const all = done.flatMap((d) => d.elements).sort((x, y) => cmp(x.id, y.id));
   for (const e of all) {
-    if (e.id in ids) continue;
+    if (Object.hasOwn(ids, e.id)) continue;
     ids[e.id] = { col: e.col, component: e.component, file: e.file, line: e.line, role: e.role, tag: e.tag };
     a11y[e.id] = { name: e.name, role: e.role, tag: e.tag };
   }
@@ -96,15 +95,14 @@ export function compile(files: readonly SourceFile[], options: CompileOptions = 
     "ids.json": ids,
     "routes.json": {},
   };
-  const hash = (v: unknown): string => `fnv1a:${fnv1a(canonicalJson(v))}`;
   return {
     artifacts,
     diagnostics: diagnostics.sort(byLocation),
     hashes: {
-      "a11y.json": hash(artifacts["a11y.json"]),
-      "deps.json": hash(artifacts["deps.json"]),
-      "ids.json": hash(artifacts["ids.json"]),
-      "routes.json": hash(artifacts["routes.json"]),
+      "a11y.json": hashOf(artifacts["a11y.json"]),
+      "deps.json": hashOf(artifacts["deps.json"]),
+      "ids.json": hashOf(artifacts["ids.json"]),
+      "routes.json": hashOf(artifacts["routes.json"]),
     },
     outputs: done.map((d) => ({ path: d.a.path, code: d.code })),
   };

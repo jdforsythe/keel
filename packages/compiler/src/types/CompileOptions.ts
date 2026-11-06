@@ -1,2 +1,2 @@
-/** `mode`: `"client"` (default) or `"server"`; other values compile as client. Typed `string` (conformance passes a widened string). */
-export type CompileOptions = { readonly mode?: string };
+/** `mode` selects the target; `"client"` (default) emits DOM ops; `"server"` currently emits the same module. */
+export type CompileOptions = { readonly mode?: "client" | "server" };

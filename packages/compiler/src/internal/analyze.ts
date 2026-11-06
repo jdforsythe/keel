@@ -6,6 +6,8 @@ import type { IdentRef } from "./IdentRef.ts";
 import type { IntrinsicKind } from "./IntrinsicKind.ts";
 import type { ReactiveDecl } from "./ReactiveDecl.ts";
 import type { Span } from "./Span.ts";
+import { coverage } from "./coverage.ts";
+import { patternNames } from "./patternNames.ts";
 
 const INTRINSICS: ReadonlySet<string> = new Set(["If", "For", "Match", "Case", "Boundary"]);
 const REACTIVE: ReadonlySet<string> = new Set(["signal", "computed", "resource"]);
@@ -26,13 +28,19 @@ function langOf(path: string): "js" | "jsx" | "ts" | "tsx" {
   return "tsx";
 }
 
+const EXT = /\.[cm]?[jt]sx?$/;
+
 function stemOf(path: string): string {
   const base = path.split("/").pop() ?? path;
-  return base.replace(/\.[cm]?[jt]sx?$/, "");
+  return base.replace(EXT, "");
+}
+
+/** Project-root-relative path without extension, `/` replaced by `.` (k.component derived ids). */
+function idPrefixOf(path: string): string {
+  return path.replace(/\\/g, "/").replace(/^\.\//, "").replace(EXT, "").split("/").join(".");
 }
 
 const span = (n: Span): Span => ({ start: n.start, end: n.end });
-const inside = (spans: Span[], n: Span): boolean => spans.some((s) => s.start <= n.start && n.end <= s.end);
 
 /** Parse one file with oxc and collect, in one visit, everything lowering and rules need. */
 export function analyze(file: SourceFile): Analysis {
@@ -42,6 +50,7 @@ export function analyze(file: SourceFile): Analysis {
     path: file.path,
     source: file.source,
     stem: stemOf(file.path),
+    idPrefix: idPrefixOf(file.path),
     program,
     parseErrors: parsed.errors.map((e) => ({ message: e.message, start: e.labels[0]?.start ?? 0 })),
     jsx: [],
@@ -49,6 +58,8 @@ export function analyze(file: SourceFile): Analysis {
     intrinsics: new Map(),
     functions: [],
     idents: [],
+    identsByName: new Map(),
+    decls: new Map(),
     bindings: [],
     members: [],
     logicals: [],
@@ -60,12 +71,35 @@ export function analyze(file: SourceFile): Analysis {
   const candidates: { name: string; start: number; end: number }[] = [];
   const shorthand = new Set<number>();
   const fnNames = new Map<number, string>();
-  const params = (ps: ParamPattern[]): void => {
-    for (const p of ps) a.bindings.push(span(p));
+  const programScope = span(program);
+  const scopes: Span[] = [programScope];
+  const fnScopes: Span[] = [programScope];
+  const top = (stack: Span[]): Span => stack[stack.length - 1] ?? programScope;
+  const declare = (names: string[], scope: Span): void => {
+    for (const n of names) {
+      const list = a.decls.get(n);
+      if (list === undefined) a.decls.set(n, [scope]);
+      else list.push(scope);
+    }
+  };
+  const enterScope = (n: Span): void => void scopes.push(span(n));
+  const exitScope = (): void => void scopes.pop();
+  const params = (ps: ParamPattern[], scope: Span): void => {
+    for (const p of ps) {
+      a.bindings.push(span(p));
+      declare(patternNames(p), scope);
+    }
   };
   const fn = (node: FnInfo["node"]): void => {
     a.functions.push({ start: node.start, end: node.end, name: fnNames.get(node.start) ?? null, node });
-    params(node.params);
+    const scope = span(node);
+    scopes.push(scope);
+    fnScopes.push(scope);
+    params(node.params, scope);
+  };
+  const fnExit = (): void => {
+    scopes.pop();
+    fnScopes.pop();
   };
 
   new Visitor({
@@ -74,6 +108,10 @@ export function analyze(file: SourceFile): Analysis {
     ImportDeclaration: (n) => {
       a.imports.push(n);
       a.bindings.push(span(n));
+      declare(
+        n.specifiers.map((x) => x.local.name),
+        programScope,
+      );
       if (n.source.value !== "@keel/runtime-dom") return;
       for (const s of n.specifiers) {
         if (s.type !== "ImportSpecifier") continue;
@@ -85,17 +123,38 @@ export function analyze(file: SourceFile): Analysis {
       if (n.id) {
         fnNames.set(n.start, n.id.name);
         a.bindings.push(span(n.id));
+        declare([n.id.name], top(scopes));
       }
       fn(n);
     },
+    "FunctionDeclaration:exit": fnExit,
     FunctionExpression: (n) => {
       if (n.id) {
         if (!fnNames.has(n.start)) fnNames.set(n.start, n.id.name);
         a.bindings.push(span(n.id));
+        declare([n.id.name], span(n));
       }
       fn(n);
     },
+    "FunctionExpression:exit": fnExit,
     ArrowFunctionExpression: (n) => fn(n),
+    "ArrowFunctionExpression:exit": fnExit,
+    BlockStatement: enterScope,
+    "BlockStatement:exit": exitScope,
+    ForStatement: enterScope,
+    "ForStatement:exit": exitScope,
+    ForInStatement: enterScope,
+    "ForInStatement:exit": exitScope,
+    ForOfStatement: enterScope,
+    "ForOfStatement:exit": exitScope,
+    SwitchStatement: enterScope,
+    "SwitchStatement:exit": exitScope,
+    StaticBlock: enterScope,
+    "StaticBlock:exit": exitScope,
+    VariableDeclaration: (n) => {
+      const scope = n.kind === "var" ? top(fnScopes) : top(scopes);
+      for (const d of n.declarations) declare(patternNames(d.id), scope);
+    },
     VariableDeclarator: (n) => {
       a.bindings.push(span(n.id));
       const init = n.init;
@@ -111,10 +170,17 @@ export function analyze(file: SourceFile): Analysis {
       if (n.callee.type === "Identifier" && n.callee.name === "effect") a.effects.push(span(n));
     },
     CatchClause: (n) => {
-      if (n.param) a.bindings.push(span(n.param));
+      enterScope(n);
+      if (n.param) {
+        a.bindings.push(span(n.param));
+        declare(patternNames(n.param), span(n));
+      }
     },
+    "CatchClause:exit": exitScope,
     ClassDeclaration: (n) => {
-      if (n.id) a.bindings.push(span(n.id));
+      if (!n.id) return;
+      a.bindings.push(span(n.id));
+      declare([n.id.name], top(scopes));
     },
     MemberExpression: (n) => {
       if (n.computed) return;
@@ -153,13 +219,20 @@ export function analyze(file: SourceFile): Analysis {
   a.jsx.sort((x, y) => x.start - y.start || y.end - x.end);
   const seen = new Set<number>();
   const idents: IdentRef[] = [];
+  const isExcluded = coverage(excluded);
+  const isBinding = coverage(a.bindings);
   for (const c of candidates) {
     if (seen.has(c.start)) continue;
     seen.add(c.start);
-    if (inside(excluded, c) || inside(a.bindings, c)) continue;
+    if (isExcluded(c) || isBinding(c)) continue;
     idents.push({ ...c, shorthand: shorthand.has(c.start) });
   }
   a.idents = idents.sort((x, y) => x.start - y.start);
+  for (const r of a.idents) {
+    const list = a.identsByName.get(r.name);
+    if (list === undefined) a.identsByName.set(r.name, [r]);
+    else list.push(r);
+  }
   for (const f of a.functions) if (f.name === null) f.name = fnNames.get(f.start) ?? null;
   return a;
 }

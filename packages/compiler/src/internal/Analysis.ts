@@ -11,6 +11,8 @@ export type Analysis = {
   source: string;
   /** File name without directories and extension; prefix of derived element ids. */
   stem: string;
+  /** Root-relative path without extension, `/` as `.`: prefix of derived element ids (`src.cart.Add`). */
+  idPrefix: string;
   program: Program;
   parseErrors: { message: string; start: number }[];
   /** All JSX elements and fragments, sorted by start. */
@@ -19,7 +21,11 @@ export type Analysis = {
   /** Local name -> intrinsic, for names imported from `@keel/runtime-dom`. */
   intrinsics: Map<string, IntrinsicKind>;
   functions: FnInfo[];
+  /** Identifier reads, sorted by start. */
   idents: IdentRef[];
+  identsByName: Map<string, IdentRef[]>;
+  /** Declared name -> spans of the scopes that declare it (function, block, catch, program). */
+  decls: Map<string, Span[]>;
   /** Declaration positions (params, variable ids, imports): identifiers inside are not reads. */
   bindings: Span[];
   /** Member accesses by property name (non-computed), for raw-HTML detection. */
