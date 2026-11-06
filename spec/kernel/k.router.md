@@ -1,5 +1,5 @@
 # k.router: Routes
-status: proposed
+status: implemented
 
 **Manifest.** Each module's `routes.ts` (k.module) exports one manifest; a deployable's route table is their union.
 ```ts
@@ -18,9 +18,9 @@ export const routes = manifest({
 ```
 Keys: `path`, `params` (required iff `path` has `:name`), `search` (every field optional), `loader`, `actions` keyed by `POST`/`PUT`/`PATCH`/`DELETE`, `component`, `layout`, `guard`, `errorElement`. An entry without `path` is a layout: its `component` renders a `children` slot. A route's chain is the route plus its layouts, outermost first. `component` receives `{ params, search, data }`, where `data` is its loader's `ok` value; `errorElement` receives `{ error: KeelError }`.
 
-**Matching.** Segment by segment; a static segment beats `:param`; no wildcards. A trailing slash redirects (308) to the canonical path. Params that fail their schema: 404 with `keel.notFound`, no loader runs. Search keys that fail are dropped and the rest parsed.
+**Matching.** Segment by segment; a static segment beats `:param`; no wildcards. A trailing slash redirects (308) to the canonical path. Params that fail their schema: 404 with `keel.notFound`; no guard or loader runs. It renders in the nearest `errorElement` of the chain, inside the layouts above it when none of them declares a loader or guard, otherwise alone. Search keys that fail are dropped and the rest parsed.
 
-**Links.** `href(id, params?, search?)` returns a branded `Href`. Params are encoded by schema then URL-encoded; search keys are sorted and absent optionals omitted. `Link to`, `navigate`, and URL attributes take `Href` only (E1501).
+**Links.** `href(id, params?, search?)` returns a branded `Href`. Params are encoded by schema then URL-encoded; search keys are sorted and absent optionals omitted. `Link to`, `navigate`, and URL attributes take `Href` only (E1501). `href` resolves `id` in the most recently declared manifest containing it; a router, its `Form`s, and guard redirects use only their own manifest. A manifest sees only its own entries: layouts are named within it (a deployable passes the union to its router).
 
 **Guards.**
 ```ts

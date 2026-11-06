@@ -1,13 +1,18 @@
-import { registerRoutes } from "./internal/registerRoutes.ts";
+import { compileRoutes } from "./internal/compileRoutes.ts";
+import { latest } from "./internal/latest.ts";
+import { tables } from "./internal/tables.ts";
 import type { Manifest } from "./types/Manifest.ts";
 import type { RouteDef } from "./types/RouteDef.ts";
 
 /**
- * Declare a module's routes (k.router Manifest). Validates the entries (throws an Error whose `code` is
- * E1502-E1506) and registers them in the process route table that `href` and `Form` read.
+ * Declare routes (k.router Manifest). Validates only these entries (throws an Error whose `code` is
+ * E1502-E1506) and compiles the manifest's own table; manifests never share validation or tables. Each id
+ * becomes resolvable by the free `href(id)`, newest declaration first.
  */
 export function manifest<M extends Readonly<Record<string, RouteDef>>>(routes: M): Manifest<M> {
-  registerRoutes(routes);
-  const m: Manifest<M> = { kind: "keel.manifest", routes };
-  return Object.freeze(m);
+  const table = compileRoutes(routes);
+  const m: Manifest<M> = Object.freeze({ kind: "keel.manifest", routes });
+  tables.set(m, table);
+  for (const id of table.keys()) latest.set(id, table);
+  return m;
 }

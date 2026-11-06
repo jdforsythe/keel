@@ -15,8 +15,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0011 compiler: artifacts (deps, ids, a11y expectations); escaping by context · compiler · k.compiler · G1 · 0010
 - [x] 0012 runtime-dom: nodes, delegation, islands resume · runtime-dom · k.runtime · G1 · 0010
 - [x] 0013 component: props schema, slots, ids, rules E14xx · compiler · k.component · G1 · 0011
-- [ ] 0014 router: manifest, params, search, href · router · k.router · G1 · 0013
-- [ ] 0015 router: loaders, actions by verb, Form, revalidation, guards, scroll and focus · router · k.router · G1 · 0014
+- [x] 0014 router: manifest, params, search, href · router · k.router · G1 · 0013
+- [x] 0015 router: loaders, actions by verb, Form, revalidation, guards, scroll and focus · router · k.router · G1 · 0014
 - [x] 0016 forms: form(schema), bindings, validation, submit, server errors · forms · k.forms · G1 · 0015
 - [ ] 0017 ui: tokens, style props, atomic CSS, scoped styles · ui · k.ui · G1 · 0013
 - [ ] 0018 ui: base elements with a11y-required props; standard slots · ui · k.ui · G1 · 0017
@@ -45,3 +45,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0041 rfc: k.compiler E1000 syntax error code; E1501 scope (relative asset URLs like `src="logo.png"`) · compiler · k.compiler · G1 · 0010
 - [ ] 0042 tooling: ledger scans apps/*/modules exports too · tooling · k.testing · G1 · 0026
 - [ ] 0043 rfc: reactive `Scope.run(fn)` to create nodes under an existing owner; removes runtime-dom's nursery chain of one-shot effects (runtime PLAN D4/D19) · reactive, runtime-dom · k.reactive · G1 · 0012
+- [ ] 0044 rfc: router guards by reference (`guard: authGuard`) and manifest-typed `routes.href` replacing the name table and the free `href`; scroll keyed by history entry (router PLAN D19, D20, D23) · router · k.router · G3 · 0014

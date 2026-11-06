@@ -1,12 +1,9 @@
-import { createCtx } from "@keel/ctx";
 // Examples: manifest validation codes (E1502-E1506 at runtime) and the routes.json artifact.
 import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
-import { createRouter } from "../src/createRouter.ts";
 import { manifest } from "../src/manifest.ts";
 import { routesArtifact } from "../src/routesArtifact.ts";
 import type { RouteDef } from "../src/types/RouteDef.ts";
-import { memoryHistory } from "./memoryHistory.ts";
 
 const view = (): Node => document.createComment("");
 const codeOf = (fn: () => unknown): string | undefined => {
@@ -42,10 +39,14 @@ describe("manifest validation", () => {
     expect(codeOf(() => Reflect.apply(manifest, undefined, [routes]))).toBe("E1505");
   });
 
-  it("E1506 for an unknown layout, at createRouter", () => {
-    const routes = manifest({ "v8.a": { path: "/v8", component: view, layout: "v8.nope" } });
-    const ctx = createCtx({ mode: "sim" });
-    expect(codeOf(() => createRouter(routes, { ctx, history: memoryHistory("/v8") }))).toBe("E1506");
+  it("E1506 for a layout name not in the same manifest (manifests never share entries)", () => {
+    manifest({ "v8.shell": { component: view } });
+    expect(codeOf(() => manifest({ "v8.a": { path: "/v8", component: view, layout: "v8.shell" } }))).toBe("E1506");
+  });
+
+  it("unrelated manifests never interact: the same path and id in two manifests are both valid", () => {
+    expect(codeOf(() => manifest({ "v9.a": { path: "/v9", component: view } }))).toBeUndefined();
+    expect(codeOf(() => manifest({ "v9.a": { path: "/v9", component: view } }))).toBeUndefined();
   });
 
   it("clean counterpart: a valid manifest does not throw", () => {

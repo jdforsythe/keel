@@ -25,7 +25,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.component | Components | implemented | one default export, schema props, named slots, If/For/Match |
 | k.compiler | Compiler and artifacts | implemented | JSX to DOM ops; dep graph, ID index, route table, a11y expectations |
 | k.runtime | DOM runtime and islands | implemented | fine-grained nodes, delegation, resume |
-| k.router | Routes | proposed | manifest, typed params and search, loaders, actions by verb, guards |
+| k.router | Routes | implemented | manifest, typed params and search, loaders, actions by verb, guards |
 | k.forms | Forms | implemented | form(schema): bindings, validation, submit, server errors |
 | k.ui | Tokens and styling | proposed | typed style props, atomic CSS, scoped, a11y-required props |
 | k.ctx | Capabilities | implemented | clock, random, net, storage; real, shell, simulated |

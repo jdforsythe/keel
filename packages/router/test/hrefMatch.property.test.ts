@@ -1,6 +1,7 @@
 // Properties for href and matching over generated manifests (k.router Links, Matching). Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { type ObjectSchema, type Schema, s } from "@keel/schema";
+import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createRouter } from "../src/createRouter.ts";
@@ -63,7 +64,7 @@ const rec = (v: unknown): Readonly<Record<string, unknown>> =>
   typeof v === "object" && v !== null ? Object.fromEntries(Object.entries(v)) : {};
 const withValues = (b: Built) =>
   fc
-    .tuple(b.params?.gen() ?? fc.constant({}), b.search?.gen() ?? fc.constant({}))
+    .tuple(b.params ? gen(b.params) : fc.constant({}), b.search ? gen(b.search) : fc.constant({}))
     .map(([p, q]) => ({ b, p: rec(p), q: rec(q) }));
 
 describe("href and matching over generated manifests", () => {

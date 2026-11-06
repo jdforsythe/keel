@@ -1,10 +1,10 @@
 import { scope, signal } from "@keel/reactive";
 import { cond } from "@keel/runtime-dom/ops";
 import type { KeelError } from "@keel/schema";
-import { href } from "./href.ts";
-import { active } from "./internal/active.ts";
 import { codedError } from "./internal/codedError.ts";
-import { routeTable } from "./internal/routeTable.ts";
+import { findRouter } from "./internal/findRouter.ts";
+import { hrefIn } from "./internal/hrefIn.ts";
+import { latest } from "./internal/latest.ts";
 import type { FormProps } from "./types/FormProps.ts";
 
 type Status = { readonly pending: boolean; readonly error: KeelError<string, unknown> | null };
@@ -18,13 +18,14 @@ function slot(parent: HTMLFormElement, when: () => boolean, render: () => Node):
 /**
  * `<Form method action params? form? loading? error?>` (k.router Form). Renders `<form method="post">` whose
  * `action` is the target route's href, with a hidden `_method` for PUT/PATCH/DELETE, so it posts natively
- * without JS. Rendered by a router, it intercepts submit: validates `form` (if any), submits the FormData to
+ * without JS. Rendered inside a router's `App` (found through the owner scope chain), it intercepts submit: validates `form` (if any), submits the FormData to
  * `actions[method]` of route `action`, and applies the Result (`ok(href)` navigates, `ok(null)` revalidates).
  * Throws E1505 when the route does not declare that method.
  */
 export function Form(props: FormProps): HTMLFormElement {
-  const route = routeTable.get(props.action);
-  if (route?.def.actions?.[props.method] === undefined)
+  const core = findRouter();
+  const table = core === null ? latest.get(props.action) : core.table;
+  if (table?.get(props.action)?.def.actions?.[props.method] === undefined)
     throw codedError(
       "E1505",
       `<Form method="${props.method}" action="${props.action}">: route declares no such action`,
@@ -32,7 +33,7 @@ export function Form(props: FormProps): HTMLFormElement {
   const params = props.params ?? {};
   const el = document.createElement("form");
   el.setAttribute("method", "post");
-  el.setAttribute("action", href(props.action, params));
+  el.setAttribute("action", hrefIn(table, props.action, params, {}));
   if (props.method !== "POST") {
     const hidden = document.createElement("input");
     hidden.setAttribute("type", "hidden");
@@ -42,7 +43,6 @@ export function Form(props: FormProps): HTMLFormElement {
   }
   const kids = props.children;
   if (kids !== undefined) el.append(...(kids instanceof Node ? [kids] : kids));
-  const core = active.core;
   if (core === null) return el;
   const status = signal<Status>({ pending: false, error: null });
   const { loading, error } = props;

@@ -1,29 +1,31 @@
 import type { Ctx } from "@keel/ctx";
-import { batch, computed, signal } from "@keel/reactive";
+import { batch, computed, owner, scope, signal } from "@keel/reactive";
 import { boundary } from "@keel/runtime-dom/ops";
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
-import { narrowRoute } from "../unsafe/narrowRoute.ts";
-import { href } from "./href.ts";
 import type { Located } from "./internal/Located.ts";
 import type { Match } from "./internal/Match.ts";
 import type { Place } from "./internal/Place.ts";
 import type { RouterCore } from "./internal/RouterCore.ts";
 import type { View } from "./internal/View.ts";
 import { afterNavigate } from "./internal/afterNavigate.ts";
+import { compileRoutes } from "./internal/compileRoutes.ts";
 import { compileTable } from "./internal/compileTable.ts";
 import { defaultError } from "./internal/defaultError.ts";
 import { fieldsError } from "./internal/fieldsError.ts";
 import { fieldsOf } from "./internal/fieldsOf.ts";
 import { guardTable } from "./internal/guardTable.ts";
+import { hrefIn } from "./internal/hrefIn.ts";
+import { isRouteStateOf } from "./internal/isRouteStateOf.ts";
 import { matchUrl } from "./internal/matchUrl.ts";
+import { needsBare } from "./internal/needsBare.ts";
 import { notFound } from "./internal/notFound.ts";
 import { renderView } from "./internal/renderView.ts";
 import { rooted } from "./internal/rooted.ts";
-import { routeTable } from "./internal/routeTable.ts";
+import { routers } from "./internal/routers.ts";
 import { runGuard } from "./internal/runGuard.ts";
 import { runLoaders } from "./internal/runLoaders.ts";
+import { tables } from "./internal/tables.ts";
 import { unexpected } from "./internal/unexpected.ts";
-import { withActive } from "./internal/withActive.ts";
 import type { Href } from "./types/Href.ts";
 import type { Manifest } from "./types/Manifest.ts";
 import type { RouteDef } from "./types/RouteDef.ts";
@@ -57,12 +59,17 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   opts: { readonly ctx: Ctx; readonly history: RouterHistory },
 ): Router<RouteState<M>> {
   const { ctx, history } = opts;
-  const table = compileTable(routes.routes);
+  const own = tables.get(routes) ?? compileRoutes(routes.routes);
+  const table = compileTable(own, routes.routes);
   const root = rooted(() => {
     const view = signal<View | null>(null);
     const place = signal<Place>(MISSING);
     const pending = signal(false);
-    const route = computed(() => ({ ...place.get(), pending: pending.get() }));
+    const route = computed((): RouteState<M> => {
+      const state = { ...place.get(), pending: pending.get() };
+      if (isRouteStateOf(routes.routes, state)) return state;
+      throw new Error(`k.router: route id ${String(state.id)} is not in this manifest`);
+    });
     return { view, place, pending, route };
   });
   const { view, place, pending, route } = root.value;
@@ -96,8 +103,10 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     if (m.route === null || failed === undefined || failed.ok) return makeView(m, results, null);
     return makeView(m, results, { level: nearestErrorElement(m.route, f), bare: false, error: failed.error });
   };
-  const failedAt = (m: Match, level: number, error: KeelError<string, unknown>): View =>
-    makeView(m, [], { level: m.route === null ? -1 : nearestErrorElement(m.route, level), bare: true, error });
+  const failedAt = (m: Match, level: number, error: KeelError<string, unknown>): View => {
+    const at = m.route === null ? -1 : nearestErrorElement(m.route, level);
+    return makeView(m, [], { level: at, bare: needsBare(m.route?.chain ?? [], at), error });
+  };
 
   const commit = (t: number, next: View, at: Place, mode: Mode): void => {
     if (t !== token || disposed) {
@@ -125,9 +134,9 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   };
 
   const redirectTo = (id: string, next: string): Result<string, KeelError<string, unknown>> => {
-    const target = routeTable.get(id)?.def.search;
+    const target = own.get(id)?.def.search;
     const takesNext = target !== undefined && fieldsOf(target.node).some(([k]) => k === "next");
-    const r = attempt(() => href(id, {}, takesNext ? { next } : {}));
+    const r = attempt(() => hrefIn(own, id, {}, takesNext ? { next } : {}));
     return r.ok ? ok(String(r.value)) : err(unexpected(`guard redirect to "${id}" failed: ${r.error.message}`));
   };
 
@@ -184,15 +193,16 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   };
 
   const core: RouterCore = {
+    table: own,
     async submit(req) {
       const handle = req.handle;
       if (handle !== undefined && !handle.validate().ok) return null;
-      const act = routeTable.get(req.action)?.def.actions?.[req.method];
+      const act = own.get(req.action)?.def.actions?.[req.method];
       if (act === undefined || disposed) return null;
       const data = new FormData(req.form);
       data.delete("_method");
       pending.set(true);
-      handle?.pending.set(true);
+      handle?.setPending(true);
       const decoded = act.input.decodeStrings(data);
       let result: Result<Href | null, KeelError<string, unknown>>;
       if (!decoded.ok) result = err(fieldsError(decoded.error));
@@ -200,7 +210,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
         const ran = await attempt(() => act.run(decoded.value, { params: req.params }, ctx));
         result = ran.ok ? ran.value : ran;
       }
-      handle?.pending.set(false);
+      handle?.setPending(false);
       handle?.onResult(result);
       if (!result.ok) pending.set(false);
       else if (result.value === null) await revalidate();
@@ -216,23 +226,28 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
 
   return {
     navigate: (to, o) => go(to, o?.replace === true ? "replace" : "push", 0),
-    route: narrowRoute<M>(route),
+    route,
     App() {
       const frag = document.createDocumentFragment();
       const a = document.createComment("keel:router");
       frag.append(a);
       anchor = a;
-      boundary(
-        a,
-        () => {
-          const v = view.get();
-          return v === null ? document.createComment("") : withActive(core, () => renderView(v, core));
-        },
-        (error, reset) => {
-          resetRoot = reset;
-          return defaultError(error);
-        },
-      );
+      // The App's own scope is how `Form` finds this router (owner chain, `routers` WeakMap).
+      scope(() => {
+        const me = owner();
+        if (me !== undefined) routers.set(me, core);
+        boundary(
+          a,
+          () => {
+            const v = view.get();
+            return v === null ? document.createComment("") : renderView(v);
+          },
+          (error, reset) => {
+            resetRoot = reset;
+            return defaultError(error);
+          },
+        );
+      });
       return frag;
     },
     dispose() {
