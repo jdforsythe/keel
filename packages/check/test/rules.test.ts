@@ -10,6 +10,7 @@ const NOW = ["Date", "now"].join(".");
 
 type Case = { code: string; bad: SourceFile[]; clean: SourceFile[]; fix?: true };
 const f = (path: string, source: string): SourceFile => ({ path, source });
+const codesOf = (x: SourceFile): string[] => check([x], { types: false }).diagnostics.map((d) => d.code);
 
 const CASES: Case[] = [
   {
@@ -127,6 +128,12 @@ const CASES: Case[] = [
     clean: [f("src/x.ts", `export const x = ${UNSAFE}('reason', () => 1)\n`)],
   },
   {
+    code: "E1757",
+    bad: [f("src/x.ts", "declare const m: { a?: number }\nexport const x: any = m.a!\n")],
+    clean: [f("src/x.ts", "declare const m: { a?: number }\nexport const x: unknown = m.a\n")],
+    fix: true,
+  },
+  {
     code: "E1803",
     bad: [
       f(
@@ -186,6 +193,21 @@ describe("kernel rules", () => {
         .diagnostics.map((d) => d.code)
         .sort(),
     ).toEqual(["E1403", "E1805", "E1805"]);
+  });
+
+  it("E1757: suppression comments are removed by the fix; as const is not a cast", () => {
+    const src = `// @ts-${"ignore"}\nexport const x: number = 'a' // @ts-${"expect-error"}\n`;
+    const d = check([f("src/x.ts", src)], { types: false }).diagnostics.filter((x) => x.code === "E1757");
+    expect(d.map((x) => x.line)).toEqual([1, 2]);
+    expect(applyPatch("src/x.ts", src, d[0]?.fix ?? "")).toBe("export const x: number = 'a' // @ts-expect-error\n");
+    expect(codesOf(f("src/y.ts", "export const y = [1] as const\n"))).not.toContain("E1757");
+  });
+
+  it("E1752: a re-export outside index.ts is reported; index.ts and types/ may re-export", () => {
+    expect(codesOf(f("src/a.ts", "export { b } from './b.ts'\n"))).toContain("E1752");
+    expect(codesOf(f("src/a.ts", "export * from './b.ts'\n"))).toContain("E1752");
+    expect(codesOf(f("src/index.ts", "export { b } from './b.ts'\n"))).not.toContain("E1752");
+    expect(codesOf(f("src/types/B.ts", "export type { B } from './B.ts'\n"))).not.toContain("E1752");
   });
 
   it("E1752: a *.server.ts exporting only loader and action is exempt", () => {

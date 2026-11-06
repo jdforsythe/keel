@@ -388,7 +388,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1752",
-    "more than one export in a file, or filename not equal to its export",
+    "more than one export in a file, filename not equal to its export, or a re-export outside index",
     "Principle 3: one export per file.",
     "split it: one file per export, named after it",
     "k.check",
@@ -419,6 +419,13 @@ const ROWS: readonly Row[] = [
     "a rule threw; the other rules still ran",
     "Rules are pure and must not throw.",
     "fix the rule named in the message",
+    "k.check",
+  ],
+  [
+    "E1757",
+    "cast, non-null assertion, any, or ts-suppression outside unsafe/",
+    "These defeat the type system; narrow with a guard or isolate in unsafe/.",
+    "x! -> x (after a guard); any -> unknown",
     "k.check",
   ],
   ["E1801", "raw value where a token is required", "", 'p="12px" -> p="3" (nearest token)', "k.ui"],

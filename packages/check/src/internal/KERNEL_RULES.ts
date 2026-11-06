@@ -4,6 +4,7 @@ import { noInlineStyle } from "../rules/noInlineStyle.ts";
 import { noIntrinsicElement } from "../rules/noIntrinsicElement.ts";
 import { noThrow } from "../rules/noThrow.ts";
 import { noTryCatch } from "../rules/noTryCatch.ts";
+import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
 import { oneExport } from "../rules/oneExport.ts";
 import { pureTransaction } from "../rules/pureTransaction.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
@@ -24,6 +25,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noDomQueryInTest,
   oneExport,
   unsafeJustified,
+  noUnsafeSyntax,
   noInlineStyle,
   noIntrinsicElement,
 ];
