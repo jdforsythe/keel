@@ -7,7 +7,6 @@ import { isCodePath } from "./internal/isCodePath.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { parseFile } from "./internal/parseFile.ts";
-import { renderA11y } from "./internal/renderA11y.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { runRules } from "./internal/runRules.ts";
 import { summarize } from "./internal/summarize.ts";
@@ -18,13 +17,11 @@ import type { CheckResult } from "./types/CheckResult.ts";
 import type { Diagnostic } from "./types/Diagnostic.ts";
 import type { SourceFile } from "./types/SourceFile.ts";
 
-const isError = (d: Diagnostic): boolean => !/^[WI]/.test(d.code);
-
 /**
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, (3) the rule registry on each file plus project passes (E1005,
- * E1454, E1753, E1755, and the k.module pass E1151-E1157), (4) rendered a11y checks, (5) dedupe and sort.
- * Pure and deterministic for equal inputs.
+ * E1454, E1753, E1755, and the k.module pass E1151-E1157), (4) dedupe and sort. Static only: no app code is
+ * evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
   const code = files.filter((f) => isCodePath(f.path));
@@ -52,14 +49,6 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...generatedEdits(files, opts.artifacts ?? {}),
   );
 
-  if (opts.render !== false) {
-    const failing = new Set(out.filter(isError).map((d) => d.path));
-    const outputs = new Map(compiled.outputs.map((o) => [o.path, o.code]));
-    for (const { file, parsed } of checked) {
-      const js = outputs.get(file.path);
-      if (js !== undefined && !failing.has(file.path)) out.push(...renderA11y(file, js, parsed.program));
-    }
-  }
   const diagnostics = normalize(out);
   return { diagnostics, summary: summarize(diagnostics) };
 }

@@ -76,7 +76,7 @@ for (const file of files) {
 const ALIAS = { E1757: "S0004", E1754: "S0005" };
 const SRC = /^packages\/[^/]+\/src\//;
 const sources = files.map((f) => ({ path: rel(root, f), source: fs.readFileSync(f, "utf8") }));
-const result = check(sources, { types: false, render: false, root });
+const result = check(sources, { types: false, root });
 for (const d of result.diagnostics) {
   const { fix: _fix, see: _see, ...rest } = d;
   const ok = (c) => d.code === c;

@@ -5,7 +5,7 @@ import type { Budget } from "./Budget.ts";
  * Options for `check`. `root`: directory module specifiers resolve from (default `process.cwd()`).
  * `budgets`: measurements to enforce (E1755). `artifacts`: read-only project artifacts handed to rules,
  * merged over the ones compiled from `files`.
- * `topology`: the parsed `topology.ts`, passed to `compile` (E1004 is not reported in client-only deployables). `types: false` / `render: false` skip pipeline steps 1b and 4.
+ * `topology`: the parsed `topology.ts`, passed to `compile` (E1004 is not reported in client-only deployables). `types: false` skips pipeline step 1b.
  */
 export type CheckOptions = {
   readonly root?: string;
@@ -13,5 +13,4 @@ export type CheckOptions = {
   readonly artifacts?: Readonly<Record<string, unknown>>;
   readonly topology?: Topology;
   readonly types?: boolean;
-  readonly render?: boolean;
 };

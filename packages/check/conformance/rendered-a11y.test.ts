@@ -1,11 +1,10 @@
-// @vitest-environment happy-dom
 // Seed 1337
-// Pipeline step 4 (rendered checks). axe-core vs a11y.json comparison reports E1702/E1703 under `keel test`, not here:
-// untestable through check(files, opts). Only the type-level a11y rule (E1802) is asserted.
+// rfc:0023: `keel check` is static only. Rendered a11y (axe vs a11y.json, E1702/E1703) is `keel test`; here only the
+// type-level a11y rule (E1802) is asserted, and `check()` is shown never to evaluate app code.
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { one, SEED } from "./support.ts";
+import { SEED, one } from "./support.ts";
 
 const codes = (src: string) => check(one(src), {}).diagnostics.map((d) => d.code);
 
@@ -25,7 +24,12 @@ test("E1802: a base element with its required a11y prop reports no E1802", () =>
   expect(c).not.toContain("E1802");
 });
 
-test("a component rendered once under sim ctx with no violations adds no diagnostics", () => {
-  const c = codes(`import { Button } from '@keel/ui'\nexport default function C() { return <Button>Go</Button> }\n`);
-  expect(c).toEqual([]);
+test("check() never evaluates app code: a module that throws at top level yields only static diagnostics", () => {
+  const src = `import { Button } from '@keel/ui'\nthrow new Error('evaluated')\nexport default function C() { return <Button>Go</Button> }\n`;
+  expect(() => check(one(src), {})).not.toThrow();
+  expect(codes(src)).not.toContain("E1756");
+  const clean = codes(
+    `import { Button } from '@keel/ui'\nexport default function C() { return <Button>Go</Button> }\n`,
+  );
+  expect(clean).toEqual([]);
 });

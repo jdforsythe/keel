@@ -1,14 +1,16 @@
 {
   "version": 1,
-  "unsafe": 7,
+  "unsafe": 6,
   "mutationScore": {
-    "check": 35.5,
+    "check": 83,
+    "cli": 59.1,
+    "compiler": 57.4,
     "ctx": 83,
     "forms": 93.7,
     "reactive": 87.5,
     "router": 89.5,
     "runtime-dom": 75.6,
-    "schema": 92.1,
+    "schema": 92.3,
     "server": 88.6,
     "services": 75.9,
     "store": 89.3,
@@ -18,14 +20,98 @@
   "exports": [
     {
       "pkg": "golden-1",
+      "name": "ActionApi",
+      "file": "golden-1:api/ActionApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "addList",
-      "file": "golden-1:todos/addList.ts",
+      "file": "golden-1:api/addList.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-1",
       "name": "addTodo",
-      "file": "golden-1:todos/addTodo.ts",
+      "file": "golden-1:api/addTodo.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "board",
+      "file": "golden-1:api/board.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "BoardApi",
+      "file": "golden-1:api/BoardApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "editTodo",
+      "file": "golden-1:api/editTodo.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "loadBoard",
+      "file": "golden-1:api/loadBoard.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "loadSuggestions",
+      "file": "golden-1:api/loadSuggestions.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "postEdit",
+      "file": "golden-1:api/postEdit.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "postList",
+      "file": "golden-1:api/postList.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "postTodo",
+      "file": "golden-1:api/postTodo.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "postToggle",
+      "file": "golden-1:api/postToggle.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "postUndo",
+      "file": "golden-1:api/postUndo.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "SuggestionsApi",
+      "file": "golden-1:api/SuggestionsApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "toggleTodo",
+      "file": "golden-1:api/toggleTodo.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ActionReply",
+      "file": "golden-1:todos/ActionReply.schema.ts",
       "rung": "example"
     },
     {
@@ -42,8 +128,14 @@
     },
     {
       "pkg": "golden-1",
-      "name": "board",
-      "file": "golden-1:todos/board.ts",
+      "name": "BoardReply",
+      "file": "golden-1:todos/BoardReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "BoardView",
+      "file": "golden-1:todos/BoardView.schema.ts",
       "rung": "example"
     },
     {
@@ -66,14 +158,20 @@
     },
     {
       "pkg": "golden-1",
-      "name": "editTodo",
-      "file": "golden-1:todos/editTodo.ts",
+      "name": "EditTodoPage",
+      "file": "golden-1:todos/EditTodoPage.tsx",
       "rung": "example"
     },
     {
       "pkg": "golden-1",
-      "name": "EditTodoPage",
-      "file": "golden-1:todos/EditTodoPage.tsx",
+      "name": "FieldsReply",
+      "file": "golden-1:todos/FieldsReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "hydrate",
+      "file": "golden-1:todos/hydrate.ts",
       "rung": "example"
     },
     {
@@ -102,6 +200,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "loadIndex",
+      "file": "golden-1:todos/loadIndex.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "loadList",
       "file": "golden-1:todos/loadList.server.ts",
       "rung": "example"
@@ -114,14 +218,38 @@
     },
     {
       "pkg": "golden-1",
+      "name": "refreshView",
+      "file": "golden-1:todos/refreshView.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "Suggestion",
       "file": "golden-1:todos/Suggestion.schema.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-1",
+      "name": "suggestions",
+      "file": "golden-1:todos/suggestions.service.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "Suggestions",
       "file": "golden-1:todos/Suggestions.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "SuggestionsReply",
+      "file": "golden-1:todos/SuggestionsReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "syncAfter",
+      "file": "golden-1:todos/syncAfter.ts",
       "rung": "example"
     },
     {
@@ -150,14 +278,116 @@
     },
     {
       "pkg": "golden-1",
-      "name": "toggleTodo",
-      "file": "golden-1:todos/toggleTodo.ts",
+      "name": "todos",
+      "file": "golden-1:todos/todos.service.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "todosApi",
+      "file": "golden-1:todos/todosApi.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-1",
       "name": "updateTodo",
       "file": "golden-1:todos/updateTodo.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "view",
+      "file": "golden-1:todos/view.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "A11yEntry",
+      "file": "inspector:inspector/A11yEntry.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "Graph",
+      "file": "inspector:inspector/Graph.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "GraphView",
+      "file": "inspector:inspector/GraphView.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "IdEntry",
+      "file": "inspector:inspector/IdEntry.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "IdsView",
+      "file": "inspector:inspector/IdsView.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "inspectApi",
+      "file": "inspector:inspector/inspectApi.service.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "InspectDoc",
+      "file": "inspector:inspector/InspectDoc.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "InspectError",
+      "file": "inspector:inspector/InspectError.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "Inspection",
+      "file": "inspector:inspector/Inspection.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "InspectorPage",
+      "file": "inspector:inspector/InspectorPage.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "loadInspect",
+      "file": "inspector:inspector/loadInspect.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "LogEntry",
+      "file": "inspector:inspector/LogEntry.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "RouteEntry",
+      "file": "inspector:inspector/RouteEntry.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "StoresView",
+      "file": "inspector:inspector/StoresView.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "StoreView",
+      "file": "inspector:inspector/StoreView.schema.ts",
       "rung": "example"
     },
     {
@@ -170,13 +400,13 @@
       "pkg": "check",
       "name": "defineRule",
       "file": "packages/check/src/defineRule.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "check",
       "name": "explain",
       "file": "packages/check/src/explain.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "check",
@@ -188,7 +418,7 @@
       "pkg": "check",
       "name": "rules",
       "file": "packages/check/src/rules.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "cli",

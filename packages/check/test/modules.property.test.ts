@@ -16,7 +16,7 @@ const man = (m: string, exports: string[]) =>
     `import { module } from '@keel/compiler'\nexport default module({ id: '${m}', deps: [], capabilities: [], public: { exports: ${list(exports)}, routes: [] } })\n`,
   );
 const codes = (files: SourceFile[], code: string) =>
-  check(files, { types: false, render: false }).diagnostics.filter((d) => d.code === code);
+  check(files, { types: false }).diagnostics.filter((d) => d.code === code);
 
 describe("module pass properties", () => {
   it("joinPath: resolving a child segment then '..' returns the directory", () => {
@@ -57,7 +57,7 @@ describe("module pass properties", () => {
         const base = [man(m, [ghost])];
         const noise = extra.map((n) => f(`src/${n}.ts`, `export const ${n} = 1\n`));
         const only = (files: SourceFile[]) =>
-          check(files, { types: false, render: false }).diagnostics.filter((d) => /^E115/.test(d.code));
+          check(files, { types: false }).diagnostics.filter((d) => /^E115/.test(d.code));
         expect(only([...noise, ...base])).toEqual(only(base));
       }),
       { seed: SEED, numRuns: 20 },

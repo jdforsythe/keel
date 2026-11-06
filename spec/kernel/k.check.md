@@ -1,14 +1,13 @@
 # k.check: Checker and diagnostics
 status: implemented
 
-**Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1.
+**Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are `keel test`, k.testing; rfc:0023).
 1. Parse (oxc) and TS strict type check.
 2. Compiler diagnostics (k.compiler transform of every file). They flow through unchanged: same code, location, message, and fix.
 3. Rule registry: kernel structure rules plus rules from stdlib modules in the project's `deps` (k.module), run on each file with read-only project artifacts (`.keel/*.json`, manifests).
-4. Rendered checks: every component and route rendered once under sim ctx (k.testing); axe-core plus `a11y.json` comparison.
-5. Formatter: dedupe, sort by path, line, and col, group by code, cap, render per `--format` (k.cli).
+4. Formatter: dedupe, sort by path, line, and col, group by code, cap, render per `--format` (k.cli).
 
-Changing one file re-runs steps 1-4 for that file and its dependents only.
+Changing one file re-runs steps 1-3 for that file and its dependents only.
 
 **Diagnostics.** Exactly the OUTPUT.md model: `{ kind: 'diag', code, path, line, col, message, fix?, see? }`. `code` is E (error), W (warning), or I (info) plus four digits, never renumbered; `message` is one line under 90 chars; `fix` is a unified diff hunk that applies to the checked tree; `see` is the spec section id. Only E codes affect the exit code (k.cli). A TS error that encodes a Keel rule (a missing a11y prop, an unknown field path, a string for `Href`) is reported under that rule's code; any other TS error is E1751.
 
@@ -38,6 +37,7 @@ Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule t
 - Every E code in a kernel section's Rules has an `explain` entry of at most 120 tokens and a fixture that triggers exactly that code.
 - For the top 30 codes, applying the fix diff to its fixture with `git apply` succeeds, and re-checking reports no diagnostic of that code.
 - The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits.
+- `check()` never evaluates app code: a module that throws at top level yields only static diagnostics.
 - Two runs on an unchanged tree produce identical output.
 - Compact output for golden app 1 with 10 injected errors is at most 600 tokens.
 - `--code E1501` emits only E1501 diagnostics while the summary counts every code.

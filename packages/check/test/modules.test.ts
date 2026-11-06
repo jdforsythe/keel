@@ -10,7 +10,7 @@ const man = (id: string, o: { deps?: string[]; caps?: string[]; exports?: string
     `modules/${id}/module.ts`,
     `import { module } from '@keel/compiler'\nexport default module({\n  id: '${id}',\n  deps: ${list(o.deps ?? [])},\n  capabilities: ${list(o.caps ?? [])},\n  public: { exports: ${list(o.exports ?? [])}, routes: ${list(o.routes ?? [])} },\n})\n`,
   );
-const run = (files: SourceFile[]): readonly Diagnostic[] => check(files, { types: false, render: false }).diagnostics;
+const run = (files: SourceFile[]): readonly Diagnostic[] => check(files, { types: false }).diagnostics;
 const of = (files: SourceFile[], code: string): readonly Diagnostic[] => run(files).filter((d) => d.code === code);
 
 /** Apply a diagnostic's fix to the file it names and return the new file list. */

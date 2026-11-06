@@ -42,7 +42,7 @@ const UNSAFE = "unsafe";
 const AS = "as";
 
 /** One line per diagnostic (`code line:col message`), its fix diff indented below. */
-const show = (files: SourceFile[], opts: Parameters<typeof check>[1] = { types: false, render: false }): string =>
+const show = (files: SourceFile[], opts: Parameters<typeof check>[1] = { types: false }): string =>
   check(files, opts)
     .diagnostics.map(
       (d) => `${d.code} ${d.path}:${d.line}:${d.col} ${d.message}${d.fix === undefined ? "" : `\n${d.fix}`}`,
@@ -50,7 +50,7 @@ const show = (files: SourceFile[], opts: Parameters<typeof check>[1] = { types: 
     .join("\n");
 const one = (path: string, source: string): string => show([f(path, source)]);
 const only = (code: string, path: string, source: string): string =>
-  check([f(path, source)], { types: false, render: false })
+  check([f(path, source)], { types: false })
     .diagnostics.filter((d) => d.code === code)
     .map((d) => `${d.line}:${d.col} ${d.message}${d.fix === undefined ? "" : `\n${d.fix}`}`)
     .join("\n");
@@ -557,7 +557,12 @@ describe("E1601 noAmbientCapability", () => {
       # Math.floor ok
 
       # computed ok
-
+      1:24 Date.now() outside ctx; use ctx.clock.now()
+      --- a/src/a.ts
+      +++ b/src/a.ts
+      @@ -1 +1 @@
+      -export const t = () => Date['now']()
+      +export const t = () => ctx.clock.now()
       # other object ok
 
       # non-identifier object ok
@@ -2770,9 +2775,7 @@ describe("runRules and E1756", () => {
       explain: "e",
       check: ({ file }) => (file.path === RR ? [findingAt(file, 0)] : []),
     });
-    const out = check([f(RR, "ab\ncd\n")], { types: false, render: false }).diagnostics.filter((x) =>
-      /^[EW]29/.test(x.code),
-    );
+    const out = check([f(RR, "ab\ncd\n")], { types: false }).diagnostics.filter((x) => /^[EW]29/.test(x.code));
     expect(out).toMatchInlineSnapshot(`
       [
         {
@@ -2828,11 +2831,7 @@ describe("runRules and E1756", () => {
 });
 
 describe("project passes", () => {
-  const E = (
-    code: string,
-    files: SourceFile[],
-    opts: Parameters<typeof check>[1] = { types: false, render: false },
-  ): string =>
+  const E = (code: string, files: SourceFile[], opts: Parameters<typeof check>[1] = { types: false }): string =>
     check(files, opts)
       .diagnostics.filter((d) => d.code === code)
       .map((d) => `${d.path}:${d.line}:${d.col} ${d.message}${d.fix === undefined ? "" : `\n${d.fix}`}`)
@@ -2993,7 +2992,6 @@ describe("project passes", () => {
         "budget",
         E("E1755", [], {
           types: false,
-          render: false,
           budgets: [
             { id: "x", limit: 1, actual: 2, unit: "bytes", path: "p.json" },
             { id: "y", limit: 2, actual: 2, unit: "bytes" },
@@ -3015,7 +3013,6 @@ describe("project passes", () => {
         "expected hash matches",
         E("E1005", [f(".keel/routes.json", okFile)], {
           types: false,
-          render: false,
           artifacts: { hashes: { "routes.json": hashOf({ a: 1 }) } },
         }),
       ),
@@ -3023,7 +3020,6 @@ describe("project passes", () => {
         "expected hash differs",
         E("E1005", [f(".keel/routes.json", okFile)], {
           types: false,
-          render: false,
           artifacts: { hashes: { "routes.json": "fnv1a:11111111" } },
         }),
       ),
@@ -3031,17 +3027,13 @@ describe("project passes", () => {
         "expected hash for other name",
         E("E1005", [f(".keel/routes.json", okFile)], {
           types: false,
-          render: false,
           artifacts: { hashes: { "other.json": "fnv1a:11111111" } },
         }),
       ),
-      block(
-        "hashes null",
-        E("E1005", [f(".keel/routes.json", okFile)], { types: false, render: false, artifacts: { hashes: null } }),
-      ),
+      block("hashes null", E("E1005", [f(".keel/routes.json", okFile)], { types: false, artifacts: { hashes: null } })),
       block(
         "hashes string",
-        E("E1005", [f(".keel/routes.json", okFile)], { types: false, render: false, artifacts: { hashes: "x" } }),
+        E("E1005", [f(".keel/routes.json", okFile)], { types: false, artifacts: { hashes: "x" } }),
       ),
       block("nested dir", E("E1005", [f("apps/a/.keel/routes.json", "nope")])),
       block(
@@ -3101,21 +3093,21 @@ describe("project passes", () => {
 
   it("E1000 syntax errors skip rules; parse is memoized by path and text", () => {
     const bad = f("src/a.ts", "export const a = (\n");
-    expect(check([bad], { types: false, render: false }).diagnostics.map((d) => d.code)).toEqual(["E1000"]);
-    expect(check([bad], { types: false, render: false })).toEqual(check([bad], { types: false, render: false }));
+    expect(check([bad], { types: false }).diagnostics.map((d) => d.code)).toEqual(["E1000"]);
+    expect(check([bad], { types: false })).toEqual(check([bad], { types: false }));
     const x = f("src/a.ts", "export const a = 1\n");
     const y = f("src/b.ts", "export const b = 1\n");
     const z = f("src/a.ts", "export const a = (\n");
-    expect(check([x], { types: false, render: false }).diagnostics).toEqual([]);
-    expect(check([z], { types: false, render: false }).summary.ok).toBe(false);
-    expect(check([x], { types: false, render: false }).summary.ok).toBe(true);
-    expect(check([y], { types: false, render: false }).diagnostics).toEqual([]);
+    expect(check([x], { types: false }).diagnostics).toEqual([]);
+    expect(check([z], { types: false }).summary.ok).toBe(false);
+    expect(check([x], { types: false }).summary.ok).toBe(true);
+    expect(check([y], { types: false }).diagnostics).toEqual([]);
   });
 });
 
 describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => {
   const T = (path: string, source: string): string =>
-    check([f(path, source)], { render: false })
+    check([f(path, source)], {})
       .diagnostics.filter((d) => d.code !== "E1805" && d.code !== "E1752")
       .map((d) => `${d.code} ${d.line}:${d.col} ${d.message}`)
       .join("\n");
@@ -3371,9 +3363,9 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
   });
 
   it("compiler diagnostics already reported are not repeated by the type check", () => {
-    const out = check([f("src/A.tsx", "export default function A() { return <div>{ }</div> }\n")], {
-      render: false,
-    }).diagnostics.map((d) => d.code);
+    const out = check([f("src/A.tsx", "export default function A() { return <div>{ }</div> }\n")], {}).diagnostics.map(
+      (d) => d.code,
+    );
     expect(out).toEqual([...new Set(out)]);
   });
 
@@ -3395,154 +3387,6 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       ),
     ).toEqual(["E1751"]);
   });
-});
-
-describe("rendered a11y (step 4)", () => {
-  const R = (path: string, source: string, extra: SourceFile[] = []): string =>
-    check([f(path, source), ...extra], { types: false })
-      .diagnostics.map(
-        (d) => `${d.code} ${d.path}:${d.line}:${d.col} ${d.message}${d.see === undefined ? "" : ` (${d.see})`}`,
-      )
-      .join("\n");
-  const ui = "import { Box, Button, Input, Image, Link, Select, TextArea, Text, Checkbox } from '@keel/ui'\n";
-  const C = (body: string, pre = "", name = "C"): string =>
-    `${ui}${pre}export default function ${name}() { return ${body} }\n`;
-  it("pins each rendered violation", () => {
-    const out = [
-      block("button empty label", R("src/C.tsx", C('<Button id="b" label=" " />'))),
-      block("button text", R("src/C.tsx", C('<Button id="b">Go</Button>'))),
-      block("button label", R("src/C.tsx", C('<Button id="b" label="Go" />'))),
-      block("input empty label", R("src/C.tsx", C('<Input id="i" label="" />'))),
-      block("input label", R("src/C.tsx", C('<Input id="i" label="Name" />'))),
-      block("textarea empty", R("src/C.tsx", C('<TextArea id="i" label=" " />'))),
-      block("select empty", R("src/C.tsx", C('<Select id="i" label=" " />'))),
-      block("checkbox empty", R("src/C.tsx", C('<Checkbox id="i" label=" " />'))),
-      block("image no alt", R("src/C.tsx", C('<Image src="x" decorative />'))),
-      block("image alt", R("src/C.tsx", C('<Image src="x" alt="pic" />'))),
-      block("link no text", R("src/C.tsx", C('<Link to={href("x")}> </Link>', "const href = (x: string) => x\n"))),
-      block("link text", R("src/C.tsx", C('<Link to={href("x")}>Go</Link>', "const href = (x: string) => x\n"))),
-      block("hidden", R("src/C.tsx", C('<Box aria-hidden="true"><Button id="b" label=" " /></Box>'))),
-      block(
-        "two violations at default export",
-        R(
-          "src/C.tsx",
-          `${ui}const k = 1\nexport default function C() { return <Box><Button id="b" label=" " /><Input id="i" label=" " /></Box> }\n`,
-        ),
-      ),
-      block("no default export", R("src/C.tsx", `${ui}export const C = () => <Button id="b" label=" " />\n`)),
-      block("not tsx", R("src/c.ts", "export default function C() { return 1 }\n")),
-      block("jsx file", R("src/C.jsx", `${ui}export default function C() { return <Button id="b" label=" " /> }\n`)),
-      block(
-        "unsupported import",
-        R(
-          "src/C.tsx",
-          `${ui}import { x } from './other.ts'\nexport default function C() { return <Button id="b" label=" " /> }\n`,
-        ),
-      ),
-      block(
-        "type import ok",
-        R(
-          "src/C.tsx",
-          `${ui}import type { X } from './other.ts'\nexport default function C() { return <Button id="b" label=" " /> }\n`,
-        ),
-      ),
-      block("render throws", R("src/C.tsx", `${ui}export default function C() { return null.x }\n`)),
-      block(
-        "supported kernel imports",
-        R(
-          "src/C.tsx",
-          `${ui}import { signal } from '@keel/reactive'\nimport { s } from '@keel/schema'\nexport default function C() { const n = signal(1); return <Button id="b" label=" " /> }\n`,
-        ),
-      ),
-      block(
-        "other error suppresses render",
-        R("src/C.tsx", `${ui}export default function C() { return <div><Button id="b" label=" " /></div> }\n`),
-      ),
-      block(
-        "render false",
-        check([f("src/C.tsx", C('<Button id="b" label=" " />'))], { types: false, render: false })
-          .diagnostics.map((d) => d.code)
-          .join(),
-      ),
-      block("memo returns same", R("src/C.tsx", C('<Button id="b" label=" " />'))),
-    ].join("\n");
-    expect(out).toMatchInlineSnapshot(`
-      "# button empty label
-      E1802 src/C.tsx:2:1 rendered <button> has no accessible name (text or label) (k.ui)
-      # button text
-
-      # button label
-
-      # input empty label
-
-      # input label
-
-      # textarea empty
-
-      # select empty
-
-      # checkbox empty
-
-      # image no alt
-      E1501 src/C.tsx:2:45 src is a string path; use href(routeId, params) (k.router)
-      # image alt
-      E1501 src/C.tsx:2:45 src is a string path; use href(routeId, params) (k.router)
-      # link no text
-      E1802 src/C.tsx:3:1 rendered <a> has no accessible name (text or label) (k.ui)
-      # link text
-
-      # hidden
-      E1802 src/C.tsx:2:1 rendered <button> has no accessible name (text or label) (k.ui)
-      # two violations at default export
-      E1802 src/C.tsx:3:1 rendered <button> has no accessible name (text or label) (k.ui)
-      # no default export
-
-      # not tsx
-      E1752 src/c.ts:1:1 file c exports C; filename must equal its export (k.check)
-      # jsx file
-      E1802 src/C.jsx:2:1 rendered <button> has no accessible name (text or label) (k.ui)
-      # unsupported import
-
-      # type import ok
-      E1802 src/C.tsx:3:1 rendered <button> has no accessible name (text or label) (k.ui)
-      # render throws
-
-      # supported kernel imports
-      E1802 src/C.tsx:4:1 rendered <button> has no accessible name (text or label) (k.ui)
-      # other error suppresses render
-      E1805 src/C.tsx:2:39 <div> in app code; use <Box> from @keel/ui (k.ui)
-      # render false
-
-      # memo returns same
-      E1802 src/C.tsx:2:1 rendered <button> has no accessible name (text or label) (k.ui)"
-    `);
-  });
-  it("memoizes per path and text but not across edits", () => {
-    const bad = f("src/M.tsx", C('<Button id="b" label=" " />', "", "M"));
-    const good = f("src/M.tsx", C('<Button id="b" label="Go" />', "", "M"));
-    const codes = (x: SourceFile): string[] =>
-      check([x], { types: false })
-        .diagnostics.map((d) => d.code)
-        .filter((c) => c === "E1802");
-    expect(codes(bad)).toEqual(["E1802"]);
-    expect(codes(good)).toEqual([]);
-    expect(codes(bad)).toEqual(["E1802"]);
-    const at = (p: string): string[] =>
-      check([f(p, p.includes("N") ? bad.source.replace("M", "N") : bad.source)], { types: false })
-        .diagnostics.filter((d) => d.code === "E1802")
-        .map((d) => d.path);
-    expect(at("src/N.tsx")).toEqual(["src/N.tsx"]);
-    expect(at("src/M.tsx")).toEqual(["src/M.tsx"]);
-  });
-  it("evicts the oldest memo entry beyond 128 without changing results", () => {
-    const run = (i: number): number =>
-      check([f(`src/E${i}.tsx`, C(`<Button id="b" label=" " /> /* ${i} */`, "", `E${i}`))], {
-        types: false,
-      }).diagnostics.filter((d) => d.code === "E1802").length;
-    for (let i = 0; i < 135; i++) expect(run(i)).toBe(1);
-    expect(run(0)).toBe(1);
-    expect(run(134)).toBe(1);
-  }, 120_000);
 });
 
 describe("ensureImport, references, nodeAt", () => {
