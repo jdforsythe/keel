@@ -1,7 +1,19 @@
 {
   "version": 1,
-  "unsafe": 1,
+  "unsafe": 6,
   "exports": [
+    {
+      "pkg": "cli",
+      "name": "formatter",
+      "file": "packages/cli/src/formatter.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "compiler",
+      "name": "compile",
+      "file": "packages/compiler/src/compile.ts",
+      "rung": "probabilistic"
+    },
     {
       "pkg": "ctx",
       "name": "capabilities",
@@ -33,6 +45,18 @@
       "rung": "example"
     },
     {
+      "pkg": "forms",
+      "name": "form",
+      "file": "packages/forms/src/form.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "forms",
+      "name": "toFormData",
+      "file": "packages/forms/src/toFormData.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "reactive",
       "name": "batch",
       "file": "packages/reactive/src/batch.ts",
@@ -58,6 +82,12 @@
     },
     {
       "pkg": "reactive",
+      "name": "owner",
+      "file": "packages/reactive/src/owner.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "reactive",
       "name": "resource",
       "file": "packages/reactive/src/resource.ts",
       "rung": "probabilistic"
@@ -72,6 +102,66 @@
       "pkg": "reactive",
       "name": "signal",
       "file": "packages/reactive/src/signal.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "router",
+      "name": "action",
+      "file": "packages/router/src/action.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "router",
+      "name": "browserHistory",
+      "file": "packages/router/src/browserHistory.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "router",
+      "name": "createRouter",
+      "file": "packages/router/src/createRouter.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "router",
+      "name": "Form",
+      "file": "packages/router/src/Form.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "router",
+      "name": "guard",
+      "file": "packages/router/src/guard.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "router",
+      "name": "href",
+      "file": "packages/router/src/href.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "router",
+      "name": "loader",
+      "file": "packages/router/src/loader.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "router",
+      "name": "manifest",
+      "file": "packages/router/src/manifest.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "router",
+      "name": "routesArtifact",
+      "file": "packages/router/src/routesArtifact.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "runtime-dom",
+      "name": "mount",
+      "file": "packages/runtime-dom/src/mount.ts",
       "rung": "probabilistic"
     },
     {
@@ -102,6 +192,84 @@
       "pkg": "schema",
       "name": "pathToString",
       "file": "packages/schema/src/pathToString.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
+      "name": "invariant",
+      "file": "packages/store/src/invariant.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
+      "name": "store",
+      "file": "packages/store/src/store.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
+      "name": "stores",
+      "file": "packages/store/src/stores.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
+      "name": "transaction",
+      "file": "packages/store/src/transaction.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
+      "name": "tx",
+      "file": "packages/store/src/tx.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "testing",
+      "name": "ledger",
+      "file": "packages/testing/src/ledger.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "testing",
+      "name": "ledgerDiff",
+      "file": "packages/testing/src/ledgerDiff.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "testing",
+      "name": "properties",
+      "file": "packages/testing/src/properties.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "testing",
+      "name": "properties",
+      "file": "packages/testing/src/properties.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "testing",
+      "name": "properties",
+      "file": "packages/testing/src/properties.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "testing",
+      "name": "render",
+      "file": "packages/testing/src/render.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ui",
+      "name": "defineTokens",
+      "file": "packages/ui/src/defineTokens.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ui",
+      "name": "styles",
+      "file": "packages/ui/src/styles.ts",
       "rung": "probabilistic"
     }
   ]
