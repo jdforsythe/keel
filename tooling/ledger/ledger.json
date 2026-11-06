@@ -1,5 +1,108 @@
 {
   "version": 1,
-  "unsafe": 0,
-  "exports": []
+  "unsafe": 1,
+  "exports": [
+    {
+      "pkg": "ctx",
+      "name": "capabilities",
+      "file": "packages/ctx/src/capabilities.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "ctx",
+      "name": "createCtx",
+      "file": "packages/ctx/src/createCtx.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ctx",
+      "name": "createCtx",
+      "file": "packages/ctx/src/createCtx.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ctx",
+      "name": "createCtx",
+      "file": "packages/ctx/src/createCtx.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ctx",
+      "name": "register",
+      "file": "packages/ctx/src/register.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "reactive",
+      "name": "batch",
+      "file": "packages/reactive/src/batch.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "reactive",
+      "name": "computed",
+      "file": "packages/reactive/src/computed.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "reactive",
+      "name": "effect",
+      "file": "packages/reactive/src/effect.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "reactive",
+      "name": "inspect",
+      "file": "packages/reactive/src/inspect.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "reactive",
+      "name": "resource",
+      "file": "packages/reactive/src/resource.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "reactive",
+      "name": "scope",
+      "file": "packages/reactive/src/scope.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "reactive",
+      "name": "signal",
+      "file": "packages/reactive/src/signal.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "attempt",
+      "file": "packages/schema/src/attempt.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "attempt",
+      "file": "packages/schema/src/attempt.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "err",
+      "file": "packages/schema/src/err.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "ok",
+      "file": "packages/schema/src/ok.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "pathToString",
+      "file": "packages/schema/src/pathToString.ts",
+      "rung": "probabilistic"
+    }
+  ]
 }

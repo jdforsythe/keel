@@ -1,11 +1,15 @@
 import type { Infer } from "./Infer.ts";
 import type { KeelError } from "./KeelError.ts";
+import type { ObjectSchema } from "./ObjectSchema.ts";
 import type { Result } from "./Result.ts";
 import type { Schema } from "./Schema.ts";
+import type { StringInput } from "./StringInput.ts";
 import type { Node } from "./internal/Node.ts";
 import { clip } from "./internal/clip.ts";
+import { fromStrings } from "./internal/fromStrings.ts";
 import { make } from "./internal/make.ts";
 import { registry } from "./internal/registry.ts";
+import { stringEntries } from "./internal/stringEntries.ts";
 
 type Shape = Readonly<Record<string, Schema<unknown, boolean>>>;
 type OptionalKeys<S> = { [K in keyof S]: S[K] extends Schema<unknown, true> ? K : never }[keyof S];
@@ -20,8 +24,11 @@ type Variant<K extends string> = Schema<{ readonly [P in K]: string | number | b
 
 /** The schema namespace. One builder per primitive; modifiers are `.optional()` and `.nullable()`. */
 export const s = {
-  string: (opts: { readonly min?: number; readonly max?: number } = {}): Schema<string> =>
-    make({ kind: "string", min: opts.min ?? 0, max: opts.max }, false),
+  string: (opts: { readonly min?: number; readonly max?: number } = {}): Schema<string> => {
+    const min = opts.min ?? 0;
+    if (opts.max !== undefined && min > opts.max) throw new Error(`string min ${min} exceeds max ${opts.max}`);
+    return make({ kind: "string", min, max: opts.max }, false);
+  },
   number: (): Schema<number> => make({ kind: "number" }, false),
   int: (): Schema<number> => make({ kind: "int" }, false),
   boolean: (): Schema<boolean> => make({ kind: "boolean" }, false),
@@ -29,8 +36,14 @@ export const s = {
   enum: <const E extends readonly [string, ...string[]]>(values: E): Schema<E[number]> =>
     make({ kind: "enum", values }, false),
   id: <B extends string>(brand: B): Schema<string & { readonly __brand: B }> => make({ kind: "id", brand }, false),
-  object: <S extends Shape>(shape: S): Schema<ObjectOf<S>> =>
-    make({ kind: "object", fields: Object.fromEntries(Object.entries(shape).map(([k, v]) => [k, v.node])) }, false),
+  object: <S extends Shape>(shape: S): ObjectSchema<ObjectOf<S>> => {
+    const node: Node = {
+      kind: "object",
+      fields: Object.fromEntries(Object.entries(shape).map(([k, v]) => [k, v.node])),
+    };
+    const base = make<ObjectOf<S>, false>(node, false);
+    return { ...base, decodeStrings: (input: StringInput) => base.parse(fromStrings(node, "", stringEntries(input))) };
+  },
   array: <S extends Schema<unknown>>(item: S): Schema<Infer<S>[]> => make({ kind: "array", item: item.node }, false),
   record: <S extends Schema<unknown>>(value: S): Schema<Record<string, Infer<S>>> =>
     make({ kind: "record", value: value.node }, false),

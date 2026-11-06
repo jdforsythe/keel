@@ -32,6 +32,11 @@ Covers backlog 0002 (primitives), 0003 (parse/encode/decode/Result), 0004 (gener
 - D11: `KeelError<C, D>` = `{ readonly code: C; readonly message: string; readonly data: D }`. `s.error(code, D)` is an object schema `{ code: literal, message: string, data: D }` typed as `KeelError<C, Infer<D>>`, plus `.make(data, message = code)` (no runtime validation of `data`; the type covers it).
 - D12: `s.result(T, E)` is a union node on `ok` with variants `{ ok: true, value: T }` / `{ ok: false, error: E }`, so codec, gen and doc come from the existing walkers. Typed as `Result<Infer<T>, Infer<E>>`.
 - D13: `attempt(fn)`: a sync fn gives a `Result` synchronously; a fn returning a thenable gives `Promise<Result>` that never rejects. Return type `[T] extends [never] ? Result<never, U> : T extends PromiseLike<V> ? Promise<Result<V, U>> : Result<T, U>`, where U = `KeelError<'keel.unexpected', { cause: string }>`. `cause` is `Name: message` for Errors, else the string or JSON of the thrown value; `message` is the cause clipped to 89 chars.
+- D14 (rfc:0002): `decodeStrings` exists only on `s.object(..)` schemas (type `ObjectSchema<T>`; `.optional()`/`.nullable()` return plain `Schema`). It reshapes input into a candidate value (`src/internal/fromStrings.ts`, `leafFromString.ts`, `stringEntries.ts`) then calls `parse`, so all rules come from one checker. Text that cannot be coerced is left unchanged and surfaces as `type`/`literal`/`enum`/`int`. Required array/record/object with no keys is `required`. File entries in FormData are ignored. Nullable key absent or empty gives null; an optional boolean absent is absent (optional wins over checkbox semantics), a plain or nullable boolean absent is false. `decode` stays the JSON inverse of `encode`.
+- D15: `parse` rejects an object, record or union value with an own `__proto__`, `constructor` or `prototype` key (rule `type` at the object's path), via `src/internal/hasProtoKey.ts`. A schema declaring such a field name can never validate. Parse still returns the input by reference; encode still drops unknown keys (documented in README).
+- D16: `s.string({ min, max })` with `min > max` throws a plain `Error` at construction (programmer error, like `union`).
+- D17: `pathToString(path)` is `path.join('.')`, exported from `src/pathToString.ts`; `invalid()` reuses it.
+- D18: `packages/schema/unsafe/unsafe.ts` had no callers and was deleted (dir kept with `.gitkeep`); `tooling/ledger/ledger.json` regenerated so the baseline records unsafe = 1 (ctx, PLAN 0009 D10). Schema's own unsafe count stays 0.
 
 ## Verification
 - [x] conformance green (129 tests incl. result.test.ts) · properties present · `pnpm --filter @keel/schema check` clean · unsafe count 0 in schema
@@ -41,7 +46,7 @@ Covers backlog 0002 (primitives), 0003 (parse/encode/decode/Result), 0004 (gener
 
 Test trailer (`pnpm --filter @keel/schema test`):
 ```
-ok 225 tests, 0 failed, 0 skipped (0.5s)
+ok 242 tests, 0 failed, 0 skipped (0.5s)
 ```
 
 ## Next action

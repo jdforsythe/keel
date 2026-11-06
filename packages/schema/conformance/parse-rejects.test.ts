@@ -55,8 +55,17 @@ describe("k.schema parse rejects invalid shapes", () => {
   }
 
   const RULES = [
-    "type", "finite", "int", "min", "max", "literal", "enum",
-    "required", "optional-null", "nullable-absent", "discriminant",
+    "type",
+    "finite",
+    "int",
+    "min",
+    "max",
+    "literal",
+    "enum",
+    "required",
+    "optional-null",
+    "nullable-absent",
+    "discriminant",
   ];
 
   it("failure carries code, path array, and message", () => {

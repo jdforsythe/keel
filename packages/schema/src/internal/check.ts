@@ -1,5 +1,6 @@
 import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
+import { hasProtoKey } from "./hasProtoKey.ts";
 import { isRecord } from "./isRecord.ts";
 import { leafRule } from "./leafRule.ts";
 import { variantOf } from "./variantOf.ts";
@@ -20,11 +21,11 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
       else for (const [i, item] of x.entries()) check(node.item, item, [...path, i], issues);
       break;
     case "record":
-      if (!isRecord(x)) issues.push({ path, rule: "type" });
+      if (!isRecord(x) || hasProtoKey(x)) issues.push({ path, rule: "type" });
       else for (const key of Object.keys(x)) check(node.value, x[key], [...path, key], issues);
       break;
     case "object":
-      if (!isRecord(x)) {
+      if (!isRecord(x) || hasProtoKey(x)) {
         issues.push({ path, rule: "type" });
         break;
       }
@@ -41,7 +42,7 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
       }
       break;
     case "union": {
-      if (!isRecord(x)) {
+      if (!isRecord(x) || hasProtoKey(x)) {
         issues.push({ path, rule: "type" });
         break;
       }
