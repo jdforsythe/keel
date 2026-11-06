@@ -16,6 +16,14 @@
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
   },
+  "dependencies": {
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*",
+    "fast-check": "^3"
+  },
   "devDependencies": {
     "@keel/tooling": "workspace:*"
   }

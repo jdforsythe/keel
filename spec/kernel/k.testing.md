@@ -18,7 +18,7 @@ const r = await renderRoute('orders.show', { params: { id }, search: {}, state: 
 
 **ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim. Pass `ctx` to control clock, seed, and net fixtures.
 
-**a11y.** `a11y(id?)` is built from the live DOM: nodes `{ id, role, name, state: { checked?, disabled?, expanded?, selected?, invalid?, focused? }, children }`, with implicit roles and accessible names per WAI-ARIA. After the first render and after every `fire`, the harness compares each element's role and name source with `.keel/a11y.json` and runs axe.
+**a11y.** `a11y(id?)` is built from the live DOM: nodes `{ id, role, name, state: { checked?, disabled?, expanded?, selected?, invalid?, focused? }, children }`, with implicit roles and accessible names per WAI-ARIA. After the first render and after every `fire`, the harness compares each element's role and name source with the compiler's `a11y.json` (passed as `render(C, { artifacts })` by `keel test`, which reads `.keel/`; absent, E1702 is not checked) and runs axe.
 
 **Properties.**
 ```ts

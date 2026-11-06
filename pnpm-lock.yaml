@@ -227,20 +227,32 @@ importers:
         version: link:../../tooling
 
   packages/scaffold:
+    dependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      magic-string:
+        specifier: ^1.4.5
+        version: 1.4.5
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
-
-  packages/schema:
-    dependencies:
       fast-check:
         specifier: ^3
         version: 3.23.2
+
+  packages/schema:
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
 
   packages/server:
     devDependencies:
@@ -294,6 +306,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../forms
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
