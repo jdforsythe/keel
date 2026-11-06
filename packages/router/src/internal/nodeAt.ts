@@ -1,5 +1,5 @@
 import type { SchemaNode as Node } from "./SchemaNode.ts";
-import { unwrap } from "./unwrapNode.ts";
+import { unwrapNode } from "./unwrapNode.ts";
 
 const INDEX = /^(0|[1-9]\d*)$/;
 

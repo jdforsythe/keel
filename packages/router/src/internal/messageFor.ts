@@ -1,6 +1,6 @@
 import type { SchemaError } from "@keel/schema";
 import type { SchemaNode as Node } from "./SchemaNode.ts";
-import { unwrap } from "./unwrapNode.ts";
+import { unwrapNode } from "./unwrapNode.ts";
 
 type Rule = SchemaError["data"]["issues"][number]["rule"];
 
