@@ -1,10 +1,12 @@
 // The golden apps are the repo's own proof: `keel check` over apps/golden-1 reports nothing.
-import { readFileSync, readdirSync } from "node:fs";
-import { join, relative } from "node:path";
+import { readFileSync, readdirSync, realpathSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
 
-const ROOT = join(import.meta.dirname, "..", "..", "..", "apps", "golden-1");
+// Repo root via a workspace link, so this also holds in Stryker's sandbox copy (where ../../.. is not the repo root).
+const PACKAGES = dirname(realpathSync(join(import.meta.dirname, "..", "node_modules", "@keel", "schema")));
+const ROOT = join(PACKAGES, "..", "apps", "golden-1");
 const SKIP = new Set(["node_modules", "dist", ".keel", "coverage"]);
 
 function read(dir: string): { path: string; source: string }[] {

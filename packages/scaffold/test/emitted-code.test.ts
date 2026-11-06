@@ -1,10 +1,18 @@
 import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import nodePath from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { scaffold } from "../src/index.ts";
 import { type Files, apply } from "./helpers.ts";
 
-const BIOME = fileURLToPath(new URL("../../../node_modules/.bin/biome", import.meta.url));
+// Repo root via a workspace link, so this also holds in Stryker's sandbox copy (where relative paths miss the root).
+const REPO_ROOT = nodePath.resolve(
+  fs.realpathSync(fileURLToPath(new URL("../node_modules/@keel/schema", import.meta.url))),
+  "../..",
+);
+const BIOME = nodePath.join(REPO_ROOT, "node_modules/.bin/biome");
+const ROOT_BIOME_CONFIG = nodePath.join(REPO_ROOT, "biome.json");
 
 function build(workspace: boolean): Files {
   let files: Files = new Map();
@@ -26,10 +34,15 @@ describe("emitted code passes the repo's biome config", () => {
       const bad: string[] = [];
       for (const [path, text] of files) {
         if (!/\.tsx?$/.test(path)) continue;
-        const run = spawnSync(BIOME, ["check", "--write", `--stdin-file-path=${path}`], {
-          input: text,
-          encoding: "utf8",
-        });
+        const run = spawnSync(
+          BIOME,
+          ["check", "--write", `--config-path=${ROOT_BIOME_CONFIG}`, `--stdin-file-path=${path}`],
+          {
+            input: text,
+            encoding: "utf8",
+            cwd: REPO_ROOT,
+          },
+        );
         if (run.status !== 0 || run.stdout !== text) bad.push(`${path}\n${run.stdout}${run.stderr}`);
       }
       expect(bad).toEqual([]);

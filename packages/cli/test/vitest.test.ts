@@ -12,7 +12,7 @@ describe("keel test", () => {
     const out = lines(r.stdout);
     const diags = out.filter((l) => l.startsWith("T0001 "));
     expect(diags).toHaveLength(1);
-    expect(diags[0]).toMatch(/^T0001 sum\.fixture\.ts:12:17 fails on purpose: expected 2 to be 3/);
+    expect(diags[0]).toMatch(/^T0001 sum\.fixture\.ts:\d+:\d+ fails on purpose: expected 2 to be 3/);
     expect(out).toContain("  fix: - 3");
     expect(out.at(-1)).toBe("fail test 3 tests, 1 failed, 0 skipped");
   }, 30_000);

@@ -5,11 +5,11 @@ Updated by `/handoff`. Read first on every fresh start.
 ```
 health: pnpm check && pnpm test
 active:
-  - state: G1 and G2 passed. Freeze review (docs/freeze-review.md): 2 of 18 sections conformance-covered; gaps as backlog 0057-0068. Mutation: all measured packages at threshold (check 83%); compiler/scaffold/cli configs in flight.
-  - in flight: red-team pass; mutation configs; RFC 0019 (conformance defects); RFC 0020/0021 (conformance completeness waves 1-2); spec/std/sessions.md draft (S1).
-  - next: review red-team findings; S1 sessions conformance + module (0070-0074); 0054 per-request stores; 0044; 0069.
-  - running for the user: `node apps/golden-1/server.ts` (4181) and `vite preview --port 4180` in apps/golden-1.
-  - process: rfc:0000 pre-implementation fixes; RFCs 0001-0021 in docs/rfc; delegation tiers in docs/WORKFLOW.md; never Stryker inPlace.
+  - state (end of 2026-11-06): G1 and G2 passed. All 15 kernel sections implemented; 5 of 18 conformance-covered (docs/freeze-review.md). Red-team report docs/red-team/2026-11-06.md: critical and high items fixed (RFC 0022 server hardening, RFC 0023 check static-only, schema nested proto keys); remaining items in tasks/BACKLOG.md "## Red team" (0071, 0073, 0078-0090 open). S1 sessions spec drafted (spec/std/std.sessions.md; backlog 0091-0095).
+  - root `pnpm check` and `pnpm test` green (31 tasks). Mutation: all packages at threshold except compiler 57.4%, cli 59.1%, scaffold unmeasured (0096).
+  - running for the user: `NODE_ENV=production node apps/golden-1/server.ts` (4181) and `vite preview --port 4180` (apps/golden-1); open http://localhost:4180/ with `open`.
+  - next (pick the first unchecked unblocked line in BACKLOG): 0096 mutation gaps; red-team 0071/0073/0078-0090 (0054 per-request stores design); 0091 sessions conformance then 0092 module; 0057-0065 freeze gaps; 0044; 0069.
+  - process: rfc:0000 pre-implementation fixes; RFCs 0001-0023 in docs/rfc; delegation tiers in docs/WORKFLOW.md; never Stryker inPlace; shared git index means agents must stage by explicit path.
   blockers: none
 pending decisions: none
 last updated: (initial)

@@ -138,7 +138,9 @@ const inScope = (e) => `${e.file}#${e.name}`.startsWith(scope);
 /** Unsafe calls in `apps/<app>/` for every app whose `<app>:` key prefix matches `scope`. */
 function scopedUnsafe() {
   const ap = path.join(root, "apps");
-  const apps = fs.existsSync(ap) ? fs.readdirSync(ap).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`)) : [];
+  const apps = fs.existsSync(ap)
+    ? fs.readdirSync(ap).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`))
+    : [];
   let n = 0;
   for (const a of apps)
     for (const f of walk(path.join(ap, a)).filter((x) => CODE_EXT.test(x)))
