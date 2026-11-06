@@ -1,5 +1,5 @@
 # k.module: Module manifest
-status: proposed
+status: implemented
 
 **Manifest.** All app code lives in modules. A module is a folder `modules/<id>/` with a `module.ts`:
 ```ts

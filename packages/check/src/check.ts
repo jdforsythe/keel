@@ -4,6 +4,7 @@ import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
 import { generatedEdits } from "./internal/generatedEdits.ts";
 import { isCodePath } from "./internal/isCodePath.ts";
+import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { parseFile } from "./internal/parseFile.ts";
 import { renderA11y } from "./internal/renderA11y.ts";
@@ -22,7 +23,8 @@ const isError = (d: Diagnostic): boolean => !/^[WI]/.test(d.code);
 /**
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, (3) the rule registry on each file plus project passes (E1005,
- * E1454, E1753, E1755), (4) rendered a11y checks, (5) dedupe and sort. Pure and deterministic for equal inputs.
+ * E1454, E1753, E1755, and the k.module pass E1151-E1157), (4) rendered a11y checks, (5) dedupe and sort.
+ * Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
   const code = files.filter((f) => isCodePath(f.path));
@@ -44,6 +46,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   }
   out.push(
     ...duplicateErrorCodes(checked),
+    ...moduleChecks(checked),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
     ...generatedEdits(files, opts.artifacts ?? {}),

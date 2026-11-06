@@ -25,6 +25,19 @@ describe("module", () => {
   });
 });
 
+describe("ModuleSchema", () => {
+  it("applies the lowerCamel id rule on parse, decode, and encode alike", () => {
+    const bad = { ...def, id: "to-dos" };
+    expect(ModuleSchema.decode(bad).ok).toBe(false);
+    expect(ModuleSchema.decode(def).ok).toBe(true);
+    const r = ModuleSchema.parse(bad);
+    expect(r.ok ? [] : r.error.data.issues).toEqual([{ path: ["id"], rule: "type" }]);
+    expect(r.ok ? "" : r.error.message).toContain("lowerCamel");
+    expect(() => ModuleSchema.encode(bad)).toThrow(/lowerCamel/);
+    expect(ModuleSchema.encode(def)).toEqual(def);
+  });
+});
+
 describe("tsconfig.strict.json", () => {
   it("parses as JSON, is strict, and leaves jsxImportSource unset", () => {
     const file = path.join(import.meta.dirname, "..", "tsconfig.strict.json");
