@@ -1,15 +1,18 @@
 {
   "version": 1,
-  "unsafe": 6,
+  "unsafe": 7,
   "mutationScore": {
+    "check": 35.5,
     "ctx": 83,
-    "forms": 55.4,
+    "forms": 93.7,
     "reactive": 87.5,
-    "router": 63.4,
-    "runtime-dom": 68.2,
+    "router": 89.5,
+    "runtime-dom": 75.6,
     "schema": 92.1,
+    "server": 88.6,
     "services": 75.9,
-    "store": 76.9,
+    "store": 89.3,
+    "testing": 88.1,
     "ui": 70.3
   },
   "exports": [
@@ -305,13 +308,13 @@
       "pkg": "router",
       "name": "action",
       "file": "packages/router/src/action.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
       "name": "browserHistory",
       "file": "packages/router/src/browserHistory.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "router",
@@ -329,7 +332,7 @@
       "pkg": "router",
       "name": "guard",
       "file": "packages/router/src/guard.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
@@ -341,19 +344,19 @@
       "pkg": "router",
       "name": "loader",
       "file": "packages/router/src/loader.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
       "name": "manifest",
       "file": "packages/router/src/manifest.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
       "name": "routesArtifact",
       "file": "packages/router/src/routesArtifact.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "runtime-dom",
@@ -401,6 +404,12 @@
       "pkg": "schema",
       "name": "pathToString",
       "file": "packages/schema/src/pathToString.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "server",
+      "name": "createApp",
+      "file": "packages/server/src/createApp.ts",
       "rung": "probabilistic"
     },
     {

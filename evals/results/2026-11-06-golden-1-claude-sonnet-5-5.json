@@ -23,13 +23,13 @@
   "converged": false,
   "iterations": 3,
   "tokens": {
-    "input": 6532513,
-    "output": 53077
+    "input": 4841674,
+    "output": 49972
   },
-  "costUsd": 1.9514249999999995,
+  "costUsd": 1.6771878999999998,
   "unsafeCount": 4,
-  "checkTrailer": "ok budgets 23 measured (1.2s)",
-  "testTrailer": "ok test 30 tasks (0.8s)",
-  "durationMs": 886944,
-  "startedAt": "2026-11-06T16:33:06.156Z"
+  "checkTrailer": "ok budgets 23 measured (3.0s)",
+  "testTrailer": "ok test 30 tasks (1.0s)",
+  "durationMs": 973743,
+  "startedAt": "2026-11-06T17:08:40.391Z"
 }
