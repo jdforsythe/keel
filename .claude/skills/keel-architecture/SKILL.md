@@ -12,4 +12,6 @@ Load when starting any task. Keep under 600 tokens in context.
 
 **Never.** Rename glossary terms · add a second way to do a thing · edit `conformance/` without an RFC · use bare `Date`, `Math.random`, `fetch` in app or test code · print anything that violates OUTPUT.md · read generated output or `.worktrees/` of other tasks.
 
+**Delegate.** haiku: mechanical · sonnet: routine scripts and tests · opus/self: design. Parallel when independent. Brief with owned files, spec id, verify command, report shape.
+
 **Always.** One export per file · schema before code · conformance before implementation · checkpoint PLAN.md · cite the spec section and principle numbers in PRs.

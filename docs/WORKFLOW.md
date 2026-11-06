@@ -11,3 +11,13 @@
 **Humans.** Approve RFCs and ADRs, own security, decide freezes, pick design partners.
 
 **Red team.** `red-team` subagent runs on schedule against merged work and PRINCIPLES.md, filing backlog items.
+
+**Delegation.** The orchestrating agent keeps its context for thinking and decisions; it does not read code wholesale or do mechanical edits. Work is tiered by model and effort:
+
+| Tier | Model / effort | Use for |
+| --- | --- | --- |
+| mechanical | haiku, high | scaffolds, renames, reading and summarizing, running commands, applying a known diff |
+| routine | sonnet, medium | scripts, tooling, tests from a clear brief, conformance tests, reviews |
+| design | opus, high (or the orchestrator) | kernel package design, spec interpretation, ADRs, anything with a judgment call |
+
+Brief every subagent with: the files it owns, the files other agents own concurrently, the spec section, the verification command, and what to report back (trailer lines, files touched, unfinished items). Independent subagents run in parallel in one turn. Subagent definitions in `.claude/agents/` carry a `model:` so the tier is the default, not a choice.

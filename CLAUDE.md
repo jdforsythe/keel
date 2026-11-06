@@ -11,7 +11,7 @@ You are building Keel. The repo is the memory; your context is a cache. Anything
 2. Conformance tests are written by the `conformance-writer` subagent from the spec section before implementation. Never edit `packages/*/conformance/**` outside an `rfc:NNNN` PR.
 3. Checkpoint `tasks/<id>/PLAN.md` after every step. Commit `wip:` early. Run `/handoff` at every stopping point and before any compaction.
 4. Decisions go into `PLAN.md` or an ADR the moment they are made.
-5. Exploration goes to subagents; their reading never enters your context.
+5. Exploration goes to subagents; their reading never enters your context. Delegate by tier (`docs/WORKFLOW.md` Delegation): haiku for mechanical work, sonnet for routine scripts and tests, opus or yourself for design. Run independent subagents in parallel.
 6. No `any`, casts, non-null assertions, or `@ts-ignore` outside `unsafe/` directories; every `unsafe` use carries a justification string.
 7. Everything you print, log, or emit follows `docs/OUTPUT.md`.
 8. Never rename a glossary term. Propose an RFC.
