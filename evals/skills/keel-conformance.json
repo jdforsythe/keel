@@ -1,0 +1,9 @@
+{
+  "skill": "keel-conformance",
+  "maxTokens": 600,
+  "prompt": "Who writes conformance tests and what must they not read?",
+  "expect": [
+    "spec",
+    "implementation"
+  ]
+}

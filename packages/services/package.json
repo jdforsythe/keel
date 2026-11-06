@@ -1,0 +1,22 @@
+{
+  "name": "@keel/services",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "echo skip"
+  },
+  "devDependencies": {
+    "@keel/tooling": "workspace:*"
+  }
+}

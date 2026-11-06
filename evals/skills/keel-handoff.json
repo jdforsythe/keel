@@ -1,0 +1,10 @@
+{
+  "skill": "keel-handoff",
+  "maxTokens": 600,
+  "prompt": "What do you do at a stopping point to hand off work?",
+  "expect": [
+    "PLAN.md",
+    "wip",
+    "HANDOFF"
+  ]
+}

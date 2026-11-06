@@ -1,0 +1,9 @@
+{
+  "skill": "keel-review",
+  "maxTokens": 600,
+  "prompt": "What is the output format of a review and what is the verdict?",
+  "expect": [
+    "approve",
+    "request changes"
+  ]
+}

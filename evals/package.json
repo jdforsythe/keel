@@ -1,0 +1,14 @@
+{
+  "name": "@keel/evals",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@keel/tooling": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22"
+  }
+}

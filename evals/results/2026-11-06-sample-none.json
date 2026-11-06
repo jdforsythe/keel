@@ -1,0 +1,17 @@
+{
+  "task": "sample",
+  "model": "none",
+  "runner": "none",
+  "converged": false,
+  "iterations": 1,
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "unsafeCount": 0,
+  "checkTrailer": "ok budgets 21 measured (0.6s)",
+  "testTrailer": "ok test 15 tasks (0.3s)",
+  "durationMs": 2201,
+  "startedAt": "2026-11-06T14:37:27.371Z"
+}

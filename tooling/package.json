@@ -2,5 +2,16 @@
   "name": "@keel/tooling",
   "private": true,
   "type": "module",
-  "main": "output.ts"
+  "main": "output.ts",
+  "exports": {
+    "./output": "./output.ts",
+    "./vitest-reporter": "./vitest-reporter.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "vitest": "^2"
+  }
 }

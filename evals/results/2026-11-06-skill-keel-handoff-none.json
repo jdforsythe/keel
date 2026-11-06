@@ -1,0 +1,17 @@
+{
+  "skill": "keel-handoff",
+  "runner": "none",
+  "model": "none",
+  "passed": true,
+  "tokenEstimate": 137,
+  "maxTokens": 600,
+  "frontmatterOk": true,
+  "missing": [],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "durationMs": 1,
+  "startedAt": "2026-11-06T14:32:43.423Z"
+}

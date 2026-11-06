@@ -2,7 +2,7 @@
 
 Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one context window. Claim with `/next`.
 
-- [ ] 0001 factory: toolchain, scripts, hooks, subagents, commands, evals harness, budgets · repo · PRD A · G0 · none
+- [x] 0001 factory: toolchain, scripts, hooks, subagents, commands, evals harness, budgets · repo · PRD A · G0 · none
 - [ ] 0002 schema: primitives, object, array, union, enum, id, optional vs nullable · schema · k.schema · G1 · 0001
 - [ ] 0003 schema: parse, encode, decode, Result · schema · k.schema · G1 · 0002
 - [ ] 0004 schema: generators and docs; type registry · schema · k.schema · G1 · 0003

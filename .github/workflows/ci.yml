@@ -1,29 +1,114 @@
+# _generated: edit tooling/ci.source.json and run pnpm generate. Do not edit by hand.
 name: ci
-on: [push, pull_request]
-env: { KEEL_AGENT: "1" }
+on:
+  push:
+    branches:
+      - main
+  pull_request: {}
+  schedule:
+    - cron: "0 3 * * *"
+    - cron: "0 4 * * 1"
+env:
+  KEEL_AGENT: "1"
+  TURBO_TOKEN: "${{ secrets.TURBO_TOKEN }}"
+  TURBO_TEAM: "${{ vars.TURBO_TEAM }}"
 jobs:
-  verify:
+  check:
+    if: "github.event_name != 'schedule'"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+        with:
+          node-version: 22
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm test
-      - run: pnpm build
-      - run: node tooling/budgets.mjs
-      - run: node tooling/ledger.mjs --ci
-      - run: node tooling/docs-freshness.mjs
-  mutate:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  test:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+        with:
+          node-version: 22
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm mutate
+      - run: pnpm test
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+  budgets:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node tooling/budgets.mjs
+  ledger:
+    needs: budgets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node tooling/ledger.mjs --diff
+  mutate:
+    if: "github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: "pnpm mutate --filter=\"./packages/*\""
+  eval:
+    if: "github.event_name == 'schedule' && github.event.schedule == '0 4 * * 1'"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: "pnpm eval --runner=none"

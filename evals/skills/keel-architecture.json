@@ -1,0 +1,9 @@
+{
+  "skill": "keel-architecture",
+  "maxTokens": 600,
+  "prompt": "Where does conformance test code live, and may an agent edit it?",
+  "expect": [
+    "conformance",
+    "rfc"
+  ]
+}

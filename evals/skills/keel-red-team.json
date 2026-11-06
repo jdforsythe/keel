@@ -1,0 +1,8 @@
+{
+  "skill": "keel-red-team",
+  "maxTokens": 600,
+  "prompt": "What does a red-team pass produce?",
+  "expect": [
+    "backlog"
+  ]
+}

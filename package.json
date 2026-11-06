@@ -6,14 +6,16 @@
     "node": ">=22"
   },
   "scripts": {
-    "check": "turbo run check --output-logs=errors-only && node tooling/structure-lint.mjs",
-    "test": "turbo run test --output-logs=errors-only",
-    "build": "turbo run build --output-logs=errors-only",
-    "mutate": "turbo run mutate --output-logs=errors-only",
+    "check": "node tooling/turbo.mjs check && node tooling/structure-lint.mjs && node tooling/generate.mjs --check && node tooling/docs-freshness.mjs && node tooling/budgets.mjs",
+    "test": "node tooling/turbo.mjs test",
+    "build": "node tooling/turbo.mjs build",
+    "mutate": "node tooling/turbo.mjs mutate",
     "eval": "tsx evals/run.ts",
     "spec": "node tooling/spec.mjs",
     "ledger": "node tooling/ledger.mjs",
-    "handoff": "node tooling/handoff.mjs"
+    "handoff": "node tooling/handoff.mjs",
+    "generate": "node tooling/generate.mjs",
+    "budgets": "node tooling/budgets.mjs"
   },
   "devDependencies": {
     "turbo": "^2",

@@ -1,6 +1,6 @@
+// _generated: edit tooling/turbo.source.json and run pnpm generate. Do not edit by hand.
 {
   "$schema": "https://turbo.build/schema.json",
-  "_generated": "edit tooling/turbo.source.json and run pnpm scaffold turbo",
   "tasks": {
     "check": {
       "dependsOn": [
