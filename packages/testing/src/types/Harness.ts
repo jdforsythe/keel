@@ -13,6 +13,8 @@ export interface Harness {
   state<T>(store: Store<T>): T;
   /** Dispatch `event` on the element with `id`; resolves once triggered work has settled. */
   fire(id: string, event: TestEvent): Promise<void>;
+  /** Wait, without an event or timers, until DOM and store logs are quiet (e.g. after a resource resolves). */
+  settle(): Promise<void>;
   find(id: string): Found;
   /** Unmount and free every binding, listener, and subscription. Idempotent. */
   dispose(): void;

@@ -10,9 +10,10 @@ expect(t.find('cart.total').name).toBe('Total 3')
 t.dispose()
 const r = await renderRoute('orders.show', { params: { id }, search: {}, state: [], ctx: sim })
 ```
-- `render(Component, { props, state?, ctx? })` -> `{ a11y(id?), state(store?), fire(id, event), find(id), dispose() }`. `props` and each `[store, value]` in `state` are parsed by their schemas first.
+- `render(Component, { props, state?, ctx? })` -> `{ a11y(id?), state(store?), fire(id, event), settle(), find(id), dispose() }`. `props` and each `[store, value]` in `state` are parsed by their schemas first.
 - `renderRoute(id, { params, search?, state?, ctx? })` runs the route's guards and loaders, then renders its chain; it resolves when the page is ready.
 - `fire(id, event)` dispatches through the delegated table (k.runtime). `event` is a closed `TestEvent` union (`click`, `input` with `value`, `change`, `keydown` with `key`, `submit`, `focus`, `blur`). It resolves once effects, resources, and actions are quiescent.
+- `settle()` runs the loop `fire` uses without an event (microtask rounds until DOM and store logs are quiet, bounded, no timers), then the render checks; `renderRoute` handles have it too.
 - `find(id)` returns `{ id, role, name, text, state }`, never a DOM node. `state(store)` is that store's value; `state()` is every store keyed by store id.
 - Tests address elements by id only.
 
@@ -49,6 +50,7 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
 - Inside a harness render, `ctx.clock.now()` returns the sim clock's value, and two runs with one seed produce equal `state()`.
 - `fire` resolves only after every effect and resource it triggered has settled.
 - `a11y()` for `<Button label="Save" disabled />` contains `{ role: 'button', name: 'Save', state: { disabled: true } }`.
+- After a resource resolves, `await settle()` makes its ready state visible without any event.
 - A property failing at a seed reports that seed; re-running with `KEEL_SEED` reproduces the same shrunk case.
 - A transaction breaking a declared invariant fails `properties()` with E1704.
 - An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`.

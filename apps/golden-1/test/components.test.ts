@@ -39,7 +39,7 @@ describe("Suggestions", () => {
     ctx.net.route(SUGGESTIONS, () => new Response(JSON.stringify([{ title: "Eggs" }, { title: "Bread" }])));
     const t = render(Suggestions, { props: {}, ctx });
     expect(t.find("todos.suggestions.loading").text).toBe("Loading suggestions");
-    await t.fire("todos.suggestions.title", { type: "focus" });
+    await t.settle();
     expect(t.find("todos.suggestions.list").text).toBe("EggsBread");
     t.dispose();
   });
@@ -48,7 +48,7 @@ describe("Suggestions", () => {
     ctx.net.route(SUGGESTIONS, () => new Response("boom", { status: 500 }));
     const t = render(Suggestions, { props: {}, ctx });
     expect(t.find("todos.suggestions.loading").text).toBe("Loading suggestions");
-    await t.fire("todos.suggestions.title", { type: "focus" });
+    await t.settle();
     expect(t.find("todos.suggestions.error").text).toBe("Suggestions failed (500)");
     t.dispose();
   });

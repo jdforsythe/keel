@@ -117,5 +117,11 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     if (!gone) check();
   };
 
-  return { harness: { a11y, state, fire, find, dispose }, check };
+  const settleNow = async (): Promise<void> => {
+    live();
+    await settle(container, () => undefined, busy);
+    if (!gone) check();
+  };
+
+  return { harness: { a11y, state, fire, settle: settleNow, find, dispose }, check };
 }

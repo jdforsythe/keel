@@ -3,23 +3,23 @@
 Status: draft
 
 ## Problem
-A call whose `params`, `query`, or `body` fail their schemas is the caller's bug, but k.services has no code for it, so it is reported as `api.decode`. That code means a response body failed `output`; callers cannot tell "I sent bad input" from "the server sent bad data" (services PLAN D4).
+A call whose `params`, `query`, or `body` fail their schemas is reported as `api.decode`, which also means a response body failed `output`. Callers cannot tell their own bad input from bad server data (services PLAN D4).
 
 ## Proposal
-Add `api.input` `{ issues }` to `ApiError`, with `schema.invalid`'s issue shape. Issue paths are prefixed `params`, `query`, or `body`. It is returned before anything is sent. `api.decode` stays for response bodies only.
+Add `api.input` `{ issues }` to `ApiError`, with `schema.invalid`'s issue shape. Paths are prefixed `params`, `query`, or `body`. Returned before anything is sent. `api.decode` stays for response bodies.
 
 ## Alternatives
 - Keep `api.decode` for both: ambiguous.
-- Reuse `schema.invalid`: breaks the closed `api.*` union.
+- Reuse `schema.invalid`: breaks the `api.*` union.
 
 ## Spec diff
-k.services: `api.input` in the ApiError list; Conformance gains "invalid call input returns `err` `api.input` with issue paths prefixed params/query/body and sends no request".
+k.services: `api.input` in the ApiError list; one Conformance sentence.
 
 ## Conformance diff
-Add `packages/services/conformance/api-input.test.ts`. Existing tests unchanged.
+Add `packages/services/conformance/api-input.test.ts`.
 
 ## Migration
-Additive to the union; callers matching input failures on `api.decode` switch to `api.input`.
+Callers matching input failures on `api.decode` switch to `api.input`.
 
 ## Token impact
-About 40 tokens in k.services.
+About 40 tokens.
