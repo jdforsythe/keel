@@ -32,6 +32,7 @@
 - D17 (rfc:0003): `uses` records declarations keyed by `owner()` (merged per scope, dropped via `Scope.onDispose`); outside a scope it throws E1203. `tx` unions the declarations of the caller's scope and its `parent` chain; none in the chain means unrestricted. Replaces the D10 probe (`liveness.ts` deleted). Test "Declarations are not enforced outside any scope" now holds in general. `test/examples` "uses declaration stops applying" rewritten for the new semantics (not a conformance test).
 - D18 (rfc:0003): default id `store.<n>` from a module counter (supersedes D14 default `"store"`); `stores()` returns a live registry Map (internal, `src/internal/registry.ts`), entries removed by `onDispose` of the creating scope; a live duplicate id throws before anything is created.
 - D19 (rfc:0007): `Store` exposes readonly `schema` and `id`; `Transaction` exposes readonly `schema` (alias of `payload`) and `store` (set after `self` exists; `define` runs only on call, so no TDZ). Tests: conformance/schema-exposed.test.ts.
+- D20 (rfc:0011): `Store.check(state)` parses `state` with `schema`, then runs every guard in `guards`; `ok(parsed)` or `err(store.invariant)` with data `{ transaction: "" }` (a schema-rejected candidate is also `store.invariant`, so the type stays one code). No commit, log entry, or signal write. Tests: conformance/check.test.ts.
 
 ## Verification
 - [x] conformance green (22 tests) · properties present · `pnpm --filter @keel/store check` clean · structure-lint clean for store · build ok

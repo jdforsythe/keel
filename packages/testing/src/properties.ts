@@ -4,7 +4,6 @@ import * as fc from "fast-check";
 import { checkComponent } from "./internal/checkComponent.ts";
 import { checkTransaction } from "./internal/checkTransaction.ts";
 import { fail } from "./internal/fail.ts";
-import { holds } from "./internal/holds.ts";
 import { jsonOf } from "./internal/jsonOf.ts";
 import { propertyFailure } from "./internal/propertyFailure.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
@@ -48,7 +47,7 @@ export async function properties<T, P>(
     const st = target.store;
     const out = fc.check(
       fc.property(gen(st.schema), gen(target.schema), (state, p) => {
-        fc.pre(holds(st, state));
+        fc.pre(st.check(state).ok);
         checkTransaction(target, state, p);
       }),
       { seed, numRuns: runs },

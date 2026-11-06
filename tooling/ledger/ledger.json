@@ -1,7 +1,151 @@
 {
   "version": 1,
-  "unsafe": 4,
+  "unsafe": 5,
   "exports": [
+    {
+      "pkg": "golden-1",
+      "name": "addList",
+      "file": "golden-1:todos/addList.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "addTodo",
+      "file": "golden-1:todos/addTodo.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "AppShell",
+      "file": "golden-1:todos/AppShell.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Board",
+      "file": "golden-1:todos/Board.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "board",
+      "file": "golden-1:todos/board.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "createList",
+      "file": "golden-1:todos/createList.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "createTodo",
+      "file": "golden-1:todos/createTodo.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "editable",
+      "file": "golden-1:todos/editable.guard.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "editTodo",
+      "file": "golden-1:todos/editTodo.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "EditTodoPage",
+      "file": "golden-1:todos/EditTodoPage.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListDraft",
+      "file": "golden-1:todos/ListDraft.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListError",
+      "file": "golden-1:todos/ListError.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListPage",
+      "file": "golden-1:todos/ListPage.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListsPage",
+      "file": "golden-1:todos/ListsPage.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "loadList",
+      "file": "golden-1:todos/loadList.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "loadTodo",
+      "file": "golden-1:todos/loadTodo.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Suggestion",
+      "file": "golden-1:todos/Suggestion.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Suggestions",
+      "file": "golden-1:todos/Suggestions.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Todo",
+      "file": "golden-1:todos/Todo.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoDraft",
+      "file": "golden-1:todos/TodoDraft.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoList",
+      "file": "golden-1:todos/TodoList.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoRow",
+      "file": "golden-1:todos/TodoRow.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "toggleTodo",
+      "file": "golden-1:todos/toggleTodo.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "updateTodo",
+      "file": "golden-1:todos/updateTodo.server.ts",
+      "rung": "example"
+    },
     {
       "pkg": "check",
       "name": "check",
@@ -54,13 +198,19 @@
       "pkg": "cli",
       "name": "run",
       "file": "packages/cli/src/run.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "compiler",
       "name": "compile",
       "file": "packages/compiler/src/compile.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "compiler",
+      "name": "module",
+      "file": "packages/compiler/src/module.ts",
+      "rung": "example"
     },
     {
       "pkg": "ctx",
@@ -243,6 +393,12 @@
       "rung": "probabilistic"
     },
     {
+      "pkg": "server",
+      "name": "topology",
+      "file": "packages/server/src/topology.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "store",
       "name": "invariant",
       "file": "packages/store/src/invariant.ts",
@@ -301,6 +457,12 @@
       "name": "renderRoute",
       "file": "packages/testing/src/renderRoute.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "testing",
+      "name": "testResults",
+      "file": "packages/testing/src/testResults.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "ui",

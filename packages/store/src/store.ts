@@ -97,6 +97,14 @@ export function store<T extends object>(
       return current[key];
     },
     select: (fn) => computed(() => fn(root.get())),
+    check(state) {
+      const parsed = schema.parse(state);
+      if (!parsed.ok)
+        return err(violated.make({ transaction: "" }, `candidate state rejected: ${parsed.error.message}`));
+      for (const g of guards)
+        if (!g(parsed.value)) return err(violated.make({ transaction: "" }, "candidate state violates an invariant"));
+      return ok(parsed.value);
+    },
     log() {
       version.get();
       return rows.map((r) => r.entry);

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-// Builds tooling/ledger/ledger.json: every exported function in packages/*/src/*.ts with its verification rung.
+// Builds tooling/ledger/ledger.json: every exported function in packages/*/src/*.ts and every export of apps/*/modules/** with its verification rung.
 // Usage: node tooling/ledger.mjs [--diff|--ci]   (--diff compares to the committed ledger, prints E1706 on regression)
 // I/O shell only: rung rules are `ledger` and `ledgerDiff` from @keel/testing (k.testing Ledger), imported by path.
 import fs from "node:fs";
@@ -14,6 +14,12 @@ const LEDGER = "tooling/ledger/ledger.json";
 const FN_DECL = /^export\s+(?:async\s+)?function\*?\s+([A-Za-z_$][\w$]*)/;
 const FN_CONST =
   /^export\s+const\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*(?:async\s*)?(?:function\b|\(|[A-Za-z_$][\w$]*\s*=>)/;
+const APP_EXPORT = /^export\s+(?:async\s+)?(?:const|let|function\*?|class)\s+([A-Za-z_$][\w$]*)/;
+const APP_DEFAULT = /^export\s+default\b/;
+/** A component's `Props` and `uses` belong to the component; module.ts and routes.ts are manifests, not items. */
+const APP_PART_NAMES = new Set(["Props", "uses"]);
+const APP_MANIFESTS = new Set(["module.ts", "routes.ts"]);
+const TEST_FILE = /\.test\.(?:ts|tsx|mts)$/;
 const UNSAFE_CALL = /(?<!function\s)\bunsafe\s*\(/g;
 /** fast-check runs a property 100 times unless `numRuns` says otherwise. */
 const FC_DEFAULT_RUNS = 100;
@@ -71,10 +77,40 @@ function build() {
       }
     }
   }
+  found.push(...buildApps());
   found.sort((a, b) => (a.file + a.name).localeCompare(b.file + b.name));
   const records = ledger(found.map((e) => ({ item: `${e.file}#${e.name}`, evidence: e.evidence })));
   const exports = found.map((e, i) => ({ pkg: e.pkg, name: e.name, file: e.file, rung: records[i]?.rung ?? "none" }));
   return { version: 1, unsafe, exports };
+}
+
+/** Items of `apps/<app>/modules/**`: keyed `<app>:<path under modules>#<name>`; evidence from `apps/<app>/test/**` and co-located tests. */
+function buildApps() {
+  const ap = path.join(root, "apps");
+  const found = [];
+  const apps = fs.existsSync(ap) ? fs.readdirSync(ap).sort() : [];
+  for (const app of apps) {
+    const modDir = path.join(ap, app, "modules");
+    if (!fs.existsSync(modDir)) continue;
+    const modFiles = walk(modDir).filter((f) => CODE_EXT.test(f));
+    const verif = [...walk(path.join(ap, app, "test")), ...modFiles.filter((f) => TEST_FILE.test(f))]
+      .filter((f) => CODE_EXT.test(f))
+      .map((f) => {
+        const s = fs.readFileSync(f, "utf8");
+        return { s, ev: evidenceOf(s) };
+      });
+    for (const f of modFiles.filter((x) => !TEST_FILE.test(x) && !APP_MANIFESTS.has(path.basename(x)))) {
+      const key = `${app}:${path.relative(modDir, f).split(path.sep).join("/")}`;
+      for (const l of readCode(f)) {
+        const m = APP_EXPORT.exec(l);
+        const name = m ? m[1] : APP_DEFAULT.test(l) ? path.basename(f).split(".")[0] : null;
+        if (!name || APP_PART_NAMES.has(name) || found.some((e) => e.file === key && e.name === name)) continue;
+        const word = new RegExp(`\\b${name.replace(/\$/g, "\\$")}\\b`);
+        found.push({ pkg: app, name, file: key, evidence: verif.filter((v) => word.test(v.s)).map((v) => v.ev) });
+      }
+    }
+  }
+  return found;
 }
 
 function committed() {
