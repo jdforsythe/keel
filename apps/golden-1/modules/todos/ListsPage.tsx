@@ -47,4 +47,3 @@ export default function ListsPage(_props: Infer<typeof Props>) {
     </Box>
   );
 }
-ListsPage.Props = Props;

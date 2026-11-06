@@ -1,5 +1,7 @@
-/** What `Case` returns: one variant's renderer, consumed by `Match`. */
-export interface CaseNode<U> {
-  readonly tag: string;
-  readonly render: (value: () => U) => Node;
-}
+declare const VARIANTS: unique symbol;
+
+/**
+ * What `Case` returns: a JSX element (a DOM node) that carries one variant's renderer for `Match`. The
+ * phantom `[VARIANTS]` member records the union `U` it belongs to; it never exists at runtime.
+ */
+export type CaseNode<U> = Node & { readonly [VARIANTS]?: (union: U) => void };

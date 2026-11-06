@@ -43,4 +43,3 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
     </Box>
   );
 }
-EditTodoPage.Props = Props;

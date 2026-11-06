@@ -74,4 +74,3 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
     </Box>
   );
 }
-ListPage.Props = Props;

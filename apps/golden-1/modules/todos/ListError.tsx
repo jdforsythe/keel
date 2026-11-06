@@ -22,4 +22,3 @@ export default function ListError(props: Infer<typeof Props>) {
     </Box>
   );
 }
-ListError.Props = Props;

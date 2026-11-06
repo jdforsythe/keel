@@ -3,6 +3,7 @@ import type { Transaction } from "@keel/store";
 import * as fc from "fast-check";
 import { checkComponent } from "./internal/checkComponent.ts";
 import { checkTransaction } from "./internal/checkTransaction.ts";
+import { fail } from "./internal/fail.ts";
 import { holds } from "./internal/holds.ts";
 import { jsonOf } from "./internal/jsonOf.ts";
 import { propertyFailure } from "./internal/propertyFailure.ts";
@@ -31,6 +32,8 @@ export async function properties<T, P>(
   const runs = options.runs ?? DEFAULT_RUNS;
   if (typeof target === "function") {
     const props = target.Props;
+    if (props === undefined)
+      throw fail("schema.invalid", "component has no Props (export `Props` from its file)", null);
     const out = fc.check(
       fc.property(gen(props), (p) => checkComponent(target, p, seed)),
       { seed, numRuns: runs },

@@ -17,7 +17,9 @@ import type { TestComponent } from "./types/TestComponent.ts";
  * axe rules (E1703). `dispose` puts every seeded store back to its snapshot from before the render.
  */
 export function render<P>(component: TestComponent<P>, options: RenderOptions): Harness {
-  const parsed = component.Props.parse(options.props);
+  const schema = component.Props;
+  if (schema === undefined) throw fail("schema.invalid", "component has no Props (export `Props` from its file)", null);
+  const parsed = schema.parse(options.props);
   if (!parsed.ok) throw fail("schema.invalid", `props: ${clip(parsed.error.message, 80)}`, parsed.error.data);
   const seeded = seedStores(options.state ?? []);
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });

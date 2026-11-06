@@ -26,51 +26,36 @@ async function fetchSuggestions(ctx: Ctx | undefined): Promise<Suggestion[]> {
 /** Suggested titles from `GET /api/suggestions` through `ctx.net`, shown by resource state. */
 export default function Suggestions(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const list = resource(() => fetchSuggestions(ctx));
-  // `<Match>`/`<Case>` JSX does not type-check (Case returns a CaseNode, not a JSX element), so the runtime
-  // call form is used. `on` stays a getter so only the match op tracks the resource, and `key` is explicit:
-  // without it the wrapper reads `on` in this component's scope to infer it and the component re-renders.
-  const children = (): Node =>
-    Match<State>({
-      key: "state",
-      get on() {
-        return list.get();
-      },
-      children: [
-        Case<State>({
-          tag: "loading",
-          children: () => (
-            <Text id="todos.suggestions.loading" as="p">
-              Loading suggestions
-            </Text>
-          ),
-        }),
-        Case<State>({
-          tag: "error",
-          children: (v) => (
-            <Text id="todos.suggestions.error" as="p" fg="danger">
-              {v.state === "error" ? messageOf(v.error) : ""}
-            </Text>
-          ),
-        }),
-        Case<State>({
-          tag: "ready",
-          children: (v) => (
-            <Box as="ul" id="todos.suggestions.list">
-              <For each={v.state === "ready" ? v.value : []} key="title">
-                {(item) => <Box as="li">{item.title}</Box>}
-              </For>
-            </Box>
-          ),
-        }),
-      ],
-    });
   return (
     <Box as="section" id="todos.suggestions" gap="1">
       <Heading id="todos.suggestions.title" level={2}>
         Suggestions
       </Heading>
-      {children()}
+      <Match on={list.get()}>
+        <Case<State> tag="loading">
+          {() => (
+            <Text id="todos.suggestions.loading" as="p">
+              Loading suggestions
+            </Text>
+          )}
+        </Case>
+        <Case<State> tag="error">
+          {(v) => (
+            <Text id="todos.suggestions.error" as="p" fg="danger">
+              {messageOf(v.error)}
+            </Text>
+          )}
+        </Case>
+        <Case<State> tag="ready">
+          {(v) => (
+            <Box as="ul" id="todos.suggestions.list">
+              <For each={v.value} key="title">
+                {(item) => <Box as="li">{item.title}</Box>}
+              </For>
+            </Box>
+          )}
+        </Case>
+      </Match>
     </Box>
   );
 }
-Suggestions.Props = Props;

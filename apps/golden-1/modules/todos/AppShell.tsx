@@ -18,9 +18,8 @@ export default function AppShell(props: Infer<typeof Props> & { readonly childre
         <Button id="todos.undo" label="Undo" disabled={empty} onClick={() => board.undo()} />
       </Box>
       <Box as="main" id="todos.main">
-        {props.children?.() ?? ""}
+        {props.children?.()}
       </Box>
     </Box>
   );
 }
-AppShell.Props = Props;

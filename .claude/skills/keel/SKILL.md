@@ -10,7 +10,7 @@ description: "Build a Keel app: schemas, stores, components, routes, forms, test
 **Files** (one export per file, filename = export name):
 - `*.schema.ts`: schemas only (`s.object`, `s.error`); `type T = s.infer<typeof T>`.
 - `*.store.ts`: `store(...)`, `transaction(...)` (pure), `invariant(...)`; ids prefixed by module id (`todos.board`).
-- Component `Foo.tsx`: default export `(props, slots?, ctx?)`, plus `export const Props = s.object(...)` and `export const uses = [tx, ...]`. Props are getters; never destructure. Use `<If>`, `<For key>`, `<Match>`, not `&&`. Give controls explicit ids.
+- Component `Foo.tsx`: default export `(props, slots?, ctx?)`, plus `export const Props = s.object(...)` and `export const uses = [tx, ...]`. Props are getters; never destructure. Use `<If>`, `<For key>`, `<Match>`, not `&&`. Give controls explicit ids. Render layout children with `{props.children?.()}`.
 - `*.server.ts`: `loader(...)`, `action(...)`; `*.guard.ts`: `guard(...)`.
 - `routes.ts`: `manifest({...})`; navigate with `href(id, params)` only.
 - `tokens.ts`: `defineTokens({...})`; style props take token names, never raw values. UI from `@keel/ui`.

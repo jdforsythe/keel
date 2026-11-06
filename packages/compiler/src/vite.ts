@@ -14,6 +14,9 @@ import type { RouteEntry } from "./types/RouteEntry.ts";
 import type { Topology } from "./types/Topology.ts";
 
 const CODE = /\.[cm]?[jt]sx?$/;
+/** Test code and tool configs are not app code: no rules, no lowering (k.testing lint E1701 covers tests, D37). */
+const NOT_APP =
+  /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)vitest(?:\.[\w-]+)?\.config\.[cm]?[jt]s$/;
 const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json", "routes.json", "styles.json"];
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
 const CSS_IMPORT = "virtual:keel.css";
@@ -73,7 +76,8 @@ export default function (): {
     // only app code under the root: linked workspace packages resolve to real paths outside it (D25)
     const rel = path.relative(root, file);
     if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
-    return rel.split(path.sep).join("/");
+    const posix = rel.split(path.sep).join("/");
+    return NOT_APP.test(posix) ? null : posix;
   };
   const exists = (rel: string): boolean => fs.existsSync(path.join(root, rel));
 

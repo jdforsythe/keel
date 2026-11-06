@@ -168,6 +168,19 @@ export default function C() { return <div><Wrap><b>x</b><i>y</i></Wrap><Opt>z</O
     expect(el.textContent).not.toContain("[object");
   });
 
+  it("inserts `props.children?.() ?? <fallback>` as a node and renders the fallback when the thunk is absent", () => {
+    const { code } = one(
+      "W.tsx",
+      `function Shell(props: { children?: () => Node }) { return <main>{props.children?.() ?? ""}</main> }
+function Fb(props: { children?: () => Node }) { return <aside>{props.children?.() ?? "none"}</aside> }
+export default function C() { return <div><Shell><b>x</b></Shell><Fb /><Fb>y</Fb></div> }`,
+    );
+    const el = host(evaluate(code));
+    expect(el.querySelector("main > b")?.textContent).toBe("x");
+    expect([...el.querySelectorAll("aside")].map((a) => a.textContent)).toEqual(["none", "y"]);
+    expect(el.textContent).not.toContain("[object");
+  });
+
   it("creates module-level stores in a root scope and fills their id from the module and export", () => {
     const { code } = one(
       "modules/todos/board.ts",

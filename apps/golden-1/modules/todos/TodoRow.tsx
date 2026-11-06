@@ -30,4 +30,3 @@ export default function TodoRow(props: Infer<typeof Props>) {
     </Box>
   );
 }
-TodoRow.Props = Props;

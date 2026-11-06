@@ -86,6 +86,7 @@ function unparen(e: Expression): Expression {
  * (`children()`); optional calls too. It returns nodes, so it is inserted as a node, never bound as text (D31).
  */
 function isSlotCall(e: Expression): boolean {
+  if (e.type === "LogicalExpression" && e.operator === "??") return isSlotCall(unparen(e.left));
   const x = e.type === "ChainExpression" ? e.expression : e;
   if (x.type !== "CallExpression") return false;
   const c = x.callee;
@@ -545,7 +546,7 @@ export function lowerFile(
     if (i.specifiers.every((s) => s.type === "ImportSpecifier" && a.intrinsics.has(s.local.name)))
       ms.remove(i.start, i.end);
   }
-  const body = ms.toString();
+  const body = ms.toString() + attachedExports(a);
   const ops = body.includes(`${ns}.`);
   if (!ops && headerImports.length === 0) return { code: body, bindings };
   const header = [
@@ -624,6 +625,39 @@ function usesExport(a: Analysis): string | undefined {
     }
   }
   return undefined;
+}
+
+/** The local name a file exports as `name` (`export const name`, `export function name`, or `export { x as name }`), if any. */
+function exportedLocal(a: Analysis, name: string): string | undefined {
+  for (const st of a.program.body) {
+    if (st.type !== "ExportNamedDeclaration" || st.exportKind === "type") continue;
+    const d = st.declaration;
+    if (d?.type === "VariableDeclaration")
+      for (const v of d.declarations) if (v.id.type === "Identifier" && v.id.name === name) return name;
+    if (st.source !== null) continue;
+    for (const sp of st.specifiers) {
+      const exported = sp.exported.type === "Identifier" ? sp.exported.name : sp.exported.value;
+      if (exported === name && sp.local.type === "Identifier") return sp.local.name;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * A component file that exports `Props` (and/or `uses`) gets `Name.Props = Props` (and `Name.uses = uses`)
+ * after its body, `Name` being the default-export component, so the test harness (`render`, `properties`)
+ * finds them statically (D35). Skipped for an anonymous default export or an assignment already in the source.
+ */
+function attachedExports(a: Analysis): string {
+  const name = defaultComponent(a)?.name;
+  if (typeof name !== "string" || !IDENT.test(name)) return "";
+  let out = "";
+  for (const key of ["Props", "uses"]) {
+    const local = exportedLocal(a, key);
+    if (local !== undefined && !new RegExp(`(?<![\\w$])${name.replace(/\$/g, "\\$")}\\.${key}\\s*=[^=]`).test(a.source))
+      out += `\n${name}.${key} = ${local};`;
+  }
+  return out === "" ? "" : `${out}\n`;
 }
 
 /** The default-export component function: declared inline, or a top-level function named by `export default X`. */

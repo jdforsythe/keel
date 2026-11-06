@@ -217,7 +217,7 @@ describe("cond and match", () => {
 
   it("If and Match/Case (hand-built) work without the compiler", () => {
     const on = rootSignal(false);
-    const tag = rootSignal<{ t: "x" | "y" }>({ t: "x" });
+    const tag = rootSignal<{ tag: "x" | "y" }>({ tag: "x" });
     const host = document.createElement("div");
     const D = template('<div id="d"></div>');
     const dispose = mount(() => {
@@ -237,8 +237,8 @@ describe("cond and match", () => {
             return tag.get();
           },
           children: [
-            Case<{ t: "x" | "y" }>({ tag: "x", children: () => clone(template('<u id="x">x</u>')) }),
-            Case<{ t: "x" | "y" }>({ tag: "y", children: () => clone(template('<u id="y">y</u>')) }),
+            Case<{ tag: "x" | "y" }>({ tag: "x", children: () => clone(template('<u id="x">x</u>')) }),
+            Case<{ tag: "x" | "y" }>({ tag: "y", children: () => clone(template('<u id="y">y</u>')) }),
           ],
         }),
       );
@@ -247,7 +247,7 @@ describe("cond and match", () => {
     expect(host.querySelector("#no")).not.toBeNull();
     expect(host.querySelector("#x")).not.toBeNull();
     on.set(true);
-    tag.set({ t: "y" });
+    tag.set({ tag: "y" });
     expect(host.querySelector("#yes")).not.toBeNull();
     expect(host.querySelector("#no")).toBeNull();
     expect(host.querySelector("#y")).not.toBeNull();
