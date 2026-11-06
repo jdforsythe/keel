@@ -9,7 +9,8 @@ import type { Topology } from "./Topology.ts";
  * `routes` is the union manifest of the deployable's modules. `deployable` names the topology entry to
  * serve (required when there is more than one). `guards` registers guards that route `guard` names resolve to
  * (then the router registry). `expose` lists module-level stores whose snapshots go in `#k-state`. `mode`
- * defaults to `dev`.
+ * defaults to `dev`. `artifacts` is the compiler's `.keel` directory; in dev, `GET /__keel/inspect` reads `ids`,
+ * `a11y`, and `routes` from it (k.cli Inspect).
  */
 export type AppOptions = {
   readonly topology: Topology;
@@ -20,4 +21,5 @@ export type AppOptions = {
   readonly guards?: readonly Guard[];
   readonly expose?: readonly Pick<Store<unknown>, "id">[];
   readonly log?: LogSink;
+  readonly artifacts?: string;
 };

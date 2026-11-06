@@ -24,7 +24,7 @@ export default topology({ web: { modules: ['app', 'orders'], adapter: 'node' } }
 ```
 Each deployable builds to one artifact. Adapters: `node` (Hono on Node), `static` (prerendered HTML only), and `client` (no server: loaders and actions run in the browser, the compiler generates the entry that calls `mount(App, el)` with the router's `App`, and `ctx` is `createCtx({ mode: 'real' })`; golden app 1 uses it). Local only: a deployable's modules run in one process; calls between deployables are stdlib (split topology).
 
-**Dev server.** `keel dev`: Vite and Hono in one process, HMR, real `ctx`. Log stream on stdout per OUTPUT.md, one record per event: `req` (compact `GET /orders/7 orders.show 200 12ms`), `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. `keel inspect log` reads the same stream.
+**Dev server.** `keel dev`: Vite and Hono in one process, HMR, real `ctx`. Log stream on stdout per OUTPUT.md, one record per event: `req` (compact `GET /orders/7 orders.show 200 12ms`), `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. In dev it also serves `GET /__keel/inspect` (k.cli Inspect).
 
 **Rules.** E1551 `loader` or `action` declared outside a `*.server.ts` file (in a client-only deployable those files are bundled to the browser; E1551 still applies) · E1552 topology names an unknown module or one module in two deployables · E1553 `static` deployable contains a route with params or actions · E1554 loader data fails its output schema (dev diagnostic; 500 in production).
 

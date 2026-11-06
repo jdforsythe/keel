@@ -67,6 +67,13 @@ const ROWS: readonly Row[] = [
     "k.cli",
   ],
   [
+    "E1056",
+    "inspect target unreachable, not 2xx, or not an inspect document",
+    "The url must be a running dev app serving GET /__keel/inspect.",
+    "keel inspect http://localhost:5173 (start the app in dev first)",
+    "k.cli",
+  ],
+  [
     "E1101",
     "string where enum expected",
     "Closed vocabularies are enums so values are checked.",

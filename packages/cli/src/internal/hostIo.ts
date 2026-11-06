@@ -15,6 +15,7 @@ export function hostIo(stream: boolean): Io {
     cwd,
     env,
     tty: process.stdout.isTTY === true,
+    fetch: (url: string) => fetch(url),
     load: (scope) => (scope === "none" ? [] : readProject(cwd, scope)),
     apply: (writes) => applyWrites(cwd, writes),
     ...(stream ? { stdin: process.stdin, emit: (text: string) => void process.stdout.write(text) } : {}),

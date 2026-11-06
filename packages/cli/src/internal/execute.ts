@@ -6,6 +6,7 @@ import type { Outcome } from "./Outcome.ts";
 import { buildCommand } from "./buildCommand.ts";
 import { checkCommand } from "./checkCommand.ts";
 import { explainCommand } from "./explainCommand.ts";
+import { inspectCommand } from "./inspectCommand.ts";
 import { ledgerCommand } from "./ledgerCommand.ts";
 import { scaffoldCommand } from "./scaffoldCommand.ts";
 import { specCommand } from "./specCommand.ts";
@@ -35,7 +36,7 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     case "dev":
       return only(unavailable(op.name, "vite.config.ts and the keel binary (vite dev server)", "k.server"));
     case "inspect":
-      return only(unavailable(op.name, "a running keel dev app", "k.server"));
+      return only(await inspectCommand(input, io));
     case "render":
       return only(unavailable(op.name, "a compiled component or route loader", "k.testing"));
   }

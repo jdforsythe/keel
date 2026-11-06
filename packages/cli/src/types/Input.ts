@@ -14,7 +14,7 @@ export type Input = {
   readonly id?: string;
   readonly for?: string;
   readonly map?: boolean;
-  readonly what?: "state" | "deps" | "tree" | "a11y" | "log";
+  readonly url?: string;
   readonly target?: string;
   readonly props?: string;
   readonly op?: string;

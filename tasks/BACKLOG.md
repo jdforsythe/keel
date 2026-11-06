@@ -32,7 +32,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0028 server: Hono adapter, loaders and actions, dev server, log stream · server · k.server · G2 · 0015
 - [x] 0029 services: typed client from OpenAPI, timeouts, ApiError · services · k.services · G2 · 0028
 - [x] 0030 module manifest and cross-module check · check · k.module · G2 · 0021
-- [ ] 0031 inspector viewer built in Keel · apps · k.cli · G2 · 0027 0028
+- [x] 0031 inspector viewer built in Keel · apps · k.cli · G2 · 0027 0028
 - [x] 0032 golden app 1 with real API; evals rerun · apps · all · G2 · 0029
 - [ ] 0033 user skill `keel` and domain skills with evals · skills · all · G2 · 0032
 - [ ] 0034 freeze review: one-way audit, extension points exercised, status flips · spec · all · G3 · 0033
@@ -57,3 +57,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0053 rfc: k.services error code for invalid call input (today `api.decode` with `params`/`query`/`body` path prefix, services PLAN D4); spec union has no input code · services · k.services · G2 · 0029
 - [ ] 0054 rfc: per-request store instances on the server (compiler emits store factories; createApp instantiates per request) · server, compiler, store · k.server · G2 · 0028
 - [x] 0055 cli: `keel scaffold project --workspace` flag (E1052 today); scaffold emits `.keel/` into the app .gitignore; golden-1 package.json/lockfile drift after scaffold (baseline run 3 friction) · cli, scaffold · k.cli · G2 · 0048
+- [ ] 0056 rfc: k.schema `s.json()` for opaque JSON values (store state, payloads), so the inspector declares `state` instead of reading an undeclared key that `parse`/`decode` pass through (inspector PLAN D7); spec whether undeclared object keys are kept or dropped · schema · k.schema · G2 · 0031

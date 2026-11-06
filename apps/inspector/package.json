@@ -1,0 +1,29 @@
+{
+  "name": "inspector",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "check": "tsc --noEmit && biome check modules test",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/forms": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/services": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "vite": "^8.3.6"
+  }
+}

@@ -3,6 +3,7 @@ import { A11ySchema } from "./internal/A11ySchema.ts";
 import { CiteSchema } from "./internal/CiteSchema.ts";
 import { EditSchema } from "./internal/EditSchema.ts";
 import { ExplainSchema } from "./internal/ExplainSchema.ts";
+import { InspectStoreSchema } from "./internal/InspectStoreSchema.ts";
 import { LedgerSchema } from "./internal/LedgerSchema.ts";
 import { ReqSchema } from "./internal/ReqSchema.ts";
 import { SectionSchema } from "./internal/SectionSchema.ts";
@@ -87,14 +88,10 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "inspect",
-    description: "Query a running dev app: state, deps, tree, a11y or log.",
-    input: s.object({
-      what: s.enum(["state", "deps", "tree", "a11y", "log"]).optional(),
-      id: s.string().optional(),
-      ...common,
-    }),
-    output: outputOf(A11ySchema, ReqSchema),
-    positional: ["what"],
+    description: "Summarize GET /__keel/inspect of a running dev app (default http://localhost:5173).",
+    input: s.object({ url: s.string().optional(), ...common }),
+    output: outputOf(InspectStoreSchema),
+    positional: ["url"],
     scope: "none",
   },
   {

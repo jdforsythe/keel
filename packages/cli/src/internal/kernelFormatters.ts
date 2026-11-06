@@ -4,6 +4,7 @@ import { DiagSchema } from "./DiagSchema.ts";
 import { EditSchema } from "./EditSchema.ts";
 import type { Entry } from "./Entry.ts";
 import { ExplainSchema } from "./ExplainSchema.ts";
+import { InspectStoreSchema } from "./InspectStoreSchema.ts";
 import { LedgerSchema } from "./LedgerSchema.ts";
 import { ReqSchema } from "./ReqSchema.ts";
 import { SectionSchema } from "./SectionSchema.ts";
@@ -22,7 +23,7 @@ const flags = (st: Readonly<Record<string, boolean | undefined>>): string => {
 
 /**
  * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, ledger, a11y.
- * The cli's own record kinds (spec.section, spec.cite, explain.text, scaffold.edit) go through the same extension point.
+ * The cli's own record kinds (spec.section, spec.cite, explain.text, scaffold.edit, inspect.store) go through the same extension point.
  */
 export const kernelFormatters: readonly (readonly [string, Entry])[] = [
   ["diag", entryOf({ schema: DiagSchema, compact: diagCompact, pretty: diagPretty })],
@@ -80,6 +81,14 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
       schema: ExplainSchema,
       compact: (r) => (r.text.includes(r.code) ? r.text : `${r.code} ${r.text}`),
       pretty: (r) => `${r.code}\n\n${r.text}`,
+    }),
+  ],
+  [
+    "inspect.store",
+    entryOf({
+      schema: InspectStoreSchema,
+      compact: (r) => `${r.id} ${r.entries} entries${r.last === undefined ? "" : `, last ${r.last}`}`,
+      pretty: (r) => `store ${r.id}: ${r.entries} log entries${r.last === undefined ? "" : ` (last ${r.last})`}`,
     }),
   ],
   [
