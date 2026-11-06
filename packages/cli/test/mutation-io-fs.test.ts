@@ -254,13 +254,13 @@ describe("applyWrites", () => {
 });
 
 describe("hostIo", () => {
+  // process.chdir is unavailable in vitest worker threads (Stryker); hostIo reads process.cwd(), so spy on it.
   const inDir = <T>(d: string, f: () => T): T => {
-    const before = process.cwd();
-    process.chdir(d);
+    const spy = vi.spyOn(process, "cwd").mockReturnValue(d);
     try {
       return f();
     } finally {
-      process.chdir(before);
+      spy.mockRestore();
     }
   };
 
