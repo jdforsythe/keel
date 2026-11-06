@@ -25,4 +25,4 @@ description: "Build a Keel app: schemas, stores, components, routes, forms, test
 
 **Output:** `pnpm check`, `pnpm test` print compact output; read the trailer, fix by code (`keel explain <code>`), no `--verbose`.
 
-**Domain skills:** keel-testing, keel-api (API-backed apps), keel-forms.
+**Domain skills:** keel-testing, keel-api (API-backed apps: service client, hydrate tx, `syncAfter`), keel-forms.
