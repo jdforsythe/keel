@@ -1,5 +1,5 @@
 import { batch, effect, owner, signal } from "@keel/reactive";
-import { type Infer, type KeelError, type ObjectSchema, type Result, type SchemaError, ok } from "@keel/schema";
+import type { Infer, ObjectSchema, Result, SchemaError } from "@keel/schema";
 import { asSchemaValue } from "../unsafe/asSchemaValue.ts";
 import type { Bindable } from "./internal/Bindable.ts";
 import type { Reading } from "./internal/Reading.ts";
@@ -16,6 +16,7 @@ import { setAt } from "./internal/setAt.ts";
 import { splitPath } from "./internal/splitPath.ts";
 import { unwrap } from "./internal/unwrap.ts";
 import { withDefaults } from "./internal/withDefaults.ts";
+import { withUnmapped } from "./internal/withUnmapped.ts";
 import { without } from "./internal/without.ts";
 import type { DeepPartial } from "./types/DeepPartial.ts";
 import type { Field } from "./types/Field.ts";
@@ -31,12 +32,12 @@ let created = 0;
  * Create form state in the calling scope (k.forms). Signals belong to the current scope (none: E1203);
  * bound elements unbind when the scope that called `bind` is disposed.
  */
-export function form<S extends ObjectSchema<object>>(
-  schema: S,
-  options: { readonly initial?: DeepPartial<Infer<S>> } = {},
-): FormState<Infer<S>> {
-  type T = Infer<S>;
-  const root = schema.node;
+export function form<S extends ObjectSchema<object>, T extends object = Infer<S>>(
+  schema: ObjectSchema<T> & S,
+  options: { readonly initial?: DeepPartial<NoInfer<T>> } = {},
+): FormState<T> {
+  const typed: ObjectSchema<T> = schema;
+  const root = typed.node;
   const initial = withDefaults(root, options.initial ?? {});
   created += 1;
   const formId = `form${created}`;
@@ -45,7 +46,6 @@ export function form<S extends ObjectSchema<object>>(
   const raw = signal<Messages>({});
   const errs = signal<Messages>({});
   const touchedPaths = signal<ReadonlySet<string>>(new Set());
-  const actionError = signal<KeelError<string, unknown> | undefined>(undefined);
   const pendingSignal = signal(false);
   const shown = new Set<string>();
   const known = new Set<string>();
@@ -61,7 +61,7 @@ export function form<S extends ObjectSchema<object>>(
     errs.set(next);
   };
   const validateField = (path: string): void => {
-    const parsed = schema.parse(candidate());
+    const parsed = typed.parse(candidate());
     const message = parsed.ok ? undefined : issueMessages(root, parsed.error.data.issues, [path])[path];
     const current = errs.get();
     if (message !== undefined) {
@@ -70,17 +70,16 @@ export function form<S extends ObjectSchema<object>>(
     } else if (Object.hasOwn(current, path)) errs.set(without(current, path));
   };
   const validateAll = (): Result<T, SchemaError> => {
-    const parsed = schema.parse(candidate());
-    if (parsed.ok) {
-      setErrors({});
-      return ok(asSchemaValue<T>(parsed.value));
-    }
-    setErrors(issueMessages(root, parsed.error.data.issues, known));
+    const parsed = typed.parse(candidate());
+    setErrors(parsed.ok ? {} : withUnmapped(issueMessages(root, parsed.error.data.issues, known), known));
     return parsed;
   };
   const focusFirstInvalid = (): void => {
     const current = errs.get();
-    const els = [...bound].filter(([p]) => Object.hasOwn(current, p)).flatMap(([, set]) => [...set]);
+    const els = [...bound]
+      .filter(([p]) => Object.hasOwn(current, p))
+      .flatMap(([, set]) => [...set])
+      .filter((el) => el.isConnected);
     els.sort(documentOrder)[0]?.focus();
   };
   const reset = (): void =>
@@ -89,7 +88,6 @@ export function form<S extends ObjectSchema<object>>(
       raw.set({});
       errs.set({});
       touchedPaths.set(new Set());
-      actionError.set(undefined);
       shown.clear();
     });
 
@@ -171,6 +169,7 @@ export function form<S extends ObjectSchema<object>>(
           el.removeEventListener("blur", blur);
           for (const e of effects) e.dispose();
           els.delete(el);
+          if (els.size === 0 && bound.get(path) === els) bound.delete(path);
         };
         owner()?.onDispose(unbind);
         return unbind;
@@ -185,24 +184,18 @@ export function form<S extends ObjectSchema<object>>(
       makeField<string extends P ? unknown : PathValue<T, P & string>>(path),
     values: () => asSchemaValue<DeepPartial<T>>(vals.get()),
     errors: () => errs.get(),
-    error: () => actionError.get(),
-    pending: Object.assign(() => pendingSignal.get(), { get: pendingSignal.get, set: pendingSignal.set }),
+    pending: () => pendingSignal.get(),
+    setPending: (v) => pendingSignal.set(v),
     reset,
     validate: () =>
       batch(() => {
-        actionError.set(undefined);
         const r = validateAll();
         if (!r.ok) focusFirstInvalid();
         return r;
       }),
-    onResult: (result) =>
-      batch(() => {
-        pendingSignal.set(false);
-        if (result.ok) reset();
-        else if (result.error.code === "keel.fields") {
-          actionError.set(undefined);
-          setErrors(fieldMessages(result.error.data));
-        } else actionError.set(result.error);
-      }),
+    onResult: (result) => {
+      if (result.ok) reset();
+      else if (result.error.code === "keel.fields") setErrors(fieldMessages(result.error.data));
+    },
   };
 }

@@ -1,4 +1,3 @@
-import type { Signal } from "@keel/reactive";
 import type { KeelError, Result, SchemaError } from "@keel/schema";
 import type { DeepPartial } from "./DeepPartial.ts";
 import type { Field } from "./Field.ts";
@@ -17,14 +16,17 @@ export interface FormState<T> {
   values(): DeepPartial<T>;
   /** Field path -> message. */
   errors(): Readonly<Record<string, string>>;
-  /** The last non-field action error, rendered by `<Form>`'s `error` slot; cleared on submit and reset. */
-  error(): KeelError<string, unknown> | undefined;
-  /** Call to read; `<Form>` sets it with `pending.set(true)` when it sends the action. */
-  readonly pending: (() => boolean) & Signal<boolean>;
-  /** Values back to `initial`; errors, touched, and the action error cleared. */
+  /** True from submit until the action's response; written only by `<Form>` through `setPending`. */
+  pending(): boolean;
+  /** Router seam: `<Form>` sets pending true when it sends the action and false when the response arrives. */
+  setPending(value: boolean): void;
+  /** Values back to `initial`; errors and touched cleared. */
   reset(): void;
-  /** Router seam: validate every field, set errors, focus the first invalid bound element in document order. */
+  /**
+   * Router seam: validate every field and set an error for every schema issue (issues no `field()` covers are
+   * also summarised under the root path `''`); focus the first invalid bound element in document order.
+   */
   validate(): Result<T, SchemaError>;
-  /** Router seam: apply the action's Result (ok resets; keel.fields sets exactly those errors; else `error()`). */
+  /** Router seam: apply the action's Result (ok resets; keel.fields sets exactly those errors; other err: no change). */
   onResult(result: Result<unknown, KeelError<string, unknown>>): void;
 }

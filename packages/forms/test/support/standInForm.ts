@@ -1,6 +1,5 @@
-// Test-only stand-in for @keel/router's <Form form>: the seam flow k.forms specifies (validate, pending, onResult,
-// error slot). Used until the router lands; the conformance suite exercises the real Form.
-import { effect } from "@keel/reactive";
+// Test-only stand-in for @keel/router's <Form form>: the seam flow k.forms specifies (validate, setPending,
+// onResult, error slot from the Result). Isolates forms tests from router internals; conformance uses the real Form.
 import type { KeelError, Result } from "@keel/schema";
 import type { FormState } from "../../src/index.ts";
 
@@ -19,11 +18,13 @@ export function standInForm<T>(
     e.preventDefault();
     const r = f.validate();
     if (!r.ok) return;
-    f.pending.set(true);
-    void Promise.resolve(send(r.value)).then((out) => f.onResult(out));
-  });
-  effect(() => {
-    slot.textContent = f.error()?.message ?? "";
+    f.setPending(true);
+    slot.textContent = "";
+    void Promise.resolve(send(r.value)).then((out) => {
+      f.setPending(false);
+      f.onResult(out);
+      if (!out.ok && out.error.code !== "keel.fields") slot.textContent = out.error.message;
+    });
   });
   return el;
 }

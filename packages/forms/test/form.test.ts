@@ -163,19 +163,49 @@ describe("submit", () => {
     );
   });
 
-  it("any other err goes to error() and the slot; values and field errors unchanged; next submit clears it", async () => {
+  it("any other err leaves values and field errors unchanged (the router's error slot shows it)", async () => {
     const r = rig();
     fill(r, VALID);
     const before = r.f.values();
     r.reply.current = () => err({ code: "keel.unexpected", message: "boom", data: null });
     await r.submit();
-    expect(r.f.error()?.code).toBe("keel.unexpected");
     expect(r.root.querySelector('[data-slot="error"]')?.textContent).toBe("boom");
     expect(r.f.values()).toEqual(before);
     expect(r.f.errors()).toEqual({});
-    r.reply.current = () => ok(null);
-    await r.submit();
-    expect(r.f.error()).toBeUndefined();
+  });
+
+  it("every schema issue is reported; issues no field() covers are summarised under ''", () => {
+    scope(() => {
+      const f = form(s.object({ a: s.string({ min: 1 }), b: s.int(), c: s.object({ d: s.string() }) }));
+      const a = f.field("a");
+      const el = document.createElement("input");
+      document.body.append(el);
+      a.bind(el);
+      const r = f.validate();
+      expect(r.ok).toBe(false);
+      expect(f.errors()).toEqual({
+        a: "Required",
+        b: "Required",
+        c: "Required",
+        "": "b: Required (+1 more)",
+      });
+      expect(document.activeElement).toBe(el);
+      el.remove();
+    }).dispose();
+  });
+
+  it("focus skips disconnected bound elements", () => {
+    scope(() => {
+      const f = form(s.object({ a: s.string({ min: 1 }), b: s.string({ min: 1 }) }));
+      const gone = document.createElement("input");
+      const here = document.createElement("input");
+      document.body.append(here);
+      f.field("a").bind(gone);
+      f.field("b").bind(here);
+      f.validate();
+      expect(document.activeElement).toBe(here);
+      here.remove();
+    }).dispose();
   });
 });
 
