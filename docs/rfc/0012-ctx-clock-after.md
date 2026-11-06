@@ -1,6 +1,6 @@
 # RFC 0012: ctx.clock.after(ms, signal) timer
 
-Status: draft
+Status: implemented
 
 ## Problem
 `Clock` has only `now()`. `@keel/services` timeouts poll a sim clock once per macrotask and detect sim with `"advance" in clock`. That needs real timers under sim and breaks under `vi.useFakeTimers()`.

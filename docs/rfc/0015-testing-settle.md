@@ -1,6 +1,6 @@
 # RFC 0015: testing: handle.settle()
 
-Status: draft
+Status: implemented
 
 ## Problem
 After `render`, a resource that resolves later is visible only after `fire`. Tests fire a synthetic `focus` just to wait (golden-1 friction 8).

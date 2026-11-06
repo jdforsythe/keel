@@ -1,6 +1,6 @@
 # RFC 0008: JSX children are `props.children`
 
-Status: draft
+Status: implemented
 
 ## Problem
 The compiler lowers `<Button>Go</Button>` to `Button({}, { default: () => ... })`, but base elements read `props.children`, so every base element given JSX children renders empty in a compiled app. k.component does not say how children reach a component.

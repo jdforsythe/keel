@@ -38,9 +38,10 @@ describe("k.cli E1051", () => {
     expect(lines(r.stdout).some((l) => /^E1051 /.test(l))).toBe(true);
   });
 
-  it("session is reserved for the stdlib sessions module; without it the kernel reports E1051", async () => {
+  it("session is reserved for the stdlib sessions module; without it the kernel reports I1055 (info, exit 0)", async () => {
     const r = await keel(["session"]);
-    expect(r.code).toBe(2);
-    expect(r.stdout + r.stderr).toContain("E1051");
+    expect(r.code).toBe(0);
+    expect(r.stdout + r.stderr).toContain("I1055");
+    expect(r.stdout + r.stderr).not.toContain("E1051");
   });
 });

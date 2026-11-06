@@ -1,6 +1,6 @@
 # RFC 0013: services: api.input for invalid call input
 
-Status: draft
+Status: implemented
 
 ## Problem
 A call whose `params`, `query`, or `body` fail their schemas is reported as `api.decode`, which also means a response body failed `output`. Callers cannot tell their own bad input from bad server data (services PLAN D4).

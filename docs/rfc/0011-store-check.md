@@ -1,6 +1,6 @@
 # RFC 0011: store.check(state) runs invariants without committing
 
-Status: draft
+Status: implemented
 
 ## Problem
 Stores hide their invariants, so `@keel/testing` filters generated states by defining a probe transaction (`keel.testing.holds`) on the store, restoring the state into it, and reading `store.invariant`. This adds a transaction name to every probed store and mutates state to ask a question.

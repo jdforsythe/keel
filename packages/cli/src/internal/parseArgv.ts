@@ -17,7 +17,7 @@ const usage = (command: string, argv: readonly string[], diags: Diag[]): Parsed 
  * Parse argv against the command table. Flags are `--name`, `--name=value` or `--name value`; booleans take no
  * value. Bare words fill the operation's positional fields in order (an array field takes the rest). The text is
  * coerced and validated by the operation's input schema (`decodeStrings`), so every invalid value is E1052.
- * E1051 for an unknown or missing command (`session` included: reserved for the stdlib sessions module).
+ * E1051 for an unknown or missing command (`session` is answered earlier, in runEngine, with I1055).
  */
 export function parseArgv(argv: readonly string[], ops: readonly Operation[]): Parsed {
   const name = argv[0];
@@ -25,10 +25,7 @@ export function parseArgv(argv: readonly string[], ops: readonly Operation[]): P
   if (name === undefined || name.startsWith("-"))
     return usage("keel", argv, [makeDiag("E1051", "no command given; see keel spec k.cli", { see: "k.cli" })]);
   if (op === undefined) {
-    const msg =
-      name === "session"
-        ? "unknown command session: reserved for the stdlib sessions module"
-        : `unknown command ${JSON.stringify(name.slice(0, 24))}`;
+    const msg = `unknown command ${JSON.stringify(name.slice(0, 24))}`;
     return usage(name, argv, [makeDiag("E1051", msg, { see: "k.cli" })]);
   }
   const fields = fieldsOf(op);

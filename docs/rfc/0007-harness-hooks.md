@@ -1,6 +1,6 @@
 # RFC 0007: harness hooks: mount onError; store and transaction expose schema
 
-Status: draft
+Status: implemented
 
 ## Problem
 `@keel/testing` cannot observe an error the root Boundary renders except by scraping `<pre data-k-error>`, and cannot generate store states or transaction payloads: `Store` and `Transaction` hide their schemas (`Transaction.payload` exists, but `Store` has none), so it needs a side channel.

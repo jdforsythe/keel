@@ -1,6 +1,6 @@
 # RFC 0019: Conformance defects
 
-Status: draft
+Status: implemented
 
 ## Problem
 The freeze review found four defects in committed conformance and docs: `schema/conformance/result.test.ts` never awaits an async property; `check/conformance/zz.test.ts.bak` is a tracked debug probe; the cli `session` test asserts E1051 while k.cli Rules specify I1055 (info, exit 0); RFCs 0001-0018 still say `draft`.

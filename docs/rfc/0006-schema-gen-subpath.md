@@ -1,6 +1,6 @@
 # RFC 0006: schema: generators on a subpath
 
-Status: draft
+Status: implemented
 
 ## Problem
 `@keel/schema` imports `fast-check` statically to implement `.gen()` on every schema, so every app bundle ships fast-check (about 90 kB minified, 30 kB gzip) although generators are only used in tests. The schema core is 3.5 kB gzip without it.

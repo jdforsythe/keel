@@ -1,6 +1,6 @@
 # RFC 0002: schema: decodeStrings for URL and FormData input
 
-Status: draft
+Status: implemented
 
 ## Problem
 k.forms (FormData) and k.router (params, search) receive strings, but `decode` is the JSON codec and cannot coerce `"5"` to 5 or a checkbox to a boolean. Each consumer would hand-write the same coercion. Separately, `parse` accepts own `__proto__`, `constructor` and `prototype` keys, `s.string({ min, max })` accepts `min > max`, and there is no shared path formatter.

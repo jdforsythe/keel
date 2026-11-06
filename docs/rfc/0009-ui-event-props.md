@@ -1,6 +1,6 @@
 # RFC 0009: closed event props on base elements
 
-Status: draft
+Status: implemented
 
 ## Problem
 Base elements take no event props, so an app cannot handle a click, toggle, or keystroke without a lowercase element, which E1805 forbids. Undo and per-row toggles in golden-1 are blocked on this.

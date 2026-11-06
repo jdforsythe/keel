@@ -1,6 +1,6 @@
 # RFC 0017: inspect endpoint and viewer
 
-Status: draft
+Status: implemented
 
 ## Problem
 Principle 6 says the runtime is queryable, but `keel inspect` reports I1055 and no running app exposes its graph, stores, or artifacts.

@@ -1,6 +1,6 @@
 # RFC 0001: ctx: single typed accessor for registered capabilities
 
-Status: draft
+Status: implemented
 
 ## Problem
 `register()` exposes a capability two ways: `ctx[name]` and the returned typed accessor. Principle 1 (one way) allows one. Re-registering the same name on HMR or re-import throws E1602. Every registered capability receives the raw ctx seed, so streams correlate.

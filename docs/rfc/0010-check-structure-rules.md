@@ -1,6 +1,6 @@
 # RFC 0010: one implementation of the structure rules
 
-Status: draft
+Status: implemented
 
 ## Problem
 `tooling/structure-lint.mjs` re-implements, with regexes, rules that `@keel/check` already owns (E1752 one export per file, E1754 unsafe justification) and one it lacks (casts, `any`, non-null assertions, ts-suppression outside `unsafe/`, CLAUDE.md rule 6). Two implementations drift: the regexes miss `x!` and `as` in odd spots, and apps get none of it.

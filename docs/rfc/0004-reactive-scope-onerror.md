@@ -1,6 +1,6 @@
 # RFC 0004: reactive: scope onError hook
 
-Status: draft
+Status: implemented
 
 ## Problem
 An effect or computed that throws during a commit surfaces as the first error rethrown from `batch`/flush, with no owner attribution. `Boundary` (k.errors: catches throws from render, computed, effect, and event handlers anywhere in its subtree) cannot catch app-level `effect()`/`computed` throws (runtime-dom PLAN D7).

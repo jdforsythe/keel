@@ -17,7 +17,7 @@ status: implemented
 | `scaffold <op>` / `codemod <op>` | structural operations (k.scaffold) |
 | `ledger` | emit and diff the ledger (k.testing) |
 
-`session` is reserved for the stdlib sessions module; without it the kernel reports E1051.
+`session` is reserved for the stdlib sessions module; without it the kernel reports I1055 (info, exit 0).
 
 Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting commands also accept `--code <code>`.
 

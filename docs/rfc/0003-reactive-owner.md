@@ -1,6 +1,6 @@
 # RFC 0003: reactive: owner() exposes the current scope
 
-Status: draft
+Status: implemented
 
 ## Problem
 `@keel/store` `uses([...])` cannot bind a declaration to the calling scope: reactive exposes no owner identity, so store approximates (any live declaration restricts every caller). Store also needs to know when a scope ends (to drop its declarations and registry entry).

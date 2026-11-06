@@ -1,6 +1,6 @@
 # RFC 0018: s.json()
 
-Status: draft
+Status: implemented
 
 ## Problem
 k.schema cannot declare an opaque JSON value (store state, payloads). The inspector reads an undeclared `state` key by narrowing, relying on `parse` passing unknown keys through.

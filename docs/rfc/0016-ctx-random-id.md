@@ -1,6 +1,6 @@
 # RFC 0016: ctx.random.id(brand)
 
-Status: draft
+Status: implemented
 
 ## Problem
 Actions mint ids with `random.uuid()` (a `string`), then re-parse the payload to get the branded id type (golden-1 friction 7).

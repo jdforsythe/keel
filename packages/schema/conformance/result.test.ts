@@ -85,8 +85,8 @@ describe("k.errors: attempt", () => {
   });
 
   it("attempt returns err keel.unexpected when fn throws a non-Error value", async () => {
-    fc.assert(
-      await fc.asyncProperty(fc.jsonValue(), async (thrown) => {
+    await fc.assert(
+      fc.asyncProperty(fc.jsonValue(), async (thrown) => {
         const r = await attempt(() => {
           throw thrown;
         });

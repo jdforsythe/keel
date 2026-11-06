@@ -1,6 +1,6 @@
 # RFC 0005: schema: number and int bounds
 
-Status: draft
+Status: implemented
 
 ## Problem
 `s.string` takes `{ min, max }` but `s.number` and `s.int` do not. Pagination, quantities and ports need bounded numbers, and forms and router suites already write `s.int({ min: 0 })`. Callers hand-check ranges and lose generator, doc and issue support.
