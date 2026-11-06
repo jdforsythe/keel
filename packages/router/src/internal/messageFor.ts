@@ -8,7 +8,7 @@ const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" 
 
 /** Copy of @keel/forms messageFor (router precedes forms in deps order, D30). One-line message for a broken rule, using the constraint from the schema node at the issue path. */
 export function messageFor(node: Node | undefined, rule: Rule): string {
-  const n = node === undefined ? undefined : unwrap(node);
+  const n = node === undefined ? undefined : unwrapNode(node);
   switch (rule) {
     case "required":
     case "nullable-absent":
