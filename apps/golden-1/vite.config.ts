@@ -1,22 +1,7 @@
 import keel from "@keel/compiler/vite";
-import { type Plugin, defineConfig } from "vite";
+import { defineConfig } from "vite";
 
-/** Dev-only stub for GET /api/suggestions until the real API lands (backlog 0032). */
-const suggestionsStub = (): Plugin => {
-  const handler = (req: IncomingMessage, res: ServerResponse, next: () => void): void => {
-    if (req.url?.split("?")[0] !== "/api/suggestions") return next();
-    res.setHeader("content-type", "application/json");
-    res.end(JSON.stringify([{ title: "Eggs" }, { title: "Milk" }, { title: "Bread" }]));
-  };
-  return {
-    name: "golden-1-suggestions-stub",
-    configureServer: (server) => {
-      server.middlewares.use(handler);
-    },
-    configurePreviewServer: (server) => {
-      server.middlewares.use(handler);
-    },
-  };
-};
+/** `/api` is the `api` deployable (`pnpm api`, server.ts on port 4181); dev and preview proxy to it. */
+const proxy = { "/api": "http://localhost:4181" };
 
-export default defineConfig({ plugins: [keel(), suggestionsStub()] });
+export default defineConfig({ plugins: [keel()], server: { proxy }, preview: { proxy } });

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { Board } from "../modules/todos/Board.schema.ts";
 import { ListDraft } from "../modules/todos/ListDraft.schema.ts";
 import { Suggestion } from "../modules/todos/Suggestion.schema.ts";
+import { SuggestionsReply } from "../modules/todos/SuggestionsReply.schema.ts";
 import { Todo } from "../modules/todos/Todo.schema.ts";
 import { TodoDraft } from "../modules/todos/TodoDraft.schema.ts";
 import { TodoList } from "../modules/todos/TodoList.schema.ts";
@@ -34,11 +35,14 @@ describe("schemas", () => {
     expect(TodoList.parse({ id: "l1", name: "" }).ok).toBe(false);
     expect(Todo.parse({ id: "t1", listId: "l1", title: "Milk", priority: "urgent", done: false }).ok).toBe(false);
   });
-  it("ListDraft, TodoDraft and Suggestion bound their strings", () => {
+  it("ListDraft, TodoDraft and Suggestion bound their strings; SuggestionsReply is the api.suggestions Result", () => {
     expect(ListDraft.parse({ name: "x".repeat(61) }).ok).toBe(false);
     expect(TodoDraft.parse({ title: "Milk", priority: "high" }).ok).toBe(true);
     expect(TodoDraft.parse({ title: "", priority: "high" }).ok).toBe(false);
     expect(Suggestion.parse({ title: "Eggs" }).ok).toBe(true);
+    const reply = { id: "api.suggestions", results: { "api.suggestions": { ok: true, value: [{ title: "Eggs" }] } } };
+    expect(SuggestionsReply.parse(reply).ok).toBe(true);
+    expect(SuggestionsReply.parse([{ title: "Eggs" }]).ok).toBe(false);
   });
 });
 

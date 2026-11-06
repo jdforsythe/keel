@@ -56,6 +56,9 @@ importers:
 
   apps/golden-1:
     dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.6
+        version: 2.1.6(hono@4.13.16)
       '@keel/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
@@ -80,6 +83,9 @@ importers:
       '@keel/server':
         specifier: workspace:*
         version: link:../../packages/server
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store
@@ -1018,6 +1024,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@hono/node-server@2.1.6':
+    resolution: {integrity: sha512-p/KH9MnfNcsm3sR6x4lNgm5j+QN4Et8srKredl9DZfXiyZ1UQ3aQ2YVpFLbqktYN5JI+DB+VZFKM2PqE5hLKjQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
 
   '@inquirer/checkbox@3.0.1':
     resolution: {integrity: sha512-0hm2nrToWUdD6/UHnel/UKGdk1//ke5zGUpHIvk5ZWmaKezlGxZkOJXNSWsdxO/rEqTkbB3lNC2J6nBElV2aAQ==}
@@ -3177,6 +3189,10 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@hono/node-server@2.1.6(hono@4.13.16)':
+    dependencies:
+      hono: 4.13.16
 
   '@inquirer/checkbox@3.0.1':
     dependencies:

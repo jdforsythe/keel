@@ -1,6 +1,9 @@
 import { createCtx } from "@keel/ctx";
+import { manifest } from "@keel/router";
 import { type A11yNode, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import SuggestionsApi from "../modules/api/SuggestionsApi.ts";
+import { loadSuggestions } from "../modules/api/loadSuggestions.server.ts";
 import { board } from "../modules/todos/board.ts";
 import { routes } from "../modules/todos/routes.ts";
 
@@ -59,7 +62,13 @@ describe("todos.list", () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     ctx.net.route(
       new URL("/api/suggestions", location.href).href,
-      () => new Response(JSON.stringify([{ title: "Eggs" }])),
+      () =>
+        new Response(
+          JSON.stringify({
+            id: "api.suggestions",
+            results: { "api.suggestions": { ok: true, value: [{ title: "Eggs" }] } },
+          }),
+        ),
     );
     const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, state, ctx });
     await r.fire("todos.suggestions.title", { type: "focus" });
@@ -132,6 +141,25 @@ describe("todos.edit", () => {
     await r.fire("todos.save", { type: "click" });
     expect(r.route().id).toBe("todos.list");
     expect(r.state(board).todos[0]?.title).toBe("Oat milk");
+    r.dispose();
+  });
+});
+
+describe("api.suggestions", () => {
+  it("loadSuggestions returns the same sorted titles on every call", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    const first = await loadSuggestions.run({ params: {}, search: {} }, ctx);
+    const second = await loadSuggestions.run({ params: {}, search: {} }, ctx);
+    expect(first.ok && first.value.map((x) => x.title)).toEqual(["Bread", "Eggs", "Milk"]);
+    expect(second).toEqual(first);
+  });
+  it("SuggestionsApi renders the loader data as a list", async () => {
+    // The entry of modules/api/routes.ts, declared here: importing that file trips the compiler's E1004 (0027 D25).
+    const apiRoutes = manifest({
+      "api.suggestions": { path: "/api/suggestions", loader: loadSuggestions, component: SuggestionsApi },
+    });
+    const r = await renderRoute("api.suggestions", { routes: apiRoutes });
+    expect(r.find("api.suggestions").text).toBe("BreadEggsMilk");
     r.dispose();
   });
 });

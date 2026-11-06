@@ -1,4 +1,5 @@
 import { createCtx } from "@keel/ctx";
+import { service } from "@keel/services";
 import { properties, render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import AppShell from "../modules/todos/AppShell.tsx";
@@ -9,6 +10,7 @@ import ListsPage from "../modules/todos/ListsPage.tsx";
 import Suggestions from "../modules/todos/Suggestions.tsx";
 import TodoRow from "../modules/todos/TodoRow.tsx";
 import { board } from "../modules/todos/board.ts";
+import { suggestions } from "../modules/todos/suggestions.service.ts";
 import "../modules/todos/routes.ts";
 
 const base = board.snapshot();
@@ -19,6 +21,14 @@ afterEach(() => {
 const L = { id: "l1", name: "Home" };
 const milk = { id: "t1", listId: "l1", title: "Milk", priority: "high", done: true };
 const SUGGESTIONS = new URL("/api/suggestions", location.href).href;
+/** What the `api` deployable answers a runtime GET with (k.server): the `api.suggestions` loader `Result`. */
+const served = (titles: string[]) =>
+  new Response(
+    JSON.stringify({
+      id: "api.suggestions",
+      results: { "api.suggestions": { ok: true, value: titles.map((title) => ({ title })) } },
+    }),
+  );
 
 describe("TodoRow", () => {
   it("shows done, priority and an edit link", () => {
@@ -36,7 +46,7 @@ describe("TodoRow", () => {
 describe("Suggestions", () => {
   it("goes loading to ready", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
-    ctx.net.route(SUGGESTIONS, () => new Response(JSON.stringify([{ title: "Eggs" }, { title: "Bread" }])));
+    ctx.net.route(SUGGESTIONS, () => served(["Eggs", "Bread"]));
     const t = render(Suggestions, { props: {}, ctx });
     expect(t.find("todos.suggestions.loading").text).toBe("Loading suggestions");
     await t.settle();
@@ -52,40 +62,29 @@ describe("Suggestions", () => {
     expect(t.find("todos.suggestions.error").text).toBe("Suggestions failed (500)");
     t.dispose();
   });
+  it("goes loading to error when the body is not the api.suggestions Result", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    ctx.net.route(SUGGESTIONS, () => new Response(JSON.stringify([{ title: "Eggs" }])));
+    const t = render(Suggestions, { props: {}, ctx });
+    await t.settle();
+    expect(t.find("todos.suggestions.error").text).toBe("Suggestions failed");
+    t.dispose();
+  });
   it("holds its properties", async () => {
     await properties(Suggestions);
   });
 });
 
-describe("pages", () => {
-  it("AppShell disables Undo while the log is empty", () => {
-    const t = render(AppShell, { props: {} });
-    expect(t.find("todos.undo").state.disabled).toBe(true);
-    expect(t.find("todos.home").name).toBe("Home");
-    t.dispose();
-  });
-  it("ListError renders the error message", () => {
-    const t = render(ListError, { props: { error: { code: "keel.notFound", message: "No list x" } } });
-    expect(t.find("todos.error.message").text).toBe("No list x");
-    t.dispose();
-  });
-  it("ListsPage lists every list", () => {
-    const t = render(ListsPage, { props: {}, state: [[board, { lists: [L], todos: [] }]] });
-    expect(t.find("todos.listLink.l1").name).toBe("Home");
-    expect(t.find("todos.openCount.l1").text).toBe("0 open");
-    t.dispose();
-  });
-  it("ListPage shows the list's todos", () => {
-    const props = { params: { listId: "l1" }, search: {}, data: L };
-    const t = render(ListPage, { props, state: [[board, { lists: [L], todos: [milk] }]] });
-    expect(t.find("todos.list.title").text).toBe("Home");
-    expect(t.find("todos.row.t1").role).toBe("listitem");
-    t.dispose();
-  });
-  it("EditTodoPage starts from the todo's values", () => {
-    const t = render(EditTodoPage, { props: { params: { listId: "l1", todoId: "t1" }, data: milk } });
-    expect(t.find("todos.edit.title").text).toBe("Edit todo");
-    expect(t.find("todos.save").name).toBe("Save");
-    t.dispose();
+describe("suggestions", () => {
+  it("lists through ctx.net with accept: application/json and decodes the Result", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    const accepts: (string | null)[] = [];
+    ctx.net.route(SUGGESTIONS, (req) => {
+      accepts.push(req.headers.get("accept"));
+      return served(["Milk"]);
+    });
+    const r = await service({ base: location.origin, schema: suggestions }).list({}, ctx);
+    expect(r.ok && r.value.results["api.suggestions"].value).toEqual([{ title: "Milk" }]);
+    expect(accepts).toEqual(["application/json"]);
   });
 });

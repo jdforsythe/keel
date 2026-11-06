@@ -6,9 +6,11 @@
   "scripts": {
     "check": "tsc --noEmit && biome check modules",
     "test": "vitest run",
-    "build": "vite build"
+    "build": "vite build",
+    "api": "node server.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.6",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
@@ -17,6 +19,7 @@
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
+    "@keel/services": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/ui": "workspace:*"

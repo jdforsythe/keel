@@ -1,3 +1,6 @@
 import { topology } from "@keel/server";
 
-export default topology({ web: { modules: ["todos"], adapter: "client" } });
+export default topology({
+  web: { modules: ["todos"], adapter: "client" },
+  api: { modules: ["api"], adapter: "node" },
+});

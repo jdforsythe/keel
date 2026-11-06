@@ -4,5 +4,5 @@ export default module({
   id: "todos",
   deps: [],
   capabilities: ["net", "random", "storage"],
-  public: { exports: [], routes: [] },
+  public: { exports: ["Suggestion"], routes: [] },
 });

@@ -2,8 +2,10 @@ import type { Ctx } from "@keel/ctx";
 import { type ResourceState, resource } from "@keel/reactive";
 import { Case, For, Match, type Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
+import { type ApiError, service } from "@keel/services";
 import { Box, Heading, Text } from "@keel/ui";
-import { Suggestion } from "./Suggestion.schema.ts";
+import type { Suggestion } from "./Suggestion.schema.ts";
+import { suggestions } from "./suggestions.service.ts";
 
 export const Props = s.object({});
 
@@ -11,19 +13,17 @@ type State = ResourceState<Suggestion[]>;
 
 const messageOf = (e: unknown): string => (e instanceof Error ? e.message : "Suggestions failed");
 
+/** `api.status` names the HTTP status; any other ApiError (network, timeout, decode) only that it failed. */
+const failure = (e: ApiError): Error =>
+  new Error(e.code === "api.status" ? `Suggestions failed (${e.data.status})` : "Suggestions failed");
+
 async function fetchSuggestions(ctx: Ctx | undefined): Promise<Suggestion[]> {
   if (ctx === undefined) return Promise.reject(new Error("Suggestions need a ctx"));
-  const res = await ctx.net.fetch(new Request(new URL("/api/suggestions", location.href)));
-  if (!res.ok) return Promise.reject(new Error(`Suggestions failed (${res.status})`));
-  const body: unknown = await res.json();
-  const items: unknown[] = Array.isArray(body) ? body : [];
-  return items.flatMap((x) => {
-    const r = Suggestion.parse(x);
-    return r.ok ? [r.value] : [];
-  });
+  const r = await service({ base: location.origin, schema: suggestions }).list({}, ctx);
+  return r.ok ? r.value.results["api.suggestions"].value : Promise.reject(failure(r.error));
 }
 
-/** Suggested titles from `GET /api/suggestions` through `ctx.net`, shown by resource state. */
+/** Suggested titles from `GET /api/suggestions` through a typed `suggestions` client, shown by resource state. */
 export default function Suggestions(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const list = resource(() => fetchSuggestions(ctx));
   return (
