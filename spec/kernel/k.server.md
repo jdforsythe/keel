@@ -1,7 +1,7 @@
 # k.server: Thin server
 status: proposed
 
-**API.** Hono underneath; app code sees only `loader`, `action`, and `topology` from `@keel/server`.
+**API.** Hono underneath; app code sees only `topology` from `@keel/server`; `loader(output, fn)` and `action(input, fn)` are declared by `@keel/router` (they run in-process in a client-only deployable) and the server executes them over HTTP.
 ```ts
 // modules/orders/show.server.ts
 export const loadOrder = loader(Order, async ({ params, search }, ctx) => api.getOrder({ params }, ctx))

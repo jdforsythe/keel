@@ -11,7 +11,7 @@ export const routes = manifest({
     params: s.object({ id: s.id('Order') }),
     search: s.object({ tab: s.enum(['items', 'history']).optional() }),
     loader: loadOrder,                                   // loader(Order, fn), show.server.ts (k.server)
-    actions: { POST: updateOrder, DELETE: removeOrder }, // action(input, fn)
+    actions: { POST: updateOrder, DELETE: removeOrder }, // action(input, fn) and loader(output, fn) are exported from @keel/router; see k.server for their execution over HTTP
     component: OrderPage, layout: 'orders.shell', guard: 'auth', errorElement: OrderError,
   },
 })
