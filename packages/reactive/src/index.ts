@@ -1,2 +1,12 @@
-// re-exports only (one export per file lives in src/<Export>.ts)
-export {};
+export { batch } from "./batch.ts";
+export { computed } from "./computed.ts";
+export { effect } from "./effect.ts";
+export { resource } from "./resource.ts";
+export { scope } from "./scope.ts";
+export { signal } from "./signal.ts";
+export type { Computed } from "./types/Computed.ts";
+export type { Effect } from "./types/Effect.ts";
+export type { Resource } from "./types/Resource.ts";
+export type { ResourceState } from "./types/ResourceState.ts";
+export type { Scope } from "./types/Scope.ts";
+export type { Signal } from "./types/Signal.ts";

@@ -1,19 +1,19 @@
 // Spec: k.reactive, rules E1201, E1202, E1203.
-import { describe, expect, it } from 'vitest';
-import { signal, computed, effect, scope } from '@keel/reactive';
+import { describe, expect, it } from "vitest";
+import { signal, computed, effect, scope } from "@keel/reactive";
 
 const codeOf = (fn: () => void): unknown => {
   try {
     fn();
   } catch (e) {
-    if (e instanceof Error && 'code' in e) return e.code;
-    return 'non-coded-error';
+    if (e instanceof Error && "code" in e) return e.code;
+    return "non-coded-error";
   }
-  return 'no-throw';
+  return "no-throw";
 };
 
-describe('k.reactive: rules', () => {
-  it('E1201: effect writing to a signal not in its declared writes', () => {
+describe("k.reactive: rules", () => {
+  it("E1201: effect writing to a signal not in its declared writes", () => {
     expect(
       codeOf(() => {
         scope(() => {
@@ -26,10 +26,10 @@ describe('k.reactive: rules', () => {
           );
         });
       }),
-    ).toBe('E1201');
+    ).toBe("E1201");
   });
 
-  it('E1201: write to a signal declared by a different effect is still rejected', () => {
+  it("E1201: write to a signal declared by a different effect is still rejected", () => {
     expect(
       codeOf(() => {
         scope(() => {
@@ -43,10 +43,10 @@ describe('k.reactive: rules', () => {
           );
         });
       }),
-    ).toBe('E1201');
+    ).toBe("E1201");
   });
 
-  it('E1201 is not raised for a declared write', () => {
+  it("E1201 is not raised for a declared write", () => {
     expect(
       codeOf(() => {
         scope(() => {
@@ -59,10 +59,10 @@ describe('k.reactive: rules', () => {
           );
         });
       }),
-    ).toBe('no-throw');
+    ).toBe("no-throw");
   });
 
-  it('E1202: computed dependency cycle', () => {
+  it("E1202: computed dependency cycle", () => {
     expect(
       codeOf(() => {
         scope(() => {
@@ -73,10 +73,10 @@ describe('k.reactive: rules', () => {
           b.get();
         });
       }),
-    ).toBe('E1202');
+    ).toBe("E1202");
   });
 
-  it('E1202: effect that reads and writes its own signal in a loop', () => {
+  it("E1202: effect that reads and writes its own signal in a loop", () => {
     expect(
       codeOf(() => {
         scope(() => {
@@ -89,25 +89,25 @@ describe('k.reactive: rules', () => {
           );
         });
       }),
-    ).toBe('E1202');
+    ).toBe("E1202");
   });
 
-  it('E1203: signal created outside any scope', () => {
-    expect(codeOf(() => void signal(0))).toBe('E1203');
+  it("E1203: signal created outside any scope", () => {
+    expect(codeOf(() => void signal(0))).toBe("E1203");
   });
 
-  it('E1203: computed, effect created outside any scope', () => {
-    expect(codeOf(() => void computed(() => 1))).toBe('E1203');
-    expect(codeOf(() => void effect(() => {}))).toBe('E1203');
+  it("E1203: computed, effect created outside any scope", () => {
+    expect(codeOf(() => void computed(() => 1))).toBe("E1203");
+    expect(codeOf(() => void effect(() => {}))).toBe("E1203");
   });
 
-  it('E1203: primitive created after its scope has run (async, outside scope)', async () => {
+  it("E1203: primitive created after its scope has run (async, outside scope)", async () => {
     scope(() => {});
     await Promise.resolve();
-    expect(codeOf(() => void signal(0))).toBe('E1203');
+    expect(codeOf(() => void signal(0))).toBe("E1203");
   });
 
-  it('creation inside scope does not throw E1203', () => {
-    expect(codeOf(() => void scope(() => void signal(0)))).toBe('no-throw');
+  it("creation inside scope does not throw E1203", () => {
+    expect(codeOf(() => void scope(() => void signal(0)))).toBe("no-throw");
   });
 });

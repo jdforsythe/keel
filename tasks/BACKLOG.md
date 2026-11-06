@@ -36,3 +36,5 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0032 golden app 1 with real API; evals rerun · apps · all · G2 · 0029
 - [ ] 0033 user skill `keel` and domain skills with evals · skills · all · G2 · 0032
 - [ ] 0034 freeze review: one-way audit, extension points exercised, status flips · spec · all · G3 · 0033
+- [ ] 0035 tooling: size budgets measure an esbuild bundle of src/index.ts (minified, gzip), not tsc dist re-exports · tooling · PRD A · G1 · 0001
+- [ ] 0036 tooling: Stryker config per kernel package; `pnpm mutate` real; thresholds from docs/TESTING.md · tooling · PRD A · G1 · 0001

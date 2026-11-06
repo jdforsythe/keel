@@ -1,6 +1,6 @@
 // Spec: k.reactive, clause "resource state transitions are exactly loading -> ready | error".
-import { describe, expect, it } from 'vitest';
-import { effect, resource, scope } from '@keel/reactive';
+import { describe, expect, it } from "vitest";
+import { effect, resource, scope } from "@keel/reactive";
 
 const flush = async (): Promise<void> => {
   for (let i = 0; i < 10; i++) await Promise.resolve();
@@ -23,19 +23,25 @@ const deferred = <T>(): Deferred<T> => {
 
 const collapse = (xs: string[]): string[] => xs.filter((x, i) => x !== xs[i - 1]);
 
-describe('k.reactive: resource transitions', () => {
-  it('starts in loading synchronously', () => {
+const at = <T>(arr: readonly T[], i: number): T => {
+  const v = arr[i];
+  if (v === undefined) throw new Error(`missing element ${i}`);
+  return v;
+};
+
+describe("k.reactive: resource transitions", () => {
+  it("starts in loading synchronously", () => {
     const d = deferred<number>();
     scope(() => {
       const r = resource(() => d.promise);
-      expect(r.get()).toEqual({ state: 'loading' });
+      expect(r.get()).toEqual({ state: "loading" });
     });
   });
 
-  it('loading -> ready carries the value', async () => {
+  it("loading -> ready carries the value", async () => {
     const d = deferred<number>();
     const states: string[] = [];
-    let get: () => { state: string; value?: number } = () => ({ state: '' });
+    let get: () => { state: string; value?: number } = () => ({ state: "" });
     scope(() => {
       const r = resource(() => d.promise);
       get = () => r.get();
@@ -45,15 +51,15 @@ describe('k.reactive: resource transitions', () => {
     });
     d.resolve(42);
     await flush();
-    expect(collapse(states)).toEqual(['loading', 'ready']);
-    expect(get()).toEqual({ state: 'ready', value: 42 });
+    expect(collapse(states)).toEqual(["loading", "ready"]);
+    expect(get()).toEqual({ state: "ready", value: 42 });
   });
 
-  it('loading -> error carries the error', async () => {
+  it("loading -> error carries the error", async () => {
     const d = deferred<number>();
-    const boom = new Error('boom');
+    const boom = new Error("boom");
     const states: string[] = [];
-    let get: () => { state: string; error?: unknown } = () => ({ state: '' });
+    let get: () => { state: string; error?: unknown } = () => ({ state: "" });
     scope(() => {
       const r = resource(() => d.promise);
       get = () => r.get();
@@ -63,44 +69,44 @@ describe('k.reactive: resource transitions', () => {
     });
     d.reject(boom);
     await flush();
-    expect(collapse(states)).toEqual(['loading', 'error']);
-    expect(get()).toEqual({ state: 'error', error: boom });
+    expect(collapse(states)).toEqual(["loading", "error"]);
+    expect(get()).toEqual({ state: "error", error: boom });
   });
 
-  it('never skips loading and never goes ready <-> error directly', async () => {
+  it("never skips loading and never goes ready <-> error directly", async () => {
     const ds = [deferred<number>(), deferred<number>(), deferred<number>()];
     let i = 0;
     const states: string[] = [];
     let refetch: () => void = () => {};
     scope(() => {
-      const r = resource(() => ds[i++]!.promise);
+      const r = resource(() => at(ds, i++).promise);
       refetch = () => r.refetch();
       effect(() => {
         states.push(r.get().state);
       });
     });
-    ds[0]!.resolve(1);
+    at(ds, 0).resolve(1);
     await flush();
     refetch();
     await flush();
-    ds[1]!.reject(new Error('x'));
+    at(ds, 1).reject(new Error("x"));
     await flush();
     refetch();
     await flush();
-    ds[2]!.resolve(3);
+    at(ds, 2).resolve(3);
     await flush();
     const seq = collapse(states);
-    expect(seq[0]).toBe('loading');
+    expect(seq[0]).toBe("loading");
     for (let k = 1; k < seq.length; k++) {
       const prev = seq[k - 1];
       const cur = seq[k];
-      if (cur === 'ready' || cur === 'error') expect(prev).toBe('loading');
-      expect(['loading', 'ready', 'error']).toContain(cur);
+      if (cur === "ready" || cur === "error") expect(prev).toBe("loading");
+      expect(["loading", "ready", "error"]).toContain(cur);
     }
-    expect(seq).toEqual(['loading', 'ready', 'loading', 'error', 'loading', 'ready']);
+    expect(seq).toEqual(["loading", "ready", "loading", "error", "loading", "ready"]);
   });
 
-  it('a settled resource stays settled with no further notifications', async () => {
+  it("a settled resource stays settled with no further notifications", async () => {
     const d = deferred<number>();
     let runs = 0;
     scope(() => {

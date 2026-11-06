@@ -1,12 +1,12 @@
 // Spec: k.reactive, clause "Glitch-free propagation". Property seed: 1337.
-import { describe, expect, it } from 'vitest';
-import * as fc from 'fast-check';
-import { signal, computed, effect, scope } from '@keel/reactive';
+import { describe, expect, it } from "vitest";
+import * as fc from "fast-check";
+import { signal, computed, effect, scope } from "@keel/reactive";
 
 const SEED = 1337;
 
-describe('k.reactive: glitch-free propagation', () => {
-  it('diamond: one write yields exactly one effect run with a consistent value', () => {
+describe("k.reactive: glitch-free propagation", () => {
+  it("diamond: one write yields exactly one effect run with a consistent value", () => {
     const seen: number[] = [];
     scope(() => {
       const a = signal(1);
@@ -22,7 +22,7 @@ describe('k.reactive: glitch-free propagation', () => {
     expect(seen).toEqual([12, 23]);
   });
 
-  it('diamond: effect never observes a mix of old and new branch values', () => {
+  it("diamond: effect never observes a mix of old and new branch values", () => {
     const pairs: Array<[number, number]> = [];
     scope(() => {
       const a = signal(0);
@@ -37,7 +37,7 @@ describe('k.reactive: glitch-free propagation', () => {
     expect(pairs.length).toBe(6);
   });
 
-  it('property: random DAG, one source write -> exactly one extra run matching the reference model', () => {
+  it("property: random DAG, one source write -> exactly one extra run matching the reference model", () => {
     const dagArb = fc.array(fc.array(fc.nat({ max: 1000 }), { minLength: 1, maxLength: 3 }), {
       minLength: 1,
       maxLength: 10,

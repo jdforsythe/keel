@@ -1,12 +1,12 @@
 // Spec: k.reactive, clause "Disposal frees all subscriptions". Property seed: 1337.
-import { describe, expect, it } from 'vitest';
-import * as fc from 'fast-check';
-import { signal, computed, effect, scope } from '@keel/reactive';
+import { describe, expect, it } from "vitest";
+import * as fc from "fast-check";
+import { signal, computed, effect, scope } from "@keel/reactive";
 
 const SEED = 1337;
 
-describe('k.reactive: disposal frees all subscriptions', () => {
-  it('after scope dispose, writes trigger no effect runs', () => {
+describe("k.reactive: disposal frees all subscriptions", () => {
+  it("after scope dispose, writes trigger no effect runs", () => {
     let runs = 0;
     let set: (v: number) => void = () => {};
     const h = scope(() => {
@@ -24,7 +24,7 @@ describe('k.reactive: disposal frees all subscriptions', () => {
     expect(runs).toBe(1);
   });
 
-  it('after scope dispose, a computed is not recomputed', () => {
+  it("after scope dispose, a computed is not recomputed", () => {
     let computes = 0;
     let set: (v: number) => void = () => {};
     const h = scope(() => {
@@ -44,7 +44,7 @@ describe('k.reactive: disposal frees all subscriptions', () => {
     expect(computes).toBe(before);
   });
 
-  it('disposing an effect handle stops only that effect', () => {
+  it("disposing an effect handle stops only that effect", () => {
     let a = 0;
     let b = 0;
     scope(() => {
@@ -64,7 +64,7 @@ describe('k.reactive: disposal frees all subscriptions', () => {
     expect(b).toBe(2);
   });
 
-  it('dispose is idempotent', () => {
+  it("dispose is idempotent", () => {
     const h = scope(() => {
       signal(0);
     });
@@ -72,7 +72,7 @@ describe('k.reactive: disposal frees all subscriptions', () => {
     expect(() => h.dispose()).not.toThrow();
   });
 
-  it('property: any write sequence after dispose causes zero effect runs and zero recomputes', () => {
+  it("property: any write sequence after dispose causes zero effect runs and zero recomputes", () => {
     fc.assert(
       fc.property(fc.array(fc.integer(), { maxLength: 20 }), (writes) => {
         let runs = 0;

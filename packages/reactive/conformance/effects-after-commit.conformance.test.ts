@@ -1,9 +1,9 @@
 // Spec: k.reactive, clause "Effects run after commit".
-import { describe, expect, it } from 'vitest';
-import { signal, effect, scope, batch } from '@keel/reactive';
+import { describe, expect, it } from "vitest";
+import { signal, effect, scope, batch } from "@keel/reactive";
 
-describe('k.reactive: effects run after commit', () => {
-  it('inside a batch, the effect observes only final values and runs once', () => {
+describe("k.reactive: effects run after commit", () => {
+  it("inside a batch, the effect observes only final values and runs once", () => {
     const seen: Array<[number, number]> = [];
     scope(() => {
       const a = signal(0);
@@ -23,7 +23,7 @@ describe('k.reactive: effects run after commit', () => {
     ]);
   });
 
-  it('the effect does not run while the batch is still open', () => {
+  it("the effect does not run while the batch is still open", () => {
     let runs = 0;
     let during = -1;
     scope(() => {
@@ -43,7 +43,7 @@ describe('k.reactive: effects run after commit', () => {
     expect(during).toBe(0);
   });
 
-  it('reads of a signal inside a batch see the written value immediately', () => {
+  it("reads of a signal inside a batch see the written value immediately", () => {
     scope(() => {
       const a = signal(0);
       batch(() => {
@@ -53,7 +53,7 @@ describe('k.reactive: effects run after commit', () => {
     });
   });
 
-  it('a batch whose writes net to no change still commits without an inconsistent view', () => {
+  it("a batch whose writes net to no change still commits without an inconsistent view", () => {
     const seen: number[] = [];
     scope(() => {
       const a = signal(0);

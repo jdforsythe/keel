@@ -1,6 +1,6 @@
 // Spec: k.reactive, clause "stale resource results never overwrite newer ones".
-import { describe, expect, it } from 'vitest';
-import { resource, scope } from '@keel/reactive';
+import { describe, expect, it } from "vitest";
+import { resource, scope } from "@keel/reactive";
 
 const flush = async (): Promise<void> => {
   for (let i = 0; i < 10; i++) await Promise.resolve();
@@ -21,62 +21,68 @@ const deferred = <T>(): Deferred<T> => {
   return { promise, resolve, reject };
 };
 
+const at = <T>(arr: readonly T[], i: number): T => {
+  const v = arr[i];
+  if (v === undefined) throw new Error(`missing element ${i}`);
+  return v;
+};
+
 const setup = (n: number) => {
   const ds = Array.from({ length: n }, () => deferred<string>());
   let i = 0;
-  let get: () => { state: string; value?: string; error?: unknown } = () => ({ state: '' });
+  let get: () => { state: string; value?: string; error?: unknown } = () => ({ state: "" });
   let refetch: () => void = () => {};
   scope(() => {
-    const r = resource(() => ds[i++]!.promise);
+    const r = resource(() => at(ds, i++).promise);
     get = () => r.get();
     refetch = () => r.refetch();
   });
   return { ds, get: () => get(), refetch: () => refetch() };
 };
 
-describe('k.reactive: stale resource results', () => {
-  it('older fetch resolving after a newer one does not overwrite it', async () => {
+describe("k.reactive: stale resource results", () => {
+  it("older fetch resolving after a newer one does not overwrite it", async () => {
     const t = setup(2);
     t.refetch();
-    t.ds[1]!.resolve('new');
+    at(t.ds, 1).resolve("new");
     await flush();
-    expect(t.get()).toEqual({ state: 'ready', value: 'new' });
-    t.ds[0]!.resolve('old');
+    expect(t.get()).toEqual({ state: "ready", value: "new" });
+    at(t.ds, 0).resolve("old");
     await flush();
-    expect(t.get()).toEqual({ state: 'ready', value: 'new' });
+    expect(t.get()).toEqual({ state: "ready", value: "new" });
   });
 
-  it('two refetches resolving out of order: value is from the latest', async () => {
+  it("two refetches resolving out of order: value is from the latest", async () => {
     const t = setup(3);
     t.refetch();
     t.refetch();
-    t.ds[2]!.resolve('third');
+    at(t.ds, 2).resolve("third");
     await flush();
-    t.ds[0]!.resolve('first');
+    at(t.ds, 0).resolve("first");
     await flush();
-    t.ds[1]!.resolve('second');
+    at(t.ds, 1).resolve("second");
     await flush();
-    expect(t.get()).toEqual({ state: 'ready', value: 'third' });
+    expect(t.get()).toEqual({ state: "ready", value: "third" });
   });
 
-  it('a stale rejection does not replace a newer ready value', async () => {
+  it("a stale rejection does not replace a newer ready value", async () => {
     const t = setup(2);
     t.refetch();
-    t.ds[1]!.resolve('fresh');
+    at(t.ds, 1).resolve("fresh");
     await flush();
-    t.ds[0]!.reject(new Error('stale failure'));
+    at(t.ds, 0).reject(new Error("stale failure"));
     await flush();
-    expect(t.get()).toEqual({ state: 'ready', value: 'fresh' });
+    expect(t.get()).toEqual({ state: "ready", value: "fresh" });
   });
 
-  it('a stale result arriving while the latest is still loading leaves it loading', async () => {
+  it("a stale result arriving while the latest is still loading leaves it loading", async () => {
     const t = setup(2);
     t.refetch();
-    t.ds[0]!.resolve('stale');
+    at(t.ds, 0).resolve("stale");
     await flush();
-    expect(t.get()).toEqual({ state: 'loading' });
-    t.ds[1]!.resolve('latest');
+    expect(t.get()).toEqual({ state: "loading" });
+    at(t.ds, 1).resolve("latest");
     await flush();
-    expect(t.get()).toEqual({ state: 'ready', value: 'latest' });
+    expect(t.get()).toEqual({ state: "ready", value: "latest" });
   });
 });

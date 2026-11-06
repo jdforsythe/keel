@@ -2,7 +2,5 @@
   "skill": "keel-package-dev",
   "maxTokens": 600,
   "prompt": "What must a kernel package change include before it is done?",
-  "expect": [
-    "changeset"
-  ]
+  "expect": ["changeset"]
 }
