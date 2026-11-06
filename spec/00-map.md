@@ -15,6 +15,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E160x | k.ctx | E165x | k.services |
 | E170x | k.testing | E175x | k.check |
 | E18xx | k.ui | E19xx | k.forms |
+| E200x | std.sessions | | |
 
 ## Kernel
 | id | section | status | one line |
@@ -40,3 +41,6 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 
 ## Stdlib
 See `spec/std/README.md`. Sections are added per wave with their own budgets.
+| id | section | status | one line |
+| --- | --- | --- | --- |
+| std.sessions | Sessions | proposed | capture, ingest, replay, minimize, to-test; GitHub Action |
