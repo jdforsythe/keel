@@ -3,7 +3,8 @@ import fc from "fast-check";
 import { type Op, scaffold } from "../src/index.ts";
 
 export const SEED = 1337;
-export const RUNS = 100;
+// Stryker sets STRYKER_MUTATOR_WORKER in its test workers: fewer cases per mutant keeps the run inside budget.
+export const RUNS = process.env.STRYKER_MUTATOR_WORKER === undefined ? 100 : 15;
 export type Files = Map<string, string>;
 
 export const lower = fc.stringMatching(/^[a-z]{3,7}$/).map((s) => `zq${s}`);
