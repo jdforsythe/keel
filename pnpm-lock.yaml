@@ -103,13 +103,13 @@ importers:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
-      '@keel/compiler':
-        specifier: workspace:*
-        version: link:../compiler
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
     devDependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
@@ -281,12 +281,18 @@ importers:
 
   packages/testing:
     dependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../runtime-dom

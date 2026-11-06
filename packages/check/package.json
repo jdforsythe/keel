@@ -16,7 +16,19 @@
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
   },
+  "dependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*",
+    "happy-dom": "^21.0.4",
+    "oxc-parser": "^0.157.0",
+    "typescript": "^5.6"
+  },
   "devDependencies": {
-    "@keel/tooling": "workspace:*"
+    "@keel/tooling": "workspace:*",
+    "fast-check": "^3"
   }
 }

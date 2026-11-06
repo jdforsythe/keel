@@ -1,0 +1,201 @@
+import { describe, expect, it } from "vitest";
+import { check } from "../src/index.ts";
+import type { SourceFile } from "../src/index.ts";
+import { applyPatch } from "./support/applyPatch.ts";
+
+// Built so the factory's own lint does not read fixture text as a call in this file.
+const UNSAFE = "unsafe";
+const NOW = ["Date", "now"].join(".");
+
+type Case = { code: string; bad: SourceFile[]; clean: SourceFile[]; fix?: true };
+const f = (path: string, source: string): SourceFile => ({ path, source });
+
+const CASES: Case[] = [
+  {
+    code: "E1104",
+    bad: [f("src/User.ts", "import { s } from '@keel/schema'\nexport const User = s.object({ name: s.string() })\n")],
+    clean: [
+      f("src/User.schema.ts", "import { s } from '@keel/schema'\nexport const User = s.object({ name: s.string() })\n"),
+    ],
+  },
+  {
+    code: "E1302",
+    bad: [
+      f(
+        "src/addItem.ts",
+        `import { transaction } from '@keel/store'\nexport const addItem = transaction(cart, 'cart.addItem', Item, (state) => ({ ...state, at: ${NOW}() }))\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "src/addItem.ts",
+        "import { transaction } from '@keel/store'\nexport const addItem = transaction(cart, 'cart.addItem', Item, (state, p) => ({ ...state, at: p.at }))\n",
+      ),
+    ],
+  },
+  {
+    code: "E1451",
+    bad: [f("src/f.ts", "export function f(n: number) {\n  if (n < 0) throw new Error('neg')\n  return n\n}\n")],
+    clean: [f("src/f.ts", "export function f(n: number) {\n  return n\n}\n")],
+    fix: true,
+  },
+  {
+    code: "E1452",
+    bad: [
+      f(
+        "src/f.ts",
+        "export async function f(p: Promise<number>) {\n  try {\n    return await p\n  } catch (e) {\n    return 0\n  }\n}\n",
+      ),
+    ],
+    clean: [f("src/f.ts", "export function f() {\n  return 1\n}\n")],
+    fix: true,
+  },
+  {
+    code: "E1452",
+    bad: [f("src/f.ts", "export const f = (p: Promise<number>) => p.catch(() => 0)\n")],
+    clean: [f("src/f.ts", "export const f = (p: Promise<number>) => p\n")],
+  },
+  {
+    code: "E1453",
+    bad: [
+      f(
+        "src/f.ts",
+        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nsave()\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nconst r = save()\nvoid r\n",
+      ),
+    ],
+  },
+  {
+    code: "E1454",
+    bad: [
+      f(
+        "src/a.schema.ts",
+        "import { s } from '@keel/schema'\nexport const a = s.error('orders.locked', s.object({}))\n",
+      ),
+      f(
+        "src/b.schema.ts",
+        "import { s } from '@keel/schema'\nexport const b = s.error('orders.locked', s.object({}))\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/a.schema.ts",
+        "import { s } from '@keel/schema'\nexport const a = s.error('orders.locked', s.object({}))\n",
+      ),
+      f(
+        "src/b.schema.ts",
+        "import { s } from '@keel/schema'\nexport const b = s.error('orders.closed', s.object({}))\n",
+      ),
+    ],
+  },
+  {
+    code: "E1601",
+    bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],
+    clean: [f("src/id.ts", "export const id = (ctx: { random: { uuid(): string } }) => ctx.random.uuid()\n")],
+    fix: true,
+  },
+  {
+    code: "E1601",
+    bad: [f("test/a.test.ts", "const r = Math.random()\nvoid r\n")],
+    clean: [f("test/a.test.ts", "const r = 0.5\nvoid r\n")],
+    fix: true,
+  },
+  {
+    code: "E1701",
+    bad: [f("test/cart.test.ts", "const el = document.querySelector('#total')\nvoid el\n")],
+    clean: [f("test/cart.test.ts", "const t = { find: (id: string) => id }\nvoid t.find('cart.total')\n")],
+  },
+  {
+    code: "E1752",
+    bad: [f("src/a.ts", "export const a = 1\nexport const b = 2\n")],
+    clean: [f("src/a.ts", "export const a = 1\n")],
+  },
+  {
+    code: "E1753",
+    bad: [f("src/rule.ts", "defineRule({ code: 'E1999', message: 'm', explain: 'e', check: () => [] })\n")],
+    clean: [f("src/rule.ts", "defineRule({ code: 'E2001', message: 'm', explain: 'e', check: () => [] })\n")],
+  },
+  {
+    code: "E1754",
+    bad: [f("src/x.ts", `export const x = ${UNSAFE}(() => 1)\n`)],
+    clean: [f("src/x.ts", `export const x = ${UNSAFE}('reason', () => 1)\n`)],
+  },
+  {
+    code: "E1803",
+    bad: [
+      f(
+        "src/C.tsx",
+        "import { Box } from '@keel/ui'\nexport default function C() { return <Box style={{}}>x</Box> }\n",
+      ),
+    ],
+    clean: [
+      f("src/C.tsx", "import { Box } from '@keel/ui'\nexport default function C() { return <Box p=\"2\">x</Box> }\n"),
+    ],
+  },
+  {
+    code: "E1805",
+    bad: [
+      f(
+        "src/C.tsx",
+        "import { Box } from '@keel/ui'\nexport default function C() {\n  return <Box><h2>Orders</h2><span>x</span></Box>\n}\n",
+      ),
+    ],
+    clean: [
+      f("src/C.tsx", "import { Box } from '@keel/ui'\nexport default function C() {\n  return <Box>Orders</Box>\n}\n"),
+    ],
+    fix: true,
+  },
+];
+
+describe("kernel rules", () => {
+  for (const c of CASES) {
+    it(`${c.code}: ${c.bad[0]?.path} triggers it; the clean counterpart does not`, () => {
+      expect(check(c.bad, {}).diagnostics.map((d) => d.code)).toContain(c.code);
+      expect(check(c.clean, {}).diagnostics.map((d) => d.code)).not.toContain(c.code);
+    });
+    if (c.fix === true) {
+      it(`${c.code}: every fix applies with git apply and clears that diagnostic`, () => {
+        const file = c.bad[0];
+        if (file === undefined) throw new Error("case without a file");
+        let source = file.source;
+        for (let i = 0; i < 5; i++) {
+          const d = check([{ path: file.path, source }], {}).diagnostics.find((x) => x.code === c.code);
+          if (d === undefined) break;
+          expect(typeof d.fix).toBe("string");
+          source = applyPatch(file.path, source, d.fix ?? "");
+        }
+        expect(check([{ path: file.path, source }], {}).diagnostics.map((d) => d.code)).not.toContain(c.code);
+      });
+    }
+  }
+
+  it("E1805: an <a> with a literal absolute URL has no base element and is exempt", () => {
+    const src = 'export default function C() { return <a href="https://example.com">x</a> }\n';
+    expect(check([f("C.tsx", src)], {}).diagnostics).toEqual([]);
+  });
+
+  it("E1805 is held back on a file the compiler reports on", () => {
+    const src = "export default function C(props) { return <div>{props.a && <b/>}</div> }\n";
+    expect(check([f("C.tsx", src)], {}).diagnostics.map((d) => d.code)).toEqual(["E1403"]);
+  });
+
+  it("E1755: a measured budget over its limit is reported at its path", () => {
+    const budgets = [
+      { id: "check.injected10", limit: 600, actual: 640, unit: "tokens" as const },
+      { id: "@keel/ui", limit: 6000, actual: 10, unit: "bytes" as const, path: "packages/ui" },
+    ];
+    const d = check([], { budgets }).diagnostics;
+    expect(d.map((x) => [x.code, x.path])).toEqual([["E1755", "budgets.json"]]);
+    expect(d[0]?.message).toContain("640 tokens > 600");
+  });
+
+  it("E1756: a throwing rule message stays under 90 chars whatever it threw", () => {
+    const d = check([f("a.ts", "x\n")], {}).diagnostics;
+    for (const x of d) expect(x.message.length).toBeLessThan(90);
+  });
+});
