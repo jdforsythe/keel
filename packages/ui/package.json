@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*"
   },

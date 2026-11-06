@@ -1,4 +1,6 @@
+import type { Computed } from "@keel/reactive";
 import { appendChildren } from "../internal/appendChildren.ts";
+import { applyDisabled } from "../internal/applyDisabled.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import type { Child } from "../types/Child.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
@@ -9,14 +11,19 @@ type Name =
 
 /**
  * A button named by its text or `label` (one is required, E1802). With children, `label` becomes
- * `aria-label`; without, `label` is the visible text. `type` defaults to `button`.
+ * `aria-label`; without, `label` is the visible text. `type` defaults to `button`; `disabled` may be reactive.
  */
 export function Button(
-  props: StyleProps & { readonly type?: "button" | "submit" | "reset"; readonly id?: string } & Name,
+  props: StyleProps & {
+    readonly type?: "button" | "submit" | "reset";
+    readonly id?: string;
+    readonly disabled?: boolean | Computed<boolean>;
+  } & Name,
 ): Node {
   const el = document.createElement("button");
   el.setAttribute("type", props.type ?? "button");
   if (props.id !== undefined) el.setAttribute("id", props.id);
+  applyDisabled(el, props.disabled);
   applyStyle(el, props);
   if (props.children === undefined) appendChildren(el, props.label);
   else {

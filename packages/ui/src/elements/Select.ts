@@ -1,5 +1,6 @@
 import type { Computed } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
+import { applyDisabled } from "../internal/applyDisabled.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
@@ -12,6 +13,7 @@ type Option = { readonly value: string; readonly label: string };
 export function Select(
   props: StyleProps & {
     readonly label: string;
+    readonly disabled?: boolean | Computed<boolean>;
     readonly id?: string;
     readonly name?: string;
     readonly options?: readonly Option[];
@@ -29,6 +31,7 @@ export function Select(
     el.appendChild(opt);
   }
   if (isReadable(v)) prop(el, "value", () => v.get());
+  applyDisabled(el, props.disabled);
   applyStyle(el, props);
   return labelled(el, controlId("select", props.label, props.id), props.label, false);
 }

@@ -212,6 +212,9 @@ importers:
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../runtime-dom

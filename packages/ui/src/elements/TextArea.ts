@@ -1,5 +1,6 @@
 import type { Computed } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
+import { applyDisabled } from "../internal/applyDisabled.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
@@ -10,6 +11,7 @@ import type { StyleProps } from "../types/StyleProps.ts";
 export function TextArea(
   props: StyleProps & {
     readonly label: string;
+    readonly disabled?: boolean | Computed<boolean>;
     readonly id?: string;
     readonly name?: string;
     readonly rows?: number;
@@ -22,6 +24,7 @@ export function TextArea(
   const v = props.value;
   if (isReadable(v)) prop(el, "value", () => v.get());
   else if (v !== undefined) el.appendChild(document.createTextNode(v));
+  applyDisabled(el, props.disabled);
   applyStyle(el, props);
   return labelled(el, controlId("textarea", props.label, props.id), props.label, false);
 }

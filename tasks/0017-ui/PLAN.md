@@ -5,7 +5,7 @@ Covers backlog 0017 (tokens, style props, atomic CSS, scoped styles) and 0018 (b
 
 ## Deliverables
 - [x] `defineTokens`, `TokenSchema` (closed groups, `{ light, dark }` colors, E1807)
-- [x] typed style props `p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap`; responsive by breakpoint; states `hover focusVisible active disabled`
+- [x] typed style props `p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap`; responsive by breakpoint; state styles under `states={{ hover, focusVisible, active, disabled }}` (rfc:0000)
 - [x] `@keel/ui/css`: `compileStyles({ tokens, usages })` -> `{ classes, css }` (pure, deterministic, deduped); `contrast(fg, bg)` (WCAG 2)
 - [x] `styles({...})` scoped styles -> class strings
 - [x] base elements `Box Text Heading Button Link Image Input TextArea Select Checkbox` with a11y-required props in the types; `StandardSlots` type
@@ -14,7 +14,8 @@ Covers backlog 0017 (tokens, style props, atomic CSS, scoped styles) and 0018 (b
 ## Steps
 1. [x] conformance written by conformance-writer (packages/ui/conformance).
 2. [x] Implement; `pnpm --filter @keel/ui check`; `test`.
-3. [x] Properties; README; changeset; spec status and map row -> implemented.
+3. [x] Properties; README; changeset. Spec status kept `proposed` until review (coordinator).
+4. [x] rfc:0000 follow-up: `states` prop, `disabled` boolean, `Href` from router (local stand-in), `Heading level` literal union.
 
 ## Decisions
 - D1: Style-prop types are keyed by the app's tokens through a `Register` interface (`declare module '@keel/ui' { interface Register { tokens: typeof tokens } }`). Unregistered, the k.ui example token set (`internal/DefaultTokens.ts`) applies, so E1801 holds at the type level without app generics. Scaffold should emit the augmentation next to `tokens.ts`.
@@ -28,20 +29,22 @@ Covers backlog 0017 (tokens, style props, atomic CSS, scoped styles) and 0018 (b
 - D9: `defineTokens<const T>` returns its input (literal names kept) after `TokenSchema.parse`; throws `code: 'E1807'` on failure.
 - D10: Dynamic classes bind one `attr(el, 'class', fn)` op (empty -> attribute removed); static props set `class` once with no binding. Reactive children bind `text` on a fresh text node; reactive `value`/`checked` bind `prop`. Never a `style` attribute.
 - D11: Controls render `<div><label for=id>label</label><control id=id></div>` (checkbox: control then label); style props go on the control. id = `id` prop, else `k-<kind>-<slug(label)>` (hash when the slug is empty). Equal labels give equal ids (E1404 territory; pass `id`).
-- D12: `Href` is defined in ui for now (router has not shipped `href()`): branded string | `/${string}` | `http|https|mailto|tel:` URL. The conformance calls `Link({ to: "/" })`, so a brand-only type would fail tsc. Replace with router's `Href` when it lands; E1501 stays a check rule. `Link`/`Image` pass URLs through runtime-dom `safeUrl(name, value)`.
-- D13: `Heading level` is typed `number` (conformance `fc.constantFrom(1..6)` widens to `number`); levels outside 1..6 throw RangeError `code: 'E1802'`.
+- D12 (rev): `Href` should be `import type { Href } from '@keel/router'`; `@keel/router` is a dependency, but router does not export `Href` yet, so `src/types/Href.ts` is a local stand-in with the same name and shape (`string & { readonly __brand: 'Href' }`). Swap to the import when router lands. `Link`/`Image` pass URLs through runtime-dom `safeUrl(name, value)`.
+- D13 (rev): `Heading level` is `1 | 2 | 3 | 4 | 5 | 6` (conformance updated); no runtime range check.
 - D14: `Button`: children with `label` -> `aria-label`; `label` alone -> visible text; `type` defaults to `button`. `Image decorative` -> `alt=""` + `role="presentation"`.
-- D15: The `disabled` state style key collides with an HTML `disabled` attribute prop; base elements expose no `disabled` attribute in this slice. Needs an RFC (rename the state or the attribute prop).
+- D15 (rev, rfc:0000): state styles live under one `states` prop; `disabled?: boolean | Computed<boolean>` is the HTML attribute on `Button Input TextArea Select Checkbox` (static sets the attribute; reactive binds the `disabled` property via `prop`). `compileStyles` usages keep the flat `state` field.
 - D16: `styles()` builds its record with an honest runtime-checked type guard (`internal/hasEvery.ts`) instead of `unsafe`; unsafe count stays 0. (An `unsafe/` helper broke `pnpm build`: TS6059 rootDir, the same factory issue ctx has.)
 - D17: No event props on base elements yet (k.ui lists none; handlers are keyed by element id in k.runtime). `Input field` (k.forms bindings) is not implemented here: forms conformance calls `Input({ field, label })`.
 
 ## Verification
-- [x] `pnpm --filter @keel/ui check` clean · structure-lint clean for ui · budgets ok · `pnpm --filter @keel/ui build` ok
+- [x] biome clean · structure-lint clean for ui · budgets ok · build ok
+- [ ] `pnpm --filter @keel/ui check`: tsc fails only in `conformance/fixtures.ts` (`href`, `manifest` not exported by `@keel/router` yet). Blocked on router.
+- [ ] `pnpm --filter @keel/ui test`: every conformance file imports fixtures, which call router's `manifest` at load, so all 7 conformance files fail with `manifest is not a function`. Blocked on router.
+- [x] With a scratchpad-only vitest alias stubbing `@keel/router` (`manifest` identity, `href` -> "/"): `Test Files 12 passed | 1 skipped`, `Tests 68 passed | 3 todo (71)`. All ui conformance is green, including the scope-wrapped signal tests.
 - [x] properties present: compileStyles determinism, dedupe, order independence, injectivity; contrast symmetry, range, #rgb expansion, known WCAG pairs; derived ids pure; TokenSchema gen/encode
-- [ ] conformance: all green except 2 tests in `conformance/signal-style-no-inline.test.ts`, which create `signal()` outside any `scope` (k.reactive E1203) and throw before reaching ui code. The same behavior is green in `test/elements.test.ts` with the signal created inside `scope`. Needs an `rfc:` conformance fix (wrap in `scope`), which also affects runtime-dom's attr-toggle and mount-dispose.
 - Mutation: `mutate` script is `echo skip`; not measured.
 
-Test trailer (`pnpm --filter @keel/ui test`): `fail 71 tests, 3 failed, 3 skipped (0.7s)` (the 2 E1203 tests plus the file-level marker; 3 skipped are the `it.todo` for E1803/E1805/E1806)
+Test trailer (`pnpm --filter @keel/ui test`, real router): `fail 42 tests, 7 failed, 3 skipped (1.1s)` (7 = conformance files failing at import on router; own tests 39 passed)
 
 ## Next action
 review

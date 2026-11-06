@@ -57,7 +57,9 @@ describe("dynamic style props", () => {
 
   it("responsive and state values may be signals; static classes stay", async () => {
     const s = scoped(() => signal<string>("1"));
-    const { host, dispose } = render(() => Box({ p: { base: "2", md: s.value }, hover: { bg: s.value }, class: "x" }));
+    const { host, dispose } = render(() =>
+      Box({ p: { base: "2", md: s.value }, states: { hover: { bg: s.value } }, class: "x" }),
+    );
     const box = first(host);
     expect(box.className).toBe("k-p-2 k-md-p-1 k-hover-bg-1 x");
     s.value.set("3");
@@ -102,7 +104,7 @@ describe("dynamic style props", () => {
   });
 
   it("styles() yields the same atomic classes as style props", () => {
-    const css = styles({ card: { p: "3", radius: "1", hover: { bg: "accent" } }, empty: {} });
+    const css = styles({ card: { p: "3", radius: "1", states: { hover: { bg: "accent" } } }, empty: {} });
     expect(css).toEqual({ card: "k-p-3 k-radius-1 k-hover-bg-accent", empty: "" });
     const { host, dispose } = render(() => Box({ class: css.card }));
     expect(first(host).className).toBe(css.card);
@@ -166,6 +168,28 @@ describe("base elements", () => {
     b.dispose();
   });
 
+  it("disabled sets the attribute on Button and controls, and binds when reactive", async () => {
+    const d = scoped((): Signal<boolean> => signal(false));
+    const { host, dispose } = render(() =>
+      Box({
+        children: [
+          Button({ label: "Go", disabled: true }),
+          Input({ label: "A", disabled: true }),
+          TextArea({ label: "B", disabled: d.value }),
+          Select({ label: "C" }),
+          Checkbox({ label: "D", disabled: true }),
+        ],
+      }),
+    );
+    const dis = (): string[] => Array.from(host.querySelectorAll("[disabled]")).map((e) => e.tagName.toLowerCase());
+    expect(dis()).toEqual(["button", "input", "input"]);
+    d.value.set(true);
+    await flush();
+    expect(host.querySelector("textarea")?.disabled).toBe(true);
+    dispose();
+    d.dispose();
+  });
+
   it("Image decorative renders alt='' and role=presentation", () => {
     const { host, dispose } = render(() => Image({ decorative: true }));
     expect(host.innerHTML).toBe('<img alt="" role="presentation">');
@@ -183,10 +207,6 @@ describe("base elements", () => {
     expect(host.querySelector("a")?.getAttribute("href")).toBe("about:blank");
     expect(host.querySelector("img")?.getAttribute("src")).toBe("about:blank");
     dispose();
-  });
-
-  it("Heading rejects levels outside 1..6 with E1802", () => {
-    expect(() => Heading({ level: 7, children: "x" })).toThrow(expect.objectContaining({ code: "E1802" }));
   });
 
   it("text children become text nodes, never markup", () => {

@@ -1,5 +1,6 @@
 import type { Computed } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
+import { applyDisabled } from "../internal/applyDisabled.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
@@ -10,6 +11,7 @@ import type { StyleProps } from "../types/StyleProps.ts";
 export function Checkbox(
   props: StyleProps & {
     readonly label: string;
+    readonly disabled?: boolean | Computed<boolean>;
     readonly id?: string;
     readonly name?: string;
     readonly checked?: boolean | Computed<boolean>;
@@ -21,6 +23,7 @@ export function Checkbox(
   const c = props.checked;
   if (isReadable(c)) prop(el, "checked", () => c.get());
   else if (c === true) el.setAttribute("checked", "");
+  applyDisabled(el, props.disabled);
   applyStyle(el, props);
   return labelled(el, controlId("checkbox", props.label, props.id), props.label, true);
 }

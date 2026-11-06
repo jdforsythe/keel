@@ -25,14 +25,16 @@ function collect(src: Readonly<Record<string, unknown>>, state: StyleState | und
   }
 }
 
-/** The atomic classes for an element's style props, then its `class` prop. Reads signals (tracked). */
+/** The atomic classes for an element's style props, then its `states`, then its `class` prop. Reads signals (tracked). */
 export function classesOf(props: Readonly<Record<string, unknown>>): string[] {
   const out: string[] = [];
   collect(props, undefined, out);
-  for (const s of states) {
-    const nested = props[s.key];
-    if (isRecord(nested) && !isReadable(nested)) collect(nested, s.key, out);
-  }
+  const st = props.states;
+  if (isRecord(st))
+    for (const s of states) {
+      const nested = st[s.key];
+      if (isRecord(nested) && !isReadable(nested)) collect(nested, s.key, out);
+    }
   const extra = props.class;
   if (typeof extra === "string") for (const c of extra.split(/\s+/)) if (c !== "") out.push(c);
   return out;

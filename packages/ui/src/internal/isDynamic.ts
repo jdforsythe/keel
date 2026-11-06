@@ -1,9 +1,8 @@
 import { isReadable } from "./isReadable.ts";
 import { isRecord } from "./isRecord.ts";
-import { states } from "./states.ts";
 import { styleProps } from "./styleProps.ts";
 
-const KEYS: readonly string[] = [...styleProps, ...states.map((s) => s.key), "class"];
+const KEYS: readonly string[] = [...styleProps, "states", "class"];
 
 function dynamic(x: unknown, keys: readonly string[] | undefined): boolean {
   if (isReadable(x)) return true;
