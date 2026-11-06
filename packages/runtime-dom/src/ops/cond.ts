@@ -1,4 +1,4 @@
-import { computed, effect } from "@keel/reactive";
+import { computed, effect, scope } from "@keel/reactive";
 import type { Unit } from "../internal/Unit.ts";
 import { consumed } from "../internal/consumed.ts";
 import { current } from "../internal/current.ts";
@@ -10,13 +10,15 @@ import { writesOf } from "../internal/writesOf.ts";
 
 /**
  * `If`: render `then()` before `anchor` while `when()` is truthy, else `otherwise()` (or nothing).
- * A branch re-renders only when the truthiness flips; each branch lives in its own scope.
+ * A branch re-renders only when the truthiness flips; each branch lives in its own scope, created in the
+ * op's `home` scope (`home.run`) and disposed when the branch is replaced.
  */
 export function cond(anchor: Node, when: () => unknown, then: () => Node, otherwise?: () => Node): void {
   const parent = current("cond");
   const at = idOf(anchor);
   const { end, claim } = prepare(anchor);
   const truthy = computed(() => Boolean(when()));
+  const home = scope(() => {});
   let unit: Unit | null = null;
   let hydrate = claim;
   effect(
@@ -37,7 +39,9 @@ export function cond(anchor: Node, when: () => unknown, then: () => Node, otherw
         if (h !== null) consumed(h);
         return;
       }
-      unit = renderUnit(parent, parent.catcher, end, branch, h, at, h === null ? undefined : () => consumed(h));
+      unit = home.run(() =>
+        renderUnit(parent, parent.catcher, end, branch, h, at, h === null ? undefined : () => consumed(h)),
+      );
     },
     { writes: writesOf(parent) },
   );

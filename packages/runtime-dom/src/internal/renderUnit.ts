@@ -10,7 +10,8 @@ import { report } from "./report.ts";
 import { withCx } from "./withCx.ts";
 
 /**
- * Render `render()` as a unit owned by the running reactive owner, inserted before `anchor` (or claimed
+ * Render `render()` as a unit owned by the running reactive owner (structural ops call it inside their
+ * `home.run`, so the unit outlives reruns of their own effect), inserted before `anchor` (or claimed
  * in place when `claim` is given, on the first run only). The render runs in its own effect so its reads
  * do not subscribe the structural op; if one of them changes, the unit re-renders client-side. A throw
  * goes to `catcher` (the unit owner's Boundary): from the render itself, or (k.reactive `scope` onError,

@@ -49,7 +49,7 @@ describe("D12: disposed while running", () => {
     scope(() => {
       const s = signal(0);
       set = (v) => s.set(v);
-      let outer: Scope = { dispose: () => {}, parent: undefined, onDispose: () => {} };
+      let outer: Scope = { dispose: () => {}, parent: undefined, onDispose: () => {}, run: (f) => f() };
       batch(() => {
         outer = scope(() => {
           // Runs at commit; disposing `outer` disposes this effect and the scope below mid-fn.

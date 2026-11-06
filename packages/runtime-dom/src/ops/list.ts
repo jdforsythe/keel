@@ -1,7 +1,6 @@
-import { computed, effect } from "@keel/reactive";
+import { computed, effect, scope } from "@keel/reactive";
 import type { Unit } from "../internal/Unit.ts";
 import { consumed } from "../internal/consumed.ts";
-import { createNursery } from "../internal/createNursery.ts";
 import { current } from "../internal/current.ts";
 import { idOf } from "../internal/idOf.ts";
 import { prepare } from "../internal/prepare.ts";
@@ -9,19 +8,22 @@ import { renderUnit } from "../internal/renderUnit.ts";
 import { report } from "../internal/report.ts";
 import { writesOf } from "../internal/writesOf.ts";
 
-type Row = { unit: Unit | null; rendered: boolean; cancelled: boolean };
+type Row = { unit: Unit | null; rendered: boolean };
 
 /**
  * `For`: one row per distinct `key(item)` of `each()`, in order, before `anchor`. Rows are keyed: when
  * the order changes rows move (node identity kept); a row is created only for a new key and disposed
  * when its key leaves. `item()`/`index()` track the row's current item and position
  * (read them inside bindings: a top-level read in the row body re-renders the row when it changes). First key wins.
+ * Rows live in the op's own `home` scope (`home.run`), so reruns of the reconcile effect never dispose them.
+ * `empty`, when given, renders (in its own scope) while `each()` has no rows and is removed when rows arrive.
  */
 export function list<T>(
   anchor: Node,
   each: () => readonly T[],
   key: (item: T) => unknown,
   render: (item: () => T, index: () => number) => Node,
+  empty?: () => Node,
 ): void {
   const parent = current("list");
   const at = idOf(anchor);
@@ -36,10 +38,11 @@ export function list<T>(
     return m;
   });
   const rows = new Map<unknown, Row>();
-  const nursery = createNursery();
+  const home = scope(() => {});
   let order: unknown[] = [];
   let pending = 0;
   let hydrate = claim;
+  let emptyUnit: Unit | null = null;
   const place = (): void => {
     const p = end.parentNode;
     if (pending > 0 || p === null) return;
@@ -66,17 +69,26 @@ export function list<T>(
       order = [...m.keys()];
       for (const [k, row] of rows) {
         if (m.has(k)) continue;
-        row.cancelled = true;
         if (!row.rendered) pending--;
         row.unit?.dispose();
         rows.delete(k);
       }
       const h = hydrate;
       hydrate = null;
-      if (h !== null && m.size === 0) consumed(h);
+      if (m.size > 0 && emptyUnit !== null) {
+        emptyUnit.dispose();
+        emptyUnit = null;
+      }
+      if (m.size === 0 && empty !== undefined) {
+        if (emptyUnit === null) {
+          emptyUnit = home.run(() =>
+            renderUnit(parent, parent.catcher, end, empty, h, at, h === null ? undefined : () => consumed(h)),
+          );
+        }
+      } else if (h !== null && m.size === 0) consumed(h);
       for (const [k, first] of m) {
         if (rows.has(k)) continue;
-        const row: Row = { unit: null, rendered: false, cancelled: false };
+        const row: Row = { unit: null, rendered: false };
         rows.set(k, row);
         pending++;
         const row$ = (): Unit => {
@@ -113,12 +125,10 @@ export function list<T>(
             },
           );
         };
-        nursery.spawn(() => {
-          if (!row.cancelled) row.unit = row$();
-        });
+        row.unit = home.run(row$);
       }
       place();
     },
-    { writes: [nursery.tick, ...writesOf(parent)] },
+    { writes: writesOf(parent) },
   );
 }

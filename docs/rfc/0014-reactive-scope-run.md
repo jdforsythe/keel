@@ -1,6 +1,6 @@
 # RFC 0014: reactive: Scope.run(fn)
 
-Status: draft
+Status: implemented
 
 ## Problem
 A node's owner is fixed at creation and an effect's rerun disposes what it owns, so an effect cannot create nodes under a stable scope. Runtime-dom's keyed list works around it with a "nursery": a chain of one-shot effects, one idle node per commit that adds rows (runtime-dom PLAN D4, D19).

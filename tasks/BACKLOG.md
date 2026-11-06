@@ -44,7 +44,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0040 compiler integration: emit atomic CSS via `@keel/ui` compileStyles; `routes.json` via router `routesArtifact`; topology input so E1004 skips client-only deployables; server mode renderer with data-k and <!--[--> regions (needed by 0027/0028) · compiler · k.compiler · G1 · 0010 0014 0017
 - [ ] 0041 rfc: k.compiler E1000 syntax error code; E1501 scope (relative asset URLs like `src="logo.png"`) · compiler · k.compiler · G1 · 0010
 - [x] 0042 tooling: ledger scans apps/*/modules exports too · tooling · k.testing · G1 · 0026
-- [ ] 0043 rfc: reactive `Scope.run(fn)` to create nodes under an existing owner; removes runtime-dom's nursery chain of one-shot effects (runtime PLAN D4/D19) · reactive, runtime-dom · k.reactive · G1 · 0012
+- [x] 0043 rfc: reactive `Scope.run(fn)` to create nodes under an existing owner; removes runtime-dom's nursery chain of one-shot effects (runtime PLAN D4/D19) · reactive, runtime-dom · k.reactive · G1 · 0012
 - [ ] 0044 rfc: router guards by reference (`guard: authGuard`) and manifest-typed `routes.href` replacing the name table and the free `href`; scroll keyed by history entry (router PLAN D19, D20, D23) · router · k.router · G3 · 0014
 - [x] 0045 rfc: `Store.check(state)` runs declared invariants without committing, so @keel/testing drops the `keel.testing.holds` probe transaction (testing PLAN D21) · store, testing · k.store · G1 · 0025
 - [ ] 0046 compiler: a11y.json role rules align with the harness (decorative img → presentation; unnamed section → generic; name-from-content role list per WAI-ARIA) so E1702 has no false alarms (testing PLAN D22) · compiler · k.compiler · G1 · 0025
