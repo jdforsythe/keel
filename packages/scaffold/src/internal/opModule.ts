@@ -50,8 +50,11 @@ export function opModule(input: unknown, files: ReadonlyMap<string, string>): Re
     [manifest, moduleTs(id)],
     [`modules/${id}/routes.ts`, routesTs()],
     ["topology.ts", nextTopo],
-    ["turbo.json", turboJson([...moduleIds(files), id])],
-    [".github/workflows/ci.yml", ciWorkflow()],
   ]);
-  return commit(files, writes, ["turbo.json", ".github/workflows/ci.yml"]);
+  const generated: string[] = [];
+  if (files.has("turbo.json")) generated.push("turbo.json");
+  if (files.has(".github/workflows/ci.yml")) generated.push(".github/workflows/ci.yml");
+  if (generated.includes("turbo.json")) writes.set("turbo.json", turboJson([...moduleIds(files), id]));
+  if (generated.includes(".github/workflows/ci.yml")) writes.set(".github/workflows/ci.yml", ciWorkflow());
+  return commit(files, writes, generated);
 }

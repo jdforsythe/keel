@@ -12,6 +12,7 @@ import { inputs } from "./inputs.ts";
 import { isGenerated } from "./isGenerated.ts";
 import { isPascal } from "./isPascal.ts";
 import { pascal } from "./pascal.ts";
+import { renameModule } from "./renameModule.ts";
 import { routeId } from "./routeId.ts";
 import { routeTable } from "./routeTable.ts";
 import { storeId } from "./storeId.ts";
@@ -53,6 +54,7 @@ export function opRename(input: unknown, files: ReadonlyMap<string, string>): Re
   if (!r.ok) return badInput("rename", r.error);
   const { kind, from, to } = r.value;
   if (from === to) return fail("E1351", to, `${to} already exists`);
+  if (kind === "module") return renameModule(from, to, files);
   if (kind === "component" || kind === "schema") {
     if (!isPascal(to)) return fail("E1352", to, `${kind} name ${to} must be PascalCase`);
     const decls = kind === "component" ? basenames(files, `${from}.tsx`, true) : findSchema(files, from);
@@ -64,6 +66,7 @@ export function opRename(input: unknown, files: ReadonlyMap<string, string>): Re
     if (taken[0] !== undefined) return fail("E1351", taken[0], `${kind} ${to} already exists`);
     const dir = dirOf(decl);
     const paths = renamedFiles(files, dir, [[`${from}.`, `${to}.`]]);
+    for (const [o, n] of renamedFiles(files, "test", [[`${from}.`, `${to}.`]])) paths.set(o, n);
     return applyRename(files, dir, spec([[from, to]], [], paths, null, true));
   }
   if (kind === "store") {
@@ -81,6 +84,8 @@ export function opRename(input: unknown, files: ReadonlyMap<string, string>): Re
       [`${a.name}.store.`, `${b.name}.store.`],
       [`${sa}.`, `${sb}.`],
     ]);
+    for (const [o, n] of renamedFiles(files, "test", [[`${a.mod}.${a.name}.store.`, `${a.mod}.${b.name}.store.`]]))
+      paths.set(o, n);
     const names: [string, string][] = [
       [a.name, b.name],
       [sa, sb],
@@ -100,10 +105,12 @@ export function opRename(input: unknown, files: ReadonlyMap<string, string>): Re
   const dir = dirOf(decl.file);
   const [pa, pb] = [pascal(a.leaf), pascal(b.leaf)];
   const paths = renamedFiles(files, dir, [
-    [`${a.leaf}.server.`, `${b.leaf}.server.`],
+    [`load${pa}.server.`, `load${pb}.server.`],
     [`${a.leaf}.route.`, `${b.leaf}.route.`],
     [`${pa}Page.`, `${pb}Page.`],
   ]);
+  for (const [o, n] of renamedFiles(files, "test", [[`${a.mod}.${a.leaf}.route.`, `${a.mod}.${b.leaf}.route.`]]))
+    paths.set(o, n);
   const names: [string, string][] = [
     [`load${pa}`, `load${pb}`],
     [`${pa}Page`, `${pb}Page`],

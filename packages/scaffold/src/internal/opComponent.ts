@@ -26,13 +26,14 @@ export function opComponent(input: unknown, files: ReadonlyMap<string, string>):
   if (!files.has(`modules/${mod}/module.ts`)) return fail("E1352", id, `${mod} is not a module of this project`);
   if (!isPascal(name)) return fail("E1352", id, `component name ${name} must be PascalCase`);
   const file = `modules/${mod}/${name}.tsx`;
-  const test = `modules/${mod}/${name}.test.tsx`;
+  const inTestDir = files.has("vitest.config.ts");
+  const test = inTestDir ? `test/${name}.test.tsx` : `modules/${mod}/${name}.test.tsx`;
   const existing = [...basenames(files, `${name}.tsx`), ...(files.has(test) ? [test] : [])];
   if (existing[0] !== undefined)
     return fail("E1351", existing[0], `component ${name} already exists; use codemod rename or move`);
   const writes: Writes = new Map([
     [file, componentTsx(name)],
-    [test, componentTest(name)],
+    [test, componentTest(name, inTestDir ? `../modules/${mod}` : ".")],
   ]);
   return commit(files, writes);
 }

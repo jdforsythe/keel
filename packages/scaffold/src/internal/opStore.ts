@@ -25,13 +25,15 @@ export function opStore(input: unknown, files: ReadonlyMap<string, string>): Res
   if (!files.has(`modules/${mod}/module.ts`)) return fail("E1352", id, `${mod} is not a module of this project`);
   const schema = `${pascal(name)}State`;
   const dir = `modules/${mod}`;
-  const paths = [`${dir}/${schema}.schema.ts`, `${dir}/${name}.store.ts`, `${dir}/${name}.store.test.ts`];
+  const inTestDir = files.has("vitest.config.ts");
+  const test = inTestDir ? `test/${mod}.${name}.store.test.ts` : `${dir}/${name}.store.test.ts`;
+  const paths = [`${dir}/${schema}.schema.ts`, `${dir}/${name}.store.ts`, test];
   for (const p of paths) if (files.has(p)) return fail("E1351", p, `store ${id} already exists; use a codemod`);
   const [schemaPath = "", storePath = "", testPath = ""] = paths;
   const writes: Writes = new Map([
     [schemaPath, stateSchemaTs(schema)],
     [storePath, storeTs(name, schema)],
-    [testPath, storeTest(name, schema)],
+    [testPath, storeTest(name, schema, inTestDir ? `../${dir}` : ".")],
   ]);
   return commit(files, writes);
 }

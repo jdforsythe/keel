@@ -16,6 +16,7 @@ import { fail } from "./fail.ts";
 import { inputs } from "./inputs.ts";
 import { insertImports } from "./insertImports.ts";
 import { isPascal } from "./isPascal.ts";
+import { lineIndent } from "./lineIndent.ts";
 import { parseSource } from "./parseSource.ts";
 import { pascal } from "./pascal.ts";
 import { routeId } from "./routeId.ts";
@@ -67,8 +68,9 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
     if (def.path !== null && pattern(def.path) === pattern(path))
       return fail("E1351", def.file, `path ${path} is already routed by ${other}`);
   const loaderName = `load${pascal(leaf)}`;
-  const loaderPath = `${dir}/${leaf}.server.ts`;
-  const testPath = `${dir}/${leaf}.route.test.ts`;
+  const loaderPath = `${dir}/${loaderName}.server.ts`;
+  const inTestDir = files.has("vitest.config.ts");
+  const testPath = inTestDir ? `test/${mod}.${leaf}.route.test.ts` : `${dir}/${leaf}.route.test.ts`;
   for (const p of [loaderPath, testPath, ...basenames(files, `${page}.tsx`)])
     if (files.has(p)) return fail("E1351", p, `${p} already exists`);
   const src = files.get(routesPath);
@@ -80,16 +82,20 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   const ms = new MagicString(src);
   const pageSpec = `./${pagePath.slice(dir.length + 1)}`;
   insertImports(ms, program, [
-    ...(params.length > 0 && !importsS(src) ? ["import { s } from '@keel/schema'"] : []),
-    `import ${page} from '${pageSpec}'`,
-    `import { ${loaderName} } from './${leaf}.server.ts'`,
+    ...(params.length > 0 && !importsS(src) ? [`import { s } from "@keel/schema";`] : []),
+    `import ${page} from "${pageSpec}";`,
+    `import { ${loaderName} } from "./${loaderName}.server.ts";`,
   ]);
-  appendProperty(ms, src, obj, routeEntry(id, path, params, loaderName, page), true);
+  const last = obj.properties[obj.properties.length - 1];
+  const multi = last !== undefined && src.slice(obj.start, obj.properties[0]?.start ?? obj.start).includes("\n");
+  const ind = multi && last !== undefined ? lineIndent(src, last.start) : `${lineIndent(src, obj.start)}  `;
+  const entry = routeEntry(id, path, params, loaderName, page).split("\n").join(`\n${ind}`);
+  appendProperty(ms, src, obj, entry, true);
   const writes: Writes = new Map([
     [routesPath, ms.toString()],
     [loaderPath, loaderTs(loaderName)],
     [pagePath, componentTsx(page)],
-    [testPath, routeTest(id, params)],
+    [testPath, routeTest(id, params, inTestDir ? `../${dir}/routes.ts` : "./routes.ts")],
   ]);
   return commit(files, writes);
 }

@@ -1,26 +1,27 @@
+import { jsonText } from "../internal/jsonText.ts";
 const KEEL = "^0.0.0";
+const KERNEL = ["compiler", "ctx", "forms", "reactive", "router", "runtime-dom", "schema", "server", "store", "ui"];
 
-/** `package.json` of a new project: scripts call `keel`, kernel packages as dependencies. */
-export function packageJson(name: string): string {
+/**
+ * `package.json` of a new project. Standalone: scripts call `keel`, kernel packages as versioned dependencies.
+ * `workspace`: an app inside the Keel monorepo; only `check`/`test`/`build` scripts, `workspace:*` dependencies.
+ */
+export function packageJson(name: string, workspace = false): string {
+  const v = workspace ? "workspace:*" : KEEL;
+  const scripts = workspace
+    ? { build: "vite build", check: "tsc --noEmit && biome check modules test", test: "vitest run" }
+    : { build: "keel build", check: "keel check", dev: "keel dev", test: "keel test" };
+  const dev = workspace
+    ? { "@keel/testing": v, "@keel/tooling": v, vite: "^8.3.6" }
+    : { "@keel/cli": v, "@keel/testing": v, typescript: "^5.6", vite: "^8.3.6", vitest: "^2" };
   const pkg = {
     name,
     version: "0.0.0",
     private: true,
     type: "module",
-    scripts: { build: "keel build", check: "keel check", dev: "keel dev", test: "keel test" },
-    dependencies: Object.fromEntries(
-      ["compiler", "ctx", "forms", "reactive", "router", "runtime-dom", "schema", "server", "store", "ui"].map((p) => [
-        `@keel/${p}`,
-        KEEL,
-      ]),
-    ),
-    devDependencies: {
-      "@keel/cli": KEEL,
-      "@keel/testing": KEEL,
-      typescript: "^5.6",
-      vite: "^8.3.6",
-      vitest: "^2",
-    },
+    scripts,
+    dependencies: Object.fromEntries(KERNEL.map((p) => [`@keel/${p}`, v])),
+    devDependencies: dev,
   };
-  return `${JSON.stringify(pkg, null, 2)}\n`;
+  return `${jsonText(pkg)}\n`;
 }

@@ -1,10 +1,10 @@
-/** `<name>.server.ts` (k.router, k.server): the route's loader. */
+/** `<loaderName>.server.ts` (k.router, k.server): the route's loader; the file stem equals the export (E1752). */
 export function loaderTs(loaderName: string): string {
   return [
-    "import { loader } from '@keel/router'",
-    "import { ok, s } from '@keel/schema'",
+    `import { loader } from "@keel/router";`,
+    `import { ok, s } from "@keel/schema";`,
     "",
-    `export const ${loaderName} = loader(s.object({}), async () => ok({}))`,
+    `export const ${loaderName} = loader(s.object({}), async () => ok({}));`,
     "",
   ].join("\n");
 }

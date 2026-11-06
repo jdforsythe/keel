@@ -1,0 +1,171 @@
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { scaffold } from "../src/index.ts";
+import { type Files, apply } from "./helpers.ts";
+
+const BIOME = fileURLToPath(new URL("../../../node_modules/.bin/biome", import.meta.url));
+
+function build(workspace: boolean): Files {
+  let files: Files = new Map();
+  files = apply("project", { name: "shop", workspace }, files);
+  files = apply("module", { id: "todos" }, files);
+  files = apply("route", { id: "todos.list", path: "/lists/:listId" }, files);
+  files = apply("route", { id: "todos.edit", path: "/lists/:listId/todos/:todoId/edit" }, files);
+  files = apply("route", { id: "todos.item", path: "/items/:id" }, files);
+  files = apply("route", { id: "todos.tagged", path: "/tags/:slug" }, files);
+  files = apply("component", { id: "todos/TodoRow" }, files);
+  files = apply("store", { id: "todos.board" }, files);
+  return files;
+}
+
+describe("emitted code passes the repo's biome config", () => {
+  for (const workspace of [true, false]) {
+    it(`every .ts/.tsx file of a ${workspace ? "workspace" : "standalone"} project is biome-clean`, () => {
+      const files = build(workspace);
+      const bad: string[] = [];
+      for (const [path, text] of files) {
+        if (!/\.tsx?$/.test(path)) continue;
+        const run = spawnSync(BIOME, ["check", "--write", `--stdin-file-path=${path}`], {
+          input: text,
+          encoding: "utf8",
+        });
+        if (run.status !== 0 || run.stdout !== text) bad.push(`${path}\n${run.stdout}${run.stderr}`);
+      }
+      expect(bad).toEqual([]);
+    });
+  }
+});
+
+describe("file naming (one export per file, E1752)", () => {
+  it("a route's server file is named after its loader export", () => {
+    const files = build(true);
+    expect(files.get("modules/todos/loadList.server.ts")).toContain("export const loadList = loader(");
+    expect(files.has("modules/todos/list.server.ts")).toBe(false);
+  });
+
+  it("every emitted .ts/.tsx module exports exactly its file stem (or Props/default for components)", () => {
+    for (const [path, text] of build(true)) {
+      if (!/^modules\/todos\/[^/]+\.(ts|tsx)$/.test(path) || /(module|routes)\.ts$/.test(path)) continue;
+      const stem = (path.split("/").pop() ?? "").split(".")[0] ?? "";
+      const names = [...text.matchAll(/^export (?:const|function|default function) (\w+)/gm)].map((m) => m[1]);
+      expect(
+        names.filter((n) => n !== "Props"),
+        path,
+      ).toEqual([stem]);
+    }
+  });
+});
+
+describe("route params", () => {
+  const routes = (): string => build(true).get("modules/todos/routes.ts") ?? "";
+
+  it("`*Id` params are s.id of the entity, `id` is s.id of the module's entity, others stay strings", () => {
+    const text = routes();
+    expect(text).toContain(`params: s.object({ listId: s.id("List") }),`);
+    expect(text).toContain(`params: s.object({ listId: s.id("List"), todoId: s.id("Todo") }),`);
+    expect(text).toContain(`params: s.object({ id: s.id("Todos") }),`);
+    expect(text).toContain("params: s.object({ slug: s.string() }),");
+  });
+
+  it("imports in routes.ts are sorted", () => {
+    const imports = (routes().match(/^import .*$/gm) ?? []).map((l) => /from "([^"]+)"/.exec(l)?.[1] ?? "");
+    expect(imports.slice(0, 2)).toEqual(["@keel/router", "@keel/schema"]);
+    const rel = imports.slice(2);
+    expect(rel).toEqual([...rel].sort());
+  });
+});
+
+describe("project --workspace", () => {
+  const files = (): Files => apply("project", { name: "shop", workspace: true }, new Map());
+
+  it("emits index.html and vitest.config.ts, and no turbo, CI or .keel", () => {
+    const f = files();
+    expect(f.get("vitest.config.ts")).toContain(`import { KeelReporter } from "@keel/tooling/vitest-reporter";`);
+    expect(f.get("vitest.config.ts")).toContain(`environment: "happy-dom"`);
+    expect(f.get("vitest.config.ts")).toContain("plugins: [keel()]");
+    expect(f.get("index.html")).toContain("/@keel/entry.ts");
+    expect([...f.keys()].filter((p) => p === "turbo.json" || p.startsWith(".github") || p.startsWith(".keel"))).toEqual(
+      [],
+    );
+  });
+
+  it("package.json has only check/test/build scripts; tsconfig extends the strict profile", () => {
+    const f = files();
+    expect(Object.keys(JSON.parse(f.get("package.json") ?? "{}").scripts).sort()).toEqual(["build", "check", "test"]);
+    expect(JSON.parse(f.get("tsconfig.json") ?? "{}").extends).toBe("@keel/compiler/tsconfig.strict.json");
+  });
+
+  it("modules added later do not create turbo or CI, and tests go under test/", () => {
+    let f = files();
+    f = apply("module", { id: "todos" }, f);
+    f = apply("route", { id: "todos.list", path: "/lists/:listId" }, f);
+    f = apply("component", { id: "todos/TodoRow" }, f);
+    f = apply("store", { id: "todos.board" }, f);
+    expect([...f.keys()].some((p) => p === "turbo.json" || p.startsWith(".github"))).toBe(false);
+    for (const p of ["test/todos.list.route.test.ts", "test/TodoRow.test.tsx", "test/todos.board.store.test.ts"])
+      expect(f.has(p), p).toBe(true);
+    expect([...f.keys()].filter((p) => p.startsWith("modules/") && /\.test\.tsx?$/.test(p))).toEqual([]);
+    expect(f.get("test/TodoRow.test.tsx")).toContain(`from "../modules/todos/TodoRow.tsx"`);
+  });
+
+  it("the default (non-workspace) project is unchanged: turbo, CI and no vitest.config.ts", () => {
+    const f = apply("project", { name: "shop" }, new Map());
+    expect(f.has("turbo.json") && f.has(".github/workflows/ci.yml")).toBe(true);
+    expect(f.has("vitest.config.ts") || f.has("index.html")).toBe(false);
+  });
+});
+
+describe("codemod rename module", () => {
+  const start = (): Files => {
+    let f = apply("project", { name: "shop", workspace: true }, new Map());
+    f = apply("route", { id: "app.home", path: "/home" }, f);
+    f = apply("store", { id: "app.cart" }, f);
+    f = apply("module", { id: "other" }, f);
+    return f;
+  };
+
+  it("moves the folder and updates manifest id, route ids, store ids and topology", () => {
+    const f = apply("rename", { kind: "module", from: "app", to: "todos" }, start());
+    expect([...f.keys()].some((p) => p.startsWith("modules/app/"))).toBe(false);
+    expect(f.get("modules/todos/module.ts")).toContain(`id: "todos"`);
+    expect(f.get("modules/todos/routes.ts")).toContain(`"todos.home": {`);
+    expect(f.get("modules/todos/routes.ts")).not.toContain("app.home");
+    expect(f.get("topology.ts")).toContain(`modules: ["todos", "other"]`);
+    expect(f.has("test/todos.home.route.test.ts")).toBe(true);
+    expect(f.get("test/todos.home.route.test.ts")).toContain(`renderRoute("todos.home"`);
+    expect(f.get("test/todos.home.route.test.ts")).toContain(`"../modules/todos/routes.ts"`);
+    expect(f.has("test/todos.cart.store.test.ts")).toBe(true);
+    expect(f.get("test/todos.cart.store.test.ts")).toContain(`"../modules/todos/cart.store.ts"`);
+  });
+
+  it("round-trips byte-identically", () => {
+    const a = start();
+    const there = apply("rename", { kind: "module", from: "app", to: "todos" }, a);
+    const back = apply("rename", { kind: "module", from: "todos", to: "app" }, there);
+    expect([...back].sort()).toEqual([...a].sort());
+  });
+
+  it("regenerates turbo.json in a standalone project", () => {
+    const f = apply(
+      "rename",
+      { kind: "module", from: "app", to: "todos" },
+      apply("project", { name: "shop" }, new Map()),
+    );
+    expect(f.get("turbo.json")).toContain("modules/todos/**");
+    expect(f.get("turbo.json")).not.toContain("modules/app/**");
+  });
+
+  it("refuses an unknown source, a taken target and a bad name", () => {
+    const f = start();
+    for (const [from, to, code] of [
+      ["nope", "x", "E1052"],
+      ["app", "other", "E1351"],
+      ["app", "Bad_Name", "E1352"],
+    ] as const) {
+      const r = scaffold("rename", { kind: "module", from, to }, f);
+      expect(r.ok).toBe(false);
+      expect(JSON.stringify(r.ok ? "" : r.error)).toContain(code);
+    }
+  });
+});

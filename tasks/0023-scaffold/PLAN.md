@@ -51,12 +51,17 @@ Covers backlog 0023 (generators project, module, route, component, store; turbo 
 - [x] properties present (seed 1337, 100 runs): rename round trip for component/store/route/schema, no old reference after rename, determinism and plan = scaffold and input never mutated, edit set equals tree difference, generated trees clean under the check proxy, cycle-creating move -> E1353, relSpec/joinSpec/restyleSpec
 - Mutation: `mutate` script is `echo skip`; not measured. Unsafe count 0 (unchanged).
 - Root `pnpm check` not run (it runs biome in every package; out of scope for this task).
+- D23 (0048): all templates emit what the repo's biome config accepts (double quotes, semicolons, `insertImports` places new imports in biome order: packages, `../`, `./`, code-unit order). Route manifest entries are emitted multi-line. JSON goes through `jsonText` (arrays of scalars on one line). Test `test/emitted-code.test.ts` pipes every emitted `.ts`/`.tsx` through `biome check --write --stdin-file-path` and requires identical output (no `@biomejs/js-api` installed).
+- D24 (0048): a route's server file is `load<Leaf>.server.ts` exporting `load<Leaf>` (stem equals export, E1752; golden-1 convention). `rename route` renames those files. Component default export takes `_props`.
+- D25 (0048): route params: `id` -> `s.id("<Module>")` (PascalCase module), `fooId` -> `s.id("Foo")`, anything else `s.string()`.
+- D26 (0048): `project { workspace: true }` (default false): `package.json` scripts only build/check/test (`vite build`, `tsc --noEmit && biome check modules test`, `vitest run`), `workspace:*` deps, tsconfig includes `test`/`vitest.config.ts`, plus `index.html` and `vitest.config.ts` (happy-dom, keel plugin, KeelReporter, `test/**/*.test.{ts,tsx}`); no turbo.json, CI or `.keel/`. A tree is "workspace" when it has `vitest.config.ts`: tests of route/component/store then go to `test/<mod>.<leaf>.route.test.ts`, `test/<Name>.test.tsx`, `test/<mod>.<name>.store.test.ts`; `module` writes turbo/CI only if the tree already has them. Both modes now set `jsxImportSource` in tsconfig and use `defineConfig` in `vite.config.ts`.
+- D27 (0048): `rename { kind: "module", from, to }` works for any module (including `app`): moves `modules/<from>/`, rewrites string literals equal to `from` in every `module.ts` and `topology.ts`, route and store id tokens `<from>.*`, relative imports, `test/<from>.*` files, and regenerates turbo.json if present. Round trip is byte-identical. Proof: scaffold workspace project + module + routes + component + store + module rename, written to a scratch dir, passes `biome check`, `tsc --noEmit` and `vitest run`.
 
 ## Review notes
 - (D18) Strictly dropping the route-leaf rewrite breaks conformance `rename-references` (route case: `uses: [<leaf>]`); resolved with the `uses:` carve-out. Flag for the spec owner.
 - Conformance `rename-references` (route case) requires the old leaf to vanish from the route's own `path` (`/zz/<name>/:id`), so a route rename changes its URL when a path segment equals the old leaf. Spec text lists declaration, file name, imports, `href()`, `uses:`, element ids, test, manifest; it does not list the path. Implemented (D13); flag for the spec owner.
 - Same test's fixture imports `./<name>.tsx` for store/route kinds, a file the generators never create; rename handles it by stem (D12).
-- Not implemented: `transaction` and `service` generators; `rename` kinds `transaction`, `field`, `module` (E1052 via the input schema enum).
+- Not implemented: `transaction` and `service` generators; `rename` kinds `transaction`, `field` (E1052 via the input schema enum).
 
 ## Next action
 review
