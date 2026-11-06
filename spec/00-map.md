@@ -13,7 +13,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E140x | k.component | E145x | k.errors |
 | E150x | k.router | E155x | k.server |
 | E160x | k.ctx | E165x | k.services |
-| E170x | k.testing | E175x | reserved |
+| E170x | k.testing | E175x | k.check |
 | E18xx | k.ui | E19xx | k.forms |
 
 ## Kernel

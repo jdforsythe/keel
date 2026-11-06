@@ -26,7 +26,7 @@ Each deployable builds to one artifact. Adapters: `node` (Hono on Node) and `sta
 
 **Dev server.** `keel dev`: Vite and Hono in one process, HMR, real `ctx`. Log stream on stdout per OUTPUT.md, one record per event: `req` (compact `GET /orders/7 orders.show 200 12ms`), `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. `keel inspect log` reads the same stream.
 
-**Rules.** E1551 `loader` or `action` declared outside a `*.server.ts` file · E1552 topology names an unknown module or one module in two deployables · E1553 `static` deployable contains a route with params or actions · E1554 loader data fails its output schema (dev diagnostic; 500 in production).
+**Rules.** E1551 `loader` or `action` declared outside a `*.server.ts` file (in a client-only deployable those files are bundled to the browser; E1551 still applies) · E1552 topology names an unknown module or one module in two deployables · E1553 `static` deployable contains a route with params or actions · E1554 loader data fails its output schema (dev diagnostic; 500 in production).
 
 **Conformance.**
 - A GET with params that fail the params schema returns 404 and calls no loader.
