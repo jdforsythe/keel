@@ -16,7 +16,13 @@
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
   },
+  "dependencies": {
+    "@keel/schema": "workspace:*",
+    "magic-string": "^1.4.5",
+    "oxc-parser": "^0.157.0"
+  },
   "devDependencies": {
-    "@keel/tooling": "workspace:*"
+    "@keel/tooling": "workspace:*",
+    "fast-check": "^3"
   }
 }

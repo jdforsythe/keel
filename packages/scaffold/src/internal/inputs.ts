@@ -1,0 +1,13 @@
+import { s } from "@keel/schema";
+
+/** Input schema per operation (k.scaffold CLI flags). `add-field`'s `default` is any JSON value, read separately. */
+export const inputs = {
+  project: s.object({ name: s.string() }),
+  module: s.object({ id: s.string() }),
+  route: s.object({ id: s.string(), path: s.string(), file: s.string().optional() }),
+  component: s.object({ id: s.string() }),
+  store: s.object({ id: s.string() }),
+  rename: s.object({ kind: s.enum(["component", "store", "route", "schema"]), from: s.string(), to: s.string() }),
+  move: s.object({ name: s.string(), to: s.string() }),
+  "add-field": s.object({ schema: s.string(), field: s.string(), type: s.string() }),
+};
