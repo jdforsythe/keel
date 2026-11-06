@@ -124,10 +124,12 @@ export async function build(b: Behavior, mode: Mode = "production") {
       search: Search,
       loader: showLoader,
       actions: { POST: act },
-      component: (p: RouteProps) => el("main", { "data-page": "show" }, `page ${String(Reflect.get(Object(p.params), "kind"))}`),
+      component: (p: RouteProps) =>
+        el("main", { "data-page": "show" }, `page ${String(Reflect.get(Object(p.params), "kind"))}`),
       layout: "orders.shell",
       guard: "auth",
-      errorElement: (p: { readonly error: KeelError<string, unknown> }) => el("section", { "data-error-element": "1" }, p.error.code),
+      errorElement: (p: { readonly error: KeelError<string, unknown> }) =>
+        el("section", { "data-error-element": "1" }, p.error.code),
     },
     "app.login": { path: "/login", component: () => el("main", {}, "login") },
   });
@@ -141,8 +143,7 @@ export async function build(b: Behavior, mode: Mode = "production") {
   return { app, n, routes, href };
 }
 
-export const get = (path: string, headers: Record<string, string> = {}) =>
-  new Request(`${BASE}${path}`, { headers });
+export const get = (path: string, headers: Record<string, string> = {}) => new Request(`${BASE}${path}`, { headers });
 
 export function post(path: string, fields: Record<string, string>, headers: Record<string, string> = {}) {
   const fd = new FormData();

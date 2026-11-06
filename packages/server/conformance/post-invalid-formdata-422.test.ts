@@ -5,7 +5,9 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { build, kinds, post } from "./fixtures.ts";
 
-const word = fc.array(fc.constantFrom(..."abcdefghjkmnpqrstuvwxyz"), { minLength: 6, maxLength: 12 }).map((a) => a.join(""));
+const word = fc
+  .array(fc.constantFrom(..."abcdefghjkmnpqrstuvwxyz"), { minLength: 6, maxLength: 12 })
+  .map((a) => a.join(""));
 
 describe("k.server", () => {
   it("A POST with invalid FormData returns 422, does not call the action, and lists the field errors", async () => {
