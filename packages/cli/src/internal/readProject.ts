@@ -6,8 +6,10 @@ import { CODE_FILE } from "./CODE_FILE.ts";
 const SKIP = new Set(["node_modules", "dist", "coverage", "reports", ".turbo", ".git", ".worktrees"]);
 const TEXT = /\.(?:[cm]?[jt]sx?|json|md|ya?ml|css|html|txt)$/;
 const MAX_BYTES = 1_000_000;
+/** Build configuration is tooling, type-checked by the project's own tsc, not app code for `keel check`. */
+const BUILD_CONFIG = /(?:^|\/)(?:vite|vitest|stryker)\.config\.[cm]?[jt]s$/;
 const QUERY = (rel: string): boolean =>
-  CODE_FILE.test(rel) ||
+  (CODE_FILE.test(rel) && !BUILD_CONFIG.test(rel)) ||
   (rel.startsWith("spec/") && rel.endsWith(".md")) ||
   (rel.startsWith(".keel/") && rel.endsWith(".json")) ||
   rel === "tooling/ledger/ledger.json";
