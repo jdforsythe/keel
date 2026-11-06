@@ -6,7 +6,8 @@ import keel from "@keel/compiler/vite";
 import { parseSync } from "oxc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-const packages = path.resolve(import.meta.dirname, "..", "..");
+// Real packages dir via a workspace link, so this also holds in Stryker's sandbox copy (where ../.. is not packages/).
+const packages = path.dirname(fs.realpathSync(path.join(import.meta.dirname, "..", "node_modules", "@keel", "schema")));
 let root = "";
 
 const write = (rel: string, text: string): string => {
@@ -122,7 +123,7 @@ describe("@keel/compiler/vite project inputs", () => {
     const file = path.join(root, "modules/todos/routes.ts");
     // topology.ts is read in configResolved, so transforms before buildStart already see it
     expect(p.transform(ROUTES, file)?.code).toContain("manifest(");
-    const topo = write("topology.ts", `export default topology({ web: { modules: ["todos"], adapter: "node" } });\n`);
+    const topo = write("topology.ts", `export default topology({ web: { modules: ["todos"], adapter: "static" } });\n`);
     p.watchChange(topo, { event: "update" });
     expect(() => p.transform(ROUTES, file)).toThrow(/^E1004 modules\/todos\/routes.ts/);
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(/adapter 'client'/);

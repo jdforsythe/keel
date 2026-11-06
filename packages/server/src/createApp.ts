@@ -14,7 +14,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
 
 /**
  * Build one deployable of `topology` over Hono (k.server; generated server entry and `keel dev` only).
- * Rejects with an Error whose message starts with E1552 (a deployable names a module no route belongs to,
+ * Rejects with an Error whose message starts with E1552 (the served deployable names a module no route belongs to,
  * or a module is in two deployables) or E1553 (a `static` deployable has a route with params or actions).
  * Each request follows the k.server Request flow and writes one `req` record (after any `diag`) to `log`.
  * Each request runs in its own scope: stores created in it appear in `#k-state` and are disposed after the

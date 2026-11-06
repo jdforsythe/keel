@@ -80,10 +80,29 @@ describe("topology and routes inputs", () => {
     { path: "src/shared.ts", source: `import { x } from "../modules/todos/x.server.ts";\nexport const y = x;\n` },
   ];
 
-  it("reports E1004 without a topology or for a node deployable", () => {
-    expect(compile(files).diagnostics.map((d) => d.code)).toEqual(["E1004", "E1004"]);
-    const node = compile(files, { topology: { web: { modules: ["todos"], adapter: "node" } } });
-    expect(node.diagnostics.map((d) => d.code)).toEqual(["E1004", "E1004"]);
+  it("reports E1004 without a topology or for a static deployable", () => {
+    expect(compile(files).diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual([
+      "E1004 modules/todos/routes.ts",
+      "E1004 src/shared.ts",
+    ]);
+    const stat = compile(files, { topology: { web: { modules: ["todos"], adapter: "static" } } });
+    expect(stat.diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual(["E1004 modules/todos/routes.ts"]);
+  });
+
+  it("is per deployable: node-only routes.ts and files outside modules/ are legal (D40)", () => {
+    const node = { web: { modules: ["todos"], adapter: "node" as const } };
+    expect(compile(files, { topology: node }).diagnostics).toEqual([]);
+    const comp = [{ path: "modules/todos/List.tsx", source: files[0]?.source ?? "" }];
+    expect(compile(comp, { topology: node }).diagnostics.map((d) => d.code)).toEqual(["E1004"]);
+    const mixed = {
+      web: { modules: ["todos"], adapter: "node" as const },
+      app: { modules: ["todos"], adapter: "client" as const },
+    };
+    expect(compile(files, { topology: mixed }).diagnostics).toEqual([]);
+    const other = { api: { modules: ["admin"], adapter: "node" as const } };
+    expect(compile([files[1] ?? { path: "", source: "" }], { topology: other }).diagnostics).toEqual([]);
+    const t = { path: "test/a.test.ts", source: files[0]?.source ?? "" };
+    expect(compile([t], { topology: node }).diagnostics).toEqual([]);
   });
 
   it("skips E1004 for files whose deployables are all client-only", () => {
@@ -92,7 +111,7 @@ describe("topology and routes inputs", () => {
     const split = compile(files, {
       topology: { app: { modules: ["todos"], adapter: "client" }, api: { modules: ["admin"], adapter: "node" } },
     });
-    expect(split.diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual(["E1004 src/shared.ts"]);
+    expect(split.diagnostics).toEqual([]);
   });
 
   it("copies a precomputed routes artifact, sorted, into routes.json; default is {}", () => {

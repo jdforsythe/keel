@@ -57,6 +57,8 @@ Covers backlog 0010 (oxc plugin, JSX to DOM ops, If/For/Match), 0011 (artifacts,
 - D38 (golden app 1): a child expression `<slot call> ?? <fallback>` (slot call: `props.children()`, `children?.()`, `slots.x()`, optional or not) is inserted as a node like a bare slot call; the fallback renders when the thunk is absent. Test: test/integration.test.ts.
 - D39 (golden app 1): `<For empty={...}>` lowers to a fifth argument of `list` (the `empty` attribute value as written); omitted when absent. Test: test/integration.test.ts.
 
+- D40 (golden app 1, 0032): E1004 is per deployable. A file under `modules/<m>/` belongs to every deployable listing `m`; files outside `modules/` (tests, configs, server entry) are never subject; a `routes.ts` of a module listed only by `node` deployables is legal (server-loaded manifest); all-`client` owners stay exempt (existing); no topology keeps `modules/` files subject. Manifest deps are not in `Topology`, so only direct listing is used. Spec clarification, no RFC (rule intent unchanged). Tests: test/integration.test.ts, test/vite-project.test.ts.
+
 ## Verification
 - [x] conformance green (17 files; keel-dir-tamper skipped by design) · properties present · biome clean · structure-lint clean for compiler · docs-freshness, budgets, generate ok
 - [x] `pnpm --filter @keel/compiler check` green (tsc + biome) after review fixes D17-D22.

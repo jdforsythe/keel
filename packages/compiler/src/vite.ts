@@ -5,6 +5,7 @@ import { canonicalJson } from "./internal/canonicalJson.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { hashOf } from "./internal/hashOf.ts";
+import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
@@ -28,9 +29,11 @@ const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
 
 type Entry = { source: string; output: Output | undefined; artifacts: Artifacts; failures: string[] };
 type ModuleNode = object;
+type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware>): void };
 type DevServer = {
   moduleGraph: { getModuleById(id: string): ModuleNode | undefined };
   reloadModule(module: ModuleNode): Promise<void>;
+  middlewares: Middlewares;
 };
 type Warn = (message: string) => void;
 
@@ -45,12 +48,16 @@ type Warn = (message: string) => void;
  * deployable's `modules/<id>/routes.ts` to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
  * For a `client` deployable (`KEEL_DEPLOYABLE` picks one by name, else the first by name) it serves the
  * generated entry at `/@keel/entry.ts`.
+ *
+ * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
+ * stores the open page's dev entry last posted.
  */
 export default function (): {
   name: string;
   enforce: "pre";
   configResolved: (config: { root: string; command?: "build" | "serve" }) => void;
   configureServer: (server: DevServer) => void;
+  configurePreviewServer: (server: { middlewares: Middlewares }) => void;
   buildStart: (this: { warn?: Warn } | undefined) => Promise<void>;
   resolveId: (id: string) => string | null;
   load: (id: string) => Promise<string | null>;
@@ -67,6 +74,7 @@ export default function (): {
   let usageKeys = "";
   let warn: Warn = () => {};
   const modules = new Map<string, Entry>();
+  const inspect = inspectMiddleware(() => root);
   const written = new Map<string, string>();
 
   const relOf = (id: string): string | null => {
@@ -197,6 +205,10 @@ export default function (): {
     },
     configureServer(s) {
       server = s;
+      s.middlewares.use(inspect);
+    },
+    configurePreviewServer(s) {
+      s.middlewares.use(inspect);
     },
     async buildStart() {
       const w = this?.warn;

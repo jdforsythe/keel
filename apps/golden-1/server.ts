@@ -10,11 +10,8 @@ const PORT = 4181;
 const DEPLOYABLE = "api";
 const log = { format: "compact", write: (line: string) => process.stdout.write(`${line}\n`) } as const;
 
-// createApp checks every deployable's modules against `routes`; this process loads only the api modules
-// (todos is the `client` deployable, .tsx that Node cannot load), so it is given its own deployable only.
-const served = Object.fromEntries(Object.entries(topology).filter(([name]) => name === DEPLOYABLE));
 const app = await createApp({
-  topology: served,
+  topology,
   routes,
   ctx: createCtx({ mode: "real" }),
   deployable: DEPLOYABLE,

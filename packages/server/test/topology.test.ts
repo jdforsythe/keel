@@ -54,6 +54,19 @@ describe("topology", () => {
     );
   });
 
+  it("createApp validates only the served deployable's modules; duplicates still checked on the whole topology", async () => {
+    const page = () => document.createElement("p");
+    const routes = manifest({ "api.home": { path: "/api", component: page } });
+    const ctx = createCtx({ mode: "sim", seed: SEED });
+    const t = topology({ web: { modules: ["todos"], adapter: "client" }, api: { modules: ["api"], adapter: "node" } });
+    await expect(createApp({ topology: t, routes, ctx, deployable: "api" })).resolves.toBeDefined();
+    await expect(createApp({ topology: t, routes, ctx, deployable: "web" })).rejects.toThrow(
+      /^E1552 deployable web names unknown module todos/,
+    );
+    const dup = topology({ web: { modules: ["api"], adapter: "node" }, api: { modules: ["api"], adapter: "node" } });
+    await expect(createApp({ topology: dup, routes, ctx, deployable: "api" })).rejects.toThrow(/^E1552 module api/);
+  });
+
   it("throws E1552 for an empty modules list or a bad shape", () => {
     expect(() => topology({ web: { modules: [], adapter: "node" } })).toThrow(/^E1552/);
     const bad = JSON.parse('{"web":{"modules":["a"],"adapter":"lambda"}}');

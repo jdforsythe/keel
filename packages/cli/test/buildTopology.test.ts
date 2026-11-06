@@ -19,8 +19,8 @@ describe("build with a topology", () => {
     expect(r.code).toBe(0);
   });
 
-  it("a node deployable still reports E1004; so does a project without topology.ts", async () => {
-    const node = await run(["build", "--format=json"], { cwd: CWD, files: [topology("node"), routes] });
+  it("a static deployable still reports E1004; so does a project without topology.ts", async () => {
+    const node = await run(["build", "--format=json"], { cwd: CWD, files: [topology("static"), routes] });
     expect(node.stdout).toContain("E1004");
     const none = await run(["build", "--format=json"], { cwd: CWD, files: [routes] });
     expect(none.stdout).toContain("E1004");
