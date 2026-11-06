@@ -3,7 +3,7 @@ import { type Plugin, defineConfig } from "vite";
 
 /** Dev-only stub for GET /api/suggestions until the real API lands (backlog 0032). */
 const suggestionsStub = (): Plugin => {
-  const handler: Connect.NextHandleFunction = (req, res, next) => {
+  const handler = (req: IncomingMessage, res: ServerResponse, next: () => void): void => {
     if (req.url?.split("?")[0] !== "/api/suggestions") return next();
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify([{ title: "Eggs" }, { title: "Milk" }, { title: "Bread" }]));
