@@ -20,9 +20,9 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0016 forms: form(schema), bindings, validation, submit, server errors · forms · k.forms · G1 · 0015
 - [x] 0017 ui: tokens, style props, atomic CSS, scoped styles · ui · k.ui · G1 · 0013
 - [x] 0018 ui: base elements with a11y-required props; standard slots · ui · k.ui · G1 · 0017
-- [ ] 0019 errors: Result, boundaries, thrown-exception lint · schema · k.errors · G1 · 0003
-- [ ] 0020 check: pipeline, diagnostic model, formatters, explain · check · k.check · G1 · 0011
-- [ ] 0021 check: fix diffs for top 30 codes; budgets; rule registry · check · k.check · G1 · 0020
+- [x] 0019 errors: Result, boundaries, thrown-exception lint · schema · k.errors · G1 · 0003
+- [x] 0020 check: pipeline, diagnostic model, formatters, explain · check · k.check · G1 · 0011
+- [x] 0021 check: fix diffs for top 30 codes; budgets; rule registry · check · k.check · G1 · 0020
 - [ ] 0022 cli: commands, formatter registry, mcp, lsp · cli · k.cli · G1 · 0020
 - [x] 0023 scaffold: project, module, route, component, store; turbo emission · scaffold · k.scaffold · G1 · 0022
 - [x] 0024 scaffold: codemods rename, move, add-field · scaffold · k.scaffold · G1 · 0023

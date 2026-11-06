@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 import type { SourceFile } from "../src/index.ts";
+import { hashOf } from "../src/internal/hashOf.ts";
 import { applyPatch } from "./support/applyPatch.ts";
 
 // Built so the factory's own lint does not read fixture text as a call in this file.
@@ -174,14 +175,38 @@ describe("kernel rules", () => {
     }
   }
 
-  it("E1805: an <a> with a literal absolute URL has no base element and is exempt", () => {
-    const src = 'export default function C() { return <a href="https://example.com">x</a> }\n';
-    expect(check([f("C.tsx", src)], {}).diagnostics).toEqual([]);
+  it("E1805 has no exceptions: an external <a> names Link, and it fires beside compiler codes", () => {
+    const a = check([f("C.tsx", 'export default function C() { return <a href="https://example.com">x</a> }\n')], {});
+    expect(a.diagnostics.map((d) => [d.code, d.message])).toEqual([
+      ["E1805", "<a> in app code; use <Link> from @keel/ui"],
+    ]);
+    const src = "export default function C(props) { return <div>{props.a && <b/>}</div> }\n";
+    expect(
+      check([f("C.tsx", src)], {})
+        .diagnostics.map((d) => d.code)
+        .sort(),
+    ).toEqual(["E1403", "E1805", "E1805"]);
   });
 
-  it("E1805 is held back on a file the compiler reports on", () => {
-    const src = "export default function C(props) { return <div>{props.a && <b/>}</div> }\n";
-    expect(check([f("C.tsx", src)], {}).diagnostics.map((d) => d.code)).toEqual(["E1403"]);
+  it("E1752: a *.server.ts exporting only loader and action is exempt", () => {
+    const server = "export const loader = () => 1\nexport const action = () => 2\n";
+    expect(check([f("src/orders/show.server.ts", server)], {}).diagnostics.map((d) => d.code)).not.toContain("E1752");
+    const extra = `${server}export const helper = 3\n`;
+    expect(check([f("src/orders/show.server.ts", extra)], {}).diagnostics.map((d) => d.code)).toContain("E1752");
+  });
+
+  it("E1005: a .keel/ artifact whose bytes or hash differ from what the compiler writes", () => {
+    const data = { "C.0": { col: 1 } };
+    const good = `{"data":{"C.0":{"col":1}},"hash":"${hashOf(data)}"}\n`;
+    const codes = (source: string, artifacts = {}) =>
+      check([f(".keel/ids.json", source)], { artifacts }).diagnostics.map((d) => d.code);
+    expect(codes(good)).toEqual([]);
+    expect(codes(good.replace('"col":1', '"col":2'))).toEqual(["E1005"]);
+    expect(codes(good, { hashes: { "ids.json": "fnv1a:00000000" } })).toEqual(["E1005"]);
+    const spaced = good.replace('{"data"', '{ "data"');
+    const d = check([f(".keel/ids.json", spaced)], {}).diagnostics;
+    expect(d.map((x) => x.code)).toEqual(["E1005"]);
+    expect(applyPatch(".keel/ids.json", spaced, d[0]?.fix ?? "")).toBe(good);
   });
 
   it("E1755: a measured budget over its limit is reported at its path", () => {

@@ -48,7 +48,8 @@ function pretty(d: Diagnostic): string[] {
 /**
  * Render diagnostics per docs/OUTPUT.md. Always dedupes and sorts first; the summary counts every code
  * even under `code`. `compact` (default): one line per diagnostic grouped by code, cap per code then a
- * `... +N more` line, fix as `-`/`+` lines, one trailer line; silent on pass except the trailer. `json`:
+ * `... +N more` line, fix as `-`/`+` lines, then the trailer (`ok|fail N errors, M warnings`) and an indented per-code
+ * counts line; silent on pass except the trailer. `json`:
  * NDJSON diagnostics then a summary line (uncapped unless `limit` is set). `pretty`: blocks for humans.
  * No ANSI, no timestamps; equal inputs give byte-identical output.
  */
@@ -63,7 +64,7 @@ export function format(diags: readonly Diagnostic[], opts: FormatOptions = {}): 
   const quiet = opts.quiet === true;
   if (mode === "pretty") {
     const body = quiet ? [] : capped(shown, per, pretty);
-    return [...body, trailer(summary, opts.ms)].join("\n");
+    return [...body, ...trailer(summary, opts)].join("\n");
   }
   const body = quiet
     ? []
@@ -71,5 +72,5 @@ export function format(diags: readonly Diagnostic[], opts: FormatOptions = {}): 
         `${d.code} ${where(d)} ${d.message}`,
         ...(d.fix === undefined ? [] : compactFix(d, d.fix)),
       ]);
-  return [...body, trailer(summary, opts.ms)].join("\n");
+  return [...body, ...trailer(summary, opts)].join("\n");
 }

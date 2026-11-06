@@ -27,6 +27,12 @@ const SUGGEST: ReadonlyMap<string, string> = new Map([
   ["input", "Input"],
   ["textarea", "TextArea"],
   ["select", "Select"],
+  ["label", "Input"],
+]);
+/** Phrasing tags outside `Text as` that map to its nearest tag. */
+const TEXT_LIKE: ReadonlyMap<string, string> = new Map([
+  ["b", "strong"],
+  ["i", "em"],
 ]);
 
 /** `[base element, extra attributes]` for a drop-in replacement of `tag`, or null. */
@@ -36,21 +42,11 @@ function dropIn(tag: string): [string, string] | null {
   if (tag === "button") return ["Button", ""];
   if (BOX_AS.has(tag)) return ["Box", ` as="${tag}"`];
   if (TEXT_AS.has(tag)) return ["Text", ` as="${tag}"`];
+  const like = TEXT_LIKE.get(tag);
+  if (like !== undefined) return ["Text", ` as="${like}"`];
   const h = /^h([1-6])$/.exec(tag);
   if (h !== null) return ["Heading", ` level={${h[1]}}`];
   return null;
-}
-
-function externalLink(attrs: readonly JSXAttributeItem[]): boolean {
-  return attrs.some(
-    (a) =>
-      a.type === "JSXAttribute" &&
-      a.name.type === "JSXIdentifier" &&
-      a.name.name === "href" &&
-      a.value?.type === "Literal" &&
-      typeof a.value.value === "string" &&
-      /^(?:https?:\/\/|mailto:|tel:)/.test(a.value.value),
-  );
 }
 
 const onlyId = (attrs: readonly JSXAttributeItem[]): boolean =>
@@ -58,8 +54,8 @@ const onlyId = (attrs: readonly JSXAttributeItem[]): boolean =>
 
 /**
  * E1805 (k.ui): a lowercase intrinsic element in app code. Fix: the matching base element from `@keel/ui`
- * when it is a drop-in (no attributes besides `id`). An `<a>` with a literal absolute URL `href` is exempt:
- * `Link` takes only an `Href` from `href()`, and k.compiler admits absolute URLs in URL attributes.
+ * when it is a drop-in (no attributes besides `id`); the message always names the base element (`Box` for
+ * tags with no closer match).
  */
 export const noIntrinsicElement: RuleDef = {
   code: "E1805",
@@ -80,13 +76,12 @@ export const noIntrinsicElement: RuleDef = {
         const o = n.openingElement;
         if (o.name.type !== "JSXIdentifier" || !/^[a-z][a-z0-9]*$/.test(o.name.name)) return;
         const tag = o.name.name;
-        if (tag === "a" && externalLink(o.attributes)) return;
         const fit = dropIn(tag);
         const close = n.closingElement;
         out.push(
           findingAt(file, o.name.start, {
             tag,
-            base: fit?.[0] ?? SUGGEST.get(tag) ?? "",
+            base: fit?.[0] ?? SUGGEST.get(tag) ?? "Box",
             extra: fit?.[1] ?? "",
             fixable: fit !== null && onlyId(o.attributes) ? 1 : 0,
             openStart: o.name.start,

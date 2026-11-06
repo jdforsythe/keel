@@ -2,6 +2,7 @@ import { compile } from "@keel/compiler";
 import type { Checked } from "./internal/Checked.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
+import { generatedEdits } from "./internal/generatedEdits.ts";
 import { isCodePath } from "./internal/isCodePath.ts";
 import { normalize } from "./internal/normalize.ts";
 import { parseFile } from "./internal/parseFile.ts";
@@ -16,15 +17,12 @@ import type { CheckResult } from "./types/CheckResult.ts";
 import type { Diagnostic } from "./types/Diagnostic.ts";
 import type { SourceFile } from "./types/SourceFile.ts";
 
-/** Codes held back on a file the compiler already reports on: fix the compile errors first (PLAN D5). */
-const HELD_BACK: ReadonlySet<string> = new Set(["E1805"]);
-
 const isError = (d: Diagnostic): boolean => !/^[WI]/.test(d.code);
 
 /**
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
- * diagnostics passed through unchanged, (3) the rule registry on each file plus project passes (E1454,
- * E1753, E1755), (4) rendered a11y checks, (5) dedupe and sort. Pure and deterministic for equal inputs.
+ * diagnostics passed through unchanged, (3) the rule registry on each file plus project passes (E1005,
+ * E1454, E1753, E1755), (4) rendered a11y checks, (5) dedupe and sort. Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
   const code = files.filter((f) => isCodePath(f.path));
@@ -42,11 +40,14 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     const parsed = parseFile(file);
     if (!parsed.ok) continue;
     checked.push({ file, parsed });
-    const held = reported.has(file.path);
-    for (const d of runRules(registered, { file, ast: parsed.program, artifacts }))
-      if (!(held && HELD_BACK.has(d.code))) out.push(d);
+    out.push(...runRules(registered, { file, ast: parsed.program, artifacts }));
   }
-  out.push(...duplicateErrorCodes(checked), ...ruleCodeDeclarations(checked), ...budgetBreaches(opts.budgets ?? []));
+  out.push(
+    ...duplicateErrorCodes(checked),
+    ...ruleCodeDeclarations(checked),
+    ...budgetBreaches(opts.budgets ?? []),
+    ...generatedEdits(files, opts.artifacts ?? {}),
+  );
 
   if (opts.render !== false) {
     const failing = new Set(out.filter(isError).map((d) => d.path));

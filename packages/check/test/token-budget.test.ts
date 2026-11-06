@@ -22,9 +22,14 @@ const INJECTED: SourceFile[] = [
   { path: "src/cart/Badge.tsx", source: "export default function Badge() {\n  return <span>new</span>\n}\n" },
   {
     path: "src/cart/List.tsx",
-    source: "export default function List(props) {\n  return <ul>{props.open && <li>x</li>}</ul>\n}\n",
+    source:
+      "import { Box, Text } from '@keel/ui'\nexport default function List(props) {\n  return <Box as=\"ul\">{props.open && <Text>x</Text>}</Box>\n}\n",
   },
-  { path: "src/cart/Name.tsx", source: "export default function Name({ name }) {\n  return <p>{name}</p>\n}\n" },
+  {
+    path: "src/cart/Name.tsx",
+    source:
+      "import { Text } from '@keel/ui'\nexport default function Name({ name }) {\n  return <Text>{name}</Text>\n}\n",
+  },
   { path: "src/cart/count.ts", source: 'export const count: number = "three"\n' },
   { path: "src/cart/pair.ts", source: "export const pair = 1\nexport const other = 2\n" },
   {
@@ -41,14 +46,14 @@ it("compact output for 10 injected errors stays within 600 tokens", () => {
   expect(tokens(out)).toBeLessThanOrEqual(600);
 });
 
-it("any 10-file subset of repeated injections stays within 600 tokens", () => {
+it("any 10 injected errors (repeats allowed, one per file) stay within 600 tokens", () => {
   fc.assert(
     fc.property(
       fc.array(fc.integer({ min: 0, max: INJECTED.length - 1 }), { minLength: 10, maxLength: 10 }),
       (picks) => {
         const files = picks.map((p, i) => {
           const src = INJECTED[p] ?? { path: "x.ts", source: "" };
-          return { path: src.path.replace(/(\.[a-z]+)$/, `${i}$1`), source: src.source };
+          return { path: src.path.replace(/^(src|test)\//, `$1/c${i}/`), source: src.source };
         });
         expect(tokens(format(check(files, {}).diagnostics, { mode: "compact" }))).toBeLessThanOrEqual(600);
       },

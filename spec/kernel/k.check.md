@@ -1,5 +1,5 @@
 # k.check: Checker and diagnostics
-status: proposed
+status: implemented
 
 **Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1.
 1. Parse (oxc) and TS strict type check.

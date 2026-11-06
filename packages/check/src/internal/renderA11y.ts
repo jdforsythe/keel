@@ -1,3 +1,5 @@
+import * as ctxModule from "@keel/ctx";
+import { createCtx } from "@keel/ctx";
 import * as reactive from "@keel/reactive";
 import * as runtimeDom from "@keel/runtime-dom";
 import * as ops from "@keel/runtime-dom/ops";
@@ -12,8 +14,9 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import { lineCol } from "./lineCol.ts";
 import { withDom } from "./withDom.ts";
 
-/** The modules a rendered component may import: the kernel runtime and `@keel/ui`. */
+/** The modules a rendered component may import: the kernel runtime, `@keel/ctx`, and `@keel/ui`. */
 const MODULES: ReadonlyMap<string, unknown> = new Map<string, unknown>([
+  ["@keel/ctx", ctxModule],
   ["@keel/reactive", reactive],
   ["@keel/runtime-dom", runtimeDom],
   ["@keel/runtime-dom/ops", ops],
@@ -22,6 +25,8 @@ const MODULES: ReadonlyMap<string, unknown> = new Map<string, unknown>([
   ["@keel/ui", ui],
 ]);
 
+/** Seed of the sim ctx each component renders under (k.testing default replay seed). */
+const SEED = 1337;
 const memo = new Map<string, Diagnostic[]>();
 const MEMO_MAX = 128;
 
@@ -73,9 +78,10 @@ function violations(root: Element): [string, string][] {
 }
 
 /**
- * Pipeline step 4 (k.check): render each component module once (compiled output, empty props) and report
+ * Pipeline step 4 (k.check): render each component module once (compiled output, empty props, a sim ctx with
+ * seed 1337 as the third argument via `mount`) and report
  * structural a11y violations of the rendered tree as E1802 at the default export. Modules that import
- * anything besides the kernel runtime and `@keel/ui`, or that throw while rendering, are not rendered.
+ * anything besides the kernel runtime and `@keel/ui`, or whose render throws (root Boundary), report nothing.
  */
 export function renderA11y(file: SourceFile, compiled: string, program: Program): Diagnostic[] {
   const at = defaultExportAt(program);
@@ -89,12 +95,17 @@ export function renderA11y(file: SourceFile, compiled: string, program: Program)
   }).outputText;
   const found = withDom((doc) => {
     const host = doc.createElement("div");
+    let failed = false;
     let dispose = (): void => {};
     try {
       const component = loadComponent(js, requireKernel);
       if (component === null) return [];
-      dispose = runtimeDom.mount(component, host);
-      return violations(host);
+      const ctx = createCtx({ mode: "sim", seed: SEED });
+      const onError = (): void => {
+        failed = true;
+      };
+      dispose = runtimeDom.mount(component, host, { ctx, onError });
+      return failed ? [] : violations(host);
     } catch {
       return [];
     } finally {

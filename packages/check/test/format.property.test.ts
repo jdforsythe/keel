@@ -65,26 +65,39 @@ describe("format compact", () => {
     );
   });
 
-  it("ends with exactly one trailer: ok iff no E code; quiet prints only it", () => {
+  it("ends with one trailer line (ok iff no E code, no codes in it), then per-code counts; quiet prints only the trailer", () => {
     fc.assert(
       fc.property(fc.array(arbDiagnostic, { maxLength: 30 }), (ds) => {
         const out = lines(format(ds, { mode: "compact" }));
-        const last = out[out.length - 1] ?? "";
+        const head = out.findIndex((l) => /^(?:ok|fail) /.test(l));
+        const trailer = out[head] ?? "";
         const failing = ds.some((d) => d.code.startsWith("E"));
-        expect(last.startsWith(failing ? "fail check: " : "ok check: ")).toBe(true);
-        expect(lines(format(ds, { mode: "compact", quiet: true }))).toEqual([last]);
+        expect(trailer.startsWith(failing ? "fail " : "ok ")).toBe(true);
+        expect(trailer).not.toMatch(/[EWI]\d{4}/);
+        const rest = out.slice(head + 1);
+        if (ds.length === 0) expect(rest).toEqual([]);
+        else
+          expect(rest).toEqual([
+            `  ${[...uniqueByCode(unique(ds))]
+              .sort(([a], [b]) => (a < b ? -1 : 1))
+              .map(([c, n]) => `${c} ${n}`)
+              .join(", ")}`,
+          ]);
+        expect(lines(format(ds, { mode: "compact", quiet: true }))).toEqual([trailer]);
       }),
       { seed: SEED, numRuns: 150 },
     );
   });
 
-  it("--code keeps one code and leaves the trailer unchanged", () => {
+  it("--code keeps one code: same trailer line, counts for that code only", () => {
     fc.assert(
       fc.property(fc.array(arbDiagnostic, { minLength: 1, maxLength: 30 }), (ds) => {
         const code = ds[0]?.code ?? "E1001";
+        const head = (out: string[]): string => out.find((l) => /^(?:ok|fail) /.test(l)) ?? "";
         const all = lines(format(ds, { mode: "compact" }));
         const only = lines(format(ds, { mode: "compact", code }));
-        expect(only[only.length - 1]).toBe(all[all.length - 1]);
+        expect(head(only)).toBe(head(all));
+        expect(only[only.length - 1]).toBe(`  ${code} ${uniqueByCode(unique(ds)).get(code)}`);
         const shown = only.map((l) => /^([EWI]\d{4}) /.exec(l)?.[1]).filter((c) => c !== undefined);
         expect(new Set(shown)).toEqual(new Set([code]));
       }),

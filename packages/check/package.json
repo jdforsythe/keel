@@ -9,7 +9,9 @@
       "default": "./src/index.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
@@ -18,6 +20,7 @@
   },
   "dependencies": {
     "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",

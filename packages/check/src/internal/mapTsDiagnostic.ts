@@ -29,6 +29,26 @@ function enclosingIntrinsic(n: ts.Node): string | null {
   return null;
 }
 
+/** The string literal value of the JSX attribute at `n`, or null. */
+function attributeLiteral(n: ts.Node): string | null {
+  for (let p: ts.Node | undefined = n; p !== undefined; p = p.parent) {
+    if (ts.isJsxAttribute(p)) {
+      const v = p.initializer;
+      if (v !== undefined && ts.isStringLiteral(v)) return v.text;
+      if (
+        v !== undefined &&
+        ts.isJsxExpression(v) &&
+        v.expression !== undefined &&
+        ts.isStringLiteralLike(v.expression)
+      )
+        return v.expression.text;
+      return null;
+    }
+    if (ts.isJsxOpeningElement(p) || ts.isJsxSelfClosingElement(p)) return null;
+  }
+  return null;
+}
+
 function atTagName(n: ts.Node): boolean {
   const p = n.parent;
   return p !== undefined && (ts.isJsxOpeningElement(p) || ts.isJsxSelfClosingElement(p)) && p.tagName === n;
@@ -63,7 +83,8 @@ function isComponentProps(n: ts.Node, path: string): boolean {
 
 /**
  * Map one TS diagnostic to a Keel diagnostic (k.check): a missing a11y prop on a base element is E1802,
- * a missing `For` key is E1001, a string where `Href` is required is E1501; any other error is E1751 with
+ * a missing `For` key is E1001, a string where `Href` is required is E1501 (E1003 when it is a literal
+ * `javascript:`/`data:` URL); any other error is E1751 with
  * the message starting `TS<code>`. Returns `null` for errors Keel does not report (implicit `any` on
  * component props) and for non-error categories.
  */
@@ -102,7 +123,15 @@ export function mapTsDiagnostic(
     return diag("E1802", `<${tag}> is missing a11y-required prop ${required.join(" or ")}`, "k.ui");
   if (tag === "For" && missing === "key")
     return diag("E1001", 'For needs key="<field>" naming a field of the item', "k.compiler");
-  if (/not assignable to type 'Href'/.test(text))
+  if (/not assignable to type 'Href'/.test(text)) {
+    const literal = attributeLiteral(node);
+    if (literal !== null && /^\s*(?:javascript|data):/i.test(literal))
+      return diag(
+        "E1003",
+        `literal ${literal.trim().split(":")[0]?.toLowerCase()}: URL in a URL attribute`,
+        "k.compiler",
+      );
     return diag("E1501", "string path where an Href is required; build it with href()", "k.router");
+  }
   return diag("E1751", `TS${d.code} ${text.split("\n")[0] ?? ""}`, "k.check");
 }

@@ -16,9 +16,12 @@
     "./internal/safeUrl": {
       "types": "./src/internal/safeUrl.ts",
       "default": "./src/internal/safeUrl.ts"
+    },
+    "./jsx-runtime": {
+      "types": "./jsx-runtime.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "jsx-runtime.d.ts"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
