@@ -1,0 +1,17 @@
+{
+  "skill": "keel-testing",
+  "runner": "none",
+  "model": "none",
+  "passed": true,
+  "tokenEstimate": 573,
+  "maxTokens": 600,
+  "frontmatterOk": true,
+  "missing": [],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "durationMs": 29,
+  "startedAt": "2026-11-06T18:29:56.191Z"
+}
