@@ -195,6 +195,29 @@ describe("kernel rules", () => {
     expect(check([f("src/orders/show.server.ts", extra)], {}).diagnostics.map((d) => d.code)).toContain("E1752");
   });
 
+  it("E1752: a component file may export Props and uses beside its default; a schema file its type alias", () => {
+    const codes = (x: SourceFile): string[] => check([x], { types: false }).diagnostics.map((d) => d.code);
+    const comp = "export const Props = 1\nexport const uses = []\nexport default function Row() {\n  return null\n}\n";
+    expect(codes(f("src/Row.tsx", comp))).not.toContain("E1752");
+    expect(codes(f("src/Row.tsx", `${comp}export const other = 1\n`))).toContain("E1752");
+    expect(codes(f("src/Row.ts", comp))).toContain("E1752");
+    const schema = "export const Todo = s.object({})\nexport type Todo = Infer<typeof Todo>\n";
+    expect(codes(f("src/Todo.schema.ts", schema))).not.toContain("E1752");
+    expect(codes(f("src/Todo.schema.ts", `${schema}export const Other = 1\n`))).toContain("E1752");
+  });
+
+  it("E1004 is not reported in a client-only deployable when the topology is passed", () => {
+    const routes = f(
+      "src/todos/routes.ts",
+      "import { loadList } from './loadList.server.ts'\nexport const routes = loadList\n",
+    );
+    const server = f("src/todos/loadList.server.ts", "export const loader = () => 1\n");
+    const codes = (o: object): string[] =>
+      check([routes, server], { types: false, ...o }).diagnostics.map((d) => d.code);
+    expect(codes({})).toContain("E1004");
+    expect(codes({ topology: { web: { modules: ["todos"], adapter: "client" } } })).not.toContain("E1004");
+  });
+
   it("E1005: a .keel/ artifact whose bytes or hash differ from what the compiler writes", () => {
     const data = { "C.0": { col: 1 } };
     const good = `{"data":{"C.0":{"col":1}},"hash":"${hashOf(data)}"}\n`;

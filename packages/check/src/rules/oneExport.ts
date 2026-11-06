@@ -9,6 +9,9 @@ import type { RuleDef } from "../types/RuleDef.ts";
 type Exported = { name: string; at: number };
 
 /** A route's server module (k.server) exports its `loader` and `action` side by side. */
+/** A component file may also export its `Props` type and its `uses` declaration (k.component). */
+const COMPONENT_EXTRAS: ReadonlySet<string> = new Set(["Props", "uses"]);
+
 const SERVER_EXPORTS: ReadonlySet<string> = new Set(["loader", "action"]);
 
 function exportsOf(ast: Program): Exported[] {
@@ -37,8 +40,8 @@ function exportsOf(ast: Program): Exported[] {
 
 /**
  * E1752 (principle 3): more than one export in a file, or a filename not equal to its export. A component
- * file (`.tsx`/`.jsx` with a default export) may also export `Props` (k.component); a `*.server.ts` whose
- * exports are only `loader`/`action` is exempt (k.server). Index files re-export.
+ * file (`.tsx`/`.jsx` with a default export) may also export `Props` and `uses` (k.component); a `*.server.ts` whose
+ * exports are only `loader`/`action` is exempt (k.server). A `*.schema.ts` may export one schema plus its inferred type alias of the same name. Index files re-export.
  */
 export const oneExport: RuleDef = {
   code: "E1752",
@@ -53,7 +56,7 @@ export const oneExport: RuleDef = {
     if (!isAppPath(file.path) || stem === "index") return [];
     const all = exportsOf(ast);
     const component = /\.[jt]sx$/.test(file.path) && ast.body.some((s) => s.type === "ExportDefaultDeclaration");
-    const named = all.filter((e) => !(component && e.name === "Props"));
+    const named = all.filter((e) => !(component && COMPONENT_EXTRAS.has(e.name)));
     if (/\.server\.[cm]?[jt]s$/.test(file.path) && named.every((e) => SERVER_EXPORTS.has(e.name))) return [];
     const names = [...new Set(named.map((e) => e.name))];
     if (names.length > 1) {

@@ -26,7 +26,7 @@ const isError = (d: Diagnostic): boolean => !/^[WI]/.test(d.code);
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
   const code = files.filter((f) => isCodePath(f.path));
-  const compiled = compile(code);
+  const compiled = compile(code, opts.topology === undefined ? {} : { topology: opts.topology });
   const out: Diagnostic[] = compiled.diagnostics.map((d) => ({ kind: "diag", ...d }));
   const reported = new Map<string, Set<string>>();
   for (const d of compiled.diagnostics) reported.set(d.path, (reported.get(d.path) ?? new Set()).add(d.code));

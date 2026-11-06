@@ -1,5 +1,6 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { compile } from "./compile.ts";
+export { parseTopology } from "./internal/parseTopology.ts";
 export { module } from "./module.ts";
 export { ModuleSchema } from "./ModuleSchema.ts";
 export type { A11yEntry } from "./types/A11yEntry.ts";
