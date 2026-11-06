@@ -9,6 +9,9 @@
       "default": "./src/index.ts"
     }
   },
+  "bin": {
+    "keel": "./dist/src/bin.js"
+  },
   "files": ["dist"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
@@ -16,7 +19,14 @@
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
   },
+  "dependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/schema": "workspace:*"
+  },
   "devDependencies": {
-    "@keel/tooling": "workspace:*"
+    "@keel/compiler": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
   }
 }
