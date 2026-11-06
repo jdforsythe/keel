@@ -27,7 +27,7 @@ const FILES: readonly string[] = [
 ];
 const PROPERTY_TARGETS: readonly string[] = ["addList", "addTodo", "toggleTodo", "editTodo", "TodoRow", "Suggestions"];
 const LEDGER_EXEMPT_FILES: readonly string[] = ["module.ts", "routes.ts"];
-const LEDGER_EXEMPT_NAMES: readonly string[] = ["Props"];
+const LEDGER_EXEMPT_NAMES: readonly string[] = ["Props", "uses"];
 const SKIP_DIR = /(^|\/)(node_modules|\.keel|dist|coverage)(\/|$)/;
 const CODE = /\.(ts|tsx|mts|mjs|js)$/;
 const NAMED_EXPORT = /^export\s+(?:async\s+)?(?:const|let|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm;

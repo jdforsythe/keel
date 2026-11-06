@@ -26,16 +26,19 @@ k.store
 - invariant(board, (state) => boolean)  // declared once beside the store; violation: err store.invariant, rollback
 - reads board.get('todos'), board.select(fn) (computeds); writes only tx(addTodo, payload)
 - board.log() entries { name, payload, at, id }; board.undo(); board.snapshot(); board.restore(snap)
-- component declares uses: [addTodo]; calling an undeclared tx is E1301
+- component declares uses (k.component); calling an undeclared tx from a component is E1301; loaders and actions are unrestricted
 
 k.ctx
 - ctx.clock.now() ctx.random.uuid()/float() ctx.net.fetch(req) ctx.storage.get/set
 - createCtx({ mode: 'sim', seed }) -> SimCtx with net.route(pattern, (req) => Response), clock.advance(ms)
 - Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
+- ctx.net.fetch in app code is E1651 (k.services), not enforced until k.services is implemented; golden-1 calls it directly
 
 k.component
 - one default export per file, filename = name; export const Props = s.object(...)
-- (props: Props, slots?) => JSX; props are getters, never destructure (E1401)
+- (props: Props, slots?, ctx?: Ctx) => JSX; ctx comes from the mount/island root or harness render; the only way a component reaches an effect; resource fetchers close over it
+- a file may also export `export const uses = [toggleTodo]`; the compiler calls uses(...) in the component scope
+- props are getters, never destructure (E1401)
 - <If when>, <For each key="id">, <Match on={union}><Case tag="...">; {a && <b/>} is E1403
 - ids: explicit id="todos.add" or derived <file>.<index>; duplicates E1404
 
@@ -57,7 +60,7 @@ k.router
 k.server (declarations used client-only)
 - loader(OutputSchema, async ({ params, search }, ctx) => Result<T, KeelError>) in *.server.ts (E1551)
 - action(InputSchema, async (input, { params }, ctx) => Result<Href | null, KeelError>) in *.server.ts
-- topology.ts: export default topology({ web: { modules: ['todos'], adapter: ... } })
+- topology.ts: export default topology({ web: { modules: ['todos'], adapter: 'client' } })  // no server; loaders/actions run in the browser; compiler generates mount(App, el); ctx = createCtx({ mode: 'real' })
 
 k.forms
 - const f = form(TodoDraft, { initial? }); f.field('title') f.values() f.errors() f.pending() f.reset()
