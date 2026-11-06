@@ -320,6 +320,37 @@ importers:
 
   packages/server:
     dependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
+      hono:
+        specifier: ^4.13.16
+        version: 4.13.16
+    devDependencies:
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+
+  packages/services:
+    dependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -327,12 +358,9 @@ importers:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
-
-  packages/services:
-    devDependencies:
-      '@keel/tooling':
-        specifier: workspace:*
-        version: link:../../tooling
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
 
   packages/store:
     dependencies:
@@ -1862,6 +1890,10 @@ packages:
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
+
+  hono@4.13.16:
+    resolution: {integrity: sha512-AOLOEhvrV+iH92xXCnFr/5+3KjPKcI3xP63XJtX5spAnkznPdHijlIsUTpi7/9EhWqrTCekw5c5zh1K+YsVw7A==}
+    engines: {node: '>=16.9.0'}
 
   human-id@4.2.2:
     resolution: {integrity: sha512-Z+8unD6em/MJwyrkWQ2M3wygRGI1+MztbutiNwk1DCuEPXOZRWGjtcMPZYP1exY9iNZMhd7ZOSMQSo9WYtiQRw==}
@@ -3982,6 +4014,8 @@ snapshots:
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
+
+  hono@4.13.16: {}
 
   human-id@4.2.2: {}
 
