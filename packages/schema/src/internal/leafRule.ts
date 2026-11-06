@@ -1,6 +1,11 @@
 import type { Node } from "./Node.ts";
 import type { Rule } from "./Rule.ts";
 
+function bound(node: { readonly min?: number; readonly max?: number }, x: number): Rule | undefined {
+  if (node.min !== undefined && x < node.min) return "min";
+  return node.max !== undefined && x > node.max ? "max" : undefined;
+}
+
 /** The rule a scalar value breaks for a scalar node, or undefined when it fits (or the node is a container). */
 export function leafRule(node: Node, x: unknown): Rule | undefined {
   switch (node.kind) {
@@ -10,10 +15,10 @@ export function leafRule(node: Node, x: unknown): Rule | undefined {
       return node.max !== undefined && x.length > node.max ? "max" : undefined;
     case "number":
       if (typeof x !== "number") return "type";
-      return Number.isFinite(x) ? undefined : "finite";
+      return Number.isFinite(x) ? bound(node, x) : "finite";
     case "int":
       if (typeof x !== "number") return "type";
-      return Number.isSafeInteger(x) ? undefined : "int";
+      return Number.isSafeInteger(x) ? bound(node, x) : "int";
     case "boolean":
       return typeof x === "boolean" ? undefined : "type";
     case "literal":

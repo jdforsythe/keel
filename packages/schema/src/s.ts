@@ -22,6 +22,19 @@ type ErrorSchema<C extends string, D> = Schema<KeelError<C, D>> & {
 };
 type Variant<K extends string> = Schema<{ readonly [P in K]: string | number | boolean }>;
 
+type NumberBounds = { readonly min?: number; readonly max?: number };
+
+/** Validate inclusive bounds at construction; keys are omitted when unset so nodes stay plain JSON. */
+function bounds(kind: "number" | "int", opts: NumberBounds): NumberBounds {
+  const { min, max } = opts;
+  for (const b of [min, max])
+    if (b !== undefined && !Number.isFinite(b)) throw new Error(`${kind} bound ${b} is not finite`);
+  if (min !== undefined && max !== undefined && min > max) throw new Error(`${kind} min ${min} exceeds max ${max}`);
+  if (kind === "int" && Math.ceil(min ?? Number.NEGATIVE_INFINITY) > Math.floor(max ?? Number.POSITIVE_INFINITY))
+    throw new Error(`int range ${min}..${max} contains no integer`);
+  return { ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }) };
+}
+
 /** The schema namespace. One builder per primitive; modifiers are `.optional()` and `.nullable()`. */
 export const s = {
   string: (opts: { readonly min?: number; readonly max?: number } = {}): Schema<string> => {
@@ -29,8 +42,8 @@ export const s = {
     if (opts.max !== undefined && min > opts.max) throw new Error(`string min ${min} exceeds max ${opts.max}`);
     return make({ kind: "string", min, max: opts.max }, false);
   },
-  number: (): Schema<number> => make({ kind: "number" }, false),
-  int: (): Schema<number> => make({ kind: "int" }, false),
+  number: (opts: NumberBounds = {}): Schema<number> => make({ kind: "number", ...bounds("number", opts) }, false),
+  int: (opts: NumberBounds = {}): Schema<number> => make({ kind: "int", ...bounds("int", opts) }, false),
   boolean: (): Schema<boolean> => make({ kind: "boolean" }, false),
   literal: <const L extends string | number | boolean>(value: L): Schema<L> => make({ kind: "literal", value }, false),
   enum: <const E extends readonly [string, ...string[]]>(values: E): Schema<E[number]> =>

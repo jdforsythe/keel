@@ -1,8 +1,8 @@
 /** The descriptor tree: the single source walked by validation, codec, generator and doc. Plain JSON data. */
 export type Node =
   | { readonly kind: "string"; readonly min: number; readonly max: number | undefined }
-  | { readonly kind: "number" }
-  | { readonly kind: "int" }
+  | { readonly kind: "number"; readonly min?: number; readonly max?: number }
+  | { readonly kind: "int"; readonly min?: number; readonly max?: number }
   | { readonly kind: "boolean" }
   | { readonly kind: "literal"; readonly value: string | number | boolean }
   | { readonly kind: "enum"; readonly values: readonly string[] }

@@ -37,6 +37,7 @@ Covers backlog 0002 (primitives), 0003 (parse/encode/decode/Result), 0004 (gener
 - D16: `s.string({ min, max })` with `min > max` throws a plain `Error` at construction (programmer error, like `union`).
 - D17: `pathToString(path)` is `path.join('.')`, exported from `src/pathToString.ts`; `invalid()` reuses it.
 - D18: `packages/schema/unsafe/unsafe.ts` had no callers and was deleted (dir kept with `.gitkeep`); `tooling/ledger/ledger.json` regenerated so the baseline records unsafe = 1 (ctx, PLAN 0009 D10). Schema's own unsafe count stays 0.
+- D19 (rfc:0005): `s.number({ min?, max? })` and `s.int({ min?, max? })`, inclusive. Nodes carry `min`/`max` only when set. Construction throws on non-finite bounds, `min > max`, or (int) a range with no integer. Failing bound gives rule `min`/`max` after `type`/`finite`/`int`. `gen()` uses `fc.double`/`fc.integer` with the bounds; `doc()` renders `int(0..1000)`. `decodeStrings` unchanged.
 
 ## Verification
 - [x] conformance green (129 tests incl. result.test.ts) · properties present · `pnpm --filter @keel/schema check` clean · unsafe count 0 in schema

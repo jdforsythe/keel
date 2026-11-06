@@ -7,6 +7,9 @@ export function typeText(node: Node): string {
       return node.min === 0 && node.max === undefined ? "string" : `string(${node.min}..${node.max ?? ""})`;
     case "number":
     case "int":
+      return node.min === undefined && node.max === undefined
+        ? node.kind
+        : `${node.kind}(${node.min ?? ""}..${node.max ?? ""})`;
     case "boolean":
       return node.kind;
     case "literal":
