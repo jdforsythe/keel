@@ -27,6 +27,7 @@
 - D11 (rfc:0001): `register` is idempotent for the same name and identical impls object (reference equality); a different object throws E1602.
 - D13 (rfc:0012): `Clock.after(ms, signal?)`. Sim: waiters keyed by (deadline, registration seq); `advance` steps `now()` to each due deadline, resolving in order, then to the target. Abort rejects with `signal.reason` and drops the waiter. Real: `setTimeout` clamped to 2^31-1, cleared on abort. Shell delegates to real.
 - D12 (rfc:0001): each registered capability's seed = ctx seed xor FNV-1a(name), so streams do not correlate.
+- D14 (rfc:0016): `Random.id(brand)` returns `Id<B>` (type exported by `@keel/schema`, used by `s.id`); `@keel/ctx` now depends on schema (type-only import; schema precedes ctx in deps.json). Sim and real draw the same stream/source as `uuid()`; the brand is type-only, cast once in `unsafe/asId.ts` with a justification (unsafe count +1). Conformance `random-id.test.ts`, type test `test/randomId.types.test.ts`.
 
 ## Verification
 - [x] conformance green · properties present · `pnpm --filter @keel/ctx check` clean · structure-lint clean for ctx

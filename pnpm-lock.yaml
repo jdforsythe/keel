@@ -219,6 +219,10 @@ importers:
         version: 21.0.4
 
   packages/ctx:
+    dependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*

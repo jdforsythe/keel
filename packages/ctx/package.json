@@ -16,6 +16,9 @@
     "build": "tsc -p tsconfig.build.json",
     "mutate": "stryker run"
   },
+  "dependencies": {
+    "@keel/schema": "workspace:*"
+  },
   "devDependencies": {
     "@keel/tooling": "workspace:*"
   }

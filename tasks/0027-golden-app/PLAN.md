@@ -37,6 +37,7 @@
 - D18: workarounds removed after router D26/D27 and forms D19b: AppShell reads `props.children?.()`; ListPage passes a children thunk to `Form`, takes `ctx` so `Suggestions` shows sim suggestions (routes.test.ts).
 - D19: removed the hand `Name.Props = Props` assignments (compiler D35 attaches them; `TestComponent.Props` now optional) and `Suggestions` is back to JSX `<Match on={list.get()}><Case<State> tag="loading">...` with no explicit key (compiler D36 passes `state`; runtime D25-D26). Vite plugin no longer checks `test/**` (compiler D37).
 - D20: `AppShell` renders layout children as `{props.children?.()}` (compiler D38 inserts `children?.()` with or without `?? fallback` as a node; before, the `?? ""` form lowered as a text binding and `todos.main` was empty). Root `biome.json` turns `correctness.useJsxKeyInIterable` off: Keel keys `For` rows with the `key` prop, not React keys, so the rule's three hits in `ListPage.tsx` were false positives.
+- D21 (rfc:0016; resolves friction 7): `createList` mints `ctx.random.id('TodoList')` and calls `tx` with no parse; `createTodo` mints `ctx.random.id('Todo')` and parses only the route-param `listId` with `s.id('TodoList')`.
 
 ## Verification
 - [x] `pnpm exec tsc --noEmit -p evals/tsconfig.json` clean; `pass.ts` returns false with no app present

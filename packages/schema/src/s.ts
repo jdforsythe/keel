@@ -1,3 +1,4 @@
+import type { Id } from "./Id.ts";
 import type { Infer } from "./Infer.ts";
 import type { KeelError } from "./KeelError.ts";
 import type { ObjectSchema } from "./ObjectSchema.ts";
@@ -48,7 +49,7 @@ export const s = {
   literal: <const L extends string | number | boolean>(value: L): Schema<L> => make({ kind: "literal", value }, false),
   enum: <const E extends readonly [string, ...string[]]>(values: E): Schema<E[number]> =>
     make({ kind: "enum", values }, false),
-  id: <B extends string>(brand: B): Schema<string & { readonly __brand: B }> => make({ kind: "id", brand }, false),
+  id: <B extends string>(brand: B): Schema<Id<B>> => make({ kind: "id", brand }, false),
   object: <S extends Shape>(shape: S): ObjectSchema<ObjectOf<S>> => {
     const node: Node = {
       kind: "object",

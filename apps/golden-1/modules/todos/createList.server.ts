@@ -6,8 +6,6 @@ import { addList } from "./addList.ts";
 
 /** POST on `todos.index`: add a list with a fresh id, then revalidate. */
 export const createList = action(ListDraft, (input, _at, ctx) => {
-  const payload = addList.schema.parse({ id: ctx.random.uuid(), name: input.name });
-  if (!payload.ok) return err(payload.error);
-  const r = tx(addList, payload.value);
+  const r = tx(addList, { id: ctx.random.id("TodoList"), name: input.name });
   return r.ok ? ok(null) : err(r.error);
 });
