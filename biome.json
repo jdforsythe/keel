@@ -19,12 +19,6 @@
     }
   },
   "files": {
-    "ignore": [
-      "turbo.json",
-      ".github/**",
-      "dist/**",
-      "coverage/**",
-      "tooling/ledger/ledger.json"
-    ]
+    "ignore": ["turbo.json", ".github/**", "dist/**", "coverage/**", "tooling/ledger/ledger.json"]
   }
 }

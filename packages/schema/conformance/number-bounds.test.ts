@@ -10,14 +10,18 @@ const Int = s.int({ min: 0, max: 1000 });
 const OnlyMin = s.int({ min: 0 });
 const OnlyMax = s.number({ max: 5 });
 
-const rules = (r: ReturnType<typeof Int.parse>): string[] =>
-  r.ok ? [] : r.error.data.issues.map((i) => i.rule);
+const rules = (r: ReturnType<typeof Int.parse>): string[] => (r.ok ? [] : r.error.data.issues.map((i) => i.rule));
 
 describe("k.schema number and int bounds", () => {
   it("gen() stays within bounds", () => {
     fc.assert(
-      fc.property(Num.gen(), Int.gen(), OnlyMin.gen(), OnlyMax.gen(), (a, b, c, d) =>
-        a >= -2.5 && a <= 10 && Number.isInteger(b) && b >= 0 && b <= 1000 && Number.isInteger(c) && c >= 0 && d <= 5,
+      fc.property(
+        Num.gen(),
+        Int.gen(),
+        OnlyMin.gen(),
+        OnlyMax.gen(),
+        (a, b, c, d) =>
+          a >= -2.5 && a <= 10 && Number.isInteger(b) && b >= 0 && b <= 1000 && Number.isInteger(c) && c >= 0 && d <= 5,
       ),
       { seed: SEED, numRuns: RUNS },
     );
