@@ -166,6 +166,7 @@ const ROWS: readonly Row[] = [
     "k.reactive",
   ],
   ["E1205", "reading a disposed computed", "", "read it only while its owning scope is live", "k.reactive"],
+  ["E1206", "scope.run on a disposed scope", "", "create nodes only while the scope is live", "k.reactive"],
   [
     "E1251",
     "app code imports a runtime op",
