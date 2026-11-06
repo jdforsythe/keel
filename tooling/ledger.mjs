@@ -7,6 +7,7 @@ import path from "node:path";
 import { ledger } from "../packages/testing/src/ledger.ts";
 import { ledgerDiff } from "../packages/testing/src/ledgerDiff.ts";
 import { parseArgs, run } from "./output.ts";
+import { mutationScore } from "./ledgerMutation.mjs";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
 
 const root = path.join(import.meta.dirname, "..");
@@ -81,7 +82,13 @@ function build() {
   found.sort((a, b) => (a.file + a.name).localeCompare(b.file + b.name));
   const records = ledger(found.map((e) => ({ item: `${e.file}#${e.name}`, evidence: e.evidence })));
   const exports = found.map((e, i) => ({ pkg: e.pkg, name: e.name, file: e.file, rung: records[i]?.rung ?? "none" }));
-  return { version: 1, unsafe, exports };
+  /** Per-package mutation score (percent) from packages/<pkg>/reports/mutation/mutation.json, when a report exists. */
+  const mutation = {};
+  for (const pkg of pkgs) {
+    const sc = mutationScore(path.join(pk, pkg));
+    if (sc !== undefined) mutation[pkg] = sc;
+  }
+  return { version: 1, unsafe, ...(Object.keys(mutation).length > 0 ? { mutationScore: mutation } : {}), exports };
 }
 
 /** Items of `apps/<app>/modules/**`: keyed `<app>:<path under modules>#<name>`; evidence from `apps/<app>/test/**` and co-located tests. */

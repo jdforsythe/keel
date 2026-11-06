@@ -20,6 +20,9 @@ importers:
       '@stryker-mutator/core':
         specifier: ^8
         version: 8.7.1
+      '@stryker-mutator/vitest-runner':
+        specifier: ^8
+        version: 8.7.1(@stryker-mutator/core@8.7.1)(vitest@2.1.9(@types/node@22.20.5)(happy-dom@21.0.4)(lightningcss@1.33.0))
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
@@ -1447,6 +1450,13 @@ packages:
 
   '@stryker-mutator/util@8.7.1':
     resolution: {integrity: sha512-Oj/sIHZI1GLfGOHKnud4Gw0ZRufm7ONoQYNnhcaAYEXTWraYVcV7mue/th8fZComTHvDPA8Ge8U16FvWYEb8dg==}
+
+  '@stryker-mutator/vitest-runner@8.7.1':
+    resolution: {integrity: sha512-vNRTM6MEy+0hNK5UhJ44euEIRjluDV43UROcMAKIMbT9ELdp8XgM/tA5GrTcp5QadnvrBwvEcCRQk+ARL+e0sg==}
+    engines: {node: '>=14.18.0'}
+    peerDependencies:
+      '@stryker-mutator/core': ~8.7.0
+      vitest: '>=0.31.2'
 
   '@turbo/darwin-64@2.11.10':
     resolution: {integrity: sha512-By4idRap5+nLnMuRzLB4qkOPRlvNdyY1ne4VJYDyUoUB11H94k7uif9mbe3JT8JSNXs1D68uMcBj6hJ/jMQRvA==}
@@ -3522,6 +3532,14 @@ snapshots:
       - supports-color
 
   '@stryker-mutator/util@8.7.1': {}
+
+  '@stryker-mutator/vitest-runner@8.7.1(@stryker-mutator/core@8.7.1)(vitest@2.1.9(@types/node@22.20.5)(happy-dom@21.0.4)(lightningcss@1.33.0))':
+    dependencies:
+      '@stryker-mutator/api': 8.7.1
+      '@stryker-mutator/core': 8.7.1
+      '@stryker-mutator/util': 8.7.1
+      tslib: 2.7.0
+      vitest: 2.1.9(@types/node@22.20.5)(happy-dom@21.0.4)(lightningcss@1.33.0)
 
   '@turbo/darwin-64@2.11.10':
     optional: true

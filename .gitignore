@@ -6,3 +6,4 @@ reports
 .worktrees
 .claude/.callcount
 evals/results/*.tmp
+.stryker-tmp

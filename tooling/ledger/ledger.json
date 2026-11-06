@@ -1,6 +1,10 @@
 {
   "version": 1,
   "unsafe": 5,
+  "mutationScore": {
+    "reactive": 87.5,
+    "schema": 76.4
+  },
   "exports": [
     {
       "pkg": "golden-1",

@@ -14,7 +14,7 @@
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "echo skip"
+    "mutate": "stryker run"
   },
   "dependencies": {
     "@keel/schema": "workspace:*",
