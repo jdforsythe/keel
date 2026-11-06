@@ -32,7 +32,7 @@ Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule t
 
 **Budgets.** Enforced from `budgets.json` (output tokens, gzip size per package or route). In the Keel repo: `keel check` on golden app 1 with 10 injected errors <= 600 tokens; `keel spec <id>` <= 1,500; spec map <= 1,200. A breach is E1755.
 
-**Rules.** E1751 TS type error with no Keel rule code (message starts with the TS code) · E1752 file with more than one export, or filename not equal to its export (principle 3) · E1753 rule code registered twice, or a stdlib rule outside E2xxx/W2xxx · E1754 `unsafe` without a justification string · E1755 budget exceeded · E1756 rule threw.
+**Rules.** E1751 TS type error with no Keel rule code (message starts with the TS code) · E1752 file with more than one export, filename not equal to its export, or a re-export outside `index.*` and `types/` (principle 3) · E1753 rule code registered twice, or a stdlib rule outside E2xxx/W2xxx · E1754 `unsafe` without a justification string · E1755 budget exceeded · E1756 rule threw · E1757 cast, non-null assertion, `any`, or ts-suppression outside `unsafe/`.
 
 **Conformance.**
 - Every E code in a kernel section's Rules has an `explain` entry of at most 120 tokens and a fixture that triggers exactly that code.
