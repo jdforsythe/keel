@@ -21,6 +21,7 @@
     "mutate": "echo skip"
   },
   "dependencies": {
+    "@keel/forms": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",
     "@keel/runtime-dom": "workspace:*",

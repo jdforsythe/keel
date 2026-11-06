@@ -1,5 +1,5 @@
 # k.ui: Tokens and styling
-status: proposed
+status: implemented
 
 **Tokens.** `tokens.ts` at the project root, validated by `TokenSchema` from `@keel/ui`:
 ```ts
@@ -14,7 +14,7 @@ Groups are closed: `color`, `space`, `size`, `radius`, `font`, `fontSize`, `weig
 
 **Base elements.** From `@keel/ui`: `Box`, `Text`, `Heading`, `Button`, `Link`, `Image`, `Input`, `TextArea`, `Select`, `Checkbox`. Required a11y props are in the type: `Heading level`; `Image alt` or `decorative`; `label` on `Input`, `TextArea`, `Select`, `Checkbox`; `Link to: Href` with text; `Button` text or `label`. `Box as` and `Text as` take closed sets of structural tags (`section`, `nav`, `main`, `ul`, `li`, `p`, `span`, ...).
 
-**Style props.** Base elements take typed style props whose values are token names: `p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap`. Responsive values are keyed by breakpoint. State styles live under one `states` prop: `states={{ hover, focusVisible, active, disabled }}`, each a nested style object; this keeps `disabled` free as the boolean attribute on form controls and `Button`.
+**Style props.** Base elements take style props whose values are token names: `p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap`. Types accept any string shaped like a token name (`TokenName`: an identifier or short numeric key, so `16px` and `#fff` are type errors); whether the token exists is E1801, reported by `check`. Responsive values are keyed by breakpoint. State styles live under one `states` prop: `states={{ hover, focusVisible, active, disabled }}`, each a nested style object; this keeps `disabled` free as the boolean attribute on form controls and `Button`.
 ```tsx
 <Box as="section" p={{ base: '2', md: '3' }} bg="bg" states={{ hover: { bg: 'accent' } }}>
   <Heading level={2}>Orders</Heading>

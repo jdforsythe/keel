@@ -18,8 +18,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0014 router: manifest, params, search, href · router · k.router · G1 · 0013
 - [x] 0015 router: loaders, actions by verb, Form, revalidation, guards, scroll and focus · router · k.router · G1 · 0014
 - [x] 0016 forms: form(schema), bindings, validation, submit, server errors · forms · k.forms · G1 · 0015
-- [ ] 0017 ui: tokens, style props, atomic CSS, scoped styles · ui · k.ui · G1 · 0013
-- [ ] 0018 ui: base elements with a11y-required props; standard slots · ui · k.ui · G1 · 0017
+- [x] 0017 ui: tokens, style props, atomic CSS, scoped styles · ui · k.ui · G1 · 0013
+- [x] 0018 ui: base elements with a11y-required props; standard slots · ui · k.ui · G1 · 0017
 - [ ] 0019 errors: Result, boundaries, thrown-exception lint · schema · k.errors · G1 · 0003
 - [ ] 0020 check: pipeline, diagnostic model, formatters, explain · check · k.check · G1 · 0011
 - [ ] 0021 check: fix diffs for top 30 codes; budgets; rule registry · check · k.check · G1 · 0020

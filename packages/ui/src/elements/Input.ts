@@ -1,3 +1,4 @@
+import type { Field } from "@keel/forms";
 import type { Computed } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
 import { applyDisabled } from "../internal/applyDisabled.ts";
@@ -18,6 +19,8 @@ export function Input(
     readonly label: string;
     readonly disabled?: boolean | Computed<boolean>;
     readonly id?: string;
+    /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
+    readonly field?: Field<unknown>;
     readonly name?: string;
     readonly type?: InputType;
     readonly value?: string | Computed<string>;
@@ -31,5 +34,6 @@ export function Input(
   else if (v !== undefined) el.setAttribute("value", v);
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
-  return labelled(el, controlId("input", props.label, props.id), props.label, false);
+  const id = props.field?.id ?? controlId("input", props.label, props.id, el.ownerDocument);
+  return labelled(el, id, props.label, false, props.field);
 }

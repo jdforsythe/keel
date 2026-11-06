@@ -1,3 +1,4 @@
+import type { Field } from "@keel/forms";
 import type { Computed } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
 import { applyDisabled } from "../internal/applyDisabled.ts";
@@ -13,6 +14,8 @@ export function Checkbox(
     readonly label: string;
     readonly disabled?: boolean | Computed<boolean>;
     readonly id?: string;
+    /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
+    readonly field?: Field<unknown>;
     readonly name?: string;
     readonly checked?: boolean | Computed<boolean>;
   },
@@ -25,5 +28,6 @@ export function Checkbox(
   else if (c === true) el.setAttribute("checked", "");
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
-  return labelled(el, controlId("checkbox", props.label, props.id), props.label, true);
+  const id = props.field?.id ?? controlId("checkbox", props.label, props.id, el.ownerDocument);
+  return labelled(el, id, props.label, true, props.field);
 }

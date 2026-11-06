@@ -1,3 +1,4 @@
+import type { Field } from "@keel/forms";
 import type { Computed } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
 import { applyDisabled } from "../internal/applyDisabled.ts";
@@ -13,6 +14,8 @@ export function TextArea(
     readonly label: string;
     readonly disabled?: boolean | Computed<boolean>;
     readonly id?: string;
+    /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
+    readonly field?: Field<unknown>;
     readonly name?: string;
     readonly rows?: number;
     readonly value?: string | Computed<string>;
@@ -26,5 +29,6 @@ export function TextArea(
   else if (v !== undefined) el.appendChild(document.createTextNode(v));
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
-  return labelled(el, controlId("textarea", props.label, props.id), props.label, false);
+  const id = props.field?.id ?? controlId("textarea", props.label, props.id, el.ownerDocument);
+  return labelled(el, id, props.label, false, props.field);
 }

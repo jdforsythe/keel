@@ -132,15 +132,47 @@ describe("base elements", () => {
     dispose();
   });
 
-  it("derived ids are pure functions of the label", () => {
-    fc.assert(
-      fc.property(fc.string(), (label) => {
+  it("equal labels get distinct ids, each label pointing at its own control", () => {
+    const { host, dispose } = render(() =>
+      Box({ children: [Input({ label: "Name" }), Input({ label: "Name" }), Input({ label: "Name" })] }),
+    );
+    const ids = Array.from(host.querySelectorAll("input")).map((e) => e.id);
+    expect(ids).toEqual(["k-input-name", "k-input-name-2", "k-input-name-3"]);
+    for (const id of ids) expect(host.querySelectorAll(`label[for="${id}"]`)).toHaveLength(1);
+    dispose();
+  });
+
+  it("an id already in the document is skipped; the same render order gives the same ids", async () => {
+    const run = async (): Promise<string[]> => {
+      const pre = document.createElement("input");
+      pre.id = "k-input-email";
+      document.body.append(pre);
+      await flush();
+      const host = document.createElement("div");
+      document.body.append(host);
+      const dispose = mount(() => Box({ children: [Input({ label: "Email" }), Input({ label: "Email" })] }), host);
+      const ids = Array.from(host.querySelectorAll("input")).map((e) => e.id);
+      dispose();
+      host.remove();
+      pre.remove();
+      await flush();
+      return ids;
+    };
+    const a = await run();
+    expect(a).toEqual(["k-input-email-2", "k-input-email-3"]);
+    expect(await run()).toEqual(a);
+  });
+
+  it("derived ids are pure functions of the label", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.string(), async (label) => {
         const a = render(() => Input({ label }));
-        const b = render(() => Input({ label }));
         const id = a.host.querySelector("input")?.id ?? "";
-        expect(id).toBe(b.host.querySelector("input")?.id);
-        expect(id).toMatch(/^k-input-[a-z0-9-]+$/);
         a.dispose();
+        expect(id).toMatch(/^k-input-[a-z0-9-]+$/);
+        await flush();
+        const b = render(() => Input({ label }));
+        expect(b.host.querySelector("input")?.id).toBe(id);
         b.dispose();
       }),
       { seed: SEED, numRuns: 50 },
