@@ -4,7 +4,7 @@
 
 ## Deliverables
 - [x] compiler mutation score >= 70%: 88.2% (was 57.4%), run 8m30s
-- [ ] cli mutation score >= 70% (was 59.1%; 316 more kills needed)
+- [x] cli mutation score >= 70%: 90.9% (was 59.1%), run 7m22s; bin.ts stays NoCoverage (exercised only via child process, invisible to Stryker)
 - [ ] scaffold mutation run completes under 15 min with a score >= 70%, or a config split that does
 - [ ] ledger records all three scores; no threshold lowered; no `floor` added
 
@@ -18,11 +18,12 @@
 ## Decisions
 - D1: Tests are added, thresholds untouched (docs/TESTING.md: thresholds are never lowered).
 - D2: Subagents never run Stryker concurrently; the orchestrator runs each package's mutate alone.
+- D4: Tests must not call `process.chdir` (vitest worker threads under Stryker refuse it); spy on `process.cwd` instead.
 - D3: New tests go in `test/`, not `conformance/` (no RFC needed; conformance is spec-bound).
 
 ## Verification
 - [x] `pnpm --filter @keel/compiler mutate` trailer `ok mutate compiler score 88.2% (threshold 70%)`
-- [ ] `pnpm --filter @keel/cli mutate` trailer `ok`
+- [x] `pnpm --filter @keel/cli mutate` trailer `ok mutate cli score 90.9% (threshold 70%)`
 - [ ] `pnpm --filter @keel/scaffold mutate` trailer `ok` and wall time < 15 min
 - [ ] `pnpm check && pnpm test` green; `unsafe` count unchanged
 
