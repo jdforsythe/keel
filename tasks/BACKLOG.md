@@ -48,3 +48,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0044 rfc: router guards by reference (`guard: authGuard`) and manifest-typed `routes.href` replacing the name table and the free `href`; scroll keyed by history entry (router PLAN D19, D20, D23) · router · k.router · G3 · 0014
 - [ ] 0045 rfc: `Store.check(state)` runs declared invariants without committing, so @keel/testing drops the `keel.testing.holds` probe transaction (testing PLAN D21) · store, testing · k.store · G1 · 0025
 - [ ] 0046 compiler: a11y.json role rules align with the harness (decorative img → presentation; unnamed section → generic; name-from-content role list per WAI-ARIA) so E1702 has no false alarms (testing PLAN D22) · compiler · k.compiler · G1 · 0025
+- [ ] 0047 tooling: structure-lint S0001/S0002/S0004/S0005 delegate to @keel/check rules (E1752, E1754) so there is one implementation; keep S0003/S0006 in tooling · tooling, check · k.check · G1 · 0020
