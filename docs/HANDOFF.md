@@ -5,16 +5,14 @@ Updated by `/handoff`. Read first on every fresh start.
 ```
 health: pnpm check && pnpm test
 active:
-  - task: 0002-schema (covers 0002-0004), 0005-reactive (covers 0005-0006), 0009-ctx; all in this worktree, run in parallel via subagents
-    plan: tasks/<id>/PLAN.md
-    next: see each PLAN.md "Next action"
-    blockers: none
-  - task: 0001-factory (CLOSED 2026-11-06; CI not yet run remotely)
-    branch: jdforsythe/test-impl
-    worktree: /Users/jforsythe/orca/workspaces/keel/test-impl (Orca worktree; decision D1)
-    plan: tasks/0001-factory/PLAN.md
-    next: see PLAN.md "Next action"
-    blockers: none
+  - 0009-ctx: DONE (commits eac05d6, bbbb9a7 via rfc:0001). Reviewed.
+  - 0002-schema (0002-0004): implementer resuming after SchemaError realignment to k.errors; conformance updated under rfc:0000. Next: review, commit, flip status implemented.
+  - 0005-reactive (0005-0006): committed aaf1f76; review fixes 1-5 in progress (E1205, equals, inspect(), leak guards). Next: commit, re-review not needed.
+  - 0007-store (0007-0008): conformance written; implementer running. Next: review, commit.
+  - 0010-0013 compiler + 0012 runtime-dom: conformance writers running for k.runtime and k.compiler+k.component. Next: opus implementers (runtime first).
+  - specs: k.errors, k.compiler, k.runtime, k.ui, k.forms, k.cli, k.scaffold, k.server, k.services, k.module drafted (proposed) in eac05d6; code ranges table in spec/00-map.md.
+  - policy: rfc:0000 pre-implementation conformance fixes (docs/RFC.md); delegation tiers (docs/WORKFLOW.md).
+  blockers: none
 pending decisions: none
 last updated: (initial)
 ```
