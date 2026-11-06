@@ -43,5 +43,8 @@
 - [x] `pnpm eval --task golden-1 --runner none` -> `converged=true` (2026-11-06; `evals/results/2026-11-06-golden-1-none.json`; `unsafe=4` is the repo-wide count, app has 0)
 - [ ] Baseline results committed for two models; `unsafe=0`
 
+## Browser verification (2026-11-06)
+Headless Chromium via tooling/smoke/{smoke,interact,todo-flow}.mjs: renders; add list via Form action; link navigation is client-side (store persists); add todo; toggle via Checkbox onChange; Undo via Button onClick restores; no page errors.
+
 ## Next action
 File backlog items for D12, D13, D14(a-c,e), D16 and the scaffold gaps (D15); then step 4 (two-model baseline) from a tree without `apps/golden-1/`. Still open: D7 follow-up.

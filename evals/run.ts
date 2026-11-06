@@ -67,7 +67,7 @@ function run(cmd: string, args: string[]): Promise<Exec> {
 }
 
 async function callClaude(prompt: string, model: string | undefined): Promise<Usage> {
-  const args = ["-p", "--output-format", "json", "--max-turns", "30"];
+  const args = ["-p", "--output-format", "json", "--dangerously-skip-permissions", "--max-turns", "60"];
   if (model !== undefined) args.push("--model", model);
   args.push(prompt);
   const { stdout } = await run("claude", args);
