@@ -1,0 +1,19 @@
+import type { Ctx } from "@keel/ctx";
+import type { KeelError, ObjectSchema, Result } from "@keel/schema";
+import type { Action } from "./types/Action.ts";
+import type { Href } from "./types/Href.ts";
+
+/**
+ * Declare a route action (k.server): `fn` gets the input decoded from FormData by `input`, `{ params }`, and
+ * `ctx`. `ok(href)` navigates there; `ok(null)` revalidates the current chain.
+ */
+export function action<I, P = Readonly<Record<string, unknown>>>(
+  input: ObjectSchema<I>,
+  fn: (
+    input: I,
+    at: { readonly params: P },
+    ctx: Ctx,
+  ) => Result<Href | null, KeelError<string, unknown>> | Promise<Result<Href | null, KeelError<string, unknown>>>,
+): Action<I, P> {
+  return Object.freeze({ kind: "keel.action", input, run: fn });
+}

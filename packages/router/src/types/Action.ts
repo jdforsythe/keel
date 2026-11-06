@@ -1,0 +1,14 @@
+import type { Ctx } from "@keel/ctx";
+import type { KeelError, ObjectSchema, Result } from "@keel/schema";
+import type { Href } from "./Href.ts";
+
+/** A route action declared with `action(input, fn)` (k.server); `ok(href)` navigates, `ok(null)` revalidates. */
+export interface Action<I, P = Readonly<Record<string, unknown>>> {
+  readonly kind: "keel.action";
+  readonly input: ObjectSchema<I>;
+  run(
+    input: I,
+    at: { readonly params: P },
+    ctx: Ctx,
+  ): Result<Href | null, KeelError<string, unknown>> | Promise<Result<Href | null, KeelError<string, unknown>>>;
+}

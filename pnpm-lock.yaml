@@ -62,16 +62,63 @@ importers:
         version: 22.20.5
 
   packages/check:
+    dependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
+      happy-dom:
+        specifier: ^21.0.4
+        version: 21.0.4
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+      typescript:
+        specifier: ^5.6
+        version: 5.9.3
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
 
   packages/cli:
+    dependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
 
   packages/compiler:
     dependencies:
@@ -142,10 +189,26 @@ importers:
         version: link:../../tooling
 
   packages/router:
+    dependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
 
   packages/runtime-dom:
     dependencies:
@@ -202,6 +265,25 @@ importers:
         version: link:../../tooling
 
   packages/testing:
+    dependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*

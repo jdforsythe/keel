@@ -1,5 +1,5 @@
 # k.router: Routes
-status: implemented
+status: proposed
 
 **Manifest.** Each module's `routes.ts` (k.module) exports one manifest; a deployable's route table is their union.
 ```ts
