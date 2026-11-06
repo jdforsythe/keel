@@ -83,7 +83,10 @@ describe("k.schema decodeStrings", () => {
       ok: true,
       value: { v: 3, b: true, e: "a", id: "7" },
     });
-    expect(rulesOf(L.decodeStrings({ v: "4", b: "true", e: "c", id: "7" })).map((i) => i.rule)).toEqual(["literal", "enum"]);
+    expect(rulesOf(L.decodeStrings({ v: "4", b: "true", e: "c", id: "7" })).map((i) => i.rule)).toEqual([
+      "literal",
+      "enum",
+    ]);
   });
 
   it("selects union variants by discriminant", () => {

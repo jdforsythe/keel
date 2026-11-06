@@ -37,7 +37,10 @@ await run(task ?? "turbo", () => {
   const all = `${r.stdout}\n${r.stderr}`;
   const tasks = Number(/Tasks:\s+(\d+) successful/.exec(all)?.[1] ?? 0);
   if (r.status === 0) return { diags: [], counts: { tasks } };
-  const lines = all.split("\n").map((l) => l.replace(/^\S+:\S+: /, "")).filter((l) => !NOISE.some((n) => n.test(l)));
+  const lines = all
+    .split("\n")
+    .map((l) => l.replace(/^\S+:\S+: /, ""))
+    .filter((l) => !NOISE.some((n) => n.test(l)));
   console.log(lines.slice(0, 60).join("\n") + (lines.length > 60 ? `\n... +${lines.length - 60} more lines` : ""));
   return {
     diags: [{ kind: "diag", code: "E0005", message: `turbo ${task} failed` }],

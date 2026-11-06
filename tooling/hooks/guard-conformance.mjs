@@ -28,7 +28,13 @@ if (tag && tag[1] === "0000") {
   const pkg = /packages\/([^/]+)\/conformance\//.exec(file)?.[1] ?? "";
   const readme = fs.existsSync(`packages/${pkg}/README.md`) ? fs.readFileSync(`packages/${pkg}/README.md`, "utf8") : "";
   const ids = [...readme.matchAll(/\bk\.[a-z-]+/g)].map((m) => m[0]);
-  const proposed = ids.length > 0 && ids.every((id) => /^status: proposed/m.test(fs.existsSync(`spec/kernel/${id}.md`) ? fs.readFileSync(`spec/kernel/${id}.md`, "utf8") : ""));
+  const proposed =
+    ids.length > 0 &&
+    ids.every((id) =>
+      /^status: proposed/m.test(
+        fs.existsSync(`spec/kernel/${id}.md`) ? fs.readFileSync(`spec/kernel/${id}.md`, "utf8") : "",
+      ),
+    );
   if (proposed) process.exit(0);
   console.log("E0001 rfc:0000 not accepted: section already implemented; file a numbered RFC");
   process.exit(2);

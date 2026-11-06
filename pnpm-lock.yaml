@@ -74,10 +74,38 @@ importers:
         version: link:../../tooling
 
   packages/compiler:
+    dependencies:
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
+      magic-string:
+        specifier: ^1.4.5
+        version: 1.4.5
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+      happy-dom:
+        specifier: ^21.0.4
+        version: 21.0.4
 
   packages/ctx:
     devDependencies:
