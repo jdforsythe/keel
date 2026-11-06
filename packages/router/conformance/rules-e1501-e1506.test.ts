@@ -2,6 +2,7 @@
 // E1501 is a type-level rule (a string for Href is a TS error reported under E1501, k.check), checked here by tsc.
 // E1502-E1506 are source diagnostics of `keel check` (k.check); @keel/check has no public API yet.
 import { type Href, type createRouter, href } from "@keel/router";
+import "./fixtures.ts";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 type Navigate = Parameters<ReturnType<typeof createRouter>["navigate"]>[0];

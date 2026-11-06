@@ -7,9 +7,9 @@
 import { createCtx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { effect } from "@keel/reactive";
-import { Form, action, createRouter, manifest } from "@keel/router";
+import { type Href, Form, action, createRouter, manifest } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
-import { type err, ok, s } from "@keel/schema";
+import { type KeelError, type Result, ok, s } from "@keel/schema";
 
 export const SEED = 1337;
 export const RUNS = 25;
@@ -24,7 +24,7 @@ export const FIELDS: readonly Field[] = ["title", "email", "age"];
 export const VALID: Record<Field, string> = { title: "hello", email: "a@b.c", age: "30" };
 export const INVALID: Record<Field, string> = { title: "", email: "a", age: "-1" };
 
-export type Outcome = ReturnType<typeof ok> | ReturnType<typeof err>;
+export type Outcome = Result<Href | null, KeelError<string, unknown>>;
 export type Deferred<T> = { promise: Promise<T>; resolve: (v: T) => void };
 
 export function deferred<T>(): Deferred<T> {
@@ -138,7 +138,7 @@ export function setup(opts: { order?: readonly Field[]; initial?: Record<string,
   const order = opts.order ?? FIELDS;
   const calls: unknown[] = [];
   const handler: Harness["handler"] = { current: () => ok(null) };
-  const save = action(Note, async (input: unknown) => {
+  const save = action(Note, async (input: unknown): Promise<Outcome> => {
     calls.push(input);
     return handler.current(input);
   });
