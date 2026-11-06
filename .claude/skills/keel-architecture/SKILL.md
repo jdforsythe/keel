@@ -6,7 +6,7 @@ description: Read first in any Keel task. Package map, naming, boundaries, where
 
 Load when starting any task. Keep under 600 tokens in context.
 
-**Map.** Kernel packages in dependency order: schema, reactive, store, runtime-dom, compiler, router, forms, ui, check, cli, scaffold, testing, server, services, ctx. Imports point downward only (`tooling/deps.json`).
+**Map.** Kernel packages in dependency order: schema, reactive, store, runtime-dom, compiler, router, forms, ui, check, scaffold, testing, server, services, cli, ctx. Imports point downward only (`tooling/deps.json`).
 
 **Where.** Spec: `spec/kernel/<id>.md` via `pnpm spec <id>`. Decisions: `docs/adr/`. Process: `docs/WORKFLOW.md`. Output rules: `docs/OUTPUT.md`. Current state: `docs/HANDOFF.md`.
 

@@ -9,11 +9,11 @@
     "forms",
     "ui",
     "check",
-    "cli",
     "scaffold",
     "testing",
     "server",
     "services",
+    "cli",
     "ctx"
   ],
   "rule": "a package may import only packages earlier in order, plus ctx and tooling"
