@@ -39,7 +39,7 @@ describe("k.schema json", () => {
       Number.NaN,
       Number.POSITIVE_INFINITY,
       Number.NEGATIVE_INFINITY,
-      new Date(0),
+      new Set([1]),
       new Map(),
       new Box(),
       cyclic,
