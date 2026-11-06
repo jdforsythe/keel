@@ -6,6 +6,7 @@ import { applyStyle } from "../internal/applyStyle.ts";
 import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
 import { labelled } from "../internal/labelled.ts";
+import { listen } from "../internal/listen.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 /** A multi-line text control with a visible `<label for>` (`label` required, E1802). */
@@ -17,6 +18,8 @@ export function TextArea(
     /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
     readonly field?: Field<unknown>;
     readonly name?: string;
+    /** Called with the new value after the field update, if bound (RFC 0009). */
+    readonly onInput?: (value: string) => void;
     readonly rows?: number;
     readonly value?: string | Computed<string>;
   },
@@ -30,5 +33,8 @@ export function TextArea(
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
   const id = props.field?.id ?? controlId("textarea", props.label, props.id, el.ownerDocument);
-  return labelled(el, id, props.label, false, props.field);
+  const out = labelled(el, id, props.label, false, props.field);
+  const h = props.onInput;
+  if (h !== undefined) listen(el, "input", () => h(el.value));
+  return out;
 }

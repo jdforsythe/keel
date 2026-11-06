@@ -2,6 +2,7 @@ import type { Computed } from "@keel/reactive";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyDisabled } from "../internal/applyDisabled.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { listen } from "../internal/listen.ts";
 import { renderChildren } from "../internal/renderChildren.ts";
 import type { Child } from "../types/Child.ts";
 import type { Children } from "../types/Children.ts";
@@ -20,6 +21,8 @@ export function Button(
     readonly type?: "button" | "submit" | "reset";
     readonly id?: string;
     readonly disabled?: boolean | Computed<boolean>;
+    /** Called on click (RFC 0009). */
+    readonly onClick?: () => void;
   } & Name,
 ): Node {
   const el = document.createElement("button");
@@ -32,5 +35,6 @@ export function Button(
     if (props.label !== undefined) el.setAttribute("aria-label", props.label);
     appendChildren(el, renderChildren(props.children));
   }
+  listen(el, "click", props.onClick);
   return el;
 }

@@ -6,6 +6,7 @@ import { applyStyle } from "../internal/applyStyle.ts";
 import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
 import { labelled } from "../internal/labelled.ts";
+import { listen } from "../internal/listen.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type InputType = "text" | "email" | "password" | "number" | "search" | "tel" | "url" | "date";
@@ -22,6 +23,8 @@ export function Input(
     /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
     readonly field?: Field<unknown>;
     readonly name?: string;
+    /** Called with the new value after the field update, if bound (RFC 0009). */
+    readonly onInput?: (value: string) => void;
     readonly type?: InputType;
     readonly value?: string | Computed<string>;
   },
@@ -35,5 +38,8 @@ export function Input(
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
   const id = props.field?.id ?? controlId("input", props.label, props.id, el.ownerDocument);
-  return labelled(el, id, props.label, false, props.field);
+  const out = labelled(el, id, props.label, false, props.field);
+  const h = props.onInput;
+  if (h !== undefined) listen(el, "input", () => h(el.value));
+  return out;
 }
