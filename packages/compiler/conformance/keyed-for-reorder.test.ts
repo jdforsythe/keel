@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Seed 1337 (fc.assert seed below).
+// Seed 1337
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
