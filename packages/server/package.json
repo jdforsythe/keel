@@ -16,6 +16,9 @@
     "build": "tsc -p tsconfig.build.json",
     "mutate": "echo skip"
   },
+  "dependencies": {
+    "@keel/schema": "workspace:*"
+  },
   "devDependencies": {
     "@keel/tooling": "workspace:*"
   }

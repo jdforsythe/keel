@@ -267,6 +267,10 @@ importers:
         version: 3.23.2
 
   packages/server:
+    dependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
