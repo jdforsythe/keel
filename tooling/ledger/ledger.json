@@ -1,11 +1,29 @@
 {
   "version": 1,
-  "unsafe": 6,
+  "unsafe": 3,
   "exports": [
     {
       "pkg": "cli",
       "name": "formatter",
       "file": "packages/cli/src/formatter.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "cli",
+      "name": "lsp",
+      "file": "packages/cli/src/lsp.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "cli",
+      "name": "mcp",
+      "file": "packages/cli/src/mcp.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "cli",
+      "name": "run",
+      "file": "packages/cli/src/run.ts",
       "rung": "probabilistic"
     },
     {
@@ -180,6 +198,12 @@
       "pkg": "schema",
       "name": "err",
       "file": "packages/schema/src/err.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "gen",
+      "file": "packages/schema/src/gen.ts",
       "rung": "probabilistic"
     },
     {
