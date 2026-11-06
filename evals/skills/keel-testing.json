@@ -1,0 +1,6 @@
+{
+  "skill": "keel-testing",
+  "maxTokens": 600,
+  "prompt": "How do I test a route that loads data over the network in Keel, fire a click, and what error do I get for a selector-shaped id?",
+  "expect": ["renderRoute", "fire", "settle", "ctx.net.route", "E1701"]
+}
