@@ -125,13 +125,11 @@ export function store<T extends object>(
       const codec = logSchema(payloads);
       const whole = s.object({ state: schema, log: codec, initial: schema }).parse(snap);
       if (!whole.ok) return whole;
-      if (typeof snap !== "object" || snap === null || !("state" in snap) || !("log" in snap) || !("initial" in snap))
-        throw new Error("unreachable: snapshot passed its schema");
-      const state = copy(schema, snap.state);
+      const state = copy(schema, whole.value.state);
       if (!state.ok) return state;
-      const log = copy(codec, snap.log);
+      const log = copy(codec, whole.value.log);
       if (!log.ok) return log;
-      const initial = copy(schema, snap.initial);
+      const initial = copy(schema, whole.value.initial);
       if (!initial.ok) return initial;
       const next: Row<T>[] = [];
       for (const e of log.value) {
@@ -192,10 +190,9 @@ export function store<T extends object>(
       },
     },
   };
-  const sc = owner();
-  if (sc === undefined) throw new Error("E1203: store created outside any scope; wrap it in scope(fn)");
+  // signal() above already threw E1203 outside a scope, so an owner exists here.
   registry.set(id, self);
-  sc.onDispose(() => {
+  owner()?.onDispose(() => {
     if (registry.get(id) === self) registry.delete(id);
   });
   return self;
