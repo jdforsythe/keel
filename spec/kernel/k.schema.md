@@ -1,5 +1,5 @@
 # k.schema: Schemas
-status: proposed
+status: implemented
 
 **Purpose.** One declaration per data shape. Everything derives from it.
 

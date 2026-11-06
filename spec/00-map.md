@@ -19,7 +19,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 ## Kernel
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| k.schema | Schemas | proposed | declare once; types, validators, codecs, generators derive |
+| k.schema | Schemas | implemented | declare once; types, validators, codecs, generators derive |
 | k.reactive | Reactivity | implemented | signal, computed, effect, resource; scopes dispose |
 | k.store | Store and transactions | proposed | named pure transactions, log, undo, ownership |
 | k.component | Components | proposed | one default export, schema props, named slots, If/For/Match |
