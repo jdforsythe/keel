@@ -22,7 +22,7 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · other `
 // topology.ts
 export default topology({ web: { modules: ['app', 'orders'], adapter: 'node' } })
 ```
-Each deployable builds to one artifact. Adapters: `node` (Hono on Node) and `static` (prerendered HTML only). Local only: a deployable's modules run in one process; calls between deployables are stdlib (split topology).
+Each deployable builds to one artifact. Adapters: `node` (Hono on Node), `static` (prerendered HTML only), and `client` (no server: loaders and actions run in the browser, the compiler generates the entry that calls `mount(App, el)` with the router's `App`, and `ctx` is `createCtx({ mode: 'real' })`; golden app 1 uses it). Local only: a deployable's modules run in one process; calls between deployables are stdlib (split topology).
 
 **Dev server.** `keel dev`: Vite and Hono in one process, HMR, real `ctx`. Log stream on stdout per OUTPUT.md, one record per event: `req` (compact `GET /orders/7 orders.show 200 12ms`), `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. `keel inspect log` reads the same stream.
 

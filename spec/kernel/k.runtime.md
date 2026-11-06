@@ -20,6 +20,8 @@ dispose()
 
 Resume restores stores from the snapshot, finds bound nodes by `data-k`, attaches bindings and delegated handlers, and neither re-renders nor re-runs loaders. All islands resume at load; events fired before resume are queued and replayed in order.
 
+**Resume markup.** The server wraps the content of each structural op (`If`, `For`, `Match`, `Boundary`) in `<!--[-->` … `<!--]-->`, placed immediately before the op's anchor node; regions nest, each `<!--[-->` closing at its matching `<!--]-->`. At resume the island's first template claims the island root element, and each op claims the elements of its region in order (rows of a `For` in list order); claimed nodes are kept, and later content is inserted before the closing marker. Element tags and element structure must match the compiled templates; text and comments are not compared. A missing marker, a missing or extra element, or a child component whose root lies outside any region is a mismatch: E1253, and that island re-renders on the client in place of the server element; events queued for it are dropped.
+
 **Rules.** E1251 app code imports a runtime op · E1252 `document`, `window`, or DOM node APIs in app code outside the generated entry · E1253 server HTML does not match the compiled structure at resume (dev diagnostic; that island re-renders on the client) · E1254 island root prop not encodable by its schema (function or class instance).
 
 **Conformance.**
