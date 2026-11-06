@@ -2,35 +2,41 @@ import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { Operation } from "../types/Operation.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
+import type { Outcome } from "./Outcome.ts";
+import { buildCommand } from "./buildCommand.ts";
 import { checkCommand } from "./checkCommand.ts";
 import { explainCommand } from "./explainCommand.ts";
 import { ledgerCommand } from "./ledgerCommand.ts";
+import { scaffoldCommand } from "./scaffoldCommand.ts";
 import { specCommand } from "./specCommand.ts";
 import { testCommand } from "./testCommand.ts";
 import { unavailable } from "./unavailable.ts";
 
-/** Run one operation on schema-valid input. Every surface ends here: same input, same records. */
-export async function execute(op: Operation, input: Input, io: Io): Promise<OutRecord[]> {
+const only = (records: readonly OutRecord[]): Outcome => ({ records, writes: [] });
+
+/** Run one operation on schema-valid input. Every surface ends here: same input, same records and writes. */
+export async function execute(op: Operation, input: Input, io: Io): Promise<Outcome> {
   switch (op.name) {
     case "check":
-      return checkCommand(input, io);
+      return only(checkCommand(input, io));
     case "test":
-      return testCommand();
-    case "spec":
-      return specCommand(input, io);
-    case "explain":
-      return explainCommand(input);
-    case "ledger":
-      return ledgerCommand(input, io);
+      return only(await testCommand(input, io));
     case "build":
-    case "dev":
-      return unavailable(op.name, "@keel/server", "k.server");
-    case "inspect":
-      return unavailable(op.name, "a running keel dev app", "k.server");
-    case "render":
-      return unavailable(op.name, "@keel/testing harness", "k.testing");
+      return buildCommand(io);
+    case "spec":
+      return only(specCommand(input, io));
+    case "explain":
+      return only(explainCommand(input));
+    case "ledger":
+      return only(ledgerCommand(input, io));
     case "scaffold":
     case "codemod":
-      return unavailable(op.name, "@keel/scaffold", "k.scaffold");
+      return scaffoldCommand(op.name, input, io);
+    case "dev":
+      return only(unavailable(op.name, "vite.config.ts and the keel binary (vite dev server)", "k.server"));
+    case "inspect":
+      return only(unavailable(op.name, "a running keel dev app", "k.server"));
+    case "render":
+      return only(unavailable(op.name, "a compiled component or route loader", "k.testing"));
   }
 }

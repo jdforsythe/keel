@@ -20,6 +20,9 @@ export type Input = {
   readonly op?: string;
   readonly args?: string[];
   readonly "dry-run"?: boolean;
+  readonly kind?: "component" | "store" | "route" | "schema";
+  readonly adapter?: "client" | "node" | "static";
+  readonly file?: string;
   readonly path?: string;
   readonly openapi?: string;
   readonly to?: string;

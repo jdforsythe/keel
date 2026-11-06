@@ -1,6 +1,7 @@
 import { A11ySchema } from "./A11ySchema.ts";
 import { CiteSchema } from "./CiteSchema.ts";
 import { DiagSchema } from "./DiagSchema.ts";
+import { EditSchema } from "./EditSchema.ts";
 import type { Entry } from "./Entry.ts";
 import { ExplainSchema } from "./ExplainSchema.ts";
 import { LedgerSchema } from "./LedgerSchema.ts";
@@ -21,7 +22,7 @@ const flags = (st: Readonly<Record<string, boolean | undefined>>): string => {
 
 /**
  * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, ledger, a11y.
- * The cli's own record kinds (spec.section, spec.cite, explain.text) go through the same extension point.
+ * The cli's own record kinds (spec.section, spec.cite, explain.text, scaffold.edit) go through the same extension point.
  */
 export const kernelFormatters: readonly (readonly [string, Entry])[] = [
   ["diag", entryOf({ schema: DiagSchema, compact: diagCompact, pretty: diagPretty })],
@@ -79,6 +80,14 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
       schema: ExplainSchema,
       compact: (r) => (r.text.includes(r.code) ? r.text : `${r.code} ${r.text}`),
       pretty: (r) => `${r.code}\n\n${r.text}`,
+    }),
+  ],
+  [
+    "scaffold.edit",
+    entryOf({
+      schema: EditSchema,
+      compact: (r) => r.diff ?? `${r.action} ${r.path}`,
+      pretty: (r) => (r.diff === undefined ? `${r.action.padEnd(6)} ${r.path}` : `${r.action} ${r.path}\n${r.diff}`),
     }),
   ],
 ];

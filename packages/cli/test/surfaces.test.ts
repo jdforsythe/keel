@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { lsp, mcp, operations, run } from "../src/index.ts";
 import { toJsonSchema } from "../src/internal/toJsonSchema.ts";
 import type { Io } from "../src/types/Io.ts";
+import { applyEdits } from "./support/applyEdits.ts";
 
 const SEED = 1337;
 const CWD = "/work/app";
@@ -195,5 +196,44 @@ describe("surfaces", () => {
     ]);
     await server.receive(frame({ jsonrpc: "2.0", method: "exit" }));
     expect(server.done()).toBe(true);
+  });
+
+  it("LSP code actions turn a diagnostic's fix diff into a quick fix that applies to the document", async () => {
+    const server = lsp(() => ({ cwd: CWD, files: [] }));
+    const uri = `file://${CWD}/src/x.ts`;
+    const text = "export function x(): number {\n  throw new Error('no')\n}\n";
+    await server.receive(frame({ jsonrpc: "2.0", id: 1, method: "initialize", params: { rootUri: `file://${CWD}` } }));
+    await server.receive(
+      frame({ jsonrpc: "2.0", method: "textDocument/didOpen", params: { textDocument: { uri, text } } }),
+    );
+    const out = unframe(
+      await server.receive(
+        frame({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "textDocument/codeAction",
+          params: {
+            textDocument: { uri },
+            range: { start: { line: 0, character: 0 }, end: { line: 3, character: 0 } },
+          },
+        }),
+      ),
+    );
+    const actions = out[0]?.result;
+    expect(Array.isArray(actions) && actions.length > 0).toBe(true);
+    const first: unknown = Array.isArray(actions) ? actions[0] : undefined;
+    const edits =
+      typeof first === "object" &&
+      first !== null &&
+      "edit" in first &&
+      typeof first.edit === "object" &&
+      first.edit !== null &&
+      "changes" in first.edit
+        ? Reflect.get(Object(first.edit.changes), uri)
+        : undefined;
+    expect(Array.isArray(edits)).toBe(true);
+    const fixed = applyEdits(text, Array.isArray(edits) ? edits : []);
+    expect(fixed).not.toBe(text);
+    expect(fixed).not.toContain("throw new Error");
   });
 });

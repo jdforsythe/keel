@@ -1,4 +1,5 @@
 import type { Io } from "../types/Io.ts";
+import type { Write } from "./Write.ts";
 import { isRecord } from "./isRecord.ts";
 import { mcpCall } from "./mcpCall.ts";
 import { mcpTools } from "./mcpTools.ts";
@@ -11,6 +12,7 @@ const PROTOCOL = "2025-06-18";
 export async function mcpHandle(
   line: string,
   provide: () => Io | Promise<Io>,
+  apply: (writes: readonly Write[]) => void,
 ): Promise<Record<string, unknown> | undefined> {
   const msg = readRpc(line);
   if (msg === undefined) return rpcReply(null, undefined, { code: -32700, message: "parse error" });
@@ -29,7 +31,7 @@ export async function mcpHandle(
     case "tools/list":
       return rpcReply(msg.id, { tools: mcpTools() });
     case "tools/call":
-      return rpcReply(msg.id, await mcpCall(msg.params, await provide()));
+      return rpcReply(msg.id, await mcpCall(msg.params, await provide(), apply));
     default:
       return rpcReply(msg.id, undefined, { code: -32601, message: `method not found: ${String(msg.method)}` });
   }

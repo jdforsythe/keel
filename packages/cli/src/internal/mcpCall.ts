@@ -1,6 +1,7 @@
 import { operations } from "../operations.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
+import type { Write } from "./Write.ts";
 import { codeFilter } from "./codeFilter.ts";
 import { execute } from "./execute.ts";
 import { isRecord } from "./isRecord.ts";
@@ -24,8 +25,9 @@ const result = (r: { code: number; stdout: string; records: readonly OutRecord[]
 /**
  * MCP `tools/call`: validate arguments with the operation's input schema, execute, render. Agents are the client,
  * so the default format is compact (not a TTY); `structuredContent.records` carries the same records as json.
+ * File effects of a successful call go to `apply` (the binary writes them; in-process they are dropped).
  */
-export async function mcpCall(params: unknown, io: Io): Promise<ToolResult> {
+export async function mcpCall(params: unknown, io: Io, apply: (writes: readonly Write[]) => void): Promise<ToolResult> {
   const p = isRecord(params) ? params : {};
   const name = typeof p.name === "string" ? p.name : "";
   const agent: Io = { ...io, tty: false };
@@ -41,6 +43,8 @@ export async function mcpCall(params: unknown, io: Io): Promise<ToolResult> {
     );
   const v = validateArgs(op, p.arguments);
   if (!v.ok) return result(usageResult(name, v.diags, agent, undefined));
-  const records = await execute(op, v.input, agent);
-  return result(respond(records, agent, { ...v.input, command: op.name, code: codeFilter(op, v.input) }));
+  const outcome = await execute(op, v.input, agent);
+  const r = respond(outcome.records, agent, { ...v.input, command: op.name, code: codeFilter(op, v.input) });
+  if (r.code === 0 && outcome.writes.length > 0) apply(outcome.writes);
+  return result(r);
 }

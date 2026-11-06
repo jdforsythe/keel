@@ -1,6 +1,7 @@
 import { s } from "@keel/schema";
 import { A11ySchema } from "./internal/A11ySchema.ts";
 import { CiteSchema } from "./internal/CiteSchema.ts";
+import { EditSchema } from "./internal/EditSchema.ts";
 import { ExplainSchema } from "./internal/ExplainSchema.ts";
 import { LedgerSchema } from "./internal/LedgerSchema.ts";
 import { ReqSchema } from "./internal/ReqSchema.ts";
@@ -24,7 +25,10 @@ const structural = {
   op: s.string().optional(),
   args: s.array(s.string()).optional(),
   "dry-run": s.boolean().optional(),
+  kind: s.enum(["component", "store", "route", "schema"]).optional(),
+  adapter: s.enum(["client", "node", "static"]).optional(),
   path: s.string().optional(),
+  file: s.string().optional(),
   openapi: s.string().optional(),
   to: s.string().optional(),
   default: s.string().optional(),
@@ -48,7 +52,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "build",
-    description: "Production build per deployable (k.server).",
+    description: "Compile the project and write the .keel artifacts; vite build when vite.config.ts exists.",
     input: s.object(diagnostic),
     output: outputOf(),
     positional: [],
@@ -94,16 +98,16 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "scaffold",
-    description: "Structural generator operation (k.scaffold).",
+    description: "Structural generator: project, module, route, component, store (k.scaffold).",
     input: s.object(structural),
-    output: outputOf(),
+    output: outputOf(EditSchema),
     positional: ["op", "args"],
   },
   {
     name: "codemod",
-    description: "Structural codemod operation (k.scaffold).",
+    description: "Structural codemod: rename, move, add-field (k.scaffold).",
     input: s.object(structural),
-    output: outputOf(),
+    output: outputOf(EditSchema),
     positional: ["op", "args"],
   },
   {

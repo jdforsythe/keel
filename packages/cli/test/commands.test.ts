@@ -2,7 +2,6 @@
 import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { formatter, run } from "../src/index.ts";
-import { buildLedger } from "../src/internal/buildLedger.ts";
 import { normalize } from "../src/internal/normalize.ts";
 import { render } from "../src/internal/render.ts";
 
@@ -10,8 +9,8 @@ const CWD = "/work/app";
 const lines = (out: string): string[] => out.split("\n").filter((l) => l !== "");
 
 describe("commands", () => {
-  it("commands whose package has not landed report info I1055 and exit 0", async () => {
-    for (const cmd of ["build", "dev", "inspect", "render", "scaffold", "codemod"]) {
+  it("commands not available in-process report info I1055 and exit 0", async () => {
+    for (const cmd of ["dev", "inspect", "render"]) {
       const r = await run([cmd], { cwd: CWD });
       expect(r.code).toBe(0);
       expect(lines(r.stdout)[0]).toMatch(/^I1055 /);
@@ -62,12 +61,23 @@ describe("commands", () => {
     }
   });
 
-  it("ledger: rungs from tests, unsafe count, and --diff reports E1706 for a lowered rung", async () => {
+  it("ledger: rungs from tests via @keel/testing, spec clauses from // Spec: headers, --diff reports E1706", async () => {
     const files = [
       { path: "packages/a/src/foo.ts", source: "export function foo() {}\n" },
       { path: "packages/a/src/bar.ts", source: "export const bar = () => unsafe('why', () => 1)\n" },
-      { path: "packages/a/src/internal/baz.ts", source: "export function baz() {}\n" },
-      { path: "packages/a/test/foo.test.ts", source: "import fc from 'fast-check'\nfoo()\n" },
+      { path: "packages/a/src/baz.ts", source: "export function baz() {}\n" },
+      { path: "packages/a/src/internal/qux.ts", source: "export function qux() {}\n" },
+      {
+        path: "packages/a/test/foo.test.ts",
+        source: "import fc from 'fast-check'\nfoo()\n{ seed: 1337, numRuns: 100 }\n",
+      },
+      { path: "packages/a/test/baz.test.ts", source: "import fc from 'fast-check'\nbaz()\n" },
+      {
+        path: "packages/a/conformance/one.test.ts",
+        source:
+          '// Spec: k.a, clause "One works."\nimport fc from "fast-check"\nfc.assert(p, { seed: 1337, numRuns: 200 })\n',
+      },
+      { path: "spec/kernel/k.a.md", source: "# k.a\n\n**Conformance.**\n- One works.\n- Two works.\n" },
       {
         path: "tooling/ledger/ledger.json",
         source: JSON.stringify({
@@ -77,26 +87,23 @@ describe("commands", () => {
         }),
       },
     ];
-    expect(buildLedger(files)).toEqual({
-      exports: [
-        { pkg: "a", name: "bar", file: "packages/a/src/bar.ts", rung: "none", evidence: "none" },
-        {
-          pkg: "a",
-          name: "foo",
-          file: "packages/a/src/foo.ts",
-          rung: "probabilistic",
-          evidence: "packages/a/test/foo.test.ts",
-        },
-      ],
-      unsafe: 1,
-    });
     const plain = await run(["ledger"], { cwd: CWD, files });
     expect(plain.stdout).toBe(
-      "packages/a/src/bar.ts#bar none none\npackages/a/src/foo.ts#foo probabilistic packages/a/test/foo.test.ts\nok ledger 2 exports, 1 verified, 1 unsafe\n",
+      [
+        "packages/a/src/bar.ts#bar none none",
+        "packages/a/src/baz.ts#baz example property runs 100 packages/a/test/baz.test.ts",
+        "packages/a/src/foo.ts#foo probabilistic property runs 100 seed 1337 packages/a/test/foo.test.ts",
+        "k.a#1 probabilistic property runs 200 seed 1337 packages/a/conformance/one.test.ts",
+        "k.a#2 none none",
+        "ok ledger 5 items, 3 verified, 1 unsafe",
+        "",
+      ].join("\n"),
     );
     const diff = await run(["ledger", "--diff"], { cwd: CWD, files });
     expect(diff.code).toBe(1);
-    expect(lines(diff.stdout)[0]).toBe("E1706 packages/a/src/bar.ts:1:1 bar rung lowered example -> none");
+    expect(lines(diff.stdout)[0]).toBe(
+      "E1706 packages/a/src/bar.ts:1:1 ledger rung lowered: packages/a/src/bar.ts#bar example -> none",
+    );
   });
 
   it("a registered kind renders through its formatter in every mode; json is the schema encoding", () => {

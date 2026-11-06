@@ -12,7 +12,9 @@
   "bin": {
     "keel": "./dist/src/bin.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
@@ -21,10 +23,13 @@
   },
   "dependencies": {
     "@keel/check": "workspace:*",
-    "@keel/schema": "workspace:*"
+    "@keel/compiler": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/scaffold": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "vitest": "^2"
   },
   "devDependencies": {
-    "@keel/compiler": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3"
