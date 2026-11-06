@@ -3,6 +3,7 @@ import { signal } from "@keel/reactive";
 // Property seed: 1337. Resume of islands whose content includes structural regions (<!--[-->...<!--]-->).
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { eventQueue } from "../src/internal/eventQueue.ts";
 import { clone, cond, list, on, resume, template, text } from "../src/ops/index.ts";
 import { SEED } from "./support.ts";
 
@@ -99,5 +100,29 @@ describe("resume with structural regions", () => {
     if (add === null) throw new Error("no #add");
     fire(add);
     expect(host.querySelectorAll("li").length).toBe(2);
+  });
+
+  it("events queued for an island that falls back (E1253) or has no component are dropped, not replayed", () => {
+    for (const kind of ["fallback", "missing"]) {
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      host.innerHTML =
+        kind === "fallback" ? server(["a", "b"]).replace('"names":["a","b"]', '"names":["a"]') : server(["a"]);
+      const add = host.querySelector("#add");
+      if (add === null) throw new Error("no #add");
+      fire(add);
+      fire(add);
+      expect(eventQueue.pending()).toBe(2);
+      const { warnings } = resume(host, kind === "fallback" ? { L } : {});
+      expect(warnings.length).toBe(1);
+      expect(eventQueue.pending()).toBe(0);
+      expect(host.querySelectorAll("li").length).toBe(1);
+      const again = host.querySelector("#add");
+      if (again === null) throw new Error("no #add");
+      fire(again);
+      expect(eventQueue.pending()).toBe(0);
+      expect(host.querySelectorAll("li").length).toBe(kind === "fallback" ? 2 : 1);
+      host.remove();
+    }
   });
 });

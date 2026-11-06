@@ -8,7 +8,7 @@ import { attr, clone, prop, template } from "../src/ops/index.ts";
 import { SEED, rootSignal } from "./support.ts";
 
 const ALLOWED = ["http", "https", "mailto", "tel"];
-const URL_ATTRS = ["href", "src", "action", "formaction", "HREF"];
+const URL_ATTRS = ["href", "src", "action", "formaction", "poster", "ping", "HREF"];
 const scheme = fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9+.-]{0,10}$/);
 const rest = fc.stringMatching(/^[a-z0-9/?#=&.-]{0,12}$/);
 
@@ -102,6 +102,26 @@ describe("safeUrl: only http, https, mailto, tel survive in URL attributes", () 
         dispose();
       }),
       { seed: SEED, numRuns: 30 },
+    );
+  });
+
+  it("ping is checked per space-separated URL; srcdoc (raw HTML) is always replaced", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(fc.constantFrom(...ALLOWED), rest), { minLength: 1, maxLength: 4 }),
+        scheme.filter((s) => !ALLOWED.includes(s.toLowerCase())),
+        fc.nat(4),
+        fc.string(),
+        (good, bad, at, html) => {
+          const urls = good.map(([sc, r]) => `${sc}:${r}`);
+          expect(safeUrl("ping", urls.join(" "))).toBe(urls.join(" "));
+          const mixed = [...urls];
+          mixed.splice(at % (urls.length + 1), 0, `${bad}:x`);
+          expect(safeUrl("ping", mixed.join("  "))).toBe("about:blank");
+          expect(safeUrl("srcdoc", html)).toBe("about:blank");
+        },
+      ),
+      { seed: SEED, numRuns: 100 },
     );
   });
 });

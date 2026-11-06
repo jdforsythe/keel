@@ -57,7 +57,14 @@ export const eventQueue = {
     installed = true;
     for (const t of QUEUED) document.addEventListener(t, capture, true);
   },
-  /** Mark `island` resumed and replay its queued events through its delegation root `root`, in order. */
+  /** Events waiting for an island to resume. */
+  pending(): number {
+    return entries.length;
+  },
+  /**
+   * Mark `island` resumed and replay its queued events through its delegation root `root`, in order.
+   * With `root` null (island fell back to client render, or has no component) its events are dropped.
+   */
   resume(island: Element, root: Element | null): void {
     resumed.add(island);
     const mine = entries.filter((x) => x.island === island);

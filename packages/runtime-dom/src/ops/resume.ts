@@ -37,6 +37,7 @@ export function resume(
     const component = Object.hasOwn(components, id) ? components[id] : undefined;
     if (component === undefined) {
       warnings.push(`E1253 [data-k-island="${id}"] has no compiled component; left static`);
+      eventQueue.resume(el, null);
       continue;
     }
     try {

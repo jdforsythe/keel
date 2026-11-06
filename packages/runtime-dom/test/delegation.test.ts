@@ -83,4 +83,39 @@ describe("delegation order over random nesting depth", () => {
       { seed: SEED, numRuns: 30 },
     );
   });
+
+  it("a mount nested inside another mount's tree runs each element's handler once per event", () => {
+    fc.assert(
+      fc.property(fc.constantFrom("click", "input", "keydown"), fc.boolean(), (type, stop) => {
+        const log: string[] = [];
+        const OUTER = template('<div id="outer"><section id="slot"></section></div>');
+        const INNER = template('<p id="p"><button id="btn">b</button></p>');
+        const host = document.createElement("div");
+        const disposeOuter = mount(() => {
+          const r = clone(OUTER);
+          on("outer", type, () => log.push("outer"));
+          on("slot", type, () => log.push("slot"));
+          return r;
+        }, host);
+        const slot = host.querySelector("#slot");
+        if (slot === null) throw new Error("no #slot");
+        const disposeInner = mount(() => {
+          const r = clone(INNER);
+          on("btn", type, (e) => {
+            log.push("btn");
+            if (stop) e.stopPropagation();
+          });
+          on("p", type, () => log.push("p"));
+          return r;
+        }, slot);
+        const btn = host.querySelector("#btn");
+        if (btn === null) throw new Error("no #btn");
+        fire(btn, type);
+        expect(log).toEqual(stop ? ["btn"] : ["btn", "p", "slot", "outer"]);
+        disposeInner();
+        disposeOuter();
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  });
 });

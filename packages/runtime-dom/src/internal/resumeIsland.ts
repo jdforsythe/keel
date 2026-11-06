@@ -53,6 +53,8 @@ export function resumeIsland(
     const host = n instanceof Element ? n : el.parentElement;
     el.replaceWith(n);
     if (host !== null) fresh.attach(host);
+    // The client-rendered root is live: never queue its events.
+    if (n instanceof Element) eventQueue.resume(n, null);
   }
   eventQueue.resume(el, null);
   return `E1253 [data-k-island="${id}"] ${failed.message}; re-rendered on the client`;
