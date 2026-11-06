@@ -5,7 +5,8 @@ import { expect, test } from "vitest";
 import { one, SEED } from "./support.ts";
 
 const ident = fc.stringMatching(/^[a-z]{3,8}$/);
-const codes = (src: string, path = "src/a.ts") => check(one(src, path), { types: false }).diagnostics.map((d) => d.code);
+const codes = (src: string, path = "src/a.ts") =>
+  check(one(src, path), { types: false }).diagnostics.map((d) => d.code);
 
 const SUPPRESS = `@ts-${"ignore"}`;
 const BAD = (n: string): string[] => [
