@@ -1,6 +1,6 @@
 // k.ctx registry: registering a name twice is E1602
 import { expect, test } from "vitest";
-import { register } from "@keel/ctx";
+import { capabilities, register } from "@keel/ctx";
 
 const impls = {
   real: () => ({}),
@@ -8,11 +8,11 @@ const impls = {
   sim: () => ({}),
 };
 
-test("registering the same name twice throws Error with code E1602", () => {
+test("registering the same name twice with a different object throws Error with code E1602", () => {
   register("dupcap", impls);
   let caught: unknown;
   try {
-    register("dupcap", impls);
+    register("dupcap", { ...impls });
   } catch (e) {
     caught = e;
   }
@@ -29,4 +29,11 @@ test("registering a kernel name again throws E1602", () => {
   }
   expect(caught).toBeInstanceOf(Error);
   expect(Reflect.get(Object(caught), "code")).toBe("E1602");
+});
+
+test("re-registering the same name with the identical implementations object is idempotent", () => {
+  const first = register("idemcap", impls);
+  const second = register("idemcap", impls);
+  expect(second).toBe(first);
+  expect(capabilities().filter((n) => n === "idemcap")).toHaveLength(1);
 });

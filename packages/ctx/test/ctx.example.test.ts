@@ -22,14 +22,34 @@ describe("sim net", () => {
 });
 
 describe("register", () => {
-  test("accessor returns the mode's implementation, seeded with the ctx seed", () => {
+  test("accessor returns the mode's implementation, seeded from the ctx seed and the name", () => {
     const geo = register("example-geo", {
       real: () => ({ where: () => "real" }),
       shell: () => ({ where: () => "shell" }),
       sim: ({ seed }) => ({ where: () => `sim:${seed}` }),
     });
-    expect(geo(createCtx({ mode: "sim", seed: 7 })).where()).toBe("sim:7");
+    const a = geo(createCtx({ mode: "sim", seed: 7 })).where();
+    expect(a).toBe(geo(createCtx({ mode: "sim", seed: 7 })).where());
+    expect(a).not.toBe("sim:7");
+    expect(a).not.toBe(geo(createCtx({ mode: "sim", seed: 8 })).where());
     expect(geo(createCtx({ mode: "shell" })).where()).toBe("shell");
+  });
+
+  test("different names get different seeds from one ctx seed", () => {
+    const seedOf = (name: string) => {
+      const acc = register(name, {
+        real: () => ({ s: 0 }),
+        shell: () => ({ s: 0 }),
+        sim: ({ seed }) => ({ s: seed }),
+      });
+      return acc(createCtx({ mode: "sim", seed: 7 })).s;
+    };
+    expect(seedOf("example-seed-a")).not.toBe(seedOf("example-seed-b"));
+  });
+
+  test("ctx has no own property for a registered capability", () => {
+    register("example-hidden", { real: () => ({}), shell: () => ({}), sim: () => ({}) });
+    expect("example-hidden" in createCtx({ mode: "sim" })).toBe(false);
   });
 
   test("accessor on a ctx created before register throws", () => {

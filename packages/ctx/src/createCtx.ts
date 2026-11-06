@@ -14,7 +14,7 @@ import { simRandom } from "./internal/simRandom.ts";
 import { simStorage } from "./internal/simStorage.ts";
 
 function withExtensions<C extends Ctx>(ctx: C, mode: Mode, seed: number): C {
-  for (const attach of extensions.values()) attach(ctx, mode, seed);
+  for (const entry of extensions.values()) entry.attach(ctx, mode, seed);
   return Object.freeze(ctx);
 }
 

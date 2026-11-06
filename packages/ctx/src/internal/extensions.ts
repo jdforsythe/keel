@@ -1,4 +1,4 @@
-import type { Attach } from "./Attach.ts";
+import type { Registration } from "./Registration.ts";
 
 /** Registered (non-kernel) capabilities in registration order. Module-level: the registry is process-wide. */
-export const extensions: Map<string, Attach> = new Map();
+export const extensions: Map<string, Registration> = new Map();

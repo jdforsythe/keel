@@ -11,7 +11,7 @@ const KERNEL: Record<string, string[]> = {
   storage: ["get", "set"],
 };
 
-register("probe3", {
+const probe3 = register("probe3", {
   real: () => ({ ping: () => "real" }),
   shell: () => ({ ping: () => "shell" }),
   sim: () => ({ ping: () => "sim" }),
@@ -19,7 +19,8 @@ register("probe3", {
 const METHODS: Record<string, string[]> = { ...KERNEL, probe3: ["ping"] };
 
 function cap(mode: (typeof MODES)[number], name: string): unknown {
-  return Reflect.get(createCtx({ mode, seed: SEED }), name);
+  const ctx = createCtx({ mode, seed: SEED });
+  return name === "probe3" ? probe3(ctx) : Reflect.get(ctx, name);
 }
 
 describe("k.ctx three implementations", () => {
@@ -51,7 +52,7 @@ describe("k.ctx three implementations", () => {
     }
   });
 
-  test("registered capability is exposed as ctx[name] and listed", () => {
+  test("registered capability is reachable through the returned accessor and listed", () => {
     expect(capabilities()).toContain("probe3");
     const ping = (mode: (typeof MODES)[number]) =>
       Reflect.apply(Reflect.get(Object(cap(mode, "probe3")), "ping"), undefined, []);

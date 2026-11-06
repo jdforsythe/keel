@@ -11,7 +11,7 @@
 
 ## Extension points
 
-**Capability registry.** `register(name, { real, shell, sim })` where each factory is `({ seed }) => Impl` and runs once per ctx created afterwards. The capability appears as `ctx[name]`; `register` returns a typed accessor `(ctx) => Impl` (use it instead of indexing). A name already taken, kernel or registered, throws `Error` with `code: 'E1602'`. The registry is process-wide.
+**Capability registry.** `register(name, { real, shell, sim })` where each factory is `({ seed }) => Impl` and runs once per ctx created afterwards. `register` returns a typed accessor `(ctx) => Impl`, the only way to reach the capability (it is not attached as `ctx[name]`). Each factory's `seed` is derived from the ctx seed and the name, so streams do not correlate. Registering the same name again with the identical implementations object (reference equality) is idempotent and returns the same accessor (HMR safe); a different object, or a kernel name, throws `Error` with `code: 'E1602'`. The registry is process-wide.
 
 ## Unsafe
 
