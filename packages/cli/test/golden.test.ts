@@ -11,7 +11,9 @@ function read(dir: string): { path: string; source: string }[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const abs = join(dir, e.name);
     if (e.isDirectory()) return SKIP.has(e.name) ? [] : read(abs);
-    return /\.[cm]?[jt]sx?$/.test(e.name) ? [{ path: relative(ROOT, abs), source: readFileSync(abs, "utf8") }] : [];
+    // Build config (vite/vitest/stryker) is tooling, outside `keel check`'s scope, as in readProject.
+    const code = /\.[cm]?[jt]sx?$/.test(e.name) && !/^(?:vite|vitest|stryker)\.config\./.test(e.name);
+    return code ? [{ path: relative(ROOT, abs), source: readFileSync(abs, "utf8") }] : [];
   });
 }
 
