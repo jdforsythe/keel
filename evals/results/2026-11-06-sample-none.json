@@ -1,12 +1,7 @@
 {
   "task": "sample",
   "skill": "keel-package-dev",
-  "specSections": [
-    "k.reactive",
-    "k.store",
-    "k.component",
-    "k.testing"
-  ],
+  "specSections": ["k.reactive", "k.store", "k.component", "k.testing"],
   "model": "none",
   "runner": "none",
   "converged": false,

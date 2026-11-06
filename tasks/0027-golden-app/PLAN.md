@@ -4,15 +4,15 @@
 
 ## Deliverables
 - [x] Eval task `evals/tasks/golden-1/` (`TASK.md`, `spec-slice.txt`, `pass.ts`); `pnpm exec tsc --noEmit -p evals/tsconfig.json` clean
-- [ ] `apps/golden-1/`: todo app per `evals/tasks/golden-1/TASK.md`, built by an agent from spec + skill
-- [ ] Property tests for all four transactions, `TodoRow`, `Suggestions`; example tests for every other export
+- [x] `apps/golden-1/`: todo app per `evals/tasks/golden-1/TASK.md`, built by an agent from spec + skill (2026-11-06; partial behavior, see D12-D14)
+- [x] Property tests for all four transactions, `TodoRow`, `Suggestions`; example tests for every other export
 - [ ] Eval baseline in `evals/results/` for >= 2 models (docs/TESTING.md "Evals")
 
 ## Steps
 0. [ ] Prereqs: 0001-0026 and 0040 merged (Q1-Q4 resolved in spec: D8-D11).
-1. [ ] Scaffold: `keel scaffold project golden-1` under `apps/`, then `keel codemod rename app todos` and `keel scaffold route|component|store|transaction` per the TASK file list, once scaffold (0023/0024) lands; else by hand.
-2. [ ] Build: schemas, `board` store and invariant, transactions, guard, loaders and actions, routes, components, `tokens.ts`.
-3. [ ] Properties: `properties()` for transactions and `TodoRow`, `Suggestions`; examples per TASK.md; `pnpm eval --task golden-1 --runner none` prints `converged=true`.
+1. [x] Scaffold (2026-11-06, `@keel/scaffold` in-process: project, module todos, 3 routes, 4 components, store, rename schema; then hand-moved to the TASK file list, D15): `keel scaffold project golden-1` under `apps/`, then `keel codemod rename app todos` and `keel scaffold route|component|store|transaction` per the TASK file list, once scaffold (0023/0024) lands; else by hand.
+2. [x] Build: schemas, `board` store and invariant, transactions, guard, loaders and actions, routes, components, `tokens.ts`.
+3. [x] Properties: `properties()` for transactions and `TodoRow`, `Suggestions`; examples per TASK.md; `pnpm eval --task golden-1 --runner none` prints `converged=true`.
 4. [ ] Eval baseline: from a tree without `apps/golden-1/`, `pnpm eval --task golden-1 --model <id>` for two models; commit `evals/results/<date>-golden-1-<model>.json`; record trailers below.
 
 ## Decisions
@@ -28,10 +28,16 @@
 - D10 (was Q3): k.server topology adapter `client`: no server, loaders and actions run in the browser, the compiler generates the entry calling `mount(App, el)`. `topology.ts` uses `adapter: 'client'`.
 - D11 (was Q4): `export const uses = [toggleTodo, ...]` beside `Props` in the component file; the compiler calls `uses(...)` in the component scope (k.component). Loaders and actions are exempt from E1301, so actions call `tx` directly. `uses` is ledger-exempt in `pass.ts` like `Props`.
 
+- D12 (blocked): `@keel/ui` `Button`/`Checkbox` expose no event-handler prop and intrinsics are E1805, so the Undo click and the TodoRow toggle cannot be wired. Undo renders with its reactive `disabled` (log empty); the undo example calls `board.undo()`. `TodoRow` declares `uses = [toggleTodo]` but never calls `tx`. Needs a k.ui spec line (e.g. `onPress`/`onChange` on base elements, lowered to `on(id, ...)`).
+- D13 (blocked): the router calls route/layout components without `ctx` (`renderView` passes props only), so `Suggestions` inside `todos.list` sees `ctx === undefined` and renders its error state; Suggestions loading/ready/error is tested via `render(Suggestions, { ctx })`.
+- D14 (workarounds, no casts): (a) components set `Name.Props = Props` (TS expando) because `render`/`properties` need a static `Props` the compiler does not attach; (b) router `Form` and runtime `Match`/`Case` are called as functions and inserted through a local `children()` binding (compiler D31), because `Form` spreads the RFC 0008 children thunk (crash) and `<Case>` is not a valid JSX element under `@keel/runtime-dom/jsx-runtime`; `Match` gets an explicit `key: "state"` or its wrapper reads `on` in the component scope and re-renders forever; (c) layout `children` is a Node from the router, inserted the same way; (d) branded ids are minted by `transaction.schema.parse` in actions; (e) tests locate generated form-field ids (`form<n>:title`) by accessible name in `a11y()`.
+- D15: wiring follows the orchestrator brief, not TASK.md lines 1-2: scripts `tsc --noEmit && biome check modules` / `vitest run` / `vite build`, tsconfig extends `@keel/compiler/tsconfig.strict.json` plus `jsxImportSource: @keel/runtime-dom`; added `index.html`, `vitest.config.ts` (happy-dom, KeelReporter, `keel()`). Scaffold's `modules/app`, app `turbo.json`, `.github/`, colocated tests, `<route>.server.ts` names and `board.store.ts`/`BoardState.schema.ts` were not kept (TASK file list wins).
+- D16: `keel check` (CLI, not in the app's check script) still reports E1752 on `TodoRow.tsx` (`uses` beside the default export, which k.component allows) and 10 x E1004 for `routes.ts` importing `*.server.ts` (the CLI does not pass `topology.ts`, whose `client` adapter exempts them). Both are checker issues, not app issues.
+
 ## Verification
 - [x] `pnpm exec tsc --noEmit -p evals/tsconfig.json` clean; `pass.ts` returns false with no app present
-- [ ] `pnpm eval --task golden-1 --runner none` -> `converged=true`
+- [x] `pnpm eval --task golden-1 --runner none` -> `converged=true` (2026-11-06; `evals/results/2026-11-06-golden-1-none.json`; `unsafe=4` is the repo-wide count, app has 0)
 - [ ] Baseline results committed for two models; `unsafe=0`
 
 ## Next action
-Step 0: wait for 0001-0026 and 0040; file the D7 follow-up (skill in eval results) in `tasks/BACKLOG.md`.
+File backlog items for D12, D13, D14(a-c,e), D16 and the scaffold gaps (D15); then step 4 (two-model baseline) from a tree without `apps/golden-1/`. Still open: D7 follow-up.
