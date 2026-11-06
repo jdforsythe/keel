@@ -14,7 +14,6 @@ export { Text } from "./elements/Text.ts";
 export { TextArea } from "./elements/TextArea.ts";
 export type { Child } from "./types/Child.ts";
 export type { ColorValue } from "./types/ColorValue.ts";
-export type { Href } from "./types/Href.ts";
 export type { Register } from "./types/Register.ts";
 export type { Responsive } from "./types/Responsive.ts";
 export type { StandardSlots } from "./types/StandardSlots.ts";

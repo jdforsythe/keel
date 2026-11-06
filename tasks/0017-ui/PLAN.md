@@ -15,7 +15,8 @@ Covers backlog 0017 (tokens, style props, atomic CSS, scoped styles) and 0018 (b
 1. [x] conformance written by conformance-writer (packages/ui/conformance).
 2. [x] Implement; `pnpm --filter @keel/ui check`; `test`.
 3. [x] Properties; README; changeset. Spec status kept `proposed` until review (coordinator).
-4. [x] rfc:0000 follow-up: `states` prop, `disabled` boolean, `Href` from router (local stand-in), `Heading level` literal union.
+4. [x] rfc:0000 follow-up: `states` prop, `disabled` boolean, `Href` from router (now imported), `Heading level` literal union.
+5. [x] Router landed: stand-in `Href` replaced; base elements need no k.component ctx parameter (tsc clean). Own tests assert element `outerHTML` (runtime-dom `mount` now appends a `<!---->` anchor).
 
 ## Decisions
 - D1: Style-prop types are keyed by the app's tokens through a `Register` interface (`declare module '@keel/ui' { interface Register { tokens: typeof tokens } }`). Unregistered, the k.ui example token set (`internal/DefaultTokens.ts`) applies, so E1801 holds at the type level without app generics. Scaffold should emit the augmentation next to `tokens.ts`.
@@ -29,7 +30,7 @@ Covers backlog 0017 (tokens, style props, atomic CSS, scoped styles) and 0018 (b
 - D9: `defineTokens<const T>` returns its input (literal names kept) after `TokenSchema.parse`; throws `code: 'E1807'` on failure.
 - D10: Dynamic classes bind one `attr(el, 'class', fn)` op (empty -> attribute removed); static props set `class` once with no binding. Reactive children bind `text` on a fresh text node; reactive `value`/`checked` bind `prop`. Never a `style` attribute.
 - D11: Controls render `<div><label for=id>label</label><control id=id></div>` (checkbox: control then label); style props go on the control. id = `id` prop, else `k-<kind>-<slug(label)>` (hash when the slug is empty). Equal labels give equal ids (E1404 territory; pass `id`).
-- D12 (rev): `Href` should be `import type { Href } from '@keel/router'`; `@keel/router` is a dependency, but router does not export `Href` yet, so `src/types/Href.ts` is a local stand-in with the same name and shape (`string & { readonly __brand: 'Href' }`). Swap to the import when router lands. `Link`/`Image` pass URLs through runtime-dom `safeUrl(name, value)`.
+- D12 (rev 2): `Link to`/`Image src` take `import type { Href } from '@keel/router'` (branded `string & { readonly __brand: 'Href' }`, same shape as the former stand-in, now deleted). ui does not re-export `Href` (one import path, P1). URLs pass through runtime-dom `safeUrl(name, value)`.
 - D13 (rev): `Heading level` is `1 | 2 | 3 | 4 | 5 | 6` (conformance updated); no runtime range check.
 - D14: `Button`: children with `label` -> `aria-label`; `label` alone -> visible text; `type` defaults to `button`. `Image decorative` -> `alt=""` + `role="presentation"`.
 - D15 (rev, rfc:0000): state styles live under one `states` prop; `disabled?: boolean | Computed<boolean>` is the HTML attribute on `Button Input TextArea Select Checkbox` (static sets the attribute; reactive binds the `disabled` property via `prop`). `compileStyles` usages keep the flat `state` field.
@@ -37,14 +38,12 @@ Covers backlog 0017 (tokens, style props, atomic CSS, scoped styles) and 0018 (b
 - D17: No event props on base elements yet (k.ui lists none; handlers are keyed by element id in k.runtime). `Input field` (k.forms bindings) is not implemented here: forms conformance calls `Input({ field, label })`.
 
 ## Verification
-- [x] biome clean · structure-lint clean for ui · budgets ok · build ok
-- [ ] `pnpm --filter @keel/ui check`: tsc fails only in `conformance/fixtures.ts` (`href`, `manifest` not exported by `@keel/router` yet). Blocked on router.
-- [ ] `pnpm --filter @keel/ui test`: every conformance file imports fixtures, which call router's `manifest` at load, so all 7 conformance files fail with `manifest is not a function`. Blocked on router.
-- [x] With a scratchpad-only vitest alias stubbing `@keel/router` (`manifest` identity, `href` -> "/"): `Test Files 12 passed | 1 skipped`, `Tests 68 passed | 3 todo (71)`. All ui conformance is green, including the scope-wrapped signal tests.
+- [x] `pnpm --filter @keel/ui check` clean · structure-lint clean for ui · budgets ok
+- [x] conformance green (all ui conformance files)
 - [x] properties present: compileStyles determinism, dedupe, order independence, injectivity; contrast symmetry, range, #rgb expansion, known WCAG pairs; derived ids pure; TokenSchema gen/encode
 - Mutation: `mutate` script is `echo skip`; not measured.
 
-Test trailer (`pnpm --filter @keel/ui test`, real router): `fail 42 tests, 7 failed, 3 skipped (1.1s)` (7 = conformance files failing at import on router; own tests 39 passed)
+Test trailer (`pnpm --filter @keel/ui test`): `ok 71 tests, 0 failed, 3 skipped (1.4s)` (3 skipped = `it.todo` E1803/E1805/E1806)
 
 ## Next action
 review

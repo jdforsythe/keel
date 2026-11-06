@@ -1,6 +1,6 @@
+import type { Href } from "@keel/router";
 import { safeUrl } from "@keel/runtime-dom/internal/safeUrl";
 import { applyStyle } from "../internal/applyStyle.ts";
-import type { Href } from "../types/Href.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type Alt = { readonly alt: string; readonly decorative?: never } | { readonly decorative: true; readonly alt?: never };

@@ -1,8 +1,8 @@
+import type { Href } from "@keel/router";
 import { safeUrl } from "@keel/runtime-dom/internal/safeUrl";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import type { Child } from "../types/Child.ts";
-import type { Href } from "../types/Href.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 /** A link to `to` (an `Href`, required, E1802) named by its text. Unsafe schemes render `about:blank`. */

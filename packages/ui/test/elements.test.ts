@@ -2,9 +2,9 @@
 // Base elements: dynamic classes (signals and getter props), ids, a11y attributes, URL safety. Seed 1337.
 import { scope, signal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
+import type { Href } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
 import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, Text, TextArea, styles } from "@keel/ui";
-import type { Href } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
@@ -99,7 +99,7 @@ describe("dynamic style props", () => {
 
   it("static props set classes once and never a style attribute", () => {
     const { host, dispose } = render(() => Text({ fg: "fg", fontSize: "lg", as: "p", children: "t" }));
-    expect(host.innerHTML).toBe('<p class="k-fg-fg k-fontSize-lg">t</p>');
+    expect(first(host).outerHTML).toBe('<p class="k-fg-fg k-fontSize-lg">t</p>');
     dispose();
   });
 
@@ -161,9 +161,9 @@ describe("base elements", () => {
 
   it("Button: children with label sets aria-label; label alone is the text; type defaults to button", () => {
     const a = render(() => Button({ children: "x", label: "Close" }));
-    expect(a.host.innerHTML).toBe('<button type="button" aria-label="Close">x</button>');
+    expect(first(a.host).outerHTML).toBe('<button type="button" aria-label="Close">x</button>');
     const b = render(() => Button({ type: "submit", label: "Save" }));
-    expect(b.host.innerHTML).toBe('<button type="submit">Save</button>');
+    expect(first(b.host).outerHTML).toBe('<button type="submit">Save</button>');
     a.dispose();
     b.dispose();
   });
@@ -192,7 +192,7 @@ describe("base elements", () => {
 
   it("Image decorative renders alt='' and role=presentation", () => {
     const { host, dispose } = render(() => Image({ decorative: true }));
-    expect(host.innerHTML).toBe('<img alt="" role="presentation">');
+    expect(first(host).outerHTML).toBe('<img alt="" role="presentation">');
     dispose();
   });
 
