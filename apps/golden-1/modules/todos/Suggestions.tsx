@@ -13,7 +13,7 @@ const messageOf = (e: unknown): string => (e instanceof Error ? e.message : "Sug
 
 async function fetchSuggestions(ctx: Ctx | undefined): Promise<Suggestion[]> {
   if (ctx === undefined) return Promise.reject(new Error("Suggestions need a ctx"));
-  const res = await ctx.net.fetch(new Request("http://localhost/api/suggestions"));
+  const res = await ctx.net.fetch(new Request(new URL("/api/suggestions", location.href)));
   if (!res.ok) return Promise.reject(new Error(`Suggestions failed (${res.status})`));
   const body: unknown = await res.json();
   const items: unknown[] = Array.isArray(body) ? body : [];

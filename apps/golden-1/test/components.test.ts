@@ -18,7 +18,7 @@ afterEach(() => {
 
 const L = { id: "l1", name: "Home" };
 const milk = { id: "t1", listId: "l1", title: "Milk", priority: "high", done: true };
-const URL = "http://localhost/api/suggestions";
+const SUGGESTIONS = new URL("/api/suggestions", location.href).href;
 
 describe("TodoRow", () => {
   it("shows done, priority and an edit link", () => {
@@ -36,7 +36,7 @@ describe("TodoRow", () => {
 describe("Suggestions", () => {
   it("goes loading to ready", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
-    ctx.net.route(URL, () => new Response(JSON.stringify([{ title: "Eggs" }, { title: "Bread" }])));
+    ctx.net.route(SUGGESTIONS, () => new Response(JSON.stringify([{ title: "Eggs" }, { title: "Bread" }])));
     const t = render(Suggestions, { props: {}, ctx });
     expect(t.find("todos.suggestions.loading").text).toBe("Loading suggestions");
     await t.fire("todos.suggestions.title", { type: "focus" });
@@ -45,7 +45,7 @@ describe("Suggestions", () => {
   });
   it("goes loading to error on a sim 500", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
-    ctx.net.route(URL, () => new Response("boom", { status: 500 }));
+    ctx.net.route(SUGGESTIONS, () => new Response("boom", { status: 500 }));
     const t = render(Suggestions, { props: {}, ctx });
     expect(t.find("todos.suggestions.loading").text).toBe("Loading suggestions");
     await t.fire("todos.suggestions.title", { type: "focus" });

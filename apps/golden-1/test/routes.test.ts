@@ -57,7 +57,10 @@ describe("todos.list", () => {
   });
   it("Suggestions inside the route receive ctx and show sim suggestions", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
-    ctx.net.route("http://localhost/api/suggestions", () => new Response(JSON.stringify([{ title: "Eggs" }])));
+    ctx.net.route(
+      new URL("/api/suggestions", location.href).href,
+      () => new Response(JSON.stringify([{ title: "Eggs" }])),
+    );
     const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, state, ctx });
     await r.fire("todos.suggestions.title", { type: "focus" });
     expect(r.find("todos.suggestions.list").text).toBe("Eggs");
