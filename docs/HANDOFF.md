@@ -5,11 +5,10 @@ Updated by `/handoff`. Read first on every fresh start.
 ```
 health: pnpm check && pnpm test
 active:
-  - state (2026-11-06 late): 15 of 15 kernel sections implemented except k.server (implementer running) and k.module (conformance being written). golden app 1 runs in a browser (http://localhost:4180 via `vite preview`; tooling/smoke); Suggestions served by a dev stub until 0032.
-  - mutation: schema 92.1%, reactive 87.5%, services 75.9%; survey of the rest running.
-  - in flight: eval baseline (real model, isolated worktree), 0028 server, k.module conformance, RFC 0012 clock.after (ctx+services), RFC 0013 api.input, RFC 0014 Scope.run (reactive+runtime-dom), RFC 0015 settle() (testing).
-  - next: review server; 0032 golden-1 real API via services+server; 0030 module check; 0031 inspector; 0050 ctx random.id; 0044 (G3); G1 gate review then G2 gate.
-  - process: rfc:0000 pre-implementation fixes; RFCs 0001-0015 in docs/rfc; delegation tiers in docs/WORKFLOW.md.
+  - state: all 15 kernel sections implemented (k.server WIP-committed 5bab51d, review pending; k.module checks implementer running). golden app 1 runs in a browser (port 4180). RFCs 0001-0016 landed.
+  - in flight: server fixture type fix (rfc:0000) + router/server alignment (next param, keel.fields messages); 0030 module checks; mutation-score survey.
+  - next: review server, flip k.server; re-run real-model eval baseline (last run: converged=false only because of a stale ledger baseline, now fixed); 0032 golden-1 real API through services+server; E1206 explain entry; 0031 inspector; G2 gate.
+  - process: rfc:0000 pre-implementation fixes; delegation tiers in docs/WORKFLOW.md; cli last in deps order.
   blockers: none
 pending decisions: none
 last updated: (initial)
