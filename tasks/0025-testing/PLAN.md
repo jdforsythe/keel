@@ -58,7 +58,7 @@
 
 - D25 (RFC 0015): `Harness.settle()` (also on `renderRoute` handles) runs `internal/settle.ts` with no event, then `check()`. `render` stays synchronous. golden-1 Suggestions tests use it instead of `fire("focus")`.
 
-Test trailer (`pnpm --filter @keel/testing test`): `ok 99 tests, 0 failed, 2 skipped (1.9s)`
+Test trailer (`pnpm --filter @keel/testing test`): `ok 104 tests, 0 failed, 2 skipped (5.9s)`
 
 ## Next action
 review
