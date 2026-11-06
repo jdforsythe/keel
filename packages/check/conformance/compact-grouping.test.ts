@@ -49,7 +49,7 @@ test("compact: a diagnostic line is 'code path:line:col message'", () => {
 
 test("compact: diagnostics within a code are sorted by path, line, col", () => {
   fc.assert(
-    fc.property(fc.shuffle([0, 1, 2, 3, 4]), (order) => {
+    fc.property(fc.shuffledSubarray([0, 1, 2, 3, 4], { minLength: 5, maxLength: 5 }), (order) => {
       const ds = order.map((i) => synth("E1042", i, "src/a.tsx"));
       const out = lines(format(ds, { mode: "compact" })).filter((l) => l.startsWith("E1042 "));
       const locs = out.map((l) => Number(l.split(" ")[1]?.split(":")[1]));
