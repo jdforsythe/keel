@@ -1,13 +1,13 @@
 # k.runtime: DOM runtime and islands
-status: proposed
+status: implemented
 
 **API.** App code uses only `mount` and the intrinsics `If`, `For`, `Match`, `Case`, `Boundary` from `@keel/runtime-dom`.
 ```ts
 import { mount } from '@keel/runtime-dom'
-const dispose = mount(App, document.getElementById('app')) // generated entry only; App takes no props
+const dispose = mount(App, document.getElementById('app'), { ctx: createCtx({ mode: 'real' }) }) // generated entry only; App takes no props
 dispose()
 ```
-`mount(Component, el)` renders a client-only tree into `el` and returns `dispose`. Server-rendered apps never call it: the generated entry resumes islands.
+`mount(Component, el, { ctx? })` renders a client-only tree into `el`, passing `ctx` (k.ctx) as the root component's third argument, and returns `dispose`. Server-rendered apps never call it: the generated entry calls `resume(root, components, { ctx?, stores? })` (`@keel/runtime-dom/ops`), which passes `ctx` to every island root.
 
 **Ops.** Compiler-only (k.compiler): `template(html)`, `clone(t)`, `text(node, fn)`, `attr(el, name, fn)`, `prop(el, name, fn)`, `on(id, type, handler)`, `cond`, `list`, `match`, `boundary`. Each binding is an `effect` in the owning component's scope that writes exactly one DOM location; disposing the scope removes it. `attr` with `null` or `false` removes the attribute; `true` sets it empty.
 

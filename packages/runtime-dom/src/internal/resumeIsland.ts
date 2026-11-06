@@ -1,3 +1,4 @@
+import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";
 import type { Island } from "../types/Island.ts";
@@ -19,6 +20,7 @@ export function resumeIsland(
   id: string,
   component: Island,
   props: Record<string, unknown>,
+  ctx: Ctx | undefined,
 ): string | null {
   const root = createRoot(el);
   const owner = createOwner(null, root, null);
@@ -26,7 +28,7 @@ export function resumeIsland(
   const rendered: { node: Node | null; scope: Scope | null } = { node: null, scope: null };
   try {
     rendered.scope = scope(() => {
-      rendered.node = withCx(owner, claim, () => component(props));
+      rendered.node = withCx(owner, claim, () => component(props, undefined, ctx));
     });
   } catch (error) {
     if (!(error instanceof Mismatch)) throw error;
@@ -46,7 +48,7 @@ export function resumeIsland(
   const freshOwner = createOwner(null, fresh, null);
   const client: { node: Node | null } = { node: null };
   scope(() => {
-    client.node = withCx(freshOwner, null, () => component(props));
+    client.node = withCx(freshOwner, null, () => component(props, undefined, ctx));
   });
   const n = client.node;
   if (n !== null) {

@@ -26,6 +26,7 @@
     "mutate": "echo skip"
   },
   "dependencies": {
+    "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*"
   },

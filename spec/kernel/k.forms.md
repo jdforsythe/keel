@@ -1,5 +1,5 @@
 # k.forms: Forms
-status: proposed
+status: implemented
 
 **API.**
 ```tsx

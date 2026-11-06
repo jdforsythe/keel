@@ -7,14 +7,20 @@ import { rootFallback } from "./internal/rootFallback.ts";
 import { withCx } from "./internal/withCx.ts";
 import { boundary } from "./ops/boundary.ts";
 import type { Component } from "./types/Component.ts";
+import type { MountOptions } from "./types/MountOptions.ts";
 
 /**
  * Render `component` client-side at the end of `el` (generated entry only). The component takes no props:
- * one that requires props does not type-check; it is called with an empty props object. The root has a
+ * one that requires props does not type-check; it is called with an empty props object, no slots, and
+ * `options.ctx` (k.ctx; the generated entry and the harness pass one). The root has a
  * default Boundary (k.errors) whose fallback shows the error in `<pre data-k-error>`. Returns `dispose`:
  * removes the rendered nodes, every root listener, and every binding and subscription. Idempotent.
  */
-export function mount(component: Component<Readonly<Record<string, unknown>>>, el: Element): () => void {
+export function mount(
+  component: Component<Readonly<Record<string, unknown>>>,
+  el: Element,
+  options: MountOptions = {},
+): () => void {
   const root = createRoot(el);
   const owner = createOwner(null, root, null);
   const before = el.lastChild;
@@ -33,7 +39,7 @@ export function mount(component: Component<Readonly<Record<string, unknown>>>, e
   };
   try {
     sc = scope(() => {
-      withCx(owner, null, () => boundary(anchor, () => component({}), rootFallback));
+      withCx(owner, null, () => boundary(anchor, () => component({}, undefined, options.ctx), rootFallback));
     });
   } catch (error) {
     dispose();

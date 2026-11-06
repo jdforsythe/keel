@@ -22,7 +22,7 @@
 - D6: Boundary state is a signal; every effect that may report to a Boundary declares it in `writes` (E1201-safe). `fail` disposes the child unit synchronously (no effect of the failed subtree runs again), then sets state; `reset` sets it back. `data.at`: handler -> `on` id; binding -> bound element id; render -> anchor's nearest id.
 - D7: (superseded by D21) app-level `effect()`/`computed` throws were not attributable before rfc:0004.
 - D8: Resume protocol: first `clone` in an island claims the island root; structural ops claim the server region `<!--[-->…<!--]-->` immediately before their anchor and render into it (closing marker becomes the insertion point). Shape check compares element tags/structure only (text and comments are dynamic). Any mismatch (also a missing component, bad #k-state, unknown store) -> warning `E1253 [data-k-island="id"] …`; structural mismatch re-renders that island client-side in place. Non-mismatch throws during resume are rethrown after all islands are attempted. Compiler/server must emit these markers; nested child components outside a region are not claimable yet (fallback: E1253 + client render).
-- D9: Store restore uses an internal structural type `Restorable { restore(snapshot) }` passed as `resume(root, components, stores?)`; TODO: switch to k.store's `stores()` registry (rfc:0003) when @keel/store lands.
+- D9: Store restore uses an internal structural type `Restorable { restore(snapshot) }` passed as `resume(root, components, { stores })` (D22); TODO: switch to k.store's `stores()` registry (rfc:0003) when @keel/store lands.
 - D10: Island props are decoded with the component's static `Props` schema (`decode`) when present, else passed as JSON.
 - D11: Pre-resume queue: capture listeners on `document` for 19 bubbling interaction types, installed at import of `src/ops/resume.ts` (README documents it as the one import-time effect); events are keyed to their outermost unresumed island and replayed through its delegation root; events queued for an island that falls back to client render are dropped.
 - D12: `safeUrl(name, value)` lives in `src/internal/safeUrl.ts` and is exported as `@keel/runtime-dom/internal/safeUrl` for the compiler's server renderer; strips leading C0/space and ignores tab/CR/LF before scheme detection. Applied by `attr` and `prop`.
@@ -36,6 +36,7 @@
 - D19 (review 4): queued pre-resume events are dropped for islands that fall back (E1253) or have no component, and the client-rendered replacement root is marked resumed (bug found by the new test: its clicks were being queued forever). Tests: resume.test.ts via `eventQueue.pending()`. Nursery chain NOT changed: under k.reactive, a node's owner is fixed at creation and an effect's rerun disposes everything it owns; a spent link owns its live rows and the next link, so it can be neither disposed nor re-armed without killing rows, and no API (scope, owner(), Scope.onDispose, onError) creates nodes under an existing owner. Cost stays one idle effect per commit that adds rows (not per spawn: one link drains every spawn of a commit). Fix needs a reactive RFC: `Scope.run(fn)` (create under an existing scope), which would remove the nursery and the unit effects (D4).
 - D20 (review 5): `mount` renders through a root `boundary` whose fallback is `<pre data-k-error="<at>">message</pre>` (anchor comment appended to `el`; dispose removes everything mount added). `safeUrl`: `poster`, `ping` (every space-separated URL must pass), `srcdoc` always `about:blank` (raw HTML sink, not a URL; a scheme check would pass `<script>`). `package.json` `sideEffects: ["./src/ops/resume.ts"]`.
 - D21 (rfc:0004): every render unit runs its render inside `scope(fn, { onError })` when it has a Boundary, routing throws of app-level effects and computeds created under it (delivered after the commit; the effect is marked failed) to the same catch path as render/handler throws: dispose subtree, fallback with `keel.unexpected` (`data.at` = the unit's anchor id), `reset()` re-creates. Nearest Boundary wins because each unit's scope is the nearest `onError`. Tests: boundary-effects.test.ts (effect throw on later write, computed read in effect, reset, root default Boundary).
+- D22 (k.component ctx): `Component<P> = (props: P, slots?: Slots, ctx?: Ctx) => Node`; `mount(App, el, { ctx? })` and `resume(root, components, { ctx?, stores? })` pass `ctx` (k.ctx) as the root/island component's third argument (`undefined` when omitted, so conformance calls without options still work). `resume`'s third parameter changed from a `stores` map to an options object (`stores` moved inside; supersedes D9's signature). Nested components get `ctx` from compiled code, not the runtime. Dependency `@keel/ctx` added. Tests: ctx.test.ts.
 
 ## Conformance issues (resolved by conformance-writer after the WIP commit; not edited here)
 - E1203 conflict: attr-toggle.test.ts (3 tests), mount-dispose.test.ts "zero reactive subscriptions", boundary.test.ts "after a catch, no effect…" (2 tests) create `signal()` at test level; k.reactive conformance (rules.conformance.test.ts) requires that to throw E1203. Verified all six pass when the signal is created in a live root scope (temporary copies, deleted).
@@ -43,12 +44,12 @@
 
 ## Verification
 - [x] conformance green (after conformance-writer's fixes): 25 pass, 9 todo
-- [x] properties present (test/: attr, delegation, mount-dispose, safeUrl, structural, resume, boundary-effects): 29 pass
+- [x] properties present (test/: attr, delegation, mount-dispose, safeUrl, structural, resume, boundary-effects, ctx): 31 pass
 - [x] biome clean (src, test, unsafe) · structure-lint clean for runtime-dom · build config compiles
-- [x] `pnpm --filter @keel/runtime-dom check` clean · compiler: tsc clean, test `ok 43 tests, 0 failed, 1 skipped`; compiler biome currently fails on import order in its in-progress src/internal/analyze.ts (not runtime-dom)
+- [x] `pnpm --filter @keel/runtime-dom check` clean · `pnpm --filter @keel/compiler test`: `ok 52 tests, 0 failed, 1 skipped`
 - Mutation: `mutate` is `echo skip`; 70% threshold not measured.
 
-Test trailer (`pnpm --filter @keel/runtime-dom test`): `ok 63 tests, 0 failed, 9 skipped (0.8s)` (9 skipped = it.todo for untestable rules).
+Test trailer (`pnpm --filter @keel/runtime-dom test`): `ok 65 tests, 0 failed, 9 skipped (1.2s)` (9 skipped = it.todo for untestable rules).
 
 ## Next action
 review

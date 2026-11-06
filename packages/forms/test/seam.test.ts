@@ -1,7 +1,7 @@
+import type { FormHandle } from "@keel/router";
 import { s } from "@keel/schema";
 import { expectTypeOf, it } from "vitest";
 import type { form } from "../src/index.ts";
-import type { FormHandle } from "../src/internal/FormHandle.ts";
 
 const Note = s.object({ title: s.string({ min: 1 }), age: s.int(), a: s.object({ b: s.array(s.string()) }) });
 

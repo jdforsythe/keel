@@ -13,7 +13,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0009 ctx: registry; clock, random, net, storage; real and sim · ctx · k.ctx · G1 · 0001
 - [ ] 0010 compiler: Vite plugin on oxc; JSX to DOM ops; If/For/Match · compiler · k.compiler · G1 · 0006
 - [ ] 0011 compiler: artifacts (deps, ids, a11y expectations); escaping by context · compiler · k.compiler · G1 · 0010
-- [ ] 0012 runtime-dom: nodes, delegation, islands resume · runtime-dom · k.runtime · G1 · 0010
+- [x] 0012 runtime-dom: nodes, delegation, islands resume · runtime-dom · k.runtime · G1 · 0010
 - [ ] 0013 component: props schema, slots, ids, rules E14xx · compiler · k.component · G1 · 0011
 - [ ] 0014 router: manifest, params, search, href · router · k.router · G1 · 0013
 - [ ] 0015 router: loaders, actions by verb, Form, revalidation, guards, scroll and focus · router · k.router · G1 · 0014

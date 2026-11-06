@@ -3,22 +3,23 @@ import { islandProps } from "../internal/islandProps.ts";
 import { readState } from "../internal/readState.ts";
 import { resumeIsland } from "../internal/resumeIsland.ts";
 import type { Island } from "../types/Island.ts";
-import type { Restorable } from "../types/Restorable.ts";
+import type { ResumeOptions } from "../types/ResumeOptions.ts";
 
 // The package's one import-time effect: queue events fired before resume (see README).
 eventQueue.install();
 
 /**
- * Resume server-rendered islands under `root` (generated entry only, ADR-0006): restore `stores` from
- * `#k-state`, then for each outermost `[data-k-island]` attach its bindings and delegated handlers to the
+ * Resume server-rendered islands under `root` (generated entry only, ADR-0006): restore `options.stores`
+ * from `#k-state`, pass `options.ctx` (k.ctx) to every island root, then for each outermost `[data-k-island]` attach its bindings and delegated handlers to the
  * existing nodes without re-rendering, and replay events queued before resume. Returns dev warnings
  * (E1253: that island was re-rendered on the client).
  */
 export function resume(
   root: Element,
   components: Readonly<Record<string, Island>>,
-  stores: Readonly<Record<string, Restorable>> = {},
+  options: ResumeOptions = {},
 ): { warnings: string[] } {
+  const stores = options.stores ?? {};
   const warnings: string[] = [];
   const state = readState(root, warnings);
   for (const [id, snapshot] of Object.entries(state.stores)) {
@@ -41,7 +42,7 @@ export function resume(
       continue;
     }
     try {
-      const w = resumeIsland(el, id, component, islandProps(component, state.islands[id], id, warnings));
+      const w = resumeIsland(el, id, component, islandProps(component, state.islands[id], id, warnings), options.ctx);
       if (w !== null) warnings.push(w);
     } catch (error) {
       thrown ??= { error };

@@ -12,4 +12,5 @@ export { template } from "./template.ts";
 export { text } from "./text.ts";
 export type { Island } from "../types/Island.ts";
 export type { Restorable } from "../types/Restorable.ts";
+export type { ResumeOptions } from "../types/ResumeOptions.ts";
 export type { Value } from "../types/Value.ts";

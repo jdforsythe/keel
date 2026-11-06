@@ -5,6 +5,6 @@ status: proposed
 
 **Control flow.** `<If when={}>`, `<For each={} key="id">`, `<Match on={union}>` with one `<Case tag="">` per variant (missing variant is E1402). `{a && <b/>}` is E1403.
 
-**IDs.** Every element gets a stable id: explicit `id="cart.submit"` or derived `<file>.<index>`; duplicates are E1404.
+**IDs.** Every element gets a stable id: explicit `id="cart.submit"` or derived `<file>.<index>`, where `<file>` is the project-root-relative path without extension with `/` as `.` (`src.orders.OrderList.0`) and `<index>` counts the file's elements in source order; duplicates are E1404.
 
 **Conformance.** Render is pure for equal props and state; a11y tree snapshot stable across re-renders; every element addressable by id in the harness.
