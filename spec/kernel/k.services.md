@@ -23,6 +23,7 @@ const r = await api.getOrder({ params: { id } }, ctx) // Result<Order, ApiError>
 - `api.network` `{}`: `fetch` rejected.
 - `api.status` `{ status, body }`: non-2xx; `body` decoded by `errors[status]` when declared, else `null`.
 - `api.decode` `{ issues }`: a 2xx body that fails `output`.
+- `api.input` `{ issues }`: the call's `params`, `query`, or `body` fail their schemas; nothing is sent.
 
 The client never throws; every failure is an `err`.
 
@@ -35,6 +36,7 @@ The client never throws; every failure is an `err`.
 **Conformance.**
 - A 2xx response whose body matches `output` yields `ok` with the decoded value.
 - A 2xx response whose body fails `output` yields `err` with `api.decode`, never `ok`.
+- Invalid call input returns `err` `api.input` with issue paths prefixed params/query/body and sends no request.
 - Under sim, with no response, advancing the clock to `timeout - 1` leaves the call pending; advancing to `timeout` yields `api.timeout` and aborts the request signal.
 - A 409 with `errors: { 409: Conflict }` yields `api.status` with a decoded body; an undeclared 500 yields `api.status` with `body: null`.
 - A rejected `fetch` yields `api.network`.

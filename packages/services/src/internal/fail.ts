@@ -3,7 +3,7 @@ import type { ApiError } from "../ApiError.ts";
 
 type Issues = SchemaError["data"]["issues"];
 
-/** Constructors for the four ApiError variants (k.services). */
+/** Constructors for the five ApiError variants (k.services). */
 export const fail = {
   timeout: (ms: number): ApiError<never> => ({
     code: "api.timeout",
@@ -19,6 +19,11 @@ export const fail = {
   decode: (issues: Issues): ApiError<never> => ({
     code: "api.decode",
     message: "value does not match its schema",
+    data: { issues },
+  }),
+  input: (issues: Issues): ApiError<never> => ({
+    code: "api.input",
+    message: "call input does not match its schema",
     data: { issues },
   }),
 };

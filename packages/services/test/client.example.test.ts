@@ -54,7 +54,7 @@ describe("wire format", () => {
 });
 
 describe("errors", () => {
-  test("invalid input is api.decode with the part as path prefix; nothing is sent", async () => {
+  test("invalid input is api.input with the part as path prefix; nothing is sent", async () => {
     const ctx = createCtx({ mode: "sim" });
     let calls = 0;
     ctx.net.route("https://api.test/*", () => {
@@ -62,11 +62,11 @@ describe("errors", () => {
       return new Response("{}");
     });
     const r = await api.add({ ...input, body: { text: "" } }, ctx);
-    expect(!r.ok && r.error).toMatchObject({ code: "api.decode", data: { issues: [{ path: ["body", "text"] }] } });
+    expect(!r.ok && r.error).toMatchObject({ code: "api.input", data: { issues: [{ path: ["body", "text"] }] } });
     expect(calls).toBe(0);
   });
 
-  test("a param encodeURIComponent rejects (lone surrogate) is api.decode at params.<name>", async () => {
+  test("a param encodeURIComponent rejects (lone surrogate) is api.input at params.<name>", async () => {
     const r = await api.add({ ...input, params: { id: "\uD800" } }, createCtx({ mode: "sim" }));
     expect(!r.ok && r.error.data.issues).toEqual([{ path: ["params", "id"], rule: "type" }]);
   });
@@ -93,6 +93,9 @@ describe("errors", () => {
         now: () => {
           throw new Error("no clock");
         },
+        after: () => {
+          throw new Error("no clock");
+        },
       },
     };
     const r = await api.list({}, broken);
@@ -105,11 +108,10 @@ describe("real clock path", () => {
     vi.useRealTimers();
   });
 
-  test("a clock without advance is re-checked after a platform timer", async () => {
+  test("a real clock times out through a platform timer", async () => {
     vi.useFakeTimers();
-    let t = 0;
     const sim = createCtx({ mode: "sim" });
-    const ctx: Ctx = { ...sim, clock: { now: () => t } };
+    const ctx: Ctx = { ...sim, clock: createCtx({ mode: "real" }).clock };
     let aborted = false;
     sim.net.route("https://api.test/*", (req) => {
       req.signal.addEventListener("abort", () => {
@@ -118,10 +120,8 @@ describe("real clock path", () => {
       return new Promise<Response>(() => {});
     });
     const pending = api.list({}, ctx);
-    t = 5_000;
     await vi.advanceTimersByTimeAsync(9_999);
     expect(aborted).toBe(false);
-    t = 10_000;
     await vi.advanceTimersByTimeAsync(1);
     expect(await pending).toEqual({ ok: false, error: expect.objectContaining({ code: "api.timeout" }) });
     expect(aborted).toBe(true);

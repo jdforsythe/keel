@@ -7,7 +7,7 @@ import { endpoints } from "../src/endpoints.ts";
 import { service } from "../src/service.ts";
 
 const BASE = "https://api.test";
-const CODES = ["api.status", "api.decode", "api.timeout", "api.network"];
+const CODES = ["api.status", "api.decode", "api.input", "api.timeout", "api.network"];
 
 const api = service({
   base: BASE,

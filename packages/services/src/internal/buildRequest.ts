@@ -8,7 +8,7 @@ import { fillPath } from "./fillPath.ts";
 
 /**
  * Build the Request for one call: path params URL-encoded, query by its schema, body as JSON. Invalid input is
- * `api.decode`; a Request the platform refuses (bad URL, body on GET) is `api.network`.
+ * `api.input`; a Request the platform refuses (bad URL, body on GET) is `api.network`.
  */
 export function buildRequest(
   e: Endpoint,

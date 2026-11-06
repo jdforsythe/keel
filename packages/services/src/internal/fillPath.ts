@@ -8,7 +8,7 @@ const PARAM = /:([A-Za-z_$][\w$]*)/g;
 
 /**
  * Replace each `:name` in `path` with the URL-encoded text of the encoded param. A value `encodeURIComponent`
- * rejects (a lone surrogate) is `api.decode` at `params.<name>`.
+ * rejects (a lone surrogate) is `api.input` at `params.<name>`.
  */
 export function fillPath(path: string, params: JsonValue | undefined): Result<string, ApiError<never>> {
   const fields = isFields(params) ? params : {};
@@ -19,5 +19,5 @@ export function fillPath(path: string, params: JsonValue | undefined): Result<st
     bad ??= name;
     return "";
   });
-  return bad === undefined ? ok(filled) : err(fail.decode([{ path: ["params", bad], rule: "type" }]));
+  return bad === undefined ? ok(filled) : err(fail.input([{ path: ["params", bad], rule: "type" }]));
 }
