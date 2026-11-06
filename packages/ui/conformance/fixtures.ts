@@ -2,7 +2,10 @@
 // Assumed: `compileStyles` from '@keel/ui/css' is pure, takes { tokens, usages: { props, breakpoint?, state? }[] } and returns { classes: string[][], css: string }; the compiler calls it.
 // Assumed: `contrast(fg, bg)` from '@keel/ui/css' takes two hex colors and returns the WCAG ratio.
 // Axe proper (axe-core) arrives with @keel/testing; `a11yViolations` below is a minimal structural stand-in.
-import { defineTokens } from "@keel/ui";
+import { scope } from "@keel/reactive";
+import { href, manifest } from "@keel/router";
+import { s } from "@keel/schema";
+import { Text, defineTokens } from "@keel/ui";
 
 export const SEED = 1337;
 
@@ -15,6 +18,22 @@ export const tokens = defineTokens({
   breakpoint: { md: "768px" },
   motion: { fast: "120ms" },
 });
+
+/** One-route manifest (k.router) so `Link to` receives a real `Href`. */
+export const routes = manifest({
+  home: { path: "/", params: s.object({}), search: s.object({}), component: () => Text({ children: "home" }) },
+});
+export const home = href("home", {}, {});
+
+/** Runs `fn` inside an ownership scope (k.reactive E1203); `dispose` frees the scope. */
+export const inScope = <T>(fn: () => T): { value: T; dispose: () => void } => {
+  const slot: T[] = [];
+  const sc = scope(() => {
+    slot.push(fn());
+  });
+  // reduce without a seed yields the single element typed T (throws if fn threw before pushing).
+  return { value: slot.reduce((_, x) => x), dispose: () => sc.dispose() };
+};
 
 export const flush = async (): Promise<void> => {
   await Promise.resolve();

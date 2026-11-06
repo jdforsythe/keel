@@ -1,8 +1,8 @@
+import { mount } from "@keel/runtime-dom";
+import { clone, on, template } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
 // Spec: k.runtime Conformance 2. Property seed: 1337.
 import * as fc from "fast-check";
-import { mount } from "@keel/runtime-dom";
-import { clone, on, template } from "@keel/runtime-dom/ops";
 import { describe, expect, it } from "vitest";
 import { SEED, trackListeners } from "./fixtures.ts";
 

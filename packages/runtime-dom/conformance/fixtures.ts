@@ -1,5 +1,5 @@
 // Shared fixtures for k.runtime conformance. Property seed: 1337.
-import { signal } from "@keel/reactive";
+import { scope, signal } from "@keel/reactive";
 import { clone, on, template, text } from "@keel/runtime-dom/ops";
 
 export const SEED = 1337;
@@ -52,6 +52,16 @@ export function trackListeners(): Tracker {
 
 export const click = (el: Element): void => {
   el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+};
+
+/** Runs `fn` inside an ownership scope (k.reactive E1203); `dispose` frees the scope. */
+export const inScope = <T>(fn: () => T): { value: T; dispose: () => void } => {
+  const slot: T[] = [];
+  const sc = scope(() => {
+    slot.push(fn());
+  });
+  // reduce without a seed yields the single element typed T (throws if fn threw before pushing).
+  return { value: slot.reduce((_, x) => x), dispose: () => sc.dispose() };
 };
 
 export const flush = async (): Promise<void> => {

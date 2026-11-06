@@ -1,7 +1,7 @@
+import { defineTokens } from "@keel/ui";
 // Spec: k.ui Conformance 3. Property seed: 1337.
 // Assumed: motion tokens are emitted as CSS custom properties whose names contain the token name.
 import { compileStyles } from "@keel/ui/css";
-import { defineTokens } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, mediaBlocks, tokens, withoutMedia } from "./fixtures.ts";

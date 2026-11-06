@@ -1,11 +1,11 @@
-// @vitest-environment happy-dom
-// Spec: k.runtime Conformance 1. Property seed: 1337.
-import * as fc from "fast-check";
 import { signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { clone, on, template, text } from "@keel/runtime-dom/ops";
+// @vitest-environment happy-dom
+// Spec: k.runtime Conformance 1. Property seed: 1337.
+import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { SEED, click, flush, trackListeners } from "./fixtures.ts";
+import { SEED, click, flush, inScope, trackListeners } from "./fixtures.ts";
 
 const T = template('<div id="root"><button id="b">x</button></div>');
 
@@ -34,17 +34,23 @@ describe("k.runtime: mount then dispose leaves zero event listeners and zero rea
   });
 
   it("mount then dispose leaves zero reactive subscriptions: a signal written after dispose runs nothing", async () => {
-    const s = signal(0);
     let runs = 0;
     const el = document.createElement("div");
-    const dispose = mount(() => {
-      const r = clone(T);
-      text(r, () => {
-        runs++;
-        return String(s.get());
-      });
-      return r;
-    }, el);
+    const {
+      value: { s, dispose },
+      dispose: endScope,
+    } = inScope(() => {
+      const s = signal(0);
+      const dispose = mount(() => {
+        const r = clone(T);
+        text(r, () => {
+          runs++;
+          return String(s.get());
+        });
+        return r;
+      }, el);
+      return { s, dispose };
+    });
     const before = runs;
     s.set(1);
     await flush();
@@ -55,6 +61,7 @@ describe("k.runtime: mount then dispose leaves zero event listeners and zero rea
     s.set(3);
     await flush();
     expect(runs).toBe(after);
+    endScope();
   });
 
   it("after dispose, a click dispatched on the old tree runs no handler", () => {

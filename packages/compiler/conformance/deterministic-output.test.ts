@@ -18,7 +18,7 @@ test("Compiling the same sources twice yields byte-identical JS and artifacts", 
     fc.property(
       fc.stringMatching(/^[a-z]{1,8}$/),
       fc.nat(1000),
-      fc.constantFrom("client", "server"),
+      fc.constantFrom<"client" | "server">("client", "server"),
       (label, n, mode) => {
         const files = [{ path: "C.tsx", source: tpl(label, n) }];
         const a = compile(files, { mode });

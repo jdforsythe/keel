@@ -6,7 +6,7 @@ import { mount } from "@keel/runtime-dom";
 import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, Text, TextArea } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { SEED, flush } from "./fixtures.ts";
+import { SEED, flush, home, inScope } from "./fixtures.ts";
 
 const attrsExceptClass = (e: Element): [string, string][] =>
   Array.from(e.attributes)
@@ -17,9 +17,14 @@ describe("k.ui: A signal bound to a style prop changes only the element's class 
   it("A signal bound to a style prop changes only the element's class list", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(fc.constantFrom("0", "1", "2", "3"), { minLength: 1, maxLength: 6 }), async (seq) => {
-        const s = signal<string>("0");
         const host = document.createElement("div");
-        const dispose = mount(() => Box({ p: s, children: "x" }), host);
+        const {
+          value: { s, unmount },
+          dispose: endScope,
+        } = inScope(() => {
+          const s = signal<string>("0");
+          return { s, unmount: mount(() => Box({ p: s, children: "x" }), host) };
+        });
         const box = host.firstElementChild;
         if (box === null) throw new Error("no element");
         const attrs = attrsExceptClass(box);
@@ -32,23 +37,30 @@ describe("k.ui: A signal bound to a style prop changes only the element's class 
           expect(attrsExceptClass(box)).toEqual(attrs);
           expect(box.hasAttribute("style")).toBe(false);
         }
-        dispose();
+        unmount();
+        endScope();
       }),
       { seed: SEED, numRuns: 25 },
     );
   });
 
   it("changing the bound value changes the class list", async () => {
-    const s = signal<string>("1");
     const host = document.createElement("div");
-    const dispose = mount(() => Box({ p: s }), host);
+    const {
+      value: { s, unmount },
+      dispose: endScope,
+    } = inScope(() => {
+      const s = signal<string>("1");
+      return { s, unmount: mount(() => Box({ p: s }), host) };
+    });
     const box = host.firstElementChild;
     if (box === null) throw new Error("no element");
     const before = box.className;
     s.set("3");
     await flush();
     expect(box.className).not.toBe(before);
-    dispose();
+    unmount();
+    endScope();
   });
 
   it("no element ever has a style attribute", () => {
@@ -58,12 +70,12 @@ describe("k.ui: A signal bound to a style prop changes only the element's class 
         Box({
           p: "2",
           bg: "bg",
-          hover: { bg: "accent" },
+          states: { hover: { bg: "accent" } },
           children: [
             Text({ fg: "fg", children: "t" }),
             Heading({ level: 1, children: "h" }),
             Button({ children: "b" }),
-            Link({ to: "/", children: "l" }),
+            Link({ to: home, children: "l" }),
             Image({ alt: "i", w: "3" }),
             Input({ label: "a" }),
             TextArea({ label: "b" }),

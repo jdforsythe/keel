@@ -1,13 +1,13 @@
+import { effect, signal } from "@keel/reactive";
+import { Boundary, mount } from "@keel/runtime-dom";
+import { boundary, clone, on, template } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
 // Spec: k.errors Boundaries + Conformance (Boundary clauses). Property seed: 1337.
 // Covered elsewhere: ok/err/attempt/s.result (packages/schema/conformance/result.test.ts),
 // throwing transaction (packages/store/conformance/throws.test.ts).
 import * as fc from "fast-check";
-import { effect, signal } from "@keel/reactive";
-import { Boundary, mount } from "@keel/runtime-dom";
-import { boundary, clone, on, template } from "@keel/runtime-dom/ops";
 import { describe, expect, it } from "vitest";
-import { SEED, click, flush } from "./fixtures.ts";
+import { SEED, click, flush, inScope } from "./fixtures.ts";
 
 type Caught = { code: string; message: string; data: { at: string } };
 const isCaught = (e: unknown): e is Caught =>
@@ -21,7 +21,7 @@ const isCaught = (e: unknown): e is Caught =>
   "at" in e.data &&
   typeof e.data.at === "string";
 
-const node = (html: string): Node => clone(template(html));
+const node = (html: string): Element => clone(template(html));
 const para = (id: string, text: string): Node => node(`<p id="${id}">${text}</p>`);
 const mark = (): Node => node('<span id="slot"></span>');
 
@@ -154,7 +154,7 @@ describe("k.errors: Boundary", () => {
   it("after a catch, no effect created in the failed subtree runs again", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(fc.integer(), { minLength: 1, maxLength: 5 }), async (writes) => {
-        const s = signal(-1);
+        const { value: s, dispose: endScope } = inScope(() => signal(-1));
         let runs = 0;
         const { dispose } = setup({
           inner: () => {
@@ -177,13 +177,14 @@ describe("k.errors: Boundary", () => {
         }
         expect(runs).toBe(before);
         dispose();
+        endScope();
       }),
       { seed: SEED, numRuns: 20 },
     );
   });
 
   it("after a catch from an event handler, effects created in the failed subtree do not run again", async () => {
-    const s = signal(0);
+    const { value: s, dispose: endScope } = inScope(() => signal(0));
     let runs = 0;
     const { host, dispose } = setup({
       inner: () => {
@@ -210,6 +211,7 @@ describe("k.errors: Boundary", () => {
     await flush();
     expect(runs).toBe(before);
     dispose();
+    endScope();
   });
 
   it("reset() re-renders the children", async () => {
