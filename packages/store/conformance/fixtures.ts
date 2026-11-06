@@ -1,8 +1,8 @@
+import { scope } from "@keel/reactive";
+import { s } from "@keel/schema";
+import { store, transaction, tx } from "@keel/store";
 // Shared fixtures for k.store conformance. Seed 1337 (recorded here, used by every suite).
 import fc from "fast-check";
-import { s } from "@keel/schema";
-import { scope } from "@keel/reactive";
-import { store, transaction, tx } from "@keel/store";
 
 export const SEED = 1337;
 export const RUNS = 100;

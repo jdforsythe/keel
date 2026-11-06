@@ -1,7 +1,7 @@
+import { invariant } from "@keel/store";
+import fc from "fast-check";
 // Spec: k.store (ADR-0003 named transactions) invariant(store, fn): checked after every tx; violation -> err store.invariant + rollback. Seed 1337.
 import { describe, expect, it } from "vitest";
-import fc from "fast-check";
-import { invariant } from "@keel/store";
 import { applyOp, inScope, makeCart, opArb, opts } from "./fixtures";
 
 describe("k.store: invariants", () => {

@@ -44,7 +44,7 @@ describe("subscription bookkeeping", () => {
     let observers = -1;
     scope(() => {
       const s = createNode("signal", undefined, []);
-      let inner: Scope = { dispose: () => {} };
+      let inner: Scope = { dispose: () => {}, parent: undefined, onDispose: () => {} };
       batch(() => {
         inner = scope(() => {
           watch(

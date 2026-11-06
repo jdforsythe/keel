@@ -1,3 +1,4 @@
+import type { Scope } from "../types/Scope.ts";
 /**
  * One graph node. Signals have no `fn`; computeds, effects and resources do (it returns "value changed");
  * scopes only own children. Effects and resources are pushed by the commit, never pulled by a read.
@@ -14,4 +15,8 @@ export interface Node {
   owned: Node[];
   writes: readonly unknown[];
   gone: boolean;
+  /** Scope nodes only: the public handle. */
+  handle?: Scope;
+  /** Scope nodes only: callbacks run on dispose. */
+  hooks?: (() => void)[] | undefined;
 }

@@ -1,7 +1,7 @@
+import { computed, effect, scope } from "@keel/reactive";
+import fc from "fast-check";
 // Spec: k.store API, "Reads: cart.get('items'), cart.select(fn) as computeds". Seed 1337.
 import { describe, expect, it } from "vitest";
-import fc from "fast-check";
-import { effect, scope, computed } from "@keel/reactive";
 import { applyOp, inScope, makeCart, opArb, opts } from "./fixtures";
 
 describe("k.store: reactive reads", () => {

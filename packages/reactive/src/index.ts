@@ -2,6 +2,7 @@ export { batch } from "./batch.ts";
 export { computed } from "./computed.ts";
 export { effect } from "./effect.ts";
 export { inspect } from "./inspect.ts";
+export { owner } from "./owner.ts";
 export { resource } from "./resource.ts";
 export { scope } from "./scope.ts";
 export { signal } from "./signal.ts";

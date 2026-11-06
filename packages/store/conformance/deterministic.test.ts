@@ -1,6 +1,6 @@
+import fc from "fast-check";
 // Spec: k.store Conformance, "Transactions are deterministic for equal inputs". Seed 1337.
 import { describe, expect, it } from "vitest";
-import fc from "fast-check";
 import { applyOp, makeCart, opArb, opts } from "./fixtures";
 
 // E1302 (transaction purity: no ctx/global access) is a static checker rule; untestable at runtime here.

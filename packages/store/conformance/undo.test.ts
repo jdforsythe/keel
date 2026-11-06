@@ -1,6 +1,6 @@
+import fc from "fast-check";
 // Spec: k.store Conformance, "undo is exact inverse". Seed 1337.
 import { describe, expect, it } from "vitest";
-import fc from "fast-check";
 import { applyOp, makeCart, opArb, opts } from "./fixtures";
 
 describe("k.store: undo", () => {

@@ -42,10 +42,10 @@ export function model(ops: readonly Op[]): Counter[] {
   return hist;
 }
 
-export function makeCounter(clock?: () => number) {
+export function makeCounter(clock?: () => number, start: Counter = initial) {
   const box: { kit?: ReturnType<typeof build> } = {};
   const build = () => {
-    const c = store(Counter, initial, clock === undefined ? undefined : { clock });
+    const c = store(Counter, start, clock === undefined ? undefined : { clock });
     return {
       c,
       add: transaction(c, "counter.add", s.object({ by: s.int() }), (st, { by }) => ({ ...st, n: st.n + by })),

@@ -15,4 +15,7 @@ export function dispose(n: Node): void {
   }
   disposeOwned(n);
   unlink(n);
+  const hooks = n.hooks;
+  n.hooks = undefined;
+  if (hooks) for (const h of hooks) h();
 }

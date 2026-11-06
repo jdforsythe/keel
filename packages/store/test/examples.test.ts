@@ -49,12 +49,66 @@ describe("@keel/store examples", () => {
     expect(JSON.stringify([k.c.snapshot(), k.c.log()])).toBe(before);
   });
 
-  it("a uses declaration stops applying once its scope is disposed", () => {
+  it("a uses declaration is dropped once its scope is disposed", () => {
     const k = makeCounter();
-    const declaring = scope(() => k.c.uses([k.add]));
-    expect(tx(k.reset, {}).ok).toBe(false);
+    let denied = false;
+    const declaring = scope(() => {
+      k.c.uses([k.add]);
+      denied = !tx(k.reset, {}).ok;
+    });
+    expect(denied).toBe(true);
+    // A descendant scope inherits the restriction; after disposal nothing restricts.
+    let nested = true;
+    scope(() => {
+      nested = tx(k.reset, {}).ok;
+    });
+    expect(nested).toBe(true);
     declaring.dispose();
-    expect(tx(k.reset, {}).ok).toBe(true);
+    scope(() => {
+      expect(tx(k.reset, {}).ok).toBe(true);
+    });
+  });
+
+  it("a descendant scope is restricted by an ancestor's declaration", () => {
+    const k = makeCounter();
+    let code: string | undefined;
+    let allowed: boolean | undefined;
+    scope(() => {
+      k.c.uses([k.add]);
+      scope(() => {
+        const r = tx(k.reset, {});
+        code = r.ok ? undefined : r.error.code;
+        allowed = tx(k.add, { by: 1 }).ok;
+      });
+    });
+    expect(code).toBe("store.undeclared");
+    expect(allowed).toBe(true);
+  });
+
+  it("restore with a different initial makes undo exact against the restored base", () => {
+    const src = makeCounter(undefined, { n: 10, tags: [] });
+    tx(src.add, { by: 1 });
+    tx(src.add, { by: 2 });
+    const dst = makeCounter();
+    expect(dst.c.restore(JSON.parse(JSON.stringify(src.c.snapshot()))).ok).toBe(true);
+    expect(dst.c.undo()).toBe(true);
+    expect(dst.c.get("n")).toBe(11);
+    expect(dst.c.undo()).toBe(true);
+    expect(dst.c.get("n")).toBe(10);
+    expect(dst.c.snapshot().initial.n).toBe(10);
+  });
+
+  it("restore rejects an invalid or missing initial and changes nothing", () => {
+    const k = makeCounter();
+    tx(k.add, { by: 1 });
+    const snap = k.c.snapshot();
+    const before = JSON.stringify(k.c.snapshot());
+    for (const bad of [
+      { state: snap.state, log: snap.log },
+      { ...snap, initial: { n: "x", tags: [] } },
+    ])
+      expect(k.c.restore(bad).ok).toBe(false);
+    expect(JSON.stringify(k.c.snapshot())).toBe(before);
   });
 
   it("uses outside a scope throws (E1203)", () => {

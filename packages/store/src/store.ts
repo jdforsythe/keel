@@ -1,13 +1,14 @@
-import { type Computed, batch, computed, signal } from "@keel/reactive";
+import { type Computed, type Scope, batch, computed, owner, signal } from "@keel/reactive";
 import { type Result, type Schema, type SchemaError, err, ok, s } from "@keel/schema";
 import type { Bound } from "./internal/Bound.ts";
 import type { Row } from "./internal/Row.ts";
 import type { TxError } from "./internal/TxError.ts";
 import { copy } from "./internal/copy.ts";
 import { coreKey } from "./internal/coreKey.ts";
+import { counter } from "./internal/counter.ts";
 import { freeze } from "./internal/freeze.ts";
-import { liveness } from "./internal/liveness.ts";
 import { logSchema } from "./internal/logSchema.ts";
+import { registry } from "./internal/registry.ts";
 import { undeclared } from "./internal/undeclared.ts";
 import { violated } from "./internal/violated.ts";
 import type { Store } from "./types/Store.ts";
@@ -15,18 +16,20 @@ import type { Transaction } from "./types/Transaction.ts";
 
 /**
  * Create a store inside a scope (E1203 outside one). State is validated, copied and deep-frozen.
- * `clock` stamps log entries (default: a per-store counter). Undo replays the log from `initial`.
+ * `clock` stamps log entries (default: a per-store counter). Undo replays the log from the snapshot base
+ * (`initial`, or the `initial` of the last restored snapshot). `id` defaults to `store.<n>`; a live duplicate throws.
  */
 export function store<T extends object>(
   schema: Schema<T>,
   initial: NoInfer<T>,
   options?: { readonly id?: string; readonly clock?: () => number },
 ): Store<T> {
-  const id = options?.id ?? "store";
+  const id = options?.id ?? `store.${++counter.next}`;
+  if (registry.has(id)) throw new Error(`store ${id}: id already in use by a live store`);
   const clock = options?.clock;
   const start = copy(schema, initial);
   if (!start.ok) throw new Error(`store ${id}: initial state invalid: ${start.error.message}`);
-  const base = freeze(start.value);
+  let base = freeze(start.value);
   const root = signal(base);
   const version = signal(0);
   let current = base;
@@ -35,7 +38,7 @@ export function store<T extends object>(
   let seq = 0;
   let tick = 0;
   const guards: ((state: T) => boolean)[] = [];
-  let decls: { alive: () => boolean; allowed: ReadonlySet<Transaction<T, unknown>> }[] = [];
+  const decls = new Map<Scope, Set<Transaction<T, unknown>>>();
   const payloads = new Map<string, Schema<unknown>>();
   const binders = new Map<string, (raw: unknown) => Result<Bound<T>, SchemaError>>();
 
@@ -56,10 +59,16 @@ export function store<T extends object>(
       version.set(++ver);
     });
 
-  // Union of the live `uses` declarations; none live means nothing is enforced.
+  // Declarations of the calling scope and its ancestors; none in the chain means unrestricted.
   const declared = (t: Transaction<T, unknown>): boolean => {
-    decls = decls.filter((d) => d.alive());
-    return decls.length === 0 || decls.some((d) => d.allowed.has(t));
+    let restricted = false;
+    for (let sc = owner(); sc !== undefined; sc = sc.parent) {
+      const allowed = decls.get(sc);
+      if (allowed === undefined) continue;
+      if (allowed.has(t)) return true;
+      restricted = true;
+    }
+    return !restricted;
   };
 
   const run = (t: Transaction<T, unknown>, bound: Result<Bound<T>, SchemaError>): Result<T, TxError> => {
@@ -78,7 +87,7 @@ export function store<T extends object>(
     });
   };
 
-  return {
+  const self: Store<T> = {
     id,
     get(key) {
       const cell = cells.get(key);
@@ -99,18 +108,22 @@ export function store<T extends object>(
         rows.map((r) => r.entry),
       );
       if (!state.ok || !log.ok) throw new Error(`store ${id}: committed state or log no longer fits its schema`);
-      return { state: state.value, log: log.value };
+      const initial = copy(schema, base);
+      if (!initial.ok) throw new Error(`store ${id}: initial state no longer fits its schema`);
+      return { state: state.value, log: log.value, initial: initial.value };
     },
     restore(snap) {
       const codec = logSchema(payloads);
-      const whole = s.object({ state: schema, log: codec }).parse(snap);
+      const whole = s.object({ state: schema, log: codec, initial: schema }).parse(snap);
       if (!whole.ok) return whole;
-      if (typeof snap !== "object" || snap === null || !("state" in snap) || !("log" in snap))
+      if (typeof snap !== "object" || snap === null || !("state" in snap) || !("log" in snap) || !("initial" in snap))
         throw new Error("unreachable: snapshot passed its schema");
       const state = copy(schema, snap.state);
       if (!state.ok) return state;
       const log = copy(codec, snap.log);
       if (!log.ok) return log;
+      const initial = copy(schema, snap.initial);
+      if (!initial.ok) return initial;
       const next: Row<T>[] = [];
       for (const e of log.value) {
         const bound = binders.get(e.name)?.(e.payload);
@@ -123,6 +136,7 @@ export function store<T extends object>(
         tick = Math.max(tick, r.entry.at);
       }
       const restored = freeze(state.value);
+      base = freeze(initial.value);
       commit(restored, next);
       return ok(restored);
     },
@@ -136,7 +150,13 @@ export function store<T extends object>(
       return true;
     },
     uses(list) {
-      decls.push({ alive: liveness(), allowed: new Set(list) });
+      const sc = owner();
+      if (sc === undefined) throw new Error("E1203: uses() called outside any scope; wrap it in scope(fn)");
+      const known = decls.get(sc);
+      if (known === undefined) {
+        decls.set(sc, new Set(list));
+        sc.onDispose(() => decls.delete(sc));
+      } else for (const x of list) known.add(x);
     },
     [coreKey]: {
       define<P>(name: string, payload: Schema<P>, fn: (state: T, payload: P) => T): Transaction<T, P> {
@@ -157,4 +177,11 @@ export function store<T extends object>(
       },
     },
   };
+  const sc = owner();
+  if (sc === undefined) throw new Error("E1203: store created outside any scope; wrap it in scope(fn)");
+  registry.set(id, self);
+  sc.onDispose(() => {
+    if (registry.get(id) === self) registry.delete(id);
+  });
+  return self;
 }

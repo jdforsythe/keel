@@ -1,6 +1,6 @@
+import fc from "fast-check";
 // Spec: k.store Conformance, "snapshot round-trips through JSON". Seed 1337.
 import { describe, expect, it } from "vitest";
-import fc from "fast-check";
 import { applyOp, makeCart, opArb, opts } from "./fixtures";
 
 describe("k.store: snapshot", () => {
@@ -33,5 +33,29 @@ describe("k.store: snapshot", () => {
       }),
       opts,
     );
+  });
+});
+
+describe("k.store: snapshot carries initial", () => {
+  it("undo after restore from a store with a different initial is the exact inverse against the restored base", () => {
+    fc.assert(
+      fc.property(fc.array(opArb, { minLength: 1, maxLength: 10 }), (ops) => {
+        const src = makeCart();
+        for (const op of ops) applyOp(src, op);
+        const dst = makeCart();
+        dst.cart.restore(JSON.parse(JSON.stringify(src.cart.snapshot())));
+        const expected = makeCart();
+        for (const op of ops.slice(0, -1)) applyOp(expected, op);
+        const logged = src.cart.log().length;
+        expect(dst.cart.undo()).toBe(logged > 0);
+        if (logged === ops.length) expect(dst.cart.snapshot().state).toEqual(expected.cart.snapshot().state);
+      }),
+      opts,
+    );
+  });
+
+  it("snapshot() exposes the initial state", () => {
+    const k = makeCart();
+    expect(k.cart.snapshot().initial).toEqual({ items: [] });
   });
 });
