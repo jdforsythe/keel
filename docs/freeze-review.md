@@ -13,9 +13,9 @@
 | k.ctx | 8 | 7 | 1 | 0 | 0 | no | `keel test` itself runs under sim (`default-sim` only sets `KEEL_TEST=1`) |
 | k.errors | 14 | 13 | 1 | 0 | 0 | no | E1453, E1454 trigger + clean fixtures; status line still `proposed` |
 | k.compiler | 8 | 6 | 1 | 1 | 0 | no | `.keel/` byte change → E1005 (`keel-dir-tamper` skip); `ids.json` keys via harness `find(id)` (test uses `getElementById`) |
-| k.component | 5 | 0 | 5 | 0 | 0 | no | purity over equal state; full a11y snapshot (not `[id, role]`); every element via `find`; children thunk in child scope; real base element |
+| k.component | 5 | 5 | 0 | 0 | 0 | **conformance-covered** | none (rfc:0021: `testing/conformance/component-*.test.ts`; compiler cannot import testing or ui, S0003, so its two files stay compiled stand-ins) |
 | k.runtime | 11 | 8 | 1 | 2 | 0 | no | `state()` equals snapshot after resume (todo); no islands → no runtime JS (todo); post-resume `fire(id)` vs client-only state and DOM |
-| k.ui | 11 | 5 | 6 | 0 | 0 | no | `p={{ base, md }}` object prop; axe on base elements; E1804 reported by check (pass and fail); Button/Checkbox via harness `fire` |
+| k.ui | 11 | 11 | 0 | 0 | 0 | **conformance-covered** | none (rfc:0021: `testing/conformance/ui-*.test.ts`; E1804 was unimplemented and is now a `check` rule reading the `tokens` artifact; Checkbox change is driven by `fire` click, which toggles then emits change; `fire(id, 'change')` alone passes the held state) |
 | k.router | 9 | 8 | 1 | 0 | 0 | no | E1501 diagnostic, not type only (E1502-E1506 trigger + clean tests landed, rfc:0020, `rules-e1501-e1506.test.ts`) |
 | k.server | 7 | 6 | 0 | 1 | 0 | no | dev log stream: one `req` per request, json lines parse (todo) |
 | k.services | 9 | 8 | 0 | 1 | 0 | no | OpenAPI fixture client: one method per operation, types match (todo) |
@@ -23,8 +23,8 @@
 | k.cli | 10 | 9 | 0 | 0 | 1 | no | `GET /__keel/inspect` on a dev `createApp` and prod 404 (server side; parity, MCP schema fields/types, inspect client and E1056 landed, rfc:0020: `surfaces.test.ts`, `inspect.test.ts`) |
 | k.module | 7 | 6 | 1 | 0 | 0 | no | malformed stdlib manifest rejected by `ModuleSchema`; E1153, E1155-E1157 on a stdlib module |
 | k.scaffold | 7 | 4 | 3 | 0 | 0 | no | run `keel check` + `keel test` after every generator (proxy: imports resolve; transaction, service skipped); printed dry-run diff equals apply; `turbo.json` vs independently computed graph |
-| k.testing | 9 | 6 | 3 | 0 | 0 | no | default-sim render and a seed-dependent state; `fire` awaiting a triggered resource; rung promotion from real test runs |
-| **total** | **165** | **131** | **28** | **5** | **1** | 2 of 18 | |
+| k.testing | 9 | 9 | 0 | 0 | 0 | **conformance-covered** | none (rfc:0021: `default-sim-seed`, `fire-resource`, `ledger-real-runs`). Finding: `fire` settles on 32 DOM-quiet microtask hops, so a resource pending 40+ hops with no DOM change is missed; asserted to 24 hops |
+| **total** | **165** | **145** | **14** | **5** | **1** | 5 of 18 | |
 
 ## 2. One-way audit (principle 1)
 

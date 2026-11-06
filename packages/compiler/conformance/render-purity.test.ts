@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below).
-// Also covered elsewhere or untestable here: a11y tree snapshot stability and harness find(id) need @keel/testing (not yet available).
+// Compiled stand-in only (compiler precedes testing in deps order, S0003). The harness assertions (find, a11y snapshot, real base elements) are packages/testing/conformance/component-*.test.ts (rfc:0021).
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";

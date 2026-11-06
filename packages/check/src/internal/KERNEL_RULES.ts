@@ -1,3 +1,4 @@
+import { lowContrast } from "../rules/lowContrast.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noDomQueryInTest } from "../rules/noDomQueryInTest.ts";
 import { noInlineStyle } from "../rules/noInlineStyle.ts";
@@ -28,4 +29,5 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noUnsafeSyntax,
   noInlineStyle,
   noIntrinsicElement,
+  lowContrast,
 ];

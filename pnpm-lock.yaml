@@ -439,6 +439,9 @@ importers:
 
   packages/testing:
     dependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -460,6 +463,9 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
       fast-check:
         specifier: ^3
         version: 3.23.2

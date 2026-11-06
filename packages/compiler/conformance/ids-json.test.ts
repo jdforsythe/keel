@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below).
-// The harness find(id) lives in @keel/testing, not yet available; resolution is checked via the id attribute in the mounted DOM (getElementById).
+// Mounted-DOM stand-in (compiler precedes testing in deps order, S0003). Resolution through the harness find(id) is packages/testing/conformance/component-ids-find.test.ts (rfc:0021).
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { mount } from "@keel/runtime-dom";

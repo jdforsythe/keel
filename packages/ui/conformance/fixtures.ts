@@ -1,7 +1,7 @@
 // Shared fixtures for k.ui conformance. Property seed: 1337.
 // Assumed: `compileStyles` from '@keel/ui/css' is pure, takes { tokens, usages: { props, breakpoint?, state? }[] } and returns { classes: string[][], css: string }; the compiler calls it.
 // Assumed: `contrast(fg, bg)` from '@keel/ui/css' takes two hex colors and returns the WCAG ratio.
-// Axe proper (axe-core) arrives with @keel/testing; `a11yViolations` below is a minimal structural stand-in.
+// Axe, style-signal and E1804 check conformance lives in packages/testing/conformance/ui-*.test.ts (rfc:0021).
 import { scope } from "@keel/reactive";
 import { href, manifest } from "@keel/router";
 import { s } from "@keel/schema";
@@ -87,43 +87,6 @@ export const withoutMedia = (css: string): string => {
     }
     n = n.slice(0, at) + n.slice(i);
   }
-};
-
-const hasText = (e: Element): boolean => (e.textContent ?? "").trim().length > 0;
-const labelled = (e: Element, root: Element): boolean => {
-  const aria = e.getAttribute("aria-label");
-  if (aria !== null && aria.trim().length > 0) return true;
-  const id = e.getAttribute("id");
-  if (id === null || id === "") return false;
-  for (const l of Array.from(root.querySelectorAll("label"))) {
-    if (l.getAttribute("for") === id && hasText(l)) return true;
-  }
-  return false;
-};
-
-/** Minimal structural a11y check; returns violation descriptions. */
-export const a11yViolations = (root: Element): string[] => {
-  const v: string[] = [];
-  for (const e of Array.from(root.querySelectorAll("img"))) {
-    if (!e.hasAttribute("alt") && e.getAttribute("role") !== "presentation") v.push("img-alt");
-  }
-  for (const e of Array.from(root.querySelectorAll("input, textarea, select"))) {
-    if (e.getAttribute("type") === "hidden") continue;
-    if (!labelled(e, root)) v.push(`control-label:${e.tagName.toLowerCase()}`);
-  }
-  for (const e of Array.from(root.querySelectorAll("h1, h2, h3, h4, h5, h6, [role=heading]"))) {
-    const lvl = e.getAttribute("aria-level");
-    if (!/^h[1-6]$/i.test(e.tagName) && lvl === null) v.push("heading-level");
-  }
-  for (const e of Array.from(root.querySelectorAll("button"))) {
-    const aria = e.getAttribute("aria-label");
-    if (!hasText(e) && (aria === null || aria.trim() === "")) v.push("button-name");
-  }
-  for (const e of Array.from(root.querySelectorAll("a"))) {
-    const aria = e.getAttribute("aria-label");
-    if (!hasText(e) && (aria === null || aria.trim() === "")) v.push("link-name");
-  }
-  return v;
 };
 
 /** WCAG 2.x relative luminance contrast, computed independently of the implementation. */

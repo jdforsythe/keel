@@ -17,6 +17,7 @@
     "mutate": "stryker run"
   },
   "dependencies": {
+    "@keel/check": "workspace:*",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
@@ -24,6 +25,7 @@
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*",
     "fast-check": "^3"
   },
   "devDependencies": {
