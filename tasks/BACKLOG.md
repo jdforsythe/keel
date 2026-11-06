@@ -17,7 +17,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0013 component: props schema, slots, ids, rules E14xx · compiler · k.component · G1 · 0011
 - [ ] 0014 router: manifest, params, search, href · router · k.router · G1 · 0013
 - [ ] 0015 router: loaders, actions by verb, Form, revalidation, guards, scroll and focus · router · k.router · G1 · 0014
-- [ ] 0016 forms: form(schema), bindings, validation, submit, server errors · forms · k.forms · G1 · 0015
+- [x] 0016 forms: form(schema), bindings, validation, submit, server errors · forms · k.forms · G1 · 0015
 - [ ] 0017 ui: tokens, style props, atomic CSS, scoped styles · ui · k.ui · G1 · 0013
 - [ ] 0018 ui: base elements with a11y-required props; standard slots · ui · k.ui · G1 · 0017
 - [ ] 0019 errors: Result, boundaries, thrown-exception lint · schema · k.errors · G1 · 0003
