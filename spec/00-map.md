@@ -35,7 +35,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.scaffold | Scaffold and codemods | implemented | structural edits as operations |
 | k.testing | Harness and ledger | implemented | given state, do events, expect; rungs |
 | k.server | Thin server | proposed | loaders, actions, dev server, adapters, local topology |
-| k.services | Thin services | proposed | typed client from schema, timeouts, ApiError |
+| k.services | Thin services | implemented | typed client from schema, timeouts, ApiError |
 | k.module | Module manifest | proposed | declared public surface; cross-module access checked |
 
 ## Stdlib

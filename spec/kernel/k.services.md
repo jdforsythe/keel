@@ -1,5 +1,5 @@
 # k.services: Thin services
-status: proposed
+status: implemented
 
 **API.**
 ```ts

@@ -1,9 +1,16 @@
 {
   "version": 1,
-  "unsafe": 5,
+  "unsafe": 6,
   "mutationScore": {
+    "ctx": 83,
+    "forms": 55.4,
     "reactive": 87.5,
-    "schema": 76.4
+    "router": 63.4,
+    "runtime-dom": 68.2,
+    "schema": 92.1,
+    "services": 75.9,
+    "store": 76.9,
+    "ui": 70.3
   },
   "exports": [
     {
@@ -400,6 +407,18 @@
       "pkg": "server",
       "name": "topology",
       "file": "packages/server/src/topology.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "services",
+      "name": "endpoints",
+      "file": "packages/services/src/endpoints.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "services",
+      "name": "service",
+      "file": "packages/services/src/service.ts",
       "rung": "probabilistic"
     },
     {

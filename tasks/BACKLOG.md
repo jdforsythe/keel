@@ -30,7 +30,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0026 testing: schema-generated properties; invariants; ledger · testing · k.testing · G1 · 0025
 - [ ] 0027 golden app 1 (client-only) built by agent from spec + skill; record eval baseline · apps · all · G1 · 0001-0026
 - [ ] 0028 server: Hono adapter, loaders and actions, dev server, log stream · server · k.server · G2 · 0015
-- [ ] 0029 services: typed client from OpenAPI, timeouts, ApiError · services · k.services · G2 · 0028
+- [x] 0029 services: typed client from OpenAPI, timeouts, ApiError · services · k.services · G2 · 0028
 - [ ] 0030 module manifest and cross-module check · check · k.module · G2 · 0021
 - [ ] 0031 inspector viewer built in Keel · apps · k.cli · G2 · 0027 0028
 - [ ] 0032 golden app 1 with real API; evals rerun · apps · all · G2 · 0029
