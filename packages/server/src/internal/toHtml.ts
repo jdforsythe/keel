@@ -1,3 +1,4 @@
+import { escapeComment } from "./dom/escapeComment.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 
 /**
@@ -12,7 +13,7 @@ export function toHtml(out: unknown): string {
   if (typeof Node !== "undefined" && out instanceof Node) {
     if (out instanceof Element) return out.outerHTML;
     if (out.nodeType === 3) return escapeHtml(out.nodeValue ?? "");
-    if (out.nodeType === 8) return `<!--${out.nodeValue ?? ""}-->`;
+    if (out.nodeType === 8) return `<!--${escapeComment(out.nodeValue ?? "")}-->`;
     return Array.from(out.childNodes, toHtml).join("");
   }
   return typeof out === "number" ? String(out) : escapeHtml(String(out));

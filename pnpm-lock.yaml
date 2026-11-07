@@ -483,6 +483,9 @@ importers:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/node':
         specifier: ^22
         version: 22.20.5

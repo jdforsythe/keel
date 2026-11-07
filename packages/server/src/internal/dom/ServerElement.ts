@@ -1,10 +1,14 @@
 import type { ServerDocument } from "./ServerDocument.ts";
 import { ServerNode } from "./ServerNode.ts";
+import { assertName } from "./assertName.ts";
 import { cloneChildren } from "./cloneChildren.ts";
 import { parseHtml } from "./parseHtml.ts";
 import { serializeNode } from "./serializeNode.ts";
 
-/** A server element (`nodeType` 1): attributes, children, `innerHTML`/`outerHTML`; events are accepted and never fire. */
+/**
+ * A server element (`nodeType` 1): attributes, children, `innerHTML`/`outerHTML`; events are accepted and never fire.
+ * An invalid element or attribute name throws `InvalidCharacterError` (`assertName`), as in a browser.
+ */
 export class ServerElement extends ServerNode {
   override nodeType = 1;
   readonly localName: string;
@@ -12,7 +16,7 @@ export class ServerElement extends ServerNode {
 
   constructor(doc: ServerDocument | null, localName: string) {
     super(doc);
-    this.localName = localName.toLowerCase();
+    this.localName = assertName("element", localName).toLowerCase();
   }
 
   get tagName(): string {
@@ -48,7 +52,7 @@ export class ServerElement extends ServerNode {
   }
 
   setAttribute(name: string, value: string): void {
-    this.attrs.set(name.toLowerCase(), String(value));
+    this.attrs.set(assertName("attribute", name).toLowerCase(), String(value));
   }
 
   getAttribute(name: string): string | null {
@@ -76,8 +80,13 @@ export class ServerElement extends ServerNode {
     return null;
   }
 
+  /** The nodes `innerHTML` serializes: the children (a template's `content` instead). */
+  contentNodes(): ServerNode[] {
+    return this.childNodes;
+  }
+
   get innerHTML(): string {
-    return this.childNodes.map(serializeNode).join("");
+    return serializeNode(this, "inner");
   }
 
   set innerHTML(html: string) {

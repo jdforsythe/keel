@@ -10,7 +10,8 @@ const RAW_TEXT = new Set(["script", "style"]);
 /**
  * Parse `html` (compiler-hoisted templates, `innerHTML`) into children of `into`: elements with attributes,
  * text with character references decoded, comments, void elements, and raw `script`/`style` text. Not a
- * spec parser: it does no error recovery beyond ignoring stray closing tags.
+ * spec parser: it does no error recovery beyond ignoring stray closing tags, and a tag or attribute name the
+ * server DOM refuses (`assertName`) throws.
  */
 export function parseHtml(doc: ServerDocument, html: string, into: ServerNode): void {
   const stack: ServerNode[] = [into];

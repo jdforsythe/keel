@@ -1,6 +1,7 @@
 import type { ServerDocument } from "./ServerDocument.ts";
 import { ServerElement } from "./ServerElement.ts";
 import { ServerFragment } from "./ServerFragment.ts";
+import type { ServerNode } from "./ServerNode.ts";
 import { cloneChildren } from "./cloneChildren.ts";
 import { parseHtml } from "./parseHtml.ts";
 import { serializeNode } from "./serializeNode.ts";
@@ -14,8 +15,12 @@ export class ServerTemplate extends ServerElement {
     this.content = new ServerFragment(doc);
   }
 
+  override contentNodes(): ServerNode[] {
+    return this.content.childNodes;
+  }
+
   override get innerHTML(): string {
-    return this.content.childNodes.map(serializeNode).join("");
+    return serializeNode(this, "inner");
   }
 
   override set innerHTML(html: string) {
