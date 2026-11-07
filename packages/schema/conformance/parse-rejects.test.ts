@@ -1,5 +1,5 @@
 // Clause: parse rejects every invalid shape in the fixture set.
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { Arr, Bool, Enum, Int, Lit, Num, Obj, Rec, Str, Union, UserId } from "./fixtures";
 
 const validObj = { id: "u1", name: "a", role: "admin", nick: null };
@@ -108,9 +108,9 @@ describe("k.schema parse rejects invalid shapes", () => {
     if (!r.ok) expect(r.error.data.issues[0]?.rule).toBe("discriminant");
   });
 
-  it("decode rejects the same invalid shapes as parse", () => {
-    expect(Int.decode(1.5).ok).toBe(false);
-    expect(Enum.decode("owner").ok).toBe(false);
-    expect(Obj.decode({}).ok).toBe(false);
+  it("a schema has no decode: parse is the only validating entry (rfc:0043)", () => {
+    for (const schema of [Int, Enum, Obj, Str, Union]) expect("decode" in schema).toBe(false);
+    expectTypeOf(Int).not.toHaveProperty("decode");
+    expectTypeOf(Obj).not.toHaveProperty("decode");
   });
 });

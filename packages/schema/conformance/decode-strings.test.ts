@@ -114,16 +114,16 @@ describe("k.schema decodeStrings", () => {
     });
   });
 
-  it("decode stays the JSON inverse of encode", () => {
+  it("parse is the JSON inverse of encode", () => {
     fc.assert(
       fc.property(gen(Prim), (v) => {
-        const r = Prim.decode(Prim.encode(v));
+        const r = Prim.parse(Prim.encode(v));
         expect(r.ok).toBe(true);
         if (r.ok) expect(norm(r.value)).toEqual(norm(v));
       }),
       { seed: SEED, numRuns: RUNS },
     );
-    expect(fails(Prim.decode({ age: "5" }))).toBe(true);
+    expect(fails(Prim.parse({ age: "5" }))).toBe(true);
   });
 });
 

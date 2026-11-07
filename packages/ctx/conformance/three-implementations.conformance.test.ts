@@ -6,7 +6,7 @@ const SEED = 1337;
 const MODES = ["real", "shell", "sim"] as const;
 const KERNEL: Record<string, string[]> = {
   clock: ["now"],
-  random: ["uuid", "float"],
+  random: ["id", "float"],
   net: ["fetch"],
   storage: ["get", "set"],
 };

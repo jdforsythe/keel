@@ -51,7 +51,7 @@ const routes = manifest({
       const label = el("label", { for: "rt.title" }, "Title");
       const input = el("input", { id: "rt.title", name: "title" });
       const submit = el("button", { id: "rt.save", type: "submit" }, "Save");
-      const form = Form({ method: "POST", action: "rt.list", children: [label, input, submit] });
+      const form = Form({ method: "POST", action: routes.href("rt.list"), children: [label, input, submit] });
       form.setAttribute("id", "rt.form");
       root.append(form);
       return root;

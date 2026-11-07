@@ -7,7 +7,7 @@
     "check": "tsc --noEmit && biome check modules",
     "test": "vitest run",
     "build": "vite build",
-    "api": "node server.ts"
+    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning server.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.6",

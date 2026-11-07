@@ -2,7 +2,6 @@ import { createCtx } from "@keel/ctx";
 import { service } from "@keel/services";
 import { properties, render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import { board } from "../modules/api/board.ts";
 import AppShell from "../modules/todos/AppShell.tsx";
 import EditTodoPage from "../modules/todos/EditTodoPage.tsx";
 import ListError from "../modules/todos/ListError.tsx";
@@ -12,13 +11,13 @@ import Suggestions from "../modules/todos/Suggestions.tsx";
 import TodoRow from "../modules/todos/TodoRow.tsx";
 import { suggestions } from "../modules/todos/suggestions.service.ts";
 import { view } from "../modules/todos/view.ts";
-import { simApi } from "./simApi.ts";
+import { boardOf } from "./at.ts";
+import { resetApi, seedBoard, simApi } from "./simApi.ts";
 import "../modules/todos/routes.ts";
 
-const base = board.snapshot();
 const shown = view.snapshot();
 afterEach(() => {
-  expect(board.restore(base).ok).toBe(true);
+  resetApi();
   expect(view.restore(shown).ok).toBe(true);
 });
 
@@ -44,7 +43,7 @@ describe("TodoRow", () => {
   });
   it("the checkbox posts the toggle to the api and the row shows the re-read board", async () => {
     const seed = { lists: [L], todos: [{ ...milk, done: false }] };
-    expect(board.restore({ state: seed, log: [], initial: seed }).ok).toBe(true);
+    await seedBoard(boardOf(seed));
     const { ctx, sent } = await simApi();
     const t = render(TodoRow, { props: { todo: { ...milk, done: false } }, ctx });
     await t.fire("todos.toggle.t1", { type: "change" });

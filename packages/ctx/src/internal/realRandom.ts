@@ -5,7 +5,6 @@ import type { Random } from "../Random.ts";
 export function realRandom(): Random {
   return {
     id: (_brand) => asId(crypto.randomUUID()),
-    uuid: () => crypto.randomUUID(),
     float: () => Math.random(),
   };
 }

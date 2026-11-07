@@ -25,10 +25,10 @@ describe("k.schema closed objects and member unions (rfc:0029)", () => {
     fc.assert(
       fc.property(gen(Closed), (v) => {
         const enc = Closed.encode(v);
-        const direct = Closed.decode(enc);
+        const direct = Closed.parse(enc);
         expect(direct.ok).toBe(true);
         if (direct.ok) expect(direct.value).toEqual(v);
-        const viaText = Closed.decode(JSON.parse(JSON.stringify(enc)));
+        const viaText = Closed.parse(JSON.parse(JSON.stringify(enc)));
         expect(viaText.ok).toBe(true);
         if (viaText.ok) expect(viaText.value).toEqual(v);
       }),
@@ -95,7 +95,7 @@ describe("k.schema closed objects and member unions (rfc:0029)", () => {
         expect(Theme.parse(v).ok).toBe(true);
         const enc = Theme.encode(v);
         for (const wire of [enc, JSON.parse(JSON.stringify(enc))]) {
-          const r = Theme.decode(wire);
+          const r = Theme.parse(wire);
           expect(r.ok).toBe(true);
           if (r.ok) expect(r.value).toEqual(v);
         }

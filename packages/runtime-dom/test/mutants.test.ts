@@ -123,7 +123,7 @@ describe("nextClaimable", () => {
 });
 
 describe("islandProps", () => {
-  const withProps = (decode: (j: unknown) => unknown): unknown => Object.assign(() => null, { Props: { decode } });
+  const withProps = (parse: (j: unknown) => unknown): unknown => Object.assign(() => null, { Props: { parse } });
 
   it("without a Props schema returns a plain-object json as is, else {}", () => {
     const w: string[] = [];
@@ -139,11 +139,11 @@ describe("islandProps", () => {
     const w: string[] = [];
     const j = { a: 1 };
     const bad: unknown[] = [
-      { Props: { decode: () => ({ ok: true, value: { z: 1 } }) } },
+      { Props: { parse: () => ({ ok: true, value: { z: 1 } }) } },
       Object.assign(() => null, { Props: null }),
       Object.assign(() => null, { Props: "x" }),
       Object.assign(() => null, { Props: {} }),
-      Object.assign(() => null, { Props: { decode: 1 } }),
+      Object.assign(() => null, { Props: { parse: 1 } }),
       () => null,
       null,
       undefined,
@@ -152,19 +152,19 @@ describe("islandProps", () => {
     expect(w).toEqual([]);
   });
 
-  it("uses the decoded record when the schema accepts", () => {
+  it("uses the parsed record when the schema accepts", () => {
     const w: string[] = [];
     const seen: unknown[] = [];
     const c = withProps((j) => {
       seen.push(j);
-      return { ok: true, value: { decoded: true } };
+      return { ok: true, value: { parsed: true } };
     });
-    expect(islandProps(c, { raw: 1 }, "i", w)).toEqual({ decoded: true });
+    expect(islandProps(c, { raw: 1 }, "i", w)).toEqual({ parsed: true });
     expect(seen).toEqual([{ raw: 1 }]);
     expect(w).toEqual([]);
   });
 
-  it("feeds {} to decode when json is null or undefined, but keeps other falsy json", () => {
+  it("feeds {} to parse when json is null or undefined, but keeps other falsy json", () => {
     const seen: unknown[] = [];
     const c = withProps((j) => {
       seen.push(j);
@@ -177,7 +177,7 @@ describe("islandProps", () => {
     expect(seen).toEqual([{}, {}, 0, ""]);
   });
 
-  it("warns E1253 with the island id and falls back when decode fails", () => {
+  it("warns E1253 with the island id and falls back when parse fails", () => {
     const w: string[] = [];
     const c = withProps(() => ({ ok: false }));
     const j = { a: 1 };
@@ -187,7 +187,7 @@ describe("islandProps", () => {
     expect(w).toHaveLength(2);
   });
 
-  it("warns and falls back when decode succeeds with a non-record value", () => {
+  it("warns and falls back when parse succeeds with a non-record value", () => {
     for (const value of [1, "s", null, [1], undefined]) {
       const w: string[] = [];
       const c = withProps(() => ({ ok: true, value }));

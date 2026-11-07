@@ -39,14 +39,15 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
   const children = (): Node =>
     Form({
       method: "POST",
-      action: "todos.list",
-      params: { listId },
+      action: routes.href("todos.list", { listId }),
       form: f,
       error: (e) => <Text fg="danger">{e.message}</Text>,
       children: () => [
         <Input field={f.field("title")} label="Title" />,
         <Select field={f.field("priority")} label="Priority" options={PRIORITIES} />,
-        <Button id="todos.addTodo" type="submit" label="Add todo" />,
+        <Button id="todos.addTodo" type="submit">
+          Add todo
+        </Button>,
       ],
     });
   return (

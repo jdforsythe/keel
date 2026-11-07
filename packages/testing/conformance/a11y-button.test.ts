@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "`a11y()` for `<Button label="Save" disabled />` contains `{ role: 'button', name: 'Save', state: { disabled: true } }`."
+// Spec: k.testing, clause "`a11y()` for `<Button disabled>Save</Button>` contains `{ role: 'button', name: 'Save', state: { disabled: true } }`."
 // Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { Button, SEED, flatten, simCtx } from "./fixtures.ts";
 
-describe("k.testing: a11y() for <Button label=Save disabled /> contains { role: button, name: Save, state: { disabled: true } }", () => {
+describe("k.testing: a11y() for <Button disabled>Save</Button> contains { role: button, name: Save, state: { disabled: true } }", () => {
   it("a11y() contains a button node named Save with state.disabled true", () => {
     const t = render(Button, { props: { label: "Save", disabled: true }, ctx: simCtx() });
     const node = flatten(t.a11y()).find((n) => n.id === "save");

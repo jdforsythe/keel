@@ -143,22 +143,18 @@ export function setup(opts: { order?: readonly Field[]; initial?: Record<string,
     return handler.current(input);
   });
   const holder: { f?: Harness["f"] } = {};
-  const Page = () => {
+  // Annotated: the Form's action reads `routes`, whose manifest holds Page (TS7022 otherwise).
+  const Page = (): HTMLFormElement => {
     const f = form(Note, opts.initial === undefined ? {} : { initial: opts.initial });
     holder.f = f;
     return Form({
       method: "POST",
-      action: "notes.edit",
+      action: routes.href("notes.edit"),
       form: f,
       error: (e: { message: string }) => {
         const d = document.createElement("div");
         d.setAttribute("data-slot", "error");
         d.textContent = e.message;
-        return d;
-      },
-      loading: () => {
-        const d = document.createElement("div");
-        d.setAttribute("data-slot", "loading");
         return d;
       },
       children: [...order.map((n) => plainInput(f.field(n))), plainSubmit()],

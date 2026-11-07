@@ -1,4 +1,5 @@
 import { batch, effect, owner, signal } from "@keel/reactive";
+import { formHandle } from "@keel/router/internal";
 import type { Infer, ObjectSchema, Result, SchemaError } from "@keel/schema";
 import { asSchemaValue } from "../unsafe/asSchemaValue.ts";
 import type { Bindable } from "./internal/Bindable.ts";
@@ -195,17 +196,20 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
     values: () => asSchemaValue<DeepPartial<T>>(vals.get()),
     errors: () => errs.get(),
     pending: () => pendingSignal.get(),
-    setPending: (v) => pendingSignal.set(v),
     reset,
-    validate: () =>
-      batch(() => {
-        const r = validateAll();
-        if (!r.ok) focusFirstInvalid();
-        return r;
-      }),
-    onResult: (result) => {
-      if (result.ok) reset();
-      else if (result.error.code === "keel.fields") setErrors(fieldMessages(result.error.data));
+    // The `<Form form>` seam, keyed by a symbol so it is not public API (RFC 0045).
+    [formHandle]: {
+      setPending: (v) => pendingSignal.set(v),
+      validate: () =>
+        batch(() => {
+          const r = validateAll();
+          if (!r.ok) focusFirstInvalid();
+          return r;
+        }),
+      onResult: (result) => {
+        if (result.ok) reset();
+        else if (result.error.code === "keel.fields") setErrors(fieldMessages(result.error.data));
+      },
     },
   };
 }

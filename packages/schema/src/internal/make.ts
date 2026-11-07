@@ -30,7 +30,6 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
     node,
     isOptional,
     parse,
-    decode: parse,
     encode(value) {
       if (!is(value)) throw new Error(issueText(issues));
       return toJson(node, value);

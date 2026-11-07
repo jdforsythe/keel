@@ -31,10 +31,10 @@ describe("k.errors: ok and err", () => {
 });
 
 describe("k.errors: s.result round-trip", () => {
-  it("s.result(T, E) round-trips generated ok and err values through encode/decode", () => {
+  it("s.result(T, E) round-trips generated ok and err values through encode/parse", () => {
     fc.assert(
       fc.property(gen(Res), (v) => {
-        const d = Res.decode(JSON.parse(JSON.stringify(Res.encode(v))));
+        const d = Res.parse(JSON.parse(JSON.stringify(Res.encode(v))));
         expect(d.ok).toBe(true);
         if (d.ok) expect(d.value).toEqual(v);
       }),
@@ -46,7 +46,7 @@ describe("k.errors: s.result round-trip", () => {
     fc.assert(
       fc.property(fc.string(), (str) => {
         const v = ok(str);
-        const d = Res.decode(JSON.parse(JSON.stringify(Res.encode(v))));
+        const d = Res.parse(JSON.parse(JSON.stringify(Res.encode(v))));
         expect(d.ok).toBe(true);
         if (d.ok) expect(d.value).toEqual(v);
       }),
@@ -58,7 +58,7 @@ describe("k.errors: s.result round-trip", () => {
     fc.assert(
       fc.property(gen(OrderId), (id) => {
         const v = err(OrderLocked.make({ id }));
-        const d = Res.decode(JSON.parse(JSON.stringify(Res.encode(v))));
+        const d = Res.parse(JSON.parse(JSON.stringify(Res.encode(v))));
         expect(d.ok).toBe(true);
         if (d.ok) expect(d.value).toEqual(v);
       }),

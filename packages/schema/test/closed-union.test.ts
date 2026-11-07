@@ -145,7 +145,7 @@ describe("member unions (anyOf)", () => {
       fc.property(gen(Color), (v) => {
         seen.add(typeof v);
         expect(fits(Color.node, v)).toBe(true);
-        expect(Color.decode(JSON.parse(JSON.stringify(Color.encode(v))))).toEqual({ ok: true, value: v });
+        expect(Color.parse(JSON.parse(JSON.stringify(Color.encode(v))))).toEqual({ ok: true, value: v });
       }),
     );
     expect([...seen].sort()).toEqual(["object", "string"]);

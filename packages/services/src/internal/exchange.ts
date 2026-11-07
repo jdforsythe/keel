@@ -19,7 +19,7 @@ export async function exchange(e: Endpoint, req: Request, ctx: Ctx): Promise<Res
   const text = await attempt(() => res.text());
   if (!text.ok) return err(fail.network());
   const json = readJson(text.value);
-  const decoded = json.ok ? schema.decode(json.value) : undefined;
+  const decoded = json.ok ? schema.parse(json.value) : undefined;
   if (!success) return err(fail.status(res.status, decoded?.ok ? decoded.value : null));
   if (decoded === undefined) return err(fail.decode([{ path: [], rule: "type" }]));
   return decoded.ok ? ok(decoded.value) : err(fail.decode(decoded.error.data.issues));

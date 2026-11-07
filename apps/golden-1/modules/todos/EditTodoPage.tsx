@@ -4,6 +4,7 @@ import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Select, Text } from "@keel/ui";
 import { Todo } from "./Todo.schema.ts";
 import { TodoDraft } from "./TodoDraft.schema.ts";
+import { routes } from "./routes.ts";
 
 export const Props = s.object({
   params: s.object({ listId: s.id("TodoList"), todoId: s.id("Todo") }),
@@ -24,11 +25,14 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
   const children = (): Node => {
     const title = <Input field={f.field("title")} label="Title" />;
     const priority = <Select field={f.field("priority")} label="Priority" options={PRIORITIES} />;
-    const submit = <Button id="todos.save" type="submit" label="Save" />;
+    const submit = (
+      <Button id="todos.save" type="submit">
+        Save
+      </Button>
+    );
     return Form({
       method: "POST",
-      action: "todos.edit",
-      params: props.params,
+      action: routes.href("todos.edit", props.params),
       form: f,
       error: (e) => <Text fg="danger">{e.message}</Text>,
       children: [title, priority, submit],

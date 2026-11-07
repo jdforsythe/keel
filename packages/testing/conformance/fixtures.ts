@@ -47,7 +47,7 @@ const need = (root: Node, sel: string): Element => {
 
 type Slots = Record<string, unknown> | undefined;
 
-// <Button label="Save" disabled />
+// <Button disabled>Save</Button> (its text arrives as the `label` prop of this hand-compiled fixture)
 export const ButtonProps = s.object({ label: s.string(), disabled: s.boolean() });
 const ButtonT = template('<button id="save" data-k="save"></button>');
 export const Button = Object.assign(

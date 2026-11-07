@@ -36,7 +36,7 @@ describe("k.ui: a signal bound to a style prop changes only the element's class 
               Box({ id: "styled", p, children: "x" }),
               Button({
                 id: "next",
-                label: "next",
+                children: "next",
                 onClick: () => {
                   current = seq[i++] ?? "0";
                   p.set(current);
@@ -73,7 +73,7 @@ describe("k.ui: a signal bound to a style prop changes only the element's class 
     const C = page(() => {
       const p = signal<string>("1");
       return Box({
-        children: [Box({ id: "styled", p }), Button({ id: "set", label: "set", onClick: () => p.set("3") })],
+        children: [Box({ id: "styled", p }), Button({ id: "set", children: "set", onClick: () => p.set("3") })],
       });
     });
     const t = render(C, { props: {}, ctx: simCtx() });

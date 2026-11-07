@@ -3,7 +3,6 @@ import { s } from "@keel/schema";
 import { service } from "@keel/services";
 import { properties } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import { board } from "../modules/api/board.ts";
 import { ActionReply } from "../modules/todos/ActionReply.schema.ts";
 import { Board } from "../modules/todos/Board.schema.ts";
 import { BoardReply } from "../modules/todos/BoardReply.schema.ts";
@@ -30,21 +29,24 @@ import { todos } from "../modules/todos/todos.service.ts";
 import { todosApi } from "../modules/todos/todosApi.ts";
 import { updateTodo } from "../modules/todos/updateTodo.server.ts";
 import { view } from "../modules/todos/view.ts";
-import { at } from "./at.ts";
-import { simApi } from "./simApi.ts";
+import { at, boardOf } from "./at.ts";
+import { readBoard, resetApi, seedBoard, simApi } from "./simApi.ts";
 import "../modules/todos/routes.ts";
 
-const served = board.snapshot();
 const shown = view.snapshot();
 afterEach(() => {
-  expect(board.restore(served).ok).toBe(true);
+  resetApi();
   expect(view.restore(shown).ok).toBe(true);
 });
 
 const L = { id: "l1", name: "Home" };
 const milk = { id: "t1", listId: "l1", title: "Milk", priority: "normal", done: false } as const;
 const seed = { lists: [L], todos: [milk] };
-const seedServer = () => expect(board.restore({ state: seed, log: [], initial: seed }).ok).toBe(true);
+const seedServer = () => {
+  const b = Board.parse(seed);
+  if (!b.ok) throw new Error(b.error.message);
+  return seedBoard(b.value);
+};
 const LISTS = new URL("/api/lists", location.href).href;
 /** `todos.toggleTodo` for `t1`: params parse into the branded id the endpoint takes. */
 const T1 = s.object({ todoId: s.id("Todo") }).parse({ todoId: milk.id });
@@ -84,7 +86,7 @@ describe("todos.view", () => {
     await properties(hydrate);
   });
   it("refreshView reads GET /api/lists into the view; syncAfter writes then refreshes", async () => {
-    seedServer();
+    await seedServer();
     const { ctx, sent } = await simApi();
     expect((await refreshView(location.origin, ctx)).ok).toBe(true);
     expect(view.get("lists")).toEqual([L]);
@@ -125,9 +127,12 @@ describe("todos service", () => {
 
 describe("client loaders and actions (through the api deployable)", () => {
   it("loadIndex hydrates; loadList and loadTodo find by id or return keel.notFound", async () => {
-    seedServer();
+    await seedServer();
     const { ctx } = await simApi();
-    const index = await loadIndex.run({ params: {}, search: {}, url: location.href }, ctx);
+    const index = await loadIndex.run(
+      { params: {}, search: {}, url: location.href, caller: "c1", stores: undefined },
+      ctx,
+    );
     expect(index.ok && index.value.lists).toEqual([L]);
     expect(await loadList.run({ ...at(ListParams, { listId: "l1" }), search: {} }, ctx)).toEqual({
       ok: true,
@@ -141,14 +146,16 @@ describe("client loaders and actions (through the api deployable)", () => {
   });
   it("createList and createTodo post to the api and answer ok(null)", async () => {
     const { ctx, sent } = await simApi();
-    expect(await createList.run({ name: "Work" }, { params: {}, url: location.href }, ctx)).toEqual({
+    expect(
+      await createList.run({ name: "Work" }, { params: {}, url: location.href, caller: "c1", stores: undefined }, ctx),
+    ).toEqual({
       ok: true,
       value: null,
     });
-    const listId = board.get("lists")[0]?.id ?? "";
+    const listId = (await readBoard()).lists[0]?.id ?? "";
     const r = await createTodo.run({ title: "Milk", priority: "low" }, at(ListParams, { listId }), ctx);
     expect(r).toEqual({ ok: true, value: null });
-    expect(board.get("todos")).toMatchObject([{ listId, title: "Milk", priority: "low", done: false }]);
+    expect((await readBoard()).todos).toMatchObject([{ listId, title: "Milk", priority: "low", done: false }]);
     expect(sent).toEqual(["POST /api/lists", `POST /api/lists/${listId}/todos`]);
   });
   it("createTodo on an unknown list returns the api 404", async () => {
@@ -157,8 +164,9 @@ describe("client loaders and actions (through the api deployable)", () => {
     expect(r.ok ? null : r.error).toMatchObject({ code: "api.status", data: { status: 404 } });
   });
   it("updateTodo passes on the api's keel.fields and goes to the list on success", async () => {
-    const both = { lists: [L], todos: [milk, { ...milk, id: "t2", title: "Eggs" }] };
-    expect(board.restore({ state: both, log: [], initial: both }).ok).toBe(true);
+    const both = Board.parse({ lists: [L], todos: [milk, { ...milk, id: "t2", title: "Eggs" }] });
+    if (!both.ok) throw new Error(both.error.message);
+    await seedBoard(both.value);
     const { ctx } = await simApi();
     const edit = at(TodoParams, { listId: "l1", todoId: "t1" });
     const dup = await updateTodo.run({ title: "Eggs", priority: "high" }, edit, ctx);
@@ -170,7 +178,7 @@ describe("client loaders and actions (through the api deployable)", () => {
       ok: true,
       value: "/lists/l1",
     });
-    expect(board.get("todos")[0]).toMatchObject({ title: "Oat milk", priority: "high" });
+    expect((await readBoard()).todos[0]).toMatchObject({ title: "Oat milk", priority: "high" });
   });
   it("editable denies when ctx.storage todos.readOnly is 1", async () => {
     const ctx = createCtx({ mode: "sim", seed: 7 });

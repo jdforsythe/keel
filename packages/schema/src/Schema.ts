@@ -10,10 +10,10 @@ import type { Node } from "./internal/Node.ts";
 export interface Schema<T, O extends boolean = false> {
   readonly node: Node;
   readonly isOptional: O;
+  /** Validates `input`; also the JSON inverse of `encode` (RFC 0043: there is no separate `decode`). */
   parse(input: unknown): Result<T, SchemaError>;
   /** Validates first; throws an Error listing the issues when `value` does not fit (unexpected). */
   encode(value: unknown): JsonValue;
-  decode(json: unknown): Result<T, SchemaError>;
   doc(): string;
   optional(): Schema<T, true>;
   nullable(): Schema<T | null, O>;

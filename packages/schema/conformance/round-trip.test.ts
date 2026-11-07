@@ -6,10 +6,10 @@ import { RUNS, SEED, allTypes, norm } from "./fixtures";
 
 describe("k.schema round-trip", () => {
   for (const [name, schema] of Object.entries(allTypes)) {
-    it(`decode(encode(v)) equals v for generated ${name}`, () => {
+    it(`parse(encode(v)) equals v for generated ${name}`, () => {
       fc.assert(
         fc.property(gen(schema), (v) => {
-          const r = schema.decode(schema.encode(v));
+          const r = schema.parse(schema.encode(v));
           expect(r.ok).toBe(true);
           if (r.ok) expect(norm(r.value)).toEqual(norm(v));
         }),
@@ -20,7 +20,7 @@ describe("k.schema round-trip", () => {
       fc.assert(
         fc.property(gen(schema), (v) => {
           const wire = JSON.parse(JSON.stringify(schema.encode(v)));
-          const r = schema.decode(wire);
+          const r = schema.parse(wire);
           expect(r.ok).toBe(true);
           if (r.ok) expect(norm(r.value)).toEqual(norm(v));
         }),

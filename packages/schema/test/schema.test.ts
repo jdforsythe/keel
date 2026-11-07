@@ -74,22 +74,15 @@ describe("every schema", () => {
         }),
       );
     });
-    it(`${name}: decode agrees with parse`, () => {
-      fc.assert(
-        fc.property(fc.oneof(gen(T), fc.anything()), (x) => {
-          const a = T.parse(x);
-          const b = T.decode(x);
-          expect(b.ok).toBe(a.ok);
-          if (!a.ok && !b.ok) expect(b.error).toEqual(a.error);
-        }),
-      );
+    it(`${name}: has no decode (RFC 0043: parse is the JSON inverse of encode)`, () => {
+      expect("decode" in T).toBe(false);
     });
-    it(`${name}: encode output is JSON-stable and decodes`, () => {
+    it(`${name}: encode output is JSON-stable and parses`, () => {
       fc.assert(
         fc.property(gen(T), (v) => {
           const j = T.encode(v);
           expect(wire(JSON.parse(wire(j)))).toBe(wire(j));
-          expect(T.decode(j).ok).toBe(true);
+          expect(T.parse(j).ok).toBe(true);
         }),
       );
     });

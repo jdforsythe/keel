@@ -10,14 +10,14 @@ function sample(seed: number, n: number) {
   const uuids: string[] = [];
   const floats: number[] = [];
   for (let i = 0; i < n; i++) {
-    uuids.push(ctx.random.uuid());
+    uuids.push(ctx.random.id("Sample"));
     floats.push(ctx.random.float());
   }
   return { uuids, floats };
 }
 
 describe("k.ctx sim determinism", () => {
-  test("same seed yields identical uuid and float sequences", () => {
+  test("same seed yields identical id and float sequences", () => {
     expect(sample(SEED, 50)).toEqual(sample(SEED, 50));
   });
 
@@ -47,7 +47,7 @@ describe("k.ctx sim determinism", () => {
     );
   });
 
-  test("uuid is a well-formed uuid string", () => {
+  test("id is a well-formed uuid string", () => {
     for (const u of sample(SEED, 20).uuids) {
       expect(u).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     }

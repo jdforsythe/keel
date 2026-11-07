@@ -60,14 +60,14 @@ describe("xoshiro128", () => {
 });
 
 describe("simRandom", () => {
-  test("property: float is in [0, 1) and uuid is v4 shaped", () => {
+  test("property: float is in [0, 1) and id is a v4 uuid", () => {
     fc.assert(
       fc.property(seedArb, (seed) => {
         const r = simRandom(seed);
         for (let i = 0; i < 8; i++) {
           const f = r.float();
           expect(f >= 0 && f < 1).toBe(true);
-          expect(r.uuid()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+          expect(r.id("X")).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
         }
       }),
       FC,

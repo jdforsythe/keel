@@ -13,7 +13,7 @@ const cases: [string, string, () => Node][] = [
   ["Text", "e", () => Text({ id: "e", children: "hello" })],
   ["Heading", "e", () => Heading({ id: "e", level: 2, children: "Orders" })],
   ["Button (text)", "e", () => Button({ id: "e", children: "Save" })],
-  ["Button (label)", "e", () => Button({ id: "e", label: "Save" })],
+  ["Button (image named by alt)", "e", () => Button({ id: "e", children: Image({ src: "save.svg", alt: "Save" }) })],
   ["Link", "e", () => Link({ id: "e", to: home, children: "Home" })],
   ["Image (alt)", "e", () => Image({ id: "e", alt: "logo" })],
   ["Image (decorative)", "e", () => Image({ id: "e", decorative: true })],

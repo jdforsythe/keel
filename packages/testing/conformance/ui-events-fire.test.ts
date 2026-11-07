@@ -14,7 +14,7 @@ describe("k.ui: fire drives Button onClick and Checkbox onChange", () => {
       fc.asyncProperty(fc.integer({ min: 1, max: 5 }), async (n) => {
         const calls: number[] = [];
         const t = render(
-          page(() => Button({ id: "go", label: "Go", onClick: () => calls.push(1) })),
+          page(() => Button({ id: "go", children: "Go", onClick: () => calls.push(1) })),
           { props: {}, ctx: simCtx() },
         );
         for (let i = 1; i <= n; i++) {
@@ -29,7 +29,7 @@ describe("k.ui: fire drives Button onClick and Checkbox onChange", () => {
 
   it("a Button without onClick does not throw on fire click", async () => {
     const t = render(
-      page(() => Button({ id: "go", label: "Go" })),
+      page(() => Button({ id: "go", children: "Go" })),
       { props: {}, ctx: simCtx() },
     );
     await t.fire("go", { type: "click" });

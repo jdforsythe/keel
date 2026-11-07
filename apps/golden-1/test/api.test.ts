@@ -1,4 +1,6 @@
 import { createCtx } from "@keel/ctx";
+import { scope } from "@keel/reactive";
+import { isolate } from "@keel/store";
 import { properties, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import ActionApi from "../modules/api/ActionApi.ts";
@@ -8,6 +10,7 @@ import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
 import { addList } from "../modules/api/addList.ts";
 import { addTodo } from "../modules/api/addTodo.ts";
 import { board } from "../modules/api/board.ts";
+import { boardStores } from "../modules/api/boardStores.ts";
 import { editTodo } from "../modules/api/editTodo.ts";
 import { loadBoard } from "../modules/api/loadBoard.server.ts";
 import { loadSuggestions } from "../modules/api/loadSuggestions.server.ts";
@@ -18,21 +21,48 @@ import { postToggle } from "../modules/api/postToggle.server.ts";
 import { postUndo } from "../modules/api/postUndo.server.ts";
 import { routes } from "../modules/api/routes.ts";
 import { toggleTodo } from "../modules/api/toggleTodo.ts";
+import type { Board } from "../modules/todos/Board.schema.ts";
 import { ListParams } from "../modules/todos/ListParams.schema.ts";
-import { at } from "./at.ts";
-import { apiApp } from "./simApi.ts";
+import { at, boardOf } from "./at.ts";
+import { BOARD_KEY, apiApp, apiCtx, readBoard, resetApi, seedBoard } from "./simApi.ts";
 
-const base = board.snapshot();
+const scopes: { dispose(): void }[] = [];
 afterEach(() => {
-  expect(board.restore(base).ok).toBe(true);
+  resetApi();
+  for (const sc of scopes.splice(0)) sc.dispose();
 });
+
+/** Run `make` in a fresh isolated scope (k.store `isolate`), disposed after the test: ids never collide. */
+const inScope = <T>(make: () => T): T => {
+  const sc = scope(() => undefined);
+  isolate(sc);
+  scopes.push(sc);
+  return sc.run(make);
+};
+/** One request's stores, as the node deployable builds them. */
+const fresh = () => inScope(boardStores);
+type Stores = ReturnType<typeof boardStores>;
+/** What the router adds to a node-deployable `fn`: the caller and this request's stores. */
+const as = (stores: Stores, caller = "c1") => ({ caller, stores });
+const URL_ = "http://localhost/api/lists";
+/** Entries in the api's stored board log. */
+async function logLength(): Promise<number> {
+  const raw = await apiCtx().storage.get(BOARD_KEY);
+  const snap: unknown = raw === null ? null : JSON.parse(raw);
+  if (typeof snap !== "object" || snap === null || !("log" in snap) || !Array.isArray(snap.log)) return -1;
+  return snap.log.length;
+}
 
 const sim = () => createCtx({ mode: "sim", seed: 7 });
 const L = { id: "l1", name: "Home" };
 const milk = { id: "t1", listId: "l1", title: "Milk", priority: "normal", done: false } as const;
 const eggs = { id: "t2", listId: "l1", title: "Eggs", priority: "low", done: true } as const;
-const seed = (state: { lists: (typeof L)[]; todos: (typeof milk | typeof eggs)[] }) =>
-  expect(board.restore({ state, log: [], initial: state }).ok).toBe(true);
+/** `stores` seeded with `state` and no log. */
+const seeded = (state: Board): Stores => {
+  const st = fresh();
+  expect(st.board.restore({ state, log: [], initial: state }).ok).toBe(true);
+  return st;
+};
 
 const ORIGIN = "http://localhost";
 const json = { accept: "application/json", "content-type": "application/json" };
@@ -43,12 +73,13 @@ const lists = async (app: Awaited<ReturnType<typeof apiApp>>) => await (await ap
 
 describe("api.board", () => {
   it("transactions keep the invariant for generated payloads", async () => {
-    await properties(addList);
-    await properties(addTodo);
-    await properties(toggleTodo);
-    await properties(editTodo);
+    await properties(addList(inScope(board)));
+    await properties(addTodo(inScope(board)));
+    await properties(toggleTodo(inScope(board)));
+    await properties(editTodo(inScope(board)));
   });
   it("the invariant rejects a todo in an unknown list and duplicate ids", () => {
+    const { board } = fresh();
     expect(board.check({ lists: [L], todos: [milk] }).ok).toBe(true);
     const orphan = board.check({ lists: [], todos: [milk] });
     expect(orphan.ok ? null : orphan.error.code).toBe("store.invariant");
@@ -58,50 +89,72 @@ describe("api.board", () => {
 
 describe("loaders and actions", () => {
   it("loadBoard serves lists, todos and canUndo", async () => {
-    seed({ lists: [L], todos: [milk] });
-    const r = await loadBoard.run({ params: {}, search: {}, url: "http://localhost/api/lists" }, sim());
+    const st = seeded(boardOf({ lists: [L], todos: [milk] }));
+    const r = await loadBoard.run({ params: {}, search: {}, url: URL_, ...as(st) }, sim());
     expect(r).toEqual({ ok: true, value: { lists: [L], todos: [milk], canUndo: false } });
   });
-  it("postList, postTodo, postToggle and postEdit commit with ctx-minted ids; postUndo outside a request is refused", async () => {
-    expect(await postList.run({ name: "Work" }, { params: {}, url: "http://localhost/api/lists" }, sim())).toEqual({
+  it("postList, postTodo, postToggle and postEdit commit with ctx-minted ids; postUndo refuses another caller", async () => {
+    const st = fresh();
+    const a = as(st, "a");
+    expect(await postList.run({ name: "Work" }, { params: {}, url: URL_, ...a }, sim())).toEqual({
       ok: true,
       value: null,
     });
-    const listId = board.get("lists")[0]?.id ?? "";
-    expect((await postTodo.run({ title: "Milk", priority: "low" }, at(ListParams, { listId }), sim())).ok).toBe(true);
-    const todoId = board.get("todos")[0]?.id ?? "";
-    expect((await postToggle.run({}, at(TodoIdParams, { todoId }), sim())).ok).toBe(true);
-    const edited = await postEdit.run({ title: "Oat milk", priority: "high" }, at(TodoIdParams, { todoId }), sim());
+    const listId = st.board.get("lists")[0]?.id ?? "";
+    expect(
+      (await postTodo.run({ title: "Milk", priority: "low" }, { ...at(ListParams, { listId }), ...a }, sim())).ok,
+    ).toBe(true);
+    const todoId = st.board.get("todos")[0]?.id ?? "";
+    expect((await postToggle.run({}, { ...at(TodoIdParams, { todoId }), ...a }, sim())).ok).toBe(true);
+    const edited = await postEdit.run(
+      { title: "Oat milk", priority: "high" },
+      { ...at(TodoIdParams, { todoId }), ...a },
+      sim(),
+    );
     expect(edited.ok).toBe(true);
-    expect(board.get("todos")).toMatchObject([{ listId, title: "Oat milk", priority: "high", done: true }]);
-    // No request, so no caller: undo is scoped to the caller that committed the write (finding 0082).
-    const refused = await postUndo.run({}, { params: {}, url: "http://localhost/api/undo" }, sim());
+    expect(st.board.get("todos")).toMatchObject([{ listId, title: "Oat milk", priority: "high", done: true }]);
+    // Undo is scoped to the caller that committed the write: another caller is denied, the writer succeeds.
+    const undoUrl = "http://localhost/api/undo";
+    const refused = await postUndo.run({}, { params: {}, url: undoUrl, ...as(st, "b") }, sim());
     expect(refused.ok ? null : refused.error.code).toBe("keel.denied");
-    expect(board.get("todos")[0]?.title).toBe("Oat milk");
+    expect(st.board.get("todos")[0]?.title).toBe("Oat milk");
+    expect((await postUndo.run({}, { params: {}, url: undoUrl, ...a }, sim())).ok).toBe(true);
+    expect(st.board.get("todos")[0]?.title).toBe("Milk");
   });
   it("unknown ids are keel.notFound; a duplicate title is keel.fields; undo with nothing of the caller's is keel.denied", async () => {
-    seed({ lists: [L], todos: [milk, eggs] });
+    const st = seeded(boardOf({ lists: [L], todos: [milk, eggs] }));
+    const a = as(st);
     const code = (r: { ok: boolean; error?: { code: string } }) => (r.ok ? null : r.error?.code);
-    expect(code(await postTodo.run({ title: "X", priority: "low" }, at(ListParams, { listId: "nope" }), sim()))).toBe(
+    expect(
+      code(await postTodo.run({ title: "X", priority: "low" }, { ...at(ListParams, { listId: "nope" }), ...a }, sim())),
+    ).toBe("keel.notFound");
+    expect(code(await postToggle.run({}, { ...at(TodoIdParams, { todoId: "nope" }), ...a }, sim()))).toBe(
       "keel.notFound",
     );
-    expect(code(await postToggle.run({}, at(TodoIdParams, { todoId: "nope" }), sim()))).toBe("keel.notFound");
-    expect(code(await postEdit.run({ title: "X", priority: "low" }, at(TodoIdParams, { todoId: "nope" }), sim()))).toBe(
-      "keel.notFound",
+    expect(
+      code(
+        await postEdit.run({ title: "X", priority: "low" }, { ...at(TodoIdParams, { todoId: "nope" }), ...a }, sim()),
+      ),
+    ).toBe("keel.notFound");
+    const dup = await postEdit.run(
+      { title: "Eggs", priority: "low" },
+      { ...at(TodoIdParams, { todoId: "t1" }), ...a },
+      sim(),
     );
-    const dup = await postEdit.run({ title: "Eggs", priority: "low" }, at(TodoIdParams, { todoId: "t1" }), sim());
     expect(dup.ok ? null : dup.error).toMatchObject({
       code: "keel.fields",
       data: { title: "Another todo has this title" },
     });
-    expect(code(await postUndo.run({}, { params: {}, url: "http://localhost/api/undo" }, sim()))).toBe("keel.denied");
-    expect(board.get("todos")).toEqual([milk, eggs]);
+    expect(code(await postUndo.run({}, { params: {}, url: "http://localhost/api/undo", ...a }, sim()))).toBe(
+      "keel.denied",
+    );
+    expect(st.board.get("todos")).toEqual([milk, eggs]);
   });
 });
 
 describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
   it("GET /api/lists is the api.lists Result", async () => {
-    seed({ lists: [L], todos: [milk] });
+    await seedBoard(boardOf({ lists: [L], todos: [milk] }));
     const app = await apiApp();
     const res = await app.fetch(get("/api/lists"));
     expect(res.status).toBe(200);
@@ -114,16 +167,16 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
     const app = await apiApp();
     const created = await app.fetch(post("/api/lists", { name: "Work" }));
     expect([created.status, await created.json()]).toEqual([200, { ok: true, value: null }]);
-    // The first write sets the caller cookie (finding 0082); this client sends it back, as a browser would.
+    // The first write sets the caller cookie (the cookie is the undo scope); this client sends it back, as a browser would.
     const cookie = created.headers.get("set-cookie")?.split(";")[0] ?? "";
     expect(cookie).toMatch(/^keel-caller=/);
     const mine = (req: Request) => {
       req.headers.set("cookie", cookie);
       return app.fetch(req);
     };
-    const listId = board.get("lists")[0]?.id ?? "";
+    const listId = (await readBoard()).lists[0]?.id ?? "";
     expect((await mine(post(`/api/lists/${listId}/todos`, { title: "Milk", priority: "low" }))).status).toBe(200);
-    const todoId = board.get("todos")[0]?.id ?? "";
+    const todoId = (await readBoard()).todos[0]?.id ?? "";
     expect((await mine(post(`/api/todos/${todoId}/toggle`))).status).toBe(200);
     expect((await mine(post(`/api/todos/${todoId}`, { title: "Oat milk", priority: "high" }))).status).toBe(200);
     const after = await (await mine(get("/api/lists"))).json();
@@ -137,20 +190,19 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
     expect((await mine(post("/api/undo"))).status).toBe(200);
     expect((await lists(app)).results["api.lists"].value.todos[0]).toMatchObject({ title: "Milk", done: true });
   });
-  it("after 50 writes the served document and JSON name no transaction (finding 0082)", async () => {
+  it("after 50 writes the served document and JSON name no transaction", async () => {
     const app = await apiApp();
     for (let i = 0; i < 50; i++) expect((await app.fetch(post("/api/lists", { name: `L${i}` }))).status).toBe(200);
-    expect(board.log()).toHaveLength(50);
+    expect(await logLength()).toBe(50);
     const html = await (
       await app.fetch(new Request(`${ORIGIN}/api/lists`, { headers: { accept: "text/html" } }))
     ).text();
-    expect(html).toContain('"api.board":{"state":');
-    expect(html).toContain('"log":[]');
+    expect(html).not.toContain("api.board");
     expect(html).not.toContain("api.addList");
     expect(JSON.stringify(await lists(app))).not.toContain("api.addList");
   });
   it("bad bodies are 422 keel.fields; unknown ids are 404; a duplicate title is 422 with the field", async () => {
-    seed({ lists: [L], todos: [milk, eggs] });
+    await seedBoard(boardOf({ lists: [L], todos: [milk, eggs] }));
     const app = await apiApp();
     const bad = await app.fetch(post("/api/lists", { name: "" }));
     expect([bad.status, (await bad.json()).error.code]).toEqual([422, "keel.fields"]);
@@ -161,7 +213,7 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
       422,
       { code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } },
     ]);
-    expect(board.get("todos")).toEqual([milk, eggs]);
+    expect((await readBoard()).todos).toEqual([milk, eggs]);
   });
   it("GET /api/suggestions is the api.suggestions Result", async () => {
     const res = await (await apiApp()).fetch(get("/api/suggestions"));
@@ -175,10 +227,16 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
 
 describe("api route components", () => {
   it("loadSuggestions returns the same sorted titles on every call", async () => {
-    const first = await loadSuggestions.run({ params: {}, search: {}, url: "http://localhost/api/suggestions" }, sim());
+    const first = await loadSuggestions.run(
+      { params: {}, search: {}, url: "http://localhost/api/suggestions", caller: "c1", stores: undefined },
+      sim(),
+    );
     expect(first.ok && first.value.map((x) => x.title)).toEqual(["Bread", "Eggs", "Milk"]);
     expect(
-      await loadSuggestions.run({ params: {}, search: {}, url: "http://localhost/api/suggestions" }, sim()),
+      await loadSuggestions.run(
+        { params: {}, search: {}, url: "http://localhost/api/suggestions", caller: "c1", stores: undefined },
+        sim(),
+      ),
     ).toEqual(first);
   });
   it("SuggestionsApi, BoardApi and ActionApi render the document views", async () => {
@@ -190,9 +248,10 @@ describe("api route components", () => {
     const s = await renderRoute("api.suggestions", { routes });
     expect(s.find("api.suggestions").text).toBe("BreadEggsMilk");
     s.dispose();
-    const b = await renderRoute("api.lists", { routes, state: [[board, { lists: [L], todos: [] }]] });
-    expect(b.find("api.lists").text).toBe("Home");
-    b.dispose();
+    // The loader runs only on the node deployable: read the document it serves over the seeded api.
+    await seedBoard(boardOf({ lists: [L], todos: [] }));
+    const doc = await (await apiApp()).fetch(new Request(`${ORIGIN}/api/lists`, { headers: { accept: "text/html" } }));
+    expect(await doc.text()).toContain("Home");
     const a = await renderRoute("api.undo", { routes });
     expect(a.find("api.action").text).toBe("POST only");
     a.dispose();

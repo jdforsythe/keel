@@ -35,7 +35,9 @@ export default function AppShell(
         <Link id="todos.home" to={routes.href("todos.index")}>
           Home
         </Link>
-        <Button id="todos.undo" label="Undo" disabled={empty} onClick={undo} />
+        <Button id="todos.undo" disabled={empty} onClick={undo}>
+          Undo
+        </Button>
       </Box>
       <Box as="main" id="todos.main">
         {props.children?.()}

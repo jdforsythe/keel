@@ -36,9 +36,9 @@ describe("k.schema optional vs nullable", () => {
   it("encode keeps null as null for nullable", () => {
     expect(Nul.encode({ a: null })).toEqual({ a: null });
   });
-  it("decode does not turn null into absent or absent into null", () => {
-    const o = Opt.decode({});
-    const n = Nul.decode({ a: null });
+  it("parse does not turn null into absent or absent into null", () => {
+    const o = Opt.parse({});
+    const n = Nul.parse({ a: null });
     expect(o.ok && "a" in o.value).toBe(false);
     expect(n.ok && n.value.a).toBeNull();
   });

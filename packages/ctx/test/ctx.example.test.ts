@@ -74,6 +74,6 @@ describe("mode default", () => {
   });
 
   test("seed defaults to 0", () => {
-    expect(createCtx({ mode: "sim" }).random.uuid()).toBe(createCtx({ mode: "sim", seed: 0 }).random.uuid());
+    expect(createCtx({ mode: "sim" }).random.id("X")).toBe(createCtx({ mode: "sim", seed: 0 }).random.id("X"));
   });
 });

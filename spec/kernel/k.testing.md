@@ -49,7 +49,7 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
 - `render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering.
 - Inside a harness render, `ctx.clock.now()` returns the sim clock's value, and two runs with one seed produce equal `state()`.
 - `fire` resolves only after every effect and resource it triggered has settled.
-- `a11y()` for `<Button label="Save" disabled />` contains `{ role: 'button', name: 'Save', state: { disabled: true } }`.
+- `a11y()` for `<Button disabled>Save</Button>` contains `{ role: 'button', name: 'Save', state: { disabled: true } }`.
 - After a resource resolves, `await settle()` makes its ready state visible without any event.
 - A property failing at a seed reports that seed; re-running with `KEEL_SEED` reproduces the same shrunk case.
 - A transaction breaking a declared invariant fails `properties()` with E1704.

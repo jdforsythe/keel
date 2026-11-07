@@ -1,6 +1,5 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { defineTokens } from "./defineTokens.ts";
-export { styles } from "./styles.ts";
 export { TokenSchema } from "./TokenSchema.ts";
 export { Box } from "./elements/Box.ts";
 export { Button } from "./elements/Button.ts";

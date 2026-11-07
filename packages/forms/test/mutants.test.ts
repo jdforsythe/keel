@@ -2,6 +2,7 @@
 // Targeted examples pinning internals (coercion table, path helpers, message text, encoders) and form wiring.
 // Property-based parts use fast-check seed 1337 (fixed for determinism).
 import { effect, scope } from "@keel/reactive";
+import { formHandle } from "@keel/router/internal";
 import { type SchemaError, err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
@@ -811,14 +812,14 @@ describe("form wiring", () => {
     f.field("note").set("n");
     f.field("on").set(true);
     f.field("c.d").set("d");
-    expect(f.validate().ok).toBe(false);
+    expect(f[formHandle].validate().ok).toBe(false);
     expect(f.errors().title).toBe("Required");
     expect(document.activeElement).toBe(first);
     first.blur();
     // errors elsewhere with nothing bound for them: no focus, no throw
     const g = within(() => form(Flat));
-    expect(() => g.validate()).not.toThrow();
-    expect(g.validate().ok).toBe(false);
+    expect(() => g[formHandle].validate()).not.toThrow();
+    expect(g[formHandle].validate().ok).toBe(false);
   });
 
   it("validate focus order follows the document, not the binding order", () => {
@@ -829,7 +830,7 @@ describe("form wiring", () => {
     within(() => f.field("title").bind(a));
     f.field("on").set(true);
     f.field("c.d").set("x");
-    expect(f.validate().ok).toBe(false);
+    expect(f[formHandle].validate().ok).toBe(false);
     expect(f.errors().note).toBe("Required");
     expect(document.activeElement).toBe(a);
   });
@@ -842,20 +843,20 @@ describe("form wiring", () => {
     within(() => f.field("note").bind(b));
     unbindA();
     unbindA();
-    f.validate();
+    f[formHandle].validate();
     expect(document.activeElement).toBe(b);
   });
 
   it("validate returns the parse result and clears errors when valid", () => {
     const f = within(() => form(Flat, { initial: { title: "t", note: null, c: { d: "d" } } }));
-    const r = f.validate();
+    const r = f[formHandle].validate();
     expect(r).toEqual(ok({ title: "t", note: null, on: false, c: { d: "d" } }));
     expect(f.errors()).toEqual({});
     f.field("title").set("");
-    expect(f.validate().ok).toBe(false);
+    expect(f[formHandle].validate().ok).toBe(false);
     expect(f.errors().title).toBe("Must be at least 1 character");
     f.field("title").set("z");
-    expect(f.validate().ok).toBe(true);
+    expect(f[formHandle].validate().ok).toBe(true);
     expect(Object.keys(f.errors())).toEqual([]);
   });
 
@@ -867,7 +868,7 @@ describe("form wiring", () => {
     typeInto(el, "12x");
     expect(el.value).toBe("12x");
     expect(age.value()).toBeUndefined();
-    expect(f.validate().ok).toBe(false);
+    expect(f[formHandle].validate().ok).toBe(false);
     expect(f.errors().age).toBe("Must be a number");
     typeInto(el, "12x");
     expect(f.errors().age).toBe("Must be a number");
@@ -1047,7 +1048,7 @@ describe("form wiring", () => {
     typeInto(a, "ignored");
     expect(f.field("title").value()).toBe("later");
     f.field("title").set(undefined);
-    f.validate();
+    f[formHandle].validate();
     expect(document.activeElement).toBe(b);
     ub();
     typeInto(b, "ignored too");
@@ -1082,7 +1083,7 @@ describe("form wiring", () => {
   it("unmapped schema issues are summarised under ''", () => {
     const f = within(() => form(Flat));
     f.field("title");
-    f.validate();
+    f[formHandle].validate();
     expect(f.errors().note).toBe("Required");
     expect(f.errors()[""]).toBe("note: Required (+1 more)");
     expect(f.errors()[""]).toMatch(/^(note|c): Required \(\+1 more\)$/);
@@ -1091,20 +1092,20 @@ describe("form wiring", () => {
   it("pending, reset and onResult", () => {
     const f = within(() => form(Flat, { initial: { title: "init" } }));
     expect(f.pending()).toBe(false);
-    f.setPending(true);
+    f[formHandle].setPending(true);
     expect(f.pending()).toBe(true);
-    f.setPending(false);
+    f[formHandle].setPending(false);
     expect(f.pending()).toBe(false);
     f.field("title").set("changed");
     f.field("title").blur();
-    f.onResult(err({ code: "keel.fields", message: "m", data: { title: "taken", bad: 3 } }));
+    f[formHandle].onResult(err({ code: "keel.fields", message: "m", data: { title: "taken", bad: 3 } }));
     expect(f.errors()).toEqual({ title: "taken" });
     f.field("title").set("again");
     expect(f.errors().title).toBeUndefined();
-    f.onResult(err({ code: "keel.other", message: "m", data: { title: "no" } }));
+    f[formHandle].onResult(err({ code: "keel.other", message: "m", data: { title: "no" } }));
     expect(f.errors()).toEqual({});
-    f.onResult(err({ code: "keel.fields", message: "m", data: { title: "taken" } }));
-    f.onResult(ok(null));
+    f[formHandle].onResult(err({ code: "keel.fields", message: "m", data: { title: "taken" } }));
+    f[formHandle].onResult(ok(null));
     expect(f.errors()).toEqual({});
     expect(f.values()).toEqual({ title: "init", on: false });
     expect(f.field("title").touched()).toBe(false);
@@ -1113,7 +1114,7 @@ describe("form wiring", () => {
   it("errors set by onResult count as shown, so edits revalidate", () => {
     const f = within(() => form(Flat, { initial: { title: "t" } }));
     const title = f.field("title");
-    f.onResult(err({ code: "keel.fields", message: "m", data: { title: "taken" } }));
+    f[formHandle].onResult(err({ code: "keel.fields", message: "m", data: { title: "taken" } }));
     title.set("");
     expect(f.errors().title).toBe("Must be at least 1 character");
   });

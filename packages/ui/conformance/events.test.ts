@@ -19,7 +19,7 @@ describe("k.ui: fire click on a Button with onClick calls the handler once; chan
   it("a click on a Button with onClick calls the handler once", () => {
     const calls: number[] = [];
     const root = host();
-    const off = mount(() => Button({ id: "go", label: "Go", onClick: () => calls.push(1) }), root);
+    const off = mount(() => Button({ id: "go", children: "Go", onClick: () => calls.push(1) }), root);
     byId("go").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     expect(calls).toEqual([1]);
     off();
@@ -74,7 +74,7 @@ describe("k.ui: fire click on a Button with onClick calls the handler once; chan
   it("disposing the mount removes the handlers", () => {
     const calls: number[] = [];
     const root = host();
-    const off = mount(() => Button({ id: "gone", label: "Go", onClick: () => calls.push(1) }), root);
+    const off = mount(() => Button({ id: "gone", children: "Go", onClick: () => calls.push(1) }), root);
     const el = byId("gone");
     off();
     el.dispatchEvent(new MouseEvent("click", { bubbles: true }));

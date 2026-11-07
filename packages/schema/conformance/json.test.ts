@@ -12,11 +12,11 @@ const rules = (x: unknown): string[] => {
 };
 
 describe("k.schema json", () => {
-  it("every generated value parses, round-trips through encode/decode and a JSON string", () => {
+  it("every generated value parses, round-trips through encode/parse and a JSON string", () => {
     fc.assert(
       fc.property(gen(Json), (v) => {
         expect(Json.parse(v).ok).toBe(true);
-        const r = Json.decode(JSON.parse(JSON.stringify(Json.encode(v))));
+        const r = Json.parse(JSON.parse(JSON.stringify(Json.encode(v))));
         expect(r.ok).toBe(true);
         if (r.ok) expect(r.value).toEqual(v);
       }),

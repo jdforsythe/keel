@@ -3,7 +3,7 @@ import type { Random } from "../Random.ts";
 import { uuidFromWords } from "./uuidFromWords.ts";
 import { xoshiro128 } from "./xoshiro128.ts";
 
-/** Seeded randomness: uuid and float draw from one xoshiro128** stream. */
+/** Seeded randomness: id and float draw from one xoshiro128** stream. */
 export function simRandom(seed: number): Random {
   const next = xoshiro128(seed);
   const uuid = (): string => {
@@ -15,6 +15,5 @@ export function simRandom(seed: number): Random {
   return {
     id: (_brand) => asId(uuid()),
     float: () => next() / 4294967296,
-    uuid,
   };
 }

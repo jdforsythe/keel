@@ -38,7 +38,7 @@ describe("s.result", () => {
   it("gen yields ok and err values that round-trip through JSON", () => {
     fc.assert(
       fc.property(gen(Res), (v) => {
-        const back = Res.decode(JSON.parse(JSON.stringify(Res.encode(v))));
+        const back = Res.parse(JSON.parse(JSON.stringify(Res.encode(v))));
         expect(back.ok && JSON.stringify(back.value)).toBe(JSON.stringify(v));
       }),
     );

@@ -18,10 +18,14 @@ export default function ListsPage(_props: Infer<typeof Props>) {
   // inserted through a `children()` binding (compiler D31).
   const children = (): Node => {
     const name = <Input field={f.field("name")} label="List name" />;
-    const submit = <Button id="todos.addList" type="submit" label="Add list" />;
+    const submit = (
+      <Button id="todos.addList" type="submit">
+        Add list
+      </Button>
+    );
     return Form({
       method: "POST",
-      action: "todos.index",
+      action: routes.href("todos.index"),
       form: f,
       error: (e) => <Text fg="danger">{e.message}</Text>,
       children: [name, submit],

@@ -1,8 +1,8 @@
-import { createCtx } from "@keel/ctx";
+import { type Mode, createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 // k.ctx: random.id(brand) under sim is deterministic by seed and parses with s.id(brand)
-import { describe, expect, test } from "vitest";
+import { describe, expect, expectTypeOf, test } from "vitest";
 
 const SEED = 1337;
 
@@ -33,5 +33,11 @@ describe("k.ctx random.id (sim)", () => {
       }),
       { seed: SEED },
     );
+  });
+
+  test("random has no uuid: id(brand) is the one way to mint (rfc:0043)", () => {
+    const modes: readonly Mode[] = ["real", "shell", "sim"];
+    for (const mode of modes) expect("uuid" in createCtx({ mode }).random).toBe(false);
+    expectTypeOf(createCtx({ mode: "sim" }).random).not.toHaveProperty("uuid");
   });
 });

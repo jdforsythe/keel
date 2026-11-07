@@ -35,9 +35,9 @@ test("with KEEL_TEST=1 createCtx({}) random is deterministic and equals sim with
     const b = createCtx({});
     const c = createCtx({ mode: "sim", seed: 0 });
     for (let i = 0; i < 20; i++) {
-      const u = a.random.uuid();
-      expect(b.random.uuid()).toBe(u);
-      expect(c.random.uuid()).toBe(u);
+      const u = a.random.id("Probe");
+      expect(b.random.id("Probe")).toBe(u);
+      expect(c.random.id("Probe")).toBe(u);
       const f = a.random.float();
       expect(b.random.float()).toBe(f);
       expect(c.random.float()).toBe(f);

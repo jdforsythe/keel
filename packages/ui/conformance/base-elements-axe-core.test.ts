@@ -57,7 +57,7 @@ const cases: [string, () => Node][] = [
     () => Heading({ id: "e", level, children: "Orders" }),
   ]),
   ["Button (text)", () => Button({ id: "e", children: "Save" })],
-  ["Button (label)", () => Button({ id: "e", label: "Save" })],
+  ["Button (image named by alt)", () => Button({ id: "e", children: Image({ src: "save.svg", alt: "Save" }) })],
   ["Link", () => Link({ id: "e", to: home, children: "Home" })],
   ["Image (alt)", () => Image({ id: "e", alt: "logo" })],
   ["Image (decorative)", () => Image({ id: "e", decorative: true })],

@@ -142,8 +142,8 @@ describe("k.schema secrets", () => {
     }
   });
 
-  it("the marker fails decode with schema.invalid and rule secret-missing at path []", () => {
-    const r = Str.decode(MARKER);
+  it("the marker after a JSON text trip fails parse with schema.invalid and rule secret-missing at path []", () => {
+    const r = Str.parse(JSON.parse(JSON.stringify(MARKER)));
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error.code).toBe("schema.invalid");
@@ -151,9 +151,9 @@ describe("k.schema secrets", () => {
     }
   });
 
-  it("the marker at a nested secret fails parse and decode with rule secret-missing at its path", () => {
+  it("the marker at a nested secret fails parse, also after a JSON text trip, with rule secret-missing at its path", () => {
     const O = s.object({ token: s.secret(s.string()) });
-    for (const r of [O.parse({ token: MARKER }), O.decode({ token: MARKER })]) {
+    for (const r of [O.parse({ token: MARKER }), O.parse(JSON.parse(JSON.stringify({ token: MARKER })))]) {
       expect(r.ok).toBe(false);
       if (!r.ok) {
         expect(r.error.code).toBe("schema.invalid");
@@ -162,10 +162,10 @@ describe("k.schema secrets", () => {
     }
   });
 
-  it("encode then decode of an object containing a secret fails with secret-missing (the codec never restores a value)", () => {
+  it("encode then parse of an object containing a secret fails with secret-missing (the codec never restores a value)", () => {
     fc.assert(
       fc.property(gen(Obj), (o) => {
-        const r = Obj.decode(Obj.encode(o));
+        const r = Obj.parse(Obj.encode(o));
         expect(r.ok).toBe(false);
         if (!r.ok) {
           expect(r.error.code).toBe("schema.invalid");

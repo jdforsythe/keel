@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // fast-check seed: 1337
 import { type Scope, effect, scope } from "@keel/reactive";
+import { formHandle } from "@keel/router/internal";
 import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
@@ -181,7 +182,7 @@ describe("submit", () => {
       const el = document.createElement("input");
       document.body.append(el);
       a.bind(el);
-      const r = f.validate();
+      const r = f[formHandle].validate();
       expect(r.ok).toBe(false);
       expect(f.errors()).toEqual({
         a: "Required",
@@ -202,7 +203,7 @@ describe("submit", () => {
       document.body.append(here);
       f.field("a").bind(gone);
       f.field("b").bind(here);
-      f.validate();
+      f[formHandle].validate();
       expect(document.activeElement).toBe(here);
       here.remove();
     }).dispose();

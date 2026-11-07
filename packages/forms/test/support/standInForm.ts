@@ -1,3 +1,4 @@
+import { formHandle } from "@keel/router/internal";
 // Test-only stand-in for @keel/router's <Form form>: the seam flow k.forms specifies (validate, setPending,
 // onResult, error slot from the Result). Isolates forms tests from router internals; conformance uses the real Form.
 import type { KeelError, Result } from "@keel/schema";
@@ -16,13 +17,13 @@ export function standInForm<T>(
   el.append(...children, slot);
   el.addEventListener("submit", (e) => {
     e.preventDefault();
-    const r = f.validate();
+    const r = f[formHandle].validate();
     if (!r.ok) return;
-    f.setPending(true);
+    f[formHandle].setPending(true);
     slot.textContent = "";
     void Promise.resolve(send(r.value)).then((out) => {
-      f.setPending(false);
-      f.onResult(out);
+      f[formHandle].setPending(false);
+      f[formHandle].onResult(out);
       if (!out.ok && out.error.code !== "keel.fields") slot.textContent = out.error.message;
     });
   });

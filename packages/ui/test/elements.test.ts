@@ -4,7 +4,7 @@ import { scope, signal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import type { Href } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
-import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, Text, TextArea, styles } from "@keel/ui";
+import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, Text, TextArea } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
@@ -57,14 +57,12 @@ describe("dynamic style props", () => {
 
   it("responsive and state values may be signals; static classes stay", async () => {
     const s = scoped(() => signal<string>("1"));
-    const { host, dispose } = render(() =>
-      Box({ p: { base: "2", md: s.value }, states: { hover: { bg: s.value } }, class: "x" }),
-    );
+    const { host, dispose } = render(() => Box({ p: { base: "2", md: s.value }, states: { hover: { bg: s.value } } }));
     const box = first(host);
-    expect(box.className).toBe("k-p-2 k-md-p-1 k-hover-bg-1 x");
+    expect(box.className).toBe("k-p-2 k-md-p-1 k-hover-bg-1");
     s.value.set("3");
     await flush();
-    expect(box.className).toBe("k-p-2 k-md-p-3 k-hover-bg-3 x");
+    expect(box.className).toBe("k-p-2 k-md-p-3 k-hover-bg-3");
     dispose();
     s.dispose();
   });
@@ -103,12 +101,14 @@ describe("dynamic style props", () => {
     dispose();
   });
 
-  it("styles() yields the same atomic classes as style props", () => {
-    const css = styles({ card: { p: "3", radius: "1", states: { hover: { bg: "accent" } } }, empty: {} });
-    expect(css).toEqual({ card: "k-p-3 k-radius-1 k-hover-bg-accent", empty: "" });
-    const { host, dispose } = render(() => Box({ class: css.card }));
-    expect(first(host).className).toBe(css.card);
+  it("states yield atomic state classes after the plain ones; there is no class prop or styles() (RFC 0043)", () => {
+    const { host, dispose } = render(() => Box({ p: "3", radius: "1", states: { hover: { bg: "accent" } } }));
+    expect(first(host).className).toBe("k-p-3 k-radius-1 k-hover-bg-accent");
     dispose();
+    const loose: Readonly<Record<string, unknown>> = { p: "1", class: "x" };
+    const b = render(() => Reflect.apply(Box, undefined, [loose]));
+    expect(first(b.host).className).toBe("k-p-1");
+    b.dispose();
   });
 });
 
@@ -191,10 +191,11 @@ describe("base elements", () => {
     s.dispose();
   });
 
-  it("Button: children with label sets aria-label; label alone is the text; type defaults to button", () => {
-    const a = render(() => Button({ children: "x", label: "Close" }));
-    expect(first(a.host).outerHTML).toBe('<button type="button" aria-label="Close">x</button>');
-    const b = render(() => Button({ type: "submit", label: "Save" }));
+  it("Button: children are the text; a stray label is ignored; type defaults to button", () => {
+    const a = render(() => Button({ children: "Close" }));
+    expect(first(a.host).outerHTML).toBe('<button type="button">Close</button>');
+    const loose: Readonly<Record<string, unknown>> = { type: "submit", children: "Save", label: "x" };
+    const b = render(() => Reflect.apply(Button, undefined, [loose]));
     expect(first(b.host).outerHTML).toBe('<button type="submit">Save</button>');
     a.dispose();
     b.dispose();
@@ -205,7 +206,7 @@ describe("base elements", () => {
     const { host, dispose } = render(() =>
       Box({
         children: [
-          Button({ label: "Go", disabled: true }),
+          Button({ children: "Go", disabled: true }),
           Input({ label: "A", disabled: true }),
           TextArea({ label: "B", disabled: d.value }),
           Select({ label: "C" }),
