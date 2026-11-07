@@ -62,7 +62,7 @@ k.server
 - loader(OutputSchema, async ({ params, search }, ctx) => Result<T, KeelError>) in *.server.ts (E1551)
 - action(InputSchema, async (input, { params }, ctx) => Result<Href | null, KeelError>) in *.server.ts
 - topology.ts: topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)
-- server entry: createApp({ topology, routes, ctx: createCtx({ mode: 'real' }), deployable: 'api', log }) -> { fetch }; validates only the served deployable; expose lists process-shared stores
+- server entry: createApp({ topology, routes, ctx: createCtx({ mode: 'real' }), deployable: 'api', log }) -> { fetch }; validates only the served deployable
 - POST/PUT/PATCH/DELETE: body decoded with the action's input schema from FormData, or from JSON when content-type is application/json (a k.services client); fail: keel.fields 422, action not called
 - runtime request (header accept: application/json): GET and POST return JSON { id: routeId, results: { [routeId]: Result } } where Result is { ok: true, value } | { ok: false, error: { code, message, data } }; a loader's value is its encoded output, an action's is null or an href
 - status: keel.notFound 404, keel.denied 403, keel.fields 422, other err 400
