@@ -19,11 +19,11 @@ const only = (records: readonly OutRecord[]): Outcome => ({ records, writes: [] 
 export async function execute(op: Operation, input: Input, io: Io): Promise<Outcome> {
   switch (op.name) {
     case "check":
-      return only(checkCommand(input, io));
+      return only(await checkCommand(input, io));
     case "test":
       return only(await testCommand(input, io));
     case "build":
-      return buildCommand(io);
+      return await buildCommand(io);
     case "spec":
       return only(specCommand(input, io));
     case "explain":

@@ -231,3 +231,18 @@ describe("module pass", () => {
     }
   });
 });
+
+describe("E1158 non-finite literals (rfc:0066, backlog 0195)", () => {
+  const std = (value: string): SourceFile =>
+    f(
+      "modules/a/module.ts",
+      `export default module({ id: 'a', deps: ['@keel/std-free'], capabilities: [], public: { exports: [], routes: [] }, std: { '@keel/std-free': ${value} } })\n`,
+    );
+  it("-1e999 and 1e999 are not literal JSON; finite negatives and -0 are", () => {
+    for (const v of ["-1e999", "{ n: -1e999 }", "[1e999]"])
+      expect(of([std(v)], "E1158").map((d) => d.message)).toEqual([
+        "std config for @keel/std-free in module a is not literal JSON",
+      ]);
+    for (const v of ["-2.5", "{ n: -0 }"]) expect(of([std(v)], "E1158")).toEqual([]);
+  });
+});

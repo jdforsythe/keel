@@ -16,8 +16,8 @@ const defaultError = (e: KeelError<string, unknown>): string =>
  * receiving the next level, rendered before it, as `children` (a thunk whose string form is the child HTML, so string
  * components can interpolate it). A failure renders its level's `errorElement` (layouts above intact unless
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
- * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a
- * compiler-marked `data-k` element outside nested levels' islands is an island: it gets
+ * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a bound
+ * (`data-k`) element outside nested levels' islands, however it was built (template or base element, rfc:0067), is an island: it gets
  * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup, rfc:0037).
  */
 export function renderChain(input: ChainInput): Rendered {

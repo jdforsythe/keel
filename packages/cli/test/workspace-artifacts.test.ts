@@ -59,7 +59,7 @@ describe("keel check in a workspace (0144)", () => {
   it("counts the same files for an app from the root and from inside it, artifacts included, all genuine", async () => {
     const inside = await check(join(root, "apps/a"), []);
     const fromRoot = await check(root, ["apps/a"]);
-    expect(inside.files).toBe(5); // src/A.tsx and the four artifacts `keel build` writes
+    expect(inside.files).toBe(6); // src/A.tsx and the five artifacts `keel build` writes
     expect(fromRoot).toEqual(inside);
     expect((await check(root, [])).e1005).toEqual([]);
   });

@@ -21,7 +21,7 @@ import { valuesOf } from "./valuesOf.ts";
 /**
  * POST, PUT, PATCH, DELETE (k.server Request flow): the verb is the method, or a POST's `_method` field (k.router
  * Form). A body over `maxBody` bytes is 413 `keel.payloadTooLarge`, action not called. FormData is decoded with the action's input schema; a `content-type: application/json` body (a k.services
- * client) is parsed with it instead (either fail: `keel.fields`, 422, action not called);
+ * client) is parsed with it instead, an empty one as `{}` (either fail: `keel.fields`, 422, action not called);
  * the action runs with `caller` and its `stores` instance (`openStores`); its `ok` saves the changed stores (`saveStores`,
  * else `keel.conflict`); `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
  * the `Result` as JSON with the status of its code. A document `keel.fields` re-renders the page at 422
@@ -34,8 +34,8 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const bytes = await readCapped(r.raw, r.sv.maxBody);
   if (bytes === null) return { response: payloadTooLarge(r.sv.maxBody), route: id, diags: [] };
   const typed = new Response(bytes, { headers: { "content-type": r.raw.headers.get("content-type") ?? "" } });
-  // A JSON body (a `@keel/services` client, k.services Encoding) carries no `_method`.
-  const sent = json ? await attempt((): Promise<unknown> => typed.json()) : null;
+  // A JSON body (a `@keel/services` client, k.services Encoding) carries no `_method`; an empty one is `{}` (rfc:0068).
+  const sent = json ? await attempt(async (): Promise<unknown> => (bytes.length ? typed.json() : {})) : null;
   const read = json ? null : await attempt(() => typed.formData());
   const form = read?.ok === true ? read.value : new FormData();
   const override = r.method === "POST" ? form.get("_method") : null;

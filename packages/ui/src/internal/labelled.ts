@@ -1,13 +1,15 @@
 import type { Field } from "@keel/forms";
 import { text } from "@keel/runtime-dom/ops";
 import { appendChildren } from "./appendChildren.ts";
+import { bound } from "./bound.ts";
 import { controlId } from "./controlId.ts";
 import { make } from "./make.ts";
 
 /**
  * A wrapper holding `control(id)` and a visible `<label for>` naming it (after a checkbox, before others). The id is
  * `props.id`, the field's, or `controlId`. With `field`, `field.bind(control)` owns name, id, value and aria wiring,
- * and the error text renders in an element with id `field.errorId` under the control (k.forms Bindings). Nodes are
+ * and the error text renders in an element with id `field.errorId` under the control (k.forms Bindings); both are
+ * bound (`data-k`, rfc:0067). Nodes are
  * made in document order, so at resume each claims its server element (rfc:0064).
  */
 export function labelled<C extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
@@ -28,9 +30,11 @@ export function labelled<C extends HTMLInputElement | HTMLSelectElement | HTMLTe
     const kids = l === null ? [c, label()] : [l, c];
     const field = props.field;
     if (field !== undefined) {
+      bound(c);
       field.bind(c);
       kids.push(
         make("span", (msg) => {
+          bound(msg);
           msg.setAttribute("id", field.errorId);
           msg.appendChild(document.createTextNode(""));
           text(msg, () => field.error() ?? "");

@@ -7,6 +7,7 @@ import type { Result } from "./Result.ts";
 import type { Schema } from "./Schema.ts";
 import type { Secret } from "./Secret.ts";
 import type { StringInput } from "./StringInput.ts";
+import { err } from "./err.ts";
 import type { Node } from "./internal/Node.ts";
 import { clip } from "./internal/clip.ts";
 import { fromStrings } from "./internal/fromStrings.ts";
@@ -88,7 +89,7 @@ export const s = {
       decodeStrings: (input: StringInput) => {
         const entries = stringEntries(input);
         const bad = protoPaths(entries.keys());
-        return bad.length > 0 ? { ok: false, error: invalid(bad) } : base.parse(fromStrings(node, "", entries));
+        return bad.length > 0 ? err(invalid(bad)) : base.parse(fromStrings(node, "", entries));
       },
     };
   },

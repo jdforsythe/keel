@@ -1,6 +1,6 @@
 # Golden app 1 (API-backed)
 
-Build `apps/golden-1/`: the todo app of the client-only brief, but the data lives behind an API. Two deployables in `topology.ts`: `web` (`adapter: 'client'`, module `todos`) and `api` (`adapter: 'node'`, module `api`, deps `todos`). Use only kernel APIs from the spec slice; read a section with `pnpm spec <id>`. Edit nothing outside `apps/golden-1/`. Scaffold with `scaffold('project', { workspace: true })` (keep its `index.html`, `vitest.config.ts`). If the slice leaves an API unspecified, report `blocked: <section> <question>`; invent nothing.
+Build `apps/golden-1/`: the todo app of the client-only brief, but the data lives behind an API. Two deployables in `topology.ts`: `web` (`adapter: 'client'`, module `todos`) and `api` (`adapter: 'node'`, module `api`, deps `todos`). Use only kernel APIs from the spec slice; read a section with `pnpm spec <id>`. Edit nothing outside `apps/golden-1/`. Scaffold with `scaffold('project', { workspace: true })` (CLI, from `apps/`: `keel scaffold project golden-1 --workspace`, which writes `apps/golden-1/`; keep its `index.html`, `vitest.config.ts`). If the slice leaves an API unspecified, report `blocked: <section> <question>`; invent nothing.
 
 ## Behavior (UI unchanged)
 - `/` (`todos.index`): lists with open-todo counts; a Form adding a list.
@@ -23,9 +23,10 @@ Build `apps/golden-1/`: the todo app of the client-only brief, but the data live
 
 ## Files (exactly these)
 ```
-apps/golden-1/{package.json,tsconfig.json,vite.config.ts,tokens.ts,topology.ts,server.ts}   package scripts check/test/build/api
+apps/golden-1/{package.json,tsconfig.json,vite.config.ts,tokens.ts,topology.ts,server.ts}   scripts: the scaffold's check/test/build, plus api
 apps/golden-1/modules/api/{module,routes}.ts
 apps/golden-1/modules/api/{board,boardStores,addList,addTodo,toggleTodo,editTodo,ActionApi,BoardApi,SuggestionsApi}.ts  and  TodoIdParams.schema.ts
+  (ActionApi, BoardApi, SuggestionsApi: plain .ts components, no JSX, each exporting Props for render and typing its first parameter `Infer<typeof Props>`)
 apps/golden-1/modules/api/{loadBoard,loadSuggestions,postList,postTodo,postEdit,postToggle,postUndo}.server.ts
 apps/golden-1/modules/todos/{module,routes,editable.guard,view,hydrate,refreshView,syncAfter,todosApi}.ts
 apps/golden-1/modules/todos/{todos,suggestions}.service.ts
@@ -37,7 +38,7 @@ apps/golden-1/test/{api,board,components,routes}.test.ts  and  test/simApi.ts
 
 ## Tests (`@keel/testing` only; ids only)
 - `test/simApi.ts` serves the real api (`createApp(...).fetch` over `api.board`, sim ctx) behind sim `ctx.net` `/api/*`, recording requests, so client tests see real bodies.
-- `api.test.ts`: `properties()` on the four `api` transactions; the invariant; every endpoint through `createApp().fetch` (runtime JSON), including 404, 422, undo.
+- `api.test.ts`: `properties()` on the four `api` transactions; the invariant; every endpoint through `createApp().fetch` (runtime JSON), including 404, 422 (a field error, and an empty JSON body, which decodes as `{}`), undo. Import a module's `routes.ts` before any of its `*.server.ts`.
 - `board.test.ts`: `properties(hydrate)`. `components.test.ts`: `properties()` for `TodoRow` and `Suggestions`; Suggestions loading to ready and to error on a sim 500; Undo disabled/enabled.
 - `routes.test.ts`: the former examples (filter, notFound, readOnly, invalid add focuses title, duplicate title error) plus a `renderRoute` refresh test: create a list, then a second `renderRoute` with an empty `todos.view` (new client, same api) still shows it.
 

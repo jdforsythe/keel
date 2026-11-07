@@ -158,7 +158,7 @@ describe("keel binary", () => {
     const r = await keel(d, ["build"]);
     expect(r.code).toBe(0);
     expect(r.stderr).toBe("");
-    expect(r.stdout).toBe("ok build 0 files, 4 artifacts, 0 errors\n");
+    expect(r.stdout).toBe("ok build 0 files, 5 artifacts, 0 errors\n");
     expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("build\n");
   }, 30_000);
 
@@ -185,7 +185,7 @@ describe("keel binary", () => {
 
   it("build without vite.config.ts is just the engine build", async () => {
     const r = await keel(tmp(), ["build"]);
-    expect(r).toEqual({ code: 0, stdout: "ok build 0 files, 4 artifacts, 0 errors\n", stderr: "" });
+    expect(r).toEqual({ code: 0, stdout: "ok build 0 files, 5 artifacts, 0 errors\n", stderr: "" });
   }, 30_000);
 
   it("a vite build failure prints its last lines to stderr and fails the command with 1", async () => {
@@ -194,7 +194,7 @@ describe("keel binary", () => {
     const r = await keel(d, ["build"]);
     expect(r.code).toBe(1);
     expect(r.stderr).toBe("bad2\nbad3\nbad4\nbad5\nbad6\n");
-    expect(r.stdout).toBe("ok build 0 files, 4 artifacts, 0 errors\n");
+    expect(r.stdout).toBe("ok build 0 files, 5 artifacts, 0 errors\n");
   }, 30_000);
 
   it("a failing engine build never starts vite and keeps its own exit code", async () => {

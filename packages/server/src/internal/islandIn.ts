@@ -1,5 +1,6 @@
 /**
- * True when `el` or an element below it carries `data-k` (a bound element the compiler marked, k.runtime)
+ * True when `el` or an element below it carries `data-k` (a bound element: a compiled template's, or a k.ui base
+ * element's, rfc:0067)
  * outside any nested `data-k-island` subtree (a nested route level's own island). Walks `children` and
  * attributes only, so the DOM-free server tree needs no selector engine.
  */

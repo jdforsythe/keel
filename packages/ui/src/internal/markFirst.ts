@@ -1,10 +1,12 @@
+import { bound } from "./bound.ts";
 import { edited } from "./edited.ts";
 
 /**
  * Wrap a control's `name` binding so that its first value also runs `mark`, which writes it as the control's markup
  * default (the `value` attribute, text, `selected`, `checked`; rfc:0062): server HTML shows it, and later values
  * change the property only, as a browser keeps a default apart from the user's edits. A control the user changed
- * before resume keeps its state on that first run (rfc:0064): no default is written, the property stays.
+ * before resume keeps its state on that first run (rfc:0064): no default is written, the property stays. A reactive
+ * control is bound: `el` gets `data-k` (rfc:0067).
  */
 export function markFirst<T>(
   el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
@@ -12,6 +14,7 @@ export function markFirst<T>(
   read: () => T,
   mark: (v: T) => void,
 ): () => unknown {
+  bound(el);
   let first = true;
   return () => {
     const v = read();

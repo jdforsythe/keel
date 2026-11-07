@@ -172,6 +172,20 @@ const ROWS: readonly Row[] = [
     "k.module",
   ],
   [
+    "E1159",
+    "a @keel/std-* package in deps cannot be imported (not found, or throws while it loads)",
+    "keel check and keel build import each stdlib dep first so its rules and config schema register.",
+    "install the package, fix its name in deps, or drop it from deps",
+    "k.module",
+  ],
+  [
+    "E1160",
+    "createApp({ std }) file missing, not { data, hash }, or hand-edited",
+    "The std.json artifact is built from the module manifests; its hash must match its data.",
+    "run keel build and pass its .keel/std.json; edit std config in module.ts, not the artifact",
+    "k.module",
+  ],
+  [
     "E1201",
     "write outside declared writes",
     "Reads register dependencies; writes are declared.",

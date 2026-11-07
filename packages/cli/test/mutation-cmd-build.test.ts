@@ -13,7 +13,7 @@ const BAD = {
 };
 
 describe("build", () => {
-  it("counts only app sources (isSourcePath): no tests or test dirs, no *.config.*, no dot dirs", () => {
+  it("counts only app sources (isSourcePath): no tests or test dirs, no *.config.*, no dot dirs", async () => {
     const files = [
       ok("src/A.ts", "A"),
       ok("src/B.test.ts", "B"),
@@ -30,12 +30,12 @@ describe("build", () => {
       ok("test/fixtures/W.tsx", "W2"),
       ok("conformance/c.ts", "C"),
     ];
-    const o = buildCommand({ cwd: CWD, files });
+    const o = await buildCommand({ cwd: CWD, files });
     // src/A.ts, src/K.configs.ts, config.ts
     expect(o.records.at(-1)).toMatchObject({
       kind: "summary",
       name: "build",
-      counts: { files: 3, artifacts: 4, errors: expect.any(Number) },
+      counts: { files: 3, artifacts: 5, errors: expect.any(Number) },
     });
   });
 
@@ -52,8 +52,8 @@ describe("build", () => {
       { path: "tools.config.ts", source: "export default {}\n" },
       { path: "vite.config.tsx", source: 'export const x = <p id="cfg.p">c</p>\n' },
     ];
-    const built = buildCommand({ cwd: CWD, files });
-    expect(built.writes.length).toBe(4);
+    const built = await buildCommand({ cwd: CWD, files });
+    expect(built.writes.length).toBe(5);
     const artifacts = built.writes.map((w) => ({ path: w.path, source: w.content ?? "" }));
     const ids = artifacts.find((a) => a.path === ".keel/ids.json")?.source ?? "";
     expect(ids).toContain("home.title");
@@ -68,23 +68,24 @@ describe("build", () => {
     expect(stale.stdout).toContain("E1005");
   });
 
-  it("a root-level config file and a project with only tests contribute no files", () => {
-    const o = buildCommand({ cwd: CWD, files: [ok("vite.config.ts", "V"), ok("a.test.ts", "T")] });
+  it("a root-level config file and a project with only tests contribute no files", async () => {
+    const o = await buildCommand({ cwd: CWD, files: [ok("vite.config.ts", "V"), ok("a.test.ts", "T")] });
     expect(o.records.at(-1)).toEqual({
       kind: "summary",
       ok: true,
       name: "build",
-      counts: { files: 0, artifacts: 4, errors: 0 },
+      counts: { files: 0, artifacts: 5, errors: 0 },
     });
   });
 
-  it("writes each artifact at .keel/<name>.json as canonical { data, hash } plus one newline, read-only", () => {
-    const o = buildCommand({ cwd: CWD, files: [ok("src/A.ts", "A")] });
+  it("writes each artifact at .keel/<name>.json as canonical { data, hash } plus one newline, read-only", async () => {
+    const o = await buildCommand({ cwd: CWD, files: [ok("src/A.ts", "A")] });
     expect(o.writes.map((w) => w.path)).toEqual([
       ".keel/a11y.json",
       ".keel/deps.json",
       ".keel/ids.json",
       ".keel/styles.json",
+      ".keel/std.json",
     ]);
     for (const w of o.writes) {
       expect(w.readonly).toBe(true);
@@ -100,7 +101,7 @@ describe("build", () => {
         '{"kind":"diag","code":"E1003","path":"src/C.tsx","line":1,"col":41,"message":"href is a literal script/data URL; it renders as about:blank","see":"k.compiler","fix":"--- a/src/C.tsx\\n+++ b/src/C.tsx\\n@@ -1,1 +1,1 @@\\n-export default function C() { return <a href=\\"javascript:alert(1)\\">x</a> }\\n+export default function C() { return <a>x</a> }"}\n{"kind":"summary","ok":false,"name":"build","counts":{"files":1,"artifacts":0,"errors":1}}\n',
       stderr: "",
     });
-    const o = buildCommand({ cwd: CWD, files: [BAD, ok("src/A.ts", "A")] });
+    const o = await buildCommand({ cwd: CWD, files: [BAD, ok("src/A.ts", "A")] });
     expect(o.writes).toEqual([]);
     expect(o.records.at(-1)).toEqual({
       kind: "summary",

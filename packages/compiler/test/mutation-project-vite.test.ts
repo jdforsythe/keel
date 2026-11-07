@@ -209,6 +209,7 @@ describe("vite: artifacts on disk", () => {
       "deps.json",
       "ids.json",
       "routes.json",
+      "std.json",
       "styles.json",
     ]);
     expect(Object.keys(artifact("ids.json").data)).toEqual(["src.A.0"]);

@@ -16,6 +16,8 @@ import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
+import { importDeps } from "./std/importDeps.ts";
+import { stdArtifact } from "./stdArtifact.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
 import type { Output } from "./types/Output.ts";
 import type { RouteEntry } from "./types/RouteEntry.ts";
@@ -31,6 +33,8 @@ const CSS_IMPORT = "virtual:keel.css";
 const CSS_ID = "/__keel.css";
 /** Files whose change can alter the CSS or `routes.json` beyond one module's own usages. */
 const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
+/** App module manifests: their `std` entries are `std.json` (rfc:0066). */
+const MANIFEST = /^modules\/[^/]+\/module\.[cm]?[jt]s$/;
 
 type Entry = { source: string; output: Output | undefined; artifacts: Artifacts; failures: string[] };
 type ModuleNode = object;
@@ -64,7 +68,9 @@ type BuildConfig = {
  * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046). A `vite build` whose `KEEL_DEPLOYABLE`
  * is a `node` deployable builds that entry alone (input `entry`) into `dist/<name>/` with hashed `assets/` and the
  * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), and writes no `.keel/` artifacts (the project's own build
- * does); any other build keeps the project's own Vite config.
+ * does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
+ * manifests' `deps` and writes `std.json` (`stdArtifact`); there a bad dep (E1159) or `std` entry (E1158) fails a build
+ * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten (rfc:0066).
  *
  * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
  * stores the open page's dev entry last posted, to the server's own origin and those `KEEL_INSPECT_ORIGINS` lists.
@@ -171,8 +177,9 @@ export default function (): {
     const { artifacts, duplicates } = mergeArtifacts(parts);
     artifacts["routes.json"] = routes;
     fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
-    for (const name of clientBuild ? [] : NAMES) {
-      const text = artifactText(artifacts[name]);
+    const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
+    texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
+    for (const [name, text] of clientBuild ? [] : texts) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);
       written.set(name, text);
@@ -185,6 +192,16 @@ export default function (): {
     }
     return duplicates;
   };
+
+  /** The app module manifests seen so far, with their sources. */
+  const manifests = (): { path: string; source: string }[] =>
+    [...modules].filter(([k]) => MANIFEST.test(k)).map(([path, e]) => ({ path, source: e.source }));
+
+  /** Import the manifests' stdlib deps, then their E1159 and E1158 lines (rfc:0066). */
+  const stdProblems = async (): Promise<string[]> =>
+    [...(await importDeps(root, manifests())), ...stdArtifact(manifests()).diagnostics].map(
+      (d) => `${d.code} ${d.path}:${d.line}:${d.col} ${d.message}`,
+    );
 
   const compileModule = (rel: string, code: string): Entry => {
     let entry = modules.get(rel);
@@ -256,6 +273,9 @@ export default function (): {
       if (w !== undefined) warn = (m) => w.call(this, m);
       readTopology();
       for (const rel of listSources(root)) compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
+      const bad = await stdProblems();
+      if (bad.length > 0 && command === "build" && !clientBuild) throw new Error(bad.join("\n"));
+      for (const b of bad) warn(`keel: ${b}`);
       await refresh();
     },
     resolveId(id) {
@@ -296,6 +316,16 @@ export default function (): {
     watchChange(id, change) {
       const rel = relOf(id);
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
+      else if (rel !== null && MANIFEST.test(rel) && exists(rel)) {
+        compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
+        // New deps load before std.json is rewritten; problems go where dev's other ones do (backlog 0196).
+        void stdProblems()
+          .then((bad) => {
+            for (const b of bad) warn(`keel: ${b}`);
+            flush();
+          })
+          .catch((e: unknown) => warn(`keel: ${e instanceof Error ? e.message : String(e)}`));
+      }
       if (rel === null || !PROJECT_FILE.test(rel)) return;
       if (rel === "topology.ts") {
         readTopology();

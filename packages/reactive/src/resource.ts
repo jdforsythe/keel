@@ -1,12 +1,15 @@
+import type { Outcome } from "./internal/Outcome.ts";
 import { State } from "./internal/State.ts";
 import { fail } from "./internal/fail.ts";
 import { flush } from "./internal/flush.ts";
+import { isKeelResult } from "./internal/isKeelResult.ts";
 import { mark } from "./internal/mark.ts";
 import { rt } from "./internal/rt.ts";
 import { track } from "./internal/track.ts";
 import { watch } from "./internal/watch.ts";
 import type { Resource } from "./types/Resource.ts";
 import type { ResourceState } from "./types/ResourceState.ts";
+import type { Settled } from "./types/Settled.ts";
 
 const attempt = (fn: () => void): { error: unknown } | null => {
   try {
@@ -20,9 +23,13 @@ const attempt = (fn: () => void): { error: unknown } | null => {
 /**
  * Async value. `fetcher` runs at creation, on `refetch()`, and when a signal it read synchronously
  * changes. Every run gets a higher request id; only the latest request may settle the state.
+ * A throw or rejection settles `error`; a keel `Result` (made by k.schema `ok`/`err`, which brand it) unwraps:
+ * `ok(v)` is `ready` with `v`, `err(e)` is `error` with `e` (rfc:0068), so a fetcher returning a `@keel/services`
+ * call needs no throw. Any other value, a plain `{ ok, error }` object included, is `ready` as is.
  * `refetch()` is a write: inside an effect it must be declared in `writes` (E1201).
  */
-export function resource<T>(fetcher: () => Promise<T>): Resource<T> {
+export function resource<T>(fetcher: () => Promise<T>): Resource<Settled<T>>;
+export function resource<T>(fetcher: () => Promise<T | Outcome<T>>): Resource<T> {
   let current: ResourceState<T> = { state: "loading" };
   let latest = 0;
   const put = (next: ResourceState<T>): void => {
@@ -45,14 +52,22 @@ export function resource<T>(fetcher: () => Promise<T>): Resource<T> {
     () => {
       const id = ++latest;
       if (current.state !== "loading") put({ state: "loading" });
-      let pending: Promise<T>;
+      let pending: Promise<T | Outcome<T>>;
       try {
         pending = fetcher();
       } catch (error) {
         pending = Promise.reject(error);
       }
       Promise.resolve(pending).then(
-        (value) => settle(id, { state: "ready", value }),
+        (v) =>
+          settle(
+            id,
+            !isKeelResult(v)
+              ? { state: "ready", value: v }
+              : v.ok
+                ? { state: "ready", value: v.value }
+                : { state: "error", error: v.error },
+          ),
         (error: unknown) => settle(id, { state: "error", error }),
       );
     },

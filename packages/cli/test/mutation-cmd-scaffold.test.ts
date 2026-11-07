@@ -30,7 +30,16 @@ beforeAll(async () => {
     ["scaffold", "store", "orders.cart"],
     ["scaffold", "route", "orders.list", "--path", "/orders"],
   ])
-    files = applied(files, (await runEngine(argv, { cwd: CWD, files })).writes);
+    files = applied(
+      files,
+      // `scaffold project shop` writes under `shop/` (rfc:0068); the other ops run inside it.
+      argv[1] === "project"
+        ? (await runEngine(argv, { cwd: "/work", files })).writes.map((w) => ({
+            ...w,
+            path: w.path.replace(/^shop\//, ""),
+          }))
+        : (await runEngine(argv, { cwd: CWD, files })).writes,
+    );
   tree = files;
   cyclic = applied(files, [
     { path: "modules/orders/module.ts", content: manifest("orders", [], ["OrderCard"]) },

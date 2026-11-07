@@ -19,6 +19,8 @@ import type { LogSink } from "./LogSink.ts";
  * by every instance. A secret under 32 UTF-8 bytes rejects with E1556; a deployed production start without one writes
  * a W1556 `diag` to `log`. `secure` says the app is served over https (true behind a TLS-terminating proxy); it defaults to
  * the request URL's scheme. When secure, the caller cookie is `__Host-keel-caller` with `Secure`, else `keel-caller`.
+ * `std` is the path of the build's `.keel/std.json`, read at startup and bound to `ctx`, where stdlib packages read
+ * their modules' config with `stdConfig(ctx, pkg, Config)` (k.module Std config, rfc:0066).
  */
 export type AppOptions = {
   readonly topology: Topology;
@@ -33,4 +35,5 @@ export type AppOptions = {
   readonly assets?: string;
   readonly secret?: string;
   readonly secure?: boolean;
+  readonly std?: string;
 };

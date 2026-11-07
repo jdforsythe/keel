@@ -2,6 +2,7 @@ import type { Program } from "oxc-parser";
 import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
+import { isComponentFile } from "../internal/isComponentFile.ts";
 import { stemOf } from "../internal/stemOf.ts";
 import { str } from "../internal/str.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -41,7 +42,7 @@ function exportsOf(ast: Program): Exported[] {
 
 /**
  * E1752 (principle 3): more than one export in a file, or a filename not equal to its export. A component
- * file (`.tsx`/`.jsx` with a default export) may also export `Props` and `uses` (k.component); a `*.server.ts` whose
+ * file (`isComponentFile`: `.tsx`/`.jsx`, or a PascalCase `.ts`, with a default export) may also export `Props` and `uses` (k.component); a `*.server.ts` whose
  * exports are only `loader`/`action` is exempt (k.server). A `*.schema.ts` may export one schema plus its inferred type alias of the same name. Index files and files under `types/` may re-export; elsewhere a re-export is reported.
  */
 export const oneExport: RuleDef = {
@@ -58,7 +59,7 @@ export const oneExport: RuleDef = {
     const stem = stemOf(file.path);
     if (!isAppPath(file.path) || stem === "index") return [];
     const all = exportsOf(ast);
-    const component = /\.[jt]sx$/.test(file.path) && ast.body.some((s) => s.type === "ExportDefaultDeclaration");
+    const component = isComponentFile(file.path, ast);
     const moved = all.find((e) => e.reexport === true);
     if (moved !== undefined && !/(?:^|\/)types\//.test(file.path))
       return [findingAt(file, moved.at, { kind: "reexport" })];

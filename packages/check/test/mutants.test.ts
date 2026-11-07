@@ -1668,9 +1668,15 @@ describe("E1803 / E1701 / E1104 / E1754", () => {
       block("fake schema file", E("src/User.schemas.ts", `${head}const User = s.object({})\n`)),
       block(
         "component Props exempt",
-        E("src/A.tsx", `${head}export const Props = s.object({})\nconst Other = s.object({})\n`),
+        E(
+          "src/A.tsx",
+          `${head}export const Props = s.object({})\nconst Other = s.object({})\nexport default function A() {}\n`,
+        ),
       ),
-      block("component jsx Props", E("src/A.jsx", `${head}export const Props = s.object({})\n`)),
+      block(
+        "component jsx Props",
+        E("src/A.jsx", `${head}export const Props = s.object({})\nexport default function A() {}\n`),
+      ),
       block("ts Props not exempt", E("src/a.ts", `${head}export const Props = s.object({})\n`)),
       block("test path", E("test/a.test.ts", `${head}const User = s.object({})\n`)),
     ].join("\n");

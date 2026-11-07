@@ -1,6 +1,6 @@
 # Golden app 2 (recipe box, API-backed)
 
-Build `apps/golden-2/`: a recipe box whose data lives behind an API. Use only kernel APIs from the spec slice; read a full section with `pnpm spec <id>`; skills `keel-api`, `keel-forms`, `keel-testing` are in `.claude/skills/<name>/SKILL.md`. Edit nothing outside `apps/golden-2/` (the root `pnpm install` lockfile change excepted). Scaffold with `keel scaffold project golden-2 --workspace` (keep its `index.html` and `vitest.config.ts`; replace its `app` module), then `pnpm install` at the root. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; invent nothing.
+Build `apps/golden-2/`: a recipe box whose data lives behind an API. Use only kernel APIs from the spec slice; read a full section with `pnpm spec <id>`; skills `keel-api`, `keel-forms`, `keel-testing` are in `.claude/skills/<name>/SKILL.md`. Edit nothing outside `apps/golden-2/` (the root `pnpm install` lockfile change excepted). Scaffold from `apps/` with `keel scaffold project golden-2 --workspace`, which writes `apps/golden-2/` (keep its `index.html` and `vitest.config.ts`; replace its `app` module), then `pnpm install` at the root. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; invent nothing.
 
 ## Topology
 `topology.ts` default export: `web` (`adapter: 'client'`, module `recipes`) and `api` (`adapter: 'node'`, module `kitchen`, deps `recipes`). Schemas both modules use live in `recipes` and are public exports.
@@ -31,4 +31,5 @@ Build `apps/golden-2/`: a recipe box whose data lives behind an API. Use only ke
 2. `pnpm test --filter golden-2` green.
 3. `invariant(` in `modules/kitchen`; a `stores:` declaration in a kitchen `*.server.ts`; `properties(addRecipe` and `properties(toggleFavorite` in tests.
 4. `unsafe(` count 0; no `any`, casts, `!`, `@ts-ignore`.
-5. A hidden `renderRoute` suite passes against your `topology`, both `routes`, and the ids above: index and favorites filter, favorite toggle, unknown id, guest redirect, form validation and duplicate title, create then listed.
+5. Ledger scope `golden-2:`: every item at rung example or better; `pnpm ledger --diff --scope golden-2:` clean. Verify with `node packages/cli/src/bin.ts ledger --scope golden-2:`: no item may be at rung `none`. Every export under `modules/` (schemas, pages, the guard, loaders, actions, the service and its client) is used in a test body; a page or error component reached only through `renderRoute` is not evidence, so `render` it (or call the loader or schema) in a test too.
+6. A hidden `renderRoute` suite passes against your `topology`, both `routes`, and the ids above: index and favorites filter, favorite toggle, unknown id, guest redirect, form validation and duplicate title, create then listed.

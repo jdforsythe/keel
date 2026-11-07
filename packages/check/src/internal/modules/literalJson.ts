@@ -27,7 +27,8 @@ export function literalJson(e: Expression): Out {
     }
     case "UnaryExpression": {
       if (e.operator !== "-" || e.argument.type !== "Literal" || typeof e.argument.value !== "number") return NO;
-      return { ok: true, value: -e.argument.value };
+      // `-1e999` is -Infinity, which JSON cannot hold (rfc:0066, backlog 0195).
+      return Number.isFinite(e.argument.value) ? { ok: true, value: -e.argument.value } : NO;
     }
     case "TemplateLiteral": {
       const cooked = e.expressions.length === 0 ? e.quasis[0]?.value.cooked : undefined;

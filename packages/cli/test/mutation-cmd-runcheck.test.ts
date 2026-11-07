@@ -21,29 +21,29 @@ beforeEach(() => {
   answer = [];
 });
 
-describe("runCheck", () => {
-  it("passes only path and source of the files, with the root, the project (default the files) and no topology when the project has none", () => {
-    runCheck("/w", [{ path: "src/a.ts", source: "export const a = 1\n" }]);
+describe("runCheck", async () => {
+  it("passes only path and source of the files, with the root, the project (default the files) and no topology when the project has none", async () => {
+    await runCheck("/w", [{ path: "src/a.ts", source: "export const a = 1\n" }]);
     const a = [{ path: "src/a.ts", source: "export const a = 1\n" }];
     expect(calls).toStrictEqual([{ files: a, options: { root: "/w", project: a } }]);
   });
 
-  it("parses the root topology.ts of the project (defaulting to the checked files) for the options", () => {
+  it("parses the root topology.ts of the project (defaulting to the checked files) for the options", async () => {
     const topology = parseTopology(TOPOLOGY).topology;
     expect(topology).toBeDefined();
-    runCheck("/w", [{ path: "topology.ts", source: TOPOLOGY }]);
+    await runCheck("/w", [{ path: "topology.ts", source: TOPOLOGY }]);
     expect(calls[0]?.options).toStrictEqual({
       root: "/w",
       topology,
       project: [{ path: "topology.ts", source: TOPOLOGY }],
     });
-    runCheck("/w", [{ path: "src/a.ts", source: "" }], [{ path: "topology.ts", source: TOPOLOGY }]);
+    await runCheck("/w", [{ path: "src/a.ts", source: "" }], [{ path: "topology.ts", source: TOPOLOGY }]);
     expect(calls[1]?.options).toEqual({ root: "/w", topology, project: [{ path: "topology.ts", source: TOPOLOGY }] });
-    runCheck("/w", [{ path: "topology.ts", source: TOPOLOGY }], [{ path: "src/a.ts", source: "" }]);
+    await runCheck("/w", [{ path: "topology.ts", source: TOPOLOGY }], [{ path: "src/a.ts", source: "" }]);
     expect(calls[2]?.options).toEqual({ root: "/w", project: [{ path: "src/a.ts", source: "" }] });
   });
 
-  it("keeps present optional fields (path made project-relative) and omits absent ones", () => {
+  it("keeps present optional fields (path made project-relative) and omits absent ones", async () => {
     answer = [
       { code: "E0001", message: "bare" },
       { code: "W0002", path: "/w/src/a.ts", line: 3, col: 4, message: "full", fix: "f", see: "s" },
@@ -53,7 +53,7 @@ describe("runCheck", () => {
       { code: "E0006", message: "fix only", fix: "x" },
       { code: "E0007", message: "see only", see: "y" },
     ];
-    expect(runCheck("/w", [])).toStrictEqual([
+    expect(await runCheck("/w", [])).toStrictEqual([
       { kind: "diag", code: "E0001", message: "bare" },
       { kind: "diag", code: "W0002", path: "src/a.ts", line: 3, col: 4, message: "full", fix: "f", see: "s" },
       { kind: "diag", code: "E0003", path: "src/b.ts", message: "path only" },

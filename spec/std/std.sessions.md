@@ -1,7 +1,7 @@
 # std.sessions: Sessions
 status: proposed
 
-**Module.** `@keel/std-sessions` ships a stdlib manifest (k.module) `{ id: 'sessions', capabilities: ['clock', 'random', 'storage'], public: { exports: ['record', 'replay', 'session', 'Session'], routes: ['sessions.ingest', 'sessions.list'] } }`. Apps opt in with `deps: ['@keel/std-sessions']`; each app module lists its own redactions (needs rfc: k.module `std` key, validated by a package-exported schema):
+**Module.** `@keel/std-sessions` ships a stdlib manifest (k.module) `{ id: 'sessions', capabilities: ['clock', 'random', 'storage'], public: { exports: ['record', 'replay', 'session', 'Session'], routes: ['sessions.ingest', 'sessions.list'] } }`. Apps opt in with `deps: ['@keel/std-sessions']`; each app module lists its own redactions (read with `stdConfig`, k.module):
 ```ts
 std: { '@keel/std-sessions': { redact: ['tx:cart.pay#card.number', 'route:orders.show#search.q'] } }
 ```

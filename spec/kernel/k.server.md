@@ -10,9 +10,9 @@ status: conformance-covered
 
 **Request flow.** Match the route table -> parse params (fail: 404) and search (fail: defaults) -> guard (deny: redirect) ->
 - GET: run the chain's loaders concurrently, then stream HTML. A loader `err` renders the route's `errorElement`.
-- POST, PUT, PATCH, DELETE: first the same-site check (`Sec-Fetch-Site` `same-origin`/`none`, its own `Origin`, `accept: application/json` with `x-keel: 1`, or neither; else 403 `keel.denied`, nothing runs). `_method` overrides POST only. A body over `createApp({ maxBodyBytes })` (default 1 MiB) is 413 `keel.payloadTooLarge` (`data: { limit }`), nothing runs. Then decode FormData or JSON by the action's input schema (fail: `keel.fields`, action not called), run it, then 303 to the target (document request) or the `Result` as JSON (runtime).
+- POST, PUT, PATCH, DELETE: first the same-site check (`Sec-Fetch-Site` `same-origin`/`none`, its own `Origin`, `accept: application/json` with `x-keel: 1`, or neither; else 403 `keel.denied`, nothing runs). `_method` overrides POST only. A body over `createApp({ maxBodyBytes })` (default 1 MiB) is `keel.payloadTooLarge` (`data: { limit }`), nothing runs. Then decode FormData or JSON (empty: `{}`) by the action's input (fail: `keel.fields`, not called), run it, then 303 to the target (document) or `Result` JSON (runtime).
 
-Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · `keel.conflict` 409 · other `err` 400 · uncaught throw 500 `keel.unexpected` (production: message `unexpected`, no stack). `mode` defaults to `production`. `#k-state` holds every store created in the request scope.
+Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · `keel.conflict` 409 · other `err` 400 · uncaught throw 500 `keel.unexpected` (production: message `unexpected`, no stack). `mode` defaults to `production`. `#k-state` holds every request-scope store.
 
 **Document.** Each route level is a candidate island root by route id.
 
@@ -29,7 +29,7 @@ Adapters: `node` (Hono; serves the resume entry), `static` (prerendered HTML), `
 - A GET with params that fail the params schema returns 404 and calls no loader.
 - All loaders of a matched chain start before any of them resolves.
 - A loader returning `err` with `keel.notFound` yields 404 and the route's `errorElement` HTML.
-- A POST with invalid FormData returns 422, does not call the action, and lists the field errors.
+- A POST with invalid FormData or JSON (empty JSON too) returns 422, does not call the action, and lists the field errors.
 - For a document request, `ok(href)` yields 303 with `Location: href`; `ok(null)` yields 303 to the request URL.
 - An uncaught throw in production mode yields 500 whose body contains neither the thrown message nor a stack frame.
 - The dev log stream emits exactly one `req` record per request; in json mode every line parses.

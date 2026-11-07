@@ -1,4 +1,5 @@
 import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
+import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
 import { compileRoutes, compileTable } from "@keel/router/internal";
 import { attempt } from "@keel/schema";
@@ -17,6 +18,7 @@ import { handle } from "./internal/handle.ts";
 import { inspectAllowed } from "./internal/inspectAllowed.ts";
 import { inspectResponse } from "./internal/inspectResponse.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
+import { loadStd } from "./internal/loadStd.ts";
 import { moduleOf } from "./internal/moduleOf.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { reqLine } from "./internal/reqLine.ts";
@@ -52,6 +54,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * A `secret` under 32 bytes (UTF-8) rejects with E1556; under that same production gate, no `secret` writes one W1556
  * `diag` to `log` at startup, since each instance then signs callers with its own random key (RFC 0057, backlog 0159),
  * and no `secure` writes one W1557: https is then the request's URL or `x-forwarded-proto: https` (RFC 0060).
+ * `std` (a `.keel/std.json`) is read once and bound to `ctx` for `stdConfig`: missing, malformed or hand-edited
+ * rejects with E1160, a value failing its package's registered schema with E1158 (k.module Std config, rfc:0066).
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -72,6 +76,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       "E1556",
       "secret: createApp({ secret }) needs at least 32 bytes; pass 32+ random bytes from the env",
     );
+  if (opts.std !== undefined) bindStd(opts.ctx, await loadStd(opts.std));
   const log = opts.log;
   if (deployed && opts.secret === undefined)
     log?.write(

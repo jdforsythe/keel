@@ -55,11 +55,11 @@ describe("server-rendered controls show their values (backlog 0166)", () => {
     const res = await app.fetch(new Request("http://localhost/edit", { headers: { accept: "text/html" } }));
     const html = await res.text();
     expect(res.status).toBe(200);
-    expect(html).toMatch(/<input type="text" id="[^"]+" value="Milk &amp; &quot;eggs&quot;">/);
+    expect(html).toMatch(/<input type="text" id="[^"]+" data-k="" value="Milk &amp; &quot;eggs&quot;">/);
     expect(html).toContain(">&lt;b&gt;x&lt;/b&gt;\nsecond</textarea>");
     expect(html).toContain('<option value="high" selected="">High</option>');
     expect(html).toContain('<option value="low">Low</option>');
-    expect(html).toMatch(/<input type="checkbox" id="[^"]+" checked="">/);
+    expect(html).toMatch(/<input type="checkbox" id="[^"]+" data-k="" checked="">/);
     expect(html).not.toContain("hunter2");
   });
 });

@@ -2,7 +2,7 @@
 // evaluation), and the Vite plugin's build warns W1005 before it rewrites a differing routes.json.
 import fs from "node:fs";
 import path from "node:path";
-import { artifactHashes, compile } from "@keel/compiler";
+import { artifactHashes, compile, stdArtifact } from "@keel/compiler";
 import keel from "@keel/compiler/vite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { canonicalJson } from "../src/internal/canonicalJson.ts";
@@ -14,9 +14,13 @@ const WARNING = "keel: W1005 .keel/routes.json differed from routes.ts; rewritte
 describe("artifactHashes", () => {
   it("is the compiler's hashes, with routes.json null only beside a modules/<m>/routes.ts", () => {
     const { hashes } = compile([C]);
-    expect(artifactHashes([C])).toEqual(hashes);
+    expect(artifactHashes([C])).toEqual({ ...hashes, "std.json": stdArtifact([]).hash });
     const manifest = { path: "modules/m/routes.ts", source: "export const routes = {}\n" };
-    expect(artifactHashes([C, manifest])).toEqual({ ...compile([C, manifest]).hashes, "routes.json": null });
+    expect(artifactHashes([C, manifest])).toEqual({
+      ...compile([C, manifest]).hashes,
+      "routes.json": null,
+      "std.json": stdArtifact([]).hash,
+    });
     for (const p of ["routes.ts", "modules/routes.ts", "modules/m/sub/routes.ts", "x/modules/m/routes.ts"])
       expect(artifactHashes([C, { path: p, source: "export const routes = {}\n" }])["routes.json"]).toBeTypeOf(
         "string",

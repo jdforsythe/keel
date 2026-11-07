@@ -16,7 +16,7 @@ keel codemod add-field Order note 'string.optional'
 ```
 
 **Generators.** Each emits spec-conformant files only:
-- `project`: `package.json`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo and CI.
+- `project`: `package.json`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo and CI; `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo and CI. `keel scaffold project <name>` writes under `<name>/` (rfc:0068).
 - `module`: `modules/<id>/module.ts` and `routes.ts`; adds the module to `topology.ts`.
 - `route`: manifest entry, `*.server.ts` loader, page component, route test.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
@@ -42,3 +42,4 @@ keel codemod add-field Order note 'string.optional'
 - An operation whose edit set would introduce a diagnostic writes no file and reports E1353.
 - Running the same generator twice reports E1351 the second time and writes nothing.
 - After `scaffold module`, `turbo.json` equals the generator's output for the new task graph.
+- `keel scaffold project <name>`, with or without `--workspace`, creates every file under `<name>/` and none beside it.

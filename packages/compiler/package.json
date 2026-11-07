@@ -32,6 +32,10 @@
       "types": "./src/inspect/*.ts",
       "default": "./src/inspect/*.ts"
     },
+    "./std/*": {
+      "types": "./src/std/*.ts",
+      "default": "./src/std/*.ts"
+    },
     "./testing": {
       "types": "./src/testing/evaluate.ts",
       "default": "./src/testing/evaluate.ts"
