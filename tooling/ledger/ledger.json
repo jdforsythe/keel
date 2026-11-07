@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 6,
   "mutationScore": {
-    "check": 83,
+    "check": 80.6,
     "cli": 90.9,
     "compiler": 88.2,
     "ctx": 83,
@@ -59,6 +59,12 @@
       "pkg": "golden-1",
       "name": "board",
       "file": "golden-1:api/board.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "boardStores",
+      "file": "golden-1:api/boardStores.ts",
       "rung": "example"
     },
     {
@@ -326,6 +332,192 @@
       "rung": "example"
     },
     {
+      "pkg": "golden-2",
+      "name": "KitchenApi",
+      "file": "golden-2:kitchen/KitchenApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "NewRecipe",
+      "file": "golden-2:kitchen/NewRecipe.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "addRecipe",
+      "file": "golden-2:kitchen/addRecipe.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "boxStores",
+      "file": "golden-2:kitchen/boxStores.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "loadRecipes",
+      "file": "golden-2:kitchen/loadRecipes.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "postFavorite",
+      "file": "golden-2:kitchen/postFavorite.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "postRecipe",
+      "file": "golden-2:kitchen/postRecipe.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "toggleFavorite",
+      "file": "golden-2:kitchen/toggleFavorite.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ActionReply",
+      "file": "golden-2:recipes/ActionReply.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Box",
+      "file": "golden-2:recipes/Box.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "BoxReply",
+      "file": "golden-2:recipes/BoxReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "BoxShell",
+      "file": "golden-2:recipes/BoxShell.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ErrorReply",
+      "file": "golden-2:recipes/ErrorReply.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "FieldsReply",
+      "file": "golden-2:recipes/FieldsReply.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "KeelFields",
+      "file": "golden-2:recipes/KeelFields.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "NewRecipePage",
+      "file": "golden-2:recipes/NewRecipePage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Nothing",
+      "file": "golden-2:recipes/Nothing.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Recipe",
+      "file": "golden-2:recipes/Recipe.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipeDraft",
+      "file": "golden-2:recipes/RecipeDraft.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipeError",
+      "file": "golden-2:recipes/RecipeError.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipeList",
+      "file": "golden-2:recipes/RecipeList.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipePage",
+      "file": "golden-2:recipes/RecipePage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipeParams",
+      "file": "golden-2:recipes/RecipeParams.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipeSearch",
+      "file": "golden-2:recipes/RecipeSearch.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "cook",
+      "file": "golden-2:recipes/cook.guard.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "createRecipe",
+      "file": "golden-2:recipes/createRecipe.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "favoriteRecipe",
+      "file": "golden-2:recipes/favoriteRecipe.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "kitchen",
+      "file": "golden-2:recipes/kitchen.service.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "kitchenApi",
+      "file": "golden-2:recipes/kitchenApi.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "loadIndex",
+      "file": "golden-2:recipes/loadIndex.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "loadRecipe",
+      "file": "golden-2:recipes/loadRecipe.server.ts",
+      "rung": "none"
+    },
+    {
       "pkg": "inspector",
       "name": "A11yEntry",
       "file": "inspector:inspector/A11yEntry.schema.ts",
@@ -375,6 +567,12 @@
     },
     {
       "pkg": "inspector",
+      "name": "InspectSection",
+      "file": "inspector:inspector/InspectSection.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
       "name": "Inspection",
       "file": "inspector:inspector/Inspection.schema.ts",
       "rung": "example"
@@ -395,6 +593,18 @@
       "pkg": "inspector",
       "name": "RouteEntry",
       "file": "inspector:inspector/RouteEntry.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "SectionView",
+      "file": "inspector:inspector/SectionView.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "SectionsView",
+      "file": "inspector:inspector/SectionsView.tsx",
       "rung": "example"
     },
     {
@@ -569,7 +779,7 @@
       "pkg": "router",
       "name": "Form",
       "file": "packages/router/src/Form.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
@@ -621,12 +831,6 @@
     },
     {
       "pkg": "scaffold",
-      "name": "plan",
-      "file": "packages/scaffold/src/plan.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "scaffold",
       "name": "scaffold",
       "file": "packages/scaffold/src/scaffold.ts",
       "rung": "example"
@@ -669,12 +873,6 @@
     },
     {
       "pkg": "server",
-      "name": "canUndoOwn",
-      "file": "packages/server/src/canUndoOwn.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "server",
       "name": "createApp",
       "file": "packages/server/src/createApp.ts",
       "rung": "probabilistic"
@@ -684,12 +882,6 @@
       "name": "topology",
       "file": "packages/server/src/topology.ts",
       "rung": "probabilistic"
-    },
-    {
-      "pkg": "server",
-      "name": "undoOwn",
-      "file": "packages/server/src/undoOwn.ts",
-      "rung": "example"
     },
     {
       "pkg": "services",
@@ -702,6 +894,36 @@
       "name": "service",
       "file": "packages/services/src/service.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-money",
+      "name": "addMoney",
+      "file": "packages/std-money/src/addMoney.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-money",
+      "name": "formatMoney",
+      "file": "packages/std-money/src/formatMoney.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-report",
+      "name": "tallyOf",
+      "file": "packages/std-report/src/tallyOf.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-timings",
+      "name": "time",
+      "file": "packages/std-timings/src/time.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-timings",
+      "name": "timingsOf",
+      "file": "packages/std-timings/src/timingsOf.ts",
+      "rung": "example"
     },
     {
       "pkg": "store",
@@ -779,12 +1001,6 @@
       "pkg": "ui",
       "name": "defineTokens",
       "file": "packages/ui/src/defineTokens.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "ui",
-      "name": "styles",
-      "file": "packages/ui/src/styles.ts",
       "rung": "example"
     }
   ],
@@ -868,6 +1084,22 @@
     {
       "item": "k.cli#11",
       "rung": "example"
+    },
+    {
+      "item": "k.cli#12",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#15",
+      "rung": "none"
     },
     {
       "item": "k.compiler#1",
@@ -1003,7 +1235,7 @@
     },
     {
       "item": "k.forms#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.forms#7",
@@ -1039,6 +1271,10 @@
     },
     {
       "item": "k.module#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.module#8",
       "rung": "example"
     },
     {
@@ -1079,6 +1315,10 @@
     },
     {
       "item": "k.router#10",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.router#11",
       "rung": "example"
     },
     {
@@ -1103,7 +1343,7 @@
     },
     {
       "item": "k.runtime#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.runtime#7",
@@ -1111,6 +1351,10 @@
     },
     {
       "item": "k.runtime#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.runtime#9",
       "rung": "none"
     },
     {
@@ -1179,6 +1423,14 @@
     },
     {
       "item": "k.server#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.server#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.server#12",
       "rung": "example"
     },
     {
@@ -1286,6 +1538,134 @@
       "rung": "example"
     },
     {
+      "item": "k.ui#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.brands#1",
+      "rung": "none"
+    },
+    {
+      "item": "std.brands#2",
+      "rung": "none"
+    },
+    {
+      "item": "std.brands#3",
+      "rung": "none"
+    },
+    {
+      "item": "std.brands#4",
+      "rung": "none"
+    },
+    {
+      "item": "std.brands#5",
+      "rung": "none"
+    },
+    {
+      "item": "std.brands#6",
+      "rung": "none"
+    },
+    {
+      "item": "std.geo#1",
+      "rung": "none"
+    },
+    {
+      "item": "std.geo#2",
+      "rung": "none"
+    },
+    {
+      "item": "std.geo#3",
+      "rung": "none"
+    },
+    {
+      "item": "std.geo#4",
+      "rung": "none"
+    },
+    {
+      "item": "std.geo#5",
+      "rung": "none"
+    },
+    {
+      "item": "std.health#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.health#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.health#3",
+      "rung": "none"
+    },
+    {
+      "item": "std.health#4",
+      "rung": "none"
+    },
+    {
+      "item": "std.health#5",
+      "rung": "none"
+    },
+    {
+      "item": "std.health#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.health#7",
+      "rung": "none"
+    },
+    {
+      "item": "std.money#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.money#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.money#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.money#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.money#5",
+      "rung": "none"
+    },
+    {
+      "item": "std.money#6",
+      "rung": "none"
+    },
+    {
+      "item": "std.money#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.report#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.report#2",
+      "rung": "none"
+    },
+    {
+      "item": "std.report#3",
+      "rung": "none"
+    },
+    {
+      "item": "std.report#4",
+      "rung": "none"
+    },
+    {
+      "item": "std.report#5",
+      "rung": "none"
+    },
+    {
+      "item": "std.report#6",
+      "rung": "example"
+    },
+    {
       "item": "std.sessions#1",
       "rung": "none"
     },
@@ -1320,6 +1700,26 @@
     {
       "item": "std.sessions#9",
       "rung": "none"
+    },
+    {
+      "item": "std.timings#1",
+      "rung": "none"
+    },
+    {
+      "item": "std.timings#2",
+      "rung": "none"
+    },
+    {
+      "item": "std.timings#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.timings#4",
+      "rung": "none"
+    },
+    {
+      "item": "std.timings#5",
+      "rung": "example"
     }
   ]
 }

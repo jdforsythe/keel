@@ -14,13 +14,14 @@ export default module({
 - `id`: lowerCamel, equals the folder name; prefixes the module's route ids, store ids, transaction names, and error codes.
 - `deps`: app module ids or stdlib package names this module may import from or link to. Stdlib modules ship the same manifest (extension point) at the package root, `node_modules/@keel/std-<x>/module.ts`; `deps` name the package and its `id` is its prefix.
 - `capabilities`: `ctx` capabilities its code may use; topology and shells read this list.
+- `std` (optional): this module's config for stdlib packages, `{ '<pkg>': <literal JSON> }`, read statically. Each key is a stdlib package (`@keel/std-*`) in `deps`. A package that takes config registers its schema under its package name (`s.register('@keel/std-x', Config)`, k.schema), and the value must parse with it.
 - `public.exports`: export names (equal to file names, principle 3) other modules may import. `public.routes`: route ids other modules may pass to `href()`.
 
 Everything not listed is private. Cross-module imports name the exporting file directly; there are no barrel files. Each module has its own `routes.ts`; a deployable's route table is the union of its modules' manifests.
 
 **Checks.** Cross-module access is checked statically from imports, `href()` calls, and `uses:` lists, on every build and every `keel check`. Manifests are validated by `ModuleSchema`.
 
-**Rules.** E1151 import of a non-public export of another module (fix adds it to that module's `public.exports`) · E1152 import from, or `href()` into, a module not in `deps` (fix adds it) · E1153 cycle in module `deps` (message lists the cycle) · E1154 `public` names an export or route that does not exist (fix removes it) · E1155 route id, store id, transaction name, or error code not prefixed by its module id (fix prefixes it) · E1156 `ctx` capability used but not in `capabilities` (fix adds it) · E1157 `href()` to a non-public route of another module (fix adds it to that module's `public.routes`). No fix edits a file under `node_modules/`.
+**Rules.** E1151 import of a non-public export of another module (fix adds it to that module's `public.exports`) · E1152 import from, or `href()` into, a module not in `deps` (fix adds it) · E1153 cycle in module `deps` (message lists the cycle) · E1154 `public` names an export or route that does not exist (fix removes it) · E1155 route id, store id, transaction name, or error code not prefixed by its module id (fix prefixes it) · E1156 `ctx` capability used but not in `capabilities` (fix adds it) · E1157 `href()` to a non-public route of another module (fix adds it to that module's `public.routes`) · E1158 `std` key that is not a stdlib package (`@keel/std-*`) in `deps`, a `std` value that is not literal JSON, or one that fails the schema registered under its package name (message names the issue's path and rule). No fix edits a file under `node_modules/`.
 
 **Conformance.**
 - Importing a non-public export of another module reports E1151 at the import; adding it to `public.exports` clears it.
@@ -30,3 +31,4 @@ Everything not listed is private. Cross-module imports name the exporting file d
 - Changing the signature of a non-public export produces no diagnostic in any other module.
 - A route `show` declared in module `orders` without the `orders.` prefix reports E1155.
 - A stdlib module's manifest is validated by the same schema and enforced by the same rules as an app module's.
+- A `std` key absent from `deps`, or naming an app module, reports E1158, and listing it in `deps` clears it. A `std` value that fails its package's registered schema reports E1158 naming the issue's path; a value that parses is clean.
