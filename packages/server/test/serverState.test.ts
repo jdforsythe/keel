@@ -1,13 +1,13 @@
 // k.server Server state (RFC 0044) under plain Node (happy-dom strips `cookie` and `set-cookie` at construction):
 // `stores` factories get a fresh instance per request, restored from and saved to `ctx.storage`; the caller token
 // rides on `tx` meta, so undo is scoped across requests and `await`s; factory stores never reach `#k-state`.
+import { createHash } from "node:crypto";
 import { type Ctx, createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
-import { callerHasher } from "../src/internal/callerHasher.ts";
 
 const BASE = "http://localhost";
 const KEY = "keel.store.test.notes";
@@ -109,21 +109,29 @@ describe("server state (RFC 0044)", () => {
     expect(await saved(built.ctx)).toMatchObject({
       state: { items: ["a1"] },
       initial: { items: [] },
-      log: [{ name: "test.add", payload: { text: "a1" }, meta: { caller: (await callerHasher())(token) } }],
+      log: [
+        {
+          name: "test.add",
+          payload: { text: "a1" },
+          meta: { caller: createHash("sha256").update(token).digest("base64url") },
+        },
+      ],
     });
     // Backlog 0131: the stored snapshot never holds the cookie token.
     expect(await built.ctx.storage.get(KEY)).not.toContain(token);
   });
 
-  it("issues the caller cookie on a first write only; Secure over https", async () => {
+  it("issues the signed caller cookie on a first write only; __Host- and Secure over https (RFC 0057)", async () => {
     const c = client(build());
     expect((await c.send("GET", "/notes")).headers.get("set-cookie")).toBeNull();
     expect((await c.write("a")).headers.get("set-cookie")).toMatch(
-      /^keel-caller=[A-Za-z0-9-]{16,64}; Path=\/; HttpOnly; SameSite=Lax$/,
+      /^keel-caller=[A-Za-z0-9-]{16,64}\.[\w-]{43}; Path=\/; HttpOnly; SameSite=Lax$/,
     );
     expect((await c.write("b")).headers.get("set-cookie")).toBeNull();
     const secure = await client(build(undefined, true)).write("c");
-    expect(secure.headers.get("set-cookie")).toMatch(/; HttpOnly; SameSite=Lax; Secure$/);
+    expect(secure.headers.get("set-cookie")).toMatch(
+      /^__Host-keel-caller=[^;]+; Path=\/; HttpOnly; SameSite=Lax; Secure$/,
+    );
   });
 
   it("two interleaving clients each undo only their own last write, across requests and after an await", async () => {
@@ -149,7 +157,18 @@ describe("server state (RFC 0044)", () => {
     const a = client(built);
     await a.write("a1");
     const app = await built.app;
-    for (const cookie of ["", "keel-caller=00000000-0000-4000-8000-000000000000", "keel-caller=<x>", "keel-caller="]) {
+    // RFC 0057: a's own token without its signature (a pre-0057 cookie), or with one character of it changed, is no caller.
+    const mine = a.cookie();
+    const flipped = `${mine.slice(0, -1)}${mine.endsWith("A") ? "B" : "A"}`;
+    const unsigned = mine.slice(0, mine.lastIndexOf("."));
+    const forged = [
+      "keel-caller=00000000-0000-4000-8000-000000000000",
+      "keel-caller=<x>",
+      "keel-caller=",
+      unsigned,
+      flipped,
+    ];
+    for (const cookie of ["", ...forged]) {
       const headers = new Headers({ accept: "application/json", "content-type": "application/json" });
       if (cookie !== "") headers.set("cookie", cookie);
       expect((await app.fetch(new Request(`${BASE}/undo`, { method: "POST", headers, body: "{}" }))).status).toBe(403);

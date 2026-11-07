@@ -1,6 +1,7 @@
 /**
- * Who sent one request (k.server Server state): `token` is the `keel-caller` cookie value, or one minted for a write
- * that came without it (then `fresh`, set as a cookie on its response by `issueCaller`), else `""` (a cookieless read).
- * `id` is what loaders and actions get as `caller`: the token's hash (`callerHasher`, RFC 0054), never the token.
+ * Who sent one request (k.server Server state, RFC 0054, 0057): `id` is what loaders and actions get as `caller`, the
+ * hash of the caller cookie's value when the server signed it (`callerSigner`), else of a value minted for a write that
+ * came without one, else `""` (a cookieless read). `set` is the `set-cookie` header `issueCaller` puts on the minting
+ * write's response, else `""`. The cookie value itself never reaches app code.
  */
-export type Caller = { readonly token: string; readonly fresh: boolean; readonly id: string };
+export type Caller = { readonly id: string; readonly set: string };

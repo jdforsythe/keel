@@ -32,7 +32,7 @@
     },
     "@keel/schema": "5kb",
     "@keel/server": {
-      "max": "11.5kb",
+      "max": "12kb",
       "platform": "node"
     },
     "@keel/services": "3kb",

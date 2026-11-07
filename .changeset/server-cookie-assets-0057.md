@@ -1,0 +1,5 @@
+---
+"@keel/server": minor
+---
+
+Signed `__Host-` caller cookie and hardened asset serving (RFC 0057, backlog 0134, 0136). Over https (`createApp({ secure })`, default the request URL's scheme) the caller cookie is `__Host-keel-caller` with `Secure`, so no sibling subdomain can plant it; over http it stays `keel-caller`. The value is now `token.mac`, an HMAC-SHA-256 under `createApp({ secret })` (default: 32 random bytes per process). A cookie the server did not sign counts as none, so the next write mints a fresh caller and existing unsigned cookies are replaced. Production should pass one stable secret to every instance. Built files are served `nosniff`; only files the Vite manifest names with a `-<hash>` are `immutable`, the rest `no-cache`. Symlinks resolving outside `assets/`, and a manifest entry outside it, are not read (E1555 for the entry). A `secret` under 32 bytes rejects with E1556, and a production start without one logs W1556. Unhashed manifest names such as `island-checkout.js` are no longer `immutable`. Non-ASCII and spaced asset names serve at their encoded paths, and built files carry a weak ETag honored with 304.

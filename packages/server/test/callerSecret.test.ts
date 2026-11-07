@@ -1,0 +1,77 @@
+// RFC 0057 amendment (backlog 0159): `createApp({ secret })` under 32 bytes (UTF-8) rejects with E1556 at startup, since
+// an empty or short HMAC key lets anyone sign caller cookies; a deployed production start (the E1555 gate) without a
+// secret writes one W1556 diag to `log`, because each instance then signs with its own random key.
+import { createHmac } from "node:crypto";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createCtx } from "@keel/ctx";
+import { manifest } from "@keel/router";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createApp, topology } from "../src/index.ts";
+import { callerSigner } from "../src/internal/callerSigner.ts";
+
+const made: string[] = [];
+afterEach(() => {
+  vi.unstubAllEnvs();
+  for (const d of made.splice(0)) fs.rmSync(d, { recursive: true, force: true });
+});
+const built = (): string => {
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-secret-"));
+  made.push(d);
+  fs.mkdirSync(path.join(d, ".vite"), { recursive: true });
+  fs.mkdirSync(path.join(d, "assets"), { recursive: true });
+  fs.writeFileSync(
+    path.join(d, ".vite/manifest.json"),
+    JSON.stringify({ e: { file: "assets/entry-Ab12Cd34.js", isEntry: true } }),
+  );
+  fs.writeFileSync(path.join(d, "assets/entry-Ab12Cd34.js"), "resume()");
+  return d;
+};
+const app = (o: { secret?: string; mode?: "dev" | "production"; assets?: string; lines?: string[] }) =>
+  createApp({
+    topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("p") } }),
+    ctx: createCtx({ mode: "sim", seed: 1337 }),
+    ...(o.secret === undefined ? {} : { secret: o.secret }),
+    ...(o.mode === undefined ? {} : { mode: o.mode }),
+    ...(o.assets === undefined ? {} : { assets: o.assets }),
+    ...(o.lines === undefined ? {} : { log: { format: "json", write: (l: string) => o.lines?.push(l) } }),
+  });
+
+describe("createApp({ secret }) (backlog 0159)", () => {
+  it("backlog 0159 repro: an empty key signs cookies anyone can forge, so createApp refuses it", async () => {
+    const t = "A".repeat(22);
+    expect((await callerSigner("")).valid(`${t}.${createHmac("sha256", "").update(t).digest("base64url")}`)).toBe(true);
+    await expect(app({ secret: "" })).rejects.toMatchObject({
+      code: "E1556",
+      message: expect.stringMatching(/^E1556 secret: /),
+    });
+  });
+
+  it.each([
+    ["a", false],
+    ["x".repeat(31), false],
+    ["é".repeat(15), false],
+    ["x".repeat(32), true],
+    ["é".repeat(16), true],
+  ])("a %j secret (UTF-8 bytes against 32) is accepted: %s", async (secret, ok) => {
+    if (ok) await expect(app({ secret })).resolves.toBeDefined();
+    else await expect(app({ secret })).rejects.toMatchObject({ code: "E1556" });
+  });
+
+  it("a deployed production start without a secret writes one W1556 diag; with one, or in dev or test, none", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const lines: string[] = [];
+    await app({ assets: built(), lines });
+    expect(lines.map((l) => JSON.parse(l))).toEqual([
+      { kind: "diag", code: "W1556", message: expect.stringContaining("callers reset"), see: "k.server" },
+    ]);
+    const quiet: string[] = [];
+    await app({ assets: built(), lines: quiet, secret: "s".repeat(32) });
+    await app({ assets: built(), lines: quiet, mode: "dev" });
+    vi.stubEnv("NODE_ENV", "test");
+    await app({ lines: quiet });
+    expect(quiet).toEqual([]);
+  });
+});

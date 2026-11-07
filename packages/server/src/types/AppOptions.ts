@@ -12,7 +12,13 @@ import type { LogSink } from "./LogSink.ts";
  * 1048576); a larger one is refused with 413 `keel.payloadTooLarge` before it is parsed. `assets` is the deployable's
  * `keel build` output (`dist/<deployable>`): in production its manifest is read at startup (missing, or no `assets`
  * unless `NODE_ENV` is `development` or `test`: E1555, RFC 0052), documents
- * load its built entry, and its files are served immutable; dev ignores it (k.server Build, RFC 0048).
+ * load its built entry, and its files are served `nosniff`, `immutable` when the manifest names them with a content hash
+ * and `no-cache` otherwise; dev ignores it (k.server Build, RFC 0048, 0057). `secret` keys the HMAC that signs caller
+ * cookies (k.server Server state, RFC 0057): a cookie without a valid signature is not a caller. It defaults to 32
+ * random bytes per `createApp`, so callers reset on restart; production sets a stable secret (32+ random bytes) shared
+ * by every instance. A secret under 32 UTF-8 bytes rejects with E1556; a deployed production start without one writes
+ * a W1556 `diag` to `log`. `secure` says the app is served over https (true behind a TLS-terminating proxy); it defaults to
+ * the request URL's scheme. When secure, the caller cookie is `__Host-keel-caller` with `Secure`, else `keel-caller`.
  */
 export type AppOptions = {
   readonly topology: Topology;
@@ -25,4 +31,6 @@ export type AppOptions = {
   readonly log?: LogSink;
   readonly artifacts?: string;
   readonly assets?: string;
+  readonly secret?: string;
+  readonly secure?: boolean;
 };

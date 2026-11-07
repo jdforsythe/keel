@@ -6,8 +6,8 @@ import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import type { Served } from "./internal/Served.ts";
-import { callerHasher } from "./internal/callerHasher.ts";
 import { callerOf } from "./internal/callerOf.ts";
+import { callerSigner } from "./internal/callerSigner.ts";
 import { codedError } from "./internal/codedError.ts";
 import { crashed } from "./internal/crashed.ts";
 import { denied } from "./internal/denied.ts";
@@ -37,15 +37,19 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * any request scope (its `graph` holds the app's scopes only; inspector section E1057s go to `log`), to a loopback
  * or listed host and an absent (GET only), same, or listed (`inspect.origins`) `Origin` only; others, and any other
  * method without an allowed `Origin`, get 403 `keel.denied`.
- * Each request has a caller (`keel-caller` cookie, minted and set HttpOnly/SameSite=Lax on a write without one, else
- * `""`) and its own instance of each `stores` factory its loaders and action name, restored from and saved to
- * `ctx.storage` through the deployable's in-process copy (k.server Server state, RFC 0044).
+ * Each request has a caller (a caller cookie signed under `secret`, else one minted and set HttpOnly/SameSite=Lax on
+ * a write, else `""`; `__Host-keel-caller` and Secure when `secure` or the request is https, RFC 0057) and its own
+ * instance of each `stores` factory its loaders and action name, restored from and saved to `ctx.storage` through the
+ * deployable's in-process copy (k.server Server state, RFC 0044).
  * In production, `assets` (the deployable's `keel build` output) is read once here: documents load its built entry and
- * its files are served immutable; a missing or entry-less manifest rejects with E1555 (k.server Build, RFC 0048).
+ * its files are served nosniff, immutable only when the manifest names them hashed, never through a symlink out of
+ * `assets/` (RFC 0057); a missing or entry-less manifest rejects with E1555 (k.server Build, RFC 0048).
  * A production `createApp` without `assets` also rejects with E1555 unless `NODE_ENV` (trimmed, any case) is
  * `development` or `test`; unset counts as production (RFC 0052). Without a build its island documents would load
  * `/@keel/entry.ts`, whose bare `@keel/*` imports only Vite resolves. Whether a page has islands is known only when it
  * renders, so this holds for every deployable. Dev mode, and tests (vitest sets `NODE_ENV=test`), keep serving it.
+ * A `secret` under 32 bytes (UTF-8) rejects with E1556; under that same production gate, no `secret` writes one W1556
+ * `diag` to `log` at startup, since each instance then signs callers with its own random key (RFC 0057, backlog 0159).
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -54,10 +58,25 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
   const modules = new Set(Object.keys(routes).map(moduleOf));
   const mode = opts.mode ?? "production";
   const env = nodeEnv();
-  if (mode === "production" && opts.assets === undefined && env !== "development" && env !== "test")
+  const deployed = mode === "production" && env !== "development" && env !== "test";
+  if (deployed && opts.assets === undefined)
     throw codedError(
       "E1555",
       "assets: a production server needs its client build; run `keel build` and pass createApp({ assets: 'dist/<deployable>' })",
+    );
+  // RFC 0057 amendment (backlog 0159): a short key makes the caller HMAC guessable, `""` public.
+  if (opts.secret !== undefined && new TextEncoder().encode(opts.secret).length < 32)
+    throw codedError(
+      "E1556",
+      "secret: createApp({ secret }) needs at least 32 bytes; pass 32+ random bytes from the env",
+    );
+  const log = opts.log;
+  if (deployed && opts.secret === undefined)
+    log?.write(
+      diagLine(log.format, {
+        code: "W1556",
+        message: "secret: none given, so callers reset on restart and differ per instance; pass createApp({ secret })",
+      }),
     );
   const sv: Served = {
     table: selectDeployable(opts.topology, table, modules, opts.deployable),
@@ -68,10 +87,10 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     inspectOrigins: opts.inspect?.origins ?? [],
     saved: new Map(),
     saving: new Map(),
-    callerId: await callerHasher(),
+    keys: await callerSigner(opts.secret),
+    secure: opts.secure,
     built: mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets) : undefined,
   };
-  const log = opts.log;
   const hono = new Hono();
   hono.all("*", async (c) => {
     const raw = c.req.raw;
@@ -81,7 +100,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
     const routed = async () => {
-      const rq = { scope: scope(() => undefined), caller: callerOf(raw, sv.ctx, sv.callerId), held: new Map() };
+      const rq = { scope: scope(() => undefined), caller: callerOf(raw, sv.ctx, sv.keys, sv.secure), held: new Map() };
       isolate(rq.scope);
       const r = await attempt(() => handle(sv, raw, rq));
       rq.scope.dispose();
