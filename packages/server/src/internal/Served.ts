@@ -1,20 +1,20 @@
 import type { Ctx } from "@keel/ctx";
-import type { Located, Manifest, RouteDef } from "@keel/router";
-import type { LogEntry } from "@keel/store";
+import type { Manifest, RouteDef } from "@keel/router";
+import type { Located } from "@keel/router/internal";
 import type { Mode } from "./Mode.ts";
+import type { Saved } from "./Saved.ts";
 
 /**
- * A built deployable: its routes, `ctx`, mode, its manifest (guard redirects resolve in it, RFC 0041), the stores exposed to `#k-state` (id to whether their
- * log goes too), the action body cap in bytes, the extra origins the dev inspect endpoint answers, and the caller
- * token each module-store log entry was committed under (`tagSince`, finding 0082).
+ * A built deployable: its routes, `ctx`, mode, its manifest (guard redirects resolve in it, RFC 0041), the action body cap in bytes, the extra origins the dev
+ * inspect endpoint answers, and the in-process copy of each `ctx.storage` key a `stores` factory's store was restored
+ * from or saved to (`openStores`, `saveStores`; k.server Server state).
  */
 export type Served = {
   readonly table: readonly Located[];
   readonly ctx: Ctx;
   readonly mode: Mode;
   readonly routes: Manifest<Readonly<Record<string, RouteDef>>>;
-  readonly expose: ReadonlyMap<string, boolean>;
   readonly maxBody: number;
   readonly inspectOrigins: readonly string[];
-  readonly tags: WeakMap<LogEntry, string>;
+  readonly saved: Map<string, Saved>;
 };

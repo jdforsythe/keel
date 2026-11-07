@@ -1,10 +1,7 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
-export { canUndoOwn } from "./canUndoOwn.ts";
 export { createApp } from "./createApp.ts";
 export type { AppOptions } from "./types/AppOptions.ts";
 export type { LogSink } from "./types/LogSink.ts";
 export type { ServerApp } from "./types/ServerApp.ts";
-export type { Topology } from "./types/Topology.ts";
-export { TopologySchema } from "./TopologySchema.ts";
+export type { Topology } from "@keel/compiler";
 export { topology } from "./topology.ts";
-export { undoOwn } from "./undoOwn.ts";

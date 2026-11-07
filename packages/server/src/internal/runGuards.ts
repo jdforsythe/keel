@@ -1,7 +1,8 @@
 import type { Ctx } from "@keel/ctx";
-import { type Manifest, type RouteDef, runGuard } from "@keel/router";
-import type { Level } from "@keel/router";
-import { needsBare } from "@keel/router";
+import type { Manifest, RouteDef } from "@keel/router";
+import { runGuard } from "@keel/router/internal";
+import type { Level } from "@keel/router/internal";
+import { needsBare } from "@keel/router/internal";
 import { type KeelError, attempt } from "@keel/schema";
 import type { GuardOutcome } from "./GuardOutcome.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";

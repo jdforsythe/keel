@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Unit and property tests (seed 1337) for the pure internals of the request flow.
-import { type RouteDef, compileRoutes, compileTable, needsBare } from "@keel/router";
+import type { RouteDef } from "@keel/router";
+import { compileRoutes, compileTable, needsBare } from "@keel/router/internal";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import type { Level } from "@keel/router";
+import type { Level } from "@keel/router/internal";
 import type { JsonValue, KeelError } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Rec } from "./Rec.ts";

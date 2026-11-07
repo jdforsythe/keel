@@ -6,8 +6,7 @@ import type { Store } from "./Store.ts";
 /** A named, typed, pure state change bound to one store. Run it with `tx(t, payload, { meta }?)`. */
 export interface Transaction<T, P> {
   readonly name: string;
-  readonly payload: Schema<P>;
-  /** The payload schema (same as `payload`); parses every payload `tx` accepts. */
+  /** The payload schema; parses every payload `tx` accepts. */
   readonly schema: Schema<P>;
   /** The store this transaction is bound to. */
   readonly store: Store<T>;

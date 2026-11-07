@@ -76,10 +76,18 @@ describe("GET /__keel/inspect", () => {
 
   it("echoes only the origin the gate admitted (gating itself: hardening.test.ts, under Node)", async () => {
     // `origin` is a forbidden request header in the DOM environment, so the response builder is called directly.
-    const res = await inspectResponse(undefined, "http://localhost:4182");
+    const { response: res } = await inspectResponse(
+      undefined,
+      "http://localhost:4182",
+      createCtx({ mode: "sim", seed: 1 }),
+    );
     expect(res.headers.get("access-control-allow-origin")).toBe("http://localhost:4182");
     expect(res.headers.get("vary")).toBe("origin");
-    expect((await inspectResponse(undefined, undefined)).headers.get("access-control-allow-origin")).toBeNull();
+    expect(
+      (await inspectResponse(undefined, undefined, createCtx({ mode: "sim", seed: 1 }))).response.headers.get(
+        "access-control-allow-origin",
+      ),
+    ).toBeNull();
   });
 
   it("production: the route table's 404; a dev POST without an Origin is 403 (gating: hardening.test.ts)", async () => {

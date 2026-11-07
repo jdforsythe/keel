@@ -1,6 +1,6 @@
 /**
  * HTTP status of an `err` code (k.server): `keel.notFound` 404, `keel.denied` 403, `keel.fields` 422,
- * `keel.payloadTooLarge` 413,
+ * `keel.payloadTooLarge` 413, `keel.conflict` 409,
  * `keel.unexpected` 500 (an uncaught throw, or one the server detected), any other code 400.
  */
 export function statusOf(code: string): number {
@@ -13,6 +13,8 @@ export function statusOf(code: string): number {
       return 422;
     case "keel.payloadTooLarge":
       return 413;
+    case "keel.conflict":
+      return 409;
     case "keel.unexpected":
       return 500;
     default:

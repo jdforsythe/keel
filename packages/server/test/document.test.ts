@@ -27,7 +27,6 @@ const state = (html: string): unknown => {
 };
 
 type Opts = {
-  expose?: ({ id: string } | { store: { id: string }; log?: boolean })[];
   requestStore?: string;
   title?: string;
   mode?: "dev" | "production";
@@ -71,7 +70,6 @@ async function build(o: Opts = {}) {
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: o.mode ?? "production",
-    expose: o.expose ?? [],
   });
   return app;
 }
@@ -107,43 +105,18 @@ describe("document", () => {
     expect(html).not.toContain("<script>alert(1)");
   });
 
-  it("module-level stores are process-shared: absent from #k-state unless listed in `expose`", async () => {
+  it("module-level stores are process-wide and never reach #k-state (RFC 0044)", async () => {
     const Counter = s.object({ n: s.int() });
     const sc = scope(() => {
-      store(Counter, { n: 7 }, { id: "app.counter" });
+      const counter = store(Counter, { n: 0 }, { id: "app.logged" });
+      tx(
+        transaction(counter, "app.bump", s.object({}), (st) => ({ n: st.n + 1 })),
+        {},
+      );
     });
-    const app = await build();
-    expect(state(await (await app.fetch(get("/"))).text())).toMatchObject({ stores: {} });
-    const exposed = await build({ expose: [{ id: "app.counter" }, { id: "app.gone" }] });
-    const html = await (await exposed.fetch(get("/"))).text();
-    expect(state(html)).toMatchObject({ stores: { "app.counter": { state: { n: 7 } } } });
-    const parsed: unknown = state(html);
-    const stores = typeof parsed === "object" && parsed !== null && "stores" in parsed ? parsed.stores : undefined;
-    expect(Object.keys(typeof stores === "object" && stores !== null ? stores : {})).toEqual(["app.counter"]);
-    sc.dispose();
-  });
-
-  it("an exposed store carries its state only (no log, initial = state) unless exposed with `log: true`", async () => {
-    const Counter = s.object({ n: s.int() });
-    let counter: ReturnType<typeof store<{ n: number }>> | undefined;
-    const sc = scope(() => {
-      counter = store(Counter, { n: 0 }, { id: "app.logged" });
-      const bump = transaction(counter, "app.bump", s.object({}), (st) => ({ n: st.n + 1 }));
-      tx(bump, {});
-      tx(bump, {});
-    });
-    const plain = state(await (await (await build({ expose: [{ id: "app.logged" }] })).fetch(get("/"))).text());
-    expect(plain).toMatchObject({ stores: { "app.logged": { state: { n: 2 }, log: [], initial: { n: 2 } } } });
-    expect(JSON.stringify(plain)).not.toContain("app.bump");
-    const withLog = state(
-      await (await (await build({ expose: [{ store: { id: "app.logged" }, log: true }] })).fetch(get("/"))).text(),
-    );
-    expect(withLog).toMatchObject({
-      stores: {
-        "app.logged": { state: { n: 2 }, initial: { n: 0 }, log: [{ name: "app.bump" }, { name: "app.bump" }] },
-      },
-    });
-    expect(counter?.id).toBe("app.logged");
+    const html = await (await (await build()).fetch(get("/"))).text();
+    expect(state(html)).toMatchObject({ stores: {} });
+    expect(html).not.toContain("app.bump");
     sc.dispose();
   });
 

@@ -1,5 +1,5 @@
-import type { Located } from "@keel/router";
-import type { Topology } from "../types/Topology.ts";
+import type { Topology } from "@keel/compiler";
+import type { Located } from "@keel/router/internal";
 import { codedError } from "./codedError.ts";
 import { moduleOf } from "./moduleOf.ts";
 

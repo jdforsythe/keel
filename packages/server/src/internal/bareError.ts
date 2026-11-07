@@ -1,4 +1,4 @@
-import type { Level } from "@keel/router";
+import type { Level } from "@keel/router/internal";
 import { err } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";

@@ -200,7 +200,6 @@ export function store<T extends object>(
         binders.set(name, bind);
         const t: Transaction<T, P> = {
           name,
-          payload,
           schema: payload,
           store: self,
           [coreKey]: (raw, meta) => run(t, bind(raw), meta),

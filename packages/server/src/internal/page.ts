@@ -1,4 +1,4 @@
-import type { Match } from "@keel/router";
+import type { Match } from "@keel/router/internal";
 import { type JsonValue, type KeelError, attempt, err, ok } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
@@ -32,9 +32,7 @@ export async function page(
 ): Promise<Handled> {
   const { chain, def, id } = m.route;
   const publicize = (e: KeelError<string, unknown>) => publicError(e, r.sv.mode);
-  const outcomes = await inRequest(r.rq, () =>
-    runLoaders(chain, { params: m.params, search: m.search, url: r.raw.url }, r.sv.ctx),
-  );
+  const outcomes = await runLoaders(r, chain, { params: m.params, search: m.search, url: r.raw.url });
   const diags = outcomes.flatMap((o) => (o.diag === null ? [] : [o.diag]));
   const failedAt = outcomes.findIndex((o) => !o.result.ok);
   const failed = outcomes[failedAt]?.result;

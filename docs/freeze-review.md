@@ -39,7 +39,7 @@
 | 7 | `ui/src/elements/Button.ts:12-13,33-36` | text from children or `label` | children = text; `label` = `aria-label` | yes |
 | 8 | `forms/src/types/FormState.ts:20`, `router/src/types/FormProps.ts:12`, `RouteState.ts:27` | `form.pending()`, `<Form loading>`, `route().pending` | slot to render, `pending()` to read | yes |
 | 9 | `forms/src/types/FormState.ts:22,29,31` | public `setPending/validate/onResult` beside `<Form>` | symbol-keyed handle | no |
-| 10 | `store/src/types/Transaction.ts:9,11` | `payload` alias of `schema` (RFC 0007 kept it) | `schema` | no |
+| 10 | `store/src/types/Transaction.ts:9,11` | `payload` alias of `schema` (RFC 0007 kept it) | `schema` | 0044 (done) |
 | 11 | `scaffold/src/plan.ts:11-16`, `scaffold.ts:13-18` | `plan()` and `scaffold()` identical | `scaffold()`; dry run is a flag | no |
 | 12 | `router/src/index.ts:4-18` | `compileRoutes`, writable `guardTable`, `matchUrl`, `runGuard` beside `manifest()` | `@keel/router/internal` for server | no |
 | 13 | `server/src/types/Topology.ts:2`, `compiler/src/types/Topology.ts:5`, `server/src/index.ts:7-8` | duplicate `Topology` (and `StyleUsage`); `TopologySchema.parse` accepts what `topology()` rejects | one owner; unexport `TopologySchema` | no |

@@ -1,28 +1,29 @@
-import type { Match } from "@keel/router";
-import { fieldsError } from "@keel/router";
+import type { Match } from "@keel/router/internal";
+import { fieldsError } from "@keel/router/internal";
 import { attempt, err, ok } from "@keel/schema";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import { inRequest } from "./inRequest.ts";
 import { isVerb } from "./isVerb.ts";
 import { jsonResponse } from "./jsonResponse.ts";
-import { markLogs } from "./markLogs.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
+import { openStores } from "./openStores.ts";
 import { page } from "./page.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
 import { publicError } from "./publicError.ts";
 import { readCapped } from "./readCapped.ts";
 import { redirectResponse } from "./redirectResponse.ts";
+import { saveStores } from "./saveStores.ts";
 import { statusOf } from "./statusOf.ts";
 import { stringRecord } from "./stringRecord.ts";
-import { tagSince } from "./tagSince.ts";
 import { valuesOf } from "./valuesOf.ts";
 
 /**
  * POST, PUT, PATCH, DELETE (k.server Request flow): the verb is the method, or a POST's `_method` field (k.router
  * Form). A body over `maxBody` bytes is 413 `keel.payloadTooLarge`, action not called. FormData is decoded with the action's input schema; a `content-type: application/json` body (a k.services
  * client) is parsed with it instead (either fail: `keel.fields`, 422, action not called);
- * the action runs; `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
+ * the action runs with `caller` and its `stores` instance (`openStores`); its `ok` saves the changed stores (`saveStores`,
+ * else `keel.conflict`); `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
  * the `Result` as JSON with the status of its code. A document `keel.fields` re-renders the page at 422
  * with the submitted values and messages (k.forms); any other `err` renders at the route's errorElement.
  */
@@ -53,17 +54,19 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
     if (r.runtime) return { response: jsonResponse(422, err(e)), route: id, diags: [] };
     return page(r, m, 422, null, { route: id, method: verb, values, errors: e.data });
   }
-  // Entries committed to module stores during the action's synchronous run are this caller's (finding 0082); one
-  // committed after an `await` cannot be told from an overlapping request's and stays untagged (nobody can undoOwn it).
-  const ran = await attempt(() => {
-    const mark = markLogs();
-    try {
-      return inRequest(r.rq, () => action.run(decoded.value, { params: m.params, url: r.raw.url }, r.sv.ctx));
-    } finally {
-      tagSince(mark, r.rq.caller);
-    }
+  // The action gets this request's instance of its `stores` factory; its `ok` saves the changed stores (or is
+  // `keel.conflict`), anything else drops the instances unsaved so a re-render reads storage (k.server Server state).
+  const { sv, rq } = r;
+  const ran = await attempt(async () => {
+    const stores = action.stores === undefined ? undefined : await openStores(sv, rq, action.stores);
+    const at = { params: m.params, url: r.raw.url, caller: rq.caller.token, stores };
+    const out = await inRequest(rq, () => action.run(decoded.value, at, sv.ctx));
+    if (!out.ok) return out;
+    const clash = await saveStores(sv, rq);
+    return clash === null ? out : err(clash);
   });
   const result = ran.ok ? ran.value : ran;
+  if (!result.ok) rq.held.clear();
   if (result.ok) {
     if (r.runtime) return { response: jsonResponse(200, ok(result.value)), route: id, diags: [] };
     return { response: redirectResponse(303, result.value ?? r.raw.url), route: id, diags: [] };

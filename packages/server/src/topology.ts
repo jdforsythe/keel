@@ -1,6 +1,6 @@
+import type { Topology } from "@keel/compiler";
 import { pathToString } from "@keel/schema";
-import { TopologySchema } from "./TopologySchema.ts";
-import type { Topology } from "./types/Topology.ts";
+import { TopologySchema } from "./internal/TopologySchema.ts";
 
 /**
  * Validate and freeze a topology definition (k.server). Throws `E1552 ...` when the shape is wrong or a
