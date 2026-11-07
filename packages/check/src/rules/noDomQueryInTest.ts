@@ -17,7 +17,10 @@ const DOM: ReadonlySet<string> = new Set([
 const QUERY = /^(?:get|getAll|query|queryAll|find|findAll)By[A-Z]\w*$/;
 const isQuery = (name: string): boolean => DOM.has(name) || QUERY.test(name);
 
-/** E1701 (k.testing): a DOM selector or DOM query in a test; tests address elements by id (`find(id)`). */
+/**
+ * E1701 (k.testing): a DOM selector or DOM query in a test, as a member (`t.container`), a call (`getByRole`), or a
+ * destructured name (`const { container } = render(...)`); tests address elements by id (`find(id)`).
+ */
 export const noDomQueryInTest: RuleDef = {
   code: "E1701",
   message: (f) => `DOM query ${str(f.data, "name")} in a test; address elements by id with find(id)`,
@@ -30,6 +33,12 @@ export const noDomQueryInTest: RuleDef = {
       MemberExpression: (n) => {
         if (!n.computed && isQuery(n.property.name))
           out.push(findingAt(file, n.property.start, { name: n.property.name }));
+      },
+      ObjectPattern: (n) => {
+        for (const p of n.properties) {
+          if (p.type === "Property" && !p.computed && p.key.type === "Identifier" && isQuery(p.key.name))
+            out.push(findingAt(file, p.key.start, { name: p.key.name }));
+        }
       },
       CallExpression: (n) => {
         if (n.callee.type === "Identifier" && QUERY.test(n.callee.name))

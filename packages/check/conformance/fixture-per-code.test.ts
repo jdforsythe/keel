@@ -1,7 +1,8 @@
 // Seed 1337
 // Every E code named in a kernel section's Rules has a fixture that triggers exactly that code and a clean
 // counterpart, or is explain-only (check() cannot trigger it: runtime, cli, server, scaffold and testing codes,
-// and codes whose rule is not implemented; RFC 0020). The code list is read from spec/kernel/*.md at test time.
+// and codes whose rule is not implemented; RFC 0020, triaged by RFC 0040). The code list is read from
+// spec/kernel/*.md at test time.
 import { check } from "@keel/check";
 import { expect, test } from "vitest";
 import { CODE_FIXTURES } from "./fixtures-by-code.ts";
@@ -13,21 +14,20 @@ const range = (p: string, a: number, b: number): string[] =>
 export const EXPLAIN_ONLY: readonly string[] = [
   ...range("E", 1051, 1054),
   "E1056",
-  ...range("E", 1101, 1103),
-  ...range("E", 1201, 1206),
-  ...range("E", 1251, 1254),
+  ...range("E", 1201, 1203),
+  "E1206",
+  "E1253",
   ...range("E", 1351, 1354),
   "E1006",
   "E1049",
-  ...range("E", 1502, 1507),
-  ...range("E", 1551, 1554),
+  ...range("E", 1502, 1506),
+  ...range("E", 1552, 1554),
   ...range("E", 1702, 1706),
   "E1756",
   "E1801",
   "E1804",
-  "E1806",
   "E1807",
-  ...range("E", 1901, 1904),
+  "E1902",
 ];
 
 test("every spec Rules code has a fixture or is listed explain-only, never both", () => {

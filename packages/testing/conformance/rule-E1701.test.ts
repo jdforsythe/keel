@@ -55,8 +55,7 @@ describe("k.testing: E1701 DOM selector or DOM query in a test", () => {
     expect(await run('expect(t.find("save").name).toBe("Save")')).toEqual([]);
   });
 
-  // Skipped (RFC 0036): @keel/check reports `t.container` but not a bare or destructured `container`; a k.check fix.
-  it.skip("E1701 static form: the testing-library idiom `const { container } = render(...)` is reported", async () => {
+  it("E1701 static form: the testing-library idiom `const { container } = render(...)` is reported", async () => {
     const source = `import { render } from "@keel/testing"\nit("x", () => {\n  const { container } = render(C, { props: {} })\n  expect(container).toBeDefined()\n})\n`;
     const r = await check([{ path: "modules/orders/x.test.ts", source }], { types: false });
     expect(r.diagnostics.filter((d) => d.code === "E1701").length).toBeGreaterThan(0);

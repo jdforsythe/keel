@@ -27,7 +27,7 @@ Without JS the server runs the same flow: it decodes FormData with the action's 
 
 **Slots** on `<Form form>`: `loading` while pending, `error` for non-field errors (k.ui standard slots).
 
-**Rules.** E1901 input inside a `<Form>` without `field` · E1902 `field(path)` path not in the schema · E1903 form schema differs from the target action's input schema · E1904 `keel.fields` error names a path not in the action's input schema.
+**Rules.** E1901 input inside a `<Form>` without `field` · E1902 `field(path)` path not in the schema.
 
 **Conformance.**
 - Submitting invalid values sends no request, sets an error on every invalid field, and focuses the first invalid field.

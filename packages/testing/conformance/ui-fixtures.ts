@@ -1,5 +1,5 @@
 // Shared fixtures for k.ui conformance under the real harness (not a test file). Property seed: 1337.
-import { href, manifest } from "@keel/router";
+import { manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import { Text, defineTokens } from "@keel/ui";
 
@@ -18,7 +18,7 @@ export const tokens = defineTokens({
 export const routes = manifest({
   home: { path: "/", params: s.object({}), search: s.object({}), component: () => Text({ children: "home" }) },
 });
-export const home = href("home", {}, {});
+export const home = routes.href("home", {}, {});
 
 /** A component with an empty `Props` schema around `view`. */
 export const page = (view: () => Node) => Object.assign(view, { Props: s.object({}) });

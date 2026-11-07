@@ -3271,7 +3271,7 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # heading
       E1802 2:39 <Heading> is missing a11y-required prop level
       # image
-      E1501 2:45 string path where an Href is required; build it with href()
+      E1802 2:39 <Image> is missing a11y-required prop decorative
       # input
       E1802 2:39 <Input> is missing a11y-required prop label
       # link
@@ -3285,7 +3285,7 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # for no key
       E1001 2:38 For needs key="<field>" naming a field of the item
       # link string path
-      E1501 2:44 to is a string path; use href(routeId, params)
+      E1501 2:44 to is a string path; use routes.href(routeId, params)
       # link javascript
       E1003 2:44 to is a literal script/data URL; it renders as about:blank
       # link JavaScript spaced
@@ -3295,10 +3295,10 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # link data template
       E1003 2:44 to is a literal script/data URL; it renders as about:blank
       # link var
-      E1501 3:44 string path where an Href is required; build it with href()
+      E1501 3:44 string path where an Href is required; use routes.href(routeId, params)
       # link not url scheme
       E1003 2:44 to is a literal script/data URL; it renders as about:blank
-      E1501 2:44 string path where an Href is required; build it with href()
+      E1501 2:44 string path where an Href is required; use routes.href(routeId, params)
       # plain TS error
       E1751 1:14 TS2322 Type 'string' is not assignable to type 'number'.
       # two TS errors

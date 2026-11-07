@@ -189,14 +189,14 @@ test("E1156: a stdlib file using ctx.clock.now() without clock in capabilities i
   expect(has([auth({ capabilities: ["clock"] }), run], "E1156")).toBe(false);
 });
 
-test("E1157: href() to a non-public stdlib route is reported; href() to the public one is clean", () => {
+test("E1157: routes.href() to a non-public stdlib route is reported; to the public one is clean", () => {
   const mk = (target: string) => [
-    auth({ routes: ["auth.login"] }),
+    auth({ exports: ["routes"], routes: ["auth.login"] }),
     routesAt(AUTH, ["auth.private", "auth.login"]),
     orders(["@keel/std-auth"]),
     {
       path: "modules/orders/Back.ts",
-      source: `import { href } from '@keel/router'\nexport const Back = href('${target}')\n`,
+      source: `import { routes } from '@keel/std-auth/routes'\nexport const Back = routes.href('${target}')\n`,
     },
   ];
   const d = codesOf(mk("auth.private"), "E1157");
@@ -237,9 +237,13 @@ const SCENARIOS: Record<string, (kind: Kind, x: string) => Files> = {
   E1155: (k, x) => [mfile(k, { id: x }), routesAt(where(k, x), ["show"])],
   E1156: (k, x) => [mfile(k, { id: x }), { path: `${where(k, x)}/Run.ts`, source: RUN }],
   E1157: (k, x) => [
-    mfile(k, { id: x, routes: [`${x}.pub`] }),
+    mfile(k, { id: x, exports: ["routes"], routes: [`${x}.pub`] }),
     routesAt(where(k, x), [`${x}.pub`, `${x}.priv`]),
-    ...consumer(k, [x], `import { href } from '@keel/router'\nexport const Use = href('${x}.priv')\n`),
+    ...consumer(
+      k,
+      [x],
+      `import { routes } from '${spec(k, x, "routes")}'\nexport const Use = routes.href('${x}.priv')\n`,
+    ),
   ],
 };
 

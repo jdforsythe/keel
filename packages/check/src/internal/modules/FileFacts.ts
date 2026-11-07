@@ -4,7 +4,7 @@ import type { Entry } from "./Entry.ts";
 export type FileFacts = {
   /** Import, re-export, and literal dynamic-import specifiers; `start` is the statement or call. */
   readonly imports: readonly Entry[];
-  /** Literal route ids passed to `href()` from `@keel/router`. */
+  /** Literal route ids passed to `href()` from `@keel/router` or to a member `<x>.href('id')` (rfc:0041). */
   readonly hrefs: readonly Entry[];
   /** Route ids declared as keys of `manifest({...})` from `@keel/router`. */
   readonly routes: readonly Entry[];

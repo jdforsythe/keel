@@ -123,7 +123,7 @@ export function mapTsDiagnostic(
     return diag("E1802", `<${tag}> is missing a11y-required prop ${required.join(" or ")}`, "k.ui");
   if (tag === "For" && missing === "key")
     return diag("E1001", 'For needs key="<field>" naming a field of the item', "k.compiler");
-  if (/not assignable to type 'Href'/.test(text)) {
+  if (/not assignable to (?:parameter of )?type 'Href'/.test(text)) {
     const literal = attributeLiteral(node);
     if (literal !== null && /^\s*(?:javascript|data):/i.test(literal))
       return diag(
@@ -131,7 +131,7 @@ export function mapTsDiagnostic(
         `literal ${literal.trim().split(":")[0]?.toLowerCase()}: URL in a URL attribute`,
         "k.compiler",
       );
-    return diag("E1501", "string path where an Href is required; build it with href()", "k.router");
+    return diag("E1501", "string path where an Href is required; use routes.href(routeId, params)", "k.router");
   }
   return diag("E1751", `TS${d.code} ${text.split("\n")[0] ?? ""}`, "k.check");
 }

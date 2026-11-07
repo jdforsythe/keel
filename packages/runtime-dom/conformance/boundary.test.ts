@@ -328,11 +328,3 @@ describe("k.errors: Boundary", () => {
   });
 });
 
-// Untestable at runtime: E1451 `throw` in app code is a static check diagnostic (k.check).
-it.todo("E1451 throw in app code");
-// Untestable at runtime: E1452 try/catch or .catch() in app code is a static check diagnostic (k.check).
-it.todo("E1452 try/catch or .catch() in app code");
-// Untestable at runtime: E1453 discarded Result or Promise<Result> is a static check diagnostic (k.check).
-it.todo("E1453 a Result or Promise<Result> discarded as an expression statement");
-// Untestable at runtime: E1454 duplicate s.error codes is a static check diagnostic (k.check).
-it.todo("E1454 two s.error declarations with the same code");

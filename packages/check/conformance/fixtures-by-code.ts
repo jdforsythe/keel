@@ -143,16 +143,56 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1157: {
     opts: NO_TYPES,
     bad: [
-      mod("b", [], [], ["b.pub"]),
+      mod("b", [], ["routes"], ["b.pub"]),
       routes("b", ["b.pub", "b.priv"]),
       mod("a", ["b"], []),
-      f("modules/a/Back.ts", "import { href } from '@keel/router'\nexport const Back = href('b.priv')\n"),
+      f("modules/a/Back.ts", "import { routes } from '../b/routes.ts'\nexport const Back = routes.href('b.priv')\n"),
     ],
     clean: [
-      mod("b", [], [], ["b.pub"]),
+      mod("b", [], ["routes"], ["b.pub"]),
       routes("b", ["b.pub", "b.priv"]),
       mod("a", ["b"], []),
-      f("modules/a/Back.ts", "import { href } from '@keel/router'\nexport const Back = href('b.pub')\n"),
+      f("modules/a/Back.ts", "import { routes } from '../b/routes.ts'\nexport const Back = routes.href('b.pub')\n"),
+    ],
+  },
+  E1204: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${UI}import { resource } from '@keel/reactive'\nexport default function C() { const r = resource(() => Promise.resolve(1)); return <Text>{r.get().state}</Text> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${UI}import { resource } from '@keel/reactive'\nimport { Case, Match } from '@keel/runtime-dom'\nexport default function C() { const r = resource(() => Promise.resolve(1)); return <Match on={r.get()}><Case tag="ready">{() => <Text>ok</Text>}</Case></Match> }\n`,
+      ),
+    ],
+  },
+  E1251: {
+    opts: NO_TYPES,
+    bad: [f("src/x.ts", "import { template } from '@keel/runtime-dom/ops'\nexport const x = template\n")],
+    clean: [f("src/x.ts", "import { For } from '@keel/runtime-dom'\nexport const x = For\n")],
+  },
+  E1252: {
+    opts: NO_TYPES,
+    bad: [f("src/title.ts", "export const title = (): string => document.title\n")],
+    clean: [f("src/title.ts", "export const title = (page: { title: string }): string => page.title\n")],
+  },
+  E1302: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/greet.ts",
+        "import { transaction } from '@keel/store'\ndeclare const app: unknown\nexport const greet = transaction(app, 'greet', (s: string) => s + navigator.language)\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/greet.ts",
+        "import { transaction } from '@keel/store'\ndeclare const app: unknown\nexport const greet = transaction(app, 'greet', (s: string) => `${s}!`)\n",
+      ),
     ],
   },
   E1451: {
@@ -197,7 +237,37 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     clean: [
       f(
         "C.tsx",
-        `${UI}import { Link } from '@keel/ui'\nimport { href } from '@keel/router'\nexport default function C() { return <Link to={href('orders.list')}>x</Link> }\n`,
+        `${UI}import { Link } from '@keel/ui'\nimport { manifest } from '@keel/router'\nconst Page = () => null\nconst routes = manifest({ 'orders.list': { path: '/orders', component: Page } })\nexport default function C() { return <Link to={routes.href('orders.list')}>x</Link> }\n`,
+      ),
+    ],
+  },
+  E1507: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/load.server.ts",
+        "import { loader } from '@keel/router'\ndeclare const Out: unknown\nexport const load = loader({ output: Out }, async ({ params }: { params: unknown }) => params)\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/load.server.ts",
+        "import { loader } from '@keel/router'\ndeclare const Out: unknown\nexport const load = loader({ output: Out }, async ({ params }) => params)\n",
+      ),
+    ],
+  },
+  E1551: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/load.ts",
+        "import { loader } from '@keel/router'\ndeclare const Out: unknown\nexport const load = loader({ output: Out }, async () => 1)\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/load.server.ts",
+        "import { loader } from '@keel/router'\ndeclare const Out: unknown\nexport const load = loader({ output: Out }, async () => 1)\n",
       ),
     ],
   },
@@ -289,5 +359,35 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1805: {
     bad: [f("C.tsx", `${UI}export default function C() { return <Box><h2>Orders</h2></Box> }\n`)],
     clean: [f("C.tsx", `${UI}export default function C() { return <Box>Orders</Box> }\n`)],
+  },
+  E1806: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${UI}import { For } from '@keel/runtime-dom'\nexport default function C(props: { xs: { id: string }[] }) { return <For each={props.xs} key="id" empty={<Text>none</Text>}>{(x) => <Text>{x.id}</Text>}</For> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${UI}import { For } from '@keel/runtime-dom'\nexport default function C(props: { xs: { id: string }[] }) { return <For each={props.xs} key="id" empty={() => <Text>none</Text>}>{(x) => <Text>{x.id}</Text>}</For> }\n`,
+      ),
+    ],
+  },
+  E1901: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `import { Form } from '@keel/router'\nimport { Input } from '@keel/ui'\nexport default function C() { return <Form method="POST" action="orders.show"><Input label="Note" /></Form> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `import { Form } from '@keel/router'\nimport { Input } from '@keel/ui'\nexport default function C(props: { note: never }) { return <Form method="POST" action="orders.show"><Input label="Note" field={props.note} /></Form> }\n`,
+      ),
+    ],
   },
 };

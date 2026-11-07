@@ -46,7 +46,8 @@ function storeId(args: readonly Argument[]): Entry | null {
 }
 
 /**
- * Collect a file's module facts in one AST walk (k.module): imports, `href()` route ids, `manifest({...})` route
+ * Collect a file's module facts in one AST walk (k.module): imports, route ids passed to `href()` or to the
+ * manifest member form `<routes>.href('id', params?)` (rfc:0041; both during the transition), `manifest({...})` route
  * keys, `store(..., { id })`, `transaction(store, 'name', ...)`, `s.error('code', ...)`, and `ctx.<cap>` uses.
  * Callees count only when imported from their kernel package (`@keel/router`, `@keel/store`, `@keel/schema`).
  */
@@ -92,8 +93,13 @@ export function scanFile(program: Program): FileFacts {
         }
         return;
       }
-      if (c.type !== "MemberExpression" || c.computed || c.property.name !== "error") return;
-      if (c.object.type !== "Identifier" || !schema.has(c.object.name)) return;
+      if (c.type !== "MemberExpression" || c.computed) return;
+      if (c.property.name === "href") {
+        const e = literal(a[0]);
+        if (e !== null) hrefs.push(e);
+        return;
+      }
+      if (c.property.name !== "error" || c.object.type !== "Identifier" || !schema.has(c.object.name)) return;
       const e = literal(a[0]);
       if (e !== null) ids.push({ ...e, kind: "error code" });
     },

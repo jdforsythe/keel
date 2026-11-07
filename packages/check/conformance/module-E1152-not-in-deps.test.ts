@@ -48,17 +48,17 @@ test("E1152: listing the module in deps clears it", () => {
   );
 });
 
-test("E1152: href() into a module not in deps is reported", () => {
+test("E1152: routes.href() into a module not in deps is reported", () => {
   fc.assert(
     fc.property(distinct, ([a, b]) => {
       const route = `${b}.show`;
       const mk = (deps: string[]) => [
-        manifestFile({ id: b, routes: [route] }),
+        manifestFile({ id: b, exports: ["routes"], routes: [route] }),
         routesFile(b, [route]),
         manifestFile({ id: a, deps }),
         {
           path: `modules/${a}/Back.ts`,
-          source: `import { href } from '@keel/router'\nexport const Back = href('${route}')\n`,
+          source: `import { routes } from '../${b}/routes.ts'\nexport const Back = routes.href('${route}')\n`,
         },
       ];
       expect(has(mk([]), "E1152")).toBe(true);

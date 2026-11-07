@@ -608,16 +608,16 @@ describe("small helpers", () => {
   it("memoryHistory records pushes and replaces and never pops", () => {
     const h = memoryHistory("/start");
     expect(h.current()).toBe("/start");
-    h.push("/a");
+    h.push("/a", "k1");
     expect(h.current()).toBe("/a");
-    h.replace("/b");
+    h.replace("/b", "k1");
     expect(h.current()).toBe("/b");
-    h.push("/c");
-    h.replace("/d");
+    h.push("/c", "k2");
+    h.replace("/d", "k2");
     expect(h.current()).toBe("/d");
     expect(h.onPop(() => {})).toBeUndefined();
     const r = memoryHistory("/s");
-    r.replace("/t");
+    r.replace("/t", "k1");
     expect(r.current()).toBe("/t");
   });
 

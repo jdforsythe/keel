@@ -2,7 +2,7 @@
 // Spec: k.testing Harness (`renderRoute`) with k.router manifests, navigation, and Form actions. Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { Form, action, href, loader, manifest } from "@keel/router";
+import { Form, type Href, action, loader, manifest } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -39,7 +39,8 @@ const routes = manifest({
     actions: {
       POST: action({ input: s.object({ title: s.string() }) }, async ({ title }) => {
         tx(add, { title });
-        return ok(href("rt.show", { n: list.snapshot().state.titles.length }));
+        const to: Href = routes.href("rt.show", { n: list.snapshot().state.titles.length });
+        return ok(to);
       }),
     },
     component: (props) => {

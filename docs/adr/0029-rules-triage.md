@@ -1,0 +1,7 @@
+# ADR-0029: Rules triage (RFC 0040)
+
+**Status:** accepted
+**Context.** The freeze review (§4) found kernel Rules codes that nothing raised. The `fixture-per-code` EXPLAIN_ONLY list hid them next to codes that other surfaces genuinely raise. Backlog 0062, 0101, 0109, 0110.
+**Decision.** A Rules code is (a) a static `@keel/check` rule with a triggering and a clean fixture, plus a fix when one hunk repairs it; (b) deleted; or (c) explain-only, and only when a named non-check surface raises it and that surface's conformance asserts it. New rules: E1204, E1251, E1252, E1507 (static half, with fix), E1551, E1806 (with fix), and E1901. E1302 is now counted. E1701 also covers destructured queries, and E1501 also covers string arguments to `Href` parameters. Deleted: E1101-E1103, E1205, E1254, E1903, and E1904. E1702 stays explain-only (testing harness). The module pass reads `routes.href('id')` (rfc:0041) as well as `href('id')`.
+**Alternatives.** Keeping unraised codes as explain-only breaks principle 5. Type-aware or cross-file versions of the deleted codes would duplicate E1751 or need schema resolution across files.
+**Consequences.** EXPLAIN_ONLY now holds only codes raised by the runtime, cli, server, scaffold, or testing surfaces, plus E1801, E1804, E1807, E1902, and E1502-E1506, which are still to be triaged. A deleted code returns only by RFC, with a fixture or a conformance assertion. Reactive still throws E1205 until its own RFC decides.

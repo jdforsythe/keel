@@ -129,13 +129,13 @@ const FIXED: FixedCase[] = [
     name: "E1157 (add b.priv to public.routes)",
     code: "E1157",
     files: [
-      manifest("b", [], [], ["b.pub"]),
+      manifest("b", [], ["routes"], ["b.pub"]),
       f(
         "modules/b/routes.ts",
         "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n  'b.pub': { path: '/b/pub', component: Page },\n  'b.priv': { path: '/b/priv', component: Page },\n})\n",
       ),
       manifest("a", ["b"], [], []),
-      f("modules/a/Back.ts", "import { href } from '@keel/router'\nexport const Back = href('b.priv')\n"),
+      f("modules/a/Back.ts", "import { routes } from '../b/routes.ts'\nexport const Back = routes.href('b.priv')\n"),
     ],
     opts: NO_TYPES,
   },
@@ -162,6 +162,7 @@ const FIXED: FixedCase[] = [
     files: [f("C.tsx", `export function f() { try { return 1 } catch (e) { return 2 } }\n`)],
     opts: {},
   },
+  { name: "E1507 (annotation removed)", code: "E1507", ...fixtureOf("E1507") },
   {
     name: "E1601",
     code: "E1601",
@@ -199,6 +200,7 @@ const FIXED: FixedCase[] = [
     files: [f("src/x.ts", "// @ts-ignore\nexport const x = 1\n")],
     opts: {},
   },
+  { name: "E1806 (JSX element wrapped as a thunk)", code: "E1806", ...fixtureOf("E1806") },
   {
     name: "E1805",
     code: "E1805",
@@ -239,11 +241,13 @@ const FIX = [
   "E1401",
   "E1451",
   "E1452",
+  "E1507",
   "E1601",
   "E1652",
   "E1653",
   "E1757",
   "E1805",
+  "E1806",
 ];
 const NO_FIX = [
   "E1000", // a syntax error has no unique repair
@@ -253,11 +257,16 @@ const NO_FIX = [
   "E1104", // renaming the file would break imports in other files
   "E1105", // moving to a .server file is a design change
   "E1153", // which dependency edge to cut is a design choice
+  "E1204", // the Case per resource state is the author's
+  "E1251", // the JSX that replaces an op is the author's
+  "E1252", // the JSX or ctx replacement is the author's
+  "E1302", // moving the effect out of the transaction is a design change
   "E1403", // the condition's wrapper is the author's choice
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice
   "E1501", // the target route id is unknown to the checker
+  "E1551", // moving the declaration to a .server file is a design change
   "E1651", // the replacement endpoint is unknown
   "E1701", // the harness id is unknown
   "E1751", // a generic type error has no mechanical repair
@@ -267,6 +276,7 @@ const NO_FIX = [
   "E1755", // a budget breach has no source edit
   "E1802", // the missing prop value is the author's choice
   "E1803", // the replacement token is the author's choice
+  "E1901", // the form path to bind is the author's choice
 ];
 
 test("fix-bearing codes and no-fix codes partition exactly the fixtured codes", () => {
