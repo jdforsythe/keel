@@ -5,9 +5,10 @@ import type { Href } from "./types/Href.ts";
 
 /**
  * Declare a route action (k.server): `fn` gets the input decoded from FormData by `input`, `{ params }`, and
- * `ctx`. `ok(href)` navigates there; `ok(null)` revalidates the current chain.
+ * `ctx`. `ok(href)` navigates there; `ok(null)` revalidates the current chain. `fn` types `params` as `Infer` of
+ * the route's `params` schema; a shape it does not fit fails at `manifest`.
  */
-export function action<I, P = Readonly<Record<string, unknown>>>(
+export function action<I, P = unknown>(
   input: ObjectSchema<I>,
   fn: (
     input: I,

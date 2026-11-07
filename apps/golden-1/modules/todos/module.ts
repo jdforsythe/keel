@@ -4,5 +4,5 @@ export default module({
   id: "todos",
   deps: [],
   capabilities: ["net", "storage"],
-  public: { exports: ["Suggestion", "Board", "BoardView", "ListDraft", "TodoDraft"], routes: [] },
+  public: { exports: ["Suggestion", "Board", "BoardView", "ListDraft", "TodoDraft", "ListParams"], routes: [] },
 });

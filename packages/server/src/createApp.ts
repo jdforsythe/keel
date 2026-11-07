@@ -6,6 +6,8 @@ import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import type { Served } from "./internal/Served.ts";
+import { callerOf } from "./internal/callerOf.ts";
+import { callers } from "./internal/callers.ts";
 import { crashed } from "./internal/crashed.ts";
 import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
@@ -32,6 +34,9 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.cli Inspect) before the route table, to a loopback
  * or listed host and an absent (GET only), same, or listed (`inspect.origins`) `Origin` only; others, and any other
  * method without an allowed `Origin`, get 403 `keel.denied`.
+ * Each request has a caller (`keel-caller` cookie, minted and set HttpOnly/SameSite=Lax on a write without one); log
+ * entries an action commits to a module store are tagged with it, and `undoOwn`/`canUndoOwn` act only on the caller's
+ * own last entry (finding 0082).
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -48,14 +53,16 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     ),
     maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
+    tags: new WeakMap(),
   };
   const log = opts.log;
   const hono = new Hono();
   hono.all("*", async (c) => {
     const raw = c.req.raw;
     const t0 = sv.ctx.clock.now();
-    const rq = { scope: scope(() => undefined) };
+    const rq = { scope: scope(() => undefined), caller: callerOf(raw, sv.ctx, sv.tags) };
     isolate(rq.scope);
+    callers.set(rq.scope, rq.caller);
     const path = new URL(raw.url).pathname;
     const inspecting = sv.mode === "dev" && path === INSPECT_PATH;
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;

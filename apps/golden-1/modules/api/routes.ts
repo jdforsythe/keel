@@ -1,8 +1,9 @@
 import { manifest } from "@keel/router";
-import { s } from "@keel/schema";
+import { ListParams } from "../todos/ListParams.schema.ts";
 import ActionApi from "./ActionApi.ts";
 import BoardApi from "./BoardApi.ts";
 import SuggestionsApi from "./SuggestionsApi.ts";
+import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { loadBoard } from "./loadBoard.server.ts";
 import { loadSuggestions } from "./loadSuggestions.server.ts";
 import { postEdit } from "./postEdit.server.ts";
@@ -16,19 +17,19 @@ export const routes = manifest({
   "api.lists": { path: "/api/lists", loader: loadBoard, actions: { POST: postList }, component: BoardApi },
   "api.listTodos": {
     path: "/api/lists/:listId/todos",
-    params: s.object({ listId: s.id("TodoList") }),
+    params: ListParams,
     actions: { POST: postTodo },
     component: ActionApi,
   },
   "api.todo": {
     path: "/api/todos/:todoId",
-    params: s.object({ todoId: s.id("Todo") }),
+    params: TodoIdParams,
     actions: { POST: postEdit },
     component: ActionApi,
   },
   "api.todoToggle": {
     path: "/api/todos/:todoId/toggle",
-    params: s.object({ todoId: s.id("Todo") }),
+    params: TodoIdParams,
     actions: { POST: postToggle },
     component: ActionApi,
   },

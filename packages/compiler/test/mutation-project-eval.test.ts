@@ -151,3 +151,33 @@ describe("evaluateProject (mutation)", () => {
     );
   });
 });
+
+describe("evaluateProject error mapping (0090)", () => {
+  const run = (tokensFile: string) =>
+    evaluateProject({ root, tokensFile, routesFiles: [], usages: [{ props: { p: "1" } }] });
+
+  it(
+    "maps a tokens module that throws while evaluating to E1807 with the real message",
+    { timeout: 30000 },
+    async () => {
+      write("t-throw.ts", `throw new Error("boom at load");`);
+      const r = await run("t-throw.ts");
+      expect(r.css).toBe("");
+      expect(r.problems).toEqual(["E1807 t-throw.ts failed to evaluate: boom at load"]);
+    },
+  );
+
+  it("passes a diagnostic-shaped error that carries a code through unchanged", { timeout: 30000 }, async () => {
+    write("t-coded.ts", `throw Object.assign(new Error("custom diag"), { code: "E1234" });`);
+    expect((await run("t-coded.ts")).problems).toEqual(["E1234 custom diag"]);
+  });
+
+  it(
+    "rethrows an internal compiler failure with its real message instead of an app code",
+    { timeout: 30000 },
+    async () => {
+      write("t-internal.ts", `export const tokens = { color: { get fg(): string { throw new Error("kaput"); } } };`);
+      await expect(run("t-internal.ts")).rejects.toThrow(/internal compiler failure.*kaput/);
+    },
+  );
+});

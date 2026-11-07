@@ -824,6 +824,10 @@
       "rung": "none"
     },
     {
+      "item": "k.cli#11",
+      "rung": "none"
+    },
+    {
       "item": "k.compiler#1",
       "rung": "none"
     },
@@ -853,6 +857,14 @@
     },
     {
       "item": "k.compiler#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#9",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#10",
       "rung": "none"
     },
     {
@@ -913,6 +925,10 @@
     },
     {
       "item": "k.forms#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.forms#8",
       "rung": "none"
     },
     {
@@ -1065,6 +1081,10 @@
     },
     {
       "item": "k.server#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.server#8",
       "rung": "none"
     },
     {

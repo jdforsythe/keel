@@ -1,10 +1,12 @@
 import { manifest } from "@keel/router";
-import { s } from "@keel/schema";
 import AppShell from "./AppShell.tsx";
 import EditTodoPage from "./EditTodoPage.tsx";
 import ListError from "./ListError.tsx";
 import ListPage from "./ListPage.tsx";
+import { ListParams } from "./ListParams.schema.ts";
+import { ListSearch } from "./ListSearch.schema.ts";
 import ListsPage from "./ListsPage.tsx";
+import { TodoParams } from "./TodoParams.schema.ts";
 import { createList } from "./createList.server.ts";
 import { createTodo } from "./createTodo.server.ts";
 import { editable } from "./editable.guard.ts";
@@ -24,8 +26,8 @@ export const routes = manifest({
   },
   "todos.list": {
     path: "/lists/:listId",
-    params: s.object({ listId: s.id("TodoList") }),
-    search: s.object({ filter: s.enum(["all", "active", "done"]).optional() }),
+    params: ListParams,
+    search: ListSearch,
     loader: loadList,
     actions: { POST: createTodo },
     component: ListPage,
@@ -34,7 +36,7 @@ export const routes = manifest({
   },
   "todos.edit": {
     path: "/lists/:listId/todos/:todoId/edit",
-    params: s.object({ listId: s.id("TodoList"), todoId: s.id("Todo") }),
+    params: TodoParams,
     loader: loadTodo,
     actions: { POST: updateTodo },
     component: EditTodoPage,

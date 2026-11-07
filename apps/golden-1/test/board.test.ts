@@ -10,11 +10,13 @@ import { BoardReply } from "../modules/todos/BoardReply.schema.ts";
 import { BoardView } from "../modules/todos/BoardView.schema.ts";
 import { FieldsReply } from "../modules/todos/FieldsReply.schema.ts";
 import { ListDraft } from "../modules/todos/ListDraft.schema.ts";
+import { ListParams } from "../modules/todos/ListParams.schema.ts";
 import { Suggestion } from "../modules/todos/Suggestion.schema.ts";
 import { SuggestionsReply } from "../modules/todos/SuggestionsReply.schema.ts";
 import { Todo } from "../modules/todos/Todo.schema.ts";
 import { TodoDraft } from "../modules/todos/TodoDraft.schema.ts";
 import { TodoList } from "../modules/todos/TodoList.schema.ts";
+import { TodoParams } from "../modules/todos/TodoParams.schema.ts";
 import { createList } from "../modules/todos/createList.server.ts";
 import { createTodo } from "../modules/todos/createTodo.server.ts";
 import { editable } from "../modules/todos/editable.guard.ts";
@@ -28,6 +30,7 @@ import { todos } from "../modules/todos/todos.service.ts";
 import { todosApi } from "../modules/todos/todosApi.ts";
 import { updateTodo } from "../modules/todos/updateTodo.server.ts";
 import { view } from "../modules/todos/view.ts";
+import { at } from "./at.ts";
 import { simApi } from "./simApi.ts";
 import "../modules/todos/routes.ts";
 
@@ -125,38 +128,41 @@ describe("client loaders and actions (through the api deployable)", () => {
     const { ctx } = await simApi();
     const index = await loadIndex.run({ params: {}, search: {} }, ctx);
     expect(index.ok && index.value.lists).toEqual([L]);
-    expect(await loadList.run({ params: { listId: "l1" }, search: {} }, ctx)).toEqual({ ok: true, value: L });
-    const missing = await loadList.run({ params: { listId: "nope" }, search: {} }, ctx);
+    expect(await loadList.run({ ...at(ListParams, { listId: "l1" }), search: {} }, ctx)).toEqual({
+      ok: true,
+      value: L,
+    });
+    const missing = await loadList.run({ ...at(ListParams, { listId: "nope" }), search: {} }, ctx);
     expect(missing.ok ? null : missing.error.code).toBe("keel.notFound");
-    expect((await loadTodo.run({ params: { listId: "l1", todoId: "t1" }, search: {} }, ctx)).ok).toBe(true);
-    const todo = await loadTodo.run({ params: { listId: "l1", todoId: "nope" }, search: {} }, ctx);
+    expect((await loadTodo.run({ ...at(TodoParams, { listId: "l1", todoId: "t1" }), search: {} }, ctx)).ok).toBe(true);
+    const todo = await loadTodo.run({ ...at(TodoParams, { listId: "l1", todoId: "nope" }), search: {} }, ctx);
     expect(todo.ok ? null : todo.error.code).toBe("keel.notFound");
   });
   it("createList and createTodo post to the api and answer ok(null)", async () => {
     const { ctx, sent } = await simApi();
     expect(await createList.run({ name: "Work" }, { params: {} }, ctx)).toEqual({ ok: true, value: null });
     const listId = board.get("lists")[0]?.id ?? "";
-    const r = await createTodo.run({ title: "Milk", priority: "low" }, { params: { listId } }, ctx);
+    const r = await createTodo.run({ title: "Milk", priority: "low" }, at(ListParams, { listId }), ctx);
     expect(r).toEqual({ ok: true, value: null });
     expect(board.get("todos")).toMatchObject([{ listId, title: "Milk", priority: "low", done: false }]);
     expect(sent).toEqual(["POST /api/lists", `POST /api/lists/${listId}/todos`]);
   });
   it("createTodo on an unknown list returns the api 404", async () => {
     const { ctx } = await simApi();
-    const r = await createTodo.run({ title: "Milk", priority: "low" }, { params: { listId: "nope" } }, ctx);
+    const r = await createTodo.run({ title: "Milk", priority: "low" }, at(ListParams, { listId: "nope" }), ctx);
     expect(r.ok ? null : r.error).toMatchObject({ code: "api.status", data: { status: 404 } });
   });
   it("updateTodo passes on the api's keel.fields and goes to the list on success", async () => {
     const both = { lists: [L], todos: [milk, { ...milk, id: "t2", title: "Eggs" }] };
     expect(board.restore({ state: both, log: [], initial: both }).ok).toBe(true);
     const { ctx } = await simApi();
-    const at = { params: { listId: "l1", todoId: "t1" } };
-    const dup = await updateTodo.run({ title: "Eggs", priority: "high" }, at, ctx);
+    const edit = at(TodoParams, { listId: "l1", todoId: "t1" });
+    const dup = await updateTodo.run({ title: "Eggs", priority: "high" }, edit, ctx);
     expect(dup.ok ? null : dup.error).toMatchObject({
       code: "keel.fields",
       data: { title: "Another todo has this title" },
     });
-    expect(await updateTodo.run({ title: "Oat milk", priority: "high" }, at, ctx)).toEqual({
+    expect(await updateTodo.run({ title: "Oat milk", priority: "high" }, edit, ctx)).toEqual({
       ok: true,
       value: "/lists/l1",
     });

@@ -1,12 +1,11 @@
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { Todo } from "./Todo.schema.ts";
+import type { TodoParams } from "./TodoParams.schema.ts";
 import { refreshView } from "./refreshView.ts";
 
-type Params = { readonly listId: string; readonly todoId: string };
-
 /** The todo `todoId` of list `listId` from a fresh board (`refreshView`), else `keel.notFound`. */
-export const loadTodo = loader(Todo, async ({ params }: { readonly params: Params }, ctx) => {
+export const loadTodo = loader(Todo, async ({ params }: { readonly params: TodoParams }, ctx) => {
   const board = await refreshView(ctx);
   if (!board.ok) return board;
   const todo = board.value.todos.find((t) => t.id === params.todoId && t.listId === params.listId);

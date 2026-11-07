@@ -6,6 +6,7 @@ import type { Req } from "./Req.ts";
 import { inRequest } from "./inRequest.ts";
 import { isVerb } from "./isVerb.ts";
 import { jsonResponse } from "./jsonResponse.ts";
+import { markLogs } from "./markLogs.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { page } from "./page.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
@@ -14,6 +15,7 @@ import { readCapped } from "./readCapped.ts";
 import { redirectResponse } from "./redirectResponse.ts";
 import { statusOf } from "./statusOf.ts";
 import { stringRecord } from "./stringRecord.ts";
+import { tagSince } from "./tagSince.ts";
 import { valuesOf } from "./valuesOf.ts";
 
 /**
@@ -51,7 +53,16 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
     if (r.runtime) return { response: jsonResponse(422, err(e)), route: id, diags: [] };
     return page(r, m, 422, null, { route: id, method: verb, values, errors: e.data });
   }
-  const ran = await attempt(() => inRequest(r.rq, () => action.run(decoded.value, { params: m.params }, r.sv.ctx)));
+  // Entries committed to module stores during the action's synchronous run are this caller's (finding 0082); one
+  // committed after an `await` cannot be told from an overlapping request's and stays untagged (nobody can undoOwn it).
+  const ran = await attempt(() => {
+    const mark = markLogs();
+    try {
+      return inRequest(r.rq, () => action.run(decoded.value, { params: m.params }, r.sv.ctx));
+    } finally {
+      tagSince(mark, r.rq.caller);
+    }
+  });
   const result = ran.ok ? ran.value : ran;
   if (result.ok) {
     if (r.runtime) return { response: jsonResponse(200, ok(result.value)), route: id, diags: [] };
