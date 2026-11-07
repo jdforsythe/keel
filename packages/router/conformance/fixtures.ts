@@ -130,7 +130,7 @@ const OrderPage = (p: { params: Infer<typeof OrderParams>; search: unknown; data
   return el(
     "section",
     { "data-page": "orders.show" },
-    Form({ method: control.verb, action: "orders.show", params: p.params, children: () => [fields] }),
+    Form({ method: control.verb, action: routes.href("orders.show", p.params), children: () => [fields] }),
   );
 };
 
@@ -310,4 +310,47 @@ export async function submit(host: HTMLElement): Promise<void> {
   if (form === null) throw new Error("fixture: no form rendered");
   form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
   await settle();
+}
+
+// ---- Form probe: render one `<Form method action>` from a route component inside a router (E1505 is raised there).
+// The Href comes from `probeLinks`, a second manifest used only for links, so no component reads its own manifest
+// (TS7022); the router under test is `probeRoutes`.
+const probeKnob: { method: unknown; action: Href | null } = { method: "POST", action: null };
+const ProbeHome = (): Node =>
+  Reflect.apply(Form, undefined, [{ method: probeKnob.method, action: probeKnob.action, children: () => [] }]);
+const probeAct = action({ input: OrderEdit }, async () => ok(null));
+export const probeRoutes = manifest({
+  "probe.home": { path: "/probe", component: ProbeHome },
+  "probe.show": { path: "/probe/:id", params: OrderParams, actions: { POST: probeAct }, component: page("probe.show") },
+});
+export const probeLinks = manifest({
+  "link.show": { path: "/probe/:id", params: OrderParams, component: page("link.show") },
+  "link.ghost": { path: "/nowhere", component: page("link.ghost") },
+});
+const codeOfThrown = (e: unknown): unknown => (typeof e === "object" && e !== null && "code" in e ? e.code : "no-code");
+/** The `code` of what rendering the Form inside the router threw (thrown out of mount, or shown by the router's error boundary), or null when it rendered. */
+export async function probeForm(method: unknown, href: Href): Promise<unknown> {
+  probeKnob.method = method;
+  probeKnob.action = href;
+  const router = createRouter(probeRoutes, {
+    ctx: createCtx({ mode: "sim", seed: SEED }),
+    history: memoryHistory("/probe"),
+  });
+  const host = document.createElement("div");
+  document.body.append(host);
+  let unmount: () => void = () => {};
+  let code: unknown = null;
+  try {
+    unmount = mount(router.App, host);
+    await settle();
+  } catch (e) {
+    code = codeOfThrown(e);
+  }
+  // The router's render boundary may catch the throw and show it as an alert whose message starts with the code.
+  const alert = host.querySelector('[role="alert"]');
+  if (code === null && alert?.textContent?.startsWith("E1505")) code = "E1505";
+  unmount();
+  router.dispose();
+  host.remove();
+  return code;
 }

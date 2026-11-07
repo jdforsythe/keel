@@ -12,6 +12,7 @@ import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import type { RouteDef } from "../src/types/RouteDef.ts";
 import { memoryHistory } from "./memoryHistory.ts";
+import { to } from "./to.ts";
 
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 64; i++) await Promise.resolve();
@@ -63,15 +64,8 @@ it.each<[string, Partial<RouteDef>, boolean]>([
   router.dispose();
 });
 
-it("Form outside any router render is a native form: submit is not intercepted", () => {
-  manifest({
-    "nat.a": {
-      path: "/nat",
-      actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
-      component: () => tag("p"),
-    },
-  });
-  const form = Form({ method: "POST", action: "nat.a" });
+it("Form outside any router render is a native form posting to its Href: submit is not intercepted", () => {
+  const form = Form({ method: "POST", action: to("/nat") });
   const e = new Event("submit", { bubbles: true, cancelable: true });
   form.dispatchEvent(e);
   expect(e.defaultPrevented).toBe(false);

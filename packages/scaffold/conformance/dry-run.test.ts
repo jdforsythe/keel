@@ -1,5 +1,5 @@
 // Spec: k.scaffold, clause "`--dry-run` writes nothing and prints exactly the diff a following apply writes."
-// In-process: plan == apply. Printed form: the real `keel` binary prints unified diffs; an independent applier
+// In-process: a dry run (scaffold, nothing written) == the following apply. Printed form: the real `keel` binary prints unified diffs; an independent applier
 // (unified-diff.ts) applies them to the before-tree and the result must equal what the following real apply writes.
 // Both forms cover every generator and codemod, transaction and service included (RFC 0039).
 import { describe, expect, it } from "vitest";
@@ -7,8 +7,8 @@ import {
   type Files,
   SERVICE_INPUT,
   apply,
+  dryRun,
   fresh,
-  planOf,
   snap,
   withOpenApi,
   withOrders,
@@ -31,12 +31,12 @@ const calls: [Parameters<typeof apply>[0], Record<string, unknown>, () => Files]
   ["service", SERVICE_INPUT, fresh],
 ];
 
-describe("plan (dry run)", () => {
+describe("scaffold (dry run)", () => {
   for (const [op, input, mk] of calls) {
     it(`${String(op)} --dry-run writes nothing and yields exactly the edit set the following apply writes`, () => {
       const files = mk();
       const before = snap(files);
-      const p = planOf(op, input, files);
+      const p = dryRun(op, input, files);
       expect(snap(files)).toBe(before);
       expect(p.ok).toBe(true);
       const a = apply(op, input, files);

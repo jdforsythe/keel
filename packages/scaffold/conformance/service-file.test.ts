@@ -17,10 +17,10 @@ import {
   SERVICE_INPUT,
   apiName,
   apply,
+  dryRun,
   errText,
   fresh,
   lowerName,
-  planOf,
   read,
   scaffoldRaw,
   serviceInput,
@@ -63,12 +63,12 @@ describe("scaffold service", () => {
     for (const p of ["modules/orders/OrdersApi.schema.ts", "modules/orders/api.ts"])
       expect(read(out, p).split("\n")[0], p).toBe(GENERATED_HEADER);
   });
-  it("service --dry-run (plan) yields exactly the edit set the following apply writes", () => {
+  it("service --dry-run (scaffold, not written) yields exactly the edit set the following apply writes", () => {
     fc.assert(
       fc.property(lowerName, (id) => {
         const files = withModule(id);
         const before = snap(files);
-        const p = planOf("service", input(id), files);
+        const p = dryRun("service", input(id), files);
         expect(snap(files)).toBe(before);
         expect(p.ok).toBe(true);
         const a = apply("service", input(id), files);

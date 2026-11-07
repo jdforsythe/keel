@@ -1,7 +1,7 @@
-// Properties: operations are pure and deterministic; plan equals scaffold; refusals write nothing.
+// Properties: operations are pure and deterministic (so a dry run is a call to scaffold); refusals write nothing.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { type Op, plan, scaffold } from "../src/index.ts";
+import { type Op, scaffold } from "../src/index.ts";
 import { RUNS, SEED, lower, snap, tree, upper } from "./helpers.ts";
 
 const call = (t: { modules: string[]; components: string[]; stores: string[] }, n: string, P: string) => {
@@ -29,7 +29,7 @@ const call = (t: { modules: string[]; components: string[]; stores: string[] }, 
 };
 
 describe("determinism", () => {
-  it("every operation twice on equal input gives byte-identical results, and plan equals scaffold", () => {
+  it("every operation twice on equal input gives byte-identical results", () => {
     fc.assert(
       fc.property(tree, lower, upper, (t, n, P) => {
         fc.pre(!t.modules.includes(n) && !t.components.includes(P));
@@ -37,13 +37,9 @@ describe("determinism", () => {
           const before = snap(t.files);
           const a = scaffold(op, input, t.files);
           const b = scaffold(op, input, new Map(t.files));
-          const p = plan(op, input, t.files);
           expect(snap(t.files), op).toBe(before);
           expect(JSON.stringify(a.ok ? { ...a.value, files: snap(a.value.files) } : a), op).toBe(
             JSON.stringify(b.ok ? { ...b.value, files: snap(b.value.files) } : b),
-          );
-          expect(JSON.stringify(p.ok ? { ...p.value, files: snap(p.value.files) } : p), op).toBe(
-            JSON.stringify(a.ok ? { ...a.value, files: snap(a.value.files) } : a),
           );
         }
       }),

@@ -1,8 +1,8 @@
-import { plan, scaffold } from "@keel/scaffold";
+import { scaffold } from "@keel/scaffold";
 // Shared harness for k.scaffold conformance. Not a test file.
 // ASSUMED API (one line): every operation is a pure function
 //   scaffold(op, input, files: Map<string,string>) => Result<{ files, created, changed }, KeelError>
-//   plan(op, input, files) => same Result shape, computed without applying. Inputs: project {name}, module {id},
+//   (RFC 0045: scaffold writes nothing, so a call to it IS the dry run; the cli --dry-run prints its edit set.) Inputs: project {name}, module {id},
 //   route {id, path}, component {id:"orders/OrderCard"}, store {id:"orders.cart"}, rename {kind, from, to},
 //   move {name, to}, add-field {schema, field, type, default?}. Error codes are found as substrings of the JSON error.
 // Seed 1337 for all fast-check runs. Generated names carry a "zq"/"Zq" prefix so they cannot collide with template words.
@@ -24,8 +24,8 @@ export function apply(op: Op, input: Input, files: Files) {
   if (!r.ok) throw new Error(`${String(op)} failed: ${JSON.stringify(r.error)}`);
   return r.value;
 }
-export function planOf(op: Op, input: Input, files: Files) {
-  return plan(op, input, files);
+export function dryRun(op: Op, input: Input, files: Files) {
+  return scaffold(op, input, files);
 }
 export function errText(r: { ok: boolean; error?: unknown }): string {
   return r.ok ? "" : JSON.stringify(r.error);

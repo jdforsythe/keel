@@ -1,3 +1,4 @@
+import type { formHandle } from "@keel/router/internal";
 import type { KeelError, Result, SchemaError } from "@keel/schema";
 import type { DeepPartial } from "./DeepPartial.ts";
 import type { Field } from "./Field.ts";
@@ -16,17 +17,20 @@ export interface FormState<T> {
   values(): DeepPartial<T>;
   /** Field path -> message. */
   errors(): Readonly<Record<string, string>>;
-  /** True from submit until the action's response; written only by `<Form>` through `setPending`. */
+  /** True from submit until the action's response; written only by `<Form>` through the seam's `setPending`. */
   pending(): boolean;
-  /** Router seam: `<Form>` sets pending true when it sends the action and false when the response arrives. */
-  setPending(value: boolean): void;
   /** Values back to `initial`; errors and touched cleared. */
   reset(): void;
-  /**
-   * Router seam: validate every field and set an error for every schema issue (issues no `field()` covers are
-   * also summarised under the root path `''`); focus the first invalid bound element in document order.
-   */
-  validate(): Result<T, SchemaError>;
-  /** Router seam: apply the action's Result (ok resets; keel.fields sets exactly those errors; other err: no change). */
-  onResult(result: Result<unknown, KeelError<string, unknown>>): void;
+  /** The `<Form form>` seam (`@keel/router/internal`, RFC 0045); not public API. */
+  readonly [formHandle]: {
+    /** `<Form>` sets pending true when it sends the action and false when the response arrives. */
+    setPending(value: boolean): void;
+    /**
+     * Validate every field and set an error for every schema issue (issues no `field()` covers are also summarised
+     * under the root path `''`); focus the first invalid bound element in document order.
+     */
+    validate(): Result<T, SchemaError>;
+    /** Apply the action's Result (ok resets; keel.fields sets exactly those errors; other err: no change). */
+    onResult(result: Result<unknown, KeelError<string, unknown>>): void;
+  };
 }

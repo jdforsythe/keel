@@ -10,6 +10,7 @@ import { createRouter } from "../src/createRouter.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import { memoryHistory } from "./memoryHistory.ts";
+import { to } from "./to.ts";
 
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 64; i++) await Promise.resolve();
@@ -36,7 +37,7 @@ it("a page showing its errorElement renders the component after ok(null) when th
       errorElement: ({ error }) => {
         const box = document.createElement("div");
         box.id = "failed";
-        box.append(error.code, Form({ method: "POST", action: "rv.page" }));
+        box.append(error.code, Form({ method: "POST", action: to("/rv") }));
         return box;
       },
     },

@@ -9,6 +9,7 @@ import { action } from "../src/action.ts";
 import { createRouter } from "../src/createRouter.ts";
 import { manifest } from "../src/manifest.ts";
 import { memoryHistory } from "./memoryHistory.ts";
+import { to } from "./to.ts";
 
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 64; i++) await Promise.resolve();
@@ -54,7 +55,7 @@ const formRoutes = (id: string, kids: "thunk" | "plain" | "array" | "text") =>
         child.setAttribute("data-x", "kid");
         const children =
           kids === "thunk" ? () => child : kids === "plain" ? child : kids === "array" ? [child] : () => "hi";
-        return Form({ method: "POST", action: id, children });
+        return Form({ method: "POST", action: to(`/${id}`), children });
       },
     },
   });

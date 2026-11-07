@@ -6,6 +6,7 @@ import type { Located } from "./internal/Located.ts";
 import type { Match } from "./internal/Match.ts";
 import type { Place } from "./internal/Place.ts";
 import type { RouterCore } from "./internal/RouterCore.ts";
+import { STORES_SERVER_ONLY } from "./internal/STORES_SERVER_ONLY.ts";
 import type { View } from "./internal/View.ts";
 import { absoluteUrl } from "./internal/absoluteUrl.ts";
 import { afterNavigate } from "./internal/afterNavigate.ts";
@@ -13,6 +14,7 @@ import { compileRoutes } from "./internal/compileRoutes.ts";
 import { compileTable } from "./internal/compileTable.ts";
 import { defaultError } from "./internal/defaultError.ts";
 import { fieldsError } from "./internal/fieldsError.ts";
+import { formHandle } from "./internal/formHandle.ts";
 import { hrefIn } from "./internal/hrefIn.ts";
 import { isRouteStateOf } from "./internal/isRouteStateOf.ts";
 import { matchUrl } from "./internal/matchUrl.ts";
@@ -31,6 +33,7 @@ import type { RouteDef } from "./types/RouteDef.ts";
 import type { RouteState } from "./types/RouteState.ts";
 import type { Router } from "./types/Router.ts";
 import type { RouterHistory } from "./types/RouterHistory.ts";
+import type { Verb } from "./types/Verb.ts";
 
 type Mode = "push" | "replace" | "pop" | "initial" | "stay";
 type Outcome = Result<unknown, KeelError<string, unknown>>;
@@ -200,13 +203,20 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     });
   };
 
+  // A Form's `action` is an Href (RFC 0045): its route and params come from matching it in this router's table.
+  const actionAt = (href: Href, method: Verb) => {
+    const m = matchUrl(table, href);
+    const act = m.kind === "route" ? m.route.def.actions?.[method] : undefined;
+    return m.kind === "route" && act !== undefined ? { act, params: m.params } : null;
+  };
   const core: RouterCore = {
-    table: own,
+    accepts: (href, method) => actionAt(href, method) !== null,
     async submit(req) {
-      const handle = req.handle;
+      const handle = req.handle?.[formHandle];
       if (handle !== undefined && !handle.validate().ok) return null;
-      const act = own.get(req.action)?.def.actions?.[req.method];
-      if (act === undefined || disposed) return null;
+      const target = actionAt(req.action, req.method);
+      if (target === null || disposed) return null;
+      const { act, params } = target;
       const data = new FormData(req.form);
       data.delete("_method");
       pending.set(true);
@@ -214,9 +224,10 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       const decoded = act.input.decodeStrings(data);
       let result: Result<Href | null, KeelError<string, unknown>>;
       if (!decoded.ok) result = err(fieldsError(act.input.node, decoded.error));
+      else if (act.stores !== undefined) result = err(unexpected(STORES_SERVER_ONLY));
       else {
-        const url = absoluteUrl(hrefIn(own, req.action, req.params, {}));
-        const ran = await attempt(() => act.run(decoded.value, { params: req.params, url }, ctx));
+        const url = absoluteUrl(req.action);
+        const ran = await attempt(() => act.run(decoded.value, { params, url, caller: "", stores: undefined }, ctx));
         result = ran.ok ? ran.value : ran;
       }
       handle?.setPending(false);

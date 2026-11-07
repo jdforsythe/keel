@@ -3,16 +3,16 @@
 // E1501 has two halves. `navigate` with a string is type-only in this package (a TS error reported under E1501,
 // k.check), asserted here with type-level checks. Literal URL attributes and `Link to` are diagnosed by the compiler
 // (URL policy, k.compiler, RFC 0030), asserted through the public `compile`. Property seed: 1337.
-// E1502-E1506: `manifest` throws an Error whose `code` is the rule; `<Form>` throws E1505. E1506 means unknown
+// E1502-E1506: `manifest` throws an Error whose `code` is the rule; `<Form>` throws E1505 when rendered inside a router (RFC 0045; outside one it never does). E1506 means unknown
 // layout name, a layout with a path, or a layout cycle (guards are values since RFC 0041, so no unknown guard name
 // exists). Each trigger has a clean counterpart.
 import { compile } from "@keel/compiler";
-import { Form, type Href, action, type createRouter, manifest } from "@keel/router";
+import { type Href, action, type createRouter, manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import { ok } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { SEED, el, idOf, routes } from "./fixtures.ts";
+import { SEED, el, idOf, probeForm, probeLinks, routes } from "./fixtures.ts";
 
 type Navigate = Parameters<ReturnType<typeof createRouter>["navigate"]>[0];
 
@@ -144,24 +144,18 @@ describe("k.router rules", () => {
     expect(codeOf(() => manifest(bad("DELETE")))).toBeNull();
   });
 
-  it("E1505 <Form method> outside POST/PUT/PATCH/DELETE", () => {
-    manifest({ "m.show": { path: "/m/:id", params: Id, actions: { POST: post }, component: page } });
-    const id = idOf("1");
-    const callForm = (method: string): unknown =>
-      Reflect.apply(Form, undefined, [{ method, action: "m.show", params: { id }, children: () => [] }]);
-    expect(codeOf(() => callForm("GET"))).toBe("E1505");
-    expect(codeOf(() => callForm("post"))).toBe("E1505");
-    expect(codeOf(() => callForm("POST"))).toBeNull();
+  it("E1505 <Form method> outside POST/PUT/PATCH/DELETE", async () => {
+    const href = probeLinks.href("link.show", { id: idOf("1") });
+    expect(await probeForm("GET", href)).toBe("E1505");
+    expect(await probeForm("post", href)).toBe("E1505");
+    expect(await probeForm("POST", href)).toBeNull();
   });
 
-  it("E1505 <Form method> not declared on the target route", () => {
-    manifest({ "g.show": { path: "/g/:id", params: Id, actions: { POST: post }, component: page } });
-    const id = idOf("1");
-    expect(codeOf(() => Form({ method: "DELETE", action: "g.show", params: { id }, children: () => [] }))).toBe(
-      "E1505",
-    );
-    expect(codeOf(() => Form({ method: "POST", action: "g.show", params: { id }, children: () => [] }))).toBeNull();
-    expect(codeOf(() => Form({ method: "POST", action: "g.nope", children: () => [] }))).toBe("E1505");
+  it("E1505 <Form method> not declared on the target route, or the action matches no route", async () => {
+    const href = probeLinks.href("link.show", { id: idOf("1") });
+    expect(await probeForm("DELETE", href)).toBe("E1505");
+    expect(await probeForm("POST", href)).toBeNull();
+    expect(await probeForm("POST", probeLinks.href("link.ghost"))).toBe("E1505");
   });
 
   it("E1506 unknown layout name, a layout with a path, or a layout cycle", () => {

@@ -1,6 +1,5 @@
 import { compileRoutes } from "./internal/compileRoutes.ts";
 import { hrefIn } from "./internal/hrefIn.ts";
-import { latest } from "./internal/latest.ts";
 import { tables } from "./internal/tables.ts";
 import type { Href } from "./types/Href.ts";
 import type { Manifest } from "./types/Manifest.ts";
@@ -20,6 +19,5 @@ export function manifest<M extends Readonly<Record<string, RouteDef>>>(routes: M
   const href = (id: string, params: Rec = {}, search: Rec = {}): Href => hrefIn(table, id, params, search);
   const m: Manifest<M> = Object.freeze({ kind: "keel.manifest", routes, href });
   tables.set(m, table);
-  for (const id of table.keys()) latest.set(id, table);
   return m;
 }

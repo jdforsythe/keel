@@ -11,6 +11,7 @@ import { createRouter } from "../src/createRouter.ts";
 import { guard } from "../src/guard.ts";
 import { afterNavigate } from "../src/internal/afterNavigate.ts";
 import { defaultError } from "../src/internal/defaultError.ts";
+import { formHandle } from "../src/internal/formHandle.ts";
 import { isHref } from "../src/internal/isHref.ts";
 import { renderChildren } from "../src/internal/renderChildren.ts";
 import { loader } from "../src/loader.ts";
@@ -656,44 +657,64 @@ describe("Form", () => {
     f?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
   };
   const handleOf = (log: string[], valid = true): FormHandle => ({
-    setPending: (v) => void log.push(`pending:${String(v)}`),
-    values: () => ({}),
-    onResult: (r) => void log.push(`result:${r.ok ? "ok" : r.error.code}`),
-    validate: () => {
-      log.push("validate");
-      return valid ? ok(null) : err({ code: "schema.invalid", message: "x", data: { issues: [] } });
+    [formHandle]: {
+      setPending: (v) => void log.push(`pending:${String(v)}`),
+      onResult: (r) => void log.push(`result:${r.ok ? "ok" : r.error.code}`),
+      validate: () => {
+        log.push("validate");
+        return valid ? ok(null) : err({ code: "schema.invalid", message: "x", data: { issues: [] } });
+      },
     },
   });
 
-  it("renders method, action, hidden _method for non-POST, children and throws E1505 for a missing verb", () => {
-    const act = action({ input: s.object({}) }, async () => ok(null));
-    manifest({
-      "fm.a": {
-        path: "/fm/:id",
-        params: s.object({ id: s.int() }),
-        actions: { POST: act, PUT: act },
-        component: () => el("x"),
-      },
-    });
-    const post = Form({ method: "POST", action: "fm.a", params: { id: 4 }, children: "hello" });
+  it("outside a router: renders method, the action Href as given, hidden _method for non-POST, children; no lookup", () => {
+    const fm = to("/fm/4");
+    const post = Form({ method: "POST", action: fm, children: "hello" });
     expect(post.getAttribute("method")).toBe("post");
     expect(post.getAttribute("action")).toBe("/fm/4");
     expect(post.querySelector("input")).toBeNull();
     expect(post.textContent).toBe("hello");
-    const put = Form({ method: "PUT", action: "fm.a", params: { id: 4 }, children: () => el("kid") });
+    const put = Form({ method: "PUT", action: fm, children: () => el("kid") });
     const hidden = put.querySelector("input");
     expect(hidden?.getAttribute("type")).toBe("hidden");
     expect(hidden?.getAttribute("name")).toBe("_method");
     expect(hidden?.getAttribute("value")).toBe("PUT");
     expect(put.querySelector('[data-x="kid"]')).not.toBeNull();
-    let msg = "";
-    try {
-      Form({ method: "DELETE", action: "fm.a", params: { id: 4 } });
-    } catch (e) {
-      msg = e instanceof Error ? e.message : "";
-    }
-    expect(msg).toBe('E1505 <Form method="DELETE" action="fm.a">: route declares no such action');
-    expect(() => Form({ method: "POST", action: "fm.unknown" })).toThrow("E1505");
+    expect(() => Form({ method: "DELETE", action: to("/nowhere") })).not.toThrow();
+  });
+
+  it("inside a router: E1505 when the route the action matches does not declare the method, or none matches", async () => {
+    const act = action({ input: s.object({}) }, async () => ok(null));
+    const msgs: string[] = [];
+    const tryForm = (method: "POST" | "DELETE", href: Href): void => {
+      try {
+        Form({ method, action: href });
+        msgs.push("ok");
+      } catch (e) {
+        msgs.push(e instanceof Error ? e.message : "");
+      }
+    };
+    const rs = manifest({
+      "fm.a": {
+        path: "/fm/:id",
+        params: s.object({ id: s.int() }),
+        actions: { POST: act, PUT: act },
+        component: () => {
+          tryForm("POST", to("/fm/4"));
+          tryForm("DELETE", to("/fm/4"));
+          tryForm("POST", to("/nowhere"));
+          return el("x");
+        },
+      },
+    });
+    const t = boot(rs, "/fm/4");
+    await settle();
+    expect(msgs).toEqual([
+      "ok",
+      'E1505 <Form method="DELETE" action="/fm/4">: no route of this router declares that action',
+      'E1505 <Form method="POST" action="/nowhere">: no route of this router declares that action',
+    ]);
+    t.stop();
   });
 
   it("renderChildren: thunk, node, string, array, undefined", () => {
@@ -722,7 +743,7 @@ describe("Form", () => {
           }),
         },
         component: () => {
-          const f = Form({ method: "PUT", action: "fs.page", params: { id: 9 }, form: handleOf(log) });
+          const f = Form({ method: "PUT", action: to("/p/9"), form: handleOf(log) });
           const box = document.createElement("input");
           box.name = "title";
           box.value = "hello";
@@ -748,7 +769,7 @@ describe("Form", () => {
       "fv.page": {
         path: "/p",
         actions: { POST: action({ input: input }, async () => ok(null)) },
-        component: () => Form({ method: "POST", action: "fv.page", form: handleOf(log, false) }),
+        component: () => Form({ method: "POST", action: to("/p"), form: handleOf(log, false) }),
       },
     });
     const t = boot(rs, "/p");
@@ -768,7 +789,7 @@ describe("Form", () => {
       "ff.page": {
         path: "/p",
         actions: { POST: action({ input: input }, async () => ok(null)) },
-        component: () => Form({ method: "POST", action: "ff.page", form: handleOf(log) }),
+        component: () => Form({ method: "POST", action: to("/p"), form: handleOf(log) }),
       },
     });
     const t = boot(rs, "/p");
@@ -792,25 +813,22 @@ describe("Form", () => {
         component: () =>
           Form({
             method: "POST",
-            action: "fe.page",
+            action: to("/p"),
             error: (e) => el(`err:${e.code}`),
-            loading: () => el("loading"),
           }),
       },
     });
     const t = boot(rs, "/p");
     await settle();
-    expect(t.host.querySelector('[data-x="loading"]')).toBeNull();
     expect(t.host.querySelector('[data-x^="err:"]')).toBeNull();
     submit(t.host.querySelector("form"));
     await settle();
     expect(t.host.querySelector('[data-x="err:keel.unexpected"]')).not.toBeNull();
-    expect(t.host.querySelector('[data-x="loading"]')).toBeNull();
     expect(t.router.route.get().pending).toBe(false);
     t.stop();
   });
 
-  it("loading slot shows while the action is in flight; error clears on resubmit", async () => {
+  it("route().pending is true while the action is in flight; error clears on resubmit", async () => {
     let release: () => void = () => {};
     let fail = true;
     const rs = manifest({
@@ -828,9 +846,8 @@ describe("Form", () => {
         component: () =>
           Form({
             method: "POST",
-            action: "fl.page",
+            action: to("/p"),
             error: (e) => el(`err:${e.code}`),
-            loading: () => el("loading"),
           }),
       },
     });
@@ -842,11 +859,11 @@ describe("Form", () => {
     fail = false;
     submit(t.host.querySelector("form"));
     await settle();
-    expect(t.host.querySelector('[data-x="loading"]')).not.toBeNull();
+    expect(t.router.route.get().pending).toBe(true);
     expect(t.host.querySelector('[data-x^="err:"]')).toBeNull();
     release();
     await settle();
-    expect(t.host.querySelector('[data-x="loading"]')).toBeNull();
+    expect(t.router.route.get().pending).toBe(false);
     expect(t.host.querySelector('[data-x^="err:"]')).toBeNull();
     t.stop();
   });
@@ -862,7 +879,7 @@ describe("Form", () => {
           ),
         },
         component: () =>
-          Form({ method: "POST", action: "fh.page", form: handleOf([]), error: (e) => el(`err:${e.code}`) }),
+          Form({ method: "POST", action: to("/p"), form: handleOf([]), error: (e) => el(`err:${e.code}`) }),
       },
     });
     const t = boot(rs, "/p");
@@ -882,7 +899,7 @@ describe("Form", () => {
       "fn.page": {
         path: "/p",
         actions: { POST: action({ input: input }, async () => ok(null)) },
-        component: () => Form({ method: "POST", action: "fn.page", error: (e) => el(`err:${e.code}`) }),
+        component: () => Form({ method: "POST", action: to("/p"), error: (e) => el(`err:${e.code}`) }),
       },
     });
     const t = boot(rs, "/p");
@@ -904,7 +921,7 @@ describe("Form", () => {
             return ok(null);
           }),
         },
-        component: () => Form({ method: "POST", action: "fd.page" }),
+        component: () => Form({ method: "POST", action: to("/p") }),
       },
     });
     const t = boot(rs, "/p");
@@ -927,7 +944,7 @@ describe("Form", () => {
         actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
         component: (p) => {
           const out = el("out");
-          const f = Form({ method: "POST", action: "fr.page" });
+          const f = Form({ method: "POST", action: to("/p") });
           return el("page", [out, f, Object.assign(document.createElement("span"), { id: String(p.data) })]);
         },
       },
@@ -955,7 +972,7 @@ describe("Form", () => {
             return ok(null);
           }),
         },
-        component: () => Form({ method: "POST", action: "fx.page" }),
+        component: () => Form({ method: "POST", action: to("/p") }),
         errorElement: ({ error }) => el(`err:${error.code}`),
       },
     });
@@ -978,7 +995,7 @@ describe("Form", () => {
             return ok(null);
           }),
         },
-        component: () => Form({ method: "POST", action: "fz.page" }),
+        component: () => Form({ method: "POST", action: to("/p") }),
       },
     });
     const t = boot(rs, "/p");

@@ -3,7 +3,7 @@
 // Scenario: moving OrderCard into catalog while catalog already depends on orders would create a deps cycle (E1153)
 // and orders would import a module not in its deps; the clean counterpart moves it without that dependency.
 import { expect, it } from "vitest";
-import { type Files, apply, errText, only, planOf, rel, scaffoldRaw, snap, withOrders } from "./fixtures.ts";
+import { type Files, apply, dryRun, errText, only, rel, scaffoldRaw, snap, withOrders } from "./fixtures.ts";
 
 const manifest = (id: string, deps: string[], exports: string[]) =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${JSON.stringify(deps)}, capabilities: [], public: { exports: ${JSON.stringify(exports)}, routes: [] } })\n`;
@@ -27,7 +27,7 @@ it("an operation whose edit set would introduce a diagnostic writes no file and 
   expect(r.ok).toBe(false);
   expect(errText(r)).toContain("E1353");
   expect(snap(f)).toBe(before);
-  const p = planOf("move", { name: "OrderCard", to: "catalog" }, f);
+  const p = dryRun("move", { name: "OrderCard", to: "catalog" }, f);
   expect(p.ok).toBe(false);
   expect(errText(p)).toContain("E1353");
 });

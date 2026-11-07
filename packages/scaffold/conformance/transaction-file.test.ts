@@ -9,11 +9,11 @@ import {
   RUNS,
   SEED,
   apply,
+  dryRun,
   errText,
   fresh,
   lowerName,
   pascalName,
-  planOf,
   read,
   scaffoldRaw,
   snap,
@@ -64,12 +64,12 @@ describe("scaffold transaction", () => {
       ).toBe(true);
     }
   });
-  it("transaction --dry-run (plan) yields exactly the edit set the following apply writes", () => {
+  it("transaction --dry-run (scaffold, not written) yields exactly the edit set the following apply writes", () => {
     fc.assert(
       fc.property(lowerName, (name) => {
         const files = withStoreCart();
         const before = snap(files);
-        const p = planOf("transaction", { id: `orders.cart.${name}` }, files);
+        const p = dryRun("transaction", { id: `orders.cart.${name}` }, files);
         expect(snap(files)).toBe(before);
         expect(p.ok).toBe(true);
         const a = apply("transaction", { id: `orders.cart.${name}` }, files);

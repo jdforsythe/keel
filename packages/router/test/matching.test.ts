@@ -1,8 +1,9 @@
-// The matcher and search parser as exported for @keel/server (matchUrl, parseSearch, compileRoutes, compileTable).
+// The matcher and search parser as exported for @keel/server from @keel/router/internal (RFC 0045).
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { type RouteDef, compileRoutes, compileTable, matchUrl, parseSearch } from "../src/index.ts";
+import { compileRoutes, compileTable, matchUrl, parseSearch } from "../src/internal/index.ts";
+import type { RouteDef } from "../src/types/RouteDef.ts";
 
 const SEED = 1337;
 const p = (): Node => document.createElement("p");

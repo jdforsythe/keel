@@ -3,12 +3,11 @@ import { cond } from "@keel/runtime-dom/ops";
 import type { KeelError } from "@keel/schema";
 import { codedError } from "./internal/codedError.ts";
 import { findRouter } from "./internal/findRouter.ts";
-import { hrefIn } from "./internal/hrefIn.ts";
-import { latest } from "./internal/latest.ts";
 import { renderChildren } from "./internal/renderChildren.ts";
 import type { FormProps } from "./types/FormProps.ts";
 
-type Status = { readonly pending: boolean; readonly error: KeelError<string, unknown> | null };
+/** The non-field error the `error` slot shows; pending state lives on the `form` handle only (RFC 0043). */
+type Shown = KeelError<string, unknown> | null;
 
 function slot(parent: HTMLFormElement, when: () => boolean, render: () => Node): void {
   const anchor = document.createComment("keel:slot");
@@ -17,24 +16,23 @@ function slot(parent: HTMLFormElement, when: () => boolean, render: () => Node):
 }
 
 /**
- * `<Form method action params? form? loading? error?>` (k.router Form). Renders `<form method="post">` whose
- * `action` is the target route's href, with a hidden `_method` for PUT/PATCH/DELETE, so it posts natively
- * without JS. Rendered inside a router's `App` (found through the owner scope chain), it intercepts submit: validates `form` (if any), submits the FormData to
- * `actions[method]` of route `action`, and applies the Result (`ok(href)` navigates, `ok(null)` revalidates).
- * Throws E1505 when the route does not declare that method.
+ * `<Form method action form? error?>` (k.router Form, RFC 0045). Renders `<form method="post">` whose `action` is
+ * the given `Href` (`routes.href`), with a hidden `_method` for PUT/PATCH/DELETE, so it posts natively without JS
+ * and reads no route table. Rendered inside a router's `App` (found through the owner scope chain), it intercepts
+ * submit: validates `form` (if any), submits the FormData to `actions[method]` of the route `action` matches in that
+ * router's table, and applies the Result (`ok(href)` navigates, `ok(null)` revalidates). Inside a router, throws
+ * E1505 when the matched route does not declare that method.
  */
 export function Form(props: FormProps): HTMLFormElement {
   const core = findRouter();
-  const table = core === null ? latest.get(props.action) : core.table;
-  if (table?.get(props.action)?.def.actions?.[props.method] === undefined)
+  if (core !== null && !core.accepts(props.action, props.method))
     throw codedError(
       "E1505",
-      `<Form method="${props.method}" action="${props.action}">: route declares no such action`,
+      `<Form method="${props.method}" action="${props.action}">: no route of this router declares that action`,
     );
-  const params = props.params ?? {};
   const el = document.createElement("form");
   el.setAttribute("method", "post");
-  el.setAttribute("action", hrefIn(table, props.action, params, {}));
+  el.setAttribute("action", props.action);
   if (props.method !== "POST") {
     const hidden = document.createElement("input");
     hidden.setAttribute("type", "hidden");
@@ -44,23 +42,22 @@ export function Form(props: FormProps): HTMLFormElement {
   }
   el.append(...renderChildren(props.children));
   if (core === null) return el;
-  const status = signal<Status>({ pending: false, error: null });
-  const { loading, error } = props;
-  if (loading !== undefined) slot(el, () => status.get().pending, loading);
+  const status = signal<Shown>(null);
+  const { error } = props;
   if (error !== undefined)
     slot(
       el,
-      () => status.get().error !== null,
+      () => status.get() !== null,
       () => {
-        const e = status.get().error;
+        const e = status.get();
         return e === null ? document.createComment("") : error(e);
       },
     );
   const run = async (): Promise<void> => {
-    status.set({ pending: true, error: null });
-    const r = await core.submit({ action: props.action, method: props.method, params, form: el, handle: props.form });
+    status.set(null);
+    const r = await core.submit({ action: props.action, method: props.method, form: el, handle: props.form });
     const shown = r !== null && !r.ok && (props.form === undefined || r.error.code !== "keel.fields") ? r.error : null;
-    status.set({ pending: false, error: shown });
+    status.set(shown);
   };
   const onSubmit = (e: Event): void => {
     e.preventDefault();

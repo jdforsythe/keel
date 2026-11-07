@@ -13,6 +13,7 @@ import { absoluteUrl } from "../src/internal/absoluteUrl.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import { memoryHistory } from "./memoryHistory.ts";
+import { to } from "./to.ts";
 
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 64; i++) await Promise.resolve();
@@ -37,7 +38,7 @@ it("loaders and actions get the absolute url of the page and of the action's rou
           return ok(null);
         }),
       },
-      component: (p) => Form({ method: "POST", action: "ru.page", params: { n: 7 }, children: () => "go" }),
+      component: () => Form({ method: "POST", action: to("/ru/7"), children: () => "go" }),
     },
   });
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/ru/7?tab=a") });

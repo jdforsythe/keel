@@ -9,10 +9,12 @@ import { Form } from "../src/Form.ts";
 import { action } from "../src/action.ts";
 import { createRouter } from "../src/createRouter.ts";
 import { guard } from "../src/guard.ts";
+import { formHandle } from "../src/internal/formHandle.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import type { FormHandle } from "../src/types/FormHandle.ts";
 import { memoryHistory } from "./memoryHistory.ts";
+import { to } from "./to.ts";
 
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 64; i++) await Promise.resolve();
@@ -45,16 +47,17 @@ it.each([
 it("an action input failure yields keel.fields with messages per path", async () => {
   const seen: unknown[] = [];
   const handle: FormHandle = {
-    setPending: () => {},
-    values: () => ({}),
-    onResult: (r) => void seen.push(r),
-    validate: () => ok(null),
+    [formHandle]: {
+      setPending: () => {},
+      onResult: (r) => void seen.push(r),
+      validate: () => ok(null),
+    },
   };
   const routes = manifest({
     "gn.form": {
       path: "/form",
       actions: { POST: action({ input: s.object({ title: s.string({ min: 3 }) }) }, async () => ok(null)) },
-      component: () => Form({ method: "POST", action: "gn.form", form: handle }),
+      component: () => Form({ method: "POST", action: to("/form"), form: handle }),
     },
   });
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/form") });

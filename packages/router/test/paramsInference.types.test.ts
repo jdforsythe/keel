@@ -38,13 +38,22 @@ describe("loader and action params/search", () => {
       readonly params: { todoId: Id<"Todo"> };
       readonly search: { filter?: "all" | "done" | undefined };
       readonly url: string;
+      readonly caller: string;
+      readonly stores: undefined;
     }>();
-    expectTypeOf(save.run)
-      .parameter(1)
-      .toEqualTypeOf<{ readonly params: { todoId: Id<"Todo"> }; readonly url: string }>();
-    expectTypeOf(unread.run)
-      .parameter(0)
-      .toEqualTypeOf<{ readonly params: unknown; readonly search: unknown; readonly url: string }>();
+    expectTypeOf(save.run).parameter(1).toEqualTypeOf<{
+      readonly params: { todoId: Id<"Todo"> };
+      readonly url: string;
+      readonly caller: string;
+      readonly stores: undefined;
+    }>();
+    expectTypeOf(unread.run).parameter(0).toEqualTypeOf<{
+      readonly params: unknown;
+      readonly search: unknown;
+      readonly url: string;
+      readonly caller: string;
+      readonly stores: undefined;
+    }>();
   });
 
   it("manifest accepts the declared schemas' routes and unread loaders; a route whose params do not fit fails", () => {
@@ -74,7 +83,7 @@ describe("loader and action params/search", () => {
     expect(params.ok).toBe(true);
     if (!params.ok) return;
     const r = await routes.routes["t.show"].loader.run(
-      { params: params.value, search: {}, url: "http://localhost/t/t9" },
+      { params: params.value, search: {}, url: "http://localhost/t/t9", caller: "", stores: undefined },
       createCtx({ mode: "sim" }),
     );
     expect(r).toEqual({ ok: true, value: { id: "t9" } });
