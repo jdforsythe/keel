@@ -33,7 +33,8 @@ const GLOBAL_OBJECTS: ReadonlySet<string> = new Set(["globalThis", "window", "se
  * a literal to `Reflect.set/get/defineProperty/getOwnPropertyDescriptor` or `Object.defineProperty/
  * getOwnPropertyDescriptor`, or as a key of an object literal passed to `Object.assign/defineProperties`;
  * `setAttribute(NS)` with a literal `srcdoc` or `on*` name; the global `DOMParser`; `write`/`writeln` on the
- * global `document`. `Reflect`, `Object`, `DOMParser` and `document` count only when not declared in scope.
+ * global `document`; a literal `on*` key holding a string in a spread object literal on an HTML element
+ * (rfc:0056). `Reflect`, `Object`, `DOMParser` and `document` count only when not declared in scope.
  * A fully dynamic key is not detectable (rfc:0053): the compiler and runtime never emit these sinks.
  */
 export function ruleRawHtml(a: Analysis): Diagnostic[] {
@@ -145,5 +146,19 @@ export function ruleRawHtml(a: Analysis): Diagnostic[] {
         hit("DOMParser", n.start);
     },
   }).visit(a.program);
+  // rfc:0056: a spread object literal on an HTML element with a literal `on*` key holding a string. The runtime
+  // `attr` drops every `on*` name, so this reports the source spelling; a key from data is not detectable.
+  for (const j of a.jsx) {
+    if (j.type !== "JSXElement" || !isHtmlTag(tagNameOf(j.openingElement.name))) continue;
+    for (const at of j.openingElement.attributes) {
+      if (at.type !== "JSXSpreadAttribute" || at.argument.type !== "ObjectExpression") continue;
+      for (const p of at.argument.properties) {
+        if (p.type !== "Property" || (p.value.type !== "Literal" && p.value.type !== "TemplateLiteral")) continue;
+        if (p.value.type === "Literal" && typeof p.value.value !== "string") continue;
+        const key = p.computed ? keyOf(p.key) : p.key.type === "Identifier" ? p.key.name : keyOf(p.key);
+        if (key !== null && /^on/i.test(key)) handler(key, p.key.start);
+      }
+    }
+  }
   return out;
 }

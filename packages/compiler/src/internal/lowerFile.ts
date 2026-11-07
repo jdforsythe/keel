@@ -1,4 +1,4 @@
-import { isSafeUrl } from "@keel/runtime-dom/url";
+import { isRefusedAttr, isSafeUrl } from "@keel/runtime-dom/url";
 import MagicString from "magic-string";
 import type { Function as FunctionNode } from "oxc-parser";
 import type {
@@ -307,6 +307,7 @@ export function lowerFile(
       }
       const sv = staticValueOf(at.value);
       if (sv !== undefined) {
+        if (isRefusedAttr(tag, out)) continue;
         if (sv.bare) {
           t.html += ` ${out}=""`;
           continue;

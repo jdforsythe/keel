@@ -1178,6 +1178,10 @@
       "rung": "example"
     },
     {
+      "item": "k.compiler#17",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.component#1",
       "rung": "example"
     },
@@ -1466,6 +1470,10 @@
       "rung": "example"
     },
     {
+      "item": "k.runtime#10",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.scaffold#1",
       "rung": "example"
     },
@@ -1579,7 +1587,7 @@
     },
     {
       "item": "k.server#11",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.server#12",
@@ -1591,6 +1599,14 @@
     },
     {
       "item": "k.server#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.server#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.server#16",
       "rung": "example"
     },
     {

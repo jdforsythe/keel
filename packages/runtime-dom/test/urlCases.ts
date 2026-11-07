@@ -11,6 +11,13 @@ export const URL_CASE_ATTRS: readonly { readonly tag: string; readonly attr: str
   { tag: "a", attr: "xlink:href" },
   { tag: "video", attr: "poster" },
   { tag: "a", attr: "ping" },
+  { tag: "object", attr: "data" },
+  { tag: "img", attr: "srcset" },
+  { tag: "link", attr: "imagesrcset" },
+  { tag: "set", attr: "to" },
+  { tag: "animate", attr: "from" },
+  { tag: "animate", attr: "by" },
+  { tag: "animate", attr: "values" },
   { tag: "iframe", attr: "srcdoc" },
 ];
 
