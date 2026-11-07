@@ -1,5 +1,5 @@
 # k.scaffold: Scaffold and codemods
-status: implemented
+status: conformance-covered
 
 **Operations.** Every structural edit is one operation. It computes a complete edit set from the project's artifacts (`.keel/ids.json`, `routes.json`, `deps.json`, module manifests), never from text search, and applies it atomically: all files or none. The same operations are MCP tools (k.cli). `--dry-run` prints the edit set as unified diffs and writes nothing. An edit set is `{ files, created, changed, removed }`: the tree after the operation and the sorted paths it creates, changes, and deletes; a dry run returns the same edit set.
 ```sh
@@ -21,10 +21,10 @@ keel codemod add-field Order note 'string.optional'
 - `route`: manifest entry, `*.server.ts` loader, page component, route test.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
 - `store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test.
-- `service`: endpoint schemas from OpenAPI and the service file (k.services); schemas are generated, read-only.
+- `service`: endpoint schemas from OpenAPI and the service file (k.services): `modules/<id>/<Id>Api.schema.ts` and `api.ts`; schemas are generated, read-only.
 
 **Codemods.**
-- `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call, `uses:` list, element-id prefix, test, and manifest entry.
+- `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a manifest's `routes.href()`), `uses:` list, element-id prefix, test, and manifest entry.
 - `move` relocates a file to another module, updating imports and both manifests.
 - `add-field` adds a field to a schema and to every initial state, fixture, and form `initial` that constructs it. Optional fields need no data; required fields take `--default`.
 

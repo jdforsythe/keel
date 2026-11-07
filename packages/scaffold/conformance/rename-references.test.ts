@@ -1,5 +1,7 @@
 // Spec: k.scaffold, clause "After `rename`, no import, `href()` call, `uses:` entry, or element id references the old name."
 // Spec: k.scaffold, clause "`rename A B` then `rename B A` restores a byte-identical tree."
+// The page references the target through both the free `href('id')` and the manifest member `routes.href('id', p)`
+// (RFC 0039 Migration, for RFC 0041); no form may keep the old name.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -55,7 +57,7 @@ function setup(kind: Kind, name: string, spec: (typeof cases)[number]): Files {
   const t = spec.token(name);
   files.set(
     page,
-    `// refs\nimport X from './${name}.tsx'\nconst a = href('${t}')\nconst u = { uses: [${name}] }\nconst el = 'id="${name}-1"'\n`,
+    `// refs\nimport X from './${name}.tsx'\nconst a = href('${t}')\nconst m = routes.href('${t}', { id: '1' })\nconst u = { uses: [${name}] }\nconst el = 'id="${name}-1"'\n`,
   );
   return files;
 }

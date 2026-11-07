@@ -1,4 +1,7 @@
-/** The sources `openapi` generates: `api.schema.ts` (the `endpoints` declaration) and `api.ts` (the `service`). */
+/**
+ * The sources `openapi` generates: `schema` for `<Name>Api.schema.ts` (the `endpoints` declaration, exported as
+ * `<Name>Api`) and `service` for `api.ts` (the `service`, importing `./<Name>Api.schema.ts`), rfc:0039.
+ */
 export type OpenApiFiles = {
   readonly schema: string;
   readonly service: string;

@@ -1,11 +1,11 @@
 // Spec: k.scaffold, clause "Each generator run in a fresh project leaves `keel check` and `keel test` clean."
 // Real: each generator's tree is materialized and the actual `keel` binary runs `check` and `test` on it.
 // Extra cases keep the relative-import proxy (every relative import resolves to a file in the tree).
-// Blocked (RFC 0036): the k.services spec path `api.schema.ts` exporting `OrdersApi` (what `@keel/services/openapi`
-// emits) is E1752 under k.check; the service case is skipped until a k.services/k.check RFC names the file.
+// Service (RFC 0039): `modules/orders/OrdersApi.schema.ts` exporting `OrdersApi` and `api.ts` exporting `api` satisfy
+// E1752; the case runs both on the in-process placement and on the real `keel scaffold service --openapi` output.
 import { afterAll, describe, expect, it } from "vitest";
-import { type Files, SERVICE_INPUT, apply, fresh, withStoreCart } from "./fixtures.ts";
-import { type CliRecord, cleanup, keel, materialize } from "./keel-cli.ts";
+import { type Files, SERVICE_INPUT, apply, fresh, withOpenApi, withStoreCart } from "./fixtures.ts";
+import { type CliRecord, cleanup, keel, materialize, readTree } from "./keel-cli.ts";
 
 function unresolved(files: Files): string[] {
   const bad: string[] = [];
@@ -65,6 +65,10 @@ function counts(r: CliRecord | undefined): Record<string, unknown> {
 function clean(tree: Files): void {
   const dir = materialize(tree);
   dirs.push(dir);
+  cleanDir(dir, [...tree.keys()].filter((p) => /\.test\.tsx?$/.test(p)).length);
+}
+
+function cleanDir(dir: string, testFiles: number): void {
   const diags = (rs: CliRecord[]) => JSON.stringify(rs.filter((r) => r.kind === "diag"));
   const check = keel(dir, ["check"]);
   const checkSummary = summaryOf(check.records, "check");
@@ -80,7 +84,6 @@ function clean(tree: Files): void {
   expect(test.status, detail).toBe(0);
   expect(testSummary?.ok, detail).toBe(true);
   expect(counts(testSummary).failed, detail).toBe(0);
-  const testFiles = [...tree.keys()].filter((p) => /\.test\.tsx?$/.test(p)).length;
   expect(Number(counts(testSummary).tests), detail).toBeGreaterThanOrEqual(testFiles);
 }
 
@@ -109,7 +112,17 @@ describe("keel check and keel test are clean after each generator", () => {
   it("service: a fresh project leaves keel check and keel test clean", () => {
     clean(fresh());
   }, 60000);
-  it.skip("service orders with an OpenAPI-generated schema and service source leaves keel check and keel test clean", () => {
+  it("service orders with an OpenAPI-generated schema and service source leaves keel check and keel test clean", () => {
     clean(apply("service", SERVICE_INPUT, fresh()).files);
+  }, 60000);
+  it("keel scaffold service orders --openapi openapi.json in a fresh project leaves keel check and keel test clean", () => {
+    const dir = materialize(withOpenApi());
+    dirs.push(dir);
+    const gen = keel(dir, ["scaffold", "service", "orders", "--openapi", "openapi.json"]);
+    expect(gen.status, JSON.stringify(gen.records)).toBe(0);
+    const tree = readTree(dir);
+    expect(tree.get("modules/orders/OrdersApi.schema.ts")).toMatch(/^export const OrdersApi = endpoints\(/m);
+    expect(tree.get("modules/orders/api.ts")).toContain('import { OrdersApi } from "./OrdersApi.schema.ts";');
+    cleanDir(dir, [...tree.keys()].filter((p) => /\.test\.tsx?$/.test(p)).length);
   }, 60000);
 });

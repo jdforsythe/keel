@@ -238,7 +238,7 @@ export const OrderItemsApi = endpoints({
 `,
         service: `// Generated from OpenAPI by \`keel scaffold service\` (k.services); do not edit.
 import { service } from "@keel/services";
-import { OrderItemsApi } from "./api.schema.ts";
+import { OrderItemsApi } from "./OrderItemsApi.schema.ts";
 
 export const api = service({ base: "https://api.test/v1", schema: OrderItemsApi });
 `,

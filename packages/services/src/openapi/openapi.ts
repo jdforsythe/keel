@@ -45,8 +45,9 @@ function endpointsOf(g: Gen, paths: Readonly<Record<string, unknown>>): [string,
 
 /**
  * Generate the k.services declaration and client for an OpenAPI 3 JSON document (k.services OpenAPI, rfc:0034):
- * `schema` is `api.schema.ts` (`<Name>Api = endpoints({...})`, one endpoint per operation keyed by `operationId`)
- * and `service` is `api.ts` (`api = service({ base: servers[0].url, schema })`). A document outside the supported
+ * `schema` is `<Name>Api.schema.ts` (`<Name>Api = endpoints({...})`, one endpoint per operation keyed by `operationId`;
+ * the filename equals its one export, rfc:0039) and `service` is `api.ts` (`api = service({ base: servers[0].url,
+ * schema })`, importing `./<Name>Api.schema.ts`). A document outside the supported
  * subset is `err` `schema.invalid` with one issue per problem, its path into the doc. Throws only on an invalid `name`.
  */
 export function openapi(doc: unknown, opts: OpenApiOptions): Result<OpenApiFiles, SchemaError> {
@@ -70,7 +71,7 @@ export function openapi(doc: unknown, opts: OpenApiOptions): Result<OpenApiFiles
     1,
   );
   const schema = `${HEADER}import { s } from "@keel/schema";\nimport { endpoints } from "@keel/services";\n\n${consts}${consts === "" ? "" : "\n"}export const ${name} = ${decl};\n`;
-  const service = `${HEADER}import { service } from "@keel/services";\nimport { ${name} } from "./api.schema.ts";\n\nexport const api = service({ base: ${JSON.stringify(base)}, schema: ${name} });\n`;
+  const service = `${HEADER}import { service } from "@keel/services";\nimport { ${name} } from "./${name}.schema.ts";\n\nexport const api = service({ base: ${JSON.stringify(base)}, schema: ${name} });\n`;
   return ok({ schema, service });
 }
 

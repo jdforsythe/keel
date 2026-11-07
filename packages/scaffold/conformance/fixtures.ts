@@ -87,10 +87,10 @@ export function withOrders(): Files {
     [
       `import OrderCard from '${rel(page, card)}'`,
       `import { cart } from '${rel(page, store)}'`,
-      `import { href } from '@keel/router'`,
+      `import { routes } from './routes.ts'`,
       "export default function OrdersPage() {",
       "  const uses = [cart]",
-      `  return { uses, link: href('orders.show', { id: '1' }), card: OrderCard, id: 'OrderCard-root' }`,
+      `  return { uses, link: routes.href('orders.show', { id: '1' }), card: OrderCard, id: 'OrderCard-root' }`,
       "}",
       "",
     ].join("\n"),
@@ -127,7 +127,10 @@ export function withStoreCart(): Files {
 }
 
 export const GENERATED_HEADER = "// Generated from OpenAPI by `keel scaffold service` (k.services); do not edit.";
-/** Sources `@keel/services/openapi` would generate for one GET endpoint, per the k.services spec paths. */
+/**
+ * Sources `@keel/services/openapi` would generate for one GET endpoint of module `orders`, per the k.services spec
+ * paths (rfc:0039): `OrdersApi.schema.ts` exporting `OrdersApi`, and `api.ts` importing it.
+ */
 export const ORDERS_API_SCHEMA = [
   GENERATED_HEADER,
   `import { s } from "@keel/schema";`,
@@ -146,9 +149,58 @@ export const ORDERS_API_SCHEMA = [
 export const ORDERS_API_SERVICE = [
   GENERATED_HEADER,
   `import { service } from "@keel/services";`,
-  `import { OrdersApi } from "./api.schema.ts";`,
+  `import { OrdersApi } from "./OrdersApi.schema.ts";`,
   "",
   `export const api = service({ base: "https://api.example.com", schema: OrdersApi });`,
   "",
 ].join("\n");
 export const SERVICE_INPUT = { id: "orders", schema: ORDERS_API_SCHEMA, service: ORDERS_API_SERVICE };
+/** `<Id>Api`: the declaration name k.services gives module `id` (`orders` -> `OrdersApi`). */
+export const apiName = (id: string): string => `${id.charAt(0).toUpperCase()}${id.slice(1)}Api`;
+/** The same two sources generated for module `id`: `<Id>Api.schema.ts` exporting `<Id>Api`, and `api.ts`. */
+export function serviceInput(id: string): { id: string; schema: string; service: string } {
+  const n = apiName(id);
+  return {
+    id,
+    schema: ORDERS_API_SCHEMA.replaceAll("OrdersApi", n),
+    service: ORDERS_API_SERVICE.replaceAll("OrdersApi", n),
+  };
+}
+/** An OpenAPI 3 document with the one operation of ORDERS_API_SCHEMA, for `keel scaffold service --openapi`. */
+export const ORDERS_OPENAPI = JSON.stringify(
+  {
+    openapi: "3.0.3",
+    info: { title: "orders", version: "1" },
+    servers: [{ url: "https://api.example.com" }],
+    paths: {
+      "/orders/{id}": {
+        get: {
+          operationId: "getOrder",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          responses: {
+            "200": {
+              description: "ok",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["id", "total"],
+                    properties: { id: { type: "string" }, total: { type: "integer" } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  null,
+  2,
+);
+/** fresh() + `openapi.json` (ORDERS_OPENAPI) at the project root. */
+export function withOpenApi(): Files {
+  const f = fresh();
+  f.set("openapi.json", `${ORDERS_OPENAPI}\n`);
+  return f;
+}

@@ -1,7 +1,8 @@
 // Spec: k.scaffold, Generators "`service`: endpoint schemas from OpenAPI and the service file (k.services); schemas are generated, read-only."
 // Spec: k.scaffold, Turbo emission "Generated files are read-only (E1005)."
-// RFC 0036: `service { id: "<module>", schema, service }` places the two sources `@keel/services/openapi` generates at
-// modules/<module>/api.schema.ts and modules/<module>/api.ts. A later operation that would change or delete a file whose
+// RFC 0036, RFC 0039: `service { id: "<module>", schema, service }` places the two sources `@keel/services/openapi`
+// generates at modules/<module>/<Module>Api.schema.ts (filename equals its one export `<Module>Api`, k.check E1752) and
+// modules/<module>/api.ts. A later operation that would change or delete a file whose
 // first line is a generated header (`// Generated`, `// _generated`; `# _generated` is the YAML form, CI only) is refused
 // with E1005, nothing written.
 // seed 1337
@@ -14,6 +15,7 @@ import {
   RUNS,
   SEED,
   SERVICE_INPUT,
+  apiName,
   apply,
   errText,
   fresh,
@@ -21,30 +23,44 @@ import {
   planOf,
   read,
   scaffoldRaw,
+  serviceInput,
   snap,
 } from "./fixtures.ts";
 
 const withModule = (id: string) => apply("module", { id }, fresh()).files;
-const input = (id: string) => ({ id, schema: ORDERS_API_SCHEMA, service: ORDERS_API_SERVICE });
+const input = serviceInput;
 
 describe("scaffold service", () => {
-  it("places the schema source and the service source verbatim at modules/<module>/api.schema.ts and api.ts", () => {
+  it("places the schema source and the service source verbatim at modules/<module>/<Module>Api.schema.ts and api.ts", () => {
     fc.assert(
       fc.property(lowerName, (id) => {
         const before = withModule(id);
-        const out = apply("service", input(id), before);
-        expect(out.created).toEqual([`modules/${id}/api.schema.ts`, `modules/${id}/api.ts`]);
+        const inp = input(id);
+        const out = apply("service", inp, before);
+        const schemaPath = `modules/${id}/${apiName(id)}.schema.ts`;
+        expect(out.created).toEqual([schemaPath, `modules/${id}/api.ts`]);
         expect(out.removed).toEqual([]);
-        expect(read(out.files, `modules/${id}/api.schema.ts`)).toBe(ORDERS_API_SCHEMA);
-        expect(read(out.files, `modules/${id}/api.ts`)).toBe(ORDERS_API_SERVICE);
+        expect(read(out.files, schemaPath)).toBe(inp.schema);
+        expect(read(out.files, `modules/${id}/api.ts`)).toBe(inp.service);
         for (const [p, c] of before) if (!out.changed.includes(p)) expect(out.files.get(p), p).toBe(c);
       }),
       { seed: SEED, numRuns: RUNS },
     );
   });
+  it("each placed file's name equals its one export: OrdersApi.schema.ts exports OrdersApi, api.ts exports api", () => {
+    const out = apply("service", SERVICE_INPUT, fresh()).files;
+    for (const [p, name] of [
+      ["modules/orders/OrdersApi.schema.ts", "OrdersApi"],
+      ["modules/orders/api.ts", "api"],
+    ] as const)
+      expect(
+        [...read(out, p).matchAll(/^export const (\w+)/gm)].map((m) => m[1]),
+        p,
+      ).toEqual([name]);
+  });
   it("both placed sources start with the generated header", () => {
     const out = apply("service", SERVICE_INPUT, fresh()).files;
-    for (const p of ["modules/orders/api.schema.ts", "modules/orders/api.ts"])
+    for (const p of ["modules/orders/OrdersApi.schema.ts", "modules/orders/api.ts"])
       expect(read(out, p).split("\n")[0], p).toBe(GENERATED_HEADER);
   });
   it("service --dry-run (plan) yields exactly the edit set the following apply writes", () => {
@@ -93,8 +109,8 @@ describe("service rules", () => {
       { seed: SEED, numRuns: RUNS },
     );
   });
-  it("E1351: an existing handwritten api.ts or api.schema.ts blocks the service and writes nothing", () => {
-    for (const existing of ["modules/orders/api.ts", "modules/orders/api.schema.ts"]) {
+  it("E1351: an existing handwritten api.ts or OrdersApi.schema.ts blocks the service and writes nothing", () => {
+    for (const existing of ["modules/orders/api.ts", "modules/orders/OrdersApi.schema.ts"]) {
       const f = fresh();
       f.set(existing, "export const handwritten = 1;\n");
       const before = snap(f);
@@ -123,12 +139,12 @@ describe("generated schemas are read-only (E1005)", () => {
     expect(snap(f)).toBe(before);
   };
 
-  it("add-field to a schema in a placed api.schema.ts is refused with E1005 and writes nothing", () => {
+  it("add-field to a schema in a placed OrdersApi.schema.ts is refused with E1005 and writes nothing", () => {
     const schema = ORDERS_API_SCHEMA.replace("export const OrdersApi", `${ORDER}\nexport const OrdersApi`);
     const f = apply("service", { id: "orders", schema, service: ORDERS_API_SERVICE }, fresh()).files;
     refuses("add-field", { schema: "Order", field: "note", type: "string.optional" }, f);
   });
-  it("rename of a schema declared in a placed api.schema.ts is refused with E1005 and writes nothing", () => {
+  it("rename of a schema declared in a placed OrdersApi.schema.ts is refused with E1005 and writes nothing", () => {
     const schema = ORDERS_API_SCHEMA.replace("export const OrdersApi", `${ORDER}\nexport const OrdersApi`);
     const f = apply("service", { id: "orders", schema, service: ORDERS_API_SERVICE }, fresh()).files;
     refuses("rename", { kind: "schema", from: "Order", to: "Invoice" }, f);
@@ -139,12 +155,12 @@ describe("generated schemas are read-only (E1005)", () => {
       refuses("rename", { kind: "schema", from: "Order", to: "Invoice" }, withGenerated(header));
     });
   }
-  it("operations that do not touch the placed sources leave api.schema.ts and api.ts byte-identical", () => {
+  it("operations that do not touch the placed sources leave OrdersApi.schema.ts and api.ts byte-identical", () => {
     fc.assert(
       fc.property(lowerName, (n) => {
         const f = apply("service", SERVICE_INPUT, fresh()).files;
         const out = apply("store", { id: `orders.${n}` }, f).files;
-        expect(out.get("modules/orders/api.schema.ts")).toBe(ORDERS_API_SCHEMA);
+        expect(out.get("modules/orders/OrdersApi.schema.ts")).toBe(ORDERS_API_SCHEMA);
         expect(out.get("modules/orders/api.ts")).toBe(ORDERS_API_SERVICE);
       }),
       { seed: SEED, numRuns: RUNS },

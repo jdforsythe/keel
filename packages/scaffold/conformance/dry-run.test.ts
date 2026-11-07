@@ -1,6 +1,7 @@
 // Spec: k.scaffold, clause "`--dry-run` writes nothing and prints exactly the diff a following apply writes."
 // In-process: plan == apply. Printed form: the real `keel` binary prints unified diffs; an independent applier
 // (unified-diff.ts) applies them to the before-tree and the result must equal what the following real apply writes.
+// Both forms cover every generator and codemod, transaction and service included (RFC 0039).
 import { describe, expect, it } from "vitest";
 import {
   type Files,
@@ -9,6 +10,7 @@ import {
   fresh,
   planOf,
   snap,
+  withOpenApi,
   withOrders,
   withSchema,
   withStoreCart,
@@ -76,6 +78,12 @@ const cli: [string, string[], () => Files][] = [
     "codemod add-field Order note string.optional",
     ["codemod", "add-field", "Order", "note", "string.optional"],
     () => withSchema(true),
+  ],
+  ["scaffold transaction orders.cart.addItem", ["scaffold", "transaction", "orders.cart.addItem"], withStoreCart],
+  [
+    "scaffold service orders --openapi openapi.json",
+    ["scaffold", "service", "orders", "--openapi", "openapi.json"],
+    withOpenApi,
   ],
 ];
 

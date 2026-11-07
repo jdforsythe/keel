@@ -9,7 +9,7 @@ import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { api } from "./fixtures/openapi/api.ts";
 // seed 1337 (every fast-check run below passes { seed: 1337 }); no wall clock, no Math.random.
-// `fixtures/openapi/api.schema.ts` and `fixtures/openapi/api.ts` are generated from `fixtures/orders.openapi.json`
+// `fixtures/openapi/OrdersApi.schema.ts` and `fixtures/openapi/api.ts` are generated from `fixtures/orders.openapi.json`
 // by `openapi(doc, { name: "orders" })` and committed; the first test pins them byte-for-byte.
 // UNSPECIFIED (not tested): the decoded value of a 204 with no body under `s.json()`; deleteOrder is served a 200 JSON body.
 
@@ -125,7 +125,7 @@ describe("k.services: the client generated from the OpenAPI fixture", () => {
     const r = openapi(doc, { name: "orders" });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.value.schema).toBe(readFileSync(here("./fixtures/openapi/api.schema.ts"), "utf8"));
+    expect(r.value.schema).toBe(readFileSync(here("./fixtures/openapi/OrdersApi.schema.ts"), "utf8"));
     expect(r.value.service).toBe(readFileSync(here("./fixtures/openapi/api.ts"), "utf8"));
   });
 
