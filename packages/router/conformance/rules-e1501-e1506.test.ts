@@ -1,13 +1,17 @@
 // @vitest-environment happy-dom
 // Spec: k.router, clause "Each of E1501-E1506 has a fixture that triggers it and a clean counterpart." (RFC 0020)
-// E1501 is a type-level rule (a string for Href is a TS error reported under E1501, k.check), checked here by tsc.
+// E1501 has two halves. `navigate` with a string is type-only in this package (a TS error reported under E1501,
+// k.check), asserted here with type-level checks. Literal URL attributes and `Link to` are diagnosed by the compiler
+// (URL policy, k.compiler, RFC 0030), asserted through the public `compile`. Property seed: 1337.
 // E1502-E1506: `manifest` throws an Error whose `code` is the rule; `<Form>` throws E1505; an unknown guard name
 // fails the route at navigation with a message naming E1506. Each trigger has a clean counterpart.
+import { compile } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
 import { Form, type Href, action, createRouter, guard, href, loader, manifest } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { ok } from "@keel/schema";
+import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { SEED, el, idOf, memoryHistory, settle } from "./fixtures.ts";
 
@@ -28,6 +32,30 @@ const codeOf = (fn: () => unknown): unknown => {
   return null;
 };
 
+type CompileRoutes = NonNullable<Parameters<typeof compile>[1]>["routes"];
+const showRoutes: CompileRoutes = {
+  "orders.show": {
+    path: "/orders/:id",
+    params: {},
+    search: {},
+    actions: [],
+    layout: null,
+    guard: null,
+    module: "orders",
+  },
+};
+const LINK_IMPORT = `import { Link } from "@keel/ui"\n`;
+const e1501 = (jsx: string, opts: { routes?: CompileRoutes; link?: boolean } = {}) =>
+  compile(
+    [
+      {
+        path: "C.tsx",
+        source: `${opts.link === true ? LINK_IMPORT : ""}import { href } from "@keel/router"\nexport default function C(p: { id: string }) { const id = p.id; return <div>${jsx}</div> }`,
+      },
+    ],
+    opts.routes === undefined ? undefined : { routes: opts.routes },
+  ).diagnostics.filter((d) => d.code === "E1501");
+
 describe("k.router rules", () => {
   it("E1501 string path where an Href is required", () => {
     const clean: Navigate = href("app.home");
@@ -36,6 +64,46 @@ describe("k.router rules", () => {
     expectTypeOf<string>().not.toMatchTypeOf<Href>();
     expectTypeOf<"/orders/1">().not.toMatchTypeOf<Href>();
     expectTypeOf<string>().not.toMatchTypeOf<Navigate>();
+  });
+
+  it("E1501 a literal path in href, action, formaction or Link to is exactly one diagnostic; a relative literal matching a route pattern too", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(
+          { jsx: `<a id="a" href="/orders">x</a>`, link: false },
+          { jsx: `<form id="f" action="/orders"></form>`, link: false },
+          { jsx: `<button id="b" formaction="/orders/7">x</button>`, link: false },
+          { jsx: `<Link id="l" to="/orders">x</Link>`, link: true },
+        ),
+        (c) => {
+          expect(e1501(c.jsx, { link: c.link })).toHaveLength(1);
+          expect(e1501(c.jsx, { link: c.link, routes: showRoutes })).toHaveLength(1);
+        },
+      ),
+      { seed: SEED, numRuns: 20 },
+    );
+    expect(e1501(`<a id="a" href="orders/7">x</a>`, { routes: showRoutes })).toHaveLength(1);
+  });
+
+  it("E1501 clean counterparts: href() expressions, #frag, absolute URL, and a relative literal matching no pattern have zero diagnostics", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(
+          { jsx: `<a id="a" href={href("orders.show", { id })}>x</a>`, link: false },
+          { jsx: `<form id="f" action={href("orders.show", { id })}></form>`, link: false },
+          { jsx: `<button id="b" formaction={href("orders.show", { id })}>x</button>`, link: false },
+          { jsx: `<Link id="l" to={href("orders.show", { id })}>x</Link>`, link: true },
+          { jsx: `<a id="a" href="#frag">x</a>`, link: false },
+          { jsx: `<a id="a" href="https://x.test/orders">x</a>`, link: false },
+          { jsx: `<a id="a" href="docs/guide.pdf">x</a>`, link: false },
+        ),
+        (c) => {
+          expect(e1501(c.jsx, { link: c.link })).toEqual([]);
+          expect(e1501(c.jsx, { link: c.link, routes: showRoutes })).toEqual([]);
+        },
+      ),
+      { seed: SEED, numRuns: 20 },
+    );
   });
 
   it("E1502 two routes with the same path pattern (param names do not distinguish them)", () => {
@@ -75,6 +143,16 @@ describe("k.router rules", () => {
     expect(codeOf(() => manifest(bad("post")))).toBe("E1505");
     expect(codeOf(() => manifest(bad("POST")))).toBeNull();
     expect(codeOf(() => manifest(bad("DELETE")))).toBeNull();
+  });
+
+  it("E1505 <Form method> outside POST/PUT/PATCH/DELETE", () => {
+    manifest({ "m.show": { path: "/m/:id", params: Id, actions: { POST: post }, component: page } });
+    const id = idOf("1");
+    const callForm = (method: string): unknown =>
+      Reflect.apply(Form, undefined, [{ method, action: "m.show", params: { id }, children: () => [] }]);
+    expect(codeOf(() => callForm("GET"))).toBe("E1505");
+    expect(codeOf(() => callForm("post"))).toBe("E1505");
+    expect(codeOf(() => callForm("POST"))).toBeNull();
   });
 
   it("E1505 <Form method> not declared on the target route", () => {

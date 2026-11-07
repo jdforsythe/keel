@@ -17,6 +17,9 @@ describe("k.router loader errors", () => {
     expect(app.host.querySelector('[data-page="orders.show"]')).toBeNull();
     expect(app.host.querySelector('[data-layout="app.shell"]')).not.toBeNull();
     expect(app.host.querySelector('[data-layout="orders.shell"]')).not.toBeNull();
+    const layout = app.host.querySelector('[data-layout="orders.shell"]');
+    expect(layout?.contains(shown ?? null)).toBe(true);
+    expect(app.host.querySelector('[data-layout="app.shell"]')?.contains(layout ?? null)).toBe(true);
     app.stop();
   });
   it("when the failing route has no errorElement, the nearest layout errorElement renders and layouts above it stay", async () => {
@@ -27,6 +30,7 @@ describe("k.router loader errors", () => {
     expect(shown?.getAttribute("data-code")).toBe("orders.broken");
     expect(app.host.querySelector('[data-page="orders.bare"]')).toBeNull();
     expect(app.host.querySelector('[data-layout="app.shell"]')).not.toBeNull();
+    expect(app.host.querySelector('[data-layout="app.shell"]')?.contains(shown ?? null)).toBe(true);
     app.stop();
   });
   it("a loader ok renders the route component and no errorElement (clean counterpart)", async () => {

@@ -14,6 +14,7 @@ describe("k.server", () => {
         const { app, n } = await build({ act: () => ok(target) });
         const res = await app.fetch(post(`/orders/${from}`, { kind: from, note: "n" }));
         expect(res.status).toBe(303);
+        expect(res.headers.get("location")).toBe(String(target));
         expect(new URL(res.headers.get("location") ?? "", BASE).pathname).toBe(`/orders/${to}`);
         expect(n.act).toBe(1);
       }),

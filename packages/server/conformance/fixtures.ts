@@ -25,6 +25,8 @@ export interface AppOptions {
   ctx: unknown;
   mode?: Mode;
   guards?: unknown;
+  log?: { format: "compact" | "json"; write(line: string): void };
+  maxBodyBytes?: number;
 }
 export type CreateApp = (o: AppOptions) => App | Promise<App>;
 
@@ -90,7 +92,7 @@ function el(tag: string, attrs: Record<string, string>, ...kids: (Node | string)
   return e;
 }
 
-export async function build(b: Behavior, mode: Mode = "production") {
+export async function build(b: Behavior, mode: Mode = "production", extra: Partial<AppOptions> = {}) {
   const n: Counts = { show: 0, shell: 0, root: 0, act: 0, component: 0 };
   const rootLoader = loader({ output: Page }, () => {
     n.root++;
@@ -139,6 +141,7 @@ export async function build(b: Behavior, mode: Mode = "production") {
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode,
     guards: [auth],
+    ...extra,
   });
   return { app, n, routes, href };
 }

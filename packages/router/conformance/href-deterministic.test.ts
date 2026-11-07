@@ -40,6 +40,25 @@ describe("k.router href", () => {
       opts,
     );
   });
+  it("href omits absent optional search keys on orders.show", () => {
+    fc.assert(
+      fc.property(
+        gen(OrderParams).filter((p) => usableId(p.id)),
+        gen(ShowSearch),
+        (p, q) => {
+          const h = String(href("orders.show", p, q));
+          const keys = [...url(h).searchParams.keys()];
+          expect(String(href("orders.show", p, { tab: q.tab }))).toBe(h);
+          if (q.tab === undefined) {
+            expect(keys).toEqual([]);
+            expect(url(h).search).toBe("");
+            expect(h).toBe(String(href("orders.show", p)));
+          } else expect(keys).toEqual(["tab"]);
+        },
+      ),
+      opts,
+    );
+  });
   it("href encodes params by schema then URL-encodes them", () => {
     fc.assert(
       fc.property(

@@ -10,7 +10,8 @@ describe("k.router search parsing", () => {
     const app = await start("/");
     app.history.external("/orders/7?tab=bogus&x=1");
     await settle();
-    expect(now(app.router)).toMatchObject({ id: "orders.show", params: { id: "7" }, search: {} });
+    expect(now(app.router)).toMatchObject({ id: "orders.show", params: { id: "7" } });
+    expect(now(app.router).search).toEqual({});
     expect(now(app.router).pending).toBe(false);
     app.stop();
   });
@@ -23,7 +24,8 @@ describe("k.router search parsing", () => {
         async (bad, key) => {
           app.history.external(`/orders/7?tab=${bad}&${key}=1`);
           await settle();
-          expect(now(app.router)).toMatchObject({ id: "orders.show", search: {} });
+          expect(now(app.router)).toMatchObject({ id: "orders.show" });
+          expect(now(app.router).search).toEqual({});
         },
       ),
       { seed: SEED, numRuns: 100 },

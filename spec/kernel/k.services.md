@@ -1,5 +1,5 @@
 # k.services: Thin services
-status: implemented
+status: conformance-covered
 
 **API.**
 ```ts
@@ -28,6 +28,8 @@ const r = await api.getOrder({ params: { id } }, ctx) // Result<Order, ApiError>
 The client never throws; every failure is an `err`.
 
 **Encoding.** Path params are URL-encoded; `query` is encoded by its schema; `body` is JSON by its schema. Every request sends `accept: application/json` and `x-keel: 1` (the k.server same-site proof, RFC 0022). Responses decode with `output`.
+
+**OpenAPI** (rfc:0034). `openapi(doc, { name })` from `@keel/services/openapi` (build time; `keel scaffold service` writes its output) returns `Result<{ schema, service }, SchemaError>`: the sources of `api.schema.ts` (`<Name>Api = endpoints({...})`, one endpoint per operation keyed by its `operationId`, in document order) and `api.ts` (`api = service({ base: servers[0].url, schema })`). From OpenAPI 3 JSON: `{name}` path segments become `:name`; `path` and `query` parameters become `params` and `query` objects (query fields optional unless `required`); a JSON request body is `body`; the lowest 2xx JSON response is `output` (none: `s.json()`); every other numeric status with a JSON body is in `errors`. Schemas: `string` (`minLength`/`maxLength`), `integer` and `number` (`minimum`/`maximum`), `boolean`, `array`, `object` (keys outside `required` optional; `additionalProperties: false` closes it; `additionalProperties` alone is `record`), string `enum`, `const`, `nullable: true` or `type: [T, 'null']`, `oneOf`/`anyOf` (member union), local refs (`#/components/schemas/<Name>` becomes a file-local `const <Name>`, others are inlined); anything else is `s.json()`. A doc outside this subset (no `paths`, a missing or non-identifier `operationId`, a missing or relative server URL, a cyclic ref) is `err`, with issue paths into the doc.
 
 **Not here** (stdlib): retries, caching, auth and token refresh, interceptors.
 

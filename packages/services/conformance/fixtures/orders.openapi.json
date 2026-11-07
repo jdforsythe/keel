@@ -1,0 +1,225 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Orders", "version": "1.0.0" },
+  "servers": [{ "url": "https://api.example.com" }, { "url": "https://staging.example.com" }],
+  "paths": {
+    "/orders": {
+      "get": {
+        "operationId": "listOrders",
+        "parameters": [
+          { "name": "customer", "in": "query", "required": true, "schema": { "type": "string", "minLength": 1 } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "paid", "shipped"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["items"],
+                  "properties": {
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/Order" } },
+                    "next": { "type": "string", "nullable": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOrder",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewOrder" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } }
+          },
+          "409": {
+            "description": "conflict",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Conflict" } } }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "operationId": "getOrder",
+        "parameters": [{ "name": "expand", "in": "query", "schema": { "type": "boolean" } }],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } }
+          },
+          "404": {
+            "description": "missing",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotFound" } } }
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceOrder",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewOrder" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } }
+          },
+          "404": {
+            "description": "missing",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotFound" } } }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchOrder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": { "type": ["string", "null"] },
+                  "flags": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": { "gift": { "type": "boolean" }, "rush": { "type": "boolean" } }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } }
+          },
+          "409": {
+            "description": "conflict",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Conflict" } } }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteOrder",
+        "parameters": [{ "name": "force", "in": "query", "required": true, "schema": { "type": "boolean" } }],
+        "responses": {
+          "204": { "description": "deleted" },
+          "404": {
+            "description": "missing",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotFound" } } }
+          }
+        }
+      }
+    },
+    "/orders/{id}/notes/{noteId}": {
+      "get": {
+        "operationId": "getNote",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "noteId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["text"],
+                  "properties": { "text": { "type": "string", "maxLength": 200 } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Address": {
+        "type": "object",
+        "required": ["street", "city"],
+        "properties": {
+          "street": { "type": "string", "minLength": 1 },
+          "city": { "type": "string" },
+          "zip": { "type": "string" }
+        }
+      },
+      "Line": {
+        "type": "object",
+        "required": ["sku", "qty"],
+        "properties": {
+          "sku": { "type": "string" },
+          "qty": { "type": "integer", "minimum": 1, "maximum": 1000 }
+        }
+      },
+      "Card": {
+        "type": "object",
+        "required": ["cardNumber"],
+        "properties": { "cardNumber": { "type": "string" } }
+      },
+      "Wire": {
+        "type": "object",
+        "required": ["iban"],
+        "properties": { "iban": { "type": "string" } }
+      },
+      "NewOrder": {
+        "type": "object",
+        "required": ["customer", "lines", "shipTo"],
+        "properties": {
+          "customer": { "type": "string" },
+          "lines": { "type": "array", "items": { "$ref": "#/components/schemas/Line" } },
+          "shipTo": { "$ref": "#/components/schemas/Address" },
+          "note": { "type": "string", "nullable": true }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": ["id", "status", "customer", "lines", "shipTo", "note", "total"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "paid", "shipped"] },
+          "customer": { "type": "string" },
+          "lines": { "type": "array", "items": { "$ref": "#/components/schemas/Line" } },
+          "shipTo": { "$ref": "#/components/schemas/Address" },
+          "note": { "type": "string", "nullable": true },
+          "nickname": { "type": ["string", "null"] },
+          "total": { "type": "number", "minimum": 0 },
+          "paid": { "type": "boolean" },
+          "meta": { "additionalProperties": { "type": "string" } },
+          "flags": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "gift": { "type": "boolean" } }
+          },
+          "payment": { "oneOf": [{ "$ref": "#/components/schemas/Card" }, { "$ref": "#/components/schemas/Wire" }] }
+        }
+      },
+      "NotFound": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string" } }
+      },
+      "Conflict": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string", "enum": ["stale", "duplicate"] },
+          "current": { "$ref": "#/components/schemas/Order" }
+        }
+      }
+    }
+  }
+}

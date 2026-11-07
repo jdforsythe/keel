@@ -1,6 +1,6 @@
 # @keel/router
 
-**Spec:** k.router · **Status:** implemented · **verified:** (none)
+**Spec:** k.router · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

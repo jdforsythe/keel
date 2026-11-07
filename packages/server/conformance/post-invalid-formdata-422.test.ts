@@ -9,6 +9,10 @@ const word = fc
   .array(fc.constantFrom(..."abcdefghjkmnpqrstuvwxyz"), { minLength: 6, maxLength: 12 })
   .map((a) => a.join(""));
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
 describe("k.server", () => {
   it("A POST with invalid FormData returns 422, does not call the action, and lists the field errors", async () => {
     const { app, n } = await build({});
@@ -17,12 +21,22 @@ describe("k.server", () => {
         word.filter((w) => !kinds.some((k) => k === w)),
         word,
         async (badKind, note) => {
-          const res = await app.fetch(post("/orders/open", { kind: badKind, note }, { accept: "application/json" }));
+          const res = await app.fetch(
+            post("/orders/open", { kind: badKind, note }, { accept: "application/json", "x-keel": "1" }),
+          );
           expect(res.status).toBe(422);
           const json: unknown = await res.json();
-          const text = JSON.stringify(json);
-          expect(text).toContain("keel.fields");
-          expect(text).toContain("kind");
+          expect(isRecord(json) && json["ok"]).toBe(false);
+          const error = isRecord(json) ? json["error"] : undefined;
+          expect(isRecord(error) && error["code"]).toBe("keel.fields");
+          const data = isRecord(error) ? error["data"] : undefined;
+          expect(isRecord(data)).toBe(true);
+          if (!isRecord(data)) return;
+          const msg = data["kind"];
+          expect(typeof msg).toBe("string");
+          expect(typeof msg === "string" && msg.length > 0).toBe(true);
+          expect(Object.hasOwn(data, "note")).toBe(false);
+          expect(Object.keys(data)).toEqual(["kind"]);
           expect(n.act).toBe(0);
         },
       ),

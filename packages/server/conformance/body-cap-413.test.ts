@@ -38,7 +38,7 @@ function formReq(note: string): Request {
   const fd = new FormData();
   fd.set("kind", "open");
   fd.set("note", note);
-  return new Request(`${BASE}/orders/open`, { method: "POST", body: fd });
+  return new Request(`${BASE}/orders/open`, { method: "POST", body: fd, headers: { accept: "application/json" } });
 }
 function jsonReq(note: string): Request {
   return new Request(`${BASE}/orders/open`, {
@@ -48,13 +48,17 @@ function jsonReq(note: string): Request {
   });
 }
 
-async function code(res: Response): Promise<unknown> {
+async function errorOf(res: Response): Promise<{ code: unknown; limit: unknown }> {
   const body: unknown = await res.json();
   if (typeof body === "object" && body !== null && "error" in body) {
     const e: unknown = body.error;
-    if (typeof e === "object" && e !== null && "code" in e) return e.code;
+    if (typeof e === "object" && e !== null && "code" in e) {
+      const d: unknown = "data" in e ? e.data : undefined;
+      const limit = typeof d === "object" && d !== null && "limit" in d ? d.limit : undefined;
+      return { code: e.code, limit };
+    }
   }
-  return body;
+  return { code: body, limit: undefined };
 }
 
 test("A FormData action body over `maxBodyBytes` yields 413 `keel.payloadTooLarge` and does not call the action", async () => {
@@ -63,6 +67,9 @@ test("A FormData action body over `maxBodyBytes` yields 413 `keel.payloadTooLarg
       const { app, n } = await setup(100);
       const res = await app.fetch(formReq("x".repeat(extra)));
       expect(res.status).toBe(413);
+      const e = await errorOf(res);
+      expect(e.code).toBe("keel.payloadTooLarge");
+      expect(e.limit).toBe(100);
       expect(n.act).toBe(0);
     }),
     { seed: 1337, numRuns: 5 },
@@ -75,7 +82,9 @@ test("A JSON action body over `maxBodyBytes` yields 413 `keel.payloadTooLarge` a
       const { app, n } = await setup(100);
       const res = await app.fetch(jsonReq("x".repeat(extra)));
       expect(res.status).toBe(413);
-      expect(await code(res)).toBe("keel.payloadTooLarge");
+      const e = await errorOf(res);
+      expect(e.code).toBe("keel.payloadTooLarge");
+      expect(e.limit).toBe(100);
       expect(n.act).toBe(0);
     }),
     { seed: 1337, numRuns: 5 },
@@ -93,5 +102,8 @@ test("Without `maxBodyBytes` a body just over 1 MiB is 413", async () => {
   const { app, n } = await setup(undefined);
   const res = await app.fetch(jsonReq("x".repeat(1048576)));
   expect(res.status).toBe(413);
+  const e = await errorOf(res);
+  expect(e.code).toBe("keel.payloadTooLarge");
+  expect(e.limit).toBe(1048576);
   expect(n.act).toBe(0);
 });

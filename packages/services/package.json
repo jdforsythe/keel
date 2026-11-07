@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./openapi": {
+      "types": "./src/openapi/index.ts",
+      "default": "./src/openapi/index.ts"
     }
   },
   "files": ["dist"],
@@ -21,6 +25,7 @@
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@keel/check": "workspace:*",
     "@keel/tooling": "workspace:*",
     "fast-check": "^3"
   }

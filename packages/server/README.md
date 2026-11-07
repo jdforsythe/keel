@@ -1,6 +1,6 @@
 # @keel/server
 
-**Spec:** k.server · **Status:** proposed · **verified:** (none)
+**Spec:** k.server · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

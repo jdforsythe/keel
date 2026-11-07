@@ -1,5 +1,5 @@
 # k.server: Thin server
-status: implemented
+status: conformance-covered
 
 **API.** Hono underneath; app code sees only `topology`, `undoOwn`, and `canUndoOwn` from `@keel/server`; `loader` and `action` are declared by `@keel/router` (they run in-process in a client-only deployable) and the server executes them over HTTP.
 ```ts
@@ -26,7 +26,7 @@ export default topology({ web: { modules: ['app', 'orders'], adapter: 'node' } }
 ```
 Each deployable builds to one artifact. Adapters: `node` (Hono on Node; renders without a DOM global), `static` (prerendered HTML only), and `client` (no server: loaders and actions run in the browser, the compiler generates the entry that calls `mount(App, el)` with the router's `App`, and `ctx` is `createCtx({ mode: 'real' })`; golden app 1 uses it). Local only: a deployable's modules run in one process; calls between deployables are stdlib (split topology).
 
-**Dev server.** `keel dev`: Vite and Hono in one process, HMR, real `ctx`. Log stream on stdout per OUTPUT.md, one record per event: `req` (compact `GET /orders/7 orders.show 200 12ms`), `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. In dev it also serves `/__keel/inspect`, gated as k.cli Inspect states.
+**Dev server.** `keel dev`: Vite and Hono in one process, HMR, real `ctx`. Log stream on stdout per OUTPUT.md, one record per event: `req` (compact `GET /orders/7 orders.show 200 12ms`), `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. `createApp({ log: { format: 'compact' | 'json', write } })` writes the stream, one line per `write`; the dev entry passes stdout (rfc:0034). In dev it also serves `/__keel/inspect`, gated as k.cli Inspect states.
 
 **Rules.** E1551 `loader` or `action` declared outside a `*.server.ts` file (in a client-only deployable those files are bundled to the browser; E1551 still applies) · E1552 topology names an unknown module or one module in two deployables · E1553 `static` deployable contains a route with params or actions · E1554 loader data fails its output schema (dev diagnostic; 500 in production).
 
