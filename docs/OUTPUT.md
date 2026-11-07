@@ -24,10 +24,10 @@ Fields: `code` (stable, E/W/I prefix, never renumbered) · `path:line:col` · `m
 - Every command accepts `--quiet` (trailer only) and `--limit N`.
 - `--verbose` exists; skills say to use it only with a stated reason.
 
-**JSON.** NDJSON: `{"kind":"diag","code":"E1042","path":…,"line":…,"col":…,"message":…,"fix":…,"see":…}` per line, then `{"kind":"summary",…}`.
+**JSON.** NDJSON: `{"kind":"diag","code":"E1042","path":…,"line":…,"col":…,"message":…,"fix":…,"see":…}` per line, then `{"kind":"summary",…}`. Other commands emit their own record kinds (`ledger`, `property`, `example`, `spec.section`, `spec.cite`, `explain.text`, `inspect.section`, `inspect.store`, `scaffold.edit`, `quickfix`, `invalid`, `unparsable`); warnings are `diag` records with a `W` code (W1005, W1556, W1557). With `--limit N` json caps too; otherwise json is uncapped.
 
 **Budgets, enforced in CI** (`tooling/budgets.json`): `keel check` (the real checker, compact) on a copy of golden app 1 with 10 injected errors <= 600 tokens; `keel explain` <= 300, `keel spec --for` <= 400, MCP `tools/list` <= 1,500 tokens; `keel test` with 3 failures <= 400 tokens; `keel spec <section>` <= 1,500 tokens; spec map <= 1,200 tokens. Package size (`size` entries, every package; `platform: "node"` for node-only ones): the package's own code bundled from `src/index.ts` by esbuild, minified, dependencies external, gzipped.
 
 **Internal rule.** Keel's own scripts, runners, and hooks obey this contract from task 0001.
 
-verified: 959a568f16e924fac59329e75c1585fe38d4c00e
+verified: 8cf77e6d77c865912ea3825d0f44447752a22cd0
