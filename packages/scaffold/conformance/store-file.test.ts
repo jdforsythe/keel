@@ -1,4 +1,4 @@
-// Clause: k.scaffold generators — `store`: *.schema.ts, store file, invariant test; k.store: id is <module>.<export>.
+// Spec: k.scaffold, Generators "`store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test."
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, apply, fresh, lowerName, read, word } from "./fixtures.ts";

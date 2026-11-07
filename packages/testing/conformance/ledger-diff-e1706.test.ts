@@ -1,4 +1,5 @@
-// Spec: k.testing, clause "Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706." Seed: 1337.
+// Spec: k.testing, clause "Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706."
+// Seed: 1337.
 import { ledgerDiff } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

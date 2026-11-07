@@ -11,6 +11,8 @@ export const inputs = {
   route: s.object({ id: s.string(), path: s.string(), file: s.string().optional() }),
   component: s.object({ id: s.string() }),
   store: s.object({ id: s.string() }),
+  transaction: s.object({ id: s.string() }),
+  service: s.object({ id: s.string(), schema: s.string(), service: s.string() }),
   rename: s.object({
     kind: s.enum(["component", "store", "route", "schema", "module"]),
     from: s.string(),

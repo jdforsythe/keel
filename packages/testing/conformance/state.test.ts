@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, "state(store) is that store's value; state() is every store keyed by store id." Seed: 1337.
+// Spec: k.testing, Harness "`state(store)` is that store's value; `state()` is every store keyed by store id."
+// Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

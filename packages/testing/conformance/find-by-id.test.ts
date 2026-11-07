@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, "find(id) returns { id, role, name, text, state }, never a DOM node." Seed: 1337.
+// Spec: k.testing, Harness "`find(id)` returns `{ id, role, name, text, state }`, never a DOM node."
+// Seed: 1337.
 import { render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { Button, CartView, cart, simCtx } from "./fixtures.ts";

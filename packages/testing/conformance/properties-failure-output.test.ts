@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, "Failure output (OUTPUT.md)" and clause "A property failing at a seed reports that seed; re-running with `KEEL_SEED` reproduces the same shrunk case." Seed: 1337.
+// Spec: k.testing, clause "A property failing at a seed reports that seed; re-running with `KEEL_SEED` reproduces the same shrunk case."
+// Seed: 1337.
 import { properties } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { SEED, addAny, codeOf, messageOf, thrown } from "./fixtures.ts";
@@ -12,7 +13,7 @@ const withEnv = async <T>(value: string, fn: () => Promise<T>): Promise<T> => {
   try {
     return await fn();
   } finally {
-    if (prev === undefined) delete process.env.KEEL_SEED;
+    if (prev === undefined) Reflect.deleteProperty(process.env, "KEEL_SEED");
     else process.env.KEEL_SEED = prev;
   }
 };

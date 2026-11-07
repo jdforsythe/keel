@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.testing a11y paragraph and k.component clause "a11y tree snapshot stable across re-renders". Seed: 1337.
+// Spec: k.testing, a11y "`a11y(id?)` is built from the live DOM"
+// Spec: k.component, clause "a11y tree snapshot stable across re-renders"
+// Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

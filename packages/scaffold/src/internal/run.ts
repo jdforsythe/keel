@@ -10,7 +10,9 @@ import { opMove } from "./opMove.ts";
 import { opProject } from "./opProject.ts";
 import { opRename } from "./opRename.ts";
 import { opRoute } from "./opRoute.ts";
+import { opService } from "./opService.ts";
 import { opStore } from "./opStore.ts";
+import { opTransaction } from "./opTransaction.ts";
 
 type Impl = (input: unknown, files: ReadonlyMap<string, string>) => Result<Edit, ScaffoldError>;
 
@@ -20,6 +22,8 @@ const OPS: ReadonlyMap<string, Impl> = new Map<Op, Impl>([
   ["route", opRoute],
   ["component", opComponent],
   ["store", opStore],
+  ["transaction", opTransaction],
+  ["service", opService],
   ["rename", opRename],
   ["move", opMove],
   ["add-field", opAddField],

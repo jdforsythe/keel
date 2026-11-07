@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "`a11y()` for `<Button label=\"Save\" disabled />` contains `{ role: 'button', name: 'Save', state: { disabled: true } }`." Seed: 1337.
+// Spec: k.testing, clause "`a11y()` for `<Button label="Save" disabled />` contains `{ role: 'button', name: 'Save', state: { disabled: true } }`."
+// Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

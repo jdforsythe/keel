@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "Inside a harness render, `ctx.clock.now()` returns the sim clock's value, and two runs with one seed produce equal `state()`." Seed: 1337.
+// Spec: k.testing, clause "Inside a harness render, `ctx.clock.now()` returns the sim clock's value, and two runs with one seed produce equal `state()`."
+// Seed: 1337.
+// Spec: k.testing, Harness "**ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim."
 // Default sim: `render` without a `ctx` builds a sim ctx from KEEL_SEED (default 1337); state that depends on the seed is equal for one seed.
 import { type Ctx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
@@ -110,5 +112,92 @@ describe("k.testing: a render without a ctx runs under the default sim", () => {
     const explicit = JSON.stringify(t.state());
     t.dispose();
     expect(viaDefault).toBe(explicit);
+  });
+});
+
+// A component that hands the ctx it received to the test and records the first draws from ctx.random.
+const seen: { ctx: Ctx | undefined; at: number; draws: number[] } = { ctx: undefined, at: -1, draws: [] };
+const ProbeT = template("<p></p>");
+const Probe = Object.assign(
+  (_props: Record<string, never>, _slots?: Slots, ctx?: Ctx): Node => {
+    if (ctx === undefined) throw new Error("fixture: ctx not passed to component");
+    seen.ctx = ctx;
+    seen.at = ctx.clock.now();
+    seen.draws = [ctx.random.float(), ctx.random.float(), ctx.random.float()];
+    return clone(ProbeT);
+  },
+  { Props: s.object({}) },
+);
+
+const advanceOf = (ctx: Ctx): ((ms: number) => void) | undefined => {
+  const clock: object = ctx.clock;
+  if ("advance" in clock && typeof clock.advance === "function") {
+    const fn = clock.advance;
+    return (ms) => Reflect.apply(fn, clock, [ms]);
+  }
+  return undefined;
+};
+
+describe("k.testing: harness renders always use a sim ctx", () => {
+  it("for any KEEL_SEED, a render with no ctx option gets the clock value and random draws of createCtx sim with that seed", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 0, max: 100000 }), async (seed) => {
+        await withSeed(seed, async () => {
+          const t = render(Probe, { props: {} });
+          const ref = createCtx({ mode: "sim", seed });
+          expect(seen.at).toBe(ref.clock.now());
+          expect(seen.draws).toEqual([ref.random.float(), ref.random.float(), ref.random.float()]);
+          t.dispose();
+        });
+      }),
+      { seed: SEED, numRuns: 50 },
+    );
+  });
+
+  it("without KEEL_SEED the draws are those of createCtx sim with seed 1337", async () => {
+    await withSeed(undefined, async () => {
+      const t = render(Probe, { props: {} });
+      const ref = createCtx({ mode: "sim", seed: Number(process.env.KEEL_SEED ?? 1337) });
+      expect(seen.at).toBe(ref.clock.now());
+      expect(seen.draws).toEqual([ref.random.float(), ref.random.float(), ref.random.float()]);
+      t.dispose();
+    });
+  });
+
+  it("the default ctx clock moves only when the test advances it, never by settle", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 1_000_000 }), async (ms) => {
+        const probe = render(Probe, { props: {} });
+        const c = seen.ctx;
+        if (c === undefined) throw new Error("fixture: no ctx seen");
+        const start = c.clock.now();
+        await probe.settle();
+        expect(c.clock.now()).toBe(start);
+        const advance = advanceOf(c);
+        expect(advance).toBeDefined();
+        advance?.(ms);
+        expect(c.clock.now()).toBe(start + ms);
+        await probe.settle();
+        expect(c.clock.now()).toBe(start + ms);
+        probe.dispose();
+      }),
+      { seed: SEED, numRuns: 25 },
+    );
+  });
+
+  it("a ctx created with createCtx() and no mode under KEEL_TEST=1 is sim: it has a movable clock and seeded draws", () => {
+    const prev = process.env.KEEL_TEST;
+    process.env.KEEL_TEST = "1";
+    try {
+      const ctx = createCtx({});
+      const advance = advanceOf(ctx);
+      expect(advance).toBeDefined();
+      const start = ctx.clock.now();
+      advance?.(5);
+      expect(ctx.clock.now()).toBe(start + 5);
+    } finally {
+      if (prev === undefined) Reflect.deleteProperty(process.env, "KEEL_TEST");
+      else process.env.KEEL_TEST = prev;
+    }
   });
 });

@@ -1,4 +1,4 @@
-// Clause: k.scaffold generators — `project`: package.json, tokens.ts, topology.ts, vite.config.ts, module app, generated turbo and CI.
+// Spec: k.scaffold, Generators "`project`: `package.json`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo and CI."
 import { describe, expect, it } from "vitest";
 import { apply, find, read } from "./fixtures.ts";
 

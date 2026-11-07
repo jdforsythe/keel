@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, "Every run records its seed; KEEL_SEED=<n> replays it." Seed: 1337.
+// Spec: k.testing, Properties "Every run records its seed; `KEEL_SEED=<n>` replays it."
+// Seed: 1337.
 import { properties } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -32,7 +33,7 @@ describe("k.testing: property runs record the seed", () => {
     try {
       expect(await properties(addClamped, { runs: 5 })).toMatchObject({ seed: 4021 });
     } finally {
-      if (prev === undefined) delete process.env.KEEL_SEED;
+      if (prev === undefined) Reflect.deleteProperty(process.env, "KEEL_SEED");
       else process.env.KEEL_SEED = prev;
     }
   });

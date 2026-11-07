@@ -1,4 +1,4 @@
-// Clause: k.scaffold codemods — `add-field` adds a field to a schema and to every initial state, fixture, and form `initial` that constructs it.
+// Spec: k.scaffold, Codemods "`add-field` adds a field to a schema and to every initial state, fixture, and form `initial` that constructs it."
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED, apply, lowerName, read, withSchema, word } from "./fixtures.ts";

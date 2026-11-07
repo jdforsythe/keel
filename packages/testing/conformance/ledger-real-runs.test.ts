@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Ledger, clause "An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`." Seed: 1337.
+// Spec: k.testing, clause "An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`."
+// Seed: 1337.
 // Evidence comes from real runs: an example is a test body that actually executed its assertion; the property is the
 // harness's own `properties()` run, whose `{ seed, runs }` result feeds the ledger. No hand-written evidence.
 import { type Evidence, ledger, properties } from "@keel/testing";

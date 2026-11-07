@@ -1,4 +1,4 @@
-// Clause: k.scaffold codemods — `move` relocates a file to another module, updating imports and both manifests.
+// Spec: k.scaffold, Codemods "`move` relocates a file to another module, updating imports and both manifests."
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, apply, find, isGenerated, only, pascalName, read, withOrders } from "./fixtures.ts";

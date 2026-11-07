@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Rules, E1701 DOM selector or DOM query in a test. Seed: 1337.
+// Spec: k.testing, Rules "E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`)"
+// Seed: 1337.
+import { check } from "@keel/check";
 import { render } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -31,5 +33,32 @@ describe("k.testing: E1701 DOM selector or DOM query in a test", () => {
     t.dispose();
   });
 
-  it.skip("E1701 static form (querySelector, getByRole, container in test source) is a check-time lint: untestable at runtime", () => {});
+  it("E1701 static form: querySelector, getByRole and container in a test file are reported, find(id) is not", async () => {
+    const run = async (body: string) => {
+      const source = `import { render } from "@keel/testing"\nimport { expect, it } from "vitest"\nit("x", () => {\n  const t = render(C, { props: {} })\n  ${body}\n})\n`;
+      const r = await check([{ path: "modules/orders/x.test.ts", source }], { types: false });
+      return r.diagnostics.filter((d) => d.code === "E1701");
+    };
+    await fc.assert(
+      fc.asyncProperty(
+        fc.constantFrom(
+          'expect(document.querySelector("#save")).toBeNull()',
+          'expect(screen.getByRole("button")).toBeDefined()',
+          "expect(t.container.firstChild).toBeNull()",
+        ),
+        async (body) => {
+          expect((await run(body)).length).toBeGreaterThan(0);
+        },
+      ),
+      { seed: SEED, numRuns: 30 },
+    );
+    expect(await run('expect(t.find("save").name).toBe("Save")')).toEqual([]);
+  });
+
+  // Skipped (RFC 0036): @keel/check reports `t.container` but not a bare or destructured `container`; a k.check fix.
+  it.skip("E1701 static form: the testing-library idiom `const { container } = render(...)` is reported", async () => {
+    const source = `import { render } from "@keel/testing"\nit("x", () => {\n  const { container } = render(C, { props: {} })\n  expect(container).toBeDefined()\n})\n`;
+    const r = await check([{ path: "modules/orders/x.test.ts", source }], { types: false });
+    expect(r.diagnostics.filter((d) => d.code === "E1701").length).toBeGreaterThan(0);
+  });
 });

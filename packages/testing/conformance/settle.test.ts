@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "after a resource resolves, `await settle()` makes its ready state visible without any event". Seed: 1337.
+// Spec: k.testing, clause "After a resource resolves, `await settle()` makes its ready state visible without any event."
+// Seed: 1337.
 import type { Ctx } from "@keel/ctx";
 import { resource } from "@keel/reactive";
-import { s } from "@keel/schema";
 import { clone, template, text } from "@keel/runtime-dom/ops";
+import { s } from "@keel/schema";
 import { render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { simCtx } from "./fixtures.ts";

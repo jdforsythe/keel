@@ -1,3 +1,4 @@
+import { plan, scaffold } from "@keel/scaffold";
 // Shared harness for k.scaffold conformance. Not a test file.
 // ASSUMED API (one line): every operation is a pure function
 //   scaffold(op, input, files: Map<string,string>) => Result<{ files, created, changed }, KeelError>
@@ -6,7 +7,6 @@
 //   move {name, to}, add-field {schema, field, type, default?}. Error codes are found as substrings of the JSON error.
 // Seed 1337 for all fast-check runs. Generated names carry a "zq"/"Zq" prefix so they cannot collide with template words.
 import fc from "fast-check";
-import { plan, scaffold } from "@keel/scaffold";
 
 export const SEED = 1337;
 export const RUNS = 25;
@@ -88,11 +88,11 @@ export function withOrders(): Files {
       `import OrderCard from '${rel(page, card)}'`,
       `import { cart } from '${rel(page, store)}'`,
       `import { href } from '@keel/router'`,
-      `export default function OrdersPage() {`,
-      `  const uses = [cart]`,
+      "export default function OrdersPage() {",
+      "  const uses = [cart]",
       `  return { uses, link: href('orders.show', { id: '1' }), card: OrderCard, id: 'OrderCard-root' }`,
-      `}`,
-      ``,
+      "}",
+      "",
     ].join("\n"),
   );
   return files;
@@ -120,3 +120,35 @@ export function withSchema(constructors: boolean): Files {
 export function scaffoldRaw(op: Op, input: Input, files: Files) {
   return scaffold(op, input, files);
 }
+
+/** fresh() + store orders.cart (the precondition of `transaction orders.cart.<name>`). */
+export function withStoreCart(): Files {
+  return apply("store", { id: "orders.cart" }, fresh()).files;
+}
+
+export const GENERATED_HEADER = "// Generated from OpenAPI by `keel scaffold service` (k.services); do not edit.";
+/** Sources `@keel/services/openapi` would generate for one GET endpoint, per the k.services spec paths. */
+export const ORDERS_API_SCHEMA = [
+  GENERATED_HEADER,
+  `import { s } from "@keel/schema";`,
+  `import { endpoints } from "@keel/services";`,
+  "",
+  "export const OrdersApi = endpoints({",
+  "  getOrder: {",
+  `    method: "GET",`,
+  `    path: "/orders/:id",`,
+  "    params: s.object({ id: s.string() }),",
+  "    output: s.object({ id: s.string(), total: s.int() }),",
+  "  },",
+  "});",
+  "",
+].join("\n");
+export const ORDERS_API_SERVICE = [
+  GENERATED_HEADER,
+  `import { service } from "@keel/services";`,
+  `import { OrdersApi } from "./api.schema.ts";`,
+  "",
+  `export const api = service({ base: "https://api.example.com", schema: OrdersApi });`,
+  "",
+].join("\n");
+export const SERVICE_INPUT = { id: "orders", schema: ORDERS_API_SCHEMA, service: ORDERS_API_SERVICE };

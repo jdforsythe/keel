@@ -1,4 +1,4 @@
-// "Generated files are read-only (E1005)."
+// Spec: k.scaffold, Turbo emission "Generated files are read-only (E1005)."
 // ASSUMED reading: an edit set that needs to write into a generated location (.keel/, turbo.json, CI) is refused with E1005
 // and nothing is written; operations that add no module/package leave turbo.json and CI workflows byte-identical.
 import { describe, expect, it } from "vitest";

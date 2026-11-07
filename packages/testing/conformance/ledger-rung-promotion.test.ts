@@ -1,4 +1,5 @@
-// Spec: k.testing, clause "An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`." Seed: 1337.
+// Spec: k.testing, clause "An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`."
+// Seed: 1337.
 import { ledger } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

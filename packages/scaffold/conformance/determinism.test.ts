@@ -1,4 +1,4 @@
-// Clause: operations are deterministic — same input twice yields identical output (spec: computed from artifacts, never text search).
+// Spec: k.scaffold, Operations "It computes a complete edit set from the project's artifacts (`.keel/ids.json`, `routes.json`, `deps.json`, module manifests), never from text search, and applies it atomically: all files or none."
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, apply, fresh, lowerName, pascalName, snap, withOrders, withSchema } from "./fixtures.ts";

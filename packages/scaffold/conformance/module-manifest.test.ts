@@ -1,4 +1,4 @@
-// Clause: k.scaffold generators — `module`: modules/<id>/module.ts and routes.ts; adds the module to topology.ts.
+// Spec: k.scaffold, Generators "`module`: `modules/<id>/module.ts` and `routes.ts`; adds the module to `topology.ts`."
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, apply, fresh, lowerName, read, word } from "./fixtures.ts";

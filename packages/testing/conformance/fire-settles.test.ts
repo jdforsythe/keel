@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "`fire` resolves only after every effect and resource it triggered has settled." Seed: 1337.
+// Spec: k.testing, clause "`fire` resolves only after every effect and resource it triggered has settled."
+// Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

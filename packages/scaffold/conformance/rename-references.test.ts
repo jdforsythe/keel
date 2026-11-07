@@ -1,5 +1,5 @@
-// Clauses: "After rename, no import, href() call, uses: entry, or element id references the old name."
-//          "rename A B then rename B A restores a byte-identical tree."
+// Spec: k.scaffold, clause "After `rename`, no import, `href()` call, `uses:` entry, or element id references the old name."
+// Spec: k.scaffold, clause "`rename A B` then `rename B A` restores a byte-identical tree."
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {

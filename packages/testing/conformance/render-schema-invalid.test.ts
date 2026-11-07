@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "`render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering." Seed: 1337.
+// Spec: k.testing, clause "`render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering."
+// Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

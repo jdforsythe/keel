@@ -1,4 +1,4 @@
-// Clause: k.scaffold generators — `route`: manifest entry, *.server.ts loader, page component, route test.
+// Spec: k.scaffold, Generators "`route`: manifest entry, `*.server.ts` loader, page component, route test."
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, apply, esc, lowerName, only, read, withOrders } from "./fixtures.ts";

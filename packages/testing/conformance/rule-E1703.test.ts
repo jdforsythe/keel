@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Rules, E1703 axe violation in a harness render. Seed: 1337.
+// Spec: k.testing, Rules "E1703 axe violation in a harness render"
+// Seed: 1337.
 import { render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { BadImg, Button, codeOf, messageOf, simCtx, thrown } from "./fixtures.ts";

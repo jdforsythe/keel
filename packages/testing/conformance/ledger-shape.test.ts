@@ -1,4 +1,5 @@
-// Spec: k.testing, "keel ledger emits one record { item, rung, evidence } per public export and per spec clause." Seed: 1337.
+// Spec: k.testing, Ledger "`keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence)."
+// Seed: 1337.
 import { ledger } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

@@ -1,4 +1,5 @@
-// Clause: an operation whose edit set would introduce a diagnostic writes no file and reports E1353.
+// Spec: k.scaffold, clause "An operation whose edit set would introduce a diagnostic writes no file and reports E1353."
+// Spec: k.scaffold, Rules "E1353 operation aborted, would break check; nothing written"
 // Scenario: moving OrderCard into catalog while catalog already depends on orders would create a deps cycle (E1153)
 // and orders would import a module not in its deps; the clean counterpart moves it without that dependency.
 import { expect, it } from "vitest";

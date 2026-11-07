@@ -4,22 +4,22 @@ import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { Writes } from "./Writes.ts";
 import { fail } from "./fail.ts";
 import { introduced } from "./introduced.ts";
-import { isGenerated } from "./isGenerated.ts";
+import { readOnlyEdit } from "./readOnlyEdit.ts";
 import { sortedKeys } from "./sortedKeys.ts";
 
 /**
- * Turn pending writes into an edit set: refuse writes into generated locations other than `allowGenerated`
- * (E1005), refuse an edit set that introduces a check diagnostic (E1353), else return the new tree and the
- * sorted created/changed/removed paths. `before` is never mutated.
+ * Turn pending writes into an edit set: refuse writes into generated locations other than `allowGenerated`, or
+ * changes to a file marked generated (E1005, `readOnlyEdit`), refuse an edit set that introduces a check
+ * diagnostic (E1353), else return the new tree and the sorted created/changed/removed paths. `before` is never
+ * mutated.
  */
 export function commit(
   before: ReadonlyMap<string, string>,
   writes: Writes,
   allowGenerated: readonly string[] = [],
 ): Result<Edit, ScaffoldError> {
-  for (const p of sortedKeys(writes.keys()))
-    if (isGenerated(p) && !allowGenerated.includes(p))
-      return fail("E1005", p, `${p} is generated and read-only; the operation would write it`);
+  const ro = readOnlyEdit(before, writes, allowGenerated);
+  if (ro !== null) return fail("E1005", ro, `${ro} is generated and read-only; the operation would write it`);
   const created: string[] = [];
   const changed: string[] = [];
   const removed: string[] = [];
