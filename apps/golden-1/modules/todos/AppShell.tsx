@@ -2,7 +2,7 @@ import type { Ctx } from "@keel/ctx";
 import { computed } from "@keel/reactive";
 import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
-import { Box, Button, Link } from "@keel/ui";
+import { Box, Button, Image, Link, Text } from "@keel/ui";
 import { hydrate } from "./hydrate.ts";
 import { refreshView } from "./refreshView.ts";
 import { routes } from "./routes.ts";
@@ -30,16 +30,49 @@ export default function AppShell(
         .then(() => refreshView(location.origin, ctx));
   };
   return (
-    <Box id="todos.shell" p="3" gap="2" bg="bg" fg="fg">
-      <Box as="nav" id="todos.nav" direction="row" gap="2">
-        <Link id="todos.home" to={routes.href("todos.index")}>
-          Home
-        </Link>
-        <Button id="todos.undo" disabled={empty} onClick={undo}>
-          Undo
-        </Button>
+    <Box id="todos.shell" direction="column" bg="surface" fg="text" font="serif" fontSize="md">
+      <Box
+        as="header"
+        direction={{ base: "column", md: "row" }}
+        align={{ base: "start", md: "center" }}
+        justify="between"
+        gap="3"
+        px={{ base: "3", md: "6" }}
+        py="4"
+      >
+        <Box direction="row" align="center" gap="3">
+          <Image src="/keel-mark.svg" decorative w="mark" h="mark" />
+          <Text fontSize="lg" weight="semibold">
+            Keel
+          </Text>
+          <Text font="mono" fontSize="xs" fg="textSecondary">
+            golden-1 / todos
+          </Text>
+        </Box>
+        <Box as="nav" id="todos.nav" direction="row" align="center" gap="4">
+          <Link id="todos.home" to={routes.href("todos.index")} fg="text">
+            Home
+          </Link>
+          <Button
+            id="todos.undo"
+            disabled={empty}
+            onClick={undo}
+            font="mono"
+            fontSize="sm"
+            px="3"
+            py="2"
+            bg="card"
+            fg="text"
+            border="rule"
+            radius="none"
+            states={{ hover: { bg: "surfaceLow" }, disabled: { fg: "textSecondary", border: "control" } }}
+          >
+            Undo
+          </Button>
+        </Box>
       </Box>
-      <Box as="main" id="todos.main">
+      <Box h="hairline" bg="divider" />
+      <Box as="main" id="todos.main" w={{ md: "measure" }} mx={{ md: "auto" }} px={{ base: "3", md: "4" }} py="6">
         {props.children?.()}
       </Box>
     </Box>

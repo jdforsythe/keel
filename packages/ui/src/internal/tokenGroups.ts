@@ -10,6 +10,7 @@ export const tokenGroups: readonly TokenGroup[] = [
   "fontSize",
   "weight",
   "shadow",
+  "border",
   "breakpoint",
   "motion",
 ];

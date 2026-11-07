@@ -1,4 +1,4 @@
-// Spec: k.server Conformance: `caller` is the sent cookie's token, else a fresh one set as a cookie on a write, else `""`.
+// Spec: k.server, clause "`caller` is the sent cookie's token, else a fresh one set as a cookie on a write, else `""`."
 // Seed 1337. Runs under plain Node: happy-dom strips cookie headers. Only runtime (JSON) requests are used.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";

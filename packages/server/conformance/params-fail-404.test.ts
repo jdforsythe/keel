@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Clause: A GET with params that fail the params schema returns 404 and calls no loader.
+// Spec: k.server, clause "A GET with params that fail the params schema returns 404 and calls no loader."
 // Seed 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

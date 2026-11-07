@@ -19,6 +19,7 @@ export const TokenSchema: Schema<Tokens> = s.object(
     fontSize: scale,
     weight: scale,
     shadow: scale,
+    border: scale,
     breakpoint: scale,
     motion: scale,
   },

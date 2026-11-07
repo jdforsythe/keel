@@ -1,5 +1,5 @@
 // Seed 1337
-// Spec: k.compiler URL policy and Conformance "A literal src=\"logo.png\" is not E1501; href=\"/orders\" is."
+// Spec: k.compiler, clause "A literal `src="logo.png"` is not E1501; `href="/orders"` is."
 import { compile } from "@keel/compiler";
 import fc from "fast-check";
 import { expect, test } from "vitest";

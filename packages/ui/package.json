@@ -11,9 +11,14 @@
     "./css": {
       "types": "./src/css/index.ts",
       "default": "./src/css/index.ts"
-    }
+    },
+    "./brand": {
+      "types": "./src/brand/index.ts",
+      "default": "./src/brand/index.ts"
+    },
+    "./fonts": "./fonts/fonts.css"
   },
-  "files": ["dist"],
+  "files": ["dist", "fonts"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",

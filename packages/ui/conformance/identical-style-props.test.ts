@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.ui Conformance 1. Property seed: 1337.
+// Spec: k.ui, clause "Two elements with identical style props get identical class lists, and the CSS file contains each atomic rule once."
 import { mount } from "@keel/runtime-dom";
 import { Box, Text } from "@keel/ui";
 import type { StyleProps, TokenName } from "@keel/ui";

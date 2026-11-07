@@ -19,17 +19,17 @@ export default function IdsView(props: Infer<typeof Props>) {
         return { id, text: `${id}: ${where}; ${expected}` };
       });
   return (
-    <Box as="section" id="inspector.ids" gap="1">
-      <Heading id="inspector.ids.title" level={2}>
+    <Box as="section" id="inspector.ids" direction="column" gap="4">
+      <Heading id="inspector.ids.title" level={2} fontSize="xl" weight="semibold" m="0">
         Ids and a11y
       </Heading>
-      <Text as="p" id="inspector.ids.counts">
+      <Text as="p" id="inspector.ids.counts" m="0" font="mono" fontSize="sm" fg="textSecondary">
         {`${Object.keys(props.ids).length} ids, ${Object.keys(props.a11y).length} a11y expectations`}
       </Text>
-      <Box as="ul" id="inspector.ids.list">
+      <Box as="ul" id="inspector.ids.list" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
         <For each={rows()} key="id">
           {(r) => (
-            <Box as="li" id={`inspector.id.${r.id}`}>
+            <Box as="li" id={`inspector.id.${r.id}`} direction="row" px="3" py="2" bg="card" font="mono" fontSize="sm">
               {r.text}
             </Box>
           )}

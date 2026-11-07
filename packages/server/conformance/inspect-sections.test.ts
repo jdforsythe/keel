@@ -1,5 +1,5 @@
-// Spec: k.cli, clause "A dev `createApp` serves each registered section as `{ doc, value }`; one whose value fails its
-// schema is `{ doc, error }` with E1057; a second `inspector` with that id throws E1057."
+// Spec: k.cli, clause "A dev `createApp` serves each section as `{ doc, value }`; a value failing its schema is
+// `{ doc, error }` with E1057; a second `inspector` with that id throws E1057."
 // @vitest-environment happy-dom
 // Seed 1337. The inspector registry is process-global: every test uses a unique id.
 import { inspector } from "@keel/compiler/inspect/inspector";

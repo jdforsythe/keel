@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// Spec: k.compiler, clause "A dynamic `href` whose value is `javascript:alert(1)` renders as `about:blank`."
 // Seed 1337 (fc.assert seed below).
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";

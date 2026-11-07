@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Clause: All loaders of a matched chain start before any of them resolves.
+// Spec: k.server, clause "All loaders of a matched chain start before any of them resolves."
 import { describe, expect, it } from "vitest";
 import { ok } from "@keel/schema";
 import { build, deferred, get } from "./fixtures.ts";

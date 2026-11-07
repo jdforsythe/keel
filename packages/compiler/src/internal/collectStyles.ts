@@ -28,6 +28,7 @@ const STYLE_PROPS: readonly string[] = [
   "fontSize",
   "weight",
   "shadow",
+  "border",
   "direction",
   "align",
   "justify",

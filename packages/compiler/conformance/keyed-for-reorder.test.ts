@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// Spec: k.compiler, clause "Reordering a keyed `For` list preserves the DOM node identity of every row."
 // Seed 1337
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";

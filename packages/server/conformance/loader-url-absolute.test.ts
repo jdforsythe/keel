@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.server Conformance: A loader's `url` is the absolute URL of the request it serves.
+// Spec: k.server, clause "A loader's `url` is the absolute URL of the request it serves."
 // Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";

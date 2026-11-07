@@ -1,7 +1,7 @@
 import type { ServerDocument } from "./ServerDocument.ts";
 
 /**
- * The DOM-free server `Node` (k.server): just enough of the DOM tree API for kernel components and
+ * The DOM-free server `Node` (k.server): enough of the DOM tree API for kernel components and
  * `@keel/runtime-dom` ops to build a tree in plain Node and serialize it. Subclasses set `nodeType`.
  */
 export class ServerNode {

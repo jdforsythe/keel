@@ -18,6 +18,7 @@ export const styleProps: readonly StyleProp[] = [
   "fontSize",
   "weight",
   "shadow",
+  "border",
   "direction",
   "align",
   "justify",

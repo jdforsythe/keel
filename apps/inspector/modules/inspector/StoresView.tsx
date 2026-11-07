@@ -19,26 +19,54 @@ export default function StoresView(props: Infer<typeof Props>) {
         return { id, state: st.state, log: st.log.map((e) => ({ ...e, undo: e.id === last })) };
       });
   return (
-    <Box as="section" id="inspector.stores" gap="1">
-      <Heading id="inspector.stores.title" level={2}>
+    <Box as="section" id="inspector.stores" direction="column" gap="4">
+      <Heading id="inspector.stores.title" level={2} fontSize="xl" weight="semibold" m="0">
         Stores
       </Heading>
       <For each={list()} key="id">
         {(st) => (
-          <Box as="section" id={`inspector.store.${st.id}`} gap="1">
-            <Heading id={`inspector.store.${st.id}.title`} level={3}>
+          <Box as="section" id={`inspector.store.${st.id}`} direction="column" gap="2">
+            <Heading id={`inspector.store.${st.id}.title`} level={3} font="mono" fontSize="sm" weight="semibold" m="0">
               {st.id}
             </Heading>
-            <Text as="p" id={`inspector.store.${st.id}.state`} fontSize="sm">
+            <Text
+              as="p"
+              id={`inspector.store.${st.id}.state`}
+              m="0"
+              p="3"
+              bg="surfaceLow"
+              fg="text"
+              font="mono"
+              fontSize="sm"
+            >
               {st.state}
             </Text>
-            <Text as="p" id={`inspector.store.${st.id}.count`}>
+            <Text as="p" id={`inspector.store.${st.id}.count`} m="0" font="mono" fontSize="sm" fg="textSecondary">
               {st.log.length === 0 ? "Log empty: nothing to undo" : `Log: ${st.log.length} entries`}
             </Text>
-            <Box as="ul" id={`inspector.store.${st.id}.log`}>
+            <Box
+              as="ul"
+              id={`inspector.store.${st.id}.log`}
+              direction="column"
+              gap="hairline"
+              bg="divider"
+              border="hairline"
+              p="0"
+              m="0"
+            >
               <For each={st.log} key="id">
                 {(e) => (
-                  <Box as="li" id={`inspector.store.${st.id}.entry.${e.id}`}>
+                  <Box
+                    as="li"
+                    id={`inspector.store.${st.id}.entry.${e.id}`}
+                    direction="row"
+                    px="3"
+                    py="2"
+                    bg="card"
+                    font="mono"
+                    fontSize="sm"
+                    fg={e.undo ? "accent" : "text"}
+                  >
                     {e.undo ? `${e.id} ${e.name} at ${e.at} (undo reverts this)` : `${e.id} ${e.name} at ${e.at}`}
                   </Box>
                 )}

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Clause: An uncaught throw in production mode yields 500 whose body contains neither the thrown message nor a stack frame.
+// Spec: k.server, clause "An uncaught throw in production mode yields 500 whose body contains neither the thrown message nor a stack frame."
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { build, get, post } from "./fixtures.ts";

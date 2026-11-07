@@ -1,6 +1,7 @@
 import type { Result } from "@keel/schema";
 import { ciWorkflow } from "../templates/ciWorkflow.ts";
 import { indexHtml } from "../templates/indexHtml.ts";
+import { keelMarkSvg } from "../templates/keelMarkSvg.ts";
 import { moduleTs } from "../templates/moduleTs.ts";
 import { packageJson } from "../templates/packageJson.ts";
 import { routesTs } from "../templates/routesTs.ts";
@@ -38,6 +39,7 @@ export function opProject(input: unknown, files: ReadonlyMap<string, string>): R
     ["tokens.ts", tokensTs()],
     ["topology.ts", topologyTs(["app"], adapter)],
     ["vite.config.ts", viteConfigTs()],
+    ["public/keel-mark.svg", keelMarkSvg()],
     ["modules/app/module.ts", moduleTs("app")],
     ["modules/app/routes.ts", routesTs()],
   ]);

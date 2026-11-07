@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Clause: Status: keel.notFound 404 · keel.denied 403 · keel.fields 422 · other err 400 · uncaught throw 500 as keel.unexpected.
+// Spec: k.server Status mapping: Status: keel.notFound 404 · keel.denied 403 · keel.fields 422 · other err 400 · uncaught throw 500 as keel.unexpected.
 // Also request flow: guard deny redirects; search fails default; GET page markup; trailing slash 308.
 import { describe, expect, it } from "vitest";
 import { err, s } from "@keel/schema";

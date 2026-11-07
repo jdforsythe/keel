@@ -3,7 +3,7 @@
 Status: implemented
 
 ## Problem
-After `render`, a resource that resolves later is visible only after `fire`. Tests fire a synthetic `focus` just to wait (golden-1 friction 8).
+After `render`, a resource that resolves later is visible only after `fire`. Tests fire a synthetic `focus` only to wait (golden-1 friction 8).
 
 ## Proposal
 `Harness` gains `settle(): Promise<void>`, also on `renderRoute` handles. It runs the loop `fire` uses: microtask rounds until the DOM and every store log are quiet, bounded, no timers. Then it runs the render checks (`keel.unexpected`, E1702, E1703). `render` stays synchronous.

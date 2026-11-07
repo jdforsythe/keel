@@ -8,11 +8,14 @@ export const Props = s.object({
 /** `errorElement` of `recipes.show`. */
 export default function RecipeError(props: Infer<typeof Props>) {
   return (
-    <Box as="section" id="recipes.errorBox" gap="2">
-      <Heading id="recipes.error.heading" level={1} fg="danger">
+    <Box as="section" id="recipes.errorBox" direction="column" gap="3" p="4" bg="card" border="error">
+      <Text font="mono" fontSize="xs" fg="accent">
+        {props.error.code}
+      </Text>
+      <Heading id="recipes.error.heading" level={1} fontSize="2xl" weight="semibold" m="0" fg="error">
         Something went wrong
       </Heading>
-      <Text id="recipes.error" fg="danger">
+      <Text id="recipes.error" font="mono" fontSize="sm" fg="error">
         {props.error.message}
       </Text>
     </Box>

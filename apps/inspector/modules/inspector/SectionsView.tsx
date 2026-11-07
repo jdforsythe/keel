@@ -15,23 +15,40 @@ export default function SectionsView(props: Infer<typeof Props>) {
       .sort()
       .map((id) => ({ id, ...(props.sections[id] ?? { doc: "", text: "", failed: false }) }));
   return (
-    <Box as="section" id="inspector.sections" gap="1">
-      <Heading id="inspector.sections.title" level={2}>
+    <Box as="section" id="inspector.sections" direction="column" gap="4">
+      <Heading id="inspector.sections.title" level={2} fontSize="xl" weight="semibold" m="0">
         Sections
       </Heading>
-      <Text as="p" id="inspector.sections.count">
+      <Text as="p" id="inspector.sections.count" m="0" font="mono" fontSize="sm" fg="textSecondary">
         {list().length === 0 ? "No sections registered" : `${list().length} sections`}
       </Text>
       <For each={list()} key="id">
         {(sec) => (
-          <Box as="section" id={`inspector.section.${sec.id}`} gap="1">
-            <Heading id={`inspector.section.${sec.id}.title`} level={3}>
+          <Box as="section" id={`inspector.section.${sec.id}`} direction="column" gap="2">
+            <Heading
+              id={`inspector.section.${sec.id}.title`}
+              level={3}
+              font="mono"
+              fontSize="sm"
+              weight="semibold"
+              m="0"
+            >
               {sec.id}
             </Heading>
-            <Text as="p" id={`inspector.section.${sec.id}.doc`} fontSize="sm">
+            <Text as="p" id={`inspector.section.${sec.id}.doc`} m="0" font="mono" fontSize="sm" fg="textSecondary">
               {`Type: ${sec.doc}`}
             </Text>
-            <Text as="p" id={`inspector.section.${sec.id}.value`} fontSize="sm">
+            <Text
+              as="p"
+              id={`inspector.section.${sec.id}.value`}
+              m="0"
+              p="3"
+              bg="surfaceLow"
+              font="mono"
+              fontSize="sm"
+              fg={sec.failed ? "accent" : "text"}
+              border={sec.failed ? "accent" : "none"}
+            >
               {sec.failed ? `Failed: ${sec.text}` : sec.text}
             </Text>
           </Box>

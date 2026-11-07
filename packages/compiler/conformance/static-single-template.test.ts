@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// Spec: k.compiler, clause "A component with no dynamic expressions compiles to a single cloned template and no bindings."
 // Seed 1337 (fc.assert seed below).
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";

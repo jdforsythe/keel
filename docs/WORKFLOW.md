@@ -4,9 +4,13 @@
 
 **Loop.** `/next` (claim, worktree, branch, PLAN.md) -> `conformance-writer` writes tests from spec -> implement -> `pnpm check` -> `pnpm test` -> `/review` -> docs, spec status, changeset -> commit -> PR -> merge flips the backlog line.
 
+**Batches.** When several tasks run in parallel subagents, the batch ends with the `reviewer` subagent over the batch diff (PRINCIPLES 1-12, VISION promises, Definition of done per RFC) and a `red-team` pass; their findings become backlog lines before the next batch starts, and the push waits for both.
+
 **Parallelism.** One worktree per task under `.worktrees/`. `HANDOFF.md` lists all active worktrees. Same-package tasks are serialized. Worktrees share one git index, so every agent stages by explicit path (never `git add -A`) and only the orchestrator commits.
 
 **Context discipline.** Checkpoint `PLAN.md` after each step. Subagents for exploration. `pnpm spec` for retrieval. Never read `.generated/` or build output.
+
+**Brand.** `docs/BRAND.md` is the one style and voice guide. New apps start from the scaffold `project` template (brand tokens, self-hosted fonts, the mark); READMEs and docs pass `tooling/voice-lint.mjs`; the lockup goes on every public page.
 
 **Humans.** Approve RFCs and ADRs, own security, decide freezes, pick design partners.
 

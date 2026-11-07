@@ -1,3 +1,4 @@
+// Spec: k.compiler, clause "Compiling the same sources twice yields byte-identical JS and artifacts."
 // Seed 1337 (fc.assert seed below).
 import { compile } from "@keel/compiler";
 import fc from "fast-check";

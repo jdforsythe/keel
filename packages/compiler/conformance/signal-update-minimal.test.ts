@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// Spec: k.compiler, clause "Updating one signal changes only the DOM nodes bound to it; every other node keeps its identity."
 // Seed 1337 (fc.assert seed below).
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Clause: The dev log stream emits exactly one `req` record per request; in json mode every line parses.
-// Spec: `createApp({ log: { format: 'compact' | 'json', write } })` writes the stream, one line per `write` (rfc:0034).
+// Spec: k.server, clause "The dev log stream emits exactly one `req` record per request; in json mode every line parses."
+// Log stream API: `createApp({ log: { format: 'compact' | 'json', write } })` writes the stream, one line per `write` (rfc:0034).
 // Seed 1337 (fc.assert below). No wall time: the `ms` figure is only matched by shape.
 import { ok } from "@keel/schema";
 import fc from "fast-check";

@@ -10,33 +10,48 @@ export const Props = s.object({ search: RecipeSearch, data: s.object({ recipes: 
 /** Route `recipes.index`: the recipes (or only favorites) with filter links. */
 export default function RecipeList(props: Infer<typeof Props>) {
   return (
-    <Box as="section" id="recipes.list" gap="2">
-      <Heading id="recipes.list.title" level={1}>
+    <Box as="section" id="recipes.list" direction="column" gap="5">
+      <Heading id="recipes.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
         Recipes
       </Heading>
-      <Box as="nav" id="recipes.filters" direction="row" gap="2">
-        <Link id="recipes.filter.all" to={routes.href("recipes.index", {}, { only: "all" })}>
+      <Box as="nav" id="recipes.filters" direction="row" gap="4" font="mono" fontSize="sm">
+        <Link id="recipes.filter.all" to={routes.href("recipes.index", {}, { only: "all" })} fg="text">
           All
         </Link>
-        <Link id="recipes.filter.favorites" to={routes.href("recipes.index", {}, { only: "favorites" })}>
+        <Link id="recipes.filter.favorites" to={routes.href("recipes.index", {}, { only: "favorites" })} fg="text">
           Favorites
         </Link>
       </Box>
       <If when={props.data.recipes.length === 0}>
         {() => (
-          <Text id="recipes.empty" fg="fg">
+          <Text id="recipes.empty" font="mono" fontSize="sm" fg="textSecondary">
             No recipes
           </Text>
         )}
       </If>
-      <Box as="ul" id="recipes.items">
+      <Box as="ul" id="recipes.items" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
         <For each={props.data.recipes} key="id">
           {(r) => (
-            <Box as="li" id={`recipes.item.${r.id}`} direction="row" gap="2">
-              <Link id={`recipes.link.${r.id}`} to={routes.href("recipes.show", { recipeId: r.id })}>
+            <Box
+              as="li"
+              id={`recipes.item.${r.id}`}
+              direction="row"
+              align="baseline"
+              justify="between"
+              gap="3"
+              px="3"
+              py="3"
+              bg="card"
+            >
+              <Link id={`recipes.link.${r.id}`} to={routes.href("recipes.show", { recipeId: r.id })} fg="text">
                 {r.title}
               </Link>
-              <Text id={`recipes.minutes.${r.id}`}>{`${r.minutes} min`}</Text>
+              <Text
+                id={`recipes.minutes.${r.id}`}
+                font="mono"
+                fontSize="sm"
+                fg="textSecondary"
+              >{`${r.minutes} min`}</Text>
             </Box>
           )}
         </For>

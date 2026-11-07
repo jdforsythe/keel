@@ -41,32 +41,71 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       method: "POST",
       action: routes.href("todos.list", { listId }),
       form: f,
-      error: (e) => <Text fg="danger">{e.message}</Text>,
+      error: (e) => <Text fg="error">{e.message}</Text>,
       children: () => [
-        <Input field={f.field("title")} label="Title" />,
-        <Select field={f.field("priority")} label="Priority" options={PRIORITIES} />,
-        <Button id="todos.addTodo" type="submit">
+        <Input
+          field={f.field("title")}
+          label="Title"
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />,
+        <Select
+          field={f.field("priority")}
+          label="Priority"
+          options={PRIORITIES}
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />,
+        <Button
+          id="todos.addTodo"
+          type="submit"
+          font="mono"
+          fontSize="sm"
+          px="4"
+          py="2"
+          my="2"
+          bg="text"
+          fg="card"
+          border="rule"
+          radius="none"
+        >
           Add todo
         </Button>,
       ],
     });
   return (
-    <Box as="section" id="todos.list" gap="2">
-      <Heading id="todos.list.title" level={1}>
+    <Box as="section" id="todos.list" direction="column" gap="5">
+      <Heading id="todos.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
         {props.data.name}
       </Heading>
-      <Box as="nav" id="todos.filters" direction="row" gap="2">
-        <Link id="todos.filter.all" to={routes.href("todos.list", { listId }, { filter: "all" })}>
+      <Box as="nav" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
+        <Link id="todos.filter.all" to={routes.href("todos.list", { listId }, { filter: "all" })} fg="text">
           All
         </Link>
-        <Link id="todos.filter.active" to={routes.href("todos.list", { listId }, { filter: "active" })}>
+        <Link id="todos.filter.active" to={routes.href("todos.list", { listId }, { filter: "active" })} fg="text">
           Active
         </Link>
-        <Link id="todos.filter.done" to={routes.href("todos.list", { listId }, { filter: "done" })}>
+        <Link id="todos.filter.done" to={routes.href("todos.list", { listId }, { filter: "done" })} fg="text">
           Done
         </Link>
       </Box>
-      <Box as="ul" id="todos.items">
+      <Box as="ul" id="todos.items" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
         <For each={shown()} key="id">
           {(todo) => <TodoRow todo={todo} />}
         </For>

@@ -1,4 +1,4 @@
-// Spec: k.server Conformance: Overlapping actions on one factory's store each see only their own instance; the later save is 409 `keel.conflict`. A conflicting or `err` action and an unchanged store save nothing.
+// Spec: k.server, clause "Overlapping actions on one factory's store each see only their own instance; the later save is 409 `keel.conflict`. A conflicting or `err` action and an unchanged store save nothing."
 // Seed 1337. Runs under plain Node: happy-dom strips cookie headers. Only runtime (JSON) POSTs are used.
 // Overlap is made deterministic with deferreds: each action commits synchronously, signals arrival, then awaits a gate.
 import { createCtx } from "@keel/ctx";

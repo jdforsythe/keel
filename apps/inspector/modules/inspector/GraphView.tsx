@@ -20,23 +20,41 @@ export default function GraphView(props: Infer<typeof Props>) {
         })),
     })).filter((g) => g.nodes.length > 0);
   return (
-    <Box as="section" id="inspector.graph" gap="1">
-      <Heading id="inspector.graph.title" level={2}>
+    <Box as="section" id="inspector.graph" direction="column" gap="4">
+      <Heading id="inspector.graph.title" level={2} fontSize="xl" weight="semibold" m="0">
         Graph
       </Heading>
-      <Text as="p" id="inspector.graph.counts">
+      <Text as="p" id="inspector.graph.counts" m="0" font="mono" fontSize="sm" fg="textSecondary">
         {`${props.graph.nodes.length} nodes, ${props.graph.edges.length} edges`}
       </Text>
       <For each={groups()} key="kind">
         {(g) => (
-          <Box as="section" id={`inspector.graph.${g.kind}`} gap="1">
-            <Heading id={`inspector.graph.${g.kind}.title`} level={3}>
+          <Box as="section" id={`inspector.graph.${g.kind}`} direction="column" gap="2">
+            <Heading id={`inspector.graph.${g.kind}.title`} level={3} font="mono" fontSize="sm" weight="semibold" m="0">
               {`${g.kind} (${g.nodes.length})`}
             </Heading>
-            <Box as="ul" id={`inspector.graph.${g.kind}.nodes`}>
+            <Box
+              as="ul"
+              id={`inspector.graph.${g.kind}.nodes`}
+              direction="column"
+              gap="hairline"
+              bg="divider"
+              border="hairline"
+              p="0"
+              m="0"
+            >
               <For each={g.nodes} key="id">
                 {(n) => (
-                  <Box as="li" id={`inspector.node.${n.id}`}>
+                  <Box
+                    as="li"
+                    id={`inspector.node.${n.id}`}
+                    direction="row"
+                    px="3"
+                    py="2"
+                    bg="card"
+                    font="mono"
+                    fontSize="sm"
+                  >
                     {n.reads.length === 0 ? `#${n.id}` : `#${n.id} reads ${n.reads.join(", ")}`}
                   </Box>
                 )}

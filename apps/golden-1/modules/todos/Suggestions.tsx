@@ -27,30 +27,43 @@ async function fetchSuggestions(ctx: Ctx | undefined): Promise<Suggestion[]> {
 export default function Suggestions(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const list = resource(() => fetchSuggestions(ctx));
   return (
-    <Box as="section" id="todos.suggestions" gap="1">
-      <Heading id="todos.suggestions.title" level={2}>
+    <Box as="section" id="todos.suggestions" direction="column" gap="3">
+      <Heading id="todos.suggestions.title" level={2} fontSize="xl" weight="semibold" m="0">
         Suggestions
       </Heading>
       <Match on={list.get()}>
         <Case<State> tag="loading">
           {() => (
-            <Text id="todos.suggestions.loading" as="p">
+            <Text id="todos.suggestions.loading" as="p" m="0" font="mono" fontSize="sm" fg="textSecondary">
               Loading suggestions
             </Text>
           )}
         </Case>
         <Case<State> tag="error">
           {(v) => (
-            <Text id="todos.suggestions.error" as="p" fg="danger">
+            <Text id="todos.suggestions.error" as="p" m="0" font="mono" fontSize="sm" fg="error">
               {messageOf(v.error)}
             </Text>
           )}
         </Case>
         <Case<State> tag="ready">
           {(v) => (
-            <Box as="ul" id="todos.suggestions.list">
+            <Box
+              as="ul"
+              id="todos.suggestions.list"
+              direction="column"
+              gap="hairline"
+              bg="divider"
+              border="hairline"
+              p="0"
+              m="0"
+            >
               <For each={v.value} key="title">
-                {(item) => <Box as="li">{item.title}</Box>}
+                {(item) => (
+                  <Box as="li" direction="row" px="3" py="2" bg="card">
+                    {item.title}
+                  </Box>
+                )}
               </For>
             </Box>
           )}

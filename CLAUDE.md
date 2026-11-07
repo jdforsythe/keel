@@ -16,5 +16,6 @@ You are building Keel. The repo is the memory; your context is a cache. Anything
 7. Everything you print, log, or emit follows `docs/OUTPUT.md`.
 8. Never rename a glossary term. Propose an RFC.
 9. Never use `--verbose` without stating why in `PLAN.md`.
+10. Anything a person sees (README, site, example apps, inspector, scaffold output, docs copy) follows `docs/BRAND.md`: `brandTokens` from `@keel/ui/brand`, the marks in `docs/brand/`, and the voice rules; `pnpm check` runs the voice lint (V0003).
 
 **Definition of done:** spec section cited · conformance green · property tests present · mutation score at threshold (`docs/TESTING.md`) · ledger not regressed · docs, spec status, changeset updated · budgets met · `unsafe` count unchanged or justified · `PLAN.md` closed · `tasks/BACKLOG.md` updated.

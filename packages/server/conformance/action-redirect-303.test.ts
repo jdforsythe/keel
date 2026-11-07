@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Clause: For a document request, `ok(href)` yields 303 with `Location: href`; `ok(null)` yields 303 to the request URL.
+// Spec: k.server, clause "For a document request, `ok(href)` yields 303 with `Location: href`; `ok(null)` yields 303 to the request URL."
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { ok } from "@keel/schema";

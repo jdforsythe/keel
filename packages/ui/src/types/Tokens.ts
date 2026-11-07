@@ -12,6 +12,8 @@ export type Tokens = {
   readonly fontSize?: Scale;
   readonly weight?: Scale;
   readonly shadow?: Scale;
+  /** `border` shorthands: `hairline: "1px solid var(--k-color-divider)"`. */
+  readonly border?: Scale;
   readonly breakpoint?: Scale;
   readonly motion?: Scale;
 };

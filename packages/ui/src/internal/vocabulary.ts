@@ -37,6 +37,7 @@ export const vocabulary: Readonly<Record<StyleProp, Entry>> = {
   fontSize: token("font-size", "fontSize"),
   weight: token("font-weight", "weight"),
   shadow: token("box-shadow", "shadow"),
+  border: token("border", "border"),
   direction: flex("flex-direction", {
     row: "row",
     column: "column",

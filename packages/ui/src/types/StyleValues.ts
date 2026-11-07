@@ -22,6 +22,7 @@ export type StyleValues<D = Computed<string>> = {
   readonly fontSize?: Token<D>;
   readonly weight?: Token<D>;
   readonly shadow?: Token<D>;
+  readonly border?: Token<D>;
   readonly direction?: Responsive<"row" | "column" | "row-reverse" | "column-reverse", D>;
   readonly align?: Responsive<"start" | "center" | "end" | "stretch" | "baseline", D>;
   readonly justify?: Responsive<"start" | "center" | "end" | "between" | "around" | "evenly", D>;
