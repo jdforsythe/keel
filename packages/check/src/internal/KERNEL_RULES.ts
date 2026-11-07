@@ -8,6 +8,7 @@ import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
 import { oneExport } from "../rules/oneExport.ts";
 import { pureTransaction } from "../rules/pureTransaction.ts";
+import { revealInServerFile } from "../rules/revealInServerFile.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -19,6 +20,7 @@ import type { RuleDef } from "../types/RuleDef.ts";
  */
 export const KERNEL_RULES: readonly RuleDef[] = [
   schemaInSchemaFile,
+  revealInServerFile,
   pureTransaction,
   noThrow,
   noTryCatch,

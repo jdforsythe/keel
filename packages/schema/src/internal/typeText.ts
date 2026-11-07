@@ -23,6 +23,8 @@ export function typeText(node: Node): string {
       return `${typeText(node.inner)} | null`;
     case "optional":
       return typeText(node.inner);
+    case "secret":
+      return `secret<${typeText(node.inner)}>`;
     case "array":
       return `array<${typeText(node.item)}>`;
     case "record":

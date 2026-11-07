@@ -102,6 +102,13 @@ const ROWS: readonly Row[] = [
     "k.schema",
   ],
   [
+    "E1105",
+    "reveal imported outside a *.server.ts file",
+    "Secrets are revealed only on the server, never in client code.",
+    "move the reveal call into a *.server.ts file",
+    "k.schema",
+  ],
+  [
     "E1151",
     "import of a non-public export of another module",
     "",

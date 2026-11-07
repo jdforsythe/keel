@@ -1,5 +1,6 @@
 import * as fc from "fast-check";
 import type { Schema } from "./Schema.ts";
+import { Secret } from "./Secret.ts";
 import type { Node } from "./internal/Node.ts";
 
 const limits = (node: { readonly min?: number; readonly max?: number }): { min?: number; max?: number } => ({
@@ -33,6 +34,8 @@ function arbitrary(node: Node): fc.Arbitrary<unknown> {
       return fc.option(arbitrary(node.inner), { nil: null });
     case "optional":
       return arbitrary(node.inner);
+    case "secret":
+      return arbitrary(node.inner).map((v) => Secret.of(v));
     case "array":
       return fc.array(arbitrary(node.item));
     case "record":

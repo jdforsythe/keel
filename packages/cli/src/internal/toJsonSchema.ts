@@ -4,6 +4,8 @@ import type { SchemaNode } from "./SchemaNode.ts";
 /** Derive the JSON Schema of a k.schema node (used for MCP tool input and output schemas). */
 export function toJsonSchema(node: SchemaNode): JsonSchema {
   switch (node.kind) {
+    case "secret":
+      return toJsonSchema(node.inner);
     case "string":
       return {
         type: "string",

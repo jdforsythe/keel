@@ -7,8 +7,10 @@ import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
 import { check } from "./check.ts";
 import { docOf } from "./docOf.ts";
+import { hasSecret } from "./hasSecret.ts";
 import { invalid } from "./invalid.ts";
 import { issueText } from "./issueText.ts";
+import { seal } from "./seal.ts";
 import { toJson } from "./toJson.ts";
 
 /** Build the public Schema object for a node. The type guard below is the only place unknown becomes T. */
@@ -19,7 +21,11 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
     check(node, x, [], issues);
     return issues.length === 0;
   };
-  const parse = (input: unknown): Result<T, SchemaError> => (is(input) ? ok(input) : err(invalid(issues)));
+  const sealing = hasSecret(node);
+  const parse = (input: unknown): Result<T, SchemaError> => {
+    const value = sealing ? seal(node, input) : input;
+    return is(value) ? ok(value) : err(invalid(issues));
+  };
   return {
     node,
     isOptional,

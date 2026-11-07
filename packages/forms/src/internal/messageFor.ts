@@ -12,6 +12,7 @@ export function messageFor(node: Node | undefined, rule: Rule): string {
   switch (rule) {
     case "required":
     case "nullable-absent":
+    case "secret-missing":
       return "Required";
     case "optional-null":
       return "Must not be null";

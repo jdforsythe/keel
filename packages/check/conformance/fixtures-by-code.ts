@@ -97,6 +97,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("src/User.ts", `${SCHEMA}export const User = s.object({ name: s.string() })\n`)],
     clean: [f("src/User.schema.ts", `${SCHEMA}export const User = s.object({ name: s.string() })\n`)],
   },
+  E1105: {
+    opts: NO_TYPES,
+    bad: [manifest("app"), f("modules/app/x.ts", `import { reveal } from '@keel/schema'\nexport const x = reveal\n`)],
+    clean: [manifest("app"), f("modules/app/x.server.ts", `import { reveal } from '@keel/schema'\nexport const x = reveal\n`)],
+  },
   E1005: {
     bad: [f(".keel/ids.json", '{"data":{"C.0":{"col":1}},"hash":"fnv1a:00000000"}\n')],
     clean: [],

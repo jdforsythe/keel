@@ -44,6 +44,7 @@ const RULES = [
   "optional-null",
   "nullable-absent",
   "discriminant",
+  "secret-missing",
 ];
 
 describe("every schema", () => {

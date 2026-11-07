@@ -11,6 +11,8 @@ const sorted = (o: Readonly<Record<string, JsonValue>>): JsonValue =>
 /** JSON Schema for a schema node, keys sorted (routes.json, k.compiler). Optional unwraps; ids keep their brand. */
 export function jsonSchemaOf(node: SchemaNode): JsonValue {
   switch (node.kind) {
+    case "secret":
+      return jsonSchemaOf(node.inner);
     case "string":
       return sorted(
         node.max === undefined

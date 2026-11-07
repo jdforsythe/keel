@@ -5,6 +5,7 @@ import type { KeelError } from "./KeelError.ts";
 import type { ObjectSchema } from "./ObjectSchema.ts";
 import type { Result } from "./Result.ts";
 import type { Schema } from "./Schema.ts";
+import type { Secret } from "./Secret.ts";
 import type { StringInput } from "./StringInput.ts";
 import type { Node } from "./internal/Node.ts";
 import { clip } from "./internal/clip.ts";
@@ -53,6 +54,8 @@ export const s = {
   enum: <const E extends readonly [string, ...string[]]>(values: E): Schema<E[number]> =>
     make({ kind: "enum", values }, false),
   json: (): Schema<JsonValue> => make({ kind: "json" }, false),
+  secret: <S extends Schema<unknown>>(inner: S): Schema<Secret<Infer<S>>> =>
+    make({ kind: "secret", inner: inner.node }, false),
   id: <B extends string>(brand: B): Schema<Id<B>> => make({ kind: "id", brand }, false),
   object: <S extends Shape>(shape: S): ObjectSchema<ObjectOf<S>> => {
     const node: Node = {

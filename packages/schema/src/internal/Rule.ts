@@ -10,4 +10,5 @@ export type Rule =
   | "required"
   | "optional-null"
   | "nullable-absent"
-  | "discriminant";
+  | "discriminant"
+  | "secret-missing";

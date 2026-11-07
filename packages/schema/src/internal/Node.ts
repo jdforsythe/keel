@@ -13,4 +13,5 @@ export type Node =
   | { readonly kind: "record"; readonly value: Node }
   | { readonly kind: "union"; readonly key: string; readonly variants: readonly Node[] }
   | { readonly kind: "nullable"; readonly inner: Node }
-  | { readonly kind: "optional"; readonly inner: Node };
+  | { readonly kind: "optional"; readonly inner: Node }
+  | { readonly kind: "secret"; readonly inner: Node };

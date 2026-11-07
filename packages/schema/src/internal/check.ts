@@ -1,3 +1,4 @@
+import { Secret } from "../Secret.ts";
 import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
 import { hasProtoKey } from "./hasProtoKey.ts";
@@ -17,6 +18,11 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
       break;
     case "optional":
       check(node.inner, x, path, issues);
+      break;
+    case "secret":
+      if (Secret.is(x)) check(node.inner, Secret.open(x), path, issues);
+      else if (x === Secret.marker) issues.push({ path, rule: "secret-missing" });
+      else check(node.inner, x, path, issues);
       break;
     case "json":
       if (!isJson(x, new Set())) issues.push({ path, rule: "type" });
