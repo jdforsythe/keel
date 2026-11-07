@@ -1,3 +1,4 @@
+import { isSafeUrl } from "@keel/runtime-dom/url";
 import MagicString from "magic-string";
 import type { Function as FunctionNode } from "oxc-parser";
 import type {
@@ -17,7 +18,6 @@ import type { Lowered } from "./Lowered.ts";
 import { RAW_HTML } from "./RAW_HTML.ts";
 import type { Span } from "./Span.ts";
 import type { StyleRewrite } from "./StyleRewrite.ts";
-import { URL_ATTRS } from "./URL_ATTRS.ts";
 import { attrNameOf } from "./attrNameOf.ts";
 import { attrOf } from "./attrOf.ts";
 import { bindsTo } from "./bindsTo.ts";
@@ -25,7 +25,6 @@ import { canNest } from "./canNest.ts";
 import { cleanJsxText } from "./cleanJsxText.ts";
 import { componentAt } from "./componentAt.ts";
 import { componentFns } from "./componentFns.ts";
-import { dangerousUrl } from "./dangerousUrl.ts";
 import { decodeEntities } from "./decodeEntities.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 import { exprOf } from "./exprOf.ts";
@@ -295,7 +294,7 @@ export function lowerFile(
         }
         const decoded = sv.encoded ? decodeEntities(sv.text) : sv.text;
         let html = sv.encoded ? sv.text.replace(/"/g, "&quot;") : escapeHtml(sv.text);
-        if (URL_ATTRS.has(out) && dangerousUrl(decoded)) html = "about:blank";
+        if (!isSafeUrl(out, decoded)) html = "about:blank";
         t.html += ` ${out}="${html}"`;
         continue;
       }

@@ -715,18 +715,13 @@ describe("form wiring", () => {
     for (const sc of scopes.splice(0)) sc.dispose();
   });
 
-  it("form ids come from a per-form counter: distinct per form, stable per field", () => {
-    const a = within(() => form(Flat));
-    const b = within(() => form(Flat));
-    expect(a.field("title").id).toMatch(/^form\d+:title$/);
+  it("form ids derive from the schema shape and explicit id; concurrent duplicates get a suffix", () => {
+    const both = within(() => ({ a: form(Flat), b: form(Flat) }));
+    const { a, b } = both;
+    expect(a.field("title").id).toMatch(/^form-[0-9a-z]+:title$/);
     expect(a.field("title").errorId).toBe(`${a.field("title").id}:error`);
-    expect(b.field("title").id).toMatch(/^form\d+:title$/);
-    expect(b.field("title").id).not.toBe(a.field("title").id);
-    expect(a.field("c.d").id).toMatch(/^form\d+:c\.d$/);
-    const ids = new Set(Array.from({ length: 5 }, () => within(() => form(Flat)).field("title").id));
-    expect(ids.size).toBe(5);
-    const nums = [...ids].map((i) => Number(i.slice(4, i.indexOf(":"))));
-    expect(nums.every((n, i) => i === 0 || n === (nums[i - 1] ?? 0) + 1)).toBe(true);
+    expect(b.field("title").id).toBe(a.field("title").id.replace(":title", "~2:title"));
+    expect(within(() => form(Flat, { id: "orders.edit" })).field("c.d").id).toBe("orders.edit:c.d");
     expect(a.field("title").name).toBe("title");
   });
 

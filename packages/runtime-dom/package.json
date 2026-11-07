@@ -13,9 +13,9 @@
       "types": "./src/ops/index.ts",
       "default": "./src/ops/index.ts"
     },
-    "./internal/safeUrl": {
-      "types": "./src/internal/safeUrl.ts",
-      "default": "./src/internal/safeUrl.ts"
+    "./url": {
+      "types": "./src/url/index.ts",
+      "default": "./src/url/index.ts"
     },
     "./jsx-runtime": {
       "types": "./jsx-runtime.d.ts"

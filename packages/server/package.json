@@ -17,6 +17,7 @@
     "mutate": "stryker run"
   },
   "dependencies": {
+    "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",

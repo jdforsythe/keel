@@ -1,13 +1,15 @@
+import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { scope } from "@keel/reactive";
 import { compileRoutes, compileTable } from "@keel/router";
 import { attempt } from "@keel/schema";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
-import { INSPECT_PATH } from "./internal/INSPECT_PATH.ts";
+import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import type { Served } from "./internal/Served.ts";
 import { crashed } from "./internal/crashed.ts";
 import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
+import { installServerDom } from "./internal/dom/installServerDom.ts";
 import { handle } from "./internal/handle.ts";
 import { inspectAllowed } from "./internal/inspectAllowed.ts";
 import { inspectResponse } from "./internal/inspectResponse.ts";
@@ -25,10 +27,14 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * Each request runs in its own isolated scope (k.store `isolate`): stores created in it register in its own registry,
  * appear in `#k-state` and are disposed after the response; module-level stores are process-shared and appear (state
  * only, unless `log: true`) only when listed in `expose`. `mode` defaults to `production` (RFC 0022).
+ * With no DOM global (plain Node) it installs the DOM-free server tree (`installServerDom`) so components that build
+ * DOM render documents. A JSON or FormData action body over `maxBodyBytes` (default 1 MiB) gets 413 `keel.payloadTooLarge`.
  * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.cli Inspect) before the route table, to a loopback
- * or listed host and an absent, same, or listed (`inspect.origins`) `Origin` only; others get 403 `keel.denied`.
+ * or listed host and an absent (GET only), same, or listed (`inspect.origins`) `Origin` only; others, and any other
+ * method without an allowed `Origin`, get 403 `keel.denied`.
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
+  installServerDom();
   const routes = opts.routes.routes;
   const table = compileTable(compileRoutes(routes), routes);
   const modules = new Set(Object.keys(routes).map(moduleOf));
@@ -40,6 +46,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     expose: new Map(
       (opts.expose ?? []).map((x): [string, boolean] => ("store" in x ? [x.store.id, x.log === true] : [x.id, false])),
     ),
+    maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
   };
   const log = opts.log;
@@ -50,10 +57,10 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const rq = { scope: scope(() => undefined) };
     isolate(rq.scope);
     const path = new URL(raw.url).pathname;
-    const inspecting = sv.mode === "dev" && raw.method === "GET" && path === INSPECT_PATH;
+    const inspecting = sv.mode === "dev" && path === INSPECT_PATH;
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     const ran = await attempt(() =>
-      gate === undefined
+      gate === undefined || (gate.ok && raw.method !== "GET")
         ? handle(sv, raw, rq)
         : (gate.ok
             ? inspectResponse(opts.artifacts, gate.allow)

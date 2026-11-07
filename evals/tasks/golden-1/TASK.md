@@ -41,6 +41,6 @@ apps/golden-1/test/{board,routes,components}.test.ts
 2. `pnpm check` clean, budgets included.
 3. `pnpm test --filter golden-1` green.
 4. `properties(` covers each transaction, `TodoRow`, `Suggestions`; `invariant(` in `board.ts`.
-5. Ledger: every export under `modules/` (except `module.ts`, `routes.ts`, `Props`, `uses`) is named in a test (rung `example` or better); `node tooling/ledger.mjs --diff` clean.
+5. Ledger: every export under `modules/` (except `module.ts`, `routes.ts`, `Props`, `uses`) is used in a test body (rung `example` or better); `pnpm ledger --diff` clean.
 6. `unsafe(` count 0; no `any`, casts, `!`, `@ts-ignore`.
 7. Quiet `check` and `test` output within `tooling/budgets.json` output budgets; never `--verbose`.

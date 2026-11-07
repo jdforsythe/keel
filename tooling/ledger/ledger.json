@@ -27,15 +27,27 @@
     },
     {
       "pkg": "golden-1",
+      "name": "BoardApi",
+      "file": "golden-1:api/BoardApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "SuggestionsApi",
+      "file": "golden-1:api/SuggestionsApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "addList",
       "file": "golden-1:api/addList.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
       "name": "addTodo",
       "file": "golden-1:api/addTodo.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -45,15 +57,9 @@
     },
     {
       "pkg": "golden-1",
-      "name": "BoardApi",
-      "file": "golden-1:api/BoardApi.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "editTodo",
       "file": "golden-1:api/editTodo.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -99,15 +105,9 @@
     },
     {
       "pkg": "golden-1",
-      "name": "SuggestionsApi",
-      "file": "golden-1:api/SuggestionsApi.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "toggleTodo",
       "file": "golden-1:api/toggleTodo.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -141,6 +141,84 @@
     },
     {
       "pkg": "golden-1",
+      "name": "EditTodoPage",
+      "file": "golden-1:todos/EditTodoPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "FieldsReply",
+      "file": "golden-1:todos/FieldsReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListDraft",
+      "file": "golden-1:todos/ListDraft.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListError",
+      "file": "golden-1:todos/ListError.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListPage",
+      "file": "golden-1:todos/ListPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListsPage",
+      "file": "golden-1:todos/ListsPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Suggestion",
+      "file": "golden-1:todos/Suggestion.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Suggestions",
+      "file": "golden-1:todos/Suggestions.tsx",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "SuggestionsReply",
+      "file": "golden-1:todos/SuggestionsReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Todo",
+      "file": "golden-1:todos/Todo.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoDraft",
+      "file": "golden-1:todos/TodoDraft.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoList",
+      "file": "golden-1:todos/TodoList.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoRow",
+      "file": "golden-1:todos/TodoRow.tsx",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-1",
       "name": "createList",
       "file": "golden-1:todos/createList.server.ts",
       "rung": "example"
@@ -159,45 +237,9 @@
     },
     {
       "pkg": "golden-1",
-      "name": "EditTodoPage",
-      "file": "golden-1:todos/EditTodoPage.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "FieldsReply",
-      "file": "golden-1:todos/FieldsReply.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "hydrate",
       "file": "golden-1:todos/hydrate.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "ListDraft",
-      "file": "golden-1:todos/ListDraft.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "ListError",
-      "file": "golden-1:todos/ListError.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "ListPage",
-      "file": "golden-1:todos/ListPage.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "ListsPage",
-      "file": "golden-1:todos/ListsPage.tsx",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -225,56 +267,14 @@
     },
     {
       "pkg": "golden-1",
-      "name": "Suggestion",
-      "file": "golden-1:todos/Suggestion.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "suggestions",
       "file": "golden-1:todos/suggestions.service.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-1",
-      "name": "Suggestions",
-      "file": "golden-1:todos/Suggestions.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "SuggestionsReply",
-      "file": "golden-1:todos/SuggestionsReply.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "syncAfter",
       "file": "golden-1:todos/syncAfter.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "Todo",
-      "file": "golden-1:todos/Todo.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "TodoDraft",
-      "file": "golden-1:todos/TodoDraft.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "TodoList",
-      "file": "golden-1:todos/TodoList.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "TodoRow",
-      "file": "golden-1:todos/TodoRow.tsx",
       "rung": "example"
     },
     {
@@ -317,7 +317,7 @@
       "pkg": "inspector",
       "name": "GraphView",
       "file": "inspector:inspector/GraphView.tsx",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "inspector",
@@ -329,13 +329,7 @@
       "pkg": "inspector",
       "name": "IdsView",
       "file": "inspector:inspector/IdsView.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": "inspector",
-      "name": "inspectApi",
-      "file": "inspector:inspector/inspectApi.service.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "inspector",
@@ -359,13 +353,7 @@
       "pkg": "inspector",
       "name": "InspectorPage",
       "file": "inspector:inspector/InspectorPage.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": "inspector",
-      "name": "loadInspect",
-      "file": "inspector:inspector/loadInspect.server.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "inspector",
@@ -381,33 +369,45 @@
     },
     {
       "pkg": "inspector",
-      "name": "StoresView",
-      "file": "inspector:inspector/StoresView.tsx",
+      "name": "StoreView",
+      "file": "inspector:inspector/StoreView.schema.ts",
       "rung": "example"
     },
     {
       "pkg": "inspector",
-      "name": "StoreView",
-      "file": "inspector:inspector/StoreView.schema.ts",
+      "name": "StoresView",
+      "file": "inspector:inspector/StoresView.tsx",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "inspector",
+      "name": "inspectApi",
+      "file": "inspector:inspector/inspectApi.service.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "loadInspect",
+      "file": "inspector:inspector/loadInspect.server.ts",
       "rung": "example"
     },
     {
       "pkg": "check",
       "name": "check",
       "file": "packages/check/src/check.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "check",
       "name": "defineRule",
       "file": "packages/check/src/defineRule.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "check",
       "name": "explain",
       "file": "packages/check/src/explain.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "check",
@@ -419,13 +419,13 @@
       "pkg": "check",
       "name": "rules",
       "file": "packages/check/src/rules.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "cli",
       "name": "formatter",
       "file": "packages/cli/src/formatter.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "cli",
@@ -443,7 +443,7 @@
       "pkg": "cli",
       "name": "run",
       "file": "packages/cli/src/run.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "compiler",
@@ -537,9 +537,15 @@
     },
     {
       "pkg": "router",
+      "name": "Form",
+      "file": "packages/router/src/Form.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "router",
       "name": "action",
       "file": "packages/router/src/action.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "router",
@@ -551,19 +557,13 @@
       "pkg": "router",
       "name": "createRouter",
       "file": "packages/router/src/createRouter.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "router",
-      "name": "Form",
-      "file": "packages/router/src/Form.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
       "name": "guard",
       "file": "packages/router/src/guard.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "router",
@@ -575,19 +575,19 @@
       "pkg": "router",
       "name": "loader",
       "file": "packages/router/src/loader.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "router",
       "name": "manifest",
       "file": "packages/router/src/manifest.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "router",
       "name": "routesArtifact",
       "file": "packages/router/src/routesArtifact.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "runtime-dom",
@@ -599,13 +599,13 @@
       "pkg": "scaffold",
       "name": "plan",
       "file": "packages/scaffold/src/plan.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "scaffold",
       "name": "scaffold",
       "file": "packages/scaffold/src/scaffold.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "schema",
@@ -635,7 +635,7 @@
       "pkg": "schema",
       "name": "pathToString",
       "file": "packages/schema/src/pathToString.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "server",
@@ -683,7 +683,7 @@
       "pkg": "store",
       "name": "stores",
       "file": "packages/store/src/stores.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "store",
@@ -737,13 +737,471 @@
       "pkg": "ui",
       "name": "defineTokens",
       "file": "packages/ui/src/defineTokens.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "ui",
       "name": "styles",
       "file": "packages/ui/src/styles.ts",
       "rung": "example"
+    }
+  ],
+  "clauses": [
+    {
+      "item": "k.check#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.check#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.check#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.check#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.check#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.check#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.check#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.check#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.check#9",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#9",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#10",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.errors#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.errors#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.errors#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.errors#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.errors#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.errors#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.errors#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.errors#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.forms#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.forms#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.forms#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.forms#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.forms#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.forms#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.forms#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.router#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.router#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.router#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.router#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.router#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.router#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.router#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.router#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.router#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.runtime#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.runtime#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.runtime#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.runtime#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.runtime#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.runtime#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.runtime#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.runtime#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.server#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.server#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.server#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.server#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.server#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.server#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.server#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.services#9",
+      "rung": "none"
+    },
+    {
+      "item": "k.testing#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.testing#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.testing#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.testing#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.testing#8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.testing#9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.ui#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.ui#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.ui#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.ui#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions#1",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#2",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#3",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#4",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#5",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#6",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#7",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#8",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#9",
+      "rung": "none"
     }
   ]
 }

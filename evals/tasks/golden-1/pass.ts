@@ -98,6 +98,6 @@ export default async (): Promise<boolean> => {
   if (!check.ok || tokens(check.stdout) > (await outputBudget("check.injected10"))) return false;
   const test = await sh("pnpm", ["test", "--quiet", "--filter", "golden-1"]);
   if (!test.ok || tokens(test.stdout) > (await outputBudget("test.failing3"))) return false;
-  if (!(await sh("node", ["tooling/ledger.mjs", "--diff", "--quiet", "--scope", "golden-1:"])).ok) return false;
+  if (!(await sh("pnpm", ["ledger", "--diff", "--scope", "golden-1:"])).ok) return false;
   return ledgerItemsProven();
 };

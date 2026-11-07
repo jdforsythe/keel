@@ -26,7 +26,7 @@ Fields: `code` (stable, E/W/I prefix, never renumbered) · `path:line:col` · `m
 
 **JSON.** NDJSON: `{"kind":"diag","code":"E1042","path":…,"line":…,"col":…,"message":…,"fix":…,"see":…}` per line, then `{"kind":"summary",…}`.
 
-**Budgets, enforced in CI** (`tooling/budgets.json`): `keel check` on the golden app with 10 injected errors <= 600 tokens; `keel test` with 3 failures <= 400 tokens; `keel spec <section>` <= 1,500 tokens; spec map <= 1,200 tokens. Package size (`size` entries): the package's own code bundled from `src/index.ts` by esbuild, minified, dependencies external, gzipped.
+**Budgets, enforced in CI** (`tooling/budgets.json`): `keel check` (the real checker, compact) on a copy of golden app 1 with 10 injected errors <= 600 tokens; `keel explain` <= 300, `keel spec --for` <= 400, MCP `tools/list` <= 1,500 tokens; `keel test` with 3 failures <= 400 tokens; `keel spec <section>` <= 1,500 tokens; spec map <= 1,200 tokens. Package size (`size` entries, every package; `platform: "node"` for node-only ones): the package's own code bundled from `src/index.ts` by esbuild, minified, dependencies external, gzipped.
 
 **Internal rule.** Keel's own scripts, runners, and hooks obey this contract from task 0001.
 

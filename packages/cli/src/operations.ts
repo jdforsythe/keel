@@ -120,10 +120,15 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "ledger",
-    description: "Emit the verification ledger, or diff it against the committed one.",
-    input: s.object({ diff: s.boolean().optional(), ...diagnostic }),
+    description: "Emit the verification ledger (or --write it to a file), or diff it against the committed one.",
+    input: s.object({
+      diff: s.boolean().optional(),
+      write: s.string().optional(),
+      scope: s.string().optional(),
+      ...diagnostic,
+    }),
     output: outputOf(LedgerSchema),
     positional: [],
-    scope: "query",
+    scope: "ledger",
   },
 ];

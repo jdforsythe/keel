@@ -46,7 +46,7 @@ apps/golden-1/test/{api,board,components,routes}.test.ts  and  test/simApi.ts
 2. `pnpm check` clean, budgets included.
 3. `pnpm test --filter golden-1` green.
 4. `properties(` covers `addList addTodo toggleTodo editTodo hydrate TodoRow Suggestions`; `invariant(` in `api/board.ts`.
-5. Ledger scope `golden-1:`: every item at rung example or better; `node tooling/ledger.mjs --diff --scope golden-1:` clean.
+5. Ledger scope `golden-1:`: every item at rung example or better; `pnpm ledger --diff --scope golden-1:` clean.
 6. `unsafe(` count 0; no `any`, casts, `!`, `@ts-ignore`.
 7. `pnpm --filter golden-1 build` green.
 8. Quiet output within `tooling/budgets.json`.

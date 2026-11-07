@@ -82,11 +82,11 @@ describe("GET /__keel/inspect", () => {
     expect((await inspectResponse(undefined, undefined)).headers.get("access-control-allow-origin")).toBeNull();
   });
 
-  it("production: the route table's 404; other verbs in dev go through the route table too", async () => {
+  it("production: the route table's 404; a dev POST without an Origin is 403 (gating: hardening.test.ts)", async () => {
     const lines: string[] = [];
     expect((await (await build("production", lines)).fetch(new Request(`${BASE}/__keel/inspect`))).status).toBe(404);
     const dev = await build("dev", []);
-    expect((await dev.fetch(new Request(`${BASE}/__keel/inspect`, { method: "POST" }))).status).toBe(404);
+    expect((await dev.fetch(new Request(`${BASE}/__keel/inspect`, { method: "POST" }))).status).toBe(403);
     expect(lines).toEqual(["GET /__keel/inspect 404 0ms"]);
   });
 });

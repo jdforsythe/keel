@@ -69,13 +69,17 @@ describe("commands", () => {
       { path: "packages/a/src/internal/qux.ts", source: "export function qux() {}\n" },
       {
         path: "packages/a/test/foo.test.ts",
-        source: "import fc from 'fast-check'\nfoo()\n{ seed: 1337, numRuns: 100 }\n",
+        source: "import fc from 'fast-check'\nit('t', () => { foo(); fc.assert(p, { seed: 1337, numRuns: 100 }) })\n",
       },
-      { path: "packages/a/test/baz.test.ts", source: "import fc from 'fast-check'\nbaz()\n" },
+      {
+        path: "packages/a/test/baz.test.ts",
+        source: "import fc from 'fast-check'\nit('t', () => { baz(); fc.assert(p) })\n",
+      },
+      { path: "packages/a/test/skipped.test.ts", source: "it.skip('t', () => bar())\n// bar()\n" },
       {
         path: "packages/a/conformance/one.test.ts",
         source:
-          '// Spec: k.a, clause "One works."\nimport fc from "fast-check"\nfc.assert(p, { seed: 1337, numRuns: 200 })\n',
+          '// Spec: k.a, clause "One works."\nimport fc from "fast-check"\nit("t", () => fc.assert(p, { seed: 1337, numRuns: 200 }))\n',
       },
       { path: "spec/kernel/k.a.md", source: "# k.a\n\n**Conformance.**\n- One works.\n- Two works.\n" },
       {
@@ -95,7 +99,7 @@ describe("commands", () => {
         "packages/a/src/foo.ts#foo probabilistic property runs 100 seed 1337 packages/a/test/foo.test.ts",
         "k.a#1 probabilistic property runs 200 seed 1337 packages/a/conformance/one.test.ts",
         "k.a#2 none none",
-        "ok ledger 5 items, 3 verified, 1 unsafe",
+        "ok ledger 5 items, 3 verified, 1 unsafe, 0 warnings",
         "",
       ].join("\n"),
     );

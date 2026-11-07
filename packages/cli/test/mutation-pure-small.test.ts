@@ -6,7 +6,6 @@ import { defaultMode } from "../src/internal/defaultMode.ts";
 import { diagCompact } from "../src/internal/diagCompact.ts";
 import { diagPretty } from "../src/internal/diagPretty.ts";
 import { errorText } from "../src/internal/errorText.ts";
-import { evidenceOf } from "../src/internal/evidenceOf.ts";
 import { exitCode } from "../src/internal/exitCode.ts";
 import { isRecord } from "../src/internal/isRecord.ts";
 import { makeDiag } from "../src/internal/makeDiag.ts";
@@ -92,32 +91,6 @@ describe("diagPretty", () => {
       "E1000\n  msg\n  fix:\n    one\n    two\n  see: keel spec k.x",
     );
     expect(diagPretty(makeDiag("E1000", "msg", { fix: "" }))).toBe("E1000\n  msg\n  fix:\n    ");
-  });
-});
-
-describe("evidenceOf", () => {
-  it("a file without fast-check is an example", () => {
-    expect(evidenceOf("numRuns: 5 seed: 3")).toStrictEqual({ kind: "example", passed: true });
-    expect(evidenceOf("")).toStrictEqual({ kind: "example", passed: true });
-  });
-
-  it("a fast-check file is a property: largest literal numRuns (default 100), literal seed", () => {
-    expect(evidenceOf('import fc from "fast-check";')).toStrictEqual({ kind: "property", passed: true, runs: 100 });
-    expect(evidenceOf("fast-check\nnumRuns: 50\nnumRuns: 200\nnumRuns: 7")).toStrictEqual({
-      kind: "property",
-      passed: true,
-      runs: 200,
-    });
-    expect(evidenceOf("fast-check numRuns:1000")).toMatchObject({ runs: 1000 });
-    expect(evidenceOf("fast-check numRuns:   25")).toMatchObject({ runs: 25 });
-    expect(evidenceOf("fast-check numRuns: x")).toMatchObject({ runs: 100 });
-    expect(evidenceOf("fast-check seed: 7")).toStrictEqual({ kind: "property", passed: true, runs: 100, seed: 7 });
-    expect(evidenceOf("fast-check const SEED = 42;")).toMatchObject({ seed: 42 });
-    expect(evidenceOf("fast-check SEED=1337")).toMatchObject({ seed: 1337 });
-    expect(evidenceOf("fast-check seed:    12345")).toMatchObject({ seed: 12345 });
-    expect(evidenceOf("fast-check seed: 0")).toMatchObject({ seed: 0 });
-    expect(evidenceOf("fast-check seed: x SEED = y")).not.toHaveProperty("seed");
-    expect(evidenceOf("fast-check")).not.toHaveProperty("seed");
   });
 });
 

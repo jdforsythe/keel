@@ -29,7 +29,7 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     case "explain":
       return only(explainCommand(input));
     case "ledger":
-      return only(ledgerCommand(input, io));
+      return ledgerCommand(input, io);
     case "scaffold":
     case "codemod":
       return scaffoldCommand(op.name, input, io);

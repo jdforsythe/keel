@@ -1,23 +1,16 @@
 import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
-import { INSPECT_PATH } from "./INSPECT_PATH.ts";
+import { INSPECT_PATH } from "../inspect/INSPECT_PATH.ts";
+import { LOOPBACK } from "../inspect/LOOPBACK.ts";
+import { artifactData } from "../inspect/artifactData.ts";
+import { originListed as listed } from "../inspect/originListed.ts";
 
-/** Hostnames the endpoint answers on without being listed (a non-loopback Host is DNS rebinding unless listed). */
-const LOOPBACK: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
 /** Largest live report a page may post. */
 const MAX_BODY = 8 * 1024 * 1024;
 
 type Middleware = (req: IncomingMessage, res: ServerResponse, next: () => void) => void;
 type Live = { readonly graph: unknown; readonly stores: unknown };
-
-/** Whether `origin` is in `list`; an entry ending in `:*` matches its scheme and host on any port (RFC 0022). */
-const listed = (list: readonly string[], origin: string): boolean =>
-  list.some((o) => {
-    if (!o.endsWith(":*")) return o === origin;
-    const base = o.slice(0, -2);
-    return origin === base || (origin.startsWith(`${base}:`) && /^\d{1,5}$/.test(origin.slice(base.length + 1)));
-  });
 
 /** A `Host` header value or an origin as a URL, or undefined when it does not parse. */
 const hostOf = (s: string): URL | undefined => {
@@ -33,8 +26,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 /** `data` of `.keel/<name>`, or `{}` when it is missing or unreadable (no build yet). */
 const artifact = (root: string, name: string): unknown => {
   try {
-    const parsed: unknown = JSON.parse(fs.readFileSync(path.join(root, ".keel", name), "utf8"));
-    return isRecord(parsed) && isRecord(parsed.data) ? parsed.data : {};
+    return artifactData(fs.readFileSync(path.join(root, ".keel", name), "utf8"));
   } catch {
     return {};
   }
@@ -69,8 +61,8 @@ const send = (res: ServerResponse, status: number, body?: unknown): void => {
  * GET returns `{ live, graph, stores, ids, a11y, routes }`: artifacts read from `<root>/.keel/` per request, the live
  * half from the last report the open page posted (`live: false`, empty graph and stores, until one arrives). POST
  * takes that report as JSON. Both answer only (RFC 0022) a `Host` that is loopback or in `origins`, with an `Origin`
- * that is absent, the server's own, or in `origins` (`:*` for any port); others get 403 `keel.denied`. A listed
- * cross-origin `Origin` is echoed for CORS.
+ * that is the server's own or in `origins` (`:*` for any port); others get 403 `keel.denied`. A GET may omit `Origin`
+ * (a navigation or curl); a POST or any other method must send one. A listed cross-origin `Origin` is echoed for CORS.
  */
 export function inspectMiddleware(root: () => string, origins: readonly string[] = []): Middleware {
   let live: Live | undefined;
@@ -84,7 +76,8 @@ export function inspectMiddleware(root: () => string, origins: readonly string[]
       (LOOPBACK.has(self.hostname) ||
         listed(origins, `http://${self.host}`) ||
         listed(origins, `https://${self.host}`));
-    const same = origin === undefined || (from !== undefined && from.host === self?.host);
+    const write = req.method !== "GET" && req.method !== "HEAD";
+    const same = origin === undefined ? !write : from !== undefined && from.host === self?.host;
     const crossOk = origin !== undefined && !same && listed(origins, origin);
     if (!hostOk || !(same || crossOk))
       return send(res, 403, { ok: false, error: { code: "keel.denied", message: "inspect origin refused", data: {} } });

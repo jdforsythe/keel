@@ -12,6 +12,10 @@
       "types": "./src/vite.ts",
       "default": "./src/vite.ts"
     },
+    "./inspect/*": {
+      "types": "./src/inspect/*.ts",
+      "default": "./src/inspect/*.ts"
+    },
     "./testing": {
       "types": "./src/testing/evaluate.ts",
       "default": "./src/testing/evaluate.ts"

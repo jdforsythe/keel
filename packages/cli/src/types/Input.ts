@@ -29,4 +29,6 @@ export type Input = {
   readonly to?: string;
   readonly default?: string;
   readonly diff?: boolean;
+  readonly write?: string;
+  readonly scope?: string;
 };

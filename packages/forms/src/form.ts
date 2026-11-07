@@ -3,6 +3,7 @@ import type { Infer, ObjectSchema, Result, SchemaError } from "@keel/schema";
 import { asSchemaValue } from "../unsafe/asSchemaValue.ts";
 import type { Bindable } from "./internal/Bindable.ts";
 import type { Reading } from "./internal/Reading.ts";
+import { claimFormId } from "./internal/claimFormId.ts";
 import { describedBy } from "./internal/describedBy.ts";
 import { documentOrder } from "./internal/documentOrder.ts";
 import { fieldMessages } from "./internal/fieldMessages.ts";
@@ -13,6 +14,7 @@ import { issueMessages } from "./internal/issueMessages.ts";
 import { nodeAt } from "./internal/nodeAt.ts";
 import { readElement } from "./internal/readElement.ts";
 import { setAt } from "./internal/setAt.ts";
+import { shapeHash } from "./internal/shapeHash.ts";
 import { splitPath } from "./internal/splitPath.ts";
 import { unwrap } from "./internal/unwrap.ts";
 import { withDefaults } from "./internal/withDefaults.ts";
@@ -26,21 +28,18 @@ import type { PathValue } from "./types/PathValue.ts";
 
 type Messages = Readonly<Record<string, string>>;
 
-let created = 0;
-
 /**
- * Create form state in the calling scope (k.forms). Signals belong to the current scope (none: E1203);
+ * Create form state in the calling scope (k.forms). Field ids are `<formId>:<path>`; formId is `options.id` or a hash of the schema shape, never a process counter. Signals belong to the current scope (none: E1203);
  * bound elements unbind when the scope that called `bind` is disposed.
  */
 export function form<S extends ObjectSchema<object>, T extends object = Infer<S>>(
   schema: ObjectSchema<T> & S,
-  options: { readonly initial?: DeepPartial<NoInfer<T>> } = {},
+  options: { readonly initial?: DeepPartial<NoInfer<T>>; readonly id?: string } = {},
 ): FormState<T> {
   const typed: ObjectSchema<T> = schema;
   const root = typed.node;
   const initial = withDefaults(root, options.initial ?? {});
-  created += 1;
-  const formId = `form${created}`;
+  const formId = claimFormId(options.id ?? `form-${shapeHash(root)}`);
 
   const vals = signal<unknown>(initial);
   const raw = signal<Messages>({});

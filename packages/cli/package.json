@@ -25,7 +25,8 @@
     "@keel/schema": "workspace:*",
     "@keel/scaffold": "workspace:*",
     "@keel/testing": "workspace:*",
-    "vitest": "^2"
+    "vitest": "^2",
+    "typescript": "^5.6"
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*",

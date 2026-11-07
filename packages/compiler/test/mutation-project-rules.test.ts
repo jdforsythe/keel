@@ -83,7 +83,7 @@ describe("E1003 / E1501 URL literals", () => {
   it("reports each literal URL with its attribute name, decoding entities and trimming", () => {
     const src = `${UI}export default function C() { return <div><a href="javascript:x">1</a><a href="/p">2</a><a href="&#106;avascript:x">3</a><Image src="orders" /><Link to="/x" /><a href="  data:x ">4</a><a href="  #frag ">5</a><a href={x}>6</a><a href>7</a><Box src="/x"/></div> }`;
     const bad = "it renders as about:blank";
-    expect(diags(src)).toEqual([
+    expect(diags(src).map(({ fix: _, ...rest }) => rest)).toEqual([
       d("E1003", "a.tsx", 2, 46, `href is a literal script/data URL; ${bad}`, "k.compiler"),
       d("E1501", "a.tsx", 2, 74, "href is a string path; use href(routeId, params)", "k.router"),
       d("E1003", "a.tsx", 2, 92, `href is a literal script/data URL; ${bad}`, "k.compiler"),

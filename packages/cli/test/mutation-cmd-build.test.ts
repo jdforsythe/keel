@@ -65,7 +65,7 @@ describe("build", () => {
     expect(r).toEqual({
       code: 1,
       stdout:
-        '{"kind":"diag","code":"E1003","path":"src/C.tsx","line":1,"col":41,"message":"href is a literal script/data URL; it renders as about:blank","see":"k.compiler"}\n{"kind":"summary","ok":false,"name":"build","counts":{"files":1,"artifacts":0,"errors":1}}\n',
+        '{"kind":"diag","code":"E1003","path":"src/C.tsx","line":1,"col":41,"message":"href is a literal script/data URL; it renders as about:blank","see":"k.compiler","fix":"--- a/src/C.tsx\\n+++ b/src/C.tsx\\n@@ -1,1 +1,1 @@\\n-export default function C() { return <a href=\\"javascript:alert(1)\\">x</a> }\\n+export default function C() { return <a>x</a> }"}\n{"kind":"summary","ok":false,"name":"build","counts":{"files":1,"artifacts":0,"errors":1}}\n',
       stderr: "",
     });
     const o = buildCommand({ cwd: CWD, files: [BAD, ok("src/A.ts", "A")] });

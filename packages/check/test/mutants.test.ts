@@ -3297,6 +3297,7 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # link var
       E1501 3:44 string path where an Href is required; build it with href()
       # link not url scheme
+      E1003 2:44 to is a literal script/data URL; it renders as about:blank
       E1501 2:44 string path where an Href is required; build it with href()
       # plain TS error
       E1751 1:14 TS2322 Type 'string' is not assignable to type 'number'.

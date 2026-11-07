@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
-// Property seed: 1337. k.compiler URL rule, enforced by attr/prop through src/internal/safeUrl.
+// Property seed: 1337. k.compiler URL rule, enforced by attr/prop through src/url (the @keel/runtime-dom/url export).
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
-import { safeUrl } from "../src/internal/safeUrl.ts";
 import { attr, clone, prop, template } from "../src/ops/index.ts";
+import { safeUrl } from "../src/url/index.ts";
 import { SEED, rootSignal } from "./support.ts";
 
 const ALLOWED = ["http", "https", "mailto", "tel"];

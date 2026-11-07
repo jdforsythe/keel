@@ -1,3 +1,4 @@
+import { originListed as originMatches } from "@keel/compiler/inspect/originListed";
 // RFC 0022 server hardening under plain Node (happy-dom strips `Origin` and `Sec-*` request headers): the production
 // default, the CSRF accept/reject matrix for writes, `_method` from POST only, dev inspect origin and host gating,
 // prototype-safe submitted values, and per-request store registries (overlapping requests, one store id).
@@ -7,7 +8,6 @@ import { ok, s } from "@keel/schema";
 import { store, stores } from "@keel/store";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
-import { originMatches } from "../src/internal/originMatches.ts";
 import { valuesOf } from "../src/internal/valuesOf.ts";
 
 const BASE = "http://localhost";
@@ -180,6 +180,18 @@ describe("dev inspect gating", () => {
   it("refuses a non-loopback, unlisted host (DNS rebinding) even without Origin", async () => {
     expect((await read("http://rebound.example/__keel/inspect", {})).status).toBe(403);
     expect((await read("http://dev.box:5173/__keel/inspect", {}, ["http://dev.box:5173"])).status).toBe(200);
+  });
+
+  it("POST to the inspect path needs a loopback or listed Origin: none is 403, same-origin keeps the route table", async () => {
+    const app = await build({ verbs: [] }, { mode: "dev" });
+    const post = (headers: Record<string, string>) => app.fetch(new Request(INSPECT, { method: "POST", headers }));
+    const none = await post({});
+    expect(none.status).toBe(403);
+    expect(await body(none)).toMatchObject({ ok: false, error: { code: "keel.denied" } });
+    expect((await post({ origin: BASE })).status).toBe(404);
+    expect((await post({ origin: "http://localhost:9999" })).status).toBe(403);
+    expect((await post({ origin: "https://evil.example" })).status).toBe(403);
+    expect((await read(INSPECT, {})).status).toBe(200);
   });
 
   it("a cross-site POST to the inspect path is refused like any write", async () => {

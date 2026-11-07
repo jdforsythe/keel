@@ -1,5 +1,5 @@
 import type { Href } from "@keel/router";
-import { safeUrl } from "@keel/runtime-dom/internal/safeUrl";
+import { safeUrl } from "@keel/runtime-dom/url";
 import { applyStyle } from "../internal/applyStyle.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 

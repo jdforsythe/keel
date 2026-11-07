@@ -3,11 +3,44 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 1500,
-    "spec.map": 1200
+    "spec.map": 1200,
+    "explain": 300,
+    "spec.for": 400,
+    "mcp.tools-list": 1500
   },
   "size": {
-    "@keel/runtime-dom": "6kb",
+    "@keel/check": {
+      "max": "27kb",
+      "platform": "node"
+    },
+    "@keel/cli": {
+      "max": "17kb",
+      "platform": "node"
+    },
+    "@keel/compiler": {
+      "max": "21kb",
+      "platform": "node"
+    },
+    "@keel/ctx": "3kb",
+    "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "8kb"
+    "@keel/router": "8kb",
+    "@keel/runtime-dom": "6kb",
+    "@keel/scaffold": {
+      "max": "16kb",
+      "platform": "node"
+    },
+    "@keel/schema": "5kb",
+    "@keel/server": {
+      "max": "11kb",
+      "platform": "node"
+    },
+    "@keel/services": "3kb",
+    "@keel/store": "3kb",
+    "@keel/testing": {
+      "max": "9kb",
+      "platform": "node"
+    },
+    "@keel/ui": "4kb"
   }
 }

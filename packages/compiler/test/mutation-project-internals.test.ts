@@ -10,7 +10,6 @@ import { attrNameOf } from "../src/internal/attrNameOf.ts";
 import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { componentFns } from "../src/internal/componentFns.ts";
 import { coverage } from "../src/internal/coverage.ts";
-import { dangerousUrl } from "../src/internal/dangerousUrl.ts";
 import { diag } from "../src/internal/diag.ts";
 import { exprOf } from "../src/internal/exprOf.ts";
 import { fnv1a } from "../src/internal/fnv1a.ts";
@@ -372,23 +371,6 @@ describe("small helpers (mutation)", () => {
     expect(canonicalJson([2, 1])).toBe("[2,1]");
     expect(canonicalJson(JSON.parse('{"__proto__":1,"a":2}'))).toBe('{"__proto__":1,"a":2}');
     expect(canonicalJson({ b: { y: 1, x: 2 }, a: 1 })).toBe('{"a":1,"b":{"x":2,"y":1}}');
-  });
-
-  it("dangerousUrl strips whitespace and control characters, ignores case, and anchors", () => {
-    for (const u of [
-      "javascript:x",
-      "JavaScript:x",
-      "java script:x",
-      "java\tscript:x",
-      " \njava\u0001script: x",
-      "vbscript:x",
-      "data:text/html,x",
-    ])
-      expect(dangerousUrl(u), u).toBe(true);
-    for (const u of ["xjavascript:x", "https://javascript:x", "javascriptx:", "/data:", "", "javascript", "data"])
-      expect(dangerousUrl(u), u).toBe(false);
-    expect(dangerousUrl("java script:")).toBe(true);
-    expect(dangerousUrl("java!script:")).toBe(false);
   });
 
   it("lowerBound finds the first start >= pos", () => {

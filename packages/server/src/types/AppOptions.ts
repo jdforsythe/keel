@@ -12,7 +12,8 @@ import type { Topology } from "./Topology.ts";
  * `{ state, log: [], initial: state }`; `{ store, log: true }` sends the whole snapshot (RFC 0022). `mode` defaults to
  * `production`. `artifacts` is the compiler's `.keel` directory; in dev, `GET /__keel/inspect` reads `ids`, `a11y`,
  * and `routes` from it (k.cli Inspect). `inspect.origins` lists the origins (`:*` for any port) besides the request's
- * own whose reads of it are answered (default none).
+ * own whose reads of it are answered (default none). `maxBodyBytes` caps a JSON or FormData action body (default
+ * 1048576); a larger one is refused with 413 `keel.payloadTooLarge` before it is parsed.
  */
 export type AppOptions = {
   readonly topology: Topology;
@@ -26,6 +27,7 @@ export type AppOptions = {
     | { readonly store: Pick<Store<unknown>, "id">; readonly log?: boolean }
   )[];
   readonly inspect?: { readonly origins?: readonly string[] };
+  readonly maxBodyBytes?: number;
   readonly log?: LogSink;
   readonly artifacts?: string;
 };

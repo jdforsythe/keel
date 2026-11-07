@@ -1,4 +1,4 @@
-import { INSPECT_PATH } from "./INSPECT_PATH.ts";
+import { INSPECT_PATH } from "../inspect/INSPECT_PATH.ts";
 
 // Specifiers of the generated client entry. It is app code that runs in the browser; the compiler itself
 // never imports these packages (they are later in tooling/deps.json).

@@ -1,7 +1,7 @@
 import { bind } from "../internal/bind.ts";
 import { idOf } from "../internal/idOf.ts";
-import { safeUrl } from "../internal/safeUrl.ts";
 import type { Value } from "../types/Value.ts";
+import { safeUrl } from "../url/safeUrl.ts";
 
 /**
  * Bind attribute `name` of `el` to `fn`: `null`, `undefined`, or `false` removes it, `true` sets it empty,

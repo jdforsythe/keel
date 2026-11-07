@@ -6,16 +6,17 @@
     "node": ">=22"
   },
   "scripts": {
-    "check": "node tooling/turbo.mjs check && node tooling/structure-lint.mjs && node tooling/generate.mjs --check && node tooling/docs-freshness.mjs && node tooling/budgets.mjs",
+    "check": "node tooling/turbo.mjs check && node tooling/structure-lint.mjs && node tooling/conformance-guard.mjs && node tooling/generate.mjs --check && node tooling/docs-freshness.mjs && node tooling/budgets.mjs",
     "test": "node tooling/turbo.mjs test",
     "build": "node tooling/turbo.mjs build",
     "mutate": "node tooling/turbo.mjs mutate",
     "eval": "tsx evals/run.ts",
     "spec": "node tooling/spec.mjs",
-    "ledger": "node tooling/ledger.mjs",
+    "ledger": "node packages/cli/src/bin.ts ledger --write tooling/ledger/ledger.json",
     "handoff": "node tooling/handoff.mjs",
     "generate": "node tooling/generate.mjs",
-    "budgets": "node tooling/budgets.mjs"
+    "budgets": "node tooling/budgets.mjs",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9",

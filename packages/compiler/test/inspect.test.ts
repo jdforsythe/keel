@@ -35,7 +35,7 @@ const listen = async (): Promise<void> => {
 const post = (body: string, headers: Record<string, string> = {}): Promise<Response> =>
   fetch(`${base}/__keel/inspect`, {
     method: "POST",
-    headers: { "content-type": "application/json", ...headers },
+    headers: { "content-type": "application/json", origin: base, ...headers },
     body,
   });
 const get = async (headers: Record<string, string> = {}): Promise<{ res: Response; json: unknown }> => {
@@ -111,6 +111,20 @@ describe("inspectMiddleware", () => {
     expect((await get({ origin: base })).res.headers.get("access-control-allow-origin")).toBeNull();
   });
 
+  it("POST without an Origin is 403 keel.denied; GET without one is served (RFC 0022)", async () => {
+    const bare = await fetch(`${base}/__keel/inspect`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(REPORT),
+    });
+    expect(bare.status).toBe(403);
+    expect(await bare.json()).toMatchObject({ ok: false, error: { code: "keel.denied" } });
+    expect((await get()).json).toMatchObject({ live: false });
+    const put = await fetch(`${base}/__keel/inspect`, { method: "PUT" });
+    expect(put.status).toBe(403);
+    expect((await fetch(`${base}/__keel/inspect`, { method: "PUT", headers: { origin: base } })).status).toBe(405);
+  });
+
   it("answers listed origins (`:*` any port) with CORS, and refuses a non-loopback unlisted Host", async () => {
     const s = server;
     if (s !== undefined) await new Promise<void>((resolve) => s.close(() => resolve()));
@@ -140,7 +154,7 @@ describe("inspectMiddleware", () => {
   });
 
   it("other methods are 405; other paths and a query on the path go to next / are served", async () => {
-    expect((await fetch(`${base}/__keel/inspect`, { method: "PUT" })).status).toBe(405);
+    expect((await fetch(`${base}/__keel/inspect`, { method: "PUT", headers: { origin: base } })).status).toBe(405);
     const other = await fetch(`${base}/__keel/inspectx`);
     expect([other.status, await other.text()]).toEqual([404, "next"]);
     expect((await fetch(`${base}/__keel/inspect?x=1`)).status).toBe(200);

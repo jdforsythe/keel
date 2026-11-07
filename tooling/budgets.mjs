@@ -43,17 +43,42 @@ await run("budgets", async () => {
     if (t > out["spec.map"]) breach("spec.map", relp(map), t, out["spec.map"], "tokens");
   }
 
-  if (out["check.injected10"] !== undefined) {
-    const r = spawnSync(
-      process.execPath,
-      ["tooling/structure-lint.mjs", "--format=compact", "--root", "tooling/fixtures/injected10"],
-      { cwd: root, encoding: "utf8" },
-    );
-    const t = tokens(r.stdout);
+  const KEEL_BIN = "packages/cli/src/bin.ts";
+  const agentEnv = { ...process.env, KEEL_AGENT: "1" };
+  const measure = (key, where, text) => {
+    const t = tokens(text);
     measured++;
-    if (t > out["check.injected10"])
-      breach("check.injected10", "tooling/fixtures/injected10", t, out["check.injected10"], "tokens");
+    if (t > out[key]) breach(key, where, t, out[key], "tokens");
+  };
+
+  // A sibling of apps/golden-1 so tsconfig and @types resolve as they do for the real app; removed afterwards.
+  // The real checker (keel check --format=compact) on a copy of golden app 1 with 10 injected kernel-rule violations.
+  if (out["check.injected10"] !== undefined) {
+    const fixture = "tooling/fixtures/injected10-app";
+    const golden = path.join(root, "apps", "golden-1");
+    const tmp = fs.mkdtempSync(path.join(root, "apps", ".injected10-"));
+    try {
+      const skip = new Set(["node_modules", "dist", ".turbo", ".keel"]);
+      fs.cpSync(golden, tmp, { recursive: true, filter: (src) => !skip.has(path.basename(src)) });
+      fs.cpSync(path.join(root, fixture), tmp, { recursive: true });
+      fs.symlinkSync(path.join(golden, "node_modules"), path.join(tmp, "node_modules"));
+      const r = spawnSync(process.execPath, [path.join(root, KEEL_BIN), "check", "--format=compact"], {
+        cwd: tmp,
+        encoding: "utf8",
+        env: agentEnv,
+      });
+      measure("check.injected10", fixture, r.stdout);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   }
+
+  const keel = (args, input) =>
+    spawnSync(process.execPath, [KEEL_BIN, ...args], { cwd: root, encoding: "utf8", env: agentEnv, input }).stdout;
+  if (out.explain !== undefined) measure("explain", "keel explain E1451", keel(["explain", "E1451"]));
+  if (out["spec.for"] !== undefined) measure("spec.for", "keel spec --for E1451", keel(["spec", "--for", "E1451"]));
+  if (out["mcp.tools-list"] !== undefined)
+    measure("mcp.tools-list", "keel mcp tools/list", keel(["mcp"], '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n'));
 
   if (out["test.failing3"] !== undefined) {
     const fixture = "tooling/fixtures/failing3";
@@ -75,7 +100,9 @@ await run("budgets", async () => {
   // Package size: the package's own code bundled from src/index.ts (minified esm, dependencies external), gzipped.
   // The tsc dist entry is a re-export file of ~100 bytes and measured nothing (backlog 0035).
   for (const [name, limit] of Object.entries(budgets.size ?? {})) {
-    const m = /^(\d+(?:\.\d+)?)\s*kb$/i.exec(limit);
+    const max = typeof limit === "string" ? limit : limit.max;
+    const platform = typeof limit === "string" ? "browser" : (limit.platform ?? "browser");
+    const m = /^(\d+(?:\.\d+)?)\s*kb$/i.exec(max);
     const entry = path.join(root, "packages", name.replace(/^@keel\//, ""), "src", "index.ts");
     if (!m || !fs.existsSync(entry)) continue;
     const bundle = await build({
@@ -83,7 +110,7 @@ await run("budgets", async () => {
       bundle: true,
       minify: true,
       format: "esm",
-      platform: "browser",
+      platform,
       packages: "external",
       write: false,
       logLevel: "silent",

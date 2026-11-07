@@ -1,22 +1,15 @@
+import { artifactData } from "@keel/compiler/inspect/artifactData";
 import { inspect } from "@keel/reactive";
 import { stores } from "@keel/store";
 
 const NAMES = ["ids", "a11y", "routes"] as const;
-
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** `data` of `<dir>/<name>.json`, or `{}` when there is no directory or the file is missing or unreadable. */
 async function artifact(dir: string | undefined, name: string): Promise<unknown> {
   if (dir === undefined) return {};
   const fs = await import("node:fs/promises");
   const text = await fs.readFile(`${dir}/${name}.json`, "utf8").catch(() => "");
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return {};
-  }
-  return isRecord(parsed) && isRecord(parsed.data) ? parsed.data : {};
+  return artifactData(text);
 }
 
 /**

@@ -83,7 +83,27 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: node tooling/ledger.mjs --diff
+      - run: pnpm ledger --diff
+  mutate-pr:
+    if: "github.event_name == 'pull_request'"
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: "packages/*/.stryker-tmp/incremental.json"
+          key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}"
+          restore-keys: "stryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
+      - run: node tooling/mutate-changed.mjs
   mutate:
     if: "github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'"
     runs-on: ubuntu-latest
@@ -97,6 +117,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: "packages/*/.stryker-tmp/incremental.json"
+          key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}"
+          restore-keys: "stryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
       - run: "pnpm mutate --filter=\"./packages/*\""
   eval:
     if: "github.event_name == 'schedule' && github.event.schedule == '0 4 * * 1'"
