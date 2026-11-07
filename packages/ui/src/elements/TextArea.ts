@@ -7,6 +7,7 @@ import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
 import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
+import { markFirst } from "../internal/markFirst.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 /** A multi-line text control with a visible `<label for>` (`label` required, E1802). */
@@ -28,7 +29,16 @@ export function TextArea(
   if (props.name !== undefined) el.setAttribute("name", props.name);
   if (props.rows !== undefined) el.setAttribute("rows", String(props.rows));
   const v = props.value;
-  if (isReadable(v)) prop(el, "value", () => v.get());
+  // A reactive value's first value is also the default text (rfc:0062).
+  if (isReadable(v))
+    prop(
+      el,
+      "value",
+      markFirst(
+        () => v.get(),
+        (x) => el.appendChild(document.createTextNode(x)),
+      ),
+    );
   else if (v !== undefined) el.appendChild(document.createTextNode(v));
   applyDisabled(el, props.disabled);
   applyStyle(el, props);

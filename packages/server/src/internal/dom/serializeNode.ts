@@ -21,6 +21,8 @@ const TEXT_ONLY = new Set([
   "noscript",
   "plaintext",
 ]);
+// Elements whose first newline the HTML parser drops.
+const LEADING_LF = new Set(["textarea", "pre", "listing"]);
 // Foreign content: a `style`/`script` under these is markup, so its text is escaped like any text.
 const FOREIGN = new Set(["svg", "math"]);
 
@@ -47,7 +49,10 @@ const outer = (node: ServerNode, foreign: boolean): string => {
   }
   if (node instanceof ServerElement) {
     if (VOID_TAGS.has(node.localName)) return openTag(node);
-    return `${openTag(node)}${inner(node, foreign)}</${node.localName}>`;
+    const html = inner(node, foreign);
+    // The parser drops one newline after these start tags (backlog 0179): a leading one is written twice.
+    const lf = !foreign && LEADING_LF.has(node.localName) && /^[\r\n]/.test(html) ? "\n" : "";
+    return `${openTag(node)}${lf}${html}</${node.localName}>`;
   }
   return node.childNodes.map((c) => outer(c, foreign)).join("");
 };

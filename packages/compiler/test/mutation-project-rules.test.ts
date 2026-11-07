@@ -23,11 +23,13 @@ describe("E1403 a && <jsx/>", () => {
     const msg = "`a && <jsx/>` renders conditionally; use <If when={a}>";
     const src =
       "export default function C(p) { return <div>{p.a && <b/>}{p.a && (<b/>)}{p.a && <></>}{p.a && (<></>)}{p.a || <b/>}{p.a && p.b}{p.a && p.b.c}</div> }";
-    expect(diags(src)).toEqual([
+    const cond = "elements in a conditional expression; use <If when={…} fallback={…}>";
+    expect(diags(src).map(({ fix: _, ...x }) => x)).toEqual([
       d("E1403", "a.tsx", 1, 45, msg, "k.component"),
       d("E1403", "a.tsx", 1, 58, msg, "k.component"),
       d("E1403", "a.tsx", 1, 73, msg, "k.component"),
       d("E1403", "a.tsx", 1, 87, msg, "k.component"),
+      d("E1403", "a.tsx", 1, 103, cond, "k.component"),
     ]);
   });
   it("does not flag a fragment on the left or && with a non-JSX call", () => {

@@ -7,8 +7,9 @@ export function snapshot(ctx: Ctx): Timings {
   const st = stats.get(ctx);
   if (st === undefined) return {};
   const out: Timings = {};
-  for (const name of [...st.byName.keys()].sort()) {
-    const v = st.byName.get(name);
+  const all = new Map([...st.fresh, ...st.kept]);
+  for (const name of [...all.keys()].sort()) {
+    const v = all.get(name);
     if (v !== undefined) out[name] = { ...v };
   }
   return out;

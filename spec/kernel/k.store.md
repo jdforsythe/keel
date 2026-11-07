@@ -1,5 +1,5 @@
 # k.store: Store and transactions
-status: implemented
+status: conformance-covered
 
 **API.**
 ```ts

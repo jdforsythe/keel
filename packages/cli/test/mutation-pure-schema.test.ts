@@ -46,19 +46,22 @@ describe("toJsonSchema exact output", () => {
         c: { anyOf: [{ type: "boolean" }, { type: "null" }] },
       },
       required: ["a", "c"],
+    });
+    expect(toJsonSchema(s.object({ a: s.int() }, { closed: true }).node)).toStrictEqual({
+      type: "object",
+      properties: { a: { type: "integer" } },
+      required: ["a"],
       additionalProperties: false,
     });
     expect(toJsonSchema(s.object({}).node)).toStrictEqual({
       type: "object",
       properties: {},
       required: [],
-      additionalProperties: false,
     });
     expect(toJsonSchema(s.object({ a: s.int().optional() }).node)).toStrictEqual({
       type: "object",
       properties: { a: { type: "integer" } },
       required: [],
-      additionalProperties: false,
     });
   });
 
@@ -71,12 +74,11 @@ describe("toJsonSchema exact output", () => {
     const u = s.union("t", [s.object({ t: s.literal("a") }), s.object({ t: s.literal("b"), n: s.int() })]);
     expect(toJsonSchema(u.node)).toStrictEqual({
       oneOf: [
-        { type: "object", properties: { t: { const: "a" } }, required: ["t"], additionalProperties: false },
+        { type: "object", properties: { t: { const: "a" } }, required: ["t"] },
         {
           type: "object",
           properties: { t: { const: "b" }, n: { type: "integer" } },
           required: ["t", "n"],
-          additionalProperties: false,
         },
       ],
     });

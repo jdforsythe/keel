@@ -32,7 +32,7 @@ export function toJsonSchema(node: SchemaNode): JsonSchema {
         type: "object",
         properties: Object.fromEntries(entries.map(([k, f]) => [k, toJsonSchema(f)])),
         required: entries.filter(([, f]) => f.kind !== "optional").map(([k]) => k),
-        additionalProperties: false,
+        ...(node.closed === true ? { additionalProperties: false } : {}),
       };
     }
     case "array":

@@ -1045,7 +1045,7 @@
     },
     {
       "item": "k.check#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.check#4",
@@ -1077,7 +1077,7 @@
     },
     {
       "item": "k.cli#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#3",
@@ -1228,6 +1228,10 @@
       "rung": "example"
     },
     {
+      "item": "k.component#6",
+      "rung": "example"
+    },
+    {
       "item": "k.ctx#1",
       "rung": "probabilistic"
     },
@@ -1237,7 +1241,7 @@
     },
     {
       "item": "k.ctx#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.ctx#4",
@@ -1269,6 +1273,10 @@
     },
     {
       "item": "k.ctx#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#12",
       "rung": "example"
     },
     {
@@ -1337,10 +1345,18 @@
     },
     {
       "item": "k.forms#9",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.forms#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.forms#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.forms#12",
       "rung": "example"
     },
     {
@@ -1537,7 +1553,7 @@
     },
     {
       "item": "k.schema#1",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.schema#2",
@@ -1725,7 +1741,7 @@
     },
     {
       "item": "k.store#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.store#13",
@@ -1825,6 +1841,10 @@
     },
     {
       "item": "k.ui#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#10",
       "rung": "example"
     },
     {
@@ -2009,6 +2029,10 @@
     },
     {
       "item": "std.timings#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.timings#7",
       "rung": "example"
     }
   ]

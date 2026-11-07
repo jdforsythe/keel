@@ -11,17 +11,19 @@ import type { RuleDef } from "../types/RuleDef.ts";
 const INVOKERS: ReadonlySet<string> = new Set(["call", "apply", "bind"]);
 /** `Reflect` members whose first argument is invoked. */
 const REFLECT_INVOKE: ReadonlySet<string> = new Set(["apply", "construct"]);
-/** Whether `s` is a `data:` URL as the URL parser reads it: leading C0 and spaces skipped, tabs and newlines removed. */
-function isDataUrl(s: string): boolean {
+/** Schemes whose URL carries its own code: `data:` inline, `blob:` from `URL.createObjectURL` (rfc:0058, 0061). */
+const CODE_SCHEMES: ReadonlySet<string> = new Set(["data:", "blob:"]);
+/** Constructors whose first argument is a script URL that runs (rfc:0061). */
+const WORKERS: ReadonlySet<string> = new Set(["Worker", "SharedWorker"]);
+/** The scheme `s` starts with as the URL parser reads it: leading C0 and spaces skipped, tabs and newlines removed. */
+function schemeOf(s: string): string {
   let i = 0;
   while (i < s.length && s.charCodeAt(i) <= 0x20) i++;
-  return (
-    s
-      .slice(i)
-      .replace(/[\t\n\r]/g, "")
-      .slice(0, 5)
-      .toLowerCase() === "data:"
-  );
+  return s
+    .slice(i)
+    .replace(/[\t\n\r]/g, "")
+    .slice(0, 5)
+    .toLowerCase();
 }
 /** Alias and `+` links followed for a constant prefix before giving up. */
 const MAX_DEPTH = 16;
@@ -39,8 +41,9 @@ const isFunctionPath = (p: readonly string[] | null): boolean =>
  * string reaches every ambient past E1601. Resolved like E1601 (`globalRefs`): aliases, `globalThis` and
  * literal keys, lexical scope. `eval` is reported at every use; `Function` where it is invoked (called,
  * constructed, `.call`/`.apply`/`.bind`, or `Reflect.apply`/`construct`), so `instanceof Function` stays clean;
- * also a function's `constructor` (`(() => {}).constructor(s)`, async and generator forms) and `import()` of a
- * `data:` URL (rfc:0058).
+ * also a function's `constructor` (`(() => {}).constructor(s)`, async and generator forms, also through
+ * `Object.getPrototypeOf`) and `import()` or `new Worker`/`SharedWorker` of a `data:` or `blob:` URL
+ * (a constant prefix, or `URL.createObjectURL(...)`) (rfc:0058, 0061).
  * An unexported alias is reported at its uses. No fix: the code in the string is the author's.
  */
 export const noCodeFromString: RuleDef = {
@@ -77,6 +80,13 @@ export const noCodeFromString: RuleDef = {
       }
       return out;
     };
+    /** `data:` or `blob:` when `e` is such a URL: a constant prefix, or `URL.createObjectURL(...)` through aliases. */
+    const codeUrl = (e: Expression): string | null => {
+      const x = g.initOf(e);
+      if (x.type === "CallExpression" && g.resolve(x.callee)?.join(".") === "URL.createObjectURL") return "blob:";
+      const scheme = schemeOf(prefixOf(e, 0));
+      return CODE_SCHEMES.has(scheme) ? scheme : null;
+    };
     const invoked = (e: Expression): void => {
       if (isFunction(e) && !g.isAliasInit(e.start, e.end)) hit(e.start, "Function");
     };
@@ -91,9 +101,17 @@ export const noCodeFromString: RuleDef = {
         if (p !== null && p.length === 2 && p[0] === "Reflect" && REFLECT_INVOKE.has(p[1] ?? "") && first !== undefined)
           if (first.type !== "SpreadElement") invoked(first);
       },
-      NewExpression: (n) => invoked(n.callee),
+      NewExpression: (n) => {
+        invoked(n.callee);
+        const worker = g.resolve(n.callee)?.join(".") ?? "";
+        const first = n.arguments[0];
+        if (!WORKERS.has(worker) || first === undefined || first.type === "SpreadElement") return;
+        const scheme = codeUrl(first);
+        if (scheme !== null) hit(n.start, `new ${worker}(${scheme})`);
+      },
       ImportExpression: (n) => {
-        if (isDataUrl(prefixOf(n.source, 0))) hit(n.start, "import(data:)");
+        const scheme = codeUrl(n.source);
+        if (scheme !== null) hit(n.start, `import(${scheme})`);
       },
       MemberExpression: (n) => {
         if (g.isAliasInit(n.start, n.end)) return;

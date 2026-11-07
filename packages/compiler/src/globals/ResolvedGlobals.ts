@@ -1,4 +1,4 @@
-import type { Expression } from "oxc-parser";
+import type { Expression, Function as FunctionNode } from "oxc-parser";
 import type { Ref } from "./Ref.ts";
 
 /**
@@ -20,4 +20,6 @@ export type ResolvedGlobals = {
   readonly constString: (e: Expression) => string | null;
   /** `e` unwrapped, or the initializer its same-file alias chain ends at: `f` after `const f = new X()` is `new X()`. */
   readonly initOf: (e: Expression) => Expression;
+  /** The function declaration (or named function expression) the name `name` read at `at` binds, else null. */
+  readonly functionOf: (name: string, at: number) => FunctionNode | null;
 };

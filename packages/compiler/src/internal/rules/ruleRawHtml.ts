@@ -41,7 +41,7 @@ type Keyed = { readonly key: PropertyKey; readonly computed: boolean };
  * `const` parts). Reported: the `innerHTML` family as a JSX attribute; any of `SINKS` as a member name, a
  * constant computed key, or a destructured key; a `SINKS` key passed to `Reflect.set/get/defineProperty/
  * getOwnPropertyDescriptor` or `Object.defineProperty/getOwnPropertyDescriptor`, or as a key of an object
- * literal passed to `Object.assign/defineProperties`; `setAttribute(NS)` with a constant `srcdoc` or `on*` name;
+ * literal passed to `Object.assign/defineProperties`, inline or through a same-file alias (rfc:0061); `setAttribute(NS)` with a constant `srcdoc` or `on*` name;
  * `execCommand('insertHTML', ...)`; the global `DOMParser`, `document.write` and `document.writeln`, at each use
  * (an unexported alias at its uses); a literal `on*` key holding a string in a spread object literal on an HTML
  * element (rfc:0056); and `script`/`style` content (`ruleRawText`, rfc:0058). A fully dynamic key is not
@@ -124,7 +124,9 @@ export function ruleRawHtml(a: Analysis): Diagnostic[] {
         const k = argKey(n.arguments[1]);
         if (k !== null && SINKS.has(k.key)) hit(k.key, k.at);
       } else if (MAP_CALLS.has(p))
-        for (const x of n.arguments.slice(1)) {
+        for (const arg of n.arguments.slice(1)) {
+          // rfc:0061: a map held in a same-file alias (`const o = { innerHTML: x }; Object.assign(el, o)`).
+          const x = arg.type === "SpreadElement" ? arg : g.initOf(arg);
           if (x.type !== "ObjectExpression") continue;
           for (const q of x.properties) {
             if (q.type !== "Property") continue;

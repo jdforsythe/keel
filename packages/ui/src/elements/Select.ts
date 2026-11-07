@@ -7,6 +7,7 @@ import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
 import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
+import { markFirst } from "../internal/markFirst.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type Option = { readonly value: string; readonly label: string };
@@ -36,7 +37,19 @@ export function Select(
     opt.appendChild(document.createTextNode(o.label));
     el.appendChild(opt);
   }
-  if (isReadable(v)) prop(el, "value", () => v.get());
+  // A reactive value's first value is also the default (rfc:0062): its option carries `selected`.
+  if (isReadable(v))
+    prop(
+      el,
+      "value",
+      markFirst(
+        () => v.get(),
+        (x) =>
+          Array.from(el.options)
+            .find((o) => o.value === x)
+            ?.setAttribute("selected", ""),
+      ),
+    );
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
   const id = props.id ?? props.field?.id ?? controlId("select", props.label, undefined, el.ownerDocument);

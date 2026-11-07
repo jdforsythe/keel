@@ -7,6 +7,7 @@ import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
 import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
+import { markFirst } from "../internal/markFirst.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 /** A checkbox followed by its visible `<label for>` (`label` required, E1802). */
@@ -27,7 +28,18 @@ export function Checkbox(
   el.setAttribute("type", "checkbox");
   if (props.name !== undefined) el.setAttribute("name", props.name);
   const c = props.checked;
-  if (isReadable(c)) prop(el, "checked", () => c.get());
+  // A reactive state's first value is also the default (rfc:0062).
+  if (isReadable(c))
+    prop(
+      el,
+      "checked",
+      markFirst(
+        () => c.get(),
+        (x) => {
+          if (x) el.setAttribute("checked", "");
+        },
+      ),
+    );
   else if (c === true) el.setAttribute("checked", "");
   applyDisabled(el, props.disabled);
   applyStyle(el, props);

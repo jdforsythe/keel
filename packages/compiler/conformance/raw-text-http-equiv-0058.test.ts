@@ -144,7 +144,10 @@ test("a meta name/content and a style with literal attributes stay clean", () =>
 
 test("backlog 0168: literal SVG <style> text is text node data, escaped only by a serializer", () => {
   const css = "g > rect { fill: red } a < b & c";
-  const S = load("S", `export default function S() { return <div><svg><style>{${JSON.stringify(css)}}</style></svg></div> }`);
+  const S = load(
+    "S",
+    `export default function S() { return <div><svg><style>{${JSON.stringify(css)}}</style></svg></div> }`,
+  );
   const host = document.createElement("div");
   const dispose = mount(S, host);
   const style = host.querySelector("style");
@@ -152,7 +155,10 @@ test("backlog 0168: literal SVG <style> text is text node data, escaped only by 
   expect(style?.childNodes.length).toBe(1);
   dispose();
   const js = compile([
-    { path: "S.tsx", source: `export default function S() { return <svg><style>{${JSON.stringify(css)}}</style></svg> }` },
+    {
+      path: "S.tsx",
+      source: `export default function S() { return <svg><style>{${JSON.stringify(css)}}</style></svg> }`,
+    },
   ]).outputs[0]?.code;
   expect(js).not.toContain("&gt;");
   expect(js).not.toContain("&lt;");

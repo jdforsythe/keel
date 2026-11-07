@@ -7,11 +7,13 @@ import type { Reading } from "./internal/Reading.ts";
 import { claimFormId } from "./internal/claimFormId.ts";
 import { describedBy } from "./internal/describedBy.ts";
 import { documentOrder } from "./internal/documentOrder.ts";
+import { edited } from "./internal/edited.ts";
 import { fieldMessages } from "./internal/fieldMessages.ts";
 import { fieldPathError } from "./internal/fieldPathError.ts";
 import { formatValue } from "./internal/formatValue.ts";
 import { getAt } from "./internal/getAt.ts";
 import { issueMessages } from "./internal/issueMessages.ts";
+import { markDefault } from "./internal/markDefault.ts";
 import { nodeAt } from "./internal/nodeAt.ts";
 import { readElement } from "./internal/readElement.ts";
 import { setAt } from "./internal/setAt.ts";
@@ -171,7 +173,20 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
         };
         el.addEventListener("input", onInput);
         el.addEventListener("blur", blur);
-        const effects = [effect(() => sync(el)), effect(() => aria(el))];
+        // A control the user changed before bind (server HTML, then edits before the runtime loaded) keeps that
+        // value: the field takes it, and its markup default stays the server's (rfc:0062, backlog 0180).
+        let first = !edited(el);
+        if (!first) onInput();
+        const effects = [
+          effect(() => {
+            sync(el);
+            // The first render's value is also the markup default (rfc:0062): server HTML shows it; later writes,
+            // the user's included, change the property only.
+            if (first) markDefault(el);
+            first = false;
+          }),
+          effect(() => aria(el)),
+        ];
         let done = false;
         const unbind = (): void => {
           if (done) return;

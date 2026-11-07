@@ -6,6 +6,7 @@ import { s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { MAX_NAMES } from "../src/internal/MAX_NAMES.ts";
+import { MAX_PROTECTED } from "../src/internal/MAX_PROTECTED.ts";
 import { readRecent as recentOf } from "../src/internal/readRecent.ts";
 import { registerSection } from "../src/internal/registerSection.ts";
 import { time } from "../src/time.ts";
@@ -23,7 +24,7 @@ test("backlog 0162: after 256 request-derived names, db is kept and the oldest n
   expect(recentOf(ctx).dropped).toBe(1);
 });
 
-test("an updated name moves to the recent end: the next new name evicts the next oldest", async () => {
+test("an updated name is protected: the next new name evicts the oldest unprotected one", async () => {
   const ctx = createCtx({ mode: "sim", seed: SEED });
   for (let i = 0; i < MAX_NAMES; i++) await time(ctx, `n${i}`, () => 1);
   await time(ctx, "n0", () => 1);
@@ -34,32 +35,53 @@ test("an updated name moves to the recent end: the next new name evicts the next
   expect(recentOf(createCtx({ mode: "sim", seed: SEED }))).toEqual({ timings: {}, dropped: 0 });
 });
 
-test("property: the retained names are always the most recently updated <= 256, and dropped counts evictions", async () => {
+test("backlog 0172 repro: db x1000, then 256 request-derived names: db keeps its count", async () => {
+  const ctx = createCtx({ mode: "sim", seed: SEED });
+  for (let i = 0; i < 1000; i++) await time(ctx, "db", () => 1);
+  for (let i = 0; i < 256; i++) await time(ctx, `GET /u/${i}`, () => 1);
+  expect(timingsOf(ctx).db?.count).toBe(1000);
+  expect(timingsOf(ctx)["GET /u/0"]).toBeUndefined();
+  expect(Object.keys(timingsOf(ctx)).length).toBe(MAX_NAMES);
+  expect(recentOf(ctx).dropped).toBe(1);
+});
+
+test("past 192 protected names the least recent moves back unprotected, uncounted, and is evicted first", async () => {
+  const ctx = createCtx({ mode: "sim", seed: SEED });
+  for (let i = 0; i <= MAX_PROTECTED; i++) {
+    await time(ctx, `p${i}`, () => 1);
+    await time(ctx, `p${i}`, () => 1);
+  }
+  expect(recentOf(ctx).dropped).toBe(0);
+  for (let i = 0; i < MAX_NAMES - MAX_PROTECTED - 1; i++) await time(ctx, `f${i}`, () => 1);
+  expect(Object.keys(timingsOf(ctx)).length).toBe(MAX_NAMES);
+  // p0 moved back when p192 was protected, before any f name joined: it is the least recent unprotected name.
+  expect(timingsOf(ctx).p0?.count).toBe(2);
+  await time(ctx, "next", () => 1);
+  expect(timingsOf(ctx).p0).toBeUndefined();
+  expect(timingsOf(ctx).f0?.count).toBe(1);
+  expect(timingsOf(ctx).p1?.count).toBe(2);
+  expect(recentOf(ctx).dropped).toBe(1);
+});
+
+test("property: a name with >= 2 samples survives any sequence of single-sample names (seed 1337)", async () => {
   await fc.assert(
-    fc.asyncProperty(fc.array(fc.nat({ max: 299 }), { maxLength: 700 }), async (ids) => {
-      const ctx = createCtx({ mode: "sim", seed: SEED });
-      const lastUse = new Map<string, number>();
-      let seen = new Set<string>();
-      let dropped = 0;
-      for (const [at, id] of ids.entries()) {
-        const name = `n${id}`;
-        if (!seen.has(name) && seen.size >= MAX_NAMES) {
-          const oldest = [...seen].sort((a, b) => (lastUse.get(a) ?? 0) - (lastUse.get(b) ?? 0))[0];
-          seen = new Set([...seen].filter((n) => n !== oldest));
-          dropped += 1;
-        }
-        seen.add(name);
-        lastUse.set(name, at);
-        await time(ctx, name, () => 1);
-      }
-      const recent = [...lastUse.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, MAX_NAMES)
-        .map(([n]) => n)
-        .sort();
-      expect(Object.keys(timingsOf(ctx))).toEqual(recent);
-      expect(recentOf(ctx).dropped).toBe(dropped);
-    }),
+    fc.asyncProperty(
+      fc.integer({ min: 2, max: 12 }),
+      fc.array(fc.nat({ max: 5 }), { maxLength: 150 }),
+      fc.integer({ min: 0, max: 1200 }),
+      async (k, kept, singles) => {
+        const ctx = createCtx({ mode: "sim", seed: SEED });
+        for (let i = 0; i < k; i++) await time(ctx, "db", () => 1);
+        // Other names with history, fewer than MAX_PROTECTED in all.
+        for (const [i, n] of kept.entries()) for (let j = 0; j <= n; j++) await time(ctx, `k${i}`, () => 1);
+        for (let i = 0; i < singles; i++) await time(ctx, `GET /u/${i}`, () => 1);
+        const t = timingsOf(ctx);
+        expect(t.db?.count).toBe(k);
+        for (const [i, n] of kept.entries()) if (n > 0) expect(t[`k${i}`]?.count).toBe(n + 1);
+        expect(Object.keys(t).length).toBe(Math.min(MAX_NAMES, 1 + kept.length + singles));
+        expect(recentOf(ctx).dropped).toBe(Math.max(0, 1 + kept.length + singles - MAX_NAMES));
+      },
+    ),
     { seed: SEED, numRuns: 30 },
   );
 });

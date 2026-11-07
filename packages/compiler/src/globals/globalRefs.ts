@@ -1,6 +1,9 @@
 import {
+  type AssignmentTargetMaybeDefault,
+  type AssignmentTargetRest,
   type BindingPattern,
   type Expression,
+  type Function as FunctionNode,
   type ParamPattern,
   type Program,
   type PropertyKey,
@@ -11,6 +14,8 @@ import { references } from "./references.ts";
 import { unwrapExpression as unwrap } from "./unwrapExpression.ts";
 
 type Span = { readonly start: number; readonly end: number };
+/** What an assignment, update or `for…in/of` head writes: a name, a member, or a destructuring pattern. */
+type Target = AssignmentTargetMaybeDefault | AssignmentTargetRest | Expression;
 /** One destructuring step: the property key of a pattern element. */
 type Key = { readonly key: PropertyKey; readonly computed: boolean };
 /** What a binding was initialized from: `init`, then the destructuring keys in order. */
@@ -21,6 +26,8 @@ type Binding = {
   readonly source: Source | null;
   readonly mutable: boolean;
   readonly fn: boolean;
+  /** The function a function declaration or named function expression binds (rfc:0061). */
+  readonly decl: FunctionNode | null;
 };
 
 const GLOBAL_OBJECTS: ReadonlySet<string> = new Set(["globalThis", "window", "self"]);
@@ -49,7 +56,8 @@ const memo = new WeakMap<Program, ResolvedGlobals>();
  * a read binds to the innermost span containing it, and a name with none is the global. A binding resolves
  * to the path of its initializer (plus destructuring keys) when it is a `const`, a parameter default, or a
  * `let`/`var` never assigned in the file; a function or class resolves to `Function.prototype`, so its
- * `constructor` is `Function` (rfc:0058); any other binding is a local and resolves to null. Keys fold
+ * `constructor` is `Function` (rfc:0058), and so does `Object.getPrototypeOf`/`Reflect.getPrototypeOf` of one
+ * (rfc:0061); any other binding is a local and resolves to null. Keys fold
  * constant strings (`'inner' + 'HTML'`, a template of `const` parts).
  */
 export function globalRefs(program: Program): ResolvedGlobals {
@@ -75,9 +83,16 @@ export function globalRefs(program: Program): ResolvedGlobals {
   /** Simple aliases (`X = <expr>`, no keys) whose initializer is skipped when the alias resolves. */
   const aliases: { name: string; at: number; init: Expression }[] = [];
 
-  const bind = (name: string, scope: Span, source: Source | null, mutable: boolean, fn = false): void => {
+  const bind = (
+    name: string,
+    scope: Span,
+    source: Source | null,
+    mutable: boolean,
+    fn = false,
+    decl: FunctionNode | null = null,
+  ): void => {
     const list = decls.get(name);
-    const b: Binding = { scope, source, mutable, fn };
+    const b: Binding = { scope, source, mutable, fn, decl };
     if (list === undefined) decls.set(name, [b]);
     else list.push(b);
   };
@@ -119,6 +134,25 @@ export function globalRefs(program: Program): ResolvedGlobals {
       else pattern(p, scope, null, true);
     }
   };
+  /** Records the root identifier of each name an assignment target writes. */
+  const targets = (t: Target): void => {
+    if (t.type === "Identifier") assignSpans.push(span(t));
+    else if (t.type === "MemberExpression") targets(t.object);
+    else if (t.type === "AssignmentPattern") targets(t.left);
+    else if (t.type === "RestElement") targets(t.argument);
+    else if (t.type === "ArrayPattern") {
+      for (const e of t.elements) if (e !== null) targets(e);
+    } else if (t.type === "ObjectPattern")
+      for (const q of t.properties) targets(q.type === "RestElement" ? q.argument : q.value);
+    else if (
+      t.type === "ParenthesizedExpression" ||
+      t.type === "TSAsExpression" ||
+      t.type === "TSSatisfiesExpression" ||
+      t.type === "TSNonNullExpression" ||
+      t.type === "TSTypeAssertion"
+    )
+      targets(t.expression);
+  };
   const enter = (n: Span): void => void scopes.push(span(n));
   const exit = (): void => void scopes.pop();
   const fnEnter = (n: Span & { params: readonly ParamPattern[] }): void => {
@@ -140,12 +174,12 @@ export function globalRefs(program: Program): ResolvedGlobals {
       if (n.declaration !== null) exportedDecls.add(n.declaration.start);
     },
     FunctionDeclaration: (n) => {
-      if (n.id) bind(n.id.name, top(scopes), null, false, true);
+      if (n.id) bind(n.id.name, top(scopes), null, false, true, n);
       fnEnter(n);
     },
     "FunctionDeclaration:exit": fnExit,
     FunctionExpression: (n) => {
-      if (n.id) bind(n.id.name, span(n), null, false, true);
+      if (n.id) bind(n.id.name, span(n), null, false, true, n);
       fnEnter(n);
     },
     "FunctionExpression:exit": fnExit,
@@ -163,12 +197,12 @@ export function globalRefs(program: Program): ResolvedGlobals {
     "ForStatement:exit": exit,
     ForInStatement: (n) => {
       enter(n);
-      if (n.left.type !== "VariableDeclaration") assignSpans.push(span(n.left));
+      if (n.left.type !== "VariableDeclaration") targets(n.left);
     },
     "ForInStatement:exit": exit,
     ForOfStatement: (n) => {
       enter(n);
-      if (n.left.type !== "VariableDeclaration") assignSpans.push(span(n.left));
+      if (n.left.type !== "VariableDeclaration") targets(n.left);
     },
     "ForOfStatement:exit": exit,
     SwitchStatement: enter,
@@ -188,13 +222,17 @@ export function globalRefs(program: Program): ResolvedGlobals {
         if (exported) names(d.id, d.id.type !== "Identifier");
       }
     },
-    AssignmentExpression: (n) => void assignSpans.push(span(n.left)),
-    UpdateExpression: (n) => void assignSpans.push(span(n.argument)),
+    AssignmentExpression: (n) => targets(n.left),
+    UpdateExpression: (n) => targets(n.argument),
   }).visit(program);
 
-  /** Names written anywhere in the file (conservative: `o.x = 1` counts `o`), so a `let` alias of them is not followed. */
+  /**
+   * Names written anywhere in the file, so a `let`/`var` alias of them is not followed. Only a target's root
+   * name counts (conservative: `o.x = 1` counts `o`); a name read inside a computed key (`el[k] = x`) or a
+   * default value is not written (rfc:0061).
+   */
   const assigned = new Set<string>();
-  for (const r of refs) if (assignSpans.some((s) => r.start >= s.start && r.end <= s.end)) assigned.add(r.name);
+  for (const r of refs) if (assignSpans.some((s) => r.start === s.start && r.end === s.end)) assigned.add(r.name);
 
   const lookup = (name: string, at: number): Binding | undefined => {
     let best: Binding | undefined;
@@ -260,10 +298,31 @@ export function globalRefs(program: Program): ResolvedGlobals {
     }
     return normalize(out);
   };
+  /** Whether `e` is a function or class value: an expression, a declaration's name, or a same-file alias of one. */
+  const isFunctionValue = (e: Expression, depth: number): boolean => {
+    const x = unwrap(e);
+    if (FUNCTIONS.has(x.type)) return true;
+    if (x.type !== "Identifier" || depth > MAX_DEPTH) return false;
+    const b = lookup(x.name, x.start);
+    if (b === undefined) return false;
+    if (b.fn) return true;
+    const src = followed(x.name, b);
+    return src !== null && src.keys.length === 0 && isFunctionValue(src.init, depth + 1);
+  };
   const resolveExpr = (e: Expression, depth: number): string[] | null => {
     const x = unwrap(e);
     if (x.type === "Identifier") return resolveName(x.name, x.start, depth);
     if (FUNCTIONS.has(x.type)) return [...FUNCTION_PROTOTYPE];
+    if (x.type === "CallExpression") {
+      // rfc:0061: a function's prototype (`Object.getPrototypeOf(async function () {})`) is the `Function` family's.
+      const callee = depth > MAX_DEPTH ? null : resolveExpr(x.callee, depth + 1);
+      const name = callee === null ? "" : callee.join(".");
+      const arg = x.arguments[0];
+      if (name !== "Object.getPrototypeOf" && name !== "Reflect.getPrototypeOf") return null;
+      return arg !== undefined && arg.type !== "SpreadElement" && isFunctionValue(arg, depth + 1)
+        ? [...FUNCTION_PROTOTYPE]
+        : null;
+    }
     if (x.type !== "MemberExpression") return null;
     const base = resolveExpr(x.object, depth);
     if (base === null) return null;
@@ -299,6 +358,7 @@ export function globalRefs(program: Program): ResolvedGlobals {
     isAliasInit: (start, end) => skipped.has(spanKey(start, end)),
     constString: (e) => constString(e, 0),
     initOf: (e) => initOf(e, 0),
+    functionOf: (name, at) => lookup(name, at)?.decl ?? null,
   };
   memo.set(program, out);
   return out;

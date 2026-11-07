@@ -27,11 +27,13 @@ import { cleanJsxText } from "./cleanJsxText.ts";
 import { componentAt } from "./componentAt.ts";
 import { componentFns } from "./componentFns.ts";
 import { decodeEntities } from "./decodeEntities.ts";
+import { elementValued } from "./elementValued.ts";
 import { endsRawText } from "./endsRawText.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 import { exprOf } from "./exprOf.ts";
 import { intrinsicOf } from "./intrinsicOf.ts";
 import { isHtmlTag } from "./isHtmlTag.ts";
+import { isSlotCall } from "./isSlotCall.ts";
 import { literalTextOf } from "./literalTextOf.ts";
 import { lowerBound } from "./lowerBound.ts";
 import { patternNames } from "./patternNames.ts";
@@ -83,21 +85,6 @@ const q = (s: string): string => JSON.stringify(s);
 
 function unparen(e: Expression): Expression {
   return e.type === "ParenthesizedExpression" ? unparen(e.expression) : e;
-}
-
-/**
- * A call that renders a slot: `slots.<name>()`, `<props>.children()` (RFC 0008), or a `children` binding
- * (`children()`); optional calls too. It returns nodes, so it is inserted as a node, never bound as text (D31).
- */
-function isSlotCall(e: Expression): boolean {
-  if (e.type === "LogicalExpression" && e.operator === "??") return isSlotCall(unparen(e.left));
-  const x = e.type === "ChainExpression" ? e.expression : e;
-  if (x.type !== "CallExpression") return false;
-  const c = x.callee;
-  if (c.type === "Identifier") return c.name === "children";
-  if (c.type !== "MemberExpression" || c.computed) return false;
-  if (c.property.name === "children") return true;
-  return c.object.type === "Identifier" && c.object.name === "slots";
 }
 
 /**
@@ -250,7 +237,8 @@ export function lowerFile(
         } else if (e.type === "JSXElement" || e.type === "JSXFragment")
           items.push({ kind: "node", code: () => lowerNode(e) });
         else if (isSlotCall(e)) items.push({ kind: "node", code: () => `(${code(e)}) ?? ""` });
-        else items.push({ kind: "dyn", expr: c.expression });
+        // rfc:0061: elements in an expression are E1403 and bind nothing (never a text binding of a node).
+        else if (elementValued(a, c.expression) === null) items.push({ kind: "dyn", expr: c.expression });
       } else if (isHtmlTag(tagNameOf(c.openingElement.name))) {
         const nests = parentTag === undefined || canNest(parentTag, tagNameOf(c.openingElement.name));
         items.push(nests ? { kind: "el", node: c } : { kind: "node", code: () => lowerElementRoot(c) });
@@ -483,8 +471,10 @@ export function lowerFile(
       if (at?.value) record(owner(el.start), op, name, at.value);
     }
     switch (kind) {
-      case "If":
-        return `${ns}.cond(${anchor}, () => (${attrCode("when", "false")}), ${renderFn(el.children)})`;
+      case "If": {
+        const otherwise = attrOf(el, "fallback") === undefined ? "" : `, ${attrCode("fallback", "undefined")}`;
+        return `${ns}.cond(${anchor}, () => (${attrCode("when", "false")}), ${renderFn(el.children)}${otherwise})`;
+      }
       case "For": {
         const k = staticValueOf(attrOf(el, "key")?.value ?? null);
         const v = tmp("v");

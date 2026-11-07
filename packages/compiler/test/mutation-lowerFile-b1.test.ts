@@ -341,7 +341,7 @@ const cases: Case[] = [
     path: "C.tsx",
     source:
       "function K(p) { return <i/> }\nexport default function C(p) { const inner = (q) => <K a={q}/>; return <div>{inner(1)}</div>; }\nexport function D(p) { return <K/> }",
-    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<i id=\\"C.0\\"></i>");\nconst __kt1 = __k.template("<div id=\\"C.1\\"> </div>");\nfunction K(p) { return __kscoped(() => {  return __k.clone(__kt0)  }); }\nexport default function C(p, __kslots, __kctx) { return __kscoped(() => {  const inner = (q) => K({ get a() { return (q); } }, undefined, __kctx); return (() => { const __kr1 = __k.clone(__kt1); const __kn2 = __kr1.childNodes[0]; __k.text(__kn2, () => (inner(1))); return __kr1; })();  }); }\nexport function D(p, __kslots, __kctx) { return __kscoped(() => {  return K({}, undefined, __kctx)  }); }',
+    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<i id=\\"C.0\\"></i>");\nconst __kt1 = __k.template("<div id=\\"C.1\\"></div>");\nfunction K(p) { return __kscoped(() => {  return __k.clone(__kt0)  }); }\nexport default function C(p, __kslots, __kctx) { return __kscoped(() => {  const inner = (q) => K({ get a() { return (q); } }, undefined, __kctx); return __k.clone(__kt1);  }); }\nexport function D(p, __kslots, __kctx) { return __kscoped(() => {  return K({}, undefined, __kctx)  }); }',
     edges: [],
   },
   {

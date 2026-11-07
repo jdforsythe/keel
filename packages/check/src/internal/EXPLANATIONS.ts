@@ -260,7 +260,13 @@ const ROWS: readonly Row[] = [
     "k.component",
   ],
   ["E1402", "Match without a Case for every union variant", "", 'add <Case tag="missing">...</Case>', "k.component"],
-  ["E1403", "{a && <b/>} conditional rendering", "", "{a && <b/>} -> <If when={a}><b/></If>", "k.component"],
+  [
+    "E1403",
+    "elements in a JSX child expression: {a && <b/>}, {a ? <b/> : c}, an array, map(), or a function",
+    "Only literal JSX becomes nodes; an expression binds as text, so it renders nothing (rfc:0061).",
+    "{a ? <b/> : <i/>} -> <If when={a} fallback={() => <i/>}><b/></If>",
+    "k.component",
+  ],
   [
     "E1404",
     "duplicate element id",
@@ -391,7 +397,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1603",
-    "eval, Function(...), new Function(...), a function's constructor, or import() of a data: URL in app code",
+    "eval, Function(...), new Function(...), a function's constructor, or import()/new Worker of a data: or blob: URL",
     "Code from a string reaches every ambient effect past E1601.",
     "eval(src) -> call the function src describes",
     "k.ctx",

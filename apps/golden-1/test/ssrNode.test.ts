@@ -47,12 +47,13 @@ describe("golden-1 documents in plain node (no DOM global)", () => {
     expect(list.status).toBe(200);
     expect(list.html).toContain('id="todos.list.title" class="k-m-0 k-fontSize-2xl k-weight-semibold">Home</h1>');
     expect(list.html).toContain(">Done: Milk</label>");
-    // An input's value is IDL state, not markup, in a browser and on the server DOM alike: the form shows its
-    // controls; the bound values arrive at resume.
+    // Backlog 0166 (rfc:0062): `Field.bind` writes the first render's value as the markup default, so the edit form
+    // shows the todo's values before any script runs (an IDL value alone never reaches the HTML).
     const edit = await page(app.fetch, "/lists/l1/todos/t1/edit");
     expect(edit.status).toBe(200);
     expect(edit.html).toContain(">Title</label>");
-    expect(edit.html).toContain('<option value="normal">Normal</option>');
+    expect(edit.html).toMatch(/<input type="text"[^>]* name="title" value="Milk">/);
+    expect(edit.html).toContain('<option value="low">Low</option><option value="normal" selected="">Normal</option>');
     // A loader's keel.notFound renders the route's compiled errorElement (ListError) in a render unit too.
     const missing = await page(app.fetch, "/lists/nope");
     expect(missing.status).toBe(404);

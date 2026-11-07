@@ -1,5 +1,5 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
-// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), and E1805 carry one; RFC 0035 lists why the others cannot."
+// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), and E1805 carry one; RFC 0035 lists why the others cannot."
 // Spec: k.module, Rules, "No fix edits a file under `node_modules/`."
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -36,6 +36,8 @@ function applyFix(files: Files, fix: string): Files {
 
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const UI = "import { Box, Text } from '@keel/ui'\n";
+/** E1403 carries a fix only where `If` is already imported (rfc:0061). */
+const IF = "import { If } from '@keel/runtime-dom'\n";
 const SERVICES = "import { endpoints } from '@keel/services'\nimport { s } from '@keel/schema'\n";
 const manifest = (id: string, deps: string[], exports: string[], routes: string[]): Files[number] => {
   const q = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
@@ -199,6 +201,25 @@ const FIXED: FixedCase[] = [
   },
   { name: "E1806 (JSX element wrapped as a thunk)", code: "E1806", ...fixtureOf("E1806") },
   {
+    name: "E1403 (&&, rfc:0061)",
+    code: "E1403",
+    files: [
+      f("C.tsx", `${UI}${IF}export default function C(props) { return <Box>{props.a && <Text>x</Text>}</Box> }\n`),
+    ],
+    opts: {},
+  },
+  {
+    name: "E1403 (?: with element branches, rfc:0061)",
+    code: "E1403",
+    files: [
+      f(
+        "C.tsx",
+        `${UI}${IF}export default function C(props) { return <Box>{props.a ? <Text>x</Text> : <Text>y</Text>}</Box> }\n`,
+      ),
+    ],
+    opts: {},
+  },
+  {
     name: "E1805",
     code: "E1805",
     files: [f("C.tsx", `${UI}export default function C() { return <Box><h2>Orders</h2></Box> }\n`)],
@@ -236,6 +257,7 @@ const FIX = [
   "E1156",
   "E1157",
   "E1401",
+  "E1403",
   "E1451",
   "E1452",
   "E1507",
@@ -259,7 +281,6 @@ const NO_FIX = [
   "E1251", // the JSX that replaces an op is the author's
   "E1252", // the JSX or ctx replacement is the author's
   "E1302", // moving the effect out of the transaction is a design change
-  "E1403", // the condition's wrapper is the author's choice
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice

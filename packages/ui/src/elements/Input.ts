@@ -7,13 +7,15 @@ import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
 import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
+import { markFirst } from "../internal/markFirst.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type InputType = "text" | "email" | "password" | "number" | "search" | "tel" | "url" | "date";
 
 /**
  * A text-like input with a visible `<label for>` (`label` required, E1802). Style props apply to the
- * control. `id` defaults to one derived from the label; a reactive `value` binds the `value` property.
+ * control. `id` defaults to one derived from the label; a reactive `value` binds the `value` property and writes its
+ * first value as the `value` attribute (not for `password`).
  */
 export function Input(
   props: StyleProps & {
@@ -33,7 +35,18 @@ export function Input(
   el.setAttribute("type", props.type ?? "text");
   if (props.name !== undefined) el.setAttribute("name", props.name);
   const v = props.value;
-  if (isReadable(v)) prop(el, "value", () => v.get());
+  // A reactive value's first value is also the default (rfc:0062); a password never enters the markup.
+  if (isReadable(v))
+    prop(
+      el,
+      "value",
+      markFirst(
+        () => v.get(),
+        (x) => {
+          if (props.type !== "password") el.setAttribute("value", x);
+        },
+      ),
+    );
   else if (v !== undefined) el.setAttribute("value", v);
   applyDisabled(el, props.disabled);
   applyStyle(el, props);
