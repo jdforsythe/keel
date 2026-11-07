@@ -1,12 +1,15 @@
+import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noDomQueryInTest } from "../rules/noDomQueryInTest.ts";
 import { noInlineStyle } from "../rules/noInlineStyle.ts";
 import { noIntrinsicElement } from "../rules/noIntrinsicElement.ts";
+import { noNetFetchInApp } from "../rules/noNetFetchInApp.ts";
 import { noThrow } from "../rules/noThrow.ts";
 import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
 import { oneExport } from "../rules/oneExport.ts";
+import { pathParamsMatch } from "../rules/pathParamsMatch.ts";
 import { pureTransaction } from "../rules/pureTransaction.ts";
 import { revealInServerFile } from "../rules/revealInServerFile.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
@@ -22,6 +25,9 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   schemaInSchemaFile,
   revealInServerFile,
   pureTransaction,
+  noNetFetchInApp,
+  pathParamsMatch,
+  bodyOnGetEndpoint,
   noThrow,
   noTryCatch,
   noAmbientCapability,

@@ -14,10 +14,7 @@ export default {
   mutate: [
     ...base.mutate,
     // Pure data table (explanation prose): string-literal mutants there are not behaviour and only
-    // cost run time. KERNEL_RULES.ts (an import list plus one array of rule objects, no logic) stays
-    // excluded: a full-file run with it included did not finish inside the 15-minute budget (backlog 0080),
-    // so no score >= 70% could be shown. Re-include it when a faster incremental run is available.
+    // cost run time. KERNEL_RULES.ts is mutated again (backlog 0098).
     "!src/internal/EXPLANATIONS.ts",
-    "!src/internal/KERNEL_RULES.ts",
   ],
 };

@@ -17,6 +17,7 @@ export interface CodeFixture {
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const UI = "import { Box, Text, Button } from '@keel/ui'\n";
 const SCHEMA = "import { s } from '@keel/schema'\n";
+const SERVICES = "import { endpoints } from '@keel/services'\n";
 const UNSAFE = "unsafe"; // built so this file's own lint does not read fixture text as a call
 const manifest = (id: string, extra = ""): Files[number] =>
   f(
@@ -100,10 +101,16 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1105: {
     opts: NO_TYPES,
     bad: [manifest("app"), f("modules/app/x.ts", `import { reveal } from '@keel/schema'\nexport const x = reveal\n`)],
-    clean: [manifest("app"), f("modules/app/x.server.ts", `import { reveal } from '@keel/schema'\nexport const x = reveal\n`)],
+    clean: [
+      manifest("app"),
+      f("modules/app/x.server.ts", `import { reveal } from '@keel/schema'\nexport const x = reveal\n`),
+    ],
   },
   E1005: {
-    bad: [f(".keel/ids.json", '{"data":{"C.0":{"col":1}},"hash":"fnv1a:00000000"}\n')],
+    bad: [
+      f(".keel/ids.json", '{"data":{"C.0":{"col":1}},"hash":"fnv1a:00000000"}\n'),
+      f(".keel/x.json", '{"hash":"abc"}'),
+    ],
     clean: [],
   },
   E1151: {
@@ -126,17 +133,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1156: {
     bad: [
       mod("a", [], []),
-      f(
-        "modules/a/Run.ts",
-        "import type { Ctx } from '@keel/ctx'\nexport const Run = (ctx: Ctx, r: Request) => ctx.net.fetch(r)\n",
-      ),
+      f("modules/a/Run.ts", "import type { Ctx } from '@keel/ctx'\nexport const Run = (ctx: Ctx) => ctx.clock.now()\n"),
     ],
     clean: [
-      mod("a", [], [], [], ["net"]),
-      f(
-        "modules/a/Run.ts",
-        "import type { Ctx } from '@keel/ctx'\nexport const Run = (ctx: Ctx, r: Request) => ctx.net.fetch(r)\n",
-      ),
+      mod("a", [], [], [], ["clock"]),
+      f("modules/a/Run.ts", "import type { Ctx } from '@keel/ctx'\nexport const Run = (ctx: Ctx) => ctx.clock.now()\n"),
     ],
   },
   E1157: {
@@ -207,6 +208,46 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1701: {
     bad: [f("test/cart.test.ts", "const el = document.querySelector('#total')\nvoid el\n")],
     clean: [f("test/cart.test.ts", "const t = { find: (id: string) => id }\nvoid t.find('cart.total')\n")],
+  },
+  E1651: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/load.ts",
+        "export const load = (ctx: { net: { fetch: (u: string) => unknown } }) => ctx.net.fetch('/orders')\n",
+      ),
+    ],
+    clean: [f("src/load.ts", "export const load = (api: { list: () => unknown }) => api.list()\n")],
+  },
+  E1652: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/Api.ts",
+        `${SERVICES}${SCHEMA}export const Api = endpoints({ getOrder: { method: 'GET', path: '/orders/:id', params: s.object({ id: s.string(), extra: s.string() }), output: s.string() } })\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "src/Api.ts",
+        `${SERVICES}${SCHEMA}export const Api = endpoints({ getOrder: { method: 'GET', path: '/orders/:id', params: s.object({ id: s.string() }), output: s.string() } })\n`,
+      ),
+    ],
+  },
+  E1653: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/Api.ts",
+        `${SERVICES}${SCHEMA}export const Api = endpoints({ list: { method: 'GET', path: '/orders', body: s.string(), output: s.string() } })\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "src/Api.ts",
+        `${SERVICES}${SCHEMA}export const Api = endpoints({ add: { method: 'POST', path: '/orders', body: s.string(), output: s.string() } })\n`,
+      ),
+    ],
   },
   E1751: {
     bad: [f("src/a.ts", 'export const a: number = "text"\n')],

@@ -31,7 +31,7 @@ The client never throws; every failure is an `err`.
 
 **Not here** (stdlib): retries, caching, auth and token refresh, interceptors.
 
-**Rules.** E1651 `ctx.net.fetch` in app code (fix: declare an endpoint)  (enforced only once this section is implemented; until then client-only apps call `ctx.net.fetch` through the component `ctx`)· E1652 a `:param` in `path` without a field in `params`, or a `params` field missing from `path` · E1653 `body` on a `GET` or `HEAD` endpoint.
+**Rules.** On `endpoints({...})` literals from `@keel/services` and app code. E1651 `ctx.net.fetch` in app code (no fix; declare an endpoint) · E1652 a `:param` in a literal `path` without a field in a literal `params`, or a `params` field missing from `path` (fix adds or removes the field) · E1653 `body` on a `GET` or `HEAD` endpoint (fix removes it).
 
 **Conformance.**
 - A 2xx response whose body matches `output` yields `ok` with the decoded value.

@@ -17,7 +17,8 @@ function parse(text: string): { ok: true; value: unknown } | { ok: false } {
 /**
  * E1005 (k.compiler): a `.keel/<name>.json` among the checked files that is not exactly what the compiler
  * writes: `{ data, hash }` in canonical JSON plus a newline, `hash` equal to the content hash of `data`, and
- * equal to `artifacts.hashes[name]` when the caller passes the compiler's hashes. When only the bytes differ
+ * equal to `artifacts.hashes[name]` when the caller passes the compiler's hashes. A file with no `data` key
+ * (for example `{"hash":"abc"}`) is malformed: reported, never hashed, no diff. When only the bytes differ
  * (data and hash intact) the fix restores them; otherwise the file must be regenerated (no diff).
  */
 export function generatedEdits(
@@ -34,7 +35,9 @@ export function generatedEdits(
     const data: unknown = typeof value === "object" && value !== null ? Reflect.get(value, "data") : undefined;
     const hash: unknown = typeof value === "object" && value !== null ? Reflect.get(value, "hash") : undefined;
     const expected = typeof known === "object" && known !== null ? Reflect.get(known, name) : undefined;
-    const intact = typeof hash === "string" && hash === hashOf(data) && (expected === undefined || expected === hash);
+    const hasData = typeof value === "object" && value !== null && Object.hasOwn(value, "data");
+    const intact =
+      hasData && typeof hash === "string" && hash === hashOf(data) && (expected === undefined || expected === hash);
     const canonical = `${canonicalJson({ data, hash })}\n`;
     if (intact && file.source === canonical) continue;
     const base: Diagnostic = {
