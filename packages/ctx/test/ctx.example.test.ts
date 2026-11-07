@@ -52,10 +52,10 @@ describe("register", () => {
     expect("example-hidden" in createCtx({ mode: "sim" })).toBe(false);
   });
 
-  test("accessor on a ctx created before register throws", () => {
+  test("accessor on a ctx created before register resolves lazily", () => {
     const early = createCtx({ mode: "sim" });
     const late = register("example-late", { real: () => ({}), shell: () => ({}), sim: () => ({}) });
-    expect(() => late(early)).toThrow(/absent/);
+    expect(late(early)).toBe(late(early));
   });
 
   test("ctx is frozen", () => {

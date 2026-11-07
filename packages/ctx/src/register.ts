@@ -1,13 +1,14 @@
 import { narrowAccessor } from "../unsafe/narrowAccessor.ts";
 import type { Capability } from "./Capability.ts";
 import type { Ctx } from "./Ctx.ts";
+import { ctxMeta } from "./internal/ctxMeta.ts";
 import { deriveSeed } from "./internal/deriveSeed.ts";
 import { extensions } from "./internal/extensions.ts";
 import { kernelNames } from "./internal/kernelNames.ts";
 
 /**
  * Register a capability (extension point). Returns the typed accessor `(ctx) => T`, the only way to reach it.
- * Each factory receives a seed derived from the ctx seed and the name. Registering the same name with the
+ * Resolution is lazy: the first access on a ctx builds the implementation for its mode, so ctx and register may be created in either order. Each factory receives a seed derived from the ctx seed and the name. Registering the same name with the
  * identical `impls` object again returns the original accessor (HMR safe); any other repeat throws E1602.
  */
 export function register<T extends object>(name: string, impls: Capability<T>): (ctx: Ctx) => T {
@@ -18,16 +19,14 @@ export function register<T extends object>(name: string, impls: Capability<T>): 
   }
   const instances = new WeakMap<Ctx, T>();
   const accessor = (ctx: Ctx): T => {
-    const impl = instances.get(ctx);
-    if (impl === undefined) throw new Error(`capability "${name}" is absent: ctx was created before register`);
+    const cached = instances.get(ctx);
+    if (cached !== undefined) return cached;
+    const meta = ctxMeta.get(ctx);
+    if (meta === undefined) throw new Error(`capability "${name}": not a ctx made by createCtx`);
+    const impl = impls[meta.mode]({ seed: deriveSeed(meta.seed, name) });
+    instances.set(ctx, impl);
     return impl;
   };
-  extensions.set(name, {
-    impls,
-    accessor,
-    attach: (target, mode, seed) => {
-      instances.set(target, impls[mode]({ seed: deriveSeed(seed, name) }));
-    },
-  });
+  extensions.set(name, { impls, accessor });
   return accessor;
 }
