@@ -12,6 +12,14 @@
       "types": "./src/vite.ts",
       "default": "./src/vite.ts"
     },
+    "./routes": {
+      "types": "./src/buildRoutes.ts",
+      "default": "./src/buildRoutes.ts"
+    },
+    "./internal": {
+      "types": "./src/globals/index.ts",
+      "default": "./src/globals/index.ts"
+    },
     "./a11y": {
       "types": "./src/a11y/index.ts",
       "default": "./src/a11y/index.ts"

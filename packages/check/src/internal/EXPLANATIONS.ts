@@ -18,15 +18,15 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1002",
-    "raw HTML in app code: the innerHTML family by name or literal key, DOMParser, document.write",
-    "Raw HTML has no API outside unsafe; Reflect/Object property calls and srcdoc count too.",
+    "raw HTML in app code: innerHTML family by name or constant key, DOMParser, document.write, data in script/style",
+    "Raw HTML has no API outside unsafe; aliases, Reflect/Object calls, srcdoc, execCommand insertHTML count.",
     "el.innerHTML = s -> render {s} as a text child",
     "k.compiler",
   ],
   [
     "E1003",
-    "literal javascript: or data: URL in a URL attribute",
-    "URL attributes take an Href or an absolute http(s), mailto, tel URL.",
+    "literal javascript: or data: URL in a URL attribute; any srcdoc, <base href> or <meta http-equiv>",
+    "URL attributes take an Href or an absolute http(s), mailto, tel URL. The server owns the document head.",
     'href="javascript:go()" -> a Button with an event handler',
     "k.compiler",
   ],
@@ -40,15 +40,15 @@ const ROWS: readonly Row[] = [
   [
     "E1005",
     "hand edit to generated output (.keel/, turbo.json, CI workflows, Dockerfiles, API schemas), a .keel/ file older than its sources, or one the compiler does not write",
-    "Each .keel/ is compared with the sources of the project that holds it.",
+    "Each .keel/ is compared with its project's sources; routes.json with the literal ids, paths and guards in routes.ts.",
     "revert the file and regenerate; remove a file the compiler does not write",
     "k.compiler",
   ],
   [
     "W1005",
-    ".keel/routes.json beside a routes.ts, not verified by keel check",
-    "Only evaluating routes.ts derives it; check never runs app code. vite build rewrites it and warns if it differed.",
-    "run keel build or vite build, and commit the rewritten routes.json",
+    ".keel/routes.json parts that are not literals in routes.ts (named), not verified by keel check",
+    "check reads routes.ts without running it; a computed id or path needs evaluation. Builds rewrite it, warning if it differed.",
+    "use literal route ids and paths, or rebuild (vite build or keel build) and commit routes.json",
     "k.compiler",
   ],
   [
@@ -377,7 +377,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1601",
-    "Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code",
+    "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",
     "Date.now() -> ctx.clock.now()",
     "k.ctx",
@@ -391,7 +391,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1603",
-    "eval, Function(...), or new Function(...) in app code",
+    "eval, Function(...), new Function(...), a function's constructor, or import() of a data: URL in app code",
     "Code from a string reaches every ambient effect past E1601.",
     "eval(src) -> call the function src describes",
     "k.ctx",

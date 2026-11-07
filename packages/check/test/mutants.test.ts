@@ -1,3 +1,4 @@
+import { references } from "@keel/compiler/internal";
 // Targeted examples pinning exact diagnostics (code, location, message, fix diff), helper edge cases, and
 // formatting. Rule output is pinned with inline snapshots of reviewed fixtures. Property parts use seed 1337.
 import fc from "fast-check";
@@ -23,7 +24,6 @@ import { lineCol } from "../src/internal/lineCol.ts";
 import { nodeAt } from "../src/internal/nodeAt.ts";
 import { normalize } from "../src/internal/normalize.ts";
 import { num } from "../src/internal/num.ts";
-import { references } from "../src/internal/references.ts";
 import { stemOf } from "../src/internal/stemOf.ts";
 import { str } from "../src/internal/str.ts";
 import { summarize } from "../src/internal/summarize.ts";
@@ -3048,7 +3048,7 @@ describe("project passes", () => {
       # forged: data changed, hash recomputed
       .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
       # routes manifest: routes.json not verified
-      .keel/routes.json:1:1 .keel/routes.json not verified: routes.ts runs only in vite build
+      .keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
       # routes manifest: W1005 only
 
       # routes manifest: not self-consistent
@@ -3066,7 +3066,7 @@ describe("project passes", () => {
       # nested dir: genuine
 
       # nested manifest: W1005
-      apps/a/.keel/routes.json:1:1 .keel/routes.json not verified: routes.ts runs only in vite build
+      apps/a/.keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
       # root manifest: not nested
 
       # nested source: its own project
@@ -3104,7 +3104,7 @@ describe("project passes", () => {
       # 0143: empty hashes are ignored
       .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; regenerate
       # project: sources come from it
-      .keel/routes.json:1:1 .keel/routes.json not verified: routes.ts runs only in vite build
+      .keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
       # project: empty
       .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
       # unknown name

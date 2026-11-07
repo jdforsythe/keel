@@ -1,7 +1,7 @@
+import { references } from "@keel/compiler/internal";
 import { Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
-import { references } from "../internal/references.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";

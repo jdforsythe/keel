@@ -2,14 +2,22 @@ import type { Ctx } from "@keel/ctx";
 import { MAX_NAMES } from "./internal/MAX_NAMES.ts";
 import { stats } from "./internal/stats.ts";
 
-/** Add one duration under `name` for `ctx`; a new name beyond `MAX_NAMES` distinct names is not retained. */
+/**
+ * Add one duration under `name` for `ctx`. The name moves to the most recent end; a new name at `MAX_NAMES` evicts
+ * the least recently updated one and counts it in `dropped` (rfc:0059), so request-derived names cannot starve others.
+ */
 function record(ctx: Ctx, name: string, ms: number): void {
-  const byName = stats.get(ctx) ?? new Map();
-  stats.set(ctx, byName);
+  const st = stats.get(ctx) ?? { byName: new Map(), dropped: 0 };
+  stats.set(ctx, st);
   const d = Math.max(0, ms);
-  const prior = byName.get(name);
-  if (prior === undefined && byName.size >= MAX_NAMES) return; // first come, first kept: later names are dropped
-  byName.set(
+  const prior = st.byName.get(name);
+  if (prior === undefined && st.byName.size >= MAX_NAMES) {
+    const oldest = st.byName.keys().next();
+    if (oldest.done !== true) st.byName.delete(oldest.value);
+    st.dropped += 1;
+  }
+  st.byName.delete(name);
+  st.byName.set(
     name,
     prior === undefined
       ? { count: 1, totalMs: d, maxMs: d, lastMs: d }

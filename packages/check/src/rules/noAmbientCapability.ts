@@ -1,11 +1,10 @@
+import { globalRefs, unwrapExpression } from "@keel/compiler/internal";
 import { type Expression, Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
-import { globalRefs } from "../internal/globalRefs.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { isTestPath } from "../internal/isTestPath.ts";
 import { num } from "../internal/num.ts";
 import { str } from "../internal/str.ts";
-import { unwrapExpression } from "../internal/unwrapExpression.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
@@ -29,6 +28,9 @@ const AMBIENT: ReadonlySet<string> = new Set([
   "crypto.randomUUID",
   "crypto.getRandomValues",
   "performance.now",
+  "performance.timeOrigin",
+  "Temporal.Now",
+  "navigator.sendBeacon",
   "setTimeout",
   "setInterval",
   "requestAnimationFrame",
@@ -38,6 +40,8 @@ const AMBIENT: ReadonlySet<string> = new Set([
   "EventSource",
   "document.cookie",
 ]);
+/** `Intl.DateTimeFormat` members that read the clock when called with no date (rfc:0058). */
+const FORMATS: ReadonlySet<string> = new Set(["format", "formatToParts"]);
 /** Globals whose every member is ambient storage. */
 const STORAGE: ReadonlySet<string> = new Set(["localStorage", "sessionStorage", "indexedDB"]);
 /** Constructors that are ambient effects with any arguments. */
@@ -65,7 +69,9 @@ const endsWith = (p: readonly string[], tail: readonly string[]): boolean =>
  * E1601 (k.ctx): the clock, random, net and storage families in app code (and test code: tests are
  * deterministic too): `Date` (`Date.now`, `new Date()`, `Date()`), `performance.now`, `Math.random`,
  * `crypto.randomUUID`/`getRandomValues`, `setTimeout`/`setInterval`/`requestAnimationFrame`, `fetch`,
- * `XMLHttpRequest`/`WebSocket`/`EventSource`, `localStorage`/`sessionStorage`/`indexedDB`, `document.cookie`;
+ * `XMLHttpRequest`/`WebSocket`/`EventSource`, `localStorage`/`sessionStorage`/`indexedDB`, `document.cookie`,
+ * `Temporal.Now`, `performance.timeOrigin`, `navigator.sendBeacon`, and an `Intl.DateTimeFormat` `format()` or
+ * `formatToParts()` with no date (its instance followed through a same-file `const`; rfc:0058);
  * also through `globalThis`/`window`/`self`, literal computed keys, and same-file aliases and destructuring,
  * names bound by lexical scope (`globalRefs`, rfc:0053). An unexported alias is reported at its uses, not at
  * its initializer. Fix: the `ctx` equivalent where exact.
@@ -125,6 +131,18 @@ export const noAmbientCapability: RuleDef = {
       },
       CallExpression: (n) => {
         const c = n.callee;
+        const fmt = unwrapExpression(c);
+        if (n.arguments.length === 0 && fmt.type === "MemberExpression") {
+          const member = fmt.computed
+            ? g.constString(fmt.property)
+            : fmt.property.type === "Identifier"
+              ? fmt.property.name
+              : null;
+          const made = g.initOf(fmt.object);
+          const maker = made.type === "NewExpression" || made.type === "CallExpression" ? g.resolve(made.callee) : null;
+          if (FORMATS.has(member ?? "") && maker?.join(".") === "Intl.DateTimeFormat")
+            return report(c.start, `Intl.DateTimeFormat ${member}()`, n.end - 1, n.end - 1, "ctx.clock.now()");
+        }
         const p = g.resolve(c);
         if (p === null) return;
         const core = unwrapExpression(c).start;

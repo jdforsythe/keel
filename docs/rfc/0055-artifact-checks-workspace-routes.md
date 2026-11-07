@@ -55,3 +55,8 @@ Status: accepted (ADR-0043)
 - k.compiler: 1,500 to 1,495 tokens (additions offset by editorial cuts).
 - W1005 explain: one entry.
 - `keel check` on golden app 1 adds one W1005 line.
+
+## Amendment (RFC 0059, backlog 0149, 0150, 0155)
+- **W1005 now names what was not read.** `keel check` compares `routes.json` with the literal ids, paths, layouts, actions and guard redirects of `routes.ts` (`routeLiterals`, no evaluation). A mismatch is E1005. W1005 remains only for parts that are not literals.
+- **The known limit is closed.** `keel build` writes `routes.json` when every deployable is `node` (`@keel/compiler/routes`).
+- **Grouping reaches the rule compile.** `check()` compiles each project's code with its own topology, not only its artifacts.

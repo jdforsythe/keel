@@ -1,4 +1,4 @@
-// Spec: k.compiler, clause "`javascript:` in `object data`, a `srcset` candidate, or a `<set>` `to`/`<animate>` `values` item is E1003 as a literal and `about:blank` bound; any `<base>` `href` is E1003, never rendered."
+// Spec: k.compiler, clause "`javascript:` in `object data`, a `srcset` candidate, or a `<set>` `to`/`<animate>` `values` item is E1003 as a literal and `about:blank` bound; any `<base>` `href` or `<meta>` `http-equiv` is E1003, never rendered."
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below). RFC 0056 / backlog 0132, 0133 (compiler side of the spread repro).
 import { compile } from "@keel/compiler";

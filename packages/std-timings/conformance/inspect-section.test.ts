@@ -1,11 +1,11 @@
 // Spec: std.timings, clause "A dev `createApp` whose app ctx ran `time` serves `sections['timings.recent']` as
-// `{ doc: Timings.doc(), value: Timings.encode(timingsOf(ctx)) }`."
+// `{ doc: TimingsRecent.doc(), value: TimingsRecent.encode({ timings: timingsOf(ctx), dropped: 0 }) }`."
 // @vitest-environment happy-dom
 // Seed 1337
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import { createApp, topology } from "@keel/server";
-import { Timings, time, timingsOf } from "@keel/std-timings";
+import { TimingsRecent, time, timingsOf } from "@keel/std-timings";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
@@ -20,7 +20,7 @@ const routes = manifest({
   },
 });
 
-test("A dev `createApp` whose app ctx ran `time` serves `sections['timings.recent']` as `{ doc: Timings.doc(), value: Timings.encode(timingsOf(ctx)) }`", async () => {
+test("A dev `createApp` whose app ctx ran `time` serves `sections['timings.recent']` as `{ doc: TimingsRecent.doc(), value: TimingsRecent.encode({ timings: timingsOf(ctx), dropped: 0 }) }`.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.array(fc.integer({ min: 0, max: 5000 }), { minLength: 1, maxLength: 5 }), async (ds) => {
       const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -40,7 +40,10 @@ test("A dev `createApp` whose app ctx ran `time` serves `sections['timings.recen
       expect(res.status).toBe(200);
       const body: unknown = await res.json();
       const secs = Object(Reflect.get(Object(body), "sections"));
-      expect(secs["timings.recent"]).toEqual({ doc: Timings.doc(), value: Timings.encode(timingsOf(ctx)) });
+      expect(secs["timings.recent"]).toEqual({
+        doc: TimingsRecent.doc(),
+        value: TimingsRecent.encode({ timings: timingsOf(ctx), dropped: 0 }),
+      });
     }),
     { seed: 1337, numRuns: 10 },
   );

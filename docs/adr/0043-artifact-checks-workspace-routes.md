@@ -23,3 +23,4 @@
 - A root `keel check` compiles once per app with a checked artifact. Golden apps cost about 10 ms each.
 - `check()` callers that relied on `artifacts.hashes` pass `project`.
 - **Known limit.** `keel build` in a project whose deployables are all `node` runs no project-level `vite build`, so `routes.json` is neither rewritten nor compared there.
+- **Superseded in part by ADR-0049.** W1005 is now limited to non-literal parts of `routes.ts`, and the `node`-only limit above is closed.

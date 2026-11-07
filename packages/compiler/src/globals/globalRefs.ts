@@ -15,11 +15,21 @@ type Span = { readonly start: number; readonly end: number };
 type Key = { readonly key: PropertyKey; readonly computed: boolean };
 /** What a binding was initialized from: `init`, then the destructuring keys in order. */
 type Source = { readonly init: Expression; readonly keys: readonly Key[] };
-type Binding = { readonly scope: Span; readonly source: Source | null; readonly mutable: boolean };
+/** `fn`: a function or class declaration, which stands for `Function.prototype` (its `constructor` runs strings). */
+type Binding = {
+  readonly scope: Span;
+  readonly source: Source | null;
+  readonly mutable: boolean;
+  readonly fn: boolean;
+};
 
 const GLOBAL_OBJECTS: ReadonlySet<string> = new Set(["globalThis", "window", "self"]);
 /** Alias links followed before giving up (a cycle resolves to nothing). */
 const MAX_DEPTH = 16;
+/** The path a function or class stands for: its `constructor` is the `Function` family (rfc:0058). */
+const FUNCTION_PROTOTYPE: readonly string[] = ["Function", "prototype"];
+
+const FUNCTIONS: ReadonlySet<string> = new Set(["FunctionExpression", "ArrowFunctionExpression", "ClassExpression"]);
 
 const spanKey = (start: number, end: number): string => `${start}:${end}`;
 const span = (n: Span): Span => ({ start: n.start, end: n.end });
@@ -38,7 +48,9 @@ const memo = new WeakMap<Program, ResolvedGlobals>();
  * (program; function for parameters and `var`; block, `for`, `catch`, `switch`, static block for the rest);
  * a read binds to the innermost span containing it, and a name with none is the global. A binding resolves
  * to the path of its initializer (plus destructuring keys) when it is a `const`, a parameter default, or a
- * `let`/`var` never assigned in the file; any other binding is a local and resolves to null.
+ * `let`/`var` never assigned in the file; a function or class resolves to `Function.prototype`, so its
+ * `constructor` is `Function` (rfc:0058); any other binding is a local and resolves to null. Keys fold
+ * constant strings (`'inner' + 'HTML'`, a template of `const` parts).
  */
 export function globalRefs(program: Program): ResolvedGlobals {
   const hit = memo.get(program);
@@ -63,9 +75,9 @@ export function globalRefs(program: Program): ResolvedGlobals {
   /** Simple aliases (`X = <expr>`, no keys) whose initializer is skipped when the alias resolves. */
   const aliases: { name: string; at: number; init: Expression }[] = [];
 
-  const bind = (name: string, scope: Span, source: Source | null, mutable: boolean): void => {
+  const bind = (name: string, scope: Span, source: Source | null, mutable: boolean, fn = false): void => {
     const list = decls.get(name);
-    const b: Binding = { scope, source, mutable };
+    const b: Binding = { scope, source, mutable, fn };
     if (list === undefined) decls.set(name, [b]);
     else list.push(b);
   };
@@ -128,22 +140,22 @@ export function globalRefs(program: Program): ResolvedGlobals {
       if (n.declaration !== null) exportedDecls.add(n.declaration.start);
     },
     FunctionDeclaration: (n) => {
-      if (n.id) bind(n.id.name, top(scopes), null, false);
+      if (n.id) bind(n.id.name, top(scopes), null, false, true);
       fnEnter(n);
     },
     "FunctionDeclaration:exit": fnExit,
     FunctionExpression: (n) => {
-      if (n.id) bind(n.id.name, span(n), null, false);
+      if (n.id) bind(n.id.name, span(n), null, false, true);
       fnEnter(n);
     },
     "FunctionExpression:exit": fnExit,
     ArrowFunctionExpression: fnEnter,
     "ArrowFunctionExpression:exit": fnExit,
     ClassDeclaration: (n) => {
-      if (n.id) bind(n.id.name, top(scopes), null, false);
+      if (n.id) bind(n.id.name, top(scopes), null, false, true);
     },
     ClassExpression: (n) => {
-      if (n.id) bind(n.id.name, span(n), null, false);
+      if (n.id) bind(n.id.name, span(n), null, false, true);
     },
     BlockStatement: enter,
     "BlockStatement:exit": exit,
@@ -235,6 +247,7 @@ export function globalRefs(program: Program): ResolvedGlobals {
     if (depth > MAX_DEPTH) return null;
     const b = lookup(name, at);
     if (b === undefined) return [name];
+    if (b.fn) return [...FUNCTION_PROTOTYPE];
     const src = followed(name, b);
     if (src === null) return null;
     const base = resolveExpr(src.init, depth + 1);
@@ -250,6 +263,7 @@ export function globalRefs(program: Program): ResolvedGlobals {
   const resolveExpr = (e: Expression, depth: number): string[] | null => {
     const x = unwrap(e);
     if (x.type === "Identifier") return resolveName(x.name, x.start, depth);
+    if (FUNCTIONS.has(x.type)) return [...FUNCTION_PROTOTYPE];
     if (x.type !== "MemberExpression") return null;
     const base = resolveExpr(x.object, depth);
     if (base === null) return null;
@@ -259,6 +273,15 @@ export function globalRefs(program: Program): ResolvedGlobals {
         ? x.property.name
         : null;
     return key === null ? null : normalize([...base, key]);
+  };
+
+  /** `e`, or the initializer an unassigned alias chain from `e` ends at (unwrapped), so a value can be inspected. */
+  const initOf = (e: Expression, depth: number): Expression => {
+    const x = unwrap(e);
+    if (x.type !== "Identifier" || depth > MAX_DEPTH) return x;
+    const b = lookup(x.name, x.start);
+    const src = b === undefined ? null : followed(x.name, b);
+    return src === null || src.keys.length > 0 ? x : initOf(src.init, depth + 1);
   };
 
   const skipped = new Set<string>();
@@ -274,6 +297,8 @@ export function globalRefs(program: Program): ResolvedGlobals {
     resolve: (e) => resolveExpr(e, 0),
     resolveName: (name, at) => resolveName(name, at, 0),
     isAliasInit: (start, end) => skipped.has(spanKey(start, end)),
+    constString: (e) => constString(e, 0),
+    initOf: (e) => initOf(e, 0),
   };
   memo.set(program, out);
   return out;

@@ -1,8 +1,10 @@
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
+import type { Expected } from "./Expected.ts";
 import { artifactDir } from "./artifactDir.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { hashOf } from "./hashOf.ts";
+import { routesMismatch } from "./routesMismatch.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
 const GENERATED = /(?:^|\/)\.keel\/([^/]+\.json)$/;
@@ -22,18 +24,17 @@ function parse(text: string): { ok: true; value: unknown } | { ok: false } {
  * in `expected`), else E1005 (not among the compiled artifacts); then `{ data, hash }` in canonical JSON plus a
  * newline, with `hash` the content hash of `data`. A file with no `data` key (for example `{"hash":"abc"}`) is
  * malformed: reported, never hashed, no diff. A self-consistent file whose hash is not the expected one (forged or
- * stale) must be regenerated (no diff); one whose expected hash is `null` is W1005, not verified. When only the
- * bytes differ (data and hash intact) the fix restores them.
+ * stale) must be regenerated (no diff). One whose expected hash is `null` (`routes.json` beside an evaluated
+ * `routes.ts`) is compared with the manifests' literals (rfc:0059): a mismatch is E1005, and parts that are not literals
+ * are W1005, named. When only the bytes differ (data and hash intact) the fix restores them.
  */
-export function generatedEdits(
-  files: readonly SourceFile[],
-  expected: ReadonlyMap<string, Readonly<Record<string, string | null>>>,
-): Diagnostic[] {
+export function generatedEdits(files: readonly SourceFile[], expected: ReadonlyMap<string, Expected>): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const file of files) {
     const name = GENERATED.exec(file.path)?.[1];
     if (name === undefined) continue;
-    const hashes = expected.get(artifactDir(file.path) ?? "") ?? {};
+    const project = expected.get(artifactDir(file.path) ?? "");
+    const hashes = project?.hashes ?? {};
     const parsed = parse(file.source);
     const value = parsed.ok ? parsed.value : null;
     const data: unknown = typeof value === "object" && value !== null ? Reflect.get(value, "data") : undefined;
@@ -46,23 +47,31 @@ export function generatedEdits(
     const canonical = `${canonicalJson({ data, hash })}\n`;
     const shown = `.keel/${name.slice(0, 30)}`;
     const at = { path: file.path, line: 1, col: 1, see: "k.compiler" };
-    if (intact && file.source === canonical) {
-      if (want === null)
+    const literals = want === null ? project?.routes : undefined;
+    const off = literals === undefined ? undefined : routesMismatch(data, literals);
+    if (intact && file.source === canonical && off === undefined) {
+      const first = literals === undefined ? (want === null ? "routes" : undefined) : literals.unread[0];
+      if (first !== undefined) {
+        const rest = (literals?.unread.length ?? 1) - 1;
+        const more = rest > 0 ? ` (+${rest} more)` : "";
         out.push({
           kind: "diag",
           code: "W1005",
           ...at,
-          message: `${shown} not verified: routes.ts runs only in vite build`,
+          message: `${shown} unverified, not literal: ${first.slice(0, 34)}${more}`,
         });
+      }
       continue;
     }
     const message = !known
       ? `${shown} is not among the compiled artifacts; remove it`
-      : consistent && !intact
-        ? `generated ${shown} does not match its sources; regenerate`
-        : `hand edit to generated ${shown}; revert and regenerate`;
+      : off !== undefined && intact
+        ? `${shown} differs from routes.ts at "${off.slice(0, 24)}"; regenerate`
+        : consistent && !intact
+          ? `generated ${shown} does not match its sources; regenerate`
+          : `hand edit to generated ${shown}; revert and regenerate`;
     const base: Diagnostic = { kind: "diag", code: "E1005", ...at, message };
-    out.push(intact ? { ...base, fix: unifiedDiff(file.path, file.source, canonical) } : base);
+    out.push(intact && off === undefined ? { ...base, fix: unifiedDiff(file.path, file.source, canonical) } : base);
   }
   return out;
 }

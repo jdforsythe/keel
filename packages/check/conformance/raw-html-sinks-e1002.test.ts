@@ -1,5 +1,5 @@
 // Seed 1337
-// Spec: k.compiler, Rules "E1002 raw HTML in app code (`innerHTML` family by literal key, `DOMParser`, `document.write`; rfc:0053)"
+// Spec: k.compiler, Rules "E1002 raw HTML (`innerHTML` family, `DOMParser`, `document.write`, `on*` strings, also spread; data in `script`/`style`; rfc:0053, 0058)"
 import { check } from "@keel/check";
 import { expect, test } from "vitest";
 

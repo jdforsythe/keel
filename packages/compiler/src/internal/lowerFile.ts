@@ -16,6 +16,7 @@ import type { ElementInfo } from "./ElementInfo.ts";
 import type { FnInfo } from "./FnInfo.ts";
 import type { Lowered } from "./Lowered.ts";
 import { RAW_HTML } from "./RAW_HTML.ts";
+import { RAW_TEXT_TAGS } from "./RAW_TEXT_TAGS.ts";
 import type { Span } from "./Span.ts";
 import type { StyleRewrite } from "./StyleRewrite.ts";
 import { attrNameOf } from "./attrNameOf.ts";
@@ -26,10 +27,12 @@ import { cleanJsxText } from "./cleanJsxText.ts";
 import { componentAt } from "./componentAt.ts";
 import { componentFns } from "./componentFns.ts";
 import { decodeEntities } from "./decodeEntities.ts";
+import { endsRawText } from "./endsRawText.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 import { exprOf } from "./exprOf.ts";
 import { intrinsicOf } from "./intrinsicOf.ts";
 import { isHtmlTag } from "./isHtmlTag.ts";
+import { literalTextOf } from "./literalTextOf.ts";
 import { lowerBound } from "./lowerBound.ts";
 import { patternNames } from "./patternNames.ts";
 import { propsNameOf } from "./propsNameOf.ts";
@@ -275,15 +278,20 @@ export function lowerFile(
     return lowerNode(v);
   }
 
-  function emitElement(el: JSXElement, t: Template, isRoot: boolean): void {
+  function emitElement(el: JSXElement, t: Template, isRoot: boolean, inForeign = false): void {
     const me = info.get(el.start);
     const id = me?.id ?? `${a.idPrefix}.?`;
     const tag = tagNameOf(el.openingElement.name);
+    const foreign = inForeign || tag === "svg" || tag === "math";
+    // rfc:0058: `script`/`style` text is code or CSS. Only literal attributes and text are emitted; anything
+    // bound is E1002 (`ruleRawText`) and never lowered to an op.
+    const rawText = RAW_TEXT_TAGS.has(tag);
     const ref = (): string => elRef(t, id, isRoot);
     t.html += `<${tag}`;
     if (me === undefined || !me.explicit) t.html += ` id="${escapeHtml(id)}"`;
     const at = t.html.length;
     for (const at of el.openingElement.attributes) {
+      if (rawText && (at.type === "JSXSpreadAttribute" || staticValueOf(at.value) === undefined)) continue;
       if (at.type === "JSXSpreadAttribute") {
         const s = tmp("s");
         const k = tmp("k");
@@ -325,15 +333,29 @@ export function lowerFile(
       record(id, kind, out, at.value);
     }
     t.html += ">";
-    if (!VOID.has(tag)) {
-      emitChildren(el.children, t, { id, tag, isRoot });
+    if (rawText) {
+      // Literal text only; data children are dropped (E1002). In HTML it is raw template text, which no parser
+      // decodes. In foreign content (SVG/MathML) a browser parses it as markup and the server keeps it raw, so it
+      // is set once as text node data instead: the serializer is its one escaping owner (backlog 0168).
+      const texts = el.children.map(literalTextOf);
+      const text = texts.every((x) => x !== null) ? texts.join("") : "";
+      if (foreign) {
+        if (text !== "") t.ops.push(`${ref()}.textContent = ${q(text)};`);
+      } else if (!endsRawText(tag, text)) t.html += text;
+      t.html += `</${tag}>`;
+    } else if (!VOID.has(tag)) {
+      emitChildren(el.children, t, { id, tag, isRoot, foreign });
       t.html += `</${tag}>`;
     }
     if (me !== undefined && (bound.has(id) || (isRoot && effectful(el.start))))
       t.html = `${t.html.slice(0, at)} data-k="${escapeHtml(id)}"${t.html.slice(at)}`;
   }
 
-  function emitChildren(children: JSXChild[], t: Template, parent: { id: string; tag: string; isRoot: boolean }): void {
+  function emitChildren(
+    children: JSXChild[],
+    t: Template,
+    parent: { id: string; tag: string; isRoot: boolean; foreign: boolean },
+  ): void {
     const { id: parentId, isRoot: parentIsRoot } = parent;
     let index = 0;
     let prevText = false;
@@ -361,7 +383,7 @@ export function lowerFile(
         record(parentId, "text", "#text", it.expr);
         prevText = true;
       } else if (it.kind === "el") {
-        emitElement(it.node, t, false);
+        emitElement(it.node, t, false, parent.foreign);
         prevText = false;
       } else {
         t.html += "<!---->";

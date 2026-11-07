@@ -5,16 +5,17 @@ import { CLIENT_MANIFEST } from "./entry/CLIENT_MANIFEST.ts";
 import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { RESUME_ENTRY } from "./entry/RESUME_ENTRY.ts";
+import { artifactText } from "./internal/artifactText.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
-import { hashOf } from "./internal/hashOf.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
 import { isSourcePath } from "./internal/isSourcePath.ts";
 import { islandsCode } from "./internal/islandsCode.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
+import { writeArtifact } from "./internal/writeArtifact.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
 import type { Output } from "./types/Output.ts";
 import type { RouteEntry } from "./types/RouteEntry.ts";
@@ -169,16 +170,11 @@ export default function (): {
     }
     const { artifacts, duplicates } = mergeArtifacts(parts);
     artifacts["routes.json"] = routes;
-    const dir = path.join(root, ".keel");
-    fs.mkdirSync(dir, { recursive: true });
+    fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
     for (const name of clientBuild ? [] : NAMES) {
-      const text = `${canonicalJson({ data: artifacts[name], hash: hashOf(artifacts[name]) })}\n`;
+      const text = artifactText(artifacts[name]);
       if (written.get(name) === text) continue;
-      const file = path.join(dir, name);
-      const tmp = `${file}.${process.pid}.tmp`;
-      fs.writeFileSync(tmp, text);
-      fs.chmodSync(tmp, 0o444);
-      fs.renameSync(tmp, file);
+      writeArtifact(root, name, text);
       written.set(name, text);
     }
     const usages = canonicalJson(artifacts["styles.json"]);
@@ -218,7 +214,7 @@ export default function (): {
     routes = r.routes;
     // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it (rfc:0055).
     const prior = path.join(root, ".keel", "routes.json");
-    const next = `${canonicalJson({ data: routes, hash: hashOf(routes) })}\n`;
+    const next = artifactText(routes);
     if (command === "build" && !clientBuild && fs.existsSync(prior) && fs.readFileSync(prior, "utf8") !== next)
       warn("keel: W1005 .keel/routes.json differed from routes.ts; rewritten");
     flush();

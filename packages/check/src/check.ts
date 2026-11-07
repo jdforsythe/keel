@@ -1,5 +1,7 @@
-import { artifactHashes, compile, parseTopology } from "@keel/compiler";
+import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } from "@keel/compiler";
+import type { Topology } from "@keel/compiler";
 import type { Checked } from "./internal/Checked.ts";
+import type { Expected } from "./internal/Expected.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
@@ -19,53 +21,81 @@ import type { CheckResult } from "./types/CheckResult.ts";
 import type { Diagnostic } from "./types/Diagnostic.ts";
 import type { SourceFile } from "./types/SourceFile.ts";
 
+/** The topology of the project at `dir`: the caller's for the root, else the static parse of `<dir>topology.ts`. */
+function topologyOf(dir: string, all: readonly SourceFile[], opts: CheckOptions): Topology | undefined {
+  if (dir === "") return opts.topology;
+  const manifest = all.find((f) => f.path === `${dir}topology.ts`);
+  return manifest && parseTopology(manifest.source).topology;
+}
+
 /**
- * The hashes E1005 compares each checked `.keel/` dir's artifacts with, keyed by the dir of the project holding it
- * (`""` for the root, else `apps/a/`): what the compiler derives from the sources under that dir in `opts.project`
- * (default `files`), paths made relative to it, with its own `topology.ts` (rfc:0050, rfc:0055). One compile per
- * project with a checked artifact; nothing the caller passes replaces the derivation (backlog 0143).
+ * What E1005 compares each checked `.keel/` dir's artifacts with, keyed by the dir of the project holding it (`""` for
+ * the root, else `apps/a/`): the hashes the compiler derives from the sources under that dir in `opts.project`
+ * (default `files`), paths made relative to it, with its own `topology.ts` (rfc:0050, rfc:0055), and, when
+ * `routes.json` is evaluated, the literals of its `routes.ts` (rfc:0059). One compile per project with a checked
+ * artifact; nothing the caller passes replaces the derivation (backlog 0143).
  */
-function expectedHashes(
-  files: readonly SourceFile[],
-  opts: CheckOptions,
-): ReadonlyMap<string, Readonly<Record<string, string | null>>> {
-  const out = new Map<string, Readonly<Record<string, string | null>>>();
+function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): ReadonlyMap<string, Expected> {
+  const out = new Map<string, Expected>();
   const project = opts.project ?? files;
+  const dirs = projectDirs(project);
+  /** A file under `dir` that a deeper project holds is that project's, not `dir`'s (as `keel build` compiles it). */
+  const deeper = (dir: string, path: string): boolean =>
+    dirs.some((d) => d.length > dir.length && d.startsWith(dir) && path.startsWith(d));
   for (const file of files) {
     const dir = artifactDir(file.path);
     if (dir === undefined || out.has(dir)) continue;
     const sources = project
-      .filter((f) => f.path.startsWith(dir))
+      .filter((f) => f.path.startsWith(dir) && !deeper(dir, f.path))
       .map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
-    const manifest = sources.find((f) => f.path === "topology.ts");
-    const topology = dir === "" ? opts.topology : manifest && parseTopology(manifest.source).topology;
-    out.set(dir, artifactHashes(sources, topology === undefined ? {} : { topology }));
+    const topology = topologyOf(dir, project, opts);
+    const options = topology === undefined ? {} : { topology };
+    const hashes = artifactHashes(sources, options);
+    out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, options) } : { hashes });
   }
   return out;
 }
 
 /**
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
- * diagnostics passed through unchanged, (3) the rule registry on each file plus project passes (E1005
+ * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
+ * `topology.ts`; rfc:0059), (3) the rule registry on each file plus project passes (E1005
  * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1508, E1753, E1755, and the k.module pass
  * E1151-E1157), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
   const code = files.filter((f) => isCodePath(f.path));
-  const compiled = compile(code, opts.topology === undefined ? {} : { topology: opts.topology });
-  const out: Diagnostic[] = compiled.diagnostics.map((d) => ({ kind: "diag", ...d }));
+  // One compile per project, with its paths and topology, so a workspace root sees what the app sees (rfc:0059).
+  const all = opts.project === undefined ? files : [...files, ...opts.project];
+  const dirs = projectDirs(all);
+  const out: Diagnostic[] = [];
   const reported = new Map<string, Set<string>>();
-  for (const d of compiled.diagnostics) reported.set(d.path, (reported.get(d.path) ?? new Set()).add(d.code));
+  const artifactsOf = new Map<string, Readonly<Record<string, unknown>>>();
+  for (const dir of dirs) {
+    const group = code.filter((f) => dirs.find((d) => f.path.startsWith(d)) === dir);
+    if (group.length === 0) continue;
+    const topology = topologyOf(dir, all, opts);
+    const compiled = compile(
+      group.map((f) => ({ path: f.path.slice(dir.length), source: f.source })),
+      topology === undefined ? {} : { topology },
+    );
+    for (const d of compiled.diagnostics) {
+      const path = d.path === "" ? d.path : `${dir}${d.path}`;
+      out.push({ kind: "diag", ...d, path });
+      reported.set(path, (reported.get(path) ?? new Set()).add(d.code));
+    }
+    for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...opts.artifacts });
+  }
 
   if (opts.types !== false) out.push(...typeCheck(code, opts.root ?? process.cwd(), reported));
 
-  const artifacts: Readonly<Record<string, unknown>> = { ...compiled.artifacts, ...opts.artifacts };
   const registered = rules();
   const checked: Checked[] = [];
   for (const file of code) {
     const parsed = parseFile(file);
     if (!parsed.ok) continue;
     checked.push({ file, parsed });
+    const artifacts = artifactsOf.get(file.path) ?? { ...opts.artifacts };
     out.push(...runRules(registered, { file, ast: parsed.program, artifacts }));
   }
   out.push(

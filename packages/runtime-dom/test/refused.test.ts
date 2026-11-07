@@ -63,4 +63,13 @@ describe("isRefusedAttr (rfc:0056)", () => {
     expect(isRefusedAttr("div", "data-on")).toBe(false);
     expect(isRefusedAttr("div", "title")).toBe(false);
   });
+
+  it("refuses http-equiv only on meta, in any case (rfc:0058)", () => {
+    expect(isRefusedAttr("meta", "http-equiv")).toBe(true);
+    expect(isRefusedAttr("META", "HTTP-EQUIV")).toBe(true);
+    expect(isRefusedAttr("meta", "content")).toBe(false);
+    expect(isRefusedAttr("meta", "name")).toBe(false);
+    expect(isRefusedAttr("div", "http-equiv")).toBe(false);
+    expect(isRefusedAttr("meta", "httpequiv")).toBe(false);
+  });
 });

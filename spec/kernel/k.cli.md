@@ -6,7 +6,7 @@ status: implemented
 **Commands.**
 | command | does |
 | --- | --- |
-| `check [paths]` | k.check pipeline over the code files and the `.keel/*.json` artifacts under `paths` |
+| `check [paths]` | k.check over the code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
 | `test [paths]` | harness under sim ctx (k.testing) |
 | `build` | production build per deployable (k.server) |
 | `dev` | dev server and log stream (k.server) |
@@ -21,7 +21,7 @@ status: implemented
 
 Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting commands also accept `--code <code>`.
 
-**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` (k.reactive) outside any request scope, `stores` is `{ [id]: { state, log } }` from `stores()` (k.store), and `ids`, `a11y`, `routes` are the `.keel/` artifacts (k.compiler). Node deployables serve it from `createApp` with `mode: 'dev'` (`artifacts` names the `.keel` directory); client-only apps from the compiler plugin's dev and preview servers, where the live half comes from the open page: its dev entry posts `{ graph, stores, sections }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied` (RFC 0022, 0024). `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store, one `inspect.section` per section, and a summary with node, edge, store, id, a11y, route, and section counts. The viewer is the Keel app `apps/inspector` (route `inspector.index`, search `url`).
+**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` (k.reactive) outside any request scope, `stores` is `{ [id]: { state, log } }` from `stores()` (k.store), and `ids`, `a11y`, `routes` are the `.keel/` artifacts. Node deployables serve it from `createApp` with `mode: 'dev'` (`artifacts` names the `.keel` directory); client-only apps from the compiler plugin's dev and preview servers, where the live half comes from the open page: its dev entry posts `{ graph, stores, sections }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store, one `inspect.section` per section, and a summary with node, edge, store, id, a11y, route, and section counts. The viewer is the Keel app `apps/inspector`.
 
 **Inspector hooks** (extension point, RFC 0042).
 ```ts
@@ -39,12 +39,13 @@ formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}
 ```
 Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: it is the record encoded by its schema as one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `ledger`, `a11y`. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
-**Rules.** I1055 command not available in this build (info; exit 0; e.g. `session` before the stdlib module, `scaffold` without `@keel/scaffold`) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
+**Rules.** I1055 command not available in this build (info; exit 0; e.g. `scaffold` without `@keel/scaffold`) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 
 **Conformance.**
 - For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message).
 - Each MCP tool's input schema equals the JSON Schema of its operation's input.
 - A clean `keel check` in compact prints exactly one line.
+- `keel check apps/a` at a workspace root and `keel check` in `apps/a` report the same diagnostics.
 - Compact and json output contain no ANSI escapes, no carriage returns, and no absolute paths.
 - In json every line parses, has `kind`, and the last line has `kind: "summary"`.
 - With 20 diagnostics of one code, compact prints 5 plus one `... +15 more` line; `--limit 2` prints 2.

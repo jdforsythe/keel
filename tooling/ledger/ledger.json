@@ -699,6 +699,12 @@
     },
     {
       "pkg": "compiler",
+      "name": "buildRoutes",
+      "file": "packages/compiler/src/buildRoutes.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "compiler",
       "name": "compile",
       "file": "packages/compiler/src/compile.ts",
       "rung": "probabilistic"
@@ -708,6 +714,18 @@
       "name": "module",
       "file": "packages/compiler/src/module.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "compiler",
+      "name": "projectDirs",
+      "file": "packages/compiler/src/projectDirs.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "compiler",
+      "name": "routeLiterals",
+      "file": "packages/compiler/src/routeLiterals.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "ctx",
@@ -1114,6 +1132,10 @@
       "rung": "example"
     },
     {
+      "item": "k.cli#16",
+      "rung": "example"
+    },
+    {
       "item": "k.compiler#1",
       "rung": "example"
     },
@@ -1182,6 +1204,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.compiler#18",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.component#1",
       "rung": "example"
     },
@@ -1235,6 +1261,14 @@
     },
     {
       "item": "k.ctx#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#11",
       "rung": "example"
     },
     {
@@ -1971,6 +2005,10 @@
     },
     {
       "item": "std.timings#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.timings#6",
       "rung": "example"
     }
   ]

@@ -16,4 +16,8 @@ export type ResolvedGlobals = {
   readonly resolveName: (name: string, at: number) => string[] | null;
   /** Whether the span `start..end` is the initializer of an unexported alias (reported at its uses instead). */
   readonly isAliasInit: (start: number, end: number) => boolean;
+  /** The string `e` folds to: literals, templates and `+` of constant parts, `const` strings; else null. */
+  readonly constString: (e: Expression) => string | null;
+  /** `e` unwrapped, or the initializer its same-file alias chain ends at: `f` after `const f = new X()` is `new X()`. */
+  readonly initOf: (e: Expression) => Expression;
 };
