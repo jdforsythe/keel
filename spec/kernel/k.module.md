@@ -1,5 +1,5 @@
 # k.module: Module manifest
-status: implemented
+status: conformance-covered
 
 **Manifest.** All app code lives in modules. A module is a folder `modules/<id>/` with a `module.ts`:
 ```ts
@@ -12,7 +12,7 @@ export default module({
 })
 ```
 - `id`: lowerCamel, equals the folder name; prefixes the module's route ids, store ids, transaction names, and error codes.
-- `deps`: app module ids or stdlib package names this module may import from or link to. Stdlib modules ship the same manifest (extension point).
+- `deps`: app module ids or stdlib package names this module may import from or link to. Stdlib modules ship the same manifest (extension point) at the package root, `node_modules/@keel/std-<x>/module.ts`; `deps` name the package and its `id` is its prefix.
 - `capabilities`: `ctx` capabilities its code may use; topology and shells read this list.
 - `public.exports`: export names (equal to file names, principle 3) other modules may import. `public.routes`: route ids other modules may pass to `href()`.
 
@@ -20,7 +20,7 @@ Everything not listed is private. Cross-module imports name the exporting file d
 
 **Checks.** Cross-module access is checked statically from imports, `href()` calls, and `uses:` lists, on every build and every `keel check`. Manifests are validated by `ModuleSchema`.
 
-**Rules.** E1151 import of a non-public export of another module · E1152 import from, or `href()` into, a module not in `deps` · E1153 cycle in module `deps` (message lists the cycle) · E1154 `public` names an export or route that does not exist · E1155 route id, store id, transaction name, or error code not prefixed by its module id · E1156 `ctx` capability used but not in `capabilities` · E1157 `href()` to a non-public route of another module.
+**Rules.** E1151 import of a non-public export of another module (fix adds it to that module's `public.exports`) · E1152 import from, or `href()` into, a module not in `deps` (fix adds it) · E1153 cycle in module `deps` (message lists the cycle) · E1154 `public` names an export or route that does not exist (fix removes it) · E1155 route id, store id, transaction name, or error code not prefixed by its module id (fix prefixes it) · E1156 `ctx` capability used but not in `capabilities` (fix adds it) · E1157 `href()` to a non-public route of another module (fix adds it to that module's `public.routes`). No fix edits a file under `node_modules/`.
 
 **Conformance.**
 - Importing a non-public export of another module reports E1151 at the import; adding it to `public.exports` clears it.

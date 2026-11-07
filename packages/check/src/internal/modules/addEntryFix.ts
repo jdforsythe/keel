@@ -2,13 +2,15 @@ import type { SourceFile } from "../../types/SourceFile.ts";
 import { applyEdits } from "../applyEdits.ts";
 import { unifiedDiff } from "../unifiedDiff.ts";
 import type { ManifestList } from "./ManifestList.ts";
+import { inNodeModules } from "./inNodeModules.ts";
 
 /**
  * Fix (unified diff of the manifest) appending `value` to a manifest list, quoted like its first entry.
- * `undefined` when the list is absent from the manifest (nothing to edit in place).
+ * `undefined` when the list is absent from the manifest (nothing to edit in place) or the manifest is an installed
+ * package under `node_modules/` (k.module: no fix edits it).
  */
 export function addEntryFix(manifest: SourceFile, list: ManifestList, value: string): string | undefined {
-  if (list.span === null) return undefined;
+  if (list.span === null || inNodeModules(manifest.path)) return undefined;
   const first = list.entries[0];
   const q = first !== undefined && manifest.source[first.start] === '"' ? '"' : "'";
   const text = `${q}${value}${q}`;

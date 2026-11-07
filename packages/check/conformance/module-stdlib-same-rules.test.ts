@@ -7,7 +7,7 @@ import { has, manifestFile, exportFile, pascal, SEED } from "./module-support.ts
 
 const PKG = "@keel/std-auth";
 const ROOT = "node_modules/@keel/std-auth";
-const std = (m: { exports?: string[]; deps?: string[] }) => manifestFile({ id: PKG, ...m }, ROOT);
+const std = (m: { exports?: string[]; deps?: string[] }) => manifestFile({ id: "auth", ...m }, ROOT);
 const app = (deps: string[], name: string) => [
   manifestFile({ id: "orders", deps }),
   {

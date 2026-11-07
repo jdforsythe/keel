@@ -5,16 +5,14 @@ import type { OutRecord } from "../types/OutRecord.ts";
 import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
 import { makeDiag } from "./makeDiag.ts";
+import { openapiInput } from "./openapiInput.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { scaffoldInput } from "./scaffoldInput.ts";
 import { summary } from "./summary.ts";
-import { unavailable } from "./unavailable.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
-const GENERATORS: readonly Op[] = ["project", "module", "route", "component", "store"];
+const GENERATORS: readonly Op[] = ["project", "module", "route", "component", "store", "transaction", "service"];
 const CODEMODS: readonly Op[] = ["rename", "move", "add-field"];
-/** Generators the spec names that `@keel/scaffold` does not implement yet. */
-const PENDING: readonly string[] = ["transaction", "service"];
 const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
   pascal: ["component", "schema"],
   dotted: ["store", "route"],
@@ -36,11 +34,6 @@ const refusal = (d: ScaffoldDiag): OutRecord[] => [
 export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: Io): Outcome {
   const opName = input.op;
   if (opName === undefined) return { records: [summary(name, [], { created: 0, changed: 0, removed: 0 })], writes: [] };
-  if (name === "scaffold" && PENDING.includes(opName))
-    return {
-      records: unavailable(`scaffold ${opName}`, `@keel/scaffold support for ${opName}`, "k.scaffold"),
-      writes: [],
-    };
   const mine = name === "scaffold" ? GENERATORS : CODEMODS;
   const op = mine.find((o) => o === opName);
   if (op === undefined) {
@@ -55,7 +48,10 @@ export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: 
   const files = new Map(projectFiles(io).map((f) => [f.path, f.source]));
   const dry = input["dry-run"] === true;
   const call = dry ? plan : scaffold;
-  const base = scaffoldInput(op, input);
+  const generated = op === "service" ? openapiInput(input.args?.[0], input, io.cwd, files) : undefined;
+  if (generated !== undefined && !generated.ok)
+    return { records: [generated.diag, summary(`${name} ${op}`, [generated.diag], {})], writes: [] };
+  const base = scaffoldInput(op, input, generated?.value);
   const from = typeof base.from === "string" ? base.from : "";
   const kinds =
     op === "rename" && input.kind === undefined

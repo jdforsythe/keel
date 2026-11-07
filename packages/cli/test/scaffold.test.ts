@@ -89,12 +89,11 @@ describe("scaffold and codemod", () => {
     expect(sort(back)).toEqual(sort(withCard));
   });
 
-  it("operations route to their command; unknown and pending ops; no op is an empty run", async () => {
+  it("operations route to their command; unknown ops; no op is an empty run", async () => {
     const io: Io = { cwd: CWD, files: [] };
     expect(lines((await runEngine(["scaffold", "rename", "A", "B"], io)).result.stdout)[0]).toBe(
       'E1052 unknown scaffold operation "rename"; it is keel codemod rename',
     );
-    expect((await runEngine(["scaffold", "transaction", "orders.cart.add"], io)).result.stdout).toMatch(/^I1055 /);
     expect((await runEngine(["codemod"], io)).result.stdout).toBe("ok codemod 0 created, 0 changed, 0 removed\n");
   });
 });

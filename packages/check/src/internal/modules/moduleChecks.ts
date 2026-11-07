@@ -11,6 +11,7 @@ import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 import { moduleOf } from "./moduleOf.ts";
+import { prefixFix } from "./prefixFix.ts";
 import { removeEntryFix } from "./removeEntryFix.ts";
 import { resolveImport } from "./resolveImport.ts";
 import { scanFile } from "./scanFile.ts";
@@ -45,7 +46,7 @@ function publicMissing(m: ModuleInfo, stems: ReadonlySet<string>, routes: Readon
   return out;
 }
 
-/** E1155: declared route ids, store ids, transaction names, and error codes not prefixed `<module id>.`. */
+/** E1155: declared route ids, store ids, transaction names, and error codes not prefixed `<module id>.` (fix: prefix). */
 function unprefixed({ file, module, facts }: Scanned): Diagnostic[] {
   const want = `${module.prefix}.`;
   const all = [...facts.routes.map((e) => ({ ...e, kind: "route id" })), ...facts.ids];
@@ -53,7 +54,7 @@ function unprefixed({ file, module, facts }: Scanned): Diagnostic[] {
     .filter((e) => !e.value.startsWith(want))
     .map((e) => {
       const msg = `${e.kind} '${short(e.value)}' is not prefixed by module id '${short(module.prefix)}.'`;
-      return moduleDiag("E1155", file, e.start, msg);
+      return moduleDiag("E1155", file, e.start, msg, prefixFix(file, e, module.prefix));
     });
 }
 
@@ -65,7 +66,10 @@ function ownerOf(route: string, p: Project): ModuleInfo | undefined {
   return p.modules.find((m) => m.prefix === head);
 }
 
-/** E1151, E1152, E1156, E1157 for one file of a non-opaque module. */
+/**
+ * E1151, E1152, E1156, E1157 for one file of a non-opaque module. Fixes add the missing entry to a manifest list:
+ * the target's `public.exports` (E1151) or `public.routes` (E1157), this module's `deps` (E1152) or `capabilities` (E1156).
+ */
 function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Diagnostic[] {
   const out: Diagnostic[] = [];
   const deps = values(man, "deps");
@@ -82,7 +86,7 @@ function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Di
     const tm = r.module.manifest;
     if (tm === null || r.name === null || values(tm, "exports").has(r.name)) continue;
     const msg = `${short(r.name)} is not in public.exports of module ${t}; ${own} cannot import it`;
-    out.push(moduleDiag("E1151", file, imp.start, msg));
+    out.push(moduleDiag("E1151", file, imp.start, msg, addEntryFix(r.module.file, tm.exports, r.name)));
   }
   for (const h of facts.hrefs) {
     const target = ownerOf(h.value, p);
@@ -92,7 +96,7 @@ function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Di
     const tm = target.manifest;
     if (tm === null || values(tm, "routes").has(h.value)) continue;
     const msg = `route ${short(h.value)} is not in public.routes of module ${t}; ${own} cannot link to it`;
-    out.push(moduleDiag("E1157", file, h.start, msg));
+    out.push(moduleDiag("E1157", file, h.start, msg, addEntryFix(target.file, tm.routes, h.value)));
   }
   const caps = values(man, "capabilities");
   const reported = new Set<string>();

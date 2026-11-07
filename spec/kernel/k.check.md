@@ -1,5 +1,5 @@
 # k.check: Checker and diagnostics
-status: implemented
+status: conformance-covered
 
 **Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are `keel test`, k.testing; rfc:0023).
 1. Parse (oxc) and TS strict type check.
@@ -35,7 +35,7 @@ Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule t
 
 **Conformance.**
 - Every E code in a kernel section's Rules has an `explain` entry of at most 120 tokens and a fixture that triggers exactly that code.
-- For the top 30 codes, applying the fix diff to its fixture with `git apply` succeeds, and re-checking reports no diagnostic of that code.
+- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), and E1805 carry one; RFC 0035 lists why the others cannot.
 - The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits.
 - `check()` never evaluates app code: a module that throws at top level yields only static diagnostics.
 - Two runs on an unchanged tree produce identical output.

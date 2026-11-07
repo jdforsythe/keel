@@ -154,6 +154,67 @@ describe("module pass", () => {
     expect(of(files, "E1155")).toEqual([]);
   });
 
+  it("E1151 fix adds the export to the owner's public.exports; E1157 adds the route to public.routes", () => {
+    const files = [
+      man("catalog", { exports: ["Item"], routes: ["catalog.list"] }),
+      f("modules/catalog/Item.ts", "export const Item = 1\n"),
+      f("modules/catalog/Secret.ts", "export const Secret = 1\n"),
+      f(
+        "modules/catalog/routes.ts",
+        "import { manifest } from '@keel/router'\nconst P = () => null\nexport const routes = manifest({ 'catalog.list': { path: '/c', component: P }, 'catalog.edit': { path: '/c/e', component: P } })\n",
+      ),
+      man("orders", { deps: ["catalog"] }),
+      f("modules/orders/Card.ts", "import { Secret } from '../catalog/Secret.ts'\nexport const Card = Secret\n"),
+      f("modules/orders/Back.ts", "import { href } from '@keel/router'\nexport const Back = href('catalog.edit')\n"),
+    ];
+    const e1151 = applyFix(files, of(files, "E1151")[0]);
+    expect(e1151.find((x) => x.path === "modules/catalog/module.ts")?.source).toContain("exports: ['Item', 'Secret']");
+    expect(of(e1151, "E1151")).toEqual([]);
+    const e1157 = applyFix(files, of(files, "E1157")[0]);
+    const after = e1157.find((x) => x.path === "modules/catalog/module.ts")?.source;
+    expect(after).toContain("routes: ['catalog.list', 'catalog.edit']");
+    expect(of(e1157, "E1157")).toEqual([]);
+  });
+
+  it("E1155 fix prefixes the id, keeping the quote; an identifier key becomes a quoted key", () => {
+    const files = [
+      man("orders"),
+      f(
+        "modules/orders/routes.ts",
+        "import { manifest } from '@keel/router'\nconst P = () => null\nexport const routes = manifest({ show: { path: \"/s\", component: P } })\n",
+      ),
+      f(
+        "modules/orders/Locked.ts",
+        "import { s } from '@keel/schema'\nexport const Locked = s.error(\"locked\", s.object({}))\n",
+      ),
+    ];
+    const d = of(files, "E1155");
+    expect(d.map((x) => x.path)).toEqual(["modules/orders/Locked.ts", "modules/orders/routes.ts"]);
+    const a = applyFix(files, d[0]);
+    expect(a.find((x) => x.path === "modules/orders/Locked.ts")?.source).toContain('s.error("orders.locked"');
+    const b = applyFix(files, d[1]);
+    expect(b.find((x) => x.path === "modules/orders/routes.ts")?.source).toContain("manifest({ 'orders.show': {");
+    expect(of(applyFix(a, of(a, "E1155")[0]), "E1155")).toEqual([]);
+  });
+
+  it("no fix edits a file under node_modules/ (stdlib manifests and sources)", () => {
+    const std = (src: string, name: string) => f(`node_modules/@keel/std-auth/${name}`, src);
+    const files = [
+      std(
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'auth', deps: [], capabilities: [], public: { exports: ['Ghost'], routes: [] } })\n",
+        "module.ts",
+      ),
+      std("export const Secret = 1\n", "Secret.ts"),
+      std("import type { Ctx } from '@keel/ctx'\nexport const Run = (ctx: Ctx) => ctx.clock.now()\n", "Run.ts"),
+      std("import { s } from '@keel/schema'\nexport const Locked = s.error('locked', s.object({}))\n", "Locked.ts"),
+      man("orders", { deps: ["@keel/std-auth"] }),
+      f("modules/orders/Card.ts", "import { Secret } from '@keel/std-auth/Secret'\nexport const Card = Secret\n"),
+    ];
+    const d = run(files).filter((x) => ["E1151", "E1154", "E1155", "E1156"].includes(x.code));
+    expect(d.map((x) => x.code).sort()).toEqual(["E1151", "E1154", "E1155", "E1156"]);
+    for (const x of d) expect(x.fix).toBeUndefined();
+  });
+
   it("every module diagnostic is one line under 90 chars and cites k.module, even with long ids", () => {
     const long = "a".repeat(40);
     const files = [

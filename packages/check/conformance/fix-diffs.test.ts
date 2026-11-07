@@ -1,0 +1,317 @@
+// Seed 1337 (fast-check seed, recorded in each fc.assert below)
+// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), and E1805 carry one; RFC 0035 lists why the others cannot."
+// Spec: k.module, Rules, "No fix edits a file under `node_modules/`."
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { check } from "@keel/check";
+import { compile } from "@keel/compiler";
+import fc from "fast-check";
+import { expect, test } from "vitest";
+import { CODE_FIXTURES } from "./fixtures-by-code.ts";
+import { FIXTURES, SEED, type Files } from "./support.ts";
+
+type Options = NonNullable<Parameters<typeof check>[1]>;
+const NO_TYPES: Options = { types: false };
+
+/** Write `files` to a fresh temp dir, `git apply` the fix there, and return the patched files. */
+function applyFix(files: Files, fix: string): Files {
+  const dir = mkdtempSync(join(tmpdir(), "keel-fix-"));
+  try {
+    for (const f of files) {
+      mkdirSync(dirname(join(dir, f.path)), { recursive: true });
+      writeFileSync(join(dir, f.path), f.source);
+    }
+    writeFileSync(join(dir, "fix.patch"), `${fix}\n`);
+    execFileSync("git", ["apply", "--unsafe-paths", "--directory=.", "fix.patch"], { cwd: dir, stdio: "pipe" });
+    return files.map((f) => ({
+      path: f.path,
+      source: readFileSync(join(dir, f.path), "utf8"),
+    }));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+const f = (path: string, source: string): Files[number] => ({ path, source });
+const UI = "import { Box, Text } from '@keel/ui'\n";
+const SERVICES = "import { endpoints } from '@keel/services'\nimport { s } from '@keel/schema'\n";
+const manifest = (id: string, deps: string[], exports: string[], routes: string[]): Files[number] => {
+  const q = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
+  return f(
+    `modules/${id}/module.ts`,
+    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${q(
+      deps,
+    )}, capabilities: [], public: { exports: ${q(exports)}, routes: ${q(routes)} } })\n`,
+  );
+};
+const fixtureOf = (code: string) => {
+  const fx = CODE_FIXTURES[code];
+  if (fx === undefined) throw new Error(`no fixture for ${code}`);
+  return { files: fx.bad, opts: fx.badOpts ?? fx.opts ?? {} };
+};
+
+/** Sorted-key JSON, the canonical form of a `.keel/*.json` file (k.compiler Artifacts). */
+function sortKeys(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(sortKeys);
+  if (typeof v === "object" && v !== null) {
+    return Object.fromEntries(
+      Object.entries(v)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([k, x]) => [k, sortKeys(x)]),
+    );
+  }
+  return v;
+}
+
+/** A genuine `deps.json` produced by compile(), re-indented: data and hash intact, bytes differ from canonical. */
+function reindentedArtifact(): { canonical: Files; edited: Files } {
+  const r = compile([
+    {
+      path: "C.tsx",
+      source: `${UI}export default function C(props) { return <Text>{props.a}</Text> }\n`,
+    },
+  ]);
+  const data = r.artifacts["deps.json"];
+  const hash = r.hashes["deps.json"];
+  const canonical = `${JSON.stringify({ data: sortKeys(data), hash })}\n`;
+  const edited = `${JSON.stringify({ data: sortKeys(data), hash }, null, 2)}\n`;
+  expect(edited).not.toBe(canonical);
+  return {
+    canonical: [f(".keel/deps.json", canonical)],
+    edited: [f(".keel/deps.json", edited)],
+  };
+}
+
+interface FixedCase {
+  name: string;
+  code: string;
+  files: Files;
+  opts: Options;
+}
+
+const FIXED: FixedCase[] = [
+  { name: "E1003", code: "E1003", ...fixtureOf("E1003") },
+  {
+    name: "E1005 (bytes only)",
+    code: "E1005",
+    files: reindentedArtifact().edited,
+    opts: NO_TYPES,
+  },
+  {
+    name: "E1151 (add to public.exports)",
+    code: "E1151",
+    files: [
+      manifest("b", [], [], []),
+      f("modules/b/Secret.ts", "export const Secret = 1\n"),
+      manifest("a", ["b"], [], []),
+      f("modules/a/Use.ts", "import { Secret } from '../b/Secret.ts'\nexport const Use = Secret\n"),
+    ],
+    opts: NO_TYPES,
+  },
+  { name: "E1152", code: "E1152", ...fixtureOf("E1152") },
+  { name: "E1154", code: "E1154", ...fixtureOf("E1154") },
+  {
+    name: "E1155 (route show in orders gets orders. prefix)",
+    code: "E1155",
+    files: [
+      manifest("orders", [], [], []),
+      f(
+        "modules/orders/routes.ts",
+        "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n  'show': { path: '/show', component: Page },\n})\n",
+      ),
+    ],
+    opts: NO_TYPES,
+  },
+  { name: "E1156", code: "E1156", ...fixtureOf("E1156") },
+  {
+    name: "E1157 (add b.priv to public.routes)",
+    code: "E1157",
+    files: [
+      manifest("b", [], [], ["b.pub"]),
+      f(
+        "modules/b/routes.ts",
+        "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n  'b.pub': { path: '/b/pub', component: Page },\n  'b.priv': { path: '/b/priv', component: Page },\n})\n",
+      ),
+      manifest("a", ["b"], [], []),
+      f("modules/a/Back.ts", "import { href } from '@keel/router'\nexport const Back = href('b.priv')\n"),
+    ],
+    opts: NO_TYPES,
+  },
+  {
+    name: "E1401",
+    code: "E1401",
+    files: [
+      f(
+        "C.tsx",
+        `import { Text } from '@keel/ui'\nexport default function C({ name }) { return <Text>{name}</Text> }\n`,
+      ),
+    ],
+    opts: {},
+  },
+  {
+    name: "E1451",
+    code: "E1451",
+    files: [f("C.tsx", `export function f() { throw new Error("x") }\n`)],
+    opts: {},
+  },
+  {
+    name: "E1452 (try)",
+    code: "E1452",
+    files: [f("C.tsx", `export function f() { try { return 1 } catch (e) { return 2 } }\n`)],
+    opts: {},
+  },
+  {
+    name: "E1601",
+    code: "E1601",
+    files: [f("C.tsx", `export const stamp = () => Date.now()\n`)],
+    opts: {},
+  },
+  {
+    name: "E1652 (missing :param field added)",
+    code: "E1652",
+    files: [
+      f(
+        "src/Api.ts",
+        `${SERVICES}export const Api = endpoints({ getOrder: { method: 'GET', path: '/orders/:id', params: s.object({}), output: s.string() } })\n`,
+      ),
+    ],
+    opts: NO_TYPES,
+  },
+  { name: "E1652 (extra field removed)", code: "E1652", ...fixtureOf("E1652") },
+  { name: "E1653", code: "E1653", ...fixtureOf("E1653") },
+  {
+    name: "E1757 (non-null assertion)",
+    code: "E1757",
+    files: [f("src/x.ts", "declare const m: { a?: number }\nexport const x = m.a!\n")],
+    opts: {},
+  },
+  {
+    name: "E1757 (any)",
+    code: "E1757",
+    files: [f("src/x.ts", "export const x: any = 1\n")],
+    opts: {},
+  },
+  {
+    name: "E1757 (ts-ignore)",
+    code: "E1757",
+    files: [f("src/x.ts", "// @ts-ignore\nexport const x = 1\n")],
+    opts: {},
+  },
+  {
+    name: "E1805",
+    code: "E1805",
+    files: [f("C.tsx", `${UI}export default function C() { return <Box><h2>Orders</h2></Box> }\n`)],
+    opts: {},
+  },
+];
+
+test("a genuine compiler artifact is clean, and its re-indented copy is the E1005 bytes-only fixture", () => {
+  const { canonical, edited } = reindentedArtifact();
+  expect(check(canonical, NO_TYPES).diagnostics.map((d) => d.code)).toEqual([]);
+  expect(check(edited, NO_TYPES).diagnostics.map((d) => d.code)).toEqual(["E1005"]);
+});
+
+for (const c of FIXED) {
+  test(`${c.name}: its fix applies with git apply and re-checking reports no ${c.code}`, () => {
+    const diags = check(c.files, c.opts).diagnostics.filter((d) => d.code === c.code);
+    expect(diags.length).toBe(1);
+    const fix = diags[0]?.fix;
+    expect(typeof fix).toBe("string");
+    if (fix === undefined) return;
+    expect(fix.startsWith("--- a/")).toBe(true);
+    const patched = applyFix(c.files, fix);
+    expect(patched).not.toEqual(c.files);
+    expect(check(patched, c.opts).diagnostics.map((d) => d.code)).not.toContain(c.code);
+  });
+}
+
+const FIX = [
+  "E1003",
+  "E1005",
+  "E1151",
+  "E1152",
+  "E1154",
+  "E1155",
+  "E1156",
+  "E1157",
+  "E1401",
+  "E1451",
+  "E1452",
+  "E1601",
+  "E1652",
+  "E1653",
+  "E1757",
+  "E1805",
+];
+const NO_FIX = [
+  "E1000", // a syntax error has no unique repair
+  "E1001", // the key field is a choice of the author
+  "E1002", // the safe replacement depends on intent (text vs. markup)
+  "E1004", // moving server code is a design change
+  "E1104", // renaming the file would break imports in other files
+  "E1105", // moving to a .server file is a design change
+  "E1153", // which dependency edge to cut is a design choice
+  "E1403", // the condition's wrapper is the author's choice
+  "E1404", // which id to rename is the author's choice
+  "E1453", // how to handle the Result is the author's choice
+  "E1454", // which code to rename is the author's choice
+  "E1501", // the target route id is unknown to the checker
+  "E1651", // the replacement endpoint is unknown
+  "E1701", // the harness id is unknown
+  "E1751", // a generic type error has no mechanical repair
+  "E1752", // splitting a file is a design change
+  "E1753", // which code to rename is the author's choice
+  "E1754", // the justification must be written by the author
+  "E1755", // a budget breach has no source edit
+  "E1802", // the missing prop value is the author's choice
+  "E1803", // the replacement token is the author's choice
+];
+
+test("fix-bearing codes and no-fix codes partition exactly the fixtured codes", () => {
+  const fixtured = new Set([...Object.keys(CODE_FIXTURES), ...FIXTURES.map((x) => x.code)]);
+  const all = [...FIX, ...NO_FIX];
+  expect(new Set(all).size).toBe(all.length);
+  expect(FIX.filter((c) => NO_FIX.includes(c))).toEqual([]);
+  expect([...fixtured].filter((c) => !all.includes(c)).sort()).toEqual([]);
+  expect(all.filter((c) => !fixtured.has(c)).sort()).toEqual([]);
+});
+
+interface Bad {
+  code: string;
+  files: Files;
+  opts: Options;
+}
+const BAD: Bad[] = [
+  ...Object.entries(CODE_FIXTURES).map(([code, fx]) => ({
+    code,
+    files: fx.bad,
+    opts: fx.badOpts ?? fx.opts ?? {},
+  })),
+  ...FIXTURES.map((x) => ({
+    code: x.code,
+    files: [f("C.tsx", x.bad)],
+    opts: {},
+  })),
+];
+
+test("every fix on every bad fixture applies with git apply, reports strictly fewer of its code, and never names node_modules/", () => {
+  fc.assert(
+    fc.property(fc.constantFrom(...BAD), (bad) => {
+      const before = check(bad.files, bad.opts).diagnostics;
+      for (const d of before) {
+        if (d.fix === undefined) continue;
+        for (const line of d.fix.split("\n")) {
+          if (line.startsWith("--- a/") || line.startsWith("+++ b/")) expect(line).not.toContain("node_modules/");
+        }
+        const patched = applyFix(bad.files, d.fix);
+        const after = check(patched, bad.opts).diagnostics;
+        expect(after.filter((x) => x.code === d.code).length).toBeLessThan(
+          before.filter((x) => x.code === d.code).length,
+        );
+      }
+    }),
+    { seed: SEED, numRuns: BAD.length * 2 },
+  );
+});

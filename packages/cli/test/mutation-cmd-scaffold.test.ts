@@ -55,19 +55,12 @@ describe("scaffold command routing", () => {
     ]);
   });
 
-  it("pending generators are I1055 under scaffold only", async () => {
-    for (const op of ["transaction", "service"]) {
-      const r = await go(["scaffold", op, "x"]);
-      expect(r.result).toEqual({
-        code: 0,
-        stdout: `I1055 scaffold ${op} not available: needs @keel/scaffold support for ${op}\n  see: k.scaffold\nok scaffold ${op}\n`,
-        stderr: "",
-      });
-      expect(r.writes).toEqual([]);
-    }
+  it("transaction and service are scaffold-only operations", async () => {
     const c = await go(["codemod", "transaction", "x"]);
     expect(c.result.code).toBe(2);
-    expect(c.result.stdout).toBe('E1052 unknown codemod operation "transaction"\n  see: k.scaffold\nfail codemod\n');
+    expect(c.result.stdout).toBe(
+      'E1052 unknown codemod operation "transaction"; it is keel scaffold transaction\n  see: k.scaffold\nfail codemod\n',
+    );
   });
 
   it("an unknown operation is E1052 with a pointer to the other command when it lives there", async () => {

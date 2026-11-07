@@ -1,6 +1,5 @@
 // Spec: k.cli Conformance on `keel check` output shape, plus exit codes (0 none, 1 error diagnostics, 2 usage).
-// Untestable via public API (spec names no programmatic MCP/LSP entry): "check --format=json, the MCP `check` tool, and LSP diagnostics yield the same set"
-// and "Each MCP tool's input schema equals the JSON Schema of its operation's input."
+// MCP/LSP parity ("check --format=json, the MCP `check` tool, and LSP diagnostics yield the same set"; MCP input schemas) is covered in surfaces.test.ts.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, cleanProject, dirtyProject, keel, lines, parseJsonLines } from "./fixtures";

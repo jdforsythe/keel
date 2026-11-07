@@ -3,13 +3,7 @@ import { check, defineRule } from "@keel/check";
 import { expect, test } from "vitest";
 import { findAll, one } from "./support.ts";
 
-// E1753 duplicate code: covered in define-rule.test.ts.
-// E1753 stdlib rule outside E2xxx/W2xxx: untestable, the public API has no marker distinguishing a stdlib rule from an app rule.
-test.skip("E1753: a stdlib rule outside E2xxx/W2xxx is reported (untestable: no public stdlib marker)", () => {});
-// E1754 unsafe without a justification string: untestable, the spec does not name the unsafe call shape the checker matches.
-test.skip("E1754: unsafe without a justification string is reported (untestable: unsafe syntax unspecified)", () => {});
-// E1755 budget exceeded: untestable, needs budgets.json and package/route measurements the check(files, opts) input has no slot for.
-test.skip("E1755: budget exceeded is reported (untestable: budgets.json input unspecified)", () => {});
+// E1753 duplicate code: define-rule.test.ts. E1753 stdlib range, E1754, E1755: E1753-E1754-E1755.test.ts (RFC 0035).
 // Conformance "A tree with only W diagnostics exits 0": the exit code is the CLI's (k.cli exitCode); here the check
 // summary says `ok: true` when the tree has W diagnostics and no E diagnostic.
 test("a tree with only W diagnostics reports summary.ok", () => {

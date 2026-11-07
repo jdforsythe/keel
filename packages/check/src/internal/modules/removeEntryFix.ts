@@ -2,11 +2,12 @@ import type { SourceFile } from "../../types/SourceFile.ts";
 import { applyEdits } from "../applyEdits.ts";
 import { unifiedDiff } from "../unifiedDiff.ts";
 import type { ManifestList } from "./ManifestList.ts";
+import { inNodeModules } from "./inNodeModules.ts";
 
-/** Fix (unified diff of the manifest) removing entry `index` of a manifest list with its separator. */
+/** Fix (unified diff of the manifest) removing entry `index` of a manifest list; none under `node_modules/`. */
 export function removeEntryFix(manifest: SourceFile, list: ManifestList, index: number): string | undefined {
   const e = list.entries[index];
-  if (e === undefined || list.span === null) return undefined;
+  if (e === undefined || list.span === null || inNodeModules(manifest.path)) return undefined;
   const next = list.entries[index + 1];
   const prev = list.entries[index - 1];
   const edit =
