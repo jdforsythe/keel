@@ -7,7 +7,7 @@ import { makeCart, opts } from "./fixtures";
 describe("k.store: payload validation", () => {
   it("tx with an invalid payload returns err schema.invalid and leaves state and log unchanged", () => {
     fc.assert(
-      fc.property(fc.oneof(fc.string(), fc.integer(), fc.constant(null), fc.record({ item: fc.string() })), (bad) => {
+      fc.property(fc.oneof(fc.string(), fc.integer(), fc.constant(null), fc.record({ item: fc.string() })), (bad: unknown) => {
         const k = makeCart();
         const before = JSON.stringify([k.cart.snapshot(), k.cart.log()]);
         const r = tx(k.add, bad);

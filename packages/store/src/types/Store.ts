@@ -19,11 +19,17 @@ export interface Store<T> {
   select<R>(fn: (state: T) => R): Computed<R>;
   /** Committed entries, oldest first. Reactive. */
   log(): readonly LogEntry[];
-  snapshot(): Snapshot<T>;
+  /** JSON-safe copy of state, log and `initial`; log entries carry `meta` only with `{ meta: true }` (never for clients). */
+  snapshot(options?: { readonly meta?: boolean }): Snapshot<T>;
   /** Decode a snapshot and replace state and log; `schema.invalid` leaves the store unchanged. */
   restore(snapshot: unknown): Result<T, SchemaError>;
   /** Drop the last log entry and restore the state before it; false when the log is empty. */
   undo(): boolean;
+  /**
+   * Undo the latest entry only when `pred(entry)` holds for it; true when it did. An older matching entry is never
+   * undone: replaying the log around it would reorder the entries after it.
+   */
+  undoWhere(pred: (entry: LogEntry) => boolean): boolean;
   /** Declare the transactions the current scope may call; call inside a scope. */
   uses(transactions: readonly Transaction<T, unknown>[]): void;
   /** Store-private hooks used by `transaction` and `invariant`. */

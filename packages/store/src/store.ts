@@ -8,16 +8,19 @@ import { coreKey } from "./internal/coreKey.ts";
 import { counter } from "./internal/counter.ts";
 import { freeze } from "./internal/freeze.ts";
 import { logSchema } from "./internal/logSchema.ts";
+import { metaSchema } from "./internal/metaSchema.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { undeclared } from "./internal/undeclared.ts";
 import { violated } from "./internal/violated.ts";
+import { withoutMeta } from "./internal/withoutMeta.ts";
+import type { LogEntry } from "./types/LogEntry.ts";
 import type { Store } from "./types/Store.ts";
 import type { Transaction } from "./types/Transaction.ts";
 
 /**
  * Create a store inside a scope (E1203 outside one). State is validated, copied and deep-frozen.
  * `clock` stamps log entries (default: a per-store counter). Undo replays the log from the snapshot base
- * (`initial`, or the `initial` of the last restored snapshot). `id` defaults to `store.<n>`; a live duplicate in the caller's registry
+ * (`initial`, or the `initial` of the last restored snapshot); `undoWhere` undoes only a matching latest entry. `id` defaults to `store.<n>`; a live duplicate in the caller's registry
  * (`stores()`, `isolate`) throws.
  */
 export function store<T extends object>(
@@ -73,8 +76,25 @@ export function store<T extends object>(
     return !restricted;
   };
 
-  const run = (t: Transaction<T, unknown>, bound: Result<Bound<T>, SchemaError>): Result<T, TxError> => {
+  // Drop the last entry and replay the rest from the base; false when the log is empty.
+  const drop = (): boolean => {
+    if (rows.length === 0) return false;
+    const kept = rows.slice(0, -1);
+    commit(
+      kept.reduce((st, r) => freeze(r.apply(st)), base),
+      kept,
+    );
+    return true;
+  };
+
+  const run = (
+    t: Transaction<T, unknown>,
+    bound: Result<Bound<T>, SchemaError>,
+    rawMeta: unknown,
+  ): Result<T, TxError> => {
     if (!bound.ok) return bound;
+    const meta = rawMeta === undefined ? undefined : copy(metaSchema, rawMeta);
+    if (meta !== undefined && !meta.ok) return meta;
     if (!declared(t)) return err(undeclared.make({ transaction: t.name }, `${t.name} is not in this scope's uses`));
     return batch((): Result<T, TxError> => {
       const checked = schema.parse(bound.value.apply(current));
@@ -83,7 +103,11 @@ export function store<T extends object>(
       for (const g of guards)
         if (!g(next)) return err(violated.make({ transaction: t.name }, `${t.name} violates an invariant`));
       const at = clock === undefined ? ++tick : clock();
-      rows.push({ entry: { id: ++seq, name: t.name, payload: bound.value.payload, at }, apply: bound.value.apply });
+      const entry: LogEntry = { id: ++seq, name: t.name, payload: bound.value.payload, at };
+      rows.push({
+        entry: freeze(meta === undefined ? entry : { ...entry, meta: meta.value }),
+        apply: bound.value.apply,
+      });
       commit(next, rows);
       return ok(next);
     });
@@ -111,12 +135,12 @@ export function store<T extends object>(
       version.get();
       return rows.map((r) => r.entry);
     },
-    snapshot() {
+    snapshot(options) {
       version.get();
       const state = copy(schema, current);
       const log = copy(
         logSchema(payloads),
-        rows.map((r) => r.entry),
+        rows.map((r) => (options?.meta === true ? r.entry : withoutMeta(r.entry))),
       );
       if (!state.ok || !log.ok) throw new Error(`store ${id}: committed state or log no longer fits its schema`);
       const initial = copy(schema, base);
@@ -138,7 +162,7 @@ export function store<T extends object>(
         const bound = binders.get(e.name)?.(e.payload);
         if (bound === undefined) throw new Error(`unreachable: ${e.name} passed the log schema`);
         if (!bound.ok) return bound;
-        next.push({ entry: { ...e, payload: bound.value.payload }, apply: bound.value.apply });
+        next.push({ entry: freeze({ ...e, payload: bound.value.payload }), apply: bound.value.apply });
       }
       for (const r of next) {
         seq = Math.max(seq, r.entry.id);
@@ -149,14 +173,10 @@ export function store<T extends object>(
       commit(restored, next);
       return ok(restored);
     },
-    undo() {
-      if (rows.length === 0) return false;
-      const kept = rows.slice(0, -1);
-      commit(
-        kept.reduce((st, r) => freeze(r.apply(st)), base),
-        kept,
-      );
-      return true;
+    undo: drop,
+    undoWhere(pred) {
+      const last = rows.at(-1);
+      return last !== undefined && pred(last.entry) && drop();
     },
     uses(list) {
       const sc = owner();
@@ -183,7 +203,7 @@ export function store<T extends object>(
           payload,
           schema: payload,
           store: self,
-          [coreKey]: (raw) => run(t, bind(raw)),
+          [coreKey]: (raw, meta) => run(t, bind(raw), meta),
         };
         return t;
       },

@@ -5,6 +5,8 @@ export { stores } from "./stores.ts";
 export { transaction } from "./transaction.ts";
 export { tx } from "./tx.ts";
 export type { LogEntry } from "./types/LogEntry.ts";
+export type { LogMeta } from "./types/LogMeta.ts";
 export type { Snapshot } from "./types/Snapshot.ts";
 export type { Store } from "./types/Store.ts";
 export type { Transaction } from "./types/Transaction.ts";
+export type { TxOptions } from "./types/TxOptions.ts";

@@ -4,12 +4,15 @@ import { describe, expect, it } from "vitest";
 import { tx } from "../src/index.ts";
 import { type Op, makeCounter, model, opArb, opts } from "./kit.ts";
 
+// An off-schema payload reaches tx only as `unknown` (wire data); typed call sites reject it at compile time.
+const offSchema: unknown = { by: "not an int" };
+
 function apply(k: ReturnType<typeof makeCounter>, op: Op): void {
   if (op.kind === "add") tx(k.add, { by: op.by });
   else if (op.kind === "tag") tx(k.tag, { tag: op.tag });
   else if (op.kind === "reset") tx(k.reset, {});
   else if (op.kind === "undo") k.c.undo();
-  else tx(k.add, { by: "not an int" });
+  else tx(k.add, offSchema);
 }
 
 describe("@keel/store properties", () => {
