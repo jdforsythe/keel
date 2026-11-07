@@ -15,8 +15,9 @@ async function build(seen: unknown[]) {
     return ok(null);
   });
   const routes = manifest({
-    "app.notes": { path: "/notes", actions: { POST: save }, component: () => document.createElement("p") },
+    "app.notes": { path: "/notes", component: () => document.createElement("p") },
   });
+  routes.actions({ "app.notes": { POST: save } });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

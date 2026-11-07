@@ -9,13 +9,12 @@ export const routes = manifest({
   "kitchen.recipes": {
     path: "/api/recipes",
     loader: loadRecipes,
-    actions: { POST: postRecipe },
     component: KitchenApi,
   },
   "kitchen.favorite": {
     path: "/api/recipes/:recipeId/favorite",
     params: RecipeParams,
-    actions: { POST: postFavorite },
     component: KitchenApi,
   },
 });
+routes.actions({ "kitchen.recipes": { POST: postRecipe }, "kitchen.favorite": { POST: postFavorite } });

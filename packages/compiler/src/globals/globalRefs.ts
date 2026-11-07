@@ -359,6 +359,7 @@ export function globalRefs(program: Program): ResolvedGlobals {
     constString: (e) => constString(e, 0),
     initOf: (e) => initOf(e, 0),
     functionOf: (name, at) => lookup(name, at)?.decl ?? null,
+    sameBinding: (name, a, b) => lookup(name, a) === lookup(name, b),
   };
   memo.set(program, out);
   return out;

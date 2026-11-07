@@ -10,6 +10,8 @@ import { disposeOwner } from "./disposeOwner.ts";
 import { eventQueue } from "./eventQueue.ts";
 import { withCx } from "./withCx.ts";
 
+const FOCUS = ["focus", "blur", "focusin", "focusout"];
+
 /**
  * Resume one island: run its component with `clone` claiming the server nodes, so bindings and handlers
  * attach in place. On a structural mismatch (E1253) undo that, re-render it client-side in place of the
@@ -22,20 +24,34 @@ export function resumeIsland(
   props: Record<string, unknown>,
   ctx: Ctx | undefined,
 ): string | null {
+  const doc = el.ownerDocument;
+  const focused = doc.activeElement;
+  const queued = eventQueue.pending();
   const root = createRoot(el);
   const owner = createOwner(null, root, null);
   const claim: Claim = { island: el, region: null, session: { failed: null } };
   const rendered: { node: Node | null; scope: Scope | null } = { node: null, scope: null };
+  // A claimed node moved through a fragment loses focus (rfc:0064). The focus events of those moves and of giving
+  // the focus back reach no handler, and the queue drops them: the user did not move the focus.
+  const hush = (e: Event): void => e.stopImmediatePropagation();
+  for (const t of FOCUS) doc.addEventListener(t, hush, true);
   try {
-    rendered.scope = scope(() => {
-      rendered.node = withCx(owner, claim, () => component(props, undefined, ctx));
-    });
-  } catch (error) {
-    if (!(error instanceof Mismatch)) throw error;
-    claim.session.failed ??= error;
+    try {
+      rendered.scope = scope(() => {
+        rendered.node = withCx(owner, claim, () => component(props, undefined, ctx));
+      });
+    } catch (error) {
+      // Any throw while claiming is a mismatch (backlog 0184): the client re-render below shows a real app error.
+      claim.session.failed ??= error instanceof Mismatch ? error : new Mismatch(`the claim threw ${String(error)}`);
+    }
+    if (claim.session.failed === null && rendered.node !== el)
+      claim.session.failed = new Mismatch("the component did not render the island root");
+    if (focused instanceof HTMLElement && focused !== doc.activeElement && focused.isConnected)
+      focused.focus({ preventScroll: true });
+  } finally {
+    for (const t of FOCUS) doc.removeEventListener(t, hush, true);
+    eventQueue.drop(queued);
   }
-  if (claim.session.failed === null && rendered.node !== el)
-    claim.session.failed = new Mismatch("the component did not render the island root");
   const failed = claim.session.failed;
   if (failed === null) {
     eventQueue.resume(el, el);

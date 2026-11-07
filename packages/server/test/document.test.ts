@@ -49,10 +49,6 @@ async function build(o: Opts = {}) {
       path: "/",
       layout: "app.shell",
       loader: loader({ output: Page }, () => Promise.resolve(ok({ title: o.title ?? "Home" }))),
-      actions: {
-        POST: action({ input: Edit }, () => ok(null)),
-        PATCH: action({ input: Edit }, () => err({ code: "app.locked", message: "locked", data: {} })),
-      },
       guard: auth,
       component: ({ data }) => {
         if (o.throwIn === "page") throw new Error("page broke");
@@ -64,6 +60,12 @@ async function build(o: Opts = {}) {
       errorElement: ({ error }) => el("p", { "data-error": error.code }, error.message),
     },
     "app.login": { path: "/login", component: () => el("main", {}, "login") },
+  });
+  routes.actions({
+    "app.home": {
+      POST: action({ input: Edit }, () => ok(null)),
+      PATCH: action({ input: Edit }, () => err({ code: "app.locked", message: "locked", data: {} })),
+    },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

@@ -23,7 +23,6 @@ export const routes = manifest({
   },
   "recipes.new": {
     path: "/recipes/new",
-    actions: { POST: createRecipe },
     component: NewRecipePage,
     layout: "recipes.shell",
     guard: cook,
@@ -32,9 +31,9 @@ export const routes = manifest({
     path: "/recipes/:recipeId",
     params: RecipeParams,
     loader: loadRecipe,
-    actions: { POST: favoriteRecipe },
     component: RecipePage,
     layout: "recipes.shell",
     errorElement: RecipeError,
   },
 });
+routes.actions({ "recipes.new": { POST: createRecipe }, "recipes.show": { POST: favoriteRecipe } });

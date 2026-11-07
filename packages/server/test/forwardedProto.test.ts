@@ -7,16 +7,12 @@ import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
+const routes = manifest({ "app.home": { path: "/", component: () => document.createElement("p") } });
+routes.actions({ "app.home": { POST: action({ input: s.object({}) }, async () => ok(null)) } });
 const app = (secure?: boolean) =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
-      "app.home": {
-        path: "/",
-        actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
-        component: () => document.createElement("p"),
-      },
-    }),
+    routes,
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     ...(secure === undefined ? {} : { secure }),
   });

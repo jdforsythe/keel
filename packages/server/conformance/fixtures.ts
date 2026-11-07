@@ -6,8 +6,8 @@
 // A runtime (JSON) request is a request with `accept: application/json`.
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
-import { err, ok, s } from "@keel/schema";
 import type { Href, RouteProps } from "@keel/router";
+import { err, ok, s } from "@keel/schema";
 import type { KeelError, Result } from "@keel/schema";
 import * as server from "@keel/server";
 import { topology } from "@keel/server";
@@ -125,7 +125,6 @@ export async function build(b: Behavior, mode: Mode = "production", extra: Parti
       params: Params,
       search: Search,
       loader: showLoader,
-      actions: { POST: act },
       component: (p: RouteProps) =>
         el("main", { "data-page": "show" }, `page ${String(Reflect.get(Object(p.params), "kind"))}`),
       layout: "orders.shell",
@@ -135,6 +134,7 @@ export async function build(b: Behavior, mode: Mode = "production", extra: Parti
     },
     "app.login": { path: "/login", component: () => el("main", {}, "login") },
   });
+  routes.actions({ "orders.show": { POST: act } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app", "orders"], adapter: "node" } }),
     routes,

@@ -14,6 +14,7 @@ export type { Guard } from "./types/Guard.ts";
 export type { Href } from "./types/Href.ts";
 export type { Loader } from "./types/Loader.ts";
 export type { Manifest } from "./types/Manifest.ts";
+export type { RouteActions } from "./types/RouteActions.ts";
 export type { RouteDef } from "./types/RouteDef.ts";
 export type { RouteProps } from "./types/RouteProps.ts";
 export type { Router } from "./types/Router.ts";

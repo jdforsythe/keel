@@ -1,0 +1,7 @@
+---
+"@keel/router": minor
+"@keel/server": patch
+"@keel/compiler": patch
+---
+
+RFC 0063 (backlog 0114): actions leave route entries. `export const routes = manifest({...})` is followed by the statement `routes.actions({ [id]: { POST, PUT, PATCH, DELETE } })`, so an action can `return ok(routes.href(...))` with no TS7022 and no `const to: Href` binding. `routes.actions` is typed by `ActionsFit` (ids with a `path`, `Verb` keys, fitting `params`) and throws E1505 (unknown or layout id, non-verb key, second attach) or E1507 (another `params` schema) before attaching anything. An entry with `actions` does not compile and `manifest` throws E1505 with the move. Attached actions are kept per entry object (`routeActions` in `@keel/router/internal`), so union manifests keep them; the router, server dispatch, E1553 and `routesArtifact` read it, and `routes.json` is unchanged. `RouteActions` is exported as a type. `routeLiterals` reads verbs from `routes.actions({...})` calls anywhere in the manifest file, through aliases, and unreads actions it cannot see (another file, computed keys) instead of reading none. `createRouter`/`createApp` seal the entries they compile, so a later `routes.actions` throws E1505 and E1553 holds (backlog 0183). Sizes: `@keel/router` 7,994 B of 8 kB, `@keel/server` 13,816 B of 13.5 kB (+27 B for the lookup), `@keel/compiler` 24,873 B, budget re-based 24 -> 25 kB for the routes literal reads.

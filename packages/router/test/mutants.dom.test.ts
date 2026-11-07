@@ -707,7 +707,6 @@ describe("Form", () => {
       "fm.a": {
         path: "/fm/:id",
         params: s.object({ id: s.int() }),
-        actions: { POST: act, PUT: act },
         component: () => {
           tryForm("POST", to("/fm/4"));
           tryForm("DELETE", to("/fm/4"));
@@ -716,6 +715,7 @@ describe("Form", () => {
         },
       },
     });
+    rs.actions({ "fm.a": { POST: act, PUT: act } });
     const t = boot(rs, "/fm/4");
     await settle();
     expect(msgs).toEqual([
@@ -744,13 +744,6 @@ describe("Form", () => {
       "fs.page": {
         path: "/p/:id",
         params: s.object({ id: s.int() }),
-        actions: {
-          PUT: action({ input: input }, async (i, at) => {
-            log.push("run");
-            seen.push([i, at.params]);
-            return ok(await Promise.resolve(to("/next")));
-          }),
-        },
         component: () => {
           const f = Form({ method: "PUT", action: to("/p/9"), form: handleOf(log) });
           const box = document.createElement("input");
@@ -759,6 +752,15 @@ describe("Form", () => {
           f.append(box);
           return el("page", [f]);
         },
+      },
+    });
+    rs.actions({
+      "fs.page": {
+        PUT: action({ input: input }, async (i, at) => {
+          log.push("run");
+          seen.push([i, at.params]);
+          return ok(await Promise.resolve(to("/next")));
+        }),
       },
     });
     const t = boot(rs, "/p/9");
@@ -777,10 +779,10 @@ describe("Form", () => {
     const rs = manifest({
       "fv.page": {
         path: "/p",
-        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: to("/p"), form: handleOf(log, false) }),
       },
     });
+    rs.actions({ "fv.page": { POST: action({ input: input }, async () => ok(null)) } });
     const t = boot(rs, "/p");
     await settle();
     const f = t.host.querySelector("form");
@@ -797,10 +799,10 @@ describe("Form", () => {
     const rs = manifest({
       "ff.page": {
         path: "/p",
-        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: to("/p"), form: handleOf(log) }),
       },
     });
+    rs.actions({ "ff.page": { POST: action({ input: input }, async () => ok(null)) } });
     const t = boot(rs, "/p");
     await settle();
     submit(t.host.querySelector("form"));
@@ -814,17 +816,19 @@ describe("Form", () => {
     const rs = manifest({
       "fe.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            throw new Error("nope");
-          }),
-        },
         component: () =>
           Form({
             method: "POST",
             action: to("/p"),
             error: (e) => el(`err:${e.code}`),
           }),
+      },
+    });
+    rs.actions({
+      "fe.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          throw new Error("nope");
+        }),
       },
     });
     const t = boot(rs, "/p");
@@ -843,21 +847,23 @@ describe("Form", () => {
     const rs = manifest({
       "fl.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            if (fail) return err(Boom.make({}));
-            await new Promise<void>((r) => {
-              release = r;
-            });
-            return ok(null);
-          }),
-        },
         component: () =>
           Form({
             method: "POST",
             action: to("/p"),
             error: (e) => el(`err:${e.code}`),
           }),
+      },
+    });
+    rs.actions({
+      "fl.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          if (fail) return err(Boom.make({}));
+          await new Promise<void>((r) => {
+            release = r;
+          });
+          return ok(null);
+        }),
       },
     });
     const t = boot(rs, "/p");
@@ -882,13 +888,15 @@ describe("Form", () => {
     const rs = manifest({
       "fh.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () =>
-            which === "fields" ? err({ code: "keel.fields", message: "f", data: {} }) : err(Boom.make({})),
-          ),
-        },
         component: () =>
           Form({ method: "POST", action: to("/p"), form: handleOf([]), error: (e) => el(`err:${e.code}`) }),
+      },
+    });
+    rs.actions({
+      "fh.page": {
+        POST: action({ input: s.object({}) }, async () =>
+          which === "fields" ? err({ code: "keel.fields", message: "f", data: {} }) : err(Boom.make({})),
+        ),
       },
     });
     const t = boot(rs, "/p");
@@ -907,10 +915,10 @@ describe("Form", () => {
     const rs = manifest({
       "fn.page": {
         path: "/p",
-        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: to("/p"), error: (e) => el(`err:${e.code}`) }),
       },
     });
+    rs.actions({ "fn.page": { POST: action({ input: input }, async () => ok(null)) } });
     const t = boot(rs, "/p");
     await settle();
     submit(t.host.querySelector("form"));
@@ -924,13 +932,15 @@ describe("Form", () => {
     const rs = manifest({
       "fd.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            calls.push("run");
-            return ok(null);
-          }),
-        },
         component: () => Form({ method: "POST", action: to("/p") }),
+      },
+    });
+    rs.actions({
+      "fd.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          calls.push("run");
+          return ok(null);
+        }),
       },
     });
     const t = boot(rs, "/p");
@@ -950,7 +960,6 @@ describe("Form", () => {
       "fr.page": {
         path: "/p",
         loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: ++n })),
-        actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
         component: (p) => {
           const out = el("out");
           const f = Form({ method: "POST", action: to("/p") });
@@ -958,6 +967,7 @@ describe("Form", () => {
         },
       },
     });
+    rs.actions({ "fr.page": { POST: action({ input: s.object({}) }, async () => ok(null)) } });
     const t = boot(rs, "/p");
     await settle();
     expect(n).toBe(1);
@@ -975,14 +985,16 @@ describe("Form", () => {
       "fx.page": {
         path: "/p",
         loader: loader({ output: s.object({}) }, async () => (fail ? err(Boom.make({})) : ok({}))),
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            fail = true;
-            return ok(null);
-          }),
-        },
         component: () => Form({ method: "POST", action: to("/p") }),
         errorElement: ({ error }) => el(`err:${error.code}`),
+      },
+    });
+    rs.actions({
+      "fx.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          fail = true;
+          return ok(null);
+        }),
       },
     });
     const t = boot(rs, "/p");
@@ -998,13 +1010,15 @@ describe("Form", () => {
     const rs = manifest({
       "fz.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            calls.push("run");
-            return ok(null);
-          }),
-        },
         component: () => Form({ method: "POST", action: to("/p") }),
+      },
+    });
+    rs.actions({
+      "fz.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          calls.push("run");
+          return ok(null);
+        }),
       },
     });
     const t = boot(rs, "/p");

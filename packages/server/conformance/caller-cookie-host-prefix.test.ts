@@ -23,8 +23,9 @@ async function setup(secure?: boolean) {
     return ok(null);
   });
   const routes = manifest({
-    "app.who": { path: "/who", loader: read, actions: { POST: write }, component: () => document.createElement("p") },
+    "app.who": { path: "/who", loader: read, component: () => document.createElement("p") },
   });
+  routes.actions({ "app.who": { POST: write } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

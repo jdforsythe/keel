@@ -1,12 +1,12 @@
 # k.server: Thin server
 status: conformance-covered
 
-**API.** Apps import only `topology` from `@keel/server`; `loader` and `action` (`@keel/router`) run over HTTP.
+**API.** Apps import only `topology` from `@keel/server`; `loader`/`action` (`@keel/router`) run over HTTP.
 - `loader({ output, params?, search?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, stores }` and `ctx`; returns `Promise<Result<T, KeelError>>`, data encoded with `output`.
-- `action({ input, params?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, stores }` and `ctx`; returns `Result<Href | null, KeelError>`.
+- `action({ input, params?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, stores }` and `ctx`; returns `Result<Href | null, KeelError>`; a route gets it by method from `routes.actions` (k.router).
 - `params`/`search` are `Infer` of the declared schemas (else `unknown`), the route's own (E1507); `fn` is never annotated. `url` is the absolute request URL.
 
-**Server state** (rfc:0044, 0054, 0057, 0060). `stores` names a factory `(ctx) => S` of stores (explicit `id`s) and transactions. Per request each named factory runs once; its stores restore from `ctx.storage` `keel.store.<id>`; `fn` gets that `S`. An action's `ok` saves the changed stores, none if another request saved any of the factory's since (409 `keel.conflict`); `err` or a throw saves none. `caller` is the base64url SHA-256 of the cookie token if HMAC-signed with `createApp({ secret })` (<32 bytes: E1556; default per process, W1556 in production), else of one minted on a write, else `""`; `tx` meta `{ caller }` scopes `undoWhere`. The cookie (`HttpOnly; SameSite=Lax; Path=/`) is `__Host-keel-caller`, `Secure` on https (`createApp({ secure })`; default the URL's or `x-forwarded-proto`, W1557 in production), else `keel-caller`. Factory stores skip `#k-state` and inspect; server code never writes module stores; the client router refuses `stores`.
+**Server state.** `stores` names a factory `(ctx) => S` of stores (explicit `id`s) and transactions. Per request each named factory runs once; its stores restore from `ctx.storage` `keel.store.<id>`; `fn` gets that `S`. An action's `ok` saves the changed stores, none if another request saved any of the factory's since (409 `keel.conflict`); `err` or a throw saves none. `caller` is the base64url SHA-256 of the cookie token if HMAC-signed with `createApp({ secret })` (<32 bytes: E1556; default per process, W1556 in production), else of one minted on a write, else `""`; `tx` meta `{ caller }` scopes `undoWhere`. The cookie (`HttpOnly; SameSite=Lax; Path=/`) is `__Host-keel-caller`, `Secure` on https (`createApp({ secure })`; default the URL's or `x-forwarded-proto`, W1557 in production), else `keel-caller`. Factory stores skip `#k-state` and inspect; server code never writes module stores; the client router refuses `stores`.
 
 **Request flow.** Match the route table -> parse params (fail: 404) and search (fail: defaults) -> guard (deny: redirect) ->
 - GET: run the chain's loaders concurrently, then stream HTML. A loader `err` renders the route's `errorElement`.
@@ -19,7 +19,7 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 **Topology.** `topology.ts` default-exports `topology({ <name>: { modules, adapter } })`.
 Adapters: `node` (Hono; serves the resume entry), `static` (prerendered HTML), `client` (loaders and actions run in the browser; the entry calls `mount(App, el)` with a real `ctx`). A deployable's modules share a process; calls between deployables are stdlib.
 
-**Build** (rfc:0048, 0052, 0057). `keel build` bundles each `node` deployable's entry and islands into `dist/<name>/` with `.vite/manifest.json`. Production `createApp({ assets: 'dist/<name>' })` loads it at startup, scripts its entry, serves `/assets/*` (`nosniff`; `immutable` if the manifest names it hashed, else `no-cache`, ETag); dev, or no `assets` in development or test, serves `/@keel/entry.ts`.
+**Build.** `keel build` bundles each `node` deployable's entry and islands into `dist/<name>/` with `.vite/manifest.json`. Production `createApp({ assets: 'dist/<name>' })` loads it at startup, scripts its entry, serves `/assets/*` (`nosniff`; `immutable` if the manifest names it hashed, else `no-cache`, ETag); dev, or no `assets` in development or test, serves `/@keel/entry.ts`.
 
 **Dev server.** `keel dev`: Vite and Hono, one process, HMR, real `ctx`. Stdout log (OUTPUT.md), a record per event: `req`, `diag` per diagnostic or uncaught throw (app frames only, max 5), `reload`; `createApp({ log: { format: 'compact' | 'json', write } })` writes a line per `write`.
 

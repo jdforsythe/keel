@@ -20,7 +20,6 @@ export const routes = manifest({
   "todos.index": {
     path: "/",
     loader: loadIndex,
-    actions: { POST: createList },
     component: ListsPage,
     layout: "todos.shell",
   },
@@ -29,7 +28,6 @@ export const routes = manifest({
     params: ListParams,
     search: ListSearch,
     loader: loadList,
-    actions: { POST: createTodo },
     component: ListPage,
     layout: "todos.shell",
     errorElement: ListError,
@@ -38,10 +36,14 @@ export const routes = manifest({
     path: "/lists/:listId/todos/:todoId/edit",
     params: TodoParams,
     loader: loadTodo,
-    actions: { POST: updateTodo },
     component: EditTodoPage,
     layout: "todos.shell",
     guard: editable,
     errorElement: ListError,
   },
+});
+routes.actions({
+  "todos.index": { POST: createList },
+  "todos.list": { POST: createTodo },
+  "todos.edit": { POST: updateTodo },
 });

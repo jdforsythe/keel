@@ -1,5 +1,7 @@
 import type { ObjectSchema } from "@keel/schema";
+import type { ActionsFit } from "./ActionsFit.ts";
 import type { Href } from "./Href.ts";
+import type { RouteActions } from "./RouteActions.ts";
 import type { RouteDef } from "./RouteDef.ts";
 
 type None = Readonly<Record<string, never>>;
@@ -19,10 +21,12 @@ type PathId<M> = string extends keyof M
 /**
  * A validated route table returned by `manifest()`; route ids are the literal keys of `routes`. `href` links to one of
  * its routes (k.router Links): `id` is a key with a `path`, `params`/`search` are `Infer` of that route's schemas. With
- * an untyped table (non-literal keys) `href` takes any id and plain records.
+ * an untyped table (non-literal keys) `href` takes any id and plain records. `actions` attaches each route's actions
+ * by method in a statement after the manifest (RFC 0063), so an action may `return ok(routes.href(...))`.
  */
 export type Manifest<M extends Readonly<Record<string, RouteDef>>> = {
   readonly kind: "keel.manifest";
   readonly routes: M;
   href<K extends PathId<M>>(id: K, ...args: HrefArgs<M, K>): Href;
+  actions<A extends { readonly [K in PathId<M>]?: RouteActions }>(actions: A & ActionsFit<M, A>): void;
 };

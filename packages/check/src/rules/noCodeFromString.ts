@@ -1,8 +1,9 @@
 import { globalRefs } from "@keel/compiler/internal";
-import { type Expression, Visitor } from "oxc-parser";
+import { type Expression, type MemberExpression, type SpreadElement, Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { isTestPath } from "../internal/isTestPath.ts";
+import { propertyOf } from "../internal/propertyOf.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -25,8 +26,16 @@ function schemeOf(s: string): string {
     .slice(0, 5)
     .toLowerCase();
 }
-/** Alias and `+` links followed for a constant prefix before giving up. */
+/** Alias, `+`, assignment and prototype links followed before giving up. */
 const MAX_DEPTH = 16;
+/** Calls and members that return the URL they are read from: `u.toString()`, `new URL(u).href` (rfc:0065). */
+const SAME_URL: ReadonlySet<string> = new Set(["href", "toString", "valueOf"]);
+/** Calls that return their argument's prototype. */
+const PROTOTYPE_OF: ReadonlySet<string> = new Set(["Object.getPrototypeOf", "Reflect.getPrototypeOf"]);
+/** Assignment operators whose value is the right operand. */
+const ASSIGN: ReadonlySet<string> = new Set(["=", "||=", "&&=", "??="]);
+/** The constant text a string expression starts with and the first part that is not constant (null: none). */
+type Lead = { readonly text: string; readonly rest: Expression | null };
 
 /**
  * Whether a resolved path is the `Function` constructor: `Function` itself, or a `constructor` reached from it.
@@ -41,9 +50,9 @@ const isFunctionPath = (p: readonly string[] | null): boolean =>
  * string reaches every ambient past E1601. Resolved like E1601 (`globalRefs`): aliases, `globalThis` and
  * literal keys, lexical scope. `eval` is reported at every use; `Function` where it is invoked (called,
  * constructed, `.call`/`.apply`/`.bind`, or `Reflect.apply`/`construct`), so `instanceof Function` stays clean;
- * also a function's `constructor` (`(() => {}).constructor(s)`, async and generator forms, also through
- * `Object.getPrototypeOf`) and `import()` or `new Worker`/`SharedWorker` of a `data:` or `blob:` URL
- * (a constant prefix, or `URL.createObjectURL(...)`) (rfc:0058, 0061).
+ * also a function's `constructor` (`(() => {}).constructor(s)`, async and generator forms, and up its prototype
+ * chain while it stays in the `Function` family) and `import()` or `new Worker`/`SharedWorker` (also through
+ * `Reflect.construct`) of a `data:` or `blob:` URL followed to its origin (`urlOf`) (rfc:0058, 0061, 0065).
  * An unexported alias is reported at its uses. No fix: the code in the string is the author's.
  */
 export const noCodeFromString: RuleDef = {
@@ -61,56 +70,145 @@ export const noCodeFromString: RuleDef = {
       seen.add(at);
       out.push(findingAt(file, at, { name }));
     };
-    const isFunction = (e: Expression): boolean => isFunctionPath(g.resolve(e));
-    /** The constant text `e` starts with, through same-file aliases, `+` and templates ("" when unknown). */
-    const prefixOf = (e: Expression, depth: number): string => {
-      const whole = g.constString(e);
-      if (whole !== null || depth > MAX_DEPTH) return whole ?? "";
-      const x = g.initOf(e);
-      if (x.type === "BinaryExpression" && x.operator === "+") {
-        const left = g.constString(x.left);
-        return left === null ? prefixOf(x.left, depth + 1) : left + prefixOf(x.right, depth + 1);
-      }
-      if (x.type !== "TemplateLiteral") return "";
-      let out = x.quasis[0]?.value.cooked ?? "";
-      for (const [i, sub] of x.expressions.entries()) {
-        const s = g.constString(sub);
-        if (s === null) return out + prefixOf(sub, depth + 1);
-        out += s + (x.quasis[i + 1]?.value.cooked ?? "");
-      }
-      return out;
+    /** Values each name is given in the file, at the binding offset: declarations and assignments (rfc:0065). */
+    const values = new Map<string, { at: number; v: Expression }[]>();
+    const give = (name: string, at: number, v: Expression): void =>
+      void values.set(name, [...(values.get(name) ?? []), { at, v }]);
+    new Visitor({
+      VariableDeclarator: (n) => {
+        if (n.id.type === "Identifier" && n.init !== null) give(n.id.name, n.id.start, n.init);
+      },
+      AssignmentExpression: (n) => {
+        if (n.left.type === "Identifier" && ASSIGN.has(n.operator)) give(n.left.name, n.left.start, n.right);
+      },
+    }).visit(ast);
+    const keyOf = (m: MemberExpression): string | null =>
+      m.computed ? g.constString(m.property) : m.property.type === "Identifier" ? m.property.name : null;
+    /** The value an object literal (through aliases) holds at the member `m` reads, or null. */
+    const propValue = (m: MemberExpression): Expression | null => {
+      const key = keyOf(m);
+      const o = g.initOf(m.object);
+      const p = key === null || o.type !== "ObjectExpression" ? null : propertyOf(o, key);
+      return p === null ? null : p.value;
     };
-    /** `data:` or `blob:` when `e` is such a URL: a constant prefix, or `URL.createObjectURL(...)` through aliases. */
-    const codeUrl = (e: Expression): string | null => {
+    /** Prototype steps from `e` that stay in the `Function` family (-1: not a function value; rfc:0065). */
+    const hops = (e: Expression, depth: number): number => {
       const x = g.initOf(e);
-      if (x.type === "CallExpression" && g.resolve(x.callee)?.join(".") === "URL.createObjectURL") return "blob:";
-      const scheme = schemeOf(prefixOf(e, 0));
-      return CODE_SCHEMES.has(scheme) ? scheme : null;
+      if (depth > MAX_DEPTH) return -1;
+      if (x.type === "ArrowFunctionExpression") return x.async ? 2 : 1;
+      if (x.type === "FunctionExpression") return x.async || x.generator ? 2 : 1;
+      if (x.type === "ClassExpression") return 1;
+      if (x.type === "Identifier") {
+        const d = g.functionOf(x.name, x.start);
+        if (d !== null) return d.async || d.generator ? 2 : 1;
+      }
+      if (x.type === "CallExpression") {
+        const a = x.arguments[0];
+        if (!PROTOTYPE_OF.has(g.resolve(x.callee)?.join(".") ?? "") || a === undefined || a.type === "SpreadElement")
+          return -1;
+        const h = hops(a, depth + 1);
+        return h > 0 ? h - 1 : -1;
+      }
+      const v = x.type === "MemberExpression" ? propValue(x) : null;
+      if (v !== null) return hops(v, depth + 1);
+      const p = g.resolve(x);
+      return isFunctionPath(p) ? 1 : p?.join(".") === "Function.prototype" ? 0 : -1;
+    };
+    /** Whether `e` is the `Function` constructor family: resolved, or a function value's `constructor` (rfc:0065). */
+    const isCtor = (e: Expression): boolean => {
+      if (isFunctionPath(g.resolve(e))) return true;
+      const x = g.initOf(e);
+      return x.type === "MemberExpression" && keyOf(x) === "constructor" && hops(x.object, 0) >= 0;
+    };
+    /** The constant text `e` starts with, through same-file aliases, `+` and templates, and the first other part. */
+    const lead = (e: Expression, depth: number): Lead => {
+      const whole = g.constString(e);
+      if (whole !== null) return { text: whole, rest: null };
+      const x = g.initOf(e);
+      if (depth > MAX_DEPTH) return { text: "", rest: null };
+      if (x.type === "BinaryExpression" && x.operator === "+") {
+        const l = lead(x.left, depth + 1);
+        if (l.rest !== null) return l;
+        const r = lead(x.right, depth + 1);
+        return { text: l.text + r.text, rest: r.rest };
+      }
+      if (x.type !== "TemplateLiteral") return { text: "", rest: x };
+      let text = x.quasis[0]?.value.cooked ?? "";
+      for (const [i, sub] of x.expressions.entries()) {
+        const s = lead(sub, depth + 1);
+        text += s.text;
+        if (s.rest !== null) return { text, rest: s.rest };
+        text += x.quasis[i + 1]?.value.cooked ?? "";
+      }
+      return { text, rest: null };
+    };
+    /**
+     * `data:` or `blob:` when `e` is such a URL, followed to its origin (rfc:0061, 0065): a constant prefix,
+     * `URL.createObjectURL(...)`, and through aliases, values a local is given, `?:`/`&&`/`||`/`??`, an object
+     * literal's property, `String(u)`, `u.toString()`, `new URL(u)`, `.href`, and a template or `+` it leads.
+     */
+    const urlOf = (e: Expression, depth: number): string | null => {
+      const x = g.initOf(e);
+      if (depth > MAX_DEPTH) return null;
+      const next = (v: Expression | SpreadElement | undefined | null): string | null =>
+        v === undefined || v === null || v.type === "SpreadElement" ? null : urlOf(v, depth + 1);
+      if (x.type === "Identifier") {
+        if (g.resolveName(x.name, x.start) !== null) return null;
+        for (const { at, v } of values.get(x.name) ?? []) {
+          const r = g.sameBinding(x.name, at, x.start) ? next(v) : null;
+          if (r !== null) return r;
+        }
+        return null;
+      }
+      if (x.type === "ConditionalExpression") return next(x.consequent) ?? next(x.alternate);
+      if (x.type === "LogicalExpression") return next(x.left) ?? next(x.right);
+      if (x.type === "MemberExpression") return keyOf(x) === "href" ? next(x.object) : next(propValue(x));
+      if (x.type === "NewExpression") return g.resolve(x.callee)?.join(".") === "URL" ? next(x.arguments[0]) : null;
+      if (x.type === "CallExpression") {
+        const name = g.resolve(x.callee)?.join(".") ?? "";
+        if (name === "URL.createObjectURL") return "blob:";
+        if (name === "String") return next(x.arguments[0]);
+        const c = g.initOf(x.callee);
+        return c.type === "MemberExpression" && SAME_URL.has(keyOf(c) ?? "") ? next(c.object) : null;
+      }
+      const { text, rest } = lead(x, depth);
+      const scheme = schemeOf(text);
+      if (CODE_SCHEMES.has(scheme)) return scheme;
+      return scheme === "" && rest !== x ? next(rest) : null;
     };
     const invoked = (e: Expression): void => {
-      if (isFunction(e) && !g.isAliasInit(e.start, e.end)) hit(e.start, "Function");
+      if (isCtor(e) && !g.isAliasInit(e.start, e.end)) hit(e.start, "Function");
+    };
+    const worker = (
+      n: { readonly start: number },
+      callee: Expression,
+      arg: Expression | SpreadElement | undefined | null,
+    ): void => {
+      const name = g.resolve(callee)?.join(".") ?? "";
+      const scheme =
+        !WORKERS.has(name) || arg === undefined || arg === null || arg.type === "SpreadElement" ? null : urlOf(arg, 0);
+      if (scheme !== null) hit(n.start, `new ${name}(${scheme})`);
     };
     new Visitor({
       CallExpression: (n) => {
-        const p = g.resolve(n.callee);
-        const name = p === null ? "" : p.join(".");
-        if (isFunctionPath(p)) return hit(n.callee.start, "Function");
-        if (p !== null && INVOKERS.has(p[p.length - 1] ?? "") && isFunctionPath(p.slice(0, -1)))
+        if (isCtor(n.callee)) return hit(n.callee.start, "Function");
+        const m = g.initOf(n.callee);
+        if (m.type === "MemberExpression" && INVOKERS.has(keyOf(m) ?? "") && isCtor(m.object))
           return hit(n.callee.start, "Function");
-        const first = n.arguments[0];
-        if (p !== null && p.length === 2 && p[0] === "Reflect" && REFLECT_INVOKE.has(p[1] ?? "") && first !== undefined)
-          if (first.type !== "SpreadElement") invoked(first);
+        const p = g.resolve(n.callee);
+        const [first, second] = n.arguments;
+        if (p === null || p.length !== 2 || p[0] !== "Reflect" || !REFLECT_INVOKE.has(p[1] ?? "")) return;
+        if (first === undefined || first.type === "SpreadElement") return;
+        invoked(first);
+        const list = second === undefined || second.type === "SpreadElement" ? null : g.initOf(second);
+        if (p[1] === "construct" && list?.type === "ArrayExpression") worker(n, first, list.elements[0]);
       },
       NewExpression: (n) => {
         invoked(n.callee);
-        const worker = g.resolve(n.callee)?.join(".") ?? "";
-        const first = n.arguments[0];
-        if (!WORKERS.has(worker) || first === undefined || first.type === "SpreadElement") return;
-        const scheme = codeUrl(first);
-        if (scheme !== null) hit(n.start, `new ${worker}(${scheme})`);
+        worker(n, n.callee, n.arguments[0]);
       },
       ImportExpression: (n) => {
-        const scheme = codeUrl(n.source);
+        const scheme = urlOf(n.source, 0);
         if (scheme !== null) hit(n.start, `import(${scheme})`);
       },
       MemberExpression: (n) => {

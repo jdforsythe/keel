@@ -7,20 +7,19 @@ import { compilePath } from "./compilePath.ts";
 import { fieldsOf } from "./fieldsOf.ts";
 import { patternKey } from "./patternKey.ts";
 
-const VERBS = ["POST", "PUT", "PATCH", "DELETE"];
-
 /**
  * Validate one manifest and compile its table. Throws an Error with `code`: E1502 two routes with one path
- * pattern, E1503 path/params mismatch or malformed path, E1504 required search field, E1505 actions key not
- * a verb, E1506 unknown layout, layout with a path, or layout cycle, E1507 a loader or action declaring a `params`
- * or `search` schema that is not this route's own value (RFC 0027). Looks at nothing outside `routes`.
+ * pattern, E1503 path/params mismatch or malformed path, E1504 required search field, E1505 an `actions` key on
+ * an entry (they attach with `routes.actions`, RFC 0063), E1506 unknown layout, layout with a path, or layout cycle,
+ * E1507 a loader declaring a `params` or `search` schema that is not this route's own value (RFC 0027). Looks at
+ * nothing outside `routes`.
  */
 export function compileRoutes(routes: Readonly<Record<string, RouteDef>>): Table {
   const table = new Map<string, Registered>();
   const patterns = new Map<string, string>();
   for (const [id, def] of Object.entries(routes)) {
-    for (const verb of Object.keys(def.actions ?? {}))
-      if (!VERBS.includes(verb)) throw codedError("E1505", `${id}: actions key "${verb}" is not POST/PUT/PATCH/DELETE`);
+    if (Object.hasOwn(def, "actions"))
+      throw codedError("E1505", `${id}: move actions to routes.actions({ "${id}": {...} }) after the manifest`);
     const segments = def.path === undefined ? null : compilePath(id, def.path);
     const names = (segments ?? []).flatMap((s) => (s.kind === "param" ? [s.name] : []));
     const fields = def.params === undefined ? [] : fieldsOf(def.params.node).map(([k]) => k);
@@ -33,9 +32,6 @@ export function compileRoutes(routes: Readonly<Record<string, RouteDef>>): Table
       throw codedError("E1507", `${id}: loader params schema is not this route's params`);
     if (def.loader?.search !== undefined && def.loader.search !== def.search)
       throw codedError("E1507", `${id}: loader search schema is not this route's search`);
-    for (const [verb, act] of Object.entries(def.actions ?? {}))
-      if (act?.params !== undefined && act.params !== def.params)
-        throw codedError("E1507", `${id}: ${verb} action params schema is not this route's params`);
     chainOf(id, def, routes);
     if (segments !== null) {
       const key = patternKey(segments);

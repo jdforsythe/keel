@@ -3,6 +3,7 @@ export { check } from "./check.ts";
 export { defineRule } from "./defineRule.ts";
 export { explain } from "./explain.ts";
 export { format } from "./format.ts";
+export { reportedCodes } from "./reportedCodes.ts";
 export { rules } from "./rules.ts";
 export type { Budget } from "./types/Budget.ts";
 export type { CheckOptions } from "./types/CheckOptions.ts";

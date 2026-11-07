@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Unit and property tests (seed 1337) for the pure internals of the request flow.
 import type { RouteDef } from "@keel/router";
-import { compileRoutes, compileTable, needsBare } from "@keel/router/internal";
+import { compileRoutes, compileTable, needsBare, routeActions } from "@keel/router/internal";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -31,14 +31,12 @@ const tableOf = (routes: Record<string, RouteDef>) => compileTable(compileRoutes
 const loaderStub = { kind: "keel.loader" as const, output: s.object({}), run: () => Promise.resolve(ok({})) };
 
 describe("selectDeployable", () => {
+  const shop = { path: "/shop", component: p };
+  routeActions.set(shop, { POST: { kind: "keel.action", input: s.object({}), run: () => ok(null) } });
   const table = tableOf({
     "app.home": { path: "/", component: p },
     "orders.show": { path: "/orders/:id", params: s.object({ id: s.string() }), component: p },
-    "shop.list": {
-      path: "/shop",
-      component: p,
-      actions: { POST: { kind: "keel.action", input: s.object({}), run: () => ok(null) } },
-    },
+    "shop.list": shop,
     "blog.list": { path: "/blog", component: p, loader: loaderStub },
   });
   const mods = new Set(["app", "orders", "shop", "blog"]);

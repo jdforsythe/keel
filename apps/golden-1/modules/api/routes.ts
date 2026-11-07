@@ -14,25 +14,29 @@ import { postUndo } from "./postUndo.server.ts";
 
 /** The `api` deployable (node): it owns the board (`api.board`); `todos` reads and writes it over HTTP. */
 export const routes = manifest({
-  "api.lists": { path: "/api/lists", loader: loadBoard, actions: { POST: postList }, component: BoardApi },
+  "api.lists": { path: "/api/lists", loader: loadBoard, component: BoardApi },
   "api.listTodos": {
     path: "/api/lists/:listId/todos",
     params: ListParams,
-    actions: { POST: postTodo },
     component: ActionApi,
   },
   "api.todo": {
     path: "/api/todos/:todoId",
     params: TodoIdParams,
-    actions: { POST: postEdit },
     component: ActionApi,
   },
   "api.todoToggle": {
     path: "/api/todos/:todoId/toggle",
     params: TodoIdParams,
-    actions: { POST: postToggle },
     component: ActionApi,
   },
-  "api.undo": { path: "/api/undo", actions: { POST: postUndo }, component: ActionApi },
+  "api.undo": { path: "/api/undo", component: ActionApi },
   "api.suggestions": { path: "/api/suggestions", loader: loadSuggestions, component: SuggestionsApi },
+});
+routes.actions({
+  "api.lists": { POST: postList },
+  "api.listTodos": { POST: postTodo },
+  "api.todo": { POST: postEdit },
+  "api.todoToggle": { POST: postToggle },
+  "api.undo": { POST: postUndo },
 });

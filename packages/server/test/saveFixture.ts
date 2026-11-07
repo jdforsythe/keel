@@ -56,13 +56,15 @@ export function counterApp(storage: Ctx["storage"]) {
     "app.count": {
       path: "/count",
       loader: loader({ output: Count, stores: counter }, async ({ stores }) => ok({ n: stores.count.get("n") })),
-      actions: {
-        POST: action({ input: s.object({}), stores: counter }, (input, { stores }) => {
-          const r = tx(stores.inc, input);
-          return r.ok ? ok(null) : err(r.error);
-        }),
-      },
       component: () => document.createElement("p"),
+    },
+  });
+  routes.actions({
+    "app.count": {
+      POST: action({ input: s.object({}), stores: counter }, (input, { stores }) => {
+        const r = tx(stores.inc, input);
+        return r.ok ? ok(null) : err(r.error);
+      }),
     },
   });
   const app = createApp({ topology: topology({ web: { modules: ["app"], adapter: "node" } }), routes, ctx });

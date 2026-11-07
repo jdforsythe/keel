@@ -1,6 +1,9 @@
 import { shapeOf } from "./shapeOf.ts";
 
-/** Compare a template element with a server element (tags and element structure); a description if they differ. */
+/**
+ * Compare a template element with a server element (tags and element structure); a description if they differ.
+ * A template's component slot matches any one server element: the child component claims and checks it.
+ */
 export function sameShape(tpl: Element, server: Element): string | null {
   if (tpl.tagName !== server.tagName) return `<${server.localName}> where the template has <${tpl.localName}>`;
   const a = shapeOf(tpl);
@@ -10,7 +13,8 @@ export function sameShape(tpl: Element, server: Element): string | null {
   for (let i = 0; i < a.length; i++) {
     const x = a[i];
     const y = b[i];
-    if (x === undefined || y === undefined) return "child count";
+    if (x === null) continue;
+    if (x === undefined || !y) return "child count";
     const d = sameShape(x, y);
     if (d !== null) return d;
   }

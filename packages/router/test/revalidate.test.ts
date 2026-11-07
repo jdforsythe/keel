@@ -23,12 +23,6 @@ it("a page showing its errorElement renders the component after ok(null) when th
     "rv.page": {
       path: "/rv",
       loader: loader({ output: s.object({}) }, async () => (state.fail ? err(Gone.make({})) : ok({}))),
-      actions: {
-        POST: action({ input: s.object({}) }, async () => {
-          state.fail = false;
-          return ok(null);
-        }),
-      },
       component: () => {
         const p = document.createElement("p");
         p.id = "page";
@@ -40,6 +34,14 @@ it("a page showing its errorElement renders the component after ok(null) when th
         box.append(error.code, Form({ method: "POST", action: to("/rv") }));
         return box;
       },
+    },
+  });
+  routes.actions({
+    "rv.page": {
+      POST: action({ input: s.object({}) }, async () => {
+        state.fail = false;
+        return ok(null);
+      }),
     },
   });
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/rv") });

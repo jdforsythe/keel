@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 6,
   "mutationScore": {
-    "check": 80.6,
+    "check": 73.3,
     "cli": 90.9,
     "compiler": 88.2,
     "ctx": 83,
@@ -663,6 +663,12 @@
     },
     {
       "pkg": "check",
+      "name": "reportedCodes",
+      "file": "packages/check/src/reportedCodes.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "check",
       "name": "rules",
       "file": "packages/check/src/rules.ts",
       "rung": "example"
@@ -815,7 +821,7 @@
       "pkg": "router",
       "name": "action",
       "file": "packages/router/src/action.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
@@ -845,7 +851,7 @@
       "pkg": "router",
       "name": "manifest",
       "file": "packages/router/src/manifest.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
@@ -1037,7 +1043,7 @@
   "clauses": [
     {
       "item": "k.check#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.check#2",
@@ -1280,6 +1286,10 @@
       "rung": "example"
     },
     {
+      "item": "k.ctx#13",
+      "rung": "example"
+    },
+    {
       "item": "k.errors#1",
       "rung": "probabilistic"
     },
@@ -1484,6 +1494,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.router#13",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.runtime#1",
       "rung": "example"
     },
@@ -1522,6 +1536,10 @@
     {
       "item": "k.runtime#10",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.runtime#11",
+      "rung": "example"
     },
     {
       "item": "k.scaffold#1",
@@ -1845,6 +1863,10 @@
     },
     {
       "item": "k.ui#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#11",
       "rung": "example"
     },
     {

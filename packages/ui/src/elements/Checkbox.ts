@@ -3,10 +3,10 @@ import type { Computed } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
 import { applyDisabled } from "../internal/applyDisabled.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
-import { controlId } from "../internal/controlId.ts";
 import { isReadable } from "../internal/isReadable.ts";
 import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
+import { make } from "../internal/make.ts";
 import { markFirst } from "../internal/markFirst.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
@@ -24,28 +24,31 @@ export function Checkbox(
     readonly checked?: boolean | Computed<boolean>;
   },
 ): Node {
-  const el = document.createElement("input");
-  el.setAttribute("type", "checkbox");
-  if (props.name !== undefined) el.setAttribute("name", props.name);
-  const c = props.checked;
-  // A reactive state's first value is also the default (rfc:0062).
-  if (isReadable(c))
-    prop(
-      el,
-      "checked",
-      markFirst(
-        () => c.get(),
-        (x) => {
-          if (x) el.setAttribute("checked", "");
-        },
-      ),
-    );
-  else if (c === true) el.setAttribute("checked", "");
-  applyDisabled(el, props.disabled);
-  applyStyle(el, props);
-  const id = props.id ?? props.field?.id ?? controlId("checkbox", props.label, undefined, el.ownerDocument);
-  const out = labelled(el, id, props.label, true, props.field);
-  const h = props.onChange;
-  if (h !== undefined) listen(el, "change", () => h(el.checked));
-  return out;
+  return labelled("checkbox", props, true, (id) =>
+    make("input", (el) => {
+      el.setAttribute("type", "checkbox");
+      el.setAttribute("id", id);
+      if (props.name !== undefined) el.setAttribute("name", props.name);
+      const c = props.checked;
+      // A reactive state's first value is also the default (rfc:0062).
+      if (isReadable(c))
+        prop(
+          el,
+          "checked",
+          markFirst(
+            el,
+            "checked",
+            () => c.get(),
+            (x) => {
+              if (x) el.setAttribute("checked", "");
+            },
+          ),
+        );
+      else if (c === true) el.setAttribute("checked", "");
+      applyDisabled(el, props.disabled);
+      applyStyle(el, props);
+      const h = props.onChange;
+      if (h !== undefined) listen(el, "change", () => h(el.checked));
+    }),
+  );
 }

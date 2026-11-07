@@ -77,7 +77,7 @@ type Item =
   | { kind: "dyn"; expr: Expression }
   | { kind: "el"; node: JSXElement }
   | { kind: "flow"; node: JSXElement }
-  | { kind: "node"; code: () => string };
+  | { kind: "node"; code: () => string; one?: true };
 
 type Template = { html: string; refs: string[]; ops: string[]; root: string; vars: Map<string, string> };
 
@@ -241,9 +241,9 @@ export function lowerFile(
         else if (elementValued(a, c.expression) === null) items.push({ kind: "dyn", expr: c.expression });
       } else if (isHtmlTag(tagNameOf(c.openingElement.name))) {
         const nests = parentTag === undefined || canNest(parentTag, tagNameOf(c.openingElement.name));
-        items.push(nests ? { kind: "el", node: c } : { kind: "node", code: () => lowerElementRoot(c) });
+        items.push(nests ? { kind: "el", node: c } : { kind: "node", code: () => lowerElementRoot(c), one: true });
       } else if (intrinsicOf(a, c) !== undefined) items.push({ kind: "flow", node: c });
-      else items.push({ kind: "node", code: () => lowerComponent(c) });
+      else items.push({ kind: "node", code: () => lowerComponent(c), one: true });
     }
     return items;
   }
@@ -374,9 +374,10 @@ export function lowerFile(
         emitElement(it.node, t, false, parent.foreign);
         prevText = false;
       } else {
-        t.html += "<!---->";
+        // A component (or nested element) slot is `<!--+-->`: at resume, one server element it claims (rfc:0064).
+        t.html += it.kind === "node" && it.one ? "<!--+-->" : "<!---->";
         const n = childRef(index);
-        t.ops.push(it.kind === "flow" ? `${lowerFlow(it.node, n)};` : `${n}.replaceWith(${it.code()});`);
+        t.ops.push(it.kind === "flow" ? `${lowerFlow(it.node, n)};` : `${ns}.slot(${n}, () => ${it.code()});`);
         prevText = false;
       }
       index++;

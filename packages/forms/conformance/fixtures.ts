@@ -7,7 +7,7 @@
 import { createCtx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { effect } from "@keel/reactive";
-import { type Href, Form, action, createRouter, manifest } from "@keel/router";
+import { Form, type Href, action, createRouter, manifest } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
 import { type KeelError, type Result, ok, s } from "@keel/schema";
 
@@ -161,8 +161,9 @@ export function setup(opts: { order?: readonly Field[]; initial?: Record<string,
     });
   };
   const routes = manifest({
-    "notes.edit": { path: "/notes", actions: { POST: save }, component: Page },
+    "notes.edit": { path: "/notes", component: Page },
   });
+  routes.actions({ "notes.edit": { POST: save } });
   const ctx = createCtx({ mode: "sim" });
   const router = createRouter(routes, { ctx, history: memoryHistory("/notes") });
   const root = document.createElement("div");

@@ -392,9 +392,9 @@ describe("chainOf / compileRoutes messages", () => {
     expect(
       fail(() => compileRoutes({ a: { path: "/v", search: s.object({ q: s.string() }), component: view } })).message,
     ).toBe('E1504 a: search field "q" must be optional');
-    const badVerb = { a: { path: "/v", component: view, actions: { GET: {} } } };
-    expect(fail(() => Reflect.apply(compileRoutes, undefined, [badVerb])).message).toBe(
-      'E1505 a: actions key "GET" is not POST/PUT/PATCH/DELETE',
+    const inEntry = { a: { path: "/v", component: view, actions: { POST: {} } } };
+    expect(fail(() => Reflect.apply(compileRoutes, undefined, [inEntry])).message).toBe(
+      'E1505 a: move actions to routes.actions({ "a": {...} }) after the manifest',
     );
   });
   it("layouts have no segments and are not routable", () => {
@@ -580,9 +580,10 @@ describe("routesArtifact details", () => {
       run: async () => ok(null),
     };
     const m = manifest({
-      "z.b.deep": { path: "/zb", component: view, actions: { PUT: act, POST: act, PATCH: act, DELETE: act } },
+      "z.b.deep": { path: "/zb", component: view },
       plain: { path: "/plain-art", component: view },
     });
+    m.actions({ "z.b.deep": { PUT: act, POST: act, PATCH: act, DELETE: act } });
     const a = routesArtifact(m);
     expect(Object.keys(a)).toEqual(["plain", "z.b.deep"]);
     expect(a.plain?.module).toBe("plain");

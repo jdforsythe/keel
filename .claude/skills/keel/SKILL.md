@@ -13,7 +13,7 @@ description: "Build a Keel app: schemas, stores, components, routes, forms, test
 - `Foo.tsx`: default `(props, slots?, ctx?)`, `export const Props = s.object(...)`, `export const uses = [tx]` if it calls `tx`; never destructure props. `<If when>`, `<For each key="id">`, `<Match on>`, never `&&`. Layout: `{props.children?.()}`.
 - `*.server.ts`: `loader({ output, params?, search?, stores? }, fn)`, `action({ input, params?, stores? }, fn)`; schemas are the route's own; never annotate `fn`.
 - `*.guard.ts`: `export const auth = guard({ redirect: 'app.login' }, fn)`; route holds the value (`guard: auth`).
-- `routes.ts`: `export const routes = manifest({...})`. Links only via `routes.href(id, params?, search?)` (own module's). `<Form action={routes.href('todos.list', { listId })}>`; pending: `f.pending()`. Action redirect: `const to: Href = routes.href(...); return ok(to)`.
+- `routes.ts`: `export const routes = manifest({...})`, then `routes.actions({ 'todos.list': { POST: createTodo } })` (never `actions` in an entry: E1505). Links only via `routes.href(id, params?, search?)` (own module's). `<Form action={routes.href('todos.list', { listId })}>`; pending: `f.pending()`. Action redirect: `return ok(routes.href(...))`.
 - `tokens.ts`: `defineTokens`; style props take token names only (no `class`, no `styles()`). `<Button id="x.save">Save</Button>` (text is children).
 - `topology.ts`: `topology({ web: { modules, adapter: 'client' } })`; `module.ts`: `module({ id, deps, capabilities, public })`.
 

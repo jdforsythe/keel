@@ -31,7 +31,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS, scoped, a11y-required props |
 | k.ctx | Capabilities | conformance-covered | clock, random, net, storage; real, shell, simulated |
 | k.errors | Results and boundaries | conformance-covered | Result for expected, boundary for unexpected |
-| k.check | Checker and diagnostics | implemented | codes, fix diffs, budgets, rule registry |
+| k.check | Checker and diagnostics | conformance-covered | codes, fix diffs, budgets, rule registry |
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces, formatter registry |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
 | k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |

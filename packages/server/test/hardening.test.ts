@@ -36,12 +36,12 @@ function build(calls: Calls, extra: Extra = {}) {
   const routes = manifest({
     "app.notes": {
       path: "/notes",
-      actions: { POST: act("POST"), PUT: act("PUT"), PATCH: act("PATCH"), DELETE: act("DELETE") },
       component: () => {
         throw new Error("not rendered under node");
       },
     },
   });
+  routes.actions({ "app.notes": { POST: act("POST"), PUT: act("PUT"), PATCH: act("PATCH"), DELETE: act("DELETE") } });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

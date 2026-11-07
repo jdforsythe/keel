@@ -24,6 +24,7 @@ import { needsBare } from "./internal/needsBare.ts";
 import { notFound } from "./internal/notFound.ts";
 import { renderView } from "./internal/renderView.ts";
 import { rooted } from "./internal/rooted.ts";
+import { routeActions } from "./internal/routeActions.ts";
 import { routers } from "./internal/routers.ts";
 import { runGuard } from "./internal/runGuard.ts";
 import { runLoaders } from "./internal/runLoaders.ts";
@@ -219,7 +220,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   // A Form's `action` is an Href (RFC 0045): its route and params come from matching it in this router's table.
   const actionAt = (href: Href, method: Verb) => {
     const m = matchUrl(table, href);
-    const act = m.kind === "route" ? m.route.def.actions?.[method] : undefined;
+    const act = m.kind === "route" ? routeActions.get(m.route.def)?.[method] : undefined;
     return m.kind === "route" && act !== undefined ? { act, params: m.params } : null;
   };
   const core: RouterCore = {

@@ -15,12 +15,12 @@ export const postTodo = action({ input: TodoDraft, params: ListParams, stores: b
   return r.ok ? ok(null) : err(r.error)
 })
 ```
-`routes.ts`: `'api.lists': { path: '/api/lists', loader: loadBoard, actions: { POST: postList }, component: BoardApi }` (plain `.ts`). Undo: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. Status: notFound 404, denied 403, `keel.fields` 422, conflict 409, else 400; bodies are `application/json` Results.
+`routes.ts` (plain `.ts`): `'api.lists': { path: '/api/lists', loader: loadBoard, component: BoardApi }`, then `routes.actions({ 'api.lists': { POST: postList } })`. Undo: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. Status: notFound 404, denied 403, `keel.fields` 422, conflict 409, else 400; bodies are `application/json` Results.
 
 **Serve:** `createApp({ topology, routes, ctx: createCtx({ mode: 'real' }), deployable: 'api' })`; `node --experimental-webstorage server.ts`.
 
 **Client:** `endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardReply, errors: { 422: FieldsReply } } })`; `service({ base, schema })` built per call: base `new URL(url).origin` in `*.server.ts` (never `location` there), `location.origin` in components. `await api(origin).lists({}, ctx)` gives `Result<Out, ApiError>`. Bodies: GET `{ id, results: { 'api.lists': { ok: true, value } } }`; action `{ ok: true, value }`.
 
-**View store** (optional): only `hydrate = transaction(view, 'todos.hydrate', BoardView, (_s, d) => d)` changes it; `syncAfter(ctx, write)` writes, then re-reads. Client actions return `ok(null)` or `ok(to)`.
+**View store** (optional): only `hydrate = transaction(view, 'todos.hydrate', BoardView, (_s, d) => d)` changes it; `syncAfter(ctx, write)` writes, then re-reads. Client actions return `ok(null)` or `ok(routes.href(...))`.
 
 **Tests:** `app = await createApp(...)` (sim ctx); `app.fetch(new Request(url, { method, headers: { accept: 'application/json', 'content-type': 'application/json' }, body }))`. Client tests route sim `ctx.net` `/api/*` to `app.fetch`.

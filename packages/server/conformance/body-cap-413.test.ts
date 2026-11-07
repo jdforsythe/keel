@@ -20,10 +20,10 @@ async function setup(maxBodyBytes: number | undefined) {
       path: "/orders/:kind",
       params: Params,
       search: Search,
-      actions: { POST: act },
       component: () => document.createElement("main"),
     },
   });
+  routes.actions({ "orders.show": { POST: act } });
   const base = {
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
     routes,

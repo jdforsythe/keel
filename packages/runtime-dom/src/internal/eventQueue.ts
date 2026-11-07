@@ -61,6 +61,10 @@ export const eventQueue = {
   pending(): number {
     return entries.length;
   },
+  /** Forget the events queued after the first `n`: resume's own DOM moves fired them (rfc:0064), not the user. */
+  drop(n: number): void {
+    entries.length = Math.min(entries.length, n);
+  },
   /**
    * Mark `island` resumed and replay its queued events through its delegation root `root`, in order.
    * With `root` null (island fell back to client render, or has no component) its events are dropped.

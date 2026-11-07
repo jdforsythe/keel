@@ -1,5 +1,5 @@
 import type { Topology } from "@keel/compiler";
-import type { Located } from "@keel/router/internal";
+import { type Located, routeActions } from "@keel/router/internal";
 import { codedError } from "./codedError.ts";
 import { moduleOf } from "./moduleOf.ts";
 
@@ -33,7 +33,7 @@ export function selectDeployable(
   if (dep.adapter === "static")
     for (const r of served) {
       const params = r.def.params !== undefined || r.segments.some((s) => s.kind === "param");
-      const actions = Object.keys(r.def.actions ?? {}).length > 0;
+      const actions = routeActions.has(r.def);
       if (params || actions)
         throw codedError("E1553", `static deployable ${picked}: route ${r.id} has ${params ? "params" : "actions"}`);
     }

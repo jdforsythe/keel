@@ -31,23 +31,6 @@ function build(ctx: Ctx = createCtx({ mode: "sim", seed: 1337 }), https = false)
       loader: loader({ output: NotesView, stores: notesStores }, async ({ caller, stores }) =>
         ok({ items: stores.notes.get("items"), canUndo: stores.notes.log().at(-1)?.meta?.caller === caller }),
       ),
-      actions: {
-        POST: action({ input: Text, stores: notesStores }, (input, { caller, stores }) => {
-          const r = tx(stores.add, input, { meta: { caller } });
-          return r.ok ? ok(null) : err(r.error);
-        }),
-        // Commits after an await: the caller still rides on the entry.
-        PUT: action({ input: Text, stores: notesStores }, async (input, { caller, stores }) => {
-          await Promise.resolve();
-          const r = tx(stores.add, input, { meta: { caller } });
-          return r.ok ? ok(null) : err(r.error);
-        }),
-        // Commits, then fails: nothing is saved and the re-render reads storage.
-        PATCH: action({ input: Text, stores: notesStores }, (input, { stores }) => {
-          tx(stores.add, input);
-          return err({ code: "keel.fields", message: "bad", data: { text: "rejected" } });
-        }),
-      },
       component: ({ data }) => {
         const p = document.createElement("p");
         p.textContent = JSON.stringify(data);
@@ -56,17 +39,36 @@ function build(ctx: Ctx = createCtx({ mode: "sim", seed: 1337 }), https = false)
     },
     "app.undo": {
       path: "/undo",
-      actions: {
-        POST: action({ input: s.object({}), stores: notesStores }, (_, { caller, stores }) =>
-          stores.notes.undoWhere((e) => e.meta?.caller === caller) ? ok(null) : err(denied),
-        ),
-      },
       component: () => document.createElement("p"),
     },
     "app.anon": {
       path: "/anon",
       loader: loader({ output: s.object({}), stores: anonymous }, async () => ok({})),
       component: () => document.createElement("p"),
+    },
+  });
+  routes.actions({
+    "app.notes": {
+      POST: action({ input: Text, stores: notesStores }, (input, { caller, stores }) => {
+        const r = tx(stores.add, input, { meta: { caller } });
+        return r.ok ? ok(null) : err(r.error);
+      }),
+      // Commits after an await: the caller still rides on the entry.
+      PUT: action({ input: Text, stores: notesStores }, async (input, { caller, stores }) => {
+        await Promise.resolve();
+        const r = tx(stores.add, input, { meta: { caller } });
+        return r.ok ? ok(null) : err(r.error);
+      }),
+      // Commits, then fails: nothing is saved and the re-render reads storage.
+      PATCH: action({ input: Text, stores: notesStores }, (input, { stores }) => {
+        tx(stores.add, input);
+        return err({ code: "keel.fields", message: "bad", data: { text: "rejected" } });
+      }),
+    },
+    "app.undo": {
+      POST: action({ input: s.object({}), stores: notesStores }, (_, { caller, stores }) =>
+        stores.notes.undoWhere((e) => e.meta?.caller === caller) ? ok(null) : err(denied),
+      ),
     },
   });
   const app = createApp({ topology: topology({ web: { modules: ["app"], adapter: "node" } }), routes, ctx });

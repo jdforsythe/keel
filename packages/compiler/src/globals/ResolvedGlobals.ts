@@ -22,4 +22,6 @@ export type ResolvedGlobals = {
   readonly initOf: (e: Expression) => Expression;
   /** The function declaration (or named function expression) the name `name` read at `at` binds, else null. */
   readonly functionOf: (name: string, at: number) => FunctionNode | null;
+  /** Whether `name` at offsets `a` and `b` binds the same declaration, or the global at both (rfc:0065). */
+  readonly sameBinding: (name: string, a: number, b: number) => boolean;
 };

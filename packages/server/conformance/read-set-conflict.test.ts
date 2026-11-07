@@ -83,9 +83,10 @@ async function setupSkew() {
   });
   const component = (): Node => document.createElement("p");
   const routes = manifest({
-    "app.a": { path: "/a", actions: { POST: actA }, component },
-    "app.b": { path: "/b", actions: { POST: actB }, component },
+    "app.a": { path: "/a", component },
+    "app.b": { path: "/b", component },
   });
+  routes.actions({ "app.a": { POST: actA }, "app.b": { POST: actB } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
@@ -167,8 +168,9 @@ async function setupSkewRead(holdKey: string, staleReturn: boolean) {
     return ok({ lists: [...lists], todos: [...todos] });
   });
   const routes = manifest({
-    "app.both": { path: "/both", loader: read, actions: { POST: both }, component: () => document.createElement("p") },
+    "app.both": { path: "/both", loader: read, component: () => document.createElement("p") },
   });
+  routes.actions({ "app.both": { POST: both } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

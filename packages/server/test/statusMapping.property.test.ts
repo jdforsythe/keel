@@ -42,17 +42,19 @@ async function appFor(e: KeelError<string, unknown>, mode: "dev" | "production")
     "orders.show": {
       path: "/orders",
       loader: loader({ output: Page }, () => Promise.resolve(err(e))),
-      actions: { POST: action({ input: Note }, () => err(e)) },
       component: () => p("page"),
       errorElement: ({ error }) => p(`error ${error.code}`),
     },
     "orders.ok": {
       path: "/ok",
       loader: loader({ output: Page }, () => Promise.resolve(ok({ title: "t" }))),
-      actions: { POST: action({ input: Note }, () => err(e)) },
       component: () => p("page"),
       errorElement: ({ error }) => p(`error ${error.code}`),
     },
+  });
+  routes.actions({
+    "orders.show": { POST: action({ input: Note }, () => err(e)) },
+    "orders.ok": { POST: action({ input: Note }, () => err(e)) },
   });
   return createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),

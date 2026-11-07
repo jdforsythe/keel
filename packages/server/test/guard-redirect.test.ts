@@ -2,7 +2,7 @@
 // Guard redirects on the server (k.router Guards, rfc:0051): writes, failing follow-up hops, foreign `next`, dev log.
 import { createCtx } from "@keel/ctx";
 import { action, guard, manifest } from "@keel/router";
-import type { RouteDef } from "@keel/router";
+import type { RouteActions, RouteDef } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -11,22 +11,29 @@ const Denied = s.error("keel.denied", s.object({}));
 const deny = (to: string) => guard({ redirect: to }, async () => err(Denied.make({})));
 const Page = () => document.createElement("main");
 const save = action({ input: s.object({}) }, async () => ok(null));
-const appOf = (defs: Record<string, RouteDef>, lines: string[] = []) =>
-  createApp({
+const appOf = (defs: Record<string, RouteDef>, lines: string[] = [], actions: Record<string, RouteActions> = {}) => {
+  const routes = manifest(defs);
+  routes.actions(actions);
+  return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest(defs),
+    routes,
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "dev",
     log: { format: "compact", write: (l: string) => void lines.push(l) },
   });
+};
 const get = (path: string, init: RequestInit = {}) => new Request(`http://localhost${path}`, init);
 
 describe("server guard redirects", () => {
   it("a write that a looping guard denies is 500 E1508, not 303, and the action does not run", async () => {
-    const app = await appOf({
-      "app.shell": { component: Page, guard: deny("app.login") },
-      "app.login": { path: "/login", component: Page, layout: "app.shell", actions: { POST: save } },
-    });
+    const app = await appOf(
+      {
+        "app.shell": { component: Page, guard: deny("app.login") },
+        "app.login": { path: "/login", component: Page, layout: "app.shell" },
+      },
+      [],
+      { "app.login": { POST: save } },
+    );
     const res = await app.fetch(get("/login", { method: "POST", headers: { "sec-fetch-site": "same-origin" } }));
     expect(res.status).toBe(500);
     expect(res.headers.get("location")).toBeNull();

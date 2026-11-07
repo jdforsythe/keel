@@ -1,4 +1,11 @@
-import { type Expression, type ObjectExpression, type Program, parseSync } from "oxc-parser";
+import {
+  type Expression,
+  type MemberExpression,
+  type ObjectExpression,
+  type Program,
+  Visitor,
+  parseSync,
+} from "oxc-parser";
 import { projectManifests } from "./internal/projectManifests.ts";
 import type { RouteLiteral } from "./types/RouteLiteral.ts";
 import type { RouteLiterals } from "./types/RouteLiterals.ts";
@@ -101,7 +108,7 @@ function guardRedirect(file: string, program: Program, name: string, parse: Pars
 function readRoute(
   id: string,
   value: Expression,
-  at: { file: string; program: Program; parse: Parsed },
+  at: { file: string; program: Program; parse: Parsed; acts: Map<string, Expression> | null },
   unread: string[],
 ): RouteLiteral {
   const v = unwrap(value);
@@ -132,12 +139,13 @@ function readRoute(
     if (redirect === undefined) unread.push(`${id} guard`);
     else out.guard = redirect;
   }
-  const a = props.get("actions");
-  const av = a === undefined ? undefined : unwrap(a);
-  if (av === undefined || isUndefined(av)) out.actions = [];
-  else if (av.type === "ObjectExpression" && av.properties.every((p) => p.type === "Property" && !p.computed)) {
+  // Actions attach with `routes.actions({...})` (rfc:0063); `actions` in an entry is E1505 at evaluation.
+  const av = props.has("actions") || at.acts === null ? null : at.acts.get(id);
+  const a = av === undefined || av === null ? av : unwrap(av);
+  if (a === undefined || (a !== null && isUndefined(a))) out.actions = [];
+  else if (a?.type === "ObjectExpression" && a.properties.every((p) => p.type === "Property" && !p.computed)) {
     const verbs = new Set<string>();
-    for (const p of av.properties) {
+    for (const p of a.properties) {
       const k = p.type === "Property" ? keyName(p.key) : undefined;
       if (p.type === "Property" && k !== undefined && VERBS.includes(k) && !isUndefined(unwrap(p.value))) verbs.add(k);
     }
@@ -152,9 +160,103 @@ function readRoute(
   return out;
 }
 
+/** `routes` and every name bound to the same value in `program`: `const a = b` either way, anywhere in the file. */
+function manifestNames(program: Program): Set<string> {
+  const names = new Set(["routes"]);
+  let size = 0;
+  while (size !== names.size) {
+    size = names.size;
+    new Visitor({
+      VariableDeclarator: (d) => {
+        const init = d.init === null ? undefined : unwrap(d.init);
+        if (d.id.type !== "Identifier" || init?.type !== "Identifier") return;
+        if (names.has(d.id.name) || names.has(init.name)) names.add(d.id.name).add(init.name);
+      },
+    }).visit(program);
+  }
+  return names;
+}
+
+/** True when `m` reads `actions` (or any computed key) off one of `names`. */
+const readsActions = (m: MemberExpression, names: ReadonlySet<string>): boolean =>
+  m.object.type === "Identifier" &&
+  names.has(m.object.name) &&
+  (m.computed || (m.property.type === "Identifier" && m.property.name === "actions"));
+
+/**
+ * The values of the `<manifest>.actions({...})` calls anywhere in `program` (rfc:0063, backlog 0183), by literal route
+ * id; the receiver is `routes` or an alias (`manifestNames`). `null` when actions may attach where they cannot be read:
+ * an argument that is not a literal object of plain keys, `actions` read without a call or by a computed key.
+ */
+function attached(program: Program): Map<string, Expression> | null {
+  const names = manifestNames(program);
+  const out = new Map<string, Expression>();
+  const called = new Set<MemberExpression>();
+  let unknown = false;
+  new Visitor({
+    CallExpression: (call) => {
+      const c = call.callee;
+      if (c.type !== "MemberExpression" || c.computed || !readsActions(c, names)) return;
+      called.add(c);
+      const arg = call.arguments[0];
+      const obj = arg === undefined || arg.type === "SpreadElement" ? undefined : unwrap(arg);
+      if (obj?.type !== "ObjectExpression") unknown = true;
+      else
+        for (const p of obj.properties) {
+          const id = p.type === "Property" && !p.computed ? keyName(p.key) : undefined;
+          if (p.type !== "Property" || id === undefined) unknown = true;
+          else out.set(id, p.value);
+        }
+    },
+    MemberExpression: (m) => {
+      if (!called.has(m) && readsActions(m, names)) unknown = true;
+    },
+  }).visit(program);
+  return unknown ? null : out;
+}
+
+/**
+ * True when a project file other than the manifest `file` reads `actions` (or a computed key) off a binding it imports
+ * from `file` (named, or `ns.routes` of a namespace import): those actions are not read statically (backlog 0183).
+ */
+function attachedElsewhere(file: string, sources: ReadonlyMap<string, string>, parse: Parsed): boolean {
+  for (const [path, source] of sources) {
+    if (path === file || !source.includes("actions")) continue;
+    const program = parse(path);
+    if (program === undefined) continue;
+    const named = new Set<string>();
+    const spaces = new Set<string>();
+    const dir = path.split("/").slice(0, -1).join("/");
+    for (const st of program.body) {
+      if (st.type !== "ImportDeclaration" || !st.source.value.startsWith(".")) continue;
+      const at = join(dir, st.source.value);
+      if (at !== file && `${at}.ts` !== file) continue;
+      for (const sp of st.specifiers)
+        if (sp.type === "ImportNamespaceSpecifier") spaces.add(sp.local.name);
+        else named.add(sp.local.name);
+    }
+    if (named.size === 0 && spaces.size === 0) continue;
+    let reads = false;
+    new Visitor({
+      MemberExpression: (m) => {
+        const o = m.object;
+        const viaSpace = o.type === "MemberExpression" && o.object.type === "Identifier" && spaces.has(o.object.name);
+        if (
+          readsActions(m, named) ||
+          (viaSpace && (m.computed || (m.property.type === "Identifier" && m.property.name === "actions")))
+        )
+          reads = true;
+      },
+    }).visit(program);
+    if (reads) return true;
+  }
+  return false;
+}
+
 /** The object literal of `routes = manifest({...})` in `program`, or undefined. */
 function manifestObject(program: Program): ObjectExpression | undefined {
-  const init = declared(program, "routes");
+  let init = declared(program, "routes");
+  for (let hop = 0; hop < 8 && init?.type === "Identifier"; hop++) init = declared(program, init.name);
   if (init?.type !== "CallExpression" || init.callee.type !== "Identifier" || init.callee.name !== "manifest")
     return undefined;
   const arg = init.arguments[0];
@@ -166,10 +268,10 @@ function manifestObject(program: Program): ObjectExpression | undefined {
 /**
  * Read a project's route table from its routes manifests without evaluating them (k.compiler Artifacts, rfc:0059):
  * the manifests `vite build` evaluates (`projectManifests`), each `export const routes = manifest({...})` parsed with
- * oxc. Literal route ids, `path`, `layout`, action verbs, `params`/`search` presence, and a guard's `redirect` (a
- * `guard({ redirect: "..." }, fn)` declared in the manifest or imported from a relative module) are read; anything
- * else is named in `unread`. A spread, computed key or unreadable manifest opens the id set (`closed: false`) and, since
- * it may override them, unreads the routes before it. Undefined when there is no such manifest: `routes.json` is then
+ * oxc. Literal route ids, `path`, `layout`, action verbs (from `routes.actions({...})`, rfc:0063), `params`/`search`
+ * presence, and a guard's `redirect` (a `guard({ redirect: "..." }, fn)` declared in the manifest or imported from a
+ * relative module) are read; anything else is named in `unread`. A spread, computed key or unreadable manifest opens
+ * the id set (`closed: false`) and, since it may override them, unreads the routes before it. Undefined when there is no such manifest: `routes.json` is then
  * `{}` and compared by hash. `files` are root-relative project files.
  */
 export function routeLiterals(
@@ -207,13 +309,14 @@ export function routeLiterals(
       open(file);
       continue;
     }
+    const acts = attachedElsewhere(file, sources, parse) ? null : attached(program);
     for (const p of obj.properties) {
       const id = p.type === "Property" && !p.computed ? keyName(p.key) : undefined;
       if (p.type !== "Property" || id === undefined) {
         open(`${file} ids`);
         continue;
       }
-      routes.set(id, readRoute(id, p.value, { file, program, parse }, unread));
+      routes.set(id, readRoute(id, p.value, { file, program, parse, acts }, unread));
     }
   }
   return { routes: Object.fromEntries(routes), closed, unread };

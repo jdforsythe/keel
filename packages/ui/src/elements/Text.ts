@@ -1,5 +1,6 @@
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { make } from "../internal/make.ts";
 import { renderChildren } from "../internal/renderChildren.ts";
 import { tagOf } from "../internal/tagOf.ts";
 import type { Child } from "../types/Child.ts";
@@ -13,9 +14,9 @@ type TextTag = (typeof TEXT_TAGS)[number];
 export function Text(
   props: StyleProps & { readonly as?: TextTag; readonly id?: string; readonly children?: Child | Children | undefined },
 ): Node {
-  const el = document.createElement(tagOf("Text as", TEXT_TAGS, props.as, "span"));
-  if (props.id !== undefined) el.setAttribute("id", props.id);
-  applyStyle(el, props);
-  appendChildren(el, renderChildren(props.children));
-  return el;
+  return make(tagOf("Text as", TEXT_TAGS, props.as, "span"), (el) => {
+    if (props.id !== undefined) el.setAttribute("id", props.id);
+    applyStyle(el, props);
+    appendChildren(el, renderChildren(props.children));
+  });
 }

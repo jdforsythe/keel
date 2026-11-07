@@ -39,7 +39,7 @@ k.runtime
 
 k.router
 - import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
-- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, actions: { POST: updateTodo }, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } })
+- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } }); then routes.actions({ 'todos.edit': { POST: updateTodo } }) (a statement; actions are never in an entry: E1505)
 - entry without path = layout, renders {props.children?.()}; a static segment beats :param
 - component receives { params, search, data } (data = loader ok value); errorElement receives { error: KeelError }
 - links: routes.href(id, params?, search?) -> Href, typed by the manifest; Link to, navigate, Form action take Href only (E1501)
@@ -51,7 +51,7 @@ k.router
 
 k.server
 - loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, stores }, ctx) -> Promise<Result<T, KeelError>>
-- action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `const to: Href = routes.href(...); return ok(to)`
+- action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
 - stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)

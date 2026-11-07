@@ -9,9 +9,10 @@ import type { SourceFile } from "../src/types/SourceFile.ts";
 import type { Topology } from "../src/types/Topology.ts";
 
 const M = "modules/m/routes.ts";
-const manifestSrc = (body: string, pre = ""): string => `${pre}\nexport const routes = manifest({ ${body} });\n`;
-const read = (body: string, pre = "", extra: readonly SourceFile[] = []) =>
-  routeLiterals([{ path: M, source: manifestSrc(body, pre) }, ...extra]);
+const manifestSrc = (body: string, pre = "", post = ""): string =>
+  `${pre}\nexport const routes = manifest({ ${body} });\n${post}`;
+const read = (body: string, pre = "", extra: readonly SourceFile[] = [], post = "") =>
+  routeLiterals([{ path: M, source: manifestSrc(body, pre, post) }, ...extra]);
 
 describe("routeLiterals", () => {
   it("returns undefined without a modules/<m>/routes.ts and hashes routes.json as a string", () => {
@@ -23,7 +24,10 @@ describe("routeLiterals", () => {
   it("reads a literal manifest into exact route fields", () => {
     const r = read(
       `"m.home": { path: "/home", component: X }, "m.shell": { component: S },
-       "m.edit": { path: \`/e/:id\`, layout: "m.shell", actions: { POST: a, GET: g, PUT: undefined }, params: P, search: undefined }`,
+       "m.edit": { path: \`/e/:id\`, layout: "m.shell", params: P, search: undefined }`,
+      "",
+      [],
+      `routes.actions({ "m.edit": { POST: a, GET: g, PUT: undefined } });`,
     );
     expect(r).toEqual({
       routes: {
@@ -37,8 +41,91 @@ describe("routeLiterals", () => {
   });
 
   it("orders action verbs as DELETE, PATCH, POST, PUT", () => {
-    const r = read(`"m.a": { actions: { PUT: p, POST: q, PATCH: r, DELETE: s } }`);
+    const r = read(
+      `"m.a": { path: "/a" }`,
+      "",
+      [],
+      `routes.actions({ "m.a": { PUT: p, POST: q, PATCH: r, DELETE: s } });`,
+    );
     expect(r?.routes["m.a"]?.actions).toEqual(["DELETE", "PATCH", "POST", "PUT"]);
+  });
+
+  describe("actions (rfc:0063)", () => {
+    it("reads verbs only from routes.actions, never from an entry (E1505 at evaluation)", () => {
+      const r = read(`"m.a": { path: "/a", actions: { POST: p } }, "m.b": { path: "/b" }`);
+      expect(r?.routes["m.a"]).toEqual({ path: "/a", layout: null, guard: null, params: false, search: false });
+      expect(r?.routes["m.b"]?.actions).toEqual([]);
+      expect(r?.unread).toEqual(["m.a actions"]);
+    });
+
+    it("unreads a non-literal value, and every route's actions for a non-literal argument", () => {
+      const one = read(`"m.a": { path: "/a" }, "m.b": { path: "/b" }`, "", [], `routes.actions({ "m.a": acts });`);
+      expect(one?.routes["m.a"]?.actions).toBeUndefined();
+      expect(one?.routes["m.b"]?.actions).toEqual([]);
+      expect(one?.unread).toEqual(["m.a actions"]);
+      const all = read(`"m.a": { path: "/a" }, "m.b": { path: "/b" }`, "", [], "routes.actions({ ...acts });");
+      expect(all?.routes["m.a"]?.actions).toBeUndefined();
+      expect(all?.routes["m.b"]?.actions).toBeUndefined();
+      expect(all?.unread).toEqual(["m.a actions", "m.b actions"]);
+    });
+
+    it("reads a call through an alias, and one inside a block (backlog 0183)", () => {
+      const alias = read(`"m.a": { path: "/a" }`, "", [], `const r = routes;\nr.actions({ "m.a": { POST: p } });`);
+      expect(alias?.routes["m.a"]?.actions).toEqual(["POST"]);
+      const renamed = routeLiterals([
+        {
+          path: M,
+          source: `const r = manifest({ "m.a": { path: "/a" } });\nexport const routes = r;\nr.actions({ "m.a": { PUT: p } });\n`,
+        },
+      ]);
+      expect(renamed?.routes["m.a"]?.actions).toEqual(["PUT"]);
+      const block = read(`"m.a": { path: "/a" }`, "", [], `if (on) {\n  routes.actions({ "m.a": { DELETE: p } });\n}`);
+      expect(block?.routes["m.a"]?.actions).toEqual(["DELETE"]);
+      expect([alias?.unread, renamed?.unread, block?.unread]).toEqual([[], [], []]);
+    });
+
+    it("unreads actions attached in another file, through a computed key, or read without a call (backlog 0183)", () => {
+      const other = read(`"m.a": { path: "/a" }`, "", [
+        {
+          path: "modules/m/attach.ts",
+          source: `import { routes } from "./routes.ts";\nroutes.actions({ "m.a": { POST: p } });\n`,
+        },
+      ]);
+      expect(other?.routes["m.a"]?.actions).toBeUndefined();
+      expect(other?.unread).toEqual(["m.a actions"]);
+      const spaced = read(`"m.a": { path: "/a" }`, "", [
+        { path: "modules/m/attach.ts", source: `import * as m from "./routes";\nm.routes.actions({});\n` },
+      ]);
+      expect(spaced?.unread).toEqual(["m.a actions"]);
+      const hrefOnly = read(`"m.a": { path: "/a" }`, "", [
+        {
+          path: "modules/m/save.server.ts",
+          source: `import { routes } from "./routes.ts";\nconst actions = routes.href("m.a");\n`,
+        },
+      ]);
+      expect(hrefOnly?.routes["m.a"]?.actions).toEqual([]);
+      const computed = read(`"m.a": { path: "/a" }`, "", [], `routes["actions"]({ "m.a": { POST: p } });`);
+      expect(computed?.unread).toEqual(["m.a actions"]);
+      const passed = read(
+        `"m.a": { path: "/a" }`,
+        "",
+        [],
+        `const attach = routes.actions;\nattach({ "m.a": { POST: p } });`,
+      );
+      expect(passed?.unread).toEqual(["m.a actions"]);
+    });
+
+    it("ignores ids the manifest does not declare and calls on other objects", () => {
+      const r = read(
+        `"m.a": { path: "/a" }`,
+        "",
+        [],
+        `routes.actions({ "m.z": { POST: p } });\nother.actions({ "m.a": { POST: p } });`,
+      );
+      expect(r?.routes["m.a"]?.actions).toEqual([]);
+      expect(r?.routes["m.z"]).toBeUndefined();
+      expect(r?.unread).toEqual([]);
+    });
   });
 
   describe("guard", () => {
@@ -212,11 +299,13 @@ describe("routeLiterals", () => {
             const parts: string[] = [];
             if (e.path !== undefined) parts.push(`path: "/${e.path}"`);
             if (e.layout !== undefined) parts.push(`layout: "m.${e.layout}"`);
-            if (e.actions.length > 0) parts.push(`actions: { ${e.actions.map((v) => `${v}: fn`).join(", ")} }`);
             return `"m.${w}": { ${parts.join(", ")} }`;
           })
           .join(",\n");
-        const r = read(body);
+        const acts = table
+          .filter(([, e]) => e.actions.length > 0)
+          .map(([w, e]) => `"m.${w}": { ${e.actions.map((v) => `${v}: fn`).join(", ")} }`);
+        const r = read(body, "", [], acts.length > 0 ? `routes.actions({ ${acts.join(", ")} });` : "");
         const expected = Object.fromEntries(
           table.map(([w, e]) => [
             `m.${w}`,

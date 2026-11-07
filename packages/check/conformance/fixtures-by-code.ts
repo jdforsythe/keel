@@ -1,5 +1,5 @@
-// Not a test file. One triggering fixture and one clean counterpart per E code that `check()` can report, for the
-// codes named in the Rules paragraphs of spec/kernel/*.md. Codes not here are in EXPLAIN_ONLY. Public API only.
+// Not a test file. One triggering fixture and one clean counterpart per kernel E code `check()` reports
+// (`reportedCodes()`, RFC 0065), E1756 aside (a registered rule that throws). Public API only.
 import type { check } from "@keel/check";
 import type { Files } from "./support.ts";
 
@@ -47,6 +47,10 @@ const use = (id: string, from: string, name: string): Files[number] =>
   f(`modules/${id}/Use.ts`, `import { ${name} } from '../${from}/${name}.ts'\nexport const Use = ${name}\n`);
 
 const NO_TYPES: Options = { types: false };
+/** A union prop for E1402 (k.component: one `Case` per variant). */
+const MATCH = `${SCHEMA}import { Match, Case } from '@keel/runtime-dom'\nexport const Props = s.object({ shape: s.union('kind', [s.object({ kind: s.literal('circle') }), s.object({ kind: s.literal('square') })]) })\n`;
+/** Color tokens for E1804: `mid` on `white` is about 3:1, `ink` on `white` passes 4.5:1 in both schemes. */
+const TOKENS = { color: { mid: "#949494", ink: "#111111", white: "#ffffff" }, fontSize: { sm: "14px" } };
 
 export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1000: { bad: [f("a.ts", "export const = ;\n")], clean: [f("a.ts", "export const a = 1\n")] },
@@ -208,6 +212,52 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "src/greet.ts",
         "import { transaction } from '@keel/store'\ndeclare const app: unknown\nexport const greet = transaction(app, 'greet', (s: string) => `${s}!`)\n",
       ),
+    ],
+  },
+  E1401: {
+    opts: NO_TYPES,
+    bad: [f("C.tsx", `${UI}export default function C({ name }: { name: string }) { return <Text>{name}</Text> }\n`)],
+    clean: [
+      f("C.tsx", `${UI}export default function C(props: { name: string }) { return <Text>{props.name}</Text> }\n`),
+    ],
+  },
+  E1402: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${UI}${MATCH}export default function C(props) { return <Match on={props.shape}><Case tag="circle"><Text>c</Text></Case></Match> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${UI}${MATCH}export default function C(props) { return <Match on={props.shape}><Case tag="circle"><Text>c</Text></Case><Case tag="square"><Text>s</Text></Case></Match> }\n`,
+      ),
+    ],
+  },
+  E1403: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${UI}export default function C(props: { a: boolean }) { return <Box>{props.a && <Text>x</Text>}</Box> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${UI}import { If } from '@keel/runtime-dom'\nexport default function C(props: { a: boolean }) { return <Box><If when={props.a}><Text>x</Text></If></Box> }\n`,
+      ),
+    ],
+  },
+  E1404: {
+    opts: NO_TYPES,
+    bad: [
+      f("C.tsx", `${UI}export default function C() { return <Box><Box id="x">1</Box><Box id="x">2</Box></Box> }\n`),
+    ],
+    clean: [
+      f("C.tsx", `${UI}export default function C() { return <Box><Box id="x">1</Box><Box id="y">2</Box></Box> }\n`),
     ],
   },
   E1451: {
@@ -400,6 +450,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     opts: NO_TYPES,
     bad: [f("C.tsx", `${UI}export default function C() { return <Box style={{}}>x</Box> }\n`)],
     clean: [f("C.tsx", `${UI}export default function C() { return <Box p="2">x</Box> }\n`)],
+  },
+  E1804: {
+    opts: { types: false, artifacts: { tokens: TOKENS } },
+    bad: [f("C.tsx", `${UI}export default function C() { return <Box fg="mid" bg="white">x</Box> }\n`)],
+    clean: [f("C.tsx", `${UI}export default function C() { return <Box fg="ink" bg="white">x</Box> }\n`)],
   },
   E1805: {
     bad: [f("C.tsx", `${UI}export default function C() { return <Box><h2>Orders</h2></Box> }\n`)],

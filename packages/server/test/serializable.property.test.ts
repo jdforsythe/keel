@@ -80,20 +80,22 @@ describe("overlapping requests are serializable (property)", () => {
             loader: loader({ output: Cut, stores: factory }, async ({ stores }) =>
               ok({ a: stores.a.st.get("v"), b: stores.b.st.get("v"), c: stores.c.st.get("v") }),
             ),
-            actions: {
-              POST: action({ input: Op, stores: factory }, ({ id, reads, writes }, { stores }) => {
-                const saw: Partial<Record<Key, string>> = {};
-                for (const k of reads) if (isKey(k)) saw[k] = stores[k].st.get("v");
-                seen.set(id, saw);
-                for (const k of writes) {
-                  if (!isKey(k)) continue;
-                  const r = tx(stores[k].set, { v: id });
-                  if (!r.ok) return err(r.error);
-                }
-                return ok(null);
-              }),
-            },
             component: () => document.createElement("p"),
+          },
+        });
+        routes.actions({
+          "app.prop": {
+            POST: action({ input: Op, stores: factory }, ({ id, reads, writes }, { stores }) => {
+              const saw: Partial<Record<Key, string>> = {};
+              for (const k of reads) if (isKey(k)) saw[k] = stores[k].st.get("v");
+              seen.set(id, saw);
+              for (const k of writes) {
+                if (!isKey(k)) continue;
+                const r = tx(stores[k].set, { v: id });
+                if (!r.ok) return err(r.error);
+              }
+              return ok(null);
+            }),
           },
         });
         const app = await createApp({

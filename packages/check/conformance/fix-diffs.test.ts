@@ -281,6 +281,7 @@ const NO_FIX = [
   "E1251", // the JSX that replaces an op is the author's
   "E1252", // the JSX or ctx replacement is the author's
   "E1302", // moving the effect out of the transaction is a design change
+  "E1402", // the content of the missing Case is the author's
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice
@@ -297,6 +298,7 @@ const NO_FIX = [
   "E1755", // a budget breach has no source edit
   "E1802", // the missing prop value is the author's choice
   "E1803", // the replacement token is the author's choice
+  "E1804", // which token pair to use is a design choice
   "E1901", // the form path to bind is the author's choice
 ];
 

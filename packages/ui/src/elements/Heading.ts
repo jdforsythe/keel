@@ -1,5 +1,6 @@
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { make } from "../internal/make.ts";
 import { renderChildren } from "../internal/renderChildren.ts";
 import { tagOf } from "../internal/tagOf.ts";
 import type { Child } from "../types/Child.ts";
@@ -16,9 +17,9 @@ export function Heading(
     readonly children: Child | Children;
   },
 ): Node {
-  const el = document.createElement(`h${tagOf("Heading level", LEVELS, props.level)}`);
-  if (props.id !== undefined) el.setAttribute("id", props.id);
-  applyStyle(el, props);
-  appendChildren(el, renderChildren(props.children));
-  return el;
+  return make(`h${tagOf("Heading level", LEVELS, props.level)}`, (el) => {
+    if (props.id !== undefined) el.setAttribute("id", props.id);
+    applyStyle(el, props);
+    appendChildren(el, renderChildren(props.children));
+  });
 }

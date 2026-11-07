@@ -39,7 +39,7 @@ k.runtime
 
 k.router
 - import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
-- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, actions: { POST: updateTodo }, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } })
+- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } }); then routes.actions({ 'todos.edit': { POST: updateTodo } }) (a statement; actions are never in an entry: E1505)
 - entry without path = layout, renders {props.children?.()}; a static segment beats :param
 - component receives { params, search, data } (data = loader ok value); errorElement receives { error: KeelError }
 - links: routes.href(id, params?, search?) -> Href, typed by the manifest; Link to, navigate, Form action take Href only (E1501)
@@ -51,7 +51,7 @@ k.router
 
 k.server (declarations, run in the browser by a client deployable)
 - loader({ output, params?, search? }, fn): fn({ params, search, url }, ctx) -> Promise<Result<T, KeelError>>
-- action({ input, params? }, fn): fn(input, { params, url }, ctx) -> Result<Href | null, KeelError>; return a link as `const to: Href = routes.href(...); return ok(to)`
+- action({ input, params? }, fn): fn(input, { params, url }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; the client router refuses `stores`
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' } }); the compiler generates the mount entry; ctx is createCtx({ mode: 'real' })
 

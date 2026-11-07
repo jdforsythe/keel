@@ -1,5 +1,5 @@
 import type { Match } from "@keel/router/internal";
-import { fieldsError } from "@keel/router/internal";
+import { fieldsError, routeActions } from "@keel/router/internal";
 import { attempt, err, ok } from "@keel/schema";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
@@ -41,9 +41,10 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const override = r.method === "POST" ? form.get("_method") : null;
   const verb = typeof override === "string" ? override.toUpperCase() : r.method;
   form.delete("_method");
-  const action = isVerb(verb) ? def.actions?.[verb] : undefined;
+  const acts = routeActions.get(def);
+  const action = isVerb(verb) ? acts?.[verb] : undefined;
   if (action === undefined) {
-    const allow = ["GET", "HEAD", ...Object.keys(def.actions ?? {})].join(", ");
+    const allow = ["GET", "HEAD", ...Object.keys(acts ?? {})].join(", ");
     return { response: new Response(null, { status: 405, headers: { allow } }), route: id, diags: [] };
   }
   const values = valuesOf(form);

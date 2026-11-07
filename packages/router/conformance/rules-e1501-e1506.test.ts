@@ -137,11 +137,19 @@ describe("k.router rules", () => {
   });
 
   it("E1505 actions key that is not POST/PUT/PATCH/DELETE", () => {
-    const bad = (key: string) => ({ "f.one": { path: "/f", actions: { [key]: post }, component: page } });
-    expect(codeOf(() => manifest(bad("GET")))).toBe("E1505");
-    expect(codeOf(() => manifest(bad("post")))).toBe("E1505");
-    expect(codeOf(() => manifest(bad("POST")))).toBeNull();
-    expect(codeOf(() => manifest(bad("DELETE")))).toBeNull();
+    const attach = (key: string) => {
+      const m = manifest({ "f.one": { path: "/f", component: page } });
+      return codeOf(() => Reflect.apply(m.actions, m, [{ "f.one": { [key]: post } }]));
+    };
+    expect(attach("GET")).toBe("E1505");
+    expect(attach("post")).toBe("E1505");
+    expect(attach("POST")).toBeNull();
+    expect(attach("DELETE")).toBeNull();
+  });
+
+  it("E1505 actions in an entry (they attach with routes.actions)", () => {
+    const entry = { "f.two": { path: "/f2", actions: { POST: post }, component: page } };
+    expect(codeOf(() => Reflect.apply(manifest, undefined, [entry]))).toBe("E1505");
   });
 
   it("E1505 <Form method> outside POST/PUT/PATCH/DELETE", async () => {

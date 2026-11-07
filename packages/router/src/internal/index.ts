@@ -9,6 +9,7 @@ export { guardNext } from "./guardNext.ts";
 export { matchUrl } from "./matchUrl.ts";
 export { needsBare } from "./needsBare.ts";
 export { parseSearch } from "./parseSearch.ts";
+export { routeActions } from "./routeActions.ts";
 export { runGuard } from "./runGuard.ts";
 export { withNext } from "./withNext.ts";
 export type { FormSeam } from "./FormSeam.ts";

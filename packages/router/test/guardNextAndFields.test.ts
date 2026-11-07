@@ -56,9 +56,11 @@ it("an action input failure yields keel.fields with messages per path", async ()
   const routes = manifest({
     "gn.form": {
       path: "/form",
-      actions: { POST: action({ input: s.object({ title: s.string({ min: 3 }) }) }, async () => ok(null)) },
       component: () => Form({ method: "POST", action: to("/form"), form: handle }),
     },
+  });
+  routes.actions({
+    "gn.form": { POST: action({ input: s.object({ title: s.string({ min: 3 }) }) }, async () => ok(null)) },
   });
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/form") });
   const host = document.createElement("div");
