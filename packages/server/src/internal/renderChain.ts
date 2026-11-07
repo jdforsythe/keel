@@ -4,6 +4,8 @@ import type { ChainInput } from "./ChainInput.ts";
 import type { Rendered } from "./Rendered.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 import { htmlToNode } from "./htmlToNode.ts";
+import { islandIn } from "./islandIn.ts";
+import { renderUnit } from "./renderUnit.ts";
 import { toHtml } from "./toHtml.ts";
 
 const defaultError = (e: KeelError<string, unknown>): string =>
@@ -11,11 +13,12 @@ const defaultError = (e: KeelError<string, unknown>): string =>
 
 /**
  * Render a chain to HTML like the router's view (k.router, k.errors): outermost layout first, each layout
- * receiving the next level as `children` (a thunk whose string form is the child HTML, so string
+ * receiving the next level, rendered before it, as `children` (a thunk whose string form is the child HTML, so string
  * components can interpolate it). A failure renders its level's `errorElement` (layouts above intact unless
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
- * rendering it shows the errorElement with `keel.unexpected`. A component returning an element gets
- * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup).
+ * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a
+ * compiler-marked `data-k` element outside nested levels' islands is an island: it gets
+ * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup, rfc:0037).
  */
 export function renderChain(input: ChainInput): Rendered {
   const { chain, failure, ctx } = input;
@@ -30,15 +33,13 @@ export function renderChain(input: ChainInput): Rendered {
 
   const componentAt = (i: number, lvl: Level): string => {
     const last = i === chain.length - 1;
-    let memo: string | null = null;
-    const childHtml = (): string => {
-      memo ??= levelAt(i + 1);
-      return memo;
-    };
+    // The child level renders first, outside this unit, so render units never nest.
+    const inner = last ? "" : levelAt(i + 1);
+    const childHtml = (): string => inner;
     const children = Object.assign((): Node => htmlToNode(childHtml()), { toString: childHtml });
     const base = { params: input.params, search: input.search, data: input.data[i] };
-    const out: unknown = lvl.def.component(last ? base : { ...base, children }, undefined, ctx);
-    if (typeof Element !== "undefined" && out instanceof Element) {
+    const out = renderUnit(() => lvl.def.component(last ? base : { ...base, children }, undefined, ctx));
+    if (typeof Element !== "undefined" && out instanceof Element && islandIn(out)) {
       out.setAttribute("data-k-island", lvl.id);
       islands[lvl.id] = input.props(i);
     }

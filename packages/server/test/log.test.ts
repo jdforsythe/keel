@@ -2,7 +2,7 @@
 // Examples and properties (seed 1337): the dev log stream writes exactly one `req` record per request (after any
 // `diag`); json lines parse. Requests cover every branch of the flow (308, 404s, 405s, guards, actions).
 import { createCtx } from "@keel/ctx";
-import { action, guard, href, loader, manifest } from "@keel/router";
+import { type Href, action, guard, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -14,10 +14,10 @@ const Page = s.object({ title: s.string() });
 const Note = s.object({ note: s.string({ min: 2 }) });
 
 async function build(format: LogSink["format"], lines: string[]) {
-  const deny = guard("logDeny", { redirect: "orders.list" }, () =>
+  const deny = guard({ redirect: "orders.list" }, () =>
     Promise.resolve(err({ code: "keel.denied", message: "no", data: {} })),
   );
-  const broken = guard("logBroken", { redirect: "orders.list" }, () => Promise.reject(new Error("down")));
+  const broken = guard({ redirect: "orders.list" }, () => Promise.reject(new Error("down")));
   const routes = manifest({
     "orders.list": { path: "/orders", component: () => document.createElement("p") },
     "orders.show": {
@@ -25,7 +25,10 @@ async function build(format: LogSink["format"], lines: string[]) {
       params: s.object({ id: s.int({ min: 1 }) }),
       loader: loader({ output: Page }, () => Promise.resolve(ok({ title: "T" }))),
       actions: {
-        POST: action({ input: Note }, () => ok(href("orders.list"))),
+        POST: action({ input: Note }, () => {
+          const to: Href = routes.href("orders.list");
+          return ok(to);
+        }),
         PUT: action({ input: Note }, () => err({ code: "orders.locked", message: "locked", data: {} })),
       },
       component: () => document.createElement("p"),
@@ -40,16 +43,14 @@ async function build(format: LogSink["format"], lines: string[]) {
       loader: loader({ output: Page }, () => Promise.resolve(ok(JSON.parse('{"title":1}')))),
       component: () => document.createElement("p"),
     },
-    "orders.deny": { path: "/deny", guard: "logDeny", component: () => document.createElement("p") },
-    "orders.broken": { path: "/broken", guard: "logBroken", component: () => document.createElement("p") },
-    "orders.ghost": { path: "/ghost", guard: "nobody", component: () => document.createElement("p") },
+    "orders.deny": { path: "/deny", guard: deny, component: () => document.createElement("p") },
+    "orders.broken": { path: "/broken", guard: broken, component: () => document.createElement("p") },
   });
   return createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: "dev",
-    guards: [deny, broken],
     log: { format, write: (l) => void lines.push(l) },
   });
 }
@@ -145,9 +146,6 @@ describe("dev log stream", () => {
     const broken = await app.fetch(req({ method: "GET", path: "/broken" }));
     expect(broken.status).toBe(500);
     expect(await broken.text()).toContain('data-keel-error="keel.unexpected">Error: down<');
-    const ghost = await app.fetch(req({ method: "GET", path: "/ghost" }));
-    expect(ghost.status).toBe(500);
-    expect(await ghost.text()).toContain("E1506 unknown guard &quot;nobody&quot;");
     const deny = await app.fetch(req({ method: "GET", path: "/deny?x=1" }));
     expect(deny.status).toBe(302);
     expect(deny.headers.get("location")).toBe("/orders?next=%2Fdeny%3Fx%3D1");

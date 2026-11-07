@@ -36,7 +36,7 @@ type Opts = {
 };
 
 async function build(o: Opts = {}) {
-  const auth = guard("docAuth", { redirect: "app.login" }, () =>
+  const auth = guard({ redirect: "app.login" }, () =>
     Promise.resolve(o.deny === true ? err({ code: "keel.denied", message: "no", data: {} }) : ok(null)),
   );
   const routes = manifest({
@@ -54,12 +54,13 @@ async function build(o: Opts = {}) {
         POST: action({ input: Edit }, () => ok(null)),
         PATCH: action({ input: Edit }, () => err({ code: "app.locked", message: "locked", data: {} })),
       },
-      guard: "docAuth",
+      guard: auth,
       component: ({ data }) => {
         if (o.throwIn === "page") throw new Error("page broke");
         if (o.requestStore !== undefined) store(s.object({ n: s.int() }), { n: 3 }, { id: o.requestStore });
         const t = typeof data === "object" && data !== null && "title" in data ? String(data.title) : "?";
-        return el("section", { "data-page": "home" }, el("h1", {}, t));
+        // `data-k` stands in for a compiler-marked bound element: the page level is an island (rfc:0037).
+        return el("section", { "data-page": "home", "data-k": "app.home" }, el("h1", {}, t));
       },
       errorElement: ({ error }) => el("p", { "data-error": error.code }, error.message),
     },
@@ -70,7 +71,6 @@ async function build(o: Opts = {}) {
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: o.mode ?? "production",
-    guards: [auth],
     expose: o.expose ?? [],
   });
   return app;
@@ -84,15 +84,14 @@ const post = (path: string, fields: Record<string, string>, headers: Record<stri
 };
 
 describe("document", () => {
-  it("renders DOM components inside layouts, marks island roots and serializes their props", async () => {
+  it("renders DOM components inside layouts, marks only island roots, serializes their props and loads the entry", async () => {
     const app = await build({ title: "Hello" });
     const res = await app.fetch(get("/"));
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html.startsWith("<!doctype html>")).toBe(true);
-    expect(html).toContain(
-      '<div id="app" data-k-island="app.shell"><section data-page="home" data-k-island="app.home">',
-    );
+    expect(html).toContain('<div id="app"><section data-page="home" data-k="app.home" data-k-island="app.home">');
+    expect(html.match(/<script type="module" src="\/@keel\/entry.ts"><\/script>/g)?.length).toBe(1);
     expect(html).toContain("<main>");
     expect(state(html)).toMatchObject({
       islands: { "app.home": { params: {}, search: {}, data: { title: "Hello" } } },
@@ -197,33 +196,12 @@ describe("document", () => {
     expect(w.status).toBe(303);
   });
 
-  it("an unknown guard name is 500 E1506 on every route that names it", async () => {
-    const routes = manifest({
-      "app.a": { path: "/a", component: () => el("p", {}), guard: "docNope" },
-      "app.b": {
-        path: "/b",
-        component: () => el("p", {}),
-        guard: "docObj",
-      },
-    });
-    const app = await createApp({
-      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-      routes,
-      ctx: createCtx({ mode: "sim", seed: SEED }),
-      mode: "dev",
-    });
-    const a = await app.fetch(get("/a"));
-    expect(a.status).toBe(500);
-    expect(await a.text()).toContain("E1506 unknown guard");
-    expect((await app.fetch(get("/b"))).status).toBe(500);
-  });
-
-  it("a guard() declared but not in `guards` resolves from the router registry", async () => {
-    guard("docRegistry", { redirect: "app.login" }, () =>
+  it("a route's guard is the value it holds; a denial redirects within the served manifest (RFC 0041)", async () => {
+    const no = guard({ redirect: "app.login" }, () =>
       Promise.resolve(err({ code: "keel.denied", message: "no", data: {} })),
     );
     const routes = manifest({
-      "app.c": { path: "/c", component: () => el("p", {}), guard: "docRegistry" },
+      "app.c": { path: "/c", component: () => el("p", {}), guard: no },
       "app.login": { path: "/login", component: () => el("main", {}, "login") },
     });
     const app = await createApp({
@@ -234,6 +212,22 @@ describe("document", () => {
     const res = await app.fetch(get("/c"));
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe(`/login?next=${encodeURIComponent("/c")}`);
+  });
+
+  it("a denial whose redirect is not a route of the served manifest is 500", async () => {
+    const no = guard({ redirect: "app.nowhere" }, () =>
+      Promise.resolve(err({ code: "keel.denied", message: "no", data: {} })),
+    );
+    const routes = manifest({ "app.a": { path: "/a", component: () => el("p", {}), guard: no } });
+    const app = await createApp({
+      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+      routes,
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+      mode: "dev",
+    });
+    const a = await app.fetch(get("/a"));
+    expect(a.status).toBe(500);
+    expect(await a.text()).toContain("guard redirect to &quot;app.nowhere&quot; failed");
   });
 
   it("a runtime GET returns each level's Result keyed by route id", async () => {

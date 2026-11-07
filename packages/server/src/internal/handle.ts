@@ -52,7 +52,7 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope): Promis
   const write = isVerb(method);
   if (!write && method !== "GET" && method !== "HEAD")
     return { response: new Response(null, { status: 405, headers: { allow: "GET, HEAD" } }), route, diags: [] };
-  const g = await runGuards(m.route.chain, r.here, sv.guards, sv.ctx);
+  const g = await runGuards(m.route.chain, r.here, sv.routes, sv.ctx);
   if (g.kind === "redirect") return { response: redirectResponse(write ? 303 : 302, g.location), route, diags: [] };
   if (g.kind === "fail") return bareError(r, route, statusOf(g.failure.error.code), m.route.chain, m.params, g.failure);
   return write ? issueCaller(r, noStore(await runAction(r, m))) : page(r, m, 200, null, null);

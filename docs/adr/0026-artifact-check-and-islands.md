@@ -1,0 +1,11 @@
+# ADR-0026: `keel check` reads `.keel/` artifacts; islands are marked by `data-k` in templates (RFC 0037)
+
+**Status:** accepted
+**Context.** `keel check` dropped `.keel/*.json` before calling `check()`, so a tampered artifact went unreported (backlog 0105). No document was ever an island page. The compiler marked nothing, the server marked every element-returning level, no document loaded runtime JS, and compiled ops could not run on the server outside a mount (backlog 0106).
+**Decision.** `keel check [paths]` passes the `.keel/*.json` artifacts under `paths` to `check()`.
+
+The compiler writes `data-k="<id>"` into the template of each bound element. An element is bound when it has an event binding, or a binding that reads a file-local `signal`/`computed`/`resource` or calls `.get`/`.select`. Each root element of a component that calls `effect` is bound too. This is the one definition of an island: a component instance whose element subtree holds a `data-k` element.
+
+The server marks a route level `data-k-island` only when its returned element holds such a marker outside nested islands. It adds `<script type="module" src="/@keel/entry.ts">` only when the page has an island. It renders each level as a `mount` unit on a detached host, inside the request scope. Child levels render first, so units never nest.
+**Alternatives.** A runtime `island()` op: this would change runtime-dom, and the server would learn that a page is an island only after rendering it. A static flag on compiled functions: it does not cover child components. Reading `deps.json` at request time: the file exists in dev only. Treating every binding as an island: pages that show only loader data would ship JS.
+**Consequences.** Marking is best effort by name. A false positive (`Map.get` in a binding) ships JS but never breaks resume, since resume claims nodes by structure. A false negative is possible only for state that is read through props of a child component without a handler. Islands remain route-level on the server; component-level island roots and region markers are still open. The node adapter has no generated resume entry yet: `/@keel/entry.ts` is served only for `client` deployables today.

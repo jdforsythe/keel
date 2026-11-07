@@ -5,7 +5,7 @@
 // Components build DOM nodes (RouteDef.component returns Node); test files that call build() run under happy-dom.
 // A runtime (JSON) request is a request with `accept: application/json`.
 import { createCtx } from "@keel/ctx";
-import { action, guard, href, loader, manifest } from "@keel/router";
+import { action, guard, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
 import type { Href, RouteProps } from "@keel/router";
 import type { KeelError, Result } from "@keel/schema";
@@ -110,7 +110,7 @@ export async function build(b: Behavior, mode: Mode = "production", extra: Parti
     n.act++;
     return Promise.resolve((b.act ?? (() => ok(null)))(input));
   });
-  const auth = guard("auth", { redirect: "app.login" }, () =>
+  const auth = guard({ redirect: "app.login" }, () =>
     Promise.resolve(b.deny ? err(s.error("keel.denied", s.object({})).make({})) : ok(null)),
   );
   const routes = manifest({
@@ -129,7 +129,7 @@ export async function build(b: Behavior, mode: Mode = "production", extra: Parti
       component: (p: RouteProps) =>
         el("main", { "data-page": "show" }, `page ${String(Reflect.get(Object(p.params), "kind"))}`),
       layout: "orders.shell",
-      guard: "auth",
+      guard: auth,
       errorElement: (p: { readonly error: KeelError<string, unknown> }) =>
         el("section", { "data-error-element": "1" }, p.error.code),
     },
@@ -140,10 +140,9 @@ export async function build(b: Behavior, mode: Mode = "production", extra: Parti
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode,
-    guards: [auth],
     ...extra,
   });
-  return { app, n, routes, href };
+  return { app, n, routes, href: routes.href };
 }
 
 export const get = (path: string, headers: Record<string, string> = {}) => new Request(`${BASE}${path}`, { headers });

@@ -5,7 +5,10 @@ status: conformance-covered
 ```ts
 // modules/orders/show.server.ts
 export const loadOrder = loader({ output: Order, params: OrderParams, search: OrderSearch }, async ({ params, search, url }, ctx) => api.getOrder({ params }, ctx))
-export const updateOrder = action({ input: OrderEdit, params: OrderParams }, async (input, { params }, ctx) => ok(href('orders.show', params)))
+export const updateOrder = action({ input: OrderEdit, params: OrderParams }, async (input, { params }, ctx) => {
+  const to: Href = routes.href('orders.show', params)
+  return ok(to)
+})
 ```
 - `loader({ output, params?, search? }, fn)`: `fn` gets `{ params, search, url }` and `ctx`; returns `Promise<Result<T, KeelError>>`. Data is encoded with `output`.
 - `action({ input, params? }, fn)`: `fn` gets the decoded input, `{ params, url }`, and `ctx`; returns `Result<Href | null, KeelError>`. `ok(href)` redirects there; `ok(null)` stays on the current route.
@@ -18,6 +21,8 @@ export const updateOrder = action({ input: OrderEdit, params: OrderParams }, asy
 - POST, PUT, PATCH, DELETE: first the same-site check (RFC 0022): pass on `Sec-Fetch-Site` `same-origin` or `none`, an `Origin` equal to the request's, `accept: application/json` with `x-keel: 1` (a k.services client sends it), or neither `Origin` nor `Sec-Fetch-Site`; else 403 `keel.denied`, nothing runs. `_method` overrides POST only. A body over `createApp({ maxBodyBytes })` (default 1 MiB) is 413 `keel.payloadTooLarge` (`data: { limit }`), nothing runs. Then decode FormData with the action's input schema (a `content-type: application/json` body, as a k.services client sends, is parsed with it instead) (fail: `keel.fields`, action not called), run the action, then 303 to the target for a document request or return the `Result` as JSON for a runtime request.
 
 Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · other `err` 400 · uncaught throw 500 as `keel.unexpected`. In production its message becomes `unexpected` and no stack leaves the server. `mode` defaults to `production`. `#k-state` holds every store created in the request scope and the module stores listed in `expose`, each of those as `{ state, log: [], initial: state }` unless exposed with `log: true` (RFC 0022).
+
+**Document.** Island roots, markers and the entry script follow k.runtime; each route level is a candidate island root keyed by its route id (RFC 0037).
 
 **Topology.**
 ```ts

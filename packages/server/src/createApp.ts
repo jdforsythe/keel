@@ -47,7 +47,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     table: selectDeployable(opts.topology, table, modules, opts.deployable),
     ctx: opts.ctx,
     mode: opts.mode ?? "production",
-    guards: new Map((opts.guards ?? []).map((g) => [g.name, g])),
+    routes: opts.routes,
     expose: new Map(
       (opts.expose ?? []).map((x): [string, boolean] => ("store" in x ? [x.store.id, x.log === true] : [x.id, false])),
     ),

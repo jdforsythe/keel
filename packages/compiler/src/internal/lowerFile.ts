@@ -64,6 +64,8 @@ const EVENT_ATTR = /^on[a-z]/i;
 const IDENT = /^[A-Za-z_$][\w$]*$/;
 /** Tags of a `resource` state (k.reactive); a `Match` over exactly these discriminates on `state`. */
 const RESOURCE_STATES: ReadonlySet<string> = new Set(["loading", "error", "ready"]);
+/** Member calls that read a store or signal (k.store `get`/`select`): a binding using one reads client-writable state. */
+const STATE_READS: ReadonlySet<string> = new Set(["get", "select"]);
 
 type Item =
   | { kind: "text"; html: string; plain: string }
@@ -102,7 +104,9 @@ function isSlotCall(e: Expression): boolean {
  * component's `ctx` as third argument (D27); `If`, `For`, `Match`, `Boundary` lower to
  * `cond`/`list`/`match`/`boundary` at a comment anchor. `styles` rewrites static style props of base elements
  * into `class` (D23). Every component runs in its own scope; a file exporting `uses` declares them in its
- * default-export component's scope (D26). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
+ * default-export component's scope (D26). An element with an event binding or a binding that reads client-writable
+ * state, and each root element of a component calling `effect`, gets `data-k` in its template: islands (k.runtime,
+ * rfc:0037). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
  * the generated header change; all other text is kept byte for byte.
  */
 export function lowerFile(
@@ -130,6 +134,14 @@ export function lowerFile(
   const info = new Map(elements.map((e) => [e.start, e]));
   const templates: string[] = [];
   const bindings: BindingInfo[] = [];
+  /** Element ids whose binding makes them part of an island (k.runtime): they get `data-k` in their template. */
+  const bound = new Set<string>();
+  const stateNames = new Set(a.reactive.map((r) => r.name));
+  /** True when the innermost component function around `pos` calls `effect`: its root elements are bound. */
+  const effectful = (pos: number): boolean => {
+    const f = componentFnAt(pos);
+    return f !== undefined && a.effects.some((e) => e.start >= f.start && e.end <= f.end);
+  };
   let uid = 0;
   const tmp = (p: string): string => `${ns}${p}${uid++}`;
 
@@ -163,6 +175,12 @@ export function lowerFile(
       for (const m of src.slice(s.start, s.end).matchAll(re)) if (m[1] !== undefined) props.add(m[1]);
     }
     bindings.push({ element, kind, name, reads: [...reads].sort(), props: [...props].sort() });
+    if (
+      kind === "on" ||
+      [...reads].some((r) => stateNames.has(r)) ||
+      a.members.some((m) => m.start >= s.start && m.end <= s.end && STATE_READS.has(m.name))
+    )
+      bound.add(element);
   };
 
   /** Source of [start, end) with nested JSX lowered and edits applied. */
@@ -264,6 +282,7 @@ export function lowerFile(
     const ref = (): string => elRef(t, id, isRoot);
     t.html += `<${tag}`;
     if (me === undefined || !me.explicit) t.html += ` id="${escapeHtml(id)}"`;
+    const at = t.html.length;
     for (const at of el.openingElement.attributes) {
       if (at.type === "JSXSpreadAttribute") {
         const s = tmp("s");
@@ -305,9 +324,12 @@ export function lowerFile(
       record(id, kind, out, at.value);
     }
     t.html += ">";
-    if (VOID.has(tag)) return;
-    emitChildren(el.children, t, { id, tag, isRoot });
-    t.html += `</${tag}>`;
+    if (!VOID.has(tag)) {
+      emitChildren(el.children, t, { id, tag, isRoot });
+      t.html += `</${tag}>`;
+    }
+    if (me !== undefined && (bound.has(id) || (isRoot && effectful(el.start))))
+      t.html = `${t.html.slice(0, at)} data-k="${escapeHtml(id)}"${t.html.slice(at)}`;
   }
 
   function emitChildren(children: JSXChild[], t: Template, parent: { id: string; tag: string; isRoot: boolean }): void {

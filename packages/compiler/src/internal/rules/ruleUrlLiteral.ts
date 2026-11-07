@@ -82,7 +82,7 @@ export function ruleUrlLiteral(a: Analysis, patterns: readonly string[] = []): D
         !ABSOLUTE.test(text.trim()) &&
         (text.trim().startsWith("/") || matchesRoute(text, patterns))
       ) {
-        out.push(diag(a, "E1501", at.start, `${name} is a string path; use href(routeId, params)`, "k.router"));
+        out.push(diag(a, "E1501", at.start, `${name} is a string path; use routes.href(routeId, params)`, "k.router"));
       }
     }
   }

@@ -1,5 +1,5 @@
 # k.compiler: Compiler and artifacts
-status: implemented
+status: conformance-covered
 
 **API.** One Vite plugin on oxc, no options. Project shape comes from module manifests, `routes.ts`, `tokens.ts`, and `topology.ts`.
 ```ts
@@ -10,7 +10,7 @@ export default { plugins: [keel()] }
 
 **Output.** JSX compiles to direct DOM operations (k.runtime); there is no virtual DOM and no diffing. A component function runs once per instance. Each dynamic expression becomes one binding (text, attribute, property, or event) that updates only its own node. Static subtrees are hoisted into templates built once and cloned. `If`, `For`, `Match`/`Case`, and `Boundary` are compiler intrinsics imported from `@keel/runtime-dom`; they lower to runtime ops, not component calls. `For` requires `key` naming a field of the item schema; when order changes, rows move rather than re-create.
 
-**Escaping by context.** Text children always become text nodes. Attributes and properties are set through the DOM, never string-concatenated. Server HTML escapes text and attribute contexts separately. **URL policy** (the one statement; runtime ops and `@keel/ui` `Link`/`Image` apply it, RFC 0024): URL attributes are `href`, `src`, `action`, `formaction`, `xlink:href`, `poster`, and `ping` (each space-separated URL). Navigation attributes (`href`, `action`, `formaction`, `Link to`) take an `Href` from `href()` or an absolute URL; a literal path there that starts with `/` or matches a `routes.json` path pattern is E1501 (k.router). `src`, `poster`, `ping`, and `xlink:href` are assets: relative literals (`logo.png`) are allowed. A value whose scheme, after the whitespace and control characters the URL parser skips, is not `http`, `https`, `mailto`, or `tel` renders as `about:blank`; no scheme is relative. `srcdoc` is raw HTML: every value renders as `about:blank`. Raw HTML has no API outside `unsafe`.
+**Escaping by context.** Text children always become text nodes. Attributes and properties are set through the DOM, never string-concatenated. Server HTML escapes text and attribute contexts separately. **URL policy** (the one statement; runtime ops and `@keel/ui` `Link`/`Image` apply it, RFC 0024): URL attributes are `href`, `src`, `action`, `formaction`, `xlink:href`, `poster`, and `ping` (each space-separated URL). Navigation attributes (`href`, `action`, `formaction`, `Link to`) take an `Href` from `routes.href()` or an absolute URL; a literal path there that starts with `/` or matches a `routes.json` path pattern is E1501 (k.router). `src`, `poster`, `ping`, and `xlink:href` are assets: relative literals (`logo.png`) are allowed. A value whose scheme, after the whitespace and control characters the URL parser skips, is not `http`, `https`, `mailto`, or `tel` renders as `about:blank`; no scheme is relative. `srcdoc` is raw HTML: every value renders as `about:blank`. Raw HTML has no API outside `unsafe`.
 
 **Artifacts.** Written to `.keel/` on every build and dev change. JSON, sorted keys, byte-identical for identical sources. Each file carries a content hash; all are read-only.
 - `deps.json`: reactive graph, nodes and edges (k.reactive).

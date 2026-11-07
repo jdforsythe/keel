@@ -6,7 +6,7 @@ status: conformance-covered
 **Commands.**
 | command | does |
 | --- | --- |
-| `check [paths]` | k.check pipeline |
+| `check [paths]` | k.check pipeline over the code files and the `.keel/*.json` artifacts under `paths` |
 | `test [paths]` | harness under sim ctx (k.testing) |
 | `build` | production build per deployable (k.server) |
 | `dev` | dev server and log stream (k.server) |

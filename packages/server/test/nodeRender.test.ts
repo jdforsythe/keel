@@ -61,15 +61,13 @@ describe("document rendering in plain node (no DOM global)", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/html");
     const html = await res.text();
-    expect(html).toContain('<ul id="api.lists" data-k-island="api.lists"><li>a&lt;b</li><li>c &amp; d</li></ul>');
+    expect(html).toContain('<ul id="api.lists"><li>a&lt;b</li><li>c &amp; d</li></ul>');
     expect(html).toContain('id="k-state"');
   });
 
   it("serializes templates, clones, comments and void elements", async () => {
     const html = await (await get("/api/tpl")).text();
-    expect(html).toContain(
-      '<p class="x" data-a="1" data-k-island="api.tpl">hi <b>there</b><br><!--c--><input value="v"></p>',
-    );
+    expect(html).toContain('<p class="x" data-a="1">hi <b>there</b><br><!--c--><input value="v"></p>');
   });
 
   it("serializes a fragment's children", async () => {

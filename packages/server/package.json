@@ -21,6 +21,7 @@
     "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
     "hono": "^4.13.16"
