@@ -41,15 +41,15 @@ async function appFor(e: KeelError<string, unknown>, mode: "dev" | "production")
   const routes = manifest({
     "orders.show": {
       path: "/orders",
-      loader: loader(Page, () => Promise.resolve(err(e))),
-      actions: { POST: action(Note, () => err(e)) },
+      loader: loader({ output: Page }, () => Promise.resolve(err(e))),
+      actions: { POST: action({ input: Note }, () => err(e)) },
       component: () => p("page"),
       errorElement: ({ error }) => p(`error ${error.code}`),
     },
     "orders.ok": {
       path: "/ok",
-      loader: loader(Page, () => Promise.resolve(ok({ title: "t" }))),
-      actions: { POST: action(Note, () => err(e)) },
+      loader: loader({ output: Page }, () => Promise.resolve(ok({ title: "t" }))),
+      actions: { POST: action({ input: Note }, () => err(e)) },
       component: () => p("page"),
       errorElement: ({ error }) => p(`error ${error.code}`),
     },

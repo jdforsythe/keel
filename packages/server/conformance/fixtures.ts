@@ -92,19 +92,19 @@ function el(tag: string, attrs: Record<string, string>, ...kids: (Node | string)
 
 export async function build(b: Behavior, mode: Mode = "production") {
   const n: Counts = { show: 0, shell: 0, root: 0, act: 0, component: 0 };
-  const rootLoader = loader(Page, () => {
+  const rootLoader = loader({ output: Page }, () => {
     n.root++;
     return erase((b.root ?? okPage)());
   });
-  const shellLoader = loader(Page, () => {
+  const shellLoader = loader({ output: Page }, () => {
     n.shell++;
     return erase((b.shell ?? okPage)());
   });
-  const showLoader = loader(Page, (a: { params: { kind: string } }) => {
+  const showLoader = loader({ output: Page, params: Params, search: Search }, (a) => {
     n.show++;
     return erase((b.show ?? okPage)(a));
   });
-  const act = action(Edit, (input: { kind: string; note: string }) => {
+  const act = action({ input: Edit }, (input: { kind: string; note: string }) => {
     n.act++;
     return Promise.resolve((b.act ?? (() => ok(null)))(input));
   });

@@ -336,7 +336,7 @@ describe("isRouteStateOf", () => {
 
 describe("needsBare", () => {
   const lvl = (extra: Partial<RouteDef>): Level => ({ id: "x", def: { component: view, ...extra } });
-  const ld = loader(s.object({}), async () => ok({}));
+  const ld = loader({ output: s.object({}) }, async () => ok({}));
   it("only levels above the error level count", () => {
     const chain = [lvl({}), lvl({ loader: ld }), lvl({})];
     expect(needsBare(chain, 0)).toBe(false);
@@ -598,10 +598,10 @@ describe("routesArtifact details", () => {
 
 describe("runLoaders / runGuard", () => {
   const lvl = (def: Partial<RouteDef>): Level => ({ id: "l", def: { component: view, ...def } });
-  const args = { params: {}, search: {} };
+  const args = { params: {}, search: {}, url: "http://localhost/" };
   it("no loader gives ok(undefined); a loader's value is parsed by its output schema", async () => {
     const out = await runLoaders(
-      [lvl({}), lvl({ loader: loader(s.object({ n: s.int() }), async () => ok({ n: 1 })) })],
+      [lvl({}), lvl({ loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 })) })],
       args,
       ctx,
     );
@@ -611,13 +611,13 @@ describe("runLoaders / runGuard", () => {
     const E = s.error("rl.bad", s.object({}));
     const out = await runLoaders(
       [
-        lvl({ loader: loader(s.object({}), async () => err(E.make({}))) }),
+        lvl({ loader: loader({ output: s.object({}) }, async () => err(E.make({}))) }),
         lvl({
-          loader: loader(s.object({}), async () => {
+          loader: loader({ output: s.object({}) }, async () => {
             throw new Error("kaboom");
           }),
         }),
-        lvl({ loader: loader(s.object({ n: s.int({ min: 10 }) }), async () => ok({ n: 1 })) }),
+        lvl({ loader: loader({ output: s.object({ n: s.int({ min: 10 }) }) }, async () => ok({ n: 1 })) }),
       ],
       args,
       ctx,
@@ -631,7 +631,7 @@ describe("runLoaders / runGuard", () => {
     const order: string[] = [];
     const mk = (n: string) =>
       lvl({
-        loader: loader(s.object({}), async () => {
+        loader: loader({ output: s.object({}) }, async () => {
           order.push(`start ${n}`);
           await Promise.resolve();
           order.push(`end ${n}`);

@@ -21,9 +21,9 @@ it("a page showing its errorElement renders the component after ok(null) when th
   const routes = manifest({
     "rv.page": {
       path: "/rv",
-      loader: loader(s.object({}), async () => (state.fail ? err(Gone.make({})) : ok({}))),
+      loader: loader({ output: s.object({}) }, async () => (state.fail ? err(Gone.make({})) : ok({}))),
       actions: {
-        POST: action(s.object({}), async () => {
+        POST: action({ input: s.object({}) }, async () => {
           state.fail = false;
           return ok(null);
         }),

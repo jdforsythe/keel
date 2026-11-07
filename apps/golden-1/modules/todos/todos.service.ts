@@ -8,7 +8,7 @@ import { TodoDraft } from "./TodoDraft.schema.ts";
 
 /**
  * The board endpoints of the golden-1 `api` deployable (it owns the data; k.server runtime `Result` bodies),
- * served from the page's origin (vite proxies `/api`). Build the client at call time with `todosApi()`.
+ * served from the page's origin (vite proxies `/api`). Build the client at call time with `todosApi(origin)`.
  */
 export const todos = endpoints({
   lists: { method: "GET", path: "/api/lists", output: BoardReply },

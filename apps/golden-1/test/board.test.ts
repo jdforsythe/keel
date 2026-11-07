@@ -48,7 +48,8 @@ const seedServer = () => expect(board.restore({ state: seed, log: [], initial: s
 const LISTS = new URL("/api/lists", location.href).href;
 /** `todos.toggleTodo` for `t1`: params parse into the branded id the endpoint takes. */
 const T1 = s.object({ todoId: s.id("Todo") }).parse({ todoId: milk.id });
-const toggleT1 = (ctx: Ctx) => (T1.ok ? todosApi().toggleTodo({ params: T1.value }, ctx) : Promise.resolve(T1));
+const toggleT1 = (ctx: Ctx) =>
+  T1.ok ? todosApi(location.origin).toggleTodo({ params: T1.value }, ctx) : Promise.resolve(T1);
 
 describe("schemas", () => {
   it("Board, BoardView, TodoList and Todo accept the model and reject bad values", () => {
@@ -85,7 +86,7 @@ describe("todos.view", () => {
   it("refreshView reads GET /api/lists into the view; syncAfter writes then refreshes", async () => {
     seedServer();
     const { ctx, sent } = await simApi();
-    expect((await refreshView(ctx)).ok).toBe(true);
+    expect((await refreshView(location.origin, ctx)).ok).toBe(true);
     expect(view.get("lists")).toEqual([L]);
     const r = await syncAfter(ctx, toggleT1(ctx));
     expect(r.ok && r.value.todos[0]?.done).toBe(true);
@@ -102,7 +103,7 @@ describe("todos.view", () => {
   it("a failed read leaves the view unchanged", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     ctx.net.route(LISTS, () => new Response("boom", { status: 500 }));
-    const r = await refreshView(ctx);
+    const r = await refreshView(location.origin, ctx);
     expect(r.ok ? null : r.error.code).toBe("api.status");
     expect(view.snapshot().state).toEqual(shown.state);
   });
@@ -126,7 +127,7 @@ describe("client loaders and actions (through the api deployable)", () => {
   it("loadIndex hydrates; loadList and loadTodo find by id or return keel.notFound", async () => {
     seedServer();
     const { ctx } = await simApi();
-    const index = await loadIndex.run({ params: {}, search: {} }, ctx);
+    const index = await loadIndex.run({ params: {}, search: {}, url: location.href }, ctx);
     expect(index.ok && index.value.lists).toEqual([L]);
     expect(await loadList.run({ ...at(ListParams, { listId: "l1" }), search: {} }, ctx)).toEqual({
       ok: true,
@@ -140,7 +141,10 @@ describe("client loaders and actions (through the api deployable)", () => {
   });
   it("createList and createTodo post to the api and answer ok(null)", async () => {
     const { ctx, sent } = await simApi();
-    expect(await createList.run({ name: "Work" }, { params: {} }, ctx)).toEqual({ ok: true, value: null });
+    expect(await createList.run({ name: "Work" }, { params: {}, url: location.href }, ctx)).toEqual({
+      ok: true,
+      value: null,
+    });
     const listId = board.get("lists")[0]?.id ?? "";
     const r = await createTodo.run({ title: "Milk", priority: "low" }, at(ListParams, { listId }), ctx);
     expect(r).toEqual({ ok: true, value: null });

@@ -10,7 +10,7 @@ const BASE = "http://localhost";
 const Note = s.object({ note: s.string({ min: 3 }), pinned: s.boolean() });
 
 async function build(seen: unknown[]) {
-  const save = action(Note, (input) => {
+  const save = action({ input: Note }, (input) => {
     seen.push(input);
     return ok(null);
   });

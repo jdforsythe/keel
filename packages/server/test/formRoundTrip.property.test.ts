@@ -42,7 +42,7 @@ const toForm = (v: In): FormData => {
 
 async function build() {
   const seen: unknown[] = [];
-  const act = action(Input, (v) => {
+  const act = action({ input: Input }, (v) => {
     seen.push(v);
     return ok(null);
   });

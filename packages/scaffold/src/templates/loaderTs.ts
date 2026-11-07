@@ -4,7 +4,7 @@ export function loaderTs(loaderName: string): string {
     `import { loader } from "@keel/router";`,
     `import { ok, s } from "@keel/schema";`,
     "",
-    `export const ${loaderName} = loader(s.object({}), async () => ok({}));`,
+    `export const ${loaderName} = loader({ output: s.object({}) }, async () => ok({}));`,
     "",
   ].join("\n");
 }

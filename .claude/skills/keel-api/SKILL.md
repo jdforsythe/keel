@@ -10,11 +10,11 @@ Spec: `pnpm spec k.server`, `k.services`.
 
 **api module** (owns the data): `board.ts` = shared `store` + `invariant`; `addTodo.ts` = `transaction(board, 'api.addTodo', schema, fn)`; `routes.ts` = `manifest({ 'api.lists': { path: '/api/lists', loader: loadBoard, actions: { POST: postList }, component: BoardApi } })`. Loaders and actions live in `*.server.ts`:
 ```ts
-export const loadBoard = loader(BoardView, async () => ok({ ... }))
-export const postTodo = action(TodoDraft, (input, { params }, ctx) =>
+export const loadBoard = loader({ output: BoardView }, async () => ok({ ... }))
+export const postTodo = action({ input: TodoDraft, params: ListParams }, (input, { params, url }, ctx) =>
   missing ? err({ code: 'keel.notFound', message, data }) : ok(null))
 ```
-Mint ids with `ctx.random.id('Todo')`. Status: notFound 404, denied 403, `keel.fields` 422, other err 400.
+`params`/`search` come from the route's own schema values (never annotate `fn`, E1507); `url` is the absolute request URL (use `new URL(url).origin`, never `location`, in `*.server.ts`). Mint ids with `ctx.random.id('Todo')`. Status: notFound 404, denied 403, `keel.fields` 422, other err 400.
 Api components are plain `.ts` (no JSX).
 
 **Serve:** `createApp({ topology, routes, ctx: createCtx({ mode: 'real' }), deployable: 'api', expose: [board] })` then `serve`. `deployable` is required with several; `expose` snapshots module stores into `#k-state`.

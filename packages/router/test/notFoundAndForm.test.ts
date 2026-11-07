@@ -37,7 +37,7 @@ it.each<[string, Partial<RouteDef>, boolean]>([
   ["no loader or guard above: the errorElement renders inside the layouts", {}, true],
   [
     "a layout with a loader: the errorElement renders alone",
-    { loader: loader(s.object({}), async () => ok({})) },
+    { loader: loader({ output: s.object({}) }, async () => ok({})) },
     false,
   ],
   ["a layout with a guard: the errorElement renders alone", { guard: "nf.never" }, false],
@@ -60,7 +60,11 @@ it.each<[string, Partial<RouteDef>, boolean]>([
 
 it("Form outside any router render is a native form: submit is not intercepted", () => {
   manifest({
-    "nat.a": { path: "/nat", actions: { POST: action(s.object({}), async () => ok(null)) }, component: () => tag("p") },
+    "nat.a": {
+      path: "/nat",
+      actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
+      component: () => tag("p"),
+    },
   });
   const form = Form({ method: "POST", action: "nat.a" });
   const e = new Event("submit", { bubbles: true, cancelable: true });

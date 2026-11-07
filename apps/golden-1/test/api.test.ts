@@ -59,11 +59,14 @@ describe("api.board", () => {
 describe("loaders and actions", () => {
   it("loadBoard serves lists, todos and canUndo", async () => {
     seed({ lists: [L], todos: [milk] });
-    const r = await loadBoard.run({ params: {}, search: {} }, sim());
+    const r = await loadBoard.run({ params: {}, search: {}, url: "http://localhost/api/lists" }, sim());
     expect(r).toEqual({ ok: true, value: { lists: [L], todos: [milk], canUndo: false } });
   });
   it("postList, postTodo, postToggle and postEdit commit with ctx-minted ids; postUndo outside a request is refused", async () => {
-    expect(await postList.run({ name: "Work" }, { params: {} }, sim())).toEqual({ ok: true, value: null });
+    expect(await postList.run({ name: "Work" }, { params: {}, url: "http://localhost/api/lists" }, sim())).toEqual({
+      ok: true,
+      value: null,
+    });
     const listId = board.get("lists")[0]?.id ?? "";
     expect((await postTodo.run({ title: "Milk", priority: "low" }, at(ListParams, { listId }), sim())).ok).toBe(true);
     const todoId = board.get("todos")[0]?.id ?? "";
@@ -72,7 +75,7 @@ describe("loaders and actions", () => {
     expect(edited.ok).toBe(true);
     expect(board.get("todos")).toMatchObject([{ listId, title: "Oat milk", priority: "high", done: true }]);
     // No request, so no caller: undo is scoped to the caller that committed the write (finding 0082).
-    const refused = await postUndo.run({}, { params: {} }, sim());
+    const refused = await postUndo.run({}, { params: {}, url: "http://localhost/api/undo" }, sim());
     expect(refused.ok ? null : refused.error.code).toBe("keel.denied");
     expect(board.get("todos")[0]?.title).toBe("Oat milk");
   });
@@ -91,7 +94,7 @@ describe("loaders and actions", () => {
       code: "keel.fields",
       data: { title: "Another todo has this title" },
     });
-    expect(code(await postUndo.run({}, { params: {} }, sim()))).toBe("keel.denied");
+    expect(code(await postUndo.run({}, { params: {}, url: "http://localhost/api/undo" }, sim()))).toBe("keel.denied");
     expect(board.get("todos")).toEqual([milk, eggs]);
   });
 });
@@ -172,9 +175,11 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
 
 describe("api route components", () => {
   it("loadSuggestions returns the same sorted titles on every call", async () => {
-    const first = await loadSuggestions.run({ params: {}, search: {} }, sim());
+    const first = await loadSuggestions.run({ params: {}, search: {}, url: "http://localhost/api/suggestions" }, sim());
     expect(first.ok && first.value.map((x) => x.title)).toEqual(["Bread", "Eggs", "Milk"]);
-    expect(await loadSuggestions.run({ params: {}, search: {} }, sim())).toEqual(first);
+    expect(
+      await loadSuggestions.run({ params: {}, search: {}, url: "http://localhost/api/suggestions" }, sim()),
+    ).toEqual(first);
   });
   it("SuggestionsApi, BoardApi and ActionApi render the document views", async () => {
     expect([routes.routes["api.suggestions"].component, routes.routes["api.lists"].component]).toEqual([

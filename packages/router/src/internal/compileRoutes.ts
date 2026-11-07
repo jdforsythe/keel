@@ -12,7 +12,8 @@ const VERBS = ["POST", "PUT", "PATCH", "DELETE"];
 /**
  * Validate one manifest and compile its table. Throws an Error with `code`: E1502 two routes with one path
  * pattern, E1503 path/params mismatch or malformed path, E1504 required search field, E1505 actions key not
- * a verb, E1506 unknown layout, layout with a path, or layout cycle. Looks at nothing outside `routes`.
+ * a verb, E1506 unknown layout, layout with a path, or layout cycle, E1507 a loader or action declaring a `params`
+ * or `search` schema that is not this route's own value (RFC 0027). Looks at nothing outside `routes`.
  */
 export function compileRoutes(routes: Readonly<Record<string, RouteDef>>): Table {
   const table = new Map<string, Registered>();
@@ -28,6 +29,13 @@ export function compileRoutes(routes: Readonly<Record<string, RouteDef>>): Table
     if (def.search !== undefined)
       for (const [k, node] of fieldsOf(def.search.node))
         if (node.kind !== "optional") throw codedError("E1504", `${id}: search field "${k}" must be optional`);
+    if (def.loader?.params !== undefined && def.loader.params !== def.params)
+      throw codedError("E1507", `${id}: loader params schema is not this route's params`);
+    if (def.loader?.search !== undefined && def.loader.search !== def.search)
+      throw codedError("E1507", `${id}: loader search schema is not this route's search`);
+    for (const [verb, act] of Object.entries(def.actions ?? {}))
+      if (act?.params !== undefined && act.params !== def.params)
+        throw codedError("E1507", `${id}: ${verb} action params schema is not this route's params`);
     chainOf(id, def, routes);
     if (segments !== null) {
       const key = patternKey(segments);

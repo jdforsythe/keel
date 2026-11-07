@@ -28,7 +28,7 @@ const build = () =>
     routes: manifest({
       "api.lists": {
         path: "/api/lists",
-        loader: loader(Lists, async () => ok({ names: ["a<b", "c & d"] })),
+        loader: loader({ output: Lists }, async () => ok({ names: ["a<b", "c & d"] })),
         component: Board,
       },
       "api.tpl": {

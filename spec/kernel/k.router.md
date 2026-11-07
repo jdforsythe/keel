@@ -8,10 +8,10 @@ export const routes = manifest({
   'orders.shell': { component: OrdersShell, layout: 'app.shell' },             // no path: a layout
   'orders.show': {
     path: '/orders/:id',
-    params: s.object({ id: s.id('Order') }),
-    search: s.object({ tab: s.enum(['items', 'history']).optional() }),
-    loader: loadOrder,                                   // loader(Order, fn), show.server.ts (k.server)
-    actions: { POST: updateOrder, DELETE: removeOrder }, // action(input, fn) and loader(output, fn) are exported from @keel/router; see k.server for their execution over HTTP
+    params: OrderParams,                                 // s.object({ id: s.id('Order') }); loadOrder declares the same value
+    search: OrderSearch,                                 // s.object({ tab: s.enum(['items', 'history']).optional() })
+    loader: loadOrder,                                   // loader({ output, params, search }, fn), show.server.ts (k.server)
+    actions: { POST: updateOrder, DELETE: removeOrder }, // action and loader come from @keel/router; k.server runs them over HTTP
     component: OrderPage, layout: 'orders.shell', guard: 'auth', errorElement: OrderError,
   },
 })
@@ -37,7 +37,7 @@ A guard returns `Result<null, KeelError<'keel.denied'>>`. Every guard in the cha
 
 **Artifacts.** `routes.json` (k.compiler): `{ [routeId]: { path, params, search, actions, layout, guard, module } }`. `actions` lists methods; layouts have `path: null`.
 
-**Rules.** E1501 string path where an `Href` is required · E1502 two routes with the same path pattern · E1503 `:name` in `path` without a `params` field, or the reverse · E1504 required field in a `search` schema · E1505 `actions` key or `<Form method>` that is not `POST`/`PUT`/`PATCH`/`DELETE`, or not declared on the target route · E1506 unknown `guard` or `layout` name, or a layout cycle.
+**Rules.** E1501 string path where an `Href` is required · E1502 two routes with the same path pattern · E1503 `:name` in `path` without a `params` field, or the reverse · E1504 required field in a `search` schema · E1505 `actions` key or `<Form method>` that is not `POST`/`PUT`/`PATCH`/`DELETE`, or not declared on the target route · E1506 unknown `guard` or `layout` name, or a layout cycle · E1507 loader or action `params`/`search` typed by hand, or declared with a schema other than the route's; inferred from the route's schema (`manifest` throws for the latter).
 
 **Conformance.**
 - For every route and every generated `params` and `search`, `navigate(href(id, p, q))` makes `route()` equal `{ id, params: p, search: q, pending: false }`.
@@ -49,3 +49,4 @@ A guard returns `Result<null, KeelError<'keel.denied'>>`. Every guard in the cha
 - After an `ok(null)` action, each loader in the current chain runs exactly once more; after `ok(href)`, `route().id` is the target's id.
 - After a push navigation, `document.activeElement` is `main` and the scroll position is 0; back restores the previous entry's scroll position.
 - Each of E1501-E1506 has a fixture that triggers it and a clean counterpart.
+- A loader declared with `params: P` gives `fn` `params` of type `Infer<typeof P>`; `manifest` throws E1507 when the route's `params` is another schema value.

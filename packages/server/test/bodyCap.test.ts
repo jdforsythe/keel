@@ -11,7 +11,7 @@ const BASE = "http://localhost";
 const Note = s.object({ note: s.string() });
 
 async function build(seen: unknown[], maxBodyBytes?: number) {
-  const save = action(Note, (input) => {
+  const save = action({ input: Note }, (input) => {
     seen.push(input);
     return ok(null);
   });

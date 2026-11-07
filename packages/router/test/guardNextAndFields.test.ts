@@ -53,7 +53,7 @@ it("an action input failure yields keel.fields with messages per path", async ()
   const routes = manifest({
     "gn.form": {
       path: "/form",
-      actions: { POST: action(s.object({ title: s.string({ min: 3 }) }), async () => ok(null)) },
+      actions: { POST: action({ input: s.object({ title: s.string({ min: 3 }) }) }, async () => ok(null)) },
       component: () => Form({ method: "POST", action: "gn.form", form: handle }),
     },
   });

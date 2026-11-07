@@ -138,7 +138,7 @@ export function setup(opts: { order?: readonly Field[]; initial?: Record<string,
   const order = opts.order ?? FIELDS;
   const calls: unknown[] = [];
   const handler: Harness["handler"] = { current: () => ok(null) };
-  const save = action(Note, async (input: unknown): Promise<Outcome> => {
+  const save = action({ input: Note }, async (input: unknown): Promise<Outcome> => {
     calls.push(input);
     return handler.current(input);
   });

@@ -21,7 +21,7 @@ type Extra = { mode?: "dev" | "production"; origins?: string[]; overlap?: { star
 
 function build(calls: Calls, extra: Extra = {}) {
   const act = (verb: string) =>
-    action(Note, async (input) => {
+    action({ input: Note }, async (input) => {
       calls.verbs.push(verb);
       if (input.note === "boom") throw new Error("secret-detail");
       const overlap = extra.overlap;

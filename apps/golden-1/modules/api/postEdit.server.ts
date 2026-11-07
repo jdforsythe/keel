@@ -2,7 +2,7 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { TodoDraft } from "../todos/TodoDraft.schema.ts";
-import type { TodoIdParams } from "./TodoIdParams.schema.ts";
+import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { board } from "./board.ts";
 import { editTodo } from "./editTodo.ts";
 
@@ -10,7 +10,7 @@ import { editTodo } from "./editTodo.ts";
  * `POST /api/todos/:todoId`: replace title and priority. `keel.fields` `{ title }` when another todo in the same list
  * has the title; an unknown todo is `keel.notFound`.
  */
-export const postEdit = action(TodoDraft, (input, { params }: { readonly params: TodoIdParams }) => {
+export const postEdit = action({ input: TodoDraft, params: TodoIdParams }, (input, { params }) => {
   const { todoId } = params;
   const todos = board.get("todos");
   const todo = todos.find((t) => t.id === todoId);

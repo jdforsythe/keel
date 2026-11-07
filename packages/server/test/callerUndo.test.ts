@@ -30,9 +30,9 @@ function build(https = false) {
   const routes = manifest({
     "app.notes": {
       path: "/notes",
-      loader: loader(NotesView, async () => ok({ items: notes.get("items"), canUndo: canUndoOwn(notes) })),
+      loader: loader({ output: NotesView }, async () => ok({ items: notes.get("items"), canUndo: canUndoOwn(notes) })),
       actions: {
-        POST: action(s.object({ text: s.string() }), (input) => {
+        POST: action({ input: s.object({ text: s.string() }) }, (input) => {
           const r = tx(addNote, input);
           return r.ok ? ok(null) : err(r.error);
         }),
@@ -42,12 +42,12 @@ function build(https = false) {
     "app.mark": {
       path: "/mark",
       actions: {
-        POST: action(s.object({ text: s.string() }), (input) => {
+        POST: action({ input: s.object({ text: s.string() }) }, (input) => {
           const r = tx(markNote, input);
           return r.ok ? ok(null) : err(r.error);
         }),
         // Commits after an await: not attributable to this request, so nobody may undoOwn it.
-        PUT: action(s.object({ text: s.string() }), async (input) => {
+        PUT: action({ input: s.object({ text: s.string() }) }, async (input) => {
           await Promise.resolve();
           const r = tx(markNote, input);
           return r.ok ? ok(null) : err(r.error);
@@ -58,7 +58,7 @@ function build(https = false) {
     "app.undo": {
       path: "/undo",
       actions: {
-        POST: action(s.object({}), () =>
+        POST: action({ input: s.object({}) }, () =>
           undoOwn(notes) ? ok(null) : err({ code: "keel.denied", message: "Nothing of yours to undo", data: {} }),
         ),
       },

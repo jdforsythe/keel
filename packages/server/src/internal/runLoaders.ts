@@ -9,7 +9,7 @@ import { unexpected } from "./unexpected.ts";
 async function runOne(
   id: string,
   l: Loader<unknown>,
-  args: { params: Rec; search: Rec },
+  args: { params: Rec; search: Rec; url: string },
   ctx: Ctx,
 ): Promise<LoaderOutcome> {
   const ran = await attempt(() => l.run(args, ctx));
@@ -27,12 +27,12 @@ async function runOne(
 
 /**
  * Start every loader of `chain` together (they all start before any resolves) and collect their outcomes
- * in chain order; levels without a loader give `ok(undefined)`. A throw becomes `keel.unexpected`; data
+ * in chain order; levels without a loader give `ok(undefined)`. Each gets `url`, the absolute request URL. A throw becomes `keel.unexpected`; data
  * failing `output` is `keel.unexpected` with an E1554 diag.
  */
 export function runLoaders(
   chain: readonly Level[],
-  args: { params: Rec; search: Rec },
+  args: { params: Rec; search: Rec; url: string },
   ctx: Ctx,
 ): Promise<LoaderOutcome[]> {
   return Promise.all(

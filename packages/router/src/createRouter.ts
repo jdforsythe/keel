@@ -7,6 +7,7 @@ import type { Match } from "./internal/Match.ts";
 import type { Place } from "./internal/Place.ts";
 import type { RouterCore } from "./internal/RouterCore.ts";
 import type { View } from "./internal/View.ts";
+import { absoluteUrl } from "./internal/absoluteUrl.ts";
 import { afterNavigate } from "./internal/afterNavigate.ts";
 import { compileRoutes } from "./internal/compileRoutes.ts";
 import { compileTable } from "./internal/compileTable.ts";
@@ -154,7 +155,11 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       if (!to.ok) return commit(t, failedAt(m, i, to.error), placeOf(m), mode);
       return go(to.value, mode === "push" ? "push" : "replace", hops + 1);
     }
-    const results = await runLoaders(m.route.chain, { params: m.params, search: m.search }, ctx);
+    const results = await runLoaders(
+      m.route.chain,
+      { params: m.params, search: m.search, url: absoluteUrl(m.url) },
+      ctx,
+    );
     if (t !== token) return;
     commit(t, loaded(m, results), placeOf(m), mode);
   };
@@ -182,7 +187,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     if (v === null || m === null || m.kind !== "route") return;
     const t = token;
     pending.set(true);
-    const results = await runLoaders(v.chain, { params: v.params, search: v.search }, ctx);
+    const results = await runLoaders(v.chain, { params: v.params, search: v.search, url: absoluteUrl(v.url) }, ctx);
     if (t !== token || disposed || view.get() !== v) return;
     if (v.error !== null || results.some((r) => !r.ok)) return commit(t, loaded(m, results), placeOf(m), "stay");
     batch(() => {
@@ -206,7 +211,8 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       let result: Result<Href | null, KeelError<string, unknown>>;
       if (!decoded.ok) result = err(fieldsError(act.input.node, decoded.error));
       else {
-        const ran = await attempt(() => act.run(decoded.value, { params: req.params }, ctx));
+        const url = absoluteUrl(hrefIn(own, req.action, req.params, {}));
+        const ran = await attempt(() => act.run(decoded.value, { params: req.params, url }, ctx));
         result = ran.ok ? ran.value : ran;
       }
       handle?.setPending(false);

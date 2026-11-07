@@ -17,7 +17,7 @@ const page = (): Node => el("section", {}, "page");
 const Id = s.object({ id: s.id("Order") });
 const Q = s.object({ q: s.string().optional() });
 const Edit = s.object({ note: s.string() });
-const post = action(Edit, async () => ok(null));
+const post = action({ input: Edit }, async () => ok(null));
 
 const codeOf = (fn: () => unknown): unknown => {
   try {
@@ -122,7 +122,7 @@ describe("k.router rules", () => {
         "l.page": {
           path: "/guarded",
           guard: name,
-          loader: loader(s.object({}), async () => ok({})),
+          loader: loader({ output: s.object({}) }, async () => ok({})),
           component: () => el("section", { "data-ok": "1" }, "page"),
           errorElement: shown,
         },

@@ -1,15 +1,17 @@
 # k.server: Thin server
 status: implemented
 
-**API.** Hono underneath; app code sees only `topology` from `@keel/server`; `loader(output, fn)` and `action(input, fn)` are declared by `@keel/router` (they run in-process in a client-only deployable) and the server executes them over HTTP.
+**API.** Hono underneath; app code sees only `topology`, `undoOwn`, and `canUndoOwn` from `@keel/server`; `loader` and `action` are declared by `@keel/router` (they run in-process in a client-only deployable) and the server executes them over HTTP.
 ```ts
 // modules/orders/show.server.ts
-export const loadOrder = loader(Order, async ({ params, search }, ctx) => api.getOrder({ params }, ctx))
-export const updateOrder = action(OrderEdit, async (input, { params }, ctx) => ok(href('orders.show', params)))
+export const loadOrder = loader({ output: Order, params: OrderParams, search: OrderSearch }, async ({ params, search, url }, ctx) => api.getOrder({ params }, ctx))
+export const updateOrder = action({ input: OrderEdit, params: OrderParams }, async (input, { params }, ctx) => ok(href('orders.show', params)))
 ```
-- `loader(output, fn)`: `fn` gets parsed `params`, `search`, and `ctx`; returns `Promise<Result<T, KeelError>>`. Data is encoded with `output`.
-- `action(input, fn)`: `fn` gets the decoded input, `{ params }`, and `ctx`; returns `Result<Href | null, KeelError>`. `ok(href)` redirects there; `ok(null)` stays on the current route.
+- `loader({ output, params?, search? }, fn)`: `fn` gets `{ params, search, url }` and `ctx`; returns `Promise<Result<T, KeelError>>`. Data is encoded with `output`.
+- `action({ input, params? }, fn)`: `fn` gets the decoded input, `{ params, url }`, and `ctx`; returns `Result<Href | null, KeelError>`. `ok(href)` redirects there; `ok(null)` stays on the current route.
+- `params`/`search` are `Infer` of the declared schemas (`unknown` when omitted), which are the referencing route's own values (k.router E1507); `fn` is never annotated. `url` is the absolute request URL; server code never reads `location`.
 - Both live in `*.server.ts` and are referenced from `routes.ts` (k.router).
+- `undoOwn(store)` undoes the store's last entry, and `canUndoOwn(store)` is true, only when the current request's caller committed it during an action's synchronous run; else false and nothing changes (also outside a request or after an `await`). The caller is the `keel-caller` cookie, minted on a first write as `HttpOnly; SameSite=Lax; Path=/` (`Secure` on https).
 
 **Request flow.** Match the path in the route table -> parse params (fail: 404) and search (fail: defaults) -> guard (deny: redirect) ->
 - GET: run every loader in the matched layout chain concurrently, then stream HTML with islands and serialized state (k.runtime). A loader `err` renders the route's `errorElement`.
@@ -37,3 +39,5 @@ Each deployable builds to one artifact. Adapters: `node` (Hono on Node; renders 
 - An uncaught throw in production mode yields 500 whose body contains neither the thrown message nor a stack frame.
 - The dev log stream emits exactly one `req` record per request; in json mode every line parses.
 - A JSON or FormData action body over `maxBodyBytes` yields 413 `keel.payloadTooLarge` and does not call the action.
+- A loader's `url` is the absolute URL of the request it serves.
+- `undoOwn` from a caller other than the one that committed the store's last entry returns false and leaves the store unchanged; that caller's own `undoOwn` then succeeds.

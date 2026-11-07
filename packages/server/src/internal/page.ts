@@ -32,7 +32,9 @@ export async function page(
 ): Promise<Handled> {
   const { chain, def, id } = m.route;
   const publicize = (e: KeelError<string, unknown>) => publicError(e, r.sv.mode);
-  const outcomes = await inRequest(r.rq, () => runLoaders(chain, { params: m.params, search: m.search }, r.sv.ctx));
+  const outcomes = await inRequest(r.rq, () =>
+    runLoaders(chain, { params: m.params, search: m.search, url: r.raw.url }, r.sv.ctx),
+  );
   const diags = outcomes.flatMap((o) => (o.diag === null ? [] : [o.diag]));
   const failedAt = outcomes.findIndex((o) => !o.result.ok);
   const failed = outcomes[failedAt]?.result;

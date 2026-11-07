@@ -64,7 +64,7 @@ describe("history interaction", () => {
   const routes = manifest({
     "hi.a": { path: "/a", component: () => el("a") },
     "hi.b": { path: "/b", component: () => el("b") },
-    "hi.l": { path: "/l", loader: loader(s.object({}), async () => ok({})), component: () => el("l") },
+    "hi.l": { path: "/l", loader: loader({ output: s.object({}) }, async () => ok({})), component: () => el("l") },
   });
   it("initial load rewrites a non-canonical url with replace, not push", async () => {
     const t = boot(routes, "/a/");
@@ -114,7 +114,7 @@ describe("history interaction", () => {
       "pe.a": { path: "/a", component: () => el("a") },
       "pe.b": {
         path: "/b",
-        loader: loader(s.object({}), async () => {
+        loader: loader({ output: s.object({}) }, async () => {
           await gate;
           return ok({});
         }),
@@ -144,7 +144,7 @@ describe("history interaction", () => {
     const rs = manifest({
       "su.a": {
         path: "/a",
-        loader: loader(s.object({}), async () => {
+        loader: loader({ output: s.object({}) }, async () => {
           await gateA;
           return ok({});
         }),
@@ -203,7 +203,7 @@ describe("history interaction", () => {
       "dm.a": { path: "/a", component: () => el("a") },
       "dm.b": {
         path: "/b",
-        loader: loader(s.object({}), async () => {
+        loader: loader({ output: s.object({}) }, async () => {
           await gate;
           return ok({});
         }),
@@ -409,7 +409,7 @@ describe("guards", () => {
         path: "/a",
         layout: "go.shell",
         guard: "go.inner",
-        loader: loader(s.object({}), async () => {
+        loader: loader({ output: s.object({}) }, async () => {
           order.push("loader");
           return ok({});
         }),
@@ -467,7 +467,7 @@ describe("errors and not found", () => {
       "le.a": {
         path: "/a",
         layout: "le.shell",
-        loader: loader(s.object({}), async () => err(Boom.make({}))),
+        loader: loader({ output: s.object({}) }, async () => err(Boom.make({}))),
         component: () => el("a"),
       },
     });
@@ -479,7 +479,11 @@ describe("errors and not found", () => {
   });
   it("a loader error with no errorElement anywhere renders the root default", async () => {
     const rs = manifest({
-      "ld.a": { path: "/a", loader: loader(s.object({}), async () => err(Boom.make({}))), component: () => el("a") },
+      "ld.a": {
+        path: "/a",
+        loader: loader({ output: s.object({}) }, async () => err(Boom.make({}))),
+        component: () => el("a"),
+      },
     });
     const t = boot(rs, "/a");
     await settle();
@@ -489,7 +493,7 @@ describe("errors and not found", () => {
   it("a loader error on a layout level with an errorElement only on the route: nearest is searched upward only", async () => {
     const rs = manifest({
       "lu.shell": {
-        loader: loader(s.object({}), async () => err(Boom.make({}))),
+        loader: loader({ output: s.object({}) }, async () => err(Boom.make({}))),
         component: (p) => el("shell", p.children === undefined ? [] : [p.children()]),
       },
       "lu.a": { path: "/a", layout: "lu.shell", component: () => el("a"), errorElement: () => el("route-err") },
@@ -504,7 +508,7 @@ describe("errors and not found", () => {
     const rs = manifest({
       "ld2.a": {
         path: "/a",
-        loader: loader(s.object({ n: s.int() }), async () => ok({ n: 5 })),
+        loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 5 })),
         component: (p) => el(`d=${JSON.stringify(p.data)}`),
       },
       "ld2.b": {
@@ -675,7 +679,7 @@ describe("Form", () => {
   });
 
   it("renders method, action, hidden _method for non-POST, children and throws E1505 for a missing verb", () => {
-    const act = action(s.object({}), async () => ok(null));
+    const act = action({ input: s.object({}) }, async () => ok(null));
     manifest({
       "fm.a": {
         path: "/fm/:id",
@@ -724,7 +728,7 @@ describe("Form", () => {
         path: "/p/:id",
         params: s.object({ id: s.int() }),
         actions: {
-          PUT: action(input, async (i, at) => {
+          PUT: action({ input: input }, async (i, at) => {
             log.push("run");
             seen.push([i, at.params]);
             return ok(await Promise.resolve(to("/next")));
@@ -756,7 +760,7 @@ describe("Form", () => {
     const rs = manifest({
       "fv.page": {
         path: "/p",
-        actions: { POST: action(input, async () => ok(null)) },
+        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: "fv.page", form: handleOf(log, false) }),
       },
     });
@@ -776,7 +780,7 @@ describe("Form", () => {
     const rs = manifest({
       "ff.page": {
         path: "/p",
-        actions: { POST: action(input, async () => ok(null)) },
+        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: "ff.page", form: handleOf(log) }),
       },
     });
@@ -794,7 +798,7 @@ describe("Form", () => {
       "fe.page": {
         path: "/p",
         actions: {
-          POST: action(s.object({}), async () => {
+          POST: action({ input: s.object({}) }, async () => {
             throw new Error("nope");
           }),
         },
@@ -826,7 +830,7 @@ describe("Form", () => {
       "fl.page": {
         path: "/p",
         actions: {
-          POST: action(s.object({}), async () => {
+          POST: action({ input: s.object({}) }, async () => {
             if (fail) return err(Boom.make({}));
             await new Promise<void>((r) => {
               release = r;
@@ -866,7 +870,7 @@ describe("Form", () => {
       "fh.page": {
         path: "/p",
         actions: {
-          POST: action(s.object({}), async () =>
+          POST: action({ input: s.object({}) }, async () =>
             which === "fields" ? err({ code: "keel.fields", message: "f", data: {} }) : err(Boom.make({})),
           ),
         },
@@ -890,7 +894,7 @@ describe("Form", () => {
     const rs = manifest({
       "fn.page": {
         path: "/p",
-        actions: { POST: action(input, async () => ok(null)) },
+        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: "fn.page", error: (e) => el(`err:${e.code}`) }),
       },
     });
@@ -908,7 +912,7 @@ describe("Form", () => {
       "fd.page": {
         path: "/p",
         actions: {
-          POST: action(s.object({}), async () => {
+          POST: action({ input: s.object({}) }, async () => {
             calls.push("run");
             return ok(null);
           }),
@@ -932,8 +936,8 @@ describe("Form", () => {
     const rs = manifest({
       "fr.page": {
         path: "/p",
-        loader: loader(s.object({ n: s.int() }), async () => ok({ n: ++n })),
-        actions: { POST: action(s.object({}), async () => ok(null)) },
+        loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: ++n })),
+        actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
         component: (p) => {
           const out = el("out");
           const f = Form({ method: "POST", action: "fr.page" });
@@ -957,9 +961,9 @@ describe("Form", () => {
     const rs = manifest({
       "fx.page": {
         path: "/p",
-        loader: loader(s.object({}), async () => (fail ? err(Boom.make({})) : ok({}))),
+        loader: loader({ output: s.object({}) }, async () => (fail ? err(Boom.make({})) : ok({}))),
         actions: {
-          POST: action(s.object({}), async () => {
+          POST: action({ input: s.object({}) }, async () => {
             fail = true;
             return ok(null);
           }),
@@ -982,7 +986,7 @@ describe("Form", () => {
       "fz.page": {
         path: "/p",
         actions: {
-          POST: action(s.object({}), async () => {
+          POST: action({ input: s.object({}) }, async () => {
             calls.push("run");
             return ok(null);
           }),

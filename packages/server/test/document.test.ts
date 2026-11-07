@@ -49,10 +49,10 @@ async function build(o: Opts = {}) {
     "app.home": {
       path: "/",
       layout: "app.shell",
-      loader: loader(Page, () => Promise.resolve(ok({ title: o.title ?? "Home" }))),
+      loader: loader({ output: Page }, () => Promise.resolve(ok({ title: o.title ?? "Home" }))),
       actions: {
-        POST: action(Edit, () => ok(null)),
-        PATCH: action(Edit, () => err({ code: "app.locked", message: "locked", data: {} })),
+        POST: action({ input: Edit }, () => ok(null)),
+        PATCH: action({ input: Edit }, () => err({ code: "app.locked", message: "locked", data: {} })),
       },
       guard: "docAuth",
       component: ({ data }) => {

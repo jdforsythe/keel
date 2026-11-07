@@ -134,29 +134,29 @@ const OrderPage = (p: { params: Infer<typeof OrderParams>; search: unknown; data
 
 // ---- loaders, actions, guards (server functions run in the browser for a client-only app)
 const load = (name: string) =>
-  loader(Empty, async () => {
+  loader({ output: Empty }, async () => {
     bump(`loader:${name}`);
     return ok({});
   });
-const loadShell = loader(Title, async () => {
+const loadShell = loader({ output: Title }, async () => {
   bump("loader:orders.shell");
   return ok({ title: "shell" });
 });
-const loadShow = loader(Title, async () => {
+const loadShow = loader({ output: Title }, async () => {
   bump("loader:orders.show");
   return control.show === "err" ? err(Locked.make({})) : ok({ title: "order" });
 });
-const loadBare = loader(Empty, async () => {
+const loadBare = loader({ output: Empty }, async () => {
   bump("loader:orders.bare");
   return err(Broken.make({}));
 });
-const loadSlow = loader(Empty, async () => {
+const loadSlow = loader({ output: Empty }, async () => {
   bump("loader:slow.page");
   await control.hold;
   return ok({});
 });
 const act = (verb: Verb) =>
-  action(OrderEdit, async (input) => {
+  action({ input: OrderEdit }, async (input) => {
     bump(`action:${verb}`);
     control.lastInput = input;
     return control.outcome === "href" ? ok(href("orders.list")) : ok(null);

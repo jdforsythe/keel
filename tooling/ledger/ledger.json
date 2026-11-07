@@ -39,6 +39,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "TodoIdParams",
+      "file": "golden-1:api/TodoIdParams.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "addList",
       "file": "golden-1:api/addList.ts",
       "rung": "probabilistic"
@@ -171,6 +177,18 @@
     },
     {
       "pkg": "golden-1",
+      "name": "ListParams",
+      "file": "golden-1:todos/ListParams.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListSearch",
+      "file": "golden-1:todos/ListSearch.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
       "name": "ListsPage",
       "file": "golden-1:todos/ListsPage.tsx",
       "rung": "none"
@@ -209,6 +227,12 @@
       "pkg": "golden-1",
       "name": "TodoList",
       "file": "golden-1:todos/TodoList.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoParams",
+      "file": "golden-1:todos/TodoParams.schema.ts",
       "rung": "example"
     },
     {
@@ -342,6 +366,12 @@
       "name": "InspectError",
       "file": "inspector:inspector/InspectError.tsx",
       "rung": "example"
+    },
+    {
+      "pkg": "inspector",
+      "name": "InspectSearch",
+      "file": "inspector:inspector/InspectSearch.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "inspector",
@@ -638,6 +668,18 @@
       "rung": "example"
     },
     {
+      "pkg": "schema",
+      "name": "reveal",
+      "file": "packages/schema/src/reveal.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "server",
+      "name": "canUndoOwn",
+      "file": "packages/server/src/canUndoOwn.ts",
+      "rung": "example"
+    },
+    {
       "pkg": "server",
       "name": "createApp",
       "file": "packages/server/src/createApp.ts",
@@ -648,6 +690,12 @@
       "name": "topology",
       "file": "packages/server/src/topology.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "server",
+      "name": "undoOwn",
+      "file": "packages/server/src/undoOwn.ts",
+      "rung": "example"
     },
     {
       "pkg": "services",
@@ -825,7 +873,7 @@
     },
     {
       "item": "k.cli#11",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.compiler#1",
@@ -861,10 +909,26 @@
     },
     {
       "item": "k.compiler#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.compiler#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.compiler#11",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#12",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#13",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#14",
       "rung": "none"
     },
     {
@@ -929,7 +993,7 @@
     },
     {
       "item": "k.forms#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#1",
@@ -993,6 +1057,10 @@
     },
     {
       "item": "k.router#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.router#10",
       "rung": "example"
     },
     {
@@ -1085,7 +1153,15 @@
     },
     {
       "item": "k.server#8",
-      "rung": "none"
+      "rung": "example"
+    },
+    {
+      "item": "k.server#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.server#10",
+      "rung": "example"
     },
     {
       "item": "k.services#1",

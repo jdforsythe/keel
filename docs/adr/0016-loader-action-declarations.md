@@ -1,0 +1,7 @@
+# ADR-0016: Loaders and actions declare their route schemas and get `url` (RFC 0027)
+
+**Status:** accepted
+**Context.** A loader or action is declared in `*.server.ts` before the route that references it, so `fn`'s `params`/`search` could not be inferred and were annotated by hand; d29117a's `RouteFit` only checks that the annotation fits (backlog 0100, red-team 0086). Server code read `location`, which a server lacks.
+**Decision.** `loader({ output, params?, search? }, fn)` and `action({ input, params? }, fn)` take the route's own schema values; `fn` gets `Infer` of them (`NoInfer`, so annotations cannot change them) plus `url`, the absolute request URL. `manifest` throws E1507 when a declared schema is not the route's value. The positional form remains `@deprecated` until conformance fixtures migrate in an `rfc:` PR.
+**Alternatives.** Loaders inside `routes.ts`: breaks the server-file split. A bound `route.loader(fn)` builder: second declaration step, import cycles. Annotation plus fit check: two ways, schema restated as a type. `location` via ctx: `url` is per request.
+**Consequences.** One way to type `params`/`search`; the schema is written once and referenced twice (route and loader), with identity checked at `manifest`. Server code derives origins from `url`. Follow-ups: a `keel check` E1507 rule for annotated `fn` parameters and the positional form; removing the deprecated overload.

@@ -58,7 +58,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const ran = await attempt(() => {
     const mark = markLogs();
     try {
-      return inRequest(r.rq, () => action.run(decoded.value, { params: m.params }, r.sv.ctx));
+      return inRequest(r.rq, () => action.run(decoded.value, { params: m.params, url: r.raw.url }, r.sv.ctx));
     } finally {
       tagSince(mark, r.rq.caller);
     }

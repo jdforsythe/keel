@@ -11,7 +11,7 @@ import { BASE, Edit, Params, Search } from "./fixtures.ts";
 
 async function setup(maxBodyBytes: number | undefined) {
   const n = { act: 0 };
-  const act = action(Edit, () => {
+  const act = action({ input: Edit }, () => {
     n.act++;
     return Promise.resolve(ok(null));
   });

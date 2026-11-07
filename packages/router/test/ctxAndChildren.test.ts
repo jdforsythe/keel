@@ -48,7 +48,7 @@ const formRoutes = (id: string, kids: "thunk" | "plain" | "array" | "text") =>
   manifest({
     [id]: {
       path: `/${id}`,
-      actions: { POST: action(s.object({}), async () => ok(null)) },
+      actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
       component: () => {
         const child = document.createElement("span");
         child.setAttribute("data-x", "kid");

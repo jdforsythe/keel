@@ -98,17 +98,23 @@ describe("inspector.index", () => {
 });
 
 describe("loadInspect", () => {
+  const HERE = "http://inspector.test:5555/?from=1";
+  it("without search.url inspects the origin of the request url, not location (RFC 0027)", async () => {
+    const ctx = simWith("http://inspector.test:5555/__keel/inspect", json(DOC));
+    const r = await loadInspect.run({ params: {}, search: {}, url: HERE }, ctx);
+    expect(r.ok ? r.value.url : r.error).toBe("http://inspector.test:5555");
+  });
   it("returns an Inspection with each store's state as JSON text; network failure is inspector.unreachable", async () => {
     expect(InspectDoc.parse(DOC).ok).toBe(true);
     const ctx = simWith(`${TARGET}/__keel/inspect`, json(DOC));
-    const r = await loadInspect.run({ params: {}, search: { url: TARGET } }, ctx);
+    const r = await loadInspect.run({ params: {}, search: { url: TARGET }, url: HERE }, ctx);
     expect(r.ok && Inspection.parse(r.value).ok).toBe(true);
     expect(r.ok ? r.value.stores["todos.board"]?.state : "").toBe(
       '{"lists":[{"id":"l1","name":"Groceries"}],"todos":[]}',
     );
     const failing = createCtx({ mode: "sim", seed: 1 });
     failing.net.route(`${TARGET}/__keel/inspect`, () => Promise.reject(new TypeError("fetch failed")));
-    const e = await loadInspect.run({ params: {}, search: { url: TARGET } }, failing);
+    const e = await loadInspect.run({ params: {}, search: { url: TARGET }, url: HERE }, failing);
     expect(e.ok ? "" : e.error).toMatchObject({ code: "inspector.unreachable", message: `${TARGET} is unreachable` });
   });
 });

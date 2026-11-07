@@ -1,8 +1,7 @@
-import type { Ctx } from "@keel/ctx";
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { type ApiError, service } from "@keel/services";
-import type { InspectSearch } from "./InspectSearch.schema.ts";
+import { InspectSearch } from "./InspectSearch.schema.ts";
 import { Inspection } from "./Inspection.schema.ts";
 import { inspectApi } from "./inspectApi.service.ts";
 
@@ -16,11 +15,11 @@ const reason = (e: ApiError): string =>
         : "is unreachable";
 
 /**
- * Fetch the inspect document of `search.url` (default: this page's origin, the inspector itself) and shape it for
- * the views. An unreachable target or a bad document is `inspector.unreachable`.
+ * Fetch the inspect document of `search.url` (default: the origin of the request `url`, the inspector itself) and
+ * shape it for the views. An unreachable target or a bad document is `inspector.unreachable`.
  */
-export const loadInspect = loader(Inspection, async ({ search }: { readonly search: InspectSearch }, ctx: Ctx) => {
-  const url = (search.url ?? location.origin).replace(/\/+$/, "");
+export const loadInspect = loader({ output: Inspection, search: InspectSearch }, async ({ search, url: at }, ctx) => {
+  const url = (search.url ?? new URL(at).origin).replace(/\/+$/, "");
   const r = await service({ base: url, schema: inspectApi }).get({}, ctx);
   if (!r.ok) return err({ code: "inspector.unreachable", message: `${url} ${reason(r.error)}`, data: { url } });
   const d = r.value;

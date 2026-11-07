@@ -23,10 +23,10 @@ async function build(format: LogSink["format"], lines: string[]) {
     "orders.show": {
       path: "/orders/:id",
       params: s.object({ id: s.int({ min: 1 }) }),
-      loader: loader(Page, () => Promise.resolve(ok({ title: "T" }))),
+      loader: loader({ output: Page }, () => Promise.resolve(ok({ title: "T" }))),
       actions: {
-        POST: action(Note, () => ok(href("orders.list"))),
-        PUT: action(Note, () => err({ code: "orders.locked", message: "locked", data: {} })),
+        POST: action({ input: Note }, () => ok(href("orders.list"))),
+        PUT: action({ input: Note }, () => err({ code: "orders.locked", message: "locked", data: {} })),
       },
       component: () => document.createElement("p"),
       errorElement: ({ error }) => {
@@ -37,7 +37,7 @@ async function build(format: LogSink["format"], lines: string[]) {
     },
     "orders.bad": {
       path: "/bad",
-      loader: loader(Page, () => Promise.resolve(ok(JSON.parse('{"title":1}')))),
+      loader: loader({ output: Page }, () => Promise.resolve(ok(JSON.parse('{"title":1}')))),
       component: () => document.createElement("p"),
     },
     "orders.deny": { path: "/deny", guard: "logDeny", component: () => document.createElement("p") },
