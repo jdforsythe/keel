@@ -155,7 +155,7 @@
       "pkg": "golden-1",
       "name": "EditTodoPage",
       "file": "golden-1:todos/EditTodoPage.tsx",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
@@ -173,13 +173,13 @@
       "pkg": "golden-1",
       "name": "ListError",
       "file": "golden-1:todos/ListError.tsx",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
       "name": "ListPage",
       "file": "golden-1:todos/ListPage.tsx",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
@@ -191,13 +191,13 @@
       "pkg": "golden-1",
       "name": "ListSearch",
       "file": "golden-1:todos/ListSearch.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
       "name": "ListsPage",
       "file": "golden-1:todos/ListsPage.tsx",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
@@ -383,7 +383,7 @@
       "pkg": "golden-2",
       "name": "ActionReply",
       "file": "golden-2:recipes/ActionReply.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -401,121 +401,121 @@
       "pkg": "golden-2",
       "name": "BoxShell",
       "file": "golden-2:recipes/BoxShell.tsx",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "ErrorReply",
       "file": "golden-2:recipes/ErrorReply.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "FieldsReply",
       "file": "golden-2:recipes/FieldsReply.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "KeelFields",
       "file": "golden-2:recipes/KeelFields.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "NewRecipePage",
       "file": "golden-2:recipes/NewRecipePage.tsx",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "Nothing",
       "file": "golden-2:recipes/Nothing.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "Recipe",
       "file": "golden-2:recipes/Recipe.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "RecipeDraft",
       "file": "golden-2:recipes/RecipeDraft.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "RecipeError",
       "file": "golden-2:recipes/RecipeError.tsx",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
       "name": "RecipeList",
       "file": "golden-2:recipes/RecipeList.tsx",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
       "name": "RecipePage",
       "file": "golden-2:recipes/RecipePage.tsx",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "RecipeParams",
       "file": "golden-2:recipes/RecipeParams.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "RecipeSearch",
       "file": "golden-2:recipes/RecipeSearch.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "cook",
       "file": "golden-2:recipes/cook.guard.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "createRecipe",
       "file": "golden-2:recipes/createRecipe.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "favoriteRecipe",
       "file": "golden-2:recipes/favoriteRecipe.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "kitchen",
       "file": "golden-2:recipes/kitchen.service.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "kitchenApi",
       "file": "golden-2:recipes/kitchenApi.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "loadIndex",
       "file": "golden-2:recipes/loadIndex.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
       "name": "loadRecipe",
       "file": "golden-2:recipes/loadRecipe.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "inspector",
@@ -956,6 +956,24 @@
       "rung": "probabilistic"
     },
     {
+      "pkg": "std-sessions",
+      "name": "record",
+      "file": "packages/std-sessions/src/record.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-sessions",
+      "name": "replay",
+      "file": "packages/std-sessions/src/replay.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-sessions",
+      "name": "session",
+      "file": "packages/std-sessions/src/session.ts",
+      "rung": "none"
+    },
+    {
       "pkg": "std-timings",
       "name": "time",
       "file": "packages/std-timings/src/time.ts",
@@ -1081,6 +1099,10 @@
     },
     {
       "item": "k.check#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.check#10",
       "rung": "example"
     },
     {
@@ -1425,6 +1447,10 @@
     },
     {
       "item": "k.module#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.module#12",
       "rung": "example"
     },
     {

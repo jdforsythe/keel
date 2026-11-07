@@ -13,8 +13,7 @@ const codes = (src: string, path: string) =>
 const IMP = `import { s } from "@keel/schema";\nimport type { Infer } from "@keel/schema";\n`;
 const HEAD = `${IMP}export const Props = s.object({});\n`;
 const USES = `export const uses = [];\n`;
-const typed = (n: string) =>
-  `export default function ${n}(props: Infer<typeof Props>) { return null; }\n`;
+const typed = (n: string) => `export default function ${n}(props: Infer<typeof Props>) { return null; }\n`;
 const forms: Record<string, (n: string) => string> = {
   declaration: (n) => `${HEAD}${USES}${typed(n)}`,
   "const then default": (n) =>

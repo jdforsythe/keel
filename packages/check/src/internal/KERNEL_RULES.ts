@@ -6,6 +6,7 @@ import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noCodeFromString } from "../rules/noCodeFromString.ts";
 import { noDomGlobal } from "../rules/noDomGlobal.ts";
 import { noDomQueryInTest } from "../rules/noDomQueryInTest.ts";
+import { noEagerChild } from "../rules/noEagerChild.ts";
 import { noInlineStyle } from "../rules/noInlineStyle.ts";
 import { noIntrinsicElement } from "../rules/noIntrinsicElement.ts";
 import { noNetFetchInApp } from "../rules/noNetFetchInApp.ts";
@@ -46,6 +47,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noUnsafeSyntax,
   noInlineStyle,
   noIntrinsicElement,
+  noEagerChild,
   lowContrast,
   resourceViaMatch,
   noRuntimeOpImport,

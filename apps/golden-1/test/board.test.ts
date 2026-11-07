@@ -1,3 +1,5 @@
+// routes.ts first: the *.server.ts modules import it back (E1505 cycle otherwise).
+import "../modules/todos/routes.ts";
 import { type Ctx, createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { service } from "@keel/services";
@@ -31,7 +33,6 @@ import { updateTodo } from "../modules/todos/updateTodo.server.ts";
 import { view } from "../modules/todos/view.ts";
 import { at, boardOf } from "./at.ts";
 import { readBoard, resetApi, seedBoard, simApi } from "./simApi.ts";
-import "../modules/todos/routes.ts";
 
 const shown = view.snapshot();
 afterEach(() => {

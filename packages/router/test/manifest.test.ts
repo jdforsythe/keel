@@ -51,6 +51,19 @@ describe("manifest validation", () => {
     expect(attach({ "v7.b": { PUT: save } })).toBe("E1505");
   });
 
+  it("E1505 for an action value that is undefined, a plain object or a string; nothing attaches (backlog 0191)", () => {
+    const m = manifest({ "v11.a": { path: "/v11", component: view }, "v11.b": { path: "/v11b", component: view } });
+    const attach = (arg: unknown) => codeOf(() => Reflect.apply(m.actions, m, [arg]));
+    expect(attach({ "v11.b": { POST: save }, "v11.a": { POST: undefined } })).toBe("E1505");
+    expect(attach({ "v11.a": { POST: {} } })).toBe("E1505");
+    expect(attach({ "v11.a": { POST: "save" } })).toBe("E1505");
+    const noInput = { kind: "keel.action", run: () => ok(null) };
+    expect(attach({ "v11.a": { POST: noInput } })).toBe("E1505");
+    expect(attach({ "v11.a": { POST: new Proxy(noInput, {}) } })).toBe("E1505");
+    expect(attach({ "v11.b": { POST: save } })).toBeUndefined();
+    expect(attach({ "v11.a": { POST: save } })).toBeUndefined();
+  });
+
   it("E1505 for routes.actions after createRouter compiled the entries (backlog 0183)", () => {
     const m = manifest({ "v10.a": { path: "/v10", component: view } });
     const router = createRouter(m, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/v10") });

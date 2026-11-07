@@ -1,4 +1,5 @@
 import { INSPECT_PATH } from "../inspect/INSPECT_PATH.ts";
+import type { StdData } from "../types/StdData.ts";
 
 // Specifiers of the generated client entry. It is app code that runs in the browser; the compiler itself
 // never imports these packages (they are later in tooling/deps.json).
@@ -8,18 +9,22 @@ const RUNTIME = "@keel/runtime-dom";
 const REACTIVE = "@keel/reactive";
 const STORE = "@keel/store";
 const SECTIONS = "@keel/compiler/inspect/inspectorSections";
+const BIND_STD = "@keel/compiler/std/bindStd";
 
 const q = (s: string): string => JSON.stringify(s);
 
 /**
  * The generated `/@keel/entry.ts` of a `client` deployable (k.server Topology, k.runtime): imports the atomic
  * CSS, builds a real ctx, merges the modules' route manifests (`routesFiles`, root-relative, `/`-prefixed),
- * starts the router on the browser history, and mounts its `App` into `#app` with the ctx. In a dev build
+ * binds `std` (the client-readable part of the build's `std.json`, embedded as a JSON literal; nothing when empty) to the ctx
+ * (k.module Std config, rfc:0069), starts the router on the browser history, and mounts its `App` into `#app` with
+ * the ctx. In a dev build
  * (`import.meta.env.DEV`) it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports.
  */
-export function entryCode(routesFiles: readonly string[], cssId: string): string {
+export function entryCode(routesFiles: readonly string[], cssId: string, std: StdData = {}): string {
+  const bind = Object.keys(std).length > 0;
   const imports = routesFiles.map((f, i) => `import { routes as __keelRoutes${i} } from ${q(f)};`);
   const names = routesFiles.map((_, i) => `__keelRoutes${i}`);
   const table =
@@ -32,8 +37,10 @@ export function entryCode(routesFiles: readonly string[], cssId: string): string
     `import { inspect } from ${q(REACTIVE)};`,
     `import { stores } from ${q(STORE)};`,
     `import { inspectorSections } from ${q(SECTIONS)};`,
+    ...(bind ? [`import { bindStd } from ${q(BIND_STD)};`] : []),
     ...imports,
     `const ctx = createCtx({ mode: "real" });`,
+    ...(bind ? [`bindStd(ctx, ${JSON.stringify(std)});`] : []),
     `const router = createRouter(${table}, { ctx, history: browserHistory() });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,

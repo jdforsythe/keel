@@ -535,6 +535,13 @@ const ROWS: readonly Row[] = [
     "use only the closed groups with valid values",
     "k.ui",
   ],
+  [
+    "E1808",
+    "base element children made eagerly, not a thunk",
+    "An eager child is made before its parent and claims its server node at resume (E1253).",
+    "children: Input({ label }) -> children: () => Input({ label })",
+    "k.ui",
+  ],
   ["E1901", "input inside a <Form> without field", "", "bind the input to a form path with field(path)", "k.forms"],
   [
     "E1902",

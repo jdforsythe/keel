@@ -16,6 +16,7 @@ import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
+import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
 import { stdArtifact } from "./stdArtifact.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
@@ -64,7 +65,8 @@ type BuildConfig = {
  * `topology.ts` statically (E1004 exemption for `client` deployables), and evaluates `tokens.ts` and the
  * deployable's `modules/<id>/routes.ts` to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
  * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
- * `client` one by name: the `mount` entry for a `client` deployable, else the resume entry, whose island components
+ * `client` one by name: the `mount` entry for a `client` deployable (binding the client-readable part of `std.json`,
+ * `clientStdData`, reloaded when a manifest changes; rfc:0069), else the resume entry, whose island components
  * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046). A `vite build` whose `KEEL_DEPLOYABLE`
  * is a `node` deployable builds that entry alone (input `entry`) into `dist/<name>/` with hashed `assets/` and the
  * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), and writes no `.keel/` artifacts (the project's own build
@@ -300,6 +302,7 @@ export default function (): {
       return entryCode(
         routesFiles().map((f) => `/${f}`),
         CSS_IMPORT,
+        clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
       );
     },
     transform(code, id) {
@@ -323,6 +326,9 @@ export default function (): {
           .then((bad) => {
             for (const b of bad) warn(`keel: ${b}`);
             flush();
+            // A `client` entry embeds std.json (rfc:0069): reload it with the new config.
+            const entry = server?.moduleGraph.getModuleById(ENTRY_PATH);
+            if (server !== undefined && entry !== undefined) return server.reloadModule(entry);
           })
           .catch((e: unknown) => warn(`keel: ${e instanceof Error ? e.message : String(e)}`));
       }

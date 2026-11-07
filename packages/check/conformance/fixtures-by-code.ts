@@ -460,6 +460,12 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("C.tsx", `${UI}export default function C() { return <Box><h2>Orders</h2></Box> }\n`)],
     clean: [f("C.tsx", `${UI}export default function C() { return <Box>Orders</Box> }\n`)],
   },
+  E1808: {
+    bad: [f("C.ts", `${UI}export default function C() { return Box({ children: Text({ children: "x" }) }) }\n`)],
+    clean: [
+      f("C.ts", `${UI}export default function C() { return Box({ children: () => Text({ children: "x" }) }) }\n`),
+    ],
+  },
   E1806: {
     opts: NO_TYPES,
     bad: [

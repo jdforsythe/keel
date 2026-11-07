@@ -279,4 +279,17 @@ describe(`k.router: ${CLAUSE} (E1505)`, () => {
     expect(thrown).toBeInstanceOf(Error);
     expect(thrown instanceof Error && "code" in thrown ? thrown.code : "no-code").toBe("E1505");
   });
+
+  it(`${CLAUSE} routes.actions with a value that is not an action throws E1505`, () => {
+    const m = manifest({ "e.two": { path: "/e2", component: page } });
+    for (const bad of [undefined, {}, "x", { kind: "keel.action", run: () => ok(null) }]) {
+      let thrown: unknown = null;
+      try {
+        Reflect.apply(m.actions, m, [{ "e.two": { POST: bad } }]);
+      } catch (e) {
+        thrown = e;
+      }
+      expect(thrown instanceof Error && "code" in thrown ? thrown.code : "no-code").toBe("E1505");
+    }
+  });
 });

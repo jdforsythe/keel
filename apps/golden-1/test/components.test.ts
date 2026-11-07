@@ -1,19 +1,32 @@
+// routes.ts first: the pages import it back (E1505 cycle otherwise).
+import "../modules/todos/routes.ts";
 import { createCtx } from "@keel/ctx";
 import { service } from "@keel/services";
-import { properties, render } from "@keel/testing";
+import { type A11yNode, properties, render, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import AppShell from "../modules/todos/AppShell.tsx";
 import EditTodoPage from "../modules/todos/EditTodoPage.tsx";
 import ListError from "../modules/todos/ListError.tsx";
 import ListPage from "../modules/todos/ListPage.tsx";
+import { ListSearch } from "../modules/todos/ListSearch.schema.ts";
 import ListsPage from "../modules/todos/ListsPage.tsx";
 import Suggestions from "../modules/todos/Suggestions.tsx";
 import TodoRow from "../modules/todos/TodoRow.tsx";
+import { routes } from "../modules/todos/routes.ts";
 import { suggestions } from "../modules/todos/suggestions.service.ts";
 import { view } from "../modules/todos/view.ts";
 import { boardOf } from "./at.ts";
-import { resetApi, seedBoard, simApi } from "./simApi.ts";
-import "../modules/todos/routes.ts";
+import { readBoard, resetApi, seedBoard, simApi } from "./simApi.ts";
+
+/** Id of the control (not a button) whose accessible name is `name`. */
+function controlId(nodes: readonly A11yNode[], name: string): string {
+  for (const n of nodes) {
+    if (n.name === name && n.role !== "button") return n.id;
+    const inner = controlId(n.children, name);
+    if (inner !== "") return inner;
+  }
+  return "";
+}
 
 const shown = view.snapshot();
 afterEach(() => {
@@ -117,5 +130,114 @@ describe("suggestions", () => {
     const r = await service({ base: location.origin, schema: suggestions }).list({}, ctx);
     expect(r.ok && r.value.results["api.suggestions"].value).toEqual([{ title: "Milk" }]);
     expect(accepts).toEqual(["application/json"]);
+  });
+});
+
+const eggs = { id: "t2", listId: "l1", title: "Eggs", priority: "low", done: false };
+
+describe("ListsPage", () => {
+  it("shows each list with its open count and a link to it", () => {
+    const value = { lists: [L], todos: [milk, { ...milk, id: "t2", done: false }], canUndo: false };
+    const t = render(ListsPage, { props: {}, state: [[view, value]] });
+    expect(t.find("todos.lists.title").text).toBe("Lists");
+    expect(t.find("todos.listLink.l1").name).toBe("Home");
+    expect(t.find("todos.openCount.l1").text).toBe("1 open");
+    t.dispose();
+  });
+  it("shows no list rows for an empty board", () => {
+    const t = render(ListsPage, { props: {} });
+    expect(t.find("todos.lists.items").text).toBe("");
+    t.dispose();
+  });
+});
+
+describe("ListPage", () => {
+  const props = (filter?: "all" | "active" | "done") => ({
+    params: { listId: "l1" },
+    search: filter === undefined ? {} : { filter },
+    data: L,
+  });
+  const state = [[view, { lists: [L], todos: [milk, eggs], canUndo: false }]] as const;
+  it("shows the list name and its filter links", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    ctx.net.route(SUGGESTIONS, () => served([]));
+    const t = render(ListPage, { props: props(), state, ctx });
+    expect(t.find("todos.list.title").text).toBe("Home");
+    expect(t.find("todos.filter.done").name).toBe("Done");
+    await t.settle();
+    t.dispose();
+  });
+  it("shows only the done todos under the done filter", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    ctx.net.route(SUGGESTIONS, () => served([]));
+    const t = render(ListPage, { props: props("done"), state, ctx });
+    expect(t.find("todos.items").text).toContain("Milk");
+    expect(t.find("todos.items").text).not.toContain("Eggs");
+    await t.settle();
+    t.dispose();
+  });
+  it("an invalid add-todo posts nothing and a valid one posts to the api", async () => {
+    await seedBoard(boardOf({ lists: [L], todos: [milk] }));
+    const { ctx, sent } = await simApi();
+    const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
+    await r.fire("todos.addTodo", { type: "click" });
+    expect(sent.filter((x) => x.startsWith("POST"))).toEqual([]);
+    const id = controlId(r.a11y(), "Title");
+    await r.fire(id, { type: "input", value: "Bread" });
+    await r.fire("todos.addTodo", { type: "click" });
+    expect(sent.filter((x) => x.startsWith("POST"))).toEqual(["POST /api/lists/l1/todos"]);
+    r.dispose();
+  });
+});
+
+describe("EditTodoPage", () => {
+  it("shows the heading and the todo's title in the form", () => {
+    const t = render(EditTodoPage, {
+      props: { params: { listId: "l1", todoId: "t1" }, data: milk },
+    });
+    expect(t.find("todos.edit.title").text).toBe("Edit todo");
+    expect(t.find("todos.save").name).toBe("Save");
+    t.dispose();
+  });
+  it("binds the todo's title and priority into the form controls", () => {
+    const t = render(EditTodoPage, { props: { params: { listId: "l1", todoId: "t1" }, data: milk } });
+    const title = t.find(controlId(t.a11y(), "Title"));
+    const priority = t.find(controlId(t.a11y(), "Priority"));
+    expect(title).toMatchObject({ role: "textbox", name: "Title" });
+    expect(priority).toMatchObject({ role: "combobox", name: "Priority", text: "LowNormalHigh" });
+    t.dispose();
+  });
+});
+
+describe("EditTodoPage inside its route", () => {
+  it("submitting untouched sends the bound title and priority to the api", async () => {
+    await seedBoard(boardOf({ lists: [L], todos: [milk] }));
+    const { ctx, sent } = await simApi();
+    const r = await renderRoute("todos.edit", { routes, params: { listId: "l1", todoId: "t1" }, ctx });
+    await r.fire("todos.save", { type: "click" });
+    expect(sent.filter((x) => x.startsWith("POST"))).toEqual(["POST /api/todos/t1"]);
+    expect((await readBoard()).todos[0]).toMatchObject({ title: "Milk", priority: "high" });
+    r.dispose();
+  });
+});
+
+describe("ListError", () => {
+  it("names the code, the message and links home", () => {
+    const t = render(ListError, { props: { error: { code: "keel.notFound", message: "No list nope" } } });
+    expect(t.find("todos.error.title").text).toBe("Not found");
+    expect(t.find("todos.error.message").text).toBe("No list nope");
+    expect(t.find("todos.error.home").name).toBe("Back to lists");
+    t.dispose();
+  });
+  it("holds its properties", async () => {
+    await properties(ListError, { runs: 100, seed: 1337 });
+  });
+});
+
+describe("ListSearch", () => {
+  it("accepts a filter or none and rejects any other", () => {
+    expect(ListSearch.parse({}).ok).toBe(true);
+    expect(ListSearch.parse({ filter: "done" }).ok).toBe(true);
+    expect(ListSearch.parse({ filter: "later" }).ok).toBe(false);
   });
 });

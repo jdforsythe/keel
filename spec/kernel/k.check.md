@@ -35,7 +35,7 @@ Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule t
 
 **Conformance.**
 - Every E code in a kernel section's Rules or in `reportedCodes()` has an `explain` entry of at most 120 tokens. Each one `check()` reports (`reportedCodes()`) has a fixture that triggers exactly that code (E1756: a registered rule that throws); each other Rules code comes from another command and a conformance test of its own package asserts it (outside comments and test titles).
-- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), and E1805 carry one; RFC 0035 lists why the others cannot.
+- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot.
 - The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits.
 - `check()` never evaluates app code: a module that throws at top level yields only static diagnostics.
 - Two runs on an unchanged tree produce identical output.
@@ -43,3 +43,4 @@ Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule t
 - `--code E1501` emits only E1501 diagnostics while the summary counts every code.
 - Registering one code twice reports E1753; a rule that throws reports E1756 and other rules' diagnostics still appear.
 - A tree with only W diagnostics exits 0.
+- A base element given `children: Input(...)`, also through an aliased import, in an array, or held by a `const`, reports E1808; a thunk, a string or `props.children` does not.

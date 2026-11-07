@@ -1,5 +1,5 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
-// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), and E1805 carry one; RFC 0035 lists why the others cannot."
+// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
 // Spec: k.module, Rules, "No fix edits a file under `node_modules/`."
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -225,6 +225,12 @@ const FIXED: FixedCase[] = [
     files: [f("C.tsx", `${UI}export default function C() { return <Box><h2>Orders</h2></Box> }\n`)],
     opts: {},
   },
+  {
+    name: "E1808",
+    code: "E1808",
+    files: [f("C.ts", `${UI}export default function C() { return Box({ children: Text({ children: "x" }) }) }\n`)],
+    opts: {},
+  },
 ];
 
 test("a genuine compiler artifact is clean, and its re-indented copy is the E1005 bytes-only fixture", () => {
@@ -267,6 +273,7 @@ const FIX = [
   "E1757",
   "E1805",
   "E1806",
+  "E1808",
 ];
 const NO_FIX = [
   "E1000", // a syntax error has no unique repair
