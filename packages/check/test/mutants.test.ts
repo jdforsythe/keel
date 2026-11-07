@@ -2957,10 +2957,31 @@ describe("project passes", () => {
           ],
         }),
       ),
-      block("intact", E("E1005", [f(".keel/routes.json", okFile)])),
+      block("intact", E("E1005", [f(".keel/routes.json", hashed({}))])),
+      block("forged: data changed, hash recomputed", E("E1005", [f(".keel/routes.json", okFile)])),
+      block(
+        "routes manifest: routes.json not derived",
+        E("E1005", [f(".keel/routes.json", okFile), f("modules/m/routes.ts", "export const routes = {}\n")], {
+          types: false,
+        }),
+      ),
+      block("nested dir: self-consistent", E("E1005", [f("apps/a/.keel/routes.json", okFile)])),
+      block(
+        "forged ids.json beside its source",
+        E(
+          "E1005",
+          [
+            f(".keel/ids.json", hashed({})),
+            f("src/C.tsx", 'export default function C() { return <p id="c.p">x</p> }\n'),
+          ],
+          {
+            types: false,
+          },
+        ),
+      ),
       block(
         "non-canonical bytes keep data",
-        E("E1005", [f(".keel/routes.json", `{"hash":"${hashOf({ a: 1 })}","data":{"a":1}}`)]),
+        E("E1005", [f(".keel/routes.json", `{"hash":"${hashOf({})}","data":{}}`)]),
       ),
       block("bad hash", E("E1005", [f(".keel/routes.json", `{"data":{"a":1},"hash":"fnv1a:00000000"}\n`)])),
       block("not json", E("E1005", [f(".keel/routes.json", "nope")])),
@@ -3011,14 +3032,22 @@ describe("project passes", () => {
       p.json:1:1 budget x exceeded: 2 bytes > 1
       # intact
 
+      # forged: data changed, hash recomputed
+      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
+      # routes manifest: routes.json not derived
+
+      # nested dir: self-consistent
+
+      # forged ids.json beside its source
+      .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; regenerate
       # non-canonical bytes keep data
       .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
       --- a/.keel/routes.json
       +++ b/.keel/routes.json
       @@ -1 +1 @@
-      -{"hash":"fnv1a:8b9e4511","data":{"a":1}}
+      -{"hash":"fnv1a:5465b825","data":{}}
       \\ No newline at end of file
-      +{"data":{"a":1},"hash":"fnv1a:8b9e4511"}
+      +{"data":{},"hash":"fnv1a:5465b825"}
       # bad hash
       .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
       # not json
@@ -3034,13 +3063,13 @@ describe("project passes", () => {
       # expected hash matches
 
       # expected hash differs
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
       # expected hash for other name
 
       # hashes null
-
+      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
       # hashes string
-
+      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
       # nested dir
       apps/a/.keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
       # not .keel

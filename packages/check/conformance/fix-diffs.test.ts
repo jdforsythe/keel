@@ -67,20 +67,17 @@ function sortKeys(v: unknown): unknown {
 
 /** A genuine `deps.json` produced by compile(), re-indented: data and hash intact, bytes differ from canonical. */
 function reindentedArtifact(): { canonical: Files; edited: Files } {
-  const r = compile([
-    {
-      path: "C.tsx",
-      source: `${UI}export default function C(props) { return <Text>{props.a}</Text> }\n`,
-    },
-  ]);
+  // The source travels with its artifact: E1005 compares the artifact with what the sources compile to (rfc:0050).
+  const source = f("C.tsx", `${UI}export default function C(props) { return <Text>{props.a}</Text> }\n`);
+  const r = compile([source]);
   const data = r.artifacts["deps.json"];
   const hash = r.hashes["deps.json"];
   const canonical = `${JSON.stringify({ data: sortKeys(data), hash })}\n`;
   const edited = `${JSON.stringify({ data: sortKeys(data), hash }, null, 2)}\n`;
   expect(edited).not.toBe(canonical);
   return {
-    canonical: [f(".keel/deps.json", canonical)],
-    edited: [f(".keel/deps.json", edited)],
+    canonical: [f(".keel/deps.json", canonical), source],
+    edited: [f(".keel/deps.json", edited), source],
   };
 }
 

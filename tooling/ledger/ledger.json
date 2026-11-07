@@ -693,6 +693,12 @@
     },
     {
       "pkg": "compiler",
+      "name": "artifactHashes",
+      "file": "packages/compiler/src/artifactHashes.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "compiler",
       "name": "compile",
       "file": "packages/compiler/src/compile.ts",
       "rung": "probabilistic"
@@ -1161,6 +1167,10 @@
     },
     {
       "item": "k.compiler#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.compiler#15",
       "rung": "example"
     },
     {

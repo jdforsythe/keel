@@ -47,8 +47,14 @@ async function build(): Promise<File[]> {
     .map((name) => ({ path: `.keel/${name}`, source: fs.readFileSync(path.join(root, ".keel", name), "utf8") }));
 }
 
+// `keel check` reads the sources with the artifacts: E1005 compares each artifact with what they compile to (rfc:0050).
+const SOURCES: File[] = [
+  { path: "src/Badge.tsx", source: BADGE },
+  { path: "src/Cart.tsx", source: CART },
+];
+
 const e1005 = (files: File[]): string[] =>
-  check(files)
+  check([...files, ...SOURCES], { types: false })
     .diagnostics.filter((d) => d.code === "E1005")
     .map((d) => d.path);
 

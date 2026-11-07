@@ -8,7 +8,7 @@ import { summary } from "./summary.ts";
 
 /**
  * `keel check [paths]`: k.check diagnostics over the code files and `.keel/*.json` artifacts under `paths` (a
- * tampered artifact is E1005, rfc:0037), then a summary that counts every code (`--code` filters display only).
+ * tampered, forged, or stale artifact is E1005, rfc:0037, rfc:0050), then a summary that counts every code (`--code` filters display only).
  */
 export function checkCommand(input: Input, io: Io): OutRecord[] {
   const files = codeFiles(io, input.paths, true);

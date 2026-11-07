@@ -13,7 +13,7 @@ const BAD = {
 };
 
 describe("build", () => {
-  it("counts only app sources: no tests, no *.config.* files, nothing under .keel/", () => {
+  it("counts only app sources (isSourcePath): no tests or test dirs, no *.config.*, no dot dirs", () => {
     const files = [
       ok("src/A.ts", "A"),
       ok("src/B.test.ts", "B"),
@@ -27,13 +27,45 @@ describe("build", () => {
       ok("src/K.configs.ts", "K"),
       ok("src/.keel/H.ts", "H"),
       ok("config.ts", "Cfg"),
+      ok("test/fixtures/W.tsx", "W2"),
+      ok("conformance/c.ts", "C"),
     ];
     const o = buildCommand({ cwd: CWD, files });
+    // src/A.ts, src/K.configs.ts, config.ts
     expect(o.records.at(-1)).toMatchObject({
       kind: "summary",
       name: "build",
-      counts: { files: 5, artifacts: 4, errors: expect.any(Number) },
+      counts: { files: 3, artifacts: 4, errors: expect.any(Number) },
     });
+  });
+
+  it("keel build then keel check: no E1005 with ids in test/fixtures and a *.config.ts (backlog 0142)", async () => {
+    const files = [
+      {
+        path: "modules/app/Home.tsx",
+        source: 'export default function Home() { return <h1 id="home.title">Hi</h1> }\n',
+      },
+      {
+        path: "test/fixtures/Widget.tsx",
+        source: 'export default function Widget() { return <h1 id="fixture.title">W</h1> }\n',
+      },
+      { path: "tools.config.ts", source: "export default {}\n" },
+      { path: "vite.config.tsx", source: 'export const x = <p id="cfg.p">c</p>\n' },
+    ];
+    const built = buildCommand({ cwd: CWD, files });
+    expect(built.writes.length).toBe(4);
+    const artifacts = built.writes.map((w) => ({ path: w.path, source: w.content ?? "" }));
+    const ids = artifacts.find((a) => a.path === ".keel/ids.json")?.source ?? "";
+    expect(ids).toContain("home.title");
+    expect(ids).not.toContain("fixture.title");
+    const r = await run(["check", "--format=json"], { cwd: CWD, files: [...files, ...artifacts] });
+    expect(r.stdout).not.toContain("E1005");
+    // and the stale case still holds: a source edit after the build is E1005
+    const moved = files.map((f) =>
+      f.path === "modules/app/Home.tsx" ? { ...f, source: f.source.replace('id="home.title"', 'id="home.t2"') } : f,
+    );
+    const stale = await run(["check", "--format=json"], { cwd: CWD, files: [...moved, ...artifacts] });
+    expect(stale.stdout).toContain("E1005");
   });
 
   it("a root-level config file and a project with only tests contribute no files", () => {

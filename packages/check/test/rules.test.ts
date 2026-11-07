@@ -241,12 +241,12 @@ describe("kernel rules", () => {
   });
 
   it("E1005: a .keel/ artifact whose bytes or hash differ from what the compiler writes", () => {
-    const data = { "C.0": { col: 1 } };
-    const good = `{"data":{"C.0":{"col":1}},"hash":"${hashOf(data)}"}\n`;
+    // No sources: the compiler's ids.json is `{}` (rfc:0050).
+    const good = `{"data":{},"hash":"${hashOf({})}"}\n`;
     const codes = (source: string, artifacts = {}) =>
       check([f(".keel/ids.json", source)], { artifacts }).diagnostics.map((d) => d.code);
     expect(codes(good)).toEqual([]);
-    expect(codes(good.replace('"col":1', '"col":2'))).toEqual(["E1005"]);
+    expect(codes(good.replace('"data":{}', '"data":{"C.0":{"col":1}}'))).toEqual(["E1005"]);
     expect(codes(good, { hashes: { "ids.json": "fnv1a:00000000" } })).toEqual(["E1005"]);
     const spaced = good.replace('{"data"', '{ "data"');
     const d = check([f(".keel/ids.json", spaced)], {}).diagnostics;

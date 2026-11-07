@@ -1,8 +1,7 @@
-import { compile } from "@keel/compiler";
+import { compile, isSourcePath } from "@keel/compiler";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { Outcome } from "./Outcome.ts";
-import { TEST_FILE } from "./TEST_FILE.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { makeDiag } from "./makeDiag.ts";
@@ -14,14 +13,12 @@ import { summary } from "./summary.ts";
 const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const;
 
 /**
- * `keel build`: compile every app source (no tests, no `*.config.*`) with `@keel/compiler`. Diagnostics flow
- * through unchanged; with no error, the `.keel/` artifacts (`{ data, hash }`, sorted keys, read-only) are
- * returned as writes. Bundling is Vite's: the binary runs `vite build` when `vite.config.ts` exists.
+ * `keel build`: compile every app source (`isSourcePath`, the rule the Vite plugin and `keel check` share,
+ * rfc:0050) with `@keel/compiler`. Diagnostics flow through unchanged; with no error, the `.keel/` artifacts
+ * (`{ data, hash }`, sorted keys, read-only) are returned as writes. Bundling is Vite's: the binary runs `vite build` when `vite.config.ts` exists.
  */
 export function buildCommand(io: Io): Outcome {
-  const files = codeFiles(io, undefined).filter(
-    (f) => !TEST_FILE.test(f.path) && !/(^|\/)[^/]*\.config\.[cm]?[jt]s$/.test(f.path) && !f.path.startsWith(".keel/"),
-  );
+  const files = codeFiles(io, undefined).filter((f) => isSourcePath(f.path));
   const topology = projectTopology(projectFiles(io));
   const r = compile(files, topology === undefined ? {} : { topology });
   const diags: OutRecord[] = r.diagnostics.map((d) =>

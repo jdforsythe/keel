@@ -54,6 +54,10 @@ describe("listSources (mutation)", () => {
       "src/node_modules/q.ts",
       "src/tests/q.ts",
       "notest.ts",
+      "vite.config.ts",
+      "src/x.config.tsx",
+      "src/y.configs.ts",
+      "types.d.mts",
     ])
       touch(f);
     expect(listSources(root)).toEqual([
@@ -68,6 +72,7 @@ describe("listSources (mutation)", () => {
       "notest.ts",
       "src/deep/y.ts",
       "src/deep/z.ts",
+      "src/y.configs.ts",
     ]);
   });
 

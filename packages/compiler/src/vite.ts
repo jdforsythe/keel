@@ -10,6 +10,7 @@ import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { hashOf } from "./internal/hashOf.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
+import { isSourcePath } from "./internal/isSourcePath.ts";
 import { islandsCode } from "./internal/islandsCode.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
@@ -159,7 +160,8 @@ export default function (): {
   };
 
   const flush = (): { id: string; file: string }[] => {
-    const keys = [...modules.keys()].sort();
+    // Only app sources feed the artifacts, by the rule `keel build` and `keel check` share (rfc:0050).
+    const keys = [...modules.keys()].filter(isSourcePath).sort();
     const parts: Artifacts[] = [];
     for (const k of keys) {
       const e = modules.get(k);

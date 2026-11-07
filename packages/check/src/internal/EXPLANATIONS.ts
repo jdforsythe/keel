@@ -39,7 +39,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1005",
-    "hand edit to generated output (.keel/, turbo.json, CI workflows, Dockerfiles, API schemas)",
+    "hand edit to generated output (.keel/, turbo.json, CI workflows, Dockerfiles, API schemas), or a .keel/ file older than its sources",
     "",
     "revert the file and regenerate",
     "k.compiler",
