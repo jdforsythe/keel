@@ -27,7 +27,6 @@ function lowerCamel(r: Result<Manifest, SchemaError>): Result<Manifest, SchemaEr
 export const ModuleSchema: ObjectSchema<Manifest> = {
   ...shape,
   parse: (input) => lowerCamel(shape.parse(input)),
-  decode: (json) => lowerCamel(shape.decode(json)),
   decodeStrings: (input) => lowerCamel(shape.decodeStrings(input)),
   encode(value) {
     const r = lowerCamel(shape.parse(value));

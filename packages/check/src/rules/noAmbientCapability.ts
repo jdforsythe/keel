@@ -12,8 +12,9 @@ import type { RuleDef } from "../types/RuleDef.ts";
 const CALLS: ReadonlyMap<string, string> = new Map([
   ["Date.now", "ctx.clock.now()"],
   ["Math.random", "ctx.random.float()"],
-  ["crypto.randomUUID", "ctx.random.uuid()"],
 ]);
+/** Called path -> ctx replacement named in the message only: no exact rewrite (the brand is the author's). */
+const HINTS: ReadonlyMap<string, string> = new Map([["crypto.randomUUID", "ctx.random.id(brand)"]]);
 /** Called path -> ctx replacement for the callee only (arguments kept). */
 const CALLEES: ReadonlyMap<string, string> = new Map([
   ["localStorage.getItem", "ctx.storage.get"],
@@ -104,7 +105,7 @@ export const noAmbientCapability: RuleDef = {
           return hit(c.start, `${spelled(c, p)}()`, n.start, n.end, whole);
         const callee = CALLEES.get(name);
         if (callee !== undefined) return hit(c.start, spelled(c, p), c.start, c.end, callee);
-        if (AMBIENT.has(name)) hit(c.start, spelled(c, p), -1, -1, "");
+        if (AMBIENT.has(name)) hit(c.start, spelled(c, p), -1, -1, HINTS.get(name) ?? "");
         else if (STORAGE.has(p[0] ?? "") && p.length > 1) hit(c.start, spelled(c, p, 1), -1, -1, "");
       },
       NewExpression: (n) => {

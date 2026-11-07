@@ -126,7 +126,7 @@ describe("@keel/compiler/vite project inputs", () => {
     const topo = write("topology.ts", `export default topology({ web: { modules: ["todos"], adapter: "static" } });\n`);
     p.watchChange(topo, { event: "update" });
     expect(() => p.transform(ROUTES, file)).toThrow(/^E1004 modules\/todos\/routes.ts/);
-    await expect(p.load("/@keel/entry.ts")).rejects.toThrow(/adapter 'client'/);
+    await expect(p.load("/@keel/entry.ts")).rejects.toThrow(/needs a client deployable/);
   });
 
   it("warns about unknown tokens and still emits the CSS of the known ones", { timeout: 30000 }, async () => {

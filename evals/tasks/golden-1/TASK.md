@@ -15,7 +15,7 @@ The reference app (`apps/golden-1`) keeps its data behind an API: a second deplo
 
 ## Model
 - Store `todos.board` in `board.ts`: `Board { lists: TodoList[], todos: Todo[] }`, initially empty. `invariant` beside it: ids unique, every `todo.listId` names a list.
-- Transactions `todos.addList`, `todos.addTodo`, `todos.toggleTodo`, `todos.editTodo`: pure; new ids arrive in the payload (actions mint them with `ctx.random.uuid()` and call `tx`; actions are exempt from E1301). A component calling `tx` exports `uses = [...]` beside `Props` (`TodoRow`: `toggleTodo`). Each keeps the invariant for every generated payload: an unknown or duplicate id returns the state unchanged.
+- Transactions `todos.addList`, `todos.addTodo`, `todos.toggleTodo`, `todos.editTodo`: pure; new ids arrive in the payload (actions mint them with `ctx.random.id(brand)` and call `tx`; actions are exempt from E1301). A component calling `tx` exports `uses = [...]` beside `Props` (`TodoRow`: `toggleTodo`). Each keeps the invariant for every generated payload: an unknown or duplicate id returns the state unchanged.
 - Form schemas: `ListDraft { name: string 1-60 }`, `TodoDraft { title: string 1-120, priority: low|normal|high }`. POST actions `createList`, `createTodo`, `updateTodo`; `updateTodo` returns `keel.fields` `{ title }` when the title duplicates another todo in the list.
 - UI: base elements only, style props from tokens, a11y-required props, explicit ids on every element a test touches.
 

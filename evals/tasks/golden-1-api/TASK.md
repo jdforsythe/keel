@@ -18,7 +18,7 @@ Build `apps/golden-1/`: the todo app of the client-only brief, but the data live
   - `api.todoToggle`: POST `/api/todos/:todoId/toggle`.
   - `api.undo`: POST `/api/undo` (`board.undo()`, empty log is a no-op).
   - `api.suggestions`: GET `/api/suggestions` (fixed titles).
-- `server.ts`: `createApp({ topology, routes, ctx, deployable: 'api', expose: [board], log })` with `@hono/node-server`, port from `KEEL_API_PORT` (default 4181); script `api`. `vite.config.ts` proxies `/api` to it in dev and preview.
+- `server.ts`: `createApp({ topology, routes, ctx, deployable: 'api', log })` with `@hono/node-server`, port from `KEEL_API_PORT` (default 4181); script `api`. `vite.config.ts` proxies `/api` to it in dev and preview.
 - `todos`: a `@keel/services` client for all six endpoints (built at call time, base `location.origin`; `Suggestions` calls it with its `ctx`, never `ctx.net.fetch`); a view store `todos.view` changed only by one transaction `todos.hydrate` (replaces the state); loaders re-read the board (`GET /api/lists`) and hydrate, then pick by id; route actions post through the client and return `ok(null)` (revalidation re-reads) or `ok(href)`; the edit action passes the api's 422 `keel.fields` on to the Form. Components that cannot revalidate (`TodoRow` toggle, `AppShell` Undo) write then re-read via a `syncAfter(ctx, write)` helper.
 
 ## Files (exactly these)

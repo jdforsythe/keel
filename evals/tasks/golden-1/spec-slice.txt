@@ -6,7 +6,7 @@ k.schema
 - import { s, ok, err, attempt, type Result } from '@keel/schema'
 - s.string({ min, max }) s.number() s.int() s.boolean() s.literal() s.enum([...]) s.id('Brand') s.object({...}) s.array(T) s.union (discriminated) s.record
 - .optional() = key may be absent; .nullable() = value may be null; distinct (E1102)
-- type T = s.infer<typeof T>; T.parse(x): Result<T, SchemaError>; T.encode/decode; T.gen() fast-check arbitrary
+- type T = s.infer<typeof T>; T.parse(x): Result<T, SchemaError> (also parses T.encode output; no decode); T.encode; T.gen() fast-check arbitrary
 - schemas live only in *.schema.ts (E1104)
 
 k.errors
@@ -29,7 +29,7 @@ k.store
 - component declares uses (k.component); calling an undeclared tx from a component is E1301; loaders and actions are unrestricted
 
 k.ctx
-- ctx.clock.now() ctx.random.uuid()/float() ctx.random.id(brand) (branded id) ctx.net.fetch(req) ctx.storage.get/set
+- ctx.clock.now() ctx.random.float() ctx.random.id(brand) (branded uuid; the only way to mint ids/tokens) ctx.net.fetch(req) ctx.storage.get/set
 - createCtx({ mode: 'sim', seed }) -> SimCtx with net.route(pattern, (req) => Response), clock.advance(ms)
 - Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
 - resources fetch with `new Request(new URL('/api/x', location.href))` (relative URLs throw)
@@ -54,7 +54,7 @@ k.router
 - href(id, params?, search?) -> Href; Link to, navigate, URL attrs take Href only (E1501)
 - guard(name, { redirect: routeId }, async ({ url }, ctx) => ok(null) | err(keel.denied)); file *.guard.ts
 - route() computed { id, params, search, pending }; navigate(href, { replace? })
-- <Form method action params? form? loading? error?> from '@keel/router'; ok(href) navigates; ok(null) revalidates
+- <Form method action form? error?> (action: routes.href(id, params)) (pending: f.pending(), no loading slot) from '@keel/router'; ok(href) navigates; ok(null) revalidates
 - client-only app: router runs guards, loaders, actions in the browser
 - rules E1501-E1506 (Href, duplicate path, params/path mismatch, required search field, bad verb, unknown guard/layout)
 
@@ -65,14 +65,14 @@ k.server (declarations used client-only)
 
 k.forms
 - const f = form(TodoDraft, { initial? }); f.field('title') f.values() f.errors() f.pending() f.reset()
-- <Form method="POST" action="todos.list" params={...} form={f} error={(e) => <Text>{e.message}</Text>}><Input field={f.field('title')} label="Title" /><Button type="submit" label="Add" /></Form>
+- <Form method="POST" action={routes.href('todos.list', { listId })} form={f} error={(e) => <Text>{e.message}</Text>}><Input field={f.field('title')} label="Title" /><Button type="submit">Add</Button></Form>
 - invalid submit: no request, field errors set, first invalid field focused
 - action err keel.fields { [path]: message } sets exactly those errors; other err renders error slot
 
 k.ui
 - tokens.ts: export const tokens = defineTokens({ color: { fg: { light, dark }, bg: {...}, accent, danger }, space, radius, font, fontSize, ... })
 - base elements from '@keel/ui': Box Text Heading Button Link Image Input TextArea Select Checkbox
-- required: Heading level; Image alt|decorative; label on Input/TextArea/Select/Checkbox; Link to: Href with text; Button text or label
+- required: Heading level; Image alt|decorative; label on Input/TextArea/Select/Checkbox; Link to: Href with text; Button text as children (no label); style props are the only styling (no class, no styles())
 - event props: Button onClick, Checkbox onChange, Input onInput, Select onChange
 - Box as / Text as: section nav main ul li p span ...
 - style props take token names: p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap; states={{ hover, focusVisible, active, disabled }}

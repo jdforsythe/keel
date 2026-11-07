@@ -88,6 +88,13 @@ const ROWS: readonly Row[] = [
     "k.cli",
   ],
   [
+    "E1057",
+    "inspector section id registered twice, or a section that throws or fails its schema",
+    "A section's read gets the app ctx; its value must fit its schema.",
+    "inspector({ id: 'orders.recent', schema: Recent, read: (ctx) => recent(ctx) }) once per id",
+    "k.cli",
+  ],
+  [
     "E1104",
     "schema declared outside a *.schema.ts file",
     "One declaration per data shape, at one address.",
@@ -170,6 +177,13 @@ const ROWS: readonly Row[] = [
     "resource consumed without Match",
     "A resource is loading, error, or ready; each state renders.",
     '<Match on={r}><Case tag="ready">...</Case>...</Match>',
+    "k.reactive",
+  ],
+  [
+    "E1205",
+    "read of a computed whose scope is disposed",
+    "",
+    "read it only while its owning scope is live",
     "k.reactive",
   ],
   ["E1206", "scope.run on a disposed scope", "", "create nodes only while the scope is live", "k.reactive"],

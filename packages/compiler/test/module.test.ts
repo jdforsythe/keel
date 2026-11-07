@@ -26,10 +26,9 @@ describe("module", () => {
 });
 
 describe("ModuleSchema", () => {
-  it("applies the lowerCamel id rule on parse, decode, and encode alike", () => {
+  it("applies the lowerCamel id rule on parse and encode alike", () => {
     const bad = { ...def, id: "to-dos" };
-    expect(ModuleSchema.decode(bad).ok).toBe(false);
-    expect(ModuleSchema.decode(def).ok).toBe(true);
+    expect(ModuleSchema.parse(def).ok).toBe(true);
     const r = ModuleSchema.parse(bad);
     expect(r.ok ? [] : r.error.data.issues).toEqual([{ path: ["id"], rule: "type" }]);
     expect(r.ok ? "" : r.error.message).toContain("lowerCamel");

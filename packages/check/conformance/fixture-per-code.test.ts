@@ -14,7 +14,9 @@ const range = (p: string, a: number, b: number): string[] =>
 export const EXPLAIN_ONLY: readonly string[] = [
   ...range("E", 1051, 1054),
   "E1056",
+  "E1057",
   ...range("E", 1201, 1203),
+  "E1205",
   "E1206",
   "E1253",
   ...range("E", 1351, 1354),

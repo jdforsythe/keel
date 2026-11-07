@@ -273,7 +273,9 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   },
   E1601: {
     bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],
-    clean: [f("src/id.ts", "export const id = (ctx: { random: { uuid(): string } }) => ctx.random.uuid()\n")],
+    clean: [
+      f("src/id.ts", "export const id = (ctx: { random: { id(brand: string): string } }) => ctx.random.id('Order')\n"),
+    ],
   },
   E1701: {
     bad: [f("test/cart.test.ts", "const el = document.querySelector('#total')\nvoid el\n")],
@@ -349,7 +351,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   },
   E1802: {
     bad: [f("C.tsx", `${UI}export default function C() { return <Button /> }\n`)],
-    clean: [f("C.tsx", `${UI}export default function C() { return <Button label="Save">x</Button> }\n`)],
+    clean: [f("C.tsx", `${UI}export default function C() { return <Button>Save</Button> }\n`)],
   },
   E1803: {
     opts: NO_TYPES,

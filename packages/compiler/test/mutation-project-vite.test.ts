@@ -5,6 +5,7 @@ import type { AddressInfo } from "node:net";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { RESUME_ENTRY } from "../src/entry/RESUME_ENTRY.ts";
 import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { entryCode } from "../src/internal/entryCode.ts";
 import { hashOf } from "../src/internal/hashOf.ts";
@@ -390,17 +391,15 @@ describe("vite: project inputs", () => {
     process.env.KEEL_DEPLOYABLE = "zeta";
     expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/z/routes.ts"], "virtual:keel.css"));
     process.env.KEEL_DEPLOYABLE = "api";
-    await expect(p.load("/@keel/entry.ts")).rejects.toThrow(
-      "keel: /@keel/entry.ts needs a deployable with adapter 'client' in topology.ts",
-    );
+    expect(await p.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
     process.env.KEEL_DEPLOYABLE = "nope";
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(
-      "keel: /@keel/entry.ts needs a deployable with adapter 'client' in topology.ts",
+      "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one",
     );
   });
 
   it("refuses the entry without a topology or without a client deployable", async () => {
-    const msg = "keel: /@keel/entry.ts needs a deployable with adapter 'client' in topology.ts";
+    const msg = "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one";
     const p = keel();
     p.configResolved({ root });
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(msg);

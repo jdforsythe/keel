@@ -16,6 +16,10 @@
       "types": "./src/a11y/index.ts",
       "default": "./src/a11y/index.ts"
     },
+    "./entry/*": {
+      "types": "./src/entry/*.ts",
+      "default": "./src/entry/*.ts"
+    },
     "./inspect/*": {
       "types": "./src/inspect/*.ts",
       "default": "./src/inspect/*.ts"
@@ -34,6 +38,7 @@
     "mutate": "stryker run"
   },
   "dependencies": {
+    "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",

@@ -7,7 +7,7 @@ import { nodeAt } from "./nodeAt.ts";
 
 /** `@keel/ui` base elements and their a11y-required props (k.ui), reported as E1802 when missing. */
 const A11Y: ReadonlyMap<string, readonly string[]> = new Map([
-  ["Button", ["children", "label"]],
+  ["Button", ["children"]],
   ["Checkbox", ["label"]],
   ["Heading", ["level"]],
   ["Image", ["alt", "decorative"]],

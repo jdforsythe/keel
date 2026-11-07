@@ -492,12 +492,7 @@ describe("E1601 noAmbientCapability", () => {
       -export const t = () => Math.random()
       +export const t = () => ctx.random.float()
       # randomUUID
-      1:24 crypto.randomUUID() outside ctx; use ctx.random.uuid()
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1 +1 @@
-      -export const t = () => crypto.randomUUID()
-      +export const t = () => ctx.random.uuid()
+      1:24 crypto.randomUUID outside ctx; use ctx.random.id(brand)
       # new Date()
       1:24 new Date() outside ctx; use new Date(ctx.clock.now())
       --- a/src/a.ts
@@ -3263,9 +3258,9 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
       "# button missing
-      E1802 2:39 <Button> is missing a11y-required prop label
+      E1802 2:39 <Button> is missing a11y-required prop children
       # button label
-
+      E1751 2:53 TS2322 Type '{ id: string; label: string; }' is not assignable to type 'StyleValues<Co...
       # checkbox
       E1802 2:39 <Checkbox> is missing a11y-required prop label
       # heading

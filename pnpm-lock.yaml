@@ -256,6 +256,9 @@ importers:
 
   packages/compiler:
     dependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
@@ -512,6 +515,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/forms':
         specifier: workspace:*
         version: link:../forms

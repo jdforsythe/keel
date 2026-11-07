@@ -1,11 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import { compile } from "./compile.ts";
+import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
+import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
+import { RESUME_ENTRY } from "./entry/RESUME_ENTRY.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { hashOf } from "./internal/hashOf.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
+import { islandsCode } from "./internal/islandsCode.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
@@ -22,8 +26,6 @@ const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
 const CSS_IMPORT = "virtual:keel.css";
 const CSS_ID = "/__keel.css";
-/** The generated client entry; scaffold's `index.html` loads `<script type="module" src="/@keel/entry.ts">`. */
-const ENTRY_ID = "/@keel/entry.ts";
 /** Files whose change can alter the CSS or `routes.json` beyond one module's own usages. */
 const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
 
@@ -46,8 +48,9 @@ type Warn = (message: string) => void;
  * Project inputs (D24-D25): `buildStart` compiles every app source once (style usages for the CSS), reads
  * `topology.ts` statically (E1004 exemption for `client` deployables), and evaluates `tokens.ts` and the
  * deployable's `modules/<id>/routes.ts` to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
- * For a `client` deployable (`KEEL_DEPLOYABLE` picks one by name, else the first by name) it serves the
- * generated entry at `/@keel/entry.ts`.
+ * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
+ * `client` one by name: the `mount` entry for a `client` deployable, else the resume entry, whose island components
+ * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046).
  *
  * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
  * stores the open page's dev entry last posted, to the server's own origin and those `KEEL_INSPECT_ORIGINS` lists.
@@ -224,7 +227,7 @@ export default function (): {
     },
     resolveId(id) {
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
-      if (id === ENTRY_ID) return ENTRY_ID;
+      if (id === ENTRY_PATH || id === ISLANDS_PATH) return id;
       return null;
     },
     async load(id) {
@@ -232,10 +235,15 @@ export default function (): {
         if (stale) await refresh();
         return css;
       }
-      if (id !== ENTRY_ID) return null;
+      if (id === ISLANDS_PATH)
+        return islandsCode(
+          routesFiles().map((f) => ({ path: f, source: fs.readFileSync(path.join(root, f), "utf8") })),
+        );
+      if (id !== ENTRY_PATH) return null;
       const d = deployable();
-      if (d === undefined || !d.client)
-        throw new Error(`keel: ${ENTRY_ID} needs a deployable with adapter 'client' in topology.ts`);
+      if (d === undefined)
+        throw new Error(`keel: ${ENTRY_PATH} needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one`);
+      if (!d.client) return RESUME_ENTRY;
       return entryCode(
         routesFiles().map((f) => `/${f}`),
         CSS_IMPORT,

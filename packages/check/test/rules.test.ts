@@ -97,8 +97,8 @@ const CASES: Case[] = [
   },
   {
     code: "E1601",
-    bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],
-    clean: [f("src/id.ts", "export const id = (ctx: { random: { uuid(): string } }) => ctx.random.uuid()\n")],
+    bad: [f("src/roll.ts", "export const roll = () => Math.random()\n")],
+    clean: [f("src/roll.ts", "export const roll = (ctx: { random: { float(): number } }) => ctx.random.float()\n")],
     fix: true,
   },
   {
