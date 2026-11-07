@@ -1,4 +1,4 @@
-import type { Level } from "@keel/router";
+import type { Level } from "@keel/router/internal";
 import { type JsonValue, type KeelError, attempt } from "@keel/schema";
 import type { ChainInput } from "./ChainInput.ts";
 import type { Rendered } from "./Rendered.ts";

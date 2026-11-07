@@ -16,7 +16,7 @@ dispose()
 **Islands and resume (ADR-0006).** The compiler marks a component instance as an island when its subtree has an event handler, an `effect`, or a read of client-writable state; everything else is static HTML and ships no JS. Marking is static and best effort by name within a file (like `deps.json`): an element is bound when it has an `on` binding or a binding whose expression reads a `signal`, `computed`, or `resource` declared in the file or calls `.get`/`.select` (a store or signal read); every root element of a component that calls `effect` is bound. The compiler writes `data-k="<elementId>"` into the template of each bound element, so an island is a component instance whose element subtree has a `data-k` element (RFC 0037). The server emits:
 - `data-k="<elementId>"` on every bound element (from the template);
 - `data-k-island="<componentId>"` on each island root (a k.server route level whose returned element has a `data-k` element outside nested islands, keyed by route id);
-- `<script type="module" src="/@keel/entry.ts">` (the generated entry; it calls `resume`) only when the page has an island;
+- `<script type="module" src="/@keel/entry.ts">` only when the page has an island: the generated resume entry, which `createApp` serves and Vite resolves (dev server; `vite build` of the deployable). It imports `components` from `/@keel/islands.ts`, which the Vite plugin generates from the deployable's `routes.ts` files (each route's imported `component`, by route id; static, best effort), and calls `resume(document.body, components, { ctx: createCtx({ mode: 'real' }), stores })` with the registered stores (RFC 0046);
 - one `<script type="application/json" id="k-state">` with store snapshots (k.store) and island props, encoded by their schema codecs.
 
 Resume restores stores from the snapshot, finds bound nodes by `data-k`, attaches bindings and delegated handlers, and neither re-renders nor re-runs loaders. All islands resume at load; events fired before resume are queued and replayed in order.
@@ -31,6 +31,7 @@ Resume restores stores from the snapshot, finds bound nodes by `data-k`, attache
 - After resume, every server-rendered node keeps its identity, `state()` equals the serialized snapshot, and firing an event by id yields the same state and DOM as a client-only render.
 - A page with no islands loads no runtime JS: its document has no `<script type="module">`, `data-k`, or `data-k-island`; a page with an event handler has all three, and `resume` attaches the handler to the server nodes.
 - An event fired before its island resumes is applied exactly once after resume.
+- A `createApp` document with an island loads a module script whose URL answers 200 JavaScript that calls `resume`.
 - A handler on an inner element runs before one on its ancestor; `stopPropagation` in the inner handler prevents the outer one.
 - `mount` `onError` receives the error the root boundary rendered.
 - `attr(el, 'x', fn)` removes `x` when `fn` returns `false` and restores it when `fn` returns a string again.

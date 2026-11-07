@@ -1,3 +1,4 @@
+import type { StyleUsage } from "@keel/compiler";
 import { className } from "../internal/className.ts";
 import { states } from "../internal/states.ts";
 import { styleProps } from "../internal/styleProps.ts";
@@ -5,7 +6,6 @@ import { tokenGroups } from "../internal/tokenGroups.ts";
 import { varName } from "../internal/varName.ts";
 import { vocabulary } from "../internal/vocabulary.ts";
 import type { StyleState } from "../types/StyleState.ts";
-import type { StyleUsage } from "../types/StyleUsage.ts";
 import type { Tokens } from "../types/Tokens.ts";
 
 type Rule = {
