@@ -1,4 +1,4 @@
-import { type Op, type ScaffoldDiag, plan, scaffold } from "@keel/scaffold";
+import { type Op, type ScaffoldDiag, scaffold } from "@keel/scaffold";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
@@ -26,9 +26,9 @@ const refusal = (d: ScaffoldDiag): OutRecord[] => [
 ];
 
 /**
- * `keel scaffold <op> ...` / `keel codemod <op> ...` over `io.files` through `@keel/scaffold` (`--dry-run` ->
- * `plan`). The edit set comes back as `scaffold.edit` records (unified diffs under `--dry-run`) plus writes for
- * the binary; a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
+ * `keel scaffold <op> ...` / `keel codemod <op> ...` over `io.files` through `@keel/scaffold`, which is pure, so
+ * `--dry-run` only skips the writes (RFC 0045). The edit set comes back as `scaffold.edit` records (unified diffs
+ * under `--dry-run`) plus writes for the binary; a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
  * `--kind` tries component then schema (PascalCase) or store then route (dotted), first one that finds `from`.
  */
 export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: Io): Outcome {
@@ -47,7 +47,6 @@ export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: 
   }
   const files = new Map(projectFiles(io).map((f) => [f.path, f.source]));
   const dry = input["dry-run"] === true;
-  const call = dry ? plan : scaffold;
   const generated = op === "service" ? openapiInput(input.args?.[0], input, io.cwd, files) : undefined;
   if (generated !== undefined && !generated.ok)
     return { records: [generated.diag, summary(`${name} ${op}`, [generated.diag], {})], writes: [] };
@@ -57,10 +56,10 @@ export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: 
     op === "rename" && input.kind === undefined
       ? (RENAME_KINDS[/^[A-Z]/.test(from) ? "pascal" : "dotted"] ?? [])
       : [undefined];
-  let result = call(op, kinds[0] === undefined ? base : { ...base, kind: kinds[0] }, files);
+  let result = scaffold(op, kinds[0] === undefined ? base : { ...base, kind: kinds[0] }, files);
   for (const k of kinds.slice(1)) {
     if (result.ok || result.error.data.code !== "E1052") break;
-    result = call(op, { ...base, kind: k }, files);
+    result = scaffold(op, { ...base, kind: k }, files);
   }
   const label = `${name} ${op}`;
   if (!result.ok) {

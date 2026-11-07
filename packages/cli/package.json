@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing/respond.ts",
+      "default": "./src/testing/respond.ts"
     }
   },
   "bin": {

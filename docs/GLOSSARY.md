@@ -16,7 +16,7 @@ Canonical names. Changing one requires an RFC.
 - **rung** — proven, exhaustive, probabilistic, example, monitored.
 - **conformance suite** — the executable, implementation-independent form of a spec section.
 - **spec status** — proposed -> implemented -> conformance-covered -> frozen.
-- **extension point** — schema type registry, check rule registry, capability registry, module manifest, inspector hooks, output formatter registry.
+- **extension point** — schema type registry, check rule registry, capability registry, module manifest, inspector hooks (`inspector({ id, schema, read })`: a named, schema-typed section of the inspect document), output formatter registry.
 - **unsafe** — the only named path around a guarantee; requires a justification string; counted in the ledger.
 - **diagnostic** — the one output shape for every error, warning, and finding (see OUTPUT.md).
 

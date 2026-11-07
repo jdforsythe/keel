@@ -9,6 +9,8 @@ import InspectError from "../modules/inspector/InspectError.tsx";
 import InspectorPage from "../modules/inspector/InspectorPage.tsx";
 import { LogEntry } from "../modules/inspector/LogEntry.schema.ts";
 import { RouteEntry } from "../modules/inspector/RouteEntry.schema.ts";
+import { SectionView } from "../modules/inspector/SectionView.schema.ts";
+import SectionsView from "../modules/inspector/SectionsView.tsx";
 import { StoreView } from "../modules/inspector/StoreView.schema.ts";
 import StoresView from "../modules/inspector/StoresView.tsx";
 import { inspectApi } from "../modules/inspector/inspectApi.service.ts";
@@ -118,6 +120,40 @@ describe("IdsView", () => {
   });
 });
 
+describe("SectionsView", () => {
+  it("renders each section generically: id, the schema doc as its type, the value as JSON text or the E1057", () => {
+    const sections = {
+      "orders.recent": { doc: "{ n: int }", text: '{"n":2}', failed: false },
+      "audit.tail": {
+        doc: "string[]",
+        text: "E1057 inspector section audit.tail fails its schema at 0 (type)",
+        failed: true,
+      },
+    };
+    for (const v of Object.values(sections)) expect(SectionView.parse(v).ok).toBe(true);
+    const t = render(SectionsView, { props: { sections } });
+    expect(t.find("inspector.sections.count").text).toBe("2 sections");
+    expect(t.a11y("inspector.sections").children.map((c) => c.id)).toEqual([
+      "inspector.sections.title",
+      "inspector.sections.count",
+      "inspector.section.audit.tail",
+      "inspector.section.orders.recent",
+    ]);
+    expect(t.find("inspector.section.orders.recent.doc").text).toBe("Type: { n: int }");
+    expect(t.find("inspector.section.orders.recent.value").text).toBe('{"n":2}');
+    expect(t.find("inspector.section.audit.tail.value").text).toBe(
+      "Failed: E1057 inspector section audit.tail fails its schema at 0 (type)",
+    );
+    t.dispose();
+  });
+
+  it("with no sections it says so", () => {
+    const t = render(SectionsView, { props: { sections: {} } });
+    expect(t.find("inspector.sections.count").text).toBe("No sections registered");
+    t.dispose();
+  });
+});
+
 describe("InspectorPage", () => {
   it("composes the three views under the target and live line", () => {
     expect(RouteEntry.parse({ path: null, module: "todos" }).ok).toBe(true);
@@ -129,6 +165,7 @@ describe("InspectorPage", () => {
       ids,
       a11y,
       routes: { "todos.index": { path: "/", module: "todos" } },
+      sections: {},
     };
     const t = render(InspectorPage, { props: { search: {}, data } });
     expect(t.find("inspector.title").text).toBe("Inspector: http://localhost:4180");
@@ -139,6 +176,7 @@ describe("InspectorPage", () => {
       "inspector.graph",
       "inspector.stores",
       "inspector.ids",
+      "inspector.sections",
     ]);
     t.dispose();
   });

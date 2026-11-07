@@ -18,8 +18,9 @@ const fail = (why: string, url: string): OutRecord[] => {
 
 /**
  * `keel inspect [url]` (k.cli Inspect): fetch `<url>/__keel/inspect` from a running dev app and summarize it, one
- * `inspect.store` record per store (sorted by id), then counts. Unreachable, non-2xx, or a body that is not an
- * inspect document is E1056. Without `io.fetch` (an in-process engine with no network) it is I1055.
+ * `inspect.store` record per store, then per inspector section (both sorted by id) an `inspect.section` record, or
+ * E1057 for a section the target failed to read or validate, then counts. Unreachable, non-2xx, or a body that is not
+ * an inspect document is E1056. Without `io.fetch` (an in-process engine with no network) it is I1055.
  */
 export async function inspectCommand(input: Input, io: Io): Promise<OutRecord[]> {
   const get = io.fetch;
@@ -47,6 +48,17 @@ export async function inspectCommand(input: Input, io: Io): Promise<OutRecord[]>
     const last = log[log.length - 1]?.name;
     return { kind: "inspect.store", id, entries: log.length, ...(last === undefined ? {} : { last }) };
   });
+  const sections = d.sections ?? {};
+  const sectionIds = Object.keys(sections).sort();
+  for (const id of sectionIds) {
+    const sec = sections[id];
+    if (sec === undefined) continue;
+    records.push(
+      "error" in sec
+        ? makeDiag("E1057", sec.error.replace(/^E1057 /, ""), { see: "k.cli" })
+        : { kind: "inspect.section", id, doc: sec.doc, value: sec.value },
+    );
+  }
   const counts = {
     nodes: d.graph.nodes.length,
     edges: d.graph.edges.length,
@@ -54,6 +66,7 @@ export async function inspectCommand(input: Input, io: Io): Promise<OutRecord[]>
     ids: Object.keys(d.ids).length,
     a11y: Object.keys(d.a11y).length,
     routes: Object.keys(d.routes).length,
+    sections: sectionIds.length,
   };
-  return [...records, summary(d.live ? "inspect live" : "inspect (no live page)", [], counts)];
+  return [...records, summary(d.live ? "inspect live" : "inspect (no live page)", records, counts)];
 }

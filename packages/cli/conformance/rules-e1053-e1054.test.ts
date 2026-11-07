@@ -1,7 +1,8 @@
 // Spec: k.cli Rules E1053 formatter kind registered twice; E1054 record emitted with a kind that has no formatter.
-// E1054 is untestable through the public API: the spec names no way to emit a record of an arbitrary kind.
+// E1054 is driven through `respond` from '@keel/cli/testing' (RFC 0042). Seed 1337.
 // "Registered custom formatter used by name / listed" is untestable: the spec names `formatter(kind, ...)` only, with no lookup or `--format` name selection.
 import { formatter } from "@keel/cli";
+import { respond } from "@keel/cli/testing";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -42,5 +43,34 @@ describe("k.cli E1053", () => {
       const e = reg(kind);
       expect(String(e instanceof Error ? e.message : e)).toContain("E1053");
     }
+  });
+});
+
+describe("k.cli E1054", () => {
+  it("E1054 record emitted with a kind that has no formatter: respond replaces it with a diag E1054, exit code 1", () => {
+    fc.assert(
+      fc.property(fc.stringMatching(/^[a-z]{3,8}\.[a-z]{3,8}$/), (kind) => {
+        seq += 1;
+        const unknown = `${kind}.nf${seq}`;
+        for (const format of ["compact", "json", "pretty"] as const) {
+          const r = respond([{ kind: unknown, id: "x" }], { format });
+          expect(r.code).toBe(1);
+          expect(r.records.some((x) => x.kind === unknown)).toBe(false);
+          expect(r.records.some((x) => x.kind === "diag" && x.code === "E1054")).toBe(true);
+        }
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  });
+
+  it("E1054 control: a record of a kind registered via formatter passes through unchanged, no E1054", () => {
+    seq += 1;
+    const kind = `ctl.report${seq}`;
+    formatter(kind, def);
+    const rec = { kind, id: "a", total: 3 };
+    const r = respond([rec], { format: "json" });
+    expect(r.code).toBe(0);
+    expect(r.records).toEqual([rec]);
+    expect(r.stdout).not.toContain("E1054");
   });
 });

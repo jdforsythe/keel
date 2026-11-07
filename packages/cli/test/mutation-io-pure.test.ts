@@ -582,8 +582,20 @@ describe("kernelFormatters", () => {
       "spec.cite",
       "explain.text",
       "inspect.store",
+      "inspect.section",
       "scaffold.edit",
     ]);
+  });
+
+  it("inspect.section: compact and pretty clip the value's JSON at 120 chars", () => {
+    const rec = { kind: "inspect.section", id: "orders.recent", doc: "{ n: int }", value: { n: 1 } };
+    expect(all("inspect.section", rec)).toEqual([
+      'section orders.recent {"n":1}',
+      'section orders.recent: { n: int }\n  {"n":1}',
+    ]);
+    const long = render("inspect.section", "compact", { ...rec, value: "x".repeat(200) }) ?? "";
+    expect(long).toBe(`section orders.recent "${"x".repeat(116)}...`);
+    expect(render("inspect.section", "json", rec)).toBe(JSON.stringify(rec));
   });
 
   it("a record that does not fit its schema renders as undefined in every mode", () => {

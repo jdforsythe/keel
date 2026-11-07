@@ -39,7 +39,7 @@ describe("keel inspect", () => {
       [
         "app.empty 0 entries",
         "todos.board 1 entries, last todos.addList",
-        "ok inspect live 2 nodes, 1 edges, 2 stores, 1 ids, 1 a11y, 2 routes",
+        "ok inspect live 2 nodes, 1 edges, 2 stores, 1 ids, 1 a11y, 2 routes, 0 sections",
         "",
       ].join("\n"),
     );
@@ -50,7 +50,9 @@ describe("keel inspect", () => {
     const doc = { ...DOC, live: false, graph: { nodes: [], edges: [] }, stores: {} };
     const r = await run(["inspect", "http://localhost:4180//", "--format=compact"], serving(doc, 200, seen));
     expect(seen).toEqual(["http://localhost:4180/__keel/inspect"]);
-    expect(r.stdout).toBe("ok inspect (no live page) 0 nodes, 0 edges, 0 stores, 1 ids, 1 a11y, 2 routes\n");
+    expect(r.stdout).toBe(
+      "ok inspect (no live page) 0 nodes, 0 edges, 0 stores, 1 ids, 1 a11y, 2 routes, 0 sections\n",
+    );
   });
 
   it("json: every line parses, the store records are encoded by their schema, the last is the summary", async () => {
@@ -93,5 +95,25 @@ describe("keel inspect", () => {
     const r = await run(["inspect"], { cwd: CWD });
     expect(r.code).toBe(0);
     expect(r.stdout).toMatch(/^I1055 inspect not available: needs a network/);
+  });
+
+  it("sections (RFC 0042): compact clips each value, an error is E1057 with exit 1; MCP inspect carries the same records", async () => {
+    const sections = {
+      "orders.recent": { doc: "{ n: int }", value: { n: 2 } },
+      "audit.tail": { doc: "string", error: "E1057 inspector section audit.tail read threw: boom" },
+    };
+    const doc = { ...DOC, sections };
+    const r = await run(["inspect", "--format=compact"], serving(doc));
+    expect(r.code).toBe(1);
+    expect(r.stdout).toContain("E1057 inspector section audit.tail read threw: boom");
+    expect(r.stdout).toContain('section orders.recent {"n":2}');
+    expect(r.stdout).toContain("2 sections");
+    const stdin = `${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "inspect", arguments: {} } })}\n`;
+    const m = await run(["mcp"], { ...serving(doc), stdin });
+    const reply: unknown = JSON.parse(m.stdout.trim());
+    const text = JSON.stringify(reply);
+    expect(text).toContain('"kind":"inspect.section","id":"orders.recent"');
+    expect(text).toContain('"code":"E1057"');
+    expect(text).toContain('"isError":true');
   });
 });

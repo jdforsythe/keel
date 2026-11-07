@@ -3,6 +3,7 @@ import { Box, Heading, Text } from "@keel/ui";
 import GraphView from "./GraphView.tsx";
 import IdsView from "./IdsView.tsx";
 import { Inspection } from "./Inspection.schema.ts";
+import SectionsView from "./SectionsView.tsx";
 import StoresView from "./StoresView.tsx";
 
 export const Props = s.object({
@@ -10,7 +11,7 @@ export const Props = s.object({
   data: Inspection,
 });
 
-/** Route `inspector.index`: the inspect document of `?url=` as graph, stores, and ids views. */
+/** Route `inspector.index`: the inspect document of `?url=` as graph, stores, ids, and inspector section views. */
 export default function InspectorPage(props: Infer<typeof Props>) {
   const routes = () => Object.keys(props.data.routes).sort().join(", ");
   return (
@@ -29,6 +30,7 @@ export default function InspectorPage(props: Infer<typeof Props>) {
       <GraphView graph={props.data.graph} />
       <StoresView stores={props.data.stores} />
       <IdsView ids={props.data.ids} a11y={props.data.a11y} />
+      <SectionsView sections={props.data.sections} />
     </Box>
   );
 }

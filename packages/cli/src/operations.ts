@@ -3,6 +3,7 @@ import { A11ySchema } from "./internal/A11ySchema.ts";
 import { CiteSchema } from "./internal/CiteSchema.ts";
 import { EditSchema } from "./internal/EditSchema.ts";
 import { ExplainSchema } from "./internal/ExplainSchema.ts";
+import { InspectSectionSchema } from "./internal/InspectSectionSchema.ts";
 import { InspectStoreSchema } from "./internal/InspectStoreSchema.ts";
 import { LedgerSchema } from "./internal/LedgerSchema.ts";
 import { ReqSchema } from "./internal/ReqSchema.ts";
@@ -90,7 +91,7 @@ export const operations: readonly Operation[] = [
     name: "inspect",
     description: "Summarize GET /__keel/inspect of a running dev app (default http://localhost:5173).",
     input: s.object({ url: s.string().optional(), ...common }),
-    output: outputOf(InspectStoreSchema),
+    output: outputOf(InspectStoreSchema, InspectSectionSchema),
     positional: ["url"],
     scope: "none",
   },

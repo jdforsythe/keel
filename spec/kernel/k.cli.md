@@ -21,7 +21,14 @@ status: conformance-covered
 
 Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting commands also accept `--code <code>`.
 
-**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes }`: `graph` is `inspect()` (k.reactive), `stores` is `{ [id]: { state, log } }` from `stores()` (k.store), and `ids`, `a11y`, `routes` are the `.keel/` artifacts (k.compiler). Node deployables serve it from `createApp` with `mode: 'dev'` (`artifacts` names the `.keel` directory); client-only apps from the compiler plugin's dev and preview servers, where the live half comes from the open page: its dev entry posts `{ graph, stores }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied` (RFC 0022, 0024). `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store and a summary with node, edge, store, id, a11y, and route counts. The viewer is the Keel app `apps/inspector` (route `inspector.index`, search `url`).
+**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` (k.reactive) outside any request scope, `stores` is `{ [id]: { state, log } }` from `stores()` (k.store), and `ids`, `a11y`, `routes` are the `.keel/` artifacts (k.compiler). Node deployables serve it from `createApp` with `mode: 'dev'` (`artifacts` names the `.keel` directory); client-only apps from the compiler plugin's dev and preview servers, where the live half comes from the open page: its dev entry posts `{ graph, stores }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied` (RFC 0022, 0024). `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store, one `inspect.section` per section, and a summary with node, edge, store, id, a11y, route, and section counts. The viewer is the Keel app `apps/inspector` (route `inspector.index`, search `url`).
+
+**Inspector hooks** (extension point, RFC 0042).
+```ts
+import { inspector } from '@keel/compiler/inspect/inspector'
+inspector({ id: 'orders.recent', schema: Recent, read: (ctx) => recent(ctx) })
+```
+Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, also on the dev log). The plugin's document has none (read as `{}`). The viewer renders each from `doc` and `value`.
 
 **Output.** Exactly OUTPUT.md: one data model, three renderings. Default `compact` when stdout is not a TTY or `KEEL_AGENT=1`, else `pretty`. Exit codes: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
 
@@ -30,9 +37,9 @@ Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `-
 import { formatter } from '@keel/cli'
 formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}`, pretty: (r) => table(r) })
 ```
-Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: it is the record encoded by its schema as one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `ledger`, `a11y`.
+Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: it is the record encoded by its schema as one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `ledger`, `a11y`. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
-**Rules.** I1055 command not available in this build (info; exit 0; e.g. `session` before the stdlib module, `scaffold` without `@keel/scaffold`) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document.
+**Rules.** I1055 command not available in this build (info; exit 0; e.g. `session` before the stdlib module, `scaffold` without `@keel/scaffold`) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 
 **Conformance.**
 - For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message).
@@ -46,3 +53,7 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 - `GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the `inspect()` graph; in production mode it is the route table's 404.
 - `keel inspect` against an unreachable url emits E1056 and exits 1.
 - A `POST /__keel/inspect` without `Origin` on a dev `createApp` gets 403 `keel.denied`.
+- A dev `createApp` serves each section as `{ doc, value }`; a value failing its schema is `{ doc, error }` with E1057; a second `inspector` with that id throws E1057.
+- The served `graph` equals `inspect()` taken outside the request.
+- `keel inspect` prints one `inspect.section` per section; an `error` one is E1057, exit 1.
+- `respond` of a record of a kind with no formatter yields E1054.

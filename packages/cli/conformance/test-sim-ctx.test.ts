@@ -29,8 +29,8 @@ it("a ctx created with no options inside the test is sim and seeded", () => {
     simClock: "advance" in a.clock,
     now: a.clock.now(),
     simNet: "route" in a.net,
-    uuids: [a.random.uuid(), a.random.uuid(), a.random.uuid()],
-    again: [b.random.uuid(), b.random.uuid(), b.random.uuid()],
+    uuids: [a.random.id("Probe"), a.random.id("Probe"), a.random.id("Probe")],
+    again: [b.random.id("Probe"), b.random.id("Probe"), b.random.id("Probe")],
     floats: [a.random.float(), a.random.float()],
   };
   writeFileSync(new URL("./observed.json", import.meta.url), JSON.stringify(observed));
@@ -80,7 +80,10 @@ afterAll(() => {
 
 const sim0 = (): { uuids: string[]; floats: number[] } => {
   const c = createCtx({ mode: "sim", seed: 0 });
-  return { uuids: [c.random.uuid(), c.random.uuid(), c.random.uuid()], floats: [c.random.float(), c.random.float()] };
+  return {
+    uuids: [c.random.id("Probe"), c.random.id("Probe"), c.random.id("Probe")],
+    floats: [c.random.float(), c.random.float()],
+  };
 };
 
 describe("k.ctx: `keel test` runs under sim by default", () => {
