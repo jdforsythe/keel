@@ -9,3 +9,4 @@ evals/results/*.tmp
 .stryker-tmp
 packages/*/test/.tmp-*
 packages/*/conformance/.tmp-*
+.fixtures

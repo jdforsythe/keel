@@ -29,7 +29,8 @@
       "coverage/**",
       "tooling/ledger/ledger.json",
       "**/test/.tmp-*/**",
-      "**/conformance/.tmp-*/**"
+      "**/conformance/.tmp-*/**",
+      ".fixtures/**"
     ]
   }
 }
