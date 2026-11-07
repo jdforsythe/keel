@@ -67,10 +67,6 @@ export class ServerElement extends ServerNode {
     this.attrs.delete(name.toLowerCase());
   }
 
-  addEventListener(_type: string, _listener: unknown, _options?: unknown): void {}
-
-  removeEventListener(_type: string, _listener: unknown, _options?: unknown): void {}
-
   getElementById(id: string): ServerElement | null {
     for (const c of this.children) {
       if (c.getAttribute("id") === id) return c;

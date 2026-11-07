@@ -113,6 +113,14 @@ export class ServerNode {
     return false;
   }
 
+  /**
+   * Every node is an event target, as in the DOM; the server never fires events, so listeners are dropped. The
+   * runtime registers listeners on `document` at import and on elements at render (backlog 0128).
+   */
+  addEventListener(_type: string, _listener: unknown, _options?: unknown): void {}
+
+  removeEventListener(_type: string, _listener: unknown, _options?: unknown): void {}
+
   cloneNode(_deep?: boolean): ServerNode {
     return new ServerNode(this.ownerDocument);
   }
