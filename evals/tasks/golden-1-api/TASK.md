@@ -5,18 +5,18 @@ Build `apps/golden-1/`: the todo app of the client-only brief, but the data live
 ## Behavior (UI unchanged)
 - `/` (`todos.index`): lists with open-todo counts; a Form adding a list.
 - `/lists/:listId` (`todos.list`, search `filter`: `all|active|done`, optional): filtered todos, filter links, a Checkbox per todo toggling done, a Form adding a todo, `Suggestions` (`resource`, `Match` on loading, error message, ready titles).
-- `/lists/:listId/todos/:todoId/edit` (`todos.edit`): Form editing a todo; success navigates to `todos.list`. Guard `editable` denies when `ctx.storage` `todos.readOnly` is `"1"`, redirecting to `todos.index`.
+- `/lists/:listId/todos/:todoId/edit` (`todos.edit`): Form editing a todo; success navigates to `todos.list`. Guard `editable` (`guard({ redirect: 'todos.index' }, fn)`, held as `guard: editable`) denies when `ctx.storage` `todos.readOnly` is `"1"`, redirecting to `todos.index`.
 - Unknown `listId`/`todoId`: loader returns `err` `keel.notFound`; `ListError` renders.
 - Layout `todos.shell` (`AppShell`): `main`, home Link, Undo Button (disabled when nothing can be undone).
 
 ## Architecture
-- `api` owns the board: store `api.board` (`Board { lists, todos }`, initially empty) with an `invariant` beside it (ids unique, every `todo.listId` names a list), created in an explicit `scope(() => undefined).run(...)` so `node server.ts` can load it. Pure transactions `api.addList|addTodo|toggleTodo|editTodo` (new ids arrive in the payload; unknown or duplicate id leaves state unchanged).
+- `api` owns the board as server state (k.server, RFC 0044): `board.ts` makes store `api.board` (`Board { lists, todos }`, initially empty) with an `invariant` beside it (ids unique, every `todo.listId` names a list); each transaction file exports a factory binding `api.addList|addTodo|toggleTodo|editTodo` to a board (pure; new ids arrive in the payload, minted with `ctx.random.id`; unknown or duplicate id leaves state unchanged); `boardStores.ts` returns the board and its bound transactions. Every api loader and action declares `stores: boardStores` and records `tx` meta `{ caller }`.
 - Routes, one per path, actions by verb; responses are the k.server runtime `Result` JSON body:
   - `api.lists`: `/api/lists`, GET loader returns `{ lists, todos, canUndo }`; POST creates a list (`ListDraft`).
   - `api.listTodos`: POST `/api/lists/:listId/todos` (`TodoDraft`; unknown list is `keel.notFound`).
   - `api.todo`: POST `/api/todos/:todoId` (edit; a duplicate title in the list is `keel.fields { title }`).
   - `api.todoToggle`: POST `/api/todos/:todoId/toggle`.
-  - `api.undo`: POST `/api/undo` (`board.undo()`, empty log is a no-op).
+  - `api.undo`: POST `/api/undo` (`undoWhere` this caller's last entry; nothing of the caller's is a no-op); `canUndo` is true when the log's last entry is the caller's.
   - `api.suggestions`: GET `/api/suggestions` (fixed titles).
 - `server.ts`: `createApp({ topology, routes, ctx, deployable: 'api', log })` with `@hono/node-server`, port from `KEEL_API_PORT` (default 4181); script `api`. `vite.config.ts` proxies `/api` to it in dev and preview.
 - `todos`: a `@keel/services` client for all six endpoints (built at call time, base `location.origin`; `Suggestions` calls it with its `ctx`, never `ctx.net.fetch`); a view store `todos.view` changed only by one transaction `todos.hydrate` (replaces the state); loaders re-read the board (`GET /api/lists`) and hydrate, then pick by id; route actions post through the client and return `ok(null)` (revalidation re-reads) or `ok(href)`; the edit action passes the api's 422 `keel.fields` on to the Form. Components that cannot revalidate (`TodoRow` toggle, `AppShell` Undo) write then re-read via a `syncAfter(ctx, write)` helper.
@@ -25,11 +25,11 @@ Build `apps/golden-1/`: the todo app of the client-only brief, but the data live
 ```
 apps/golden-1/{package.json,tsconfig.json,vite.config.ts,tokens.ts,topology.ts,server.ts}   package scripts check/test/build/api
 apps/golden-1/modules/api/{module,routes}.ts
-apps/golden-1/modules/api/{board,addList,addTodo,toggleTodo,editTodo,ActionApi,BoardApi,SuggestionsApi}.ts
+apps/golden-1/modules/api/{board,boardStores,addList,addTodo,toggleTodo,editTodo,ActionApi,BoardApi,SuggestionsApi}.ts  and  TodoIdParams.schema.ts
 apps/golden-1/modules/api/{loadBoard,loadSuggestions,postList,postTodo,postEdit,postToggle,postUndo}.server.ts
 apps/golden-1/modules/todos/{module,routes,editable.guard,view,hydrate,refreshView,syncAfter,todosApi}.ts
 apps/golden-1/modules/todos/{todos,suggestions}.service.ts
-apps/golden-1/modules/todos/{TodoList,Todo,Board,BoardView,BoardReply,ActionReply,FieldsReply,ListDraft,TodoDraft,Suggestion,SuggestionsReply}.schema.ts
+apps/golden-1/modules/todos/{TodoList,Todo,Board,BoardView,BoardReply,ActionReply,FieldsReply,ListDraft,TodoDraft,Suggestion,SuggestionsReply,ListParams,ListSearch,TodoParams}.schema.ts
 apps/golden-1/modules/todos/{loadIndex,loadList,loadTodo,createList,createTodo,updateTodo}.server.ts
 apps/golden-1/modules/todos/{AppShell,ListsPage,ListPage,TodoRow,EditTodoPage,ListError,Suggestions}.tsx
 apps/golden-1/test/{api,board,components,routes}.test.ts  and  test/simApi.ts
@@ -43,10 +43,10 @@ apps/golden-1/test/{api,board,components,routes}.test.ts  and  test/simApi.ts
 
 ## Acceptance (checked by `pass.ts`)
 1. Every file above exists.
-2. `pnpm check` clean, budgets included.
+2. `pnpm check` clean, budgets included; `keel check` in `apps/golden-1` (`node ../../packages/cli/src/bin.ts check`) clean (root `check` runs only the app's tsc + biome; its `check.injected10` budget copies `apps/golden-1`, so kernel diagnostics in the app overflow it).
 3. `pnpm test --filter golden-1` green.
-4. `properties(` covers `addList addTodo toggleTodo editTodo hydrate TodoRow Suggestions`; `invariant(` in `api/board.ts`.
-5. Ledger scope `golden-1:`: every item at rung example or better; `pnpm ledger --diff --scope golden-1:` clean.
+4. `properties(` covers `addList addTodo toggleTodo editTodo hydrate TodoRow Suggestions`; `invariant(` in `api/board.ts`; `stores:` in the api `*.server.ts` files.
+5. Ledger scope `golden-1:`: every item at rung example or better; `pnpm ledger --diff --scope golden-1:` clean. Verify with `node packages/cli/src/bin.ts ledger --scope golden-1:`: no item may be at rung `none`; a page or error component reached only through `renderRoute` is not evidence, so `render` it (or call the loader/schema) in a test too.
 6. `unsafe(` count 0; no `any`, casts, `!`, `@ts-ignore`.
 7. `pnpm --filter golden-1 build` green.
 8. Quiet output within `tooling/budgets.json`.

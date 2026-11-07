@@ -1,6 +1,6 @@
 {
   "skill": "keel-forms",
   "maxTokens": 600,
-  "prompt": "How do I build a validated Keel form and show a server-side field error?",
-  "expect": ["form(", "field(", "Form", "keel.fields", "E1901", "decodeStrings"]
+  "prompt": "How do I build a validated Keel form that posts to a route action, renders its pending state, and shows a server-side field error?",
+  "expect": ["form(", "field(", "Form", "routes.href", "pending()", "keel.fields", "E1901", "decodeStrings"]
 }

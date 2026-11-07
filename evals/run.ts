@@ -69,7 +69,8 @@ function run(cmd: string, args: string[]): Promise<Exec> {
 async function callClaude(prompt: string, model: string | undefined): Promise<Usage> {
   const args = ["-p", "--output-format", "json", "--dangerously-skip-permissions", "--max-turns", "60"];
   if (model !== undefined) args.push("--model", model);
-  args.push(prompt);
+  // `--` ends the options: a prompt starting with SKILL.md frontmatter (`---`) is otherwise parsed as an unknown option.
+  args.push("--", prompt);
   const { stdout } = await run("claude", args);
   let parsed: unknown;
   try {

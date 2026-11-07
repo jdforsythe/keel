@@ -1,182 +1,106 @@
-k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.forms k.ui k.testing k.module k.server k.services k.scaffold k.check
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.services k.forms k.ui k.testing k.module k.scaffold k.check
 
-Key lines only. Full text: `pnpm spec <id>`.
+Key lines only (current spec, RFCs through 0046). Full text: `pnpm spec <id>`.
 
 k.schema
 - import { s, ok, err, attempt, type Result } from '@keel/schema'
-- s.string({ min, max }) s.number() s.int() s.boolean() s.literal() s.enum([...]) s.id('Brand') s.object({...}) s.array(T) s.union (discriminated) s.record
-- .optional() = key may be absent; .nullable() = value may be null; distinct (E1102)
-- type T = s.infer<typeof T>; T.parse(x): Result<T, SchemaError> (also parses T.encode output; no decode); T.encode; T.gen() fast-check arbitrary
-- schemas live only in *.schema.ts (E1104)
+- s.string({ min, max }) s.number({ min, max }) s.int({ min, max }) s.boolean() s.literal(v) s.enum([...]) s.id('Brand') s.object({...}) s.array(T) s.union('tag', variants) s.record(T) s.json()
+- .optional() = key may be absent; .nullable() = value may be null; distinct
+- type T = s.infer<typeof T>; T.parse(x): Result<T, SchemaError> (parses JSON from T.encode too; there is no decode); T.decodeStrings(FormData | URLSearchParams); gen(T) from '@keel/schema/gen'
+- schemas live only in *.schema.ts, one export per file
 
 k.errors
-- Result<T,E> = { ok: true, value } | { ok: false, error }; build with ok(v) / err(e); narrow on r.ok
-- KeelError { code, message, data }; kernel codes keel.notFound keel.denied keel.fields keel.unexpected schema.invalid
-- s.error(code, dataSchema) in *.schema.ts; .make(data, message?); app codes prefixed by module id
-- no throw (E1451), no try/catch (E1452, use attempt), no discarded Result (E1453)
+- Result<T,E> = { ok: true, value } | { ok: false, error }; ok(v) / err(e); narrow on r.ok
+- KeelError { code, message, data }; kernel codes keel.notFound keel.denied keel.fields keel.conflict keel.unexpected schema.invalid
+- no throw (E1451), no try/catch or .catch() (E1452, use attempt), no discarded Result (E1453)
 
 k.reactive
-- signal(v), computed(fn), effect(fn, { writes: [] }), resource(fetcher)
-- resource state: { state: 'loading' } | { state: 'error', error } | { state: 'ready', value }; consume only via Match (E1204)
+- signal(v), computed(fn), effect(fn, { writes: [] }), resource(fetcher); resource consumed only via Match (E1204); primitives outside a scope E1203
 
 k.store
-- import { store, transaction, tx, invariant } from '@keel/store'
-- export const board = store(Board, { lists: [], todos: [] }, { id: 'todos.board' })
-- export const addTodo = transaction(board, 'todos.addTodo', s.object({...}), (state, payload) => nextState)  // pure (E1302)
-- invariant(board, (state) => boolean)  // declared once beside the store; violation: err store.invariant, rollback
-- reads board.get('todos'), board.select(fn) (computeds); writes only tx(addTodo, payload)
-- board.log() entries { name, payload, at, id }; board.undo(); board.snapshot(); board.restore(snap)
-- component declares uses (k.component); calling an undeclared tx from a component is E1301; loaders and actions are unrestricted
+- import { store, transaction, tx, invariant, type Store } from '@keel/store'
+- store(Schema, initial, { id: 'todos.board' }); transaction(store, 'todos.addTodo', PayloadSchema, (state, payload) => next) is pure (E1302: no ctx, no globals)
+- invariant(store, (state) => boolean), declared once beside the store; a violating tx returns err store.invariant and rolls back
+- reads store.get(key), store.select(fn); writes only tx(t, payload, { meta }?) -> Result; store.log(), undo(), undoWhere(pred), snapshot(), restore(snap)
+- a component that calls tx exports uses = [t] (E1301 otherwise); loaders and actions are unrestricted
 
 k.ctx
-- ctx.clock.now() ctx.random.float() ctx.random.id(brand) (branded uuid; the only way to mint ids/tokens) ctx.net.fetch(req) ctx.storage.get/set
-- createCtx({ mode: 'sim', seed }) -> SimCtx with net.route(pattern, (req) => Response), clock.advance(ms)
+- ctx.clock.now() ctx.random.float() ctx.random.id(brand) (the only way to mint ids) ctx.net.fetch(req) ctx.storage.get(key)/set(key, v) (async)
+- createCtx({ mode: 'sim' | 'real', seed? }) from '@keel/ctx'; sim: net.route(urlPattern, (req) => Response | Promise<Response>), clock.advance(ms)
 - Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
-- resources fetch with `new Request(new URL('/api/x', location.href))` (relative URLs throw)
-- ctx.net.fetch in app code is E1651: declare an endpoint (k.services) and call the client with ctx
 
 k.component
-- one default export per file, filename = name; export const Props = s.object(...)
-- (props: Props, slots?, ctx?: Ctx) => JSX; ctx comes from the mount/island root or harness render; the only way a component reaches an effect; resource fetchers close over it
-- a file may also export `export const uses = [toggleTodo]`; the compiler calls uses(...) in the component scope
-- props are getters, never destructure (E1401)
-- <If when>, <For each key="id">, <Match on={union}><Case tag="...">; {a && <b/>} is E1403
-- ids: explicit id="todos.add" or derived <file>.<index>; duplicates E1404
+- one default export per file, filename = name: (props, slots?, ctx?) => JSX; export const Props = s.object(...)
+- props are getters, never destructure (E1401); <If when>, <For each key="id">, <Match on={union}><Case tag>; {a && <b/>} is E1403
+- explicit ids on everything a test touches (id="todos.addTodo", id={`todos.row.${t.id}`}); duplicates E1404
 
 k.runtime
-- import { If, For, Match, Case, Boundary } from '@keel/runtime-dom'; mount is generated entry only
-- no document/window/DOM APIs in app code (E1252)
+- import { If, For, Match, Case } from '@keel/runtime-dom'; mount is the generated entry only; no document/window in app code (E1252)
 
 k.router
-- manifest({ 'todos.shell': { component, layout? }, 'todos.list': { path: '/lists/:listId', params: s.object({ listId: s.id('TodoList') }), search: s.object({ filter: s.enum([...]).optional() }), loader, actions: { POST: createTodo }, component, layout: 'todos.shell', guard: 'editable', errorElement } })
-- entry without path = layout; its component renders a children slot
-- component receives { params, search, data }; errorElement receives { error: KeelError }
-- href(id, params?, search?) -> Href; Link to, navigate, URL attrs take Href only (E1501)
-- guard(name, { redirect: routeId }, async ({ url }, ctx) => ok(null) | err(keel.denied)); file *.guard.ts
-- route() computed { id, params, search, pending }; navigate(href, { replace? })
-- <Form method action form? error?> (action: routes.href(id, params)) (pending: f.pending(), no loading slot) from '@keel/router'; ok(href) navigates; ok(null) revalidates
-- client-only app: router runs guards, loaders, actions in the browser
-- rules E1501-E1506 (Href, duplicate path, params/path mismatch, required search field, bad verb, unknown guard/layout)
+- import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
+- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, actions: { POST: updateTodo }, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } })
+- entry without path = layout, renders {props.children?.()}; a static segment beats :param
+- component receives { params, search, data } (data = loader ok value); errorElement receives { error: KeelError }
+- links: routes.href(id, params?, search?) -> Href, typed by the manifest; Link to, navigate, Form action take Href only (E1501)
+- guards: export const editable = guard({ redirect: 'todos.index' }, async ({ url }, ctx) => ok(null) | err({ code: 'keel.denied', message, data: null })); file *.guard.ts; the route holds the value (guard: editable)
+- route() { id, params, search, pending }; navigate(href, { replace? })
+- <Form method="POST" action={routes.href(...)} form? error?>: ok(href) navigates, ok(null) revalidates the chain's loaders
+- client deployable: the router runs guards, loaders and actions in the browser; it refuses `stores`
+- E1502 duplicate path, E1503 :param without params field, E1504 required search field, E1505 undeclared verb, E1506 unknown layout, E1507 params/search typed by hand
 
 k.server
-- loader(OutputSchema, async ({ params, search }, ctx) => Result<T, KeelError>) in *.server.ts (E1551)
-- action(InputSchema, async (input, { params }, ctx) => Result<Href | null, KeelError>) in *.server.ts
-- topology.ts: topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)
-- server entry: createApp({ topology, routes, ctx: createCtx({ mode: 'real' }), deployable: 'api', log }) -> { fetch }; validates only the served deployable
-- POST/PUT/PATCH/DELETE: body decoded with the action's input schema from FormData, or from JSON when content-type is application/json (a k.services client); fail: keel.fields 422, action not called
-- runtime request (header accept: application/json): GET and POST return JSON { id: routeId, results: { [routeId]: Result } } where Result is { ok: true, value } | { ok: false, error: { code, message, data } }; a loader's value is its encoded output, an action's is null or an href
-- status: keel.notFound 404, keel.denied 403, keel.fields 422, other err 400
-- one route per path; actions by verb (E1502 duplicate path); a route may be action-only (component still required; a plain .ts component avoids JSX when run by `node server.ts`)
-- tests: createApp({...}).fetch(new Request('http://x/api/lists', { headers: { accept: 'application/json' } })); in tests serve the api with the sim ctx and route sim ctx.net '/api/*' to app.fetch so client modules get real bodies
+- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, stores }, ctx) -> Promise<Result<T, KeelError>>
+- action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `const to: Href = routes.href(...); return ok(to)`
+- both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
+- stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
+- topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)
+- createApp({ topology, routes, ctx, deployable: 'api' }) from '@keel/server' -> Promise<{ fetch(req) }>
+- writes pass the same-site check: send accept: application/json with x-keel: 1 (a services client does)
+- JSON body (content-type application/json) decodes with the action input schema; fail: 422 keel.fields, action not called
+- runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; action -> { ok: true, value: null | href } or { ok: false, error: { code, message, data } }
+- status: keel.notFound 404, keel.denied 403, keel.fields 422, keel.conflict 409, other err 400
+- a route may be action-only; component still required (api components: plain .ts, `export default function ActionApi(): Node { return Box({ id: 'api.action', children: 'POST only' }) }`)
 
 k.services
-- import { endpoints, service } from '@keel/services' (output and body schemas are *.schema.ts, E1104)
-- const todos = endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardReply }, addTodo: { method: 'POST', path: '/api/lists/:listId/todos', params: s.object({ listId: s.id('TodoList') }), body: TodoDraft, output: ActionReply, errors: { 422: FieldsReply } } })
-- const api = service({ base: location.origin, schema: todos }); build it inside a function (location is absent when the compiler evaluates manifests in Node)
-- r = await api.addTodo({ params, body }, ctx) -> Result<Output, ApiError>; the client never throws; requests go through ctx.net.fetch
-- output must describe the whole runtime body: s.object({ id, results: s.object({ 'api.lists': s.object({ ok: s.literal(true), value: BoardView }) }) }); read r.value.results['api.lists'].value
-- ApiError codes api.timeout api.network api.status { status, body (decoded by errors[status], else null) } api.decode api.input
-- a declared 422 body (FieldsReply, a keel.fields error body) lets an action pass field errors on: return err(keel.fields data)
-- E1652 :param without a params field; E1653 body on GET
-
-k.forms k.ui k.testing k.module k.server k.scaffold k.check
-
-Key lines only. Full text: `pnpm spec <id>`.
-
-k.schema
-- import { s, ok, err, attempt, type Result } from '@keel/schema'
-- s.string({ min, max }) s.number() s.int() s.boolean() s.literal() s.enum([...]) s.id('Brand') s.object({...}) s.array(T) s.union (discriminated) s.record
-- .optional() = key may be absent; .nullable() = value may be null; distinct (E1102)
-- type T = s.infer<typeof T>; T.parse(x): Result<T, SchemaError> (also parses T.encode output; no decode); T.encode; T.gen() fast-check arbitrary
-- schemas live only in *.schema.ts (E1104)
-
-k.errors
-- Result<T,E> = { ok: true, value } | { ok: false, error }; build with ok(v) / err(e); narrow on r.ok
-- KeelError { code, message, data }; kernel codes keel.notFound keel.denied keel.fields keel.unexpected schema.invalid
-- s.error(code, dataSchema) in *.schema.ts; .make(data, message?); app codes prefixed by module id
-- no throw (E1451), no try/catch (E1452, use attempt), no discarded Result (E1453)
-
-k.reactive
-- signal(v), computed(fn), effect(fn, { writes: [] }), resource(fetcher)
-- resource state: { state: 'loading' } | { state: 'error', error } | { state: 'ready', value }; consume only via Match (E1204)
-
-k.store
-- import { store, transaction, tx, invariant } from '@keel/store'
-- export const board = store(Board, { lists: [], todos: [] }, { id: 'todos.board' })
-- export const addTodo = transaction(board, 'todos.addTodo', s.object({...}), (state, payload) => nextState)  // pure (E1302)
-- invariant(board, (state) => boolean)  // declared once beside the store; violation: err store.invariant, rollback
-- reads board.get('todos'), board.select(fn) (computeds); writes only tx(addTodo, payload)
-- board.log() entries { name, payload, at, id }; board.undo(); board.snapshot(); board.restore(snap)
-- component declares uses (k.component); calling an undeclared tx from a component is E1301; loaders and actions are unrestricted
-
-k.ctx
-- ctx.clock.now() ctx.random.float() ctx.random.id(brand) (branded uuid; the only way to mint ids/tokens) ctx.net.fetch(req) ctx.storage.get/set
-- createCtx({ mode: 'sim', seed }) -> SimCtx with net.route(pattern, (req) => Response), clock.advance(ms)
-- Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
-- resources fetch with `new Request(new URL('/api/x', location.href))` (relative URLs throw)
-- ctx.net.fetch in app code is E1651: declare an endpoint (k.services) and call the client with ctx
-
-k.component
-- one default export per file, filename = name; export const Props = s.object(...)
-- (props: Props, slots?, ctx?: Ctx) => JSX; ctx comes from the mount/island root or harness render; the only way a component reaches an effect; resource fetchers close over it
-- a file may also export `export const uses = [toggleTodo]`; the compiler calls uses(...) in the component scope
-- props are getters, never destructure (E1401)
-- <If when>, <For each key="id">, <Match on={union}><Case tag="...">; {a && <b/>} is E1403
-- ids: explicit id="todos.add" or derived <file>.<index>; duplicates E1404
-
-k.runtime
-- import { If, For, Match, Case, Boundary } from '@keel/runtime-dom'; mount is generated entry only
-- no document/window/DOM APIs in app code (E1252)
-
-k.router
-- manifest({ 'todos.shell': { component, layout? }, 'todos.list': { path: '/lists/:listId', params: s.object({ listId: s.id('TodoList') }), search: s.object({ filter: s.enum([...]).optional() }), loader, actions: { POST: createTodo }, component, layout: 'todos.shell', guard: 'editable', errorElement } })
-- entry without path = layout; its component renders a children slot
-- component receives { params, search, data }; errorElement receives { error: KeelError }
-- href(id, params?, search?) -> Href; Link to, navigate, URL attrs take Href only (E1501)
-- guard(name, { redirect: routeId }, async ({ url }, ctx) => ok(null) | err(keel.denied)); file *.guard.ts
-- route() computed { id, params, search, pending }; navigate(href, { replace? })
-- <Form method action form? error?> (action: routes.href(id, params)) (pending: f.pending(), no loading slot) from '@keel/router'; ok(href) navigates; ok(null) revalidates
-- client-only app: router runs guards, loaders, actions in the browser
-- rules E1501-E1506 (Href, duplicate path, params/path mismatch, required search field, bad verb, unknown guard/layout)
-
-k.server (declarations used client-only)
-- loader(OutputSchema, async ({ params, search }, ctx) => Result<T, KeelError>) in *.server.ts (E1551)
-- action(InputSchema, async (input, { params }, ctx) => Result<Href | null, KeelError>) in *.server.ts
-- topology.ts: export default topology({ web: { modules: ['todos'], adapter: 'client' } })  // no server; loaders/actions run in the browser; compiler generates mount(App, el); ctx = createCtx({ mode: 'real' })
+- import { endpoints, service } from '@keel/services'; endpoints in a *.service.ts file, body/output schemas in *.schema.ts
+- export const todos = endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardReply }, editTodo: { method: 'POST', path: '/api/todos/:todoId', params: TodoIdParams, body: TodoDraft, output: ActionReply, errors: { 422: FieldsReply } } })
+- service({ base, schema }) built per call (base new URL(url).origin in *.server.ts); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
+- output describes the whole runtime body (see k.server); read r.value.results['api.lists'].value
+- ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
+- pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body?.error ?? r.error)
+- ctx.net.fetch in app code is E1651; E1652 :param without params field; E1653 body on GET
 
 k.forms
-- const f = form(TodoDraft, { initial? }); f.field('title') f.values() f.errors() f.pending() f.reset()
-- <Form method="POST" action={routes.href('todos.list', { listId })} form={f} error={(e) => <Text>{e.message}</Text>}><Input field={f.field('title')} label="Title" /><Button type="submit">Add</Button></Form>
-- invalid submit: no request, field errors set, first invalid field focused
-- action err keel.fields { [path]: message } sets exactly those errors; other err renders error slot
+- import { form } from '@keel/forms'; const f = form(TodoDraft, { initial?, id? }) in a component; f.field('title') f.values() f.errors() f.pending() f.reset()
+- field id is `<formId>:<path>` (default formId `form-<hash>`), its error element `<formId>:<path>:error`; find it from r.a11y() by label
+- <Form method="POST" action={routes.href('todos.list', { listId })} form={f} error={(e) => <Text>{e.message}</Text>}><Input field={f.field('title')} label="Title" /><Button id="todos.addTodo" type="submit">Add</Button></Form>
+- number fields coerce from input text; invalid submit sends nothing, sets every error, focuses the first invalid field
+- action err keel.fields { [path]: message } sets exactly those errors; other err renders the error slot
+- E1901 input in a Form without field; E1902 unknown path
 
 k.ui
-- tokens.ts: export const tokens = defineTokens({ color: { fg: { light, dark }, bg: {...}, accent, danger }, space, radius, font, fontSize, ... })
+- tokens.ts: export const tokens = defineTokens({ color: { fg: { light, dark }, bg, accent, danger }, space, radius, font, fontSize })
 - base elements from '@keel/ui': Box Text Heading Button Link Image Input TextArea Select Checkbox
-- required: Heading level; Image alt|decorative; label on Input/TextArea/Select/Checkbox; Link to: Href with text; Button text as children (no label); style props are the only styling (no class, no styles())
+- required: Heading level; label on Input/TextArea/Select/Checkbox; Link to: Href with text; Button text as children (no label prop)
+- style props take token names only (no class, no styles(), no raw values: E1801): p px py m gap w h bg fg radius font fontSize weight direction align justify; Box as / Text as: section nav main ul li p span
 - event props: Button onClick, Checkbox onChange, Input onInput, Select onChange
-- Box as / Text as: section nav main ul li p span ...
-- style props take token names: p px py m mx my gap w h bg fg radius font fontSize weight shadow direction align justify wrap; states={{ hover, focusVisible, active, disabled }}
-- standard slots: loading () => JSX, empty () => JSX, error (e: KeelError) => JSX; For accepts empty
-- E1801 raw value, E1802 missing a11y prop, E1803 style attr, E1804 contrast < 4.5:1, E1805 lowercase intrinsic
 
 k.testing
 - import { render, renderRoute, properties } from '@keel/testing'
-- const t = render(TodoRow, { props, state: [[board, value]], ctx? }); t.fire(id, { type: 'click' }); t.find(id) -> { id, role, name, text, state }; t.state(board); t.a11y(id?); t.dispose()
-- const h = await renderRoute('todos.list', { routes, params, search, state, ctx })  // routes = the manifest; h.settle() runs microtask rounds until DOM and store are quiet
+- const t = render(C, { props, state: [[store, value]], ctx }); await t.fire(id, { type: 'click' }); t.find(id) -> { id, role, name, text, state }; t.state(store); t.a11y(); t.dispose()
+- const r = await renderRoute('todos.list', { routes, params, search, ctx }); runs guards and loaders first; r.route(); r.settle()
 - TestEvent: click | input { value } | change | keydown { key } | submit | focus | blur
-- properties(Component | transaction, { runs = 100, seed? }); transaction properties check every invariant and undo
-- no DOM queries in tests (E1701); unknown id E1705
-- ledger rung example = a passing test references the export; probabilistic = passing property >= 100 runs
+- properties(Component | transaction, { runs = 100, seed? }) checks invariants, determinism, undo; factory stores need a scope: `const sc = scope(() => undefined); isolate(sc); const st = sc.run(boardStores); await properties(st.addTodo)` (scope from '@keel/reactive', isolate from '@keel/store'; sc.dispose() after)
+- tests address elements by id only; DOM queries E1701; unknown id E1705
 
 k.module
-- modules/todos/module.ts: export default module({ id: 'todos', deps: [], capabilities: ['net', 'random', 'storage'], public: { exports: [], routes: [] } })
-- module({ id: 'api', deps: ['todos'], ... }): deps name modules whose public exports it imports
-- route ids, store ids, transaction names, error codes prefixed 'todos.' (E1155); used ctx capability must be listed (E1156)
+- modules/<id>/module.ts: import { module } from '@keel/compiler'; export default module({ id: 'api', deps: ['todos'], capabilities: ['random', 'storage'], public: { exports: [], routes: [] } })
+- importing another module's file needs it in deps (E1152) and in its public.exports (E1151); ids, transaction names, error codes prefixed by module id (E1155); used ctx capabilities listed (E1156)
 
 k.scaffold
-- keel scaffold project|module|route|component|store|transaction; keel codemod rename|move|add-field; --dry-run
+- keel scaffold project <name> --workspace | module | route | component | store | transaction; keel codemod rename|move; --dry-run
 
 k.check
-- one export per file, filename = export (E1752); unsafe needs justification (E1754); budgets (E1755)
-- keel check --quiet prints the trailer only; --code <code>; keel explain <code>
+- one export per file, filename = export (E1752); unsafe needs a justification (E1754)
+- keel check --quiet prints the trailer; keel explain <code>

@@ -1,0 +1,20 @@
+
+=== claude call ===
+`apps/golden-1` is built as the client-only todo app, and the acceptance checks I ran all pass. I did not commit anything, and I did not write `PLAN.md`, the backlog or the handoff.
+
+**What passed**
+- `pnpm --filter golden-1 check` is clean, and the root `pnpm check` passes with budgets.
+- `pnpm test --filter golden-1`: 31 tests, 0 failed.
+- `keel ledger --scope golden-1:` shows all 29 items verified and none at rung `none`; `pnpm ledger --diff` has 0 lowered.
+- `pnpm --filter golden-1 build` is clean.
+- `properties(` covers all four transactions, `TodoRow` and `Suggestions`, and `invariant(` is in `board.ts`.
+- Grep of `modules/` and `test/` for `unsafe(`, `any`, casts, `!` and `@ts-ignore` found nothing.
+
+**Where it differs from the brief**
+- **Extra files:** the scaffold's `.gitignore`, `index.html` and `vitest.config.ts` are kept, as the brief says. Under `modules/` and `test/` the files are exactly the list.
+- **`@keel/cli` dependency:** I added `@keel/cli` as a dev dependency so the required `keel check|test|build` scripts resolve. `packages/cli/dist` wasn't built in this worktree, so I ran `pnpm --filter @keel/cli build` and `pnpm install --offline` first. `pnpm-lock.yaml` changed as a result.
+- **`random` capability:** `module.ts` lists `net`, `storage` and `random`, because actions mint ids with `ctx.random`.
+- **Import cycle:** `updateTodo.server.ts` imports `routes.ts`, which imports it back; the spec prescribes this for `routes.href`. A test that imports `updateTodo.server.ts` before `routes.ts` breaks, so `routes.test.ts` imports `routes` first, with a comment saying why.
+- **`Suggestions` error state:** to reach the `error` case without `throw` or `.catch`, the fetcher returns `Promise.reject(message)` on an `api` error. The error text shown is that message.
+
+I did not run the output-budget check on `check` and `test` separately; only the root `budgets` task ran, as part of `pnpm check`.

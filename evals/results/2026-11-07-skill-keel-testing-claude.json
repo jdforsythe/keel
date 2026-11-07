@@ -1,0 +1,17 @@
+{
+  "skill": "keel-testing",
+  "runner": "claude",
+  "model": "claude-sonnet-5-5",
+  "passed": true,
+  "tokenEstimate": 573,
+  "maxTokens": 600,
+  "frontmatterOk": true,
+  "missing": [],
+  "tokens": {
+    "input": 31649,
+    "output": 848
+  },
+  "costUsd": 0.0801093,
+  "durationMs": 13409,
+  "startedAt": "2026-11-07T05:34:00.585Z"
+}

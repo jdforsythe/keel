@@ -1,0 +1,17 @@
+{
+  "skill": "keel-forms",
+  "runner": "claude",
+  "model": "claude-sonnet-5-5",
+  "passed": true,
+  "tokenEstimate": 593,
+  "maxTokens": 600,
+  "frontmatterOk": true,
+  "missing": [],
+  "tokens": {
+    "input": 31707,
+    "output": 1058
+  },
+  "costUsd": 0.0824413,
+  "durationMs": 13264,
+  "startedAt": "2026-11-07T05:34:00.581Z"
+}

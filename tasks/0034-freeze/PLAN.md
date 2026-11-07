@@ -31,6 +31,10 @@
 - D4: k.schema flipped with clause 8 (`json`, rfc:0018, 95961ef) included.
 - D5: Adding conformance tests to `implemented` sections needs a numbered RFC (`docs/RFC.md`; `rfc:0000` refused), so completion is batched per section group.
 
+- D6 (2026-11-07, user): the freeze flip is held. No section moves to `frozen` until the full product is built and reviewed; this plan prepares the freeze RFC and re-audit only.
+- D7 (2026-11-07, user): measurement-based size budgets (tooling/budgets.json `size`) may be re-based when a package legitimately grows, with the reason in the commit message; spec'd output and spec token budgets stay fixed.
+- D8 (2026-11-07, user): 0114 resolved by a two-phase manifest (backlog 0114), not the `const to: Href` workaround.
+
 ## Verification
 - [ ] `node tooling/budgets.mjs` ok
 - [ ] `pnpm check` and `pnpm test` green

@@ -1,0 +1,17 @@
+{
+  "skill": "keel-handoff",
+  "runner": "claude",
+  "model": "claude-sonnet-5-5",
+  "passed": true,
+  "tokenEstimate": 137,
+  "maxTokens": 600,
+  "frontmatterOk": true,
+  "missing": [],
+  "tokens": {
+    "input": 30947,
+    "output": 478
+  },
+  "costUsd": 0.0736013,
+  "durationMs": 11078,
+  "startedAt": "2026-11-07T05:34:00.583Z"
+}

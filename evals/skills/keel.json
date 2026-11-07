@@ -1,6 +1,6 @@
 {
   "skill": "keel",
   "maxTokens": 600,
-  "prompt": "How do I get spec text for an API, and what do I do when an API is unspecified?",
-  "expect": ["pnpm spec", "blocked:"]
+  "prompt": "How do I get spec text for an API, what do I do when an API is unspecified, and how do I link to a route, declare a loader and a guard, and mint an id?",
+  "expect": ["pnpm spec", "blocked:", "routes.href", "loader(", "guard(", "ctx.random.id"]
 }

@@ -15,14 +15,14 @@ const f = form(OrderEdit, { initial: order })   // in a component scope (else E1
   <Button id="orders.save" type="submit">Save</Button>
 </Form>
 ```
-- `Form` is from `@keel/router`; `action` is the target route's `Href` (`routes.href(id, params)`, no `params` prop) whose `actions: { POST }` takes the same schema. A component that returns `Form(...)` directly needs a return type (`(): Node =>`), else TS7022; JSX `<Form>` does not. Slot: `error` (no `loading`).
-- `f.field(path)`: typed dotted path (array indexes ok). Handle: `values()`, `errors()`, `pending()` (the one pending state: render from it, e.g. `<If when={f.pending()}>`), `reset()`. A `Field` has `name, id, errorId, value(), error(), touched(), set(v), blur(), bind(el)`.
-- Base inputs given `field` call `bind` (sets name, id, value, `aria-invalid`, `aria-describedby` -> `errorId`). For a plain `input/select/textarea` call `field.bind(el)`; it returns unbind.
+- `Form` is from `@keel/router`; `action` is the target route's `Href` (`routes.href(id, params)`) whose `actions: { POST }` takes the same schema. Slot: `error` (no `loading`).
+- `f.field(path)`: typed dotted path (array indexes ok). Handle: `values()`, `errors()`, `pending()` (the one pending state), `reset()`. A `Field` has `name, id, errorId, value(), error(), touched(), set(v), blur(), bind(el)`.
+- Base inputs given `field` call `bind` (name, id, value, `aria-invalid`, `aria-describedby`); for a plain `input` call `field.bind(el)` (returns unbind).
 - Validation is from the schema only: on blur, then each input once an error shows; all on submit. Invalid submit sends nothing and focuses the first invalid field.
 - Action result: `ok` resets to `initial`; `err({ code: 'keel.fields', data: { title: 'Taken' } })` sets exactly those field errors (422 on the server); any other `err` shows in the `error` slot, values kept. Pass a client-service 422 body on: `err(r.error.data.body?.error ?? r.error)`.
-- Without JS the server decodes FormData with the action input schema and re-renders with values and errors.
-- Encoding: `schema.decodeStrings(formData)` coerces numbers, checkbox booleans, `a.b` nested keys, repeated keys; `toFormData(schema, value)` is its inverse (empty string in optional keys excepted).
+- Without JS the server decodes FormData by the action input schema and re-renders.
+- Encoding: `schema.decodeStrings(formData)` coerces numbers, checkbox booleans, `a.b` nested keys, repeated keys; `toFormData(schema, value)` is its inverse (except empty optional strings).
 
-**Errors:** E1901 input in a `<Form>` without `field` · E1902 path not in schema (also thrown as `code: 'E1902'`) · E1903 form schema differs from the action input schema · E1904 `keel.fields` names a path outside the action input.
+**Errors:** E1901 input in a `<Form>` without `field` · E1902 path not in schema · E1903 form schema differs from the action input schema · E1904 `keel.fields` names a path outside the action input.
 
 **Tests:** `renderRoute`, `fire(<field id>, { type: 'input', value })`, `fire(submitId, { type: 'click' })`, then `find(id).state.focused` and `find(`${id}:error`).text`.

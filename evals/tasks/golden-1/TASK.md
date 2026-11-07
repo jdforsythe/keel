@@ -1,17 +1,16 @@
 # Golden app 1 (client-only)
 
-Build `apps/golden-1/`: a todo app, client-only (`topology.ts`: one deployable, `adapter: 'client'`; the compiler generates the `mount` entry). Use only kernel APIs from the spec slice; read a full section with `pnpm spec <id>` (k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.forms k.ui k.testing k.module k.server k.scaffold k.check). Edit nothing outside `apps/golden-1/`. Prefer `keel scaffold`/`keel codemod` for structure. Scaffold the project with `scaffold('project', { workspace: true })` (CLI: `keel scaffold project golden-1 --workspace`): it emits `index.html` and `vitest.config.ts` for an app inside the monorepo, which the files list below omits; keep them. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; do not invent one.
+Build `apps/golden-1/`: a todo app, client-only (`topology.ts`: one deployable, `adapter: 'client'`; the compiler generates the `mount` entry). Use only kernel APIs from the spec slice; read a full section with `pnpm spec <id>` (k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.forms k.ui k.testing k.module k.server k.services k.scaffold k.check). Edit nothing outside `apps/golden-1/`. Prefer `keel scaffold`/`keel codemod` for structure. Scaffold the project with `scaffold('project', { workspace: true })` (CLI: `keel scaffold project golden-1 --workspace`): it emits `index.html` and `vitest.config.ts` for an app inside the monorepo, which the files list below omits; keep them. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; do not invent one.
 
 ## Behavior
 - `/` (`todos.index`): every list with its open-todo count; a Form adding a list.
 - `/lists/:listId` (`todos.list`, search `filter`: `all|active|done`, optional): the list's todos filtered by `filter`, filter links, a Checkbox per todo toggling done, a Form adding a todo, and `Suggestions`.
-- `/lists/:listId/todos/:todoId/edit` (`todos.edit`): a Form editing a todo; success navigates to `todos.list`. Guard `editable` is a stub: denies when `ctx.storage` key `todos.readOnly` is `"1"`, redirecting to `todos.index`.
+- `/lists/:listId/todos/:todoId/edit` (`todos.edit`): a Form editing a todo; success navigates to `todos.list`. Guard `editable` (`guard({ redirect: 'todos.index' }, fn)`, held by the route as `guard: editable`) is a stub: denies when `ctx.storage` key `todos.readOnly` is `"1"`.
 - Unknown `listId` or `todoId`: the loader returns `err` `keel.notFound`; `ListError` renders.
 - Layout `todos.shell` (`AppShell`): a `main`, a home Link, and an Undo Button that undoes the last transaction from the store log; disabled when the log is empty.
-- `Suggestions`: a `resource` whose fetcher closes over the component's third parameter `ctx` and calls `ctx.net.fetch` for `GET /api/suggestions` directly (E1651 is not enforced until k.services is implemented), rendered with `Match` on `loading`, `error` (message text), `ready` (titles).
+- `Suggestions`: a `resource` whose fetcher closes over the component's third parameter `ctx` and calls a `@keel/services` client for `GET /api/suggestions` (`suggestions.service.ts`; base `location.origin`; `ctx.net.fetch` in app code is E1651), rendered with `Match` on `loading`, `error` (message text), `ready` (titles).
 
-## Data ownership
-The reference app (`apps/golden-1`) keeps its data behind an API: a second deployable `api` (`adapter: 'node'`, module `api`, `server.ts`) owns the board store `api.board` with its invariant and the `api.*` transactions, and serves it as k.server runtime `Result` bodies (`GET /api/lists`; `POST /api/lists`, `/api/lists/:listId/todos`, `/api/todos/:todoId`, `/api/todos/:todoId/toggle`, `/api/undo`). The `todos` module declares those endpoints with `@keel/services` and holds only a view store `todos.view`, replaced by one transaction `todos.hydrate`; loaders re-read the board, and every write posts then re-reads, so a reload shows the same data. The Files and Model lists below describe the client-only baseline task.
+(`golden-1-api` is the API-backed variant of this brief; the committed `apps/golden-1` follows it.)
 
 ## Model
 - Store `todos.board` in `board.ts`: `Board { lists: TodoList[], todos: Todo[] }`, initially empty. `invariant` beside it: ids unique, every `todo.listId` names a list.
@@ -25,7 +24,8 @@ apps/golden-1/package.json   name "golden-1"; scripts check/test/build: keel che
 apps/golden-1/tsconfig.json  extends ../../tsconfig.base.json
 apps/golden-1/{vite.config.ts,tokens.ts,topology.ts}   tokens: fg/bg/accent/danger with light and dark
 apps/golden-1/modules/todos/{module.ts,routes.ts,editable.guard.ts}
-apps/golden-1/modules/todos/{TodoList,Todo,Board,ListDraft,TodoDraft,Suggestion}.schema.ts
+apps/golden-1/modules/todos/{TodoList,Todo,Board,ListDraft,TodoDraft,Suggestion,SuggestionsReply,ListParams,ListSearch,TodoParams}.schema.ts
+apps/golden-1/modules/todos/suggestions.service.ts
 apps/golden-1/modules/todos/{board,addList,addTodo,toggleTodo,editTodo}.ts
 apps/golden-1/modules/todos/{loadList,loadTodo,createList,createTodo,updateTodo}.server.ts
 apps/golden-1/modules/todos/{AppShell,ListsPage,ListPage,TodoRow,EditTodoPage,ListError,Suggestions}.tsx
@@ -38,9 +38,9 @@ apps/golden-1/test/{board,routes,components}.test.ts
 
 ## Acceptance (checked by `pass.ts`)
 1. Every file above exists.
-2. `pnpm check` clean, budgets included.
+2. `pnpm check` clean, budgets included; `keel check` in `apps/golden-1` (`node ../../packages/cli/src/bin.ts check`) clean (root `check` runs only the app's tsc + biome; its `check.injected10` budget copies `apps/golden-1`, so kernel diagnostics in the app overflow it).
 3. `pnpm test --filter golden-1` green.
 4. `properties(` covers each transaction, `TodoRow`, `Suggestions`; `invariant(` in `board.ts`.
-5. Ledger: every export under `modules/` (except `module.ts`, `routes.ts`, `Props`, `uses`) is used in a test body (rung `example` or better); `pnpm ledger --diff` clean.
+5. Ledger: every export under `modules/` (except `module.ts`, `routes.ts`, `Props`, `uses`) is used in a test body (rung `example` or better); `pnpm ledger --diff` clean. Verify with `node packages/cli/src/bin.ts ledger --scope golden-1:`: no item may be at rung `none`; a page or error component reached only through `renderRoute` is not evidence, so `render` it (or call the loader/schema) in a test too.
 6. `unsafe(` count 0; no `any`, casts, `!`, `@ts-ignore`.
 7. Quiet `check` and `test` output within `tooling/budgets.json` output budgets; never `--verbose`.

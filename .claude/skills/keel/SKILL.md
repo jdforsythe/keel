@@ -5,24 +5,24 @@ description: "Build a Keel app: schemas, stores, components, routes, forms, test
 
 # Building a Keel app
 
-**Spec:** never guess an API. `pnpm spec <id>` prints a section (ids: k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.forms k.ui k.testing k.module k.server k.check). If the API you need is not specified, stop and report `blocked: <what is missing>`.
+**Spec:** never guess; `pnpm spec <id>` (k.schema, k.router, k.server, ...). Unspecified API: stop, report `blocked: <what is missing>`.
 
-**Files** (one export per file, filename = export name):
-- `*.schema.ts`: schemas only (`s.object`, `s.error`); `type T = s.infer<typeof T>`.
-- `*.store.ts`: `store(...)`, `transaction(...)` (pure), `invariant(...)`; ids prefixed by module id (`todos.board`).
-- Component `Foo.tsx`: default export `(props, slots?, ctx?)`, plus `export const Props = s.object(...)` and `export const uses = [tx, ...]`. Props are getters; never destructure. Use `<If>`, `<For key>`, `<Match>`, not `&&`. Give controls explicit ids. Render layout children with `{props.children?.()}`.
-- `*.server.ts`: `loader({ output, params?, search? }, fn)`, `action({ input, params? }, fn)` (route's own schemas, `fn` unannotated); `*.guard.ts`: `export const auth = guard({ redirect: 'app.login' }, fn)`; the route holds the value (`guard: auth`), never a name.
-- `routes.ts`: `export const routes = manifest({...})`; link with `routes.href(id, params?, search?)` only (`import { routes } from './routes.ts'`; another module's routes come from its `routes.ts`); ids and params are typed from the manifest; `<Form action>` takes one too (`action={routes.href('todos.list', { listId })}`, no `params` prop). An action returning a link binds it first: `const to: Href = routes.href('todos.list', { listId }); return ok(to)` (`return ok(routes.href(...))` is TS7022). `Image src` is a plain asset string (`'logo.png'`).
-- `tokens.ts`: `defineTokens({...})`; style props take token names, never raw values, and are the only styling (no `class`, no `styles()`). UI from `@keel/ui`; `<Button>Save</Button>` (text is children, no `label`).
-- `topology.ts`: `topology({ web: { modules: [...], adapter: 'client' } })`.
-- `module.ts`: `module({ id, deps, capabilities, public })`.
+**Files** (one export each, name = export):
+- `*.schema.ts`: `s.object(...)`; `type T = s.infer<typeof T>`; validate with `T.parse(x)` (no `decode`).
+- Store file: `store(...)`, pure `transaction(...)`, `invariant(store, fn)` beside it; ids prefixed by module (`todos.board`).
+- `Foo.tsx`: default `(props, slots?, ctx?)`, `export const Props = s.object(...)`, `export const uses = [tx]` if it calls `tx`; never destructure props. `<If when>`, `<For each key="id">`, `<Match on>`, never `&&`. Layout: `{props.children?.()}`.
+- `*.server.ts`: `loader({ output, params?, search?, stores? }, fn)`, `action({ input, params?, stores? }, fn)`; schemas are the route's own; never annotate `fn`.
+- `*.guard.ts`: `export const auth = guard({ redirect: 'app.login' }, fn)`; route holds the value (`guard: auth`).
+- `routes.ts`: `export const routes = manifest({...})`. Links only via `routes.href(id, params?, search?)` (own module's). `<Form action={routes.href('todos.list', { listId })}>`; pending: `f.pending()`. Action redirect: `const to: Href = routes.href(...); return ok(to)`.
+- `tokens.ts`: `defineTokens`; style props take token names only (no `class`, no `styles()`). `<Button id="x.save">Save</Button>` (text is children).
+- `topology.ts`: `topology({ web: { modules, adapter: 'client' } })`; `module.ts`: `module({ id, deps, capabilities, public })`.
 
-**Rules:** no throw or try/catch (use `Result`, `attempt`); no `Date.now`, `Math.random`, bare `fetch`, `localStorage`, DOM APIs (use `ctx`); no `any`, casts, `@ts-ignore`.
+**Rules:** no throw/try (use `Result`, `attempt`); no `Date.now`, `Math.random`, `fetch`, `localStorage`, DOM (use `ctx`); ids from `ctx.random.id('Todo')`; no `any`, casts, `!`, `@ts-ignore`.
 
-**Tests:** `render(Comp, { props, state, ctx })`, `t.fire('todos.add', { type: 'click' })`, `t.find(id)`, `t.state(store)`; `await renderRoute(id, {...})`; `properties(Comp | transaction, { runs: 100 })`. `renderRoute` needs `routes` (the manifest) and `h.settle()` to flush. Resources fetch with `new Request(new URL('/api/x', location.href))`, never a relative URL. Never query the DOM. Every export is named in a test.
+**Tests:** `render(C, { props, state, ctx })`, `await t.fire(id, { type: 'click' })`, `t.find(id)`; `await renderRoute(id, { routes, params, ctx })`; `properties(C | tx)`. Ids only, never the DOM; every export named in a test.
 
-**Scaffold:** then `pnpm install` at the root (workspace: `keel scaffold project <name> --workspace`).
+**Scaffold:** `keel scaffold project <name> --workspace`, then `pnpm install` at the root.
 
-**Output:** `pnpm check`, `pnpm test` print compact output; read the trailer, fix by code (`keel explain <code>`), no `--verbose`.
+**Output:** fix by code (`keel explain <code>`); no `--verbose`.
 
-**Domain skills:** keel-testing, keel-api (API-backed apps: service client, hydrate tx, `syncAfter`), keel-forms.
+**More:** skills keel-testing, keel-forms, keel-api (node api, `stores`, services).

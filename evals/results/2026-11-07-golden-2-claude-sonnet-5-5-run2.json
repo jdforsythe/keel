@@ -1,0 +1,36 @@
+{
+  "task": "golden-2",
+  "skill": "keel",
+  "specSections": [
+    "k.schema",
+    "k.errors",
+    "k.reactive",
+    "k.store",
+    "k.ctx",
+    "k.component",
+    "k.runtime",
+    "k.router",
+    "k.server",
+    "k.services",
+    "k.forms",
+    "k.ui",
+    "k.testing",
+    "k.module",
+    "k.scaffold",
+    "k.check"
+  ],
+  "model": "claude-sonnet-5-5",
+  "runner": "claude",
+  "converged": true,
+  "iterations": 1,
+  "tokens": {
+    "input": 2784412,
+    "output": 26820
+  },
+  "costUsd": 0.8431189,
+  "unsafeCount": 5,
+  "checkTrailer": "ok budgets 39 measured (3.2s)",
+  "testTrailer": "ok test 33 tasks (2.0s)",
+  "durationMs": 265009,
+  "startedAt": "2026-11-07T06:01:19.657Z"
+}

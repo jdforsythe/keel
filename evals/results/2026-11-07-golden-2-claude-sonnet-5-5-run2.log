@@ -1,0 +1,24 @@
+
+=== claude call ===
+`apps/golden-2/` is built. `pnpm --filter golden-2 check` and `keel check` in `apps/golden-2` are clean, and `pnpm test --filter golden-2` passes all 14 tests. I haven't run `pass.ts`. That means the hidden `renderRoute` suite hasn't run against it, and I haven't run `keel ledger` or a build.
+
+I stopped nowhere, so there is no `blocked:` item. The slice covered everything I needed.
+
+**What's there**
+- **`topology.ts`:** `web` (client, `recipes`) and `api` (node, `kitchen`).
+- **`kitchen`:**
+  - `boxStores` holds `kitchen.box`, the uniqueness `invariant`, and the `kitchen.addRecipe` and `kitchen.toggleFavorite` transactions.
+  - `routes.ts` has `kitchen.recipes` and `kitchen.favorite`. The loader and actions declare `stores: boxStores`.
+  - A duplicate title returns 422 `keel.fields`, and an unknown id returns 404 `keel.notFound`.
+- **`recipes`:**
+  - The shared schemas are public exports.
+  - `kitchen.service.ts` defines the `@keel/services` endpoints, with reply schemas beside it.
+  - There are server loaders and actions for the index, show, favorite toggle and create.
+  - The `cook` guard, `BoxShell`, the index, show and new pages, `RecipeError`, and `routes.ts` use the ids from your list.
+- **Tests:** `test/api.test.ts` and `test/routes.test.ts` cover what you listed.
+
+- **Acceptance 3 and 4:** by grep, `invariant(` is in `modules/kitchen/boxStores.ts` and the kitchen `*.server.ts` files declare `stores:`. The tests have `properties(addRecipe` and `properties(toggleFavorite`. There are no `unsafe(`, `any`, `@ts-ignore`, casts or `!`, though the one `as` hit is an import alias (`routes as kitchenRoutes`) in `routes.test.ts`.
+- **`addRecipe` guard:** the transaction returns the state unchanged for a duplicate id or title. That keeps `properties()` from failing on generated payloads that collide. The action checks the title first to return the 422.
+- **Extra schema:** I added `EmptyInput`, a public `s.object({})`, as the input for the favorite action.
+- **Scaffold quirk:** `keel scaffold project golden-2 --workspace` wrote into the current directory instead of creating `golden-2/`. I moved the files into `apps/golden-2/`, so nothing is left behind in `apps/`.
+- **Outside `apps/golden-2/`:** the only change is `pnpm-lock.yaml`.

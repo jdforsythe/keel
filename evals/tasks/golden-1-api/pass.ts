@@ -19,9 +19,18 @@ const FILES: readonly string[] = [
   "topology.ts",
   "server.ts",
   ...["module", "routes"].map((n) => `${api}/${n}.ts`),
-  ...["board", "addList", "addTodo", "toggleTodo", "editTodo", "ActionApi", "BoardApi", "SuggestionsApi"].map(
-    (n) => `${api}/${n}.ts`,
-  ),
+  ...[
+    "board",
+    "boardStores",
+    "addList",
+    "addTodo",
+    "toggleTodo",
+    "editTodo",
+    "ActionApi",
+    "BoardApi",
+    "SuggestionsApi",
+  ].map((n) => `${api}/${n}.ts`),
+  `${api}/TodoIdParams.schema.ts`,
   ...["loadBoard", "loadSuggestions", "postList", "postTodo", "postEdit", "postToggle", "postUndo"].map(
     (n) => `${api}/${n}.server.ts`,
   ),
@@ -41,6 +50,9 @@ const FILES: readonly string[] = [
     "TodoDraft",
     "Suggestion",
     "SuggestionsReply",
+    "ListParams",
+    "ListSearch",
+    "TodoParams",
   ].map((n) => `${mod}/${n}.schema.ts`),
   ...["loadIndex", "loadList", "loadTodo", "createList", "createTodo", "updateTodo"].map(
     (n) => `${mod}/${n}.server.ts`,
@@ -65,12 +77,12 @@ const CODE = /\.(ts|tsx|mts|mjs|js)$/;
 
 type Run = { ok: boolean; stdout: string };
 
-const sh = (cmd: string, args: string[]): Promise<Run> =>
+const sh = (cmd: string, args: string[], cwd = root): Promise<Run> =>
   new Promise((resolve) => {
     execFile(
       cmd,
       args,
-      { cwd: root, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, KEEL_AGENT: "1" } },
+      { cwd, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, KEEL_AGENT: "1" } },
       (err, stdout) => resolve({ ok: err === null, stdout: String(stdout) }),
     );
   });
@@ -103,12 +115,23 @@ async function outputBudget(key: string): Promise<number> {
   return typeof v === "number" ? v : 0;
 }
 
-/** Every golden-1 item in the committed ledger (keyed `golden-1:<path>#<name>`) must be at rung example or better. */
+/**
+ * Every golden-1 ledger item, computed now by `keel ledger --scope golden-1:` (not read from the committed ledger.json,
+ * which the agent may not edit), must be at rung example or better.
+ */
 async function ledgerItemsProven(): Promise<boolean> {
-  const raw: unknown = JSON.parse(await readFile(join(root, "tooling", "ledger", "ledger.json"), "utf8"));
-  const list = isRecord(raw) && Array.isArray(raw.exports) ? raw.exports : [];
-  const mine = list.filter((e) => isRecord(e) && e.pkg === "golden-1");
-  return mine.length > 0 && mine.every((e) => isRecord(e) && typeof e.rung === "string" && e.rung !== "none");
+  const r = await sh("node", [
+    join(root, "packages", "cli", "src", "bin.ts"),
+    "ledger",
+    "--format=json",
+    "--scope",
+    "golden-1:",
+  ]);
+  const items = r.stdout
+    .split("\n")
+    .filter((l) => l.includes('"kind":"ledger"'))
+    .map((l): unknown => JSON.parse(l));
+  return items.length > 0 && items.every((e) => isRecord(e) && typeof e.rung === "string" && e.rung !== "none");
 }
 
 export default async (): Promise<boolean> => {
@@ -125,9 +148,16 @@ export default async (): Promise<boolean> => {
 
   // Invariant declared beside the store; properties for every transaction and the two components.
   if (!(await read(`${api}/board.ts`)).includes("invariant(")) return false;
+  const serverText = (
+    await Promise.all(sources.filter((f) => f.startsWith(`${api}/`) && f.endsWith(".server.ts")).map(read))
+  ).join("\n");
+  if (!/\bstores:/.test(serverText)) return false;
   if (!testText.includes("@keel/testing")) return false;
   for (const t of PROPERTY_TARGETS) if (!new RegExp(`\\bproperties\\(\\s*${t}\\b`).test(testText)) return false;
 
+  // The kernel rules over the app itself (root `pnpm check` runs only the app's tsc + biome script).
+  const keel = await sh("node", [join(root, "packages", "cli", "src", "bin.ts"), "check", "--quiet"], app);
+  if (!keel.ok) return false;
   const check = await sh("pnpm", ["check", "--quiet"]);
   if (!check.ok || tokens(check.stdout) > (await outputBudget("check.injected10"))) return false;
   const test = await sh("pnpm", ["test", "--quiet", "--filter", "golden-1"]);
