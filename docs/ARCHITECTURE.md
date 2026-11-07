@@ -23,3 +23,5 @@
 | Sessions (stdlib) | Build | The product |
 
 **Generated, read-only:** `turbo.json`, CI workflows, Dockerfiles, compose. Hand edits fail `pnpm check`.
+
+verified: e803822c391296586daf136dac23b520184fcf11

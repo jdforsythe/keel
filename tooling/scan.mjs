@@ -12,7 +12,8 @@ export function walk(dir, skipDirs = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP.has(e.name) || skipDirs.includes(p)) continue;
+      // `.tmp-*` dirs are per-test scratch (mkdtemp under test/ or conformance/); a killed run can leave them behind.
+      if (SKIP.has(e.name) || e.name.startsWith(".tmp-") || e.name.startsWith(".stryker-tmp") || skipDirs.includes(p)) continue;
       out.push(...walk(p, skipDirs));
     } else out.push(p);
   }

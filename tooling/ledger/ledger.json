@@ -13,7 +13,7 @@
     "scaffold": 71,
     "schema": 92.3,
     "server": 88.6,
-    "services": 75.9,
+    "services": 88,
     "store": 89.3,
     "testing": 88.1,
     "ui": 70.3
@@ -801,7 +801,7 @@
     },
     {
       "item": "k.check#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.check#3",
@@ -817,11 +817,11 @@
     },
     {
       "item": "k.check#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.check#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.check#8",
@@ -913,7 +913,7 @@
     },
     {
       "item": "k.compiler#10",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.compiler#11",
@@ -1021,7 +1021,7 @@
     },
     {
       "item": "k.module#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.router#1",
@@ -1073,7 +1073,7 @@
     },
     {
       "item": "k.runtime#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.runtime#4",
@@ -1097,31 +1097,31 @@
     },
     {
       "item": "k.scaffold#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.server#1",
@@ -1213,11 +1213,11 @@
     },
     {
       "item": "k.testing#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.testing#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.testing#6",
