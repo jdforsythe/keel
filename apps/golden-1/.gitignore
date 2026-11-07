@@ -2,3 +2,4 @@ dist
 .turbo
 node_modules
 .api.storage
+.api.storage*

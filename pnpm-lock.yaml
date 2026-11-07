@@ -105,6 +105,9 @@ importers:
 
   apps/golden-2:
     dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.6
+        version: 2.1.6(hono@4.13.16)
       '@keel/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
