@@ -1,5 +1,5 @@
 # k.check: Checker and diagnostics
-status: conformance-covered
+status: implemented
 
 **Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are `keel test`, k.testing; rfc:0023).
 1. Parse (oxc) and TS strict type check.
@@ -11,7 +11,7 @@ Changing one file re-runs steps 1-3 for that file and its dependents only.
 
 **Diagnostics.** Exactly the OUTPUT.md model: `{ kind: 'diag', code, path, line, col, message, fix?, see? }`. `code` is E (error), W (warning), or I (info) plus four digits, never renumbered; `message` is one line under 90 chars; `fix` is a unified diff hunk that applies to the checked tree; `see` is the spec section id. Only E codes affect the exit code (k.cli). A TS error that encodes a Keel rule (a missing a11y prop, an unknown field path, a string for `Href`) is reported under that rule's code; any other TS error is E1751.
 
-**Codes.** `keel check` produces every code in the kernel sections' **Rules**, except codes produced by another command: dev and runtime (E1253, E1554, E1555), cli usage (E105x), scaffold operations (E135x), and harness results (E1702-E1706 from `keel test`, `keel ledger`). Those share this model, `explain`, and `spec --for`. Kernel codes are E1xxx; stdlib codes are E2xxx/W2xxx (spec/00-map.md).
+**Codes.** `keel check` produces every code in the kernel sections' **Rules**, except codes produced by another command: dev and runtime (E1253, E1554, E1555), cli usage (E105x), scaffold operations (E135x), and harness results (E1702-E1707 from `keel test`, `keel ledger`). Those share this model, `explain`, and `spec --for`. Kernel codes are E1xxx; stdlib codes are E2xxx/W2xxx (spec/00-map.md).
 
 **Registry** (extension point).
 ```ts

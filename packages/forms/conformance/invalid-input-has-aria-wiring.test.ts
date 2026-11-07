@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// Spec: k.forms, clause "An invalid bound input has `aria-invalid="true"` and `aria-describedby` naming an element whose text is its message."
 // fast-check seed: 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";

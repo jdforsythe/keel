@@ -1,5 +1,8 @@
 import { tx } from "@keel/store";
 // Spec: k.store `tx` with `meta` logs it on the entry and leaves state as without it; non-JSON meta is `schema.invalid` and changes nothing; `snapshot()` entries carry no `meta`, and `restore(snapshot({ meta: true }))` reproduces the log with its meta. Seed 1337.
+// Spec: k.store, clause "`tx` with `meta` logs it on the entry and leaves state as without it."
+// Spec: k.store, clause "Non-JSON meta is `schema.invalid` and changes nothing."
+// Spec: k.store, clause "`snapshot()` entries carry no `meta`, and `restore(snapshot({ meta: true }))` reproduces the log with its meta."
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { applyOp, makeCart, opArb, opts } from "./fixtures";

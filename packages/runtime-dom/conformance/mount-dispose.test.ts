@@ -3,7 +3,8 @@ import type { Computed, Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { attr, clone, on, prop, template, text } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
-// Spec: k.runtime Conformance 1. Property seed: 1337.
+// Spec: k.runtime, clause "`mount` then `dispose` leaves zero event listeners and zero reactive subscriptions."
+// Property seed: 1337.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, click, flush, inScope, trackListeners } from "./fixtures.ts";

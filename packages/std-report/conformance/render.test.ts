@@ -1,4 +1,7 @@
-// Spec: std.report, clauses on compact, pretty and json rendering through `respond`
+// Spec: std.report, clause "`respond([tallyOf(id, keys)], { format: 'compact' })` (`@keel/cli/testing`) prints the compact line as its first line, with exit code 0."
+// Spec: std.report, clause "`pretty` prints the `id` line and one line per row. The keys start in one column and the counts end in one column."
+// Spec: std.report, clause "`json` prints the record as one line that parses back to a value equal to the record."
+// Spec: std.report, clause "Compact and json output contain no ANSI escapes or carriage returns."
 // Seed 1337
 import { respond } from "@keel/cli/testing";
 import { tallyOf } from "@keel/std-report";

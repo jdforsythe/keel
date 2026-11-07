@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// Spec: k.forms, clause "A `keel.fields` response sets exactly the listed field errors and clears all others."
 // fast-check seed: 1337
 import { err } from "@keel/schema";
 import fc from "fast-check";

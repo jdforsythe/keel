@@ -1,3 +1,4 @@
+// Spec: k.errors, clause "Each of E1451-E1454 has a fixture that triggers it and a clean counterpart."
 // Seed 1337
 // Every E code named in a kernel section's Rules has a fixture that triggers exactly that code and a clean
 // counterpart, or is explain-only (check() cannot trigger it: runtime, cli, server, scaffold and testing codes,
@@ -24,7 +25,7 @@ export const EXPLAIN_ONLY: readonly string[] = [
   "E1049",
   ...range("E", 1502, 1506),
   ...range("E", 1552, 1555),
-  ...range("E", 1702, 1706),
+  ...range("E", 1702, 1707),
   "E1756",
   "E1801",
   "E1804",

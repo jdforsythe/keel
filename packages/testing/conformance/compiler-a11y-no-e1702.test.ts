@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Seed 1337
-// Spec: k.compiler, clause "<img alt=\"\">, an unnamed <section>, <td> and <li> with text render with no E1702."
+// Spec: k.compiler, clause "`<img alt="">`, an unnamed `<section>`, `<td>` and `<li>` with text render with no E1702."
 // Non-vacuity: the same renders with a disagreeing a11y.json throw E1702, so "no E1702" is a real check.
 import { compile } from "@keel/compiler";
 import type { A11yEntry } from "@keel/compiler";

@@ -1,3 +1,4 @@
+// Spec: k.forms, clause "For every generated valid value, FormData encode then decode by the schema returns an equal value."
 // fast-check seed: 1337
 import { toFormData } from "@keel/forms";
 import { ok, s } from "@keel/schema";

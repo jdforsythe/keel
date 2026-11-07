@@ -2,7 +2,8 @@ import { mount } from "@keel/runtime-dom";
 import { resume } from "@keel/runtime-dom/ops";
 import { stores } from "@keel/store";
 // @vitest-environment happy-dom
-// Spec: k.runtime Conformance 3 (ADR-0006). Property seed: 1337.
+// Spec: k.runtime, clause "After resume, every server-rendered node keeps its identity, `state()` equals the serialized snapshot, and firing an event by id yields the same state and DOM as a client-only render."
+// ADR-0006. Property seed: 1337.
 // ASSUMPTION: resume(root, { [componentId]: Component }) maps data-k-island ids to compiled components.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

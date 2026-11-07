@@ -8,7 +8,7 @@ import { withFiles } from "./withFiles.ts";
 
 /**
  * Re-check the project with open documents overlaid and return one `textDocument/publishDiagnostics`
- * notification per open (or just closed) document. Same `check` call as `keel check`: same diagnostics.
+ * notification per open (or already closed) document. Same `check` call as `keel check`: same diagnostics.
  */
 export function publishAll(state: LspState, io: Io, closed: readonly string[] = []): Record<string, unknown>[] {
   const root = state.root ?? io.cwd;

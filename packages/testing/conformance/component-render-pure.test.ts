@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.component Conformance, "Render is pure for equal props and state; a11y tree snapshot stable across re-renders". Seed: 1337.
+// Spec: k.component, clause "Render is pure for equal props and state."
+// Spec: k.component, clause "A11y tree snapshot stable across re-renders."
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
 import * as fc from "fast-check";

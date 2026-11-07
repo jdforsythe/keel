@@ -1,7 +1,8 @@
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
-// Clause: every generated json value round-trips and non-JSON values are rejected with rule type. Seed 1337.
+// Spec: k.schema, clause "Every generated json value round-trips and non-JSON values are rejected with rule `type`."
+// Seed 1337.
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED } from "./fixtures";
 

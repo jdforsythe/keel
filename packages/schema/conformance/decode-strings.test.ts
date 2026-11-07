@@ -1,7 +1,8 @@
 import { type SchemaError, pathToString, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
-// Clause: object schemas decode string input (k.forms, k.router); parse hardening; construction guard. Seed 1337, 100 runs.
+// Spec: k.schema, clause "For every generated valid value of an object schema of primitives, encoding to URLSearchParams then decodeStrings returns an equal value."
+// Also covers: decodeStrings coercion (k.forms, k.router), parse hardening, construction guard. Seed 1337, 100 runs.
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED, norm } from "./fixtures";
 

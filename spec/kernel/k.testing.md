@@ -34,16 +34,16 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
   payload: {"item":{"id":"i1","qty":-1}}
 ```
 
-**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence). A conformance test names its clause in a header comment: `// Spec: k.router, clause "<sentence>"`. `rung` is the highest held (docs/TESTING.md):
+**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence). A conformance test in any package names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and the final period aside; it may wrap onto the next `//` lines). `rung` is the highest held (docs/TESTING.md):
 - `example`: a passing test references the item.
 - `probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed.
 - `exhaustive`: a property whose generator's finite domain was fully enumerated.
 - `proven`: a passing type-level test or prover output; nothing else may claim it.
 - `monitored`: production only; never emitted by the kernel. No evidence: `none`.
 
-`keel ledger --diff` compares with the committed ledger.
+`keel ledger --diff` compares with the committed ledger and checks every `conformance-covered` or `frozen` section's clauses.
 
-**Rules.** E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids) · E1706 ledger rung lower than committed, or unsafe count higher · W1706 conformance header `// Clause:` (not counted; fix rewrites it to `// Spec:`).
+**Rules.** E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids) · E1706 ledger rung lower than committed, or unsafe count higher · E1707 `keel ledger --diff`: a `conformance-covered` or `frozen` section has a clause at `none`, or no clause list · W1706 conformance header `// Clause:` (not counted; fix rewrites it to `// Spec:`).
 
 **Conformance.**
 - `render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering.
@@ -55,3 +55,4 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
 - A transaction breaking a declared invariant fails `properties()` with E1704.
 - An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`.
 - Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706.
+- A `conformance-covered` section with a clause no conformance test cites makes `keel ledger --diff` report E1707 at that clause's line.

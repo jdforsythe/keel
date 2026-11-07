@@ -6,6 +6,7 @@ import { LedgerFileSchema } from "./LedgerFileSchema.ts";
 import type { LedgerItem } from "./LedgerItem.ts";
 import type { Outcome } from "./Outcome.ts";
 import { buildLedger } from "./buildLedger.ts";
+import { coverageGaps } from "./coverageGaps.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { mutationScores } from "./mutationScores.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -65,7 +66,8 @@ const ledgerFile = (
  * `keel ledger` writes the records there instead (with per-package mutation scores; stdout keeps the notes and the
  * trailer); `--diff` compares with it (default
  * `.keel/ledger.json`, else `tooling/ledger/ledger.json`) through `ledgerDiff` and writes nothing: E1706 per lowered
- * rung, and E1706 when the unsafe count rose. `--scope <prefix>` keeps the items whose key starts with it; the
+ * rung, E1706 when the unsafe count rose, and E1707 per clause of a `conformance-covered` section left at `none`
+ * (`coverageGaps`). `--scope <prefix>` keeps the items whose key starts with it; the
  * unsafe count is then the matching apps' (`golden-1:`), compared with zero.
  */
 export function ledgerCommand(input: Input, io: Io): Outcome {
@@ -111,8 +113,14 @@ export function ledgerCommand(input: Input, io: Io): Outcome {
   const allowed = scope === "" ? committed?.unsafe : 0;
   if (committed !== undefined && allowed !== undefined && unsafe > allowed)
     diags.push(makeDiag("E1706", `unsafe count up ${allowed} -> ${unsafe}`, { path: name, see: "k.testing" }));
+  const gaps = coverageGaps(files, records, scope);
+  const found = [...diags, ...gaps];
   return {
-    records: [...notes, ...diags, summary("ledger --diff", diags, { ...counts, lowered: diags.length })],
+    records: [
+      ...notes,
+      ...found,
+      summary("ledger --diff", found, { ...counts, lowered: diags.length, uncovered: gaps.length }),
+    ],
     writes: [],
   };
 }

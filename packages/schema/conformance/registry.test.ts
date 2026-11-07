@@ -1,4 +1,4 @@
-// Clause: stdlib types register by name and are retrievable via the registry.
+// Spec: k.schema registry: stdlib types register by name and are retrievable via the registry.
 import { describe, expect, it } from "vitest";
 import { s } from "@keel/schema";
 

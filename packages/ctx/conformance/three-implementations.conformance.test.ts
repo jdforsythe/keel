@@ -1,4 +1,4 @@
-// k.ctx: "every capability has all three implementations"
+// Spec: k.ctx, clause "Every capability has all three implementations."
 import { describe, expect, test } from "vitest";
 import { createCtx, register, capabilities } from "@keel/ctx";
 

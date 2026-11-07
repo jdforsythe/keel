@@ -7,4 +7,15 @@ status: conformance-covered
 
 **Artifacts.** Compiler emits `deps.json`: nodes (signals, computeds, effects, elements) and edges.
 
-**Conformance.** Glitch-free propagation; disposal frees all subscriptions; effects run after commit; resource state transitions are exactly loading -> ready | error; stale resource results never overwrite newer ones; `owner()` inside `scope(fn)` returns that scope's handle; outside any scope it returns undefined; inside an effect it returns the scope that owns the effect; an effect that throws inside a scope with onError delivers the error to that scope's onError and no outer scope's; the throwing effect does not run again; sibling effects still run; without onError the error rethrows from batch; nodes created inside `scope.run(fn)` are disposed with that scope; reading a computed after its scope is disposed throws E1205, also from a live effect that reads it; `run` on a disposed scope throws E1206; reads inside `run` do not register dependencies of an enclosing effect.
+**Conformance.**
+- Glitch-free propagation.
+- Disposal frees all subscriptions.
+- Effects run after commit.
+- Resource state transitions are exactly loading -> ready | error.
+- Stale resource results never overwrite newer ones.
+- `owner()` inside `scope(fn)` returns that scope's handle; outside any scope it returns undefined; inside an effect it returns the scope that owns the effect.
+- An effect that throws inside a scope with onError delivers the error to that scope's onError and no outer scope's; the throwing effect does not run again; sibling effects still run; without onError the error rethrows from batch.
+- Nodes created inside `scope.run(fn)` are disposed with that scope.
+- Reading a computed after its scope is disposed throws E1205, also from a live effect that reads it.
+- `run` on a disposed scope throws E1206.
+- Reads inside `run` do not register dependencies of an enclosing effect.

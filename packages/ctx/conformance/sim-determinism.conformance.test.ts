@@ -1,4 +1,4 @@
-// k.ctx: "Simulated implementations are deterministic by seed"
+// Spec: k.ctx, clause "Simulated implementations are deterministic by seed."
 import { describe, expect, test } from "vitest";
 import fc from "fast-check";
 import { createCtx } from "@keel/ctx";

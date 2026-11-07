@@ -134,8 +134,8 @@ describe("specClauses", () => {
   it("reads the Conformance list: numbered from 1, text trimmed after the dash", () => {
     const src = sec("**Conformance.**", "- first  ", "- second", "", "- after blank");
     expect(specClauses([f("spec/kernel/k.x.md", src)])).toEqual([
-      { id: "k.x", n: 1, text: "first" },
-      { id: "k.x", n: 2, text: "second" },
+      { id: "k.x", n: 1, text: "first", line: 4 },
+      { id: "k.x", n: 2, text: "second", line: 5 },
     ]);
   });
 
@@ -143,11 +143,11 @@ describe("specClauses", () => {
     expect(
       specClauses([f("spec/std/s.md", sec("**Conformance.**", "- a", "prose", "-b", "- c", "**Next.**", "- d"))]),
     ).toEqual([
-      { id: "s", n: 1, text: "a" },
-      { id: "s", n: 2, text: "c" },
+      { id: "s", n: 1, text: "a", line: 4 },
+      { id: "s", n: 2, text: "c", line: 7 },
     ]);
     expect(specClauses([f("spec/std/s.md", sec("**Conformance.**", "- a", "   ", "- b"))])).toEqual([
-      { id: "s", n: 1, text: "a" },
+      { id: "s", n: 1, text: "a", line: 4 },
     ]);
   });
 
@@ -163,15 +163,15 @@ describe("specClauses", () => {
       f("spec/kernel/ind.md", sec(" **Conformance.**", "- indented")),
       good,
     ];
-    expect(specClauses(files)).toEqual([{ id: "ok", n: 1, text: "yes" }]);
+    expect(specClauses(files)).toEqual([{ id: "ok", n: 1, text: "yes", line: 5 }]);
   });
 
   it("only the first Conformance heading counts; counters restart per file", () => {
     const a = f("spec/kernel/a.md", sec("**Conformance.**", "- 1", "**Conformance.**", "- 2"));
     const b = f("spec/std/b.md", sec("**Conformance.**", "- 3"));
     expect(specClauses([a, b])).toEqual([
-      { id: "a", n: 1, text: "1" },
-      { id: "b", n: 1, text: "3" },
+      { id: "a", n: 1, text: "1", line: 4 },
+      { id: "b", n: 1, text: "3", line: 4 },
     ]);
   });
 

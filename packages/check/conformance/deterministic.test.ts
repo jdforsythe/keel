@@ -1,4 +1,5 @@
 // Seed 1337
+// Spec: k.check, clause "Two runs on an unchanged tree produce identical output."
 import { check, format } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";

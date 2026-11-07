@@ -2,6 +2,7 @@ import { scope } from "@keel/reactive";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 // Spec: k.store Ownership, runtime form of E1301 (undeclared transaction -> err store.undeclared). Seed 1337.
+// Spec: k.store, clause "Of two sibling scopes, the one declaring `uses` is restricted and the other is not."
 // E1301 static form and E1302 (purity) are checker rules; untestable here.
 import { describe, expect, it } from "vitest";
 import { itemArb, makeCart, opts } from "./fixtures";

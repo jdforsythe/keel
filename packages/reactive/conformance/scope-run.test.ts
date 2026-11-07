@@ -2,6 +2,9 @@
 // returns its value"; Rules E1206 "run on a disposed scope"; Conformance "nodes created inside scope.run(fn) are
 // disposed with that scope; run on a disposed scope throws E1206; reads inside run do not register dependencies of
 // an enclosing effect".
+// Spec: k.reactive, clause "Nodes created inside `scope.run(fn)` are disposed with that scope."
+// Spec: k.reactive, clause "`run` on a disposed scope throws E1206."
+// Spec: k.reactive, clause "Reads inside `run` do not register dependencies of an enclosing effect."
 import { describe, expect, it } from "vitest";
 import { effect, owner, scope, signal } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";

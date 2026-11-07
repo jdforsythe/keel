@@ -1,4 +1,5 @@
-// Spec: k.schema, clause "Every generated value of a closed object round-trips, and adding an undeclared key fails with rule `unknown-key` at that key. Every generated value of a member union round-trips; a value no member accepts fails with the last member's issues."
+// Spec: k.schema, clause "Every generated value of a closed object round-trips, and adding an undeclared key fails with rule `unknown-key` at that key."
+// Spec: k.schema, clause "Every generated value of a member union round-trips; a value no member accepts fails with the last member's issues."
 // Seed 1337.
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";

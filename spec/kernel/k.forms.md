@@ -31,7 +31,9 @@ Without JS the server runs the same flow: it decodes FormData with the action's 
 **Rules.** E1901 input inside a `<Form>` without `field` · E1902 `field(path)` path not in the schema.
 
 **Conformance.**
-- Submitting invalid values sends no request, sets an error on every invalid field, and focuses the first invalid field.
+- Submitting invalid values sends no request.
+- Submitting invalid values sets an error on every invalid field.
+- Submitting invalid values focuses the first invalid field.
 - For every generated valid value, FormData encode then decode by the schema returns an equal value.
 - A `keel.fields` response sets exactly the listed field errors and clears all others.
 - Any other `err` renders in the `error` slot and leaves values intact.

@@ -2,7 +2,10 @@ import { effect, signal } from "@keel/reactive";
 import { Boundary, mount } from "@keel/runtime-dom";
 import { boundary, clone, on, template } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
-// Spec: k.errors Boundaries + Conformance (Boundary clauses). Property seed: 1337.
+// Spec: k.errors, clause "A throw during a child's render renders the nearest enclosing Boundary's fallback; content outside that boundary is unchanged and no outer fallback renders."
+// Spec: k.errors, clause "After a catch, no effect created in the failed subtree runs again."
+// Spec: k.errors, clause "`reset()` re-renders the children; if they throw again the fallback renders again with the new error."
+// Property seed: 1337.
 // Covered elsewhere: ok/err/attempt/s.result (packages/schema/conformance/result.test.ts),
 // throwing transaction (packages/store/conformance/throws.test.ts).
 import * as fc from "fast-check";

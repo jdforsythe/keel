@@ -1,7 +1,10 @@
 import { attempt, err, ok, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
-// Clauses: k.errors Conformance sentences owned by @keel/schema. Seed 1337.
+// Spec: k.errors, clause "`ok(v)` is `{ ok: true, value: v }`; `err(e)` is `{ ok: false, error: e }`."
+// Spec: k.errors, clause "`s.result(T, E)` round-trips every generated ok and err value through its JSON codec."
+// Spec: k.errors, clause "`attempt` returns `ok(value)` when `fn` returns, and `err` with code `keel.unexpected` when `fn` throws or its promise rejects; it never throws."
+// Seed 1337.
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED } from "./fixtures";
 

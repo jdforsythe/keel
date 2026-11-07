@@ -1,3 +1,4 @@
+// Spec: k.module, clause "Modules `a` and `b` that list each other in `deps` produce one E1153 naming both."
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";

@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// Spec: k.forms, clause "Any other `err` renders in the `error` slot and leaves values intact."
 // fast-check seed: 1337
 import { err } from "@keel/schema";
 import fc from "fast-check";

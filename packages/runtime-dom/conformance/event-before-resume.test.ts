@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.runtime Conformance 5. ASSUMPTION: resume(root, { [componentId]: Component }).
+// Spec: k.runtime, clause "An event fired before its island resumes is applied exactly once after resume."
+// ASSUMPTION: resume(root, { [componentId]: Component }).
 import { resume } from "@keel/runtime-dom/ops";
 import { describe, expect, it } from "vitest";
 import { COUNTER_HTML, Counter, KSTATE, click, flush } from "./fixtures.ts";

@@ -1,4 +1,5 @@
-// Clause: branded IDs are not assignable across brands (type-level, no ts-expect-error).
+// Spec: k.schema, clause "Branded IDs are not assignable across brands."
+// Type-level (expectTypeOf), no ts-expect-error.
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { s } from "@keel/schema";
 import { PostId, UserId } from "./fixtures";

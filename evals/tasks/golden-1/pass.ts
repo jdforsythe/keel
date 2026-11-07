@@ -45,11 +45,8 @@ type Run = { ok: boolean; stdout: string };
 
 const sh = (cmd: string, args: string[], cwd = root): Promise<Run> =>
   new Promise((resolve) => {
-    execFile(
-      cmd,
-      args,
-      { cwd, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, KEEL_AGENT: "1" } },
-      (err, stdout) => resolve({ ok: err === null, stdout: String(stdout) }),
+    execFile(cmd, args, { cwd, maxBuffer: 64 * 1024 * 1024, env: { ...process.env, KEEL_AGENT: "1" } }, (err, stdout) =>
+      resolve({ ok: err === null, stdout: String(stdout) }),
     );
   });
 

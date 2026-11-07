@@ -1,7 +1,7 @@
 import { type Mode, createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import fc from "fast-check";
-// k.ctx: random.id(brand) under sim is deterministic by seed and parses with s.id(brand)
+// Spec: k.ctx, clause "`random.id(brand)` under sim is deterministic by seed and parses with `s.id(brand)`; `random` has no `uuid`."
 import { describe, expect, expectTypeOf, test } from "vitest";
 
 const SEED = 1337;

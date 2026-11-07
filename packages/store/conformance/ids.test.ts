@@ -2,6 +2,8 @@ import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { store, stores } from "@keel/store";
 // Spec: k.store Ids: default id `store.<n>`; stores() lists stores whose owning scope is live; duplicate live id throws.
+// Spec: k.store, clause "`stores()` lists stores whose owning scope is live and drops one on disposal."
+// Spec: k.store, clause "A duplicate live id throws."
 import { describe, expect, it } from "vitest";
 import { Cart } from "./fixtures";
 

@@ -7,4 +7,9 @@ status: conformance-covered
 
 **IDs.** Every element gets a stable id: explicit `id="cart.submit"` or derived `<file>.<index>`, where `<file>` is the project-root-relative path without extension with `/` as `.` (`src.orders.OrderList.0`) and `<index>` counts the file's elements in source order; duplicates are E1404.
 
-**Conformance.** Render is pure for equal props and state; a11y tree snapshot stable across re-renders; every element addressable by id in the harness. A component's JSX children arrive as `props.children` and render inside the child's scope; a base element given JSX text children renders that text.
+**Conformance.**
+- Render is pure for equal props and state.
+- A11y tree snapshot stable across re-renders.
+- Every element addressable by id in the harness.
+- A component's JSX children arrive as `props.children` and render inside the child's scope.
+- A base element given JSX text children renders that text.

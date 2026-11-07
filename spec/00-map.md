@@ -20,19 +20,19 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 ## Kernel
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| k.schema | Schemas | conformance-covered | declare once; types, validators, codecs, generators derive |
+| k.schema | Schemas | implemented | declare once; types, validators, codecs, generators derive |
 | k.reactive | Reactivity | conformance-covered | signal, computed, effect, resource; scopes dispose |
-| k.store | Store and transactions | conformance-covered | named pure transactions, log, undo, ownership |
+| k.store | Store and transactions | implemented | named pure transactions, log, undo, ownership |
 | k.component | Components | conformance-covered | one default export, schema props, named slots, If/For/Match |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX to DOM ops; dep graph, ID index, route table, a11y expectations |
 | k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes, delegation, resume |
 | k.router | Routes | conformance-covered | manifest, typed params and search, loaders, actions by verb, guards |
 | k.forms | Forms | conformance-covered | form(schema): bindings, validation, submit, server errors |
 | k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS, scoped, a11y-required props |
-| k.ctx | Capabilities | conformance-covered | clock, random, net, storage; real, shell, simulated |
+| k.ctx | Capabilities | implemented | clock, random, net, storage; real, shell, simulated |
 | k.errors | Results and boundaries | conformance-covered | Result for expected, boundary for unexpected |
-| k.check | Checker and diagnostics | conformance-covered | codes, fix diffs, budgets, rule registry |
-| k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces, formatter registry |
+| k.check | Checker and diagnostics | implemented | codes, fix diffs, budgets, rule registry |
+| k.cli | CLI, MCP, LSP | implemented | one engine, three surfaces, formatter registry |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
 | k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |
 | k.server | Thin server | conformance-covered | loaders, actions, dev server, adapters, local topology |

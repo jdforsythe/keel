@@ -1,4 +1,5 @@
-// Spec: std.money, clauses on `addMoney`
+// Spec: std.money, clause "For generated same-currency pairs whose sum is in bounds, `addMoney(a, b)` is `ok` with `amount` `a.amount + b.amount` and equals `addMoney(b, a)`."
+// Spec: std.money, clause "Different currencies give `err` `money.currencyMismatch` with `data` `{ left: a.currency, right: b.currency }`; an out-of-bounds sum gives `err` `money.overflow`."
 // Seed 1337
 import { addMoney } from "@keel/std-money";
 import fc from "fast-check";

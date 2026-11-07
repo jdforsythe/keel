@@ -1,7 +1,8 @@
 import { mount } from "@keel/runtime-dom";
 import { clone, on, template } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
-// Spec: k.runtime Conformance 6. Property seed: 1337.
+// Spec: k.runtime, clause "A handler on an inner element runs before one on its ancestor; `stopPropagation` in the inner handler prevents the outer one."
+// Property seed: 1337.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, click } from "./fixtures.ts";

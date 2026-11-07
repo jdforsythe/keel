@@ -1,7 +1,7 @@
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
-// Clause: optional and nullable are distinct (E1102 reasoning). Seed 1337.
+// Spec: k.schema optional vs nullable: optional and nullable are distinct (E1102 reasoning). Seed 1337.
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { RUNS, SEED } from "./fixtures";
 

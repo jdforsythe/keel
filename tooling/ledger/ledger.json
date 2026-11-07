@@ -591,6 +591,12 @@
     },
     {
       "pkg": "inspector",
+      "name": "Masthead",
+      "file": "inspector:inspector/Masthead.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
       "name": "RouteEntry",
       "file": "inspector:inspector/RouteEntry.schema.ts",
       "rung": "example"
@@ -1019,11 +1025,11 @@
     },
     {
       "item": "k.check#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.check#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.check#6",
@@ -1035,15 +1041,15 @@
     },
     {
       "item": "k.check#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.check#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#2",
@@ -1051,15 +1057,15 @@
     },
     {
       "item": "k.cli#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#6",
@@ -1075,11 +1081,11 @@
     },
     {
       "item": "k.cli#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#10",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#11",
@@ -1087,7 +1093,7 @@
     },
     {
       "item": "k.cli#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#13",
@@ -1099,39 +1105,39 @@
     },
     {
       "item": "k.cli#15",
-      "rung": "none"
-    },
-    {
-      "item": "k.compiler#1",
-      "rung": "none"
-    },
-    {
-      "item": "k.compiler#2",
-      "rung": "none"
-    },
-    {
-      "item": "k.compiler#3",
-      "rung": "none"
-    },
-    {
-      "item": "k.compiler#4",
-      "rung": "none"
-    },
-    {
-      "item": "k.compiler#5",
-      "rung": "none"
-    },
-    {
-      "item": "k.compiler#6",
-      "rung": "none"
-    },
-    {
-      "item": "k.compiler#7",
       "rung": "example"
     },
     {
+      "item": "k.compiler#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.compiler#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.compiler#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.compiler#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.compiler#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.compiler#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.compiler#7",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.compiler#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.compiler#9",
@@ -1143,27 +1149,47 @@
     },
     {
       "item": "k.compiler#11",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.compiler#12",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.compiler#13",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.compiler#14",
-      "rung": "none"
+      "rung": "example"
+    },
+    {
+      "item": "k.component#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#5",
+      "rung": "example"
     },
     {
       "item": "k.ctx#1",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.ctx#2",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.ctx#3",
@@ -1171,11 +1197,11 @@
     },
     {
       "item": "k.ctx#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.ctx#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.ctx#6",
@@ -1183,55 +1209,55 @@
     },
     {
       "item": "k.errors#1",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.errors#2",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.errors#3",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.errors#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.errors#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.errors#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.errors#7",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.errors#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.forms#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.forms#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.forms#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.forms#4",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.forms#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.forms#6",
@@ -1239,35 +1265,43 @@
     },
     {
       "item": "k.forms#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.forms#8",
       "rung": "example"
     },
     {
+      "item": "k.forms#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.forms#10",
+      "rung": "example"
+    },
+    {
       "item": "k.module#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#7",
@@ -1278,8 +1312,52 @@
       "rung": "example"
     },
     {
+      "item": "k.reactive#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.reactive#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.reactive#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.reactive#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#11",
+      "rung": "example"
+    },
+    {
       "item": "k.router#1",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.router#2",
@@ -1291,23 +1369,23 @@
     },
     {
       "item": "k.router#4",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.router#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.router#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.router#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.router#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.router#9",
@@ -1323,11 +1401,11 @@
     },
     {
       "item": "k.runtime#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.runtime#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.runtime#3",
@@ -1339,7 +1417,7 @@
     },
     {
       "item": "k.runtime#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.runtime#6",
@@ -1347,15 +1425,15 @@
     },
     {
       "item": "k.runtime#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.runtime#8",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.runtime#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#1",
@@ -1386,32 +1464,76 @@
       "rung": "example"
     },
     {
-      "item": "k.server#1",
+      "item": "k.schema#1",
       "rung": "none"
+    },
+    {
+      "item": "k.schema#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.schema#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.schema#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.schema#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#10",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#11",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.server#1",
+      "rung": "example"
     },
     {
       "item": "k.server#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.server#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.server#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.server#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.server#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.server#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.server#8",
@@ -1435,39 +1557,103 @@
     },
     {
       "item": "k.services#1",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.services#2",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.services#3",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.services#4",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.services#5",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.services#6",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.services#7",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.services#8",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.services#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#10",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#11",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#12",
       "rung": "none"
+    },
+    {
+      "item": "k.store#13",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#14",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#15",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#16",
+      "rung": "probabilistic"
     },
     {
       "item": "k.testing#1",
@@ -1506,8 +1692,12 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.testing#10",
+      "rung": "example"
+    },
+    {
       "item": "k.ui#1",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.ui#2",
@@ -1515,7 +1705,7 @@
     },
     {
       "item": "k.ui#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.ui#4",
@@ -1543,47 +1733,47 @@
     },
     {
       "item": "std.brands#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.brands#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.brands#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.brands#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.brands#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.brands#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.geo#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.geo#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.geo#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.geo#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.geo#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.health#1",
@@ -1595,15 +1785,15 @@
     },
     {
       "item": "std.health#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.health#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.health#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.health#6",
@@ -1611,7 +1801,7 @@
     },
     {
       "item": "std.health#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.money#1",
@@ -1631,11 +1821,11 @@
     },
     {
       "item": "std.money#5",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.money#6",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.money#7",
@@ -1647,19 +1837,19 @@
     },
     {
       "item": "std.report#2",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.report#3",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.report#4",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.report#5",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.report#6",
@@ -1703,11 +1893,11 @@
     },
     {
       "item": "std.timings#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.timings#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.timings#3",
@@ -1715,7 +1905,7 @@
     },
     {
       "item": "std.timings#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.timings#5",

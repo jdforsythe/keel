@@ -1,3 +1,4 @@
+// Spec: k.module, clause "A route `show` declared in module `orders` without the `orders.` prefix reports E1155."
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";

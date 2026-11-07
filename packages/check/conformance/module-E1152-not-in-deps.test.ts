@@ -1,3 +1,4 @@
+// Spec: k.module, clause "Importing from a module absent from `deps` reports E1152 even when the export is public."
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";

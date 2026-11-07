@@ -1,3 +1,4 @@
+// Spec: k.module, clause "Using `ctx.net` in a module without `net` in `capabilities` reports E1156."
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";

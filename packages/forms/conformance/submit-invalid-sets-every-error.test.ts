@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 // fast-check seed: 1337
+// Spec: k.forms, clause "Submitting invalid values sets an error on every invalid field."
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { FIELDS, INVALID, RUNS, SEED, VALID, setup } from "./fixtures.ts";

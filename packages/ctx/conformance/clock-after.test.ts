@@ -1,6 +1,6 @@
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";
-// k.ctx: clock.after(ms, signal) under sim resolves exactly when advance crosses the deadline
+// Spec: k.ctx, clause "`after(ms)` under sim resolves exactly when `advance` crosses the deadline, never before, and an aborted waiter rejects."
 import { describe, expect, test } from "vitest";
 
 const SEED = 1337;

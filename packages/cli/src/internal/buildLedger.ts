@@ -4,9 +4,11 @@ import type { Diag } from "./Diag.ts";
 import type { LedgerItem } from "./LedgerItem.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
+import { citesClause } from "./citesClause.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { scrubCode } from "./scrubCode.ts";
 import { specClauses } from "./specClauses.ts";
+import { specHeaders } from "./specHeaders.ts";
 import { testEvidence } from "./testEvidence.ts";
 
 const FN_DECL = /^export\s+(?:async\s+)?function\*?\s+([A-Za-z_$][\w$]*)/;
@@ -52,8 +54,9 @@ const evidenceFor = (refs: readonly TestRef[], name: string): LedgerItem["eviden
  *   non-skipped test body or a helper it calls; never a comment, a string, or a skipped test);
  * - every export of `apps/<app>/modules/**` except manifests and component parts (`<app>:<path>#<name>`), with
  *   evidence from the app's `test/` and co-located tests;
- * - every spec Conformance clause (`k.cli#7`), with the tests of conformance files whose leading `// Spec:` header
- *   names the section and quotes the clause. A `// Clause:` header is not read; it is W1706 with the fix.
+ * - every spec Conformance clause (`k.cli#7`), with the non-skipped tests of every conformance file, in any package,
+ *   with a leading `// Spec: <id>` header block (`specHeaders`, which may wrap) that quotes the clause (`citesClause`:
+ *   backticks, quote style, spacing and case aside). A `// Clause:` header is not read; it is W1706 with the fix.
  * Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`.
  */
 export function buildLedger(files: readonly SourceFile[]): {
@@ -121,21 +124,15 @@ export function buildLedger(files: readonly SourceFile[]): {
         }),
       );
     }
-    const spec = head
-      .filter((x) => x.text.includes("Spec:"))
-      .map((x) => x.text)
-      .join("\n");
     return {
       path: f.path,
-      spec,
+      blocks: specHeaders(head),
       tests: (refs.get(`packages/${PKG.exec(f.path)?.[1] ?? ""}`) ?? []).filter((r) => r.path === f.path),
     };
   });
   for (const { id, n, text } of specClauses(files)) {
-    const bare = text.replace(/\.$/, "");
-    const named = new RegExp(`Spec: ${id.replace(/\./g, "\\.")}\\b`);
     const evidence = headed
-      .filter((h) => named.test(h.spec) && h.spec.includes(bare))
+      .filter((h) => h.blocks.some((b) => b.section === id && citesClause(b.text, text)))
       .flatMap((h) => h.tests.map((t) => ({ ev: t.ev, path: t.path })));
     items.push({ item: `${id}#${n}`, evidence });
   }

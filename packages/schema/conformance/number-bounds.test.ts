@@ -1,8 +1,8 @@
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
-// Clause: for number and int with bounds, every generated value is within bounds and parse
-// rejects values outside with rule min or max. Seed 1337, 100 runs.
+// Spec: k.schema, clause "For number and int with bounds, every generated value is within bounds and parse rejects values outside with rule `min` or `max`."
+// Seed 1337, 100 runs.
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED } from "./fixtures";
 

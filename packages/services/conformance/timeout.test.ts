@@ -3,6 +3,7 @@ import { s } from "@keel/schema";
 import { endpoints, service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+// Spec: k.services, clause "Under sim, with no response, advancing the clock to `timeout - 1` leaves the call pending; advancing to `timeout` yields `api.timeout` and aborts the request signal."
 // seed 1337 (fast-check runs below pass { seed: 1337 }); no wall clock, no Math.random.
 // ASSUMPTION (public API not visible from index.ts): sim net is `ctx.net.route(url, handler)` where the
 // handler receives a request with `url`/`signal` and returns a standard Response; sim clock has `advance(ms)`.

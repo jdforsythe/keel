@@ -174,11 +174,54 @@ describe("buildLedger", () => {
       file("packages/a/conformance/std.test.ts", `// Spec: s.c, clause "Std clause."\n${body}`),
     ]);
     expect(items).toEqual([
-      { item: "k.a.b#1", evidence: [{ ev: prop(100, 1), path: "packages/a/conformance/yes.test.ts" }] },
+      {
+        item: "k.a.b#1",
+        evidence: [
+          { ev: prop(100, 1), path: "packages/a/conformance/yes.test.ts" },
+          { ev: EX, path: "packages/a/conformance/split.test.ts" },
+        ],
+      },
       { item: "k.a.b#2", evidence: [{ ev: EX, path: "packages/a/conformance/two.test.ts" }] },
       { item: "s.c#1", evidence: [{ ev: EX, path: "packages/a/conformance/std.test.ts" }] },
     ]);
     expect(diags).toEqual([]);
+  });
+
+  it("a clause is cited by its quoted text: backticks, quote style, spacing, case and final period aside (rfc:0049)", () => {
+    const spec = file(
+      "spec/kernel/k.x.md",
+      [
+        "# k.x",
+        "**Conformance.**",
+        "- `mount` then `dispose` leaves zero listeners.",
+        "- A tree attaches N listeners.",
+        "- A tree attaches N listeners to its root.",
+        '- `caller` is `""` when absent.',
+        "",
+      ].join("\n"),
+    );
+    const body = 'import { it } from "vitest";\nit("t", () => {});\n';
+    const at = (path: string, head: string) => file(`packages/${path}`, `${head}\n${body}`);
+    const { items } = buildLedger([
+      spec,
+      file("spec/kernel/k.y.md", "# k.y\n**Conformance.**\n- A tree attaches N listeners.\n"),
+      at("a/conformance/bare.test.ts", '// Spec: k.x, clause "mount then dispose leaves zero listeners"'),
+      at("a/conformance/curly.test.ts", "// Spec: k.x, clause \u201CMOUNT then  dispose leaves zero listeners.\u201D"),
+      at("a/conformance/wrap.test.ts", '// Spec: k.x, clause "A tree attaches N\n// listeners to its root." Seed 1.'),
+      at("a/conformance/gap.test.ts", '// Spec: k.x, clause "A tree attaches N\n\n// listeners to its root."'),
+      at("a/conformance/cut.test.ts", '// Spec: k.x, clause "A tree attaches N\n// Clause: listeners to its root."'),
+      at("a/conformance/number.test.ts", "// Spec: k.x Conformance 2"),
+      at("a/conformance/unquoted.test.ts", "// Spec: k.x Conformance: A tree attaches N listeners."),
+      at("a/conformance/other.test.ts", '// Spec: k.y\n// Spec: k.z, clause "A tree attaches N listeners."'),
+      at("b/conformance/cross.test.ts", '// Spec: k.x, clause "`caller` is `""` when absent."'),
+      at("a/conformance/notx.test.ts", '// Spec: k.xy, clause "A tree attaches N listeners."'),
+    ]);
+    const paths = (item: string) => items.find((i) => i.item === item)?.evidence.map((e) => e.path);
+    expect(paths("k.x#1")).toEqual(["packages/a/conformance/bare.test.ts", "packages/a/conformance/curly.test.ts"]);
+    expect(paths("k.x#2")).toEqual([]);
+    expect(paths("k.x#3")).toEqual(["packages/a/conformance/wrap.test.ts"]);
+    expect(paths("k.x#4")).toEqual(["packages/b/conformance/cross.test.ts"]);
+    expect(paths("k.y#1")).toEqual([]);
   });
 
   it("a // Clause: header is not evidence; it is W1706 with the // Spec: rewrite as fix", () => {
@@ -331,7 +374,7 @@ describe("ledger command", () => {
     expect(lines(r.stdout)).toEqual([
       "E1706 packages/a/src/foo.ts:1:1 ledger rung lowered: packages/a/src/foo.ts#foo exhaustive -> probabilistic",
       "  see: k.testing",
-      "fail ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 1 lowered",
+      "fail ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 1 lowered, 0 uncovered",
     ]);
     const json = await run(["ledger", "--diff", "--format=json"], {
       cwd: CWD,
@@ -412,7 +455,9 @@ describe("ledger command", () => {
     const reversed = [...base, committed("none", ".keel/ledger.json"), committed("exhaustive")];
     const r = await run(["ledger", "--diff"], { cwd: CWD, files: reversed });
     expect(r.code).toBe(0);
-    expect(lines(r.stdout)).toEqual(["ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 0 lowered"]);
+    expect(lines(r.stdout)).toEqual([
+      "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 0 lowered, 0 uncovered",
+    ]);
   });
 
   it("--diff without a committed ledger, or with an unreadable one, compares against nothing", async () => {
@@ -423,7 +468,9 @@ describe("ledger command", () => {
     ]) {
       const r = await run(["ledger", "--diff"], { cwd: CWD, files });
       expect(r.code).toBe(0);
-      expect(lines(r.stdout)).toEqual(["ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 0 lowered"]);
+      expect(lines(r.stdout)).toEqual([
+        "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 0 lowered, 0 uncovered",
+      ]);
     }
   });
 });

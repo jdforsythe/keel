@@ -1,5 +1,5 @@
 # k.schema: Schemas
-status: conformance-covered
+status: implemented
 
 **Purpose.** One declaration per data shape. Everything derives from it.
 
@@ -23,4 +23,15 @@ Primitives: `string`, `number` (finite, `{ min, max }`), `int` (`{ min, max }`),
 
 **Rules** (checker, on source; never runtime codes). E1104 schema declared outside a `*.schema.ts` file · E1105 `reveal` imported in an app file other than `*.server.ts` (rfc:0026).
 
-**Conformance.** `parse(encode(v))` round-trips for every type but `secret`; a schema has no `decode`; generator produces only valid values; parse rejects every invalid shape in the fixture set; branded IDs are not assignable across brands. For every generated valid value of an object schema of primitives, encoding to URLSearchParams then decodeStrings returns an equal value. For number and int with bounds, every generated value is within bounds and parse rejects values outside with rule min or max. Every generated json value round-trips and non-JSON values are rejected with rule type. For every generated secret: it parses; `encode`, `String` and `util.inspect` give the marker, `JSON.stringify` the marker's JSON, `structuredClone` an empty object; parsing a raw value yields a secret revealing it; the marker fails with rule `secret-missing`. Every generated value of a closed object round-trips, and adding an undeclared key fails with rule `unknown-key` at that key. Every generated value of a member union round-trips; a value no member accepts fails with the last member's issues.
+**Conformance.**
+- `parse(encode(v))` round-trips for every type but `secret`.
+- A schema has no `decode`.
+- Generator produces only valid values.
+- Parse rejects every invalid shape in the fixture set.
+- Branded IDs are not assignable across brands.
+- For every generated valid value of an object schema of primitives, encoding to URLSearchParams then decodeStrings returns an equal value.
+- For number and int with bounds, every generated value is within bounds and parse rejects values outside with rule min or max.
+- Every generated json value round-trips and non-JSON values are rejected with rule type.
+- For every generated secret: it parses; `encode`, `String` and `util.inspect` give the marker, `JSON.stringify` the marker's JSON, `structuredClone` an empty object; parsing a raw value yields a secret revealing it; the marker fails with rule `secret-missing`.
+- Every generated value of a closed object round-trips, and adding an undeclared key fails with rule `unknown-key` at that key.
+- Every generated value of a member union round-trips; a value no member accepts fails with the last member's issues.

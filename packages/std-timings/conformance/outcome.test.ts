@@ -1,5 +1,4 @@
-// Spec: std.timings, clauses "`time` returns `fn`'s value." and
-// "When `fn` rejects, `time` rejects with the same reason, and the call is still counted."
+// Spec: std.timings, clause "`time` returns `fn`'s value. When `fn` rejects, `time` rejects with the same reason, and the call is still counted."
 // Seed 1337
 import { createCtx } from "@keel/ctx";
 import { time, timingsOf } from "@keel/std-timings";

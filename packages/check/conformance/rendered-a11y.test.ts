@@ -1,6 +1,7 @@
 // Seed 1337
 // rfc:0023: `keel check` is static only. Rendered a11y (axe vs a11y.json, E1702/E1703) is `keel test`; here only the
 // type-level a11y rule (E1802) is asserted, and `check()` is shown never to evaluate app code.
+// Spec: k.check, clause "`check()` never evaluates app code: a module that throws at top level yields only static diagnostics."
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";

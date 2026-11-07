@@ -1,5 +1,4 @@
-// Spec: std.health, clause "A `createApp` (node, sim ctx) serving `routes` answers `GET /health` with `accept: application/json`
-// with status 200 and the loader result `ok({ status: 'ok', at })`, where `at` is the sim clock's `now()`. The value parses with `Health`."
+// Spec: std.health, clause "A `createApp` (node, sim ctx) serving `routes` answers `GET /health` with `accept: application/json` with status 200; the body's `results['health.status']` is the loader result `ok({ status: 'ok', at })`, where `at` is the sim clock's `now()`. The value parses with `Health`."
 // @vitest-environment happy-dom
 // Seed 1337. The JSON body's `results['health.status']` is the loader result.
 import { createCtx } from "@keel/ctx";

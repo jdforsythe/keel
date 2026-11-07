@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Seed 1337
-// Spec: k.compiler a11y.json paragraph and Conformance "<img alt=\"\">, an unnamed <section>, <td> and <li> with text render with no E1702."
+// Spec: k.compiler, clause "`<img alt="">`, an unnamed `<section>`, `<td>` and `<li>` with text render with no E1702."
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import type { Slots } from "@keel/runtime-dom";

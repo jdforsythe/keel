@@ -1,6 +1,7 @@
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
-// Clause: generator produces only valid values. Seed 1337, 100 runs.
+// Spec: k.schema, clause "Generator produces only valid values."
+// Seed 1337, 100 runs.
 import { describe, expect, it } from "vitest";
 import { Enum, Int, Num, RUNS, SEED, Str, allTypes } from "./fixtures";
 

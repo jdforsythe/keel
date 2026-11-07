@@ -1,6 +1,7 @@
 import type { LogEntry } from "@keel/store";
 import { tx } from "@keel/store";
 // Spec: k.store `undoWhere(pred)` undoes exactly when the latest entry satisfies `pred` and otherwise changes nothing. Seed 1337.
+// Spec: k.store, clause "`undoWhere(pred)` undoes exactly when the latest entry satisfies `pred` and otherwise changes nothing."
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { makeCart, opArb, opts } from "./fixtures";

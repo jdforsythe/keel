@@ -1,4 +1,10 @@
-// Spec: std.brands. Seed 1337 (fast-check seed, recorded in each fc.assert below).
+// Spec: std.brands, clause "After importing `@keel/std-brands`, `rules()` lists E2101 and `explain('E2101')` returns the rule's explain text, at most 120 tokens."
+// Spec: std.brands, clause "For generated non-PascalCase brands (lower, snake, kebab, camel), `s.id('<b>')` reports exactly one E2101 at the literal's line and col; `ctx.random.id('<b>')` does too."
+// Spec: std.brands, clause "A file whose brands are all PascalCase literals, variables, or other expressions reports no E2101."
+// Spec: std.brands, clause "For each generated E2101 with a fix, the fix applies to its file with `git apply`, and re-checking the patched file reports no E2101."
+// Spec: std.brands, clause "The fixed brand of `user_id`, `user-id` and `userId` is `UserId`; the quote character is kept."
+// Spec: std.brands, clause "A brand with no letter-led PascalCase form (`'_'`, `'1st'`) reports E2101 without a `fix`."
+// Seed 1337 (fast-check seed, recorded in each fc.assert below).
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

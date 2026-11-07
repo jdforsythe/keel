@@ -1,5 +1,5 @@
 # k.ctx: Capabilities
-status: conformance-covered
+status: implemented
 
 **API.** `ctx.clock.now()`, `ctx.clock.after(ms, signal?): Promise<void>` (sim: resolved by `advance` in deadline order; abort rejects with the reason), `ctx.random.float()`, `ctx.random.id(brand): Id<B>` (a fresh v4 uuid typed as `s.id(brand)`; the one way to mint an id or token, no `uuid()`; rfc:0043), `ctx.net.fetch(req)`, `ctx.storage.get/set`. Registry: `register(name, { real, shell, sim })` with factories `(opts: { seed }) => Impl`; returns a typed accessor `(ctx) => Impl`, the only access path (no `ctx[name]`); resolution is lazy, the first access on a ctx builds the implementation for that ctx's mode, so `createCtx` and `register` may run in either order and a ctx made earlier sees later registrations; each factory's seed is derived from the ctx seed and the name; `capabilities()` lists names; re-registering a name with the identical implementations object is idempotent (returns the same accessor), any other duplicate name is E1602.
 

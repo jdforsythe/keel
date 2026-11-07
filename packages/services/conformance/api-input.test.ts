@@ -3,6 +3,7 @@ import { s } from "@keel/schema";
 import { endpoints, service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+// Spec: k.services, clause "Invalid call input returns `err` `api.input` with issue paths prefixed params/query/body and sends no request."
 // seed 1337 (fast-check runs below pass { seed: 1337 }); no wall clock, no Math.random.
 // ASSUMPTION (public API not visible from index.ts): sim net is `ctx.net.route(url, handler)`.
 const BASE = "https://api.example.com";

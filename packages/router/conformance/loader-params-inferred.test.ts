@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router Conformance: A loader declared with `params: P` gives `fn` `params` of type `Infer<typeof P>`; `manifest` throws E1507 when the route's `params` is another schema value.
+// Spec: k.router, clause "A loader declared with `params: P` gives `fn` `params` of type `Infer<typeof P>`; `manifest` throws E1507 when the route's `params` is another schema value."
 // The type half is checked by `tsc --noEmit` (expectTypeOf inside fn bodies); the runtime half by `manifest`.
 import { action, loader, manifest } from "@keel/router";
 import { type Infer, ok, s } from "@keel/schema";

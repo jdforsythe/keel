@@ -1,4 +1,5 @@
-// Clause: parse rejects every invalid shape in the fixture set.
+// Spec: k.schema, clause "Parse rejects every invalid shape in the fixture set."
+// Spec: k.schema, clause "A schema has no `decode`."
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { Arr, Bool, Enum, Int, Lit, Num, Obj, Rec, Str, Union, UserId } from "./fixtures";
 

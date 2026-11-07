@@ -13,7 +13,7 @@ const QUERY = (rel: string): boolean =>
   (rel.startsWith("spec/") && rel.endsWith(".md")) ||
   (rel.startsWith(".keel/") && rel.endsWith(".json")) ||
   rel === "tooling/ledger/ledger.json";
-/** Stryker reports, read by `ledger` only: the walk enters `reports` just on the path to them. */
+/** Stryker reports, read by `ledger` only: the walk enters `reports` only on the path to them. */
 const MUTATION_REPORT = /^packages\/[^/]+\/reports\/mutation\/mutation\.json$/;
 const TO_REPORT = /^packages\/[^/]+\/reports(?:\/mutation)?$/;
 

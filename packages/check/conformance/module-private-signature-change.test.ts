@@ -1,3 +1,4 @@
+// Spec: k.module, clause "Changing the signature of a non-public export produces no diagnostic in any other module."
 // Seed 1337
 import fc from "fast-check";
 import { check } from "@keel/check";

@@ -1,3 +1,4 @@
+// Spec: k.module, clause "Importing a non-public export of another module reports E1151 at the import; adding it to `public.exports` clears it."
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";

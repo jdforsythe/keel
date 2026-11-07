@@ -1,7 +1,8 @@
 import { mount } from "@keel/runtime-dom";
 import { clone, on, template } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
-// Spec: k.runtime API (mount options) + Conformance "mount onError receives the error the root boundary rendered". Seed: 1337.
+// Spec: k.runtime, clause "`mount` `onError` receives the error the root boundary rendered."
+// Also API (mount options). Seed: 1337.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, click, flush, inScope } from "./fixtures.ts";
