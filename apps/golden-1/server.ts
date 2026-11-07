@@ -2,7 +2,8 @@
 // `KEEL_API_PORT` overrides). It owns the board (`api.board`, a `stores` factory: each request restores it from
 // `ctx.storage`, which the `api` script backs with Node's localStorage in `.api.storage`); the `web` client reads and
 // writes it over HTTP. Node 24 runs this file with type stripping; vite proxies `/api` here in dev and preview. The entry is the
-// only place that reads `process.env`: `NODE_ENV=development` serves dev mode (inspect, error text), else production.
+// only place that reads `process.env`: `NODE_ENV=development` serves dev mode (inspect, error text), else production,
+// which serves the deployable's client build from `dist/api` (`pnpm build` first; missing: E1555, k.server Build).
 import { serve } from "@hono/node-server";
 import { createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
@@ -20,6 +21,7 @@ const app = await createApp({
   ctx: createCtx({ mode: "real" }),
   deployable: DEPLOYABLE,
   mode: MODE,
+  assets: `${import.meta.dirname}/dist/${DEPLOYABLE}`,
   log,
 });
 serve({ fetch: app.fetch, port: PORT }, (info) => log.write(`ok ${DEPLOYABLE} listening on :${info.port}`));

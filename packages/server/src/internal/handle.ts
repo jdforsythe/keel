@@ -21,7 +21,7 @@ import { statusOf } from "./statusOf.ts";
 /**
  * One request (k.server Request flow): a write (POST, PUT, PATCH, DELETE) that is not same-site gets 403
  * `keel.denied` before anything runs (CSRF, RFC 0022, `sameSite`); a GET or HEAD of `/@keel/entry.ts` gets the resume
- * entry (`servedEntry`, RFC 0046); then match the path (no pattern: 404; trailing
+ * entry, or a production client build's file (`servedEntry`, RFC 0046, 0048); then match the path (no pattern: 404; trailing
  * slash: 308 to the canonical path), parse params (fail: 404 at the nearest errorElement, no guard or loader runs) and search
  * (failing keys dropped), run guards outermost first (deny: 302, or 303 for a write, to the redirect route
  * with `next`), then GET/HEAD render the page and the action verbs run the action (a fresh caller token is set as a
@@ -41,7 +41,7 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope): Promis
   };
   if (isVerb(method) && !sameSite(raw))
     return { response: denied("cross-site write refused"), route: undefined, diags: [] };
-  const entry = servedEntry(raw, url.pathname);
+  const entry = servedEntry(raw, url.pathname, sv.built);
   if (entry !== null) return entry;
   const m = matchUrl(sv.table, `${path}${url.search}`);
   const route = m.route?.id;

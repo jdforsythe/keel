@@ -72,6 +72,7 @@ describe("inspectMiddleware", () => {
       ids: { "a.b": { tag: "p" } },
       a11y: { "a.b": { role: "paragraph" } },
       routes: {},
+      sections: {},
     });
   });
 
@@ -81,6 +82,16 @@ describe("inspectMiddleware", () => {
     artifact("routes.json", { "todos.index": { path: "/" } });
     const { json } = await get();
     expect(json).toMatchObject({ live: true, ...REPORT, routes: { "todos.index": { path: "/" } } });
+  });
+
+  it("serves posted inspector sections in the document, and rejects a malformed sections value", async () => {
+    const sections = { "orders.recent": { doc: "recent orders", value: [1] }, bad: { doc: "d", error: "E1057 x" } };
+    expect((await post(JSON.stringify({ ...REPORT, sections }))).status).toBe(204);
+    expect((await get()).json).toMatchObject({ live: true, sections });
+    expect((await post(JSON.stringify({ ...REPORT, sections: [] }))).status).toBe(400);
+    expect((await post(JSON.stringify({ ...REPORT, sections: 1 }))).status).toBe(400);
+    expect((await post(JSON.stringify(REPORT))).status).toBe(204);
+    expect((await get()).json).toMatchObject({ sections: {} });
   });
 
   it("rejects cross-origin, non-JSON, malformed, and oversized posts and keeps the previous report", async () => {
@@ -188,9 +199,12 @@ describe("plugin wiring and dev entry", () => {
     const code = entryCode(["/modules/todos/routes.ts"], "virtual:keel.css");
     expect(code).toContain('import { inspect } from "@keel/reactive";');
     expect(code).toContain('import { stores } from "@keel/store";');
+    expect(code).toContain('import { inspectorSections } from "@keel/compiler/inspect/inspectorSections";');
     expect(code).toContain("if (import.meta.env.DEV) {");
     expect(code).toContain('fetch("/__keel/inspect", { method: "POST"');
-    expect(code).toContain("JSON.stringify({ graph: inspect(), stores: live })");
+    expect(code).toContain(
+      "JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections })",
+    );
     expect(code).toContain("setInterval(report, 1000);");
     expect(code.indexOf("mount(router.App")).toBeLessThan(code.indexOf("report();"));
     expect(parseSync("entry.js", code, { sourceType: "module" }).errors).toEqual([]);

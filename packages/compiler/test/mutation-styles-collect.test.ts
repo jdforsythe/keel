@@ -4,7 +4,7 @@ import { analyze } from "../src/internal/analyze.ts";
 import { collectElements } from "../src/internal/collectElements.ts";
 import { collectStyles } from "../src/internal/collectStyles.ts";
 
-const UI = 'import { Box, Text, styles } from "@keel/ui";\n';
+const UI = 'import { Box, Text } from "@keel/ui";\n';
 const styled = (src: string, path = "T.tsx") => collectStyles(analyze({ path, source: src }));
 const use = (src: string) => styled(src).usages;
 const rewriteOf = (src: string) => {
@@ -24,23 +24,9 @@ describe("collectStyles: imports", () => {
     expect(styled('import type { Box } from "@keel/ui"; const x = <Box p="2"/>').usages).toEqual([]);
     expect(styled('import { type Box } from "@keel/ui"; const x = <Box p="2"/>').usages).toEqual([]);
     expect(styled('import { Other } from "@keel/ui"; const x = <Other p="2"/>').usages).toEqual([]);
-    expect(styled('import { type styles } from "@keel/ui"; styles({ s: { p: "2" } })').usages).toEqual([]);
-    expect(styled('import type { styles } from "@keel/ui"; styles({ s: { p: "2" } })').usages).toEqual([]);
-    expect(styled('import { styles } from "other"; styles({ s: { p: "2" } })').usages).toEqual([]);
-    expect(styled('import { stylesX } from "@keel/ui"; stylesX({ s: { p: "2" } })').usages).toEqual([]);
   });
   it("supports aliases and string-literal import names", () => {
     expect(styled('import { Box as B } from "@keel/ui"; const x = <B p="2"/>').usages).toEqual([{ props: { p: "2" } }]);
-    expect(styled('import { styles as st } from "@keel/ui"; st({ s: { p: "2" } })').usages).toEqual([
-      { props: { p: "2" } },
-    ]);
-    expect(styled('import { "styles" as st } from "@keel/ui"; st({ s: { p: "3" } })').usages).toEqual([
-      { props: { p: "3" } },
-    ]);
-    expect(styled('import Def, { styles } from "@keel/ui"; styles({ s: { p: "4" } })').usages).toEqual([
-      { props: { p: "4" } },
-    ]);
-    expect(styled('import * as ui from "@keel/ui"; ui.styles({ s: { p: "4" } })').usages).toEqual([]);
   });
   it("ignores non-base JSX names", () => {
     expect(use(`${UI}const x = <Other p="2"/>;`)).toEqual([]);
@@ -50,10 +36,12 @@ describe("collectStyles: imports", () => {
   });
 });
 
-describe("collectStyles: styles() calls", () => {
+const J = (attrs: string) => use(`${UI}const x = <Box ${attrs} />;`);
+
+describe("collectStyles: value shapes", () => {
   it("collects plain, responsive and state props", () => {
-    const u = use(
-      `${UI}styles({ s: { p: "2", bg: { base: "a", md: "b" }, states: { hover: { fg: "c" }, focusVisible: { w: "1" }, active: { h: "2" }, disabled: { m: "3" } } } });`,
+    const u = J(
+      `p="2" bg={{ base: "a", md: "b" }} states={{ hover: { fg: "c" }, focusVisible: { w: "1" }, active: { h: "2" }, disabled: { m: "3" } }}`,
     );
     expect(u).toEqual([
       { props: { bg: "a" } },
@@ -66,7 +54,7 @@ describe("collectStyles: styles() calls", () => {
     ]);
   });
   it("sorts by the JSON key [prop, token, breakpoint, state]", () => {
-    expect(use(`${UI}styles({ s: { p: "b", m: "a", gap: { base: "z", md: "y" } } });`)).toEqual([
+    expect(J(`p="b" m="a" gap={{ base: "z", md: "y" }}`)).toEqual([
       { props: { gap: "y" }, breakpoint: "md" },
       { props: { gap: "z" } },
       { props: { m: "a" } },
@@ -75,7 +63,7 @@ describe("collectStyles: styles() calls", () => {
   });
   it("de-duplicates identical leaves, keeping distinct tokens, breakpoints and states", () => {
     const u = use(
-      `${UI}styles({ s: { p: "2" } }); styles({ s: { p: "2" } }); styles({ s: { p: { base: "2", md: "2" } } }); styles({ s: { states: { hover: { p: "2" } } } }); styles({ s: { m: "2" } }); styles({ s: { p: "3" } });`,
+      `${UI}const x = <><Box p="2" /><Box p="2" /><Box p={{ base: "2", md: "2" }} /><Box states={{ hover: { p: "2" } }} /><Box m="2" /><Box p="3" /></>;`,
     );
     expect(u).toEqual([
       { props: { m: "2" } },
@@ -85,54 +73,43 @@ describe("collectStyles: styles() calls", () => {
       { props: { p: "3" } },
     ]);
   });
-  it("skips calls that are not simple styles(object) calls", () => {
-    expect(
-      use(`${UI}styles(); styles(...a); styles(x); styles("p"); obj.styles({ s: { p: "2" } }); other({ p: "2" });`),
-    ).toEqual([]);
-    expect(use(`${UI}styles(...[{ p: "9" }]);`)).toEqual([]);
-    expect(use(`${UI}styles({ s: { ...a, p: "2" } });`)).toEqual([{ props: { p: "2" } }]);
-    expect(use(`${UI}styles({ s: { [k]: "2", "m": "1", 3: "x" } });`)).toEqual([{ props: { m: "1" } }]);
-  });
   it("handles value shapes: numbers, templates, parens, ternaries, logicals", () => {
-    expect(use(`${UI}styles({ s: { p: 4, m: \`5\`, gap: ("6") } });`)).toEqual([
+    expect(J(`p={4} m={\`5\`} gap={("6")}`)).toEqual([
       { props: { gap: "6" } },
       { props: { m: "5" } },
       { props: { p: "4" } },
     ]);
-    expect(use(`${UI}styles({ s: { p: a ? "1" : "2", m: a && "3", gap: a || "4", w: a ?? "5" } });`)).toEqual([
+    expect(J(`p={a ? "1" : "2"} m={a && "3"} gap={a || "4"} w={a ?? "5"}`)).toEqual([
       { props: { gap: "4" } },
       { props: { m: "3" } },
       { props: { p: "1" } },
       { props: { p: "2" } },
       { props: { w: "5" } },
     ]);
-    expect(use(`${UI}styles({ s: { p: a ? (b ? "1" : "2") : "3" } });`)).toEqual([
+    expect(J(`p={a ? (b ? "1" : "2") : "3"}`)).toEqual([
       { props: { p: "1" } },
       { props: { p: "2" } },
       { props: { p: "3" } },
     ]);
-    expect(use(`${UI}styles({ s: { p: \`a\${x}\`, m: x, gap: true, w: null, h: f() } });`)).toEqual([]);
-    expect(use(`${UI}styles({ s: { p: a ? x : "1" } });`)).toEqual([{ props: { p: "1" } }]);
-    expect(use(`${UI}styles({ s: { p: { md: x, lg: "1" } } });`)).toEqual([{ props: { p: "1" }, breakpoint: "lg" }]);
+    expect(J("p={`a${x}`} m={x} gap={true} w={null} h={f()}")).toEqual([]);
+    expect(J(`p={a ? x : "1"}`)).toEqual([{ props: { p: "1" } }]);
+    expect(J(`p={{ md: x, lg: "1" }}`)).toEqual([{ props: { p: "1" }, breakpoint: "lg" }]);
   });
   it("handles odd keys and unknown props", () => {
-    expect(
-      use(`${UI}styles({ s: { p: { "md": "1", 2: "2", [k]: "3", ...s, get g() { return "4"; }, m() {} } } });`),
-    ).toEqual([
+    expect(J(`p={{ "md": "1", 2: "2", [k]: "3", ...s, get g() { return "4"; }, m() {} }}`)).toEqual([
       { props: { p: "1" }, breakpoint: "md" },
       { props: { p: "2" }, breakpoint: "2" },
     ]);
-    expect(use(`${UI}styles({ s: { unknown: "1", states: { hover: { p: "1" }, bogus: { p: "2" } } } });`)).toEqual([
+    expect(J(`unknown="1" states={{ hover: { p: "1" }, bogus: { p: "2" } }}`)).toEqual([
       { props: { p: "1" }, state: "hover" },
     ]);
-    expect(use(`${UI}styles({ s: { states: x } });`)).toEqual([]);
-    expect(use(`${UI}styles({ s: { states: { [k]: { p: "1" }, hover: x, active: { p: "5" } } } });`)).toEqual([
+    expect(J("states={x}")).toEqual([]);
+    expect(J(`states={{ [k]: { p: "1" }, hover: x, active: { p: "5" } }}`)).toEqual([
       { props: { p: "5" }, state: "active" },
     ]);
-    expect(use(`${UI}styles({ s: { states: { hover: { states: { active: { p: "1" } }, m: "2" } } } });`)).toEqual([
+    expect(J(`states={{ hover: { states: { active: { p: "1" } }, m: "2" } }}`)).toEqual([
       { props: { m: "2" }, state: "hover" },
     ]);
-    expect(use(`${UI}styles({ s: { "p": "1", get m() { return "2"; } } });`)).toEqual([{ props: { p: "1" } }]);
   });
   it("accepts every style prop name", () => {
     const names = [
@@ -157,7 +134,7 @@ describe("collectStyles: styles() calls", () => {
       "justify",
       "wrap",
     ];
-    const u = use(`${UI}styles({ s: { ${names.map((n) => `${n}: "v"`).join(", ")} } });`);
+    const u = J(names.map((n) => `${n}="v"`).join(" "));
     expect(u.map((x) => Object.keys(x.props)[0]).sort()).toEqual([...names].sort());
   });
 });

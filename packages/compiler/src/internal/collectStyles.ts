@@ -1,4 +1,4 @@
-import { type Expression, type JSXElement, type ObjectExpression, Visitor } from "oxc-parser";
+import type { Expression, JSXElement, ObjectExpression } from "oxc-parser";
 import type { StyleUsage } from "../types/StyleUsage.ts";
 import type { Analysis } from "./Analysis.ts";
 import type { StyleRewrite } from "./StyleRewrite.ts";
@@ -10,7 +10,6 @@ import { uiBaseElements } from "./uiBaseElements.ts";
 type State = NonNullable<StyleUsage["state"]>;
 type Leaf = { prop: string; token: string; breakpoint: string | undefined; state: State | undefined };
 
-const UI = "@keel/ui";
 /** Style props in ui's emission order (packages/ui/src/internal/styleProps.ts). */
 const STYLE_PROPS: readonly string[] = [
   "p",
@@ -139,34 +138,16 @@ function classList(leaves: readonly Leaf[]): string[] {
 }
 
 /**
- * Style props on `@keel/ui` base elements and in `styles({...})` calls (k.ui): every literal token per
+ * Style props on `@keel/ui` base elements (k.ui): every literal token per
  * (prop, breakpoint, state) becomes a usage, including literal leaves of dynamic `?:`/`&&` values so their
  * classes exist in the CSS. A base element without spreads whose class is absent or literal gets its fully
  * static style attributes rewritten into one `class` (the names ui would compute at runtime); dynamic ones stay.
  */
 export function collectStyles(a: Analysis): { usages: StyleUsage[]; rewrites: Map<number, StyleRewrite> } {
   const base = new Set(uiBaseElements(a).keys());
-  const stylesFns = new Set<string>();
-  for (const i of a.imports) {
-    if (i.source.value !== UI || i.importKind === "type") continue;
-    for (const s of i.specifiers) {
-      if (s.type !== "ImportSpecifier" || s.importKind === "type") continue;
-      const imported = s.imported.type === "Identifier" ? s.imported.name : s.imported.value;
-      if (imported === "styles") stylesFns.add(s.local.name);
-    }
-  }
   const leaves: Leaf[] = [];
   const rewrites = new Map<number, StyleRewrite>();
   if (base.size > 0) for (const j of a.jsx) if (j.type === "JSXElement") element(j, base, leaves, rewrites);
-  if (stylesFns.size > 0)
-    new Visitor({
-      CallExpression: (n) => {
-        const arg = n.arguments[0];
-        if (n.callee.type !== "Identifier" || !stylesFns.has(n.callee.name) || arg === undefined) return;
-        if (arg.type === "SpreadElement" || arg.type !== "ObjectExpression") return;
-        for (const p of arg.properties) if (p.type === "Property") styleObject(p.value, undefined, leaves);
-      },
-    }).visit(a.program);
   const byKey = new Map<string, StyleUsage>();
   for (const l of leaves) {
     const key = JSON.stringify([l.prop, l.token, l.breakpoint ?? "", l.state ?? ""]);

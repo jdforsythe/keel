@@ -90,6 +90,7 @@ describe("entryCode (mutation)", () => {
     'import { mount } from "@keel/runtime-dom";',
     'import { inspect } from "@keel/reactive";',
     'import { stores } from "@keel/store";',
+    'import { inspectorSections } from "@keel/compiler/inspect/inspectorSections";',
   ];
   const tail = ['const ctx = createCtx({ mode: "real" });'];
   const rest = [
@@ -104,7 +105,7 @@ describe("entryCode (mutation)", () => {
     "      const snap = st.snapshot();",
     "      live[id] = { state: snap.state, log: snap.log };",
     "    }",
-    "    const body = JSON.stringify({ graph: inspect(), stores: live });",
+    "    const body = JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections });",
     "    if (body === last) return;",
     "    last = body;",
     '    const sent = fetch("/__keel/inspect", { method: "POST", headers: { "content-type": "application/json" }, body });',

@@ -368,6 +368,14 @@ describe("viteRun", () => {
     expect(realpathSync(readFileSync(join(d, "cwd.txt"), "utf8").trim())).toBe(d);
   });
 
+  it("build with a deployable sets KEEL_DEPLOYABLE for that run only", () => {
+    const d = tmp();
+    fakeVite(d, 'echo "${KEEL_DEPLOYABLE-unset}" >> env.txt');
+    expect(viteRun(d, "build", "api")).toEqual({ code: 0, tail: "" });
+    expect(viteRun(d, "build")).toEqual({ code: 0, tail: "" });
+    expect(readFileSync(join(d, "env.txt"), "utf8")).toBe(`api\n${process.env.KEEL_DEPLOYABLE ?? "unset"}\n`);
+  });
+
   it("dev runs plain `vite`, hands over the terminal and returns its code with no tail", () => {
     const d = tmp();
     fakeVite(d, 'echo "args=$#" > args.txt\nexit 4');

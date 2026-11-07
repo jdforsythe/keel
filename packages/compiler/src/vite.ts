@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { compile } from "./compile.ts";
+import { CLIENT_MANIFEST } from "./entry/CLIENT_MANIFEST.ts";
 import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { RESUME_ENTRY } from "./entry/RESUME_ENTRY.ts";
@@ -38,6 +39,14 @@ type DevServer = {
   middlewares: Middlewares;
 };
 type Warn = (message: string) => void;
+type BuildConfig = {
+  build: {
+    outDir: string;
+    emptyOutDir: true;
+    manifest: string;
+    rolldownOptions: { input: Record<string, string> };
+  };
+};
 
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
@@ -50,7 +59,10 @@ type Warn = (message: string) => void;
  * deployable's `modules/<id>/routes.ts` to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
  * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
  * `client` one by name: the `mount` entry for a `client` deployable, else the resume entry, whose island components
- * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046).
+ * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046). A `vite build` whose `KEEL_DEPLOYABLE`
+ * is a `node` deployable builds that entry alone (input `entry`) into `dist/<name>/` with hashed `assets/` and the
+ * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), and writes no `.keel/` artifacts (the project's own build
+ * does); any other build keeps the project's own Vite config.
  *
  * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
  * stores the open page's dev entry last posted, to the server's own origin and those `KEEL_INSPECT_ORIGINS` lists.
@@ -58,6 +70,7 @@ type Warn = (message: string) => void;
 export default function (): {
   name: string;
   enforce: "pre";
+  config: (user: { root?: string }, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => BuildConfig | null;
   configResolved: (config: { root: string; command?: "build" | "serve" }) => void;
   configureServer: (server: DevServer) => void;
   configurePreviewServer: (server: { middlewares: Middlewares }) => void;
@@ -76,6 +89,8 @@ export default function (): {
   let stale = true;
   let usageKeys = "";
   let warn: Warn = () => {};
+  /** A node deployable's client build (`config`) leaves `.keel/` to the project's own build: no artifact writes. */
+  let clientBuild = false;
   const modules = new Map<string, Entry>();
   // Extra origins the inspect endpoint answers (RFC 0022): comma-separated, e.g. `http://localhost:*`.
   const origins = (process.env.KEEL_INSPECT_ORIGINS ?? "")
@@ -154,7 +169,7 @@ export default function (): {
     artifacts["routes.json"] = routes;
     const dir = path.join(root, ".keel");
     fs.mkdirSync(dir, { recursive: true });
-    for (const name of NAMES) {
+    for (const name of clientBuild ? [] : NAMES) {
       const text = `${canonicalJson({ data: artifacts[name], hash: hashOf(artifacts[name]) })}\n`;
       if (written.get(name) === text) continue;
       const file = path.join(dir, name);
@@ -206,6 +221,21 @@ export default function (): {
   return {
     name: "keel",
     enforce: "pre",
+    config(user, env) {
+      const name = process.env.KEEL_DEPLOYABLE;
+      const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
+      if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return null;
+      if (parseTopology(fs.readFileSync(file, "utf8")).topology[name]?.adapter !== "node") return null;
+      clientBuild = true;
+      return {
+        build: {
+          outDir: `dist/${name}`,
+          emptyOutDir: true,
+          manifest: CLIENT_MANIFEST,
+          rolldownOptions: { input: { entry: ENTRY_PATH } },
+        },
+      };
+    },
     configResolved(config) {
       root = config.root;
       command = config.command ?? "serve";

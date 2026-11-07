@@ -7,6 +7,7 @@ const ROUTER = "@keel/router";
 const RUNTIME = "@keel/runtime-dom";
 const REACTIVE = "@keel/reactive";
 const STORE = "@keel/store";
+const SECTIONS = "@keel/compiler/inspect/inspectorSections";
 
 const q = (s: string): string => JSON.stringify(s);
 
@@ -14,7 +15,7 @@ const q = (s: string): string => JSON.stringify(s);
  * The generated `/@keel/entry.ts` of a `client` deployable (k.server Topology, k.runtime): imports the atomic
  * CSS, builds a real ctx, merges the modules' route manifests (`routesFiles`, root-relative, `/`-prefixed),
  * starts the router on the browser history, and mounts its `App` into `#app` with the ctx. In a dev build
- * (`import.meta.env.DEV`) it then posts the live half of the inspect document (`{ graph, stores }`, k.cli Inspect) to
+ * (`import.meta.env.DEV`) it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports.
  */
@@ -30,6 +31,7 @@ export function entryCode(routesFiles: readonly string[], cssId: string): string
     `import { mount } from ${q(RUNTIME)};`,
     `import { inspect } from ${q(REACTIVE)};`,
     `import { stores } from ${q(STORE)};`,
+    `import { inspectorSections } from ${q(SECTIONS)};`,
     ...imports,
     `const ctx = createCtx({ mode: "real" });`,
     `const router = createRouter(${table}, { ctx, history: browserHistory() });`,
@@ -44,7 +46,7 @@ export function entryCode(routesFiles: readonly string[], cssId: string): string
     "      const snap = st.snapshot();",
     "      live[id] = { state: snap.state, log: snap.log };",
     "    }",
-    "    const body = JSON.stringify({ graph: inspect(), stores: live });",
+    "    const body = JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections });",
     "    if (body === last) return;",
     "    last = body;",
     `    const sent = fetch(${q(INSPECT_PATH)}, { method: "POST", headers: { "content-type": "application/json" }, body });`,

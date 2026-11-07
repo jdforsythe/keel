@@ -6,7 +6,7 @@
   "scripts": {
     "check": "tsc --noEmit && biome check modules",
     "test": "vitest run",
-    "build": "vite build",
+    "build": "node ../../packages/cli/src/bin.ts build",
     "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning server.ts"
   },
   "dependencies": {

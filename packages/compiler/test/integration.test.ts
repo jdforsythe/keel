@@ -20,12 +20,11 @@ const host = (C: unknown, props: unknown = {}, ctx?: unknown): HTMLElement => {
 };
 
 describe("styles.json and the class rewrite", () => {
-  const src = `import { Box, Text as T, styles } from "@keel/ui";
-const css = styles({ card: { p: "3", states: { hover: { bg: "accent" } } } });
-export default function Row(props: { done: boolean }) {
+  const src = `import { Box, Text as T } from "@keel/ui";
+export default function Row(props: { done: boolean; cls: string }) {
   return <Box p="2" fg={props.done ? "muted" : "fg"} class="extra">
     <T as="span" px={{ base: "1", md: "2" }}>a</T>
-    <T class={css.card} py="1">b</T>
+    <T class={props.cls} py="1" p="3" states={{ hover: { bg: "accent" } }}>b</T>
     <Box {...props} m="1" />
   </Box>;
 }`;

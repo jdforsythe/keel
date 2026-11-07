@@ -162,6 +162,27 @@ describe("keel binary", () => {
     expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("build\n");
   }, 30_000);
 
+  it("build runs vite once for the project, then once per node deployable with KEEL_DEPLOYABLE, stopping at a failure", async () => {
+    const d = tmp();
+    put(
+      d,
+      "topology.ts",
+      'export default topology({ web: { modules: ["w"], adapter: "client" }, z: { modules: ["z"], adapter: "node" }, api: { modules: ["a"], adapter: "node" } })\n',
+    );
+    fakeVite(d, 'echo "${KEEL_DEPLOYABLE-own}" >> runs.txt');
+    const r = await keel(d, ["build"]);
+    expect(r.code).toBe(0);
+    expect(readFileSync(join(d, "runs.txt"), "utf8")).toBe("own\napi\nz\n");
+    fakeVite(
+      d,
+      'echo "${KEEL_DEPLOYABLE-own}" >> fail.txt\n[ "$KEEL_DEPLOYABLE" = api ] && { echo api-broke >&2; exit 3; }\nexit 0',
+    );
+    const f = await keel(d, ["build"]);
+    expect(f.code).toBe(1);
+    expect(f.stderr).toBe("api-broke\n");
+    expect(readFileSync(join(d, "fail.txt"), "utf8")).toBe("own\napi\n");
+  }, 30_000);
+
   it("build without vite.config.ts is just the engine build", async () => {
     const r = await keel(tmp(), ["build"]);
     expect(r).toEqual({ code: 0, stdout: "ok build 0 files, 4 artifacts, 0 errors\n", stderr: "" });

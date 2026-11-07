@@ -14,6 +14,7 @@ import { installServerDom } from "./internal/dom/installServerDom.ts";
 import { handle } from "./internal/handle.ts";
 import { inspectAllowed } from "./internal/inspectAllowed.ts";
 import { inspectResponse } from "./internal/inspectResponse.ts";
+import { loadAssets } from "./internal/loadAssets.ts";
 import { moduleOf } from "./internal/moduleOf.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
@@ -36,20 +37,24 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * Each request has a caller (`keel-caller` cookie, minted and set HttpOnly/SameSite=Lax on a write without one, else
  * `""`) and its own instance of each `stores` factory its loaders and action name, restored from and saved to
  * `ctx.storage` through the deployable's in-process copy (k.server Server state, RFC 0044).
+ * In production, `assets` (the deployable's `keel build` output) is read once here: documents load its built entry and
+ * its files are served immutable; a missing or entry-less manifest rejects with E1555 (k.server Build, RFC 0048).
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
   const routes = opts.routes.routes;
   const table = compileTable(compileRoutes(routes), routes);
   const modules = new Set(Object.keys(routes).map(moduleOf));
+  const mode = opts.mode ?? "production";
   const sv: Served = {
     table: selectDeployable(opts.topology, table, modules, opts.deployable),
     ctx: opts.ctx,
-    mode: opts.mode ?? "production",
+    mode,
     routes: opts.routes,
     maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
     saved: new Map(),
+    built: mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets) : undefined,
   };
   const log = opts.log;
   const hono = new Hono();
