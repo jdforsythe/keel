@@ -1,5 +1,5 @@
 # k.reactive: Reactivity
-status: implemented
+status: conformance-covered
 
 **API.** `signal(initial)`, `computed(fn, { equals? })`, `effect(fn, { writes: [] })`, `resource(fetcher)` returning `{ state: 'loading' } | { state: 'error', error } | { state: 'ready', value }`. All created inside an ownership scope (component or `scope(fn)`) and disposed with it. `scope(fn, { onError? })` runs `fn` in a new scope; `onError(error)` receives throws from effects and computeds owned by it. `owner()` returns the running scope handle `Scope { dispose, parent, onDispose, run }` or undefined. `scope.run(fn)` runs `fn` with that scope as owner, untracked (writes are still checked), and returns its value. `inspect()` returns the live graph `{ nodes: { id, kind }[], edges: { from, to }[] }`.
 

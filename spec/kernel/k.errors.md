@@ -1,5 +1,5 @@
 # k.errors: Results and boundaries
-status: proposed
+status: conformance-covered
 
 **Split.** Expected failures (invalid input, not found, denied, conflict, network) are values: `Result`. Unexpected failures (bugs, broken invariants, throwing libraries) are exceptions caught by the nearest `<Boundary>`. No third way.
 
