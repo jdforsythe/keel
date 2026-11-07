@@ -12,9 +12,9 @@ const f = form(OrderEdit, { initial: order }) // OrderEdit is an s.object in ord
   <Button type="submit" label="Save" />
 </Form>
 ```
-`form(schema, { initial? })` creates form state in the calling component's scope. The handle: `field(path)` (typed dotted path; array indexes allowed), `values()`, `errors()` (path to message), `pending()`, `reset()`. Reads are computeds.
+`form(schema, { initial?, id? })` creates form state in the calling component's scope. The handle: `field(path)` (typed dotted path; array indexes allowed), `values()`, `errors()` (path to message), `pending()`, `reset()`. Reads are computeds.
 
-**Bindings.** `field(path)` returns a `Field`: `{ name, id, errorId, value(), error(), touched(), set(v), blur(), bind(el) }` where reads are computeds and `bind(el)` attaches to a plain `input`, `select`, or `textarea`: it sets `name`, `id`, `value`, listens to `input` and `blur`, and keeps `aria-invalid` and `aria-describedby` (naming `errorId`) in sync; it returns an unbind function and is disposed with the scope. A base input (k.ui) given `field` calls `bind` and renders the error text under `errorId`; that is the only way an element binds to a form. Values are typed; FormData coding derives from the schema (numbers, checkbox booleans, absent optionals).
+**Bindings.** `field(path)` returns a `Field`: `{ name, id, errorId, value(), error(), touched(), set(v), blur(), bind(el) }` where reads are computeds and `bind(el)` attaches to a plain `input`, `select`, or `textarea`: it sets `name`, `id`, `value`, listens to `input` and `blur`, and keeps `aria-invalid` and `aria-describedby` (naming `errorId`) in sync; it returns an unbind function and is disposed with the scope. Field `id` is `<formId>:<path>` (an `id` already on the element wins) and `errorId` is `<id>:error`; `formId` is `id` if given, else a stable hash of the schema shape, never a counter, so server and client agree. A second live form with one `formId` in a render root gets `~2`, then `~3` (RFC 0024). A base input (k.ui) given `field` calls `bind` and renders the error text under `errorId`; that is the only way an element binds to a form. Values are typed; FormData coding derives from the schema (numbers, checkbox booleans, absent optionals).
 
 **Validation.** From the schema only. A field validates on blur, then on every input once it has shown an error; all fields validate on submit. Messages derive from `schema.invalid` issues (rule plus constraint).
 
@@ -37,3 +37,4 @@ Without JS the server runs the same flow: it decodes FormData with the action's 
 - An invalid bound input has `aria-invalid="true"` and `aria-describedby` naming an element whose text is its message.
 - `pending()` is true from submit until the response and false after.
 - With the runtime absent, posting invalid FormData returns 422 HTML containing the submitted values and messages.
+- Two `form()` calls in separate render roots with one schema and one `id` give equal field ids; a second live one in the same root gets `~2`.

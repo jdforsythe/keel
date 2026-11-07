@@ -16,7 +16,7 @@ const parsed = await attempt(() => lib.parse(text)) // Result<T, KeelError<'keel
 ```
 - `Result<T, E>` is `{ ok: true, value: T } | { ok: false, error: E }`. `ok` and `err` are its only constructors; there are no `map`/`unwrap` helpers: narrow on `r.ok`. `s.result(T, E)` is its schema (codec for loaders, actions, services).
 - `KeelError<C, D>` is a plain serializable object `{ code: C, message: string, data: D }`. `code` is a dotted string literal; app codes start with the module id (E1155). `s.error(code, data)` declares one; `.make(data, message?)` builds one (message defaults to the code).
-- Kernel codes: `keel.unexpected`, `keel.notFound`, `keel.denied`, `keel.fields` (k.forms), `schema.invalid` (`SchemaError`, data `{ issues: { path, rule }[] }`), `api.*` (k.services). KeelError codes are data; E-codes are diagnostics; they never share a namespace.
+- Kernel codes: `keel.unexpected`, `keel.notFound`, `keel.denied`, `keel.fields` (k.forms), `keel.payloadTooLarge` (k.server), `schema.invalid` (`SchemaError`, data `{ issues: { path, rule }[] }`), `api.*` (k.services). KeelError codes are data; E-codes are diagnostics; they never share a namespace.
 - `attempt(fn)` is the only sanctioned catch: it runs `fn` (sync or async) and returns `err` with `keel.unexpected` if it throws or rejects. It never throws.
 
 **Boundaries.**

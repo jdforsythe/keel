@@ -43,7 +43,7 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
 
 `keel ledger --diff` compares with the committed ledger.
 
-**Rules.** E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids) · E1706 ledger rung lower than committed.
+**Rules.** E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids) · E1706 ledger rung lower than committed, or unsafe count higher · W1706 conformance header `// Clause:` (not counted; fix rewrites it to `// Spec:`).
 
 **Conformance.**
 - `render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering.
