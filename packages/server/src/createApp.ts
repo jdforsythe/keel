@@ -38,7 +38,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * or listed host and an absent (GET only), same, or listed (`inspect.origins`) `Origin` only; others, and any other
  * method without an allowed `Origin`, get 403 `keel.denied`.
  * Each request has a caller (a caller cookie signed under `secret`, else one minted and set HttpOnly/SameSite=Lax on
- * a write, else `""`; `__Host-keel-caller` and Secure when `secure` or the request is https, RFC 0057) and its own
+ * a write, else `""`; `__Host-keel-caller` and Secure when `secure`, else when the request is https by URL or
+ * `x-forwarded-proto`, RFC 0057, 0060) and its own
  * instance of each `stores` factory its loaders and action name, restored from and saved to `ctx.storage` through the
  * deployable's in-process copy (k.server Server state, RFC 0044).
  * In production, `assets` (the deployable's `keel build` output) is read once here: documents load its built entry and
@@ -49,7 +50,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * `/@keel/entry.ts`, whose bare `@keel/*` imports only Vite resolves. Whether a page has islands is known only when it
  * renders, so this holds for every deployable. Dev mode, and tests (vitest sets `NODE_ENV=test`), keep serving it.
  * A `secret` under 32 bytes (UTF-8) rejects with E1556; under that same production gate, no `secret` writes one W1556
- * `diag` to `log` at startup, since each instance then signs callers with its own random key (RFC 0057, backlog 0159).
+ * `diag` to `log` at startup, since each instance then signs callers with its own random key (RFC 0057, backlog 0159),
+ * and no `secure` writes one W1557: https is then the request's URL or `x-forwarded-proto: https` (RFC 0060).
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -76,6 +78,15 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       diagLine(log.format, {
         code: "W1556",
         message: "secret: none given, so callers reset on restart and differ per instance; pass createApp({ secret })",
+      }),
+    );
+  // RFC 0060 (backlog 0160): unset, a plain-http hop without x-forwarded-proto gets an unprefixed, non-Secure cookie.
+  if (deployed && opts.secure === undefined)
+    log?.write(
+      diagLine(log.format, {
+        code: "W1557",
+        message:
+          "secure: not set, so the caller cookie is Secure only on https or x-forwarded-proto https; pass createApp({ secure: true })",
       }),
     );
   const sv: Served = {

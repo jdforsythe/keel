@@ -1,3 +1,4 @@
+import { ServerElement } from "./ServerElement.ts";
 import { ServerNode } from "./ServerNode.ts";
 import { cloneChildren } from "./cloneChildren.ts";
 
@@ -11,6 +12,14 @@ export class ServerFragment extends ServerNode {
 
   get firstElementChild(): ServerNode | null {
     return this.children[0] ?? null;
+  }
+
+  querySelector(selector: string): ServerElement | null {
+    return ServerElement.select(this, selector, true)[0] ?? null;
+  }
+
+  querySelectorAll(selector: string): ServerElement[] {
+    return ServerElement.select(this, selector, false);
   }
 
   override cloneNode(deep?: boolean): ServerFragment {

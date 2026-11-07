@@ -28,12 +28,19 @@ const built = (): string => {
   fs.writeFileSync(path.join(d, "assets/entry-Ab12Cd34.js"), "resume()");
   return d;
 };
-const app = (o: { secret?: string; mode?: "dev" | "production"; assets?: string; lines?: string[] }) =>
+const app = (o: {
+  secret?: string;
+  mode?: "dev" | "production";
+  assets?: string;
+  lines?: string[];
+  secure?: boolean;
+}) =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes: manifest({ "app.home": { path: "/", component: () => document.createElement("p") } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     ...(o.secret === undefined ? {} : { secret: o.secret }),
+    ...(o.secure === undefined ? {} : { secure: o.secure }),
     ...(o.mode === undefined ? {} : { mode: o.mode }),
     ...(o.assets === undefined ? {} : { assets: o.assets }),
     ...(o.lines === undefined ? {} : { log: { format: "json", write: (l: string) => o.lines?.push(l) } }),
@@ -63,15 +70,38 @@ describe("createApp({ secret }) (backlog 0159)", () => {
   it("a deployed production start without a secret writes one W1556 diag; with one, or in dev or test, none", async () => {
     vi.stubEnv("NODE_ENV", "production");
     const lines: string[] = [];
-    await app({ assets: built(), lines });
+    await app({ assets: built(), lines, secure: true });
     expect(lines.map((l) => JSON.parse(l))).toEqual([
       { kind: "diag", code: "W1556", message: expect.stringContaining("callers reset"), see: "k.server" },
     ]);
     const quiet: string[] = [];
-    await app({ assets: built(), lines: quiet, secret: "s".repeat(32) });
+    await app({ assets: built(), lines: quiet, secret: "s".repeat(32), secure: true });
     await app({ assets: built(), lines: quiet, mode: "dev" });
     vi.stubEnv("NODE_ENV", "test");
     await app({ lines: quiet });
+    expect(quiet).toEqual([]);
+  });
+
+  it("backlog 0160: a deployed production start without `secure` writes one W1557 diag; with it, or in dev or test, none", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const lines: string[] = [];
+    await app({ assets: built(), lines, secret: "s".repeat(32) });
+    expect(lines.map((l) => JSON.parse(l))).toEqual([
+      {
+        kind: "diag",
+        code: "W1557",
+        message: expect.stringMatching(/^secure: .*createApp\(\{ secure: true \}\)$/),
+        see: "k.server",
+      },
+    ]);
+    const both: string[] = [];
+    await app({ assets: built(), lines: both });
+    expect(both.map((l) => JSON.parse(l).code)).toEqual(["W1556", "W1557"]);
+    const quiet: string[] = [];
+    await app({ assets: built(), lines: quiet, secret: "s".repeat(32), secure: false });
+    await app({ assets: built(), lines: quiet, secret: "s".repeat(32), mode: "dev" });
+    vi.stubEnv("NODE_ENV", "development");
+    await app({ lines: quiet, secret: "s".repeat(32) });
     expect(quiet).toEqual([]);
   });
 });

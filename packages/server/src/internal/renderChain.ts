@@ -28,7 +28,9 @@ export function renderChain(input: ChainInput): Rendered {
   const errorAt = (i: number, error: KeelError<string, unknown>): string => {
     const el = chain[i]?.def;
     const shown = input.publicize(error);
-    return el?.errorElement === undefined ? defaultError(shown) : toHtml(el.errorElement({ error: shown }));
+    const make = el?.errorElement;
+    // A render unit, as for components: a compiled errorElement's bindings need a mount context (backlog 0156).
+    return make === undefined ? defaultError(shown) : toHtml(renderUnit(() => make({ error: shown })));
   };
 
   const componentAt = (i: number, lvl: Level): string => {

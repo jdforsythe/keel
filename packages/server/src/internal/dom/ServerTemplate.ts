@@ -32,10 +32,9 @@ export class ServerTemplate extends ServerElement {
     return new ServerTemplate(this.ownerDocument);
   }
 
-  override cloneNode(deep?: boolean): ServerTemplate {
-    const copy = new ServerTemplate(this.ownerDocument);
-    for (const [name, value] of this.attributeEntries()) copy.setAttribute(name, value);
-    if (deep === true) cloneChildren(this.content, copy.content);
+  override cloneNode(deep?: boolean): ServerElement {
+    const copy = super.cloneNode(false);
+    if (deep === true && copy instanceof ServerTemplate) cloneChildren(this.content, copy.content);
     return copy;
   }
 }
