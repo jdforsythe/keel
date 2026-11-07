@@ -24,7 +24,7 @@ import { statusOf } from "./statusOf.ts";
  * entry, or a production client build's file (`servedEntry`, RFC 0046, 0048); then match the path (no pattern: 404; trailing
  * slash: 308 to the canonical path), parse params (fail: 404 at the nearest errorElement, no guard or loader runs) and search
  * (failing keys dropped), run guards outermost first (deny: 302, or 303 for a write, to the redirect route
- * with `next`), then GET/HEAD render the page and the action verbs run the action (a fresh caller token is set as a
+ * with `next`; a redirect loop or a ninth hop is E1508, rfc:0051), then GET/HEAD render the page and the action verbs run the action (a fresh caller token is set as a
  * cookie on its response, `issueCaller`); other methods get 405.
  */
 export async function handle(sv: Served, raw: Request, rq: RequestScope): Promise<Handled> {
@@ -56,8 +56,11 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope): Promis
   const write = isVerb(method);
   if (!write && method !== "GET" && method !== "HEAD")
     return { response: new Response(null, { status: 405, headers: { allow: "GET, HEAD" } }), route, diags: [] };
-  const g = await runGuards(m.route.chain, r.here, sv.routes, sv.ctx);
+  const g = await runGuards(m.route.chain, r.here, sv.routes, sv.table, sv.ctx);
   if (g.kind === "redirect") return { response: redirectResponse(write ? 303 : 302, g.location), route, diags: [] };
-  if (g.kind === "fail") return bareError(r, route, statusOf(g.failure.error.code), m.route.chain, m.params, g.failure);
+  if (g.kind === "fail") {
+    const failed = bareError(r, route, statusOf(g.failure.error.code), m.route.chain, m.params, g.failure);
+    return { ...failed, diags: [...failed.diags, ...g.diags] };
+  }
   return write ? issueCaller(r, noStore(await runAction(r, m))) : page(r, m, 200, null, null);
 }

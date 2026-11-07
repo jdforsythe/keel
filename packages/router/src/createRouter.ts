@@ -15,6 +15,8 @@ import { compileTable } from "./internal/compileTable.ts";
 import { defaultError } from "./internal/defaultError.ts";
 import { fieldsError } from "./internal/fieldsError.ts";
 import { formHandle } from "./internal/formHandle.ts";
+import { guardLoop } from "./internal/guardLoop.ts";
+import { guardNext } from "./internal/guardNext.ts";
 import { hrefIn } from "./internal/hrefIn.ts";
 import { isRouteStateOf } from "./internal/isRouteStateOf.ts";
 import { matchUrl } from "./internal/matchUrl.ts";
@@ -27,6 +29,7 @@ import { runGuard } from "./internal/runGuard.ts";
 import { runLoaders } from "./internal/runLoaders.ts";
 import { tables } from "./internal/tables.ts";
 import { unexpected } from "./internal/unexpected.ts";
+import { withNext } from "./internal/withNext.ts";
 import type { Href } from "./types/Href.ts";
 import type { Manifest } from "./types/Manifest.ts";
 import type { RouteDef } from "./types/RouteDef.ts";
@@ -40,7 +43,6 @@ type Outcome = Result<unknown, KeelError<string, unknown>>;
 type Failure = { readonly level: number; readonly bare: boolean; readonly error: KeelError<string, unknown> };
 
 const MISSING: Place = { id: null, params: {}, search: {} };
-const MAX_REDIRECTS = 8;
 const done = Promise.resolve();
 
 /** Nearest chain index at or above `from` whose route has an `errorElement`; -1 when none. */
@@ -143,14 +145,25 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     else if (mode === "pop" && w !== null) w.scrollTo(0, scrolls.get(entry ?? "") ?? 0);
   };
 
-  const redirectTo = (id: string, next: string): Result<string, KeelError<string, unknown>> => {
+  // A denial's location carries `next` (never nested) and is E1508 when it revisits `visited` or is the ninth (rfc:0051).
+  const redirectTo = (
+    id: string,
+    url: string,
+    visited: readonly string[],
+  ): Result<string, KeelError<string, unknown>> => {
     const r = attempt(() => hrefIn(own, id, {}, {}));
     if (!r.ok) return err(unexpected(`guard redirect to "${id}" failed: ${r.error.message}`));
-    const base = String(r.value);
-    return ok(`${base}${base.includes("?") ? "&" : "?"}next=${encodeURIComponent(next)}`);
+    const to = withNext(String(r.value), guardNext(table, url));
+    const loop = guardLoop(visited, to);
+    return loop === null ? ok(to) : err(unexpected(`E1508 ${loop}`));
   };
 
-  const proceed = async (t: number, m: Match & { kind: "route" }, mode: Mode, hops: number): Promise<void> => {
+  const proceed = async (
+    t: number,
+    m: Match & { kind: "route" },
+    mode: Mode,
+    visited: readonly string[],
+  ): Promise<void> => {
     for (const [i, lvl] of m.route.chain.entries()) {
       const g = lvl.def.guard;
       if (g === undefined) continue;
@@ -158,9 +171,9 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       if (t !== token) return;
       if (r.ok) continue;
       if (r.error.code !== "keel.denied") return commit(t, failedAt(m, i, r.error), placeOf(m), mode);
-      const to = hops < MAX_REDIRECTS ? redirectTo(g.redirect, m.url) : err(unexpected("too many guard redirects"));
+      const to = redirectTo(g.redirect, m.url, [...visited, m.url]);
       if (!to.ok) return commit(t, failedAt(m, i, to.error), placeOf(m), mode);
-      return go(to.value, mode === "push" ? "push" : "replace", hops + 1);
+      return go(to.value, mode === "push" ? "push" : "replace", [...visited, m.url]);
     }
     const results = await runLoaders(
       m.route.chain,
@@ -171,7 +184,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     commit(t, loaded(m, results), placeOf(m), mode);
   };
 
-  const go = (url: string, mode: Mode, hops: number): Promise<void> => {
+  const go = (url: string, mode: Mode, visited: readonly string[]): Promise<void> => {
     if (disposed) return done;
     const t = ++token;
     const m = matchUrl(table, url);
@@ -185,7 +198,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       return done;
     }
     pending.set(true);
-    return proceed(t, m, mode, hops);
+    return proceed(t, m, mode, visited);
   };
 
   const revalidate = async (): Promise<void> => {
@@ -234,19 +247,19 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       handle?.onResult(result);
       if (!result.ok) pending.set(false);
       else if (result.value === null) await revalidate();
-      else await go(result.value, "push", 0);
+      else await go(result.value, "push", []);
       return result;
     },
   };
 
   const unsubscribe = history.onPop((url, key) => {
     popped = key ?? null;
-    void go(url, "pop", 0);
+    void go(url, "pop", []);
   });
-  void go(history.current(), "initial", 0);
+  void go(history.current(), "initial", []);
 
   return {
-    navigate: (to, o) => go(to, o?.replace === true ? "replace" : "push", 0),
+    navigate: (to, o) => go(to, o?.replace === true ? "replace" : "push", []),
     route,
     App() {
       const frag = document.createDocumentFragment();
@@ -267,7 +280,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
             const u = new URL(a.href, document.baseURI);
             if (u.origin !== new URL(document.baseURI).origin) return;
             e.preventDefault();
-            void go(`${u.pathname}${u.search}${u.hash}`, "push", 0);
+            void go(`${u.pathname}${u.search}${u.hash}`, "push", []);
           };
           document.addEventListener("click", onClick);
           me?.onDispose(() => document.removeEventListener("click", onClick));

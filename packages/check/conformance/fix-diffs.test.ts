@@ -264,6 +264,7 @@ const NO_FIX = [
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice
   "E1501", // the target route id is unknown to the checker
+  "E1508", // which route leaves the guarded layout is a design choice
   "E1551", // moving the declaration to a .server file is a design change
   "E1651", // the replacement endpoint is unknown
   "E1701", // the harness id is unknown

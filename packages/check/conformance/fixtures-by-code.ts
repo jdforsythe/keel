@@ -271,6 +271,29 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1508: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/auth.guard.ts",
+        "import { guard } from '@keel/router'\nimport { ok } from '@keel/schema'\nexport const auth = guard({ redirect: 'app.login' }, async () => ok(null))\n",
+      ),
+      f(
+        "src/routes.ts",
+        "import { manifest } from '@keel/router'\nimport { auth } from './auth.guard.ts'\nconst Page = () => null\nexport const routes = manifest({\n  'app.shell': { component: Page, guard: auth },\n  'app.login': { path: '/login', component: Page, layout: 'app.shell' },\n})\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/auth.guard.ts",
+        "import { guard } from '@keel/router'\nimport { ok } from '@keel/schema'\nexport const auth = guard({ redirect: 'app.login' }, async () => ok(null))\n",
+      ),
+      f(
+        "src/routes.ts",
+        "import { manifest } from '@keel/router'\nimport { auth } from './auth.guard.ts'\nconst Page = () => null\nexport const routes = manifest({\n  'app.shell': { component: Page, guard: auth },\n  'app.home': { path: '/', component: Page, layout: 'app.shell' },\n  'app.login': { path: '/login', component: Page },\n})\n",
+      ),
+    ],
+  },
   E1551: {
     opts: NO_TYPES,
     bad: [

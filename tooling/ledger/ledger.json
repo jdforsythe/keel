@@ -1410,6 +1410,10 @@
       "rung": "example"
     },
     {
+      "item": "k.router#12",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.runtime#1",
       "rung": "example"
     },
@@ -1563,6 +1567,10 @@
     },
     {
       "item": "k.server#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.server#13",
       "rung": "example"
     },
     {

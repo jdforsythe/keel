@@ -332,6 +332,13 @@ const ROWS: readonly Row[] = [
     "declare params/search in loader({ output, params, search }, fn) and reuse the same values in the route",
     "k.router",
   ],
+  [
+    "E1508",
+    "guard redirect loop: the redirect route is under that guard, or redirects revisit a URL",
+    "A denied request would redirect into the same guard forever. Static only for a literal redirect.",
+    "move 'app.login' out of the guarded layout, or redirect to a route outside it",
+    "k.router",
+  ],
   ["E1551", "loader or action declared outside a *.server.ts file", "", "move it into <route>.server.ts", "k.server"],
   [
     "E1552",

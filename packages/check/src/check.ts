@@ -3,6 +3,7 @@ import type { Checked } from "./internal/Checked.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
 import { generatedEdits } from "./internal/generatedEdits.ts";
+import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
 import { isCodePath } from "./internal/isCodePath.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
@@ -34,7 +35,7 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
 /**
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, (3) the rule registry on each file plus project passes (E1005
- * against the hashes the compiler derives from `files`, E1454, E1753, E1755, and the k.module pass
+ * against the hashes the compiler derives from `files`, E1454, E1508, E1753, E1755, and the k.module pass
  * E1151-E1157), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
@@ -58,6 +59,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   out.push(
     ...duplicateErrorCodes(checked),
     ...moduleChecks(checked),
+    ...guardRedirectLoops(checked),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
     ...generatedEdits(files, expectedHashes(files, opts)),

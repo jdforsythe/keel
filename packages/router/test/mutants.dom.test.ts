@@ -327,7 +327,7 @@ describe("guards", () => {
     expect(t.history.entries).toEqual(["/login?next=%2Fsec"]);
     t.stop();
   });
-  it("a redirect loop stops after 8 hops with keel.unexpected", async () => {
+  it("a redirect loop stops at the first revisited location with E1508 keel.unexpected (rfc:0051)", async () => {
     const glNo = deny("gl.b");
     const glNo2 = deny("gl.a");
     const rs = manifest({
@@ -338,20 +338,29 @@ describe("guards", () => {
     await settle();
     const alert = t.host.querySelector('[role="alert"]');
     expect(alert?.getAttribute("data-keel-error")).toBe("keel.unexpected");
-    expect(alert?.textContent).toBe("too many guard redirects");
+    expect(alert?.textContent).toBe("E1508 guard redirect loop: /a -> /b?next=%2Fa -> /a?next=%2Fa -> /b?next=%2Fa");
     t.stop();
   });
-  it("a redirect that can reach the login after several hops still works (hops below the limit)", async () => {
-    let n = 0;
-    const ghStep = guard({ redirect: "gh.b" }, async () => (++n < 8 ? err(Denied.make({})) : ok(null)));
-    const rs = manifest({
-      "gh.a": { path: "/a", guard: ghStep, component: () => el("a") },
-      "gh.b": { path: "/b", guard: ghStep, component: () => el("b") },
-    });
-    const t = boot(rs, "/a");
+  it("eight guard redirects through distinct routes still land; a ninth is E1508 (rfc:0051)", async () => {
+    const chain = (n: number) => {
+      const defs: Record<string, RouteDef> = {};
+      for (let i = 0; i <= n; i++)
+        defs[`gh.r${i}`] = {
+          path: `/r${i}`,
+          component: () => el(`r${i}`),
+          ...(i < n ? { guard: deny(`gh.r${i + 1}`) } : {}),
+        };
+      return manifest(defs);
+    };
+    const eight = boot(chain(8), "/r0");
     await settle();
-    expect(t.host.querySelector('[role="alert"]')).toBeNull();
-    t.stop();
+    expect(eight.host.querySelector('[role="alert"]')).toBeNull();
+    expect(eight.history.current()).toBe("/r8?next=%2Fr0");
+    eight.stop();
+    const nine = boot(chain(9), "/r0");
+    await settle();
+    expect(nine.host.querySelector('[role="alert"]')?.textContent).toBe("E1508 more than 8 guard redirects from /r0");
+    nine.stop();
   });
   it("redirect to an unknown route id is a keel.unexpected naming the target", async () => {
     const guNo = deny("gu.nowhere");
