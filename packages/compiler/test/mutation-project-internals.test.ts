@@ -33,10 +33,13 @@ describe("nameSourceOf (mutation)", () => {
     expect(nameSourceOf(elOf("<input aria-label='x' alt='y' />"), "input", null, true)).toBe("aria");
     expect(nameSourceOf(elOf("<div />"), "div", null, false)).toBe("none");
   });
-  it("takes alt only on img, area and input", () => {
-    for (const tag of ["img", "area", "input"])
-      expect(nameSourceOf(elOf(`<${tag} alt='x' />`), tag, null, false)).toBe("alt");
-    expect(nameSourceOf(elOf("<input alt='x' />"), "input", null, true)).toBe("alt");
+  it("takes a non-empty alt only on img, area and input type=image (RFC 0030)", () => {
+    for (const tag of ["img", "area"]) expect(nameSourceOf(elOf(`<${tag} alt='x' />`), tag, null, false)).toBe("alt");
+    expect(nameSourceOf(elOf("<input type='IMAGE' alt='x' />"), "input", null, false)).toBe("alt");
+    expect(nameSourceOf(elOf("<input alt='x' />"), "input", null, false)).toBe("none");
+    expect(nameSourceOf(elOf("<input type='image' alt='x' />"), "input", null, true)).toBe("label");
+    expect(nameSourceOf(elOf("<img alt={a} />"), "img", "img", false)).toBe("alt");
+    expect(nameSourceOf(elOf("<area alt='' />"), "area", null, false)).toBe("none");
     expect(nameSourceOf(elOf("<div alt='x' />"), "div", null, false)).toBe("none");
     expect(nameSourceOf(elOf("<img />"), "img", null, false)).toBe("none");
     expect(nameSourceOf(elOf("<span alt='x' />"), "span", "button", false)).toBe("none");
@@ -56,13 +59,16 @@ describe("nameSourceOf (mutation)", () => {
       "checkbox",
       "columnheader",
       "heading",
+      "gridcell",
       "link",
-      "listitem",
       "menuitem",
+      "menuitemcheckbox",
+      "menuitemradio",
       "option",
       "radio",
       "row",
       "rowheader",
+      "sectionhead",
       "switch",
       "tab",
       "tooltip",
@@ -73,6 +79,12 @@ describe("nameSourceOf (mutation)", () => {
       expect(nameSourceOf(elOf("<b>\n  </b>"), "b", role, false), role).toBe("none");
     }
     expect(nameSourceOf(elOf("<b>x</b>"), "b", "textbox", false)).toBe("none");
+    expect(nameSourceOf(elOf("<b>x</b>"), "b", "listitem", false)).toBe("none");
+    expect(nameSourceOf(elOf("<output>x</output>"), "output", "button", false)).toBe("none");
+  });
+  it("presentation and none roles are named by nothing (RFC 0030)", () => {
+    expect(nameSourceOf(elOf("<img alt='' />"), "img", "presentation", false)).toBe("none");
+    expect(nameSourceOf(elOf("<b aria-label='x'>y</b>"), "b", "none", false)).toBe("none");
     expect(nameSourceOf(elOf("<b>x</b>"), "b", null, false)).toBe("none");
   });
   it("recognizes text in expressions, elements and fragments but not in empty, element or function slots", () => {

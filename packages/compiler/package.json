@@ -12,6 +12,10 @@
       "types": "./src/vite.ts",
       "default": "./src/vite.ts"
     },
+    "./a11y": {
+      "types": "./src/a11y/index.ts",
+      "default": "./src/a11y/index.ts"
+    },
     "./inspect/*": {
       "types": "./src/inspect/*.ts",
       "default": "./src/inspect/*.ts"

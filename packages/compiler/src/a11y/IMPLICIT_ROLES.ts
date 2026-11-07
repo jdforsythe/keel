@@ -1,4 +1,7 @@
-/** Implicit ARIA roles by tag name (WAI-ARIA in HTML); context-dependent tags are handled in `roleOf`. */
+/**
+ * Implicit ARIA roles by tag name (HTML-AAM), the one table `a11y.json` and the `@keel/testing` harness share
+ * (k.compiler Artifacts). Context-dependent tags (`a`, `area`, `img`, `input`, `select`, `section`) are in `roleFor`.
+ */
 export const IMPLICIT_ROLES: ReadonlyMap<string, string> = new Map([
   ["article", "article"],
   ["aside", "complementary"],
@@ -11,6 +14,7 @@ export const IMPLICIT_ROLES: ReadonlyMap<string, string> = new Map([
   ["del", "deletion"],
   ["details", "group"],
   ["dialog", "dialog"],
+  ["div", "generic"],
   ["dfn", "term"],
   ["dt", "term"],
   ["em", "emphasis"],
@@ -39,6 +43,7 @@ export const IMPLICIT_ROLES: ReadonlyMap<string, string> = new Map([
   ["p", "paragraph"],
   ["progress", "progressbar"],
   ["search", "search"],
+  ["span", "generic"],
   ["strong", "strong"],
   ["sub", "subscript"],
   ["sup", "superscript"],

@@ -9,6 +9,7 @@ import { collectElements } from "./internal/collectElements.ts";
 import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
 import { hashOf } from "./internal/hashOf.ts";
+import { internalFailure } from "./internal/internalFailure.ts";
 import { lowerFile } from "./internal/lowerFile.ts";
 import { ruleAndJsx } from "./internal/rules/ruleAndJsx.ts";
 import { ruleControlFlow } from "./internal/rules/ruleControlFlow.ts";
@@ -57,42 +58,59 @@ function duplicateIds(all: readonly { a: Analysis; elements: readonly ElementInf
   return out;
 }
 
+/** E1000 message: the parser's message on one line, `syntax error: ` first, under 90 chars. */
+function syntaxMessage(parser: string): string {
+  const text = `syntax error: ${parser.replace(/\s*\n\s*/g, " ").trim()}`;
+  return text.length > 89 ? `${text.slice(0, 86)}...` : text;
+}
+
 /**
  * Compile Keel sources (k.compiler): lower JSX to k.runtime ops, run the compile-time rules, and derive
  * the `.keel/` artifacts. Pure and deterministic: equal inputs give byte-identical results; nothing is
  * read from or written to disk. `mode: "server"` currently emits the same client module (see PLAN D9).
- * `topology` exempts client-only deployables from E1004; `routes` is copied (sorted) into `routes.json`.
+ * `topology` exempts client-only deployables from E1004; `routes` is copied (sorted) into `routes.json`, and its
+ * path patterns scope E1501 for relative literals. A file that does not parse gets only E1000: no
+ * elements, deps, or output. Anything thrown inside is rethrown as E1049 (`internalFailure`), never as an app code.
  */
 export function compile(files: readonly SourceFile[], options: CompileOptions = {}): CompileResult {
+  try {
+    return compileFiles(files, options);
+  } catch (e) {
+    throw internalFailure(e);
+  }
+}
+
+function compileFiles(files: readonly SourceFile[], options: CompileOptions): CompileResult {
   void options.mode;
+  const patterns = Object.values(options.routes ?? {}).flatMap((r) => (typeof r?.path === "string" ? [r.path] : []));
   const diagnostics: Diagnostic[] = [];
   const usages = new Map<string, StyleUsage>();
   const done: { a: Analysis; elements: ElementInfo[]; bindings: BindingInfo[]; code: string }[] = [];
   for (const file of files) {
     const a = analyze(file);
-    for (const e of a.parseErrors)
-      diagnostics.push(diag(a, "E1000", e.start, `syntax error: ${e.message.slice(0, 70)}`, "k.compiler"));
+    if (a.parseErrors.length > 0) {
+      for (const e of a.parseErrors)
+        diagnostics.push(diag(a, "E1000", e.start, syntaxMessage(e.message), "k.compiler"));
+      continue;
+    }
     const destructuring = rulePropsDestructuring(a);
     diagnostics.push(
       ...ruleRawHtml(a),
-      ...ruleUrlLiteral(a),
+      ...ruleUrlLiteral(a, patterns),
       ...ruleServerImport(a, clientOnly(a.path, options.topology)),
       ...ruleAndJsx(a),
       ...ruleControlFlow(a),
       ...destructuring.diagnostics,
     );
     const elements = collectElements(a);
-    const styles = a.parseErrors.length > 0 ? undefined : collectStyles(a);
-    for (const u of styles?.usages ?? []) usages.set(canonicalJson(u), u);
-    const lowered =
-      styles === undefined
-        ? { code: a.source, bindings: [] }
-        : lowerFile(
-            a,
-            elements.filter((e) => !e.base),
-            destructuring.edits,
-            styles.rewrites,
-          );
+    const styles = collectStyles(a);
+    for (const u of styles.usages) usages.set(canonicalJson(u), u);
+    const lowered = lowerFile(
+      a,
+      elements.filter((e) => !e.base),
+      destructuring.edits,
+      styles.rewrites,
+    );
     done.push({ a, elements, bindings: lowered.bindings, code: lowered.code });
   }
   diagnostics.push(...duplicateIds(done));

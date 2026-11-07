@@ -1,6 +1,5 @@
 import type { A11yEntry } from "@keel/compiler";
-import { LABELABLE } from "./LABELABLE.ts";
-import { NAME_FROM_CONTENT } from "./NAME_FROM_CONTENT.ts";
+import { LABELABLE, NAME_FROM_CONTENT } from "@keel/compiler/a11y";
 import { contentText } from "./contentText.ts";
 import { labelText } from "./labelText.ts";
 import { refText } from "./refText.ts";

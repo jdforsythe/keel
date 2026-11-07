@@ -69,7 +69,7 @@ export const tokens = defineTokens({
   write("modules/todos/ListsPage.tsx", PAGE);
   write(
     "modules/todos/loadList.server.ts",
-    `import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nexport const loadList = loader(s.object({ n: s.int() }), async () => ok({ n: 1 }));\n`,
+    `import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nexport const loadList = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n`,
   );
   write("modules/todos/routes.ts", ROUTES);
 });

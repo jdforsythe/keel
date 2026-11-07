@@ -177,7 +177,63 @@ describe("evaluateProject error mapping (0090)", () => {
     { timeout: 30000 },
     async () => {
       write("t-internal.ts", `export const tokens = { color: { get fg(): string { throw new Error("kaput"); } } };`);
-      await expect(run("t-internal.ts")).rejects.toThrow(/internal compiler failure.*kaput/);
+      await expect(run("t-internal.ts")).rejects.toMatchObject({
+        code: "E1049",
+        message: "internal compiler failure: build-time evaluation: kaput",
+      });
     },
   );
+});
+
+describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
+  const routesOnly = (...routesFiles: string[]) =>
+    evaluateProject({ root, tokensFile: undefined, routesFiles, usages: [] });
+
+  it("maps a routes.ts that throws to E1006 and keeps the other manifests", { timeout: 30000 }, async () => {
+    write("r/throw.ts", `throw new Error("routes boom");\nexport const routes = {};`);
+    write("r/ok.ts", `export const routes = { routes: { "m.index": { path: "/" } } };`);
+    const r = await routesOnly("r/throw.ts", "r/ok.ts");
+    expect(r.problems).toEqual(["E1006 r/throw.ts failed to evaluate: routes boom"]);
+    expect(Object.keys(r.routes)).toEqual(["m.index"]);
+  });
+
+  it("maps a routes.ts without a routes export to E1006", { timeout: 30000 }, async () => {
+    write("r/none.ts", "export const other = 1;");
+    expect(await routesOnly("r/none.ts")).toEqual({
+      css: "",
+      routes: {},
+      problems: ["E1006 r/none.ts exports no routes"],
+    });
+  });
+
+  it("keeps the code of a coded routes.ts throw", { timeout: 30000 }, async () => {
+    write("r/coded.ts", `throw Object.assign(new Error("dup path"), { code: "E1502" });\nexport const routes = {};`);
+    expect((await routesOnly("r/coded.ts")).problems).toEqual(["E1502 dup path"]);
+  });
+
+  it("treats a codeless throw while deriving the artifact as internal (E1049)", { timeout: 30000 }, async () => {
+    write("r/bad.ts", `export const routes = { get routes() { throw new Error("kaput"); } };`);
+    await expect(routesOnly("r/bad.ts")).rejects.toMatchObject({
+      code: "E1049",
+      message: "internal compiler failure: build-time evaluation: kaput",
+    });
+  });
+
+  it("reports a syntax error in an evaluated module as E1000 at its location", { timeout: 30000 }, async () => {
+    write("r/syntax.ts", `export const routes = { routes: { "a": { path: "/a" } };`);
+    write("tsyn.ts", "export const tokens = {;");
+    expect(await routesOnly("r/syntax.ts")).toEqual({
+      css: "",
+      routes: {},
+      problems: ["E1000 r/syntax.ts:1:56 syntax error: Expected `,` or `}` but found `;`"],
+    });
+    const t = await evaluateProject({ root, tokensFile: "tsyn.ts", routesFiles: [], usages: [] });
+    expect(t.problems).toHaveLength(1);
+    expect(t.problems[0]).toMatch(/^E1000 tsyn\.ts:1:\d+ syntax error: /);
+  });
+
+  it("rethrows a build failure that is not a syntax error unchanged", { timeout: 30000 }, async () => {
+    write("r/missing.ts", `import { x } from "./nowhere.ts";\nexport const routes = x;`);
+    await expect(routesOnly("r/missing.ts")).rejects.toThrow(/Could not resolve "\.\/nowhere\.ts"/);
+  });
 });

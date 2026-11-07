@@ -16,11 +16,43 @@ describe("E1501 and E1003 on URL attributes and base-element URL props", () => {
     }
   });
 
-  it("reports string paths as E1501 on DOM elements, Image src and Link to", () => {
-    expect(codes(`<Image src="/a.png" alt="x" />`)).toEqual(["E1501"]);
+  it("reports root paths as E1501 in navigation attributes and Link to, never in asset attributes (RFC 0030)", () => {
     expect(codes(`<Link to="/orders">o</Link>`)).toEqual(["E1501"]);
-    expect(codes(`<a href="orders">o</a>`)).toEqual(["E1501"]);
+    expect(codes(`<a href="/orders">o</a>`)).toEqual(["E1501"]);
+    expect(codes(`<form action=" /orders"><button formaction="/x">b</button></form>`)).toEqual(["E1501", "E1501"]);
+    expect(codes(`<a href="orders">o</a>`)).toEqual([]);
+    expect(codes(`<Image src="/a.png" alt="x" />`)).toEqual([]);
+    expect(codes(`<img src="logo.png" alt="x" />`)).toEqual([]);
+    expect(codes(`<video poster="/p.jpg" ping="/ping" />`)).toEqual([]);
+    expect(codes(`<svg><use xlink:href="/sprite.svg#i" /></svg>`)).toEqual([]);
     expect(codes(`<Box src="/not-a-url-prop" />`)).toEqual([]);
+  });
+
+  it("reports a relative navigation literal as E1501 only when it matches a route pattern", () => {
+    const entry = (p: string | null) => ({
+      actions: [],
+      guard: null,
+      layout: null,
+      module: "m",
+      params: null,
+      path: p,
+      search: null,
+    });
+    const routes = { "m.order": entry("/orders/:id"), "m.shell": entry(null), "m.home": entry("/") };
+    const withRoutes = (body: string): string[] =>
+      compile([{ path: "C.tsx", source: `export default function C() { return ${body} }` }], {
+        routes,
+      }).diagnostics.map((d) => d.code);
+    expect(withRoutes(`<a href="orders/7">o</a>`)).toEqual(["E1501"]);
+    expect(withRoutes(`<a href="./orders/7?x=1#t">o</a>`)).toEqual(["E1501"]);
+    expect(withRoutes(`<a href="orders/7/edit">o</a>`)).toEqual([]);
+    expect(withRoutes(`<a href="orders/">o</a>`)).toEqual([]);
+    expect(withRoutes(`<a href="order/7">o</a>`)).toEqual([]);
+    expect(withRoutes(`<a href="docs/guide.pdf">o</a>`)).toEqual([]);
+    expect(withRoutes(`<img src="orders/7" alt="x" />`)).toEqual([]);
+    expect(withRoutes(`<a href="">o</a>`)).toEqual([]);
+    expect(withRoutes(`<a href="?q=1">o</a>`)).toEqual([]);
+    expect(withRoutes(`<a href="./">o</a>`)).toEqual(["E1501"]);
   });
 
   it("reports a literal script or data URL as exactly one E1003", () => {

@@ -297,7 +297,7 @@ describe("vite: project inputs", () => {
     const p = keel();
     p.configResolved({ root, command: "build" });
     await p.buildStart.call({ warn: (m: string) => void warnings.push(m) });
-    expect(warnings).toEqual(['keel: keel.css: E1801 bg="nope" is not a color token']);
+    expect(warnings).toEqual(['keel: E1801 bg="nope" is not a color token']);
     const css1 = (await p.load("/__keel.css")) ?? "";
     expect(css1).toContain(".k-p-1{padding:var(--k-space-1)}");
     expect(css1).not.toContain(".k-p-2");

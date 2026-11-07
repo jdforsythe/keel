@@ -32,12 +32,12 @@ const loads = { n: 0 };
 const routes = manifest({
   "rt.list": {
     path: "/rt",
-    loader: loader(s.object({ count: s.int() }), async () => {
+    loader: loader({ output: s.object({ count: s.int() }) }, async () => {
       loads.n++;
       return ok({ count: list.snapshot().state.titles.length });
     }),
     actions: {
-      POST: action(s.object({ title: s.string() }), async ({ title }) => {
+      POST: action({ input: s.object({ title: s.string() }) }, async ({ title }) => {
         tx(add, { title });
         return ok(href("rt.show", { n: list.snapshot().state.titles.length }));
       }),

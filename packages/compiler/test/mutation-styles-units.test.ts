@@ -432,18 +432,46 @@ describe("roleOf", () => {
     expect(role("const x = <div role={'tab'}/>", "div")).toBe("tab");
     expect(role('const x = <div role=""/>', "div")).toBe("generic");
     expect(role("const x = <div role/>", "div")).toBe("generic");
-    expect(role("const x = <div role={r}/>", "div")).toBe("generic");
+    expect(role("const x = <div role={r}/>", "div")).toBeNull();
+    expect(role('const x = <div role=" tab  list"/>', "div")).toBe("tab");
   });
   it("anchors depend on href", () => {
     expect(role("const x = <a/>", "a")).toBe("generic");
     expect(role('const x = <a href="/"/>', "a")).toBe("link");
+    expect(role("const x = <area/>", "area")).toBe("generic");
+    expect(role("const x = <area href={h}/>", "area")).toBe("link");
+  });
+  it("img is presentation only for a literal empty alt (RFC 0030)", () => {
+    expect(role('const x = <img alt=""/>', "img")).toBe("presentation");
+    expect(role("const x = <img alt={''}/>", "img")).toBe("presentation");
+    expect(role('const x = <img alt="Logo"/>', "img")).toBe("img");
+    expect(role("const x = <img alt={a}/>", "img")).toBe("img");
+    expect(role("const x = <img/>", "img")).toBe("img");
+  });
+  it("section is a region only when labelled (RFC 0030)", () => {
+    expect(role("const x = <section/>", "section")).toBe("generic");
+    expect(role('const x = <section aria-label="News"/>', "section")).toBe("region");
+    expect(role("const x = <section aria-labelledby={h}/>", "section")).toBe("region");
+  });
+  it("select is a listbox when multiple or sized above 1, unknown when either is dynamic", () => {
+    expect(role("const x = <select/>", "select")).toBe("combobox");
+    expect(role('const x = <select size="1"/>', "select")).toBe("combobox");
+    expect(role('const x = <select size="4"/>', "select")).toBe("listbox");
+    expect(role("const x = <select multiple/>", "select")).toBe("listbox");
+    expect(role("const x = <select multiple={m}/>", "select")).toBeNull();
+    expect(role("const x = <select size={n}/>", "select")).toBeNull();
+    expect(role("const x = <select multiple size={n}/>", "select")).toBe("listbox");
+  });
+  it("a spread attribute makes absent attributes unknown", () => {
+    expect(role("const x = <div {...p}/>", "div")).toBeNull();
+    expect(role('const x = <div {...p} role="tab"/>', "div")).toBe("tab");
   });
   it("inputs depend on type", () => {
     expect(role("const x = <input/>", "input")).toBe("textbox");
     expect(role("const x = <input type/>", "input")).toBe("textbox");
-    expect(role("const x = <input type={t}/>", "input")).toBe("textbox");
+    expect(role("const x = <input type={t}/>", "input")).toBeNull();
     expect(role('const x = <input type="weird"/>', "input")).toBe("textbox");
-    expect(role('const x = <input type="hidden"/>', "input")).toBeNull();
+    expect(role('const x = <input type="hidden"/>', "input")).toBe("none");
     for (const [t, r] of [
       ["button", "button"],
       ["checkbox", "checkbox"],
@@ -458,7 +486,7 @@ describe("roleOf", () => {
       expect(role(`const x = <input type="${t}"/>`, "input")).toBe(r);
     }
     expect(role('const x = <input type="CHECKBOX"/>', "input")).toBe("checkbox");
-    expect(role('const x = <input type="Hidden"/>', "input")).toBeNull();
+    expect(role('const x = <input type="Hidden"/>', "input")).toBe("none");
   });
   it("maps every implicit tag role", () => {
     const table: [string, string][] = [
@@ -491,7 +519,7 @@ describe("roleOf", () => {
       ["p", "paragraph"],
       ["progress", "progressbar"],
       ["search", "search"],
-      ["section", "region"],
+      ["section", "generic"],
       ["select", "combobox"],
       ["span", "generic"],
       ["table", "table"],
@@ -503,6 +531,22 @@ describe("roleOf", () => {
       ["thead", "rowgroup"],
       ["tr", "row"],
       ["ul", "list"],
+      ["blockquote", "blockquote"],
+      ["caption", "caption"],
+      ["code", "code"],
+      ["datalist", "listbox"],
+      ["dd", "definition"],
+      ["del", "deletion"],
+      ["dfn", "term"],
+      ["dt", "term"],
+      ["em", "emphasis"],
+      ["figure", "figure"],
+      ["ins", "insertion"],
+      ["optgroup", "group"],
+      ["strong", "strong"],
+      ["sub", "subscript"],
+      ["sup", "superscript"],
+      ["time", "time"],
     ];
     for (const [tag, r] of table) expect(role(`const x = <${tag}/>`, tag)).toBe(r);
     expect(role("const x = <blink/>", "blink")).toBeNull();

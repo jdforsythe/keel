@@ -3271,7 +3271,7 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # heading
       E1802 2:39 <Heading> is missing a11y-required prop level
       # image
-      E1501 2:45 src is a string path; use href(routeId, params)
+      E1501 2:45 string path where an Href is required; build it with href()
       # input
       E1802 2:39 <Input> is missing a11y-required prop label
       # link

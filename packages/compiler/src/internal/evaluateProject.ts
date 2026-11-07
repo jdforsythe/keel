@@ -6,6 +6,7 @@ import { build } from "esbuild";
 import { compile } from "../compile.ts";
 import type { RouteEntry } from "../types/RouteEntry.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
+import { internalFailure } from "./internalFailure.ts";
 
 // Build-time only (D24): the bundle below is resolved from the app root, which depends on these packages.
 const UI_CSS = "@keel/ui/css";
@@ -36,7 +37,6 @@ function entrySource(tokensFile: string | undefined, routesFiles: readonly strin
   const lines: string[] = [];
   if (tokensFile !== undefined) lines.push(`import { compileStyles } from ${q(UI_CSS)};`);
   if (routesFiles.length > 0) lines.push(`import { routesArtifact } from ${q(ROUTER)};`);
-  routesFiles.forEach((f, i) => void lines.push(`import { routes as r${i} } from ${q(`./${f}`)};`));
   lines.push(
     `const usages = ${JSON.stringify(usages)};`,
     "const problems = [];",
@@ -60,8 +60,19 @@ function entrySource(tokensFile: string | undefined, routesFiles: readonly strin
       "  catch { try { css = compileStyles({ tokens, usages: usages.filter(fits) }).css; } catch (e) { report(e); } }",
       "}",
     );
+  // Each routes.ts is imported dynamically so its throw is catchable: E1006 unless it carries its own code.
+  if (routesFiles.length > 0)
+    lines.push(
+      "const manifest = async (file, load) => {",
+      "  let m;",
+      "  try { m = await load(); }",
+      "  catch (e) { problems.push(coded(e) ? `${e.code} ${message(e)}` : `E1006 ${file} failed to evaluate: ${message(e)}`); return {}; }",
+      "  if (m.routes === undefined) { problems.push(`E1006 ${file} exports no routes`); return {}; }",
+      "  try { return routesArtifact(m.routes); } catch (e) { report(e); return {}; }",
+      "};",
+    );
   lines.push(
-    `const routes = Object.assign({}, ${routesFiles.map((_, i) => `routesArtifact(r${i})`).join(", ")});`,
+    `const routes = Object.assign({}, ${routesFiles.map((f) => `await manifest(${q(f)}, () => import(${q(`./${f}`)}))`).join(", ")});`,
     "export default JSON.stringify({ css, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
   );
   return lines.join("\n");
@@ -72,10 +83,11 @@ function entrySource(tokensFile: string | undefined, routesFiles: readonly strin
  * esbuild from `root` (app modules under `root` go through `compile`, as in Vite; packages are bundled as is), run it once in
  * Node, and read back the atomic CSS (`compileStyles` from `@keel/ui/css` over `usages`) and the merged
  * `routes.json` (`routesArtifact` from `@keel/router` per manifest). Usages with an unknown token are left out
- * of the CSS and listed in `problems` (E1801; `keel check` reports them at their source). Error mapping: a
- * diagnostic-shaped error keeps its `code`; `tokens.ts` throwing while it evaluates, or exporting no tokens, is E1807
- * (k.ui: `tokens.ts` fails `TokenSchema`); any other codeless throw is an internal compiler failure and is rethrown
- * as an `Error` with the real message (the spec names no internal-error code). A throwing `routes.ts` rejects as is.
+ * of the CSS and listed in `problems` (E1801; `keel check` reports them at their source). Error mapping (k.compiler
+ * Build-time evaluation): a diagnostic-shaped error keeps its `code`; `tokens.ts` throwing while it evaluates, or
+ * exporting no tokens, is E1807 (k.ui); a `routes.ts` throwing or exporting no `routes` is E1006 (that manifest
+ * contributes no routes); a syntax error in any evaluated app module is E1000 at its location, with no CSS or routes;
+ * any other codeless throw from the compiler side rejects with E1049 (`internalFailure`), never an app code.
  */
 export async function evaluateProject(input: {
   readonly root: string;
@@ -88,7 +100,8 @@ export async function evaluateProject(input: {
   // The tokens module is imported dynamically (so its throw is catchable), which esbuild treats as optional.
   if (input.tokensFile !== undefined && !fs.existsSync(path.join(root, input.tokensFile)))
     throw new Error(`keel: Could not resolve "./${input.tokensFile}" (tokens file)`);
-  const result = await build({
+  const syntax: string[] = [];
+  const bundled = build({
     stdin: {
       contents: entrySource(input.tokensFile, input.routesFiles, input.usages),
       resolveDir: root,
@@ -109,13 +122,24 @@ export async function evaluateProject(input: {
             const rel = path.relative(root, args.path).split(path.sep).join("/");
             if (rel.startsWith("../") || path.isAbsolute(rel) || rel.split("/").includes("node_modules"))
               return undefined;
-            const out = compile([{ path: rel, source: fs.readFileSync(args.path, "utf8") }]).outputs[0];
+            const r = compile([{ path: rel, source: fs.readFileSync(args.path, "utf8") }]);
+            const broken = r.diagnostics.filter((d) => d.code === "E1000");
+            if (broken.length > 0) {
+              for (const d of broken) syntax.push(`E1000 ${d.path}:${d.line}:${d.col} ${d.message}`);
+              return { errors: broken.map((d) => ({ text: d.message })) };
+            }
+            const out = r.outputs[0];
             return { contents: out?.code ?? "", loader: "ts", resolveDir: path.dirname(args.path) };
           });
         },
       },
     ],
   });
+  const result = await bundled.catch((e: unknown) => {
+    if (syntax.length > 0) return undefined;
+    throw e;
+  });
+  if (result === undefined) return { css: "", routes: {}, problems: [...new Set(syntax)] };
   const text = result.outputFiles[0]?.text ?? "";
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evaluate-"));
   const file = path.join(dir, "evaluate.mjs");
@@ -134,10 +158,9 @@ export async function evaluateProject(input: {
     !Array.isArray(json.problems) ||
     !Array.isArray(json.internal)
   )
-    throw new Error("keel: build-time evaluation returned no result");
+    throw internalFailure("build-time evaluation returned no result");
   const internal = json.internal.filter((p) => typeof p === "string");
-  if (internal.length > 0)
-    throw new Error(`keel: internal compiler failure during build-time evaluation: ${internal.join("; ")}`);
+  if (internal.length > 0) throw internalFailure(`build-time evaluation: ${internal.join("; ")}`);
   const routes: Record<string, RouteEntry> = Object.create(null);
   for (const id of Object.keys(json.routes).sort()) {
     const entry = json.routes[id];

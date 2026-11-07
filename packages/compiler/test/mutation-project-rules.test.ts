@@ -87,7 +87,6 @@ describe("E1003 / E1501 URL literals", () => {
       d("E1003", "a.tsx", 2, 46, `href is a literal script/data URL; ${bad}`, "k.compiler"),
       d("E1501", "a.tsx", 2, 74, "href is a string path; use href(routeId, params)", "k.router"),
       d("E1003", "a.tsx", 2, 92, `href is a literal script/data URL; ${bad}`, "k.compiler"),
-      d("E1501", "a.tsx", 2, 129, "src is a string path; use href(routeId, params)", "k.router"),
       d("E1501", "a.tsx", 2, 150, "to is a string path; use href(routeId, params)", "k.router"),
       d("E1003", "a.tsx", 2, 163, `href is a literal script/data URL; ${bad}`, "k.compiler"),
     ]);
@@ -95,7 +94,11 @@ describe("E1003 / E1501 URL literals", () => {
   it("decodes entities only for JSX string attributes", () => {
     expect(
       diags(`export default function C() { return <a href={"&#106;avascript:x"}>1</a> }`).map((x) => x.code),
-    ).toEqual(["E1501"]);
+    ).toEqual([]);
+    expect(diags(`export default function C() { return <a href="&#47;p">1</a> }`).map((x) => x.code)).toEqual([
+      "E1501",
+    ]);
+    expect(diags(`export default function C() { return <a href={"&#47;p"}>1</a> }`).map((x) => x.code)).toEqual([]);
   });
 });
 
@@ -274,12 +277,51 @@ describe("E1401 props destructuring", () => {
 });
 
 describe("compile()", () => {
-  it("reports syntax errors with E1000 and passes the source through", () => {
+  it("reports syntax errors with only E1000 and no output (RFC 0030)", () => {
     const r = run("const = ;", "s.tsx");
     expect(r.diagnostics).toEqual([d("E1000", "s.tsx", 1, 7, "syntax error: Unexpected token", "k.compiler")]);
-    expect(r.outputs).toEqual([{ path: "s.tsx", code: "const = ;" }]);
+    expect(r.outputs).toEqual([]);
     expect(r.artifacts["deps.json"]).toEqual({ edges: [], nodes: [] });
     expect(r.artifacts["styles.json"]).toEqual({ usages: [] });
+    const other = compile([
+      {
+        path: "b.tsx",
+        source: `const s = signal(0);\nexport default function B() { return <a id="x" href="/y" innerHTML={s}>`,
+      },
+      { path: "c.tsx", source: `export default function C() { return <p id="x">c</p> }` },
+    ]);
+    expect(other.diagnostics.map((x) => x.code)).toEqual(["E1000"]);
+    expect(Object.keys(other.artifacts["ids.json"])).toEqual(["x"]);
+    expect(other.artifacts["ids.json"].x?.file).toBe("c.tsx");
+    expect(other.outputs.map((o) => o.path)).toEqual(["c.tsx"]);
+  });
+
+  it("clips the E1000 message to one line under 90 chars", () => {
+    const long = compile([{ path: "l.tsx", source: `const x = <${"a".repeat(120)}></b>;` }]).diagnostics;
+    for (const x of long) {
+      expect(x.message.startsWith("syntax error: ")).toBe(true);
+      expect(x.message.length).toBeLessThan(90);
+      expect(x.message).not.toContain("\n");
+    }
+    expect(long.some((x) => x.message.endsWith("..."))).toBe(true);
+  });
+
+  it("rethrows anything thrown inside as E1049, never as an app code", () => {
+    const file = {
+      path: "a.tsx",
+      get source(): string {
+        throw new Error("kaput");
+      },
+    };
+    let caught: unknown;
+    try {
+      compile([file]);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(Error);
+    expect(caught).toMatchObject({ code: "E1049", message: "internal compiler failure: kaput" });
+    expect(() => compile([file])).toThrow(/^internal compiler failure: kaput$/);
   });
 
   it("reports duplicate ids across files with clipped id and location", () => {

@@ -485,7 +485,7 @@ describe("collectElements", () => {
     expect(got[0]?.base).toBe(false);
     const rest = got.slice(1).map((e) => [e.id, e.tag, e.role, e.name, e.base, e.explicit, e.component]);
     expect(rest).toEqual([
-      ["b1", "section", "region", "none", true, true, "Page"],
+      ["b1", "section", "generic", "none", true, true, "Page"],
       ["b2", "div", "generic", "none", true, true, "Page"],
       ["t1", "p", "paragraph", "none", true, true, "Page"],
       ["t2", "span", "generic", "none", true, true, "Page"],
@@ -552,7 +552,7 @@ describe("collectElements", () => {
       "none",
       "none",
       "none",
-      "alt",
+      "none",
       "text",
       "alt",
       "none",

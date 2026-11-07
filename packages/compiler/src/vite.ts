@@ -193,7 +193,7 @@ export default function (): {
       routesFiles: routesFiles(),
       usages,
     });
-    for (const p of r.problems) warn(`keel: keel.css: ${p}`);
+    for (const p of r.problems) warn(`keel: ${p}`);
     css = r.css;
     routes = r.routes;
     flush();
