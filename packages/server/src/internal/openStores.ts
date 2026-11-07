@@ -9,8 +9,12 @@ import type { Served } from "./Served.ts";
 
 const DEFAULT_ID = /^store\.\d+$/;
 
-/** The in-process copy of `key`, read from `ctx.storage` on first use (a concurrent first read keeps the earlier copy). */
+/**
+ * The in-process copy of `key`, read from `ctx.storage` on first use (a concurrent first read keeps the earlier copy).
+ * A save of `key` still in flight is awaited first, so a read never sees a copy its storage write may yet reject.
+ */
 async function load(sv: Served, key: string): Promise<Saved> {
+  await sv.saving.get(key);
   const hit = sv.saved.get(key);
   if (hit !== undefined) return hit;
   const raw = await sv.ctx.storage.get(key);

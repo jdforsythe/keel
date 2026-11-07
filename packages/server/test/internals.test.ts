@@ -16,6 +16,7 @@ import { nearestErrorElement } from "../src/internal/nearestErrorElement.ts";
 import { notFound } from "../src/internal/notFound.ts";
 import { publicError } from "../src/internal/publicError.ts";
 import { reqLine } from "../src/internal/reqLine.ts";
+import { seeOf } from "../src/internal/seeOf.ts";
 import { selectDeployable } from "../src/internal/selectDeployable.ts";
 import { stateJson } from "../src/internal/stateJson.ts";
 import { statusOf } from "../src/internal/statusOf.ts";
@@ -222,6 +223,7 @@ describe("small pure helpers", () => {
     const d = { code: "E1554", message: "m" };
     expect(diagLine("compact", d)).toBe("E1554 m");
     expect(JSON.parse(diagLine("json", d))).toEqual({ kind: "diag", code: "E1554", message: "m", see: "k.server" });
+    expect(JSON.parse(diagLine("json", { code: "E1508", message: "loop" }))).toMatchObject({ see: "k.router" });
     expect(notFound("/u")).toEqual({ code: "keel.notFound", message: "keel.notFound", data: { url: "/u" } });
     const e = codedError("E1", "msg");
     expect(e.message).toBe("E1 msg");
@@ -234,5 +236,32 @@ describe("small pure helpers", () => {
         { code: "keel.unexpected", message: "u2", data: {} },
       ]),
     ).toBe("u1");
+  });
+});
+
+describe("seeOf", () => {
+  it("maps a kernel code to the section owning its block (spec map Code ranges), else k.server", () => {
+    const cases: readonly (readonly [string, string])[] = [
+      ["E1000", "k.compiler"],
+      ["E1057", "k.cli"],
+      ["E1203", "k.reactive"],
+      ["E1499", "k.errors"],
+      ["E1500", "k.router"],
+      ["E1508", "k.router"],
+      ["E1549", "k.router"],
+      ["E1550", "k.server"],
+      ["E1555", "k.server"],
+      ["E1601", "k.ctx"],
+      ["E1799", "k.check"],
+      ["E1800", "k.ui"],
+      ["E1899", "k.ui"],
+      ["E1903", "k.forms"],
+      ["E2001", "k.server"],
+      ["E0005", "k.server"],
+      ["E15081", "k.server"],
+      ["xE1508", "k.server"],
+      ["keel.unexpected", "k.server"],
+    ];
+    for (const [code, see] of cases) expect(seeOf(code)).toBe(see);
   });
 });

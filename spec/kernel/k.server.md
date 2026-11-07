@@ -1,34 +1,33 @@
 # k.server: Thin server
 status: conformance-covered
 
-**API.** App code sees only `topology` from `@keel/server`; `loader` and `action` come from `@keel/router` (in-process in a `client` deployable); the server runs them over HTTP.
+**API.** App code sees only `topology` from `@keel/server`; `loader` and `action` come from `@keel/router`; the server runs them over HTTP.
 ```ts
-// modules/orders/show.server.ts
-export const loadOrder = loader({ output: Order, params: OrderParams }, async ({ params }, ctx) => api.getOrder({ params }, ctx))
-export const updateOrder = action({ input: OrderEdit, params: OrderParams }, async (input, { params }) => ok(routes.href('orders.show', params)))
+export const load = loader({ output: Order, params: Params }, ({ params }, ctx) => api.getOrder({ params }, ctx))
+export const update = action({ input: Edit, params: Params }, (input, { params }) => ok(routes.href('orders.show', params)))
 ```
 - `loader({ output, params?, search?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, stores }` and `ctx`; returns `Promise<Result<T, KeelError>>`, data encoded with `output`.
 - `action({ input, params?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, stores }`, and `ctx`; returns `Result<Href | null, KeelError>`. `ok(href)` redirects there; `ok(null)` stays.
-- `params`/`search` are `Infer` of the declared schemas (else `unknown`), the route's own (k.router E1507); `fn` is never annotated. `url` is the absolute request URL, never `location`.
+- `params`/`search` are `Infer` of the declared schemas (else `unknown`), the route's own (E1507); `fn` is never annotated. `url` is the absolute request URL, never `location`.
 
-**Server state** (rfc:0044). `stores` names a factory `(ctx) => S` of stores (explicit `id`s) and transactions. Per request each named factory runs once; its stores restore from `ctx.storage` `keel.store.<id>` (`snapshot({ meta: true })`); `fn` gets that `S`. An action's `ok` saves the changed stores, none if another request saved one since (409 `keel.conflict`); `err` or a throw saves none. `caller` is the `keel-caller` cookie (minted on a cookieless write, set `HttpOnly; SameSite=Lax; Path=/`, `Secure` on https), else `""`; record it as `tx` meta `{ caller }` and `undoWhere` by it (k.store). Factory stores skip `#k-state` and inspect; server code never writes module stores; the client router refuses `stores`.
+**Server state** (rfc:0044). `stores` names a factory `(ctx) => S` of stores (explicit `id`s) and transactions. Per request each named factory runs once; its stores restore from `ctx.storage` `keel.store.<id>` (`snapshot({ meta: true })`); `fn` gets that `S`. An action's `ok` saves the changed stores, none if another request saved one since (409 `keel.conflict`); `err` or a throw saves none. `caller` is the `keel-caller` cookie (minted on a cookieless write, set `HttpOnly; SameSite=Lax; Path=/`, `Secure` on https), else `""`; record it as `tx` meta `{ caller }` and `undoWhere` by it. Factory stores skip `#k-state` and inspect; server code never writes module stores; the client router refuses `stores`.
 
 **Request flow.** Match the route table -> parse params (fail: 404) and search (fail: defaults) -> guard (deny: redirect) ->
-- GET: run the matched chain's loaders concurrently, then stream HTML (k.runtime). A loader `err` renders the route's `errorElement`.
-- POST, PUT, PATCH, DELETE: first the same-site check (RFC 0022: `Sec-Fetch-Site` `same-origin`/`none`, its own `Origin`, `accept: application/json` with `x-keel: 1`, or neither header; else 403 `keel.denied`, nothing runs). `_method` overrides POST only. A body over `createApp({ maxBodyBytes })` (default 1 MiB) is 413 `keel.payloadTooLarge` (`data: { limit }`), nothing runs. Then decode FormData (or a k.services JSON body) with the action's input schema (fail: `keel.fields`, action not called), run the action, then 303 to the target (document request) or return the `Result` as JSON (runtime request).
+- GET: run the matched chain's loaders concurrently, then stream HTML. A loader `err` renders the route's `errorElement`.
+- POST, PUT, PATCH, DELETE: first the same-site check (RFC 0022: `Sec-Fetch-Site` `same-origin`/`none`, its own `Origin`, `accept: application/json` with `x-keel: 1`, or neither header; else 403 `keel.denied`, nothing runs). `_method` overrides POST only. A body over `createApp({ maxBodyBytes })` (default 1 MiB) is 413 `keel.payloadTooLarge` (`data: { limit }`), nothing runs. Then decode FormData (or a JSON body) with the action's input schema (fail: `keel.fields`, action not called), run the action, then 303 to the target (document request) or return the `Result` as JSON (runtime request).
 
 Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · `keel.conflict` 409 · other `err` 400 · uncaught throw 500 as `keel.unexpected`. In production: message `unexpected`, no stack. `mode` defaults to `production`. `#k-state` holds every store created in the request scope.
 
-**Document.** Islands and the entry script follow k.runtime; each route level is a candidate island root by route id (RFC 0037).
+**Document.** Islands and the entry script follow k.runtime; each route level is a candidate island root by route id.
 
 **Topology.** `export default topology({ web: { modules: ['app'], adapter: 'node' } })` in `topology.ts`.
-Adapters: `node` (Hono on Node; no DOM global; serves the resume entry, k.runtime), `static` (prerendered HTML only), and `client` (no server: loaders and actions run in the browser; the generated entry calls `mount(App, el)` with a real `ctx`). A deployable's modules share one process; calls between deployables are stdlib (split topology).
+Adapters: `node` (Hono on Node; no DOM global; serves the resume entry), `static` (prerendered HTML only), and `client` (no server: loaders and actions run in the browser; the generated entry calls `mount(App, el)` with a real `ctx`). A deployable's modules share one process; calls between deployables are stdlib.
 
-**Build** (rfc:0048). `keel build` Vite-bundles each `node` deployable's resume entry and islands into `dist/<name>/` (`assets/`, `.vite/manifest.json`). Production `createApp({ assets: 'dist/<name>' })` loads it at startup, scripts the built entry, serves `/assets/*` `immutable`; dev or no `assets` serves `/@keel/entry.ts` for Vite.
+**Build** (rfc:0048, 0052). `keel build` Vite-bundles each `node` deployable's resume entry and islands into `dist/<name>/` (`assets/`, `.vite/manifest.json`). Production `createApp({ assets: 'dist/<name>' })` loads it at startup, scripts the built entry, serves `/assets/*` `immutable`; dev, or no `assets` in development or test, serves `/@keel/entry.ts`.
 
-**Dev server.** `keel dev`: Vite plus Hono, one process, HMR, real `ctx`. Stdout log (OUTPUT.md), a record per event: `req`, `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. `createApp({ log: { format: 'compact' | 'json', write } })` writes it, a line per `write` (rfc:0034). In dev it serves `/__keel/inspect`, gated per k.cli Inspect.
+**Dev server.** `keel dev`: Vite and Hono, one process, HMR, real `ctx`. Stdout log (OUTPUT.md), a record per event: `req`, `diag` for every diagnostic and uncaught throw (app frames only, max 5), `reload`. `createApp({ log: { format: 'compact' | 'json', write } })` writes it, a line per `write`. In dev it serves `/__keel/inspect`, gated per k.cli Inspect.
 
-**Rules.** E1551 `loader` or `action` declared outside a `*.server.ts` file (any deployable) · E1552 topology names an unknown module or one module in two deployables · E1553 `static` deployable has a route with params or actions · E1554 loader data fails its output schema (dev diagnostic; 500 in production) · E1555 production `assets` without a manifest entry (`createApp` rejects).
+**Rules.** E1551 `loader` or `action` declared outside a `*.server.ts` file (any deployable) · E1552 topology names an unknown module or one module in two deployables · E1553 `static` deployable has a route with params or actions · E1554 loader data fails its output schema (dev diagnostic; 500 in production) · E1555 production `assets` without a manifest entry, or no `assets` unless `NODE_ENV` is `development` or `test` (`createApp` rejects).
 
 **Conformance.**
 - A GET with params that fail the params schema returns 404 and calls no loader.
@@ -43,3 +42,4 @@ Adapters: `node` (Hono on Node; no DOM global; serves the resume entry, k.runtim
 - Overlapping actions on one factory's store each see only their own instance; the later save is 409 `keel.conflict`. A conflicting or `err` action and an unchanged store save nothing.
 - `caller` is the sent cookie's token, else a fresh one set as a cookie on a write, else `""`.
 - `createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555.
+- Production `createApp` without `assets` rejects at startup with E1555 unless `NODE_ENV` is `development` or `test`.

@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import type { Served } from "./internal/Served.ts";
 import { callerOf } from "./internal/callerOf.ts";
+import { codedError } from "./internal/codedError.ts";
 import { crashed } from "./internal/crashed.ts";
 import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
@@ -16,6 +17,7 @@ import { inspectAllowed } from "./internal/inspectAllowed.ts";
 import { inspectResponse } from "./internal/inspectResponse.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
 import { moduleOf } from "./internal/moduleOf.ts";
+import { nodeEnv } from "./internal/nodeEnv.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -39,6 +41,10 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * `ctx.storage` through the deployable's in-process copy (k.server Server state, RFC 0044).
  * In production, `assets` (the deployable's `keel build` output) is read once here: documents load its built entry and
  * its files are served immutable; a missing or entry-less manifest rejects with E1555 (k.server Build, RFC 0048).
+ * A production `createApp` without `assets` also rejects with E1555 unless `NODE_ENV` (trimmed, any case) is
+ * `development` or `test`; unset counts as production (RFC 0052). Without a build its island documents would load
+ * `/@keel/entry.ts`, whose bare `@keel/*` imports only Vite resolves. Whether a page has islands is known only when it
+ * renders, so this holds for every deployable. Dev mode, and tests (vitest sets `NODE_ENV=test`), keep serving it.
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -46,6 +52,12 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
   const table = compileTable(compileRoutes(routes), routes);
   const modules = new Set(Object.keys(routes).map(moduleOf));
   const mode = opts.mode ?? "production";
+  const env = nodeEnv();
+  if (mode === "production" && opts.assets === undefined && env !== "development" && env !== "test")
+    throw codedError(
+      "E1555",
+      "assets: a production server needs its client build; run `keel build` and pass createApp({ assets: 'dist/<deployable>' })",
+    );
   const sv: Served = {
     table: selectDeployable(opts.topology, table, modules, opts.deployable),
     ctx: opts.ctx,
@@ -54,6 +66,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
     saved: new Map(),
+    saving: new Map(),
     built: mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets) : undefined,
   };
   const log = opts.log;
