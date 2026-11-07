@@ -36,7 +36,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0032 golden app 1 with real API; evals rerun · apps · all · G2 · 0029
 - [x] 0033 user skill `keel` and domain skills with evals · skills · all · G2 · 0032
 - [ ] 0034 freeze review: one-way audit, extension points exercised, status flips · spec · all · G3 · 0033
-- [ ] 0035 tooling: size budgets measure an esbuild bundle of src/index.ts (minified, gzip), not tsc dist re-exports · tooling · PRD A · G1 · 0001
+- [x] 0035 tooling: size budgets measure an esbuild bundle of src/index.ts (minified, gzip), not tsc dist re-exports · tooling · PRD A · G1 · 0001
 - [x] 0036 tooling: Stryker config per kernel package; `pnpm mutate` real; thresholds from docs/TESTING.md · tooling · PRD A · G1 · 0001
 - [x] 0037 rfc: reactive exposes a current-scope token so store `uses` declarations bind to the calling scope exactly (store PLAN D10) · reactive, store · k.reactive · G1 · 0007
 - [ ] 0038 rfc: `tx(transaction, payload)` type-checks payload at call sites; conformance passes untyped values today (store PLAN D2) · store · k.store · G1 · 0007

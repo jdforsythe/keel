@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
+import { build } from "esbuild";
 import { run } from "./output.ts";
 
 const root = path.join(import.meta.dirname, "..");
@@ -10,7 +11,7 @@ const budgets = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "budge
 const tokens = (s) => Math.ceil(s.length / 4);
 const relp = (p) => path.relative(root, p).split(path.sep).join("/");
 
-await run("budgets", () => {
+await run("budgets", async () => {
   const diags = [];
   let measured = 0;
   let skipped = 0;
@@ -71,14 +72,26 @@ await run("budgets", () => {
     } else skipped++;
   }
 
+  // Package size: the package's own code bundled from src/index.ts (minified esm, dependencies external), gzipped.
+  // The tsc dist entry is a re-export file of ~100 bytes and measured nothing (backlog 0035).
   for (const [name, limit] of Object.entries(budgets.size ?? {})) {
     const m = /^(\d+(?:\.\d+)?)\s*kb$/i.exec(limit);
-    const dist = path.join(root, "packages", name.replace(/^@keel\//, ""), "dist", "index.js");
-    if (!m || !fs.existsSync(dist)) continue;
-    const bytes = zlib.gzipSync(fs.readFileSync(dist)).length;
+    const entry = path.join(root, "packages", name.replace(/^@keel\//, ""), "src", "index.ts");
+    if (!m || !fs.existsSync(entry)) continue;
+    const bundle = await build({
+      entryPoints: [entry],
+      bundle: true,
+      minify: true,
+      format: "esm",
+      platform: "browser",
+      packages: "external",
+      write: false,
+      logLevel: "silent",
+    });
+    const bytes = zlib.gzipSync(bundle.outputFiles[0].contents).length;
     measured++;
     if (bytes > Number(m[1]) * 1024)
-      breach(name, relp(dist), bytes, `${m[1]}kb (${Math.round(Number(m[1]) * 1024)} bytes)`, "bytes gzip");
+      breach(name, relp(entry), bytes, `${m[1]}kb (${Math.round(Number(m[1]) * 1024)} bytes)`, "bytes gzip");
   }
 
   return { diags, counts: skipped ? { measured, skipped } : { measured } };

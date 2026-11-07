@@ -12,5 +12,5 @@ active:
   - process: tests never call process.chdir (Stryker workers refuse it; spy process.cwd); scaffold Stryker tuning keys on STRYKER_MUTATOR_WORKER; rfc:0000 pre-implementation fixes; RFCs 0001-0023 in docs/rfc; delegation tiers in docs/WORKFLOW.md; never Stryker inPlace; shared git index means agents must stage by explicit path.
   blockers: none
 pending decisions: none
-last updated: 2026-11-06 (0096 closed)
+last updated: 2026-11-06 (0096, 0035 closed; size budgets now measure real esbuild bundles, all three met)
 ```
