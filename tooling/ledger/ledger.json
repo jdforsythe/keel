@@ -597,12 +597,6 @@
     },
     {
       "pkg": "router",
-      "name": "href",
-      "file": "packages/router/src/href.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "router",
       "name": "loader",
       "file": "packages/router/src/loader.ts",
       "rung": "example"
@@ -901,7 +895,7 @@
     },
     {
       "item": "k.compiler#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.compiler#8",
@@ -930,6 +924,30 @@
     {
       "item": "k.compiler#14",
       "rung": "none"
+    },
+    {
+      "item": "k.ctx#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.ctx#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.ctx#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.ctx#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.ctx#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.ctx#6",
+      "rung": "example"
     },
     {
       "item": "k.errors#1",
@@ -1029,7 +1047,7 @@
     },
     {
       "item": "k.router#2",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.router#3",
@@ -1077,7 +1095,7 @@
     },
     {
       "item": "k.runtime#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.runtime#5",
@@ -1261,6 +1279,10 @@
     },
     {
       "item": "k.ui#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#8",
       "rung": "example"
     },
     {

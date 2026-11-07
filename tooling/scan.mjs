@@ -13,7 +13,8 @@ export function walk(dir, skipDirs = []) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
       // `.tmp-*` dirs are per-test scratch (mkdtemp under test/ or conformance/); a killed run can leave them behind.
-      if (SKIP.has(e.name) || e.name.startsWith(".tmp-") || e.name.startsWith(".stryker-tmp") || skipDirs.includes(p)) continue;
+      if (SKIP.has(e.name) || e.name.startsWith(".tmp-") || e.name.startsWith(".stryker-tmp") || skipDirs.includes(p))
+        continue;
       out.push(...walk(p, skipDirs));
     } else out.push(p);
   }

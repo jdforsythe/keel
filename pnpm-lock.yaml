@@ -415,6 +415,9 @@ importers:
       '@keel/router':
         specifier: workspace:*
         version: link:../router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
