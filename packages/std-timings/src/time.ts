@@ -1,12 +1,14 @@
 import type { Ctx } from "@keel/ctx";
+import { MAX_NAMES } from "./internal/MAX_NAMES.ts";
 import { stats } from "./internal/stats.ts";
 
-/** Add one duration under `name` for `ctx`. */
+/** Add one duration under `name` for `ctx`; a new name beyond `MAX_NAMES` distinct names is not retained. */
 function record(ctx: Ctx, name: string, ms: number): void {
   const byName = stats.get(ctx) ?? new Map();
   stats.set(ctx, byName);
   const d = Math.max(0, ms);
   const prior = byName.get(name);
+  if (prior === undefined && byName.size >= MAX_NAMES) return; // first come, first kept: later names are dropped
   byName.set(
     name,
     prior === undefined

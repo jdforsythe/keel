@@ -1,6 +1,6 @@
-import { inspector } from "@keel/compiler/inspect/inspector";
 import type { Ctx } from "@keel/ctx";
-import { Timings } from "./Timings.ts";
+import type { Timings } from "./Timings.ts";
+import { registerSection } from "./internal/registerSection.ts";
 import { stats } from "./internal/stats.ts";
 
 /** The `Timings` of `ctx` (std.timings), sorted by name; `{}` for a ctx with no `time` calls. */
@@ -15,4 +15,4 @@ export function timingsOf(ctx: Ctx): Timings {
   return out;
 }
 
-inspector({ id: "timings.recent", schema: Timings, read: timingsOf });
+registerSection(timingsOf);
