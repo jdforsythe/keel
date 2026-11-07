@@ -41,7 +41,7 @@ export const routes = manifest({
     actions: { POST: updateTodo },
     component: EditTodoPage,
     layout: "todos.shell",
-    guard: editable.name,
+    guard: editable,
     errorElement: ListError,
   },
 });

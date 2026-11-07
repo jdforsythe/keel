@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { form } from "@keel/forms";
-import { Form, href } from "@keel/router";
+import { Form } from "@keel/router";
 import { For, type Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Select, Text } from "@keel/ui";
@@ -8,6 +8,7 @@ import Suggestions from "./Suggestions.tsx";
 import { TodoDraft } from "./TodoDraft.schema.ts";
 import { TodoList } from "./TodoList.schema.ts";
 import TodoRow from "./TodoRow.tsx";
+import { routes } from "./routes.ts";
 import { view } from "./view.ts";
 
 export const Props = s.object({
@@ -54,13 +55,13 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
         {props.data.name}
       </Heading>
       <Box as="nav" id="todos.filters" direction="row" gap="2">
-        <Link id="todos.filter.all" to={href("todos.list", { listId }, { filter: "all" })}>
+        <Link id="todos.filter.all" to={routes.href("todos.list", { listId }, { filter: "all" })}>
           All
         </Link>
-        <Link id="todos.filter.active" to={href("todos.list", { listId }, { filter: "active" })}>
+        <Link id="todos.filter.active" to={routes.href("todos.list", { listId }, { filter: "active" })}>
           Active
         </Link>
-        <Link id="todos.filter.done" to={href("todos.list", { listId }, { filter: "done" })}>
+        <Link id="todos.filter.done" to={routes.href("todos.list", { listId }, { filter: "done" })}>
           Done
         </Link>
       </Box>

@@ -1,11 +1,11 @@
 import type { Ctx } from "@keel/ctx";
 import { computed } from "@keel/reactive";
-import { href } from "@keel/router";
 import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Link } from "@keel/ui";
 import { hydrate } from "./hydrate.ts";
 import { refreshView } from "./refreshView.ts";
+import { routes } from "./routes.ts";
 import { todosApi } from "./todosApi.ts";
 import { view } from "./view.ts";
 
@@ -32,7 +32,7 @@ export default function AppShell(
   return (
     <Box id="todos.shell" p="3" gap="2" bg="bg" fg="fg">
       <Box as="nav" id="todos.nav" direction="row" gap="2">
-        <Link id="todos.home" to={href("todos.index")}>
+        <Link id="todos.home" to={routes.href("todos.index")}>
           Home
         </Link>
         <Button id="todos.undo" label="Undo" disabled={empty} onClick={undo} />

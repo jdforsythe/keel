@@ -7,6 +7,7 @@ import { expect, it } from "vitest";
 import { Form } from "../src/Form.ts";
 import { action } from "../src/action.ts";
 import { createRouter } from "../src/createRouter.ts";
+import { guard } from "../src/guard.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import type { RouteDef } from "../src/types/RouteDef.ts";
@@ -40,7 +41,11 @@ it.each<[string, Partial<RouteDef>, boolean]>([
     { loader: loader({ output: s.object({}) }, async () => ok({})) },
     false,
   ],
-  ["a layout with a guard: the errorElement renders alone", { guard: "nf.never" }, false],
+  [
+    "a layout with a guard: the errorElement renders alone",
+    { guard: guard({ redirect: "nf.never" }, async () => ({ ok: true, value: null })) },
+    false,
+  ],
 ])("params failure, %s", async (_, shell, inside) => {
   const prefix = `nf${Object.keys(shell).join("")}`;
   const routes = page(shell, prefix);

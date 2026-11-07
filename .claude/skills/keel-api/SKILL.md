@@ -21,6 +21,6 @@ Api components are plain `.ts` (no JSX).
 
 **Client** (`todos`): `endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardReply } })` in `todos.service.ts`; build `service({ base: location.origin, schema: todos })` at call time. Call `await todosApi().createList({ body }, ctx)` -> `Result<Out, ApiError>` (`api.status|decode|input|network|timeout`). Outputs are the runtime Result: `{ ok: true, value }`, loader reply `results['api.lists'].value`, 422 via `errors: { 422: FieldsReply }`.
 
-**View store:** `view = store(BoardView, ...)` changed only by `hydrate = transaction(view, 'todos.hydrate', BoardView, (_s, d) => d)`. `refreshView(ctx)` reads and `tx(hydrate, data)`; `syncAfter(ctx, write)` awaits a write, then refreshes. Client actions: `r.ok ? ok(null) : err(r.error)`.
+**View store:** `view = store(BoardView, ...)` changed only by `hydrate = transaction(view, 'todos.hydrate', BoardView, (_s, d) => d)`. `refreshView(ctx)` reads and `tx(hydrate, data)`; `syncAfter(ctx, write)` awaits a write, then refreshes. Client actions: `r.ok ? ok(null) : err(r.error)`; to navigate instead, `const to: Href = routes.href(id, params); return ok(to)` (the module's own `routes`; never a string path).
 
 **Server tests:** `const app = await createApp(...)` with sim ctx; `app.fetch(new Request('http://localhost/api/lists', { headers: { accept: 'application/json', 'content-type': 'application/json' }, method, body: JSON.stringify(b) }))`. Client tests: route `/api/*` of sim `ctx.net` to `app.fetch`.

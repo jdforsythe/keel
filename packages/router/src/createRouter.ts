@@ -13,7 +13,6 @@ import { compileRoutes } from "./internal/compileRoutes.ts";
 import { compileTable } from "./internal/compileTable.ts";
 import { defaultError } from "./internal/defaultError.ts";
 import { fieldsError } from "./internal/fieldsError.ts";
-import { guardTable } from "./internal/guardTable.ts";
 import { hrefIn } from "./internal/hrefIn.ts";
 import { isRouteStateOf } from "./internal/isRouteStateOf.ts";
 import { matchUrl } from "./internal/matchUrl.ts";
@@ -76,7 +75,9 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   const scrolls = new Map<string, number>();
   let token = 0;
   let disposed = false;
-  let committedUrl: string | null = null;
+  let entry: string | null = null;
+  let popped: string | null = null;
+  let keys = 0;
   let anchor: Node | null = null;
   let resetRoot: (() => void) | null = null;
 
@@ -114,11 +115,17 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       return;
     }
     const w = typeof window === "undefined" ? null : window;
-    if (w !== null && committedUrl !== null && mode !== "stay") scrolls.set(committedUrl, w.scrollY);
-    if (mode === "push") history.push(next.url);
-    else if (mode === "replace" || ((mode === "initial" || mode === "pop") && history.current() !== next.url))
-      history.replace(next.url);
-    committedUrl = next.url;
+    // Scroll is kept per history entry (RFC 0041): save the entry being left, then key the arriving one.
+    if (w !== null && entry !== null && mode !== "stay") scrolls.set(entry, w.scrollY);
+    if (mode === "push") {
+      entry = `k${++keys}`;
+      history.push(next.url, entry);
+    } else if (mode !== "stay") {
+      const arrived = mode === "pop" ? popped : mode === "replace" ? entry : null;
+      const stamp = arrived === null || history.current() !== next.url;
+      entry = arrived ?? `k${++keys}`;
+      if (stamp) history.replace(next.url, entry);
+    }
     const prev = view.get();
     batch(() => {
       view.set(next);
@@ -130,7 +137,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     resetRoot = null;
     reset?.();
     if (mode === "push" || mode === "replace") afterNavigate(anchor?.parentNode ?? null, next.url);
-    else if (mode === "pop" && w !== null) w.scrollTo(0, scrolls.get(next.url) ?? 0);
+    else if (mode === "pop" && w !== null) w.scrollTo(0, scrolls.get(entry ?? "") ?? 0);
   };
 
   const redirectTo = (id: string, next: string): Result<string, KeelError<string, unknown>> => {
@@ -142,11 +149,8 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
 
   const proceed = async (t: number, m: Match & { kind: "route" }, mode: Mode, hops: number): Promise<void> => {
     for (const [i, lvl] of m.route.chain.entries()) {
-      const name = lvl.def.guard;
-      if (name === undefined) continue;
-      const g = guardTable.get(name);
-      if (g === undefined)
-        return commit(t, failedAt(m, i, unexpected(`E1506 unknown guard "${name}"`)), placeOf(m), mode);
+      const g = lvl.def.guard;
+      if (g === undefined) continue;
       const r = await runGuard(g, m.url, ctx);
       if (t !== token) return;
       if (r.ok) continue;
@@ -224,7 +228,8 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     },
   };
 
-  const unsubscribe = history.onPop((url) => {
+  const unsubscribe = history.onPop((url, key) => {
+    popped = key ?? null;
     void go(url, "pop", 0);
   });
   void go(history.current(), "initial", 0);

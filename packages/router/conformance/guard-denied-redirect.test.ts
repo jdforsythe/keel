@@ -1,15 +1,14 @@
 // @vitest-environment happy-dom
 // Spec: k.router, clause "A guard returning err redirects to its redirect route with next; no loader runs and the route component never renders." Seed 1337.
-import { href } from "@keel/router";
 import { beforeEach, describe, expect, it } from "vitest";
-import { control, count, idOf, log, now, resetObservations, settle, start, total } from "./fixtures.ts";
+import { control, count, idOf, log, now, resetObservations, routes, settle, start, total } from "./fixtures.ts";
 
 describe("k.router guards", () => {
   beforeEach(resetObservations);
   it("a guard returning err redirects to its redirect route with next; no loader runs and the route component never renders", async () => {
     const app = await start("/", { render: true });
     control.gate = false;
-    await app.router.navigate(href("secret.show", { id: idOf("5") }));
+    await app.router.navigate(routes.href("secret.show", { id: idOf("5") }));
     await settle();
     expect(count("guard:auth")).toBe(1);
     expect(now(app.router)).toMatchObject({ id: "app.login", search: { next: expect.stringContaining("/secret/5") } });
@@ -22,7 +21,7 @@ describe("k.router guards", () => {
   });
   it("a guard returning ok lets the route load and render (clean counterpart)", async () => {
     const app = await start("/", { render: true });
-    await app.router.navigate(href("secret.show", { id: idOf("5") }));
+    await app.router.navigate(routes.href("secret.show", { id: idOf("5") }));
     await settle();
     expect(now(app.router)).toMatchObject({ id: "secret.show" });
     expect(count("loader:secret.show")).toBe(1);
@@ -32,7 +31,7 @@ describe("k.router guards", () => {
   it("every guard in the chain runs, outermost first, before any loader", async () => {
     const app = await start("/", { render: true });
     log.length = 0;
-    await app.router.navigate(href("guarded.page"));
+    await app.router.navigate(routes.href("guarded.page"));
     await settle();
     expect(log.filter((e) => e.startsWith("guard:") || e.startsWith("loader:"))).toEqual([
       "guard:g.outer",

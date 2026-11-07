@@ -1,10 +1,10 @@
 import type { Ctx } from "@keel/ctx";
-import { href } from "@keel/router";
 import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Checkbox, Link, Text } from "@keel/ui";
 import { Todo } from "./Todo.schema.ts";
 import { hydrate } from "./hydrate.ts";
+import { routes } from "./routes.ts";
 import { syncAfter } from "./syncAfter.ts";
 import { todosApi } from "./todosApi.ts";
 
@@ -30,7 +30,7 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
       </Text>
       <Link
         id={`todos.editLink.${props.todo.id}`}
-        to={href("todos.edit", { listId: props.todo.listId, todoId: props.todo.id })}
+        to={routes.href("todos.edit", { listId: props.todo.listId, todoId: props.todo.id })}
       >
         Edit
       </Link>

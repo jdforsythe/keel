@@ -36,7 +36,7 @@ const to = (u: string): Href => {
 };
 const Denied = s.error("keel.denied", s.object({}));
 const Boom = s.error("md.boom", s.object({}));
-const deny = (name: string, redirect: string) => guard(name, { redirect }, async () => err(Denied.make({})));
+const deny = (redirect: string) => guard({ redirect }, async () => err(Denied.make({})));
 
 function boot(routes: ReturnType<typeof manifest>, start: string) {
   const history = memoryHistory(start);
@@ -72,12 +72,13 @@ describe("history interaction", () => {
     expect(t.history.entries).toEqual(["/a"]);
     t.stop();
   });
-  it("initial load of a canonical url leaves history alone", async () => {
+  it("initial load of a canonical url stamps the first entry with its key via one replace of the same url", async () => {
     const replace = vi.fn();
     const history = { ...memoryHistory("/a"), replace };
     const router = createRouter(routes, { ctx, history });
     await settle();
-    expect(replace).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/a", "k1");
     router.dispose();
   });
   it("navigate pushes the canonical url; replace option replaces", async () => {
@@ -168,11 +169,11 @@ describe("history interaction", () => {
   });
   it("dispose stops navigation and unsubscribes from pops", async () => {
     const unsub = vi.fn();
-    const subs: ((u: string) => void)[] = [];
+    const subs: ((u: string, key?: string) => void)[] = [];
     const base = memoryHistory("/a");
     const history = {
       ...base,
-      onPop: (fn: (u: string) => void) => {
+      onPop: (fn: (u: string, key?: string) => void) => {
         subs.push(fn);
         return unsub;
       },
@@ -239,12 +240,12 @@ describe("scroll and focus", () => {
     expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
     Object.defineProperty(window, "scrollY", { configurable: true, value: 7 });
     scrollTo.mockClear();
-    t.history.pop("/a");
+    t.history.pop("/a", "k1");
     await settle();
     expect(scrollTo).toHaveBeenCalledTimes(1);
     expect(scrollTo).toHaveBeenCalledWith(0, 123);
     scrollTo.mockClear();
-    t.history.pop("/b");
+    t.history.pop("/b", "k2");
     await settle();
     expect(scrollTo).toHaveBeenCalledWith(0, 7);
     t.history.pop("/b?x=1");
@@ -293,11 +294,11 @@ describe("scroll and focus", () => {
 
 describe("guards", () => {
   it("denial redirects: push stays a push, initial load replaces; next is the canonical url", async () => {
-    deny("gd.no", "gd.login");
+    const gdNo = deny("gd.login");
     const rs = manifest({
       "gd.home": { path: "/", component: () => el("home") },
       "gd.login": { path: "/login", component: () => el("login") },
-      "gd.sec": { path: "/sec", guard: "gd.no", component: () => el("sec") },
+      "gd.sec": { path: "/sec", guard: gdNo, component: () => el("sec") },
     });
     const t = boot(rs, "/");
     await settle();
@@ -312,11 +313,11 @@ describe("guards", () => {
     u.stop();
   });
   it("replace navigation redirects with replace", async () => {
-    deny("gr.no", "gr.login");
+    const grNo = deny("gr.login");
     const rs = manifest({
       "gr.home": { path: "/", component: () => el("home") },
       "gr.login": { path: "/login", component: () => el("login") },
-      "gr.sec": { path: "/sec", guard: "gr.no", component: () => el("sec") },
+      "gr.sec": { path: "/sec", guard: grNo, component: () => el("sec") },
     });
     const t = boot(rs, "/");
     await settle();
@@ -326,11 +327,11 @@ describe("guards", () => {
     t.stop();
   });
   it("a redirect loop stops after 8 hops with keel.unexpected", async () => {
-    deny("gl.no", "gl.b");
-    deny("gl.no2", "gl.a");
+    const glNo = deny("gl.b");
+    const glNo2 = deny("gl.a");
     const rs = manifest({
-      "gl.a": { path: "/a", guard: "gl.no", component: () => el("a") },
-      "gl.b": { path: "/b", guard: "gl.no2", component: () => el("b") },
+      "gl.a": { path: "/a", guard: glNo, component: () => el("a") },
+      "gl.b": { path: "/b", guard: glNo2, component: () => el("b") },
     });
     const t = boot(rs, "/a");
     await settle();
@@ -341,10 +342,10 @@ describe("guards", () => {
   });
   it("a redirect that can reach the login after several hops still works (hops below the limit)", async () => {
     let n = 0;
-    guard("gh.step", { redirect: "gh.b" }, async () => (++n < 8 ? err(Denied.make({})) : ok(null)));
+    const ghStep = guard({ redirect: "gh.b" }, async () => (++n < 8 ? err(Denied.make({})) : ok(null)));
     const rs = manifest({
-      "gh.a": { path: "/a", guard: "gh.step", component: () => el("a") },
-      "gh.b": { path: "/b", guard: "gh.step", component: () => el("b") },
+      "gh.a": { path: "/a", guard: ghStep, component: () => el("a") },
+      "gh.b": { path: "/b", guard: ghStep, component: () => el("b") },
     });
     const t = boot(rs, "/a");
     await settle();
@@ -352,8 +353,8 @@ describe("guards", () => {
     t.stop();
   });
   it("redirect to an unknown route id is a keel.unexpected naming the target", async () => {
-    deny("gu.no", "gu.nowhere");
-    const rs = manifest({ "gu.a": { path: "/a", guard: "gu.no", component: () => el("a") } });
+    const guNo = deny("gu.nowhere");
+    const rs = manifest({ "gu.a": { path: "/a", guard: guNo, component: () => el("a") } });
     const t = boot(rs, "/a");
     await settle();
     const alert = t.host.querySelector('[role="alert"]');
@@ -363,27 +364,13 @@ describe("guards", () => {
     );
     t.stop();
   });
-  it("an unknown guard name is E1506, shown by the nearest errorElement", async () => {
-    const rs = manifest({
-      "ug.a": {
-        path: "/a",
-        guard: "ug.missing",
-        component: () => el("a"),
-        errorElement: ({ error }) => el(error.message),
-      },
-    });
-    const t = boot(rs, "/a");
-    await settle();
-    expect(t.host.querySelector("[data-x='E1506 unknown guard \"ug.missing\"']")).not.toBeNull();
-    t.stop();
-  });
   it("a guard that throws is not a denial: no redirect, error shown", async () => {
-    guard("gt.boom", { redirect: "gt.login" }, async () => {
+    const gtBoom = guard({ redirect: "gt.login" }, async () => {
       throw new Error("kaboom");
     });
     const rs = manifest({
       "gt.login": { path: "/login", component: () => el("login") },
-      "gt.a": { path: "/a", guard: "gt.boom", component: () => el("a") },
+      "gt.a": { path: "/a", guard: gtBoom, component: () => el("a") },
     });
     const t = boot(rs, "/a");
     await settle();
@@ -394,21 +381,21 @@ describe("guards", () => {
   });
   it("guards run outermost first and stop at the first denial before any loader runs", async () => {
     const order: string[] = [];
-    guard("go.outer", { redirect: "go.login" }, async () => {
+    const goOuter = guard({ redirect: "go.login" }, async () => {
       order.push("outer");
       return err(Denied.make({}));
     });
-    guard("go.inner", { redirect: "go.login" }, async () => {
+    const goInner = guard({ redirect: "go.login" }, async () => {
       order.push("inner");
       return ok(null);
     });
     const rs = manifest({
       "go.login": { path: "/login", component: () => el("login") },
-      "go.shell": { guard: "go.outer", component: (p) => el("shell", p.children === undefined ? [] : [p.children()]) },
+      "go.shell": { guard: goOuter, component: (p) => el("shell", p.children === undefined ? [] : [p.children()]) },
       "go.a": {
         path: "/a",
         layout: "go.shell",
-        guard: "go.inner",
+        guard: goInner,
         loader: loader({ output: s.object({}) }, async () => {
           order.push("loader");
           return ok({});
@@ -422,7 +409,7 @@ describe("guards", () => {
     t.stop();
   });
   it("a guard failing inside layouts renders its errorElement alone when a guard sits above", async () => {
-    guard("gb.boom", { redirect: "gb.l" }, async () => {
+    const gbBoom = guard({ redirect: "gb.l" }, async () => {
       throw new Error("x");
     });
     const rs = manifest({
@@ -431,7 +418,7 @@ describe("guards", () => {
       "gb.a": {
         path: "/a",
         layout: "gb.shell",
-        guard: "gb.boom",
+        guard: gbBoom,
         component: () => el("a"),
         errorElement: () => el("err"),
       },
@@ -1018,19 +1005,26 @@ describe("defaultError and browserHistory", () => {
     expect(window.history.scrollRestoration).toBe("manual");
     window.history.replaceState(null, "", "/start?a=1#z");
     expect(h.current()).toBe("/start?a=1#z");
-    h.push("/two?b=2");
+    h.push("/two?b=2", "k2");
     expect(h.current()).toBe("/two?b=2");
     expect(window.location.pathname).toBe("/two");
-    h.replace("/three");
+    h.replace("/three", "k3");
     expect(h.current()).toBe("/three");
-    const seen: string[] = [];
-    const off = h.onPop((u) => void seen.push(u));
+    const seen: [string, string | undefined][] = [];
+    const off = h.onPop((u, k) => void seen.push([u, k]));
+    window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+    expect(seen).toEqual([["/three", "k3"]]);
+    window.dispatchEvent(new PopStateEvent("popstate", { state: { keel: "other-load:k9" } }));
     window.dispatchEvent(new PopStateEvent("popstate"));
-    expect(seen).toEqual(["/three"]);
+    expect(seen).toEqual([
+      ["/three", "k3"],
+      ["/three", undefined],
+      ["/three", undefined],
+    ]);
     expect(typeof off).toBe("function");
     if (typeof off === "function") off();
     window.dispatchEvent(new PopStateEvent("popstate"));
-    expect(seen).toEqual(["/three"]);
+    expect(seen.length).toBe(3);
   });
 });
 

@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import type { KeelError, ObjectSchema } from "@keel/schema";
 import type { Action } from "./Action.ts";
+import type { Guard } from "./Guard.ts";
 import type { Loader } from "./Loader.ts";
 import type { RouteProps } from "./RouteProps.ts";
 
@@ -20,7 +21,7 @@ export interface RouteDef {
     readonly DELETE?: Action<unknown>;
   };
   readonly layout?: string;
-  readonly guard?: string;
+  readonly guard?: Guard;
   component(props: RouteProps, slots?: undefined, ctx?: Ctx): Node;
   errorElement?(props: { readonly error: KeelError<string, unknown> }): Node;
 }

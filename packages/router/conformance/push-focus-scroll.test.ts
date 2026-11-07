@@ -1,17 +1,16 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "After a push navigation, document.activeElement is main and the scroll position is 0; back restores the previous entry's scroll position." Seed 1337.
+// Spec: k.router, clause "After a push navigation, document.activeElement is main and the scroll position is 0; back and forward restore each entry's own position, also for two entries with one URL." (RFC 0041: scroll is saved per router-minted history key) Seed 1337.
 // Relies on happy-dom window.scrollTo updating window.scrollY.
-import { href } from "@keel/router";
 import fc from "fast-check";
-import { beforeEach, describe, expect, it } from "vitest";
-import { SEED, now, resetObservations, settle, start, submit } from "./fixtures.ts";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SEED, now, resetObservations, routes, settle, start, submit } from "./fixtures.ts";
 
 describe("k.router scroll and focus", () => {
   beforeEach(resetObservations);
   it("after a push navigation, document.activeElement is main and the scroll position is 0", async () => {
     const app = await start("/", { render: true });
     window.scrollTo(0, 300);
-    await app.router.navigate(href("orders.list"));
+    await app.router.navigate(routes.href("orders.list"));
     await settle();
     const main = app.host.querySelector("main");
     expect(main).not.toBeNull();
@@ -24,10 +23,10 @@ describe("k.router scroll and focus", () => {
     const app = await start("/", { render: true });
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 5000 }), async (y) => {
-        await app.router.navigate(href("orders.list"));
+        await app.router.navigate(routes.href("orders.list"));
         await settle();
         window.scrollTo(0, y);
-        await app.router.navigate(href("orders.new"));
+        await app.router.navigate(routes.href("orders.new"));
         await settle();
         expect(window.scrollY).toBe(0);
         app.history.back();
@@ -38,6 +37,75 @@ describe("k.router scroll and focus", () => {
       { seed: SEED, numRuns: 25 },
     );
     app.stop();
+  });
+  describe("per-entry scroll", () => {
+    let y = 0;
+    const original = Object.getOwnPropertyDescriptor(window, "scrollY");
+    beforeEach(() => {
+      y = 0;
+      vi.spyOn(window, "scrollTo").mockImplementation((...args: unknown[]) => {
+        const v = args.length >= 2 ? args[1] : undefined;
+        if (typeof v === "number") y = v;
+        else if (typeof args[0] === "object" && args[0] !== null && "top" in args[0]) {
+          const top = args[0].top;
+          if (typeof top === "number") y = top;
+        }
+      });
+      Object.defineProperty(window, "scrollY", { get: () => y, configurable: true });
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+      if (original !== undefined) Object.defineProperty(window, "scrollY", original);
+      else Reflect.deleteProperty(window, "scrollY");
+    });
+    it("back and forward restore each entry's own position, also for two entries with one URL", async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.tuple(
+            fc.integer({ min: 1, max: 5000 }),
+            fc.integer({ min: 1, max: 5000 }),
+            fc.integer({ min: 1, max: 5000 }),
+          ),
+          async ([a1, b1, a2]) => {
+            const app = await start("/", { render: true });
+            const go = async (to: Parameters<typeof app.router.navigate>[0], leaveAt: number): Promise<void> => {
+              window.scrollTo(0, leaveAt);
+              await app.router.navigate(to);
+              await settle();
+            };
+            const A = routes.href("orders.list");
+            const B = routes.href("orders.new");
+            await go(A, 11); // "/" left at 11
+            await go(B, a1); // A left at a1
+            await go(A, b1); // B left at b1
+            await go(B, a2); // second A left at a2
+            expect(y).toBe(0);
+            app.history.back();
+            await settle();
+            expect(now(app.router)).toMatchObject({ id: "orders.list" });
+            expect(y).toBe(a2);
+            app.history.back();
+            await settle();
+            expect(now(app.router)).toMatchObject({ id: "orders.new" });
+            expect(y).toBe(b1);
+            app.history.back();
+            await settle();
+            expect(now(app.router)).toMatchObject({ id: "orders.list" });
+            expect(y).toBe(a1);
+            app.history.forward();
+            await settle();
+            expect(now(app.router)).toMatchObject({ id: "orders.new" });
+            expect(y).toBe(b1);
+            app.history.forward();
+            await settle();
+            expect(now(app.router)).toMatchObject({ id: "orders.list" });
+            expect(y).toBe(a2);
+            app.stop();
+          },
+        ),
+        { seed: SEED, numRuns: 10 },
+      );
+    });
   });
   it("revalidation changes neither scroll nor focus", async () => {
     const app = await start("/orders/7", { render: true });

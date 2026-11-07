@@ -3,7 +3,7 @@
 // Assumed: `contrast(fg, bg)` from '@keel/ui/css' takes two hex colors and returns the WCAG ratio.
 // Axe, style-signal and E1804 check conformance lives in packages/testing/conformance/ui-*.test.ts (rfc:0021).
 import { scope } from "@keel/reactive";
-import { href, manifest } from "@keel/router";
+import { manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import { Text, defineTokens } from "@keel/ui";
 
@@ -23,7 +23,7 @@ export const tokens = defineTokens({
 export const routes = manifest({
   home: { path: "/", params: s.object({}), search: s.object({}), component: () => Text({ children: "home" }) },
 });
-export const home = href("home", {}, {});
+export const home = routes.href("home", {}, {});
 
 /** Runs `fn` inside an ownership scope (k.reactive E1203); `dispose` frees the scope. */
 export const inScope = <T>(fn: () => T): { value: T; dispose: () => void } => {

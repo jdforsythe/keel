@@ -1,6 +1,7 @@
 // Examples: manifest validation codes (E1502-E1506 at runtime) and the routes.json artifact.
-import { s } from "@keel/schema";
+import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
+import { guard } from "../src/guard.ts";
 import { manifest } from "../src/manifest.ts";
 import { routesArtifact } from "../src/routesArtifact.ts";
 import type { RouteDef } from "../src/types/RouteDef.ts";
@@ -76,6 +77,7 @@ describe("routesArtifact", () => {
     };
     const routes = manifest({
       "art.shell": { component: view },
+      "art.login": { path: "/login", component: view },
       "art.show": {
         path: "/art/:id",
         params: P,
@@ -83,11 +85,11 @@ describe("routesArtifact", () => {
         actions: { POST: save, DELETE: save },
         component: view,
         layout: "art.shell",
-        guard: "auth",
+        guard: guard({ redirect: "art.login" }, async () => ok(null)),
       },
     });
     const a = routesArtifact(routes);
-    expect(Object.keys(a)).toEqual(["art.shell", "art.show"]);
+    expect(Object.keys(a)).toEqual(["art.login", "art.shell", "art.show"]);
     expect(a["art.shell"]).toEqual({
       actions: [],
       guard: null,
@@ -99,7 +101,7 @@ describe("routesArtifact", () => {
     });
     expect(a["art.show"]).toEqual({
       actions: ["DELETE", "POST"],
-      guard: "auth",
+      guard: "art.login",
       layout: "art.shell",
       module: "art",
       params: {

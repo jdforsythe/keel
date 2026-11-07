@@ -3,17 +3,16 @@
 // E1501 has two halves. `navigate` with a string is type-only in this package (a TS error reported under E1501,
 // k.check), asserted here with type-level checks. Literal URL attributes and `Link to` are diagnosed by the compiler
 // (URL policy, k.compiler, RFC 0030), asserted through the public `compile`. Property seed: 1337.
-// E1502-E1506: `manifest` throws an Error whose `code` is the rule; `<Form>` throws E1505; an unknown guard name
-// fails the route at navigation with a message naming E1506. Each trigger has a clean counterpart.
+// E1502-E1506: `manifest` throws an Error whose `code` is the rule; `<Form>` throws E1505. E1506 means unknown
+// layout name, a layout with a path, or a layout cycle (guards are values since RFC 0041, so no unknown guard name
+// exists). Each trigger has a clean counterpart.
 import { compile } from "@keel/compiler";
-import { createCtx } from "@keel/ctx";
-import { Form, type Href, action, createRouter, guard, href, loader, manifest } from "@keel/router";
-import { mount } from "@keel/runtime-dom";
+import { Form, type Href, action, type createRouter, manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import { ok } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { SEED, el, idOf, memoryHistory, settle } from "./fixtures.ts";
+import { SEED, el, idOf, routes } from "./fixtures.ts";
 
 type Navigate = Parameters<ReturnType<typeof createRouter>["navigate"]>[0];
 
@@ -50,7 +49,7 @@ const e1501 = (jsx: string, opts: { routes?: CompileRoutes; link?: boolean } = {
     [
       {
         path: "C.tsx",
-        source: `${opts.link === true ? LINK_IMPORT : ""}import { href } from "@keel/router"\nexport default function C(p: { id: string }) { const id = p.id; return <div>${jsx}</div> }`,
+        source: `${opts.link === true ? LINK_IMPORT : ""}import { routes } from "./routes"\nexport default function C(p: { id: string }) { const id = p.id; return <div>${jsx}</div> }`,
       },
     ],
     opts.routes === undefined ? undefined : { routes: opts.routes },
@@ -58,8 +57,8 @@ const e1501 = (jsx: string, opts: { routes?: CompileRoutes; link?: boolean } = {
 
 describe("k.router rules", () => {
   it("E1501 string path where an Href is required", () => {
-    const clean: Navigate = href("app.home");
-    const asHref: Href = href("app.home");
+    const clean: Navigate = routes.href("app.home");
+    const asHref: Href = routes.href("app.home");
     expect(clean).toBe(asHref);
     expectTypeOf<string>().not.toMatchTypeOf<Href>();
     expectTypeOf<"/orders/1">().not.toMatchTypeOf<Href>();
@@ -85,14 +84,14 @@ describe("k.router rules", () => {
     expect(e1501(`<a id="a" href="orders/7">x</a>`, { routes: showRoutes })).toHaveLength(1);
   });
 
-  it("E1501 clean counterparts: href() expressions, #frag, absolute URL, and a relative literal matching no pattern have zero diagnostics", () => {
+  it("E1501 clean counterparts: routes.href() expressions, #frag, absolute URL, and a relative literal matching no pattern have zero diagnostics", () => {
     fc.assert(
       fc.property(
         fc.constantFrom(
-          { jsx: `<a id="a" href={href("orders.show", { id })}>x</a>`, link: false },
-          { jsx: `<form id="f" action={href("orders.show", { id })}></form>`, link: false },
-          { jsx: `<button id="b" formaction={href("orders.show", { id })}>x</button>`, link: false },
-          { jsx: `<Link id="l" to={href("orders.show", { id })}>x</Link>`, link: true },
+          { jsx: `<a id="a" href={routes.href("orders.show", { id })}>x</a>`, link: false },
+          { jsx: `<form id="f" action={routes.href("orders.show", { id })}></form>`, link: false },
+          { jsx: `<button id="b" formaction={routes.href("orders.show", { id })}>x</button>`, link: false },
+          { jsx: `<Link id="l" to={routes.href("orders.show", { id })}>x</Link>`, link: true },
           { jsx: `<a id="a" href="#frag">x</a>`, link: false },
           { jsx: `<a id="a" href="https://x.test/orders">x</a>`, link: false },
           { jsx: `<a id="a" href="docs/guide.pdf">x</a>`, link: false },
@@ -189,41 +188,5 @@ describe("k.router rules", () => {
         manifest({ "k.shell": { component: page }, "k.one": { path: "/k", layout: "k.shell", component: page } }),
       ),
     ).toBeNull();
-  });
-
-  it("E1506 unknown guard name: the route fails with an error naming E1506; a registered guard passes", async () => {
-    const shown = (p: { error: { message: string } }): Node => el("p", { "data-error": "1" }, p.error.message);
-    guard("l.known", { redirect: "l.home" }, async () => ok(null));
-    const run = async (name: string): Promise<{ text: string; page: boolean }> => {
-      const routes = manifest({
-        "l.home": { path: "/", component: page },
-        "l.page": {
-          path: "/guarded",
-          guard: name,
-          loader: loader({ output: s.object({}) }, async () => ok({})),
-          component: () => el("section", { "data-ok": "1" }, "page"),
-          errorElement: shown,
-        },
-      });
-      const history = memoryHistory("/guarded");
-      const router = createRouter(routes, { ctx: createCtx({ mode: "sim", seed: SEED }), history });
-      const host = document.createElement("div");
-      document.body.append(host);
-      const unmount = mount(router.App, host);
-      await settle();
-      const out = {
-        text: host.querySelector("[data-error]")?.textContent ?? "",
-        page: host.querySelector("[data-ok]") !== null,
-      };
-      unmount();
-      router.dispose();
-      host.remove();
-      return out;
-    };
-    const unknown = await run("l.ghost");
-    expect(unknown.text).toContain("E1506");
-    expect(unknown.page).toBe(false);
-    const known = await run("l.known");
-    expect(known).toEqual({ text: "", page: true });
   });
 });

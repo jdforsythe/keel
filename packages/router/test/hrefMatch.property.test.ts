@@ -5,7 +5,6 @@ import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createRouter } from "../src/createRouter.ts";
-import { href } from "../src/href.ts";
 import { manifest } from "../src/manifest.ts";
 import type { RouteDef } from "../src/types/RouteDef.ts";
 import { memoryHistory } from "./memoryHistory.ts";
@@ -80,8 +79,8 @@ describe("href and matching over generated manifests", () => {
           const routes = manifest(Object.fromEntries(built.map((x) => [x.id, x.def])));
           const history = memoryHistory("/nowhere");
           const router = createRouter(routes, { ctx, history });
-          const to = href(b.id, p, q);
-          expect(href(b.id, p, q)).toBe(to);
+          const to = routes.href(b.id, p, q);
+          expect(routes.href(b.id, p, q)).toBe(to);
           await router.navigate(to);
           expect(router.route.get()).toEqual({ id: b.id, params: p, search: q, pending: false });
           expect(history.current()).toBe(to);
@@ -104,9 +103,9 @@ describe("href and matching over generated manifests", () => {
         ];
         const routes = manifest(Object.fromEntries(staticFirst ? [stat, param] : [param, stat]));
         const router = createRouter(routes, { ctx, history: memoryHistory("/nowhere") });
-        await router.navigate(href(param[0], { x: w }));
+        await router.navigate(routes.href(param[0], { x: w }));
         expect(router.route.get().id).toBe(stat[0]);
-        await router.navigate(href(param[0], { x: u }));
+        await router.navigate(routes.href(param[0], { x: u }));
         expect(router.route.get()).toMatchObject({ id: param[0], params: { x: u } });
         router.dispose();
       }),

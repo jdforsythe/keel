@@ -85,9 +85,9 @@ describe("E1003 / E1501 URL literals", () => {
     const bad = "it renders as about:blank";
     expect(diags(src).map(({ fix: _, ...rest }) => rest)).toEqual([
       d("E1003", "a.tsx", 2, 46, `href is a literal script/data URL; ${bad}`, "k.compiler"),
-      d("E1501", "a.tsx", 2, 74, "href is a string path; use href(routeId, params)", "k.router"),
+      d("E1501", "a.tsx", 2, 74, "href is a string path; use routes.href(routeId, params)", "k.router"),
       d("E1003", "a.tsx", 2, 92, `href is a literal script/data URL; ${bad}`, "k.compiler"),
-      d("E1501", "a.tsx", 2, 150, "to is a string path; use href(routeId, params)", "k.router"),
+      d("E1501", "a.tsx", 2, 150, "to is a string path; use routes.href(routeId, params)", "k.router"),
       d("E1003", "a.tsx", 2, 163, `href is a literal script/data URL; ${bad}`, "k.compiler"),
     ]);
   });

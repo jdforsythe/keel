@@ -1,19 +1,15 @@
 import type { Ctx } from "@keel/ctx";
 import type { KeelError, Result } from "@keel/schema";
-import { guardTable } from "./internal/guardTable.ts";
 import type { Guard } from "./types/Guard.ts";
 
 /**
- * Declare and register guard `name` (k.router Guards). Routes name it in `guard`; on `err` (`keel.denied`)
- * navigation redirects to route `redirect` with search `{ next: url }`. Re-declaring a name replaces the
- * guard (module re-evaluation); guards resolve by name at navigation time.
+ * Declare a guard (k.router Guards, RFC 0041). Routes hold the returned value in `guard`; it runs outermost first,
+ * before any loader. On `err` (`keel.denied`) navigation redirects to route `redirect` of the router's own manifest,
+ * with search `{ next: url }`. There is no name and no registry: the route's reference is the only way to it.
  */
 export function guard(
-  name: string,
-  opts: { readonly redirect: string },
+  decl: { readonly redirect: string },
   fn: (req: { readonly url: string }, ctx: Ctx) => Promise<Result<null, KeelError<"keel.denied", unknown>>>,
 ): Guard {
-  const g: Guard = Object.freeze({ kind: "keel.guard", name, redirect: opts.redirect, run: fn });
-  guardTable.set(name, g);
-  return g;
+  return Object.freeze({ kind: "keel.guard", redirect: decl.redirect, run: fn });
 }

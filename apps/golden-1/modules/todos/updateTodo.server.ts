@@ -1,7 +1,8 @@
-import { action, href } from "@keel/router";
+import { type Href, action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { TodoDraft } from "./TodoDraft.schema.ts";
 import { TodoParams } from "./TodoParams.schema.ts";
+import { routes } from "./routes.ts";
 import { todosApi } from "./todosApi.ts";
 
 /**
@@ -10,6 +11,7 @@ import { todosApi } from "./todosApi.ts";
  */
 export const updateTodo = action({ input: TodoDraft, params: TodoParams }, async (input, { params, url }, ctx) => {
   const r = await todosApi(new URL(url).origin).editTodo({ params: { todoId: params.todoId }, body: input }, ctx);
-  if (r.ok) return ok(href("todos.list", { listId: params.listId }));
-  return err(r.error.data.body?.error ?? r.error);
+  if (!r.ok) return err(r.error.data.body?.error ?? r.error);
+  const to: Href = routes.href("todos.list", { listId: params.listId });
+  return ok(to);
 });

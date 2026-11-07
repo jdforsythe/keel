@@ -23,13 +23,13 @@ it.each([
   ["target declares no search", undefined],
   ["target declares next", s.object({ next: s.string().optional() })],
 ])("guard denial redirects to login with the encoded current href (%s)", async (_n, search) => {
-  guard("gn.deny", { redirect: "gn.login" }, async () => ({
+  const deny = guard({ redirect: "gn.login" }, async () => ({
     ok: false,
     error: { code: "keel.denied", message: "no", data: null },
   }));
   const routes = manifest({
     "gn.login": { path: "/login", ...(search === undefined ? {} : { search }), component: page },
-    "gn.secret": { path: "/secret", guard: "gn.deny", component: page },
+    "gn.secret": { path: "/secret", guard: deny, component: page },
   });
   const history = memoryHistory("/secret?a=1");
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history });

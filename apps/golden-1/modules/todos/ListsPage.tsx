@@ -1,9 +1,10 @@
 import { form } from "@keel/forms";
-import { Form, href } from "@keel/router";
+import { Form } from "@keel/router";
 import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Text } from "@keel/ui";
 import { ListDraft } from "./ListDraft.schema.ts";
+import { routes } from "./routes.ts";
 import { view } from "./view.ts";
 
 export const Props = s.object({});
@@ -35,7 +36,7 @@ export default function ListsPage(_props: Infer<typeof Props>) {
         <For each={view.get("lists")} key="id">
           {(list) => (
             <Box as="li" id={`todos.listItem.${list.id}`} direction="row" gap="2">
-              <Link id={`todos.listLink.${list.id}`} to={href("todos.list", { listId: list.id })}>
+              <Link id={`todos.listLink.${list.id}`} to={routes.href("todos.list", { listId: list.id })}>
                 {list.name}
               </Link>
               <Text id={`todos.openCount.${list.id}`}>{`${openCount(list.id)} open`}</Text>

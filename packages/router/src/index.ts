@@ -7,8 +7,6 @@ export { createRouter } from "./createRouter.ts";
 export { fieldsError } from "./internal/fieldsError.ts";
 export { Form } from "./Form.ts";
 export { guard } from "./guard.ts";
-export { guardTable } from "./internal/guardTable.ts";
-export { href } from "./href.ts";
 export { loader } from "./loader.ts";
 export { manifest } from "./manifest.ts";
 export { matchUrl } from "./internal/matchUrl.ts";

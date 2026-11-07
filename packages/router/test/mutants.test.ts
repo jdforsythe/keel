@@ -346,7 +346,7 @@ describe("needsBare", () => {
     expect(needsBare(chain, -1)).toBe(false);
     expect(needsBare([lvl({ loader: ld })], -1)).toBe(false);
     expect(needsBare([lvl({ loader: ld })], 0)).toBe(false);
-    expect(needsBare([lvl({ guard: "g" }), lvl({})], 1)).toBe(true);
+    expect(needsBare([lvl({ guard: guard({ redirect: "x" }, async () => ok(null)) }), lvl({})], 1)).toBe(true);
     expect(needsBare([lvl({}), lvl({})], 5)).toBe(false);
   });
 });
@@ -643,9 +643,9 @@ describe("runLoaders / runGuard", () => {
   });
   it("runGuard passes ok and denied through and turns a throw into an err", async () => {
     const D = s.error("keel.denied", s.object({}));
-    const yes = guard("rg.yes", { redirect: "x" }, async () => ok(null));
-    const no = guard("rg.no", { redirect: "x" }, async () => err(D.make({})));
-    const boom = guard("rg.boom", { redirect: "x" }, async () => {
+    const yes = guard({ redirect: "x" }, async () => ok(null));
+    const no = guard({ redirect: "x" }, async () => err(D.make({})));
+    const boom = guard({ redirect: "x" }, async () => {
       throw new Error("bang");
     });
     expect(await runGuard(yes, "/u", ctx)).toEqual(ok(null));
@@ -656,7 +656,7 @@ describe("runLoaders / runGuard", () => {
   });
   it("runGuard hands the url to the guard", async () => {
     const seen: string[] = [];
-    const g = guard("rg.url", { redirect: "x" }, async (req) => {
+    const g = guard({ redirect: "x" }, async (req) => {
       seen.push(req.url);
       return ok(null);
     });

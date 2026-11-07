@@ -2,13 +2,15 @@
 // ASSUMPTIONS (the spec names no router-instance API; a human should confirm or amend):
 //  - createRouter(routes, { ctx, history }) from @keel/router returns { navigate, route, dispose, App };
 //    route is a reactive computed read with route.get(); App is a no-prop root component for mount(App, el).
-//  - history is in-memory { push(url), replace(url), current(), onPop(fn(url)) }; this file adds test-only
-//    back(), forward() and external(url) (a URL change from outside the router, delivered through onPop).
-//  - loader/action/guard/manifest/href/Form/createRouter all come from @keel/router.
+//  - history is in-memory { push(url, key), replace(url, key), current(), onPop(fn(url, key?)) } (RFC 0041): each
+//    entry is stored as { url, key } and back()/forward() deliver fn(url, key); this file adds test-only
+//    back(), forward() and external(url) (a URL change from outside the router, delivered through onPop with no key).
+//  - loader/action/guard/manifest/Form/createRouter come from @keel/router; links come from routes.href (RFC 0041).
+//  - guards are values (guard({ redirect }, fn)), held by routes as `guard: <value>`.
 //  - components are (props) => Node; a layout receives { children } (RFC 0008: a thunk, a plain Node also tolerated);
 //    errorElement receives { error }; Form is called as a function with props and children (thunk or plain Node).
 import { createCtx } from "@keel/ctx";
-import { Form, action, createRouter, guard, href, loader, manifest } from "@keel/router";
+import { Form, type Href, action, createRouter, guard, loader, manifest } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
 import { type Infer, err, ok, s } from "@keel/schema";
 
@@ -159,17 +161,21 @@ const act = (verb: Verb) =>
   action({ input: OrderEdit }, async (input) => {
     bump(`action:${verb}`);
     control.lastInput = input;
-    return control.outcome === "href" ? ok(href("orders.list")) : ok(null);
+    if (control.outcome === "href") {
+      const to: Href = routes.href("orders.list");
+      return ok(to);
+    }
+    return ok(null);
   });
-guard("auth", { redirect: "app.login" }, async () => {
+const auth = guard({ redirect: "app.login" }, async () => {
   bump("guard:auth");
   return control.gate ? ok(null) : err(Denied.make({}));
 });
-guard("g.outer", { redirect: "app.login" }, async () => {
+const gOuter = guard({ redirect: "app.login" }, async () => {
   bump("guard:g.outer");
   return ok(null);
 });
-guard("g.inner", { redirect: "app.login" }, async () => {
+const gInner = guard({ redirect: "app.login" }, async () => {
   bump("guard:g.inner");
   return ok(null);
 });
@@ -182,7 +188,7 @@ export const routes = manifest({
     loader: loadShell,
     errorElement: errorElement("orders.shell"),
   },
-  "guarded.shell": { component: GuardedShell, layout: "app.shell", guard: "g.outer" },
+  "guarded.shell": { component: GuardedShell, layout: "app.shell", guard: gOuter },
   "app.home": { path: "/", component: page("app.home"), layout: "app.shell" },
   "app.login": { path: "/login", search: LoginSearch, component: page("app.login"), layout: "app.shell" },
   "orders.list": { path: "/orders", search: ListSearch, component: page("orders.list"), layout: "orders.shell" },
@@ -212,45 +218,50 @@ export const routes = manifest({
     loader: load("secret.show"),
     component: page("secret.show"),
     layout: "app.shell",
-    guard: "auth",
+    guard: auth,
   },
   "guarded.page": {
     path: "/guarded",
     loader: load("guarded.page"),
     component: page("guarded.page"),
     layout: "guarded.shell",
-    guard: "g.inner",
+    guard: gInner,
   },
   "slow.page": { path: "/slow", loader: loadSlow, component: page("slow.page"), layout: "app.shell" },
 });
 
 // ---- in-memory history
 export type MemoryHistory = {
-  push(url: string): void;
-  replace(url: string): void;
+  push(url: string, key: string): void;
+  replace(url: string, key: string): void;
   current(): string;
-  onPop(fn: (url: string) => void): void;
+  onPop(fn: (url: string, key?: string) => void): void;
   back(): void;
   forward(): void;
   external(url: string): void;
 };
 export function memoryHistory(start: string): MemoryHistory {
-  const entries: string[] = [start];
+  type Entry = { url: string; key: string | undefined };
+  const entries: Entry[] = [{ url: start, key: undefined }];
   let at = 0;
-  const subs: ((url: string) => void)[] = [];
-  const current = (): string => entries[at] ?? start;
+  const subs: ((url: string, key?: string) => void)[] = [];
+  const current = (): string => entries[at]?.url ?? start;
   const pop = (): void => {
-    for (const fn of subs) fn(current());
+    const key = entries[at]?.key;
+    for (const fn of subs) {
+      if (key === undefined) fn(current());
+      else fn(current(), key);
+    }
   };
-  const push = (url: string): void => {
+  const push = (url: string, key: string | undefined): void => {
     entries.splice(at + 1);
-    entries.push(url);
+    entries.push({ url, key });
     at += 1;
   };
   return {
     push,
-    replace: (url) => {
-      entries[at] = url;
+    replace: (url, key) => {
+      entries[at] = { url, key };
     },
     current,
     onPop: (fn) => {
@@ -265,7 +276,7 @@ export function memoryHistory(start: string): MemoryHistory {
       pop();
     },
     external: (url) => {
-      push(url);
+      push(url, undefined);
       pop();
     },
   };

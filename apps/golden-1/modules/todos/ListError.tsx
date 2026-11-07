@@ -1,6 +1,6 @@
-import { href } from "@keel/router";
 import { type Infer, s } from "@keel/schema";
 import { Box, Heading, Link, Text } from "@keel/ui";
+import { routes } from "./routes.ts";
 
 export const Props = s.object({
   error: s.object({ code: s.string(), message: s.string() }),
@@ -16,7 +16,7 @@ export default function ListError(props: Infer<typeof Props>) {
       <Text as="p" id="todos.error.message">
         {props.error.message}
       </Text>
-      <Link id="todos.error.home" to={href("todos.index")}>
+      <Link id="todos.error.home" to={routes.href("todos.index")}>
         Back to lists
       </Link>
     </Box>
