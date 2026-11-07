@@ -17,7 +17,8 @@ const APP_DEFAULT = /^export\s+default\b/;
 /** A component's `Props` and `uses` belong to the component; `module.ts` and `routes.ts` are manifests. */
 const APP_PARTS = new Set(["Props", "uses"]);
 const APP_MANIFESTS = new Set(["module.ts", "routes.ts"]);
-const UNSAFE_CALL = /(?<!function\s)\bunsafe\s*\(/g;
+/** `unsafe(...)` and `unsafe<T>(...)` calls; the declaration `function unsafe<T>(` is not a use. */
+const UNSAFE_CALL = /(?<!function\s)\bunsafe\s*(?:<[^<>()]*(?:<[^<>()]*>[^<>()]*)*>)?\s*\(/g;
 const PKG = /^packages\/([^/]+)\/([^/]+)\//;
 const APP = /^apps\/([^/]+)\/(.+)$/;
 const OTHER_HEADER = "// Clause:";
