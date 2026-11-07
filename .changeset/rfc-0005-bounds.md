@@ -1,3 +1,4 @@
+---
 "@keel/schema": minor
 ---
 
