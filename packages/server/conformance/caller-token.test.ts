@@ -1,5 +1,7 @@
-// Spec: k.server, clause "`caller` is the sent cookie's token, else a fresh one set as a cookie on a write, else `""`."
+// Spec: k.server, clause "`caller` is the hash of the sent cookie's token, else of a fresh one set as a cookie on a write, else `""`."
+// The hash is the base64url SHA-256 of the token, no padding (Server state prose).
 // Seed 1337. Runs under plain Node: happy-dom strips cookie headers. Only runtime (JSON) requests are used.
+import { createHash } from "node:crypto";
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
 import { ok, s } from "@keel/schema";
@@ -10,6 +12,7 @@ import { expect, test } from "vitest";
 const Out = s.object({ caller: s.string() });
 const Nothing = s.object({});
 const TOKEN = /^[A-Za-z0-9-]{16,64}$/;
+const hash = (token: string): string => createHash("sha256").update(token).digest("base64url");
 const UUID = "123e4567-e89b-42d3-a456-426614174000";
 
 async function setup() {
@@ -53,7 +56,7 @@ async function setup() {
   return { seen, get, post };
 }
 
-test("`caller` is the sent cookie's token (loader and action, any valid token, no set-cookie)", async () => {
+test("`caller` is the hash of the sent cookie's token (loader and action, any valid token, no set-cookie)", async () => {
   const { seen, get, post } = await setup();
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(TOKEN), async (token) => {
@@ -61,18 +64,20 @@ test("`caller` is the sent cookie's token (loader and action, any valid token, n
       seen.action = undefined;
       const r = await get(`keel-caller=${token}`);
       expect(r.status).toBe(200);
-      expect(seen.loader).toBe(token);
+      expect(seen.loader).toBe(hash(token));
+      expect(seen.loader).not.toBe(token);
       expect(r.headers.get("set-cookie")).toBeNull();
       const w = await post(`keel-caller=${token}`);
       expect(w.status).toBe(200);
-      expect(seen.action).toBe(token);
+      expect(seen.action).toBe(hash(token));
+      expect(seen.action).not.toBe(token);
       expect(w.headers.get("set-cookie")).toBeNull();
     }),
     { seed: 1337, numRuns: 25 },
   );
 });
 
-test("`caller` is a fresh token set as an HttpOnly SameSite=Lax Path=/ cookie on a write without one", async () => {
+test("`caller` is the hash of a fresh token set as an HttpOnly SameSite=Lax Path=/ cookie on a write without one", async () => {
   const { seen, post } = await setup();
   const res = await post();
   expect(res.status).toBe(200);
@@ -84,21 +89,24 @@ test("`caller` is a fresh token set as an HttpOnly SameSite=Lax Path=/ cookie on
   const token = first.slice("keel-caller=".length);
   expect(token).not.toBe("");
   expect(token).toMatch(TOKEN);
-  expect(seen.action).toBe(token);
+  expect(seen.action).toBe(hash(token));
+  expect(seen.action).not.toBe(token);
   const attrs = parts.slice(1).map((p) => p.toLowerCase());
   expect(attrs).toContain("httponly");
   expect(attrs).toContain("samesite=lax");
   expect(attrs).toContain("path=/");
 });
 
-test("`caller` is a fresh token set as a cookie on a write: two cookieless writes mint different tokens", async () => {
+test("`caller` is the hash of a fresh token set as a cookie on a write: two cookieless writes mint different tokens", async () => {
   const { seen, post } = await setup();
-  await post();
+  const ra = await post();
   const a = seen.action;
-  await post();
+  const rb = await post();
   const b = seen.action;
-  expect(a).toMatch(TOKEN);
-  expect(b).toMatch(TOKEN);
+  const tokenOf = (r: Response): string =>
+    ((r.headers.get("set-cookie") ?? "").split(";")[0] ?? "").slice("keel-caller=".length);
+  expect(a).toBe(hash(tokenOf(ra)));
+  expect(b).toBe(hash(tokenOf(rb)));
   expect(a).not.toBe(b);
 });
 
@@ -110,12 +118,12 @@ test('`caller` is `""` for a read without a cookie, and no cookie is set', async
   expect(res.headers.get("set-cookie")).toBeNull();
 });
 
-test("`caller` is the sent cookie's token even when other cookies are present", async () => {
+test("`caller` is the hash of the sent cookie's token even when other cookies are present", async () => {
   const { seen, get, post } = await setup();
   const cookie = `theme=dark; keel-caller=${UUID}; other=1`;
   expect((await get(cookie)).headers.get("set-cookie")).toBeNull();
-  expect(seen.loader).toBe(UUID);
+  expect(seen.loader).toBe(hash(UUID));
   const w = await post(cookie);
-  expect(seen.action).toBe(UUID);
+  expect(seen.action).toBe(hash(UUID));
   expect(w.headers.get("set-cookie")).toBeNull();
 });

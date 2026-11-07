@@ -16,7 +16,7 @@ async function runOne(
   const { sv, rq } = r;
   const ran = await attempt(async () => {
     const stores = l.stores === undefined ? undefined : await openStores(sv, rq, l.stores);
-    return rq.scope.run(() => l.run({ ...args, caller: rq.caller.token, stores }, sv.ctx));
+    return rq.scope.run(() => l.run({ ...args, caller: rq.caller.id, stores }, sv.ctx));
   });
   if (!ran.ok) return { result: ran, diag: null };
   if (!ran.value.ok) return { result: ran.value, diag: null };

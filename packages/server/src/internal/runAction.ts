@@ -59,7 +59,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const { sv, rq } = r;
   const ran = await attempt(async () => {
     const stores = action.stores === undefined ? undefined : await openStores(sv, rq, action.stores);
-    const at = { params: m.params, url: r.raw.url, caller: rq.caller.token, stores };
+    const at = { params: m.params, url: r.raw.url, caller: rq.caller.id, stores };
     const out = await inRequest(rq, () => action.run(decoded.value, at, sv.ctx));
     if (!out.ok) return out;
     const clash = await saveStores(sv, rq);

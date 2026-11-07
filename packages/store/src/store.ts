@@ -1,6 +1,7 @@
 import { type Computed, type Scope, batch, computed, owner, signal } from "@keel/reactive";
 import { type Result, type Schema, type SchemaError, err, ok, s } from "@keel/schema";
 import type { Bound } from "./internal/Bound.ts";
+import { LOG_LIMIT } from "./internal/LOG_LIMIT.ts";
 import type { Row } from "./internal/Row.ts";
 import type { TxError } from "./internal/TxError.ts";
 import { copy } from "./internal/copy.ts";
@@ -10,6 +11,7 @@ import { freeze } from "./internal/freeze.ts";
 import { logSchema } from "./internal/logSchema.ts";
 import { metaSchema } from "./internal/metaSchema.ts";
 import { registryOf } from "./internal/registryOf.ts";
+import { trim } from "./internal/trim.ts";
 import { undeclared } from "./internal/undeclared.ts";
 import { violated } from "./internal/violated.ts";
 import { withoutMeta } from "./internal/withoutMeta.ts";
@@ -21,17 +23,21 @@ import type { Transaction } from "./types/Transaction.ts";
  * Create a store inside a scope (E1203 outside one). State is validated, copied and deep-frozen.
  * `clock` stamps log entries (default: a per-store counter). Undo replays the log from the snapshot base
  * (`initial`, or the `initial` of the last restored snapshot); `undoWhere` undoes only a matching latest entry. `id` defaults to `store.<n>`; a live duplicate in the caller's registry
- * (`stores()`, `isolate`) throws.
+ * (`stores()`, `isolate`) throws. At most `logLimit` entries (default 256) are kept: a commit or `restore` past it
+ * folds the oldest into that base (RFC 0054), so `undo` reaches only kept entries.
  */
 export function store<T extends object>(
   schema: Schema<T>,
   initial: NoInfer<T>,
-  options?: { readonly id?: string; readonly clock?: () => number },
+  options?: { readonly id?: string; readonly clock?: () => number; readonly logLimit?: number },
 ): Store<T> {
   const id = options?.id ?? `store.${++counter.next}`;
   const registry = registryOf(owner());
   if (registry.has(id)) throw new Error(`store ${id}: id already in use by a live store`);
   const clock = options?.clock;
+  const limit = options?.logLimit ?? LOG_LIMIT;
+  if (!Number.isInteger(limit) || limit < 0)
+    throw new Error(`store ${id}: logLimit ${limit} is not a non-negative integer`);
   const start = copy(schema, initial);
   if (!start.ok) throw new Error(`store ${id}: initial state invalid: ${start.error.message}`);
   let base = freeze(start.value);
@@ -108,7 +114,9 @@ export function store<T extends object>(
         entry: freeze(meta === undefined ? entry : { ...entry, meta: meta.value }),
         apply: bound.value.apply,
       });
-      commit(next, rows);
+      const kept = trim(base, rows, limit);
+      base = kept.base;
+      commit(next, kept.rows);
       return ok(next);
     });
   };
@@ -169,8 +177,9 @@ export function store<T extends object>(
         tick = Math.max(tick, r.entry.at);
       }
       const restored = freeze(state.value);
-      base = freeze(initial.value);
-      commit(restored, next);
+      const kept = trim(freeze(initial.value), next, limit);
+      base = kept.base;
+      commit(restored, kept.rows);
       return ok(restored);
     },
     undo: drop,

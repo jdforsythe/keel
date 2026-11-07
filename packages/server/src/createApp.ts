@@ -6,6 +6,7 @@ import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import type { Served } from "./internal/Served.ts";
+import { callerHasher } from "./internal/callerHasher.ts";
 import { callerOf } from "./internal/callerOf.ts";
 import { codedError } from "./internal/codedError.ts";
 import { crashed } from "./internal/crashed.ts";
@@ -67,6 +68,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     inspectOrigins: opts.inspect?.origins ?? [],
     saved: new Map(),
     saving: new Map(),
+    callerId: await callerHasher(),
     built: mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets) : undefined,
   };
   const log = opts.log;
@@ -79,7 +81,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
     const routed = async () => {
-      const rq = { scope: scope(() => undefined), caller: callerOf(raw, sv.ctx), held: new Map() };
+      const rq = { scope: scope(() => undefined), caller: callerOf(raw, sv.ctx, sv.callerId), held: new Map() };
       isolate(rq.scope);
       const r = await attempt(() => handle(sv, raw, rq));
       rq.scope.dispose();

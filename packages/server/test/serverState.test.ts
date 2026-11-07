@@ -7,6 +7,7 @@ import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
+import { callerHasher } from "../src/internal/callerHasher.ts";
 
 const BASE = "http://localhost";
 const KEY = "keel.store.test.notes";
@@ -100,7 +101,7 @@ const saved = async (ctx: Ctx): Promise<unknown> => {
 };
 
 describe("server state (RFC 0044)", () => {
-  it("persists `snapshot({ meta: true })` under keel.store.<id>; the caller rides on the entry", async () => {
+  it("persists `snapshot({ meta: true })` under keel.store.<id>; the caller's id, never its token, rides on the entry", async () => {
     const built = build();
     const a = client(built);
     expect((await a.write("a1")).status).toBe(200);
@@ -108,8 +109,10 @@ describe("server state (RFC 0044)", () => {
     expect(await saved(built.ctx)).toMatchObject({
       state: { items: ["a1"] },
       initial: { items: [] },
-      log: [{ name: "test.add", payload: { text: "a1" }, meta: { caller: token } }],
+      log: [{ name: "test.add", payload: { text: "a1" }, meta: { caller: (await callerHasher())(token) } }],
     });
+    // Backlog 0131: the stored snapshot never holds the cookie token.
+    expect(await built.ctx.storage.get(KEY)).not.toContain(token);
   });
 
   it("issues the caller cookie on a first write only; Secure over https", async () => {
