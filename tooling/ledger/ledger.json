@@ -695,7 +695,7 @@
       "pkg": "compiler",
       "name": "artifactHashes",
       "file": "packages/compiler/src/artifactHashes.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "compiler",
@@ -1174,6 +1174,10 @@
       "rung": "example"
     },
     {
+      "item": "k.compiler#16",
+      "rung": "example"
+    },
+    {
       "item": "k.component#1",
       "rung": "example"
     },
@@ -1215,6 +1219,18 @@
     },
     {
       "item": "k.ctx#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#9",
       "rung": "example"
     },
     {
@@ -1574,6 +1590,10 @@
       "rung": "example"
     },
     {
+      "item": "k.server#14",
+      "rung": "example"
+    },
+    {
       "item": "k.services#1",
       "rung": "probabilistic"
     },
@@ -1671,6 +1691,14 @@
     },
     {
       "item": "k.store#16",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#17",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.store#18",
       "rung": "probabilistic"
     },
     {

@@ -69,3 +69,8 @@ Status: accepted (ADR-0039)
 - k.compiler: 1,487 to 1,497 tokens.
 - E1005 explain: +8 tokens.
 - Diagnostic output is unchanged in size: one record per artifact.
+
+## Amendment (RFC 0055, backlog 0139, 0143, 0144)
+- **`artifacts.hashes` is no longer trusted.** Alternatives above kept it as trusted caller input. RFC 0055 drops it: E1005 always derives its hashes, from `CheckOptions.project` (default `files`). A `.keel/<name>.json` the compiler does not write is E1005.
+- **Nested `.keel/` dirs are compared.** Each is compared with the sources of the directory that holds it, not only checked for self-consistency. The cli reads them at any depth.
+- **`routes.json` beside a `routes.ts`** is W1005 in `keel check` (not verified), and `vite build` warns W1005 before it rewrites a differing one.

@@ -2946,6 +2946,8 @@ describe("project passes", () => {
   it("E1755 budgets and E1005 generated artifacts", () => {
     const hashed = (data: unknown): string => `{"data":${JSON.stringify(data)},"hash":"${hashOf(data)}"}\n`;
     const okFile = hashed({ a: 1 });
+    const manifest = (dir = ""): SourceFile => f(`${dir}modules/m/routes.ts`, "export const routes = {}\n");
+    const COMPONENT = 'export default function C() { return <p id="c.p">x</p> }\n';
     const out = [
       block(
         "budget",
@@ -2959,25 +2961,45 @@ describe("project passes", () => {
       ),
       block("intact", E("E1005", [f(".keel/routes.json", hashed({}))])),
       block("forged: data changed, hash recomputed", E("E1005", [f(".keel/routes.json", okFile)])),
+      block("routes manifest: routes.json not verified", E("W1005", [f(".keel/routes.json", okFile), manifest()])),
+      block("routes manifest: W1005 only", E("E1005", [f(".keel/routes.json", okFile), manifest()])),
       block(
-        "routes manifest: routes.json not derived",
-        E("E1005", [f(".keel/routes.json", okFile), f("modules/m/routes.ts", "export const routes = {}\n")], {
-          types: false,
-        }),
+        "routes manifest: not self-consistent",
+        E("E1005", [f(".keel/routes.json", `{"data":{"a":1},"hash":"${hashOf({})}"}\n`), manifest()]),
+      ),
+      block(
+        "routes manifest: non-canonical bytes",
+        E("E1005", [f(".keel/routes.json", `{"hash":"${hashOf({})}","data":{}}`), manifest()]),
       ),
       block("nested dir: self-consistent", E("E1005", [f("apps/a/.keel/routes.json", okFile)])),
+      block("nested dir: genuine", E("E1005", [f("apps/a/.keel/routes.json", hashed({}))])),
+      block("nested manifest: W1005", E("W1005", [f("apps/a/.keel/routes.json", hashed({})), manifest("apps/a/")])),
+      block("root manifest: not nested", E("W1005", [f("apps/a/.keel/routes.json", hashed({})), manifest()])),
+      block(
+        "nested source: its own project",
+        E("E1005", [f("apps/a/.keel/ids.json", hashed({})), f("apps/a/src/C.tsx", COMPONENT)]),
+      ),
+      block("root source: not nested", E("E1005", [f("apps/a/.keel/ids.json", hashed({})), f("src/C.tsx", COMPONENT)])),
+      block(
+        "two projects, one compile each",
+        E("E1005", [
+          f("apps/a/.keel/ids.json", hashed({})),
+          f("apps/b/.keel/ids.json", hashed({})),
+          f("apps/b/C.tsx", COMPONENT),
+        ]),
+      ),
+      block(
+        "nested topology",
+        E("E1005", [
+          f("apps/a/.keel/ids.json", hashed({})),
+          f("apps/a/topology.ts", "export default { web: { modules: ['m'], adapter: 'client' } }\n"),
+        ]),
+      ),
       block(
         "forged ids.json beside its source",
-        E(
-          "E1005",
-          [
-            f(".keel/ids.json", hashed({})),
-            f("src/C.tsx", 'export default function C() { return <p id="c.p">x</p> }\n'),
-          ],
-          {
-            types: false,
-          },
-        ),
+        E("E1005", [f(".keel/ids.json", hashed({})), f("src/C.tsx", COMPONENT)], {
+          types: false,
+        }),
       ),
       block(
         "non-canonical bytes keep data",
@@ -2990,31 +3012,22 @@ describe("project passes", () => {
       block("hash not string", E("E1005", [f(".keel/routes.json", `{"data":1,"hash":1}\n`)])),
       block("data undefined", E("E1005", [f(".keel/routes.json", `{"hash":1}\n`)])),
       block(
-        "expected hash matches",
+        "0143: hashes naming the forged hash are ignored",
         E("E1005", [f(".keel/routes.json", okFile)], {
           types: false,
           artifacts: { hashes: { "routes.json": hashOf({ a: 1 }) } },
         }),
       ),
       block(
-        "expected hash differs",
-        E("E1005", [f(".keel/routes.json", okFile)], {
-          types: false,
-          artifacts: { hashes: { "routes.json": "fnv1a:11111111" } },
-        }),
+        "0143: empty hashes are ignored",
+        E("E1005", [f(".keel/ids.json", okFile)], { types: false, artifacts: { hashes: {} } }),
       ),
       block(
-        "expected hash for other name",
-        E("E1005", [f(".keel/routes.json", okFile)], {
-          types: false,
-          artifacts: { hashes: { "other.json": "fnv1a:11111111" } },
-        }),
+        "project: sources come from it",
+        E("W1005", [f(".keel/routes.json", okFile)], { types: false, project: [manifest()] }),
       ),
-      block("hashes null", E("E1005", [f(".keel/routes.json", okFile)], { types: false, artifacts: { hashes: null } })),
-      block(
-        "hashes string",
-        E("E1005", [f(".keel/routes.json", okFile)], { types: false, artifacts: { hashes: "x" } }),
-      ),
+      block("project: empty", E("E1005", [f(".keel/routes.json", okFile)], { types: false, project: [] })),
+      block("unknown name", E("E1005", [f(".keel/x.json", hashed({}))])),
       block("nested dir", E("E1005", [f("apps/a/.keel/routes.json", "nope")])),
       block(
         "not .keel",
@@ -3034,9 +3047,35 @@ describe("project passes", () => {
 
       # forged: data changed, hash recomputed
       .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
-      # routes manifest: routes.json not derived
+      # routes manifest: routes.json not verified
+      .keel/routes.json:1:1 .keel/routes.json not verified: routes.ts runs only in vite build
+      # routes manifest: W1005 only
 
+      # routes manifest: not self-consistent
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      # routes manifest: non-canonical bytes
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      --- a/.keel/routes.json
+      +++ b/.keel/routes.json
+      @@ -1 +1 @@
+      -{"hash":"fnv1a:5465b825","data":{}}
+      \\ No newline at end of file
+      +{"data":{},"hash":"fnv1a:5465b825"}
       # nested dir: self-consistent
+      apps/a/.keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
+      # nested dir: genuine
+
+      # nested manifest: W1005
+      apps/a/.keel/routes.json:1:1 .keel/routes.json not verified: routes.ts runs only in vite build
+      # root manifest: not nested
+
+      # nested source: its own project
+      apps/a/.keel/ids.json:1:1 generated .keel/ids.json does not match its sources; regenerate
+      # root source: not nested
+
+      # two projects, one compile each
+      apps/b/.keel/ids.json:1:1 generated .keel/ids.json does not match its sources; regenerate
+      # nested topology
 
       # forged ids.json beside its source
       .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; regenerate
@@ -3060,22 +3099,22 @@ describe("project passes", () => {
       .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
       # data undefined
       .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
-      # expected hash matches
-
-      # expected hash differs
+      # 0143: hashes naming the forged hash are ignored
       .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
-      # expected hash for other name
-
-      # hashes null
+      # 0143: empty hashes are ignored
+      .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; regenerate
+      # project: sources come from it
+      .keel/routes.json:1:1 .keel/routes.json not verified: routes.ts runs only in vite build
+      # project: empty
       .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
-      # hashes string
-      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; regenerate
+      # unknown name
+      .keel/x.json:1:1 .keel/x.json is not among the compiled artifacts; remove it
       # nested dir
       apps/a/.keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
       # not .keel
 
       # long name
-      .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.json:1:1 hand edit to generated .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn; revert and regenerate"
+      .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.json:1:1 .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn is not among the compiled artifacts; remove it"
     `);
   });
 

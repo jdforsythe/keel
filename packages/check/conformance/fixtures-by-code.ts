@@ -315,6 +315,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("src/id.ts", "export const id = (ctx: { random: { id(brand: string): string } }) => ctx.random.id('Order')\n"),
     ],
   },
+  E1603: {
+    opts: NO_TYPES,
+    bad: [f("src/run.ts", "export const run = (s: string) => eval(s)\n")],
+    clean: [f("src/run.ts", "export const run = (s: string) => s\n")],
+  },
   E1701: {
     bad: [f("test/cart.test.ts", "const el = document.querySelector('#total')\nvoid el\n")],
     clean: [f("test/cart.test.ts", "const t = { find: (id: string) => id }\nvoid t.find('cart.total')\n")],

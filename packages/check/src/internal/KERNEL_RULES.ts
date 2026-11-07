@@ -3,6 +3,7 @@ import { fieldInForm } from "../rules/fieldInForm.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
+import { noCodeFromString } from "../rules/noCodeFromString.ts";
 import { noDomGlobal } from "../rules/noDomGlobal.ts";
 import { noDomQueryInTest } from "../rules/noDomQueryInTest.ts";
 import { noInlineStyle } from "../rules/noInlineStyle.ts";
@@ -38,6 +39,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noThrow,
   noTryCatch,
   noAmbientCapability,
+  noCodeFromString,
   noDomQueryInTest,
   oneExport,
   unsafeJustified,

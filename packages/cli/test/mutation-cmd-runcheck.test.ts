@@ -22,22 +22,25 @@ beforeEach(() => {
 });
 
 describe("runCheck", () => {
-  it("passes only path and source of the files, with the root and no topology when the project has none", () => {
+  it("passes only path and source of the files, with the root, the project (default the files) and no topology when the project has none", () => {
     runCheck("/w", [{ path: "src/a.ts", source: "export const a = 1\n" }]);
-    expect(calls).toStrictEqual([
-      { files: [{ path: "src/a.ts", source: "export const a = 1\n" }], options: { root: "/w" } },
-    ]);
+    const a = [{ path: "src/a.ts", source: "export const a = 1\n" }];
+    expect(calls).toStrictEqual([{ files: a, options: { root: "/w", project: a } }]);
   });
 
   it("parses the root topology.ts of the project (defaulting to the checked files) for the options", () => {
     const topology = parseTopology(TOPOLOGY).topology;
     expect(topology).toBeDefined();
     runCheck("/w", [{ path: "topology.ts", source: TOPOLOGY }]);
-    expect(calls[0]?.options).toStrictEqual({ root: "/w", topology });
+    expect(calls[0]?.options).toStrictEqual({
+      root: "/w",
+      topology,
+      project: [{ path: "topology.ts", source: TOPOLOGY }],
+    });
     runCheck("/w", [{ path: "src/a.ts", source: "" }], [{ path: "topology.ts", source: TOPOLOGY }]);
-    expect(calls[1]?.options).toEqual({ root: "/w", topology });
+    expect(calls[1]?.options).toEqual({ root: "/w", topology, project: [{ path: "topology.ts", source: TOPOLOGY }] });
     runCheck("/w", [{ path: "topology.ts", source: TOPOLOGY }], [{ path: "src/a.ts", source: "" }]);
-    expect(calls[2]?.options).toEqual({ root: "/w" });
+    expect(calls[2]?.options).toEqual({ root: "/w", project: [{ path: "src/a.ts", source: "" }] });
   });
 
   it("keeps present optional fields (path made project-relative) and omits absent ones", () => {

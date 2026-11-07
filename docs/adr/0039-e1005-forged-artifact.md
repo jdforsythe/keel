@@ -24,3 +24,5 @@
 - **Gap.** `routes.json` in a project with routes manifests is still checked only for self-consistency. Closing it needs a k.check decision on evaluation.
 - **Committed artifacts.** They must be rebuilt with their sources.
 - **`check()` fixtures.** A fixture that passes `.keel/` files must pass their sources too.
+
+**Amendment (ADR-0043, RFC 0055).** Superseded in part. `artifacts.hashes` is no longer trusted: E1005 always derives from `CheckOptions.project`. Nested `.keel/` dirs are compared with their own project's sources. `routes.json` beside a `routes.ts` is W1005 in `keel check`, and `vite build` warns before it rewrites a differing one.

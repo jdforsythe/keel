@@ -216,6 +216,11 @@ export default function (): {
     for (const p of r.problems) warn(`keel: ${p}`);
     css = r.css;
     routes = r.routes;
+    // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it (rfc:0055).
+    const prior = path.join(root, ".keel", "routes.json");
+    const next = `${canonicalJson({ data: routes, hash: hashOf(routes) })}\n`;
+    if (command === "build" && !clientBuild && fs.existsSync(prior) && fs.readFileSync(prior, "utf8") !== next)
+      warn("keel: W1005 .keel/routes.json differed from routes.ts; rewritten");
     flush();
     stale = false;
   };

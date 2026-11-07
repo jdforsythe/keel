@@ -26,6 +26,7 @@ else {
     const topo = join(cwd, "topology.ts");
     for (const target of viteTargets(existsSync(topo) ? readFileSync(topo, "utf8") : undefined)) {
       const b = viteRun(cwd, "build", target);
+      for (const note of b?.notes ?? []) process.stderr.write(note);
       if (b !== undefined && b.code !== 0) {
         process.stderr.write(b.tail);
         process.exitCode = 1;

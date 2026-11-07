@@ -18,8 +18,8 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1002",
-    "innerHTML, outerHTML, insertAdjacentHTML, or dangerouslySetInnerHTML in app code",
-    "Raw HTML has no API outside unsafe.",
+    "raw HTML in app code: the innerHTML family by name or literal key, DOMParser, document.write",
+    "Raw HTML has no API outside unsafe; Reflect/Object property calls and srcdoc count too.",
     "el.innerHTML = s -> render {s} as a text child",
     "k.compiler",
   ],
@@ -39,9 +39,16 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1005",
-    "hand edit to generated output (.keel/, turbo.json, CI workflows, Dockerfiles, API schemas), or a .keel/ file older than its sources",
-    "",
-    "revert the file and regenerate",
+    "hand edit to generated output (.keel/, turbo.json, CI workflows, Dockerfiles, API schemas), a .keel/ file older than its sources, or one the compiler does not write",
+    "Each .keel/ is compared with the sources of the project that holds it.",
+    "revert the file and regenerate; remove a file the compiler does not write",
+    "k.compiler",
+  ],
+  [
+    "W1005",
+    ".keel/routes.json beside a routes.ts, not verified by keel check",
+    "Only evaluating routes.ts derives it; check never runs app code. vite build rewrites it and warns if it differed.",
+    "run keel build or vite build, and commit the rewritten routes.json",
     "k.compiler",
   ],
   [
@@ -371,7 +378,7 @@ const ROWS: readonly Row[] = [
   [
     "E1601",
     "Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code",
-    "Effects go through ctx so sim runs are deterministic.",
+    "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",
     "Date.now() -> ctx.clock.now()",
     "k.ctx",
   ],
@@ -380,6 +387,13 @@ const ROWS: readonly Row[] = [
     "capability name registered twice with different implementations",
     "",
     "register each name once; reuse the returned accessor",
+    "k.ctx",
+  ],
+  [
+    "E1603",
+    "eval, Function(...), or new Function(...) in app code",
+    "Code from a string reaches every ambient effect past E1601.",
+    "eval(src) -> call the function src describes",
     "k.ctx",
   ],
   ["E1651", "ctx.net.fetch in app code", "", "declare an endpoint in the service and call it", "k.services"],

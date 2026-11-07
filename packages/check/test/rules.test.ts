@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 import type { SourceFile } from "../src/index.ts";
+import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { hashOf } from "../src/internal/hashOf.ts";
 import { applyPatch } from "./support/applyPatch.ts";
 
@@ -247,7 +248,12 @@ describe("kernel rules", () => {
       check([f(".keel/ids.json", source)], { artifacts }).diagnostics.map((d) => d.code);
     expect(codes(good)).toEqual([]);
     expect(codes(good.replace('"data":{}', '"data":{"C.0":{"col":1}}'))).toEqual(["E1005"]);
-    expect(codes(good, { hashes: { "ids.json": "fnv1a:00000000" } })).toEqual(["E1005"]);
+    // 0143 repro: a caller's hashes never replace the derivation, so `{}` or a matching forged hash stays E1005.
+    const data = { "C.0": { col: 1 } };
+    const forged = `${canonicalJson({ data, hash: hashOf(data) })}\n`;
+    expect(codes(forged, { hashes: {} })).toEqual(["E1005"]);
+    expect(codes(forged, { hashes: { "ids.json": hashOf(data) } })).toEqual(["E1005"]);
+    expect(codes(good, { hashes: { "ids.json": "fnv1a:00000000" } })).toEqual([]);
     const spaced = good.replace('{"data"', '{ "data"');
     const d = check([f(".keel/ids.json", spaced)], {}).diagnostics;
     expect(d.map((x) => x.code)).toEqual(["E1005"]);
