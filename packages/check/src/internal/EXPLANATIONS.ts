@@ -158,6 +158,13 @@ const ROWS: readonly Row[] = [
     "k.module",
   ],
   [
+    "E1158",
+    "std key not a stdlib package in deps, or std value not literal JSON or failing its package's schema",
+    "",
+    "add '@keel/std-x' to deps, and write the config as literal JSON its package's schema accepts",
+    "k.module",
+  ],
+  [
     "E1201",
     "write outside declared writes",
     "Reads register dependencies; writes are declared.",
@@ -348,6 +355,13 @@ const ROWS: readonly Row[] = [
     "k.server",
   ],
   [
+    "E1555",
+    "production assets without a manifest entry (createApp rejects)",
+    "Production documents load the built resume entry the manifest names.",
+    "run keel build, then pass assets: 'dist/<deployable>'",
+    "k.server",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic.",
@@ -457,13 +471,7 @@ const ROWS: readonly Row[] = [
     '<Input /> -> <Input label="Email" />',
     "k.ui",
   ],
-  [
-    "E1803",
-    "style attribute or exported styles",
-    "",
-    'style={{ padding: 8 }} -> p="2" or a file-local styles() class',
-    "k.ui",
-  ],
+  ["E1803", "style attribute", "", 'style={{ padding: 8 }} -> p="2"', "k.ui"],
   [
     "E1804",
     "fg/bg contrast below 4.5:1 (3:1 at fontSize >= 24px), per color scheme",

@@ -26,7 +26,7 @@ import type { RuleDef } from "../types/RuleDef.ts";
 /**
  * Kernel per-file rules, registered before any stdlib rule. Codes produced elsewhere in the pipeline:
  * compiler (E1001-E1005, E1401-E1404, E1501), types (E1751, E1453, mapped E1802/E1501/E1001), project
- * passes (E1454, E1753, E1755; k.module E1151-E1157), runner (E1756), rendered check (E1802).
+ * passes (E1454, E1753, E1755; k.module E1151-E1158), runner (E1756), rendered check (E1802).
  */
 export const KERNEL_RULES: readonly RuleDef[] = [
   schemaInSchemaFile,

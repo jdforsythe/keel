@@ -15,7 +15,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E160x | k.ctx | E165x | k.services |
 | E170x | k.testing | E175x | k.check |
 | E18xx | k.ui | E19xx | k.forms |
-| E200x | std.sessions | | |
+| E200x | std.sessions | E210x | std.brands |
 
 ## Kernel
 | id | section | status | one line |
@@ -44,3 +44,9 @@ See `spec/std/README.md`. Sections are added per wave with their own budgets.
 | id | section | status | one line |
 | --- | --- | --- | --- |
 | std.sessions | Sessions | proposed | capture, ingest, replay, minimize, to-test; GitHub Action |
+| std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format |
+| std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
+| std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
+| std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
+| std.timings | Timings | conformance-covered | inspector hooks: `timings.recent` section |
+| std.report | Tally report | conformance-covered | formatter registry: `report.tally` |

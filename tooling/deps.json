@@ -14,7 +14,13 @@
     "server",
     "services",
     "cli",
-    "ctx"
+    "ctx",
+    "std-money",
+    "std-brands",
+    "std-geo",
+    "std-health",
+    "std-timings",
+    "std-report"
   ],
-  "rule": "a package may import only packages earlier in order, plus ctx and tooling"
+  "rule": "a package may import only packages earlier in order, plus ctx and tooling; stdlib packages (std-*) come after the kernel, so no kernel package imports one (RFC 0047)"
 }

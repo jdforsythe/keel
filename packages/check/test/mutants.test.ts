@@ -1484,56 +1484,20 @@ describe("E1805 noIntrinsicElement", () => {
 });
 
 describe("E1803 / E1701 / E1104 / E1754", () => {
-  it("pins inline style and exported styles", () => {
+  it("pins inline style", () => {
     const E = (path: string, src: string): string => only("E1803", path, src);
     const out = [
       block("attr", E("src/a.tsx", "export const A = () => <Box style={{ x: 1 }}>x</Box>\n")),
       block("data-style ok", E("src/a.tsx", 'export const A = () => <Box data-style="x">x</Box>\n')),
       block("namespaced ok", E("src/a.tsx", 'export const A = () => <Box a:style="x">x</Box>\n')),
-      block("export styles", E("src/a.ts", "export const styles = 1\n")),
-      block("export styles call", E("src/a.ts", "export const css = styles({})\n")),
-      block("export other call", E("src/a.ts", "export const css = other({})\n")),
-      block("export member call", E("src/a.ts", "export const css = x.styles({})\n")),
-      block("export non-call", E("src/a.ts", "export const css = 1\n")),
-      block("export default styles call", E("src/a.ts", "export default styles({})\n")),
-      block("export default other", E("src/a.ts", "export default other({})\n")),
-      block("export default member styles", E("src/a.ts", "export default x.styles({})\n")),
-      block("export function", E("src/a.ts", "export function styles() {}\n")),
-      block("export let multi", E("src/a.ts", "export const a = 1, styles = 2\n")),
-      block("local styles ok", E("src/a.ts", "const styles = styles2({})\nexport const a = 1\n")),
-      block("export init null", E("src/a.ts", "export let css\n")),
       block("test path", E("test/a.test.tsx", "export const A = () => <Box style={{ x: 1 }}>x</Box>\n")),
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
       "# attr
-      1:29 style attribute; use token style props or styles() classes
+      1:29 style attribute; use token style props
       # data-style ok
 
       # namespaced ok
-
-      # export styles
-      1:14 exported styles; scoped styles are file-local, keep them unexported
-      # export styles call
-      1:14 exported styles; scoped styles are file-local, keep them unexported
-      # export other call
-
-      # export member call
-
-      # export non-call
-
-      # export default styles call
-      1:1 exported styles; scoped styles are file-local, keep them unexported
-      # export default other
-
-      # export default member styles
-
-      # export function
-
-      # export let multi
-      1:21 exported styles; scoped styles are file-local, keep them unexported
-      # local styles ok
-
-      # export init null
 
       # test path
       "

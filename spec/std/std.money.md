@@ -1,0 +1,25 @@
+# std.money: Money
+status: conformance-covered
+
+**Extension point.** Schema type registry (k.schema `s.register`). Importing `@keel/std-money` registers `money.Money` and `money.Currency`; `s.registry()` then maps each name to the exported schema. The registry names composite types: codec, generator and doc derive from their declaration (k.schema), so `money` adds no primitive kind.
+
+**API** (`@keel/std-money`).
+```ts
+import { Money, Currency, addMoney, formatMoney } from '@keel/std-money'
+const price: Money = { amount: 1999, currency: 'USD' }   // minor units: cents
+```
+- `Currency` is `s.enum(['EUR', 'GBP', 'JPY', 'USD'])`. Minor-unit exponent: JPY 0, the others 2.
+- `Money` is `s.object({ amount: s.int({ min: -1e15, max: 1e15 }), currency: Currency }, { closed: true })`; `type Money = s.infer<typeof Money>`. Amounts are integers in minor units; there is no float form. The bound keeps every sum of two amounts exact.
+- `addMoney(a, b): Result<Money, KeelError<'money.currencyMismatch', { left: Currency; right: Currency }> | KeelError<'money.overflow', { amount: number }>>`: same currency gives `ok` with the summed amount; different currencies give `money.currencyMismatch` naming both; a sum outside the `amount` bounds gives `money.overflow` with the unsafe sum.
+- `formatMoney(m): string`: optional `-`, the absolute amount in major units with exactly the currency's exponent of decimals (`.` separator, no grouping), a space, the code. `{ amount: -5, currency: 'USD' }` is `-0.05 USD`; `{ amount: 1234, currency: 'JPY' }` is `1234 JPY`.
+
+**Rules.** None (no diagnostics). `money.currencyMismatch` and `money.overflow` are KeelError codes (k.errors), prefixed by the module id.
+
+**Conformance.**
+- After importing `@keel/std-money`, `s.registry().get('money.Money')` is `Money` and `s.registry().get('money.Currency')` is `Currency`; importing it again does not throw.
+- For every value `gen(Money)` produces, `Money.parse` accepts it and `Money.parse(Money.encode(v))` returns an equal value.
+- `Money.parse` rejects a non-integer amount (rule `int`), an amount beyond the bounds (rule `min` or `max`), a currency outside the four (rule `enum`) and an undeclared key (rule `unknown-key`), each at that key's path.
+- `Money.doc()` is a closed-object doc naming `amount` and `currency` and each currency code.
+- For generated same-currency pairs whose sum is in bounds, `addMoney(a, b)` is `ok` with `amount` `a.amount + b.amount` and equals `addMoney(b, a)`.
+- Different currencies give `err` `money.currencyMismatch` with `data` `{ left: a.currency, right: b.currency }`; an out-of-bounds sum gives `err` `money.overflow`.
+- For every generated `Money`, `formatMoney` matches `^-?\d+(\.\d{e})? [A-Z]{3}$` with `e` the currency's exponent (no fraction when 0), and parsing its number times `10^e` gives back `amount`.

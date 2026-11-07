@@ -3,7 +3,7 @@
 Canonical names. Changing one requires an RFC.
 
 - **kernel** — the frozen core: schema, reactive, store, compiler, runtime-dom, router, forms, ui, check, cli, scaffold, testing, server (thin), services (thin), ctx.
-- **stdlib** — modules built on kernel extension points, versioned separately, frozen individually.
+- **stdlib** — modules built on kernel extension points, versioned separately, frozen individually; packages `@keel/std-<x>`, after the kernel in dependency order (no kernel package imports one).
 - **module** — a vertical slice (schemas, routes, components, handlers) with a manifest declaring its public surface.
 - **deployable** — a composition of modules declared in `topology.ts` that builds to one artifact.
 - **schema** — the single declaration of a data shape; source of types, validators, codecs, generators.

@@ -155,6 +155,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("modules/a/Back.ts", "import { routes } from '../b/routes.ts'\nexport const Back = routes.href('b.pub')\n"),
     ],
   },
+  E1158: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "modules/a/module.ts",
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: [], capabilities: [], public: { exports: [], routes: [] }, std: { '@keel/std-fixture': { limit: 1 } } })\n",
+      ),
+    ],
+    clean: [
+      f(
+        "modules/a/module.ts",
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: ['@keel/std-fixture'], capabilities: [], public: { exports: [], routes: [] }, std: { '@keel/std-fixture': { limit: 1 } } })\n",
+      ),
+    ],
+  },
   E1204: {
     opts: NO_TYPES,
     bad: [

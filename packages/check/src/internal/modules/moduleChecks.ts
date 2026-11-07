@@ -16,6 +16,7 @@ import { removeEntryFix } from "./removeEntryFix.ts";
 import { resolveImport } from "./resolveImport.ts";
 import { scanFile } from "./scanFile.ts";
 import { short } from "./short.ts";
+import { stdConfig } from "./stdConfig.ts";
 
 type Scanned = { readonly file: SourceFile; readonly module: ModuleInfo; readonly facts: FileFacts };
 type Project = {
@@ -110,9 +111,9 @@ function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Di
 }
 
 /**
- * The k.module project pass (E1151-E1157) over every parsed code file: discover manifests (`modules/<id>/module.ts`
+ * The k.module project pass (E1151-E1158) over every parsed code file: discover manifests (`modules/<id>/module.ts`
  * and stdlib `node_modules/@keel/std-x/module.ts`), map each non-test file to its module by folder, read the
- * manifests statically, then check deps cycles, the public surface, id prefixes, and cross-module access from
+ * manifests statically, then check deps cycles, the public surface, `std` config (E1158), id prefixes, and cross-module access from
  * imports, `href()` calls, and `ctx` capability uses. Files outside every module are not checked. Deterministic:
  * files are visited in path order and the caller sorts the result.
  */
@@ -140,7 +141,10 @@ export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
   }
   const project: Project = { modules, byKey, routeOwner };
   const out: Diagnostic[] = [...depsCycles(modules, byKey)];
-  for (const m of modules) out.push(...publicMissing(m, stems.get(m) ?? new Set(), routes.get(m) ?? new Set()));
+  for (const m of modules) {
+    out.push(...publicMissing(m, stems.get(m) ?? new Set(), routes.get(m) ?? new Set()));
+    out.push(...stdConfig(m));
+  }
   for (const s of scanned) {
     out.push(...unprefixed(s));
     if (s.module.manifest !== null) out.push(...access(s, s.module.manifest, project));

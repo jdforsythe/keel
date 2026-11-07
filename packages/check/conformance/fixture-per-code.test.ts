@@ -23,7 +23,7 @@ export const EXPLAIN_ONLY: readonly string[] = [
   "E1006",
   "E1049",
   ...range("E", 1502, 1506),
-  ...range("E", 1552, 1554),
+  ...range("E", 1552, 1555),
   ...range("E", 1702, 1706),
   "E1756",
   "E1801",

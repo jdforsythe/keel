@@ -50,14 +50,14 @@ Contradiction: k.cli Rules make `session` I1055 (exit 0); `cli/conformance/rules
 
 | point | registers via public API in a test | used by a stdlib module |
 | --- | --- | --- |
-| schema type registry | yes: `schema/conformance/registry.test.ts:11-27` (`s.register`); registers names only, no new kinds/codecs | no |
-| check rule registry | yes: `check/conformance/define-rule.test.ts:7,15` (E2901 seen in `check()` and `explain`); `fix` never exercised | no |
-| capability registry | yes: `ctx/conformance/three-implementations.conformance.test.ts:14` (`probe3`, all modes) | no |
-| module manifest | yes: `check/conformance/module-stdlib-same-rules.test.ts:19-40` (fixture `@keel/std-x`); apps golden-1, inspector | no |
-| inspector hooks | **none**: no spec text, no API; the inspect document (k.cli Inspect) is a closed shape | no |
-| output formatter registry | unit only: `cli/test/commands.test.ts:109` through `src/internal` render; conformance tests only E1053 | no |
+| schema type registry | yes: `schema/conformance/registry.test.ts:11-27` (`s.register`); registers names only, no new kinds/codecs | yes (`@keel/std-money`: `money.Money`, `money.Currency`; RFC 0047) |
+| check rule registry | yes: `check/conformance/define-rule.test.ts:7,15` (E2901 seen in `check()` and `explain`); `fix` exercised by `std-brands/conformance/brands.test.ts` (`git apply`) | yes (`@keel/std-brands`: E2101) |
+| capability registry | yes: `ctx/conformance/three-implementations.conformance.test.ts:14` (`probe3`, all modes) | yes (`@keel/std-geo`: `geo`) |
+| module manifest | yes: `check/conformance/module-stdlib-same-rules.test.ts:19-40` (fixture `@keel/std-x`); apps golden-1, inspector; `std` key E1158 (RFC 0047) | yes (`@keel/std-health`: `health.status`) |
+| inspector hooks | yes: RFC 0042, `server/conformance/inspect-sections.test.ts` | yes (`@keel/std-timings`: `timings.recent`) |
+| output formatter registry | yes: `cli/conformance/rules-e1053-e1054.test.ts` through `@keel/cli/testing` `respond` | yes (`@keel/std-report`: `report.tally`) |
 
-No stdlib module exists, so the G3 criterion is 0 of 6.
+Stdlib wave 0 (RFC 0047, 2026-11-07) uses each point once, so the G3 criterion is 6 of 6.
 
 ## 4. Implemented but untested; tested but unstated
 

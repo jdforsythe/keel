@@ -24,11 +24,12 @@ await run("budgets", async () => {
     });
   const out = budgets.output ?? {};
 
-  const specDir = path.join(root, "spec", "kernel");
-  if (out["spec.section"] !== undefined && fs.existsSync(specDir)) {
+  // Kernel and stdlib sections share one budget (RFC 0047); spec/std/README.md is the index, not a section.
+  for (const specDir of [path.join(root, "spec", "kernel"), path.join(root, "spec", "std")]) {
+    if (out["spec.section"] === undefined || !fs.existsSync(specDir)) continue;
     for (const f of fs
       .readdirSync(specDir)
-      .filter((n) => n.endsWith(".md"))
+      .filter((n) => n.endsWith(".md") && n !== "README.md")
       .sort()) {
       const t = tokens(fs.readFileSync(path.join(specDir, f), "utf8"));
       measured++;

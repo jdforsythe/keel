@@ -2,6 +2,8 @@ import type { Expression, ObjectExpression, ObjectProperty, Program } from "oxc-
 import type { Entry } from "./Entry.ts";
 import type { Manifest } from "./Manifest.ts";
 import type { ManifestList } from "./ManifestList.ts";
+import type { StdEntry } from "./StdEntry.ts";
+import { literalJson } from "./literalJson.ts";
 
 /** The static key of an object property (identifier or string literal), or `null` when computed. */
 function keyOf(p: ObjectProperty): string | null {
@@ -46,6 +48,21 @@ function listOf(e: Expression | undefined): ManifestList | null {
   return { entries, span: { start: e.start, end: e.end } };
 }
 
+/** `std` entries (RFC 0047): an absent `std` is empty; `null` when it is not a literal object with static keys. */
+function stdOf(e: Expression | undefined): StdEntry[] | null {
+  if (e === undefined) return [];
+  if (e.type !== "ObjectExpression") return null;
+  const out: StdEntry[] = [];
+  for (const p of e.properties) {
+    if (p.type !== "Property") return null;
+    const key = keyOf(p);
+    if (key === null) return null;
+    const r = literalJson(p.value);
+    out.push({ key, start: p.key.start, value: r.ok ? r.value : undefined });
+  }
+  return out;
+}
+
 /** The literal object passed to the default export `module({...})` (or a bare default object literal). */
 function manifestObject(program: Program): ObjectExpression | null {
   for (const st of program.body) {
@@ -83,6 +100,7 @@ export function readManifest(program: Program): Manifest | null {
   const capabilities = listOf(props.get("capabilities"));
   const exports = listOf(pubProps.get("exports"));
   const routes = listOf(pubProps.get("routes"));
-  if (deps === null || capabilities === null || exports === null || routes === null) return null;
-  return { id: typeof idValue === "string" ? idValue : null, deps, capabilities, exports, routes };
+  const std = stdOf(props.get("std"));
+  if (deps === null || capabilities === null || exports === null || routes === null || std === null) return null;
+  return { id: typeof idValue === "string" ? idValue : null, deps, capabilities, exports, routes, std };
 }

@@ -7,6 +7,7 @@ const shape = s.object({
   deps: s.array(s.string({ min: 1 })),
   capabilities: s.array(s.string({ min: 1 })),
   public: s.object({ exports: s.array(s.string({ min: 1 })), routes: s.array(s.string({ min: 1 })) }),
+  std: s.record(s.json()).optional(),
 });
 
 type Manifest = typeof shape extends ObjectSchema<infer T> ? T : never;
@@ -21,7 +22,8 @@ function lowerCamel(r: Result<Manifest, SchemaError>): Result<Manifest, SchemaEr
 
 /**
  * Schema of a module manifest (k.module): `id` (lowerCamel, equals the folder name), `deps` (app module ids or
- * stdlib package names), `capabilities` (ctx capability names), and the `public` surface (export names, route ids).
+ * stdlib package names), `capabilities` (ctx capability names), the `public` surface (export names, route ids), and
+ * optional `std` config per stdlib package (JSON values; RFC 0047, checked against each package's schema by E1158).
  * App and stdlib manifests use this one schema.
  */
 export const ModuleSchema: ObjectSchema<Manifest> = {
