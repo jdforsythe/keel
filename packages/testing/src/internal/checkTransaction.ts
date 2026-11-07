@@ -4,11 +4,11 @@ import type { Transaction } from "@keel/store";
 /**
  * One transaction property case: from `state` (restored as the store's base, empty log), `tx(t, payload)` commits
  * (payload and output parse, every declared `invariant` holds), `undo` restores `state`, and a second `tx` gives the
- * same output. The store is restored to its snapshot from before the case.
+ * same output. The store is restored to its snapshot from before the case, log `meta` included (rfc:0028).
  */
 export function checkTransaction<T, P>(t: Transaction<T, P>, state: T, payload: P): void {
   const st = t.store;
-  const original = st.snapshot();
+  const original = st.snapshot({ meta: true });
   try {
     const seeded = st.restore({ state, log: [], initial: state });
     if (!seeded.ok) throw new Error(`generated state rejected by ${st.id}: ${seeded.error.message}`);

@@ -1,5 +1,5 @@
 # k.ui: Tokens and styling
-status: implemented
+status: conformance-covered
 
 **Tokens.** `tokens.ts` at the project root, validated by `TokenSchema` from `@keel/ui`:
 ```ts

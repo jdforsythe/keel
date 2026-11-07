@@ -88,6 +88,29 @@ describe("k.ui: fire drives Button onClick and Checkbox onChange", () => {
     await t.fire("s", { type: "change" });
     expect(seen.slice(0, 2)).toEqual(["i:x", "t:y"]);
     expect(seen).toContain("s:b");
+    // Exact: the value passed equals the selected option value (one onChange call, from the change fire).
+    expect(seen.filter((x) => x.startsWith("s:"))).toEqual(["s:b"]);
+    t.dispose();
+  });
+
+  it("fire(id, change) on a Checkbox passes true after a click checks it and false after a second click unchecks it, equal to find(id).state.checked", async () => {
+    const seen: boolean[] = [];
+    const t = render(
+      page(() => Checkbox({ id: "done", label: "Done", onChange: (c) => seen.push(c) })),
+      { props: {}, ctx: simCtx() },
+    );
+    await t.fire("done", { type: "click" });
+    expect(t.find("done").state.checked).toBe(true);
+    seen.length = 0;
+    await t.fire("done", { type: "change" });
+    expect(seen).toEqual([true]);
+    expect(seen[0]).toBe(t.find("done").state.checked);
+    await t.fire("done", { type: "click" });
+    expect(t.find("done").state.checked).toBe(false);
+    seen.length = 0;
+    await t.fire("done", { type: "change" });
+    expect(seen).toEqual([false]);
+    expect(seen[0]).toBe(t.find("done").state.checked);
     t.dispose();
   });
 });

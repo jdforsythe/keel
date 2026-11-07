@@ -45,3 +45,15 @@ test("a routes.ts with a syntax error is E1000 at build time", { timeout: 30000 
   const w = await warningsFor("export const routes = {;\n");
   expect(w.some((m) => m.startsWith("keel: E1000"))).toBe(true);
 });
+
+test(
+  "every warning of a routes.ts syntax-error build is E1000 and names routes.ts with line and column",
+  { timeout: 30000 },
+  async () => {
+    const w = await warningsFor("export const routes = {;\n");
+    const keelWarnings = w.filter((m) => m.startsWith("keel: "));
+    expect(keelWarnings.length).toBeGreaterThan(0);
+    for (const m of keelWarnings) expect(m).toMatch(/^keel: E1000\b/);
+    expect(keelWarnings.some((m) => /routes\.ts:\d+:\d+/.test(m))).toBe(true);
+  },
+);

@@ -1,6 +1,8 @@
 // Shared fixtures for k.runtime conformance. Property seed: 1337.
 import { scope, signal } from "@keel/reactive";
 import { clone, on, template, text } from "@keel/runtime-dom/ops";
+import { s } from "@keel/schema";
+import { store, transaction, tx } from "@keel/store";
 
 export const SEED = 1337;
 
@@ -83,3 +85,37 @@ export const Counter = (): Node => {
 };
 
 export const KSTATE = '<script type="application/json" id="k-state">{"stores":{},"islands":{"Counter":{}}}</script>';
+
+// Store-backed island (k.runtime Conformance 3, state()): the bound text reads a @keel/store store; click runs a transaction.
+export const STORE_ID = "fixture.count";
+export const STORE_ISLAND_HTML = '<div data-k-island="StoreCounter"><button id="sinc" data-k="sinc">0</button></div>';
+const StoreCounterT = template(STORE_ISLAND_HTML);
+const made = (() => {
+  let out: { st: ReturnType<typeof makeStore>; bump: ReturnType<typeof makeBump> } | undefined;
+  scope(() => {
+    const st = makeStore();
+    out = { st, bump: makeBump(st) };
+  });
+  if (out === undefined) throw new Error("fixture: scope did not run");
+  return out;
+})();
+function makeStore() {
+  return store(s.object({ n: s.number() }), { n: 0 }, { id: STORE_ID });
+}
+function makeBump(st: ReturnType<typeof makeStore>) {
+  return transaction(st, "fixture.bump", s.object({}), (state) => ({ n: state.n + 1 }));
+}
+export const countStore = made.st;
+export const StoreCounter = (): Node => {
+  countStore.uses([made.bump]);
+  const root = clone(StoreCounterT);
+  const button = root.querySelector("#sinc");
+  if (button === null) throw new Error("fixture: template lacks #sinc");
+  text(button, () => String(countStore.get("n")));
+  on("sinc", "click", () => {
+    tx(made.bump, {});
+  });
+  return root;
+};
+export const storeKState = (snapshot: unknown): string =>
+  `<script type="application/json" id="k-state">${JSON.stringify({ stores: { [STORE_ID]: snapshot }, islands: { StoreCounter: {} } })}</script>`;

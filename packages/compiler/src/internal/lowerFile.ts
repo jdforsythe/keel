@@ -39,7 +39,7 @@ import { tagNameOf } from "./tagNameOf.ts";
 
 /** Module the generated code imports the ops from (k.runtime). */
 const OPS_MODULE = "@keel/runtime-dom/ops";
-/** Module the generated code imports `scope` from when a component file exports `uses` (k.store). */
+/** Module the generated code imports `scope` from: one scope per component instance (k.component). */
 const REACTIVE_MODULE = "@keel/reactive";
 const VOID: ReadonlySet<string> = new Set([
   "area",
@@ -101,8 +101,8 @@ function isSlotCall(e: Expression): boolean {
  * exactly one `text`/`attr`/`prop`/`on` binding; components are called with getter props and the enclosing
  * component's `ctx` as third argument (D27); `If`, `For`, `Match`, `Boundary` lower to
  * `cond`/`list`/`match`/`boundary` at a comment anchor. `styles` rewrites static style props of base elements
- * into `class` (D23). A file exporting `uses` runs its default-export component in its own scope that declares
- * them (D26). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
+ * into `class` (D23). Every component runs in its own scope; a file exporting `uses` declares them in its
+ * default-export component's scope (D26). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
  * the generated header change; all other text is kept byte for byte.
  */
 export function lowerFile(
@@ -125,7 +125,7 @@ export function lowerFile(
     return best;
   };
   const ctxNames = ctxParams(a, fns, componentFnAt, ns, edits);
-  usesScope(a, ns, edits, headerImports);
+  componentScopes(a, fns, ns, edits, headerImports);
   moduleScope(a, ns, edits, headerImports);
   const info = new Map(elements.map((e) => [e.start, e]));
   const templates: string[] = [];
@@ -677,24 +677,49 @@ function defaultComponent(a: Analysis): FnInfo | undefined {
 }
 
 /**
- * k.component `uses`: when the file exports `uses`, its default-export component body runs inside its own
- * `scope` (k.reactive) that first declares each transaction on its store (`t.store.uses([t])`, k.store), so
- * the declaration binds to this component instance and never restricts its parent or siblings (D26).
+ * k.component: each component instance runs in its own `scope` (k.reactive), a child of the caller's owner and
+ * disposed with it, so primitives it creates and the `props.children` thunk it renders belong to it, not to its
+ * parent. When the file exports `uses`, the default-export component's scope first declares each transaction on
+ * its store (`t.store.uses([t])`, k.store), so the declaration binds to this instance and never restricts its
+ * parent or siblings (D26).
  */
-function usesScope(a: Analysis, ns: string, edits: Edit[], headerImports: string[]): void {
+function componentScopes(
+  a: Analysis,
+  fns: readonly FnInfo[],
+  ns: string,
+  edits: Edit[],
+  headerImports: string[],
+): void {
   const uses = usesExport(a);
-  const f = uses === undefined ? undefined : defaultComponent(a);
-  const body = f?.node.body;
-  if (uses === undefined || body === undefined || body === null) return;
-  const open = `${ns}scope(() => { for (const ${ns}u of ${uses}) ${ns}u.store.uses([${ns}u]); ${ns}v = `;
-  if (body.type === "BlockStatement") {
-    edits.push({ start: body.start + 1, end: body.start + 1, text: ` let ${ns}v; ${open}(() => {` });
-    edits.push({ start: body.end - 1, end: body.end - 1, text: `})(); }); return ${ns}v; ` });
-  } else {
-    edits.push({ start: body.start, end: body.start, text: `{ let ${ns}v; ${open}(` });
-    edits.push({ start: body.end, end: body.end, text: `); }); return ${ns}v; }` });
+  const main = uses === undefined ? undefined : defaultComponent(a);
+  for (const f of fns) {
+    const body = f.node.body;
+    if (body === null) continue;
+    const pre =
+      uses !== undefined && main !== undefined && f.start === main.start
+        ? `for (const ${ns}u of ${uses}) ${ns}u.store.uses([${ns}u]); `
+        : "";
+    if (body.type === "BlockStatement") {
+      edits.push({ start: body.start + 1, end: body.start + 1, text: ` return ${ns}scoped(() => { ${pre}` });
+      edits.push({ start: body.end - 1, end: body.end - 1, text: " }); " });
+    } else {
+      edits.push({
+        start: body.start,
+        end: body.start,
+        text: `${ns}scoped(() => ${pre === "" ? "(" : `{ ${pre}return (`}`,
+      });
+      edits.push({ start: body.end, end: body.end, text: pre === "" ? "))" : "); })" });
+    }
   }
-  headerImports.push(`import { scope as ${ns}scope } from ${JSON.stringify(REACTIVE_MODULE)};`);
+  if (fns.some((f) => f.node.body !== null)) headerImports.push(...scopedHelper(ns));
+}
+
+/** The header lines of `<ns>scoped(f)`: run `f` in a new scope owned by the current owner (none at module level), return its value. */
+function scopedHelper(ns: string): string[] {
+  return [
+    `import { scope as ${ns}scope } from ${JSON.stringify(REACTIVE_MODULE)};`,
+    `const ${ns}scoped = (f) => { let v; ${ns}scope(() => { v = f(); }); return v; };`,
+  ];
 }
 
 /** Local names bound to `imported` from `source`. */
@@ -738,7 +763,7 @@ function moduleScope(a: Analysis, ns: string, edits: Edit[], headerImports: stri
       const isStore = stores.has(callee);
       if (!isStore && !reactive.has(callee)) continue;
       used = true;
-      edits.push({ start: init.start, end: init.start, text: `${ns}root(() => ` });
+      edits.push({ start: init.start, end: init.start, text: `${ns}scoped(() => ` });
       edits.push({ start: init.end, end: init.end, text: ")" });
       if (!isStore || !exported || mod === undefined || v.id.type !== "Identifier") continue;
       const id = JSON.stringify(`${mod}.${v.id.name}`);
@@ -756,8 +781,5 @@ function moduleScope(a: Analysis, ns: string, edits: Edit[], headerImports: stri
     }
   }
   if (!used) return;
-  headerImports.push(
-    `import { scope as ${ns}scope } from ${JSON.stringify(REACTIVE_MODULE)};`,
-    `const ${ns}root = (f) => { let v; ${ns}scope(() => { v = f(); }); return v; };`,
-  );
+  headerImports.push(...scopedHelper(ns));
 }

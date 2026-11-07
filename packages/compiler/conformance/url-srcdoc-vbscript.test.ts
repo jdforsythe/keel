@@ -96,3 +96,38 @@ test("A literal https URL in a URL attribute emits no E1003 (clean counterpart)"
   const d = codes(`export default function C() { return <img src="https://example.com/a.png" /> }`);
   expect(d.map((x) => x.code)).not.toContain("E1003");
 });
+
+// Every URL attribute of the URL policy, on an element that carries it. xlink:href is tested on `a` (as in `hosts`) and on `svg use`.
+const allHosts: readonly (readonly [string, string])[] = [...hosts, ["xlink:href", "use"]];
+const variants = [
+  "vbscript:msgbox(1)",
+  "VBScript:msgbox(1)",
+  "VBSCRIPT:x",
+  "\tvbscript:x",
+  " vbscript:x",
+  "\n vbscript:x",
+  "\u0001vbscript:x",
+];
+
+test("A `vbscript:` URL, with case and leading whitespace/control variants, bound to every URL attribute renders as `about:blank`", () => {
+  fc.assert(
+    fc.property(fc.constantFrom(...allHosts), fc.constantFrom(...variants), ([attr, tag], v) => {
+      expect(render(tag, attr, v)).toBe("about:blank");
+    }),
+    { seed: 1337, numRuns: 100 },
+  );
+});
+
+test("A `vbscript:` URL literal with case variants in every URL attribute, including xlink:href on `use`, is E1003", () => {
+  fc.assert(
+    fc.property(
+      fc.constantFrom(...allHosts),
+      fc.constantFrom("vbscript:x", "VBScript:x", "VBSCRIPT:x", " vbscript:x", "&#9;vbscript:x"),
+      ([attr, tag], v) => {
+        const d = codes(`export default function C() { return <${tag} ${attr}="${v}" /> }`);
+        expect(d.map((x) => x.code)).toContain("E1003");
+      },
+    ),
+    { seed: 1337, numRuns: 100 },
+  );
+});

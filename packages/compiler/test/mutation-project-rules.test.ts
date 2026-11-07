@@ -270,7 +270,7 @@ describe("E1401 props destructuring", () => {
     expect(outDefault.outputs[0]?.code).toContain("C(props, x = a)");
     expect(outDefault.outputs[0]?.code).toContain("props.a");
     const edgeStart = run("const C = ({ a }) => a ?? <p/>;\nexport default C;", "src/cart.tsx");
-    expect(edgeStart.outputs[0]?.code).toContain("(props) => props.a ?? ");
+    expect(edgeStart.outputs[0]?.code).toContain("(props) => __kscoped(() => (props.a ?? ");
     const edgeEnd = run("const C = ({ a }) => <p/> ?? a;\nexport default C;", "src/cart.tsx");
     expect(edgeEnd.outputs[0]?.code).toContain("?? props.a");
   });

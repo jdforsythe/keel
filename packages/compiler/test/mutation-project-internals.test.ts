@@ -454,11 +454,16 @@ describe("evaluate and module (mutation)", () => {
     expect(evaluate("module.exports = null")).toBeUndefined();
     expect(evaluate("module.exports = 's'")).toBeUndefined();
   });
-  it("only resolves kernel modules", () => {
+  it("only resolves kernel modules and the given modules", () => {
     expect(() => evaluate("import x from 'nope'; export default x")).toThrow(
-      'evaluate: cannot require "nope" (only @keel kernel modules)',
+      'evaluate: cannot require "nope" (kernel modules and the given modules only)',
     );
     expect(typeof evaluate("import { signal } from '@keel/reactive'; export default signal")).toBe("function");
+    expect(evaluate("import { v } from 'probe'; export default v", { probe: { v: 7 } })).toBe(7);
+    expect(
+      evaluate("import { signal } from '@keel/reactive'; export default signal", { "@keel/reactive": { signal: 1 } }),
+    ).toBe(1);
+    expect(() => evaluate("import x from 'toString'; export default x")).toThrow(/cannot require "toString"/);
   });
   it("reports the clipped id of a non-lowerCamel module", () => {
     const def = { id: "A".repeat(40), deps: [], capabilities: [], public: { exports: [], routes: [] } };

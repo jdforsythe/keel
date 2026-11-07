@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below).
-// Mounted-DOM stand-in (compiler precedes testing in deps order, S0003). Resolution through the harness find(id) is packages/testing/conformance/component-ids-find.test.ts (rfc:0021).
+// Mounted-DOM stand-in (compiler precedes testing in deps order, S0003). Resolution through the harness find(id) is packages/testing/conformance/compiler-ids-find.test.ts (rfc:0033) and component-ids-find.test.ts (rfc:0021).
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { mount } from "@keel/runtime-dom";

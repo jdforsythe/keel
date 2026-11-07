@@ -28,6 +28,7 @@
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
-    "@keel/tooling": "workspace:*"
+    "@keel/tooling": "workspace:*",
+    "axe-core": "4.14.0"
   }
 }

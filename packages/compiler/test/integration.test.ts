@@ -161,7 +161,7 @@ export default function C() {
 C.outside = () => tx(dec, {}).ok;`,
     );
     // the body is wrapped in a child scope that declares `uses` before anything else runs
-    expect(code).toMatch(/__kscope\(\(\) => \{ for \(const __ku of uses\) __ku\.store\.uses\(\[__ku\]\);/);
+    expect(code).toMatch(/__kscoped\(\(\) => \{ for \(const __ku of uses\) __ku\.store\.uses\(\[__ku\]\);/);
     const C = evaluate(code);
     let outside: unknown;
     scope(() => {
@@ -171,6 +171,33 @@ C.outside = () => tx(dec, {}).ok;`,
     // undeclared inside the component (rejected before any write); a sibling scope stays unrestricted
     expect(typeof C === "function" ? Reflect.get(C, "seen") : undefined).toBe("store.undeclared");
     expect(outside).toBe(true);
+  });
+
+  it("runs every component instance in its own scope, a child of its caller's, disposed with it", () => {
+    const { code } = one(
+      "S.tsx",
+      `import { owner, signal, effect } from "@keel/reactive";
+function Leaf(props: { tag: string }) { S.seen.push([props.tag, owner()]); const n = signal(0); effect(() => { S.runs.push(n.get()); }); S.sigs.push(n); return <i>{props.tag}</i> }
+export default function S() { S.seen.push(["root", owner()]); return <p><Leaf tag="a" /><Leaf tag="b" /></p> }`,
+    );
+    const S = evaluate(code);
+    if (typeof S !== "function") throw new Error("no component");
+    const seen: [string, unknown][] = [];
+    const runs: number[] = [];
+    const sigs: { set(v: number): void }[] = [];
+    Object.assign(S, { seen, runs, sigs });
+    const el = document.createElement("div");
+    const dispose = mount(() => S({}, undefined, undefined), el);
+    const [root, a, b] = seen.map(([, o]) => o);
+    expect(seen.map(([t]) => t)).toEqual(["root", "a", "b"]);
+    expect(new Set([root, a, b]).size).toBe(3);
+    expect(Reflect.get(Object(a), "parent")).toBe(root);
+    expect(Reflect.get(Object(b), "parent")).toBe(root);
+    expect(el.textContent).toBe("ab");
+    dispose();
+    runs.length = 0;
+    for (const n of sigs) n.set(1);
+    expect(runs).toEqual([]);
   });
 
   it("inserts props.children() and slots calls as nodes, not text", () => {

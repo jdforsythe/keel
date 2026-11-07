@@ -1,5 +1,5 @@
 # k.component: Components
-status: implemented
+status: conformance-covered
 
 **Shape.** One default export per file; filename equals name. `export const Props = s.object(...)`. Signature `(props: Props, slots?: { name: Slot }, ctx?: Ctx) => JSX`: `ctx` (k.ctx) is passed by the runtime from the mount or island root and by the harness from `render`; it is the only way a component reaches an effect (resource fetchers close over it). A file may also export `Props` and `uses` (`export const uses = [addItem]`, k.store); the compiler calls `uses(...)` in the component's scope. Props are getters: destructuring is E1401 (compiler rewrites simple cases and emits the fix). JSX children are the default slot, delivered as `props.children: () => Node | Node[] | string` (a thunk, rendered inside the child's scope); the `slots` argument is reserved for named slots (later RFC).
 

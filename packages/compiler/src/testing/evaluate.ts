@@ -14,22 +14,27 @@ const MODULES: ReadonlyMap<string, unknown> = new Map<string, unknown>([
   ["@keel/store", store],
 ]);
 
-function resolve(id: string): unknown {
-  const m = MODULES.get(id);
-  if (m === undefined) throw new Error(`evaluate: cannot require ${JSON.stringify(id)} (only @keel kernel modules)`);
-  return m;
+function resolver(extra: Readonly<Record<string, unknown>>): (id: string) => unknown {
+  return (id) => {
+    const m = Object.hasOwn(extra, id) ? extra[id] : MODULES.get(id);
+    if (m === undefined)
+      throw new Error(`evaluate: cannot require ${JSON.stringify(id)} (kernel modules and the given modules only)`);
+    return m;
+  };
 }
 
 /**
  * Test helper: strip types from one `compile()` output, run it in-process against the live kernel
- * modules, and return its default export. Module-level reactive primitives are created inside a root
- * `scope` that is never disposed (it lives as long as the evaluated module).
+ * modules, and return its default export. `modules` adds or overrides specifiers by id, for packages later in
+ * the dependency order than the compiler (e.g. `{ "@keel/ui": ui }` from a testing suite) or probes; the compiler
+ * itself never imports them. Module-level reactive primitives are created inside a root `scope` that is never
+ * disposed (it lives as long as the evaluated module).
  */
-export function evaluate(code: string): unknown {
+export function evaluate(code: string, modules: Readonly<Record<string, unknown>> = {}): unknown {
   const js = transformSync(code, { loader: "ts", format: "cjs", target: "es2022" }).code;
   let exported: unknown;
   reactive.scope(() => {
-    exported = runCommonJs(js, resolve);
+    exported = runCommonJs(js, resolver(modules));
   });
   return typeof exported === "object" && exported !== null ? Reflect.get(exported, "default") : undefined;
 }
