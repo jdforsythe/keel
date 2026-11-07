@@ -38,6 +38,7 @@ export function jsonSchemaOf(node: SchemaNode): JsonValue {
       return sorted({
         type: "object",
         properties: sorted(Object.fromEntries(entries.map(([k, f]) => [k, jsonSchemaOf(f)]))),
+        ...(node.closed === true ? { additionalProperties: false } : {}),
         required: entries
           .filter(([, f]) => f.kind !== "optional")
           .map(([k]) => k)
@@ -50,6 +51,8 @@ export function jsonSchemaOf(node: SchemaNode): JsonValue {
       return sorted({ type: "object", additionalProperties: jsonSchemaOf(node.value) });
     case "union":
       return sorted({ oneOf: node.variants.map(jsonSchemaOf) });
+    case "anyOf":
+      return sorted({ anyOf: node.members.map(jsonSchemaOf) });
     case "nullable":
       return sorted({ anyOf: [jsonSchemaOf(node.inner), sorted({ type: "null" })] });
     case "optional":

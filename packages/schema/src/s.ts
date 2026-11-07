@@ -40,6 +40,25 @@ function bounds(kind: "number" | "int", opts: NumberBounds): NumberBounds {
   return { ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }) };
 }
 
+/** Discriminated by a literal `key` on every object variant, or (rfc:0029) a member list tried in order. */
+function union<K extends string, V extends readonly [Variant<K>, ...Variant<K>[]]>(
+  key: K,
+  variants: V,
+): Schema<Infer<V[number]>>;
+function union<M extends readonly [Schema<unknown>, Schema<unknown>, ...Schema<unknown>[]]>(
+  members: M,
+): Schema<Infer<M[number]>>;
+function union(keyOrMembers: string | readonly Schema<unknown>[], variants: readonly Schema<unknown>[] = []) {
+  if (typeof keyOrMembers !== "string")
+    return make<unknown, false>({ kind: "anyOf", members: keyOrMembers.map((m) => m.node) }, false);
+  const key = keyOrMembers;
+  const nodes: Node[] = variants.map((v) => v.node);
+  const tags = nodes.map((n) => (n.kind === "object" && n.fields[key]?.kind === "literal" ? n.fields[key] : undefined));
+  const bad = tags.findIndex((t, i) => t === undefined || tags.findIndex((u) => u?.value === t.value) !== i);
+  if (bad >= 0) throw new Error(`union variant ${bad} needs a unique literal ${clip(key)}`);
+  return make<unknown, false>({ kind: "union", key, variants: nodes }, false);
+}
+
 /** The schema namespace. One builder per primitive; modifiers are `.optional()` and `.nullable()`. */
 export const s = {
   string: (opts: { readonly min?: number; readonly max?: number } = {}): Schema<string> => {
@@ -57,10 +76,11 @@ export const s = {
   secret: <S extends Schema<unknown>>(inner: S): Schema<Secret<Infer<S>>> =>
     make({ kind: "secret", inner: inner.node }, false),
   id: <B extends string>(brand: B): Schema<Id<B>> => make({ kind: "id", brand }, false),
-  object: <S extends Shape>(shape: S): ObjectSchema<ObjectOf<S>> => {
+  object: <S extends Shape>(shape: S, opts: { readonly closed?: boolean } = {}): ObjectSchema<ObjectOf<S>> => {
     const node: Node = {
       kind: "object",
       fields: Object.fromEntries(Object.entries(shape).map(([k, v]) => [k, v.node])),
+      ...(opts.closed === true ? { closed: true } : {}),
     };
     const base = make<ObjectOf<S>, false>(node, false);
     return {
@@ -75,18 +95,7 @@ export const s = {
   array: <S extends Schema<unknown>>(item: S): Schema<Infer<S>[]> => make({ kind: "array", item: item.node }, false),
   record: <S extends Schema<unknown>>(value: S): Schema<Record<string, Infer<S>>> =>
     make({ kind: "record", value: value.node }, false),
-  union: <K extends string, V extends readonly [Variant<K>, ...Variant<K>[]]>(
-    key: K,
-    variants: V,
-  ): Schema<Infer<V[number]>> => {
-    const nodes: Node[] = variants.map((v) => v.node);
-    const tags = nodes.map((n) =>
-      n.kind === "object" && n.fields[key]?.kind === "literal" ? n.fields[key] : undefined,
-    );
-    const bad = tags.findIndex((t, i) => t === undefined || tags.findIndex((u) => u?.value === t.value) !== i);
-    if (bad >= 0) throw new Error(`union variant ${bad} needs a unique literal ${clip(key)}`);
-    return make({ kind: "union", key, variants: nodes }, false);
-  },
+  union,
   error: <C extends string, D extends Schema<unknown>>(code: C, data: D): ErrorSchema<C, Infer<D>> => {
     const node: Node = {
       kind: "object",

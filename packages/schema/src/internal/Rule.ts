@@ -11,4 +11,5 @@ export type Rule =
   | "optional-null"
   | "nullable-absent"
   | "discriminant"
+  | "unknown-key"
   | "secret-missing";

@@ -30,6 +30,8 @@ const all: ReadonlyArray<readonly [string, Schema<unknown, boolean>]> = [
   ["array", s.array(s.string().nullable())],
   ["record", s.record(s.boolean())],
   ["object", Shape],
+  ["closed object", s.object({ a: s.int(), b: s.string().optional() }, { closed: true })],
+  ["member union", s.union([s.string(), s.object({ a: s.int() }, { closed: true }), s.array(s.int())])],
 ];
 const wire = (x: unknown): string => JSON.stringify(x);
 const RULES = [
@@ -44,6 +46,7 @@ const RULES = [
   "optional-null",
   "nullable-absent",
   "discriminant",
+  "unknown-key",
   "secret-missing",
 ];
 

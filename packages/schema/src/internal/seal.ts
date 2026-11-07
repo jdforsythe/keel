@@ -1,5 +1,6 @@
 import { Secret } from "../Secret.ts";
 import type { Node } from "./Node.ts";
+import { fits } from "./fits.ts";
 import { isRecord } from "./isRecord.ts";
 import { variantOf } from "./variantOf.ts";
 
@@ -32,6 +33,12 @@ export function seal(node: Node, x: unknown): unknown {
       const variant = isRecord(x) ? variantOf(node, x[node.key]) : undefined;
       return variant === undefined ? x : seal(variant, x);
     }
+    case "anyOf":
+      for (const member of node.members) {
+        const sealed = seal(member, x);
+        if (fits(member, sealed)) return sealed;
+      }
+      return x;
     default:
       return x;
   }

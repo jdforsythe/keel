@@ -2,12 +2,15 @@ import type { JsonValue } from "../JsonValue.ts";
 import { Secret } from "../Secret.ts";
 import type { Node } from "./Node.ts";
 import { copyJson } from "./copyJson.ts";
+import { fits } from "./fits.ts";
 import { isRecord } from "./isRecord.ts";
 import { variantOf } from "./variantOf.ts";
 
 /** Copy an already-validated value into plain JSON, keeping only declared keys. Absent stays absent. */
 export function toJson(node: Node, value: unknown): JsonValue {
   if (node.kind === "secret") return Secret.marker;
+  const member = node.kind === "anyOf" ? node.members.find((m) => fits(m, value)) : undefined;
+  if (member !== undefined) return toJson(member, value);
   if (node.kind === "json") return copyJson(value);
   if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean")
     return value;

@@ -40,8 +40,11 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
         issues.push({ path, rule: "type" });
         break;
       }
-      for (const key of Object.keys(x))
-        if (!Object.hasOwn(node.fields, key)) scanExtras(x[key], [...path, key], issues);
+      for (const key of Object.keys(x)) {
+        if (Object.hasOwn(node.fields, key)) continue;
+        if (node.closed === true) issues.push({ path: [...path, key], rule: "unknown-key" });
+        else scanExtras(x[key], [...path, key], issues);
+      }
       for (const [key, field] of Object.entries(node.fields)) {
         const at = [...path, key];
         if (!Object.hasOwn(x, key)) {
@@ -62,6 +65,16 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
       const variant = Object.hasOwn(x, node.key) ? variantOf(node, x[node.key]) : undefined;
       if (variant === undefined) issues.push({ path: [...path, node.key], rule: "discriminant" });
       else check(variant, x, path, issues);
+      break;
+    }
+    case "anyOf": {
+      let last: Issue[] = [];
+      for (const member of node.members) {
+        last = [];
+        check(member, x, path, last);
+        if (last.length === 0) return;
+      }
+      issues.push(...last);
       break;
     }
     default: {

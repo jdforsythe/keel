@@ -31,9 +31,13 @@ export function typeText(node: Node): string {
       return `record<${typeText(node.value)}>`;
     case "union":
       return node.variants.map(typeText).join(" | ");
-    case "object":
-      return `{ ${Object.entries(node.fields)
+    case "anyOf":
+      return node.members.map(typeText).join(" | ");
+    case "object": {
+      const body = Object.entries(node.fields)
         .map(([k, f]) => `${k}${f.kind === "optional" ? "?" : ""}: ${typeText(f)}`)
-        .join(", ")} }`;
+        .join(", ");
+      return node.closed === true ? `{| ${body} |}` : `{ ${body} }`;
+    }
   }
 }

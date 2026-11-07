@@ -1,4 +1,5 @@
 import type { Node } from "./Node.ts";
+import { fits } from "./fits.ts";
 import { leafFromString } from "./leafFromString.ts";
 
 type Entries = ReadonlyMap<string, readonly string[]>;
@@ -24,6 +25,14 @@ export function fromStrings(node: Node, key: string, entries: Entries): unknown 
     );
   if (key === "" && node.kind === "object") return fieldsOf(node.fields);
   if (node.kind === "secret") return fromStrings(node.inner, key, entries);
+  if (node.kind === "anyOf") {
+    let candidate: unknown;
+    for (const member of node.members) {
+      candidate = fromStrings(member, key, entries);
+      if (fits(member, candidate)) return candidate;
+    }
+    return candidate;
+  }
   if (node.kind === "optional") {
     if (under(entries, key).length === 0) return undefined;
     const v = fromStrings(node.inner, key, entries);

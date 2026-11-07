@@ -41,6 +41,8 @@ export function toJsonSchema(node: SchemaNode): JsonSchema {
       return { type: "object", additionalProperties: toJsonSchema(node.value) };
     case "union":
       return { oneOf: node.variants.map(toJsonSchema) };
+    case "anyOf":
+      return { anyOf: node.members.map(toJsonSchema) };
     case "nullable":
       return { anyOf: [toJsonSchema(node.inner), { type: "null" }] };
     case "optional":

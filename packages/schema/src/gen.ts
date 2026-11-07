@@ -42,6 +42,8 @@ function arbitrary(node: Node): fc.Arbitrary<unknown> {
       return fc.dictionary(fc.string(), arbitrary(node.value), { noNullPrototype: true });
     case "union":
       return fc.oneof(...node.variants.map(arbitrary));
+    case "anyOf":
+      return fc.oneof(...node.members.map(arbitrary));
     case "object": {
       const fields = Object.entries(node.fields);
       const model = Object.fromEntries(fields.map(([k, f]) => [k, arbitrary(f.kind === "optional" ? f.inner : f)]));

@@ -8,10 +8,11 @@ export type Node =
   | { readonly kind: "enum"; readonly values: readonly string[] }
   | { readonly kind: "id"; readonly brand: string }
   | { readonly kind: "json" }
-  | { readonly kind: "object"; readonly fields: Readonly<Record<string, Node>> }
+  | { readonly kind: "object"; readonly fields: Readonly<Record<string, Node>>; readonly closed?: boolean }
   | { readonly kind: "array"; readonly item: Node }
   | { readonly kind: "record"; readonly value: Node }
   | { readonly kind: "union"; readonly key: string; readonly variants: readonly Node[] }
+  | { readonly kind: "anyOf"; readonly members: readonly Node[] }
   | { readonly kind: "nullable"; readonly inner: Node }
   | { readonly kind: "optional"; readonly inner: Node }
   | { readonly kind: "secret"; readonly inner: Node };

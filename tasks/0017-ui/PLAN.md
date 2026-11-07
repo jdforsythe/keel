@@ -28,6 +28,7 @@ Covers backlog 0017 (tokens, style props, atomic CSS, scoped styles) and 0018 (b
 - D6: `w`/`h` take `size` tokens, then `space` tokens (conformance uses `w: "3"` with no `size` group). Size wins on a name collision.
 - D7: `compileStyles` throws `Error` with `code: 'E1801'` for an unknown token, keyword or breakpoint, and `E1807` for a token value containing `{ } ; < >` or `/*` (CSS breakout).
 - D8: `TokenSchema` is a `Schema<Tokens>` whose `parse/decode/encode` enforce closed groups (unknown group -> issue rule `enum`) and string-or-pair colors; `node/gen/doc/optional/nullable` come from an open `s.object` with string colors. k.schema has no closed objects and no scalar-or-object union; RFC candidate.
+- D8b (rfc:0029, supersedes D8): `TokenSchema` is a plain `s.object(.., { closed: true })` whose `color` is `s.record(s.union([s.string(), Pair]))`, `Pair` a closed `{ light, dark }`; unknown group -> rule `unknown-key`; a pair with an extra key fails. `internal/isTokens.ts`, `internal/tokenIssues.ts` deleted.
 - D9: `defineTokens<const T>` returns its input (literal names kept) after `TokenSchema.parse`; throws `code: 'E1807'` on failure.
 - D10: Dynamic classes bind one `attr(el, 'class', fn)` op (empty -> attribute removed); static props set `class` once with no binding. Reactive children bind `text` on a fresh text node; reactive `value`/`checked` bind `prop`. Never a `style` attribute.
 - D11 (rev, see D19, D21): Controls render `<div><label for=id>label</label><control id=id></div>` (checkbox: control then label); style props go on the control.
