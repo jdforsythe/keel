@@ -11,12 +11,7 @@ import { renderRoute } from "@keel/testing";
 import { Box, Button, Input } from "@keel/ui";
 import { describe, expect, test } from "vitest";
 import { record, session } from "../src/index.ts";
-
-/** What the compiler emits around a bound k.ui base element with a literal `id` in a `.tsx` module: its `data-k` stamp. */
-const stamped = (n: Node, id: string): Node => {
-  if (n instanceof Element && n.hasAttribute("data-k")) n.setAttribute("data-k", id);
-  return n;
-};
+import { stamped } from "./stamped.ts";
 
 const typed: { value: string } = { value: "" };
 const routes = manifest({

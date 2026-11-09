@@ -11,12 +11,7 @@ import { createApp, topology } from "@keel/server";
 import { Box, Button } from "@keel/ui";
 import { afterEach, describe, expect, test } from "vitest";
 import { record, session } from "../src/index.ts";
-
-/** What the compiler emits around a bound k.ui base element with a literal `id` in a `.tsx` module: its `data-k` stamp. */
-const stamped = (n: Node, id: string): Node => {
-  if (n instanceof Element && n.hasAttribute("data-k")) n.setAttribute("data-k", id);
-  return n;
-};
+import { stamped } from "./stamped.ts";
 
 /** A page whose button throws; in the browser it records the session with an upload to this origin. */
 function Shop(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
