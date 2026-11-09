@@ -1,4 +1,4 @@
-import { references } from "@keel/compiler/internal";
+import { globalRefs, references } from "@keel/compiler/internal";
 import { Visitor } from "oxc-parser";
 import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
@@ -14,7 +14,8 @@ import type { RuleDef } from "../types/RuleDef.ts";
  * E1303 (k.store): a secret reaching store state. (a) The first argument of `store(...)` holds `s.secret` at any
  * depth, read through the file's consts and relative imports into `project` files; reported at that argument with
  * the field path. (b) `reveal` from `@keel/schema` (any alias, or `<namespace>.reveal`) referenced inside a
- * `transaction(...)` function; reported at the reference. No fix: removing the field or the call leaves the code
+ * `transaction(...)` function, also one that only compares; reported at the reference. `store`, `transaction` and
+ * `reveal` count only where they bind the import (a local of the same name shadows it). No fix: removing the field or the call leaves the code
  * ill-typed, and the field may live in another file.
  */
 export const noSecretInState: RuleDef = {
@@ -24,7 +25,7 @@ export const noSecretInState: RuleDef = {
       ? clip(`store state schema holds s.secret at ${str(f.data, "path")}; state never holds a secret`, 89)
       : clip(`transaction ${str(f.data, "tx")} uses reveal; state never holds a secret`, 89),
   explain:
-    "State reaches snapshots, #k-state and storage, so it never holds a secret. Keep s.secret out of state schemas; reveal in an action, not a transaction.",
+    "State reaches snapshots, #k-state and storage, so it never holds a secret. Keep the value s.secret end to end; reveal it only where it is used, never into a payload or state field.",
   see: "k.store",
   check: ({ file, ast, project }) => {
     if (!isAppPath(file.path)) return [];
@@ -38,12 +39,15 @@ export const noSecretInState: RuleDef = {
       for (const sp of st.specifiers) if (sp.type === "ImportNamespaceSpecifier") namespaces.add(sp.local.name);
     }
     const src = schemaSourceOf(file.path, ast);
+    const g = globalRefs(ast);
+    // A read is the import when it binds at module scope; a local of the same name shadows it.
+    const imported = (name: string, at: number): boolean => g.sameBinding(name, ast.start, at);
     const out: Finding[] = [];
     const fns: { start: number; end: number; name: string }[] = [];
     const members: number[] = [];
     new Visitor({
       CallExpression: (n) => {
-        if (n.callee.type !== "Identifier") return;
+        if (n.callee.type !== "Identifier" || !imported(n.callee.name, n.callee.start)) return;
         const first = n.arguments[0];
         if (stores.has(n.callee.name) && first !== undefined && first.type !== "SpreadElement") {
           const path = secretPath(first, src, project);
@@ -58,6 +62,7 @@ export const noSecretInState: RuleDef = {
       },
       MemberExpression: (n) => {
         if (n.computed || n.object.type !== "Identifier" || !namespaces.has(n.object.name)) return;
+        if (!imported(n.object.name, n.object.start)) return;
         if (n.property.type === "Identifier" && n.property.name === "reveal") members.push(n.start);
       },
     }).visit(ast);
@@ -65,7 +70,7 @@ export const noSecretInState: RuleDef = {
     const owner = (at: number): string | null => fns.find((f) => at >= f.start && at < f.end)?.name ?? null;
     const uses = [
       ...references(ast)
-        .refs.filter((r) => reveals.has(r.name))
+        .refs.filter((r) => reveals.has(r.name) && imported(r.name, r.start))
         .map((r) => r.start),
       ...members,
     ];

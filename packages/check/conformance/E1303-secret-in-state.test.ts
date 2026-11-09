@@ -1,4 +1,4 @@
-// Spec: k.store, clause "E1303 fires on a state schema with a nested `s.secret` and on `reveal` in a transaction function, not on their clean twins."
+// Spec: k.store, clause "E1303 fires on a nested `s.secret` in a state schema and on `reveal` in a transaction function, not on clean twins."
 // Seed 1337
 // E1303 has no fix; the no-fix list in fix-diffs.test.ts records it.
 import { check } from "@keel/check";

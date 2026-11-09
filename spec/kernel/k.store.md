@@ -12,13 +12,13 @@ Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx
 
 **Log meta**. `meta` is a record of JSON values with no schema, copied and frozen onto the entry; it never enters state, and non-JSON meta returns `err(schema.invalid)` with nothing committed. Snapshots reach clients (`#k-state`), so `snapshot()` drops `meta` from every entry; `snapshot({ meta: true })` keeps it and `restore` keeps the `meta` of the entries it restores. `undoWhere(pred)` undoes the latest entry when `pred(entry)` holds for it and returns whether it did; it never undoes an older matching entry.
 
-**Log limit**. A store keeps at most `logLimit` entries (default 256; not a non-negative integer: `store` throws). A commit past it folds the oldest entry into the base `undo` replays from, which `snapshot()` returns as `initial`; `restore` folds a longer log the same way, so a snapshot holds at most `logLimit` entries. State is unchanged. `undo` and `undoWhere` reach only kept entries: with none left they return `false` and change nothing.
+**Log limit**. A store keeps at most `logLimit` entries (default 256; not a non-negative integer: `store` throws). A commit past it folds the oldest entry into the base `undo` replays from, which `snapshot()` returns as `initial`; `restore` folds a longer log the same way. State is unchanged. `undo` and `undoWhere` reach only kept entries: with none left they return `false` and change nothing.
 
-**Secrets**. `tx` keeps a payload's `s.secret` values; `snapshot()` folds every entry up to the last holding one into `initial`, writing no secret. State never holds a secret (E1303).
+**Secrets**. `tx` keeps a payload's `s.secret` values; `snapshot()` folds every entry up to the last holding one into `initial`. `store()` throws E1303 on a state schema holding `s.secret`.
 
 **Ownership.** A component declares `uses: [addItem]`, bound to the declaring scope (`owner()`); `tx` consults the declarations of the calling scope and its ancestors, and a caller with none in its chain is unrestricted. Calling an undeclared transaction from a component is E1301; loaders and actions (k.router) run outside component scopes and are unrestricted. Transaction functions must be pure: E1302 on any `ctx` or global access.
 
-**Rules.** E1302 `ctx` or global access inside a transaction function · E1303 `s.secret` anywhere in a store's state schema, or `reveal` in a transaction function. Not reported: an unresolved schema or one past 8 consts (`snapshot()` throws), `reveal` via a helper.
+**Rules.** E1302 `ctx` or global access inside a transaction function · E1303 `s.secret` anywhere in a store's state schema, or a `reveal` call in a transaction function. Partial (static): skips unresolved schemas, chains past 8 consts, `reveal` in helpers.
 
 **Conformance.**
 - Transactions are deterministic for equal inputs.
@@ -42,4 +42,5 @@ Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx
 - An effect reading `stores()` reruns when a store is created and when its scope is disposed.
 - `payloads` maps each transaction declared on a store to that transaction's `schema` and holds no other name.
 - A payload's `s.secret` value is `reveal`able in `log()`; `snapshot()` then holds no secret and restores the same state.
-- E1303 fires on a state schema with a nested `s.secret` and on `reveal` in a transaction function, not on their clean twins.
+- E1303 fires on a nested `s.secret` in a state schema and on `reveal` in a transaction function, not on clean twins.
+- `store()` throws E1303 on a state schema with a nested `s.secret`, not on its clean twin.

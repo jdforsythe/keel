@@ -246,9 +246,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1303",
-    "s.secret anywhere in a store's state schema, or reveal in a transaction function",
-    "State reaches snapshots, #k-state and storage, so it never holds a secret. Not reported: an unresolved schema or one past 8 consts (snapshot() throws at run time), reveal via a helper.",
-    "keep the Secret in the payload; reveal it in a *.server.ts action, not in tx",
+    "s.secret anywhere in a store's state schema, or a reveal call in a transaction function",
+    "State reaches snapshots and #k-state. Any reveal in a reducer fires, even a compare. Static, partial (unresolved schemas, past 8 consts, helpers); store() throws E1303 at run time.",
+    "keep it s.secret; reveal where used (E1105), never into a payload or state",
     "k.store",
   ],
   ["E1351", "target id already exists", "", "use a codemod to change the existing item", "k.scaffold"],

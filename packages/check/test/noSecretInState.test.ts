@@ -84,6 +84,14 @@ describe("E1303 (a) a secret in a store state schema", () => {
     expect(message.endsWith("...")).toBe(true);
   });
 
+  it("skips a local `store` that shadows the import", () => {
+    const local = f(
+      "modules/app/cart.ts",
+      `${S}${STORE}{ const store = (x: unknown) => x; store(s.object({ t: s.secret(s.string()) })) }\n`,
+    );
+    expect(out([local])).toEqual([]);
+  });
+
   it("reports nothing it cannot resolve or that holds no secret", () => {
     const quiet = [
       cart("s.object({ a: s.string(), b: s.array(s.int()) })", S),
@@ -202,6 +210,24 @@ describe("E1303 (b) reveal in a transaction function", () => {
     expect(out([unnamed])).toEqual([
       "modules/app/login.server.ts 3:77 transaction ? uses reveal; state never holds a secret",
     ]);
+  });
+
+  it("fires on a compare-only reducer and skips locals that shadow reveal, transaction or a namespace", () => {
+    expect(out([login("(st, p) => ({ ...st, ok: hash(reveal(p.pin)) === st.pinHash })")])).toHaveLength(1);
+    expect(out([login("(st, p) => { const reveal = (x) => x; return { t: reveal(p.k) } }")])).toEqual([]);
+    expect(out([login("(st, reveal) => ({ t: reveal.k })")])).toEqual([]);
+    const outer = f(
+      "modules/app/login.server.ts",
+      `${head}function make(reveal: (x: string) => string) { return transaction(cart, 'x', Login, (st, p) => ({ t: reveal(p.k) })) }\n`,
+    );
+    expect(out([outer])).toEqual([]);
+    const shadowTx = f(
+      "modules/app/login.server.ts",
+      `${head}{ const transaction = (...a: unknown[]) => a; transaction(cart, 'x', Login, (st, p) => ({ t: reveal(p.k) })) }\n`,
+    );
+    expect(out([shadowTx])).toEqual([]);
+    const ns = `import * as k from '@keel/schema'\n${TX}`;
+    expect(out([login("(st, p) => { const k = { reveal: (x) => x }; return { t: k.reveal(p.t) } }", ns)])).toEqual([]);
   });
 
   it("ignores reveal outside the reducer, other modules, computed and other members", () => {

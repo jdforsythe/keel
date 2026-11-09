@@ -14,8 +14,10 @@ import { metaSchema } from "./internal/metaSchema.ts";
 import { persisted } from "./internal/persisted.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
+import { secretGuard } from "./internal/secretGuard.ts";
 import { trim } from "./internal/trim.ts";
 import { undeclared } from "./internal/undeclared.ts";
+import { unpersisted } from "./internal/unpersisted.ts";
 import { violated } from "./internal/violated.ts";
 import { withoutMeta } from "./internal/withoutMeta.ts";
 import type { LogEntry } from "./types/LogEntry.ts";
@@ -29,7 +31,8 @@ import type { Transaction } from "./types/Transaction.ts";
  * (`stores()`, `isolate`) throws; joining and leaving rerun `stores()` readers. `payloads` maps each transaction name to its
  * payload schema (rfc:0070). At most `logLimit` entries (default 256) are kept: a commit or `restore` past it
  * folds the oldest into that base (RFC 0054), so `undo` reaches only kept entries. A payload may hold `s.secret` values;
- * `snapshot()` folds every entry up to the last such one into `initial`, so no secret is written (rfc:0071).
+ * `snapshot()` folds every entry up to the last such one into `initial`, so no secret is written (rfc:0071). A state
+ * schema holding `s.secret` throws E1303 at construction.
  */
 export function store<T extends object>(
   schema: Schema<T>,
@@ -37,6 +40,7 @@ export function store<T extends object>(
   options?: { readonly id?: string; readonly clock?: () => number; readonly logLimit?: number },
 ): Store<T> {
   const id = options?.id ?? `store.${++counter.next}`;
+  secretGuard(id, schema);
   const registry = registryOf(owner());
   if (registry.has(id)) throw new Error(`store ${id}: id already in use by a live store`);
   const clock = options?.clock;
@@ -161,12 +165,13 @@ export function store<T extends object>(
         logSchema(payloads),
         rows.slice(cut).map((r) => (options?.meta === true ? r.entry : withoutMeta(r.entry))),
       );
-      if (!state.ok || !log.ok) throw new Error(`store ${id}: committed state or log no longer fits its schema`);
+      if (!state.ok) throw unpersisted(id, "state", state.error);
+      if (!log.ok) throw unpersisted(id, "log", log.error);
       const initial = persisted(
         schema,
         rows.slice(0, cut).reduce((st, r) => freeze(r.apply(st)), base),
       );
-      if (!initial.ok) throw new Error(`store ${id}: initial state no longer fits its schema`);
+      if (!initial.ok) throw unpersisted(id, "initial", initial.error);
       return { state: state.value, log: log.value, initial: initial.value };
     },
     restore(snap) {

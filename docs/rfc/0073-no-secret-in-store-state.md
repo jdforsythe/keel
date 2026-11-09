@@ -1,6 +1,6 @@
 # RFC 0073: store state never holds a secret (E1303)
 
-Status: accepted (ADR-0062, 2026-11-09). The user chose a check rule over a documented limit. The design applies the WORKFLOW RFC defaults 6 (kernel-level enforcement over documentation) and 4 (privacy by default: secrets never persist), and default 2 (one way) for what it leaves alone.
+Status: accepted (ADR-0062, 2026-11-09). The user chose a check rule over a documented limit. The design applies the WORKFLOW RFC defaults 6 (kernel-level enforcement over documentation) and 4 (privacy by default: secrets never persist), and default 2 (one way) for what it leaves alone. Amended the same day after the red-team pass (backlog 0257-0262): `store()` refuses a state schema holding a secret at run time, the `snapshot()` error names E1303, the fix text no longer moves `reveal` to a payload, and names resolve by binding.
 
 ## Problem
 Backlog 0239, filed by the red-team pass on RFC 0071. The snapshot fold removes secrets from transaction payloads only. A reducer that copies `reveal(p.token)` into a state field writes the plaintext into `state`, into the snapshot `initial`, and from there into `#k-state`, `ctx.storage` and session captures. `packages/store/test/secretFold.test.ts` pins this. Two ways lead there:
@@ -17,26 +17,32 @@ Messages are one line under 90 characters:
 - (a) `store state schema holds s.secret at <path>; state never holds a secret`
 - (b) `transaction <name> uses reveal; state never holds a secret` (`?` when the name is not a string literal)
 
+**Binding, not name.** `store`, `transaction`, `reveal` and a `@keel/schema` namespace count only where a read binds the module-scope import (`globalRefs(...).sameBinding`, the resolver E1601 uses). A parameter or local of the same name shadows it and is not reported. Any `reveal` in a reducer fires, also one whose value is only compared (`hash(reveal(p.pin)) === st.pinHash`): the rule does not follow data flow.
+
 **No fix.** Removing the field leaves the `initial` value and every reducer that writes the field ill-typed, and the field can live in another file, so the edit is not one hunk on the checked file. Removing a `reveal` call leaves a `Secret` where the state type wants a plain value. Both are design changes, so E1303 joins the no-fix list.
 
-**Runtime unchanged.** `snapshot()` still throws for a secret in state. E1303 reports the same case at check time and adds case (b). It is not a second way, because the throw stays the unexpected path for code the rule cannot resolve.
+**Runtime guard (exact).** `store(schema, ...)` throws at construction when `schema.node` holds a `secret` node anywhere: `E1303: store <id>: state schema holds s.secret at <path>; state never holds a secret`. It throws, because `store()` reports every construction error that way (duplicate id, bad `logLimit`, invalid `initial`), and it runs first, before the id is registered or `initial` is read. The path comes from `secretPathOf(node)` in `@keel/schema/internal`, the walk `hasSecret` now delegates to (object keys only; array items, record values and union members add no segment). The subpath is internal, read only by `@keel/store`, so there is no second public way. A `snapshot()` part that does not survive its codec throws `E1303: store <id>: snapshot <state|log|initial> at <path> does not persist (<rule>)`; with the construction guard a secret no longer reaches it.
+
+**Coverage.** The static rule is partial by design: it is the early, located signal in the editor and CI, and it misses spreads, computed keys, `s['secret']`, destructured or namespaced `s`, default and barrel exports, namespace imports of a schema file, conditionals, `let` bindings, wrappers around `store`, chains past 8 consts, and for (b) named or imported reducers, `reveal` aliases and helpers (backlog 0258, 0259). The runtime guard is exact for (a). For (b) nothing at run time can tell a revealed string from any other: a revealed value copied into a plain `s.string()` field of a payload or state (`tx(setT, { t: reveal(p.token) })` in a server action) is not detectable statically or at run time, and backlog 0257 stays open as a design item.
 
 ## Alternatives
 - **A documented limit.** Rejected by the user, and by default 6: a guard is possible.
 - **A runtime gate in `tx`, failing a commit whose next state holds a value equal to a revealed payload secret.** That needs the store to compare plaintexts on every commit and still misses derived values (a slice, a hash). A static rule stops both sources before the code runs.
+- **Only the static rule for (a).** Rejected after the red-team pass: a dozen ordinary schema shapes escape it, and `snapshot()` threw late, with a generic message, inside recorders, the inspector and server renders (backlog 0259, 0260).
 - **Extending E1105 to transaction functions in `*.server.ts`.** E1105 is about where a secret is revealed, in k.schema. Mixing the store concern into it would give one code two meanings.
 - **A fix that removes the `s.secret` field.** Rejected as unsafe (above).
 
 ## Spec diff
-- **k.store** (1,499 -> 1,487 printed).
-- **Added.** **Secrets**: "State never holds a secret (E1303)." **Rules**: "E1303 `s.secret` anywhere in a store's state schema, or `reveal` in a transaction function. Not reported: an unresolved schema or one past 8 consts (`snapshot()` throws), `reveal` via a helper." **Conformance**: "E1303 fires on a state schema with a nested `s.secret` and on `reveal` in a transaction function, not on their clean twins."
+- **k.store** (1,499 -> 1,495 printed).
+- **Added.** **Secrets**: "`store()` throws E1303 on a state schema holding `s.secret`." **Rules**: "E1303 `s.secret` anywhere in a store's state schema, or a `reveal` call in a transaction function. Partial (static): skips unresolved schemas, chains past 8 consts, `reveal` in helpers." **Conformance**: "E1303 fires on a nested `s.secret` in a state schema and on `reveal` in a transaction function, not on clean twins." and "`store()` throws E1303 on a state schema with a nested `s.secret`, not on its clean twin."
 - **Trimmed: citations.** `(rfc:0070)` after `stores()`, `(RFC 0022)` after **Registries**, `(rfc:0028)`, `(rfc:0054)` and `(rfc:0071)` after the **Log meta**, **Log limit** and **Secrets** headings, and `(runtime form of E1301)` after `store.undeclared`.
 - **Trimmed: examples.** `(wire data, a log entry)` after "one typed `unknown`", `(e.g. `{ caller }`)` after the meta record, and the API example's inline `s.object({ item: Item })` payload, now `AddItem`, with `state` shortened to `st`.
-- **Trimmed: restatements.** `(each transaction's payload schema by name)` and `(its payload schema)`, which the `payloads` and `schema` conformance clauses state; "an effect reading it reruns when one joins or leaves", which the `stores()` effect clause states; ": meta survives exactly when the log does", which the preceding meta sentence states; "(transactions are pure)" in E1302's Rules entry, which the Ownership sentence states; and the `undoWhere` rationale "replaying without a middle entry would reorder or invalidate later ones".
+- **Trimmed: restatements.** `(each transaction's payload schema by name)` and `(its payload schema)`, which the `payloads` and `schema` conformance clauses state; "an effect reading it reruns when one joins or leaves", which the `stores()` effect clause states; ": meta survives exactly when the log does", which the preceding meta sentence states; ", writing no secret" after the **Secrets** fold, which the secret-payload clause states; ", so a snapshot holds at most `logLimit` entries" after the log-limit fold, which the `restore` log-limit clause states; "(transactions are pure)" in E1302's Rules entry, which the Ownership sentence states; and the `undoWhere` rationale "replaying without a middle entry would reorder or invalidate later ones".
 - **Kept.** "Transaction functions must be pure: E1302 on any `ctx` or global access.", "Snapshots reach clients (`#k-state`), so ..." and "from a module counter" stay as they were.
 
 ## Conformance diff (rfc:0073)
 - Added `packages/check/conformance/E1303-secret-in-state.test.ts`, with a case for a method on a state schema (`Base.extend({ token: s.secret(...) })`).
+- Added `packages/store/conformance/secret-state-refused.test.ts` (generated wrappers: object, optional field, array, nullable, record).
 - Edited `packages/check/conformance/fixtures-by-code.ts` (an E1303 fixture and clean twin) and `packages/check/conformance/fix-diffs.test.ts` (E1303 in the no-fix list).
 
 ## Migration
@@ -46,10 +52,11 @@ None. No app or module in the repo holds `s.secret` in a state schema or calls `
 k.store stays under 1,500 printed tokens (above). The E1303 `explain` entry is under 120 tokens.
 
 ## Size
-The `@keel/check` bundle measures 32,881 B gzip against a 32.5 kB (33,280 B) budget, up from 31,663 B under the previous 31 kB. The rule and its schema resolver account for the difference.
+Measured gzip against `tooling/budgets.json`: `@keel/check` 32,991 B of 32.5 kB (33,280 B), up from 31,663 B before the rule; `@keel/store` 2,693 B of 3 kB; `@keel/schema` 4,402 B of 5 kB.
 
 ## Known limits
 - A helper function declared outside the reducer that calls `reveal` is not followed, the same name-based limit as E1302.
-- A schema not resolved (above) or past 8 consts is not reported; `snapshot()` throws at run time as the fallback.
+- A schema not resolved (above) or past 8 consts is not reported statically; `store()` throws E1303 at construction.
+- A revealed value copied into a plain field is not detectable (backlog 0257, open).
 - A schema built by a plain function call, imported from a package (`@keel/std-*`) or through a namespace import of `@keel/store` is not resolved.
 - `store` and `transaction` are matched as named imports of `@keel/store` only, as E1302 matches `transaction`.
