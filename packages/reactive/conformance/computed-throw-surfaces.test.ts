@@ -1,7 +1,7 @@
 // Spec: k.reactive Conformance, "An effect reading a computed that throws after a later write gets that throw from
 // its own `get()`, where a `try` around the read catches it; no `onError` receives it." API: "A computed's throw
-// surfaces in the computation reading it: an effect whose computed source throws runs, and its own `get()` of that
-// computed throws."
+// surfaces in the computation reading it: the computed runs once per commit and keeps the error, each reader's
+// `get()` throws it until a source changes, and its first value after a throw counts as a change."
 // Seed 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -23,7 +23,7 @@ function mk(initial: number) {
 describe("k.reactive: a computed's throw surfaces in the reading effect", () => {
   it("an effect reading a computed that throws after a later write catches that throw around its own get(); no onError receives it", () => {
     fc.assert(
-      fc.property(distinct, ([init, bad, good]) => {
+      fc.property(distinct, ([init, bad]) => {
         const s = mk(init);
         const seen: number[] = [];
         const caught: unknown[] = [];

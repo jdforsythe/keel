@@ -17,15 +17,17 @@ import type { UnexpectedError } from "../types/UnexpectedError.ts";
  * `fallback(error, reset)` with `keel.unexpected` and `data.at`; `reset()` re-renders the children in a
  * fresh scope. Throws inside the fallback go to the enclosing Boundary. Children and fallback each render in
  * their own scope under the op's `home` scope (`home.run`). Each catch is reported to the ctx's observers as an
- * `error` event before the fallback renders (k.ctx Observers, rfc:0070).
+ * `error` event before the fallback renders (k.ctx Observers, rfc:0070). `root` (`mount` only) gives the `data.at` of a throw
+ * at no element of its own: the app root's (k.errors).
  */
 export function boundary(
   anchor: Node,
   children: () => Node,
   fallback: (error: UnexpectedError, reset: () => void) => Node,
+  root?: { readonly at: string },
 ): void {
   const parent = current("boundary");
-  const at = idOf(anchor);
+  const at = root?.at ?? idOf(anchor);
   const { end, claim } = prepare(anchor);
   let failed: UnexpectedError | null = null;
   const state = signal<{ readonly error: UnexpectedError | null }>({ error: null });

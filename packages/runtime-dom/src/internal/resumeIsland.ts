@@ -10,6 +10,7 @@ import { disposeOwner } from "./disposeOwner.ts";
 import { eventQueue } from "./eventQueue.ts";
 import { report } from "./report.ts";
 import { rootCatcher } from "./rootCatcher.ts";
+import { stampOf } from "./stampOf.ts";
 import { withCx } from "./withCx.ts";
 
 const FOCUS = ["focus", "blur", "focusin", "focusout"];
@@ -20,7 +21,7 @@ const FOCUS = ["focus", "blur", "focusin", "focusout"];
  * server element, and return the warning. Queued pre-resume events are replayed once, in order, and reported to the
  * ctx's observers. The island has the root Boundary `mount` gives its tree (k.errors): it catches handler, binding
  * and render throws and, through the island scope's `onError`, the island's own `effect` and `computed` throws
- * (`data.at` the island id). It is armed once the claim succeeds, so a throw while claiming is a mismatch.
+ * (`data.at` the stamp at the island's place). It is armed once the claim succeeds, so a throw while claiming is a mismatch.
  */
 export function resumeIsland(
   el: Element,
@@ -33,6 +34,9 @@ export function resumeIsland(
   const focused = doc.activeElement;
   const queued = eventQueue.pending();
   const root = createRoot(el, ctx);
+  // `data.at` of a throw at no element of its own (the component's effect, computed or render): the stamp at the
+  // island's place, as `mount` uses its element's (k.errors).
+  const rootAt = stampOf(el.parentNode);
   // The island's root Boundary (k.errors): a throw after the claim reports to the ctx and swaps the island for the
   // root fallback, as under `mount`. `live` holds the island's nodes the fallback replaces and how to tear it down.
   const live: { nodes: ChildNode[]; teardown: () => void } = { nodes: [el], teardown: () => undefined };
@@ -55,7 +59,7 @@ export function resumeIsland(
         () => {
           rendered.node = withCx(owner, claim, () => component(props, undefined, ctx));
         },
-        { onError: (error) => report(owner, error, id) },
+        { onError: (error) => report(owner, error, rootAt) },
       );
     } catch (error) {
       // Any throw while claiming is a mismatch: the client re-render below shows a real app error.
@@ -97,12 +101,12 @@ export function resumeIsland(
       () => {
         client.node = withCx(freshOwner, null, () => component(props, undefined, ctx));
       },
-      { onError: (error) => report(freshOwner, error, id) },
+      { onError: (error) => report(freshOwner, error, rootAt) },
     );
   } catch (error) {
     // The client render threw: the island's root Boundary shows it in place of the server element, whose queued
     // events are dropped.
-    catcher.fail(error, id);
+    catcher.fail(error, rootAt);
     eventQueue.resume(el, null);
     return `E1253 [data-k-island="${id}"] ${failed.message}; re-rendered on the client`;
   }

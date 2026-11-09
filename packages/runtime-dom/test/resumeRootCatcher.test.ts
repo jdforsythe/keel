@@ -82,7 +82,8 @@ describe("resumed islands each have a root Boundary", () => {
           const [e] = errors();
           if (e === undefined || e.kind !== "error") throw new Error("expected an error event");
           expect(e.error.code).toBe("keel.unexpected");
-          const at = kind === "handler" ? `i${k}.boom` : `I${k}`;
+          // An effect throw is at no element of its own: the stamp at the island's place, "" under `document.body`.
+          const at = kind === "handler" ? `i${k}.boom` : "";
           expect(e.error.data).toMatchObject({ at });
           expect(document.querySelectorAll("pre[data-k-error]")).toHaveLength(1);
           expect(need(`pre[data-k-error="${at}"]`).textContent).toBe(kind === "handler" ? `boom ${k}` : `fx ${k}`);
@@ -128,7 +129,7 @@ describe("a resumed island whose client re-render throws", () => {
     expect(warnings[0]).toMatch(/^E1253 /);
     expect(eventQueue.pending()).toBe(before);
     expect(errors()).toHaveLength(1);
-    expect(need('pre[data-k-error="F"]').textContent).toBe("client boom");
+    expect(need('pre[data-k-error=""]').textContent).toBe("client boom");
     expect(document.querySelector('[data-k-island="F"]')).toBeNull();
     document.body.innerHTML = "";
   });
@@ -207,7 +208,7 @@ describe("a client re-render that returns a fragment", () => {
     expect(document.querySelector("#g\\.a")).not.toBeNull();
     expect(() => bad.set(true)).not.toThrow();
     expect(errors()).toHaveLength(1);
-    expect(need('pre[data-k-error="G"]').textContent).toBe("fx G");
+    expect(need('pre[data-k-error=""]').textContent).toBe("fx G");
     expect(document.querySelector("#g\\.a")).toBeNull();
     expect(document.querySelector("#g\\.b")).toBeNull();
     document.body.innerHTML = "";

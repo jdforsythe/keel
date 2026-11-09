@@ -23,6 +23,4 @@ export interface Node {
   onError?: ((error: unknown) => void) | undefined;
   /** Effect-like nodes only: threw into an `onError`; never runs again. */
   failed?: boolean;
-  /** Computed nodes only: its last run threw, so it stayed Dirty while its readers ran; the next change marks them. */
-  threw?: boolean;
 }

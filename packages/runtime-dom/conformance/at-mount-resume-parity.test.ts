@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.errors, clause "The same component and the same click report the same `data.at` under `mount` and after `resume`, for a handler's throw and for a binding's throw (the element the binding writes) when the handler's write makes the computed it reads throw."
+// Spec: k.errors, clause "The same component and the same click report the same `data.at` under `mount` and after `resume`, for a handler's throw, for a binding's throw (the element the binding writes) and for the component's own `effect` throw (`""`), when the handler's write makes the computed they read throw."
 // Seed 1337
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
-import { computed, signal } from "@keel/reactive";
+import { computed, effect, signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { clone, on, resume, template, text } from "@keel/runtime-dom/ops";
 import { describe, expect, it } from "vitest";
@@ -24,6 +24,18 @@ const Binding = (): Node => {
   if (node === null) throw new Error("fixture: p.out lacks a text node");
   text(node, () => c.get());
   on("p.go", "click", () => open.set(!open.get()));
+  return root;
+};
+
+// Own-effect variant: the component's top-level effect reads the throwing computed, no try.
+const OwnEffect = (): Node => {
+  const root = clone(PT);
+  const open = signal(false);
+  const c = computed(() => (open.get() ? "x".repeat(-1) : ""));
+  effect(() => {
+    c.get();
+  });
+  on("p.go", "click", () => open.set(true));
   return root;
 };
 
@@ -97,5 +109,12 @@ describe("k.errors: the same component and the same click report the same data.a
     expect(m).toBe(r);
     expect(m).toBe("p.out");
     expect(r).toBe("p.out");
+  });
+
+  it("for the component's own effect throw, data.at is the same under mount and after resume and is the empty string", async () => {
+    const m = await atUnderMount(OwnEffect);
+    const r = await atAfterResume(OwnEffect);
+    expect(m).toBe(r);
+    expect(m).toBe("");
   });
 });

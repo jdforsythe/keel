@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.errors, clause "After `resume`, an `effect` created in an island's component that throws on a later `signal.set` reports one `keel.unexpected` with the island's id as `data.at` and renders the root fallback in place of the island, also for an island re-rendered on the client after a mismatch; the other islands keep handling events."
+// Spec: k.errors, clause "After `resume`, an `effect` created in an island's component that throws on a later `signal.set` reports one `keel.unexpected` with `data.at` `""` (no stamped parent) and renders the root fallback in place of the island, also for an island re-rendered on the client after a mismatch; the other islands keep handling events."
+// Boundaries: a throw at no element of its own (the root component's own `effect`, `computed` or render) has `data.at` the `data-k` at the root's place (the `mount` element, the island's parent), else `""`.
 // Seed 1337
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { effect, signal } from "@keel/reactive";
@@ -37,7 +38,7 @@ function first(events: CtxEvent[]) {
   return e.error;
 }
 
-function setup(html: string) {
+function setup(html: string, wrap = (h: string): string => h) {
   const outer = inScope(() => signal(0));
   const sig = outer.value;
   const A = (): Node => {
@@ -56,22 +57,23 @@ function setup(html: string) {
     on("b.count", "click", () => n.set(n.get() + 1));
     return root;
   };
-  document.body.innerHTML = html + B_HTML + KSTATE(["A", "B"]);
+  document.body.innerHTML = wrap(html) + B_HTML + KSTATE(["A", "B"]);
   const o = observed();
   const res = resume(document.body, { A, B }, { ctx: o.ctx });
   return { sig, outer, res, ...o };
 }
 
-async function expectFallbackAndLiveB(s: ReturnType<typeof setup>) {
+async function expectFallbackAndLiveB(s: ReturnType<typeof setup>, at = "") {
   expect(() => s.sig.set(1)).not.toThrow();
   await flush();
   expect(errors(s.events)).toHaveLength(1);
   const err = first(s.events);
   expect(err.code).toBe("keel.unexpected");
   expect(err.message).toBe("fx1");
-  expect(err.data).toMatchObject({ at: "A" });
-  const pre = document.querySelector('pre[data-k-error="A"]');
+  expect(err.data).toMatchObject({ at });
+  const pre = document.querySelector("pre[data-k-error]");
   if (pre === null) throw new Error("expected root fallback");
+  expect(pre.getAttribute("data-k-error")).toBe(at);
   expect(pre.textContent).toBe("fx1");
   expect(document.querySelector('[data-k-island="A"]')).toBeNull();
 
@@ -87,12 +89,23 @@ async function expectFallbackAndLiveB(s: ReturnType<typeof setup>) {
   expect(errors(s.events)).toHaveLength(1);
 }
 
-describe("k.errors: after resume, an effect created in an island's component that throws on a later signal.set reports one keel.unexpected with the island's id as data.at and renders the root fallback in place of the island", () => {
-  it("after resume, a throwing island effect reports exactly one keel.unexpected with data.at the island id, renders pre[data-k-error] in place of the island, and other islands keep handling events", async () => {
+describe('k.errors: after resume, an effect created in an island\'s component that throws on a later signal.set reports one keel.unexpected with data.at "" and renders the root fallback in place of the island', () => {
+  it('after resume, a throwing island effect reports exactly one keel.unexpected with data.at "", renders pre[data-k-error=""] in place of the island, and other islands keep handling events', async () => {
     const s = setup(A_HTML);
     expect(JSON.stringify(s.res.warnings)).not.toContain("E1253");
     expect(errors(s.events)).toHaveLength(0);
     await expectFallbackAndLiveB(s);
+    s.outer.dispose();
+    document.body.innerHTML = "";
+  });
+
+  it("an island whose parent element carries data-k reports that data-k as data.at", async () => {
+    const s = setup(A_HTML, (h) => `<div data-k="shell.0">${h}</div>`);
+    expect(errors(s.events)).toHaveLength(0);
+    expect(() => s.sig.set(1)).not.toThrow();
+    await flush();
+    expect(errors(s.events)).toHaveLength(1);
+    expect(first(s.events).data).toMatchObject({ at: "shell.0" });
     s.outer.dispose();
     document.body.innerHTML = "";
   });
