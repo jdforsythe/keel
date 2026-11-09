@@ -92,7 +92,7 @@ const codeArb = fc.stringMatching(/^[A-Z][A-Z0-9_]{2,10}$/);
 
 describe("std.sessions: ingest by caller", () => {
   test("One caller's flood never evicts another caller's session", async () => {
-    // The backlog repro at its centre: one real POST, then about 20 POSTs of about 240 KiB with distinct codes.
+    // One real POST, then about 20 POSTs of about 240 KiB with distinct codes.
     const flood = fc.record({
       posts: fc.integer({ min: 17, max: 22 }),
       size: fc.integer({ min: 200_000, max: 250_000 }),

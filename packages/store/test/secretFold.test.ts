@@ -1,4 +1,4 @@
-// Seed 1337. Secret payloads and the snapshot fold (rfc:0071): undo against the live store and a restored one.
+// Seed 1337. Secret payloads and the snapshot fold: undo against the live store and a restored one.
 import { scope } from "@keel/reactive";
 import { reveal, s } from "@keel/schema";
 import { expect, test } from "vitest";
