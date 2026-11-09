@@ -47,7 +47,14 @@
     "./routes": {
       "types": "./src/routes.ts",
       "default": "./src/routes.ts"
+    },
+    "./action": {
+      "types": "./src/action/index.ts",
+      "default": "./src/action/index.ts"
     }
+  },
+  "bin": {
+    "keel-session-action": "./src/actionBin.ts"
   },
   "files": ["dist"],
   "scripts": {

@@ -1,0 +1,43 @@
+name: keel sessions
+description: >-
+  Nightly loop for @keel/std-sessions. It ingests the failing sessions of the last 26 hours, replays each
+  fingerprint's newest session, and opens or updates one keel-session issue per fingerprint that reproduces.
+  The calling job needs permissions issues write and contents read. It never pushes.
+inputs:
+  url:
+    description: Base URL of the ingest service, the one that serves /sessions/list.
+    required: true
+  token:
+    description: A reader's caller cookie value. The action exports it as KEEL_SESSIONS_TOKEN for the ingest only.
+    required: true
+  working-directory:
+    description: The project directory, the one that holds topology.ts and modules/.
+    required: false
+    default: "."
+  keel:
+    description: The command that runs the keel binary in working-directory.
+    required: false
+    default: pnpm exec keel
+  github-token:
+    description: Token for the GitHub issues API.
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: package.json
+        cache: pnpm
+    - run: pnpm install --frozen-lockfile
+      shell: bash
+    - run: pnpm exec keel-session-action
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        KEEL_AGENT: "1"
+        KEEL_SESSIONS_URL: ${{ inputs.url }}
+        KEEL_SESSIONS_TOKEN: ${{ inputs.token }}
+        KEEL_COMMAND: ${{ inputs.keel }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}

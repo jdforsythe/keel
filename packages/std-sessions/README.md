@@ -4,7 +4,7 @@
 
 ## Contract
 
-- **Public API:** stdlib module `sessions` (`module.ts` at the package root; capabilities `clock`, `observe`, `session`, `storage`). Subpaths `./record`, `./replay`, `./minimize`, `./session`, `./Session`, `./redact`, `./tools`, `./commandJob`, `./routes`; the root (the browser budget) re-exports `record`, `replay`, `redact`, `session` and the schemas, not `minimize`, `redactSession` or the node subpaths.
+- **Public API:** stdlib module `sessions` (`module.ts` at the package root; capabilities `clock`, `observe`, `session`, `storage`). Subpaths `./record`, `./replay`, `./minimize`, `./session`, `./Session`, `./redact`, `./tools`, `./commandJob`, `./routes`, `./action`; bin `keel-session-action`; the root (the browser budget) re-exports `record`, `replay`, `redact`, `session` and the schemas, not `minimize`, `redactSession` or the node subpaths.
   - `record(ctx, { limit = 500, upload? })` returns `{ events(), errors(), stop() }`, one per ctx. The base is the ctx's route when it starts, else its first `nav`. `tx` comes from each store's `log()`; `nav`, `fire`, `resource` and `error` come from `observe` (k.ctx). Past `limit` the buffer drops through its oldest `nav` and rebases there; with none buffered it rebases to now and keeps the appended input. With `upload`, the first error puts the session through `session(ctx)`. Without `document` it is a no-op. It registers inspect section `sessions.live`.
   - Redaction: each module's `redact` entries (`<subject>:<target>#<path>`, subjects `tx`, `store`, `route`, `el`, `error`) become their schema's generated value, seeded by the session seed and path. `el:` and `error:` values become `x` repeated. An `el:` entry masks every input value and one-character key of its element, and so does an element once reported masked (a password). `s.secret` fields always go, and `nav` hrefs are rebuilt from the redacted params and search. Every value an entry matched is masked again in later error messages and data, except `data.at`, which only an `error:` entry masks; other free text in errors is out of scope. `redact(schema, value, { paths, seed, salt, strings?, found? })` is the pure function. Path grammar: segments split on `.`; a bare `*` matches any one segment (an array index, a record key or an object field); `\.`, `\*` and `\\` are a literal `.`, `*` and `\` (so `store:a.b#headers.x\.trace` addresses the key `x.trace`). A recorder remembers the newest 256 distinct matched values to scrub from later errors.
   - `seed` is absent for a real or shell ctx (unseeded random), and `deterministic` is then false: a replay runs under seed 0 and may draw other ids.
@@ -21,6 +21,29 @@
   - Job contract (D1): replay, minimize and to-test write `.keel/sessions/job-<pid>-<n>.test.ts` (it imports each serving module's `routes.ts` and calls `commandJob` from `./commandJob` with the session inline), run `keel test <job> --format=json` in process on the project (its vitest config, environment and `KEEL_TEST=1`), read `JobResult` from `<job>.result.json`, and remove both. The project's vitest `include` must match `.keel/sessions/*.test.ts` (the default does); with no result the test run's diagnostics come back and the summary fails.
 - **Dependencies:** `@keel/check`, `@keel/cli` (tools only), `@keel/compiler`, `@keel/ctx`, `@keel/reactive`, `@keel/router`, `@keel/schema`, `@keel/store`, `@keel/testing`, `oxc-parser` (tools only).
 - **Rungs:** conformance (examples and properties, seed 1337) for determinism, redaction, overflow, replay, the capability, the server no-op, E2001 and E2005; properties for `sha256`, `redact` and `redactSession`.
+
+## Action
+
+`packages/std-sessions/action/action.yml` is a composite GitHub Action for the nightly loop. The calling job checks out the repo and grants `issues: write` and `contents: read`; the Action never pushes. Another repo names it by its path in the Keel repository, `uses: <owner>/<repo>/packages/std-sessions/action@<ref>`; this repo's `sessions-nightly` workflow uses the local path:
+
+```yaml
+permissions:
+  issues: write
+  contents: read
+steps:
+  - uses: actions/checkout@v4
+  - uses: ./packages/std-sessions/action
+    with:
+      url: ${{ vars.KEEL_SESSIONS_URL }}
+      token: ${{ secrets.KEEL_SESSIONS_TOKEN }}
+      working-directory: apps/sessions
+      keel: node ../../packages/cli/src/bin.ts
+```
+
+- **Inputs.** `url` and `token` are required. `token` is a reader's caller cookie value, exported as `KEEL_SESSIONS_TOKEN` to the ingest alone. `working-directory` (default `.`) is the project holding `topology.ts`; `keel` (default `pnpm exec keel`) is the command that runs the `keel` binary there; `github-token` defaults to the job's token.
+- **Steps.** It sets up pnpm and node (`node-version-file: package.json`, so `engines.node`), installs with `--frozen-lockfile`, and runs `pnpm exec keel-session-action` in `working-directory`.
+- **Loop.** `runAction(io)` (`./action`, `src/runAction.ts`; `io` is `{ env, now, fetch, run, read }`) runs `keel session ingest <url> --failing --since=<now - 26h>`. For each fingerprint it replays the newest file the ingest wrote. A reproduced fingerprint gets `minimize` and `to-test`, then the open issue labeled `keel-session` whose title starts `session <fingerprint>:` is updated, or one titled `session <fingerprint>: <code> at <route>` is created. The body is the compact `session` record and the emitted test, each fenced; no other session value goes in. A fingerprint whose replay reports E2004 gets one comment on its open issue, if there is one. `keel` never receives `GITHUB_TOKEN`.
+- **Output.** Compact records (docs/OUTPUT.md): relayed `diag`s, a `session` and a `session.issue` per fingerprint, and one `summary`. It exits 1 when the ingest or a GitHub call fails (E1056) or the env lacks the url, `GITHUB_REPOSITORY` or `GITHUB_TOKEN` (E1052); a session that does not replay leaves the exit code at 0.
 
 ## Extension points
 

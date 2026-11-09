@@ -1,0 +1,38 @@
+{
+  "name": "sessions-nightly",
+  "on": {
+    "schedule": [
+      {
+        "cron": "0 5 * * *"
+      }
+    ],
+    "workflow_dispatch": {}
+  },
+  "permissions": {
+    "issues": "write",
+    "contents": "read"
+  },
+  "env": {
+    "KEEL_AGENT": "1"
+  },
+  "jobs": {
+    "sessions": {
+      "if": "vars.KEEL_SESSIONS_URL != ''",
+      "runs-on": "ubuntu-latest",
+      "steps": [
+        {
+          "uses": "actions/checkout@v4"
+        },
+        {
+          "uses": "./packages/std-sessions/action",
+          "with": {
+            "url": "${{ vars.KEEL_SESSIONS_URL }}",
+            "token": "${{ secrets.KEEL_SESSIONS_TOKEN }}",
+            "working-directory": "apps/sessions",
+            "keel": "node ../../packages/cli/src/bin.ts"
+          }
+        }
+      ]
+    }
+  }
+}

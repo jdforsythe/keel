@@ -1,4 +1,4 @@
-// Generates turbo.json and .github/workflows/ci.yml from tooling/*.source.json.
+// Generates turbo.json and the .github/workflows/*.yml files from tooling/*.source.json.
 // Usage: node tooling/generate.mjs [--check]   (--check exits 2 with S0007 on drift)
 import fs from "node:fs";
 import path from "node:path";
@@ -46,16 +46,21 @@ function turbo() {
   return `// _generated: edit tooling/turbo.source.json and run pnpm generate. Do not edit by hand.\n${JSON.stringify({ ...($schema ? { $schema } : {}), ...rest }, null, 2)}\n`;
 }
 
-function ci() {
-  const { setup, jobs, ...rest } = readJson("ci.source.json");
+/** A workflow from `tooling/<source>`: each `"$setup"` step expands to the source's `setup` steps. */
+function workflow(source) {
+  const { setup = [], jobs, ...rest } = readJson(source);
   const expanded = {};
   for (const [name, job] of Object.entries(jobs)) {
     expanded[name] = { ...job, steps: job.steps.flatMap((s) => (s === "$setup" ? setup : [s])) };
   }
-  return `# _generated: edit tooling/ci.source.json and run pnpm generate. Do not edit by hand.\n${yaml({ ...rest, jobs: expanded })}\n`;
+  return `# _generated: edit tooling/${source} and run pnpm generate. Do not edit by hand.\n${yaml({ ...rest, jobs: expanded })}\n`;
 }
 
-const outputs = { "turbo.json": turbo(), ".github/workflows/ci.yml": ci() };
+const outputs = {
+  "turbo.json": turbo(),
+  ".github/workflows/ci.yml": workflow("ci.source.json"),
+  ".github/workflows/sessions-nightly.yml": workflow("sessions-nightly.source.json"),
+};
 const check = parseArgs().flags.has("check");
 
 await run("generate", () => {
