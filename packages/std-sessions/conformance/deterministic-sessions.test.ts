@@ -5,8 +5,7 @@ import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { SEED, json, play, stepArb } from "./fixtures.ts";
 
-// TODO 0092: unskip
-describe.skip("std.sessions: determinism and event order", () => {
+describe("std.sessions: determinism and event order", () => {
   test("Under one sim seed, one script of fires produces byte-equal sessions", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(stepArb, { maxLength: 8 }), async (script) => {

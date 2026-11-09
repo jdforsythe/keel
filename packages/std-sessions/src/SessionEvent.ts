@@ -1,12 +1,28 @@
-import type { Href } from "@keel/router";
-import type { JsonValue, KeelError } from "@keel/schema";
-import type { TestEvent } from "@keel/testing";
+import { s } from "@keel/schema";
 
-/** One recorded event (std.sessions API); `at` is `ctx.clock.now()` when it occurred. */
-export type SessionEvent = { readonly at: number } & (
-  | { readonly kind: "tx"; readonly store: string; readonly name: string; readonly payload: JsonValue }
-  | { readonly kind: "nav"; readonly href: Href }
-  | { readonly kind: "resource"; readonly id: string; readonly state: "loading" | "ready" | "error" }
-  | { readonly kind: "fire"; readonly id: string; readonly event: TestEvent }
-  | { readonly kind: "error"; readonly error: KeelError<string, JsonValue> }
-);
+const at = s.number();
+/** A closed object (every session shape rejects unknown keys). */
+const o = <S extends Parameters<typeof s.object>[0]>(shape: S) => s.object(shape, { closed: true });
+const keelError = o({ code: s.string(), message: s.string(), data: s.json() });
+const testEvent = s.union("type", [
+  o({ type: s.literal("click") }),
+  o({ type: s.literal("input"), value: s.string() }),
+  o({ type: s.literal("change") }),
+  o({ type: s.literal("keydown"), key: s.string() }),
+  o({ type: s.literal("submit") }),
+  o({ type: s.literal("focus") }),
+  o({ type: s.literal("blur") }),
+]);
+
+/**
+ * One recorded event (std.sessions): `at` is `ctx.clock.now()` when it was appended. A `nav` keeps the href as a
+ * string; `replay` re-derives a typed `Href` from the route table.
+ */
+export const SessionEvent = s.union("kind", [
+  o({ at, kind: s.literal("tx"), store: s.string(), name: s.string(), payload: s.json() }),
+  o({ at, kind: s.literal("nav"), href: s.string() }),
+  o({ at, kind: s.literal("resource"), id: s.string(), state: s.enum(["loading", "ready", "error"]) }),
+  o({ at, kind: s.literal("fire"), id: s.string(), event: testEvent }),
+  o({ at, kind: s.literal("error"), error: keelError }),
+]);
+export type SessionEvent = s.infer<typeof SessionEvent>;

@@ -75,8 +75,8 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1053",
-    "formatter kind registered twice",
-    "Each record kind has one formatter.",
+    "formatter kind or std command registered twice",
+    "Each record kind has one formatter, and the reserved `session` command one operation.",
     "remove the second registration or use a new kind",
     "k.cli",
   ],

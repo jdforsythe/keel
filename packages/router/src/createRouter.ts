@@ -1,4 +1,5 @@
 import type { Ctx } from "@keel/ctx";
+import { report } from "@keel/ctx/internal";
 import { batch, computed, owner, scope, signal } from "@keel/reactive";
 import { boundary } from "@keel/runtime-dom/ops";
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
@@ -57,13 +58,16 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * Start a client router over `routes` (k.router Client). Navigation: match, parse params (fail: 404 to the
  * nearest errorElement, no loader) and search (failing keys dropped), run every guard outermost first
  * (denied: redirect to the guard's `redirect` with `?next=`), then every loader of the chain concurrently,
- * then commit. The previous page stays rendered and `pending` is true until the commit.
+ * then commit. The previous page stays rendered and `pending` is true until the commit. Guards, loaders and actions get
+ * `caller` (default `""`; the harness supplies one). Each navigation that is not a guard's redirect reports `nav` to
+ * the ctx's observers before its guards, and each loader or action `err` reports `error` (k.ctx Observers, rfc:0070).
  */
 export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   routes: Manifest<M>,
-  opts: { readonly ctx: Ctx; readonly history: RouterHistory },
+  opts: { readonly ctx: Ctx; readonly history: RouterHistory; readonly caller?: string },
 ): Router<RouteState<M>> {
   const { ctx, history } = opts;
+  const caller = opts.caller ?? "";
   const own = tables.get(routes) ?? compileRoutes(routes.routes);
   const table = compileTable(own, routes.routes);
   const root = rooted(() => {
@@ -168,7 +172,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     for (const [i, lvl] of m.route.chain.entries()) {
       const g = lvl.def.guard;
       if (g === undefined) continue;
-      const r = await runGuard(g, m.url, ctx);
+      const r = await runGuard(g, m.url, ctx, caller);
       if (t !== token) return;
       if (r.ok) continue;
       if (r.error.code !== "keel.denied") return commit(t, failedAt(m, i, r.error), placeOf(m), mode);
@@ -178,7 +182,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     }
     const results = await runLoaders(
       m.route.chain,
-      { params: m.params, search: m.search, url: absoluteUrl(m.url) },
+      { params: m.params, search: m.search, url: absoluteUrl(m.url), caller },
       ctx,
     );
     if (t !== token) return;
@@ -193,6 +197,19 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       commit(t, failedAt(m, Number.MAX_SAFE_INTEGER, notFound(m.url)), MISSING, mode);
       return done;
     }
+    const { id, def } = m.route;
+    if (visited.length === 0)
+      report(ctx, {
+        kind: "nav",
+        href: m.url,
+        route: {
+          id,
+          path: def.path ?? "",
+          params: m.params,
+          search: m.search,
+          schemas: { params: def.params, search: def.search },
+        },
+      });
     if (view.get() === null) place.set(placeOf(m));
     if (m.route.chain.every((l) => l.def.guard === undefined && l.def.loader === undefined)) {
       commit(t, loaded(m, []), placeOf(m), mode);
@@ -208,7 +225,11 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     if (v === null || m === null || m.kind !== "route") return;
     const t = token;
     pending.set(true);
-    const results = await runLoaders(v.chain, { params: v.params, search: v.search, url: absoluteUrl(v.url) }, ctx);
+    const results = await runLoaders(
+      v.chain,
+      { params: v.params, search: v.search, url: absoluteUrl(v.url), caller },
+      ctx,
+    );
     if (t !== token || disposed || view.get() !== v) return;
     if (v.error !== null || results.some((r) => !r.ok)) return commit(t, loaded(m, results), placeOf(m), "stay");
     batch(() => {
@@ -241,8 +262,9 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       else if (act.stores !== undefined) result = err(unexpected(STORES_SERVER_ONLY));
       else {
         const url = absoluteUrl(req.action);
-        const ran = await attempt(() => act.run(decoded.value, { params, url, caller: "", stores: undefined }, ctx));
+        const ran = await attempt(() => act.run(decoded.value, { params, url, caller, stores: undefined }, ctx));
         result = ran.ok ? ran.value : ran;
+        if (!result.ok) report(ctx, { kind: "error", error: result.error });
       }
       handle?.setPending(false);
       handle?.onResult(result);

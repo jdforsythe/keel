@@ -13,8 +13,8 @@ import { simNet } from "./internal/simNet.ts";
 import { simRandom } from "./internal/simRandom.ts";
 import { simStorage } from "./internal/simStorage.ts";
 
-function seal<C extends Ctx>(ctx: C, mode: Mode, seed: number): C {
-  ctxMeta.set(ctx, { mode, seed });
+function seal<C extends Ctx>(ctx: C, mode: Mode, seed: number, given: number | undefined): C {
+  ctxMeta.set(ctx, { mode, seed, given });
   return Object.freeze(ctx);
 }
 
@@ -29,8 +29,8 @@ export function createCtx(opts: CtxOptions): Ctx {
   const seed = opts.seed ?? 0;
   if (mode === "sim") {
     const sim: SimCtx = { clock: simClock(), random: simRandom(seed), net: simNet(), storage: simStorage() };
-    return seal(sim, mode, seed);
+    return seal(sim, mode, seed, opts.seed);
   }
   const ctx: Ctx = { clock: realClock(), random: realRandom(), net: realNet(), storage: realStorage() };
-  return seal(ctx, mode, seed);
+  return seal(ctx, mode, seed, opts.seed);
 }

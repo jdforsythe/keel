@@ -27,7 +27,7 @@ export function resumeIsland(
   const doc = el.ownerDocument;
   const focused = doc.activeElement;
   const queued = eventQueue.pending();
-  const root = createRoot(el);
+  const root = createRoot(el, ctx);
   const owner = createOwner(null, root, null);
   const claim: Claim = { island: el, region: null, session: { failed: null } };
   const rendered: { node: Node | null; scope: Scope | null } = { node: null, scope: null };
@@ -60,7 +60,7 @@ export function resumeIsland(
   disposeOwner(owner);
   rendered.scope?.dispose();
   root.dispose();
-  const fresh = createRoot(null);
+  const fresh = createRoot(null, ctx);
   const freshOwner = createOwner(null, fresh, null);
   const client: { node: Node | null } = { node: null };
   scope(() => {

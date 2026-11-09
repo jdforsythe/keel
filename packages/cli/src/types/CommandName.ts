@@ -10,4 +10,5 @@ export type CommandName =
   | "render"
   | "scaffold"
   | "codemod"
-  | "ledger";
+  | "ledger"
+  | "session";

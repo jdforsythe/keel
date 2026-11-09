@@ -10,10 +10,14 @@ import { inspectCommand } from "./inspectCommand.ts";
 import { ledgerCommand } from "./ledgerCommand.ts";
 import { scaffoldCommand } from "./scaffoldCommand.ts";
 import { specCommand } from "./specCommand.ts";
+import { stdSlot } from "./stdSlot.ts";
 import { testCommand } from "./testCommand.ts";
 import { unavailable } from "./unavailable.ts";
 
-const only = (records: readonly OutRecord[]): Outcome => ({ records, writes: [] });
+const only = (records: readonly OutRecord[]): Outcome => ({
+  records,
+  writes: [],
+});
 
 /** Run one operation on schema-valid input. Every surface ends here: same input, same records and writes. */
 export async function execute(op: Operation, input: Input, io: Io): Promise<Outcome> {
@@ -37,6 +41,12 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
       return only(unavailable(op.name, "vite.config.ts and the keel binary (vite dev server)", "k.server"));
     case "inspect":
       return only(await inspectCommand(input, io));
+    case "session": {
+      const std = stdSlot.op;
+      return std === undefined
+        ? only(unavailable(op.name, "the stdlib sessions module", "k.cli"))
+        : await std.run(input, io);
+    }
     case "render":
       return only(unavailable(op.name, "a compiled component or route loader", "k.testing"));
   }

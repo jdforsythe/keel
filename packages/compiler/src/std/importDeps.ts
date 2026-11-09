@@ -38,7 +38,7 @@ const field = (manifest: unknown, k: string): unknown =>
  * `dir` or an ancestor (no NODE_PATH, no global folders), then its `exports` by ESM conditions, else `main`, else
  * `index.js`. Undefined when there is none.
  */
-function entryOf(dir: string, dep: string): string | undefined {
+function entryOf(dir: string, dep: string, sub = "."): string | undefined {
   for (let d = dir; ; d = path.dirname(d)) {
     const pkg = path.join(d, "node_modules", dep);
     const json = path.join(pkg, "package.json");
@@ -51,7 +51,14 @@ function entryOf(dir: string, dep: string): string | undefined {
       }
       const exp = field(manifest, "exports");
       const main = field(manifest, "main");
-      const rel = exp === undefined ? (typeof main === "string" ? main : "index.js") : target(exp);
+      const rel =
+        sub !== "."
+          ? target(field(exp, sub))
+          : exp === undefined
+            ? typeof main === "string"
+              ? main
+              : "index.js"
+            : target(exp);
       const file = rel === undefined ? undefined : path.resolve(pkg, rel);
       return file !== undefined && fs.existsSync(file) ? fs.realpathSync(file) : undefined;
     }
@@ -59,23 +66,30 @@ function entryOf(dir: string, dep: string): string | undefined {
   }
 }
 
-/** Import `dep` as seen from `dir`: undefined once loaded, else why not. */
+/** Import `file` once per process: true when it is loaded, false when it throws. */
+async function once(file: string): Promise<boolean> {
+  if (loaded.has(file)) return true;
+  try {
+    await import(pathToFileURL(file).href);
+  } catch {
+    return false;
+  }
+  loaded.add(file);
+  return true;
+}
+
+/** Import `dep` (then its `./tools` export, if any) as seen from `dir`: undefined once loaded, else why not. */
 async function load(dir: string, dep: string): Promise<string | undefined> {
   if (!NAME.test(dep)) return "not @keel/std-[a-z0-9-]+";
   const file = entryOf(dir, dep);
   if (file === undefined) return "not found";
-  if (loaded.has(file)) return undefined;
-  try {
-    await import(pathToFileURL(file).href);
-  } catch {
-    return "throws on import";
-  }
-  loaded.add(file);
-  return undefined;
+  if (!(await once(file))) return "throws on import";
+  const tools = entryOf(dir, dep, "./tools");
+  return tools === undefined || (await once(tools)) ? undefined : "tools throws on import";
 }
 
 /**
- * Import each `@keel/std-*` package in the `deps` of every app manifest (`modules/<id>/module.ts`, at any depth of
+ * Import each `@keel/std-*` package in the `deps` of every app manifest (and its `./tools` export, if any) (`modules/<id>/module.ts`, at any depth of
  * `files`; paths relative to `root` or absolute) so its check rules and config schema register before anything
  * validates (k.module Std config, rfc:0066; `keel check` on every surface, `keel build`, the Vite plugin). Only names
  * matching `@keel/std-[a-z0-9-]+` are imported, resolved as an ESM import from the manifest's folder through its own

@@ -7,27 +7,57 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./module": {
+      "types": "./module.ts",
+      "default": "./module.ts"
+    },
+    "./record": {
+      "types": "./src/record.ts",
+      "default": "./src/record.ts"
+    },
+    "./replay": {
+      "types": "./src/replay.ts",
+      "default": "./src/replay.ts"
+    },
+    "./session": {
+      "types": "./src/session.ts",
+      "default": "./src/session.ts"
+    },
+    "./Session": {
+      "types": "./src/Session.schema.ts",
+      "default": "./src/Session.schema.ts"
+    },
+    "./redact": {
+      "types": "./src/redact.ts",
+      "default": "./src/redact.ts"
+    },
+    "./tools": {
+      "types": "./src/tools.ts",
+      "default": "./src/tools.ts"
     }
   },
   "files": ["dist"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test",
+    "check": "tsc --noEmit && biome check src test unsafe module.ts",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@keel/ctx": "workspace:*",
-    "@keel/router": "workspace:*",
-    "@keel/schema": "workspace:*",
-    "@keel/testing": "workspace:*"
-  },
-  "devDependencies": {
     "@keel/check": "workspace:*",
     "@keel/cli": "workspace:*",
     "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "oxc-parser": "^0.157.0"
+  },
+  "devDependencies": {
     "@keel/runtime-dom": "workspace:*",
     "@keel/server": "workspace:*",
-    "@keel/store": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@keel/ui": "workspace:*",
     "@types/node": "^22",

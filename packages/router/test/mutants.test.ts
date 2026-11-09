@@ -599,7 +599,7 @@ describe("routesArtifact details", () => {
 
 describe("runLoaders / runGuard", () => {
   const lvl = (def: Partial<RouteDef>): Level => ({ id: "l", def: { component: view, ...def } });
-  const args = { params: {}, search: {}, url: "http://localhost/" };
+  const args = { params: {}, search: {}, url: "http://localhost/", caller: "" };
   it("no loader gives ok(undefined); a loader's value is parsed by its output schema", async () => {
     const out = await runLoaders(
       [lvl({}), lvl({ loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 })) })],
@@ -649,20 +649,21 @@ describe("runLoaders / runGuard", () => {
     const boom = guard({ redirect: "x" }, async () => {
       throw new Error("bang");
     });
-    expect(await runGuard(yes, "/u", ctx)).toEqual(ok(null));
-    const denied = await runGuard(no, "/u", ctx);
+    expect(await runGuard(yes, "/u", ctx, "")).toEqual(ok(null));
+    const denied = await runGuard(no, "/u", ctx, "");
     expect(denied.ok === false && denied.error.code).toBe("keel.denied");
-    const thrown = await runGuard(boom, "/u", ctx);
+    const thrown = await runGuard(boom, "/u", ctx, "");
     expect(thrown.ok === false && thrown.error.code).toBe("keel.unexpected");
   });
-  it("runGuard hands the url to the guard", async () => {
+  it("runGuard hands the url and the caller to the guard", async () => {
     const seen: string[] = [];
     const g = guard({ redirect: "x" }, async (req) => {
-      seen.push(req.url);
+      seen.push(req.url, req.caller);
       return ok(null);
     });
-    await runGuard(g, "/the/url?x=1", ctx);
-    expect(seen).toEqual(["/the/url?x=1"]);
+    await runGuard(g, "/the/url?x=1", ctx, "");
+    await runGuard(g, "/u", ctx, "c4ll3r");
+    expect(seen).toEqual(["/the/url?x=1", "", "/u", "c4ll3r"]);
   });
 });
 

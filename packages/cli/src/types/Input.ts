@@ -31,4 +31,7 @@ export type Input = {
   readonly diff?: boolean;
   readonly write?: string;
   readonly scope?: string;
+  readonly failing?: boolean;
+  readonly since?: string;
+  readonly "max-runs"?: number;
 };

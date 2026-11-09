@@ -6,7 +6,7 @@ import { Session, replay } from "@keel/std-sessions";
 import { cartRoutes } from "./fixtures.ts";
 
 // Gap: the spec names no buggy-fixture session, no stdout record or output path for `minimize` (only `.keel/sessions/` for ingest), so the minimized Session cannot be read back; "input events" is not defined (fire and nav?).
-// TODO 0092: unskip
+// TODO 0094: unskip (minimize and keel session to-test are backlog 0094)
 describe.skip("std.sessions: minimize", () => {
   const minimized = async (file: string, source: string): Promise<string> => {
     const writes: { path: string; content: string | null }[] = [];

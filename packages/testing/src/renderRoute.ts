@@ -13,7 +13,9 @@ import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
  * Render route `id` of `options.routes` (k.testing Harness): seed `state`, create a router on an in-memory history
  * at `routes.href(id, params, search)` (its initial navigation runs the chain's guards and loaders), mount its `App`, and
  * resolve once no navigation is pending and the DOM is quiet; then the `render` checks run (`keel.unexpected`,
- * E1702 with `artifacts`, E1703). The handle is `render`'s plus `route()`; `dispose` also disposes the router.
+ * E1702 with `artifacts`, E1703). The handle is `render`'s plus `route()` and `navigate(href)` (push, then the same
+ * quiescence and checks as `fire`; rfc:0070); `dispose` also disposes the router. Guards, loaders and actions get
+ * `options.caller` (default `""`).
  */
 export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   id: string,
@@ -25,7 +27,7 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   let router: ReturnType<typeof createRouter<M>>;
   try {
-    router = createRouter(options.routes, { ctx, history: memoryHistory(url) });
+    router = createRouter(options.routes, { ctx, history: memoryHistory(url), caller: options.caller ?? "" });
   } catch (error) {
     for (const [st, snap] of seeded) st.restore(snap);
     throw error;
@@ -47,5 +49,12 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
     harness.dispose();
     throw error;
   }
-  return { ...harness, route: () => router.route.get() };
+  return {
+    ...harness,
+    route: () => router.route.get(),
+    navigate: async (href) => {
+      void router.navigate(href);
+      await harness.settle();
+    },
+  };
 }

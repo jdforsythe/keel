@@ -1,23 +1,25 @@
-import type { Id, JsonValue, KeelError } from "@keel/schema";
-import type { SessionEvent } from "./SessionEvent.ts";
-import { stubSchema } from "./internal/stubSchema.ts";
+import { s } from "@keel/schema";
+import { SessionEvent } from "./SessionEvent.ts";
 
 /**
- * A recorded session (std.sessions API), registered as `sessions.Session` by backlog 0092. Until then the schema
- * is a placeholder whose `parse` and `encode` throw.
+ * A recorded session (std.sessions), registered as `sessions.Session`: format `v`, `id`, the ctx `seed` (absent for a real or shell ctx, whose
+ * random is not seeded: then `deterministic` is false and a replay may draw other ids), the base
+ * (`at`, `route`, `state`), the `events` after it, the first `error` and its `fingerprint`.
  */
-export const Session = stubSchema<Session>("sessions.Session");
-export type Session = {
-  readonly v: 1;
-  readonly id: Id<"Session">;
-  readonly seed: number;
-  readonly route: {
-    readonly id: string;
-    readonly params: { readonly [k: string]: JsonValue };
-    readonly search: { readonly [k: string]: JsonValue };
-  };
-  readonly state: { readonly [storeId: string]: JsonValue };
-  readonly events: readonly SessionEvent[];
-  readonly error: KeelError<string, JsonValue> | null;
-  readonly fingerprint: string;
-};
+export const Session = s.object(
+  {
+    v: s.literal(1),
+    id: s.id("Session"),
+    seed: s.number().optional(),
+    deterministic: s.boolean(),
+    at: s.number(),
+    route: s.object({ id: s.string(), params: s.record(s.json()), search: s.record(s.json()) }, { closed: true }),
+    state: s.record(s.json()),
+    events: s.array(SessionEvent),
+    error: s.object({ code: s.string(), message: s.string(), data: s.json() }, { closed: true }).nullable(),
+    fingerprint: s.string(),
+  },
+  { closed: true },
+);
+export type Session = s.infer<typeof Session>;
+s.register("sessions.Session", Session);

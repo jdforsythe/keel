@@ -3,6 +3,7 @@ import { State } from "./internal/State.ts";
 import { fail } from "./internal/fail.ts";
 import { flush } from "./internal/flush.ts";
 import { isKeelResult } from "./internal/isKeelResult.ts";
+import { lastResource } from "./internal/lastResource.ts";
 import { mark } from "./internal/mark.ts";
 import { rt } from "./internal/rt.ts";
 import { track } from "./internal/track.ts";
@@ -76,6 +77,7 @@ export function resource<T>(fetcher: () => Promise<T | Outcome<T>>): Resource<T>
   const handle: Resource<T> = {
     get: () => {
       track(n);
+      lastResource.id = n.id;
       return current;
     },
     refetch: () => {

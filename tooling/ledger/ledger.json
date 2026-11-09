@@ -698,6 +698,12 @@
       "rung": "example"
     },
     {
+      "pkg": "cli",
+      "name": "stdCommand",
+      "file": "packages/cli/src/stdCommand.ts",
+      "rung": "example"
+    },
+    {
       "pkg": "compiler",
       "name": "artifactHashes",
       "file": "packages/compiler/src/artifactHashes.ts",
@@ -753,9 +759,21 @@
     },
     {
       "pkg": "ctx",
+      "name": "observe",
+      "file": "packages/ctx/src/observe.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ctx",
       "name": "register",
       "file": "packages/ctx/src/register.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "ctx",
+      "name": "seedOf",
+      "file": "packages/ctx/src/seedOf.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "forms",
@@ -959,19 +977,25 @@
       "pkg": "std-sessions",
       "name": "record",
       "file": "packages/std-sessions/src/record.ts",
-      "rung": "none"
+      "rung": "example"
+    },
+    {
+      "pkg": "std-sessions",
+      "name": "redact",
+      "file": "packages/std-sessions/src/redact.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-sessions",
+      "name": "redactSession",
+      "file": "packages/std-sessions/src/redactSession.ts",
+      "rung": "example"
     },
     {
       "pkg": "std-sessions",
       "name": "replay",
       "file": "packages/std-sessions/src/replay.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": "std-sessions",
-      "name": "session",
-      "file": "packages/std-sessions/src/session.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "std-timings",
@@ -1106,6 +1130,10 @@
       "rung": "example"
     },
     {
+      "item": "k.check#11",
+      "rung": "example"
+    },
+    {
       "item": "k.cli#1",
       "rung": "example"
     },
@@ -1167,6 +1195,10 @@
     },
     {
       "item": "k.cli#16",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#17",
       "rung": "example"
     },
     {
@@ -1326,6 +1358,14 @@
       "rung": "example"
     },
     {
+      "item": "k.ctx#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#15",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.errors#1",
       "rung": "probabilistic"
     },
@@ -1454,6 +1494,14 @@
       "rung": "example"
     },
     {
+      "item": "k.module#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.module#14",
+      "rung": "example"
+    },
+    {
       "item": "k.reactive#1",
       "rung": "probabilistic"
     },
@@ -1556,6 +1604,10 @@
     {
       "item": "k.router#13",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.router#14",
+      "rung": "example"
     },
     {
       "item": "k.runtime#1",
@@ -1850,6 +1902,14 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.store#19",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#20",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.testing#1",
       "rung": "example"
     },
@@ -1887,6 +1947,10 @@
     },
     {
       "item": "k.testing#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#11",
       "rung": "example"
     },
     {
@@ -2063,19 +2127,19 @@
     },
     {
       "item": "std.sessions#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#5",
@@ -2095,7 +2159,31 @@
     },
     {
       "item": "std.sessions#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions#11",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions#12",
       "rung": "none"
+    },
+    {
+      "item": "std.sessions#13",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#14",
+      "rung": "none"
+    },
+    {
+      "item": "std.sessions#15",
+      "rung": "example"
     },
     {
       "item": "std.timings#1",

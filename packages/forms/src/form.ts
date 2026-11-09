@@ -1,3 +1,4 @@
+import { quiet } from "@keel/ctx/internal";
 import { batch, effect, owner, signal } from "@keel/reactive";
 import { formHandle } from "@keel/router/internal";
 import type { Infer, ObjectSchema, Result, SchemaError } from "@keel/schema";
@@ -82,7 +83,8 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
       .filter(([p]) => Object.hasOwn(current, p))
       .flatMap(([, set]) => [...set])
       .filter((el) => el.isConnected);
-    els.sort(documentOrder)[0]?.focus();
+    // Kernel focus, not user input: not reported to ctx observers (rfc:0070).
+    quiet(() => els.sort(documentOrder)[0]?.focus());
   };
   const reset = (): void =>
     batch(() => {

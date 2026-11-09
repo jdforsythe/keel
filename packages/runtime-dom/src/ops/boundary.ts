@@ -1,3 +1,4 @@
+import { observed, report } from "@keel/ctx/internal";
 import { effect, scope, signal } from "@keel/reactive";
 import type { Catcher } from "../internal/Catcher.ts";
 import type { Unit } from "../internal/Unit.ts";
@@ -15,7 +16,8 @@ import type { UnexpectedError } from "../types/UnexpectedError.ts";
  * handlers (including rejected handler promises) disposes their scope at once and renders
  * `fallback(error, reset)` with `keel.unexpected` and `data.at`; `reset()` re-renders the children in a
  * fresh scope. Throws inside the fallback go to the enclosing Boundary. Children and fallback each render in
- * their own scope under the op's `home` scope (`home.run`).
+ * their own scope under the op's `home` scope (`home.run`). Each catch is reported to the ctx's observers as an
+ * `error` event before the fallback renders (k.ctx Observers, rfc:0070).
  */
 export function boundary(
   anchor: Node,
@@ -40,6 +42,7 @@ export function boundary(
       unit?.dispose();
       unit = null;
       failed = toUnexpected(error, where);
+      if (observed(parent.root.ctx)) report(parent.root.ctx, { kind: "error", error: failed });
       state.set({ error: failed });
     },
   };

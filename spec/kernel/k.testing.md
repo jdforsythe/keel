@@ -8,16 +8,16 @@ await t.fire('cart.add', { type: 'click' })
 expect(t.state(cart).items).toHaveLength(1)
 expect(t.find('cart.total').name).toBe('Total 3')
 t.dispose()
-const r = await renderRoute('orders.show', { routes, params: { id }, search: {}, state: [], ctx: sim })
+const r = await renderRoute('orders.show', { routes, params: { id }, search: {}, ctx: sim })
 ```
 - `render(Component, { props, state?, ctx? })` -> `{ a11y(id?), state(store?), fire(id, event), settle(), find(id), dispose() }`. `props` and each `[store, value]` in `state` are parsed by their schemas first.
-- `renderRoute(id, { routes, params, search?, state?, ctx? })` (`routes`: the manifest) runs the route's guards and loaders, then renders its chain; it resolves when the page is ready.
+- `renderRoute(id, { routes, params, search?, state?, ctx?, caller? })` runs the route's guards (given `caller`, default `''`) and loaders, then renders its chain; it resolves when the page is ready.
 - `fire(id, event)` dispatches through the delegated table (k.runtime). `event` is a closed `TestEvent` union (`click`, `input` with `value`, `change`, `keydown` with `key`, `submit`, `focus`, `blur`). It resolves once effects, resources, and actions are quiescent.
-- `settle()` runs the loop `fire` uses without an event (microtask rounds until DOM and store logs are quiet, bounded, no timers), then the render checks; `renderRoute` handles have it too.
+- `settle()` runs the loop `fire` uses without an event (microtask rounds until DOM and store logs are quiet, bounded, no timers), then the render checks; `renderRoute` handles have it too, and `navigate(href)`, resolving when the new page is ready.
 - `find(id)` returns `{ id, role, name, text, state }`, never a DOM node. `state(store)` is that store's value; `state()` is every store keyed by store id.
 - Tests address elements by id only.
 
-**ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim. Pass `ctx` to control clock, seed, and net fixtures.
+**ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim.
 
 **a11y.** `a11y(id?)` is built from the live DOM: nodes `{ id, role, name, state: { checked?, disabled?, expanded?, selected?, invalid?, focused? }, children }`, with implicit roles and accessible names per WAI-ARIA. After the first render and after every `fire`, the harness compares each element's role and name source with the compiler's `a11y.json` (passed as `render(C, { artifacts })` by `keel test`, which reads `.keel/`; absent, E1702 is not checked) and runs axe.
 
@@ -34,7 +34,7 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
   payload: {"item":{"id":"i1","qty":-1}}
 ```
 
-**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence). A conformance test in any package names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and the final period aside; it may wrap onto the next `//` lines). `rung` is the highest held (docs/TESTING.md):
+**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence). A conformance test in any package names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and the final period aside; it may wrap onto the next `//` lines). `rung` is the highest held:
 - `example`: a passing test references the item.
 - `probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed.
 - `exhaustive`: a property whose generator's finite domain was fully enumerated.
@@ -56,3 +56,4 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
 - An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`.
 - Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706.
 - A `conformance-covered` section with a clause no conformance test cites makes `keel ledger --diff` report E1707 at that clause's line.
+- `navigate(routes.href(id))` on a `renderRoute` handle runs the target's guards and loaders and resolves with its chain rendered and every loader settled.

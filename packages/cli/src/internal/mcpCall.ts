@@ -4,6 +4,7 @@ import type { OutRecord } from "../types/OutRecord.ts";
 import { isRecord } from "./isRecord.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { perform } from "./perform.ts";
+import { stdSlot } from "./stdSlot.ts";
 import { usageResult } from "./usageResult.ts";
 import { validateArgs } from "./validateArgs.ts";
 
@@ -13,7 +14,11 @@ type ToolResult = {
   isError: boolean;
 };
 
-const result = (r: { code: number; stdout: string; records: readonly OutRecord[] }): ToolResult => ({
+const result = (r: {
+  code: number;
+  stdout: string;
+  records: readonly OutRecord[];
+}): ToolResult => ({
   content: [{ type: "text", text: r.stdout }],
   structuredContent: { records: r.records },
   isError: r.code !== 0,
@@ -28,7 +33,7 @@ export async function mcpCall(params: unknown, io: Io): Promise<ToolResult> {
   const p = isRecord(params) ? params : {};
   const name = typeof p.name === "string" ? p.name : "";
   const agent: Io = { ...io, tty: false };
-  const op = operations.find((o) => o.name === name);
+  const op = [...operations, ...(stdSlot.op === undefined ? [] : [stdSlot.op])].find((o) => o.name === name);
   if (op === undefined)
     return result(
       usageResult(

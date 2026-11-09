@@ -15,9 +15,14 @@ export function hostIo(stream: boolean): Io {
     cwd,
     env,
     tty: process.stdout.isTTY === true,
-    fetch: (url: string) => fetch(url),
+    fetch: (url: string, init?: RequestInit) => (init === undefined ? fetch(url) : fetch(url, init)),
     load: (scope) => (scope === "none" ? [] : readProject(cwd, scope)),
     apply: (writes) => applyWrites(cwd, writes),
-    ...(stream ? { stdin: process.stdin, emit: (text: string) => void process.stdout.write(text) } : {}),
+    ...(stream
+      ? {
+          stdin: process.stdin,
+          emit: (text: string) => void process.stdout.write(text),
+        }
+      : {}),
   };
 }

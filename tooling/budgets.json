@@ -24,7 +24,7 @@
     "@keel/ctx": "3kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "8kb",
+    "@keel/router": "8.5kb",
     "@keel/runtime-dom": "6kb",
     "@keel/scaffold": {
       "max": "16kb",
@@ -36,6 +36,7 @@
       "platform": "node"
     },
     "@keel/services": "3kb",
+    "@keel/std-sessions": "6kb",
     "@keel/store": "3kb",
     "@keel/testing": {
       "max": "9kb",

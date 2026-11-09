@@ -1,4 +1,5 @@
 import type { Ctx } from "@keel/ctx";
+import { report } from "@keel/ctx/internal";
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
 import type { Loader } from "../types/Loader.ts";
 import type { Level } from "./Level.ts";
@@ -8,9 +9,13 @@ import { unexpected } from "./unexpected.ts";
 
 type Outcome = Result<unknown, KeelError<string, unknown>>;
 
-async function runOne(l: Loader<unknown>, args: { params: Rec; search: Rec; url: string }, ctx: Ctx): Promise<Outcome> {
+async function runOne(
+  l: Loader<unknown>,
+  args: { params: Rec; search: Rec; url: string; caller: string },
+  ctx: Ctx,
+): Promise<Outcome> {
   if (l.stores !== undefined) return err(unexpected(STORES_SERVER_ONLY));
-  const r = await attempt(() => l.run({ ...args, caller: "", stores: undefined }, ctx));
+  const r = await attempt(() => l.run({ ...args, stores: undefined }, ctx));
   if (!r.ok) return r;
   if (!r.value.ok) return r.value;
   const checked = l.output.parse(r.value.value);
@@ -19,17 +24,20 @@ async function runOne(l: Loader<unknown>, args: { params: Rec; search: Rec; url:
 
 /**
  * Start every loader of `chain` in chain order, concurrently, and collect their Results (levels without a
- * loader give `ok(undefined)`); each gets the absolute `url` and `caller: ""` (no request). A throw, or a loader naming `stores` (server state, k.server),
- * becomes `keel.unexpected`; data failing `output` is E1554.
+ * loader give `ok(undefined)`); each gets the absolute `url` and the router's `caller` (`""` by default: no request). A
+ * throw, or a loader naming `stores` (server state, k.server), becomes `keel.unexpected`; data failing `output` is
+ * E1554. Each `err` is reported to the ctx's observers (k.ctx Observers, rfc:0070).
  */
 export function runLoaders(
   chain: readonly Level[],
-  args: { params: Rec; search: Rec; url: string },
+  args: { params: Rec; search: Rec; url: string; caller: string },
   ctx: Ctx,
 ): Promise<Outcome[]> {
   return Promise.all(
-    chain.map((lvl) =>
-      lvl.def.loader === undefined ? Promise.resolve(ok(undefined)) : runOne(lvl.def.loader, args, ctx),
-    ),
+    chain.map(async (lvl) => {
+      const r = lvl.def.loader === undefined ? ok(undefined) : await runOne(lvl.def.loader, args, ctx);
+      if (!r.ok) report(ctx, { kind: "error", error: r.error });
+      return r;
+    }),
   );
 }

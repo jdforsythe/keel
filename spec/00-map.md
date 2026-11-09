@@ -29,7 +29,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.router | Routes | conformance-covered | manifest, typed params and search, loaders, actions by verb, guards |
 | k.forms | Forms | conformance-covered | form(schema): bindings, validation, submit, server errors |
 | k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS, scoped, a11y-required props |
-| k.ctx | Capabilities | conformance-covered | clock, random, net, storage; real, shell, simulated |
+| k.ctx | Capabilities | conformance-covered | clock, random, net, storage; real, shell, simulated; observers |
 | k.errors | Results and boundaries | conformance-covered | Result for expected, boundary for unexpected |
 | k.check | Checker and diagnostics | conformance-covered | codes, fix diffs, budgets, rule registry |
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces, formatter registry |
@@ -43,7 +43,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 See `spec/std/README.md`. Sections are added per wave with their own budgets.
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| std.sessions | Sessions | proposed | capture, ingest, replay, minimize, to-test; GitHub Action |
+| std.sessions | Sessions | implemented | capture, ingest, replay, minimize, to-test; GitHub Action |
 | std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format |
 | std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
 | std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |

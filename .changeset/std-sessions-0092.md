@@ -1,0 +1,5 @@
+---
+"@keel/std-sessions": minor
+---
+
+std.sessions recording and replay (backlog 0092, RFC 0070). `record(ctx)` keeps a redacted ring buffer of navigations, inputs, resource states, transactions and errors, with a sha256 fingerprint of the first error. It uploads through the new `session` capability on the first error and serves inspect section `sessions.live`. On the server it is a no-op. `replay(session, { routes })` reruns a session under its sim seed and reports the final `state()`, whether the fingerprint reproduced, and the first input it could not apply. `redact` and `redactSession` are the redaction functions `to-test` builds on. `@keel/std-sessions/tools` registers check rules E2001 and E2005 and the `session` record formatter. Config gains `expose` and `readers`; only `redact` reaches browsers. Red-team fixes (backlog 0206-0210, 0213): `el:` entries and once-masked fields mask keydown keys too, `nav` hrefs never carry an `s.secret` search or param, redacted values are masked in later error messages, the error that overflows the buffer is kept, and an unseeded session records no `seed` and `deterministic: false`.

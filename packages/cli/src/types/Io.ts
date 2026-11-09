@@ -7,7 +7,7 @@ import type { Write } from "./Write.ts";
  * asks it for the file scope of the operation it runs (`Operation.scope`). `apply` receives the file effects of a
  * successful command (absent: they are dropped). `stdin` as a stream plus `emit` serve `mcp`/`lsp` incrementally;
  * as a string they are served in one batch and the replies returned as stdout. `tty` and `env.KEEL_AGENT` select
- * the default format (OUTPUT.md). `fetch` is the network for `inspect` (absent: I1055).
+ * the default format (OUTPUT.md). `fetch` is the network for `inspect` and `session ingest` (absent: I1055); `init` carries headers, method, body.
  */
 export type Io = {
   readonly cwd: string;
@@ -18,5 +18,5 @@ export type Io = {
   readonly emit?: ((text: string) => void) | undefined;
   readonly env?: Readonly<Record<string, string>> | undefined;
   readonly tty?: boolean | undefined;
-  readonly fetch?: ((url: string) => Promise<Response>) | undefined;
+  readonly fetch?: ((url: string, init?: RequestInit) => Promise<Response>) | undefined;
 };

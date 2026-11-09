@@ -11,6 +11,8 @@ export interface Store<T> {
   readonly id: string;
   /** The schema the state is validated against; parses every state the store accepts. */
   readonly schema: Schema<T>;
+  /** Each declared transaction's payload schema by name (rfc:0070); schemas only, never the `Transaction` objects. */
+  readonly payloads: ReadonlyMap<string, Schema<unknown>>;
   /** Parse `state` with `schema` and run every `invariant`, without committing or logging; `store.invariant` on failure. */
   check(state: unknown): Result<T, KeelError<"store.invariant", { transaction: string }>>;
   /** Reactive read of one top-level key; an effect reading it reruns only when that key changes. */

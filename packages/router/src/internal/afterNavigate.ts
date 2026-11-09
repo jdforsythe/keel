@@ -1,3 +1,4 @@
+import { quiet } from "@keel/ctx/internal";
 import { splitUrl } from "./splitUrl.ts";
 
 /**
@@ -9,7 +10,8 @@ export function afterNavigate(root: ParentNode | null, url: string): void {
   const main = root?.querySelector("main") ?? null;
   if (main !== null) {
     if (!main.hasAttribute("tabindex")) main.setAttribute("tabindex", "-1");
-    main.focus({ preventScroll: true });
+    // Kernel focus, not user input: its focus/blur are not reported to ctx observers (rfc:0070).
+    quiet(() => main.focus({ preventScroll: true }));
   }
   const { hash } = splitUrl(url);
   const target = hash === "" ? null : document.getElementById(hash);

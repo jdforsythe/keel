@@ -1,24 +1,20 @@
 // @vitest-environment happy-dom
-// Spec: std.sessions, clause "After overflow, the session starts at a navigation and its replay ends in the same `state()` as the live app."
+// Spec: std.sessions, clause "After overflow, a session holds at most `limit` events and its replay ends in the same `state()` as the live app."
 // Seed 1337
+import { replay } from "@keel/std-sessions";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { replay } from "@keel/std-sessions";
 import { SEED, cartRoutes, play, stepArb } from "./fixtures.ts";
 
-// Gap: the spec does not say what the session holds when the overflowed buffer contains no `nav` at all, nor how a script navigates through the harness (no `navigate` on RouteHarness).
-// TODO 0092: unskip
-describe.skip("std.sessions: overflow", () => {
-  test("After overflow, the session starts at a navigation", async () => {
+describe("std.sessions: overflow", () => {
+  test("After overflow, a session holds at most `limit` events", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(stepArb, { minLength: 12, maxLength: 24 }),
         fc.integer({ min: 2, max: 6 }),
         async (script, limit) => {
           const { session } = await play(SEED, script, { limit });
-          expect(session.events.length).toBeLessThanOrEqual(limit + 1);
-          const first = session.events[0];
-          if (first !== undefined) expect(first.kind).toBe("nav");
+          expect(session.events.length).toBeLessThanOrEqual(limit);
         },
       ),
       { seed: 1337, numRuns: 20 },

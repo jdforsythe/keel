@@ -1,15 +1,14 @@
 # k.router: Routes
 status: conformance-covered
 
-**Manifest.** Each module's `routes.ts` exports one manifest; a deployable's route table is their union.
+**Manifest.** One per module, in `routes.ts`; a deployable's route table is their union.
 ```ts
 export const routes = manifest({
-  'orders.shell': { component: OrdersShell, layout: 'app.shell' },
   'orders.show': {
     path: '/orders/:id',
     params: OrderParams, search: OrderSearch,
-    loader: loadOrder, // manifest, action, loader, guard: @keel/router
-    component: OrderPage, layout: 'orders.shell', guard: auth, errorElement: OrderError,
+    loader: loadOrder,
+    component: OrderPage, guard: auth, errorElement: OrderError,
   },
 })
 routes.actions({ 'orders.show': { POST: updateOrder } })
@@ -22,16 +21,15 @@ routes.actions({ 'orders.show': { POST: updateOrder } })
 
 **Guards.**
 ```ts
-// modules/app/auth.guard.ts
-export const auth = guard({ redirect: 'app.login' }, async ({ url }, ctx) => ok(null))
+export const auth = guard({ redirect: 'app.login' }, async ({ url, caller }, ctx) => ok(null))
 ```
-Routes hold the value (`guard: auth`). A guard returns `Result<null, KeelError<'keel.denied'>>`. Every guard in the chain runs, outermost first, before any loader; on `err` the request redirects to `redirect` with search `{ next: url }` (`url`'s own `next` if `url` is a `redirect` route; never nested). A redirect revisiting a location, or a ninth, is E1508.
+Routes hold the value (`guard: auth`). `caller` is k.server's `caller` (`''` if none or client-only). A guard returns `Result<null, KeelError<'keel.denied'>>`. Every guard in the chain runs, outermost first, before any loader; on `err` the request redirects to `redirect` with search `{ next: url }` (`url`'s own `next` if `url` is a `redirect` route; never nested).
 
-**Execution.** Guards, loaders, and actions run on the server (client navigation fetches results), or in the browser in a client-only app (`mount`). Server internals: `@keel/router/internal`, not public.
+**Execution.** Guards, loaders, and actions run on the server (client navigation fetches results), or in the browser in a client-only app. API: `@keel/router`; `@keel/router/internal` is not public.
 
 **Client.** `navigate(href, { replace? })` pushes or replaces a history entry. `route()` is a computed of the match `{ id, params, search, pending }`, discriminated by `id`; `pending` is true while a navigation or action is in flight; the previous page stays rendered until the new chain's loaders finish. After a push: scroll to the top (or the hash target) and focus `main`, which gets `tabindex="-1"`. Scroll is saved per history entry; back or forward restores it. Revalidation changes neither scroll nor focus. Same-origin link clicks inside the router navigate client-side.
 
-**Form.** `<Form method action form? error?>` from `@keel/router`; `action` is an `Href`. Without JS it posts natively (`PUT`/`PATCH`/`DELETE` via a hidden `_method`). Inside a router it submits FormData to the action of the route `action` matches and applies its `Result`: `ok(href)` navigates there; `ok(null)` revalidates, re-running every loader in the current chain once.
+**Form.** `<Form method action form? error?>`; `action` is an `Href`. Without JS it posts natively (`PUT`/`PATCH`/`DELETE` via a hidden `_method`). Inside a router it submits FormData to the action of the route `action` matches and applies its `Result`: `ok(href)` navigates there; `ok(null)` revalidates, re-running every loader in the current chain once.
 
 **Artifacts.** `routes.json`: `{ [routeId]: { path, params, search, actions, layout, guard, module } }`. `actions` lists methods; `guard` is the guard's `redirect`; layouts have `path: null`.
 
@@ -51,3 +49,4 @@ Routes hold the value (`guard: auth`). A guard returns `Result<null, KeelError<'
 - A loader declared with `params: P` gives `fn` `params` of type `Infer<typeof P>`; `manifest` throws E1507 when the route's `params` is another schema value.
 - A guard redirect revisiting a location, or a ninth, is E1508 (server: 500 `keel.unexpected`); no redirect nests `next`.
 - An action returning `ok(routes.href(id))` compiles unannotated and navigates to `id`; an entry with `actions` throws E1505.
+- A guard's `caller` is the hash `createApp` gives loaders (`''` with no signed cookie) and under `renderRoute` its `caller` option (default `''`).

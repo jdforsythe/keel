@@ -624,19 +624,6 @@ importers:
 
   packages/std-sessions:
     dependencies:
-      '@keel/ctx':
-        specifier: workspace:*
-        version: link:../ctx
-      '@keel/router':
-        specifier: workspace:*
-        version: link:../router
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-      '@keel/testing':
-        specifier: workspace:*
-        version: link:../testing
-    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
@@ -646,15 +633,34 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../runtime-dom
       '@keel/server':
         specifier: workspace:*
         version: link:../server
-      '@keel/store':
-        specifier: workspace:*
-        version: link:../store
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

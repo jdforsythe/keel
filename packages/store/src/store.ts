@@ -11,6 +11,7 @@ import { freeze } from "./internal/freeze.ts";
 import { logSchema } from "./internal/logSchema.ts";
 import { metaSchema } from "./internal/metaSchema.ts";
 import { registryOf } from "./internal/registryOf.ts";
+import { registryPulse } from "./internal/registryPulse.ts";
 import { trim } from "./internal/trim.ts";
 import { undeclared } from "./internal/undeclared.ts";
 import { violated } from "./internal/violated.ts";
@@ -23,7 +24,8 @@ import type { Transaction } from "./types/Transaction.ts";
  * Create a store inside a scope (E1203 outside one). State is validated, copied and deep-frozen.
  * `clock` stamps log entries (default: a per-store counter). Undo replays the log from the snapshot base
  * (`initial`, or the `initial` of the last restored snapshot); `undoWhere` undoes only a matching latest entry. `id` defaults to `store.<n>`; a live duplicate in the caller's registry
- * (`stores()`, `isolate`) throws. At most `logLimit` entries (default 256) are kept: a commit or `restore` past it
+ * (`stores()`, `isolate`) throws; joining and leaving rerun `stores()` readers. `payloads` maps each transaction name to its
+ * payload schema (rfc:0070). At most `logLimit` entries (default 256) are kept: a commit or `restore` past it
  * folds the oldest into that base (RFC 0054), so `undo` reaches only kept entries.
  */
 export function store<T extends object>(
@@ -124,6 +126,7 @@ export function store<T extends object>(
   const self: Store<T> = {
     id,
     schema,
+    payloads,
     get(key) {
       const cell = cells.get(key);
       if (cell === undefined) root.get();
@@ -223,7 +226,10 @@ export function store<T extends object>(
   // signal() above already threw E1203 outside a scope, so an owner exists here.
   registry.set(id, self);
   owner()?.onDispose(() => {
-    if (registry.get(id) === self) registry.delete(id);
+    if (registry.get(id) !== self) return;
+    registry.delete(id);
+    registryPulse.fire();
   });
+  registryPulse.fire();
   return self;
 }

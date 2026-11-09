@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./internal": {
+      "types": "./src/internal/index.ts",
+      "default": "./src/internal/index.ts"
     }
   },
   "files": ["dist"],

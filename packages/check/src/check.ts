@@ -71,9 +71,16 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   const out: Diagnostic[] = [];
   const reported = new Map<string, Set<string>>();
   const artifactsOf = new Map<string, Readonly<Record<string, unknown>>>();
+  // The project a rule sees beside its own file (rfc:0070): one array per project, shared by reference.
+  const projectOf = new Map<string, readonly SourceFile[]>();
   for (const dir of dirs) {
     const group = code.filter((f) => dirs.find((d) => f.path.startsWith(d)) === dir);
     if (group.length === 0) continue;
+    const manifest = group.some((f) => f.path === `${dir}topology.ts`)
+      ? undefined
+      : all.find((f) => f.path === `${dir}topology.ts`);
+    const project = Object.freeze(manifest === undefined ? group : [...group, manifest]);
+    for (const f of group) projectOf.set(f.path, project);
     const topology = topologyOf(dir, all, opts);
     const compiled = compile(
       group.map((f) => ({ path: f.path.slice(dir.length), source: f.source })),
@@ -96,7 +103,8 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     if (!parsed.ok) continue;
     checked.push({ file, parsed });
     const artifacts = artifactsOf.get(file.path) ?? { ...opts.artifacts };
-    out.push(...runRules(registered, { file, ast: parsed.program, artifacts }));
+    const project = projectOf.get(file.path) ?? [file];
+    out.push(...runRules(registered, { file, ast: parsed.program, artifacts, project }));
   }
   out.push(
     ...duplicateErrorCodes(checked),

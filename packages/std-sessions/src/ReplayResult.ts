@@ -2,13 +2,14 @@ import type { JsonValue, KeelError } from "@keel/schema";
 import type { SessionEvent } from "./SessionEvent.ts";
 
 /**
- * What `replay` returns (std.sessions API): `observed` events (`tx`, `resource`, `error`), the replay's `error`, and
- * whether it `reproduced` the session's fingerprint. `state` (every store's final state) is a placeholder addition
- * for the 0092 RFC; the spec does not name it yet.
+ * What `replay` returns (std.sessions API): the replay's `observed` events (`tx`, `resource`, `error`), every store's
+ * final `state()`, its first `error`, whether its fingerprint `reproduced` the session's, and `unapplied`: the 0-based
+ * index in `events` of the input it stopped at (-1: the base), else null.
  */
 export interface ReplayResult {
   readonly observed: readonly SessionEvent[];
   readonly state: { readonly [storeId: string]: JsonValue };
   readonly error: KeelError<string, JsonValue> | null;
   readonly reproduced: boolean;
+  readonly unapplied: number | null;
 }

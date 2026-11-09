@@ -6,5 +6,12 @@ export interface Guard {
   readonly kind: "keel.guard";
   /** Route id to redirect to on denial, with search `{ next: url }`. */
   readonly redirect: string;
-  run(req: { readonly url: string }, ctx: Ctx): Promise<Result<null, KeelError<"keel.denied", unknown>>>;
+  /**
+   * `caller`: the request's caller id (k.server; `""` anonymous; the router's `caller` option in a browser or harness).
+   * Optional for direct callers (a test calling `run({ url })`); the guard's function then gets `""` (rfc:0070).
+   */
+  run(
+    req: { readonly url: string; readonly caller?: string },
+    ctx: Ctx,
+  ): Promise<Result<null, KeelError<"keel.denied", unknown>>>;
 }

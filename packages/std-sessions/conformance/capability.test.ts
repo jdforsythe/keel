@@ -1,14 +1,16 @@
 // Spec: std.sessions, clause "The `session` capability has all three implementations; shell `put` returns `ok(null)` and sends nothing."
 // Seed 1337
 import { capabilities, createCtx } from "@keel/ctx";
-import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Session } from "@keel/std-sessions";
 import { session } from "@keel/std-sessions";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 const sample = (): Session => ({
   v: 1,
   id: createCtx({ mode: "sim", seed: 1337 }).random.id("Session"),
   seed: 1337,
+  deterministic: true,
+  at: 0,
   route: { id: "cart.show", params: {}, search: {} },
   state: {},
   events: [],
@@ -16,8 +18,7 @@ const sample = (): Session => ({
   fingerprint: "000000000000",
 });
 
-// TODO 0092: unskip
-describe.skip("std.sessions: capability", () => {
+describe("std.sessions: capability", () => {
   afterEach(() => vi.unstubAllGlobals());
   test("The `session` capability has all three implementations", () => {
     expect(capabilities()).toContain("session");

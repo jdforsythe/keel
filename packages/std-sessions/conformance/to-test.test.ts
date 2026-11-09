@@ -5,7 +5,7 @@ import { check } from "@keel/check";
 import { run } from "@keel/cli";
 
 // Gap: the spec has no buggy fixture project (modules, session file, fix), and no programmatic way to run the emitted test under `keel test` except `run(["test"], io)` with a cwd on disk; the fix must be a named patch.
-// TODO 0092: unskip
+// TODO 0094: unskip (minimize and keel session to-test are backlog 0094)
 describe.skip("std.sessions: to-test", () => {
   const emit = async (): Promise<{ path: string; source: string }> => {
     const writes: { path: string; content: string | null }[] = [];

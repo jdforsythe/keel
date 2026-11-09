@@ -256,6 +256,25 @@ describe("importDeps", () => {
     const nested = { ...mod("b", ["@keel/std-ok"]), path: "apps/x/modules/b/module.ts" };
     expect(await importDeps(root, [nested])).toEqual([]);
   });
+
+  it("also imports the ./tools export when the exports map has one; a throw there is E1159 (rfc:0070)", async () => {
+    const dir = (n: string): string => path.join(root, "node_modules", "@keel", n);
+    const withTools = (n: string, tools: string): void => {
+      pkg(n, "export {};\n", { ".": "./index.js", "./tools": { node: "./tools.js" } });
+      fs.writeFileSync(path.join(dir(n), "tools.js"), tools);
+    };
+    withTools("std-tl", "globalThis.__keelTools = (globalThis.__keelTools ?? 0) + 1;\nexport {};\n");
+    withTools("std-tb", "throw new Error('boom');\n");
+    pkg("std-nt", "export {};\n", { ".": "./index.js" });
+    pkg("std-str", "export {};\n", "./index.js");
+    const files = [mod("a", ["@keel/std-tl", "@keel/std-nt", "@keel/std-str", "@keel/std-tb"])];
+    expect(at(await importDeps(root, files))).toEqual([
+      "E1159 stdlib dep @keel/std-tb of module a cannot be imported (tools throws on import)",
+    ]);
+    expect(Reflect.get(globalThis, "__keelTools")).toBe(1);
+    expect(at(await importDeps(root, files))).toHaveLength(1);
+    expect(Reflect.get(globalThis, "__keelTools")).toBe(1);
+  });
 });
 
 describe("vite plugin std.json", () => {
