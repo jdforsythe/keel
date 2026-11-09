@@ -8,7 +8,7 @@
 - [ ] 0227 E2005 sees `await import(...)`, `.js` specifiers for `.ts`/`.tsx`, and `.tsx` re-exports
 - [ ] 0231 `diskFixture()` removes copies of dead pids at start; copies live under os.tmpdir() if the runner still resolves packages there (else stay in place, documented)
 - [ ] lead 1: minimizer determinism when stores are missing from `session.state` (test; fix if needed)
-- [ ] lead 2: undo reach after a secret payload entry is folded into `initial` (store; test; fix or spec note)
+- [x] (agent C: not a bug; snapshot folds only the written copy, the live log keeps every entry; a restored store undoes only kept entries and undoWhere never matches a folded one; no secret or secret tx name in the JSON. Caveat: a reducer that copies `reveal(p.token)` into state writes the value into `state` and `initial`; pinned as current behaviour in packages/store/test/secretFold.test.ts; filed as a backlog line) lead 2: undo reach after a secret payload entry is folded into `initial`
 
 ## Steps
 1. [ ] PLAN; three agents in parallel: A (opus: rfc:0072, 0225, 0226, lead 1; std-sessions routes/record/fingerprint/replay, spec/std/sessions.md, apps/sessions, THREAT-MODEL); B (sonnet: 0227, 0231; std-sessions internal resolver, adapterNotNode, conformance E2005 and fixtures.ts); C (sonnet: lead 2; packages/store).
