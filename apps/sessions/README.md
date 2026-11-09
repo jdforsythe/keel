@@ -2,13 +2,15 @@
 
 Keel's own session ingest service. `topology.ts` defines one deployable, `sessions` (`node`). It serves `@keel/std-sessions/routes` and a home page.
 
+The home page records its own session in the browser and posts it to `/sessions` on the first error. `vitest.config.ts` includes `.keel/sessions/*.test.ts` and `modules/*/test/`, so `keel session replay`, `minimize` and `to-test` run here and the tests `to-test` writes run under `pnpm test`.
+
 - `POST /sessions` takes a recorded session as JSON, up to 256 KiB. The service computes the fingerprint from the session itself. The archive keeps 64 fingerprints, the newest 5 sessions of each and 4 MiB in all; past a limit the fingerprint seen longest ago goes. Anyone can post, so put rate limiting in front of the service: a flood of 4 MiB replaces the archive.
 - `GET /sessions/list` returns the archive to a reader. Anyone else is redirected to `/sessions`.
 
 ## Readers
 1. Make one write to the service, for example `POST /sessions` with a session. The response sets a `keel-caller` cookie.
 2. Hash the cookie value: `node -e 'console.log(require("node:crypto").createHash("sha256").update(process.argv[1]).digest("base64url"))' <value>`.
-3. Add the hash to `readers` in `modules/ops/module.ts` and rebuild. The sample entry is the hash of `sample-reader-token`.
+3. Add the hash to `readers` in `modules/ops/module.ts` and rebuild. The sample entry is the hash of `sample-reader-token`, which only the tests use: the service admits a cookie only if it signed it, so a reader's hash always comes from a minted cookie.
 4. Give the cookie value to `keel session ingest` as `KEEL_SESSIONS_TOKEN`.
 
 Set `KEEL_SESSIONS_SECRET` (32 or more bytes) in production. It signs the caller cookies, so a reader hash stays valid across restarts.

@@ -5,7 +5,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [keel()],
   test: {
-    include: ["test/**/*.test.{ts,tsx}"],
+    // `keel session` replays run as `.keel/sessions/*.test.ts` jobs; `to-test` writes `modules/<m>/test/`.
+    include: ["test/**/*.test.{ts,tsx}", "modules/*/test/**/*.test.{ts,tsx}", ".keel/sessions/*.test.ts"],
     environment: "happy-dom",
     reporters: [new KeelReporter()],
   },

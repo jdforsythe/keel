@@ -7,7 +7,11 @@ import { module } from "@keel/compiler";
 export default module({
   id: "ops",
   deps: ["@keel/std-sessions"],
-  capabilities: [],
+  capabilities: ["observe", "session"],
   public: { exports: [], routes: [] },
-  std: { "@keel/std-sessions": { readers: ["2ZU4DEJJ8qr3iNQ4IFXrALxGi7WEkg6gV3aV_mjv5zc"] } },
+  std: {
+    "@keel/std-sessions": {
+      readers: ["2ZU4DEJJ8qr3iNQ4IFXrALxGi7WEkg6gV3aV_mjv5zc"],
+    },
+  },
 });
