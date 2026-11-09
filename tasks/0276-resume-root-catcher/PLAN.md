@@ -21,10 +21,12 @@
 - D4 (0280 mechanism, rfc:0075 amended): a handler's `data.at` is the id `on` was registered under, else the nearest `data-k` stamp, else `""`. The compiler wraps a k.ui base element with a literal `id` so its stamp is that id; an id from an expression is never stamped. Bindings and structural ops still read the runtime `id` (0282).
 - D5: `@keel/compiler` measures 26,332 B against 26 kB (26,624 B); no re-base.
 - D6 (drill rerun, 2026-11-09): rfc:0075 pushed at 46093b9, reader hash at 3aedf0d. Service on 4200 behind a Cloudflare quick tunnel (secret, token and URL in the job temp directory, not in the repo); repo variable `KEEL_SESSIONS_URL` and secret `KEEL_SESSIONS_TOKEN` set. A real browser click rendered the root fallback and uploaded the session (POST /sessions 303): 0276 holds live. Nightly run 42706609718 ingested 1 fingerprint and created no issue: replay reproduces the error with another `data.at` (E2004), filed as 0283. Session kept at apps/sessions/.keel/sessions/1a9e17423979-0.json (untracked).
+- D7 (0283, rfc:0075 amended): the cause was in `@keel/reactive`. A computed keeps a throw as its outcome until a source changes: one run per commit, every reader's `get()` rethrows it, the first value after a throw always counts as a change. A throw surfacing at no element has `data.at` the stamp at the root's place, else `""`, under `mount` and `resume`. Local live check at 7d78734: click reported `ops.home.limits.list`, session fb142676235c ingested and `keel session replay` reproduced it. Reactive mutation score 84.7% (threshold 80%).
+- D8: docs-freshness verified bump on GLOSSARY and VOICE, both read and accurate.
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test` green; ledger 0 lowered, 0 uncovered; unsafe 6
 - [ ] nightly run files one `keel-session` issue for the planted error; the emitted test fails before the fix and passes after; issue closed
 
 ## Next action
-The kernel agent is fixing 0283 (uncommitted work in the tree is its work). On its report: root checks, commit `rfc:0075`, push, rebuild and restart the service (same secret), click again, dispatch the nightly, confirm the issue; then step 5. The service and tunnel are running and `KEEL_SESSIONS_URL` is set: step 5 ends by deleting the variable and stopping both.
+Reviewer and red-team over 932b910 are pending (0284-0286 fixed there, not yet flipped in BACKLOG). On approval: flip them, push, rebuild, restart the service on an empty archive (same secret in the job temp directory), click, dispatch `sessions-nightly`, confirm the `keel-session` issue; then step 5. The service and tunnel are running and `KEEL_SESSIONS_URL` is set: step 5 ends by deleting the variable and stopping both.
