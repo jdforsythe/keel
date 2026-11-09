@@ -1,21 +1,23 @@
 import { loader } from "@keel/router";
 import { ok } from "@keel/schema";
-import { Archive } from "../Archive.schema.ts";
 import { archiveStores } from "../archiveStores.ts";
 import { ListSearch } from "./ListSearch.schema.ts";
+import { Listing } from "./Listing.schema.ts";
 
 /**
- * `GET /sessions/list` (`sessions.list`, std.sessions Ingest; behind guard `sessions.reader`): the archive, keeping
- * with `failing` only sessions with an error (and fingerprints left with one), with `since` only `last >= since`.
+ * `GET /sessions/list` (`sessions.list`, std.sessions Ingest; behind guard `sessions.reader`): the archive's sessions
+ * by fingerprint (`Listing`: callers and byte counts stay on the server), keeping with `failing` only sessions with
+ * an error (and fingerprints left with one), with `since` only `last >= since`.
  */
 export const listSessions = loader(
-  { output: Archive, search: ListSearch, stores: archiveStores },
+  { output: Listing, search: ListSearch, stores: archiveStores },
   async ({ search, stores }) => {
-    const out: Archive = {};
+    const out: Listing = {};
     for (const [fp, e] of Object.entries(stores.archive.snapshot().state)) {
       if (search.since !== undefined && e.last < search.since) continue;
-      const sessions = search.failing === true ? e.sessions.filter((x) => x.error !== null) : e.sessions;
-      if (sessions.length > 0) out[fp] = { ...e, sessions };
+      const kept = e.sessions.map((x) => x.session);
+      const sessions = search.failing === true ? kept.filter((x) => x.error !== null) : kept;
+      if (sessions.length > 0) out[fp] = { count: e.count, first: e.first, last: e.last, sessions };
     }
     return ok(out);
   },

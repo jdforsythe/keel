@@ -43,7 +43,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/routes": {
-      "max": "3kb",
+      "max": "3.5kb",
       "platform": "node"
     },
     "@keel/std-sessions/tools": {

@@ -270,11 +270,32 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE = path.resolve(HERE, "..");
 let copies = 0;
 
+/** Whether process `pid` exists (`kill(pid, 0)`: ESRCH is dead, EPERM is alive). */
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return !(e instanceof Error && "code" in e && e.code === "ESRCH");
+  }
+}
+
+/** Removes every `.tmp-<pid>-*` copy beside the fixtures whose process no longer exists (runs that were killed). */
+function removeDeadCopies(): void {
+  for (const e of fs.readdirSync(HERE)) {
+    const m = /^\.tmp-(\d+)-/.exec(e);
+    const pid = m?.[1] === undefined ? undefined : Number(m[1]);
+    if (pid !== undefined && (pid === process.pid || !alive(pid))) {
+      fs.rmSync(path.join(HERE, e), { recursive: true, force: true });
+    }
+  }
+}
+
 /**
  * A disk copy of `fixtures/cart-bug/` under `conformance/.tmp-<pid>-<n>/` (gitignored; inside the workspace so its
  * imports resolve through the package's `node_modules`, plus a `node_modules/@keel/std-sessions` link to this package).
  * `files()` reads it back for `run`; `fix()` overlays `fixtures/cart-bug.fix/`; `write` adds a file; `dispose()`
- * removes it. Stale copies of this process id are removed first.
+ * removes it. Copies of this process id and of dead process ids are removed first.
  */
 export function diskFixture(): {
   readonly dir: string;
@@ -283,9 +304,7 @@ export function diskFixture(): {
   fix(): void;
   dispose(): void;
 } {
-  for (const e of fs.readdirSync(HERE)) {
-    if (e.startsWith(`.tmp-${process.pid}-`)) fs.rmSync(path.join(HERE, e), { recursive: true, force: true });
-  }
+  removeDeadCopies();
   const dir = path.join(HERE, `.tmp-${process.pid}-${copies++}`);
   fs.cpSync(path.join(HERE, "fixtures", "cart-bug"), dir, { recursive: true });
   fs.mkdirSync(path.join(dir, "node_modules", "@keel"), { recursive: true });

@@ -20,7 +20,7 @@ const raw = (id: string) => ({
   at: 1,
   route: { id: "cart.show", params: {}, search: {} },
   state: {},
-  events: [{ at: 1, kind: "error", error }],
+  events: [{ at: 1, kind: "error", route: "cart.show", error }],
   error,
   fingerprint: "abcdefabcdef",
 });

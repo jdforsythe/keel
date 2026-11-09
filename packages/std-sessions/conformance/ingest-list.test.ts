@@ -1,4 +1,4 @@
-// Spec: std.sessions, clause "A valid POST to `sessions.ingest` is listed by `sessions.list` under its fingerprint; invalid input is 422 `keel.fields`; a sixth session of one fingerprint keeps 5 and counts 6; a caller not in `readers` is redirected to `sessions.ingest`."
+// Spec: std.sessions, clause "A valid POST to `sessions.ingest` is listed under its fingerprint; invalid input is 422 `keel.fields`; a sixth of one fingerprint keeps 5, counts 6; a caller not in `readers` is redirected."
 // @vitest-environment node
 // Seed 1337
 import { createHash } from "node:crypto";
@@ -34,7 +34,7 @@ function make(id: string, code: string): Session {
     at: 1000,
     route: { id: "cart.show", params: {}, search: {} },
     state: {},
-    events: [{ at: 1000, kind: "error", error }],
+    events: [{ at: 1000, kind: "error", route: "cart.show", error }],
     error,
     fingerprint: "client-claimed",
   });

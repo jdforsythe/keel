@@ -33,7 +33,7 @@ function recorded(n: number): Session {
     at: n,
     route: { id: "cart.show", params: {}, search: {} },
     state: { cart: { items: [] } },
-    events: [{ at: n, kind: "error", error }],
+    events: [{ at: n, kind: "error", route: "cart.show", error }],
     error,
     fingerprint: "",
   });

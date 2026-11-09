@@ -16,13 +16,14 @@ const testEvent = s.union("type", [
 
 /**
  * One recorded event (std.sessions): `at` is `ctx.clock.now()` when it was appended. A `nav` keeps the href as a
- * string; `replay` re-derives a typed `Href` from the route table.
+ * string; `replay` re-derives a typed `Href` from the route table. An `error` keeps the id of the route it fired
+ * under (the latest `nav`'s, else the base's), so the fingerprint is recomputable from the session alone.
  */
 export const SessionEvent = s.union("kind", [
   o({ at, kind: s.literal("tx"), store: s.string(), name: s.string(), payload: s.json() }),
   o({ at, kind: s.literal("nav"), href: s.string() }),
   o({ at, kind: s.literal("resource"), id: s.string(), state: s.enum(["loading", "ready", "error"]) }),
   o({ at, kind: s.literal("fire"), id: s.string(), event: testEvent }),
-  o({ at, kind: s.literal("error"), error: keelError }),
+  o({ at, kind: s.literal("error"), route: s.string(), error: keelError }),
 ]);
 export type SessionEvent = s.infer<typeof SessionEvent>;

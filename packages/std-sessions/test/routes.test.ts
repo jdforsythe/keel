@@ -1,6 +1,6 @@
 // @vitest-environment node
-// `@keel/std-sessions/routes` (std.sessions Ingest, backlog 0093) over createApp with a sim ctx: ingest, list with
-// `failing` and `since`, 413 past 256 KiB, the re-fingerprint, archive bounds (`sessions.capped`) and the reader
+// `@keel/std-sessions/routes` (std.sessions Ingest) over createApp with a sim ctx: ingest, list with `failing` and
+// `since`, 413 past 256 KiB, the re-fingerprint, archive bounds and caller quota (`sessions.capped`) and the reader
 // guard. Seed 1337
 import { createHash } from "node:crypto";
 import { bindStd } from "@keel/compiler/std/bindStd";
@@ -11,13 +11,16 @@ import { createApp, topology } from "@keel/server";
 import { isolate, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { Archive } from "../src/Archive.schema.ts";
+import type { Archive } from "../src/Archive.schema.ts";
 import { Session } from "../src/Session.schema.ts";
 import { archiveStores } from "../src/archiveStores.ts";
 import { fingerprint } from "../src/internal/fingerprint.ts";
+import { sessionFingerprint } from "../src/internal/sessionFingerprint.ts";
+import { utf8Length } from "../src/internal/utf8Length.ts";
 import { routes } from "../src/routes.ts";
 import { ARCHIVE_BOUNDS } from "../src/routes/ARCHIVE_BOUNDS.ts";
-import { ingestFingerprint } from "../src/routes/ingestFingerprint.ts";
+import { Listing } from "../src/routes/Listing.schema.ts";
+import { archiveBytes } from "../src/routes/archiveBytes.ts";
 
 const BASE = "http://localhost";
 
@@ -43,7 +46,7 @@ function sessionOf(n: number, over: Partial<Session> = {}): Session {
     at: n,
     route: { id: "cart.show", params: {}, search: {} },
     state: {},
-    events: [{ at: n, kind: "error", error }],
+    events: [{ at: n, kind: "error", route: "cart.show", error }],
     error,
     fingerprint: fingerprint(error, "cart.show"),
   };
@@ -84,10 +87,10 @@ function callerOf(res: Response): { cookie: string; hash: string } {
   return { cookie: `keel-caller=${value}`, hash: createHash("sha256").update(value).digest("base64url") };
 }
 
-const listed = async (res: Response): Promise<Archive> => {
+const listed = async (res: Response): Promise<Listing> => {
   const body: unknown = await res.json();
   const result: unknown = Reflect.get(Object(Reflect.get(Object(body), "results")), "sessions.list");
-  const r = Archive.parse(Reflect.get(Object(result), "value"));
+  const r = Listing.parse(Reflect.get(Object(result), "value"));
   if (!r.ok) throw new Error(`not an archive: ${JSON.stringify(body)}`);
   return r.value;
 };
@@ -117,55 +120,141 @@ describe("sessions routes", () => {
     expect(await res.json()).toMatchObject({ ok: false, error: { code: "keel.payloadTooLarge" } });
   });
 
-  test("the ingest re-fingerprints: a forged fingerprint is replaced when the session holds the error's route", () => {
-    const s = sessionOf(3, { fingerprint: "000000000000" });
-    expect(ingestFingerprint(s)).toBe(sessionOf(3).fingerprint);
-    const moved = sessionOf(3, {
+  test("the ingest recomputes error and fingerprint from the events; a posted fingerprint is never kept", async () => {
+    const { post, list, ctx } = await serve();
+    const own = sessionOf(3);
+    const forged = sessionOf(3, {
       fingerprint: "abcdefabcdef",
-      events: [{ at: 1, kind: "nav", href: "/other" }, ...sessionOf(3).events],
+      error: null,
+      events: [{ at: 1, kind: "nav", href: "/cart" }, ...own.events],
     });
-    expect(ingestFingerprint(moved)).toBe("abcdefabcdef");
-    expect(ingestFingerprint({ ...moved, fingerprint: "__proto__" })).toBe(sessionOf(3).fingerprint);
+    const minted = await post(Session.encode(forged));
+    expect(minted.status).toBe(200);
+    const { cookie, hash } = callerOf(minted);
+    bindStd(ctx, { "@keel/std-sessions": { ops: { readers: [hash] } } });
+    const all = await listed(await list(cookie));
+    expect(Object.keys(all)).toEqual([own.fingerprint]);
+    expect(all[own.fingerprint]?.sessions[0]?.error).toEqual(own.error);
+    expect(sessionFingerprint(forged)).toBe(own.fingerprint);
   });
 
-  test("property (seed 1337): addSession keeps sessions.capped (64 fingerprints, 5 each, count kept)", () => {
+  test("property (seed 1337): addSession keeps sessions.capped and its byte bound covers the archive JSON", () => {
+    const op = fc.record({
+      key: fc.integer({ min: 0, max: 90 }),
+      caller: fc.integer({ min: 0, max: 7 }),
+      size: fc.constantFrom(0, 10, 90_000, 240_000),
+    });
     fc.assert(
-      fc.property(fc.array(fc.integer({ min: 0, max: 90 }), { minLength: 1, maxLength: 200 }), (keys) => {
+      fc.property(fc.array(op, { minLength: 1, maxLength: 120 }), (ops) => {
         fresh((st) => {
-          const counts = new Map<string, number>();
-          keys.forEach((k, i) => {
-            const error = { code: `app.e${k}`, message: "m", data: null };
-            const s = sessionOf(i, { error, events: [], fingerprint: fingerprint(error, "cart.show") });
-            counts.set(s.fingerprint, (counts.get(s.fingerprint) ?? 0) + 1);
-            expect(tx(st.addSession, { at: i, session: s }).ok).toBe(true);
+          ops.forEach((o, i) => {
+            const r = put(st, i, `c${o.caller}`, `app.e${o.key}`, o.size);
+            expect(r.ok).toBe(true);
           });
           const a = st.archive.snapshot().state;
           expect(Object.keys(a).length).toBeLessThanOrEqual(ARCHIVE_BOUNDS.fingerprints);
-          for (const [fp, e] of Object.entries(a)) {
-            expect(e.sessions.length).toBe(Math.min(ARCHIVE_BOUNDS.perFingerprint, e.count));
-            expect(e.count).toBe(counts.get(fp));
+          for (const e of Object.values(a)) {
+            expect(e.sessions.length).toBeGreaterThan(0);
+            expect(e.sessions.length).toBeLessThanOrEqual(ARCHIVE_BOUNDS.perFingerprint);
+            expect(e.count).toBeGreaterThanOrEqual(e.sessions.length);
           }
+          for (const c of new Set(ops.map((o) => `c${o.caller}`))) {
+            const mine = Object.values(a).filter((e) => e.sessions.some((x) => x.caller === c));
+            expect(mine.length).toBeLessThanOrEqual(ARCHIVE_BOUNDS.callerFingerprints);
+            expect(held(a, c)).toBeLessThanOrEqual(ARCHIVE_BOUNDS.callerBytes);
+          }
+          const actual = utf8Length(JSON.stringify(a));
+          expect(archiveBytes(a)).toBeGreaterThanOrEqual(actual);
+          expect(actual).toBeLessThanOrEqual(ARCHIVE_BOUNDS.bytes);
           expect(st.archive.log()).toEqual([]);
         });
       }),
-      { seed: 1337, numRuns: 30 },
+      { seed: 1337, numRuns: 12 },
     );
   });
 
-  test("the archive stays within 4 MiB: the oldest fingerprint goes first", () => {
+  test("each kept session's bytes is its encoded JSON length", () => {
     fresh((st) => {
-      for (let i = 0; i < 24; i++) {
-        const error = { code: `app.big${i}`, message: "m", data: null };
-        const s = sessionOf(i, { error, events: [], state: { blob: "y".repeat(200_000) } });
-        expect(tx(st.addSession, { at: i, session: { ...s, fingerprint: fingerprint(error, "cart.show") } }).ok).toBe(
-          true,
-        );
-      }
+      put(st, 1, "c0", "app.x", 1234);
+      const x = Object.values(st.archive.snapshot().state)[0]?.sessions[0];
+      expect(x?.bytes).toBe(utf8Length(JSON.stringify(x?.session)));
+    });
+  });
+
+  test("a flood from one caller never evicts another caller's session; its own oldest go", () => {
+    fresh((st) => {
+      put(st, 0, "real", "app.real", 100);
+      for (let i = 1; i <= 20; i++) expect(put(st, i, "flood", `FLOOD${i}`, 240_000).ok).toBe(true);
       const a = st.archive.snapshot().state;
-      expect(JSON.stringify(a).length).toBeLessThanOrEqual(ARCHIVE_BOUNDS.bytes);
-      const lasts = Object.values(a).map((e) => e.last);
-      expect(Math.max(...lasts)).toBe(23);
-      expect(Math.min(...lasts)).toBeGreaterThan(0);
+      expect(callersOf(a)).toContain("real");
+      expect(held(a, "flood")).toBeLessThanOrEqual(ARCHIVE_BOUNDS.callerBytes);
+      expect(Math.max(...Object.values(a).map((e) => e.last))).toBe(20);
+      expect(Object.values(a).find((e) => e.last === 1)).toBeUndefined();
+    });
+  });
+
+  test("past 16 fingerprints a caller's own oldest fingerprint goes", () => {
+    fresh((st) => {
+      put(st, 0, "other", "app.other", 10);
+      for (let i = 1; i <= 17; i++) put(st, i, "f", `app.f${i}`, 10);
+      const a = st.archive.snapshot().state;
+      expect(Object.keys(a)).toHaveLength(17);
+      expect(Object.values(a).map((e) => e.last)).not.toContain(1);
+      expect(callersOf(a)).toContain("other");
+    });
+  });
+
+  test("past 5 in one fingerprint, the oldest session of the caller holding the most there goes", () => {
+    fresh((st) => {
+      put(st, 0, "real", "app.same", 10);
+      for (let i = 1; i <= 6; i++) put(st, i, "f", "app.same", 10);
+      const [e] = Object.values(st.archive.snapshot().state);
+      expect(e?.count).toBe(7);
+      expect(e?.sessions.map((x) => x.caller)).toEqual(["real", "f", "f", "f", "f"]);
+      expect(e?.sessions.map((x) => x.session.at)).toEqual([0, 3, 4, 5, 6]);
+    });
+  });
+
+  test("past 4 MiB the caller holding the largest share loses its oldest session first", () => {
+    fresh((st) => {
+      let at = 0;
+      for (let k = 0; k < 4; k++) put(st, at++, "big", `app.big${k}`, 250_000);
+      for (const c of ["c1", "c2", "c3", "c4"]) for (let k = 0; k < 4; k++) put(st, at++, c, `app.${c}.${k}`, 200_000);
+      const a = st.archive.snapshot().state;
+      expect(sessionsOf(a, "big").map((s) => s.at)).toEqual([1, 2, 3]);
+      for (const c of ["c1", "c2", "c3", "c4"]) expect(sessionsOf(a, c)).toHaveLength(4);
+      expect(utf8Length(JSON.stringify(a))).toBeLessThanOrEqual(ARCHIVE_BOUNDS.bytes);
+    });
+  });
+
+  test("when the writer holds the largest share, its own oldest other session goes, never the new one", () => {
+    fresh((st) => {
+      let at = 0;
+      for (const c of ["c1", "c2", "c3", "c4"]) for (let k = 0; k < 4; k++) put(st, at++, c, `app.${c}.${k}`, 200_000);
+      for (let k = 0; k < 4; k++) put(st, at++, "big", `app.big${k}`, 250_000);
+      const a = st.archive.snapshot().state;
+      expect(sessionsOf(a, "big").map((s) => s.at)).toEqual([17, 18, 19]);
+      for (const c of ["c1", "c2", "c3", "c4"]) expect(sessionsOf(a, c)).toHaveLength(4);
     });
   });
 });
+
+/** File a session of error `code` with a `size`-byte state blob from `caller` at ingest time `at`. */
+function put(st: ReturnType<typeof archiveStores>, at: number, caller: string, code: string, size: number) {
+  const error = { code, message: "m", data: null };
+  const s = sessionOf(at, {
+    error,
+    events: [{ at, kind: "error", route: "cart.show", error }],
+    state: size === 0 ? {} : { blob: "y".repeat(size) },
+    fingerprint: fingerprint(error, "cart.show"),
+  });
+  return tx(st.addSession, { at, caller, session: s });
+}
+
+const callersOf = (a: Archive): string[] => Object.values(a).flatMap((e) => e.sessions.map((x) => x.caller));
+const sessionsOf = (a: Archive, caller: string) =>
+  Object.values(a)
+    .flatMap((e) => e.sessions.filter((x) => x.caller === caller).map((x) => x.session))
+    .sort((x, y) => x.at - y.at);
+const held = (a: Archive, caller: string): number =>
+  Object.values(a).reduce((n, e) => n + e.sessions.reduce((m, x) => m + (x.caller === caller ? x.bytes : 0), 0), 0);

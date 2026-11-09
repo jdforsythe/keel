@@ -12,7 +12,7 @@ const DEFAULT_URL = "http://localhost:5173";
 const clip = (url: string): string => (url.length > 48 ? `${url.slice(0, 45)}...` : url);
 /** The parts of an inspect document `capture` reads (open objects: the rest is ignored). */
 const Inspect = s.object({ sections: s.record(s.object({ value: s.json().optional() })) });
-/** A runtime response of `sessions.list`: `results["sessions.list"]` is `ok(Archive)` (open objects). */
+/** A runtime response of `sessions.list`: `results["sessions.list"]` is `ok(Listing)` (open objects). */
 const Listed = s.object({
   results: s.object({
     "sessions.list": s.object({ ok: s.literal(true), value: s.record(s.object({ sessions: s.array(s.json()) })) }),

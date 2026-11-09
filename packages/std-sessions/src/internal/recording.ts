@@ -15,9 +15,9 @@ import { MAX_SESSION_BYTES } from "./MAX_SESSION_BYTES.ts";
 import type { Route } from "./Route.ts";
 import { actives } from "./actives.ts";
 import { emptySession } from "./emptySession.ts";
-import { fingerprint } from "./fingerprint.ts";
 import { jsonOf } from "./jsonOf.ts";
 import { redactionOf } from "./redactionOf.ts";
+import { sessionFingerprint } from "./sessionFingerprint.ts";
 import { utf8Length } from "./utf8Length.ts";
 
 type Base = { readonly at: number; readonly route: Route; readonly state: JsonObject; readonly id: Id<"Session"> };
@@ -30,7 +30,7 @@ const sizeOf = (v: unknown): number => utf8Length(JSON.stringify(v) ?? "");
 /**
  * A recorder on `ctx` (std.sessions `record`): `nav`, `fire`, `resource` and `error` from `observe`, `tx` from a
  * reactive read of every store's `log()`, each redacted as it is appended into a ring buffer of `limit` events whose
- * session JSON stays within `MAX_SESSION_BYTES` (backlog 0211): past either bound it cuts its oldest events by the
+ * session JSON stays within `MAX_SESSION_BYTES`: past either bound it cuts its oldest events by the
  * overflow rule. `errors()` keeps the first and last `MAX_ERRORS`. A rejected upload is recorded as its
  * `sessions.putFailed` error, not dropped.
  */
@@ -50,7 +50,6 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
   const raw: Raw[] = [];
   const bases = new WeakMap<SessionEvent, Omit<Base, "id">>();
   const inputs = new WeakMap<SessionEvent, Omit<Base, "id">>();
-  const causes = new WeakMap<SessionEvent, { readonly error: Raw; readonly route: string }>();
   const seen = new Map<string, number>();
   let uploaded = false;
   let done: Session | undefined;
@@ -141,7 +140,6 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
   const build = (): Session => {
     if (base === undefined) return emptySession(sink.id(), seed, ctx.clock.now());
     const first = buf.find((e) => e.kind === "error");
-    const cause = first === undefined ? undefined : causes.get(first);
     return {
       v: 1,
       id: base.id,
@@ -152,7 +150,7 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       state: base.state,
       events: buf.slice(),
       error: first?.kind === "error" ? first.error : null,
-      fingerprint: fingerprint(cause?.error ?? null, cause?.route ?? base.route.id),
+      fingerprint: sessionFingerprint({ events: buf, route: base.route }),
     };
   };
 
@@ -175,9 +173,8 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       const error: Raw = { code: event.error.code, message: event.error.message, data: jsonOf(event.error.data) };
       pushError(error);
       if (base === undefined) return;
-      const e: SessionEvent = { at, kind: "error", error: redaction.error(error) };
-      causes.set(e, { error, route: current?.id ?? base.route.id });
-      append(e);
+      const route = current?.id ?? base.route.id;
+      append({ at, kind: "error", route, error: redaction.error(error) });
       if (options.upload !== undefined && !uploaded) {
         uploaded = true;
         void sink.put(options.upload, build()).then((r) => {

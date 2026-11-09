@@ -24,8 +24,8 @@ function decoded(
 /**
  * Replay `session` (std.sessions API) under `createCtx({ mode: 'sim', seed })`: advance the clock to `at`, render the
  * base with `renderRoute`, then per event advance to its `at` and apply inputs (`fire`, `nav` through `navigate`);
- * `tx`, `resource` and `error` events are observations. A recorder on the replay's ctx gives `observed`, `error` and
- * the fingerprint `reproduced` compares. `unapplied`: the index of the input it stopped at, -1 for the base, else null.
+ * `tx`, `resource` and `error` events are observations. A store the base `state` lacks starts at its `initial`.
+ * A recorder on the replay's ctx gives `observed`, `error` and the fingerprint `reproduced` compares. `unapplied`: the index of the input it stopped at, -1 for the base, else null.
  * Also returns the replay recorder's whole session (`recorded`: inputs and observations in occurrence order, its
  * fingerprint), which `minimize` and `keel session` read.
  */
@@ -51,12 +51,11 @@ export async function replayRun<M extends Readonly<Record<string, RouteDef>>>(
 
   const def = Object.hasOwn(routes.routes, session.route.id) ? routes.routes[session.route.id] : undefined;
   if (def?.path === undefined) return finish(liveState(), -1);
-  const live = stores();
+  // Every live store is seeded, so the replay never reads what an earlier run left and `dispose` puts each back: one
+  // the base `state` lacks starts at its `initial` (the base its undo replays from).
   const state: (readonly [Store<unknown>, unknown])[] = [];
-  for (const [id, value] of Object.entries(session.state)) {
-    const st = live.get(id);
-    if (st !== undefined) state.push([st, value]);
-  }
+  for (const [id, st] of stores())
+    state.push([st, Object.hasOwn(session.state, id) ? session.state[id] : st.snapshot().initial]);
   const params = decoded(def.params, session.route.params);
   const search = decoded(def.search, session.route.search);
   let h: Awaited<ReturnType<typeof renderRoute>>;
