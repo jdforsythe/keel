@@ -91,3 +91,5 @@ Two golden apps: one (`apps/inspector` is not eval-built). Evals improving: no t
 
 - **k.schema**: `round-trip.test.ts:9,19` (12 types); `generator-valid.test.ts:9`; `parse-rejects.test.ts:51`; `brands.test.ts:10,13` (type-level; tsconfig includes conformance); `decode-strings.test.ts:23`; `number-bounds.test.ts:17,36-46`; `json.test.ts:15,30`.
 - **k.forms**: `submit-invalid-{sends-no-request,sets-every-error,focuses-first-invalid}.test.ts:7`; `formdata-roundtrip.test.ts:18`; `keel-fields-sets-exactly-listed.test.ts:10`; `other-err-renders-in-error-slot.test.ts:8`; `invalid-input-has-aria-wiring.test.ts:7`; `pending-true-from-submit-until-response.test.ts:6`; `server/conformance/post-invalid-formdata-422.test.ts:33`.
+
+verified: eb0e615186fb4db5a95754900ef69ef6a60bfab8
