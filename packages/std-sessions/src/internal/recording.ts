@@ -15,10 +15,12 @@ import { MAX_SESSION_BYTES } from "./MAX_SESSION_BYTES.ts";
 import { PutFailed } from "./PutFailed.ts";
 import type { Route } from "./Route.ts";
 import { actives } from "./actives.ts";
+import { currentValues } from "./currentValues.ts";
 import { emptySession } from "./emptySession.ts";
 import { jsonOf } from "./jsonOf.ts";
 import { redactionOf } from "./redactionOf.ts";
 import { sessionFingerprint } from "./sessionFingerprint.ts";
+import { takenErrors } from "./takenErrors.ts";
 import { utf8Length } from "./utf8Length.ts";
 
 type Base = { readonly at: number; readonly route: Route; readonly state: JsonObject; readonly id: Id<"Session"> };
@@ -68,16 +70,19 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
     state: own.run(snapshot),
   });
 
-  /** Append every log entry newer than the last seen, per store (before the base: only mark them seen). */
+  /**
+   * Append every log entry newer than the last seen, per store. Before the base it only marks them seen, redacting
+   * each so a value a `tx:` entry matched is scrubbed from errors reported before the recorder started.
+   */
   const pull = (): void => {
     for (const [id, st] of stores()) {
       const last = seen.get(id) ?? Number.NEGATIVE_INFINITY;
       for (const e of st.log()) {
         if (e.id <= last) continue;
         seen.set(id, e.id);
-        if (base === undefined) continue;
         const schema = st.payloads.get(e.name);
         const payload = redaction.tx(e.name, schema, jsonOf(e.payload, schema));
+        if (base === undefined) continue;
         append({ at: ctx.clock.now(), kind: "tx", store: id, name: e.name, payload });
       }
     }
@@ -135,11 +140,21 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
     if (raw.length > 2 * MAX_ERRORS) raw.splice(MAX_ERRORS, 1);
   };
 
+  // Detached: the recorder outlives the component that called `record`. Its own `onError` keeps a throw in `pull`
+  // in `errors()`, never at the app's `set` or `tx` that ran the commit.
   const own = scope(
     () => {
       effect(() => pull());
     },
-    { detached: true },
+    {
+      detached: true,
+      onError: (e) =>
+        pushError({
+          code: "keel.unexpected",
+          message: e instanceof Error ? e.message : String(e),
+          data: { at: "sessions.record" },
+        }),
+    },
   );
 
   const build = (): Session => {
@@ -184,9 +199,18 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
     );
   };
 
+  // Values redacted before the recorder started: the ctx keeps the errors since its current `nav`, and their text may
+  // hold a value typed into a redacted field earlier. When an `el:` element is gone that value is unknown, so a kept
+  // error is blinded (fail closed).
+  const prior = currentValues(redaction.elements);
+  for (const v of prior.values) redaction.remember(v);
+  const taken = takenErrors.get(ctx) ?? new WeakSet<object>();
+  takenErrors.set(ctx, taken);
+
   const onEvent = (event: CtxEvent): void => {
     own.run(pull);
-    const at = ctx.clock.now();
+    // A replayed `nav` or `error` carries the time it was reported.
+    const at = (event.kind === "nav" || event.kind === "error" ? event.at : undefined) ?? ctx.clock.now();
     if (event.kind === "nav") {
       const { route, href } = redaction.nav(event);
       current = route;
@@ -200,11 +224,15 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       return;
     }
     if (event.kind === "error") {
+      // A kept error an earlier recorder on this ctx took is its, not this one's: it is uploaded once.
+      if (event.at !== undefined && taken.has(event.error)) return;
+      taken.add(event.error);
       const error: Raw = { code: event.error.code, message: event.error.message, data: jsonOf(event.error.data) };
       pushError(error);
       if (base === undefined) return;
       const route = current?.id ?? base.route.id;
-      append({ at, kind: "error", route, error: redaction.error(error) });
+      const kept = event.at !== undefined && !prior.complete;
+      append({ at, kind: "error", route, error: kept ? redaction.blind(error) : redaction.error(error) });
       if (options.upload !== undefined && !uploaded) {
         uploaded = true;
         upload(options.upload, build());

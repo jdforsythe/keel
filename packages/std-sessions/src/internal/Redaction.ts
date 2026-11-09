@@ -10,4 +10,10 @@ export type Redaction = {
   nav(event: Extract<CtxEvent, { kind: "nav" }>): { readonly route: Route; readonly href: string };
   fire(event: Extract<SessionEvent, { kind: "fire" }>): Extract<SessionEvent, { kind: "fire" }>;
   error(error: KeelError<string, JsonValue>): KeelError<string, JsonValue>;
+  /** Fail closed: the error with its message replaced by its code and every string or number in `data` (but `data.at`) masked. */
+  blind(error: KeelError<string, JsonValue>): KeelError<string, JsonValue>;
+  /** Remember `value` as matched, so later errors are scrubbed of it (a value redacted before the recorder started). */
+  remember(value: string): void;
+  /** The element ids an `el:` entry masks the value of. */
+  readonly elements: readonly string[];
 };

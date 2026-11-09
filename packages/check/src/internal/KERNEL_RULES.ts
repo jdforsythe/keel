@@ -4,6 +4,7 @@ import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noCodeFromString } from "../rules/noCodeFromString.ts";
+import { noDetachedScope } from "../rules/noDetachedScope.ts";
 import { noDomGlobal } from "../rules/noDomGlobal.ts";
 import { noDomQueryInTest } from "../rules/noDomQueryInTest.ts";
 import { noEagerChild } from "../rules/noEagerChild.ts";
@@ -52,6 +53,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noEagerChild,
   lowContrast,
   resourceViaMatch,
+  noDetachedScope,
   noRuntimeOpImport,
   noDomGlobal,
   routeSchemaInferred,

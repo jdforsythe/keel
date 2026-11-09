@@ -9,6 +9,7 @@ import { documentResponse } from "./documentResponse.ts";
 import { encodeOr } from "./encodeOr.ts";
 import { fieldSummary } from "./fieldSummary.ts";
 import { inRequest } from "./inRequest.ts";
+import { isAt } from "./isAt.ts";
 import { jsonResponse } from "./jsonResponse.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { publicError } from "./publicError.ts";
@@ -22,7 +23,7 @@ import { statusOf } from "./statusOf.ts";
  * renders the nearest errorElement at or above it with the layouts above intact and sets the status by its
  * code; otherwise `status`, `failure` (an action error at the route) and `submission` (the 422 re-render:
  * field summary before the route component, `form` in `#k-state`) apply. `#k-state` also carries the served `route`
- * (`{ id, path, href, params, search }`, encoded; rfc:0071).
+ * (`{ id, path, href, params, search }`, encoded) and, when a loader failed, its `error` (`code`, `data.at` only).
  */
 export async function page(
   r: Req,
@@ -75,9 +76,13 @@ export async function page(
       }),
     ),
   );
-  // The served route, for the resume entry to report as the ctx's first `nav` (k.runtime, rfc:0071).
+  // The served route, for the resume entry to report as the ctx's first `nav` (k.runtime).
   const route = { id, path: def.path ?? "", href: m.url, params, search };
-  const extra = submission === null ? { route } : { route, form: submission };
+  // A failed loader's error as the resume entry reports it (k.runtime): its code and `data.at`, nothing the page's
+  // errorElement may have chosen not to show.
+  const at = loaderError !== null && isAt(loaderError.data) ? { at: loaderError.data.at } : {};
+  const error = loaderError === null ? {} : { error: { code: loaderError.code, message: loaderError.code, data: at } };
+  const extra = { route, ...error, ...(submission === null ? {} : { form: submission }) };
   if (!rendered.ok) {
     // A throw outside every route boundary: the root default alert, 500.
     const fallback = renderChain({

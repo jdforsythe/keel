@@ -20,6 +20,9 @@ const nav = (ctx: Ctx): void =>
 const fail = (ctx: Ctx, message: string): void =>
   report(ctx, { kind: "error", error: { code: "memo.failed", message, data: null } });
 
+/** Every recorder a test started; `afterEach` stops them, so none outlives its test. */
+const started: Recorder[] = [];
+
 /** `record` called from inside a component's scope, which is then disposed, as a bound component's unmount does. */
 function fromComponent(ctx: Ctx, upload?: URL): Recorder {
   const out: Recorder[] = [];
@@ -27,6 +30,7 @@ function fromComponent(ctx: Ctx, upload?: URL): Recorder {
   component.dispose();
   const [rec] = out;
   if (rec === undefined) throw new Error("record returned nothing");
+  started.push(rec);
   return rec;
 }
 
@@ -41,6 +45,7 @@ const counter = (() => {
 })();
 
 afterEach(() => {
+  for (const rec of started.splice(0)) rec.stop();
   vi.unstubAllGlobals();
 });
 
@@ -67,6 +72,7 @@ describe("record lifetime", () => {
     counter();
     expect(first.events()).toHaveLength(1);
     const second = record(ctx);
+    started.push(second);
     expect(second).not.toBe(first);
     expect(second.events()).toEqual([]);
     counter();
@@ -112,6 +118,7 @@ describe("record lifetime", () => {
     nav(ctx);
     fail(ctx, "first load");
     const rec = record(ctx);
+    started.push(rec);
     expect(rec.events().map((e) => e.kind)).toEqual(["error"]);
     expect(rec.stop().error?.message).toBe("first load");
   });

@@ -189,6 +189,23 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1207: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("app"),
+      f(
+        "modules/app/Work.ts",
+        "import { scope } from '@keel/reactive'\nexport const Work = scope(() => {}, { detached: true })\n",
+      ),
+    ],
+    clean: [
+      manifest("app"),
+      f(
+        "modules/app/Work.ts",
+        "import { scope } from '@keel/reactive'\nexport const Work = scope(() => {}, { onError: () => {} })\n",
+      ),
+    ],
+  },
   E1251: {
     opts: NO_TYPES,
     bad: [f("src/x.ts", "import { template } from '@keel/runtime-dom/ops'\nexport const x = template\n")],

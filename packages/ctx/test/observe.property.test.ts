@@ -42,14 +42,14 @@ test("every reported event reaches each observer once, in report order, until it
   );
 });
 
-test("a new observer first gets the current nav, reported even while nothing observed", () => {
+test("a new observer first gets the current nav, reported even while nothing observed, with its report time", () => {
   const ctx = createCtx({ mode: "sim" });
   report(ctx, nav("a"));
   report(ctx, nav("b"));
   report(ctx, { kind: "fire", id: "x", event: { type: "click" } });
   const got: CtxEvent[] = [];
   observe(ctx, (e) => got.push(e));
-  expect(got).toEqual([nav("b")]);
+  expect(got).toEqual([{ ...nav("b"), at: 0 }]);
 });
 
 test("a throwing observer is dropped per event and later observers still run", () => {

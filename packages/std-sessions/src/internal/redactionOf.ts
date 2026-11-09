@@ -88,6 +88,19 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
       }
       return e.type === "keydown" && e.key.length === 1 ? { ...event, event: { type: "keydown", key: "x" } } : event;
     },
+    blind(error) {
+      const where = isObject(error.data) ? error.data.at : undefined;
+      const out = each(error.data, (x) => "x".repeat(x.length));
+      return {
+        ...error,
+        message: error.code,
+        data: isObject(out) && typeof where === "string" ? { ...out, at: where } : out,
+      };
+    },
+    remember: (value) => found(value),
+    elements: [...paths]
+      .filter(([key, at]) => key.startsWith("el:") && at.includes("value"))
+      .map(([key]) => key.slice("el:".length)),
     error(error: KeelError<string, JsonValue>) {
       const at = under(`error:${error.code}`, "data.");
       const data = at.length === 0 ? error.data : apply(json, error.data, `error:${error.code}`, at);

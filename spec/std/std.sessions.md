@@ -1,10 +1,10 @@
 # std.sessions: Sessions
 status: conformance-covered
 
-**Module.** `@keel/std-sessions` is stdlib module `sessions` (capabilities `clock`, `observe`, `session`, `storage`). Modules set `std['@keel/std-sessions']: { redact?, expose?, readers? }` (string arrays); only `redact` reaches browsers.
+**Module.** `@keel/std-sessions` is stdlib module `sessions` (capabilities `clock`, `observe`, `session`, `storage`). Modules set `std['@keel/std-sessions']: { redact?, expose?, readers? }`; only `redact` reaches browsers.
 A `redact`/`expose` entry is `<subject>:<target>#<path>`: `tx:` transaction name (payload), `store:` id (state), `route:` id (`params.*`, `search.*`), `el:` element id (its values in every event), `error:` code (`data.*`). `record` keeps every value but `redact` entries, which become their schema's generated value (`el:`, `error:` strings: `x` repeated). `s.secret` values (also in `nav` search) and password inputs are always redacted; error messages and `data` (but `data.at`) drop every redacted value. `to-test` also writes each `s.string()` value no `expose` entry names as `x` repeated.
 
-**API.** Capability `session(ctx)`: `put(url, s): Promise<Result<null, KeelError>>` (real: POST, non-2xx `sessions.putFailed`; sim: in `taken(): { url, session }[]`) and `id()`: `random.id('Session')` on its own ctx. `record(ctx, { limit = 500, upload?: URL })` returns `{ events(), errors(), stop(): Session }`, one per ctx until `stop()`; with `upload` it puts the session on the first `error`. Uploads are same-origin (E2006): the recording app mounts `routes` in its `node` deployable.
+**API.** Capability `session(ctx)`: `put(url, s): Promise<Result<null, KeelError>>` (real: POST, non-2xx `sessions.putFailed`; sim: in `taken(): { url, session }[]`) and `id()`: `random.id('Session')` on its own ctx. `record(ctx, { limit = 500, upload?: URL })` returns `{ events(), errors(), stop(): Session }`, one per ctx until `stop()`; with `upload` it puts the session on the first `error`. Uploads are same-origin (E2006): the recording app serves `routes` itself.
 ```ts
 type SessionEvent = { at: number } & ({ kind: 'tx'; store; name; payload } | { kind: 'nav'; href }
   | { kind: 'resource'; id; state: 'loading' | 'ready' | 'error' } | { kind: 'fire'; id; event: TestEvent } | { kind: 'error'; route; error: KeelError })
@@ -18,7 +18,7 @@ The base (`at`, `route`, `state`) is the ctx's route when `record` starts, else 
 
 **Ingest.** `routes`: `sessions.ingest` (`POST /sessions`, input `Session`, as filed over 256 KiB 413) recomputes `error` and `fingerprint` from `events` and adds it to store `sessions.archive` (per fingerprint `count`, `first`, `last`, newest 5; at most 64 fingerprints and 4 MiB, oldest `last` evicted, never the one written). `sessions.list` (`/sessions/list`, search `{ failing?, since? }`) loads it behind guard `sessions.reader`: `caller` in `readers`, else redirect to `sessions.ingest`.
 
-**Rules.** E2001 `redact`/`expose` entry whose subject is unknown or another module's, or whose path its schema lacks (fix removes it) · E2002 session file fails `sessions.Session` · E2003 replay cannot apply input N or the base · E2004 replay fingerprint differs (`minimize`, `to-test` stop) · E2005 a non-`node` deployable serves `routes` · E2006 a cross-origin `upload` to `record`. E2002-E2004 diag the file at 1:1.
+**Rules.** E2001 `redact`/`expose` entry whose subject is unknown or another module's, or whose path its schema lacks (fix removes it) · E2002 session file fails `sessions.Session` · E2003 replay cannot apply input N or the base · E2004 replay fingerprint differs (`minimize`, `to-test` stop) · E2005 a non-`node` deployable serves `routes` · E2006 a `record` `upload` not credential-free http(s) on the page's origin. E2002-E2004 diag the file at 1:1.
 
 **Conformance.**
 - Under one sim seed, one script of fires produces byte-equal sessions; events are in occurrence order with `at` equal to `ctx.clock.now()` then.

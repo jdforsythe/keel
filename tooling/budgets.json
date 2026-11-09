@@ -10,7 +10,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "32.5kb",
+      "max": "33kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -37,13 +37,13 @@
       "platform": "node"
     },
     "@keel/services": "3kb",
-    "@keel/std-sessions": "6.5kb",
+    "@keel/std-sessions": "7kb",
     "@keel/std-sessions/action": {
       "max": "4.5kb",
       "platform": "node"
     },
     "@keel/std-sessions/commandJob": {
-      "max": "8kb",
+      "max": "8.5kb",
       "platform": "node"
     },
     "@keel/std-sessions/routes": {

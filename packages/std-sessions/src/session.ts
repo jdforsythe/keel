@@ -4,6 +4,8 @@ import { err, ok } from "@keel/schema";
 import { Session } from "./Session.schema.ts";
 import type { SessionSink } from "./SessionSink.ts";
 import { PutFailed } from "./internal/PutFailed.ts";
+import { pageOrigin } from "./internal/pageOrigin.ts";
+import { uploadable } from "./internal/uploadable.ts";
 import { utf8Length } from "./internal/utf8Length.ts";
 
 /** Browsers refuse a `keepalive` request body over 64 KiB (Fetch spec), so a larger session goes without it. */
@@ -19,7 +21,16 @@ function real(): SessionSink {
         const body = JSON.stringify(Session.encode(session));
         const headers = { "content-type": "application/json" };
         const keepalive = utf8Length(body) <= KEEPALIVE_BYTES;
-        const res = await fetch(url, { method: "POST", body, headers, keepalive, credentials: "same-origin" });
+        // Same-origin only, and never followed elsewhere: a redirect could re-post the session to another origin.
+        if (!uploadable(url, pageOrigin())) return failed(0);
+        const res = await fetch(url, {
+          method: "POST",
+          body,
+          headers,
+          keepalive,
+          credentials: "same-origin",
+          redirect: "error",
+        });
         return res.ok ? ok(null) : failed(res.status);
       } catch {
         return failed(0);

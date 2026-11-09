@@ -34,6 +34,8 @@ test("sim put keeps every session in taken(), oldest first", async () => {
 });
 
 test("real put POSTs the encoded session; non-2xx is sessions.putFailed; a network failure is status 0", async () => {
+  // The real put sends only to the page's own origin.
+  vi.stubGlobal("location", { origin: "https://example.test" });
   const calls: { url: string; init: RequestInit | undefined }[] = [];
   vi.stubGlobal("fetch", async (url: URL, init?: RequestInit) => {
     calls.push({ url: String(url), init });

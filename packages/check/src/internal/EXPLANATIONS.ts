@@ -216,6 +216,13 @@ const ROWS: readonly Row[] = [
   ],
   ["E1206", "scope.run on a disposed scope", "", "create nodes only while the scope is live", "k.reactive"],
   [
+    "E1207",
+    "detached scope or non-literal scope options in app code",
+    "A detached scope has no parent: it escapes uses and the request store registry, and outlives the route.",
+    "create the scope inside the component, or use owner()?.run(fn)",
+    "k.reactive",
+  ],
+  [
     "E1251",
     "app code imports a runtime op",
     "Ops are compiler output; app code uses JSX and intrinsics.",
