@@ -10,7 +10,7 @@
 ## Steps
 1. [x] Kernel agent: RFC 0075, ADR-0064, spec text, conformance through `conformance-writer`, implementation (wip f15db47; its design decision is D8 in tasks/0253-s1-exit-path/PLAN.md).
 2. [x] Root `pnpm check`, `pnpm test`; ledger 0 lowered; unsafe 6; budgets.
-3. [ ] Reviewer + red-team over the batch diff; findings to `tasks/BACKLOG.md`; commit `rfc:0075`; push.
+3. [x] Reviewer + red-team over the batch diff; findings to `tasks/BACKLOG.md`; commit `rfc:0075`; push.
 4. [ ] Drill rerun: build apps/sessions, serve on 4200 behind the tunnel, mint a reader and commit its hash, set `KEEL_SESSIONS_URL`, click "Show limits" in a real browser, dispatch the nightly, confirm the filed `keel-session` issue.
 5. [ ] Fix the planted `limitLine` defect (apps/sessions/modules/ops/Home.ts) with the emitted session test; close the issue with the fix commit; delete `KEEL_SESSIONS_URL`; stop the service and tunnel; close 0272.
 
@@ -20,10 +20,11 @@
 - D3 (0280, RFC default 4): a handler's `data.at` holds only an id the compiler knows, never a runtime DOM `id`; the kernel agent picks the smallest mechanism and k.errors states it.
 - D4 (0280 mechanism, rfc:0075 amended): a handler's `data.at` is the id `on` was registered under, else the nearest `data-k` stamp, else `""`. The compiler wraps a k.ui base element with a literal `id` so its stamp is that id; an id from an expression is never stamped. Bindings and structural ops still read the runtime `id` (0282).
 - D5: `@keel/compiler` measures 26,332 B against 26 kB (26,624 B); no re-base.
+- D6 (drill rerun, 2026-11-09): rfc:0075 pushed at 46093b9, reader hash at 3aedf0d. Service on 4200 behind a Cloudflare quick tunnel (secret, token and URL in the job temp directory, not in the repo); repo variable `KEEL_SESSIONS_URL` and secret `KEEL_SESSIONS_TOKEN` set. A real browser click rendered the root fallback and uploaded the session (POST /sessions 303): 0276 holds live. Nightly run 42706609718 ingested 1 fingerprint and created no issue: replay reproduces the error with another `data.at` (E2004), filed as 0283. Session kept at apps/sessions/.keel/sessions/1a9e17423979-0.json (untracked).
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test` green; ledger 0 lowered, 0 uncovered; unsafe 6
 - [ ] nightly run files one `keel-session` issue for the planted error; the emitted test fails before the fix and passes after; issue closed
 
 ## Next action
-Reviewer pass over the amendment 543af4d is pending. On approval: push, then step 4 (drill rerun). Root checks are green at 543af4d: ledger 479 items, 472 verified, 0 lowered, unsafe 6.
+The kernel agent is fixing 0283 (uncommitted work in the tree is its work). On its report: root checks, commit `rfc:0075`, push, rebuild and restart the service (same secret), click again, dispatch the nightly, confirm the issue; then step 5. The service and tunnel are running and `KEEL_SESSIONS_URL` is set: step 5 ends by deleting the variable and stopping both.
