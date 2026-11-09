@@ -83,4 +83,37 @@ describe("E2005 adapterNotNode: re-exports (0215)", () => {
     ];
     expect(run(files)).toHaveLength(0);
   });
+  test("dynamic import with a literal reports at the specifier", () => {
+    const d = run([
+      routes("export const load = () => import('@keel/std-sessions/routes')"),
+      topo("web: { modules: ['cart'], adapter: 'static' }"),
+    ]);
+    expect(d).toHaveLength(1);
+  });
+  test("dynamic import with a computed argument is not followed", () => {
+    const d = run([
+      routes("export const load = (n: string) => import(n)"),
+      topo("web: { modules: ['cart'], adapter: 'static' }"),
+    ]);
+    expect(d).toHaveLength(0);
+  });
+  test("a .js, .jsx or .mjs specifier resolves to its TypeScript source", () => {
+    const t = topo("web: { modules: ['cart'], adapter: 'static' }");
+    const hop = (ext: string, file: string) =>
+      run([
+        routes(`export * from './sess.${ext}'`),
+        { path: `modules/cart/${file}`, source: `${SESS}\nexport { routes }\n` },
+        t,
+      ]);
+    expect(hop("js", "sess.ts")).toHaveLength(1);
+    expect(hop("js", "sess.tsx")).toHaveLength(1);
+    expect(hop("jsx", "sess.tsx")).toHaveLength(1);
+    expect(hop("mjs", "sess.mts")).toHaveLength(1);
+  });
+  test("an index.tsx directory import and a .tsx file with JSX are followed", () => {
+    const t = topo("web: { modules: ['cart'], adapter: 'static' }");
+    const src = `${SESS}\nexport const el = <div />\n`;
+    expect(run([routes("export * from './a'"), { path: "modules/cart/a/index.tsx", source: src }, t])).toHaveLength(1);
+    expect(run([routes("export * from './a'"), { path: "modules/cart/a.tsx", source: src }, t])).toHaveLength(1);
+  });
 });

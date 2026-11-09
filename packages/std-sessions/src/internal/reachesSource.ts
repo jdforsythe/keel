@@ -4,11 +4,24 @@ import { sourcesOf } from "./sourcesOf.ts";
 
 type File = { readonly path: string; readonly source: string };
 
-/** The project file a relative specifier from `from` names (as is, `.ts`, `/index.ts`), else undefined. */
+const JS_TO_TS: Readonly<Record<string, readonly string[]>> = {
+  ".js": [".ts", ".tsx"],
+  ".jsx": [".tsx"],
+  ".mjs": [".mts"],
+};
+
+/**
+ * The project file a relative specifier from `from` names, else undefined: as written, with `.ts`/`.tsx`, as a
+ * directory `index.ts`/`index.tsx`, or a `.js`/`.jsx`/`.mjs` specifier mapped to its TypeScript source.
+ */
 function resolve(project: readonly File[], from: string, spec: string): File | undefined {
   if (!spec.startsWith(".")) return undefined;
   const base = path.posix.normalize(path.posix.join(path.posix.dirname(from), spec));
-  return [base, `${base}.ts`, `${base}/index.ts`].flatMap((p) => project.filter((f) => f.path === p))[0];
+  const ext = path.posix.extname(base);
+  const stem = base.slice(0, base.length - ext.length);
+  const mapped = (JS_TO_TS[ext] ?? []).map((e) => `${stem}${e}`);
+  const candidates = [base, ...mapped, `${base}.ts`, `${base}.tsx`, `${base}/index.ts`, `${base}/index.tsx`];
+  return candidates.flatMap((p) => project.filter((f) => f.path === p))[0];
 }
 
 /**

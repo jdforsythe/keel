@@ -10,8 +10,8 @@ const SOURCE = "@keel/std-sessions/routes";
 
 /**
  * E2005 (std.sessions, k.check registry): a module's `routes.ts` imports or re-exports `@keel/std-sessions/routes`
- * (`import`, `export { routes as sessions } from`, `export * from`, or through other project files that do, read from
- * `RuleInput.project`) but a deployable serving that module has an adapter other than `node`. Reported at each
+ * (`import`, `import()` with a literal specifier, `export { routes as sessions } from`, `export * from`, or through
+ * other project files that do, read from `RuleInput.project`) but a deployable serving that module has an adapter other than `node`. Reported at each
  * declaration of `routes.ts` that leads there. Reads the project's `topology.ts` statically; no fix.
  */
 export const adapterNotNode: RuleDef = defineRule({
