@@ -15,6 +15,12 @@ import { Box, Button } from "@keel/ui";
 import { describe, expect, it } from "vitest";
 import topology from "../topology.ts";
 
+/** What the compiler emits around a bound k.ui base element with a literal `id` in a `.tsx` module: its `data-k` stamp. */
+const stamped = (n: Node, id: string): Node => {
+  if (n instanceof Element && n.hasAttribute("data-k")) n.setAttribute("data-k", id);
+  return n;
+};
+
 /** The fixture page: in the browser it records with an upload to this origin; its button throws. */
 function Drill(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
   if (ctx !== undefined && typeof location !== "undefined")
@@ -23,13 +29,16 @@ function Drill(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
     as: "main",
     id: "ops.drill",
     children: () => [
-      Button({
-        id: "ops.drill.boom",
-        children: "Boom",
-        onClick: () => {
-          throw new Error("drill failed");
-        },
-      }),
+      stamped(
+        Button({
+          id: "ops.drill.boom",
+          children: "Boom",
+          onClick: () => {
+            throw new Error("drill failed");
+          },
+        }),
+        "ops.drill.boom",
+      ),
     ],
   });
 }

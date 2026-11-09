@@ -13,6 +13,12 @@ import { Box, Button, Input } from "@keel/ui";
 import { describe, expect, test } from "vitest";
 import { Session, record, session } from "../src/index.ts";
 
+/** What the compiler emits around a bound k.ui base element with a literal `id` in a `.tsx` module: its `data-k` stamp. */
+const stamped = (n: Node, id: string): Node => {
+  if (n instanceof Element && n.hasAttribute("data-k")) n.setAttribute("data-k", id);
+  return n;
+};
+
 function build() {
   const memo = store(s.object({ note: s.string() }), { note: "" }, { id: "memo" });
   const save = transaction(memo, "memo.save", s.object({ note: s.string(), pin: s.string() }), (st, p) => ({
@@ -30,13 +36,16 @@ function build() {
           id: "memo.page",
           children: [
             Input({ id: "memo.note", label: "Note", onInput: (v) => void tx(save, { note: v, pin: "1234" }) }),
-            Button({
-              id: "memo.crash",
-              children: "Crash",
-              onClick: () => {
-                throw new Error("crash");
-              },
-            }),
+            stamped(
+              Button({
+                id: "memo.crash",
+                children: "Crash",
+                onClick: () => {
+                  throw new Error("crash");
+                },
+              }),
+              "memo.crash",
+            ),
           ],
         });
       },

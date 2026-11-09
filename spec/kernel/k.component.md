@@ -16,4 +16,4 @@ status: conformance-covered
 - `{a ? <b/> : <i/>}`, `{a && <b/>}`, `{[<b/>]}` and `{xs.map((x) => <li/>)}` as children are each one E1403 and render nothing; `<If when={a} fallback={() => <i/>}>` renders `<i>` while `a` is falsy.
 - A plain `.ts` component file exporting `Props` and `uses` beside its default export reports neither E1752 nor E1104.
 - A PascalCase `.ts` file whose default export is not a function taking `Props` and that exports a `Props` schema reports E1104.
-- A plain `.ts` module calling `If` and `Boundary` imported from `@keel/runtime-dom` compiles with that import kept and renders the chosen branch; a `.tsx` module using them only as tags compiles with the import removed.
+- A plain `.ts` module calling `If` and `Boundary` imported from `@keel/runtime-dom`, or naming `If` only as a parameter or destructuring default, compiles with that import kept and renders the chosen branch; a `.tsx` module using them only as tags compiles with the import removed.

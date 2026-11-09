@@ -15,7 +15,10 @@ import { toUnexpected } from "./toUnexpected.ts";
  */
 export function rootCatcher(ctx: Ctx | undefined, settle: (fallback: Node) => void): Catcher & { arm(): void } {
   const made: Signal<{ readonly error: UnexpectedError | null }>[] = [];
-  scope(() => void made.push(signal<{ readonly error: UnexpectedError | null }>({ error: null })));
+  // Its own detached scope: the island outlives whatever scope `resume` runs in, and the state goes once it fails.
+  const home = scope(() => void made.push(signal<{ readonly error: UnexpectedError | null }>({ error: null })), {
+    detached: true,
+  });
   const [state] = made;
   if (state === undefined) throw new Error("k.runtime: root catcher state");
   let armed = false;
@@ -32,6 +35,7 @@ export function rootCatcher(ctx: Ctx | undefined, settle: (fallback: Node) => vo
       report(ctx, { kind: "error", error: failed });
       settle(rootFallback(failed));
       state.set({ error: failed });
+      home.dispose();
     },
   };
 }

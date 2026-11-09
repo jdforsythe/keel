@@ -12,6 +12,12 @@ import { Box, Button, Input } from "@keel/ui";
 import { describe, expect, test } from "vitest";
 import { record, session } from "../src/index.ts";
 
+/** What the compiler emits around a bound k.ui base element with a literal `id` in a `.tsx` module: its `data-k` stamp. */
+const stamped = (n: Node, id: string): Node => {
+  if (n instanceof Element && n.hasAttribute("data-k")) n.setAttribute("data-k", id);
+  return n;
+};
+
 const typed: { value: string } = { value: "" };
 const routes = manifest({
   "pay.show": {
@@ -28,13 +34,16 @@ const routes = manifest({
               typed.value = v;
             },
           }),
-          Button({
-            id: "pay.crash",
-            children: "Pay",
-            onClick: () => {
-              throw new Error(`card ${typed.value} declined`);
-            },
-          }),
+          stamped(
+            Button({
+              id: "pay.crash",
+              children: "Pay",
+              onClick: () => {
+                throw new Error(`card ${typed.value} declined`);
+              },
+            }),
+            "pay.crash",
+          ),
         ],
       });
     },

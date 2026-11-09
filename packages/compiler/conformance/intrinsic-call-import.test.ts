@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.component, clause "A plain `.ts` module calling `If` and `Boundary` imported from `@keel/runtime-dom` compiles with that import kept and renders the chosen branch; a `.tsx` module using them only as tags compiles with the import removed."
+// Spec: k.component, clause "A plain `.ts` module calling `If` and `Boundary` imported from `@keel/runtime-dom`, or naming `If` only as a parameter or destructuring default, compiles with that import kept and renders the chosen branch; a `.tsx` module using them only as tags compiles with the import removed."
 // Seed 1337 (no random inputs: the spaces are two booleans, covered exhaustively).
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
@@ -63,3 +63,49 @@ export default function Both(props: { x: boolean }) { return <div><If when={prop
   );
   expect(importsIntrinsic(code, "If")).toBe(true);
 });
+
+const branches = `{ when: props.on, children: () => document.createTextNode("yes"), fallback: () => document.createTextNode("no") }`;
+
+const defaultForms: ReadonlyArray<readonly [string, string]> = [
+  [
+    "a destructured parameter default",
+    `import { If } from "@keel/runtime-dom"
+function choose({ pick = If }: { pick?: typeof If } = {}) { return pick }
+export default function Pick(props: { on: boolean }) { return choose()(${branches}) }
+`,
+  ],
+  [
+    "a destructuring default in a variable declaration",
+    `import { If } from "@keel/runtime-dom"
+export default function Pick(props: { on: boolean }) {
+  const opts: { pick?: typeof If } = {}
+  const { pick = If } = opts
+  return pick(${branches})
+}
+`,
+  ],
+  [
+    "a plain parameter default",
+    `import { If } from "@keel/runtime-dom"
+function f(p = If) { return p }
+export default function Pick(props: { on: boolean }) { return f()(${branches}) }
+`,
+  ],
+];
+
+for (const [label, source] of defaultForms) {
+  test(`a plain .ts module naming If only as ${label} compiles with no diagnostics and keeps the import`, () => {
+    const code = build("Dflt.ts", source);
+    expect(importsIntrinsic(code, "If")).toBe(true);
+  });
+
+  test(`a plain .ts module naming If only as ${label} renders the chosen branch`, () => {
+    const c = evaluate(build("Dflt.ts", source));
+    if (!isMountable(c)) throw new Error("default export is not a component");
+    for (const on of [true, false]) {
+      const el = document.createElement("div");
+      mount(() => c({ on }), el);
+      expect(el.textContent).toBe(on ? "yes" : "no");
+    }
+  });
+}

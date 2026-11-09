@@ -1,6 +1,6 @@
 import { guard } from "./guard.ts";
 import { handlers } from "./handlers.ts";
-import { idOf } from "./idOf.ts";
+import { stampOf } from "./stampOf.ts";
 
 /** Per event, the delegation root the last dispatch walked up to (nested mounts share bubbling events). */
 const reached = new WeakMap<Event, Node>();
@@ -35,8 +35,8 @@ export function dispatch(root: Element, event: Event, target: Node): void {
     for (let n: Node | null = start; n !== null && !stopped; n = n.parentNode) {
       if (n instanceof Element) {
         const h = handlers.get(n)?.get(event.type);
-        // `data.at` of a throw: the id the handler was registered under, else the element's id when it throws.
-        if (h !== undefined && !h.owner.gone) guard(h.owner, h.at || idOf(n), () => h.fn(event));
+        // `data.at` of a throw: the id the handler was registered under, else the compiler's stamp when it throws.
+        if (h !== undefined && !h.owner.gone) guard(h.owner, h.at || stampOf(n), () => h.fn(event));
       }
       if (n === root) break;
     }

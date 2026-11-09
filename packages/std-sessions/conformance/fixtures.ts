@@ -171,6 +171,11 @@ export const diagCodes = (r: { readonly diagnostics: readonly { readonly code: s
  * module scope, which this package's vitest does not run): the same store id, transactions, schemas and element ids.
  */
 function buildBuggy() {
+  // Stands in for the compiler's stamp of a literal-id base element in a `.tsx` module.
+  const stamped = (node: Node, id: string): Node => {
+    if (node instanceof Element && node.hasAttribute("data-k")) node.setAttribute("data-k", id);
+    return node;
+  };
   const cart = store(BugCart, BUGGY_EMPTY, { id: "cart.cart" });
   const add = transaction(cart, "cart.add", s.object({ sku: s.string() }), (st, p) => ({
     ...st,
@@ -202,7 +207,7 @@ function buildBuggy() {
         Input({ id: "cart.card", label: "Card", onInput: (v) => void tx(setCard, { number: v }) }),
         Input({ id: "cart.note", label: "Note", onInput: (v) => void tx(setNote, { note: v }) }),
         Input({ id: "cart.pin", label: "Pin", type: "password", onInput: (v) => void tx(setPin, { set: v !== "" }) }),
-        Button({ id: "cart.checkout", children: "Checkout", onClick: checkout }),
+        stamped(Button({ id: "cart.checkout", children: "Checkout", onClick: checkout }), "cart.checkout"),
       ],
     });
   const routes = manifest({ "cart.show": { path: "/cart", search: BugSearch, component: CartPage } });

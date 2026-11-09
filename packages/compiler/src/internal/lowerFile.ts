@@ -34,6 +34,7 @@ import { exprOf } from "./exprOf.ts";
 import { intrinsicOf } from "./intrinsicOf.ts";
 import { isHtmlTag } from "./isHtmlTag.ts";
 import { isSlotCall } from "./isSlotCall.ts";
+import { literalIdOf } from "./literalIdOf.ts";
 import { literalTextOf } from "./literalTextOf.ts";
 import { lowerBound } from "./lowerBound.ts";
 import { patternNames } from "./patternNames.ts";
@@ -41,6 +42,7 @@ import { propsNameOf } from "./propsNameOf.ts";
 import { shapeAt } from "./shapeAt.ts";
 import { staticValueOf } from "./staticValueOf.ts";
 import { tagNameOf } from "./tagNameOf.ts";
+import { uiBaseElements } from "./uiBaseElements.ts";
 
 /** Module the generated code imports the ops from (k.runtime). */
 const OPS_MODULE = "@keel/runtime-dom/ops";
@@ -96,12 +98,12 @@ function unparen(e: Expression): Expression {
  * into `class` (D23). Every component runs in its own scope; a file exporting `uses` declares them in its
  * default-export component's scope (D26). An element with an event binding or a binding that reads client-writable
  * state, and each root element of a component calling `effect`, gets `data-k` in its template: islands (k.runtime,
- * rfc:0037). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
+ * rfc:0037); a bound k.ui base element with a literal `id` gets it as `data-k` (k.errors `data.at`). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
  * the generated header change; all other text is kept byte for byte.
  */
 export function lowerFile(
   a: Analysis,
-  elements: readonly ElementInfo[],
+  all: readonly ElementInfo[],
   initial: readonly Edit[],
   styles: ReadonlyMap<number, StyleRewrite> = new Map(),
 ): Lowered {
@@ -121,7 +123,27 @@ export function lowerFile(
   const ctxNames = ctxParams(a, fns, componentFnAt, ns, edits);
   componentScopes(a, fns, ns, edits, headerImports);
   moduleScope(a, ns, edits, headerImports);
+  const elements = all.filter((e) => !e.base);
+  /** k.ui base elements with a literal `id`, by JSX start: the id they are stamped with. */
+  const baseIds = new Map(all.flatMap((e): [number, string][] => (e.base ? [[e.start, e.id]] : [])));
   const info = new Map(elements.map((e) => [e.start, e]));
+  // k.errors `data.at`: a bound k.ui base element with a literal `id` carries it as its `data-k` stamp, as a bound
+  // template element carries its id; an `id` from an expression is never stamped. `stamp(id, Button)(props)` wraps
+  // both a JSX base element and a source call `Button({ id: "…", … })`.
+  const stampOpen = (id: string): string => {
+    headerImports.push(
+      `const ${ns}stamp = <A extends unknown[], N extends { hasAttribute?(k: string): boolean; setAttribute?(k: string, v: string): void }>(id: string, f: (...a: A) => N) => (...a: A): N => { const n = f(...a); if (n.hasAttribute?.("data-k")) n.setAttribute?.("data-k", id); return n; };`,
+    );
+    return `${ns}stamp(${q(id)}, `;
+  };
+  const uiBases = uiBaseElements(a);
+  for (const c of a.calls) {
+    if (c.callee.type !== "Identifier" || !uiBases.has(c.callee.name)) continue;
+    const id = literalIdOf(c.arguments[0]);
+    if (id === undefined) continue;
+    edits.push({ start: c.callee.start, end: c.callee.start, text: stampOpen(id) });
+    edits.push({ start: c.callee.end, end: c.callee.end, text: ")" });
+  }
   const templates: string[] = [];
   const bindings: BindingInfo[] = [];
   /** Element ids whose binding makes them part of an island (k.runtime): they get `data-k` in their template. */
@@ -562,7 +584,9 @@ export function lowerFile(
     const f = componentFnAt(el.start);
     const ctx = f === undefined ? undefined : ctxNames.get(f.start);
     const tail = ctx === undefined ? "" : `, undefined, ${ctx}`;
-    return `${tagNameOf(el.openingElement.name)}(${props}${tail})`;
+    const tag = tagNameOf(el.openingElement.name);
+    const id = baseIds.get(el.start);
+    return `${id === undefined ? tag : `${stampOpen(id)}${tag})`}(${props}${tail})`;
   }
 
   function lowerNode(j: JSXElement | JSXFragment): string {
@@ -577,8 +601,8 @@ export function lowerFile(
     if (it.start === it.end) ms.appendLeft(it.start, it.render());
     else ms.overwrite(it.start, it.end, it.render());
   }
-  // An intrinsic import goes only when every binding is a JSX tag the lowering replaced; one called or passed as a
-  // value (a plain `.ts` module calling `If(...)`) keeps the import.
+  // A `@keel/runtime-dom` import is removed only when every binding is an intrinsic used solely as a JSX tag, which
+  // the lowering replaced; any other reference (a call, a value, a parameter or destructuring default) keeps it.
   for (const i of a.imports) {
     if (i.source.value !== "@keel/runtime-dom" || i.specifiers.length === 0) continue;
     const tagsOnly = i.specifiers.every(
