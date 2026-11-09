@@ -2,6 +2,8 @@ import type { Io, OutRecord, Outcome } from "@keel/cli";
 import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { s } from "@keel/schema";
 import { Session } from "../Session.schema.ts";
+import { fileOf } from "./fileOf.ts";
+import { safeUrl } from "./safeUrl.ts";
 import { sessionDiag } from "./sessionDiag.ts";
 import { sessionOut } from "./sessionOut.ts";
 import { sessionText } from "./sessionText.ts";
@@ -34,13 +36,10 @@ async function getJson(io: Io & { fetch: NonNullable<Io["fetch"]> }, url: string
   }
 }
 
-/** The file a fetched session goes to. */
-const fileOf = (x: Session): string => `.keel/sessions/${x.fingerprint}-${x.id}.json`;
-
 /**
  * `keel session capture [url]` and `keel session ingest <url> [--failing] [--since t]` (std.sessions Commands,
  * rfc:0070 §8). `capture` fetches `<url>/__keel/inspect` (default `http://localhost:5173`) and writes section
- * `sessions.live`'s value to `.keel/sessions/<fingerprint>-<id>.json`; a `null` value (no recorder) writes nothing.
+ * `sessions.live`'s value to `.keel/sessions/<fingerprint>-<index>.json`; a `null` value (no recorder) writes nothing.
  * `ingest` sends `GET <url>/sessions/list?failing=1&since=<t>` (`accept: application/json`; with
  * `KEEL_SESSIONS_TOKEN` in `io.env`, the caller cookie `__Host-keel-caller` on https, else `keel-caller`) and writes
  * each archived session the same way. Unreachable, non-2xx, or a body without the section or the `sessions.list`
@@ -70,8 +69,8 @@ export async function commandFetch(
   const fail = (why: string): Outcome => done([sessionDiag("E1056", `session ${op} ${why}: ${clip(base)}`)]);
   const write = (list: readonly Session[]): Outcome =>
     done(
-      list.map((x) => sessionOut(x, x.error?.code ?? null, fileOf(x))),
-      list.map((x) => ({ path: fileOf(x), content: sessionText(x), readonly: false })),
+      list.map((x, i) => sessionOut(x, x.error?.code ?? null, fileOf(x, i))),
+      list.map((x, i) => ({ path: fileOf(x, i), content: sessionText(x), readonly: false })),
     );
   if (op === "capture") {
     const got = await getJson(net, `${base}${INSPECT_PATH}`);
@@ -83,6 +82,7 @@ export async function commandFetch(
     const live = Session.parse(section.value);
     return live.ok ? write([live.value]) : fail("sessions.live is not a session");
   }
+  if (!safeUrl(base)) return fail("needs https");
   const query = new URLSearchParams();
   if (input.failing === true) query.set("failing", "1");
   if (input.since !== undefined) query.set("since", input.since);

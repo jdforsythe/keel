@@ -9,7 +9,7 @@ import { check, defineRule, explain, reportedCodes } from "@keel/check";
 import { expect, test } from "vitest";
 import { CODE_FIXTURES } from "./fixtures-by-code.ts";
 import { specCodes } from "./spec-codes.ts";
-import { approxTokens } from "./support.ts";
+import { approxTokens, sourceFilesUnder } from "./support.ts";
 
 const THROWS = "throws.ts";
 defineRule({
@@ -50,13 +50,7 @@ const OTHER_ASSERTIONS: readonly string[] = readdirSync(PACKAGES)
   .filter((p) => p !== "check")
   .flatMap((p) => {
     const dir = new URL(`${p}/conformance/`, PACKAGES);
-    let names: string[];
-    try {
-      names = readdirSync(dir, { recursive: true, encoding: "utf8" });
-    } catch {
-      return [];
-    }
-    return names.filter((n) => /\.tsx?$/.test(n)).flatMap((n) => assertions(readFileSync(new URL(n, dir), "utf8")));
+    return sourceFilesUnder(dir).flatMap((n) => assertions(readFileSync(new URL(n, dir), "utf8")));
   });
 
 test("reportedCodes() is sorted and unique, and lists every code a fixture triggers", () => {

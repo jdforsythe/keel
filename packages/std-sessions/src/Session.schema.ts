@@ -6,7 +6,7 @@ import { SessionEvent } from "./SessionEvent.ts";
  * random is not seeded: then `deterministic` is false and a replay may draw other ids), the base
  * (`at`, `route`, `state`), the `events` after it, the first `error` and its `fingerprint`.
  */
-export const Session = s.object(
+const SessionShape = s.object(
   {
     v: s.literal(1),
     id: s.id("Session"),
@@ -21,5 +21,12 @@ export const Session = s.object(
   },
   { closed: true },
 );
-export type Session = s.infer<typeof Session>;
+/** A client-chosen id becomes a file name nowhere, but stays a short token: `^[A-Za-z0-9_-]{1,64}$` (backlog 0224). */
+const SESSION_ID = /^[A-Za-z0-9_-]{1,64}$/;
+export const Session: typeof SessionShape = {
+  ...SessionShape,
+  // A bad id parses as the empty id: the same issue path (`id`), no second error shape.
+  parse: (x) => SessionShape.parse(SESSION_ID.test(String(Object(x).id)) ? x : { ...Object(x), id: "" }),
+};
+export type Session = s.infer<typeof SessionShape>;
 s.register("sessions.Session", Session);
