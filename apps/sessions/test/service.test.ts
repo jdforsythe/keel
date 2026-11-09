@@ -16,7 +16,7 @@ import topology from "../topology.ts";
 const BASE = "http://localhost";
 const STD = fileURLToPath(new URL("../.keel/std.json", import.meta.url));
 /** The hash of the deployed service's reader cookie, as `modules/ops/module.ts` lists it. */
-const READER = "M2bBc9fD2bC-Y5rZ6s12udWSieipCnNBvmH3_v6-cxY";
+const READER = "HQ3-vDAEJk08Fmm0vNVarVrk57DUiJeosEqTEb3BG5E";
 
 async function service(std?: string) {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
