@@ -15,7 +15,7 @@ const LIMITS = [
 
 /** One bound as a line: the label, a dot leader to the widest label's column, and the value. */
 function limitLine(limit: (typeof LIMITS)[number], width: number): string {
-  return `${limit.label} ${".".repeat(width - limit.label.length - 1)} ${limit.value}`;
+  return `${limit.label} ${".".repeat(width - limit.label.length + 1)} ${limit.value}`;
 }
 
 /**
