@@ -10,6 +10,6 @@ export type FileFacts = {
   readonly routes: readonly Entry[];
   /** Store ids, transaction names, and error codes declared in the file. */
   readonly ids: readonly (Entry & { readonly kind: "store id" | "transaction name" | "error code" })[];
-  /** `ctx.<cap>` member accesses and `const { cap } = ctx` destructurings, one entry per access. */
+  /** `ctx.<cap>` member accesses, `const { cap } = ctx` destructurings and `observe(...)` calls (`observe`), one entry per use. */
   readonly ctx: readonly Entry[];
 };

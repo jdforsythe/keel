@@ -3,12 +3,11 @@ import { argAt } from "./argAt.ts";
 import { callsIn } from "./callsIn.ts";
 import { hasSchemaPath } from "./hasSchemaPath.ts";
 import { memberCall } from "./memberCall.ts";
+import { pathSegments } from "./pathSegments.ts";
 import { propValue } from "./propValue.ts";
 import { resolveSchema } from "./resolveSchema.ts";
 import { stringLiteral } from "./stringLiteral.ts";
 import { unwrap } from "./unwrap.ts";
-
-const segs = (p: string): string[] => p.split(".");
 
 /** True when `path` is proven absent from the target's schema within `files` (the module folder). */
 export function pathMissing(subject: string, name: string, path: string, files: readonly ParsedFile[]): boolean {
@@ -19,7 +18,7 @@ export function pathMissing(subject: string, name: string, path: string, files: 
       const mc = memberCall(call);
       const schemaAt = (i: number, rest: string) => {
         const a = argAt(call, i);
-        return a === undefined ? false : !hasSchemaPath(resolveSchema(a, f.scope), segs(rest));
+        return a === undefined ? false : !hasSchemaPath(resolveSchema(a, f.scope), pathSegments(rest));
       };
       if (subject === "tx" && callee.type === "Identifier" && callee.name === "transaction") {
         if (stringLiteral(argAt(call, 1)) === name) return schemaAt(2, path);
@@ -41,7 +40,7 @@ export function pathMissing(subject: string, name: string, path: string, files: 
         const schema = propValue(entry, head);
         return schema === undefined
           ? false
-          : !hasSchemaPath(resolveSchema(schema, f.scope), segs(path.slice(head.length + 1)));
+          : !hasSchemaPath(resolveSchema(schema, f.scope), pathSegments(path.slice(head.length + 1)));
       }
     }
   }

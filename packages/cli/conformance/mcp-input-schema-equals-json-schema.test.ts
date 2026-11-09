@@ -135,7 +135,11 @@ const OTHERS: unknown[] = [null, true, 1.5, 7, "x", [], ["a"], {}, { a: 1 }];
 
 describe("k.cli: MCP tool input schemas (real binary)", () => {
   it("Each MCP tool's input schema equals the JSON Schema of its operation's input: the tools list names every operation, in order", () => {
-    expect(tools.map((t) => t.name)).toEqual(operations.map((o) => o.name));
+    // A repository module that depends on @keel/std-sessions fills the `session` slot (rfc:0070): it is listed after
+    // the kernel operations, and its schema is checked with the others below.
+    const names = tools.map((t) => t.name);
+    expect(names.filter((n) => n !== "session")).toEqual(operations.map((o) => o.name));
+    if (names.includes("session")) expect(names[names.length - 1]).toBe("session");
   });
 
   it("Each MCP tool's input schema equals the JSON Schema of its operation's input: the validator accepts only keywords it implements", () => {
@@ -144,7 +148,7 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
   });
 
   it("Each MCP tool's input schema equals the JSON Schema of its operation's input: validating the tool's inputSchema agrees with parsing by the operation's input for every candidate", () => {
-    expect(tools.length).toBe(operations.length);
+    expect(tools.filter((t) => t.name !== "session").length).toBe(operations.length);
     for (const op of operations) {
       const tool = tools.find((t) => t.name === op.name);
       const schema = tool?.inputSchema;

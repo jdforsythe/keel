@@ -14,7 +14,7 @@
     "schema": 92.3,
     "server": 88.6,
     "services": 88,
-    "store": 89.3,
+    "store": 86.1,
     "testing": 88.1,
     "ui": 70.3
   },
@@ -975,9 +975,27 @@
     },
     {
       "pkg": "std-sessions",
+      "name": "archiveStores",
+      "file": "packages/std-sessions/src/archiveStores.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-sessions",
+      "name": "commandJob",
+      "file": "packages/std-sessions/src/commandJob.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-sessions",
+      "name": "minimize",
+      "file": "packages/std-sessions/src/minimize.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-sessions",
       "name": "record",
       "file": "packages/std-sessions/src/record.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-sessions",
@@ -995,7 +1013,13 @@
       "pkg": "std-sessions",
       "name": "replay",
       "file": "packages/std-sessions/src/replay.ts",
-      "rung": "example"
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-sessions",
+      "name": "toTest",
+      "file": "packages/std-sessions/src/toTest.ts",
+      "rung": "none"
     },
     {
       "pkg": "std-timings",
@@ -1086,6 +1110,12 @@
       "name": "defineTokens",
       "file": "packages/ui/src/defineTokens.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "sessions",
+      "name": "Home",
+      "file": "sessions:ops/Home.ts",
+      "rung": "none"
     }
   ],
   "clauses": [
@@ -1610,6 +1640,10 @@
       "rung": "example"
     },
     {
+      "item": "k.router#15",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.runtime#1",
       "rung": "example"
     },
@@ -1651,6 +1685,10 @@
     },
     {
       "item": "k.runtime#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.runtime#12",
       "rung": "example"
     },
     {
@@ -1910,6 +1948,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.store#21",
+      "rung": "example"
+    },
+    {
       "item": "k.testing#1",
       "rung": "example"
     },
@@ -2143,19 +2185,19 @@
     },
     {
       "item": "std.sessions#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#9",
@@ -2171,15 +2213,15 @@
     },
     {
       "item": "std.sessions#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#13",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.sessions#14",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.sessions#15",

@@ -1,0 +1,31 @@
+{
+  "name": "sessions",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../packages/cli/src/bin.ts build",
+    "check": "tsc --noEmit && biome check modules test",
+    "test": "vitest run",
+    "start": "node --experimental-webstorage --localstorage-file=.sessions.storage --disable-warning=ExperimentalWarning server.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/forms": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/std-sessions": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "vite": "^8.3.6"
+  }
+}

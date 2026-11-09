@@ -3,6 +3,10 @@ import type { Ctx } from "@keel/ctx";
 import { err, ok, s } from "@keel/schema";
 import { Session } from "./Session.schema.ts";
 import type { SessionSink } from "./SessionSink.ts";
+import { utf8Length } from "./internal/utf8Length.ts";
+
+/** Browsers refuse a `keepalive` request body over 64 KiB (Fetch spec), so a larger session goes without it. */
+const KEEPALIVE_BYTES = 65_536;
 
 const PutFailed = s.error("sessions.putFailed", s.object({ status: s.int() }));
 const failed = (status: number) => err(PutFailed.make({ status }));
@@ -14,7 +18,8 @@ function real(): SessionSink {
       try {
         const body = JSON.stringify(Session.encode(session));
         const headers = { "content-type": "application/json" };
-        const res = await fetch(url, { method: "POST", body, headers, keepalive: true, credentials: "same-origin" });
+        const keepalive = utf8Length(body) <= KEEPALIVE_BYTES;
+        const res = await fetch(url, { method: "POST", body, headers, keepalive, credentials: "same-origin" });
         return res.ok ? ok(null) : failed(res.status);
       } catch {
         return failed(0);

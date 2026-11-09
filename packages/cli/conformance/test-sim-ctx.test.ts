@@ -1,4 +1,4 @@
-// Spec: k.ctx, clause "`keel test` runs under sim by default: a ctx created with no options inside a test is sim, with seed 0."
+// Spec: k.ctx, clause "In `keel test`, a ctx created with no options is sim, with seed 0."
 // Spec: k.testing, Harness "`keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim."
 // Spec: k.cli, Commands "`test [paths]` | harness under sim ctx (k.testing)".
 // The real `keel` binary runs `keel test` over a temp project (OS tmpdir) whose test builds `createCtx({})` with no

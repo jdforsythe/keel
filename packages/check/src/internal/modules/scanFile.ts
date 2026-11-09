@@ -19,6 +19,10 @@ function literal(a: Argument | Expression | undefined): Entry | null {
   return null;
 }
 
+/** The name of an import specifier's `imported` (identifier or string literal). */
+const nameOf = (i: { type: string; name?: string; value?: unknown }): string | undefined =>
+  i.type === "Identifier" ? i.name : typeof i.value === "string" ? i.value : undefined;
+
 /** Static string keys of a literal object argument (identifier or string-literal keys). */
 function keysOf(a: Argument | undefined): Entry[] {
   if (a === undefined || a.type !== "ObjectExpression") return [];
@@ -48,8 +52,9 @@ function storeId(args: readonly Argument[]): Entry | null {
 /**
  * Collect a file's module facts in one AST walk (k.module): imports, route ids passed to `href()` or to the
  * manifest member form `<routes>.href('id', params?)` (rfc:0041; both during the transition), `manifest({...})` route
- * keys, `store(..., { id })`, `transaction(store, 'name', ...)`, `s.error('code', ...)`, and `ctx.<cap>` uses.
- * Callees count only when imported from their kernel package (`@keel/router`, `@keel/store`, `@keel/schema`).
+ * keys, `store(..., { id })`, `transaction(store, 'name', ...)`, `s.error('code', ...)`, `ctx.<cap>` uses, and, as capability
+ * `observe` (rfc:0071), an `observe` import from `@keel/ctx` (any alias) or `<namespace>.observe`. Callees count only
+ * when imported from their kernel package (`@keel/router`, `@keel/store`, `@keel/schema`).
  */
 export function scanFile(program: Program): FileFacts {
   const href = localNames(program, "href", "@keel/router");
@@ -62,6 +67,8 @@ export function scanFile(program: Program): FileFacts {
   const routes: Entry[] = [];
   const ids: IdFact[] = [];
   const ctx: Entry[] = [];
+  // `observe` is a capability (rfc:0071): its import from @keel/ctx (any alias), or `<namespace>.observe`.
+  const spaces = new Set<string>();
   for (const st of program.body) {
     const from =
       st.type === "ImportDeclaration" || st.type === "ExportAllDeclaration"
@@ -70,6 +77,12 @@ export function scanFile(program: Program): FileFacts {
           ? st.source
           : null;
     if (from !== null) imports.push({ value: from.value, start: st.start, end: st.end });
+    if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/ctx" || st.importKind === "type") continue;
+    for (const sp of st.specifiers) {
+      if (sp.type === "ImportNamespaceSpecifier") spaces.add(sp.local.name);
+      else if (sp.type === "ImportSpecifier" && sp.importKind !== "type" && nameOf(sp.imported) === "observe")
+        ctx.push({ value: "observe", start: sp.start, end: sp.end });
+    }
   }
   new Visitor({
     ImportExpression: (n) => {
@@ -104,6 +117,10 @@ export function scanFile(program: Program): FileFacts {
       if (e !== null) ids.push({ ...e, kind: "error code" });
     },
     MemberExpression: (n) => {
+      if (n.object.type === "Identifier" && spaces.has(n.object.name)) {
+        const key = n.computed ? literal(n.property)?.value : n.property.type === "Identifier" ? n.property.name : "";
+        if (key === "observe") ctx.push({ value: "observe", start: n.start, end: n.end });
+      }
       if (n.computed || n.object.type !== "Identifier" || n.object.name !== "ctx") return;
       if (n.property.type === "Identifier") ctx.push({ value: n.property.name, start: n.start, end: n.end });
     },

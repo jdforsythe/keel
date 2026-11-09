@@ -1,5 +1,5 @@
 import type { Manifest, RouteDef } from "@keel/router";
-import { compileRoutes, compileTable, matchUrl } from "@keel/router/internal";
+import { matchHref } from "@keel/router/match";
 import { type JsonValue, type Schema, s } from "@keel/schema";
 import { stores } from "@keel/store";
 import type { Session } from "./Session.schema.ts";
@@ -49,7 +49,6 @@ export function redactSession<M extends Readonly<Record<string, RouteDef>>>(
       search: objectOf(strings(def?.search, search, `route:${id}`, "search.")),
     };
   };
-  const table = compileTable(compileRoutes(routes), routes);
   const error = (e: Session["error"]): Session["error"] =>
     e === null
       ? null
@@ -62,10 +61,10 @@ export function redactSession<M extends Readonly<Record<string, RouteDef>>>(
         return { ...e, payload: strings(schema, e.payload, `tx:${e.name}`) };
       }
       case "nav": {
-        const m = matchUrl(table, e.href);
-        if (m.kind !== "route" || m.route.def.path === undefined) return e;
-        const def = m.route.def;
-        const r = route(m.route.id, jsonOf(m.params, def.params), jsonOf(m.search, def.search));
+        const m = matchHref(options.routes, e.href);
+        const def = m === null ? undefined : routes[m.id];
+        if (m === null || def?.path === undefined) return e;
+        const r = route(m.id, jsonOf(m.params, def.params), jsonOf(m.search, def.search));
         return { ...e, href: hrefOf(def.path ?? "", r.params, r.search) };
       }
       case "fire": {

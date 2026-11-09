@@ -2,10 +2,11 @@ import type { JsonValue, Schema } from "@keel/schema";
 import type { TypeNode } from "./internal/TypeNode.ts";
 import { fake } from "./internal/fake.ts";
 import { mask } from "./internal/mask.ts";
+import { pathSegments } from "./internal/pathSegments.ts";
 import { seeded } from "./internal/seeded.ts";
 
 type Options = {
-  /** Dot paths into `value` to replace; `*` matches one array index. */
+  /** Dot paths into `value` to replace (`pathSegments`): `*` matches any one segment, `\\.` is a literal dot. */
   readonly paths: readonly string[];
   /** Session seed; with `salt` and the path it seeds each generated value. */
   readonly seed: number;
@@ -20,10 +21,10 @@ type Options = {
 const isObject = (v: JsonValue): v is { readonly [k: string]: JsonValue } =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-const matches = (pattern: readonly string[], at: readonly string[]): boolean =>
-  pattern.length === at.length && pattern.every((p, i) => p === at[i] || (p === "*" && /^\d+$/.test(at[i] ?? "")));
+const matches = (pattern: readonly (string | null)[], at: readonly string[]): boolean =>
+  pattern.length === at.length && pattern.every((p, i) => p === null || p === at[i]);
 
-const under = (pattern: readonly string[], at: readonly string[]): boolean =>
+const under = (pattern: readonly (string | null)[], at: readonly string[]): boolean =>
   pattern.length <= at.length && matches(pattern, at.slice(0, pattern.length));
 
 /**
@@ -33,8 +34,8 @@ const under = (pattern: readonly string[], at: readonly string[]): boolean =>
  * `s.string()` value, and every string under `s.json()`, not under an `except` path is written as `x` repeated. Pure.
  */
 export function redact(schema: Schema<unknown, boolean>, value: JsonValue, options: Options): JsonValue {
-  const patterns = options.paths.map((p) => p.split("."));
-  const except = options.strings?.except.map((p) => p.split("."));
+  const patterns = options.paths.map(pathSegments);
+  const except = options.strings?.except.map(pathSegments);
   const gen = (node: TypeNode, at: readonly string[]): JsonValue =>
     fake(node, seeded(options.seed, options.salt, at.join(".")));
 

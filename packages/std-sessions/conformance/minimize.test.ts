@@ -1,42 +1,67 @@
+// @vitest-environment happy-dom
 // Spec: std.sessions, clause "`minimize` output reproduces the fingerprint; removing any one of its input events does not; two runs are equal."
 // Seed 1337
-import { describe, expect, test } from "vitest";
+
+import fs from "node:fs";
+import path from "node:path";
 import { run } from "@keel/cli";
 import { Session, replay } from "@keel/std-sessions";
-import { cartRoutes } from "./fixtures.ts";
+import { minimize } from "@keel/std-sessions/minimize";
+import { afterAll, describe, expect, test } from "vitest";
+import { applyTo, buggyRoutes, buggySession, diskFixture, sessionFile } from "./fixtures.ts";
 
-// Gap: the spec names no buggy-fixture session, no stdout record or output path for `minimize` (only `.keel/sessions/` for ingest), so the minimized Session cannot be read back; "input events" is not defined (fire and nav?).
-// TODO 0094: unskip (minimize and keel session to-test are backlog 0094)
-describe.skip("std.sessions: minimize", () => {
-  const minimized = async (file: string, source: string): Promise<string> => {
-    const writes: { path: string; content: string | null }[] = [];
-    await run(["session", "minimize", file], {
-      cwd: ".",
-      files: [{ path: file, source }],
-      apply: (w) => void writes.push(...w),
-    });
-    return writes.find((w) => w.path === file)?.content ?? "";
-  };
+const encoded = (s: Session): string => JSON.stringify(Session.encode(s));
 
+const minimal = async () => {
+  const r = await minimize(await buggySession(), { routes: buggyRoutes() });
+  if (!r.ok) throw new Error("minimize failed");
+  return r.value;
+};
+
+const isInput = (e: Session["events"][number]): boolean => e.kind === "fire" || e.kind === "nav";
+
+describe("std.sessions: minimize", () => {
   test("`minimize` output reproduces the fingerprint", async () => {
-    const out = await minimized("failing.json", "{}");
-    const parsed = Session.parse(JSON.parse(out));
-    expect(parsed.ok).toBe(true);
-    if (parsed.ok) expect((await replay(parsed.value, { routes: cartRoutes() })).reproduced).toBe(true);
-  });
+    const { session } = await minimal();
+    expect((await replay(session, { routes: buggyRoutes() })).reproduced).toBe(true);
+  }, 60_000);
+
+  test("`minimize` output keeps only the inputs cart.add click then cart.checkout click", async () => {
+    const { session } = await minimal();
+    const inputs = session.events.flatMap((e) => (e.kind === "fire" ? [e.id] : e.kind === "nav" ? ["nav"] : []));
+    expect(inputs).toEqual(["cart.add", "cart.checkout"]);
+  }, 60_000);
 
   test("removing any one of its input events does not", async () => {
-    const out = await minimized("failing.json", "{}");
-    const parsed = Session.parse(JSON.parse(out));
-    if (!parsed.ok) throw new Error("minimize output is not a Session");
-    const inputs = parsed.value.events.filter((e) => e.kind === "fire" || e.kind === "nav");
+    const { session } = await minimal();
+    const inputs = session.events.filter(isInput);
+    expect(inputs.length).toBeGreaterThan(0);
     for (const drop of inputs) {
-      const events = parsed.value.events.filter((e) => e !== drop);
-      expect((await replay({ ...parsed.value, events }, { routes: cartRoutes() })).reproduced).toBe(false);
+      const events = session.events.filter((e) => e !== drop);
+      expect((await replay({ ...session, events }, { routes: buggyRoutes() })).reproduced).toBe(false);
     }
-  });
+  }, 60_000);
 
   test("two runs are equal", async () => {
-    expect(await minimized("failing.json", "{}")).toBe(await minimized("failing.json", "{}"));
-  });
+    const a = await minimal();
+    const b = await minimal();
+    expect(encoded(a.session)).toBe(encoded(b.session));
+  }, 60_000);
+});
+
+describe("std.sessions: minimize (keel session minimize)", () => {
+  const fx = diskFixture();
+  afterAll(() => fx.dispose());
+
+  test("`keel session minimize` rewrites the file with the minimized session", async () => {
+    fx.write("sessions/failing.json", sessionFile(await buggySession()));
+    const r = await run(["session", "minimize", "sessions/failing.json"], {
+      cwd: fx.dir,
+      files: fx.files(),
+      apply: applyTo(fx.dir),
+    });
+    expect(r.code).toBe(0);
+    const onDisk: unknown = JSON.parse(fs.readFileSync(path.join(fx.dir, "sessions/failing.json"), "utf8"));
+    expect(onDisk).toEqual(Session.encode((await minimal()).session));
+  }, 120_000);
 });

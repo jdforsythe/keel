@@ -39,3 +39,48 @@ describe("E2005 adapterNotNode", () => {
     expect(d).toHaveLength(1);
   });
 });
+
+// Backlog 0215: E2005 sees re-exports and imports through another project file (`RuleInput.project`).
+describe("E2005 adapterNotNode: re-exports (0215)", () => {
+  const client = topo("web: { modules: ['cart'], adapter: 'client' }");
+  const node = topo("web: { modules: ['cart'], adapter: 'node' }");
+  const via = (path: string, source: string) => ({ path, source });
+  test("export { routes as sessions } from the package", () => {
+    const d = run([routes("export { routes as sessions } from '@keel/std-sessions/routes'"), client]);
+    expect(d).toHaveLength(1);
+    expect(d[0]?.line).toBe(1);
+  });
+  test("export * from the package", () => {
+    expect(run([routes("export * from '@keel/std-sessions/routes'"), client])).toHaveLength(1);
+  });
+  test("an import through another file of the module", () => {
+    const files = [
+      routes("import { sessions } from './sessions.ts'"),
+      via("modules/cart/sessions.ts", `${SESS}\nexport const sessions = routes\n`),
+      client,
+    ];
+    expect(run(files)).toHaveLength(1);
+  });
+  test("a re-export chain through two files, extensionless", () => {
+    const files = [
+      routes("export * from './a'"),
+      via("modules/cart/a.ts", "export { sessions } from './b.ts'\n"),
+      via("modules/cart/b.ts", "export { routes as sessions } from '@keel/std-sessions/routes'\n"),
+      client,
+    ];
+    expect(run(files)).toHaveLength(1);
+  });
+  test("each form is clean on a node deployable, and a cycle without the package is clean", () => {
+    expect(run([routes("export * from '@keel/std-sessions/routes'"), node])).toHaveLength(0);
+    const cycle = [routes("export * from './a.ts'"), via("modules/cart/a.ts", "export * from './routes.ts'\n"), client];
+    expect(run(cycle)).toHaveLength(0);
+  });
+  test("a record-only chain is clean", () => {
+    const files = [
+      routes("export * from './rec.ts'"),
+      via("modules/cart/rec.ts", "export { record } from '@keel/std-sessions/record'\n"),
+      client,
+    ];
+    expect(run(files)).toHaveLength(0);
+  });
+});

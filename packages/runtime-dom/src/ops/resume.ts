@@ -1,3 +1,4 @@
+import { report } from "@keel/ctx/internal";
 import { eventQueue } from "../internal/eventQueue.ts";
 import { islandProps } from "../internal/islandProps.ts";
 import { readState } from "../internal/readState.ts";
@@ -10,7 +11,7 @@ eventQueue.install();
 
 /**
  * Resume server-rendered islands under `root` (generated entry only, ADR-0006): restore `options.stores`
- * from `#k-state`, pass `options.ctx` (k.ctx) to every island root, then for each outermost `[data-k-island]` attach its bindings and delegated handlers to the
+ * from `#k-state`, report its served `route` to `options.ctx`'s observers as a `nav` (rfc:0071), pass `options.ctx` (k.ctx) to every island root, then for each outermost `[data-k-island]` attach its bindings and delegated handlers to the
  * existing nodes without re-rendering, and replay events queued before resume. Returns dev warnings
  * (E1253: that island was re-rendered on the client).
  */
@@ -26,6 +27,12 @@ export function resume(
     const store = Object.hasOwn(stores, id) ? stores[id] : undefined;
     if (store === undefined) warnings.push(`E1253 #k-state has a snapshot for unknown store "${id}"`);
     else store.restore(snapshot);
+  }
+  // The served route is the ctx's first navigation (k.ctx Observers, rfc:0071): no router runs on an island page.
+  const route = state.route;
+  if (route !== null) {
+    const { href, ...rest } = route;
+    report(options.ctx, { kind: "nav", href, route: { ...rest, schemas: {} } });
   }
   const all = [...(root.matches("[data-k-island]") ? [root] : []), ...root.querySelectorAll("[data-k-island]")];
   const top = all.filter((el) => {

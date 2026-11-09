@@ -198,6 +198,55 @@ importers:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
 
+  apps/sessions:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.6
+        version: 2.1.6(hono@4.13.16)
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../../packages/ctx
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../../packages/forms
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../../packages/runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@keel/std-sessions':
+        specifier: workspace:*
+        version: link:../../packages/std-sessions
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../../packages/store
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+
   evals:
     dependencies:
       '@keel/tooling':
@@ -651,6 +700,9 @@ importers:
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
       oxc-parser:
         specifier: ^0.157.0
         version: 0.157.0
@@ -664,9 +716,6 @@ importers:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
-      '@keel/ui':
-        specifier: workspace:*
-        version: link:../ui
       '@types/node':
         specifier: ^22
         version: 22.20.5

@@ -104,7 +104,8 @@ function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Di
   for (const c of facts.ctx) {
     if (caps.has(c.value) || reported.has(c.value)) continue;
     reported.add(c.value);
-    const msg = `module ${own} uses ctx.${short(c.value)} but it is not in its capabilities`;
+    const use = c.value === "observe" ? "calls observe" : `uses ctx.${short(c.value)}`;
+    const msg = `module ${own} ${use} but it is not in its capabilities`;
     out.push(moduleDiag("E1156", file, c.start, msg, addEntryFix(module.file, man.capabilities, c.value)));
   }
   return out;

@@ -152,9 +152,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1156",
-    "ctx capability used but not in capabilities",
+    "ctx capability used, or observe called, but not in capabilities",
     "",
-    "add the capability (e.g. net) to the module's capabilities",
+    "add the capability (e.g. net, observe) to the module's capabilities",
     "k.module",
   ],
   [

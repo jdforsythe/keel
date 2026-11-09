@@ -21,7 +21,8 @@ import { statusOf } from "./statusOf.ts";
  * `{ id, results: { [levelId]: Result } }`. Documents render the chain: the first loader `err` (chain order)
  * renders the nearest errorElement at or above it with the layouts above intact and sets the status by its
  * code; otherwise `status`, `failure` (an action error at the route) and `submission` (the 422 re-render:
- * field summary before the route component, `form` in `#k-state`) apply.
+ * field summary before the route component, `form` in `#k-state`) apply. `#k-state` also carries the served `route`
+ * (`{ id, path, href, params, search }`, encoded; rfc:0071).
  */
 export async function page(
   r: Req,
@@ -74,7 +75,9 @@ export async function page(
       }),
     ),
   );
-  const extra = submission === null ? {} : { form: submission };
+  // The served route, for the resume entry to report as the ctx's first `nav` (k.runtime, rfc:0071).
+  const route = { id, path: def.path ?? "", href: m.url, params, search };
+  const extra = submission === null ? { route } : { route, form: submission };
   if (!rendered.ok) {
     // A throw outside every route boundary: the root default alert, 500.
     const fallback = renderChain({

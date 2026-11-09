@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "After a push navigation, document.activeElement is main and the scroll position is 0; back and forward restore each entry's own position, also for two entries with one URL." (RFC 0041: scroll is saved per router-minted history key) Seed 1337.
+// Spec: k.router, clause "After a push, document.activeElement is main and scroll is 0; back and forward restore each entry's position, also for two entries with one URL." (RFC 0041: scroll is saved per router-minted history key) Seed 1337.
 // Relies on happy-dom window.scrollTo updating window.scrollY.
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

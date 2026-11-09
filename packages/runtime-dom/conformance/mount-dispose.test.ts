@@ -3,7 +3,7 @@ import type { Computed, Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { attr, clone, on, prop, template, text } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
-// Spec: k.runtime, clause "`mount` then `dispose` leaves zero event listeners and zero reactive subscriptions."
+// Spec: k.runtime, clause "`mount` then `dispose` leaves no event listener or reactive subscription."
 // Property seed: 1337.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

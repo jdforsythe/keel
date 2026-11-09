@@ -5,6 +5,8 @@ export interface Root {
   /** The ctx the mount or island was given; ops report observer events on it (k.ctx Observers, rfc:0070). */
   readonly ctx: Ctx | undefined;
   listen(type: string): void;
+  /** Report `e` to the ctx's observers as the capture tap does (once per event); for events replayed after resume. */
+  tell(e: Event): void;
   /** Move (or first attach) every listener to `el`. */
   attach(el: Element): void;
   dispose(): void;

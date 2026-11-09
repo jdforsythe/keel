@@ -25,6 +25,7 @@
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
     "@keel/router": "8.5kb",
+    "@keel/router/match": "2kb",
     "@keel/runtime-dom": "6kb",
     "@keel/scaffold": {
       "max": "16kb",
@@ -37,6 +38,18 @@
     },
     "@keel/services": "3kb",
     "@keel/std-sessions": "6kb",
+    "@keel/std-sessions/commandJob": {
+      "max": "8kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/routes": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/tools": {
+      "max": "9kb",
+      "platform": "node"
+    },
     "@keel/store": "3kb",
     "@keel/testing": {
       "max": "9kb",

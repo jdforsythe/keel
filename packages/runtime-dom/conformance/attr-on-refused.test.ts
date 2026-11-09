@@ -1,4 +1,4 @@
-// Spec: k.runtime, clause "A JSX spread `{...{ onclick: 'alert(1)' }}` creates no `onclick` attribute."
+// Spec: k.runtime, clause "JSX spread `{...{ onclick: 'alert(1)' }}` creates no `onclick` attribute."
 // Also Ops: "`attr` binds nothing for an `on*` name, a `<base>` `href` or a `<meta>` `http-equiv`." Property seed: 1337.
 // @vitest-environment happy-dom
 // The JSX-spread repro goes through the compiler, which is not a dependency of @keel/runtime-dom; it lives in

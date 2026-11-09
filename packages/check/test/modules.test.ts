@@ -86,6 +86,23 @@ describe("module pass", () => {
     expect(of(fixed, "E1156")).toEqual([]);
   });
 
+  it("E1156 observe (rfc:0071): a named import or namespace member needs the capability; a type import does not", () => {
+    const use = (src: string) => [man("orders", { caps: ["clock"] }), f("modules/orders/rec.ts", src)];
+    const named = of(use("import { observe as o } from '@keel/ctx'\nexport const r = o\n"), "E1156");
+    expect(named.map((x) => [x.line, x.message])).toEqual([
+      [1, "module orders calls observe but it is not in its capabilities"],
+    ]);
+    const fixed = applyFix(use("import { observe } from '@keel/ctx'\n"), named[0]);
+    expect(fixed.find((x) => x.path === "modules/orders/module.ts")?.source).toContain(
+      "capabilities: ['clock', 'observe']",
+    );
+    expect(of(fixed, "E1156")).toEqual([]);
+    expect(of(use("import * as k from '@keel/ctx'\nexport const r = k['observe']\n"), "E1156")).toHaveLength(1);
+    expect(
+      of(use("import type { observe } from '@keel/ctx'\nimport { createCtx } from '@keel/ctx'\n"), "E1156"),
+    ).toEqual([]);
+  });
+
   it("E1153 names a self-dependency and reports once per cycle", () => {
     expect(of([man("orders", { deps: ["orders"] })], "E1153").map((d) => d.message)).toEqual([
       "module deps cycle: orders -> orders",

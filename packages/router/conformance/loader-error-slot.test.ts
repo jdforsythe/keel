@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "A loader err renders the nearest errorElement in the chain; layouts above it stay rendered." Seed 1337.
+// Spec: k.router, clause "A loader err renders the nearest errorElement in the chain; layouts above it stay." Seed 1337.
 import { beforeEach, describe, expect, it } from "vitest";
 import { control, idOf, resetObservations, routes, settle, start } from "./fixtures.ts";
 

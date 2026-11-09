@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "For every route and every generated params and search, navigate(routes.href(id, p, q)) makes route() equal { id, params: p, search: q, pending: false }." Seed 1337.
+// Spec: k.router, clause "For every route and generated p, q, navigate(routes.href(id, p, q)) makes route() equal { id, params: p, search: q, pending: false }." Seed 1337.
 import type { Href } from "@keel/router";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";

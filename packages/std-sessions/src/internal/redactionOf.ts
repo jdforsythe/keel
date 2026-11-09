@@ -8,6 +8,8 @@ import { objectOf } from "./objectOf.ts";
 import { parseRedactEntry } from "./parseRedactEntry.ts";
 
 const json = s.json();
+/** How many distinct matched values a redaction remembers to scrub from later errors (the newest are kept). */
+const REMEMBERED = 256;
 
 /** `v` with each string (and number, as text) passed through `fn`, depth first; an unchanged value keeps its type. */
 function each(v: JsonValue, fn: (x: string) => string): JsonValue {
@@ -24,7 +26,8 @@ function each(v: JsonValue, fn: (x: string) => string): JsonValue {
  * schema-backed values become generated values, `el:` and `error:` values are masked, `s.secret` always goes. An `el:`
  * entry masks every input value and one-character key of its element, and so does an element once reported masked
  * (a password, k.ctx). Every value an entry matched is masked again wherever it appears in a later error's message
- * or data; other free text in errors is out of scope.
+ * or data, for the newest 256 distinct values (a long session's memory stays bounded; an older value is assumed
+ * gone from app state); other free text in errors is out of scope.
  */
 export function redactionOf(entries: readonly string[], seed: number): Redaction {
   const paths = new Map<string, string[]>();
@@ -38,7 +41,11 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
   const masked = new Set<string>();
   const found = (v: JsonValue): void => {
     each(v, (x) => {
-      if (x.length >= 3) known.add(x);
+      if (x.length < 3) return x;
+      known.delete(x);
+      known.add(x);
+      const oldest = known.size > REMEMBERED ? known.values().next() : undefined;
+      if (oldest !== undefined && oldest.done !== true) known.delete(oldest.value);
       return x;
     });
   };

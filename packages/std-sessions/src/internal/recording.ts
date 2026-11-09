@@ -10,19 +10,29 @@ import { SessionsConfig } from "../SessionsConfig.ts";
 import { session } from "../session.ts";
 import type { JsonObject } from "./JsonObject.ts";
 import type { Live } from "./Live.ts";
+import { MAX_ERRORS } from "./MAX_ERRORS.ts";
+import { MAX_SESSION_BYTES } from "./MAX_SESSION_BYTES.ts";
 import type { Route } from "./Route.ts";
 import { actives } from "./actives.ts";
 import { emptySession } from "./emptySession.ts";
 import { fingerprint } from "./fingerprint.ts";
 import { jsonOf } from "./jsonOf.ts";
 import { redactionOf } from "./redactionOf.ts";
+import { utf8Length } from "./utf8Length.ts";
 
 type Base = { readonly at: number; readonly route: Route; readonly state: JsonObject; readonly id: Id<"Session"> };
 type Raw = KeelError<string, JsonValue>;
 
+/** Bytes of a session's JSON outside `route`, `state`, `events` and `error`: keys, `v`, `id`, `seed`, `at`, fingerprint. */
+const OVERHEAD = 256;
+const sizeOf = (v: unknown): number => utf8Length(JSON.stringify(v) ?? "");
+
 /**
  * A recorder on `ctx` (std.sessions `record`): `nav`, `fire`, `resource` and `error` from `observe`, `tx` from a
- * reactive read of every store's `log()`, each redacted as it is appended into a ring buffer of `limit` events.
+ * reactive read of every store's `log()`, each redacted as it is appended into a ring buffer of `limit` events whose
+ * session JSON stays within `MAX_SESSION_BYTES` (backlog 0211): past either bound it cuts its oldest events by the
+ * overflow rule. `errors()` keeps the first and last `MAX_ERRORS`. A rejected upload is recorded as its
+ * `sessions.putFailed` error, not dropped.
  */
 export function recording(ctx: Ctx, options: RecordOptions): Live {
   const limit = options.limit ?? 500;
@@ -32,8 +42,11 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
   const redaction = redactionOf(entries, seed ?? 0);
 
   let base: Base | undefined;
+  let baseBytes = 0;
   let current: Route | undefined;
   let buf: SessionEvent[] = [];
+  let used = 0;
+  const sizes = new WeakMap<SessionEvent, number>();
   const raw: Raw[] = [];
   const bases = new WeakMap<SessionEvent, Omit<Base, "id">>();
   const inputs = new WeakMap<SessionEvent, Omit<Base, "id">>();
@@ -69,30 +82,56 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
     }
   };
 
-  const append = (event: SessionEvent): void => {
-    buf.push(event);
-    if (buf.length <= limit) return;
-    const cut = buf.findIndex((e) => e.kind === "nav");
-    const at = cut < 0 ? undefined : buf[cut];
-    const rebase = at === undefined ? undefined : bases.get(at);
-    if (rebase !== undefined) {
-      buf = buf.slice(cut + 1);
-      base = { ...rebase, id: sink.id() };
+  const rebase = (to: Omit<Base, "id">): void => {
+    base = { ...to, id: sink.id() };
+    baseBytes = sizeOf(to.route) + sizeOf(to.state);
+  };
+  const keep = (next: SessionEvent[], to: Omit<Base, "id">): void => {
+    buf = next;
+    used = next.reduce((n, e) => n + (sizes.get(e) ?? 0), 0);
+    rebase(to);
+  };
+  /** An upper bound of the session's JSON bytes: `error` repeats the first error event's error. */
+  const total = (): number => {
+    const first = buf.find((e) => e.kind === "error");
+    return OVERHEAD + baseBytes + used + buf.length + (first === undefined ? 0 : (sizes.get(first) ?? 0));
+  };
+
+  /** One overflow cut (std.sessions): through the oldest `nav`; else from the second input; else to now. */
+  const cut = (event: SessionEvent): void => {
+    const at = buf.findIndex((e) => e.kind === "nav");
+    const to = at < 0 ? undefined : bases.get(buf[at] ?? event);
+    if (to !== undefined) {
+      keep(buf.slice(at + 1), to);
       return;
     }
-    // No navigation buffered: rebase to the newest input but the oldest, at the state it saw, keeping it and what
+    // No navigation buffered: rebase to the oldest input but the first, at the state it saw, keeping it and what
     // followed; else to now, keeping the appended event if it is an input (its effects are yet to come) or an error
     // (the one an upload is about).
-    let f = buf.length - 1;
-    while (f > 0 && buf[f]?.kind !== "fire") f--;
+    const f = buf.findIndex((e, i) => i > 0 && e.kind === "fire");
     const from = f > 0 ? inputs.get(buf[f] ?? event) : undefined;
-    if (from !== undefined) {
-      buf = buf.slice(f);
-      base = { ...from, id: sink.id() };
+    if (from !== undefined) keep(buf.slice(f), from);
+    else keep(event.kind === "fire" || event.kind === "error" ? [event] : [], here());
+  };
+
+  const append = (event: SessionEvent): void => {
+    const size = sizeOf(event) + 1;
+    sizes.set(event, size);
+    buf.push(event);
+    used += size;
+    while (buf.length > limit || total() > MAX_SESSION_BYTES) {
+      const before = buf.length;
+      cut(event);
+      if (buf.length < before) continue;
+      // The appended event alone is over the byte bound: the session keeps none and rebases to now.
+      if (buf.length > 0) keep([], here());
       return;
     }
-    buf = event.kind === "fire" || event.kind === "error" ? [event] : [];
-    base = { ...here(), id: sink.id() };
+  };
+
+  const pushError = (error: Raw): void => {
+    raw.push(error);
+    if (raw.length > 2 * MAX_ERRORS) raw.splice(MAX_ERRORS, 1);
   };
 
   const own = scope(() => {
@@ -124,7 +163,7 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       const { route, href } = redaction.nav(event);
       current = route;
       if (base === undefined) {
-        base = { at, route, state: own.run(snapshot), id: sink.id() };
+        rebase({ at, route, state: own.run(snapshot) });
         return;
       }
       const nav: SessionEvent = { at, kind: "nav", href };
@@ -134,14 +173,18 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
     }
     if (event.kind === "error") {
       const error: Raw = { code: event.error.code, message: event.error.message, data: jsonOf(event.error.data) };
-      raw.push(error);
+      pushError(error);
       if (base === undefined) return;
       const e: SessionEvent = { at, kind: "error", error: redaction.error(error) };
       causes.set(e, { error, route: current?.id ?? base.route.id });
       append(e);
       if (options.upload !== undefined && !uploaded) {
         uploaded = true;
-        void sink.put(options.upload, build());
+        void sink.put(options.upload, build()).then((r) => {
+          if (r.ok) return;
+          if (done === undefined) onEvent({ kind: "error", error: r.error });
+          else pushError(r.error);
+        });
       }
       return;
     }

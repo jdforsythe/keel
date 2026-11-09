@@ -8,6 +8,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./match": {
+      "types": "./src/match/index.ts",
+      "default": "./src/match/index.ts"
+    },
     "./internal": {
       "types": "./src/internal/index.ts",
       "default": "./src/internal/index.ts"

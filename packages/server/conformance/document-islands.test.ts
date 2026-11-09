@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.runtime, clause "A page with no islands loads no runtime JS: its document has no `<script type="module">`, `data-k`, or `data-k-island`; a page with an event handler has all three, and `resume` attaches the handler to the server nodes."
+// Spec: k.runtime, clause "A page with no islands loads no runtime JS: its document has no `<script type="module">`, `data-k`, or `data-k-island`; a page with an event handler has all three, and `resume` attaches the handler to server nodes."
 // Spec: k.server, "Document" (route levels are the island roots, keyed by route id; RFC 0037).
 // Seed: 1337 (fc.assert seed below). Real compiled TSX (compile + evaluate), real createApp, real resume.
 import { compile } from "@keel/compiler";

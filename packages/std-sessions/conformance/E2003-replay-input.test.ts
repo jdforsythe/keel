@@ -1,18 +1,16 @@
+// @vitest-environment happy-dom
 // Spec: std.sessions, clause "E2003 fires on a fixture, not on its clean twin."
 // Seed 1337
-import fc from "fast-check";
 import { run } from "@keel/cli";
-import { describe, expect, test } from "vitest";
-import { cartRoutes, json, play } from "./fixtures.ts";
+import { replay } from "@keel/std-sessions";
+import "@keel/std-sessions/tools";
+import fc from "fast-check";
+import { afterAll, describe, expect, test } from "vitest";
+import { buggySession, cartRoutes, diskFixture, play, sessionFile } from "./fixtures.ts";
 
-// E2003 replay cannot apply input event N (id absent from `ids.json`, href matches no route; message names N) (comes from `keel session`)
-// Gap: the spec does not say whether N is zero-based, nor the stdout record shape; the test looks for the code and the decimal N in stdout. `ids.json` has to be supplied as a project file.
-// TODO 0094: unskip (keel session replay/minimize/to-test are backlog 0094)
-describe.skip("std.sessions: E2003 fires on a fixture, not on its clean twin", () => {
-  const replayOf = (source: string) =>
-    run(["session", "replay", "s.json"], { cwd: ".", files: [{ path: "s.json", source }] });
-
-  test("E2003 fires on a fixture: E2003 names event N when a fire id is absent from ids.json", async () => {
+// E2003 replay cannot apply input event N (0-based; message names N) (comes from `keel session`)
+describe("std.sessions: E2003 fires on a fixture, not on its clean twin", () => {
+  test("E2003 fires on a fixture: replay stops at the unapplicable input N", async () => {
     const { session } = await play(1337, []);
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 5 }), async (n) => {
@@ -21,24 +19,46 @@ describe.skip("std.sessions: E2003 fires on a fixture, not on its clean twin", (
           ...Array.from({ length: n }, () => nav),
           { at: 0, kind: "fire" as const, id: "no.such.id", event: { type: "click" as const } },
         ];
-        const r = await replayOf(json({ ...session, events }));
-        expect(r.stdout).toContain("E2003");
-        expect(r.stdout).toContain(String(n));
+        const r = await replay({ ...session, events }, { routes: cartRoutes() });
+        expect(r.unapplied).toBe(n);
       }),
-      { seed: 1337, numRuns: 15 },
+      { seed: 1337, numRuns: 100 },
     );
-  });
+  }, 60_000);
 
-  test("E2003 fires on a fixture: E2003 when a nav href matches no route", async () => {
+  test("E2003 fires on a fixture: a nav href matching no route is unapplied at index 0", async () => {
     const { session } = await play(1337, []);
-    const events = [{ at: 0, kind: "nav" as const, href: cartRoutes().href("cart.show") }];
-    const r = await replayOf(json({ ...session, events }).replace('"/cart"', '"/nowhere"'));
-    expect(r.stdout).toContain("E2003");
-  });
+    const events = [{ at: 0, kind: "nav" as const, href: "/nowhere" }];
+    const r = await replay({ ...session, events }, { routes: cartRoutes() });
+    expect(r.unapplied).toBe(0);
+  }, 60_000);
 
-  test("E2003 does not fire on its clean twin: E2003 absent when every input applies", async () => {
+  test("E2003 does not fire on its clean twin: every input applies", async () => {
     const { session } = await play(1337, [{ id: "cart.add" }]);
-    const r = await replayOf(json(session));
-    expect(r.stdout).not.toContain("E2003");
+    const r = await replay(session, { routes: cartRoutes() });
+    expect(r.unapplied).toBeNull();
+  }, 60_000);
+
+  describe("keel session replay", () => {
+    const fx = diskFixture();
+    afterAll(() => fx.dispose());
+
+    test("E2003 fires on a fixture: keel session replay names input event 3", async () => {
+      const good = await buggySession();
+      const at = good.events[3]?.at ?? 0;
+      const events = good.events.map((e, i) =>
+        i === 3 ? { at, kind: "fire" as const, id: "no.such.id", event: { type: "click" as const } } : e,
+      );
+      fx.write("sessions/s.json", sessionFile({ ...good, events }));
+      const r = await run(["session", "replay", "sessions/s.json"], { cwd: fx.dir, files: fx.files() });
+      expect(r.stdout).toContain("E2003");
+      expect(r.stdout).toContain("input event 3");
+    }, 120_000);
+
+    test("E2003 does not fire on its clean twin: keel session replay of the unmodified session", async () => {
+      fx.write("sessions/s.json", sessionFile(await buggySession()));
+      const r = await run(["session", "replay", "sessions/s.json"], { cwd: fx.dir, files: fx.files() });
+      expect(r.stdout).not.toContain("E2003");
+    }, 120_000);
   });
 });

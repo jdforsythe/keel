@@ -8,8 +8,10 @@ import { copy } from "./internal/copy.ts";
 import { coreKey } from "./internal/coreKey.ts";
 import { counter } from "./internal/counter.ts";
 import { freeze } from "./internal/freeze.ts";
+import { holdsSecret } from "./internal/holdsSecret.ts";
 import { logSchema } from "./internal/logSchema.ts";
 import { metaSchema } from "./internal/metaSchema.ts";
+import { persisted } from "./internal/persisted.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
 import { trim } from "./internal/trim.ts";
@@ -26,7 +28,8 @@ import type { Transaction } from "./types/Transaction.ts";
  * (`initial`, or the `initial` of the last restored snapshot); `undoWhere` undoes only a matching latest entry. `id` defaults to `store.<n>`; a live duplicate in the caller's registry
  * (`stores()`, `isolate`) throws; joining and leaving rerun `stores()` readers. `payloads` maps each transaction name to its
  * payload schema (rfc:0070). At most `logLimit` entries (default 256) are kept: a commit or `restore` past it
- * folds the oldest into that base (RFC 0054), so `undo` reaches only kept entries.
+ * folds the oldest into that base (RFC 0054), so `undo` reaches only kept entries. A payload may hold `s.secret` values;
+ * `snapshot()` folds every entry up to the last such one into `initial`, so no secret is written (rfc:0071).
  */
 export function store<T extends object>(
   schema: Schema<T>,
@@ -148,13 +151,21 @@ export function store<T extends object>(
     },
     snapshot(options) {
       version.get();
-      const state = copy(schema, current);
-      const log = copy(
+      // No secret leaves the store: every entry up to the last whose payload holds one folds into `initial` (rfc:0071).
+      let cut = 0;
+      rows.forEach((r, i) => {
+        if (holdsSecret(payloads.get(r.entry.name), r.entry.payload)) cut = i + 1;
+      });
+      const state = persisted(schema, current);
+      const log = persisted(
         logSchema(payloads),
-        rows.map((r) => (options?.meta === true ? r.entry : withoutMeta(r.entry))),
+        rows.slice(cut).map((r) => (options?.meta === true ? r.entry : withoutMeta(r.entry))),
       );
       if (!state.ok || !log.ok) throw new Error(`store ${id}: committed state or log no longer fits its schema`);
-      const initial = copy(schema, base);
+      const initial = persisted(
+        schema,
+        rows.slice(0, cut).reduce((st, r) => freeze(r.apply(st)), base),
+      );
       if (!initial.ok) throw new Error(`store ${id}: initial state no longer fits its schema`);
       return { state: state.value, log: log.value, initial: initial.value };
     },

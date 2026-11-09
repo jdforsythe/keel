@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "Outside any router a `Form` renders `action` unchanged and does not intercept submit; inside one, an `action` whose matched route lacks `method` throws E1505." (RFC 0045)
+// Spec: k.router, clause "Outside any router a `Form` renders `action` unchanged and lets submit through; inside one, an `action` route lacking `method` throws E1505." (RFC 0045)
 // Outside a router the call is made directly (no mount of a router); inside one, through the probe in fixtures.ts.
 // Property seed: 1337.
 import { Form } from "@keel/router";

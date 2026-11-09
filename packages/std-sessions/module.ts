@@ -4,7 +4,7 @@ import { module } from "@keel/compiler";
 export default module({
   id: "sessions",
   deps: [],
-  capabilities: ["clock", "session", "storage"],
+  capabilities: ["clock", "observe", "session", "storage"],
   public: {
     exports: ["record", "replay", "minimize", "session", "Session", "routes"],
     routes: ["sessions.ingest", "sessions.list"],

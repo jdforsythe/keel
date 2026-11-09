@@ -4,7 +4,6 @@ export type { Recorder } from "./Recorder.ts";
 export type { ReplayResult } from "./ReplayResult.ts";
 export { record } from "./record.ts";
 export { redact } from "./redact.ts";
-export { redactSession } from "./redactSession.ts";
 export { replay } from "./replay.ts";
 export { Session } from "./Session.schema.ts";
 export { SessionEvent } from "./SessionEvent.ts";

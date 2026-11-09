@@ -18,7 +18,7 @@ export default function BoxShell(props: Infer<typeof Props> & { readonly childre
         py="4"
       >
         <Box direction="row" align="center" gap="3">
-          <Image src="/keel-mark.svg" decorative w="mark" h="mark" />
+          <Image src="/keel-mark.svg" decorative h="mark" />
           <Text fontSize="lg" weight="semibold">
             Keel
           </Text>

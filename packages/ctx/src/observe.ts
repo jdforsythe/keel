@@ -6,6 +6,8 @@ import { hubOf } from "./internal/hubOf.ts";
  * Subscribe `fn` to the events kernel code reports on `ctx` (k.ctx Observers, rfc:0070): navigations, input events,
  * resource states and caught errors, synchronously and in order. `fn` first receives the ctx's current `nav`, if one
  * exists. A throw in `fn` is dropped. Returns the stop function; after it runs `fn` gets nothing more. Idempotent.
+ * Observing is a capability (rfc:0071): a module calling it lists `observe` in its manifest `capabilities`, which
+ * `keel check` enforces (E1156). A ctx carries no module identity, so nothing is checked here.
  */
 export function observe(ctx: Ctx, fn: (event: CtxEvent) => void): () => void {
   const own = hubOf(ctx);

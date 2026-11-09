@@ -10,8 +10,9 @@ import { renderRoute } from "@keel/testing";
 import { Box, Button, Input } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { Session, record, redactSession, replay, session } from "../src/index.ts";
+import { Session, record, replay, session } from "../src/index.ts";
 import { redactionOf } from "../src/internal/redactionOf.ts";
+import { redactSession } from "../src/redactSession.ts";
 
 const typed: { value: string } = { value: "" };
 const routes = manifest({

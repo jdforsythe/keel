@@ -44,10 +44,14 @@ export function resolveSchema(expr: Expression, scope: SchemaScope, depth = 0): 
   }
   const a0 = argAt(e, 0);
   if (LEAVES.has(mc.name)) return LEAF;
-  if (mc.name === "array" || mc.name === "secret") {
+  if (mc.name === "array" || mc.name === "secret" || mc.name === "record") {
     if (a0 === undefined) return ANY;
     const inner = resolveSchema(a0, scope, depth + 1);
-    return mc.name === "array" ? { kind: "array", item: inner } : inner;
+    return mc.name === "array"
+      ? { kind: "array", item: inner }
+      : mc.name === "record"
+        ? { kind: "record", value: inner }
+        : inner;
   }
   if (mc.name !== "object" || a0 === undefined) return ANY;
   const lit = unwrap(a0);

@@ -20,6 +20,14 @@
       "types": "./src/replay.ts",
       "default": "./src/replay.ts"
     },
+    "./minimize": {
+      "types": "./src/minimize.ts",
+      "default": "./src/minimize.ts"
+    },
+    "./commandJob": {
+      "types": "./src/commandJob.ts",
+      "default": "./src/commandJob.ts"
+    },
     "./session": {
       "types": "./src/session.ts",
       "default": "./src/session.ts"
@@ -35,6 +43,10 @@
     "./tools": {
       "types": "./src/tools.ts",
       "default": "./src/tools.ts"
+    },
+    "./routes": {
+      "types": "./src/routes.ts",
+      "default": "./src/routes.ts"
     }
   },
   "files": ["dist"],
@@ -53,13 +65,13 @@
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
+    "@keel/ui": "workspace:*",
     "oxc-parser": "^0.157.0"
   },
   "devDependencies": {
     "@keel/runtime-dom": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/tooling": "workspace:*",
-    "@keel/ui": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3",
     "happy-dom": "^21"

@@ -1,4 +1,4 @@
-// Spec: k.ctx, clause "A ctx created before `register(name)` and one created after both reach it in real, shell, and sim."
+// Spec: k.ctx, clause "Ctxs created before and after `register(name)` both reach it in real, shell, and sim."
 // fast-check seed: 1337
 import { createCtx, register } from "@keel/ctx";
 import fc from "fast-check";
@@ -10,7 +10,7 @@ const FC = { seed: 1337, numRuns: 25 };
 type Tagged = { readonly tag: string; readonly seed: unknown };
 const nameArb = fc.stringMatching(/^[a-z]{3,10}$/);
 
-describe("A ctx created before `register(name)` and one created after both reach it in real, shell, and sim.", () => {
+describe("Ctxs created before and after `register(name)` both reach it in real, shell, and sim.", () => {
   for (const mode of modes) {
     it(`A ctx created before register(name) and one created after both reach it in ${mode}`, () => {
       fc.assert(

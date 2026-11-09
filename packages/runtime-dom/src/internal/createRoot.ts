@@ -36,6 +36,7 @@ export function createRoot(el: Element | null, ctx?: Ctx): Root {
   for (const t of taps) target?.addEventListener(t, tap, true);
   return {
     ctx,
+    tell: tap,
     listen(type) {
       if (types.has(type)) return;
       const l = (e: Event): void => {

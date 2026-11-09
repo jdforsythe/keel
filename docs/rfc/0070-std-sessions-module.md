@@ -46,6 +46,7 @@ The red-team pass on the implementation filed six findings. Fixes are in this ba
 - **Secret search in `nav` (0208).** `s.secret` search values are redacted in the `nav` event's rebuilt `href`, as in `route.search`.
 - **Error messages (0209).** An error's `message` has every redacted value it contains replaced, so a message that quotes a payload cannot carry it out.
 - **Overflow keeps the error (0210).** With no `nav` buffered, the appended event is kept when it is an input or an `error`. The error that triggered the cut stays in the session, and so does the fingerprint's source.
+- **`observe` is a capability (RFC 0071).** RFC 0071 makes `observe` a declared capability, so a module that calls it lists `observe` in `capabilities` (E1156). The std-sessions manifest lists `clock`, `observe`, `session` and `storage`; RFC 0071 holds the k.ctx and k.module text.
 
 ## Proposal
 
@@ -429,7 +430,7 @@ The section is replaced by the text below. Against the draft:
 # std.sessions: Sessions
 status: implemented
 
-**Module.** `@keel/std-sessions` is stdlib module `sessions` (capabilities `clock`, `session`, `storage`; exports and routes as below). Modules set `std['@keel/std-sessions']: { redact?, expose?, readers? }` (string arrays; tests: `bindStd`); only `redact` reaches browsers.
+**Module.** `@keel/std-sessions` is stdlib module `sessions` (capabilities `clock`, `observe`, `session`, `storage`; exports, routes below). Modules set `std['@keel/std-sessions']: { redact?, expose?, readers? }` (string arrays; tests: `bindStd`); only `redact` reaches browsers.
 A `redact` or `expose` entry is `<subject>:<target>#<path>`: `tx:` transaction name (payload), `store:` id (state), `route:` id (`params.*`, `search.*`), `el:` element id (its values in every event), `error:` code (`data.*`). `record` keeps every value but `redact` entries, which become their schema's generated value (`el:`, `error:` strings: `x` repeated). `s.secret` values (also in `nav` search) and password inputs are always redacted; error messages drop every redacted value. `to-test` also writes each `s.string()` value no `expose` entry names as `x` repeated.
 
 **API.** Capability `session(ctx)`: `put(url, s): Promise<Result<null, KeelError>>` (real: POST, non-2xx `sessions.putFailed`; sim: kept in `taken(): { url, session }[]`) and `id()`: `random.id('Session')` on its own ctx. `record(ctx, { limit = 500, upload?: URL })` returns `{ events(), errors(), stop(): Session }`, one per ctx (again: the same); with `upload` it puts the session on the first `error`. Without `document` it is a no-op.

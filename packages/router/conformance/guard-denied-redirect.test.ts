@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "A guard returning err redirects to its redirect route with next; no loader runs and the route component never renders." Seed 1337.
+// Spec: k.router, clause "A guard returning err redirects to its redirect route with next; no loader or route component runs." Seed 1337.
 import { beforeEach, describe, expect, it } from "vitest";
 import { control, count, idOf, log, now, resetObservations, routes, settle, start, total } from "./fixtures.ts";
 

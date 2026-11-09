@@ -15,7 +15,8 @@ const FOCUS = ["focus", "blur", "focusin", "focusout"];
 /**
  * Resume one island: run its component with `clone` claiming the server nodes, so bindings and handlers
  * attach in place. On a structural mismatch (E1253) undo that, re-render it client-side in place of the
- * server element, and return the warning. Queued pre-resume events are replayed once, in order.
+ * server element, and return the warning. Queued pre-resume events are replayed once, in order, and reported to the
+ * ctx's observers (rfc:0071).
  */
 export function resumeIsland(
   el: Element,
@@ -54,7 +55,7 @@ export function resumeIsland(
   }
   const failed = claim.session.failed;
   if (failed === null) {
-    eventQueue.resume(el, el);
+    eventQueue.resume(el, el, root.tell);
     return null;
   }
   disposeOwner(owner);
