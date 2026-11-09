@@ -1,7 +1,7 @@
 // @vitest-environment node
 // The ingest service in plain node (no happy-dom), as `server.ts` serves it but over a sim ctx: the home page and the
 // ingest page render, a recorded session is ingested, a caller outside `readers` is sent to the ingest page, a reader
-// lists the archive, and the module's `readers` sample reaches the guard through `.keel/std.json`. Seed 1337
+// lists the archive, and the module's `readers` entry reaches the guard through `.keel/std.json`. Seed 1337
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { bindStd } from "@keel/compiler/std/bindStd";
@@ -15,7 +15,8 @@ import topology from "../topology.ts";
 
 const BASE = "http://localhost";
 const STD = fileURLToPath(new URL("../.keel/std.json", import.meta.url));
-const SAMPLE = createHash("sha256").update("sample-reader-token").digest("base64url");
+/** The hash of the deployed service's reader cookie, as `modules/ops/module.ts` lists it. */
+const READER = "M2bBc9fD2bC-Y5rZ6s12udWSieipCnNBvmH3_v6-cxY";
 
 async function service(std?: string) {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -94,9 +95,9 @@ describe("apps/sessions in plain node", () => {
     expect(body).toContain("cart.locked");
   });
 
-  it("the module's readers sample reaches the service through .keel/std.json", async () => {
+  it("the module's readers entry reaches the service through .keel/std.json", async () => {
     const { ctx } = await service(STD);
     const readers = Object.values(stdConfig(ctx, "@keel/std-sessions", SessionsConfig)).flatMap((c) => c.readers ?? []);
-    expect(readers).toEqual([SAMPLE]);
+    expect(readers).toEqual([READER]);
   });
 });
