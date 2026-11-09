@@ -24,13 +24,13 @@ function sourceOf(io: Io, files: readonly SourceFile[], target: string): string 
   return existsSync(abs) ? readFileSync(abs, "utf8") : undefined;
 }
 
-/** `expose` entries of `modules/<m>/module.ts`'s `std['@keel/std-sessions']` (literal strings only). */
-function exposeOf(files: readonly SourceFile[], m: string): string[] {
+/** `list` entries of `modules/<m>/module.ts`'s `std['@keel/std-sessions']` (literal strings only). */
+function entriesOf(files: readonly SourceFile[], m: string, list: "redact" | "expose"): string[] {
   const f = files.find((x) => x.path === `modules/${m}/module.ts`);
   const ast = f === undefined ? undefined : parseTs(f.path, f.source);
   if (ast === undefined) return [];
   return redactLiterals(ast)
-    .literals.filter((l) => l.list === "expose")
+    .literals.filter((l) => l.list === list)
     .map((l) => l.value);
 }
 
@@ -55,12 +55,12 @@ function unappliedText(s: Session, n: number): string {
 }
 
 /**
- * `keel session replay|minimize|to-test <f>` (std.sessions Commands, rfc:0070 §8): parse `<f>` with
- * `sessions.Session` (E2002), find the deployable serving `route.id` in `topology.ts` (none: E2003 for the base), and
- * run the op as a job under the project's `keel test` (`runJob`). `replay` reports E2003 (an input that does not
- * apply, N from 0 over `events`) and E2004 (fingerprint differs) and one `session` record. `minimize` rewrites `<f>`
- * with the 1-minimal session; `to-test` writes `modules/<m>/test/session-<fingerprint>.test.ts` from the session
- * redacted with the route module's `expose` entries. Both write nothing unless the session reproduces (E2004).
+ * `keel session replay|minimize|to-test <f>` (std.sessions Commands): parse `<f>` with `sessions.Session` (E2002),
+ * find the deployable serving `route.id` in `topology.ts` (none: E2003 for the base), and run the op as a job under
+ * the project's `keel test` (`runJob`), replaying with the serving modules' `redact` entries. `replay` reports E2003
+ * (an input that does not apply, N from 0 over `events`) and E2004 (fingerprint differs) and one `session` record.
+ * `minimize` rewrites `<f>` with the 1-minimal session; `to-test` writes `modules/<m>/test/session-<fingerprint>.test.ts`
+ * from the session redacted with the route module's `expose` entries. Both write nothing unless the session reproduces (E2004).
  */
 export async function commandRun(op: Op, target: string, io: Io, maxRuns: number | undefined): Promise<Outcome> {
   const files = projectOf(io);
@@ -93,7 +93,8 @@ export async function commandRun(op: Op, target: string, io: Io, maxRuns: number
     op,
     session: Session.encode(session),
     modules,
-    expose: op === "to-test" ? exposeOf(files, m) : [],
+    expose: op === "to-test" ? entriesOf(files, m, "expose") : [],
+    redact: modules.flatMap((x) => entriesOf(files, x, "redact")),
     ...(maxRuns === undefined ? {} : { maxRuns }),
   });
   // No result: the job did not run (vitest `include` misses `.keel/sessions/`) or app code threw; the test run's

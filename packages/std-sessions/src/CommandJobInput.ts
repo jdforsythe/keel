@@ -10,4 +10,6 @@ export type CommandJobInput = {
   readonly routes: readonly Table[];
   readonly maxRuns?: number;
   readonly expose?: readonly string[];
+  /** The serving modules' `redact` entries, bound on each replay ctx as the recording ctx had them. */
+  readonly redact?: readonly string[];
 };

@@ -116,4 +116,15 @@ describe("E2005 adapterNotNode: re-exports (0215)", () => {
     expect(run([routes("export * from './a'"), { path: "modules/cart/a/index.tsx", source: src }, t])).toHaveLength(1);
     expect(run([routes("export * from './a'"), { path: "modules/cart/a.tsx", source: src }, t])).toHaveLength(1);
   });
+  test("type-only import and re-export are erased and clean", () => {
+    const t = topo("web: { modules: ['cart'], adapter: 'static' }");
+    expect(run([routes("import type { routes } from '@keel/std-sessions/routes'"), t])).toHaveLength(0);
+    expect(run([routes("export type { routes } from '@keel/std-sessions/routes'"), t])).toHaveLength(0);
+    expect(run([routes("export type * from '@keel/std-sessions/routes'"), t])).toHaveLength(0);
+  });
+  test("a template literal without substitutions is a literal specifier", () => {
+    const t = topo("web: { modules: ['cart'], adapter: 'static' }");
+    expect(run([routes("export const l = () => import(`@keel/std-sessions/routes`)"), t])).toHaveLength(1);
+    expect(run([routes("export const l = (n: string) => import(`@keel/${n}`)"), t])).toHaveLength(0);
+  });
 });

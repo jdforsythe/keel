@@ -37,8 +37,8 @@ async function getJson(io: Io & { fetch: NonNullable<Io["fetch"]> }, url: string
 }
 
 /**
- * `keel session capture [url]` and `keel session ingest <url> [--failing] [--since t]` (std.sessions Commands,
- * rfc:0070 §8). `capture` fetches `<url>/__keel/inspect` (default `http://localhost:5173`) and writes section
+ * `keel session capture [url]` and `keel session ingest <url> [--failing] [--since t]` (std.sessions Commands).
+ * `capture` fetches `<url>/__keel/inspect` (default `http://localhost:5173`) and writes section
  * `sessions.live`'s value to `.keel/sessions/<fingerprint>-<index>.json`; a `null` value (no recorder) writes nothing.
  * `ingest` sends `GET <url>/sessions/list?failing=1&since=<t>` (`accept: application/json`; with
  * `KEEL_SESSIONS_TOKEN` in `io.env`, the caller cookie `__Host-keel-caller` on https, else `keel-caller`) and writes

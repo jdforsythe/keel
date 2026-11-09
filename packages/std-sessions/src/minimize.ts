@@ -23,7 +23,7 @@ function chunks(xs: readonly number[], n: number): number[][] {
 const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
 
 /**
- * Shrink `session` to a 1-minimal set of inputs that still reproduces its fingerprint (std.sessions API, rfc:0070 §7).
+ * Shrink `session` to a 1-minimal set of inputs that still reproduces its fingerprint (std.sessions API).
  * Inputs are `fire` and `nav` events; everything else is an observation. It replays the session (not reproduced:
  * `err` `sessions.notReproduced` with the replay's fingerprint), finds the shortest reproducing prefix of the inputs by
  * binary search on its length, then runs ddmin over it: complements of n chunks, n from 2 doubling to the input
@@ -32,11 +32,12 @@ const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
  * A candidate is the base plus the kept inputs; a candidate set is replayed at most once. The result keeps `v`, `id`,
  * `seed`, `deterministic`, `at`, `route` and `state`; its `events` are the kept inputs (at their recorded `at`) with
  * the observations of their final replay in occurrence order, and `error` and `fingerprint` come from that replay.
- * Every replay is deterministic under the seed and the candidate order is fixed, so two runs are equal.
+ * Every replay is deterministic under the seed and the candidate order is fixed, so two runs are equal. `redact` is
+ * passed to each replay (see `replay`).
  */
 export async function minimize<M extends Readonly<Record<string, RouteDef>>>(
   session: Session,
-  options: { readonly routes: Manifest<M>; readonly maxRuns?: number },
+  options: { readonly routes: Manifest<M>; readonly maxRuns?: number; readonly redact?: readonly string[] },
 ): Promise<
   Result<
     { session: Session; runs: number; minimal: boolean },
@@ -59,7 +60,10 @@ export async function minimize<M extends Readonly<Record<string, RouteDef>>>(
     }
     runs++;
     const events = keep.flatMap((i) => inputs.slice(i, i + 1));
-    const r = await replayRun({ ...session, events }, { routes: options.routes });
+    const r = await replayRun(
+      { ...session, events },
+      { routes: options.routes, ...(options.redact === undefined ? {} : { redact: options.redact }) },
+    );
     seen.set(key, { reproduced: r.result.reproduced, recorded: r.recorded });
     return r.result.reproduced;
   };

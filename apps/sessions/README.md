@@ -2,7 +2,7 @@
 
 Keel's own session ingest service. `topology.ts` defines one deployable, `sessions` (`node`). It serves `@keel/std-sessions/routes` and a home page.
 
-- `POST /sessions` takes a recorded session as JSON, up to 256 KiB. The service computes the fingerprint from the session itself. The archive keeps 64 fingerprints, 5 sessions of each and 4 MiB in all. One caller (one `keel-caller` cookie) keeps at most 1 MiB in 16 fingerprints. Past a limit the caller holding the most loses its oldest session first, so one caller's flood never pushes out another caller's sessions.
+- `POST /sessions` takes a recorded session as JSON, up to 256 KiB. The service computes the fingerprint from the session itself. The archive keeps 64 fingerprints, the newest 5 sessions of each and 4 MiB in all; past a limit the fingerprint seen longest ago goes. Anyone can post, so put rate limiting in front of the service: a flood of 4 MiB replaces the archive.
 - `GET /sessions/list` returns the archive to a reader. Anyone else is redirected to `/sessions`.
 
 ## Readers

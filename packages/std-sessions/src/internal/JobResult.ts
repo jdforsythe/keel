@@ -5,7 +5,7 @@ import { Session } from "../Session.schema.ts";
 const NavCall = s.object({ index: s.int(), id: s.string(), params: s.record(s.json()), search: s.record(s.json()) });
 
 /**
- * What a `keel session` job writes back (rfc:0070 §8 Job file): the replay's `fingerprint`, first error `code`,
+ * What a `keel session` job writes back: the replay's `fingerprint`, first error `code`,
  * `unapplied` index and whether it `reproduced`; `session` is the minimized (`minimize`) or redacted (`to-test`)
  * session when the op reproduced, with `navs` (`to-test`). `runs` and `minimal` report `minimize`.
  */

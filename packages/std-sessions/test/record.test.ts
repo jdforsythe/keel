@@ -1,6 +1,6 @@
 import { inspectors } from "@keel/compiler/inspect/inspectors";
 // @vitest-environment happy-dom
-// `record` (std.sessions; rfc:0070 §4): one per ctx, stop() idempotent, upload on the first error only, redaction of
+// `record` (std.sessions): one per ctx, stop() idempotent, upload on the first error only, redaction of
 // each subject, and the `sessions.live` inspect section. Seed 1337
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";

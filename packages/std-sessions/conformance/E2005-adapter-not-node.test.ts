@@ -59,6 +59,17 @@ describe("std.sessions: E2005 fires on a fixture, not on its clean twin.", () =>
     expect(viaFile("node", "modules/cart/sess.tsx", target, hop)).not.toContain("E2005");
     expect(viaFile("client", "modules/cart/sess.tsx", "export const x = 1", hop)).not.toContain("E2005");
   });
+  test("E2005 fires on a fixture, not on its clean twin: E2005 for a substitution-free template import", () => {
+    expect(codes("client", "export const load = () => import(`@keel/std-sessions/routes`)")).toContain("E2005");
+    expect(codes("node", "export const load = () => import(`@keel/std-sessions/routes`)")).not.toContain("E2005");
+  });
+  test("E2005 fires on a fixture, not on its clean twin: E2005 absent for a type-only import of the routes", () => {
+    expect(codes("client", "import { routes as sessions } from '@keel/std-sessions/routes'")).toContain("E2005");
+    expect(codes("client", "import type { routes as sessions } from '@keel/std-sessions/routes'")).not.toContain(
+      "E2005",
+    );
+    expect(codes("client", "export type { routes } from '@keel/std-sessions/routes'")).not.toContain("E2005");
+  });
   test("E2005 fires on a fixture, not on its clean twin: E2005 absent for a client record-only import", () => {
     expect(codes("client", RECORD)).not.toContain("E2005");
   });

@@ -4,7 +4,7 @@ import { err, ok } from "@keel/schema";
 import { SessionsConfig } from "../SessionsConfig.ts";
 
 /**
- * Guard `sessions.reader` (std.sessions Ingest, rfc:0070 D2): admits a `caller` in the merged `readers` of every
+ * Guard `sessions.reader` (std.sessions Ingest): admits a `caller` in the merged `readers` of every
  * module's `std['@keel/std-sessions']` (server-only config); else `keel.denied`, which redirects (302) to
  * `sessions.ingest` with `next`. An absent or empty list denies everyone, and so does the anonymous caller `""`.
  */

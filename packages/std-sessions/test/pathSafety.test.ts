@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Backlog 0224 (file names never from a client id) and 0228 (no token over plain http to a remote host). Seed 1337
+// File names never come from a client id, and no token goes over plain http to a remote host. Seed 1337
 import path from "node:path";
 import type { Io } from "@keel/cli";
 import { createCtx } from "@keel/ctx";
@@ -31,7 +31,7 @@ const made = (id: string, fingerprint = "abcdefabcdef"): Session => {
 };
 const REPRO = "/../../../package";
 
-describe("0224 session file names", () => {
+describe("session file names", () => {
   test("the repro id is rejected by the schema and by the ingest route with 422", async () => {
     expect(Session.parse(raw(REPRO)).ok).toBe(false);
     expect(Session.parse(raw("a".repeat(65))).ok).toBe(false);
@@ -71,7 +71,7 @@ describe("0224 session file names", () => {
   });
 });
 
-describe("0228 ingest URL", () => {
+describe("ingest URL", () => {
   const listed = { results: { "sessions.list": { ok: true, value: {} } } };
   async function run(target: string) {
     const seen: { url: string; cookie: string | undefined }[] = [];

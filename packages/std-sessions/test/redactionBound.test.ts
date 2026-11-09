@@ -1,4 +1,4 @@
-// Backlog 0211 (from 0093): the values a redaction remembers to scrub from later errors are bounded (newest 256).
+// The values a redaction remembers to scrub from later errors are bounded (newest 256).
 import { describe, expect, test } from "vitest";
 import { redactionOf } from "../src/internal/redactionOf.ts";
 

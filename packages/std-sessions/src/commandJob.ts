@@ -36,7 +36,8 @@ export async function commandJob(job: CommandJobInput): Promise<void> {
   const session = parsed.value;
   const routes = union(job.routes);
   const none = { session: null, navs: [], runs: 0, minimal: false };
-  const first = await replayRun(session, { routes });
+  const redact = job.redact ?? [];
+  const first = await replayRun(session, { routes, redact });
   const seen = {
     reproduced: first.result.reproduced,
     fingerprint: first.recorded.fingerprint,
@@ -45,12 +46,16 @@ export async function commandJob(job: CommandJobInput): Promise<void> {
   };
   if (job.op === "replay" || !seen.reproduced) return write({ ...seen, ...none, runs: 1 });
   if (job.op === "minimize") {
-    const m = await minimize(session, { routes, ...(job.maxRuns === undefined ? {} : { maxRuns: job.maxRuns }) });
+    const m = await minimize(session, {
+      routes,
+      redact,
+      ...(job.maxRuns === undefined ? {} : { maxRuns: job.maxRuns }),
+    });
     if (!m.ok) return write({ ...seen, ...none, reproduced: false, fingerprint: m.error.data.fingerprint });
     return write({ ...seen, session: m.value.session, navs: [], runs: m.value.runs, minimal: m.value.minimal });
   }
   const redacted = redactSession(session, { routes, expose: job.expose ?? [] });
-  const again = await replayRun(redacted, { routes });
+  const again = await replayRun(redacted, { routes, redact });
   const out = { ...seen, fingerprint: again.recorded.fingerprint, runs: 2, minimal: false };
   if (!again.result.reproduced) return write({ ...out, ...none, runs: 2, reproduced: false });
   const navs: JobResult["navs"] = [];

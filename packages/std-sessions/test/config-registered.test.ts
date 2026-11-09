@@ -1,4 +1,4 @@
-// Backlog 0203, rfc:0070: `SessionsConfig` is registered under `@keel/std-sessions`, so a misshapen `std` entry is
+// `SessionsConfig` is registered under `@keel/std-sessions`, so a misshapen `std` entry is
 // E1158; `redact`, `expose` and `readers` are optional string arrays, and only `redact` reaches browsers (D2).
 // Seed 1337 (no random inputs)
 import { stdArtifact } from "@keel/compiler";

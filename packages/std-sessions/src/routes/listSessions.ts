@@ -6,7 +6,7 @@ import { Listing } from "./Listing.schema.ts";
 
 /**
  * `GET /sessions/list` (`sessions.list`, std.sessions Ingest; behind guard `sessions.reader`): the archive's sessions
- * by fingerprint (`Listing`: callers and byte counts stay on the server), keeping with `failing` only sessions with
+ * by fingerprint (`Listing`: byte counts stay on the server), keeping with `failing` only sessions with
  * an error (and fingerprints left with one), with `since` only `last >= since`.
  */
 export const listSessions = loader(

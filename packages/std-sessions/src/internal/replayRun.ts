@@ -1,3 +1,4 @@
+import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
 import { matchHref } from "@keel/router/match";
@@ -26,16 +27,19 @@ function decoded(
  * base with `renderRoute`, then per event advance to its `at` and apply inputs (`fire`, `nav` through `navigate`);
  * `tx`, `resource` and `error` events are observations. A store the base `state` lacks starts at its `initial`.
  * A recorder on the replay's ctx gives `observed`, `error` and the fingerprint `reproduced` compares. `unapplied`: the
- * index of the input it stopped at, -1 for the base, else null.
- * Also returns the replay recorder's whole session (`recorded`: inputs and observations in occurrence order, its
- * fingerprint), which `minimize` and `keel session` read.
+ * index of the input it stopped at, -1 for the base, else null. `redact` entries are bound on the replay ctx as the
+ * recording ctx had them. Also returns the replay recorder's whole session (`recorded`: inputs and observations in
+ * occurrence order, its fingerprint), which `minimize` and `keel session` read.
  */
 export async function replayRun<M extends Readonly<Record<string, RouteDef>>>(
   session: Session,
-  options: { readonly routes: Manifest<M> },
+  options: { readonly routes: Manifest<M>; readonly redact?: readonly string[] },
 ): Promise<{ readonly result: ReplayResult; readonly recorded: Session }> {
   const routes: Table = options.routes;
   const ctx = createCtx({ mode: "sim", seed: session.seed ?? 0 });
+  // The replay recorder redacts as the live one did, so a redacted `data.at` hashes the same.
+  if (options.redact !== undefined && options.redact.length > 0)
+    bindStd(ctx, { "@keel/std-sessions": { replay: { redact: [...options.redact] } } });
   ctx.clock.advance(Math.max(0, session.at - ctx.clock.now()));
   const rec = record(ctx, { limit: Number.POSITIVE_INFINITY });
   const finish = (

@@ -14,7 +14,7 @@ const H0: number[] = [];
 
 const rotr = (x: number, n: number): number => (x >>> n) | (x << (32 - n));
 
-/** SHA-256 of `text` (UTF-8) as 64 lowercase hex characters. Synchronous, for `stop()` (rfc:0070 §5). */
+/** SHA-256 of `text` (UTF-8) as 64 lowercase hex characters. Synchronous, for `stop()`. */
 export function sha256(text: string): string {
   const bytes = new TextEncoder().encode(text);
   const len = bytes.length;

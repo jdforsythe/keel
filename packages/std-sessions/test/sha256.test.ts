@@ -1,4 +1,4 @@
-// sha256 and the fingerprint (std.sessions; rfc:0070 §5): byte-equal with node:crypto. Seed 1337
+// sha256 and the fingerprint (std.sessions): byte-equal with node:crypto. Seed 1337
 import { createHash } from "node:crypto";
 import fc from "fast-check";
 import { expect, test } from "vitest";

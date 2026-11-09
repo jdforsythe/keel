@@ -25,7 +25,7 @@ function diagsOf(stdout: string): OutRecord[] {
 }
 
 /**
- * Run one `keel session` job inside the project's `keel test` runner (std.sessions D1, rfc:0070 §8 Job file): write
+ * Run one `keel session` job inside the project's `keel test` runner (std.sessions D1): write
  * `.keel/sessions/job-<pid>-<n>.test.ts`, which imports each serving module's `routes.ts` and calls
  * `commandJob` from `@keel/std-sessions/commandJob` with the session inline; run `keel test <job> --format=json` on
  * `io.cwd` (the project's vitest config and environment, `KEEL_TEST=1`); read `JobResult` back from the
@@ -40,6 +40,7 @@ export async function runJob(
     readonly modules: readonly string[];
     readonly maxRuns?: number;
     readonly expose: readonly string[];
+    readonly redact: readonly string[];
   },
 ): Promise<{ readonly ok: true; readonly result: JobResult } | { readonly ok: false; readonly diags: OutRecord[] }> {
   const dir = path.join(io.cwd, ".keel", "sessions");
@@ -53,6 +54,7 @@ export async function runJob(
     op: job.op,
     result: resultFile,
     expose: job.expose,
+    redact: job.redact,
     ...(job.maxRuns === undefined ? {} : { maxRuns: job.maxRuns }),
   };
   const source = [

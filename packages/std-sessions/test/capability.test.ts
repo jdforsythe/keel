@@ -1,4 +1,4 @@
-// The `session` capability (std.sessions; rfc:0070 §3): sim ids follow the seed, real put posts JSON. Seed 1337
+// The `session` capability (std.sessions): sim ids follow the seed, real put posts JSON. Seed 1337
 import { createCtx } from "@keel/ctx";
 import { afterEach, expect, test, vi } from "vitest";
 import { type Session, session } from "../src/index.ts";

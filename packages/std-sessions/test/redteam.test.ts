@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Red-team leaks in recorded sessions (backlog 0206-0210, 0213; rfc:0070). Seed 1337
+// Red-team leaks in recorded sessions. Seed 1337
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
@@ -54,7 +54,7 @@ async function open(ctx: Ctx, redact: readonly string[] = []) {
 }
 
 describe("red-team 0206-0210, 0213", () => {
-  test("0206: an el: value entry masks one-character keydown keys as well as input values", async () => {
+  test("an el: value entry masks one-character keydown keys as well as input values", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[0-9]{6,10}$/), async (digits) => {
         const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -73,7 +73,7 @@ describe("red-team 0206-0210, 0213", () => {
     );
   });
 
-  test("0207: a field that once reported a masked value stays redacted after it stops being a password", async () => {
+  test("a field that once reported a masked value stays redacted after it stops being a password", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     const h = await open(ctx);
     const rec = record(ctx);
@@ -88,7 +88,7 @@ describe("red-team 0206-0210, 0213", () => {
     expect(text(out)).not.toContain('"key":"z"');
   });
 
-  test("0207: the recorder keeps masking an element once it reported a masked value, whatever observe sends next", () => {
+  test("the recorder keeps masking an element once it reported a masked value, whatever observe sends next", () => {
     const r = redactionOf([], 1337);
     const fire = (value: string) => r.fire({ at: 0, kind: "fire", id: "pay.pw", event: { type: "input", value } });
     expect(fire("plain").event).toEqual({ type: "input", value: "plain" });
@@ -100,7 +100,7 @@ describe("red-team 0206-0210, 0213", () => {
     });
   });
 
-  test("0208: an s.secret search value never reaches a nav href, with no redact entry", async () => {
+  test("an s.secret search value never reaches a nav href, with no redact entry", async () => {
     let pop: (url: string) => void = () => undefined;
     const urls: string[] = ["/pay"];
     const history: RouterHistory = {
@@ -127,7 +127,7 @@ describe("red-team 0206-0210, 0213", () => {
     expect(text(out)).toContain("visible");
   });
 
-  test("0209: a value a redact entry matched is masked in later error messages", async () => {
+  test("a value a redact entry matched is masked in later error messages", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[0-9]{8,12}$/), async (card) => {
         const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -147,7 +147,7 @@ describe("red-team 0206-0210, 0213", () => {
     );
   });
 
-  test("0210: the error that overflows the buffer is kept, so the upload names it", async () => {
+  test("the error that overflows the buffer is kept, so the upload names it", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     const h = await open(ctx);
     const upload = new URL("https://example.test/sessions");
@@ -162,7 +162,7 @@ describe("red-team 0206-0210, 0213", () => {
     expect(out.events.length).toBeLessThanOrEqual(1);
   });
 
-  test("0213: a real ctx (unseeded random) records no seed and deterministic: false; a seeded one records both", async () => {
+  test("a real ctx (unseeded random) records no seed and deterministic: false; a seeded one records both", async () => {
     const loose = createCtx({ mode: "real" });
     const h = await open(loose);
     const rec = record(loose);

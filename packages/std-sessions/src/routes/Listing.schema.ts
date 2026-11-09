@@ -3,7 +3,7 @@ import { Session } from "../Session.schema.ts";
 
 /**
  * What `sessions.list` returns (std.sessions Ingest): per fingerprint `count`, `first`, `last` and the kept sessions
- * in arrival order. The archive's callers and byte counts stay on the server.
+ * in arrival order. The archive's byte counts stay on the server.
  */
 export const Listing = s.record(
   s.object(

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// `record` bounds (backlog 0211): the session JSON stays within 192 KiB however long the inputs, `errors()` keeps the
+// `record` bounds: the session JSON stays within 192 KiB however long the inputs, `errors()` keeps the
 // first and last 32, and a rejected upload is recorded as its `sessions.putFailed` error. Seed 1337
 import { inspectors } from "@keel/compiler/inspect/inspectors";
 import { createCtx } from "@keel/ctx";

@@ -21,7 +21,7 @@ const SessionShape = s.object(
   },
   { closed: true },
 );
-/** A client-chosen id becomes a file name nowhere, but stays a short token: `^[A-Za-z0-9_-]{1,64}$` (backlog 0224). */
+/** A client-chosen id becomes a file name nowhere, but stays a short token: `^[A-Za-z0-9_-]{1,64}$`. */
 const SESSION_ID = /^[A-Za-z0-9_-]{1,64}$/;
 export const Session: typeof SessionShape = {
   ...SessionShape,

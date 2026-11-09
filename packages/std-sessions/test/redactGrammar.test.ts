@@ -1,4 +1,4 @@
-// Backlog 0214: the redact path grammar. `*` matches any one segment (array index, record key, object field); `\.`
+// The redact path grammar. `*` matches any one segment (array index, record key, object field); `\.`
 // is a literal dot, so a key containing a dot is addressable; E2001 rejects an entry that matches nothing, naming its
 // path. The examples failed before the fix (`*` matched digits only, `s.record` was unresolved). Property seed 1337.
 import { check } from "@keel/check";
@@ -12,7 +12,7 @@ import "../src/redactPath.ts";
 const SEED = 1337;
 const escapeKey = (k: string): string => (k === "*" ? "\\*" : k.replace(/\\/g, "\\\\").replace(/\./g, "\\."));
 
-describe("redact path grammar (0214)", () => {
+describe("redact path grammar", () => {
   test("`*` matches every record key: one entry redacts a field under every `s.record` entry", () => {
     const Book = s.object({ byId: s.record(s.object({ name: s.string(), n: s.int() })) });
     const value = { byId: { k1: { name: "alice-secret", n: 1 }, k2: { name: "bob-secret", n: 2 } } };
@@ -75,7 +75,7 @@ describe("redact path grammar (0214)", () => {
   });
 });
 
-describe("E2001 with the new grammar (0214)", () => {
+describe("E2001 with the path grammar", () => {
   const manifest = (redact: readonly string[]) => ({
     path: "modules/cart/module.ts",
     source: `import { module } from '@keel/compiler'

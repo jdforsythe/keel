@@ -37,7 +37,7 @@ function href(n: NavCall): string {
 }
 
 /**
- * The `@keel/testing` file `keel session to-test` writes for `session` (std.sessions, rfc:0070 §8 Emitted test):
+ * The `@keel/testing` file `keel session to-test` writes for `session` (std.sessions):
  * header `// Session: <fingerprint>, seed <n>`, then one straight-line test (no loops or helpers) that creates a sim
  * ctx of the session's seed (absent: 0), advances the clock to `at`, records, renders the base route with its params,
  * search and the state of each importable store, applies each input in order (`fire` as `h.fire(id, event)`, `nav` as

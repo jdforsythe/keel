@@ -7,7 +7,7 @@ import { sessionDiag } from "./internal/sessionDiag.ts";
 const OPS = ["capture", "ingest", "replay", "minimize", "to-test"] as const;
 
 /**
- * The `session` command std.sessions fills with `stdCommand('session', command)` (k.cli, rfc:0070 §8):
+ * The `session` command std.sessions fills with `stdCommand('session', command)` (k.cli):
  * `keel session capture [url] | ingest <url> [--failing] [--since t] | replay <f> | minimize <f> [--max-runs n] |
  * to-test <f>`. Positional fields `op`, `target`; the common flags. Records: `session` (one per session read or
  * written), `diag` (E2002-E2004 at the session file 1:1, E1056, I1055), and a `summary`.

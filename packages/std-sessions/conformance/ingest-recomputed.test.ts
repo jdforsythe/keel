@@ -1,4 +1,4 @@
-// Spec: std.sessions, clause "One caller's flood never evicts another caller's session; a POST naming another's `fingerprint` is filed under its own, the other's count unchanged."
+// Spec: std.sessions, clause "A POST naming another session's `fingerprint` is filed under its own recomputed one; 20 flood POSTs totalling less than 4 MiB leave an earlier real session in place."
 // @vitest-environment node
 // Seed 1337
 import { createHash } from "node:crypto";
@@ -90,36 +90,28 @@ async function listed(app: Fetcher, ctx: ReturnType<typeof createCtx>, cookie: s
 
 const codeArb = fc.stringMatching(/^[A-Z][A-Z0-9_]{2,10}$/);
 
-describe("std.sessions: ingest by caller", () => {
-  test("One caller's flood never evicts another caller's session", async () => {
-    // One real POST, then about 20 POSTs of about 240 KiB with distinct codes.
-    const flood = fc.record({
-      posts: fc.integer({ min: 17, max: 22 }),
-      size: fc.integer({ min: 200_000, max: 250_000 }),
-      code: codeArb,
-    });
+describe("std.sessions: ingest recomputes the fingerprint", () => {
+  test("20 flood POSTs totalling less than 4 MiB leave an earlier real session in place", async () => {
+    // One real POST, then 20 cookieless POSTs (a fresh caller each) with distinct codes, under 4 MiB in all.
+    const flood = fc.record({ size: fc.integer({ min: 100_000, max: 190_000 }), code: codeArb });
     await fc.assert(
-      fc.asyncProperty(flood, async ({ posts, size, code }) => {
+      fc.asyncProperty(flood, async ({ size, code }) => {
         const { app, ctx } = await boot();
         const real = await send(app, make("real", code, ""));
         expect(real.status).toBe(200);
         const reader = callerValue(real);
-        let flooder: string | undefined;
-        for (let i = 0; i < posts; i++) {
-          const res = await send(app, make(`f${i}`, `FLOOD${i}`, "", "a".repeat(size)), flooder);
-          expect(res.status).toBe(200);
-          flooder ??= callerValue(res);
-        }
-        const codes = Object.values(await listed(app, ctx, reader)).flatMap((e) => e.codes);
+        for (let i = 0; i < 20; i++)
+          expect((await send(app, make(`f${i}`, `FLOOD${i}`, "", "a".repeat(size)))).status).toBe(200);
+        const archive = await listed(app, ctx, reader);
+        const codes = Object.values(archive).flatMap((e) => e.codes);
         expect(codes).toContain(code);
-        expect(codes).toContain(`FLOOD${posts - 1}`);
-        expect(codes.filter((c) => c.startsWith("FLOOD")).length).toBeLessThan(posts);
+        expect(codes.filter((c) => c.startsWith("FLOOD"))).toHaveLength(20);
       }),
       { seed: 1337, numRuns: 3 },
     );
   }, 120_000);
 
-  test("a POST naming another's `fingerprint` is filed under its own, the other's count unchanged", async () => {
+  test("A POST naming another session's `fingerprint` is filed under its own recomputed one; the other's count is unchanged", async () => {
     await fc.assert(
       fc.asyncProperty(codeArb, async (code) => {
         const { app, ctx } = await boot();

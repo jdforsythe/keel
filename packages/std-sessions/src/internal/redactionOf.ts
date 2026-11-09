@@ -11,6 +11,9 @@ const json = s.json();
 /** How many distinct matched values a redaction remembers to scrub from later errors (the newest are kept). */
 const REMEMBERED = 256;
 
+const isObject = (v: JsonValue): v is { readonly [k: string]: JsonValue } =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
 /** `v` with each string (and number, as text) passed through `fn`, depth first; an unchanged value keeps its type. */
 function each(v: JsonValue, fn: (x: string) => string): JsonValue {
   if (Array.isArray(v)) return v.map((x) => each(x, fn));
@@ -26,8 +29,9 @@ function each(v: JsonValue, fn: (x: string) => string): JsonValue {
  * schema-backed values become generated values, `el:` and `error:` values are masked, `s.secret` always goes. An `el:`
  * entry masks every input value and one-character key of its element, and so does an element once reported masked
  * (a password, k.ctx). Every value an entry matched is masked again wherever it appears in a later error's message
- * or data, for the newest 256 distinct values (a long session's memory stays bounded; an older value is assumed
- * gone from app state); other free text in errors is out of scope.
+ * or data, except `data.at` (where it fired, which only an `error:` entry masks), for the newest 256 distinct values
+ * (a long session's memory stays bounded; an older value is assumed gone from app state); other free text in errors
+ * is out of scope.
  */
 export function redactionOf(entries: readonly string[], seed: number): Redaction {
   const paths = new Map<string, string[]>();
@@ -87,7 +91,14 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
     error(error: KeelError<string, JsonValue>) {
       const at = under(`error:${error.code}`, "data.");
       const data = at.length === 0 ? error.data : apply(json, error.data, `error:${error.code}`, at);
-      return { ...error, message: scrub(error.message), data: each(data, scrub) };
+      const out = each(data, scrub);
+      // `data.at` names where the error fired and feeds the fingerprint: only an `error:` entry masks it.
+      const where = isObject(data) ? data.at : undefined;
+      return {
+        ...error,
+        message: scrub(error.message),
+        data: isObject(out) && typeof where === "string" ? { ...out, at: where } : out,
+      };
     },
   };
 }
