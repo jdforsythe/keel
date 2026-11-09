@@ -10,7 +10,7 @@ The home page records its own session in the browser and posts it to `/sessions`
 ## Readers
 1. Make one write to the service, for example `POST /sessions` with a session. The response sets a `keel-caller` cookie.
 2. Hash the cookie value: `node -e 'console.log(require("node:crypto").createHash("sha256").update(process.argv[1]).digest("base64url"))' <value>`.
-3. Add the hash to `readers` in `modules/ops/module.ts` and rebuild. The sample entry is the hash of `sample-reader-token`, which only the tests use: the service admits a cookie only if it signed it, so a reader's hash always comes from a minted cookie.
+3. Add the hash to `readers` in `modules/ops/module.ts` and rebuild. The service admits a cookie only if it signed it, so a reader's hash always comes from a minted cookie, and it stays valid only while `KEEL_SESSIONS_SECRET` stays the same.
 4. Give the cookie value to `keel session ingest` as `KEEL_SESSIONS_TOKEN`.
 
 Set `KEEL_SESSIONS_SECRET` (32 or more bytes) in production. It signs the caller cookies, so a reader hash stays valid across restarts.

@@ -1,6 +1,6 @@
 # Task 0253 + 0251 + 0256: S1 exit path
 
-**Spec:** std.sessions (upload origin, recorder lifetime) · k.reactive (detached scope) · k.module / k.ctx (client start) · **Gate:** S1 exit · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-09)
+**Spec:** std.sessions (upload origin, recorder lifetime) · k.reactive (detached scope) · k.module / k.ctx (client start) · **Gate:** S1 exit · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed (2026-11-09; S1 exit itself continues as 0272)
 
 ## Deliverables
 - [x] 0253 uploads are same-origin: spec and READMEs say so; an app that records mounts `@keel/std-sessions/routes` in its own node deployable and the Action's `url` is that app (one way; no cross-origin upload, no forwarder)
