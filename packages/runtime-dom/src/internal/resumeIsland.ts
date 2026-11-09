@@ -8,6 +8,7 @@ import { createOwner } from "./createOwner.ts";
 import { createRoot } from "./createRoot.ts";
 import { disposeOwner } from "./disposeOwner.ts";
 import { eventQueue } from "./eventQueue.ts";
+import { rootCatcher } from "./rootCatcher.ts";
 import { withCx } from "./withCx.ts";
 
 const FOCUS = ["focus", "blur", "focusin", "focusout"];
@@ -16,7 +17,7 @@ const FOCUS = ["focus", "blur", "focusin", "focusout"];
  * Resume one island: run its component with `clone` claiming the server nodes, so bindings and handlers
  * attach in place. On a structural mismatch (E1253) undo that, re-render it client-side in place of the
  * server element, and return the warning. Queued pre-resume events are replayed once, in order, and reported to the
- * ctx's observers (rfc:0071).
+ * ctx's observers. The island has the root Boundary `mount` gives its tree (k.errors).
  */
 export function resumeIsland(
   el: Element,
@@ -29,7 +30,14 @@ export function resumeIsland(
   const focused = doc.activeElement;
   const queued = eventQueue.pending();
   const root = createRoot(el, ctx);
-  const owner = createOwner(null, root, null);
+  // The island's root Boundary (k.errors): a throw after the claim reports to the ctx and swaps the island for the
+  // root fallback, as under `mount`. `live` is what the fallback replaces and how to tear it down.
+  const live: { node: ChildNode; teardown: () => void } = { node: el, teardown: () => undefined };
+  const catcher = rootCatcher(ctx, (fallback) => {
+    live.teardown();
+    live.node.replaceWith(fallback);
+  });
+  const owner = createOwner(null, root, catcher);
   const claim: Claim = { island: el, region: null, session: { failed: null } };
   const rendered: { node: Node | null; scope: Scope | null } = { node: null, scope: null };
   // A claimed node moved through a fragment loses focus (rfc:0064). The focus events of those moves and of giving
@@ -55,6 +63,12 @@ export function resumeIsland(
   }
   const failed = claim.session.failed;
   if (failed === null) {
+    live.teardown = () => {
+      disposeOwner(owner);
+      rendered.scope?.dispose();
+      root.dispose();
+    };
+    catcher.arm();
     eventQueue.resume(el, el, root.tell);
     return null;
   }
@@ -62,15 +76,29 @@ export function resumeIsland(
   rendered.scope?.dispose();
   root.dispose();
   const fresh = createRoot(null, ctx);
-  const freshOwner = createOwner(null, fresh, null);
-  const client: { node: Node | null } = { node: null };
-  scope(() => {
-    client.node = withCx(freshOwner, null, () => component(props, undefined, ctx));
-  });
+  const freshOwner = createOwner(null, fresh, catcher);
+  const client: { node: Node | null; scope: Scope | null } = { node: null, scope: null };
+  live.teardown = () => {
+    disposeOwner(freshOwner);
+    client.scope?.dispose();
+    fresh.dispose();
+  };
+  catcher.arm();
+  try {
+    client.scope = scope(() => {
+      client.node = withCx(freshOwner, null, () => component(props, undefined, ctx));
+    });
+  } catch (error) {
+    // The client render threw: the island's root Boundary shows it in place of the server element.
+    catcher.fail(error, id);
+    eventQueue.resume(el, null);
+    return `E1253 [data-k-island="${id}"] ${failed.message}; re-rendered on the client`;
+  }
   const n = client.node;
   if (n !== null) {
     const host = n instanceof Element ? n : el.parentElement;
     el.replaceWith(n);
+    if (n instanceof Element) live.node = n;
     if (host !== null) fresh.attach(host);
     // The client-rendered root is live: never queue its events.
     if (n instanceof Element) eventQueue.resume(n, null);

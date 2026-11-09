@@ -5,6 +5,7 @@ import { cx } from "../internal/cx.ts";
 import { findById } from "../internal/findById.ts";
 import { guard } from "../internal/guard.ts";
 import { handlers } from "../internal/handlers.ts";
+import { idOf } from "../internal/idOf.ts";
 
 /**
  * Register `handler` for `type` on `target`: the element with that id in the current render, or the
@@ -19,7 +20,7 @@ export function on(target: string | Element, type: string, handler: (event: Even
   if (el === null) throw new Error(`k.runtime: on(${JSON.stringify(id)}) found no element with that id in this render`);
   if (NON_BUBBLING.has(type)) {
     const l = (e: Event): void => {
-      if (!owner.gone) guard(owner, id, () => handler(e));
+      if (!owner.gone) guard(owner, id || idOf(el), () => handler(e));
     };
     el.addEventListener(type, l);
     owner.cleanups.push(() => el.removeEventListener(type, l));

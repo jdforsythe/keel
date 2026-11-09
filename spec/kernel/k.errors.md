@@ -25,7 +25,7 @@ const parsed = await attempt(() => lib.parse(text)) // Result<T, KeelError<'keel
   <OrderPanel id={id} />
 </Boundary>
 ```
-`Boundary` (from `@keel/runtime-dom`) catches throws from render, `computed`, `effect`, and event handlers (including rejections of promises they return) anywhere in its subtree. The nearest boundary wins. On catch the subtree's scope is disposed and `fallback` renders with a `KeelError<'keel.unexpected'>` whose `data.at` is the element id where the throw surfaced; `reset()` re-renders the children in a fresh scope. Every route is a boundary whose fallback is its `errorElement`; the app root has a default one. A `resource` fetcher failure is its `error` state, not a throw (k.reactive). A transaction that throws leaves state and log unchanged.
+`Boundary` (from `@keel/runtime-dom`) catches throws from render, `computed`, `effect`, and event handlers (including rejections of promises they return) anywhere in its subtree. The nearest boundary wins. On catch the subtree's scope is disposed and `fallback` renders with a `KeelError<'keel.unexpected'>` whose `data.at` is the element id where the throw surfaced; `reset()` re-renders the children in a fresh scope. Every route is a boundary whose fallback is its `errorElement`; the app root has a default one, for a `mount` tree and for each island `resume` resumes: it reports the error to the ctx (k.ctx `error`) and renders `<pre data-k-error="<at>">` with the message in place of that tree or island. A handler's throw has `data.at` its element's id (`id`, else `data-k`, else the nearest ancestor's) when it throws. A `resource` fetcher failure is its `error` state, not a throw (k.reactive). A transaction that throws leaves state and log unchanged.
 
 **Rules.** E1451 `throw` in app code (fix: `return err(...)`) · E1452 `try`/`catch` or `.catch()` in app code (fix: `attempt`) · E1453 a `Result` or `Promise<Result>` discarded as an expression statement · E1454 two `s.error` declarations with the same code.
 
@@ -38,3 +38,4 @@ const parsed = await attempt(() => lib.parse(text)) // Result<T, KeelError<'keel
 - `reset()` re-renders the children; if they throw again the fallback renders again with the new error.
 - A throwing transaction leaves `snapshot()` and `log()` equal to their values before the call.
 - Each of E1451-E1454 has a fixture that triggers it and a clean counterpart.
+- After `resume`, an island whose handler throws reports one `keel.unexpected` with that element's id as `data.at` to an observer and renders the root fallback in place of the island; the page's other islands keep handling events; under `mount` the same throw reports the same error.

@@ -577,10 +577,14 @@ export function lowerFile(
     if (it.start === it.end) ms.appendLeft(it.start, it.render());
     else ms.overwrite(it.start, it.end, it.render());
   }
+  // An intrinsic import goes only when every binding is a JSX tag the lowering replaced; one called or passed as a
+  // value (a plain `.ts` module calling `If(...)`) keeps the import.
   for (const i of a.imports) {
     if (i.source.value !== "@keel/runtime-dom" || i.specifiers.length === 0) continue;
-    if (i.specifiers.every((s) => s.type === "ImportSpecifier" && a.intrinsics.has(s.local.name)))
-      ms.remove(i.start, i.end);
+    const tagsOnly = i.specifiers.every(
+      (s) => s.type === "ImportSpecifier" && a.intrinsics.has(s.local.name) && !a.identsByName.has(s.local.name),
+    );
+    if (tagsOnly) ms.remove(i.start, i.end);
   }
   const body = ms.toString() + attachedExports(a);
   const ops = body.includes(`${ns}.`);
