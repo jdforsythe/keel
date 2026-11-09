@@ -9,5 +9,5 @@ export default module({
   deps: ["@keel/std-sessions"],
   capabilities: ["observe", "session"],
   public: { exports: [], routes: [] },
-  std: { "@keel/std-sessions": { readers: ["HQ3-vDAEJk08Fmm0vNVarVrk57DUiJeosEqTEb3BG5E"] } },
+  std: { "@keel/std-sessions": { readers: ["h1NjuCrFnI-AX_1RSVPsvEjwe6-Em7G-6PDzHAqbRfA"] } },
 });
