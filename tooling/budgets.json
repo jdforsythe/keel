@@ -39,7 +39,7 @@
     "@keel/services": "3kb",
     "@keel/std-sessions": "6kb",
     "@keel/std-sessions/action": {
-      "max": "3kb",
+      "max": "4.5kb",
       "platform": "node"
     },
     "@keel/std-sessions/commandJob": {

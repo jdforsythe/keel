@@ -10,7 +10,10 @@ const readJson = (f) => JSON.parse(fs.readFileSync(path.join(here, f), "utf8"));
 
 const PLAIN = /^[A-Za-z_./][A-Za-z0-9_./@ -]*$/;
 const RESERVED = /^(?:true|false|null|yes|no|on|off|y|n|~)$/i;
+// An action pinned by commit SHA keeps its version as a trailing comment: `owner/repo@<sha> # v1.2.3`.
+const PINNED = /^[A-Za-z0-9_.\/-]+@[0-9a-f]{40} # v\d+(?:\.\d+)*$/;
 const scalar = (v) => {
+  if (typeof v === "string" && PINNED.test(v)) return v;
   if (typeof v === "string") return PLAIN.test(v) && !RESERVED.test(v) && !v.endsWith(" ") ? v : JSON.stringify(v);
   return JSON.stringify(v);
 };
@@ -46,9 +49,12 @@ function turbo() {
   return `// _generated: edit tooling/turbo.source.json and run pnpm generate. Do not edit by hand.\n${JSON.stringify({ ...($schema ? { $schema } : {}), ...rest }, null, 2)}\n`;
 }
 
-/** A workflow from `tooling/<source>`: each `"$setup"` step expands to the source's `setup` steps. */
+/**
+ * A workflow from `tooling/<source>`: each `"$setup"` step expands to the source's `setup` steps; a top-level
+ * `$comment` documents the source and is not emitted.
+ */
 function workflow(source) {
-  const { setup = [], jobs, ...rest } = readJson(source);
+  const { setup = [], jobs, $comment: _comment, ...rest } = readJson(source);
   const expanded = {};
   for (const [name, job] of Object.entries(jobs)) {
     expanded[name] = { ...job, steps: job.steps.flatMap((s) => (s === "$setup" ? setup : [s])) };

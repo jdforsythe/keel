@@ -24,26 +24,36 @@
 
 ## Action
 
-`packages/std-sessions/action/action.yml` is a composite GitHub Action for the nightly loop. The calling job checks out the repo and grants `issues: write` and `contents: read`; the Action never pushes. Another repo names it by its path in the Keel repository, `uses: <owner>/<repo>/packages/std-sessions/action@<ref>`; this repo's `sessions-nightly` workflow uses the local path:
+`packages/std-sessions/action/action.yml` is a composite GitHub Action for the nightly loop. The calling job checks out the repo without persisted credentials and grants `issues: write` and `contents: read`; the Action never pushes. Pin it to the Keel tag of the `@keel/std-sessions` version your lockfile holds, since it runs the installed `keel-session-action` bin, not code from the ref:
 
 ```yaml
 permissions:
   issues: write
   contents: read
-steps:
-  - uses: actions/checkout@v4
-  - uses: ./packages/std-sessions/action
-    with:
-      url: ${{ vars.KEEL_SESSIONS_URL }}
-      token: ${{ secrets.KEEL_SESSIONS_TOKEN }}
-      working-directory: apps/sessions
-      keel: node ../../packages/cli/src/bin.ts
+concurrency:
+  group: sessions-nightly
+  cancel-in-progress: false
+jobs:
+  sessions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: jdforsythe/keel/packages/std-sessions/action@<tag>
+        with:
+          url: ${{ vars.KEEL_SESSIONS_URL }}
+          token: ${{ secrets.KEEL_SESSIONS_TOKEN }}
+          working-directory: apps/shop
 ```
 
 - **Inputs.** `url` and `token` are required. `token` is a reader's caller cookie value, exported as `KEEL_SESSIONS_TOKEN` to the ingest alone. `working-directory` (default `.`) is the project holding `topology.ts`; `keel` (default `pnpm exec keel`) is the command that runs the `keel` binary there; `github-token` defaults to the job's token.
-- **Steps.** It sets up pnpm and node (`node-version-file: package.json`, so `engines.node`), installs with `--frozen-lockfile`, and runs `pnpm exec keel-session-action` in `working-directory`.
-- **Loop.** `runAction(io)` (`./action`, `src/runAction.ts`; `io` is `{ env, now, fetch, run, read }`) runs `keel session ingest <url> --failing --since=<now - 26h>`. For each fingerprint it replays the newest file the ingest wrote. A reproduced fingerprint gets `minimize` and `to-test`, then the open issue labeled `keel-session` whose title starts `session <fingerprint>:` is updated, or one titled `session <fingerprint>: <code> at <route>` is created. The body is the compact `session` record and the emitted test, each fenced; no other session value goes in. A fingerprint whose replay reports E2004 gets one comment on its open issue, if there is one. `keel` never receives `GITHUB_TOKEN`.
-- **Output.** Compact records (docs/OUTPUT.md): relayed `diag`s, a `session` and a `session.issue` per fingerprint, and one `summary`. It exits 1 when the ingest or a GitHub call fails (E1056) or the env lacks the url, `GITHUB_REPOSITORY` or `GITHUB_TOKEN` (E1052); a session that does not replay leaves the exit code at 0.
+- **Steps.** It sets up pnpm and node (actions pinned by commit SHA; `node-version-file: package.json`, so `engines.node`), runs `pnpm install --frozen-lockfile` in `working-directory`, and runs `pnpm exec keel-session-action` there. The bin is `dist/src/actionBin.js`, so the package must be built: a published install is; this repo's `sessions-nightly` workflow builds it first.
+- **Trust.** The Action replays sessions through the project's own test code under the job's privileges, and a child process of the job can read the job's tokens however the env is scrubbed. It belongs on a repository whose ingest service only the project writes to.
+- **Loop.** `runAction(io)` (`./action`, `src/runAction.ts`; `io` is `{ args, tty, env, now, fetch, run, read }`) runs `keel session ingest <url> --failing --since=<now - 26h>`. It replays each fingerprint's files from the ingest newest first until one reproduces. A reproduced fingerprint gets `minimize` and `to-test`, then the open issue labeled `keel-session` whose title starts `session <fingerprint>:` is updated, or one titled `session <fingerprint>: <code> at <route>` is created, at most 20 a run (the rest count as `deferred`). The title prefix is the lookup key: an issue renamed away from it, or without the label, is not found, and the next reproduction opens a new one. The body is the compact `session` record and the emitted test, each fenced; no other session value goes in. When no file reproduces (each replay E2004), the open issue gets one comment starting with the marker line `<!-- keel-session: not reproduced -->`, unless its newest comment already carries it.
+- **Safety.** Only files named `.keel/sessions/<fingerprint>-<n>.json` reach `keel`, and `read` refuses paths outside the project. A route id or error code outside `[A-Za-z0-9_.-]` skips the fingerprint with E2002. Every printed field and issue title loses ANSI escapes and control characters, and child stderr lines print prefixed `keel: `, so no line starts a workflow command. `keel` children never get `GITHUB_TOKEN`, and only the ingest gets `KEEL_SESSIONS_TOKEN`; GitHub `Link` pages outside `GITHUB_API_URL` are not followed.
+- **Output.** `--format=compact|json|pretty`, `--quiet` and `--limit N` as docs/OUTPUT.md defines them. Records: relayed `diag`s (with `fix`), and a `session` and a `session.issue` for each fingerprint whose issue changed; the `summary` counts the rest. It exits 1 when the ingest fails, a GitHub call fails or the issue list passes 50 pages (E1056), a step fails with anything but E2004, or the env lacks the url, `GITHUB_REPOSITORY` or `GITHUB_TOKEN` (E1052).
 
 ## Extension points
 

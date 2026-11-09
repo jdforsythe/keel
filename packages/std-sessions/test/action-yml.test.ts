@@ -1,7 +1,7 @@
 // @vitest-environment node
 // `packages/std-sessions/action/action.yml` (std.sessions Commands, the Action): a structural parse of the composite
 // action (no YAML parser in the workspace): block-style mappings only, inputs `url` and `token` required, `token`
-// exported as KEEL_SESSIONS_TOKEN, the step runs `keel-session-action`, and nothing pushes.
+// exported as KEEL_SESSIONS_TOKEN, actions pinned by SHA, the step runs `keel-session-action`, and nothing pushes.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
@@ -54,6 +54,13 @@ describe("action.yml", () => {
     expect(p.get("runs.steps.3.env.KEEL_SESSIONS_TOKEN")).toBe("${{ inputs.token }}");
     expect(p.get("runs.steps.3.env.KEEL_SESSIONS_URL")).toBe("${{ inputs.url }}");
     expect(p.get("runs.steps.3.env.GITHUB_TOKEN")).toBe("${{ inputs.github-token }}");
+  });
+  test("installs in working-directory and pins every action by commit SHA", () => {
+    expect(p.get("runs.steps.2.run")).toBe("pnpm install --frozen-lockfile");
+    expect(p.get("runs.steps.2.working-directory")).toBe("${{ inputs.working-directory }}");
+    const uses = text.split("\n").filter((l) => /^\s*- uses:/.test(l));
+    expect(uses).toHaveLength(2);
+    for (const l of uses) expect(l).toMatch(/@[0-9a-f]{40} # v\d+\.\d+\.\d+$/);
   });
   test("states its permissions and never pushes", () => {
     expect(text).toContain("issues write and contents read");

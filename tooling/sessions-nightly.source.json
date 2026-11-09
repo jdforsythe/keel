@@ -1,4 +1,5 @@
 {
+  "$comment": "In this repo the Action runs from source: apps/sessions has no @keel/cli dependency, so input keel runs packages/cli/src/bin.ts, and the job builds @keel/std-sessions before the Action's install links its keel-session-action bin (dist/src/actionBin.js). A consuming repo needs neither step.",
   "name": "sessions-nightly",
   "on": {
     "schedule": [
@@ -12,6 +13,10 @@
     "issues": "write",
     "contents": "read"
   },
+  "concurrency": {
+    "group": "sessions-nightly",
+    "cancel-in-progress": false
+  },
   "env": {
     "KEEL_AGENT": "1"
   },
@@ -19,11 +24,44 @@
     "sessions": {
       "if": "vars.KEEL_SESSIONS_URL != ''",
       "runs-on": "ubuntu-latest",
+      "timeout-minutes": 30,
       "steps": [
         {
-          "uses": "actions/checkout@v4"
+          "id": "gate",
+          "env": {
+            "TOKEN": "${{ secrets.KEEL_SESSIONS_TOKEN }}"
+          },
+          "run": "if [ -n \"$TOKEN\" ]; then echo ready=true >> \"$GITHUB_OUTPUT\"; else echo \"KEEL_SESSIONS_TOKEN is not set: skipped\"; fi"
         },
         {
+          "if": "steps.gate.outputs.ready == 'true'",
+          "uses": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
+          "with": {
+            "persist-credentials": false
+          }
+        },
+        {
+          "if": "steps.gate.outputs.ready == 'true'",
+          "uses": "pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0"
+        },
+        {
+          "if": "steps.gate.outputs.ready == 'true'",
+          "uses": "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0",
+          "with": {
+            "node-version-file": "package.json",
+            "cache": "pnpm"
+          }
+        },
+        {
+          "if": "steps.gate.outputs.ready == 'true'",
+          "run": "pnpm install --frozen-lockfile"
+        },
+        {
+          "if": "steps.gate.outputs.ready == 'true'",
+          "run": "pnpm --filter @keel/std-sessions build"
+        },
+        {
+          "if": "steps.gate.outputs.ready == 'true'",
           "uses": "./packages/std-sessions/action",
           "with": {
             "url": "${{ vars.KEEL_SESSIONS_URL }}",

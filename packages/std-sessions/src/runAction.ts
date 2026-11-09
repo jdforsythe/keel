@@ -1,7 +1,10 @@
 import type { OutRecord } from "@keel/cli";
 import { SessionRecord } from "./SessionRecord.ts";
 import type { ActionIo } from "./internal/ActionIo.ts";
+import type { OutputFlags } from "./internal/OutputFlags.ts";
+import { actionFlags } from "./internal/actionFlags.ts";
 import { actionText } from "./internal/actionText.ts";
+import { clean } from "./internal/clean.ts";
 import { issueApi } from "./internal/issueApi.ts";
 import { issueBody } from "./internal/issueBody.ts";
 import { recordsOf } from "./internal/recordsOf.ts";
@@ -11,10 +14,16 @@ import { sessionDiag } from "./internal/sessionDiag.ts";
 const WINDOW_MS = 26 * 60 * 60 * 1000;
 const LABEL = "keel-session";
 const REPO = /^[\w.-]+\/[\w.-]+$/;
-const NOT_REPRODUCED = "The nightly replay of this fingerprint's newest session did not reproduce it.\n\n";
+/** A file the ingest writes: `.keel/sessions/<fingerprint>-<n>.json`. Anything else is never passed to `keel`. */
+const FILE = /^\.keel\/sessions\/([0-9a-f]{12})-\d{1,9}\.json$/;
+/** The grammar a route id and an error code must match before either reaches a log line or an issue title. */
+const ID = /^[A-Za-z0-9_.-]{1,128}$/;
+const CODE = /^[EWIS]\d{4}$/;
+const MARKER = "<!-- keel-session: not reproduced -->";
+const NOT_REPRODUCED = `${MARKER}\nThe nightly replay of this fingerprint's sessions did not reproduce it.\n\n`;
+const MAX_ISSUES_PER_RUN = 20;
 
 type Ran = { readonly ok: boolean; readonly records: OutRecord[] };
-type Action = "created" | "updated" | "commented" | "none";
 type Got = { readonly ok: true; readonly value: number } | { readonly ok: false; readonly why: string };
 
 const sessionsOf = (records: readonly OutRecord[]): SessionRecord[] =>
@@ -22,27 +31,41 @@ const sessionsOf = (records: readonly OutRecord[]): SessionRecord[] =>
     const p = r.kind === "session" ? SessionRecord.parse(r) : undefined;
     return p?.ok === true ? [p.value] : [];
   });
-const diagsOf = (records: readonly OutRecord[]): OutRecord[] => records.filter((r) => r.kind === "diag");
+/** The child's diagnostics whose code is a Keel code; anything else on its stdout is dropped. */
+const diagsOf = (ran: Ran): OutRecord[] =>
+  ran.records.filter((r) => r.kind === "diag" && typeof r.code === "string" && CODE.test(r.code));
+/** Whether a failed step failed only by E2004 (fingerprint differs), an outcome rather than a broken run. */
+const onlyE2004 = (ran: Ran): boolean => {
+  const ds = diagsOf(ran);
+  return ds.length > 0 && ds.every((d) => d.code === "E2004");
+};
 
 /**
  * The std.sessions Action (`keel-session-action`, `packages/std-sessions/action/action.yml`). It runs
- * `keel session ingest $KEEL_SESSIONS_URL --failing --since=<now - 26h>`, then, per fingerprint, `replay` on its newest
- * file (the last the ingest wrote). A reproduced fingerprint gets `minimize` and `to-test`, then one open issue
- * labeled `keel-session` titled `session <fingerprint>: <code> at <route>` is created or updated (lookup: the title
- * prefix `session <fingerprint>:`); its body is the compact `session` record and the emitted test, fenced. A fingerprint
- * that does not reproduce (E2004) gets one comment on its open issue, if there is one. `GITHUB_TOKEN` never reaches
- * `keel`, and `KEEL_SESSIONS_TOKEN` reaches only the ingest. Records: relayed `diag`s, `session` and `session.issue`
- * per fingerprint, one `summary`; exit 1 when the ingest or a GitHub call fails, else 0.
+ * `keel session ingest $KEEL_SESSIONS_URL --failing --since=<now - 26h>`, then replays each fingerprint's files newest
+ * first until one reproduces. For a reproduced fingerprint it runs `minimize` and `to-test`, then updates the open
+ * `keel-session` issue whose title starts `session <fingerprint>:` or creates one titled
+ * `session <fingerprint>: <code> at <route>` (at most 20 creates a run; the rest count as `deferred`). The body is the
+ * compact `session` record and the emitted test, fenced. When no file reproduces (each E2004), the open issue gets
+ * one comment carrying a marker line, unless its newest comment already carries it. A route id or code outside
+ * `[A-Za-z0-9_.-]` skips the fingerprint with E2002. `keel` children never get `GITHUB_TOKEN`; only the ingest gets
+ * `KEEL_SESSIONS_TOKEN`. Exit 1 when the ingest, a GitHub call (E1056) or a step fails with anything but E2004.
  */
 export async function runAction(
   io: ActionIo,
 ): Promise<{ readonly code: number; readonly records: OutRecord[]; readonly stdout: string }> {
   const records: OutRecord[] = [];
-  const counts = { fingerprints: 0, created: 0, updated: 0, commented: 0 };
+  const counts: Record<string, number> = { fingerprints: 0, created: 0, updated: 0, commented: 0 };
+  const flags = actionFlags(io.args, io.env, io.tty);
+  const shown: OutputFlags = flags.ok ? flags.value : { mode: "compact", quiet: false, limit: undefined };
   const finish = (ok: boolean) => {
     records.push({ kind: "summary", ok, name: "session action", counts });
-    return { code: ok ? 0 : 1, records, stdout: actionText(records) };
+    return { code: ok ? 0 : 1, records, stdout: actionText(records, shown) };
   };
+  if (!flags.ok) {
+    records.push(sessionDiag("E1052", `session action: ${flags.why}`));
+    return finish(false);
+  }
   const env = io.env;
   const url = env.KEEL_SESSIONS_URL ?? "";
   const repo = env.GITHUB_REPOSITORY ?? "";
@@ -64,12 +87,15 @@ export async function runAction(
 
   const ingest = await keel(["ingest", url, "--failing", `--since=${io.now() - WINDOW_MS}`]);
   if (!ingest.ok) {
-    records.push(...diagsOf(ingest.records));
+    records.push(...diagsOf(ingest));
     return finish(false);
   }
-  const newest = new Map<string, string>();
-  for (const r of sessionsOf(ingest.records)) if (r.file !== null) newest.set(r.fingerprint, r.file);
-  if (newest.size === 0) return finish(true);
+  const files = new Map<string, string[]>();
+  for (const r of sessionsOf(ingest.records)) {
+    const fp = FILE.exec(r.file ?? "")?.[1];
+    if (fp !== undefined && r.file !== null && fp === r.fingerprint) files.set(fp, [...(files.get(fp) ?? []), r.file]);
+  }
+  if (files.size === 0) return finish(true);
 
   const gh = issueApi(io, api, repo, token);
   const open = await gh.open(LABEL);
@@ -78,43 +104,77 @@ export async function runAction(
     return finish(false);
   }
   let failed = false;
-  for (const [fp, file] of [...newest].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
-    counts.fingerprints++;
-    const issue = open.value.find((i) => i.title.startsWith(`session ${fp}:`));
-    const replay = await keel(["replay", file]);
-    const [seen] = sessionsOf(replay.records);
-    if (seen !== undefined) records.push(seen);
-    let result: { readonly action: Action; readonly issue: number | null } = { action: "none", issue: null };
-    const filed = (r: Got, did: Exclude<Action, "none">, n?: number) => {
-      if (r.ok) {
-        counts[did]++;
-        return { action: did, issue: n ?? r.value };
-      }
+  const report = (r: Got, did: "created" | "updated" | "commented", fp: string, rec: SessionRecord, n?: number) => {
+    if (!r.ok) {
       failed = true;
       records.push(sessionDiag("E1056", r.why));
-      return result;
-    };
-    if (replay.ok) {
-      const minimized = await keel(["minimize", file]);
-      const emitted = minimized.ok ? await keel(["to-test", file]) : minimized;
-      const [out] = sessionsOf(emitted.records);
-      const test = emitted.ok && out !== undefined && out.file !== null ? io.read(out.file) : undefined;
-      if (out === undefined || test === undefined) records.push(...diagsOf(emitted.records));
-      else {
-        const title = `session ${fp}: ${out.error ?? "ok"} at ${out.route}`;
-        const body = issueBody(sessionCompact(out), test);
-        if (issue === undefined) result = filed(await gh.create(LABEL, title, body), "created");
-        else result = filed(await gh.update(issue.number, title, body), "updated", issue.number);
+      return;
+    }
+    counts[did] = (counts[did] ?? 0) + 1;
+    records.push(rec, { kind: "session.issue", fingerprint: fp, action: did, issue: n ?? r.value });
+  };
+  const broken = (ran: Ran): void => {
+    records.push(...diagsOf(ran));
+    if (!onlyE2004(ran)) failed = true;
+  };
+  /** A record safe to print and to title an issue with: this fingerprint, an id-grammar route and code. */
+  const safe = (r: SessionRecord | undefined, fp: string, file: string): r is SessionRecord => {
+    if (r === undefined) return false;
+    if (r.fingerprint === fp && ID.test(r.route) && (r.error === null || ID.test(r.error))) return true;
+    records.push(sessionDiag("E2002", "session route or error code is not an id; skipped", clean(file)));
+    return false;
+  };
+
+  for (const [fp, list] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    counts.fingerprints = (counts.fingerprints ?? 0) + 1;
+    const issue = open.value.find((i) => i.title.startsWith(`session ${fp}:`));
+    const newest = list.at(-1) ?? "";
+    let newestSeen: SessionRecord | undefined;
+    let reproduced: string | undefined;
+    let stop = false;
+    for (const file of [...list].reverse()) {
+      const replay = await keel(["replay", file]);
+      newestSeen ??= sessionsOf(replay.records)[0];
+      if (replay.ok) reproduced = file;
+      else if (!onlyE2004(replay)) {
+        broken(replay);
+        stop = true;
       }
-    } else if (diagsOf(replay.records).some((d) => d.code === "E2004")) {
-      if (issue !== undefined && seen !== undefined)
-        result = filed(
-          await gh.comment(issue.number, `${NOT_REPRODUCED}${issueBody(sessionCompact(seen))}`),
-          "commented",
-          issue.number,
-        );
-    } else records.push(...diagsOf(replay.records));
-    records.push({ kind: "session.issue", fingerprint: fp, ...result });
+      if (reproduced !== undefined || stop) break;
+    }
+    if (stop) continue;
+    if (reproduced === undefined) {
+      if (issue === undefined || !safe(newestSeen, fp, newest)) continue;
+      const last = await gh.lastComment(issue.number);
+      if (!last.ok) {
+        failed = true;
+        records.push(sessionDiag("E1056", last.why));
+        continue;
+      }
+      if (last.value?.includes(MARKER) === true) continue;
+      const body = `${NOT_REPRODUCED}${issueBody(sessionCompact(newestSeen))}`;
+      report(await gh.comment(issue.number, body), "commented", fp, newestSeen, issue.number);
+      continue;
+    }
+    if (issue === undefined && (counts.created ?? 0) >= MAX_ISSUES_PER_RUN) {
+      counts.deferred = (counts.deferred ?? 0) + 1;
+      continue;
+    }
+    const minimized = await keel(["minimize", reproduced]);
+    const emitted = minimized.ok ? await keel(["to-test", reproduced]) : minimized;
+    if (!emitted.ok) {
+      broken(emitted);
+      continue;
+    }
+    const [out] = sessionsOf(emitted.records);
+    if (!safe(out, fp, reproduced)) continue;
+    const test =
+      out.file === `modules/${out.route.split(".")[0]}/test/session-${fp}.test.ts` ? io.read(out.file) : undefined;
+    if (test === undefined) continue;
+    const title = clean(`session ${fp}: ${out.error ?? "ok"} at ${out.route}`, 256);
+    const body = issueBody(sessionCompact(out), test);
+    if (issue === undefined) report(await gh.create(LABEL, title, body), "created", fp, out);
+    else report(await gh.update(issue.number, title, body), "updated", fp, out, issue.number);
   }
   return finish(!failed);
 }

@@ -2,7 +2,8 @@ name: keel sessions
 description: >-
   Nightly loop for @keel/std-sessions. It ingests the failing sessions of the last 26 hours, replays each
   fingerprint's newest session, and opens or updates one keel-session issue per fingerprint that reproduces.
-  The calling job needs permissions issues write and contents read. It never pushes.
+  The calling job needs permissions issues write and contents read. It never pushes. It runs the project's own
+  test code with the job's token in reach, so use it on a repository whose ingest service only the project writes to.
 inputs:
   url:
     description: Base URL of the ingest service, the one that serves /sessions/list.
@@ -25,13 +26,14 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v4
-    - uses: actions/setup-node@v4
+    - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version-file: package.json
         cache: pnpm
     - run: pnpm install --frozen-lockfile
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
     - run: pnpm exec keel-session-action
       shell: bash
       working-directory: ${{ inputs.working-directory }}

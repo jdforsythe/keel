@@ -54,7 +54,7 @@
     }
   },
   "bin": {
-    "keel-session-action": "./src/actionBin.ts"
+    "keel-session-action": "./dist/src/actionBin.js"
   },
   "files": ["dist"],
   "scripts": {
