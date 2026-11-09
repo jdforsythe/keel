@@ -13,9 +13,9 @@ A high-contrast parchment surface with deep charcoal text. ISO Ochre is reserved
 | Surface (background) | `#F9F9F9` | `98% 0.001 80` | base |
 | Surface-container-low | `#F3F3F3` | `96% 0.002 80` | 1.1:1 (UI container) |
 | Surface-bright (card) | `#FFFFFF` | `100% 0 0` | 1.05:1 |
-| Text primary / Charcoal | `#18181B` | `18% 0.01 260` | 13.5:1 (AAA) |
+| Text primary / Charcoal | `#1a191e` | `22% 0.01 295` | 16.6:1 (AAA) |
 | Text secondary / Stone | `#71717A` | `50% 0.01 260` | 5.2:1 (AA) |
-| ISO Ochre (accent) | `#C2410C` | `55% 0.18 45` | 4.8:1 (AA) |
+| ISO Ochre (accent) | `#b8420d` | `54% 0.16 40` | 5.2:1 (AA) |
 | Verified Green | `#15803D` | `52% 0.15 145` | 5.1:1 (AA) |
 | Error Crimson | `#B91C1C` | `48% 0.20 25` | 5.4:1 (AA) |
 | Hairline divider | `#E4E4E7` | | 1px solid, light mode |
