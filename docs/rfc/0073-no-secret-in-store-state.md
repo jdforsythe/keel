@@ -10,7 +10,7 @@ Backlog 0239, filed by the red-team pass on RFC 0071. The snapshot fold removes 
 ## Proposal
 ### E1303 (k.store, `@keel/check`)
 One kernel rule, `noSecretInState` in `packages/check/src/rules/`, registered in `KERNEL_RULES`, `see: k.store`. It runs on app files (`isAppPath`) and reports two cases:
-- **(a) Schema.** The first argument of a `store(...)` call, where `store` is the `@keel/store` import under any alias, is a schema whose tree holds `s.secret` at any depth. The rule reads the argument statically. It accepts an inline `s.<factory>(...)` chain, an identifier bound to a top-level `const` in the file, and a named import from a relative specifier. An import resolves to a file in `RuleInput.project` and is followed through that file's consts and its own relative imports, up to depth 8 and without revisiting a binding. It walks the call arguments of every chain (`object`, `array`, `record`, `union`, `optional`, ...), and `s` is the `@keel/schema` import under any alias in each file it reads. Anything it cannot resolve, such as a function parameter, a package import or a computed key, adds nothing. The finding is reported at the first argument, and the message names the field path (`creds.token`), because the secret may sit in another file and a rule reports only on its own file.
+- **(a) Schema.** The first argument of a `store(...)` call, where `store` is the `@keel/store` import under any alias, is a schema whose tree holds `s.secret` at any depth. The rule reads the argument statically. It accepts an inline `s.<factory>(...)` chain, an identifier bound to a top-level `const` in the file, and a named import from a relative specifier. An import resolves to a file in `RuleInput.project` and is followed through that file's consts and its own relative imports. At most 8 consts are followed along one path (an import alias costs none), and a binding is read again only when reached through fewer, so cycles end. It walks the call arguments of every `s` chain (`object`, `array`, `record`, `union`, ...), and for a method on any other receiver (`.optional()`, `Base.extend({ ... })`) both the receiver and the arguments, and `s` is the `@keel/schema` import under any alias in each file it reads. Anything it cannot resolve, such as a function parameter, a package import or a computed key, adds nothing. The finding is reported at the first argument, and the message names the field path (`creds.token`), because the secret may sit in another file and a rule reports only on its own file.
 - **(b) Reducer.** A reference to `reveal`, imported from `@keel/schema` under any alias or reached as `<namespace>.reveal`, inside the function passed as the last argument of a `transaction(...)` call, where `transaction` is the `@keel/store` import. The finding is reported at the reference, so a call `reveal(p.token)` and a value use `.map(reveal)` are both reported. A reducer is pure and returns state, so a revealed value has nowhere else to go.
 
 Messages are one line under 90 characters:
@@ -28,10 +28,15 @@ Messages are one line under 90 characters:
 - **A fix that removes the `s.secret` field.** Rejected as unsafe (above).
 
 ## Spec diff
-- **k.store** (1,499 -> 1,499 printed). The **Secrets** paragraph adds "State never holds a secret (E1303)." **Rules** adds "E1303 `s.secret` anywhere in a store's state schema, or `reveal` in a transaction function." **Conformance** adds "E1303 fires on a state schema with a nested `s.secret` and on `reveal` in a transaction function, not on their clean twins." Trims are wording only: two parenthetical examples, the module-counter note, the `#k-state` rationale of log meta, the `undoWhere` rationale, and the Ownership sentence that repeated E1302's Rules entry.
+- **k.store** (1,499 -> 1,487 printed).
+- **Added.** **Secrets**: "State never holds a secret (E1303)." **Rules**: "E1303 `s.secret` anywhere in a store's state schema, or `reveal` in a transaction function. Not reported: an unresolved schema or one past 8 consts (`snapshot()` throws), `reveal` via a helper." **Conformance**: "E1303 fires on a state schema with a nested `s.secret` and on `reveal` in a transaction function, not on their clean twins."
+- **Trimmed: citations.** `(rfc:0070)` after `stores()`, `(RFC 0022)` after **Registries**, `(rfc:0028)`, `(rfc:0054)` and `(rfc:0071)` after the **Log meta**, **Log limit** and **Secrets** headings, and `(runtime form of E1301)` after `store.undeclared`.
+- **Trimmed: examples.** `(wire data, a log entry)` after "one typed `unknown`", `(e.g. `{ caller }`)` after the meta record, and the API example's inline `s.object({ item: Item })` payload, now `AddItem`, with `state` shortened to `st`.
+- **Trimmed: restatements.** `(each transaction's payload schema by name)` and `(its payload schema)`, which the `payloads` and `schema` conformance clauses state; "an effect reading it reruns when one joins or leaves", which the `stores()` effect clause states; ": meta survives exactly when the log does", which the preceding meta sentence states; "(transactions are pure)" in E1302's Rules entry, which the Ownership sentence states; and the `undoWhere` rationale "replaying without a middle entry would reorder or invalidate later ones".
+- **Kept.** "Transaction functions must be pure: E1302 on any `ctx` or global access.", "Snapshots reach clients (`#k-state`), so ..." and "from a module counter" stay as they were.
 
 ## Conformance diff (rfc:0073)
-- Added `packages/check/conformance/E1303-secret-in-state.test.ts`.
+- Added `packages/check/conformance/E1303-secret-in-state.test.ts`, with a case for a method on a state schema (`Base.extend({ token: s.secret(...) })`).
 - Edited `packages/check/conformance/fixtures-by-code.ts` (an E1303 fixture and clean twin) and `packages/check/conformance/fix-diffs.test.ts` (E1303 in the no-fix list).
 
 ## Migration
@@ -40,7 +45,11 @@ None. No app or module in the repo holds `s.secret` in a state schema or calls `
 ## Token impact
 k.store stays under 1,500 printed tokens (above). The E1303 `explain` entry is under 120 tokens.
 
+## Size
+The `@keel/check` bundle measures 32,881 B gzip against a 32.5 kB (33,280 B) budget, up from 31,663 B under the previous 31 kB. The rule and its schema resolver account for the difference.
+
 ## Known limits
 - A helper function declared outside the reducer that calls `reveal` is not followed, the same name-based limit as E1302.
-- A schema built by a function call, imported from a package (`@keel/std-*`) or through a namespace import of `@keel/store` is not resolved.
+- A schema not resolved (above) or past 8 consts is not reported; `snapshot()` throws at run time as the fallback.
+- A schema built by a plain function call, imported from a package (`@keel/std-*`) or through a namespace import of `@keel/store` is not resolved.
 - `store` and `transaction` are matched as named imports of `@keel/store` only, as E1302 matches `transaction`.

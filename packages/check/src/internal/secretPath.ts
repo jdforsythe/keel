@@ -8,7 +8,7 @@ import { schemaSourceOf } from "./schemaSourceOf.ts";
 const MAX_HOPS = 8;
 const SUFFIXES = ["", ".ts", ".tsx", "/index.ts"];
 
-type Walk = { readonly project: readonly SourceFile[]; readonly seen: Set<string> };
+type Walk = { readonly project: readonly SourceFile[]; readonly seen: Map<string, number> };
 
 /** The project file a relative specifier in `from` names, or undefined (package specifiers included). */
 function target(from: string, spec: string, project: readonly SourceFile[]): SourceFile | undefined {
@@ -28,18 +28,20 @@ function keyOf(p: ObjectProperty): string | undefined {
   return p.key.type === "Literal" && typeof p.key.value === "string" ? p.key.value : undefined;
 }
 
+/** Resolves `name` in `src`: a const costs one of the `MAX_HOPS` bindings, an import alias none. */
 function binding(name: string, src: SchemaSource, path: readonly string[], hops: number, w: Walk): string[] | null {
   const key = `${src.path}#${name}`;
-  if (hops >= MAX_HOPS || w.seen.has(key)) return null;
-  w.seen.add(key);
+  const prior = w.seen.get(key);
+  if (prior !== undefined && prior <= hops) return null;
+  w.seen.set(key, hops);
   const init = src.consts.get(name);
-  if (init !== undefined) return walk(init, src, path, hops + 1, w);
+  if (init !== undefined) return hops >= MAX_HOPS ? null : walk(init, src, path, hops + 1, w);
   const imp = src.imports.get(name);
   const file = imp === undefined ? undefined : target(src.path, imp.source, w.project);
   if (imp === undefined || file === undefined) return null;
   const parsed = parseFile(file);
   if (!parsed.ok) return null;
-  return binding(imp.name, schemaSourceOf(file.path, parsed.program), path, hops + 1, w);
+  return binding(imp.name, schemaSourceOf(file.path, parsed.program), path, hops, w);
 }
 
 function walkAll(
@@ -78,16 +80,17 @@ function walk(e: Expression, src: SchemaSource, path: readonly string[], hops: n
     const factory = e.callee.property.type === "Identifier" ? e.callee.property.name : "";
     return factory === "secret" ? [...path] : walkAll(e.arguments, src, path, hops, w);
   }
-  return walk(obj, src, path, hops, w);
+  return walk(obj, src, path, hops, w) ?? walkAll(e.arguments, src, path, hops, w);
 }
 
 /**
  * The field path (`creds.token`) at which the schema `expr` in `src` holds `s.secret`, read statically: `s` factory
- * chains and their arguments, methods such as `.optional()` on a schema, top-level consts, and named imports from
- * relative specifiers into `project` files, up to 8 bindings deep, each binding read once. `null` when none is found;
+ * chains and their arguments, methods on a schema (`.optional()`, `Base.extend({ ... })`) and their arguments, top-level consts, and named imports from
+ * relative specifiers into `project` files, through at most 8 consts (an import alias costs none), a binding read again
+ * only when reached in fewer. `null` when none is found;
  * what cannot be resolved (parameters, package imports, other calls) holds none.
  */
 export function secretPath(expr: Expression, src: SchemaSource, project: readonly SourceFile[]): string | null {
-  const hit = walk(expr, src, [], 0, { project, seen: new Set() });
+  const hit = walk(expr, src, [], 0, { project, seen: new Map() });
   return hit === null ? null : hit.join(".");
 }

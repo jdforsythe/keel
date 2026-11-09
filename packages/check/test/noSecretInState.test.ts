@@ -1,4 +1,5 @@
 // E1303 examples pinned by location and message: schema resolution (a) and `reveal` in a reducer (b).
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 import type { SourceFile } from "../src/index.ts";
@@ -55,6 +56,17 @@ describe("E1303 (a) a secret in a store state schema", () => {
     for (const c of cases) expect(out([cart(c, S)]), c).toHaveLength(1);
   });
 
+  it("walks a method's receiver and its arguments", () => {
+    const base = `${S}const Base = s.object({ id: s.string() })\n`;
+    expect(out([cart("Base.extend({ token: s.secret(s.string()) })", base)])).toEqual([
+      `modules/app/cart.ts 4:27 ${msg("token")}`,
+    ]);
+    expect(out([cart("Unknown.merge(s.object({ k: s.secret(s.string()) }))", S)])).toEqual([
+      `modules/app/cart.ts 3:27 ${msg("k")}`,
+    ]);
+    expect(out([cart("Base.extend({ token: s.string() })", base)])).toEqual([]);
+  });
+
   it("names the root, and an aliased `s` and `store`", () => {
     expect(out([cart("s.secret(s.string())", S)])).toEqual([`modules/app/cart.ts 3:27 ${msg("(root)")}`]);
     const aliased = f(
@@ -80,7 +92,6 @@ describe("E1303 (a) a secret in a store state schema", () => {
       cart("make(s.secret(s.string()))", S),
       cart("s.object({ [k]: s.secret(s.string()) })", S),
       cart("s.object({ ...Base })", S),
-      cart("other.object({ a: s.secret(s.string()) })", S),
       cart("s.object({ a: s.secret(s.string()) })", "import { s } from 'not-keel'\n"),
       f(
         "modules/app/cart.ts",
@@ -118,6 +129,51 @@ describe("E1303 (a) a secret in a store state schema", () => {
       `${STORE}${head}export const a = store(s.object({ x: T, y: T }), {})\nexport const b = store(s.object({ y: s.int(), z: T }), {})\n`,
     );
     expect(out([two])).toEqual([`modules/app/cart.ts 4:24 ${msg("x")}`, `modules/app/cart.ts 5:24 ${msg("z")}`]);
+  });
+});
+
+// Seed 1337
+describe("E1303 (a) property: fires iff a secret is reachable within 8 consts", () => {
+  // B0 holds the leaf under `depth` wrappers; B1..B(n-1) each wrap the one before. The first `inFiles` live in their
+  // own schema files, the rest are consts in cart.ts; with `cycle`, B0 also refers back to B(n-1).
+  const where = (i: number, inFiles: number): string =>
+    i < inFiles ? `modules/app/B${i}.schema.ts` : "modules/app/cart.ts";
+  const spec = (from: string, to: string): string => `./${to.slice("modules/app/".length)}`;
+  const build = (n: number, inFiles: number, depth: number, secret: boolean, cycle: boolean): SourceFile[] => {
+    let leaf = secret ? "s.secret(s.string())" : "s.string()";
+    for (let d = 0; d < depth; d++) leaf = d % 2 === 0 ? `s.object({ w: ${leaf} })` : `s.array(${leaf})`;
+    const body = (i: number): string =>
+      i > 0 ? `s.object({ f: B${i - 1} })` : cycle ? `s.object({ back: B${n - 1}, leaf: ${leaf} })` : leaf;
+    const refs = (i: number): number[] => [...(i > 0 ? [i - 1] : []), ...(i === 0 && cycle ? [n - 1] : [])];
+    const head = (path: string, ids: number[]): string =>
+      ids
+        .filter((j) => where(j, inFiles) !== path)
+        .map((j) => `import { B${j} } from '${spec(path, where(j, inFiles))}'\n`)
+        .join("");
+    const files: SourceFile[] = [];
+    for (let i = 0; i < inFiles; i++)
+      files.push(f(where(i, inFiles), `${S}${head(where(i, inFiles), refs(i))}export const B${i} = ${body(i)}\n`));
+    const local = Array.from({ length: n - inFiles }, (_, k) => inFiles + k);
+    const imports = head("modules/app/cart.ts", [...new Set([...local.flatMap(refs), n - 1])]);
+    const consts = local.map((i) => `const B${i} = ${body(i)}\n`).join("");
+    files.push(f("modules/app/cart.ts", `${S}${STORE}${imports}${consts}export const cart = store(B${n - 1}, {})\n`));
+    return files;
+  };
+
+  it("over chain length, file placement, nesting depth, secret and cycle", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 10 }).chain((n) => fc.tuple(fc.constant(n), fc.integer({ min: 0, max: n }))),
+        fc.integer({ min: 0, max: 4 }),
+        fc.boolean(),
+        fc.boolean(),
+        ([n, inFiles], depth, secret, cycle) => {
+          const fired = out(build(n, inFiles, depth, secret, cycle));
+          expect(fired).toHaveLength(secret && n <= 8 ? 1 : 0);
+        },
+      ),
+      { seed: 1337, numRuns: 200 },
+    );
   });
 });
 

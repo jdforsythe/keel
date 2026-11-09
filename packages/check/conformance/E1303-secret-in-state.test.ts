@@ -75,6 +75,16 @@ test("E1303 fires through an aliased `store` import", () => {
   expect(e1303([stateSchema(PLAIN), file])).toHaveLength(0);
 });
 
+test("E1303 fires when a method on a state schema, such as `Base.extend({ ... })`, takes a field nesting `s.secret`", () => {
+  const state = (leaf: string) =>
+    f(
+      "modules/app/State.schema.ts",
+      `${S}const Base = s.object({ id: s.string() })\nexport const State = Base.extend({ token: ${leaf} })\n`,
+    );
+  expect(e1303([state(SECRET), cartFile("State")])).toHaveLength(1);
+  expect(e1303([state(PLAIN), cartFile("State")])).toHaveLength(0);
+});
+
 test("E1303 does not fire on an `s.secret` that only appears in a transaction's payload schema", () => {
   const cart = f(
     "modules/app/cart.server.ts",

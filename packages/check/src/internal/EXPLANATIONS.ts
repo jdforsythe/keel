@@ -247,7 +247,7 @@ const ROWS: readonly Row[] = [
   [
     "E1303",
     "s.secret anywhere in a store's state schema, or reveal in a transaction function",
-    "State reaches snapshots, #k-state and storage, so it never holds a secret.",
+    "State reaches snapshots, #k-state and storage, so it never holds a secret. Not reported: an unresolved schema or one past 8 consts (snapshot() throws at run time), reveal via a helper.",
     "keep the Secret in the payload; reveal it in a *.server.ts action, not in tx",
     "k.store",
   ],
