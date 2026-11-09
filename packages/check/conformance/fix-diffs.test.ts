@@ -288,6 +288,7 @@ const NO_FIX = [
   "E1251", // the JSX that replaces an op is the author's
   "E1252", // the JSX or ctx replacement is the author's
   "E1302", // moving the effect out of the transaction is a design change
+  "E1303", // removing the field or the reveal call is a design change
   "E1402", // the content of the missing Case is the author's
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice

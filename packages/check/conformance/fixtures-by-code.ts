@@ -214,6 +214,31 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1303: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("app"),
+      f(
+        "modules/app/State.schema.ts",
+        `${SCHEMA}export const State = s.object({ creds: s.object({ token: s.secret(s.string()) }) })\n`,
+      ),
+      f(
+        "modules/app/cart.ts",
+        "import { store } from '@keel/store'\nimport { State } from './State.schema.ts'\nexport const cart = store(State, { creds: { token: '' } })\n",
+      ),
+    ],
+    clean: [
+      manifest("app"),
+      f(
+        "modules/app/State.schema.ts",
+        `${SCHEMA}export const State = s.object({ creds: s.object({ token: s.string() }) })\n`,
+      ),
+      f(
+        "modules/app/cart.ts",
+        "import { store } from '@keel/store'\nimport { State } from './State.schema.ts'\nexport const cart = store(State, { creds: { token: '' } })\n",
+      ),
+    ],
+  },
   E1401: {
     opts: NO_TYPES,
     bad: [f("C.tsx", `${UI}export default function C({ name }: { name: string }) { return <Text>{name}</Text> }\n`)],

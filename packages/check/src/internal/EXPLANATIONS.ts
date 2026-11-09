@@ -244,6 +244,13 @@ const ROWS: readonly Row[] = [
     "read ctx.clock.now() before tx() and pass it in the payload",
     "k.store",
   ],
+  [
+    "E1303",
+    "s.secret anywhere in a store's state schema, or reveal in a transaction function",
+    "State reaches snapshots, #k-state and storage, so it never holds a secret.",
+    "keep the Secret in the payload; reveal it in a *.server.ts action, not in tx",
+    "k.store",
+  ],
   ["E1351", "target id already exists", "", "use a codemod to change the existing item", "k.scaffold"],
   [
     "E1352",

@@ -87,6 +87,8 @@ test("the snapshot JSON holds no secret value, in log or initial", () => {
   }).dispose();
 });
 
+// `keel check` forbids this reducer (E1303: `reveal` in a transaction function); the runtime does not, so the fold
+// treats the revealed value as any state value.
 test("a secret copied into state is a state-level value: the fold writes it into initial and state", () => {
   scope(() => {
     const c = store(State, { n: 0, label: "" }, { id: "sf.leak" });
