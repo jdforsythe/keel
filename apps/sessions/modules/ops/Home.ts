@@ -8,8 +8,10 @@ import { Box, Heading, Link, Text } from "@keel/ui";
 /**
  * Home of the ingest service (`ops.home`): what it takes and where. `ops.home.endpoint` binds the ingest URL, which
  * only the browser knows in full; that binding makes the page an island, so its resume runs in the browser with the
- * page's ctx. There it records the session and, on the first error, posts it to this service's `sessions.ingest`.
- * A server render shows the path and records nothing, and so does a page whose origin is opaque (`about:blank`,
+ * page's ctx. There it records the session and, on the first error, posts it to this service's `sessions.ingest`:
+ * uploads are same-origin, so the upload URL is this page's origin. The recorder lives until its `stop()`, past this
+ * component, and an error reported between the served route and this resume reaches it, since the ctx keeps the
+ * errors since its current route for a new observer. A server render shows the path and records nothing, and so does a page whose origin is opaque (`about:blank`,
  * `file:`), since no URL resolves against it. A test or replay that started its own recorder keeps that one: `record`
  * returns the ctx's recorder and ignores a second `upload`. Plain `.ts` so `node server.ts` loads it.
  */

@@ -6,7 +6,7 @@ import { hubs } from "./hubs.ts";
 export function hubOf(ctx: Ctx): Hub {
   const hub = hubs.get(ctx);
   if (hub !== undefined) return hub;
-  const made: Hub = { fns: [], nav: undefined };
+  const made: Hub = { fns: [], nav: undefined, errors: [] };
   hubs.set(ctx, made);
   return made;
 }

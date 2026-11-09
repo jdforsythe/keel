@@ -1,4 +1,4 @@
-import { observed, report } from "@keel/ctx/internal";
+import { report } from "@keel/ctx/internal";
 import { effect, scope, signal } from "@keel/reactive";
 import type { Catcher } from "../internal/Catcher.ts";
 import type { Unit } from "../internal/Unit.ts";
@@ -42,7 +42,7 @@ export function boundary(
       unit?.dispose();
       unit = null;
       failed = toUnexpected(error, where);
-      if (observed(parent.root.ctx)) report(parent.root.ctx, { kind: "error", error: failed });
+      report(parent.root.ctx, { kind: "error", error: failed });
       state.set({ error: failed });
     },
   };

@@ -1,4 +1,4 @@
-// Spec: std.sessions, clause "E2001-E2004 each fire on a fixture, not on its clean twin." (E2001)
+// Spec: std.sessions, clause "E2001-E2005 each fire on a fixture, not on its clean twin." (E2001)
 // Seed 1337
 import { check } from "@keel/check";
 import { describe, expect, test } from "vitest";

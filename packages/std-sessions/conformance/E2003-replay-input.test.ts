@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: std.sessions, clause "E2001-E2004 each fire on a fixture, not on its clean twin." (E2003)
+// Spec: std.sessions, clause "E2001-E2005 each fire on a fixture, not on its clean twin." (E2003)
 // Seed 1337
 import { run } from "@keel/cli";
 import { replay } from "@keel/std-sessions";

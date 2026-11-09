@@ -120,7 +120,7 @@ describe("record", () => {
   });
 
   test("an error is recorded and fingerprinted unredacted; error: entries mask its data; upload puts the session so far", async () => {
-    const upload = new URL("https://example.test/sessions");
+    const upload = new URL("/sessions", location.origin);
     const { ctx, rec, h } = await run(["error:keel.unexpected#data.at"], upload);
     await h.fire("memo.crash", { type: "click" }).catch(() => undefined);
     expect(rec.errors().map((e) => e.code)).toEqual(["keel.unexpected"]);

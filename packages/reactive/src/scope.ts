@@ -11,13 +11,22 @@ import type { Scope } from "./types/Scope.ts";
  * computations) belong to it. If `fn` throws, the scope is disposed and the error rethrown.
  * `onError` receives, after the commit, errors thrown by effects and computeds owned by this scope or
  * its descendants (unless a nearer scope declares one); the throwing effect does not run again.
- * `run(fn)` re-enters the scope later (see `Scope.run`).
+ * `run(fn)` re-enters the scope later (see `Scope.run`). A `detached` scope is a root: no owner disposes it or lends
+ * it an `onError`, its `parent` is undefined, and `fn` runs untracked (writes are still checked), so only its own
+ * `dispose()` ends it.
  */
-export function scope(fn: () => void, options?: { onError?: (error: unknown) => void }): Scope {
+export function scope(
+  fn: () => void,
+  options?: { readonly onError?: (error: unknown) => void; readonly detached?: boolean },
+): Scope {
+  const detached = options?.detached === true;
+  const outer = { owner: rt.owner, reaction: rt.reaction };
+  if (detached) rt.owner = null;
   const n = createNode("scope", undefined, []);
+  rt.owner = outer.owner;
   const handle: Scope = {
     dispose: () => dispose(n),
-    parent: owner(),
+    parent: detached ? undefined : owner(),
     onDispose(f) {
       if (n.gone) f();
       else n.hooks = [...(n.hooks ?? []), f];
@@ -41,15 +50,17 @@ export function scope(fn: () => void, options?: { onError?: (error: unknown) => 
   };
   n.handle = handle;
   n.onError = options?.onError;
-  const prev = rt.owner;
   rt.owner = n;
+  // Untracked like `run`: a disposed copy of the running computation subscribes nothing but still checks writes.
+  if (detached) rt.reaction = outer.reaction && { ...outer.reaction, gone: true };
   try {
     fn();
   } catch (err) {
     dispose(n);
     throw err;
   } finally {
-    rt.owner = prev;
+    rt.owner = outer.owner;
+    rt.reaction = outer.reaction;
   }
   // Disposed from inside `fn`: free what the rest of `fn` created.
   if (n.gone) disposeOwned(n);

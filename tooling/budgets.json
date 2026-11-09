@@ -37,7 +37,7 @@
       "platform": "node"
     },
     "@keel/services": "3kb",
-    "@keel/std-sessions": "6kb",
+    "@keel/std-sessions": "6.5kb",
     "@keel/std-sessions/action": {
       "max": "4.5kb",
       "platform": "node"

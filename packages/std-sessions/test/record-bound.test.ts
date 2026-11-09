@@ -117,7 +117,7 @@ describe("record bounds", () => {
       seen.push(typeof init.body === "string" ? init.body.length : -1);
       return new Response(null, { status: 413 });
     });
-    const { rec, h } = await open(createCtx({ mode: "real" }), new URL("http://localhost/sessions"));
+    const { rec, h } = await open(createCtx({ mode: "real" }), new URL("/sessions", location.origin));
     await h.fire("memo.crash", { type: "click" }).catch(() => undefined);
     await vi.waitFor(() => expect(rec.errors().map((e) => e.code)).toContain("sessions.putFailed"));
     expect(seen).toHaveLength(1);

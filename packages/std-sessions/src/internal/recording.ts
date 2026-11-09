@@ -1,7 +1,7 @@
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { type Ctx, type CtxEvent, observe, seedOf } from "@keel/ctx";
 import { effect, scope } from "@keel/reactive";
-import type { Id, JsonValue, KeelError } from "@keel/schema";
+import { type Id, type JsonValue, type KeelError, type Result, err } from "@keel/schema";
 import { stores } from "@keel/store";
 import type { RecordOptions } from "../RecordOptions.ts";
 import type { Session } from "../Session.schema.ts";
@@ -12,6 +12,7 @@ import type { JsonObject } from "./JsonObject.ts";
 import type { Live } from "./Live.ts";
 import { MAX_ERRORS } from "./MAX_ERRORS.ts";
 import { MAX_SESSION_BYTES } from "./MAX_SESSION_BYTES.ts";
+import { PutFailed } from "./PutFailed.ts";
 import type { Route } from "./Route.ts";
 import { actives } from "./actives.ts";
 import { emptySession } from "./emptySession.ts";
@@ -31,8 +32,9 @@ const sizeOf = (v: unknown): number => utf8Length(JSON.stringify(v) ?? "");
  * A recorder on `ctx` (std.sessions `record`): `nav`, `fire`, `resource` and `error` from `observe`, `tx` from a
  * reactive read of every store's `log()`, each redacted as it is appended into a ring buffer of `limit` events whose
  * session JSON stays within `MAX_SESSION_BYTES`: past either bound it cuts its oldest events by the
- * overflow rule. `errors()` keeps the first and last `MAX_ERRORS`. A rejected upload is recorded as its
- * `sessions.putFailed` error, not dropped.
+ * overflow rule. `errors()` keeps the first and last `MAX_ERRORS`. A failed upload (non-2xx, rejected or thrown put)
+ * is recorded as its `sessions.putFailed` error, never an unhandled rejection. The recorder's reactive scope is
+ * detached: it outlives the component that called `record`, and only `stop()` ends it.
  */
 export function recording(ctx: Ctx, options: RecordOptions): Live {
   const limit = options.limit ?? 500;
@@ -133,9 +135,12 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
     if (raw.length > 2 * MAX_ERRORS) raw.splice(MAX_ERRORS, 1);
   };
 
-  const own = scope(() => {
-    effect(() => pull());
-  });
+  const own = scope(
+    () => {
+      effect(() => pull());
+    },
+    { detached: true },
+  );
 
   const build = (): Session => {
     if (base === undefined) return emptySession(sink.id(), seed, ctx.clock.now());
@@ -152,6 +157,31 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       error: first?.kind === "error" ? first.error : null,
       fingerprint: sessionFingerprint({ events: buf, route: base.route }),
     };
+  };
+
+  /** A failed put is the recorder's own error: an event while it records, else only in `errors()`. */
+  const failed = (error: Raw): void => {
+    if (done !== undefined) pushError(error);
+    else
+      try {
+        onEvent({ kind: "error", error });
+      } catch {
+        pushError(error);
+      }
+  };
+  const upload = (url: URL, s: Session): void => {
+    let sent: Promise<Result<null, KeelError<string, unknown>>>;
+    try {
+      sent = sink.put(url, s);
+    } catch {
+      sent = Promise.resolve(err(PutFailed.make({ status: 0 })));
+    }
+    sent.then(
+      (r) => {
+        if (!r.ok) failed({ code: r.error.code, message: r.error.message, data: jsonOf(r.error.data) });
+      },
+      () => failed(PutFailed.make({ status: 0 })),
+    );
   };
 
   const onEvent = (event: CtxEvent): void => {
@@ -177,11 +207,7 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       append({ at, kind: "error", route, error: redaction.error(error) });
       if (options.upload !== undefined && !uploaded) {
         uploaded = true;
-        void sink.put(options.upload, build()).then((r) => {
-          if (r.ok) return;
-          if (done === undefined) onEvent({ kind: "error", error: r.error });
-          else pushError(r.error);
-        });
+        upload(options.upload, build());
       }
       return;
     }
