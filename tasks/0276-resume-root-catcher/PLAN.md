@@ -18,10 +18,12 @@
 - D1: docs-freshness D0001 on docs/ARCHITECTURE.md and docs/freeze-review.md cleared by a verified bump at eb0e615. ARCHITECTURE read against the tree and accurate. freeze-review is the dated G3 audit that RFCs 0020-0045 cite as evidence; its content is kept as filed and it goes in the 1.0 sweep (0229).
 - D2: red-team 0278-0281 filed. 0278, 0279, 0280 and the reviewer's findings (property test, history wording, two untested edges) are fixed as an amendment to rfc:0075 before the push; 0281 holds the unconfirmed leads.
 - D3 (0280, RFC default 4): a handler's `data.at` holds only an id the compiler knows, never a runtime DOM `id`; the kernel agent picks the smallest mechanism and k.errors states it.
+- D4 (0280 mechanism, rfc:0075 amended): a handler's `data.at` is the id `on` was registered under, else the nearest `data-k` stamp, else `""`. The compiler wraps a k.ui base element with a literal `id` so its stamp is that id; an id from an expression is never stamped. Bindings and structural ops still read the runtime `id` (0282).
+- D5: `@keel/compiler` measures 26,332 B against 26 kB (26,624 B); no re-base.
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test` green; ledger 0 lowered, 0 uncovered; unsafe 6
 - [ ] nightly run files one `keel-session` issue for the planted error; the emitted test fails before the fix and passes after; issue closed
 
 ## Next action
-Step 3: the kernel agent is amending rfc:0075 for 0278-0280 and the review findings (uncommitted work in the tree is its work). On its report: root checks, commit by explicit path with `rfc:0075`, flip 0276-0280 in BACKLOG, push; then step 4.
+Reviewer pass over the amendment 543af4d is pending. On approval: push, then step 4 (drill rerun). Root checks are green at 543af4d: ledger 479 items, 472 verified, 0 lowered, unsafe 6.
