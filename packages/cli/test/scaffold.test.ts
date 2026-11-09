@@ -54,9 +54,9 @@ describe("scaffold and codemod", () => {
     expect(paths).not.toContain("shop/turbo.json");
     const ignore = e.writes.find((w) => w.path === "shop/.gitignore")?.content ?? "";
     expect(ignore.split("\n")).toEqual(
-      expect.arrayContaining(["dist", ".turbo", "coverage", "reports", ".stryker-tmp"]),
+      expect.arrayContaining(["dist", ".turbo", "coverage", "reports", ".stryker-tmp", ".keel/sessions/"]),
     );
-    expect(ignore).not.toContain(".keel");
+    expect(ignore.split("\n")).not.toContain(".keel");
     const bad = await runEngine(["scaffold", "project", "shop", "--adapter", "bogus"], { cwd: CWD, files: [] });
     expect(bad.result.code).not.toBe(0);
   });
