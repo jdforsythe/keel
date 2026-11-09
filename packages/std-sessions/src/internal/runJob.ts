@@ -24,13 +24,27 @@ function diagsOf(stdout: string): OutRecord[] {
   return out;
 }
 
+/** The test run's own diagnostics, or E1052 when it reported none: the job test never ran. */
+function withNotRun(op: string, diags: OutRecord[]): OutRecord[] {
+  if (diags.length > 0) return diags;
+  return [
+    {
+      kind: "diag",
+      code: "E1052",
+      message: `session ${op}: the job test did not run; add ".keel/sessions/*.test.ts" to vitest include`,
+      fix: '-  include: ["test/**/*.test.{ts,tsx}"]\n+  include: ["test/**/*.test.{ts,tsx}", ".keel/sessions/*.test.ts"]',
+      see: "k.cli",
+    },
+  ];
+}
+
 /**
  * Run one `keel session` job inside the project's `keel test` runner (std.sessions D1): write
  * `.keel/sessions/job-<pid>-<n>.test.ts`, which imports each serving module's `routes.ts` and calls
  * `commandJob` from `@keel/std-sessions/commandJob` with the session inline; run `keel test <job> --format=json` on
  * `io.cwd` (the project's vitest config and environment, `KEEL_TEST=1`); read `JobResult` back from the
- * `.result.json` beside it; remove both. Without a result (the project's vitest `include` misses `.keel/sessions/`,
- * or app code throws on import), the test run's diagnostics come back instead.
+ * `.result.json` beside it; remove both. Without a result, the test run's diagnostics come back instead (app code threw on import); a run that
+ * reported none means the project's vitest `include` misses `.keel/sessions/`, and E1052 says so.
  */
 export async function runJob(
   io: Io,
@@ -78,9 +92,9 @@ export async function runJob(
       tty: false,
       ...(io.env === undefined ? {} : { env: io.env }),
     });
-    if (!existsSync(resultFile)) return { ok: false, diags: diagsOf(r.stdout) };
+    if (!existsSync(resultFile)) return { ok: false, diags: withNotRun(job.op, diagsOf(r.stdout)) };
     const parsed = JobResult.parse(JSON.parse(readFileSync(resultFile, "utf8")));
-    return parsed.ok ? { ok: true, result: parsed.value } : { ok: false, diags: diagsOf(r.stdout) };
+    return parsed.ok ? { ok: true, result: parsed.value } : { ok: false, diags: withNotRun(job.op, diagsOf(r.stdout)) };
   } finally {
     rmSync(testFile, { force: true });
     rmSync(resultFile, { force: true });
