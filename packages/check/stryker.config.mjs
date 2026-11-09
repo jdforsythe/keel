@@ -5,7 +5,7 @@ const base = strykerConfig("check", 70);
 
 export default {
   ...base,
-  // Half the cores: the vitest runner is CPU-bound and the full run was ~18 minutes.
+  // Half the cores: the vitest runner is CPU-bound.
   concurrency: Math.max(1, Math.floor(os.cpus().length / 2)),
   // `incremental` and `ignoreStatic` are already on in the shared factory; keep them explicit here.
   vitest: { configFile: "vitest.mutate.config.ts" },
