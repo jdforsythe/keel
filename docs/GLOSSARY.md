@@ -20,4 +20,4 @@ Canonical names. Changing one requires an RFC.
 - **unsafe**: the only named path around a guarantee; requires a justification string; counted in the ledger.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 
-verified: 959a568f16e924fac59329e75c1585fe38d4c00e
+verified: 2bcf3e93f03e71b8d7a97a1d5a4132aac4f48074

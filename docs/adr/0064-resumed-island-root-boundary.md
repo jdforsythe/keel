@@ -9,6 +9,8 @@
 - **`data.at` (default 4).** A handler's throw carries only an id the compiler wrote: the id it was registered under, else the `data-k` stamp of its element or nearest ancestor, else `""`. The compiler stamps a bound k.ui base element with its literal `id` (JSX tag or `.ts` call) as it stamps a bound template element; never a runtime `id`, which can hold app data that sessions upload and fingerprint unredacted. The `attr` op does not bind `data-k`. The compiler does the stamping because k.ui cannot tell a literal id from a runtime value, and `data.at` must hold only ids the compiler knows. It matches k.ui base names by imported name, and the wrapper does nothing to a node that has no `data-k` marker.
 - **Intrinsic calls (k.component).** Supported in files without JSX. The compiler removes a `@keel/runtime-dom` import only when every binding is an intrinsic used solely as a JSX tag; `analyze` treats pattern defaults as reads, so a parameter or destructuring default keeps it. E1251 is unchanged.
 
+- **A computed's throw surfaces in its reader (k.reactive).** A reader whose computed source throws reruns and meets the throw in its own `get()`, so a binding reports its own element under `mount` and `resume` alike (found by the live S1 drill: `"ops.home"` after resume, `""` in replay). The failed computed stays Dirty and its next source change marks its readers once.
+
 **Alternatives.**
 - A `boundary` op around each island at resume, rejected: the server emits no region for it.
 - Reporting without a fallback, rejected: differs from `mount` and leaves a dead island.
