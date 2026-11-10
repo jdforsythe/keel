@@ -4,7 +4,7 @@ import { graphemes } from "@keel/std-text";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
-test.skip("`graphemes` is 1 for `👨‍👩‍👧` and for `'é'`, 0 for `''`, and `s.length` for every generated ASCII string.", () => {
+test("`graphemes` is 1 for `👨‍👩‍👧` and for `'é'`, 0 for `''`, and `s.length` for every generated ASCII string.", () => {
   expect(graphemes("👨‍👩‍👧")).toBe(1);
   expect(graphemes("é")).toBe(1);
   expect(graphemes("é")).toBe(1);
@@ -23,7 +23,7 @@ test.skip("`graphemes` is 1 for `👨‍👩‍👧` and for `'é'`, 0 for `''`,
   );
 });
 
-test.skip("`graphemes` equals the `Intl.Segmenter` grapheme count for every generated string (property).", () => {
+test("`graphemes` equals the `Intl.Segmenter` grapheme count for every generated string (property).", () => {
   const seg = new Intl.Segmenter("en", { granularity: "grapheme" });
   fc.assert(
     fc.property(fc.fullUnicodeString({ maxLength: 30 }), (v) => {

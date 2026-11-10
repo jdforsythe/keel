@@ -14,7 +14,7 @@ const text = fc.oneof(
     .map((a) => a.join("")),
 );
 
-test.skip("For every generated string `s` and `max` from 1 to 20, `graphemes(truncate(s, max)) <= max`.", () => {
+test("For every generated string `s` and `max` from 1 to 20, `graphemes(truncate(s, max)) <= max`.", () => {
   fc.assert(
     fc.property(text, fc.integer({ min: 1, max: 20 }), (v, max) => {
       expect(graphemes(truncate(v, max))).toBeLessThanOrEqual(max);
@@ -23,7 +23,7 @@ test.skip("For every generated string `s` and `max` from 1 to 20, `graphemes(tru
   );
 });
 
-test.skip("`truncate(s, max) === s` exactly when `graphemes(s) <= max`.", () => {
+test("`truncate(s, max) === s` exactly when `graphemes(s) <= max`.", () => {
   fc.assert(
     fc.property(text, fc.integer({ min: 1, max: 20 }), (v, max) => {
       expect(truncate(v, max) === v).toBe(graphemes(v) <= max);
@@ -32,7 +32,7 @@ test.skip("`truncate(s, max) === s` exactly when `graphemes(s) <= max`.", () => 
   );
 });
 
-test.skip("Otherwise the result ends with `…` and the graphemes before it begin `s`, none split.", () => {
+test("Otherwise the result ends with `…` and the graphemes before it begin `s`, none split.", () => {
   fc.assert(
     fc.property(text, fc.integer({ min: 1, max: 20 }), (v, max) => {
       fc.pre(graphemes(v) > max);
@@ -51,12 +51,12 @@ test.skip("Otherwise the result ends with `…` and the graphemes before it begi
   );
 });
 
-test.skip("`truncate('Crème brûlée', 6)` is `Crème…`.", () => {
+test("`truncate('Crème brûlée', 6)` is `Crème…`.", () => {
   expect(truncate("Crème brûlée", 6)).toBe("Crème…");
   expect(truncate("ab cd", 4)).toBe("ab…");
 });
 
-test.skip("`truncate` throws unless `max` is an integer of at least 1.", () => {
+test("`truncate` throws unless `max` is an integer of at least 1.", () => {
   for (const bad of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
     expect(() => truncate("abc", bad)).toThrow();
   }

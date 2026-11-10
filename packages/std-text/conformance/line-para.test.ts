@@ -6,14 +6,26 @@ import { expect, test } from "vitest";
 
 const FAMILY = "👨‍👩‍👧";
 
-function rules(schema: { parse(i: unknown): { ok: boolean; error?: { data: { issues: readonly { rule: string }[] } } } }, input: unknown): string[] {
+function rules(
+  schema: { parse(i: unknown): { ok: boolean; error?: { data: { issues: readonly { rule: string }[] } } } },
+  input: unknown,
+): string[] {
   const r = schema.parse(input);
   expect(r.ok).toBe(false);
   return r.ok || !r.error ? [] : r.error.data.issues.map((i) => i.rule);
 }
 
 // Independent oracle for the `line` predicate.
-const BIDI = new RegExp("[" + String.fromCharCode(0x202a) + "-" + String.fromCharCode(0x202e, 0x2066) + "-" + String.fromCharCode(0x2069) + "]", "u");
+const BIDI = new RegExp(
+  "[" +
+    String.fromCharCode(0x202a) +
+    "-" +
+    String.fromCharCode(0x202e, 0x2066) +
+    "-" +
+    String.fromCharCode(0x2069) +
+    "]",
+  "u",
+);
 const CONTROL = new RegExp("[\\p{Cc}" + String.fromCharCode(0x2028, 0x2029) + "]", "u");
 function lineOk(v: string, min: number, max: number, allowLf: boolean): boolean {
   const text = allowLf ? v.replaceAll("\n", "") : v;
