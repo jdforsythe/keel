@@ -1,6 +1,6 @@
 # Task 0307: S2 Values (std-temporal, std-text, std-i18n, std-money; golden-2 lane)
 
-**Spec:** std.money (exists) · std.temporal, std.text, std.i18n (new, from the design RFC) · k.schema type registry, k.ui formatting hooks (kernel touch) · **Gate:** S2 exit: golden-2 prices and dates in 3 locales (eval) · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10)
+**Spec:** std.money (exists) · std.temporal, std.text, std.i18n (new, from the design RFC) · k.schema type registry, k.ui formatting hooks (kernel touch) · **Gate:** S2 exit: golden-2 prices and dates in 3 locales (eval) · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed (2026-11-10)
 
 ## Shape (tasks/PROGRAM.md)
 1. [x] Design RFC 0079 (`docs/rfc/0079-s2-values.md`, draft) (one opus agent, no code): contract per package, kernel changes, spec diff, conformance clauses, lane split, open questions for the user.
@@ -33,8 +33,9 @@
 
 ## Verification
 - [x] `pnpm check`, `pnpm test`, `pnpm build` green; ledger 573 items, 565 verified, 0 lowered, 0 uncovered; unsafe 6 -> 7 justified (std-messages asEntry)
+- [x] mutation: schema 92.1%, router 85.4% (threshold 80%)
 - [x] reviewer approved (0318 filed); red-team 0319-0336 filed, 0319, 0320, 0322 fixed in-batch
 - [x] `pnpm eval` golden-2: prices, dates, durations, titles, `<html lang>` in en-US, de-DE, ja-JP; converged
 
 ## Next action
-Pushed at de9e0d7. Mutation runs (schema, router; alone, in order) are in progress; log in the job tmp dir. On their result: record the scores here (threshold 80% for schema and router); if below, file a backlog line (thresholds are never lowered) and fix in a follow-up. Then close: `**Status:** closed`, tick 0307 in tasks/BACKLOG.md, `/handoff`. Open follow-ups from this batch: 0308 (scaffold with the locale param), 0313-0318, 0321 and 0323-0336 (red team; 0321 TimeZone names and 0323 E1758 coverage first).
+Closed. Follow-ups in tasks/BACKLOG.md: 0308 (scaffold with the locale param), 0313-0318, 0321 and 0323-0336 (red team; 0321 TimeZone names and 0323 E1758 coverage first). Next stage: S3 (tasks/0309-s3-server-depth/PLAN.md).
