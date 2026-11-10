@@ -11,13 +11,20 @@ import { messageOk } from "./internal/messageOk.ts";
 import { templateOk } from "./internal/templateOk.ts";
 
 const IDENT = /^[A-Za-z_$][\w$]*$/;
+const BLANK = /^\p{White_Space}*$/u;
 const PARTS = s.array(s.string());
 
 function messageType(params: ReadonlyMap<string, ParamKind>): Schema<unknown> {
   if (params.size === 0)
     return s.format("message", s.string(), {
-      check: (v) => templateOk(v, []),
-      gen: { from: s.string(), map: (v) => v.replace(/[{}]/g, "").slice(0, 60) || "x" },
+      check: (v) => templateOk(v, []) && !BLANK.test(v),
+      gen: {
+        from: s.string(),
+        map: (v) => {
+          const t = v.replace(/[{}]/g, "").slice(0, 60);
+          return BLANK.test(t) ? `${t}x` : t;
+        },
+      },
     });
   return s.format(`message(${[...params.keys()].join(", ")})`, s.json(), {
     check: (v) => messageOk(v, params),

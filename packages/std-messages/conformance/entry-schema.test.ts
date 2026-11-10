@@ -27,6 +27,7 @@ test("For a fixture set with keys `title` (no params), `count` (`n: s.int()`) an
   );
   expect(issues(valid)).toEqual([]);
   expect(issues({ ...valid, title: "a{b" })).toEqual([{ path: ["title"], rule: "format" }]);
+  expect(issues({ ...valid, title: "  " })).toEqual([{ path: ["title"], rule: "format" }]);
   expect(issues({ ...valid, count: { text: "{x} items" } })).toEqual([{ path: ["count"], rule: "format" }]);
   expect(issues({ ...valid, kind: { plural: "k", other: "# x" } })).toEqual([{ path: ["kind"], rule: "format" }]);
   expect(issues({ ...valid, kind: { select: "k", cases: { a: "A" } } })).toEqual([{ path: ["kind"], rule: "format" }]);
