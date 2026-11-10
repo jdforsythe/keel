@@ -1,0 +1,181 @@
+// Shared helpers for the k.compat conformance files (not a test file). Public surface only: the `keel` binary over a temp project.
+// Seed 1337 for every property in this suite.
+// ASSUMED (spec names no fixture layout): `service({ module, schema })` as in k.services; `keel build` writes `.keel/surface.json`
+// then `keel check [--base <file>] --format=json` reads it. No git fixture is needed: `--base` reads a surface.json file (the
+// generated CI hands it the base branch's), so the base is a copy of an earlier build's artifact.
+// There is no conformance/fixtures/ directory: projects are built in the test body from the parameters below (the surface
+// needs `routes.ts` evaluated, which the in-memory `check(files)` does not do).
+import { spawnSync } from "node:child_process";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+export const SEED = 1337;
+
+function findRoot(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (;;) {
+    try {
+      statSync(join(dir, "pnpm-workspace.yaml"));
+      return dir;
+    } catch {
+      const up = dirname(dir);
+      if (up === dir) throw new Error("repo root (pnpm-workspace.yaml) not found");
+      dir = up;
+    }
+  }
+}
+const root = findRoot();
+
+export type Rec = {
+  kind: string;
+  code?: unknown;
+  path?: unknown;
+  message?: unknown;
+  fix?: unknown;
+  [k: string]: unknown;
+};
+export type Run = { status: number | null; records: Rec[] };
+
+function isRec(v: unknown): v is Rec {
+  return typeof v === "object" && v !== null && "kind" in v && typeof v.kind === "string";
+}
+
+export function keel(dir: string, args: string[]): Run {
+  const env: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST") continue;
+    env[k] = v;
+  }
+  const r = spawnSync(process.execPath, [join(root, "packages/cli/src/bin.ts"), ...args, "--format=json"], {
+    cwd: dir,
+    encoding: "utf8",
+    env,
+  });
+  const records: Rec[] = [];
+  for (const line of r.stdout.split("\n")) {
+    if (line.trim() === "") continue;
+    try {
+      const v: unknown = JSON.parse(line);
+      if (isRec(v)) records.push(v);
+    } catch {
+      // non-JSON line: ignored
+    }
+  }
+  return { status: r.status, records };
+}
+
+export const diags = (run: Run, code: string): Rec[] => run.records.filter((r) => r.kind === "diag" && r.code === code);
+
+export type Tree = Record<string, string>;
+
+export function materialize(files: Tree): string {
+  const dir = mkdtempSync(join(tmpdir(), "keel-compat-"));
+  write(dir, files);
+  mkdirSync(join(dir, "node_modules/@keel"), { recursive: true });
+  for (const pkg of readdirSync(join(root, "packages"))) {
+    symlinkSync(join(root, "packages", pkg), join(dir, "node_modules/@keel", pkg));
+  }
+  for (const name of ["vitest", "vite", "typescript", "fast-check"]) {
+    symlinkSync(join(root, "node_modules", name), join(dir, "node_modules", name));
+  }
+  return dir;
+}
+
+export function write(dir: string, files: Tree): void {
+  for (const [path, content] of Object.entries(files)) {
+    const full = join(dir, path);
+    mkdirSync(dirname(full), { recursive: true });
+    try {
+      writeFileSync(full, content);
+    } catch {
+      rmSync(full, { force: true });
+      writeFileSync(full, content);
+    }
+  }
+}
+
+export const cleanup = (dir: string): void => rmSync(dir, { recursive: true, force: true });
+export const readText = (dir: string, path: string): string => readFileSync(join(dir, path), "utf8");
+
+export type Shape = {
+  /** Source of the route's action input schema (POST). */
+  input?: string;
+  /** Source of the route's GET loader output schema, and a value of it. */
+  output?: string;
+  outputValue?: string;
+  /** Endpoint of module `a` calling `y.save`: schema sources. */
+  body?: string;
+  endpointOutput?: string;
+  errors?: string;
+  /** Deployables: `x` (module a) and `y` (module y), or one deployable `x` holding both. */
+  split?: boolean;
+  /** `deps` of module a, `public.routes` of module y. */
+  deps?: string[];
+  publicRoutes?: string[];
+  /** Endpoint path (default `/y/save`) and method (default POST). */
+  path?: string;
+};
+
+/** A two-module project: module `a` calls route `y.save` of module `y` through `service({ module: 'y' })`. */
+export function project(sh: Shape = {}): Tree {
+  const input = sh.input ?? "s.object({ name: s.string() })";
+  const output = sh.output ?? "s.object({ id: s.string() })";
+  const q = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
+  const topo =
+    sh.split === false
+      ? "{ x: { modules: ['a', 'y'], adapter: 'node' } }"
+      : "{ x: { modules: ['a'], adapter: 'node' }, y: { modules: ['y'], adapter: 'node' } }";
+  return {
+    "topology.ts": `import { topology } from '@keel/server'\nexport default topology(${topo})\n`,
+    "modules/a/module.ts":
+      `import { module } from '@keel/compiler'\n` +
+      `export default module({ id: 'a', deps: ${q(sh.deps ?? ["y"])}, capabilities: [], public: { exports: [], routes: [] } })\n`,
+    "modules/y/module.ts":
+      `import { module } from '@keel/compiler'\n` +
+      `export default module({ id: 'y', deps: [], capabilities: [], public: { exports: [], routes: ${q(sh.publicRoutes ?? ["y.save"])} } })\n`,
+    "modules/y/routes.ts":
+      `import { action, loader, manifest } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n` +
+      `const Page = () => null\n` +
+      `const load = loader({ output: ${output} }, async () => ok(${sh.outputValue ?? "{ id: 'i' }"}))\n` +
+      `const save = action({ input: ${input} }, async () => ok(null))\n` +
+      `export const routes = manifest({ 'y.save': { path: '/y/save', loader: load, component: Page } })\n` +
+      `routes.actions({ 'y.save': { POST: save } })\n`,
+    "modules/a/api.ts":
+      `import { s } from '@keel/schema'\nimport { endpoints, service } from '@keel/services'\n` +
+      `export const api = service({ module: 'y', schema: endpoints({\n` +
+      `  save: { method: 'POST', path: '${sh.path ?? "/y/save"}', body: ${sh.body ?? input}, output: ${sh.endpointOutput ?? output}` +
+      `${sh.errors === undefined ? "" : `, errors: { 409: ${sh.errors} }`} },\n` +
+      `}) })\n`,
+  };
+}
+
+/** Build the project, then check it (optionally against a base surface file). */
+export function buildAndCheck(dir: string, base?: string): Run {
+  const built = keel(dir, ["build"]);
+  if (
+    built.status !== 0 &&
+    built.records.some((r) => r.kind === "diag" && r.code !== undefined && String(r.code).startsWith("E10"))
+  )
+    return built;
+  return keel(dir, base === undefined ? ["check"] : ["check", "--base", base]);
+}
+
+/** Build `files` in a temp project and return `.keel/surface.json` copied beside it as `base.json`; the project dir is returned too. */
+export function baseSurface(files: Tree): { dir: string; base: string } {
+  const dir = materialize(files);
+  keel(dir, ["build"]);
+  const base = join(dir, "..", `${dir.split("/").pop()}-base.json`);
+  writeFileSync(base, readFileSync(join(dir, ".keel/surface.json"), "utf8"));
+  return { dir, base };
+}
