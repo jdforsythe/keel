@@ -17,6 +17,7 @@
     "mutate": "stryker run"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/tooling": "workspace:*"
   },
   "dependencies": {

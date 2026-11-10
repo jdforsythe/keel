@@ -24,6 +24,7 @@
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/tooling": "workspace:*"
   }
 }

@@ -1,6 +1,6 @@
 import { Writable } from "node:stream";
 import { type TestReport, testResults } from "@keel/testing";
-import { startVitest } from "vitest/node";
+import { type Vitest, startVitest } from "vitest/node";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
@@ -15,9 +15,13 @@ const EMPTY: TestReport = { diagnostics: [], tests: 0, failed: 0, skipped: 0, er
 
 async function vitestRun(root: string, filters: readonly string[]): Promise<TestReport> {
   let report = EMPTY;
+  let run: Vitest | undefined;
   const collector = {
-    onFinished: (files: readonly unknown[] = [], errors: readonly unknown[] = []): void => {
-      report = testResults(files, errors, root);
+    onInit: (vitest: Vitest): void => {
+      run = vitest;
+    },
+    onTestRunEnd: (_modules: readonly unknown[], errors: readonly unknown[]): void => {
+      report = testResults(run?.state.getFiles() ?? [], errors, root);
     },
   };
   const exitCode = process.exitCode;

@@ -2,7 +2,7 @@
 status: conformance-covered
 
 **Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are `keel test`, k.testing; rfc:0023).
-1. Parse (oxc) and TS strict type check.
+1. Parse (oxc) and TS strict type check. The only ambient types are Node's, loaded when `@types/node` resolves from the project root.
 2. Compiler diagnostics (k.compiler transform of every file). They flow through unchanged: same code, location, message, and fix.
 3. Rule registry: kernel structure rules plus rules from stdlib modules in the project's `deps` (k.module), run on each file with read-only project artifacts (`.keel/*.json`, manifests) and `project`: the project's code files and its `topology.ts`, one shared array (rfc:0070).
 4. Formatter: dedupe, sort by path, line, and col, group by code, cap, render per `--format` (k.cli).
@@ -45,3 +45,4 @@ Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule t
 - A tree with only W diagnostics exits 0.
 - A base element given `children: Input(...)`, also through an aliased import, in an array, or held by a `const`, reports E1808; a thunk, a string or `props.children` does not.
 - A rule receives, as read-only `project`, every code file of its file's project and that project's `topology.ts`, the same array for each file it checks.
+- A file reading `process.env` and importing `node:path` checks clean in a project whose root resolves `@types/node` and reports E1751 in one whose root does not.

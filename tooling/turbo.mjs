@@ -24,10 +24,14 @@ const NOISE = [
   /^\s*(ELIFECYCLE|ERROR)\b/,
 ];
 
+// Each vitest run fills every core by itself, so test tasks run four at a time: the same wall time as the
+// default of ten, without type-check heavy tests starving past their timeout.
+const limit = task === "test" && !extra.some((a) => a.startsWith("--concurrency")) ? ["--concurrency=4"] : [];
+
 await run(task ?? "turbo", () => {
   const r = spawnSync(
     "pnpm",
-    ["exec", "turbo", "run", task, "--output-logs=errors-only", "--ui=stream", "--no-color", ...extra],
+    ["exec", "turbo", "run", task, "--output-logs=errors-only", "--ui=stream", "--no-color", ...limit, ...extra],
     {
       cwd: new URL("..", import.meta.url).pathname,
       encoding: "utf8",

@@ -25,6 +25,7 @@
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/tooling": "workspace:*",
     "vite": "^8.3.6"
   }

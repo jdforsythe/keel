@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.ts", "conformance/**/*.test.ts"],
     passWithNoTests: true,
+    // Tests here run the checker's type pass, a fresh TypeScript program per case; on a busy machine one takes several seconds.
+    testTimeout: 15_000,
     reporters: [new KeelReporter()],
   },
 });

@@ -60,7 +60,7 @@ function compactDiff(d: string | undefined): string | undefined {
 }
 
 /**
- * Turn vitest's finished task tree (`onFinished(files, errors)`) into OUTPUT.md terms: one T0001 per failed
+ * Turn vitest's finished task tree (`state.getFiles()` and the unhandled errors of `onTestRunEnd`) into OUTPUT.md terms: one T0001 per failed
  * test at its first app frame (`path:line:col` relative to `cwd`), the message `suite > test: first line`, and
  * a `fix` carrying the compact diff and up to four more app frames; a file that failed outside any test gets
  * one T0001 at line 1; each unhandled error one T0001 without location. Pure; shared by the cli and the

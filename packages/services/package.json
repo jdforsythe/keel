@@ -25,6 +25,7 @@
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/check": "workspace:*",
     "@keel/tooling": "workspace:*",
     "fast-check": "^3"

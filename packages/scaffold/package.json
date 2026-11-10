@@ -22,6 +22,7 @@
     "oxc-parser": "^0.157.0"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/tooling": "workspace:*",
     "fast-check": "^3"
   }

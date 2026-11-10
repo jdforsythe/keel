@@ -31,6 +31,7 @@
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/compiler": "workspace:*",
     "@keel/tooling": "workspace:*",
     "fast-check": "^3"
