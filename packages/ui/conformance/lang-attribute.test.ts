@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.ui, clause "A base element given `lang=\"ja-JP\"` has `lang=\"ja-JP\"` in server and client output; without it, none." (rfc:0079)
+// Spec: k.ui, clause "A base element given `lang="ja-JP"` has `lang="ja-JP"` in server and client output; without it, none." (rfc:0079)
 // Seed 1337. The client-output half; the server-output half is packages/server/conformance/lang-attribute-server.test.ts.
 // Select is not covered: its required props are not named by the spec section.
 import { mount } from "@keel/runtime-dom";

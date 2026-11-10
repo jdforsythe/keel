@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "unsafe": 6,
+  "unsafe": 7,
   "mutationScore": {
     "check": 73.3,
     "cli": 90.9,
@@ -387,6 +387,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "AppLocale",
+      "file": "golden-2:recipes/AppLocale.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "Box",
       "file": "golden-2:recipes/Box.schema.ts",
       "rung": "example"
@@ -401,7 +407,7 @@
       "pkg": "golden-2",
       "name": "BoxShell",
       "file": "golden-2:recipes/BoxShell.tsx",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -417,8 +423,20 @@
     },
     {
       "pkg": "golden-2",
+      "name": "IndexData",
+      "file": "golden-2:recipes/IndexData.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "KeelFields",
       "file": "golden-2:recipes/KeelFields.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "LocaleParams",
+      "file": "golden-2:recipes/LocaleParams.schema.ts",
       "rung": "example"
     },
     {
@@ -437,6 +455,12 @@
       "pkg": "golden-2",
       "name": "Recipe",
       "file": "golden-2:recipes/Recipe.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipeData",
+      "file": "golden-2:recipes/RecipeData.schema.ts",
       "rung": "example"
     },
     {
@@ -461,7 +485,7 @@
       "pkg": "golden-2",
       "name": "RecipePage",
       "file": "golden-2:recipes/RecipePage.tsx",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -471,8 +495,44 @@
     },
     {
       "pkg": "golden-2",
+      "name": "RecipeRef",
+      "file": "golden-2:recipes/RecipeRef.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "RecipeSearch",
       "file": "golden-2:recipes/RecipeSearch.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipesText",
+      "file": "golden-2:recipes/RecipesText.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "de-DE",
+      "file": "golden-2:recipes/RecipesText/de-DE.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "en-US",
+      "file": "golden-2:recipes/RecipesText/en-US.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ja-JP",
+      "file": "golden-2:recipes/RecipesText/ja-JP.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "TextData",
+      "file": "golden-2:recipes/TextData.schema.ts",
       "rung": "example"
     },
     {
@@ -495,6 +555,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "fieldText",
+      "file": "golden-2:recipes/fieldText.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "kitchen",
       "file": "golden-2:recipes/kitchen.service.ts",
       "rung": "example"
@@ -513,8 +579,20 @@
     },
     {
       "pkg": "golden-2",
+      "name": "loadNew",
+      "file": "golden-2:recipes/loadNew.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "loadRecipe",
       "file": "golden-2:recipes/loadRecipe.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "loadShell",
+      "file": "golden-2:recipes/loadShell.server.ts",
       "rung": "example"
     },
     {
@@ -956,6 +1034,36 @@
       "rung": "probabilistic"
     },
     {
+      "pkg": "std-i18n",
+      "name": "formatNumber",
+      "file": "packages/std-i18n/src/formatNumber.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-i18n",
+      "name": "localeName",
+      "file": "packages/std-i18n/src/localeName.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-i18n",
+      "name": "plural",
+      "file": "packages/std-i18n/src/plural.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-messages",
+      "name": "formatMessage",
+      "file": "packages/std-messages/src/formatMessage.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-messages",
+      "name": "messages",
+      "file": "packages/std-messages/src/messages.ts",
+      "rung": "example"
+    },
+    {
       "pkg": "std-money",
       "name": "addMoney",
       "file": "packages/std-money/src/addMoney.ts",
@@ -1026,6 +1134,114 @@
       "name": "toTest",
       "file": "packages/std-sessions/src/toTest.ts",
       "rung": "none"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "addDays",
+      "file": "packages/std-temporal/src/addDays.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "durationMs",
+      "file": "packages/std-temporal/src/durationMs.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "durationOf",
+      "file": "packages/std-temporal/src/durationOf.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "epochMs",
+      "file": "packages/std-temporal/src/epochMs.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "formatDate",
+      "file": "packages/std-temporal/src/formatDate.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "formatDuration",
+      "file": "packages/std-temporal/src/formatDuration.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "formatInstant",
+      "file": "packages/std-temporal/src/formatInstant.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "instantOf",
+      "file": "packages/std-temporal/src/instantOf.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-temporal",
+      "name": "plainDateOf",
+      "file": "packages/std-temporal/src/plainDateOf.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-text",
+      "name": "compareText",
+      "file": "packages/std-text/src/compareText.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-text",
+      "name": "graphemes",
+      "file": "packages/std-text/src/graphemes.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-text",
+      "name": "isEmail",
+      "file": "packages/std-text/src/isEmail.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-text",
+      "name": "isSlug",
+      "file": "packages/std-text/src/isSlug.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-text",
+      "name": "line",
+      "file": "packages/std-text/src/line.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-text",
+      "name": "para",
+      "file": "packages/std-text/src/para.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-text",
+      "name": "textCheck",
+      "file": "packages/std-text/src/textCheck.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-text",
+      "name": "textFormat",
+      "file": "packages/std-text/src/textFormat.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-text",
+      "name": "truncate",
+      "file": "packages/std-text/src/truncate.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-timings",
@@ -1171,6 +1387,10 @@
     },
     {
       "item": "k.check#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.check#13",
       "rung": "example"
     },
     {
@@ -1522,6 +1742,30 @@
       "rung": "example"
     },
     {
+      "item": "k.forms#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.head#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.head#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.head#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.head#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.head#5",
+      "rung": "example"
+    },
+    {
       "item": "k.module#1",
       "rung": "example"
     },
@@ -1576,6 +1820,34 @@
     {
       "item": "k.module#14",
       "rung": "example"
+    },
+    {
+      "item": "k.prefix#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.prefix#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.prefix#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.prefix#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.prefix#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.prefix#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.prefix#7",
+      "rung": "probabilistic"
     },
     {
       "item": "k.reactive#1",
@@ -1842,6 +2114,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.schema#12",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.server#1",
       "rung": "example"
     },
@@ -1903,10 +2179,6 @@
     },
     {
       "item": "k.server#16",
-      "rung": "example"
-    },
-    {
-      "item": "k.server#17",
       "rung": "example"
     },
     {
@@ -2130,6 +2402,10 @@
       "rung": "example"
     },
     {
+      "item": "k.ui#13",
+      "rung": "example"
+    },
+    {
       "item": "std.brands#1",
       "rung": "example"
     },
@@ -2199,6 +2475,74 @@
     },
     {
       "item": "std.health#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.i18n#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.i18n#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.i18n#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.i18n#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.i18n#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.i18n#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.i18n#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.i18n#8",
+      "rung": "example"
+    },
+    {
+      "item": "std.messages#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.messages#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.messages#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.messages#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.messages#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.messages#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.messages#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.messages#8",
+      "rung": "none"
+    },
+    {
+      "item": "std.messages#9",
       "rung": "example"
     },
     {
@@ -2303,6 +2647,82 @@
     },
     {
       "item": "std.sessions#13",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.temporal#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.temporal#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.temporal#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.temporal#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.temporal#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.temporal#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.temporal#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.temporal#8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.temporal#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.temporal#10",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.text#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#9",
       "rung": "probabilistic"
     },
     {

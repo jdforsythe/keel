@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.ui, clause "A base element given `lang=\"ja-JP\"` has `lang=\"ja-JP\"` in server and client output; without it, none." (rfc:0079)
+// Spec: k.ui, clause "A base element given `lang="ja-JP"` has `lang="ja-JP"` in server and client output; without it, none." (rfc:0079)
 // Seed 1337. The server-output half; the client half is packages/ui/conformance/lang-attribute.test.ts.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
