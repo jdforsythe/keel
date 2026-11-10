@@ -5,7 +5,7 @@
 ## Shape (tasks/PROGRAM.md)
 1. [x] Design RFC 0079 (`docs/rfc/0079-s2-values.md`, draft) (one opus agent, no code): contract per package, kernel changes, spec diff, conformance clauses, lane split, open questions for the user.
 2. [x] Orchestrator accepts the RFC (rfc:0079 accepted 2026-11-10, ADR-0068 to ADR-0072, commit 4979cfe) under the WORKFLOW RFC defaults; questions the defaults do not settle go to the user.
-3. [ ] Conformance first: one `conformance-writer` per lane, tests skipped until implementation.
+3. [~] Conformance first (five conformance-writers launched 2026-11-10 after prep commit 19cdf70): one `conformance-writer` per lane, tests skipped until implementation.
 4. [ ] Implementation batch: one agent per lane (std-temporal, std-text, std-i18n, std-money changes, golden-2), one kernel agent; in parallel.
 5. [ ] Root `pnpm check`, `pnpm test`, `pnpm build`; ledger; budgets; reviewer + red-team; in-batch fixes; push.
 6. [ ] Exit proof: the golden-2 eval shows prices and dates in 3 locales.
@@ -30,4 +30,4 @@
 - [ ] `pnpm eval` golden-2: prices and dates in 3 locales
 
 ## Next action
-Step 2b: a sonnet prep agent is applying RFC "Spec diff" and "Lanes: Orchestrator, before the batch" (spec files, four package skeletons, deps.json, budgets.json re-bases, golden-2 deps, `pnpm install`). On its report: run `pnpm check`, commit `wip: rfc:0079 spec text and package skeletons`, then step 3: launch conformance-writers (one per lane: kernel, i18n-money, std-temporal, std-text, std-messages) from the RFC "Conformance diff" file lists, each with `pnpm spec <id>`; files skipped until implementation; headers for the edited files carry rfc:0079. Then step 4 per the Lanes table.
+Step 3: five conformance-writers (kernel, i18n-money, std-temporal, std-text, std-messages) are writing skipped tests from the spec text per RFC "Conformance diff". On their reports: `pnpm check` and `pnpm test` (skipped tests must not fail; the T0001 in check's explain-and-fixture test stays until the codes land), commit `wip: rfc:0079 conformance, skipped`, then step 4: launch the six implementation agents per the RFC "Lanes" table (kernel first commit K1; i18n-money first commit Locale/formatNumber/plural; temporal, text, messages; golden-2 last). If a fresh start finds conformance files uncommitted, check them with `pnpm test` and commit.
