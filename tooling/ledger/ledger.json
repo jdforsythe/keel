@@ -1751,7 +1751,7 @@
     },
     {
       "item": "k.head#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.head#3",
@@ -2539,7 +2539,7 @@
     },
     {
       "item": "std.messages#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.messages#9",
