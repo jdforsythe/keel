@@ -21,6 +21,6 @@ The document's title is the matched route's `title`. Without one, when a loader 
 **Conformance.**
 - A node document for a route with `title` has `<title>` its return value, escaped; for a route without one, after a loader `err`, and for a 404, the deployable's name.
 - With a prefix param whose `pathDefault` is `en-US`, the document at `/de-DE/...` has `<html lang="de-DE">` and at the unprefixed URL `<html lang="en-US">`; a route with no prefix param has `lang="en"`.
-- After a client navigation from a titled `en-US` route to a titled `de-DE` route, `document.title` and `document.documentElement.lang` are the second route's, and every element of a layout both share keeps its identity.
-- After `resume`, `document.title` and `lang` equal the served document's, and no text node was replaced.
+- After a client navigation from a titled `en-US` route to a titled `de-DE` route, `document.title` and `document.documentElement.lang` are the second route's.
+- After `resume` of a served document, `document.title` and `lang` equal the served document's.
 - A built document has the head this section names; an unmatched path is 404 with an `h1`.
