@@ -7,8 +7,8 @@
 2. [x] Orchestrator accepts the RFC (rfc:0079 accepted 2026-11-10, ADR-0068 to ADR-0072, commit 4979cfe) under the WORKFLOW RFC defaults; questions the defaults do not settle go to the user.
 3. [x] Conformance first: all five lanes committed, skipped (de39b2d, df91f42, 8e0729f, d9d080a, 37a4926): one `conformance-writer` per lane, tests skipped until implementation.
 4. [~] Implementation batch: kernel (K1 first, reports then resumes), i18n-money, std-temporal, std-messages running; std-text paused at 113f420 waiting on K1/Locale; golden-2 last: one agent per lane (std-temporal, std-text, std-i18n, std-money changes, golden-2), one kernel agent; in parallel.
-5. [ ] Root `pnpm check`, `pnpm test`, `pnpm build`; ledger; budgets; reviewer + red-team; in-batch fixes; push.
-6. [ ] Exit proof: the golden-2 eval shows prices and dates in 3 locales.
+5. [x] Root `pnpm check`, `pnpm test`, `pnpm build`; ledger; budgets; reviewer + red-team; in-batch fixes; push.
+6. [x] Exit proof (evals/results/2026-11-10-golden-2-none.json, converged): the golden-2 eval shows prices and dates in 3 locales.
 
 ## Decisions
 - D1 (user, 2026-11-10): the program moves on to S2; S1 leftovers and their red-team lines wait in the backlog and are folded into a later lane that touches the same package.
@@ -32,9 +32,9 @@
 - std.messages E2401: a rule's fix edits only the checked file, so a missing locale file has no fix; the fix covers the `load` form only. Reword the Rules text.
 
 ## Verification
-- [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger 0 lowered, 0 uncovered; unsafe unchanged or justified
-- [ ] reviewer approved; red-team findings filed
-- [ ] `pnpm eval` golden-2: prices and dates in 3 locales
+- [x] `pnpm check`, `pnpm test`, `pnpm build` green; ledger 573 items, 565 verified, 0 lowered, 0 uncovered; unsafe 6 -> 7 justified (std-messages asEntry)
+- [x] reviewer approved (0318 filed); red-team 0319-0336 filed, 0319, 0320, 0322 fixed in-batch
+- [x] `pnpm eval` golden-2: prices, dates, durations, titles, `<html lang>` in en-US, de-DE, ja-JP; converged
 
 ## Next action
-Step 4 nearly closed: kernel K1-K7 (96279f8, 3e3a013, 5005ef9), all std packages, golden-2 (cad7f45) committed; budgets re-based (0c2c939); spec rewordings (16b78c3, 32572dc). Running: kernel agent on the k.testing settle gap (renderRoute waits for a loader's dynamic import; golden-2 preloads locale files as a workaround in routes.test.ts and the eval acceptance suite, to remove once fixed); fix agent on blank text in std-text/std-messages (golden-2's two generated-props tests). On both: commit by path, resume golden-2 to drop the preload workaround and re-run its verify; then step 5: root `pnpm check && pnpm test && pnpm build`, `keel ledger --diff`, reviewer (`/review`), red-team, in-batch fixes, push; step 6: `pnpm eval --task golden-2 --runner none --strict` converged. Backlog filed in-batch: 0313-0317.
+Pushed at de9e0d7. Mutation runs (schema, router; alone, in order) are in progress; log in the job tmp dir. On their result: record the scores here (threshold 80% for schema and router); if below, file a backlog line (thresholds are never lowered) and fix in a follow-up. Then close: `**Status:** closed`, tick 0307 in tasks/BACKLOG.md, `/handoff`. Open follow-ups from this batch: 0308 (scaffold with the locale param), 0313-0318, 0321 and 0323-0336 (red team; 0321 TimeZone names and 0323 E1758 coverage first).
