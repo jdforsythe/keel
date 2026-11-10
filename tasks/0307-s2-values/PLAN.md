@@ -24,6 +24,10 @@
 - D10 (user, 2026-11-10): per-route `<title>` and `<html lang>` are in S2 (not a later RFC); k.router or k.server is split to make room.
 - Note: two design agents ran (the one from before the context clear was still alive). Two drafts exist: `docs/rfc/0079-s2-values.md` (path param, `s.format`, E1758, K4 router, no ctx capability) and `docs/rfc/0079-s2-values-temporal-text-i18n.md` (`?locale=`, `s.refine`/`Refined`, E1601 widened, `i18n(ctx)` capability, `toDecimal` replaces `formatMoney`). A reconcile pass merges them into `0079-s2-values.md` with D2-D4 and the catalog design; the second file is then removed.
 
+## Spec defects reported by lanes (orchestrator fixes spec text at batch end, rfc:0079)
+- std.temporal `plainDateOf(i, zone)`: within about 15 hours of the year bounds the zoned date leaves 0001-9999; the implementation returns the UTC date of `i` (nearest valid bound). State that rule in the clause.
+- std.i18n E2301: `Intl.ListFormat` and `Intl.Segmenter` are not flagged (no stdlib function to name); note in the Rules text if not already implied.
+
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger 0 lowered, 0 uncovered; unsafe unchanged or justified
 - [ ] reviewer approved; red-team findings filed
