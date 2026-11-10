@@ -4,7 +4,7 @@ import { BoxReply } from "./BoxReply.schema.ts";
 import { ErrorReply } from "./ErrorReply.schema.ts";
 import { FieldsReply } from "./FieldsReply.schema.ts";
 import { RecipeDraft } from "./RecipeDraft.schema.ts";
-import { RecipeParams } from "./RecipeParams.schema.ts";
+import { RecipeRef } from "./RecipeRef.schema.ts";
 
 export const kitchen = endpoints({
   box: { method: "GET", path: "/api/recipes", output: BoxReply },
@@ -18,7 +18,7 @@ export const kitchen = endpoints({
   favorite: {
     method: "POST",
     path: "/api/recipes/:recipeId/favorite",
-    params: RecipeParams,
+    params: RecipeRef,
     output: ActionReply,
     errors: { 404: ErrorReply },
   },

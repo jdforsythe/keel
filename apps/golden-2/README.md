@@ -1,9 +1,12 @@
 # golden-2
 
-The recipe box. `topology.ts` defines two deployables:
+The recipe box, in `en-US`, `de-DE` and `ja-JP`. `topology.ts` defines two deployables:
 
 - `web` (`client`): the browser app, built to `dist/`.
 - `api` (`node`): `server.ts`, on port 4191 (`KEEL_API_PORT` overrides). It serves the `kitchen` module at `/api/recipes`.
+
+## Locales
+`modules/recipes/AppLocale.schema.ts` lists the served locales. `en-US` URLs carry no prefix (`/`, `/recipes/<id>`); the others do (`/de-DE`, `/ja-JP/recipes/<id>`), and `/en-US/...` redirects to the unprefixed URL. Every string the pages show is in `modules/recipes/RecipesText/<locale>.ts`. To add a locale, add it to `AppLocale` and write one file there.
 
 ## Dev
 Run these from `apps/golden-2`:

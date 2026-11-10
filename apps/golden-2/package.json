@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node ../../packages/cli/src/bin.ts build",
-    "check": "tsc --noEmit && biome check modules test",
+    "check": "tsc --noEmit && biome check modules test && node ../../packages/cli/src/bin.ts check --quiet",
     "test": "vitest run",
     "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning server.ts"
   },

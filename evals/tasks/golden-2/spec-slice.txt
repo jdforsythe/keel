@@ -1,6 +1,6 @@
-k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.services k.forms k.ui k.testing k.module k.scaffold k.check
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.prefix k.head k.server k.services k.forms k.ui k.testing k.module k.scaffold k.check std.i18n std.money std.temporal std.text std.messages
 
-Key lines only (current spec, RFCs through 0046). Full text: `pnpm spec <id>`.
+Key lines only (current spec, RFCs through 0079). Full text: `pnpm spec <id>`.
 
 k.schema
 - import { s, ok, err, attempt, type Result } from '@keel/schema'
@@ -8,6 +8,7 @@ k.schema
 - .optional() = key may be absent; .nullable() = value may be null; distinct
 - type T = s.infer<typeof T>; T.parse(x): Result<T, SchemaError> (parses JSON from T.encode too; there is no decode); T.decodeStrings(FormData | URLSearchParams); gen(T) from '@keel/schema/gen'
 - schemas live only in *.schema.ts, one export per file
+- s.enum(values, { pathDefault }) names the value a leading path param leaves out of the URL (k.prefix); s.format is stdlib-only (E1106)
 
 k.errors
 - Result<T,E> = { ok: true, value } | { ok: false, error }; ok(v) / err(e); narrow on r.ok
@@ -29,6 +30,7 @@ k.ctx
 - ctx.clock.now() ctx.random.float() ctx.random.id(brand) (the only way to mint ids) ctx.net.fetch(req) ctx.storage.get(key)/set(key, v) (async)
 - createCtx({ mode: 'sim' | 'real', seed? }) from '@keel/ctx'; sim: net.route(urlPattern, (req) => Response | Promise<Response>), clock.advance(ms)
 - Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
+- toLocaleString() or an Intl constructor without a locale, navigator.language, a local-time getter on new Date(...): E1758 (pass the locale as an argument)
 
 k.component
 - one default export per file, filename = name: (props, slots?, ctx?) => JSX; export const Props = s.object(...); a plain .ts component (PascalCase file, no JSX, default export a function whose first parameter is typed from Props: (props: Infer<typeof Props>)) may export Props and uses too
@@ -40,15 +42,23 @@ k.runtime
 
 k.router
 - import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
-- routes.ts: export const routes = manifest({ 'recipes.shell': { component: BoxShell }, 'recipes.show': { path: '/recipes/:recipeId', params: RecipeParams, loader: loadRecipe, component: RecipePage, layout: 'recipes.shell', errorElement: RecipeError, guard: cook } }); then routes.actions({ 'recipes.show': { POST: favoriteRecipe } }) (a statement; actions are never in an entry: E1505); an action returning ok(routes.href(...)) imports routes.ts, which imports it: import routes.ts (never the *.server.ts) first in tests
-- entry without path = layout, renders {props.children?.()}; a static segment beats :param
+- routes.ts: export const routes = manifest({ 'recipes.shell': { component: BoxShell, loader: loadShell }, 'recipes.show': { path: '/:locale/recipes/:recipeId', params: RecipeParams, loader: loadRecipe, component: RecipePage, layout: 'recipes.shell', errorElement: RecipeError, guard: cook, title: (p: Infer<typeof RecipePageProps>) => formatMessage(p.data.text.showTitle, { title: p.data.recipe.title }, p.params.locale) } }); then routes.actions({ 'recipes.show': { POST: favoriteRecipe } }) (a statement; actions are never in an entry: E1505); an action returning ok(routes.href(...)) imports routes.ts, which imports it: import routes.ts (never the *.server.ts) first in tests
+- entry without path = layout, renders {props.children?.()}; a layout's loader and component get the matched route's params (a layout declares none: parse them); a static segment beats :param
 - component receives { params, search, data } (data = loader ok value); errorElement receives { error: KeelError }
 - links: routes.href(id, params?, search?) -> Href, typed by the manifest; Link to, navigate, Form action take Href only (E1501)
-- guards: export const cook = guard({ redirect: 'recipes.index' }, async ({ url }, ctx) => ok(null) | err({ code: 'keel.denied', message, data: null })); file *.guard.ts; the route holds the value (guard: cook)
+- guards: export const cook = guard({ redirect: 'recipes.index' }, async ({ url }, ctx) => ok(null) | err({ code: 'keel.denied', message, data: null })); file *.guard.ts; the route holds the value (guard: cook); the redirect carries the matched route's same-name params (locale)
 - route() { id, params, search, pending }; navigate(href, { replace? })
 - <Form method="POST" action={routes.href(...)} form? error?>: ok(href) navigates, ok(null) revalidates the chain's loaders
 - client deployable: the router runs guards, loaders and actions in the browser; it refuses `stores`
-- E1502 duplicate path, E1503 :param without params field, E1504 required search field, E1505 undeclared verb, E1506 unknown layout, E1507 params/search typed by hand
+- E1509 a route colliding with a prefix param (k.prefix); E1502 duplicate path, E1503 :param without params field, E1504 required search field, E1505 undeclared verb, E1506 unknown layout, E1507 params/search typed by hand
+
+k.prefix
+- with params field locale: AppLocale (s.enum([...], { pathDefault: 'en-US' })) first in the path ('/:locale/...'), routes.href leaves the default out: routes.href('recipes.show', { locale: 'en-US', recipeId }) is '/recipes/<id>', with 'de-DE' '/de-DE/recipes/<id>'
+- parse: a served non-default first segment selects that locale; '/en-US/...' answers 308 to the path without it (search kept); anything else matches with the default; params.locale is present on every URL; an unserved locale is 404
+
+k.head
+- a path route may declare title: (props) => string over the route component's props { params, search, data }; props are untyped RouteProps, so declare the type: title: (p: Infer<typeof RecipeListProps>) => p.data.text.indexTitle; a layout takes none
+- <title> is the route's title (fallback: the deployable name, or index.html's title in a client deployable); <html lang> is the prefix param's value; the client router sets document.title and documentElement.lang after each navigation
 
 k.server
 - loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, stores }, ctx) -> Promise<Result<T, KeelError>>
@@ -65,7 +75,7 @@ k.server
 
 k.services
 - import { endpoints, service } from '@keel/services'; endpoints in a *.service.ts file, body/output schemas in *.schema.ts
-- export const kitchen = endpoints({ box: { method: 'GET', path: '/api/recipes', output: BoxReply }, add: { method: 'POST', path: '/api/recipes', body: RecipeDraft, output: ActionReply, errors: { 422: FieldsReply } }, favorite: { method: 'POST', path: '/api/recipes/:recipeId/favorite', params: RecipeParams, output: ActionReply, errors: { 404: ErrorReply } } })
+- export const kitchen = endpoints({ box: { method: 'GET', path: '/api/recipes', output: BoxReply }, add: { method: 'POST', path: '/api/recipes', body: RecipeDraft, output: ActionReply, errors: { 422: FieldsReply } }, favorite: { method: 'POST', path: '/api/recipes/:recipeId/favorite', params: RecipeRef, output: ActionReply, errors: { 404: ErrorReply } } })
 - service({ base, schema }) built per call (base new URL(url).origin in *.server.ts); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
 - output describes the whole runtime body (see k.server); read r.value.results['kitchen.recipes'].value
 - ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
@@ -73,16 +83,17 @@ k.services
 - ctx.net.fetch in app code is E1651; E1652 :param without params field; E1653 body on GET
 
 k.forms
-- import { form } from '@keel/forms'; const f = form(RecipeDraft, { initial?, id: 'recipes.draft' }) in a component; f.field('title') f.values() f.errors() f.pending() f.reset()
+- import { form, type FieldIssue } from '@keel/forms'; const f = form(RecipeDraft, { initial?, id: 'recipes.draft', issueText? }) in a component; issueText(issue: FieldIssue { rule, path (dotted, 'price.amount'), min?, max?, values?, format? }) => string gives each field's error text (without it, English); f.field('title') f.values() f.errors() f.pending() f.reset()
 - field id is `<formId>:<path>` (recipes.draft:title), its error element `<formId>:<path>:error`
 - <Form method="POST" action={routes.href('recipes.new')} form={f} error={(e) => <Text>{e.message}</Text>}><Input field={f.field('title')} label="Title" /><Button id="recipes.save" type="submit">Save</Button></Form>
 - number fields coerce from input text; invalid submit sends nothing, sets every error, focuses the first invalid field
 - action err keel.fields { [path]: message } sets exactly those errors; other err renders the error slot
 - E1901 input in a Form without field; E1902 unknown path
+- Select field options={[{ value, label }]}; a submit Button disabled={computed(() => f.pending())} binds the level (an island)
 
 k.ui
 - tokens.ts: export const tokens = defineTokens({ color: { fg: { light, dark }, bg, accent, danger }, space, radius, font, fontSize })
-- base elements from '@keel/ui': Box Text Heading Button Link Image Input TextArea Select Checkbox
+- base elements from '@keel/ui': Box Text Heading Button Link Image Input TextArea Select Checkbox; every one takes lang (written as the lang attribute)
 - required: Heading level; label on Input/TextArea/Select/Checkbox; Link to: Href with text; Button text as children (no label prop)
 - style props take token names only (no class, no styles(), no raw values: E1801): p px py m gap w h bg fg radius font fontSize weight direction align justify; Box as / Text as: section nav main ul li p span
 - event props: Button onClick, Checkbox onChange, Input onInput, Select onChange
@@ -105,3 +116,29 @@ k.scaffold
 k.check
 - one export per file, filename = export (E1752); unsafe needs a justification (E1754)
 - keel check --quiet prints the trailer; keel explain <code>
+- a module's deps naming '@keel/std-i18n' or '@keel/std-messages' run their rules (E2301, E2401-E2406)
+
+std.i18n
+- import { formatNumber, plural, localeName, type Locale } from '@keel/std-i18n'; Locale is an s.enum of 11 tags (de-DE, en-US, ja-JP, ...)
+- the locale is route data: a route showing text has '/:locale/...' and params field locale: AppLocale; components read props.params.locale and pass it to children; nothing reads it from anywhere else
+- localeName(locale) is the locale's name in its own language ('Deutsch (Deutschland)'), the text of a switcher Link
+- E2301: building an Intl formatter or toLocale*String/localeCompare with a locale in a module listing the package; call the stdlib function
+
+std.money
+- import { Money, Currency, formatMoney } from '@keel/std-money'; Money { amount: int minor units, currency: 'EUR' | 'GBP' | 'JPY' | 'USD' }
+- formatMoney(m, locale): { amount: 1250, currency: 'EUR' } is '€12.50' in en-US, '12,50\u00A0€' in de-DE
+
+std.temporal
+- import { PlainDate, Instant, UTC, instantOf, plainDateOf, durationOf, formatDate, formatDuration } from '@keel/std-temporal'; values are ISO strings (PlainDate '2026-11-10')
+- const at = instantOf(ctx.clock.now()) -> Result<Instant, TemporalError>; plainDateOf(at.value, UTC) -> PlainDate; no export reads the clock
+- formatDate(d, locale, 'long'): '10. November 2026' (de-DE); durationOf(ms) -> Duration; formatDuration(d, locale, 'short'): '1 hr, 30 min' (en-US)
+
+std.text
+- import { line } from '@keel/std-text'; line({ max: 80 }) is text a person writes: NFC, no control or bidi characters, 1 to 80 graphemes, rule 'format' otherwise; a branded type (parse a value to get one)
+
+std.messages
+- import { messages, formatMessage } from '@keel/std-messages'
+- RecipesText.schema.ts: export const RecipesText = messages(AppLocale, { title: {}, count: { n: s.int({ min: 0 }) } }, (locale) => import(`./RecipesText/${locale}.ts`))
+- RecipesText/de-DE.ts: export default RecipesText.text({ title: 'Rezepte', count: { plural: 'n', one: '# Rezept', other: '# Rezepte' } }); one file per locale; a key with params is { text: 'Added {date}' }, { plural: p, ... } or { select: p, cases }
+- a loader returns ok({ ..., text: await RecipesText.load(params.locale) }) with output schema s.object({ text: RecipesText }); a component reads props.data.text.title or formatMessage(props.data.text.count, { n }, props.params.locale); a date or price param is passed formatted
+- E2401 missing locale file · E2402 missing key · E2403 undeclared key · E2404 unused key · E2405 placeholder mismatch · E2406 literal copy (JSX text, label, alt, a route title) in a component or routes.ts

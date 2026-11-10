@@ -1,5 +1,5 @@
 import { manifest } from "@keel/router";
-import { RecipeParams } from "../recipes/RecipeParams.schema.ts";
+import { RecipeRef } from "../recipes/RecipeRef.schema.ts";
 import KitchenApi from "./KitchenApi.ts";
 import { loadRecipes } from "./loadRecipes.server.ts";
 import { postFavorite } from "./postFavorite.server.ts";
@@ -13,7 +13,7 @@ export const routes = manifest({
   },
   "kitchen.favorite": {
     path: "/api/recipes/:recipeId/favorite",
-    params: RecipeParams,
+    params: RecipeRef,
     component: KitchenApi,
   },
 });

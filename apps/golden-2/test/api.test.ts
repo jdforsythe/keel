@@ -12,7 +12,7 @@ import { postFavorite } from "../modules/kitchen/postFavorite.server.ts";
 import { postRecipe } from "../modules/kitchen/postRecipe.server.ts";
 import { toggleFavorite } from "../modules/kitchen/toggleFavorite.ts";
 import { BoxReply } from "../modules/recipes/BoxReply.schema.ts";
-import { apiApp, asJson } from "./simApi.ts";
+import { apiApp, apiCtx, asJson, draft } from "./simApi.ts";
 
 const scopes: { dispose(): void }[] = [];
 afterEach(() => {
@@ -57,7 +57,7 @@ const fetchJson = async (app: Awaited<ReturnType<typeof apiApp>>, req: Request) 
 
 describe("kitchen endpoints", () => {
   it("creates a recipe, lists it, toggles it, and refuses a duplicate title and an unknown id", async () => {
-    const app = await apiApp(createCtx({ mode: "sim", seed: 3 }));
+    const app = await apiApp(apiCtx(3));
     const empty = await fetchJson(app, asJson("GET", "/api/recipes"));
     expect(empty.status).toBe(200);
     expect(empty.body).toEqual({
@@ -65,26 +65,32 @@ describe("kitchen endpoints", () => {
       results: { "kitchen.recipes": { ok: true, value: { recipes: [] } } },
     });
 
-    const added = await fetchJson(app, asJson("POST", "/api/recipes", { title: "Soup", minutes: 30 }));
+    const added = await fetchJson(app, asJson("POST", "/api/recipes", draft("Soup", 30, 1800, "JPY")));
     expect(added).toEqual({ status: 200, body: { ok: true, value: null } });
 
     const listed = await fetchJson(app, asJson("GET", "/api/recipes"));
     const body = JSON.stringify(listed.body);
     expect(body).toContain('"title":"Soup"');
     expect(body).toContain('"favorite":false');
+    expect(body).toContain('"price":{"amount":1800,"currency":"JPY"}');
+    expect(body).toContain('"addedOn":"2026-11-10"');
     const parsed = BoxReply.parse(listed.body);
     const id = parsed.ok ? (parsed.value.results["kitchen.recipes"].value.recipes[0]?.id ?? "") : "";
     expect(id).not.toBe("");
 
-    const dup = await fetchJson(app, asJson("POST", "/api/recipes", { title: "SOUP", minutes: 5 }));
+    const dup = await fetchJson(app, asJson("POST", "/api/recipes", draft("SOUP", 5)));
     expect(dup.status).toBe(422);
     expect(dup.body).toEqual({
       ok: false,
       error: { code: "keel.fields", message: "Already in the box", data: { title: "Already in the box" } },
     });
 
-    const bad = await fetchJson(app, asJson("POST", "/api/recipes", { title: "", minutes: 0 }));
+    const bad = await fetchJson(app, asJson("POST", "/api/recipes", draft("", 0)));
     expect(bad.status).toBe(422);
+    const flagged = await fetchJson(app, asJson("POST", "/api/recipes", draft("a\u202Eb", 5)));
+    expect(flagged.status).toBe(422);
+    const noPrice = await fetchJson(app, asJson("POST", "/api/recipes", { title: "Pie", minutes: 5 }));
+    expect(noPrice.status).toBe(422);
 
     const toggled = await fetchJson(app, asJson("POST", `/api/recipes/${id}/favorite`, {}));
     expect(toggled).toEqual({ status: 200, body: { ok: true, value: null } });
