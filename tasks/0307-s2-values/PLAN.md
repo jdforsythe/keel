@@ -28,10 +28,13 @@
 - std.temporal `plainDateOf(i, zone)`: within about 15 hours of the year bounds the zoned date leaves 0001-9999; the implementation returns the UTC date of `i` (nearest valid bound). State that rule in the clause.
 - std.i18n E2301: `Intl.ListFormat` and `Intl.Segmenter` are not flagged (no stdlib function to name); note in the Rules text if not already implied.
 
+- k.schema `decodeStrings` on a format: coerces as `base` does, then parses the format (a `check`-refused value is a `format` issue). Reword the clause.
+- std.messages E2401: a rule's fix edits only the checked file, so a missing locale file has no fix; the fix covers the `load` form only. Reword the Rules text.
+
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger 0 lowered, 0 uncovered; unsafe unchanged or justified
 - [ ] reviewer approved; red-team findings filed
 - [ ] `pnpm eval` golden-2: prices and dates in 3 locales
 
 ## Next action
-Step 4 in flight. On "K1 landed" from the kernel agent: commit `wip: rfc:0079 K1 s.format, Format, rule format, pathDefault, E1106` by path, resume the kernel agent (K2-K7), resume std-text (and temporal/messages if they reported waiting). On the i18n-money report: commit, resume lanes waiting on `Locale`. Each lane's report: commit by path with `rfc:0079` in the subject. golden-2 launches when kernel, i18n-money, temporal and messages are committed. Then step 5 (root check/test/build, ledger, budgets, reviewer + red-team, push) and step 6 (eval).
+Step 4: K1 (96279f8), std-messages (1e368a3), std-temporal (b2be189), i18n-money (8eb38cc) committed. Running: kernel K2-K7 (+ two schema test fixes, E1006 client-build finding), std-text finishing (s.format landed), std-messages follow-ups (client-chunks fixture, E2401 no-fix). On the kernel report: commit by path, launch golden-2 (RFC "6. Exit proof and golden-2"; ride-along 0292). Then step 5.
