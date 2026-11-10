@@ -1,6 +1,6 @@
 # Task 0219 batch: S1 leftovers (0219, 0237 remainder, 0248, 0255)
 
-**Spec:** k.compiler (W1005, rfc:0077) · std.sessions (E2005, the action's issue lookup) · k.server (node-rendered page defaults, rfc:0078) · **Gate:** S1 leftovers, then S2 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10)
+**Spec:** k.compiler (W1005, rfc:0077) · std.sessions (E2005, the action's issue lookup) · k.server (node-rendered page defaults, rfc:0078) · **Gate:** S1 leftovers, then S2 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed (2026-11-10)
 
 ## Lanes (disjoint files; agents stage nothing; the orchestrator commits by path and owns `spec/00-map.md`, `tooling/budgets.json`, `tooling/ledger/ledger.json`, `tasks/BACKLOG.md`, `docs/HANDOFF.md`)
 - [x] A std-sessions (sonnet): 0237 remainder (`require`, `import x = require()`, alias hops in E2005) and 0248 (issue lookup keyed on a hidden body marker, `state=all`, skip `not_planned`). Owns `packages/std-sessions/**`.
@@ -10,8 +10,8 @@
 ## Steps
 1. [x] Three lane agents in parallel (launched 2026-11-10; A sonnet, B and C opus); each reports files touched, decisions, unfinished items.
 2. [x] Root `pnpm check`, `pnpm test`, `pnpm build`; ledger; budgets; unsafe 6.
-3. [ ] Reviewer + red-team over the batch diff from 88e6479 (includes 0241); findings to `tasks/BACKLOG.md`; in-batch fixes.
-4. [ ] Commit per lane (`rfc:NNNN` where conformance changed); push; backlog lines; `/handoff`.
+3. [x] Reviewer + red-team over the batch diff from 88e6479 (includes 0241); findings to `tasks/BACKLOG.md`; in-batch fixes.
+4. [x] Commit per lane (`rfc:NNNN` where conformance changed); push; backlog lines; `/handoff`.
 
 ## Decisions
 - D1 (lane A, reported 2026-11-10, uncommitted in `packages/std-sessions/**` and `.changeset/sessions-issue-marker.md`): E2005 reads `require('…')` (string or substitution-free template) and `import r = require('…')`; alias hops stay unresolved because the rule receives no `paths` (a test pins it, the README says it). The action's lookup lists `state=all` with the `keel-session` label (50 pages of 100, E1056 past it), matches the body marker `<!-- keel-session:<fp> -->` or the `session <fp>:` title prefix, reuses an open match, skips a fingerprint whose match is closed as not planned, and files a new issue when the match was closed as completed. An issue whose label was removed is still not found (dropping the label filter makes the list unbounded). Package check and 232 tests green. Proposed std.sessions sentences are in the lane report: the orchestrator adds them to the spec.
@@ -24,10 +24,11 @@
 - D8 (reviewer, changes requested; to fix in-batch at 056878d+): R1 major `packages/std-sessions/src/internal/issueFor.ts:22` matches the marker anywhere in the body, and session-derived text sits below it: match the first line only, test a marker inside the fenced part. R2 `issueApi.ts:19` `state=all` reaches the 50-page bound in time and then fails E1056 for good: bound it newest first or document it. R3 `packages/compiler/src/internal/entryOf.ts:50` an `exports` target can leave the package (`../../x`); a fragment's relative guard import is unbounded too: require the real path inside the package's real path, test escape and symlink. R4 `routeLiterals.ts:~345` W1005 text carries an absolute fragment path; `${m[1]}` is a redundant template. R5 k.server trims: restore "concurrently"; "the route's `errorElement`" and "no stack" were weakened. R8 server is 31 B over 14 kB: trim in `loadAssets` and keep 14 kB; the compiler re-base stands. R9 no test covers `check()` passing `root`: add a nested-project test.
 - D9 (red-team, 2026-11-10): filed as backlog 0295-0305. Fixed in-batch: 0295, 0297, 0298, 0299, 0300, 0301 and the reviewer's D8 items. Left open: 0296 (a new rule, S2), 0302, 0303, 0304, 0305 (user).
 - D10 (fixes, 2026-11-10): std-sessions: the marker matches the first body line only; open issues are listed fully (50 pages, E1056 past it), closed ones newest first up to 5 pages of 100, continuing past the cap. Compiler: `entryOf` applies Node's `exports` target rule and keeps the real path inside the package (the std import step shares it: a breaking target is E1159); fragment guard imports are held to the package; the evaluator passes `conditions: []` to esbuild so it, the literal reader and the std import step resolve the same file (`node`, `import`, `default`), the one Node imports at run time; W1005 names a fragment by its package specifier; 27,099 B of 27,136 B. Server: a symlinked top-level `assets` is followed to its real path and fails closed when that cannot be read; only `/assets/*.css` entries are linked; k.server wording restored; 14,390 B, so the 14.5 kB re-base stays (no honest trim reaches 14,336 B). Check: `test/routes-fragment-root.test.ts` covers `root`. Cli (0297): a run vitest ends as not passed with no failing test is one T0001 and exit 1. Backlog 0306 filed (server test stderr noise).
+- D11: reviewer approved the fixes at 86f9595 (the `conditions: []` change only removes esbuild's `module` condition, which no package or app in the repository uses; `evaluateConditions.test.ts` pins it). The lanes are committed together, not per lane: the wip commits carry both RFC ids.
 
 ## Verification
 - [x] `pnpm check`, `pnpm test`, `pnpm build` green; ledger 0 lowered, 0 uncovered; unsafe 6 (`ok check 44 tasks` · `ok test 42 tasks` · `ok build 26 tasks` · `ok ledger --diff 486 items, 479 verified, 6 unsafe, 0 warnings, 0 lowered, 0 uncovered` · `pnpm audit`: none)
-- [ ] reviewer approved; red-team findings filed
+- [x] reviewer approved; red-team findings filed (0295-0305; 0306 from the orchestrator)
 
 ## Next action
-Step 3 tail: the reviewer is re-reading the fixes (working tree on top of the last wip commit). On approval: commit (`rfc:0077 rfc:0078`), push, close this plan, `/handoff`. Backlog lines are already flipped.
+None for this task. Next work: S2 per `tasks/PROGRAM.md` (one design RFC first); open user decisions in backlog 0305.
