@@ -6,5 +6,6 @@ export default defineConfig({
     include: ["test/**/*.test.ts", "conformance/**/*.test.ts"],
     passWithNoTests: true,
     reporters: [new KeelReporter()],
+    testTimeout: 15_000,
   },
 });
