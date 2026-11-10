@@ -1,8 +1,17 @@
 import { s } from "@keel/schema";
 import type { ActionIo } from "./ActionIo.ts";
 
-/** The open-issue fields the lookup reads (open objects: the rest is ignored); pull requests carry `pull_request`. */
-const Listed = s.array(s.object({ number: s.int(), title: s.string(), pull_request: s.json().optional() }));
+/** The issue fields the lookup reads (open objects: the rest is ignored); pull requests carry `pull_request`. */
+const Listed = s.array(
+  s.object({
+    number: s.int(),
+    title: s.string(),
+    body: s.string().nullable().optional(),
+    state: s.string().optional(),
+    state_reason: s.string().nullable().optional(),
+    pull_request: s.json().optional(),
+  }),
+);
 const Filed = s.object({ number: s.int() });
 const Comments = s.array(s.object({ body: s.string().nullable().optional() }));
 const NEXT = /<([^>]+)>;\s*rel="next"/;
@@ -10,11 +19,17 @@ const LAST = /<([^>]+)>;\s*rel="last"/;
 const MAX_PAGES = 50;
 
 type Got<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly why: string };
-type Issue = { readonly number: number; readonly title: string };
+type Issue = {
+  readonly number: number;
+  readonly title: string;
+  readonly body: string;
+  /** `open`, `completed` (closed as completed) or `not_planned` (closed as not planned). */
+  readonly status: "open" | "completed" | "not_planned";
+};
 
 /**
- * GitHub REST issue calls for `repo` (`owner/name`) at `api`, authorized by `token`, through `io.fetch`. `open(label)`
- * lists every open issue with `label`, following `Link: rel="next"` only while it stays under `api`, and drops pull
+ * GitHub REST issue calls for `repo` (`owner/name`) at `api`, authorized by `token`, through `io.fetch`. `find(label)`
+ * lists every issue with `label`, open or closed, following `Link: rel="next"` only while it stays under `api`, and drops pull
  * requests; a next page past 50 pages of 100 is a failure. `lastComment(n)` is the body of issue `n`'s newest comment
  * (null: none), read from the `rel="last"` page. A failure is a reason without the token or a response body.
  */
@@ -48,16 +63,21 @@ export function issueApi(io: Pick<ActionIo, "fetch">, api: string, repo: string,
     return url?.startsWith(`${api}/`) ? url : undefined;
   };
   return {
-    open: async (label: string): Promise<Got<Issue[]>> => {
+    find: async (label: string): Promise<Got<Issue[]>> => {
       const out: Issue[] = [];
-      let url: string | undefined = `${base}?state=open&labels=${encodeURIComponent(label)}&per_page=100`;
+      let url: string | undefined = `${base}?state=all&labels=${encodeURIComponent(label)}&per_page=100`;
       for (let page = 0; url !== undefined; page++) {
         if (page === MAX_PAGES) return { ok: false, why: `github issues list exceeded ${MAX_PAGES} pages` };
         const r = await call("issues list", url, "GET");
         if (!r.ok) return r;
         const list = Listed.parse(await r.value.json().catch(() => null));
         if (!list.ok) return { ok: false, why: "github issues list answered without a list" };
-        for (const i of list.value) if (i.pull_request === undefined) out.push({ number: i.number, title: i.title });
+        for (const i of list.value) {
+          if (i.pull_request !== undefined) continue;
+          const status =
+            i.state === "closed" ? (i.state_reason === "not_planned" ? "not_planned" : "completed") : "open";
+          out.push({ number: i.number, title: i.title, body: i.body ?? "", status });
+        }
         url = under(r.value.headers.get("link"), NEXT);
       }
       return { ok: true, value: out };

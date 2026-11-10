@@ -28,12 +28,13 @@ const namedBy = (chunk: unknown): unknown[] =>
     : [];
 
 /**
- * Read the client build in `dir` (`dist/<deployable>`, k.server Build, RFC 0048, 0057) once, at startup: every regular
- * file under `assets/`, keyed by its decoded URL path, `immutable` when the manifest names it and its name carries a
- * hash (`HASHED`), with a weak `etag` from its bytes. The walk
- * descends real directories only; a file (or symlink) is read only when its real path is inside the real `assets/`, so
- * no symlink and no `..` in the manifest reaches outside it. Throws E1555 when the manifest is missing or unreadable,
- * has no entry chunk, or its entry file is not among those files.
+ * Read the client build in `dir` (`dist/<deployable>`, k.server Build) once, at startup: every regular file under
+ * `assets/` and the top-level `keel-mark.svg` (Vite copies it from `public/`), keyed by its decoded URL path,
+ * `immutable` when the manifest names it and its name carries a hash (`HASHED`), with a weak `etag` from its bytes.
+ * The walk descends real directories only; a file under `assets/` (or a symlink there) is read only when its real path
+ * is inside the real `assets/`, and the mark only when it is a regular file, so no symlink and no `..` in the manifest
+ * reaches outside. `css` lists the served stylesheets the manifest's entry chunk names, as URL paths. Throws E1555 when
+ * the manifest is missing or unreadable, has no entry chunk, or its entry file is not among those files.
  */
 export async function loadAssets(dir: string): Promise<BuiltClient> {
   const fs = await import("node:fs/promises");
@@ -53,13 +54,14 @@ export async function loadAssets(dir: string): Promise<BuiltClient> {
   const entry = isRecord(chunk) && typeof chunk.file === "string" ? chunk.file : undefined;
   if (entry === undefined) throw fail("has no entry chunk");
   const named = new Set(chunks.flatMap(namedBy));
-  const root = await fs.realpath(join(dir, "assets")).catch(() => "");
+  const real = (at: string): Promise<string> => fs.realpath(join(dir, at)).catch(() => "");
   const files = new Map<string, { body: Uint8Array<ArrayBuffer>; type: string; immutable: boolean; etag: string }>();
-  const walk = async (rel: string): Promise<void> => {
+  const walk = async (rel: string, inside: string): Promise<void> => {
     for (const d of await fs.readdir(join(dir, rel), { withFileTypes: true }).catch(() => [])) {
-      const at = `${rel}/${d.name}`;
-      if (d.isDirectory()) await walk(at);
-      else if ((await fs.realpath(join(dir, at)).catch(() => "")).startsWith(root + sep)) {
+      const at = rel + d.name;
+      if (d.isDirectory()) {
+        if (rel || at === "assets") await walk(`${at}/`, rel ? inside : await real(at));
+      } else if (rel ? (await real(at)).startsWith(inside + sep) : d.isFile() && at === "keel-mark.svg") {
         const body = await fs.readFile(join(dir, at)).catch(() => undefined);
         if (body === undefined) continue;
         const immutable = named.has(at) && HASHED.test(at);
@@ -68,7 +70,8 @@ export async function loadAssets(dir: string): Promise<BuiltClient> {
       }
     }
   };
-  if (root !== "") await walk("assets");
+  await walk("", "");
   if (!files.has(`/${entry}`)) throw fail(`entry ${entry} is missing`);
-  return { entry: `/${entry}`, files };
+  const css = (isRecord(chunk) && Array.isArray(chunk.css) ? chunk.css : []).map((f: unknown) => `/${f}`);
+  return { entry: `/${entry}`, css: css.filter((f) => files.has(f)), files };
 }

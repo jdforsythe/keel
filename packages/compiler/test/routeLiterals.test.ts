@@ -214,7 +214,7 @@ describe("routeLiterals", () => {
 
   describe("open id sets", () => {
     for (const [name, part, file] of [
-      ["a spread", "...more", `${M} ids`],
+      ["a spread", "...more", `${M} ...more`],
       ["a computed key", `[k]: { path: "/k" }`, `${M} ids`],
     ] as const)
       it(`closes false on ${name} and unreads routes read before it only`, () => {

@@ -8,8 +8,11 @@ import { islandIn } from "./islandIn.ts";
 import { renderUnit } from "./renderUnit.ts";
 import { toHtml } from "./toHtml.ts";
 
+/** The default alert: the error's message, or for `keel.notFound` the heading `Not found`. */
 const defaultError = (e: KeelError<string, unknown>): string =>
-  `<div role="alert" data-keel-error="${escapeHtml(e.code)}">${escapeHtml(e.message)}</div>`;
+  `<div role="alert" data-keel-error="${escapeHtml(e.code)}">${
+    e.code === "keel.notFound" ? "<h1>Not found</h1>" : escapeHtml(e.message)
+  }</div>`;
 
 /**
  * Render a chain to HTML like the router's view (k.router, k.errors): outermost layout first, each layout

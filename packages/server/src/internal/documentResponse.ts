@@ -8,7 +8,7 @@ import { moduleOf } from "./moduleOf.ts";
 import { snapshotStores } from "./snapshotStores.ts";
 
 /**
- * An HTML document response: the rendered chain plus one `#k-state` with `stores` (snapshots by store id),
+ * An HTML document response: the served head (`Served.head`), the rendered chain plus one `#k-state` with `stores` (snapshots by store id),
  * `islands` (props by component id) and any `extra` entries; `devMessage` shows only in dev. The entry script (the
  * production build's, else `/@keel/entry.ts`) loads only when an island was rendered; then `std` carries the
  * client-readable part (`clientStdData`: `clientStd` packages, the served deployable's modules) of the `std.json` data
@@ -32,7 +32,7 @@ export function documentResponse(
     ...extra,
     ...(std === undefined ? {} : { std }),
   };
-  const html = documentHtml(rendered.html, state, r.sv.mode === "dev" ? devMessage : null, entry);
+  const html = documentHtml(rendered.html, state, r.sv.mode === "dev" ? devMessage : null, entry, r.sv.head);
   return new Response(r.method === "HEAD" ? null : html, {
     status,
     headers: { "content-type": "text/html; charset=utf-8" },

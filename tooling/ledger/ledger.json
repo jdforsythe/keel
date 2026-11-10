@@ -1019,7 +1019,7 @@
       "pkg": "std-sessions",
       "name": "runAction",
       "file": "packages/std-sessions/src/runAction.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-sessions",
@@ -1312,6 +1312,10 @@
     {
       "item": "k.compiler#18",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.compiler#19",
+      "rung": "example"
     },
     {
       "item": "k.component#1",
@@ -1899,6 +1903,10 @@
     },
     {
       "item": "k.server#16",
+      "rung": "example"
+    },
+    {
+      "item": "k.server#17",
       "rung": "example"
     },
     {

@@ -1,7 +1,8 @@
 // @vitest-environment node
 // The ingest service in plain node (no happy-dom), as `server.ts` serves it but over a sim ctx: the home page and the
-// ingest page render, a recorded session is ingested, a caller outside `readers` is sent to the ingest page, a reader
-// lists the archive, and the module's `readers` entry reaches the guard through `.keel/std.json`. Seed 1337
+// ingest page render with the deployable's title, an unknown path is a readable 404, a recorded session is ingested, a
+// caller outside `readers` is sent to the ingest page, a reader lists the archive, and the module's `readers` entry
+// reaches the guard through `.keel/std.json`. Seed 1337
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { bindStd } from "@keel/compiler/std/bindStd";
@@ -71,6 +72,15 @@ describe("apps/sessions in plain node", () => {
     const intro = await page(app.fetch, "/sessions");
     expect(intro.status).toBe(200);
     expect(intro.html).toContain('id="sessions.intro"');
+  });
+
+  it("titles every page with the deployable name; an unknown path is a readable 404", async () => {
+    const { app } = await service();
+    expect((await page(app.fetch, "/")).html).toContain("<title>sessions</title>");
+    const missing = await page(app.fetch, "/no/such/page");
+    expect(missing.status).toBe(404);
+    expect(missing.html).toContain("<title>sessions</title>");
+    expect(missing.html).toContain("<h1>Not found</h1>");
   });
 
   it("ingests a session; a caller outside readers is redirected to the ingest page; a reader lists it", async () => {

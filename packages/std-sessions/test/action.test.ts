@@ -122,7 +122,7 @@ function world(o: {
         return new Response(JSON.stringify(cs[page - 1] ?? []), { headers });
       }
       if (o.endless === true || page < pages.length)
-        headers.set("link", `<${ISSUES}?state=open&page=${page + 1}>; rel="next"`);
+        headers.set("link", `<${ISSUES}?state=all&page=${page + 1}>; rel="next"`);
       return new Response(JSON.stringify(pages[page - 1] ?? []), { headers });
     },
   };
@@ -159,7 +159,7 @@ describe("runAction", () => {
     const record = `${FP} orders.show 42 events orders.locked -> ${testFile(FP)}`;
     expect(created[0]?.body).toEqual({
       title: `session ${FP}: orders.locked at orders.show`,
-      body: issueBody(record, emitted(FP)),
+      body: `<!-- keel-session:${FP} -->\n${issueBody(record, emitted(FP))}`,
       labels: ["keel-session"],
     });
     expect(r.code).toBe(0);
@@ -194,7 +194,7 @@ describe("runAction", () => {
     const body = w.calls.find((c) => c.method === "POST")?.body;
     const text = typeof body === "object" && body !== null && "body" in body ? String(body.body) : "";
     expect(text).toBe(
-      `\`\`\`text\n${FP} orders.show 42 events orders.locked -> ${testFile(FP)}\n\`\`\`\n\n\`\`\`ts\n${emitted(FP)}\`\`\`\n`,
+      `<!-- keel-session:${FP} -->\n\`\`\`text\n${FP} orders.show 42 events orders.locked -> ${testFile(FP)}\n\`\`\`\n\n\`\`\`ts\n${emitted(FP)}\`\`\`\n`,
     );
   });
 
@@ -211,8 +211,8 @@ describe("runAction", () => {
     });
     const r = await runAction(w.io);
     expect(w.calls.filter((c) => c.method === "GET").map((c) => c.url)).toEqual([
-      `${ISSUES}?state=open&labels=keel-session&per_page=100`,
-      `${ISSUES}?state=open&page=2`,
+      `${ISSUES}?state=all&labels=keel-session&per_page=100`,
+      `${ISSUES}?state=all&page=2`,
     ]);
     expect(writes(w.calls)).toEqual([`PATCH ${ISSUES}/7`]);
     expect(r.records).toContainEqual({ kind: "session.issue", fingerprint: FP, action: "updated", issue: 7 });
@@ -273,7 +273,7 @@ describe("runAction", () => {
     });
     const r = await runAction(w.io);
     expect(w.calls.map((c) => `${c.method} ${c.url}`)).toEqual([
-      `GET ${ISSUES}?state=open&labels=keel-session&per_page=100`,
+      `GET ${ISSUES}?state=all&labels=keel-session&per_page=100`,
       `GET ${ISSUES}/9/comments?per_page=100`,
       `GET ${ISSUES}/9/comments?page=2`,
     ]);

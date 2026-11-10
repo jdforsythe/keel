@@ -15,6 +15,7 @@ import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
 import { installServerDom } from "./internal/dom/installServerDom.ts";
 import { handle } from "./internal/handle.ts";
+import { headHtml } from "./internal/headHtml.ts";
 import { inspectAllowed } from "./internal/inspectAllowed.ts";
 import { inspectResponse } from "./internal/inspectResponse.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
@@ -54,6 +55,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * A `secret` under 32 bytes (UTF-8) rejects with E1556; under that same production gate, no `secret` writes one W1556
  * `diag` to `log` at startup, since each instance then signs callers with its own random key (RFC 0057, backlog 0159),
  * and no `secure` writes one W1557: https is then the request's URL or `x-forwarded-proto: https` (RFC 0060).
+ * Every document's head carries the deployable's name as `<title>` and links the build's entry CSS and `/keel-mark.svg`
+ * icon (`headHtml`, k.server Document).
  * `std` (a `.keel/std.json`) is read once and bound to `ctx` for `stdConfig`: missing, malformed or hand-edited
  * rejects with E1160, a value failing its package's registered schema with E1158 (k.module Std config, rfc:0066).
  */
@@ -94,8 +97,10 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
           "secure: not set, so the caller cookie is Secure only on https or x-forwarded-proto https; pass createApp({ secure: true })",
       }),
     );
+  const served = selectDeployable(opts.topology, table, modules, opts.deployable);
+  const built = mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets) : undefined;
   const sv: Served = {
-    table: selectDeployable(opts.topology, table, modules, opts.deployable),
+    table: served,
     ctx: opts.ctx,
     mode,
     routes: opts.routes,
@@ -105,7 +110,8 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     saving: new Map(),
     keys: await callerSigner(opts.secret),
     secure: opts.secure,
-    built: mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets) : undefined,
+    built,
+    head: headHtml(opts.deployable ?? Object.keys(opts.topology)[0] ?? "", built),
   };
   const hono = new Hono();
   hono.all("*", async (c) => {

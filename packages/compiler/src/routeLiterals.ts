@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import {
   type Expression,
   type MemberExpression,
@@ -6,6 +8,8 @@ import {
   Visitor,
   parseSync,
 } from "oxc-parser";
+import { appManifest } from "./internal/appManifest.ts";
+import { entryOf } from "./internal/entryOf.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
 import type { RouteLiteral } from "./types/RouteLiteral.ts";
 import type { RouteLiterals } from "./types/RouteLiterals.ts";
@@ -70,26 +74,25 @@ function join(dir: string, spec: string): string | undefined {
 
 type Parsed = (path: string) => Program | undefined;
 
+/** The specifier and imported name of the named import bound to `local` in `program`. */
+function imported(program: Program, local: string): [string, string] | undefined {
+  for (const s of program.body)
+    if (s.type === "ImportDeclaration")
+      for (const sp of s.specifiers)
+        if (sp.type === "ImportSpecifier" && sp.local.name === local)
+          return [s.source.value, sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value];
+  return undefined;
+}
+
 /**
  * The `redirect` of the guard bound to `name` in the manifest `file`: a `const` there, or one imported from a relative
  * module, initialized as `guard({ redirect: "<literal>" }, fn)`. Undefined when it does not resolve to that shape.
  */
 function guardRedirect(file: string, program: Program, name: string, parse: Parsed): string | undefined {
-  let target: { program: Program; name: string } | undefined;
-  const local = declared(program, name);
-  if (local !== undefined) target = { program, name };
-  for (const s of program.body) {
-    if (target !== undefined || s.type !== "ImportDeclaration" || !s.source.value.startsWith(".")) continue;
-    for (const sp of s.specifiers) {
-      if (sp.type !== "ImportSpecifier" || sp.local.name !== name) continue;
-      const dir = file.split("/").slice(0, -1).join("/");
-      const at = join(dir, s.source.value);
-      const other = at === undefined ? undefined : (parse(at) ?? parse(`${at}.ts`));
-      const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
-      if (other !== undefined) target = { program: other, name: imported };
-    }
-  }
-  const init = target === undefined ? undefined : declared(target.program, target.name);
+  const imp = imported(program, name);
+  const at = imp?.[0].startsWith(".") ? join(file.split("/").slice(0, -1).join("/"), imp[0]) : undefined;
+  const other = at === undefined ? undefined : (parse(at) ?? parse(`${at}.ts`));
+  const init = declared(program, name) ?? (other && imp && declared(other, imp[1]));
   if (init?.type !== "CallExpression" || init.callee.type !== "Identifier" || init.callee.name !== "guard")
     return undefined;
   const decl = init.arguments[0];
@@ -217,9 +220,10 @@ function attached(program: Program): Map<string, Expression> | null {
 
 /**
  * True when a project file other than the manifest `file` reads `actions` (or a computed key) off a binding it imports
- * from `file` (named, or `ns.routes` of a namespace import): those actions are not read statically (backlog 0183).
+ * from `file`, or from the package specifier `spec` that names it (named, or `ns.routes` of a namespace import): those
+ * actions are not read statically.
  */
-function attachedElsewhere(file: string, sources: ReadonlyMap<string, string>, parse: Parsed): boolean {
+function attachedElsewhere(file: string, sources: ReadonlyMap<string, string>, parse: Parsed, spec?: string): boolean {
   for (const [path, source] of sources) {
     if (path === file || !source.includes("actions")) continue;
     const program = parse(path);
@@ -228,9 +232,10 @@ function attachedElsewhere(file: string, sources: ReadonlyMap<string, string>, p
     const spaces = new Set<string>();
     const dir = path.split("/").slice(0, -1).join("/");
     for (const st of program.body) {
-      if (st.type !== "ImportDeclaration" || !st.source.value.startsWith(".")) continue;
-      const at = join(dir, st.source.value);
-      if (at !== file && `${at}.ts` !== file) continue;
+      if (st.type !== "ImportDeclaration") continue;
+      const s = st.source.value;
+      const at = s.startsWith(".") ? join(dir, s) : undefined;
+      if (s !== spec && (at === undefined || (at !== file && `${at}.ts` !== file))) continue;
       for (const sp of st.specifiers)
         if (sp.type === "ImportNamespaceSpecifier") spaces.add(sp.local.name);
         else named.add(sp.local.name);
@@ -254,9 +259,9 @@ function attachedElsewhere(file: string, sources: ReadonlyMap<string, string>, p
 }
 
 /** The object literal of `routes = manifest({...})` in `program`, or undefined. */
-function manifestObject(program: Program): ObjectExpression | undefined {
-  let init = declared(program, "routes");
-  for (let hop = 0; hop < 8 && init?.type === "Identifier"; hop++) init = declared(program, init.name);
+function manifestObject(program: Program | undefined): ObjectExpression | undefined {
+  let init = program && declared(program, "routes");
+  for (let hop = 0; program && hop < 8 && init?.type === "Identifier"; hop++) init = declared(program, init.name);
   if (init?.type !== "CallExpression" || init.callee.type !== "Identifier" || init.callee.name !== "manifest")
     return undefined;
   const arg = init.arguments[0];
@@ -266,31 +271,45 @@ function manifestObject(program: Program): ObjectExpression | undefined {
 }
 
 /**
- * Read a project's route table from its routes manifests without evaluating them (k.compiler Artifacts, rfc:0059):
- * the manifests `vite build` evaluates (`projectManifests`), each `export const routes = manifest({...})` parsed with
- * oxc. Literal route ids, `path`, `layout`, action verbs (from `routes.actions({...})`, rfc:0063), `params`/`search`
- * presence, and a guard's `redirect` (a `guard({ redirect: "..." }, fn)` declared in the manifest or imported from a
- * relative module) are read; anything else is named in `unread`. A spread, computed key or unreadable manifest opens
- * the id set (`closed: false`) and, since it may override them, unreads the routes before it. Undefined when there is no such manifest: `routes.json` is then
- * `{}` and compared by hash. `files` are root-relative project files.
+ * Read a project's route table from its routes manifests without evaluating them (k.compiler Artifacts): the manifests
+ * `vite build` evaluates (`projectManifests`), each `export const routes = manifest({...})` parsed with oxc. Literal
+ * route ids, `path`, `layout`, action verbs (from `routes.actions({...})`), `params`/`search` presence, and a guard's
+ * `redirect` (a `guard({ redirect: "..." }, fn)` declared in the manifest or imported from a relative module) are read;
+ * anything else is named in `unread`. A spread `...x.routes`, `x` the `routes` export of a package the module's
+ * `module.ts` lists in `deps`, reads the manifest of the file that export resolves to (from the module's folder, through the package's `exports`,
+ * as the std import step resolves it) by the same rule, without running it.
+ * Any other spread (named by its source text), a computed key or an unreadable manifest opens the id set
+ * (`closed: false`) and, since it may override them, unreads the routes before it. Undefined when there is no such
+ * manifest: `routes.json` is then `{}` and compared by hash. `files` are project files relative to `root` (default
+ * `process.cwd()`), the directory packages resolve from.
  */
 export function routeLiterals(
   files: readonly SourceFile[],
-  options: { readonly topology?: Topology | undefined } = {},
+  options: { readonly topology?: Topology | undefined; readonly root?: string | undefined } = {},
 ): RouteLiterals | undefined {
   const manifests = projectManifests(
     options.topology,
     files.map((f) => f.path),
   );
   if (manifests.length === 0) return undefined;
+  const root = options.root ?? process.cwd();
   const sources = new Map(files.map((f) => [f.path, f.source]));
+  /** A project file's text, or an absolute file's a package fragment reads. */
+  const textOf = (p: string): string | undefined => {
+    if (sources.has(p) || !path.isAbsolute(p)) return sources.get(p);
+    try {
+      return fs.readFileSync(p, "utf8");
+    } catch {
+      return undefined;
+    }
+  };
   const cache = new Map<string, Program | undefined>();
-  const parse: Parsed = (path) => {
-    if (cache.has(path)) return cache.get(path);
-    const source = sources.get(path);
-    const r = source === undefined ? undefined : parseSync(path, source, { sourceType: "module", lang: "ts" });
+  const parse: Parsed = (p) => {
+    if (cache.has(p)) return cache.get(p);
+    const source = textOf(p);
+    const r = source === undefined ? undefined : parseSync(p, source, { sourceType: "module", lang: "ts" });
     const program = r === undefined || r.errors.length > 0 ? undefined : r.program;
-    cache.set(path, program);
+    cache.set(p, program);
     return program;
   };
   const routes = new Map<string, RouteLiteral>();
@@ -302,22 +321,39 @@ export function routeLiterals(
     for (const id of routes.keys()) routes.set(id, {});
     unread.push(...[...routes.keys()].filter((id) => !unread.includes(id)), part);
   };
-  for (const file of manifests) {
-    const program = parse(file);
-    const obj = program === undefined ? undefined : manifestObject(program);
-    if (program === undefined || obj === undefined) {
-      open(file);
-      continue;
-    }
-    const acts = attachedElsewhere(file, sources, parse) ? null : attached(program);
+  /** The entries of one manifest object in source order; `spec` is the import specifier of a package fragment. */
+  const read = (file: string, program: Program, obj: ObjectExpression, spec?: string): void => {
+    const acts = attachedElsewhere(file, sources, parse, spec) ? null : attached(program);
+    const mod = spec === undefined ? textOf(file.replace(/routes\.ts$/, "module.ts")) : undefined;
+    const deps = (mod === undefined ? null : appManifest(mod))?.deps ?? [];
     for (const p of obj.properties) {
-      const id = p.type === "Property" && !p.computed ? keyName(p.key) : undefined;
-      if (p.type !== "Property" || id === undefined) {
-        open(`${file} ids`);
+      if (p.type === "SpreadElement") {
+        const a = unwrap(p.argument);
+        const imp =
+          a.type === "MemberExpression" && !a.computed && a.object.type === "Identifier" && a.property.name === "routes"
+            ? imported(program, a.object.name)
+            : undefined;
+        const m = imp?.[1] === "routes" ? /^((?:@[^/]+\/)?[^/]+)(.*)/.exec(imp[0]) : null;
+        const at =
+          m && deps.some((d) => d.value === m[1])
+            ? entryOf(path.join(root, path.dirname(file)), `${m[1]}`, `.${m[2]}`)
+            : undefined;
+        const other = at === undefined ? undefined : parse(at);
+        const o = manifestObject(other);
+        if (at && other && o && imp) read(at, other, o, imp[0]);
+        else open(`${file} ${textOf(file)?.slice(p.start, p.end)}`);
         continue;
       }
-      routes.set(id, readRoute(id, p.value, { file, program, parse, acts }, unread));
+      const id = p.computed ? undefined : keyName(p.key);
+      if (id === undefined) open(`${file} ids`);
+      else routes.set(id, readRoute(id, p.value, { file, program, parse, acts }, unread));
     }
+  };
+  for (const file of manifests) {
+    const program = parse(file);
+    const obj = manifestObject(program);
+    if (program === undefined || obj === undefined) open(file);
+    else read(file, program, obj);
   }
   return { routes: Object.fromEntries(routes), closed, unread };
 }

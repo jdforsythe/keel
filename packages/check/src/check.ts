@@ -1,3 +1,4 @@
+import path from "node:path";
 import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
 import type { Checked } from "./internal/Checked.ts";
@@ -51,7 +52,9 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
     const topology = topologyOf(dir, project, opts);
     const options = topology === undefined ? {} : { topology };
     const hashes = artifactHashes(sources, options);
-    out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, options) } : { hashes });
+    // Packages a route manifest spreads resolve from the project's own directory, as its imports do.
+    const literal = { ...options, root: path.join(opts.root ?? process.cwd(), dir) };
+    out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, literal) } : { hashes });
   }
   return out;
 }

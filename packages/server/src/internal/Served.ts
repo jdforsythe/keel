@@ -12,7 +12,8 @@ import type { Saved } from "./Saved.ts";
  * from or saved to (`openStores`, `saveStores`; k.server Server state), and `saving`, the settled tail of the last load or
  * save queued on each such key (`inOrder`: loads and saves of a key run in issue order, RFC 0054), `keys`, the caller-cookie keys (`callerSigner`), and
  * `secure`, `createApp({ secure })` (undefined: each request URL's scheme decides, RFC 0057). `built` is the production client build
- * (`createApp({ assets })`, k.server Build), undefined in dev or without `assets`.
+ * (`createApp({ assets })`, k.server Build), undefined in dev or without `assets`. `head` is every document's head content
+ * (`headHtml`).
  */
 export type Served = {
   readonly table: readonly Located[];
@@ -26,4 +27,5 @@ export type Served = {
   readonly keys: CallerKeys;
   readonly secure: boolean | undefined;
   readonly built: BuiltClient | undefined;
+  readonly head: string;
 };

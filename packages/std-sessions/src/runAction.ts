@@ -7,9 +7,11 @@ import { actionText } from "./internal/actionText.ts";
 import { clean } from "./internal/clean.ts";
 import { issueApi } from "./internal/issueApi.ts";
 import { issueBody } from "./internal/issueBody.ts";
+import { issueFor } from "./internal/issueFor.ts";
 import { recordsOf } from "./internal/recordsOf.ts";
 import { sessionCompact } from "./internal/sessionCompact.ts";
 import { sessionDiag } from "./internal/sessionDiag.ts";
+import { sessionMarker } from "./internal/sessionMarker.ts";
 
 const WINDOW_MS = 26 * 60 * 60 * 1000;
 const LABEL = "keel-session";
@@ -44,8 +46,11 @@ const onlyE2004 = (ran: Ran): boolean => {
  * The std.sessions Action (`keel-session-action`, `packages/std-sessions/action/action.yml`). It runs
  * `keel session ingest $KEEL_SESSIONS_URL --failing --since=<now - 26h>`, then replays each fingerprint's files newest
  * first until one reproduces. For a reproduced fingerprint it runs `minimize` and `to-test`, then updates the open
- * `keel-session` issue whose title starts `session <fingerprint>:` or creates one titled
- * `session <fingerprint>: <code> at <route>` (at most 20 creates a run; the rest count as `deferred`). The body is the
+ * `keel-session` issue whose body carries `<!-- keel-session:<fingerprint> -->` (or, filed without it, whose title
+ * starts `session <fingerprint>:`), or creates one titled `session <fingerprint>: <code> at <route>` with that marker
+ * as the first body line (at most 20 creates a run; the rest count as `deferred`). The lookup lists the label's issues
+ * of every state, at most 50 pages of 100. A fingerprint with no open match and a match closed as not planned
+ * is skipped (counted `skipped`); one whose matches are all closed as completed gets a new issue. The body is the
  * compact `session` record and the emitted test, fenced. When no file reproduces (each E2004), the open issue gets
  * one comment carrying a marker line, unless its newest comment already carries it. A route id or code outside
  * `[A-Za-z0-9_.-]` skips the fingerprint with E2002. `keel` children never get `GITHUB_TOKEN`; only the ingest gets
@@ -98,7 +103,7 @@ export async function runAction(
   if (files.size === 0) return finish(true);
 
   const gh = issueApi(io, api, repo, token);
-  const open = await gh.open(LABEL);
+  const open = await gh.find(LABEL);
   if (!open.ok) {
     records.push(sessionDiag("E1056", open.why));
     return finish(false);
@@ -127,7 +132,12 @@ export async function runAction(
 
   for (const [fp, list] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     counts.fingerprints = (counts.fingerprints ?? 0) + 1;
-    const issue = open.value.find((i) => i.title.startsWith(`session ${fp}:`));
+    const found = issueFor(open.value, fp);
+    if (found.kind === "skip") {
+      counts.skipped = (counts.skipped ?? 0) + 1;
+      continue;
+    }
+    const issue = found.kind === "open" ? found.issue : undefined;
     const newest = list.at(-1) ?? "";
     let newestSeen: SessionRecord | undefined;
     let reproduced: string | undefined;
@@ -172,7 +182,7 @@ export async function runAction(
       out.file === `modules/${out.route.split(".")[0]}/test/session-${fp}.test.ts` ? io.read(out.file) : undefined;
     if (test === undefined) continue;
     const title = clean(`session ${fp}: ${out.error ?? "ok"} at ${out.route}`, 256);
-    const body = issueBody(sessionCompact(out), test);
+    const body = `${sessionMarker(fp)}\n${issueBody(sessionCompact(out), test)}`;
     if (issue === undefined) report(await gh.create(LABEL, title, body), "created", fp, out);
     else report(await gh.update(issue.number, title, body), "updated", fp, out, issue.number);
   }
