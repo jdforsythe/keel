@@ -29,10 +29,10 @@ async function once(file: string): Promise<boolean> {
 /** Import `dep` (then its `./tools` export, if any) as seen from `dir`: undefined once loaded, else why not. */
 async function load(dir: string, dep: string): Promise<string | undefined> {
   if (!NAME.test(dep)) return "not @keel/std-[a-z0-9-]+";
-  const file = entryOf(dir, dep);
+  const file = entryOf(dir, dep)?.[0];
   if (file === undefined) return "not found";
   if (!(await once(file))) return "throws on import";
-  const tools = entryOf(dir, dep, "./tools");
+  const tools = entryOf(dir, dep, "./tools")?.[0];
   return tools === undefined || (await once(tools)) ? undefined : "tools throws on import";
 }
 

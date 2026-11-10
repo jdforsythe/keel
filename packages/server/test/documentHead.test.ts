@@ -85,6 +85,67 @@ describe("loadAssets", () => {
     expect(b.files.has("/.vite/manifest.json")).toBe(false);
   });
 
+  it("links only manifest CSS that is a served .css file under /assets/", async () => {
+    const css = [
+      "keel-mark.svg",
+      "assets/entry-B1x2Y3z4.js",
+      "assets/../keel-mark.svg",
+      "../x.css",
+      "assets/entry-Ab12Cd34.css",
+    ];
+    const files = {
+      ...build(),
+      ".vite/manifest.json": JSON.stringify({ e: { file: "assets/entry-B1x2Y3z4.js", isEntry: true, css } }),
+    };
+    expect((await loadAssets(dir(files))).css).toEqual(["/assets/entry-Ab12Cd34.css"]);
+  });
+
+  it("property: any manifest css list links only escaped /assets/*.css hrefs the build serves", async () => {
+    const pool = [
+      "keel-mark.svg",
+      "assets/a.css",
+      'assets/q"x.css',
+      "assets/x.js",
+      "assets/../a.css",
+      "../a.css",
+      "/assets/a.css",
+    ];
+    const entry = fc.oneof(fc.constantFrom(...pool), fc.string(), fc.integer());
+    await fc.assert(
+      fc.asyncProperty(fc.array(entry, { maxLength: 5 }), async (css) => {
+        const d = dir({
+          ".vite/manifest.json": JSON.stringify({ e: { file: "assets/e.js", isEntry: true, css } }),
+          "assets/e.js": "resume()",
+          "assets/a.css": "a{}",
+          'assets/q"x.css': "b{}",
+          "assets/x.js": "x",
+          "keel-mark.svg": "<svg/>",
+        });
+        const b = await loadAssets(d);
+        for (const href of b.css) {
+          expect(href).toMatch(/^\/assets\/[^/]+\.css$/);
+          expect(b.files.has(href)).toBe(true);
+        }
+        const links = headHtml("web", b).match(/<link rel="stylesheet" href="[^"]*">/g) ?? [];
+        expect(links).toHaveLength(b.css.length);
+        for (const l of links) expect(l).not.toContain('q"x');
+      }),
+      { seed: SEED, numRuns: 25 },
+    );
+  });
+
+  it("follows a symlinked assets/ directory, still refusing a file whose real path leaves it", async () => {
+    const real = dir({ "e.js": "resume()", "secret.txt": "secret" });
+    fs.mkdirSync(path.join(real, "assets"));
+    fs.renameSync(path.join(real, "e.js"), path.join(real, "assets", "entry-B1x2Y3z4.js"));
+    fs.symlinkSync(path.join(real, "secret.txt"), path.join(real, "assets", "leak.js"));
+    const d = dir({ ".vite/manifest.json": MANIFEST });
+    fs.symlinkSync(path.join(real, "assets"), path.join(d, "assets"));
+    const b = await loadAssets(d);
+    expect(b.entry).toBe("/assets/entry-B1x2Y3z4.js");
+    expect(b.files.has("/assets/leak.js")).toBe(false);
+  });
+
   it("reads no symlinked keel-mark.svg", async () => {
     const { "keel-mark.svg": _mark, ...rest } = build();
     const d = dir({ ...rest, "secret.svg": "secret" });

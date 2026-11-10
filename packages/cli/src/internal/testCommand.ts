@@ -22,6 +22,16 @@ const NOT_STARTED: TestReport = {
   errors: 1,
 };
 
+/** A run vitest ended as not passed with no failing test to show for it (a filter that matches no file): one T0001. */
+const notPassed = (r: TestReport, reason: string): TestReport => ({
+  ...r,
+  diagnostics: [
+    ...r.diagnostics,
+    { kind: "diag", code: "T0001", message: `no test ran: vitest ended the run as ${reason}` },
+  ],
+  errors: 1,
+});
+
 async function vitestRun(root: string, filters: readonly string[]): Promise<TestReport> {
   let report = EMPTY;
   let run: Vitest | undefined;
@@ -29,8 +39,9 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
     onInit: (vitest: Vitest): void => {
       run = vitest;
     },
-    onTestRunEnd: (_modules: readonly unknown[], errors: readonly unknown[]): void => {
-      report = run === undefined ? NOT_STARTED : testResults(run.state.getFiles(), errors, root);
+    onTestRunEnd: (_modules: readonly unknown[], errors: readonly unknown[], reason: string): void => {
+      const r = run === undefined ? NOT_STARTED : testResults(run.state.getFiles(), errors, root);
+      report = reason === "passed" || r.failed > 0 || r.errors > 0 ? r : notPassed(r, reason);
     },
   };
   const exitCode = process.exitCode;

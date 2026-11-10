@@ -114,6 +114,7 @@ function world(o: {
       if (method !== "GET") return new Response(JSON.stringify({ number: next++ }), { status: 201 });
       const u = new URL(url);
       const page = Number(u.searchParams.get("page") ?? "1");
+      if (u.searchParams.get("state") === "closed") return new Response("[]");
       const headers = new Headers();
       const thread = /\/issues\/(\d+)\/comments$/.exec(u.pathname)?.[1];
       if (thread !== undefined) {
@@ -122,7 +123,7 @@ function world(o: {
         return new Response(JSON.stringify(cs[page - 1] ?? []), { headers });
       }
       if (o.endless === true || page < pages.length)
-        headers.set("link", `<${ISSUES}?state=all&page=${page + 1}>; rel="next"`);
+        headers.set("link", `<${ISSUES}?state=open&page=${page + 1}>; rel="next"`);
       return new Response(JSON.stringify(pages[page - 1] ?? []), { headers });
     },
   };
@@ -211,8 +212,9 @@ describe("runAction", () => {
     });
     const r = await runAction(w.io);
     expect(w.calls.filter((c) => c.method === "GET").map((c) => c.url)).toEqual([
-      `${ISSUES}?state=all&labels=keel-session&per_page=100`,
-      `${ISSUES}?state=all&page=2`,
+      `${ISSUES}?state=open&labels=keel-session&per_page=100`,
+      `${ISSUES}?state=open&page=2`,
+      `${ISSUES}?state=closed&sort=updated&direction=desc&labels=keel-session&per_page=100`,
     ]);
     expect(writes(w.calls)).toEqual([`PATCH ${ISSUES}/7`]);
     expect(r.records).toContainEqual({ kind: "session.issue", fingerprint: FP, action: "updated", issue: 7 });
@@ -240,7 +242,7 @@ describe("runAction", () => {
     };
     await runAction(io);
     expect(w.calls.filter((c) => !c.url.startsWith(API))).toEqual([]);
-    expect(w.calls.filter((c) => c.method === "GET")).toHaveLength(1);
+    expect(w.calls.filter((c) => c.method === "GET")).toHaveLength(2);
   });
 
   test("not reproduced by any file: one marked comment on the open issue, nothing without one", async () => {
@@ -273,7 +275,8 @@ describe("runAction", () => {
     });
     const r = await runAction(w.io);
     expect(w.calls.map((c) => `${c.method} ${c.url}`)).toEqual([
-      `GET ${ISSUES}?state=all&labels=keel-session&per_page=100`,
+      `GET ${ISSUES}?state=open&labels=keel-session&per_page=100`,
+      `GET ${ISSUES}?state=closed&sort=updated&direction=desc&labels=keel-session&per_page=100`,
       `GET ${ISSUES}/9/comments?per_page=100`,
       `GET ${ISSUES}/9/comments?page=2`,
     ]);

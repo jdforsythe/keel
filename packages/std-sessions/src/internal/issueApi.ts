@@ -17,6 +17,7 @@ const Comments = s.array(s.object({ body: s.string().nullable().optional() }));
 const NEXT = /<([^>]+)>;\s*rel="next"/;
 const LAST = /<([^>]+)>;\s*rel="last"/;
 const MAX_PAGES = 50;
+const MAX_CLOSED_PAGES = 5;
 
 type Got<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly why: string };
 type Issue = {
@@ -29,8 +30,9 @@ type Issue = {
 
 /**
  * GitHub REST issue calls for `repo` (`owner/name`) at `api`, authorized by `token`, through `io.fetch`. `find(label)`
- * lists every issue with `label`, open or closed, following `Link: rel="next"` only while it stays under `api`, and drops pull
- * requests; a next page past 50 pages of 100 is a failure. `lastComment(n)` is the body of issue `n`'s newest comment
+ * lists every open issue with `label`, then its closed issues newest first (`sort=updated`), following `Link: rel="next"`
+ * only while it stays under `api`, and drops pull requests. A next page of open issues past 50 pages of 100 is a failure;
+ * closed issues stop after 5 pages of 100 without error, and an older closed issue is absent. `lastComment(n)` is the body of issue `n`'s newest comment
  * (null: none), read from the `rel="last"` page. A failure is a reason without the token or a response body.
  */
 export function issueApi(io: Pick<ActionIo, "fetch">, api: string, repo: string, token: string) {
@@ -65,20 +67,30 @@ export function issueApi(io: Pick<ActionIo, "fetch">, api: string, repo: string,
   return {
     find: async (label: string): Promise<Got<Issue[]>> => {
       const out: Issue[] = [];
-      let url: string | undefined = `${base}?state=all&labels=${encodeURIComponent(label)}&per_page=100`;
-      for (let page = 0; url !== undefined; page++) {
-        if (page === MAX_PAGES) return { ok: false, why: `github issues list exceeded ${MAX_PAGES} pages` };
-        const r = await call("issues list", url, "GET");
-        if (!r.ok) return r;
-        const list = Listed.parse(await r.value.json().catch(() => null));
-        if (!list.ok) return { ok: false, why: "github issues list answered without a list" };
-        for (const i of list.value) {
-          if (i.pull_request !== undefined) continue;
-          const status =
-            i.state === "closed" ? (i.state_reason === "not_planned" ? "not_planned" : "completed") : "open";
-          out.push({ number: i.number, title: i.title, body: i.body ?? "", status });
+      const q = `labels=${encodeURIComponent(label)}&per_page=100`;
+      const lists = [
+        { url: `${base}?state=open&${q}`, max: MAX_PAGES, capped: false },
+        { url: `${base}?state=closed&sort=updated&direction=desc&${q}`, max: MAX_CLOSED_PAGES, capped: true },
+      ];
+      for (const { url: first, max, capped } of lists) {
+        let url: string | undefined = first;
+        for (let page = 0; url !== undefined; page++) {
+          if (page === max) {
+            if (capped) break;
+            return { ok: false, why: `github issues list exceeded ${MAX_PAGES} pages` };
+          }
+          const r = await call("issues list", url, "GET");
+          if (!r.ok) return r;
+          const list = Listed.parse(await r.value.json().catch(() => null));
+          if (!list.ok) return { ok: false, why: "github issues list answered without a list" };
+          for (const i of list.value) {
+            if (i.pull_request !== undefined) continue;
+            const status =
+              i.state === "closed" ? (i.state_reason === "not_planned" ? "not_planned" : "completed") : "open";
+            out.push({ number: i.number, title: i.title, body: i.body ?? "", status });
+          }
+          url = under(r.value.headers.get("link"), NEXT);
         }
-        url = under(r.value.headers.get("link"), NEXT);
       }
       return { ok: true, value: out };
     },

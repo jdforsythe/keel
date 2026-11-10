@@ -4,7 +4,7 @@
 
 **Context.** `createApp` writes a head with a charset and a viewport only, so a node-rendered page has no title, stylesheet or icon, and an unknown path shows the bare code `keel.notFound`. A client deployable gets these from the scaffold's `index.html`; a node deployable has none. The production build's manifest already records the entry's stylesheets, and the build already holds `keel-mark.svg` from `public/`, but the asset loader serves only `assets/`.
 
-**Decision.** `createApp` computes one head per app at startup: `<title>` the served deployable's name, a stylesheet link per CSS file of the manifest's entry chunk that the build holds, and `/keel-mark.svg` as the icon when the build has it. The asset loader serves the build's top-level `keel-mark.svg` when it is a regular file. Every value is escaped and nothing is inline. The default alert for `keel.notFound` is `<h1>Not found</h1>`. No option, export or file convention is added.
+**Decision.** `createApp` computes one head per app at startup: `<title>` the served deployable's name, a stylesheet link per CSS file of the manifest's entry chunk that the build holds, and `/keel-mark.svg` as the icon when the build has it. The asset loader serves the build's top-level `keel-mark.svg` when it is a regular file, follows a symlinked `assets/` to its real path, and reads nothing under it when that real path cannot be read. Only the entry chunk's own `.css` files under `/assets/` are linked. Every value is escaped and nothing is inline. The default alert for `keel.notFound` is `<h1>Not found</h1>`. No option, export or file convention is added.
 
 **Alternatives.**
 - A brand base stylesheet from `brandTokens`, rejected: a second styling path beside `keel.css`, wrong for apps with their own tokens.
@@ -16,4 +16,4 @@
 - k.server gains one Document sentence, one Build phrase and one conformance clause, offset by rewording within the section.
 - Every node document has a title, and a 404 has a heading. The stylesheet link appears once the compiler's node client build emits CSS; today it emits none.
 - Per-route titles and custom head links remain open: each needs a new API shape (RFC 0078 Open questions).
-- `@keel/server` grows by 212 bytes gzip to 14,367, 31 bytes over its 14 kB budget.
+- `@keel/server` grows by 235 bytes gzip to 14,390, over 14 kB and under the 14.5 kB re-base.

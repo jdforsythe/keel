@@ -1,5 +1,5 @@
 // @vitest-environment node
-// The nightly action's issue lookup over an injected `io`: the hidden body marker, `state=all`, a fingerprint closed as
+// The nightly action's issue lookup over an injected `io`: the hidden body marker, `state=closed`, a fingerprint closed as
 // not planned, a recurrence after a completed close, the title-prefix fallback, and the pagination bound.
 import type { OutRecord } from "@keel/cli";
 import fc from "fast-check";
@@ -42,7 +42,7 @@ const session = (fp: string, file: string | null): OutRecord => ({
 const fileOf = (fp: string) => `.keel/sessions/${fp}-0.json`;
 
 /** A repo holding `pages` of issues, and a project whose sessions for `fps` all reproduce. */
-function world(fps: readonly string[], pages: readonly Listed[][], endless = false) {
+function world(fps: readonly string[], pages: readonly Listed[][], endless: "open" | "closed" | false = false) {
   const writes: { method: string; url: string; body: { title?: string; body?: string } }[] = [];
   const lists: string[] = [];
   const io: ActionIo = {
@@ -75,20 +75,28 @@ function world(fps: readonly string[], pages: readonly Listed[][], endless = fal
         return new Response(JSON.stringify({ number: 500 + writes.length }), { status: 201 });
       }
       lists.push(url);
-      const page = Number(new URL(url).searchParams.get("page") ?? "1");
+      const u = new URL(url);
+      const state = u.searchParams.get("state");
+      const page = Number(u.searchParams.get("page") ?? "1");
       const headers = new Headers();
-      if (endless || page < pages.length) headers.set("link", `<${ISSUES}?page=${page + 1}>; rel="next"`);
-      return new Response(JSON.stringify(pages[page - 1] ?? (endless ? [] : [])), { headers });
+      // Issues are served by their own state; an endless listing links to a next page of its state forever.
+      const mine = pages.map((p) => p.filter((i) => (i.state === "closed") === (state === "closed")));
+      if (endless === state || page < mine.length)
+        headers.set("link", `<${ISSUES}?state=${state}&sort=updated&page=${page + 1}>; rel="next"`);
+      return new Response(JSON.stringify(mine[page - 1] ?? []), { headers });
     },
   };
   return { io, writes, lists };
 }
 
 describe("action issue lookup", () => {
-  test("lists issues of every state", async () => {
+  test("lists open issues, then closed ones newest first", async () => {
     const w = world([FP], [[]]);
     await runAction(w.io);
-    expect(w.lists).toEqual([`${ISSUES}?state=all&labels=keel-session&per_page=100`]);
+    expect(w.lists).toEqual([
+      `${ISSUES}?state=open&labels=keel-session&per_page=100`,
+      `${ISSUES}?state=closed&sort=updated&direction=desc&labels=keel-session&per_page=100`,
+    ]);
   });
   test("a created issue opens its body with the marker, and only the fingerprint is in it", async () => {
     const w = world([FP], [[]]);
@@ -156,12 +164,45 @@ describe("action issue lookup", () => {
     await runAction(w.io);
     expect(w.writes.map((x) => x.method)).toEqual(["POST"]);
   });
-  test("the lookup follows pages and stops at 50 with E1056", async () => {
-    const w = world([FP], [], true);
+  test("an endless open listing stops at 50 pages with E1056", async () => {
+    const w = world([FP], [], "open");
     const r = await runAction(w.io);
     expect(w.lists).toHaveLength(50);
     expect(r.code).toBe(1);
     expect(r.records.some((x) => x.kind === "diag" && x.code === "E1056")).toBe(true);
+  });
+  test("an endless closed listing stops after 5 pages with no error, treating older closed issues as absent", async () => {
+    const w = world([FP], [], "closed");
+    const r = await runAction(w.io);
+    expect(w.lists.filter((u) => u.includes("state=closed"))).toHaveLength(5);
+    expect(r.records.some((x) => x.kind === "diag")).toBe(false);
+    expect(r.code).toBe(0);
+    expect(w.writes.map((x) => x.method)).toEqual(["POST"]);
+  });
+  test("a marker below the first line of another issue's body does not match", async () => {
+    const body = `${sessionMarker(FP2)}\n\`\`\`ts\n${sessionMarker(FP)}\n\`\`\``;
+    const w = world([FP], [[{ number: 4, title: "x", body, state: "open" }]]);
+    await runAction(w.io);
+    expect(w.writes.map((x) => x.method)).toEqual(["POST"]);
+  });
+  test("the victim's real issue is chosen over an injected open one", async () => {
+    const w = world(
+      [FP],
+      [
+        [
+          { number: 4, title: "x", body: `${sessionMarker(FP2)}\n${sessionMarker(FP)}`, state: "open" },
+          { number: 5, title: "y", body: `${sessionMarker(FP)}\r\nbody`, state: "open" },
+        ],
+      ],
+    );
+    await runAction(w.io);
+    expect(w.writes.map((x) => `${x.method} ${x.url}`)).toEqual([`PATCH ${ISSUES}/5`]);
+  });
+  test("an injected issue closed as not planned does not skip the victim", async () => {
+    const body = `${sessionMarker(FP2)}\n${sessionMarker(FP)}`;
+    const w = world([FP], [[{ number: 4, title: "x", body, state: "closed", state_reason: "not_planned" }]]);
+    await runAction(w.io);
+    expect(w.writes.map((x) => x.method)).toEqual(["POST"]);
   });
 });
 
@@ -175,10 +216,18 @@ describe("issueFor properties", () => {
           fp.map((f) => `session ${f}: x`),
           fc.constant("other"),
         ),
-        body: fc.oneof(
-          fp.map((f) => sessionMarker(f)),
-          fc.constant(""),
-        ),
+        body: fc
+          .tuple(
+            fc.oneof(
+              fp.map((f) => sessionMarker(f)),
+              fc.constant(""),
+            ),
+            fc.array(
+              fp.map((f) => sessionMarker(f)),
+              { maxLength: 3 },
+            ),
+          )
+          .map(([head, rest]) => [head, ...rest].join("\n")),
         status,
       }),
       { maxLength: 12 },
@@ -189,7 +238,9 @@ describe("issueFor properties", () => {
     fc.assert(
       fc.property(issues, fp, (list, f) => {
         const got = issueFor(list, f);
-        const matches = list.filter((i) => i.body.includes(sessionMarker(f)) || i.title.startsWith(`session ${f}:`));
+        const matches = list.filter(
+          (i) => i.body.split("\n", 1)[0] === sessionMarker(f) || i.title.startsWith(`session ${f}:`),
+        );
         if (got.kind === "open") expect(matches).toContain(got.issue);
         expect(got.kind === "open").toBe(matches.some((i) => i.status === "open"));
         expect(got.kind === "skip").toBe(

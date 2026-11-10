@@ -22,11 +22,12 @@ const field = (manifest: unknown, k: string): unknown =>
   typeof manifest === "object" && manifest !== null ? Reflect.get(manifest, k) : undefined;
 
 /**
- * The real entry file of `dep` as an ESM import from `dir` sees it: the first `node_modules/<dep>/package.json` in
- * `dir` or an ancestor (no NODE_PATH, no global folders), then its `exports` by ESM conditions, else `main`, else
- * `index.js`. Undefined when there is none.
+ * The real entry file of `dep` as an ESM import from `dir` sees it, with the package's real directory: the first
+ * `node_modules/<dep>/package.json` in `dir` or an ancestor (no NODE_PATH, no global folders), then its `exports` by
+ * Node's conditions (an `exports` target starts with `./` and has no `.`, `..`, `node_modules` or empty segment), else
+ * `main`, else `index.js`. Undefined when there is none or its real path is outside the package's real directory.
  */
-export function entryOf(dir: string, dep: string, sub = "."): string | undefined {
+export function entryOf(dir: string, dep: string, sub = "."): [file: string, pkg: string] | undefined {
   for (let d = dir; ; d = path.dirname(d)) {
     const pkg = path.join(d, "node_modules", dep);
     const json = path.join(pkg, "package.json");
@@ -39,16 +40,14 @@ export function entryOf(dir: string, dep: string, sub = "."): string | undefined
       }
       const exp = field(manifest, "exports");
       const main = field(manifest, "main");
-      const rel =
-        sub !== "."
-          ? target(field(exp, sub))
-          : exp === undefined
-            ? typeof main === "string"
-              ? main
-              : "index.js"
-            : target(exp);
+      let rel = sub !== "." || exp !== undefined ? target(sub === "." ? exp : field(exp, sub)) : undefined;
+      if (rel !== undefined && (!rel.startsWith("./") || /(^|[\\/])(\.\.?|node_modules)?([\\/]|$)/i.test(rel.slice(2))))
+        rel = undefined;
+      else if (sub === "." && exp === undefined) rel = typeof main === "string" ? main : "index.js";
       const file = rel === undefined ? undefined : path.resolve(pkg, rel);
-      return file !== undefined && fs.existsSync(file) ? fs.realpathSync(file) : undefined;
+      if (file === undefined || !fs.existsSync(file)) return undefined;
+      const [real, root] = [fs.realpathSync(file), fs.realpathSync(pkg)];
+      return real.startsWith(root + path.sep) ? [real, root] : undefined;
     }
     if (path.dirname(d) === d) return undefined;
   }

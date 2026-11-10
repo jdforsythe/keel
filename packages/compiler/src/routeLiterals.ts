@@ -321,9 +321,19 @@ export function routeLiterals(
     for (const id of routes.keys()) routes.set(id, {});
     unread.push(...[...routes.keys()].filter((id) => !unread.includes(id)), part);
   };
-  /** The entries of one manifest object in source order; `spec` is the import specifier of a package fragment. */
-  const read = (file: string, program: Program, obj: ObjectExpression, spec?: string): void => {
+  /**
+   * The entries of one manifest object in source order. A package fragment has its import specifier `spec`, which
+   * names its unread parts, and its package's real directory `pkg`, outside which it reads no file.
+   */
+  const read = (file: string, program: Program, obj: ObjectExpression, spec?: string, pkg?: string): void => {
     const acts = attachedElsewhere(file, sources, parse, spec) ? null : attached(program);
+    const within: Parsed = (p) => {
+      try {
+        return pkg === undefined || fs.realpathSync(p).startsWith(pkg + path.sep) ? parse(p) : undefined;
+      } catch {
+        return undefined;
+      }
+    };
     const mod = spec === undefined ? textOf(file.replace(/routes\.ts$/, "module.ts")) : undefined;
     const deps = (mod === undefined ? null : appManifest(mod))?.deps ?? [];
     for (const p of obj.properties) {
@@ -333,20 +343,20 @@ export function routeLiterals(
           a.type === "MemberExpression" && !a.computed && a.object.type === "Identifier" && a.property.name === "routes"
             ? imported(program, a.object.name)
             : undefined;
-        const m = imp?.[1] === "routes" ? /^((?:@[^/]+\/)?[^/]+)(.*)/.exec(imp[0]) : null;
+        const [, name, sub] = (imp?.[1] === "routes" && /^((?:@[^/]+\/)?[^/]+)(.*)/.exec(imp[0])) || [];
         const at =
-          m && deps.some((d) => d.value === m[1])
-            ? entryOf(path.join(root, path.dirname(file)), `${m[1]}`, `.${m[2]}`)
+          name !== undefined && deps.some((d) => d.value === name)
+            ? entryOf(path.join(root, path.dirname(file)), name, `.${sub}`)
             : undefined;
-        const other = at === undefined ? undefined : parse(at);
+        const other = at === undefined ? undefined : parse(at[0]);
         const o = manifestObject(other);
-        if (at && other && o && imp) read(at, other, o, imp[0]);
-        else open(`${file} ${textOf(file)?.slice(p.start, p.end)}`);
+        if (at && other && o && imp) read(at[0], other, o, imp[0], at[1]);
+        else open(`${spec ?? file} ${textOf(file)?.slice(p.start, p.end)}`);
         continue;
       }
       const id = p.computed ? undefined : keyName(p.key);
-      if (id === undefined) open(`${file} ids`);
-      else routes.set(id, readRoute(id, p.value, { file, program, parse, acts }, unread));
+      if (id === undefined) open(`${spec ?? file} ids`);
+      else routes.set(id, readRoute(id, p.value, { file, program, parse: within, acts }, unread));
     }
   };
   for (const file of manifests) {

@@ -48,8 +48,9 @@ const onlyE2004 = (ran: Ran): boolean => {
  * first until one reproduces. For a reproduced fingerprint it runs `minimize` and `to-test`, then updates the open
  * `keel-session` issue whose body carries `<!-- keel-session:<fingerprint> -->` (or, filed without it, whose title
  * starts `session <fingerprint>:`), or creates one titled `session <fingerprint>: <code> at <route>` with that marker
- * as the first body line (at most 20 creates a run; the rest count as `deferred`). The lookup lists the label's issues
- * of every state, at most 50 pages of 100. A fingerprint with no open match and a match closed as not planned
+ * as the first body line (at most 20 creates a run; the rest count as `deferred`). The lookup lists the label's open issues
+ * (at most 50 pages of 100, else E1056) and its closed issues newest first (at most 5 pages of 100; an older closed
+ * issue is treated as absent). A fingerprint with no open match and a match closed as not planned
  * is skipped (counted `skipped`); one whose matches are all closed as completed gets a new issue. The body is the
  * compact `session` record and the emitted test, fenced. When no file reproduces (each E2004), the open issue gets
  * one comment carrying a marker line, unless its newest comment already carries it. A route id or code outside

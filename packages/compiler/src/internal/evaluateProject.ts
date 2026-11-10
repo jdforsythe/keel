@@ -112,6 +112,9 @@ export async function evaluateProject(input: {
     write: false,
     format: "esm",
     platform: "node",
+    // Node's own conditions (`node`, `import`, `default`), without esbuild's `module`: the file a package's `exports`
+    // gives here is the one Node imports and the one `routeLiterals` reads.
+    conditions: [],
     target: "node20",
     logLevel: "silent",
     plugins: [

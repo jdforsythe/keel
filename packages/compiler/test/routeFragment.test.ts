@@ -113,9 +113,50 @@ describe("routeLiterals package fragments", () => {
   it("opens on a spread inside the fragment", () => {
     pkg(`import { routes as y } from "@keel/std-other";\nexport const routes = manifest({ ...y.routes });\n`);
     const r = routeLiterals(app(spreading("...x.routes")), { root });
-    expect(r?.closed).toBe(false);
-    expect(r?.unread).toHaveLength(1);
-    expect(r?.unread[0]).toMatch(/src\/routes\.ts \.\.\.y\.routes$/);
+    expect(r).toEqual({ routes: {}, closed: false, unread: [`${PKG}/routes ...y.routes`] });
+  });
+
+  /** `@keel/std-frag` whose `./routes` export is `target`, and a literal manifest at `<root>/outside/routes.ts`. */
+  const escaping = (target: string): SourceFile[] => {
+    put(`node_modules/${PKG}/package.json`, JSON.stringify({ exports: { "./routes": target } }));
+    put("outside/routes.ts", `export const routes = manifest({ "frag.out": { path: "/out" } });\n`);
+    return app(spreading("...x.routes"));
+  };
+
+  for (const target of ["./../../../outside/routes.ts", "../../../outside/routes.ts", "./node_modules/x/routes.ts"])
+    it(`opens on an exports target that breaks Node's target rule: ${target}`, () => {
+      const r = routeLiterals(escaping(target), { root });
+      expect(r).toEqual({ routes: {}, closed: false, unread: [`${M} ...x.routes`] });
+    });
+
+  it("opens on an exports target that is a symlink out of the package", () => {
+    const files = escaping("./src/routes.ts");
+    fs.mkdirSync(path.join(root, `node_modules/${PKG}/src`), { recursive: true });
+    fs.symlinkSync(path.join(root, "outside/routes.ts"), path.join(root, `node_modules/${PKG}/src/routes.ts`));
+    const r = routeLiterals(files, { root });
+    expect(r).toEqual({ routes: {}, closed: false, unread: [`${M} ...x.routes`] });
+  });
+
+  it("unreads a guard the fragment imports from outside its package", () => {
+    put("outside.ts", `export const reader = guard({ redirect: "frag.a" }, fn);\n`);
+    pkg(
+      `import { reader } from "../../../../outside.ts";\n` +
+        `export const routes = manifest({ "frag.a": { path: "/a", guard: reader } });\n`,
+    );
+    const r = routeLiterals(app(spreading("...x.routes")), { root });
+    expect(r?.routes["frag.a"]).toEqual({ path: "/a", layout: null, actions: [], params: false, search: false });
+    expect(r?.unread).toEqual(["frag.a guard"]);
+  });
+
+  it("reads the file Node's conditions pick from a `module` and `default` map", () => {
+    put(
+      `node_modules/${PKG}/package.json`,
+      JSON.stringify({ exports: { "./routes": { module: "./esm.ts", default: "./plain.ts" } } }),
+    );
+    put(`node_modules/${PKG}/esm.ts`, `export const routes = manifest({ "frag.a": { path: "/module" } });\n`);
+    put(`node_modules/${PKG}/plain.ts`, `export const routes = manifest({ "frag.a": { path: "/default" } });\n`);
+    const r = routeLiterals(app(spreading("...x.routes")), { root });
+    expect(r?.routes["frag.a"]?.path).toBe("/default");
   });
 
   it("reads back exactly the fields of any generated fragment table", () => {
