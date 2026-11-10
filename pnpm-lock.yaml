@@ -728,6 +728,9 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
