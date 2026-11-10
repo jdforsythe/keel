@@ -1,4 +1,4 @@
-// Spec: k.server, clause "A built document has the head Document names; an unmatched path is 404 with an `h1`." (rfc:0078)
+// Spec: k.head, clause "A built document has the head this section names; an unmatched path is 404 with an `h1`." (rfc:0078, rfc:0079)
 // Seed: 1337. Generated inputs: deployable names drawn from [a-z][a-z0-9-]{0,15}. The dist fixture is hand-built in a realpath'd tmp dir; `keel build` is not run.
 // @vitest-environment happy-dom
 import fs from "node:fs";
@@ -79,8 +79,8 @@ afterAll(() => {
   for (const dir of roots) fs.rmSync(dir, { recursive: true, force: true });
 });
 
-describe("k.server: a built document has the head Document names; an unmatched path is 404 with an h1", () => {
-  it("a built document has the head Document names: title the deployable name, entry CSS, and the keel-mark icon", async () => {
+describe("k.head: a built document has the head this section names; an unmatched path is 404 with an h1", () => {
+  it("a built document has the head this section names: title the deployable name, entry CSS, and the keel-mark icon", async () => {
     const app = await appFor("web", dist);
     const res = await get(app, "/");
     expect(res.status).toBe(200);
