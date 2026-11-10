@@ -346,3 +346,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 
 ## S2 Values 2026-11-10
 - [ ] 0307 S2 Values: std-temporal, std-text, std-i18n beside std-money; kernel touch k.schema type registry and k.ui formatting hooks; exit: golden-2 prices and dates in 3 locales (eval); tasks/0307-s2-values/PLAN.md · std-temporal, std-text, std-i18n, std-money, apps · std.* k.schema k.ui · S2 · 0230
+- [ ] 0308 scaffold: the app template starts with the locale path param (`s.enum([...], { pathDefault })`) and an unprefixed default, so adding a second locale is one enum member and no route moves (user decision 0307 D7); runs after the S2 batch · scaffold · k.scaffold k.prefix · S2 · 0307
