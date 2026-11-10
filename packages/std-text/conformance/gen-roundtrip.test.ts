@@ -1,21 +1,19 @@
 // Spec: std.text, clause "For every value `gen` produces for `line({ max: 80 })`, `line({ min: 0, max: 3 })`, `para({ max: 2000 })`, `Email` and `Slug`, `parse` accepts it and `parse(encode(v))` returns it; each `line({ max: 80 })` value has 1 to 80 graphemes, and `line({ max: 80 }).doc()` is `line(1..80)`."
 // Seed 1337
+import type { Schema } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import { Email, Slug, graphemes, line, para } from "@keel/std-text";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
-function roundtrips(
-  schema: { parse(i: unknown): { ok: boolean }; encode(v: never): unknown },
-  arb: fc.Arbitrary<unknown>,
-): void {
+function roundtrips<T>(schema: Schema<T, boolean>, arb: fc.Arbitrary<T>): void {
   fc.assert(
     fc.property(arb, (v) => {
       const first = schema.parse(v);
       expect(first.ok).toBe(true);
-      const back = schema.parse(schema.encode(v as never));
+      const back = schema.parse(schema.encode(v));
       expect(back.ok).toBe(true);
-      if (back.ok) expect((back as { ok: true; value: unknown }).value).toEqual(v);
+      if (back.ok) expect(back.value).toEqual(v);
     }),
     { seed: 1337, numRuns: 100 },
   );

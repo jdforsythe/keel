@@ -17,7 +17,6 @@ const LOCALES = [
   "pt-BR",
   "zh-CN",
 ] as const;
-const KEYS = ["zero", "one", "two", "few", "many"] as const;
 const text = fc.stringMatching(/^[a-z# ]{0,10}$/);
 const forms = fc.record(
   { other: text, zero: text, one: text, two: text, few: text, many: text },
@@ -37,10 +36,15 @@ test("`plural(n, 'en-US', { one: '# recipe', other: '# recipes' })` is `1 recipe
       forms,
       (n, l, fs) => {
         const cat = new Intl.PluralRules(l).select(n);
-        const chosen =
-          cat === "other"
-            ? fs.other
-            : ((KEYS.find((k) => k === cat) ? fs[cat as (typeof KEYS)[number]] : undefined) ?? fs.other);
+        const byCategory: Record<Intl.LDMLPluralRule, string | undefined> = {
+          zero: fs.zero,
+          one: fs.one,
+          two: fs.two,
+          few: fs.few,
+          many: fs.many,
+          other: fs.other,
+        };
+        const chosen = byCategory[cat] ?? fs.other;
         const expected = chosen.split("#").join(new Intl.NumberFormat(l).format(n));
         expect(plural(n, l, fs)).toBe(expected);
       },

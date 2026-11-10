@@ -36,14 +36,14 @@ test("For every `Locale`, style and generated value, `formatDate` and `formatIns
       fc.constantFrom(...STYLES),
       (d, i, zone, l, style) => {
         const dateExpected = new Intl.DateTimeFormat(l, { dateStyle: style, timeZone: "UTC" }).format(
-          new Date(`${d}T00:00:00.000Z`),
+          Date.parse(`${d}T00:00:00.000Z`),
         );
         expect(formatDate(d, l, style)).toBe(dateExpected);
         const instantExpected = new Intl.DateTimeFormat(l, {
           dateStyle: style,
           timeStyle: style,
           timeZone: zone,
-        }).format(new Date(i));
+        }).format(Date.parse(i));
         expect(formatInstant(i, l, zone, style)).toBe(instantExpected);
       },
     ),

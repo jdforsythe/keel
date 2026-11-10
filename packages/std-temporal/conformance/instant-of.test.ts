@@ -7,6 +7,26 @@ import { expect, test } from "vitest";
 const MIN_MS = -62135596800000; // 0001-01-01T00:00:00.000Z
 const MAX_MS = 253402300799999; // 9999-12-31T23:59:59.999Z
 
+const PARTS = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
+  calendar: "iso8601",
+  numberingSystem: "latn",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  fractionalSecondDigits: 3,
+  hourCycle: "h23",
+});
+
+function isoOf(ms: number): string {
+  const p: Record<string, string> = {};
+  for (const part of PARTS.formatToParts(ms)) p[part.type] = part.value;
+  return `${(p.year ?? "").padStart(4, "0")}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}.${p.fractionalSecond}Z`;
+}
+
 test("For every generated in-range integer `ms`, `epochMs` of `instantOf(ms)`'s value is `ms` and `instantOf(ms + 0.5)` gives the same instant; `instantOf(253402300800000)` is `err` `temporal.outOfRange`.", () => {
   fc.assert(
     fc.property(fc.integer({ min: MIN_MS, max: MAX_MS }), (ms) => {
@@ -14,7 +34,7 @@ test("For every generated in-range integer `ms`, `epochMs` of `instantOf(ms)`'s 
       expect(a.ok).toBe(true);
       if (!a.ok) return;
       expect(epochMs(a.value)).toBe(ms);
-      expect(a.value).toBe(new Date(ms).toISOString());
+      expect(a.value).toBe(isoOf(ms));
       const b = instantOf(ms + 0.5);
       expect(b.ok).toBe(true);
       if (b.ok) expect(b.value).toBe(a.value);
