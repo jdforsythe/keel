@@ -9,7 +9,7 @@
 
 ## Steps
 1. [x] Three lane agents in parallel (launched 2026-11-10; A sonnet, B and C opus); each reports files touched, decisions, unfinished items.
-2. [ ] Root `pnpm check`, `pnpm test`, `pnpm build`; ledger; budgets; unsafe 6.
+2. [x] Root `pnpm check`, `pnpm test`, `pnpm build`; ledger; budgets; unsafe 6.
 3. [ ] Reviewer + red-team over the batch diff from 88e6479 (includes 0241); findings to `tasks/BACKLOG.md`; in-batch fixes.
 4. [ ] Commit per lane (`rfc:NNNN` where conformance changed); push; backlog lines; `/handoff`.
 
@@ -21,10 +21,11 @@
 - D5 (USER DECISIONS from lane C, not built): per-route titles (recommended: optional `title` on the route definition, string or `(props) => string`, rendered `<title>{title} · {deployable}</title>`; alternative: one `title` per deployable in `topology.ts`); custom icon or extra head links (recommended: none, an app replaces `public/keel-mark.svg`); serving all of `public/` in production (reverses the rule that only `assets/` is served).
 - D6 (budgets, WORKFLOW default 7): `@keel/compiler` 26 kB -> 26.5 kB (26,957 B: the shared package resolver and the fragment reader of rfc:0077); `@keel/server` 14 kB -> 14.5 kB (14,367 B: the document head of rfc:0078).
 - D7: `check()` passes `root` (the project's own directory) to `routeLiterals`. The std.sessions spec does not describe the action's lookup, so lane A's proposed sentences stay in the package README.
+- D8 (reviewer, changes requested; to fix in-batch at 056878d+): R1 major `packages/std-sessions/src/internal/issueFor.ts:22` matches the marker anywhere in the body, and session-derived text sits below it: match the first line only, test a marker inside the fenced part. R2 `issueApi.ts:19` `state=all` reaches the 50-page bound in time and then fails E1056 for good: bound it newest first or document it. R3 `packages/compiler/src/internal/entryOf.ts:50` an `exports` target can leave the package (`../../x`); a fragment's relative guard import is unbounded too: require the real path inside the package's real path, test escape and symlink. R4 `routeLiterals.ts:~345` W1005 text carries an absolute fragment path; `${m[1]}` is a redundant template. R5 k.server trims: restore "concurrently"; "the route's `errorElement`" and "no stack" were weakened. R8 server is 31 B over 14 kB: trim in `loadAssets` and keep 14 kB; the compiler re-base stands. R9 no test covers `check()` passing `root`: add a nested-project test.
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger 0 lowered, 0 uncovered; unsafe 6
 - [ ] reviewer approved; red-team findings filed
 
 ## Next action
-Step 2: root `pnpm check`, `pnpm test`, `pnpm build`, ledger; then step 3, reviewer and red-team over `git diff 88e6479` plus the working tree.
+Step 3: wait for the red-team report (findings come back to the orchestrator, which files them), then fix D8 plus any high or medium red-team finding through lane agents, rerun root check, test, build and ledger, commit, push, flip the backlog lines, `/handoff`.
