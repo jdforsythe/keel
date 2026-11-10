@@ -13,10 +13,16 @@
 ## Decisions
 - D1 (user, 2026-11-10): the program moves on to S2; S1 leftovers and their red-team lines wait in the backlog and are folded into a later lane that touches the same package.
 
+- D2 (user, 2026-11-10): message catalogs (translated page text) are in S2. Needs a second design pass.
+- D3 (user, 2026-11-10): golden-2 is migrated for the exit proof (price and added-on date per recipe, eval task updated).
+- D4 (user, 2026-11-10): `lang` is allowed on every k.ui base element.
+- D5 (open, user): how the locale is carried: path param `/:locale/...` or `?locale=`. The user asked for pros and cons; working assumption path param until answered.
+- Note: two design agents ran (the one from before the context clear was still alive). Two drafts exist: `docs/rfc/0079-s2-values.md` (path param, `s.format`, E1758, K4 router, no ctx capability) and `docs/rfc/0079-s2-values-temporal-text-i18n.md` (`?locale=`, `s.refine`/`Refined`, E1601 widened, `i18n(ctx)` capability, `toDecimal` replaces `formatMoney`). A reconcile pass merges them into `0079-s2-values.md` with D2-D4 and the catalog design; the second file is then removed.
+
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger 0 lowered, 0 uncovered; unsafe unchanged or justified
 - [ ] reviewer approved; red-team findings filed
 - [ ] `pnpm eval` golden-2: prices and dates in 3 locales
 
 ## Next action
-Step 2: the RFC is written and committed as draft. Its four open questions are with the user (RFC "Open questions": locale as a path param `/:locale/...`; message catalogs out of S2; golden-2 migration; `lang` on every base element; the design agent recommends yes, no, yes, yes). On the answers: record them as D2+, set the RFC status to accepted, write the ADR numbers, then the orchestrator prep in RFC "Lanes" (create the three packages, `tooling/deps.json` order, `pnpm install`, spec files), then step 3 (conformance-writers per lane). Ride-along candidates: 0292 (golden-2 lane), 0306 and 0296 (kernel lane).
+Step 2: a reconcile design agent (opus) is merging the two drafts into `docs/rfc/0079-s2-values.md` and adding message catalogs (D2). If no agent is running on a fresh start, launch it again. On its report: get D5 from the user if still open, `git rm` the second draft, set the RFC accepted, then the orchestrator prep in RFC "Lanes", then step 3.
