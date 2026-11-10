@@ -1,3 +1,4 @@
+import type { Format } from "./Format.ts";
 import type { Id } from "./Id.ts";
 import type { Infer } from "./Infer.ts";
 import type { JsonValue } from "./JsonValue.ts";
@@ -7,9 +8,11 @@ import type { Result } from "./Result.ts";
 import type { Schema } from "./Schema.ts";
 import type { Secret } from "./Secret.ts";
 import type { StringInput } from "./StringInput.ts";
+import { attempt } from "./attempt.ts";
 import { err } from "./err.ts";
 import type { Node } from "./internal/Node.ts";
 import { clip } from "./internal/clip.ts";
+import { formats } from "./internal/formats.ts";
 import { fromStrings } from "./internal/fromStrings.ts";
 import { invalid } from "./internal/invalid.ts";
 import { make } from "./internal/make.ts";
@@ -27,6 +30,37 @@ type ErrorSchema<C extends string, D> = Schema<KeelError<C, D>> & {
   make(data: D, message?: string): KeelError<C, D>;
 };
 type Variant<K extends string> = Schema<{ readonly [P in K]: string | number | boolean }>;
+
+type FormatOptions<T, F> = {
+  /** Pure predicate over a value `base` accepts; false or a throw fails with rule `format`. */
+  readonly check: (value: T) => boolean;
+  /** The generator: `gen(from)` mapped through `map`; values `parse` refuses are dropped. */
+  readonly gen: { readonly from: Schema<F, boolean>; readonly map: (value: F) => T };
+};
+
+/** `base` narrowed by `check` and branded `name` (k.schema Format types). */
+function format<const N extends string, T, F>(
+  name: N,
+  base: Schema<T>,
+  opts: FormatOptions<T, F>,
+): Schema<Format<T, N>> {
+  const node: Node = { kind: "format", name, base: base.node };
+  const { from } = opts.gen;
+  formats.set(node, {
+    test: (x) => {
+      const value = base.parse(x);
+      if (!value.ok) return false;
+      const verdict = attempt(() => opts.check(value.value));
+      return verdict.ok && verdict.value === true;
+    },
+    from: from.node,
+    map: (x) => {
+      const seed = from.parse(x);
+      return seed.ok ? opts.gen.map(seed.value) : x;
+    },
+  });
+  return make(node, false);
+}
 
 type NumberBounds = { readonly min?: number; readonly max?: number };
 
@@ -71,8 +105,15 @@ export const s = {
   int: (opts: NumberBounds = {}): Schema<number> => make({ kind: "int", ...bounds("int", opts) }, false),
   boolean: (): Schema<boolean> => make({ kind: "boolean" }, false),
   literal: <const L extends string | number | boolean>(value: L): Schema<L> => make({ kind: "literal", value }, false),
-  enum: <const E extends readonly [string, ...string[]]>(values: E): Schema<E[number]> =>
-    make({ kind: "enum", values }, false),
+  enum: <const E extends readonly [string, ...string[]]>(
+    values: E,
+    opts: { readonly pathDefault?: string } = {},
+  ): Schema<E[number]> => {
+    const d = opts.pathDefault;
+    if (d === undefined) return make({ kind: "enum", values }, false);
+    if (!values.includes(d)) throw new Error(`enum pathDefault ${clip(d)} is not one of its values`);
+    return make({ kind: "enum", values, pathDefault: d }, false);
+  },
   json: (): Schema<JsonValue> => make({ kind: "json" }, false),
   secret: <S extends Schema<unknown>>(inner: S): Schema<Secret<Infer<S>>> =>
     make({ kind: "secret", inner: inner.node }, false),
@@ -97,6 +138,7 @@ export const s = {
   record: <S extends Schema<unknown>>(value: S): Schema<Record<string, Infer<S>>> =>
     make({ kind: "record", value: value.node }, false),
   union,
+  format,
   error: <C extends string, D extends Schema<unknown>>(code: C, data: D): ErrorSchema<C, Infer<D>> => {
     const node: Node = {
       kind: "object",

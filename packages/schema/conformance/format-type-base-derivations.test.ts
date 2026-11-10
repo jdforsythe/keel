@@ -19,7 +19,7 @@ const fixture = () => {
 };
 
 describe("k.schema format types: derivations", () => {
-  test.skip("`encode` is `base`'s: a format value encodes as the value `base` encodes", () => {
+  test("`encode` is `base`'s: a format value encodes as the value `base` encodes", () => {
     const { Even, Form } = fixture();
     fc.assert(
       fc.property(gen(Even), (v) => {
@@ -29,6 +29,7 @@ describe("k.schema format types: derivations", () => {
     );
   });
 
+  // Skipped (rfc:0079 kernel lane): asserts decodeStrings returns ok for a value `check` refuses; decodeStrings is coerce-then-parse, so it fails with rule `format`.
   test.skip("`decodeStrings` is `base`'s: a numeric string decodes as the int `base` decodes, then `check` applies", () => {
     const { Even, Form } = fixture();
     fc.assert(
@@ -45,6 +46,7 @@ describe("k.schema format types: derivations", () => {
     );
   });
 
+  // Skipped (rfc:0079 kernel lane): `expect(v % 2).toBe(0)` fails for negative even v (-0 is not Object.is 0); test defect.
   test.skip("`gen` maps `gen(from)` through `map`, keeping values `parse` accepts", () => {
     const { Even, Form } = fixture();
     fc.assert(
@@ -56,7 +58,7 @@ describe("k.schema format types: derivations", () => {
     );
   });
 
-  test.skip("`doc()` is `name`", () => {
+  test("`doc()` is `name`", () => {
     const { Even, Form } = fixture();
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z][a-z0-9.-]{0,11}$/), (name) => {

@@ -1,5 +1,6 @@
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
+import { formatInApp } from "../rules/formatInApp.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
@@ -35,6 +36,7 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const KERNEL_RULES: readonly RuleDef[] = [
   schemaInSchemaFile,
   revealInServerFile,
+  formatInApp,
   pureTransaction,
   noSecretInState,
   noNetFetchInApp,

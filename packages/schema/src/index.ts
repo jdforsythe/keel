@@ -1,4 +1,5 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
+export type { Format } from "./Format.ts";
 export type { Id } from "./Id.ts";
 export type { Infer } from "./Infer.ts";
 export type { JsonValue } from "./JsonValue.ts";

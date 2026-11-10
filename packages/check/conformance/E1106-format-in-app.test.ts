@@ -12,7 +12,7 @@ const CLEAN = `import { s } from '@keel/schema'\nexport const Count = s.int({ mi
 const codes = (src: string, path: string): string[] =>
   check(one(src, path), { types: false }).diagnostics.map((d) => d.code);
 
-test.skip("E1106: `s.format` in an app file reports E1106", () => {
+test("E1106: `s.format` in an app file reports E1106", () => {
   fc.assert(
     fc.property(ident, (name) => {
       expect(codes(BAD(name), "modules/app/Even.schema.ts").filter((c) => c === "E1106")).toEqual(["E1106"]);
@@ -21,7 +21,7 @@ test.skip("E1106: `s.format` in an app file reports E1106", () => {
   );
 });
 
-test.skip("E1106: `s.format` through a renamed `s` import in an app file reports E1106", () => {
+test("E1106: `s.format` through a renamed `s` import in an app file reports E1106", () => {
   const src = BAD("even")
     .replace("{ s }", "{ s as schema }")
     .replace("s.format", "schema.format")
@@ -29,11 +29,11 @@ test.skip("E1106: `s.format` through a renamed `s` import in an app file reports
   expect(codes(src, "modules/app/Even.schema.ts")).toContain("E1106");
 });
 
-test.skip("E1106: an app file that declares schemas without `s.format` reports no E1106", () => {
+test("E1106: an app file that declares schemas without `s.format` reports no E1106", () => {
   expect(codes(CLEAN, "modules/app/Count.schema.ts")).not.toContain("E1106");
 });
 
-test.skip("E1106: a triggering fixture reports exactly that code with no fix", () => {
+test("E1106: a triggering fixture reports exactly that code with no fix", () => {
   const ds = check(one(BAD("even"), "modules/app/Even.schema.ts"), { types: false }).diagnostics.filter(
     (d) => d.code === "E1106",
   );

@@ -9,7 +9,7 @@ const mk = () => ({
 });
 
 describe("k.schema format types: brand", () => {
-  test.skip("the inferred type is `Format<number, 'even'>`, not assignable across names or from `number`", () => {
+  test("the inferred type is `Format<number, 'even'>`, not assignable across names or from `number`", () => {
     const { Even, Odd } = mk();
     expectTypeOf<Infer<typeof Even>>().toEqualTypeOf<Format<number, "even">>();
     expectTypeOf<Infer<typeof Even>>().not.toEqualTypeOf<Infer<typeof Odd>>();

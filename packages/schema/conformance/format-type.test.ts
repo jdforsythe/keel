@@ -21,7 +21,7 @@ describe("k.schema format types", () => {
     const Even = mkEven();
     return { Even, Holder: mkHolder(Even) };
   };
-  test.skip("For a fixture format type, every generated value parses and round-trips", () => {
+  test("For a fixture format type, every generated value parses and round-trips", () => {
     const { Even, Holder } = fixture();
     fc.assert(
       fc.property(gen(Even), (v) => {
@@ -43,7 +43,7 @@ describe("k.schema format types", () => {
     );
   });
 
-  test.skip("a value `base` accepts and `check` refuses fails with rule `format` at its path", () => {
+  test("a value `base` accepts and `check` refuses fails with rule `format` at its path", () => {
     const { Even, Holder } = fixture();
     fc.assert(
       fc.property(fc.integer({ min: -1000, max: 1000 }), (n) => {
@@ -59,7 +59,7 @@ describe("k.schema format types", () => {
     );
   });
 
-  test.skip("`doc()` is its name", () => {
+  test("`doc()` is its name", () => {
     const { Even, Holder } = fixture();
     expect(Even.doc()).toBe("even");
     expect(Holder.doc()).toContain("even");

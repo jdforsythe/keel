@@ -16,5 +16,7 @@ export interface Schema<T, O extends boolean = false> {
   encode(value: unknown): JsonValue;
   doc(): string;
   optional(): Schema<T, true>;
+  /** `JSON.stringify(schema)` writes its node; a format node keeps its name, never its predicate or generator. */
+  toJSON(): Node;
   nullable(): Schema<T | null, O>;
 }

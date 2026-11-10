@@ -5,7 +5,7 @@ export type Node =
   | { readonly kind: "int"; readonly min?: number; readonly max?: number }
   | { readonly kind: "boolean" }
   | { readonly kind: "literal"; readonly value: string | number | boolean }
-  | { readonly kind: "enum"; readonly values: readonly string[] }
+  | { readonly kind: "enum"; readonly values: readonly string[]; readonly pathDefault?: string }
   | { readonly kind: "id"; readonly brand: string }
   | { readonly kind: "json" }
   | { readonly kind: "object"; readonly fields: Readonly<Record<string, Node>>; readonly closed?: boolean }
@@ -15,4 +15,5 @@ export type Node =
   | { readonly kind: "anyOf"; readonly members: readonly Node[] }
   | { readonly kind: "nullable"; readonly inner: Node }
   | { readonly kind: "optional"; readonly inner: Node }
-  | { readonly kind: "secret"; readonly inner: Node };
+  | { readonly kind: "secret"; readonly inner: Node }
+  | { readonly kind: "format"; readonly name: string; readonly base: Node };

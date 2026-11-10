@@ -21,6 +21,8 @@ export function toJsonSchema(node: SchemaNode): JsonSchema {
   switch (node.kind) {
     case "secret":
       return toJsonSchema(node.inner);
+    case "format":
+      return { ...toJsonSchema(node.base), format: node.name };
     case "string":
       // Residual mismatch: parse counts UTF-16 units, JSON Schema counts code points. The two agree for
       // strings without astral characters (surrogate pairs); parse stays authoritative.

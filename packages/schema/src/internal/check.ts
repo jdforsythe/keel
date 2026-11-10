@@ -1,6 +1,7 @@
 import { Secret } from "../Secret.ts";
 import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
+import { formats } from "./formats.ts";
 import { hasProtoKey } from "./hasProtoKey.ts";
 import { isJson } from "./isJson.ts";
 import { isRecord } from "./isRecord.ts";
@@ -24,6 +25,12 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
       else if (x === Secret.marker) issues.push({ path, rule: "secret-missing" });
       else check(node.inner, x, path, issues);
       break;
+    case "format": {
+      const before = issues.length;
+      check(node.base, x, path, issues);
+      if (issues.length === before && formats.get(node)?.test(x) === false) issues.push({ path, rule: "format" });
+      break;
+    }
     case "json":
       if (!isJson(x, new Set())) issues.push({ path, rule: "type" });
       break;

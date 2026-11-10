@@ -282,6 +282,7 @@ const NO_FIX = [
   "E1004", // moving server code is a design change
   "E1104", // renaming the file would break imports in other files
   "E1105", // moving to a .server file is a design change
+  "E1106", // which stdlib format type to use is the author's choice
   "E1153", // which dependency edge to cut is a design choice
   "E1158", // adding the dep or dropping the entry is the author's choice
   "E1204", // the Case per resource state is the author's

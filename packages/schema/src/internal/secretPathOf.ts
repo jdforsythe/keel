@@ -7,6 +7,8 @@ const walk = (node: Node, path: readonly string[]): readonly string[] | null => 
     case "optional":
     case "nullable":
       return walk(node.inner, path);
+    case "format":
+      return walk(node.base, path);
     case "array":
       return walk(node.item, path);
     case "record":

@@ -10,7 +10,11 @@ const under = (entries: Entries, key: string): string[] =>
   [...entries.keys()].filter((k) => k.startsWith(`${key}.`) || k === key || k === `${key}[]`);
 const join = (prefix: string, name: string): string => (prefix === "" ? name : `${prefix}.${name}`);
 const unwrap = (node: Node): Node =>
-  node.kind === "optional" || node.kind === "nullable" || node.kind === "secret" ? unwrap(node.inner) : node;
+  node.kind === "optional" || node.kind === "nullable" || node.kind === "secret"
+    ? unwrap(node.inner)
+    : node.kind === "format"
+      ? unwrap(node.base)
+      : node;
 
 /**
  * Build the candidate value for `node` from string entries stored under `key`; `undefined` means absent.
@@ -25,6 +29,7 @@ export function fromStrings(node: Node, key: string, entries: Entries): unknown 
     );
   if (key === "" && node.kind === "object") return fieldsOf(node.fields);
   if (node.kind === "secret") return fromStrings(node.inner, key, entries);
+  if (node.kind === "format") return fromStrings(node.base, key, entries);
   if (node.kind === "anyOf") {
     let candidate: unknown;
     for (const member of node.members) {

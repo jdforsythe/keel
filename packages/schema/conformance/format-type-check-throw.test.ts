@@ -7,7 +7,7 @@ import { describe, expect, test } from "vitest";
 const SEED = 1337;
 
 describe("k.schema format types: check", () => {
-  test.skip("a `check` that throws is false: parse fails with rule `format` and never throws", () => {
+  test("a `check` that throws is false: parse fails with rule `format` and never throws", () => {
     const Boom = s.format("boom", s.string(), {
       check: () => {
         throw new Error("check blew up");
@@ -27,7 +27,7 @@ describe("k.schema format types: check", () => {
     );
   });
 
-  test.skip("`check` narrows `base`: a value is accepted exactly when `base` accepts it and `check` returns true", () => {
+  test("`check` narrows `base`: a value is accepted exactly when `base` accepts it and `check` returns true", () => {
     const Short = s.format("short", s.string({ min: 1 }), {
       check: (v) => v.length <= 3,
       gen: { from: s.string({ min: 1, max: 3 }), map: (x) => x },

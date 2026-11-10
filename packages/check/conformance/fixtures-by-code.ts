@@ -110,6 +110,16 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("modules/app/x.server.ts", `import { reveal } from '@keel/schema'\nexport const x = reveal\n`),
     ],
   },
+  E1106: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "modules/app/Even.schema.ts",
+        `${SCHEMA}export const Even = s.format('even', s.int(), { check: (v) => v % 2 === 0, gen: { from: s.int(), map: (n) => n * 2 } })\n`,
+      ),
+    ],
+    clean: [f("modules/app/Count.schema.ts", `${SCHEMA}export const Count = s.int({ min: 0 })\n`)],
+  },
   E1005: {
     bad: [
       f(".keel/ids.json", '{"data":{"C.0":{"col":1}},"hash":"fnv1a:00000000"}\n'),

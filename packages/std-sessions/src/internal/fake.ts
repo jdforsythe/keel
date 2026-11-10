@@ -1,4 +1,5 @@
 import type { JsonValue } from "@keel/schema";
+import { sampleFormat } from "@keel/schema/internal";
 import type { TypeNode } from "./TypeNode.ts";
 
 const LETTERS = "abcdefghijklmnopqrstuvwxyz";
@@ -34,6 +35,8 @@ export function fake(node: TypeNode, rand: () => number): JsonValue {
     case "optional":
     case "secret":
       return fake(node.inner, rand);
+    case "format":
+      return sampleFormat(node, (from) => fake(from, rand)) ?? fake(node.base, rand);
     case "array":
       return [];
     case "record":

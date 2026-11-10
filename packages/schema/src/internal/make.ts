@@ -35,6 +35,7 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
       return toJson(node, value);
     },
     doc: () => docOf(node),
+    toJSON: () => node,
     optional: () => make<T, true>(node.kind === "optional" ? node : { kind: "optional", inner: node }, true),
     nullable() {
       const wrap = (n: Node): Node => (n.kind === "nullable" ? n : { kind: "nullable", inner: n });

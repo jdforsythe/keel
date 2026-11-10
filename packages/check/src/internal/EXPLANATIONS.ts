@@ -116,6 +116,13 @@ const ROWS: readonly Row[] = [
     "k.schema",
   ],
   [
+    "E1106",
+    "s.format in app code",
+    "Format types are the stdlib's: each brings a generator the stdlib tests.",
+    "s.format('day', s.string(), ...) -> PlainDate from @keel/std-temporal",
+    "k.schema",
+  ],
+  [
     "E1151",
     "import of a non-public export of another module",
     "",

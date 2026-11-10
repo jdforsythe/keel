@@ -10,7 +10,7 @@ const Plain = s.enum(values);
 const Prefixed = s.enum(values, { pathDefault: "en-US" });
 
 describe("k.schema enum pathDefault", () => {
-  test.skip("`parse`, `encode` and `gen` of an enum ignore `pathDefault`", () => {
+  test("`parse`, `encode` and `gen` of an enum ignore `pathDefault`", () => {
     fc.assert(
       fc.property(fc.oneof(fc.constantFrom(...values), fc.string(), fc.integer()), (v) => {
         const a = Plain.parse(v);

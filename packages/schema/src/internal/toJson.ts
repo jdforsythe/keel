@@ -9,6 +9,7 @@ import { variantOf } from "./variantOf.ts";
 /** Copy an already-validated value into plain JSON, keeping only declared keys. Absent stays absent. */
 export function toJson(node: Node, value: unknown): JsonValue {
   if (node.kind === "secret") return Secret.marker;
+  if (node.kind === "format") return toJson(node.base, value);
   const member = node.kind === "anyOf" ? node.members.find((m) => fits(m, value)) : undefined;
   if (member !== undefined) return toJson(member, value);
   if (node.kind === "json") return copyJson(value);

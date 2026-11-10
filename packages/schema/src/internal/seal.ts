@@ -15,6 +15,8 @@ export function seal(node: Node, x: unknown): unknown {
     case "optional":
     case "nullable":
       return x === null ? x : seal(node.inner, x);
+    case "format":
+      return seal(node.base, x);
     case "array":
       return Array.isArray(x) ? x.map((v: unknown) => seal(node.item, v)) : x;
     case "record":

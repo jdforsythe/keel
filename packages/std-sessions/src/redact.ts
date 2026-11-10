@@ -64,6 +64,8 @@ export function redact(schema: Schema<unknown, boolean>, value: JsonValue, optio
         return walk(node, v, at, false);
       case "string":
         return hide(v, at);
+      case "format":
+        return walk(node.base, v, at, true);
       case "array":
         return Array.isArray(v) ? v.map((x, i) => walk(node.item, x, [...at, String(i)], true)) : v;
       case "record":

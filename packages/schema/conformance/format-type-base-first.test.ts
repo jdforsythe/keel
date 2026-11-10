@@ -7,7 +7,7 @@ import { describe, expect, test } from "vitest";
 const SEED = 1337;
 
 describe("k.schema format types: parse order", () => {
-  test.skip("`parse` runs `base` first: a value `base` refuses fails with base's rule and `check` is not called", () => {
+  test("`parse` runs `base` first: a value `base` refuses fails with base's rule and `check` is not called", () => {
     let calls = 0;
     const Small = s.format("small", s.int({ min: 0, max: 9 }), {
       check: () => {
@@ -32,7 +32,7 @@ describe("k.schema format types: parse order", () => {
     );
   });
 
-  test.skip("`check` runs on a value `base` accepts, and a refusal is the single issue `format`", () => {
+  test("`check` runs on a value `base` accepts, and a refusal is the single issue `format`", () => {
     const Even = s.format("even", s.int(), {
       check: (v) => v % 2 === 0,
       gen: { from: s.int({ min: -50, max: 50 }), map: (n) => n * 2 },

@@ -5,7 +5,7 @@ import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 
 describe("k.schema format types: node", () => {
-  test.skip("a serialized format node keeps `kind` and `name` and its `base`, and carries neither `check` nor `gen`", () => {
+  test("a serialized format node keeps `kind` and `name` and its `base`, and carries neither `check` nor `gen`", () => {
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z][a-z0-9.-]{0,11}$/), (name) => {
         const F = s.format(name, s.string(), { check: () => true, gen: { from: s.string(), map: (x) => x } });
