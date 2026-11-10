@@ -18,6 +18,10 @@
 - D4 (user, 2026-11-10): `lang` is allowed on every k.ui base element.
 - D5 (user, 2026-11-10): the locale is a path param, `/:locale/...`; `?locale=` goes under Alternatives.
 - D6 (user, 2026-11-10): an app may opt in to an unprefixed default locale (`/recipes` is the default, `/de-DE/recipes` is de-DE) so adding a second locale keeps existing URLs; prefixed everywhere stays the default; `params.locale` stays typed and required in links either way. The declaration shape comes from the reconcile pass and goes back to the user.
+- D7 (user, 2026-11-10): `s.enum(values, { pathDefault })` accepted; the scaffold template born with the locale param and an unprefixed default is a separate task after this batch.
+- D8 (user, 2026-11-10): `@keel/std-messages` set shape accepted, E2406 (literal copy in components) an error.
+- D9 (user, 2026-11-10): `form(schema, { issueText })` accepted.
+- D10 (user, 2026-11-10): per-route `<title>` and `<html lang>` are in S2 (not a later RFC); k.router or k.server is split to make room.
 - Note: two design agents ran (the one from before the context clear was still alive). Two drafts exist: `docs/rfc/0079-s2-values.md` (path param, `s.format`, E1758, K4 router, no ctx capability) and `docs/rfc/0079-s2-values-temporal-text-i18n.md` (`?locale=`, `s.refine`/`Refined`, E1601 widened, `i18n(ctx)` capability, `toDecimal` replaces `formatMoney`). A reconcile pass merges them into `0079-s2-values.md` with D2-D4 and the catalog design; the second file is then removed.
 
 ## Verification
@@ -26,4 +30,4 @@
 - [ ] `pnpm eval` golden-2: prices and dates in 3 locales
 
 ## Next action
-Step 2: the reconciled RFC `docs/rfc/0079-s2-values.md` is committed (draft B removed). It adds `@keel/std-messages`, new section k.prefix (K6, `s.enum(values, { pathDefault })`, E1509, 308 to canonical), ADRs 0068-0071. Four open questions are with the user: (1) `pathDefault` shape, scaffold born with the locale param as a later task; (2) message set shape incl. the literal-copy rule E2406; (3) `form(schema, { issueText })`; (4) per-route title and `<html lang>` as a separate RFC after S2. Recommendation on all four: accept. On the answers: record D7+, set the RFC accepted, write ADRs 0068-0071, then the orchestrator prep listed in the RFC (spec files, skeletons, deps.json, budgets.json re-base router 9 kB and check 34.5 kB, `pnpm install`), then step 3. Risk to watch: de-DE and ja-JP copy in the eval table is the design agent's wording.
+Step 2: the design agent is amending RFC 0079 for D10 (route title + `<html lang>`, k.router/k.server split), setting it accepted, and writing ADRs 0068-0072. On its report: commit `rfc:0079`, file the scaffold task (D7) in the backlog, then the orchestrator prep in the RFC (spec files, skeletons, deps.json, budgets.json re-bases, `pnpm install`), then step 3.
