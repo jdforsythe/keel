@@ -8,8 +8,8 @@ export interface HarnessSetup {
   readonly ctx: Ctx;
   readonly seeded: readonly (readonly [Store<unknown>, Snapshot<unknown>])[];
   readonly a11y?: Readonly<Record<string, A11yEntry>>;
-  /** True while work the DOM does not show is in flight (a router navigation). */
-  readonly busy?: () => boolean;
+  /** The id of work the DOM does not show while it is in flight (a router navigation's route), else null. */
+  readonly busy?: () => string | null;
   /** Extra teardown run by `dispose` after unmounting (a router's `dispose`). */
   readonly teardown?: () => void;
 }

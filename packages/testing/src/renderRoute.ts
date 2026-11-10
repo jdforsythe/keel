@@ -32,7 +32,10 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
     for (const [st, snap] of seeded) st.restore(snap);
     throw error;
   }
-  const busy = (): boolean => router.route.get().pending;
+  const busy = (): string | null => {
+    const r = router.route.get();
+    return r.pending ? String(r.id) : null;
+  };
   const a11y = options.artifacts?.["a11y.json"];
   const { harness, check } = openHarness({
     view: () => router.App(),
