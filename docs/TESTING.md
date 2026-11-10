@@ -12,4 +12,4 @@
 
 **Determinism.** All kernel tests run under a seeded clock and PRNG via `ctx`. A test reading wall time fails lint.
 
-verified: 8cf77e6d77c865912ea3825d0f44447752a22cd0
+verified: 0c2c939f083f76f52b69d660f299cad9512989fe
