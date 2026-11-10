@@ -3,8 +3,8 @@
 **Spec:** std.jobs, std.schedules, std.streams (new, from the design RFC) · k.server, k.module (kernel touch) · **Gate:** S3 exit: split topology without source changes (eval) · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10), design only until the S2 batch is pushed
 
 ## Shape (tasks/PROGRAM.md)
-1. [x] Design RFC 0080 `docs/rfc/0080-s3-server-depth.md` (draft committed cb1f4d4); reconcile with 0081 and ADRs 0073-0079 in progress.
-2. [ ] Orchestrator accepts the RFC; open questions to the user.
+1. [x] Design RFC 0080 `docs/rfc/0080-s3-server-depth.md` accepted (9611941; ADR-0073 to ADR-0079; std-streams dropped: live loaders in k.server are the one stream transport, std.channels builds on them).
+2. [x] Orchestrator accepts the RFC; user answered D2-D5.
 3. [ ] Conformance first, per lane, after the S2 push (S2 and S3 both touch server, check, cli, scaffold).
 4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
 5. [ ] Exit proof eval.
@@ -21,4 +21,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
 
 ## Next action
-Step 1b: the design agent is reconciling 0080 with 0081's transport requirement, setting it accepted, writing ADRs 0073-0079. On its report: commit `rfc:0080 accepted`, pass any send-backs to the S4 agent. Implementation (step 3) waits for the S2 push.
+Waits for the S2 push (tasks/0307-s2-values/PLAN.md step 5). Then: orchestrator prep per RFC 0080 "Lanes" (spec files for k.topology, k.compat, std.jobs, std.schedules; k.server/k.services/k.module/k.scaffold edits; package skeletons std-jobs, std-schedules; deps.json; budgets.json re-bases check 36.5 kB, server 16 kB; `pnpm install`), then conformance-writers per lane, then the implementation batch (kernel + jobs-schedules, deploy, compat, golden lanes).
