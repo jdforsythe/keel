@@ -1,5 +1,5 @@
 # std.temporal: Dates, instants and durations
-status: proposed
+status: conformance-covered
 
 **Extension point.** Schema type registry (k.schema `s.register`). Importing `@keel/std-temporal` registers `temporal.Instant`, `temporal.PlainDate`, `temporal.TimeZone` and `temporal.Duration`, format types (k.schema `s.format`) over `s.string()`: one canonical ISO 8601 text per value, so `encode` is the identity and equal values are equal strings. It depends on `@keel/std-i18n` for `Locale`.
 

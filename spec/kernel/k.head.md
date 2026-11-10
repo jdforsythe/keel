@@ -1,5 +1,5 @@
 # k.head: Document head
-status: proposed
+status: conformance-covered
 
 **Purpose.** Every document names its page and its language. The server writes both, and the client router keeps them current on navigation without re-rendering text.
 

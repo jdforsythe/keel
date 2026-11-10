@@ -1,5 +1,5 @@
 # std.messages: Message sets
-status: proposed
+status: conformance-covered
 
 **Extension points.** Schema type registry (k.schema `s.format`; message types are not registered, each depends on its key's params). Check rule registry (k.check `defineRule`): `@keel/std-messages/tools`, which `keel check` imports for a module whose `deps` list the package, registers E2401 to E2406. It depends on `@keel/std-i18n` for `Locale`, `formatNumber` and `plural`.
 
