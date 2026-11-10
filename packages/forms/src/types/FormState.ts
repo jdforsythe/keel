@@ -4,6 +4,7 @@ import type { DeepPartial } from "./DeepPartial.ts";
 import type { Field } from "./Field.ts";
 import type { FieldPath } from "./FieldPath.ts";
 import type { PathValue } from "./PathValue.ts";
+import type { Unbranded } from "./Unbranded.ts";
 
 /** The handle `form(schema)` returns (k.forms). Reads are reactive. */
 export interface FormState<T> {
@@ -13,7 +14,7 @@ export interface FormState<T> {
    */
   field<P extends FieldPath<T> | (string & {})>(
     path: string extends P ? P : P & FieldPath<T>,
-  ): Field<string extends P ? unknown : PathValue<T, P & string>>;
+  ): Field<string extends P ? unknown : Unbranded<PathValue<T, P & string>>>;
   values(): DeepPartial<T>;
   /** Field path -> message. */
   errors(): Readonly<Record<string, string>>;

@@ -12,10 +12,16 @@ type BoxTag = (typeof BOX_TAGS)[number];
 
 /** A structural container. `as` is a closed set of structural tags (default `div`), checked at runtime. */
 export function Box(
-  props: StyleProps & { readonly as?: BoxTag; readonly id?: string; readonly children?: Child | Children | undefined },
+  props: StyleProps & {
+    readonly as?: BoxTag;
+    readonly id?: string /** Written as the `lang` attribute. */;
+    readonly lang?: string;
+    readonly children?: Child | Children | undefined;
+  },
 ): Node {
   return make(tagOf("Box as", BOX_TAGS, props.as, "div"), (el) => {
     if (props.id !== undefined) el.setAttribute("id", props.id);
+    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));
   });

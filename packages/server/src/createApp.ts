@@ -15,7 +15,6 @@ import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
 import { installServerDom } from "./internal/dom/installServerDom.ts";
 import { handle } from "./internal/handle.ts";
-import { headHtml } from "./internal/headHtml.ts";
 import { inspectAllowed } from "./internal/inspectAllowed.ts";
 import { inspectResponse } from "./internal/inspectResponse.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
@@ -111,7 +110,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     keys: await callerSigner(opts.secret),
     secure: opts.secure,
     built,
-    head: headHtml(opts.deployable ?? Object.keys(opts.topology)[0] ?? "", built),
+    name: opts.deployable ?? Object.keys(opts.topology)[0] ?? "",
   };
   const hono = new Hono();
   hono.all("*", async (c) => {

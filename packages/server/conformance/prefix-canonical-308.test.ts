@@ -6,14 +6,14 @@ import { describe, expect, test } from "vitest";
 import { SEED, appFor, get } from "./head-fixtures.ts";
 
 describe("k.prefix canonical URL (server)", () => {
-  test.skip("a GET of /en-US/items/7?q=1 answers 308 with Location: /items/7?q=1", async () => {
+  test("a GET of /en-US/items/7?q=1 answers 308 with Location: /items/7?q=1", async () => {
     const app = await appFor("web");
     const res = await get(app, "/en-US/items/7?q=1");
     expect(res.status).toBe(308);
     expect(res.headers.get("location")).toBe("/items/7?q=1");
   });
 
-  test.skip("for any id and search, /en-US/... answers 308 to the path without the segment, search kept; /de-DE/... does not redirect", async () => {
+  test("for any id and search, /en-US/... answers 308 to the path without the segment, search kept; /de-DE/... does not redirect", async () => {
     const app = await appFor("web");
     await fc.assert(
       fc.asyncProperty(

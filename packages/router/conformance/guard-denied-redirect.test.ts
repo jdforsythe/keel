@@ -58,7 +58,7 @@ describe("k.router guards", () => {
     app.stop();
   });
 
-  it.skip("a guard redirect carries the matched route's same-name params", async () => {
+  it("a guard redirect carries the matched route's same-name params", async () => {
     const Id = s.object({ id: s.string({ min: 1, max: 8 }) });
     const Denied = s.error("keel.denied", s.object({}));
     const page = (): Node => document.createElement("section");
@@ -84,7 +84,7 @@ describe("k.router guards", () => {
     router.dispose();
     host.remove();
   });
-  it.skip("a guard redirect to a route with a param the matched route lacks is E1508 (shown as in guard-redirect-loop-e1508.test.ts: an alert whose text contains E1508)", async () => {
+  it("a guard redirect to a route with a param the matched route lacks is E1508 (shown as in guard-redirect-loop-e1508.test.ts: an alert whose text contains E1508)", async () => {
     const Id = s.object({ id: s.string({ min: 1, max: 8 }) });
     const Denied = s.error("keel.denied", s.object({}));
     const page = (): Node => document.createElement("section");

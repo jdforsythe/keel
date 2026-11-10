@@ -21,7 +21,8 @@ export function Input(
   props: StyleProps & {
     readonly label: string;
     readonly disabled?: boolean | Computed<boolean>;
-    readonly id?: string;
+    readonly id?: string /** Written as the `lang` attribute. */;
+    readonly lang?: string;
     /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
     readonly field?: Field<unknown>;
     readonly name?: string;
@@ -35,6 +36,7 @@ export function Input(
     make("input", (el) => {
       el.setAttribute("type", props.type ?? "text");
       el.setAttribute("id", id);
+      if (props.lang !== undefined) el.setAttribute("lang", props.lang);
       if (props.name !== undefined) el.setAttribute("name", props.name);
       const v = props.value;
       // A reactive value's first value is also the default (rfc:0062); a password never enters the markup.

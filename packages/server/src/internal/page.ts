@@ -1,4 +1,4 @@
-import type { Match } from "@keel/router/internal";
+import { type Match, pageHead } from "@keel/router/internal";
 import { type JsonValue, type KeelError, attempt, err, ok } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
@@ -100,5 +100,9 @@ export async function page(
   }
   const dev = devMessageOf([shown?.error, rendered.value.caught]);
   const final = rendered.value.caught === null ? code : 500;
-  return { response: documentResponse(r, final, rendered.value, extra, dev), route: id, diags };
+  const own = outcomes[chain.length - 1]?.result;
+  const failedHead = loaderError !== null || rendered.value.caught !== null;
+  const routeProps = { params: m.params, search: m.search, data: own?.ok === true ? own.value.value : undefined };
+  const head = pageHead(m.route, m.params, routeProps, failedHead);
+  return { response: documentResponse(r, final, rendered.value, extra, dev, head), route: id, diags };
 }

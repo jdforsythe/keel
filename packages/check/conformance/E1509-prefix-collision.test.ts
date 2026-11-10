@@ -26,19 +26,19 @@ const run = (pd: boolean, extra: string) =>
     { types: false },
   ).diagnostics.filter((d) => d.code === "E1509");
 
-test.skip("Beside `x.show`, each of `/de-DE/about`, `/:slug` and `/items/:id` is E1509", () => {
+test("Beside `x.show`, each of `/de-DE/about`, `/:slug` and `/items/:id` is E1509", () => {
   for (const extra of Object.values(EXTRAS)) expect(run(true, extra).length).toBeGreaterThanOrEqual(1);
 });
 
-test.skip("without `pathDefault` none of `/de-DE/about`, `/:slug` and `/items/:id` is E1509", () => {
+test("without `pathDefault` none of `/de-DE/about`, `/:slug` and `/items/:id` is E1509", () => {
   for (const extra of Object.values(EXTRAS)) expect(run(false, extra)).toEqual([]);
 });
 
-test.skip("E1509: a table of only prefixed routes is clean", () => {
+test("E1509: a table of only prefixed routes is clean", () => {
   expect(run(true, "")).toEqual([]);
 });
 
-test.skip("E1509: the fix applied (prepend `/:p` to the route's `path`) leaves no E1509", () => {
+test("E1509: the fix applied (prepend `/:p` to the route's `path`) leaves no E1509", () => {
   const ds = run(true, EXTRAS["/items/:id"] ?? "");
   expect(ds[0]?.fix).toContain("/:p");
   // Applying the hunk with git apply is covered by fix-applies.test.ts for the other codes; here the fixed source is checked directly.

@@ -4,6 +4,7 @@ import { formatInApp } from "../rules/formatInApp.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
+import { noAmbientLocale } from "../rules/noAmbientLocale.ts";
 import { noCodeFromString } from "../rules/noCodeFromString.ts";
 import { noDetachedScope } from "../rules/noDetachedScope.ts";
 import { noDomGlobal } from "../rules/noDomGlobal.ts";
@@ -50,6 +51,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   oneExport,
   unsafeJustified,
   noUnsafeSyntax,
+  noAmbientLocale,
   noInlineStyle,
   noIntrinsicElement,
   noEagerChild,

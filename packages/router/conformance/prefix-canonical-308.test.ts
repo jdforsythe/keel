@@ -7,7 +7,7 @@ import { describe, expect, test } from "vitest";
 import { RUNS, SEED, itemIds, links, open, prefixed } from "./prefix-fixtures.ts";
 
 describe("k.prefix canonical URL (client)", () => {
-  test.skip("a client navigation to /en-US/items/7 ends at /items/7 with p en-US and adds one history entry", async () => {
+  test("a client navigation to /en-US/items/7 ends at /items/7 with p en-US and adds one history entry", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(itemIds), async (id) => {
         const app = await open(prefixed, "/de-DE");
@@ -22,7 +22,7 @@ describe("k.prefix canonical URL (client)", () => {
     );
   });
 
-  test.skip("matchHref of a /en-US/ href gives its target's match", () => {
+  test("matchHref of a /en-US/ href gives its target's match", () => {
     expect(matchHref(prefixed, links.href("raw.en", { id: "7" }))).toEqual({
       id: "x.show",
       params: { p: "en-US", id: "7" },

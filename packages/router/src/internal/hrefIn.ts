@@ -3,6 +3,7 @@ import type { Table } from "./Table.ts";
 import { codedError } from "./codedError.ts";
 import { flattenJson } from "./flattenJson.ts";
 import { isHref } from "./isHref.ts";
+import { prefixOf } from "./prefixOf.ts";
 import { stripUndefined } from "./stripUndefined.ts";
 import { toRecord } from "./toRecord.ts";
 
@@ -24,7 +25,10 @@ export function hrefIn(
     throw codedError("E1501", `href("${id}"): no declared route with a path has this id`);
   const { def, segments } = route;
   const fields = toRecord(def.params === undefined ? {} : def.params.encode(stripUndefined(params)));
-  const path = segments
+  // k.prefix Write: the prefix param's default value leaves its segment out.
+  const pre = prefixOf(def, segments);
+  const elide = pre !== null && fields[pre.name] === pre.d;
+  const path = (elide ? segments.slice(1) : segments)
     .map((s) => {
       if (s.kind === "static") return s.text;
       const v = fields[s.name];

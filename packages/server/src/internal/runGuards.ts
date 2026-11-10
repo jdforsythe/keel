@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
-import { guardLoop, guardNext, matchUrl, runGuard, withNext } from "@keel/router/internal";
+import { carriedParams, guardLoop, guardNext, matchUrl, runGuard, withNext } from "@keel/router/internal";
 import type { Level, Located } from "@keel/router/internal";
 import { needsBare } from "@keel/router/internal";
 import { type KeelError, attempt } from "@keel/schema";
@@ -12,13 +12,19 @@ import { unexpected } from "./unexpected.ts";
 type Routes = Manifest<Readonly<Record<string, RouteDef>>>;
 type Step =
   | { readonly kind: "pass" }
-  | { readonly kind: "fail"; readonly at: number; readonly error: KeelError<string, unknown> }
+  | {
+      readonly kind: "fail";
+      readonly at: number;
+      readonly error: KeelError<string, unknown>;
+      readonly diags?: readonly Diag[];
+    }
   | { readonly kind: "redirect"; readonly at: number; readonly location: string };
 
 /** The guards of `chain` for `url`, outermost first, up to the first that does not pass. */
 async function step(
   chain: readonly Level[],
   url: string,
+  params: Readonly<Record<string, unknown>>,
   routes: Routes,
   table: readonly Located[],
   ctx: Ctx,
@@ -30,7 +36,15 @@ async function step(
     const r = await runGuard(g, url, ctx, caller);
     if (r.ok) continue;
     if (r.error.code !== "keel.denied") return { kind: "fail", at: i, error: r.error };
-    const to = attempt(() => routes.href(g.redirect));
+    const carried = carriedParams(g.redirect, table.find((r) => r.id === g.redirect)?.def, params);
+    if (!carried.ok)
+      return {
+        kind: "fail",
+        at: i,
+        error: unexpected(carried.error),
+        diags: [{ code: "E1508", message: carried.error.slice(6, 95) }],
+      };
+    const to = attempt(() => routes.href(g.redirect, carried.value));
     if (!to.ok)
       return {
         kind: "fail",
@@ -52,7 +66,7 @@ async function nextHop(
 ): Promise<string | null> {
   const m = matchUrl(table, url);
   if (m.kind !== "route") return null;
-  const s = await step(m.route.chain, m.url, routes, table, ctx, caller);
+  const s = await step(m.route.chain, m.url, m.params, routes, table, ctx, caller);
   return s.kind === "redirect" ? s.location : null;
 }
 
@@ -68,6 +82,7 @@ async function nextHop(
 export async function runGuards(
   chain: readonly Level[],
   url: string,
+  params: Readonly<Record<string, unknown>>,
   routes: Routes,
   table: readonly Located[],
   ctx: Ctx,
@@ -77,9 +92,9 @@ export async function runGuards(
     const level = nearestErrorElement(chain, i);
     return { kind: "fail", failure: { level, bare: needsBare(chain, level), error }, diags };
   };
-  const first = await step(chain, url, routes, table, ctx, caller);
+  const first = await step(chain, url, params, routes, table, ctx, caller);
   if (first.kind === "pass") return first;
-  if (first.kind === "fail") return fail(first.at, first.error);
+  if (first.kind === "fail") return fail(first.at, first.error, first.diags);
   const visited = [url];
   let to: string | null = first.location;
   while (to !== null) {

@@ -1,5 +1,6 @@
 import type { Scope, Signal } from "@keel/reactive";
 import type { KeelError } from "@keel/schema";
+import type { DocHead } from "./DocHead.ts";
 import type { Level } from "./Level.ts";
 import type { Rec } from "./Rec.ts";
 
@@ -15,4 +16,6 @@ export type View = {
   readonly data: readonly Signal<unknown>[];
   readonly error: { readonly level: number; readonly bare: boolean; readonly error: KeelError<string, unknown> } | null;
   readonly scope: Scope;
+  /** The document title and language this page names (k.head). */
+  readonly head: DocHead;
 };

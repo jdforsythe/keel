@@ -18,4 +18,6 @@ export interface RouteDef {
   readonly guard?: Guard;
   component(props: RouteProps, slots?: undefined, ctx?: Ctx): Node;
   errorElement?(props: { readonly error: KeelError<string, unknown> }): Node;
+  /** A path route's document title (k.head), given the route component's props; a layout takes none. */
+  title?(props: RouteProps): string;
 }

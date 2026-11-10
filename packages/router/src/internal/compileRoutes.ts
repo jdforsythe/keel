@@ -6,12 +6,14 @@ import { codedError } from "./codedError.ts";
 import { compilePath } from "./compilePath.ts";
 import { fieldsOf } from "./fieldsOf.ts";
 import { patternKey } from "./patternKey.ts";
+import { prefixCollision } from "./prefixCollision.ts";
 
 /**
  * Validate one manifest and compile its table. Throws an Error with `code`: E1502 two routes with one path
  * pattern, E1503 path/params mismatch or malformed path, E1504 required search field, E1505 an `actions` key on
  * an entry (they attach with `routes.actions`, RFC 0063), E1506 unknown layout, layout with a path, or layout cycle,
- * E1507 a loader declaring a `params` or `search` schema that is not this route's own value (RFC 0027). Looks at
+ * E1507 a loader declaring a `params` or `search` schema that is not this route's own value (RFC 0027), E1509 a
+ * k.prefix collision (`prefixCollision`). Looks at
  * nothing outside `routes`.
  */
 export function compileRoutes(routes: Readonly<Record<string, RouteDef>>): Table {
@@ -41,5 +43,7 @@ export function compileRoutes(routes: Readonly<Record<string, RouteDef>>): Table
     }
     table.set(id, { id, def, segments });
   }
+  const collision = prefixCollision(table.values());
+  if (collision !== null) throw codedError("E1509", collision);
   return table;
 }

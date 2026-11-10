@@ -7,7 +7,7 @@ import { SEED, appFor, get, parseDoc, unescapeText } from "./head-fixtures.ts";
 const names = fc.stringMatching(/^[a-z][a-z0-9-]{0,15}$/);
 
 describe("k.head title", () => {
-  test.skip("a node document for a route with `title` has `<title>` its return value, escaped", async () => {
+  test("a node document for a route with `title` has `<title>` its return value, escaped", async () => {
     await fc.assert(
       fc.asyncProperty(names, fc.stringMatching(/^[a-z0-9]{1,8}$/), async (name, id) => {
         const app = await appFor(name);
@@ -22,7 +22,7 @@ describe("k.head title", () => {
     );
   });
 
-  test.skip("a node document for a route without a `title` has `<title>` the deployable's name", async () => {
+  test("a node document for a route without a `title` has `<title>` the deployable's name", async () => {
     await fc.assert(
       fc.asyncProperty(names, async (name) => {
         const app = await appFor(name);
@@ -33,7 +33,7 @@ describe("k.head title", () => {
     );
   });
 
-  test.skip("a node document after a loader `err` has `<title>` the deployable's name even when the route has a `title`", async () => {
+  test("a node document after a loader `err` has `<title>` the deployable's name even when the route has a `title`", async () => {
     await fc.assert(
       fc.asyncProperty(names, async (name) => {
         const app = await appFor(name);
@@ -44,7 +44,7 @@ describe("k.head title", () => {
     );
   });
 
-  test.skip("a node document for a 404 has `<title>` the deployable's name", async () => {
+  test("a node document for a 404 has `<title>` the deployable's name", async () => {
     await fc.assert(
       fc.asyncProperty(names, async (name) => {
         const app = await appFor(name);

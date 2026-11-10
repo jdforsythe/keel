@@ -25,20 +25,20 @@ const mkSchema = () =>
 type Seen = { rule: string; path: string; min?: number; max?: number; values?: readonly unknown[]; format?: string };
 
 function run<T>(fn: (seen: Seen[], Schema: ReturnType<typeof mkSchema>) => T): T {
-  const slot: T[] = [];
+  const slot: { readonly v: T }[] = [];
   const sc = scope(() => {
-    slot.push(fn([], mkSchema()));
+    slot.push({ v: fn([], mkSchema()) });
   });
   sc.dispose();
-  const v = slot[0];
-  if (v === undefined) throw new Error("fixture: scope produced nothing");
-  return v;
+  const box = slot[0];
+  if (box === undefined) throw new Error("fixture: scope produced nothing");
+  return box.v;
 }
 
 const asPath = (p: unknown): string => (Array.isArray(p) ? pathToString(p) : String(p));
 
 describe("k.forms issueText", () => {
-  test.skip("With `issueText`, an invalid field's error text is exactly its return value for that field's issue", () => {
+  test("With `issueText`, an invalid field's error text is exactly its return value for that field's issue", () => {
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z]{0,1}$/), fc.integer({ min: 121, max: 1000 }), (shortTitle, oldAge) => {
         run((seen, Schema) => {
@@ -62,7 +62,7 @@ describe("k.forms issueText", () => {
     );
   });
 
-  test.skip("the issue's `rule`, `path` and constraint match the schema node at the path", () => {
+  test("the issue's `rule`, `path` and constraint match the schema node at the path", () => {
     run((seen, Schema) => {
       const f = form(Schema, {
         issueText: (issue: Seen) => {
@@ -86,7 +86,7 @@ describe("k.forms issueText", () => {
     });
   });
 
-  test.skip("without `issueText`, a `format` issue shows `Invalid value`", () => {
+  test("without `issueText`, a `format` issue shows `Invalid value`", () => {
     fc.assert(
       fc.property(fc.integer({ min: -500, max: 500 }), (n) => {
         run((_, Schema) => {
@@ -101,7 +101,7 @@ describe("k.forms issueText", () => {
     );
   });
 
-  test.skip("`issueText` is not called for a valid field", () => {
+  test("`issueText` is not called for a valid field", () => {
     run((seen, Schema) => {
       const f = form(Schema, { issueText: (issue: Seen) => (seen.push(issue), "x") });
       const pair = f.field("pair");

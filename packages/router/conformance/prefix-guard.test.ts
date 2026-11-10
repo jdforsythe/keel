@@ -25,7 +25,7 @@ const routes = manifest({
 });
 
 describe("k.prefix guard", () => {
-  test.skip("a guard on a prefixed route that redirects to a prefixed route keeps p: /de-DE/... redirects under /de-DE/, an unprefixed URL to an unprefixed one", async () => {
+  test("a guard on a prefixed route that redirects to a prefixed route keeps p: /de-DE/... redirects under /de-DE/, an unprefixed URL to an unprefixed one", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...LOCALES), fc.stringMatching(itemIds), async (p, id) => {
         const history = memoryHistory("/");

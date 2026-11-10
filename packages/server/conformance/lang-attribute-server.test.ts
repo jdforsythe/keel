@@ -34,14 +34,14 @@ const serverLang = async (make: Make, lang: string | undefined): Promise<string 
 };
 
 describe("k.ui lang (server output)", () => {
-  test.skip('A base element given lang="ja-JP" has lang="ja-JP" in server output; without it, none', async () => {
+  test('A base element given lang="ja-JP" has lang="ja-JP" in server output; without it, none', async () => {
     for (const make of Object.values(makers)) {
       expect(await serverLang(make, "ja-JP")).toBe("ja-JP");
       expect(await serverLang(make, undefined)).toBeNull();
     }
   });
 
-  test.skip("property: any language tag given as lang is written unchanged in server output", async () => {
+  test("property: any language tag given as lang is written unchanged in server output", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.stringMatching(/^[a-z]{2}-[A-Z]{2}$/),

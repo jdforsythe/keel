@@ -1,7 +1,9 @@
 // `@keel/router/internal` (RFC 0045): what @keel/server and @keel/forms need from the router; not public API.
 // re-exports only (one export per file lives in its own file)
+export { carriedParams } from "./carriedParams.ts";
 export { compileRoutes } from "./compileRoutes.ts";
 export { compileTable } from "./compileTable.ts";
+export { pageHead } from "./pageHead.ts";
 export { fieldsError } from "./fieldsError.ts";
 export { formHandle } from "./formHandle.ts";
 export { guardLoop } from "./guardLoop.ts";
@@ -13,6 +15,7 @@ export { routeActions } from "./routeActions.ts";
 export { runGuard } from "./runGuard.ts";
 export { withNext } from "./withNext.ts";
 export type { FormSeam } from "./FormSeam.ts";
+export type { DocHead } from "./DocHead.ts";
 export type { Level } from "./Level.ts";
 export type { Located } from "./Located.ts";
 export type { Match } from "./Match.ts";

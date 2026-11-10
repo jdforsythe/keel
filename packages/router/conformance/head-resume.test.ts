@@ -18,23 +18,28 @@ const textNodes = (root: Node): Node[] => {
 };
 
 describe("k.head resume", () => {
+  // Skipped (rfc:0079 kernel lane): the router's `mount` appends and does not resume server markup (resume is k.runtime's entry), so the text-node half cannot hold here.
   test.skip("after resume, document.title and lang equal the served document's, and no text node was replaced", async () => {
     await fc.assert(
-      fc.asyncProperty(fc.constantFrom("en-US", "de-DE"), fc.constantFrom("home", "about"), async (p, page) => {
-        document.title = titleOf(p, page);
-        document.documentElement.lang = p;
-        const host = document.createElement("div");
-        host.innerHTML = `<div id="shell"><p>${page} ${p}</p></div>`;
-        document.body.append(host);
-        const before = textNodes(host);
-        const app = await open(String(routes.href(pid(page), { p })), host);
-        expect(document.title).toBe(titleOf(p, page));
-        expect(document.documentElement.lang).toBe(p);
-        const after = textNodes(host);
-        expect(after).toHaveLength(before.length);
-        for (const [i, n] of before.entries()) expect(after[i]).toBe(n);
-        app.stop();
-      }),
+      fc.asyncProperty(
+        fc.constantFrom<"en-US" | "de-DE">("en-US", "de-DE"),
+        fc.constantFrom<"home" | "about">("home", "about"),
+        async (p, page) => {
+          document.title = titleOf(p, page);
+          document.documentElement.lang = p;
+          const host = document.createElement("div");
+          host.innerHTML = `<div id="shell"><p>${page} ${p}</p></div>`;
+          document.body.append(host);
+          const before = textNodes(host);
+          const app = await open(String(routes.href(pid(page), { p })), host);
+          expect(document.title).toBe(titleOf(p, page));
+          expect(document.documentElement.lang).toBe(p);
+          const after = textNodes(host);
+          expect(after).toHaveLength(before.length);
+          for (const [i, n] of before.entries()) expect(after[i]).toBe(n);
+          app.stop();
+        },
+      ),
       { seed: SEED, numRuns: 10 },
     );
   });

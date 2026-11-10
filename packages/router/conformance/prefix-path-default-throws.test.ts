@@ -4,11 +4,11 @@ import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 
 describe("k.prefix pathDefault", () => {
-  test.skip("s.enum(['en-US'], { pathDefault: 'fr-FR' }) throws", () => {
+  test("s.enum(['en-US'], { pathDefault: 'fr-FR' }) throws", () => {
     expect(() => s.enum(["en-US"], { pathDefault: "fr-FR" })).toThrow();
   });
 
-  test.skip("a pathDefault that is one of the values does not throw; any other does", () => {
+  test("a pathDefault that is one of the values does not throw; any other does", () => {
     const tag = fc.stringMatching(/^[a-z]{2}-[A-Z]{2}$/);
     fc.assert(
       fc.property(tag, fc.array(tag, { maxLength: 3 }), tag, (first, rest, d) => {

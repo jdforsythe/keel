@@ -24,6 +24,11 @@ export type RouteFit<M> = {
   readonly [K in keyof M]: (LoaderFits<M[K]> extends true
     ? unknown
     : { readonly loader: "loader params/search must be Infer<typeof schema> of this route's params/search" }) &
+    (M[K] extends { readonly title: unknown }
+      ? M[K] extends { readonly path: string }
+        ? unknown
+        : { readonly title: "a layout has no title (k.head); declare it on a path route" }
+      : unknown) &
     (M[K] extends { readonly actions: unknown }
       ? { readonly actions: "E1505 move actions to routes.actions({ [id]: { POST } }) after the manifest" }
       : unknown);

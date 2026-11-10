@@ -1,14 +1,17 @@
 import { ENTRY_PATH } from "@keel/compiler/entry/ENTRY_PATH";
 import { clientStdData } from "@keel/compiler/std/clientStdData";
 import { stdBindings } from "@keel/compiler/std/stdBindings";
+import type { DocHead } from "@keel/router/internal";
 import type { Rendered } from "./Rendered.ts";
 import type { Req } from "./Req.ts";
 import { documentHtml } from "./documentHtml.ts";
+import { headHtml } from "./headHtml.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { snapshotStores } from "./snapshotStores.ts";
 
 /**
- * An HTML document response: the served head (`Served.head`), the rendered chain plus one `#k-state` with `stores` (snapshots by store id),
+ * An HTML document response: the head and `<html lang>` of `head` (k.head: the route's title, else the deployable's
+ * name; the prefix param's value, else `en`), the rendered chain plus one `#k-state` with `stores` (snapshots by store id),
  * `islands` (props by component id) and any `extra` entries; `devMessage` shows only in dev. The entry script (the
  * production build's, else `/@keel/entry.ts`) loads only when an island was rendered; then `std` carries the
  * client-readable part (`clientStdData`: `clientStd` packages, the served deployable's modules) of the `std.json` data
@@ -21,6 +24,7 @@ export function documentResponse(
   rendered: Rendered,
   extra: Readonly<Record<string, unknown>>,
   devMessage: string | null,
+  head: DocHead = { title: null, lang: "en" },
 ): Response {
   const entry = Object.keys(rendered.islands).length > 0 ? (r.sv.built?.entry ?? ENTRY_PATH) : null;
   const bound = entry === null ? undefined : stdBindings.get(r.sv.ctx);
@@ -32,7 +36,14 @@ export function documentResponse(
     ...extra,
     ...(std === undefined ? {} : { std }),
   };
-  const html = documentHtml(rendered.html, state, r.sv.mode === "dev" ? devMessage : null, entry, r.sv.head);
+  const html = documentHtml(
+    rendered.html,
+    state,
+    r.sv.mode === "dev" ? devMessage : null,
+    entry,
+    headHtml(head.title ?? r.sv.name, r.sv.built),
+    head.lang,
+  );
   return new Response(r.method === "HEAD" ? null : html, {
     status,
     headers: { "content-type": "text/html; charset=utf-8" },

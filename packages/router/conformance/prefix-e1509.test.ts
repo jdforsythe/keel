@@ -31,19 +31,19 @@ const siblings = {
 };
 
 describe("k.prefix E1509", () => {
-  test.skip("beside x.show, each of /de-DE/about, /:slug and /items/:id is E1509 from manifest", () => {
+  test("beside x.show, each of /de-DE/about, /:slug and /items/:id is E1509 from manifest", () => {
     for (const [name, def] of Object.entries(siblings)) {
       expect(codeOf(() => beside(Locale, { [name]: def }))).toBe("E1509");
     }
   });
 
-  test.skip("without pathDefault none of /de-DE/about, /:slug and /items/:id is E1509", () => {
+  test("without pathDefault none of /de-DE/about, /:slug and /items/:id is E1509", () => {
     for (const [name, def] of Object.entries(siblings)) {
       expect(codeOf(() => beside(PlainLocale, { [name]: def }))).not.toBe("E1509");
     }
   });
 
-  test.skip("two prefix params in one table, and a pathDefault param that is not first in its path, are E1509", () => {
+  test("two prefix params in one table, and a pathDefault param that is not first in its path, are E1509", () => {
     const Other = s.enum(["a", "b"], { pathDefault: "a" });
     expect(
       codeOf(() =>
@@ -62,7 +62,7 @@ describe("k.prefix E1509", () => {
     ).toBe("E1509");
   });
 
-  test.skip("a table with only prefixed routes is clean", () => {
+  test("a table with only prefixed routes is clean", () => {
     expect(codeOf(() => beside(Locale, {}))).toBeNull();
   });
 });

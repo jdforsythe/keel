@@ -10,11 +10,17 @@ import type { StyleProps } from "../types/StyleProps.ts";
 
 /** A link to `to` (an `Href`, required, E1802) named by its text. Unsafe schemes render `about:blank`. */
 export function Link(
-  props: StyleProps & { readonly to: Href; readonly id?: string; readonly children: Child | Children },
+  props: StyleProps & {
+    readonly to: Href;
+    readonly id?: string /** Written as the `lang` attribute. */;
+    readonly lang?: string;
+    readonly children: Child | Children;
+  },
 ): Node {
   return make("a", (el) => {
     el.setAttribute("href", safeUrl("href", props.to));
     if (props.id !== undefined) el.setAttribute("id", props.id);
+    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));
   });

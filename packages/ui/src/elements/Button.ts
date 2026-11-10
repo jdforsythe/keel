@@ -16,7 +16,8 @@ import type { StyleProps } from "../types/StyleProps.ts";
 export function Button(
   props: StyleProps & {
     readonly type?: "button" | "submit" | "reset";
-    readonly id?: string;
+    readonly id?: string /** Written as the `lang` attribute. */;
+    readonly lang?: string;
     readonly disabled?: boolean | Computed<boolean>;
     /** Called on click (RFC 0009). */
     readonly onClick?: () => void;
@@ -26,6 +27,7 @@ export function Button(
   return make("button", (el) => {
     el.setAttribute("type", props.type ?? "button");
     if (props.id !== undefined) el.setAttribute("id", props.id);
+    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
     applyDisabled(el, props.disabled);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));

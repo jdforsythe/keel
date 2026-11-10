@@ -1,7 +1,7 @@
 import { quiet } from "@keel/ctx/internal";
 import { batch, effect, owner, signal } from "@keel/reactive";
 import { formHandle } from "@keel/router/internal";
-import type { Infer, ObjectSchema, Result, SchemaError } from "@keel/schema";
+import { type Infer, type ObjectSchema, type Result, type SchemaError, pathToString } from "@keel/schema";
 import { asSchemaValue } from "../unsafe/asSchemaValue.ts";
 import type { Bindable } from "./internal/Bindable.ts";
 import type { Reading } from "./internal/Reading.ts";
@@ -26,9 +26,11 @@ import { withUnmapped } from "./internal/withUnmapped.ts";
 import { without } from "./internal/without.ts";
 import type { DeepPartial } from "./types/DeepPartial.ts";
 import type { Field } from "./types/Field.ts";
+import type { FieldIssue } from "./types/FieldIssue.ts";
 import type { FieldPath } from "./types/FieldPath.ts";
 import type { FormState } from "./types/FormState.ts";
 import type { PathValue } from "./types/PathValue.ts";
+import type { Unbranded } from "./types/Unbranded.ts";
 
 type Messages = Readonly<Record<string, string>>;
 
@@ -38,7 +40,12 @@ type Messages = Readonly<Record<string, string>>;
  */
 export function form<S extends ObjectSchema<object>, T extends object = Infer<S>>(
   schema: ObjectSchema<T> & S,
-  options: { readonly initial?: DeepPartial<NoInfer<T>>; readonly id?: string } = {},
+  options: {
+    readonly initial?: DeepPartial<NoInfer<T>>;
+    readonly id?: string;
+    /** A field's error text for each issue; without it, English from the rule and constraint (k.forms Validation). */
+    readonly issueText?: (issue: FieldIssue) => string;
+  } = {},
 ): FormState<T> {
   const typed: ObjectSchema<T> = schema;
   const root = typed.node;
@@ -65,7 +72,14 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
   };
   const validateField = (path: string): void => {
     const parsed = typed.parse(candidate());
-    const message = parsed.ok ? undefined : issueMessages(root, parsed.error.data.issues, [path])[path];
+    // Only this field's issues (its own, an ancestor's, the root's), so `issueText` sees no other field's.
+    const mine = parsed.ok
+      ? []
+      : parsed.error.data.issues.filter((i) => {
+          const key = pathToString(i.path);
+          return key === "" || key === path || path.startsWith(`${key}.`);
+        });
+    const message = mine.length === 0 ? undefined : issueMessages(root, mine, [path], options.issueText)[path];
     const current = errs.get();
     if (message !== undefined) {
       shown.add(path);
@@ -74,7 +88,9 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
   };
   const validateAll = (): Result<T, SchemaError> => {
     const parsed = typed.parse(candidate());
-    setErrors(parsed.ok ? {} : withUnmapped(issueMessages(root, parsed.error.data.issues, known), known));
+    setErrors(
+      parsed.ok ? {} : withUnmapped(issueMessages(root, parsed.error.data.issues, known, options.issueText), known),
+    );
     return parsed;
   };
   const focusFirstInvalid = (): void => {
@@ -208,8 +224,8 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
   return {
     field: <P extends FieldPath<T> | (string & {})>(
       path: string extends P ? P : P & FieldPath<T>,
-    ): Field<string extends P ? unknown : PathValue<T, P & string>> =>
-      makeField<string extends P ? unknown : PathValue<T, P & string>>(path),
+    ): Field<string extends P ? unknown : Unbranded<PathValue<T, P & string>>> =>
+      makeField<string extends P ? unknown : Unbranded<PathValue<T, P & string>>>(path),
     values: () => asSchemaValue<DeepPartial<T>>(vals.get()),
     errors: () => errs.get(),
     pending: () => pendingSignal.get(),

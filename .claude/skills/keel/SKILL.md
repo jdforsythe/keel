@@ -14,6 +14,9 @@ description: "Build a Keel app: schemas, stores, components, routes, forms, test
 - `*.server.ts`: `loader({ output, params?, search?, stores? }, fn)`, `action({ input, params?, stores? }, fn)`; schemas are the route's own; never annotate `fn`.
 - `*.guard.ts`: `export const auth = guard({ redirect: 'app.login' }, fn)`; route holds the value (`guard: auth`).
 - `routes.ts`: `export const routes = manifest({...})`, then `routes.actions({ 'todos.list': { POST: createTodo } })` (never `actions` in an entry: E1505). Links only via `routes.href(id, params?, search?)` (own module's). `<Form action={routes.href('todos.list', { listId })}>`; pending: `f.pending()`. Action redirect: `return ok(routes.href(...))`.
+- Route `title`: `title: (p) => p.data.text.showTitle`, a message from the route's loader data (a path route only; a layout has none).
+- Values on screen: `formatMoney`, `formatDate`, `formatDuration` or `formatNumber` with the route's `props.params.locale`; never `toLocaleString`.
+- Page text: a message set loaded by the route's loader (`await Set.load(params.locale)`), read as `props.data.text.<key>`.
 - `tokens.ts`: `defineTokens`; style props take token names only (no `class`, no `styles()`). `<Button id="x.save">Save</Button>` (text is children).
 - `topology.ts`: `topology({ web: { modules, adapter: 'client' } })`; `module.ts`: `module({ id, deps, capabilities, public })`.
 

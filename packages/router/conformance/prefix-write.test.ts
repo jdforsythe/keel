@@ -5,14 +5,14 @@ import { describe, expect, test } from "vitest";
 import { LOCALES, RUNS, SEED, itemIds, open, prefixed } from "./prefix-fixtures.ts";
 
 describe("k.prefix write", () => {
-  test.skip("routes.href('x.show', { p: 'en-US', id: '7' }) is /items/7 and with de-DE /de-DE/items/7", () => {
+  test("routes.href('x.show', { p: 'en-US', id: '7' }) is /items/7 and with de-DE /de-DE/items/7", () => {
     expect(String(prefixed.href("x.show", { p: "en-US", id: "7" }))).toBe("/items/7");
     expect(String(prefixed.href("x.show", { p: "de-DE", id: "7" }))).toBe("/de-DE/items/7");
     expect(String(prefixed.href("x.home", { p: "en-US" }))).toBe("/");
     expect(String(prefixed.href("x.home", { p: "de-DE" }))).toBe("/de-DE");
   });
 
-  test.skip("for every generated params value, navigate(routes.href('x.show', v)) makes route().params equal v", async () => {
+  test("for every generated params value, navigate(routes.href('x.show', v)) makes route().params equal v", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...LOCALES), fc.stringMatching(itemIds), async (p, id) => {
         const app = await open(prefixed, "/");

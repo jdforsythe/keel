@@ -387,6 +387,13 @@ const ROWS: readonly Row[] = [
     "move 'app.login' out of the guarded layout, or redirect to a route outside it",
     "k.router",
   ],
+  [
+    "E1509",
+    "k.prefix collision: a route a prefix param's URLs could also match, two prefix params, or one not first",
+    "A path without the default value's segment must have one reading; static beats :param would not decide it.",
+    "path: '/about' -> path: '/:locale/about' (and the params field)",
+    "k.prefix",
+  ],
   ["E1551", "loader or action declared outside a *.server.ts file", "", "move it into <route>.server.ts", "k.server"],
   [
     "E1552",
@@ -523,6 +530,13 @@ const ROWS: readonly Row[] = [
     "cast, non-null assertion, any, or ts-suppression outside unsafe/",
     "These defeat the type system; narrow with a guard or isolate in unsafe/.",
     "x! -> x (after a guard); any -> unknown",
+    "k.check",
+  ],
+  [
+    "E1758",
+    "ambient locale or time zone in app code (navigator.language, Intl or toLocale* without a locale or timeZone)",
+    "Server and browser differ in locale and zone; the locale is route data, the zone app data.",
+    "n.toLocaleString() -> formatNumber(n, props.params.locale)",
     "k.check",
   ],
   ["E1801", "raw value where a token is required", "", 'p="12px" -> p="3" (nearest token)', "k.ui"],

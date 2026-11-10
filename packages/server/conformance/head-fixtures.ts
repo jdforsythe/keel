@@ -18,7 +18,8 @@ const p = (text: string): Node => {
   e.textContent = text;
   return e;
 };
-const str = (props: { params: unknown }, key: string): string => String(Reflect.get(Object(props.params), key));
+const str = (props: { readonly params?: unknown }, key: string): string =>
+  String(Reflect.get(Object(props.params), key));
 
 export const routes = manifest({
   "h.show": {
@@ -53,7 +54,7 @@ export const plainLocaleRoutes = manifest({
 
 export async function appFor(name: string, r: typeof routes | typeof plainLocaleRoutes = routes) {
   return createApp({
-    topology: topology({ [name]: { modules: ["app"], adapter: "node" } }),
+    topology: topology({ [name]: { modules: ["h"], adapter: "node" } }),
     routes: r,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: "dev",

@@ -22,7 +22,7 @@ import { statusOf } from "./statusOf.ts";
  * One request (k.server Request flow): a write (POST, PUT, PATCH, DELETE) that is not same-site gets 403
  * `keel.denied` before anything runs (CSRF, RFC 0022, `sameSite`); a GET or HEAD of `/@keel/entry.ts` gets the resume
  * entry, or a production client build's file (`servedEntry`, RFC 0046, 0048); then match the path (no pattern: 404; trailing
- * slash: 308 to the canonical path), parse params (fail: 404 at the nearest errorElement, no guard or loader runs) and search
+ * slash or a prefix param's default segment: 308 to the canonical path), parse params (fail: 404 at the nearest errorElement, no guard or loader runs) and search
  * (failing keys dropped), run guards outermost first (deny: 302, or 303 for a write, to the redirect route
  * with `next`; a redirect loop or a ninth hop is E1508, rfc:0051), then GET/HEAD render the page and the action verbs run the action (a fresh caller token is set as a
  * cookie on its response, `issueCaller`); other methods get 405.
@@ -47,7 +47,8 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope): Promis
   const route = m.route?.id;
   if (m.kind === "notFound" && m.route === null)
     return bareError(r, route, 404, [], {}, { level: -1, bare: true, error: notFound(r.here) });
-  if (path !== url.pathname) return { response: redirectResponse(308, r.here), route, diags: [] };
+  // A trailing slash, or a prefix param's default segment (k.prefix Parse step 2): 308 to the canonical URL.
+  if (path !== url.pathname || m.url !== r.here) return { response: redirectResponse(308, m.url), route, diags: [] };
   if (m.kind === "notFound") {
     const chain = m.route?.chain ?? [];
     const level = nearestErrorElement(chain, chain.length - 1);
@@ -56,7 +57,7 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope): Promis
   const write = isVerb(method);
   if (!write && method !== "GET" && method !== "HEAD")
     return { response: new Response(null, { status: 405, headers: { allow: "GET, HEAD" } }), route, diags: [] };
-  const g = await runGuards(m.route.chain, r.here, sv.routes, sv.table, sv.ctx, rq.caller.id);
+  const g = await runGuards(m.route.chain, r.here, m.params, sv.routes, sv.table, sv.ctx, rq.caller.id);
   if (g.kind === "redirect") return { response: redirectResponse(write ? 303 : 302, g.location), route, diags: [] };
   if (g.kind === "fail") {
     const failed = bareError(r, route, statusOf(g.failure.error.code), m.route.chain, m.params, g.failure);

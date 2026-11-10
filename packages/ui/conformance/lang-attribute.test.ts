@@ -34,14 +34,14 @@ const clientLang = (make: Make, lang: string | undefined): string | null => {
 };
 
 describe("k.ui lang (client output)", () => {
-  test.skip('A base element given lang="ja-JP" has lang="ja-JP" in client output; without it, none', () => {
+  test('A base element given lang="ja-JP" has lang="ja-JP" in client output; without it, none', () => {
     for (const make of Object.values(makers)) {
       expect(clientLang(make, "ja-JP")).toBe("ja-JP");
       expect(clientLang(make, undefined)).toBeNull();
     }
   });
 
-  test.skip("property: any language tag given as lang is written unchanged as the lang attribute", () => {
+  test("property: any language tag given as lang is written unchanged as the lang attribute", () => {
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z]{2}-[A-Z]{2}$/), fc.constantFrom(...Object.keys(makers)), (t, name) => {
         const make = makers[name];

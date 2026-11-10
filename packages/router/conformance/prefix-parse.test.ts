@@ -7,7 +7,7 @@ import { describe, expect, test } from "vitest";
 import { RUNS, SEED, itemIds, links, prefixed, unprefixed } from "./prefix-fixtures.ts";
 
 describe("k.prefix parse", () => {
-  test.skip("/items/7 matches x.show with p en-US and /de-DE/items/7 with de-DE", () => {
+  test("/items/7 matches x.show with p en-US and /de-DE/items/7 with de-DE", () => {
     fc.assert(
       fc.property(fc.stringMatching(itemIds), (id) => {
         expect(matchHref(prefixed, links.href("raw.plain", { id }))).toEqual({
@@ -25,11 +25,11 @@ describe("k.prefix parse", () => {
     );
   });
 
-  test.skip("/fr-FR/items/7 is 404 (no match)", () => {
+  test("/fr-FR/items/7 is 404 (no match)", () => {
     expect(matchHref(prefixed, links.href("raw.fr", { id: "7" }))).toBeNull();
   });
 
-  test.skip("without pathDefault, /items/7 is 404 and /en-US/items/7 matches", () => {
+  test("without pathDefault, /items/7 is 404 and /en-US/items/7 matches", () => {
     expect(matchHref(unprefixed, links.href("raw.plain", { id: "7" }))).toBeNull();
     expect(matchHref(unprefixed, links.href("raw.en", { id: "7" }))).toEqual({
       id: "x.show",

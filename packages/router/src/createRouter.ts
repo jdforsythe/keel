@@ -11,6 +11,7 @@ import { STORES_SERVER_ONLY } from "./internal/STORES_SERVER_ONLY.ts";
 import type { View } from "./internal/View.ts";
 import { absoluteUrl } from "./internal/absoluteUrl.ts";
 import { afterNavigate } from "./internal/afterNavigate.ts";
+import { carriedParams } from "./internal/carriedParams.ts";
 import { compileRoutes } from "./internal/compileRoutes.ts";
 import { compileTable } from "./internal/compileTable.ts";
 import { defaultError } from "./internal/defaultError.ts";
@@ -23,6 +24,7 @@ import { isRouteStateOf } from "./internal/isRouteStateOf.ts";
 import { matchUrl } from "./internal/matchUrl.ts";
 import { needsBare } from "./internal/needsBare.ts";
 import { notFound } from "./internal/notFound.ts";
+import { pageHead } from "./internal/pageHead.ts";
 import { renderView } from "./internal/renderView.ts";
 import { rooted } from "./internal/rooted.ts";
 import { routeActions } from "./internal/routeActions.ts";
@@ -32,6 +34,7 @@ import { runLoaders } from "./internal/runLoaders.ts";
 import { tables } from "./internal/tables.ts";
 import { unexpected } from "./internal/unexpected.ts";
 import { withNext } from "./internal/withNext.ts";
+import { writeHead } from "./internal/writeHead.ts";
 import type { Href } from "./types/Href.ts";
 import type { Manifest } from "./types/Manifest.ts";
 import type { RouteDef } from "./types/RouteDef.ts";
@@ -90,20 +93,28 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   let keys = 0;
   let anchor: Node | null = null;
   let resetRoot: (() => void) | null = null;
+  // The document's title when the router starts (a `client` deployable's `index.html` title): k.head's fallback.
+  const fallbackTitle = typeof document === "undefined" ? "" : document.title;
 
   const makeView = (m: Match, results: readonly Outcome[], failure: Failure | null): View => {
     const chain = m.route?.chain ?? [];
+    const params = m.kind === "route" ? m.params : {};
+    const search = m.kind === "route" ? m.search : {};
+    const last = results[chain.length - 1];
+    const props = { params, search, data: last?.ok === true ? last.value : undefined };
+    const head = pageHead(m.kind === "route" ? m.route : null, params, props, failure !== null);
     const made = rooted(() => ({
       data: chain.map((_, i) => signal(results[i]?.ok === true ? results[i].value : undefined)),
     }));
     return {
       url: m.url,
       chain,
-      params: m.kind === "route" ? m.params : {},
-      search: m.kind === "route" ? m.search : {},
+      params,
+      search,
       data: made.value.data,
       error: failure,
       scope: made.scope,
+      head,
     };
   };
   const placeOf = (m: Match): Place =>
@@ -143,6 +154,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       pending.set(false);
     });
     prev?.scope.dispose();
+    writeHead(next.head, fallbackTitle);
     const reset = resetRoot;
     resetRoot = null;
     reset?.();
@@ -154,9 +166,12 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   const redirectTo = (
     id: string,
     url: string,
+    params: Readonly<Record<string, unknown>>,
     visited: readonly string[],
   ): Result<string, KeelError<string, unknown>> => {
-    const r = attempt(() => hrefIn(own, id, {}, {}));
+    const carried = carriedParams(id, own?.get(id)?.def, params);
+    if (!carried.ok) return err(unexpected(carried.error));
+    const r = attempt(() => hrefIn(own, id, carried.value, {}));
     if (!r.ok) return err(unexpected(`guard redirect to "${id}" failed: ${r.error.message}`));
     const to = withNext(String(r.value), guardNext(table, url));
     const loop = guardLoop(visited, to);
@@ -176,7 +191,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       if (t !== token) return;
       if (r.ok) continue;
       if (r.error.code !== "keel.denied") return commit(t, failedAt(m, i, r.error), placeOf(m), mode);
-      const to = redirectTo(g.redirect, m.url, [...visited, m.url]);
+      const to = redirectTo(g.redirect, m.url, m.params, [...visited, m.url]);
       if (!to.ok) return commit(t, failedAt(m, i, to.error), placeOf(m), mode);
       return go(to.value, mode === "push" ? "push" : "replace", [...visited, m.url]);
     }

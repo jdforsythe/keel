@@ -18,7 +18,8 @@ export function Select(
   props: StyleProps & {
     readonly label: string;
     readonly disabled?: boolean | Computed<boolean>;
-    readonly id?: string;
+    readonly id?: string /** Written as the `lang` attribute. */;
+    readonly lang?: string;
     /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
     readonly field?: Field<unknown>;
     readonly name?: string;
@@ -31,6 +32,7 @@ export function Select(
   return labelled("select", props, false, (id) =>
     make("select", (el) => {
       el.setAttribute("id", id);
+      if (props.lang !== undefined) el.setAttribute("lang", props.lang);
       if (props.name !== undefined) el.setAttribute("name", props.name);
       const v = props.value;
       appendChildren(

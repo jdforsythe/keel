@@ -12,10 +12,16 @@ type TextTag = (typeof TEXT_TAGS)[number];
 
 /** Inline or block text. `as` is a closed set of text tags (default `span`), checked at runtime. */
 export function Text(
-  props: StyleProps & { readonly as?: TextTag; readonly id?: string; readonly children?: Child | Children | undefined },
+  props: StyleProps & {
+    readonly as?: TextTag;
+    readonly id?: string /** Written as the `lang` attribute. */;
+    readonly lang?: string;
+    readonly children?: Child | Children | undefined;
+  },
 ): Node {
   return make(tagOf("Text as", TEXT_TAGS, props.as, "span"), (el) => {
     if (props.id !== undefined) el.setAttribute("id", props.id);
+    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));
   });

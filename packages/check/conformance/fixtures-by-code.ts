@@ -231,7 +231,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [
       f(
         "src/greet.ts",
-        "import { transaction } from '@keel/store'\ndeclare const app: unknown\nexport const greet = transaction(app, 'greet', (s: string) => s + navigator.language)\n",
+        "import { transaction } from '@keel/store'\ndeclare const app: unknown\nexport const greet = transaction(app, 'greet', (s: string) => s + navigator.userAgent)\n",
       ),
     ],
     clean: [
@@ -396,6 +396,29 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1509: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/Locale.schema.ts",
+        `${SCHEMA}export const Locale = s.enum(['en-US', 'de-DE'], { pathDefault: 'en-US' })\n`,
+      ),
+      f(
+        "src/routes.ts",
+        `import { manifest } from '@keel/router'\n${SCHEMA}import { Locale } from './Locale.schema.ts'\nconst Page = () => null\nexport const routes = manifest({\n  'app.home': { path: '/:locale', params: s.object({ locale: Locale }), component: Page },\n  'app.about': { path: '/about', component: Page },\n  'app.de': { path: '/de-DE/x', component: Page },\n})\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "src/Locale.schema.ts",
+        `${SCHEMA}export const Locale = s.enum(['en-US', 'de-DE'], { pathDefault: 'en-US' })\n`,
+      ),
+      f(
+        "src/routes.ts",
+        `import { manifest } from '@keel/router'\n${SCHEMA}import { Locale } from './Locale.schema.ts'\nconst Page = () => null\nexport const routes = manifest({\n  'app.home': { path: '/:locale', params: s.object({ locale: Locale }), component: Page },\n  'app.about': { path: '/:locale/about', params: s.object({ locale: Locale }), component: Page },\n})\n`,
+      ),
+    ],
+  },
   E1551: {
     opts: NO_TYPES,
     bad: [
@@ -493,6 +516,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1757: {
     bad: [f("src/x.ts", "declare const m: { a?: number }\nexport const x: any = m.a!\n")],
     clean: [f("src/x.ts", "declare const m: { a?: number }\nexport const x: unknown = m.a\n")],
+  },
+  E1758: {
+    opts: NO_TYPES,
+    bad: [f("src/x.ts", "export const x = (n: number) => n.toLocaleString()\n")],
+    clean: [f("src/x.ts", "export const x = (n: number, l: string) => n.toLocaleString(l)\n")],
   },
   E1802: {
     bad: [f("C.tsx", `${UI}export default function C() { return <Button /> }\n`)],

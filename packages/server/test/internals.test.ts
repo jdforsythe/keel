@@ -141,17 +141,17 @@ describe("rendering helpers", () => {
   });
 
   it("documentHtml wraps in <main> once and shows the dev panel only when given", () => {
-    const d = documentHtml("<p>x</p>", { a: 1 }, null, null, "");
+    const d = documentHtml("<p>x</p>", { a: 1 }, null, null, "", "en");
     expect(d).toContain("<body><main><p>x</p></main><script");
     expect(d).not.toContain("data-k-dev");
-    expect(documentHtml('<main id="m">x</main>', {}, null, null, "")).not.toContain("<main><main");
-    expect(documentHtml("<mainx>", {}, null, null, "")).toContain("<main><mainx>");
-    expect(documentHtml("<MAIN>x</MAIN>", {}, null, null, "")).not.toContain("<main><MAIN>");
-    expect(documentHtml("x", {}, "E1554 <bad>", null, "")).toContain(
+    expect(documentHtml('<main id="m">x</main>', {}, null, null, "", "en")).not.toContain("<main><main");
+    expect(documentHtml("<mainx>", {}, null, null, "", "en")).toContain("<main><mainx>");
+    expect(documentHtml("<MAIN>x</MAIN>", {}, null, null, "", "en")).not.toContain("<main><MAIN>");
+    expect(documentHtml("x", {}, "E1554 <bad>", null, "", "en")).toContain(
       '<pre role="alert" data-k-dev="diag">E1554 &lt;bad&gt;</pre>',
     );
     expect(d).not.toContain('type="module"');
-    expect(documentHtml("x", {}, null, "/@keel/entry.ts", "")).toContain(
+    expect(documentHtml("x", {}, null, "/@keel/entry.ts", "", "en")).toContain(
       '<script type="module" src="/@keel/entry.ts"></script></body>',
     );
     expect(d.startsWith('<!doctype html><html lang="en">')).toBe(true);

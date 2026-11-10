@@ -12,6 +12,7 @@ import { isCodePath } from "./internal/isCodePath.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { parseFile } from "./internal/parseFile.ts";
+import { prefixCollisions } from "./internal/prefixCollisions.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { runRules } from "./internal/runRules.ts";
 import { summarize } from "./internal/summarize.ts";
@@ -113,6 +114,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...duplicateErrorCodes(checked),
     ...moduleChecks(checked),
     ...guardRedirectLoops(checked),
+    ...prefixCollisions(checked),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
     ...generatedEdits(files, expectedHashes(files, opts)),

@@ -13,12 +13,14 @@ const LEVELS = [1, 2, 3, 4, 5, 6] as const;
 export function Heading(
   props: StyleProps & {
     readonly level: 1 | 2 | 3 | 4 | 5 | 6;
-    readonly id?: string;
+    readonly id?: string /** Written as the `lang` attribute. */;
+    readonly lang?: string;
     readonly children: Child | Children;
   },
 ): Node {
   return make(`h${tagOf("Heading level", LEVELS, props.level)}`, (el) => {
     if (props.id !== undefined) el.setAttribute("id", props.id);
+    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));
   });
