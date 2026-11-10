@@ -1,6 +1,6 @@
 # Task 0309: S3 Server depth (std-jobs, std-schedules, std-streams, topology split, generated Docker/CI, compat check)
 
-**Spec:** std.jobs, std.schedules, std.streams (new, from the design RFC) · k.server, k.module (kernel touch) · **Gate:** S3 exit: split topology without source changes (eval) · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10), design only until the S2 batch is pushed
+**Spec:** std.jobs, std.schedules, std.streams (new, from the design RFC) · k.server, k.module (kernel touch) · **Gate:** S3 exit: split topology without source changes (eval) · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10), implementation started after the S2 push (4f6dc1e)
 
 ## Shape (tasks/PROGRAM.md)
 1. [x] Design RFC 0080 `docs/rfc/0080-s3-server-depth.md` accepted (9611941; ADR-0073 to ADR-0079; std-streams dropped: live loaders in k.server are the one stream transport, std.channels builds on them).
@@ -21,4 +21,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
 
 ## Next action
-Waits for the S2 push (tasks/0307-s2-values/PLAN.md step 5). Then: orchestrator prep per RFC 0080 "Lanes" (spec files for k.topology, k.compat, std.jobs, std.schedules; k.server/k.services/k.module/k.scaffold edits; package skeletons std-jobs, std-schedules; deps.json; budgets.json re-bases check 36.5 kB, server 16 kB; `pnpm install`), then conformance-writers per lane, then the implementation batch (kernel + jobs-schedules, deploy, compat, golden lanes).
+Step 2b: a sonnet prep agent is applying RFC 0080 "Spec diff" and the orchestrator prep (k.topology, k.compat, std.jobs, std.schedules; k.server/k.services/k.module/k.scaffold edits; skeletons std-jobs, std-schedules; deps.json; budgets; `pnpm install`). On its report: `pnpm check`, commit `wip: rfc:0080 spec text and skeletons`, then step 3: conformance-writers per lane (kernel: k.topology, k.compat, k.server, k.services, k.module, k.scaffold edits; jobs-schedules; deploy; compat; golden), skipped until implementation; then step 4 per the RFC "Lanes" table (kernel + jobs-schedules, deploy, compat, golden lanes; ≤ 5 + 1). Conformance guard: HEAD subject must carry rfc:0080 for edits to tracked conformance files.
