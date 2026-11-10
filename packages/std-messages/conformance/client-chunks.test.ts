@@ -1,8 +1,8 @@
 // Spec: std.messages, clause "A `client` build of a fixture route whose loader loads a set holds each locale's entry in its own chunk, and no other chunk holds an entry's text."
 // Seed 1337 (no random inputs; the fixture is built once through the real CLI, as packages/server/conformance/build-assets.test.ts).
-// Observed from the public API through `keel build` output: dist/<name>/ JS files. A locale's entry text is a marker string unique
-// to that locale file, so "holds the entry" is "contains the marker". ASSUMPTIONS (spec does not name them): the CLI builds a
-// `client` deployable to dist/<name>/ with its JS under dist/<name>/assets/, and `keel build` accepts this topology.
+// Observed from the public API through `keel build` output: the JS files under dist/. A locale's entry text is a marker string unique
+// to that locale file, so "holds the entry" is "contains the marker". `keel build` builds a client-only topology with the project's
+// own Vite build (k.server Build), so the fixture carries an index.html whose entry script imports the routes, and the output is dist/.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -54,6 +54,12 @@ beforeAll(() => {
     "topology.ts",
     'import { topology } from "@keel/server";\nexport default topology({ web: { modules: ["app"], adapter: "client" } });\n',
   );
+  write(
+    fx,
+    "index.html",
+    '<!doctype html>\n<html lang="en"><head><title>fx</title></head><body><div id="app"></div><script type="module" src="/main.ts"></script></body></html>\n',
+  );
+  write(fx, "main.ts", 'import { routes } from "./modules/app/routes.ts";\nObject.assign(globalThis, { routes });\n');
   write(
     fx,
     "vite.config.ts",
@@ -117,15 +123,14 @@ export const routes = manifest({ "app.page": { path: "/:locale", params: Params,
   });
   if (r.status !== 0)
     throw new Error(`keel build failed (status ${String(r.status)})\nstdout: ${r.stdout}\nstderr: ${r.stderr}`);
-  dist = path.join(fx, "dist", "web");
+  dist = path.join(fx, "dist");
 }, 120_000);
 
 afterAll(() => {
   for (const dir of roots) fs.rmSync(dir, { recursive: true, force: true });
 });
 
-// Skipped: the fixture has no index.html and reads dist/web/, but `keel build` builds a client-only topology with the project's own Vite build to dist/ (k.server Build).
-test.skip("A `client` build of a fixture route whose loader loads a set holds each locale's entry in its own chunk, and no other chunk holds an entry's text.", () => {
+test("A `client` build of a fixture route whose loader loads a set holds each locale's entry in its own chunk, and no other chunk holds an entry's text.", () => {
   const files = jsFiles(dist);
   expect(files.length).toBeGreaterThan(0);
   const holders = (marker: string) => files.filter((f) => fs.readFileSync(path.join(dist, f), "utf8").includes(marker));

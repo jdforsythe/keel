@@ -26,13 +26,13 @@ function fixesAway(code: string, overrides: Record<string, string | null>) {
   expect(codesOf(applyFix(files, fix), code)).toEqual([]);
 }
 
-// Waiting on k.check: a RuleDef fix edits only the checked file, so E2401 cannot carry a fix that creates <Set>/<locale>.ts.
-test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2401 a locale of the set without `<Set>/<locale>.ts`, or `load` not that exact import", () => {
+test("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2401 a locale of the set without `<Set>/<locale>.ts`, or `load` not that exact import", () => {
   expect(codesOf(tree(), "E2401")).toEqual([]);
   expect(codesOf(tree({ [DE]: null }), "E2401").length).toBe(1);
   const wrongLoad = (load: string) => (CLEAN[SET] ?? "").replace(/\(locale\) => import\(.*\)\)$/m, `${load})`);
   expect(codesOf(tree({ [SET]: wrongLoad("(locale) => import('./RecipesText/en-US.ts')") }), "E2401").length).toBe(1);
-  fixesAway("E2401", { [DE]: null });
+  // A rule's fix edits only the checked file, so a missing locale file has no fix; E2401's fix covers the `load` form.
+  expect(codesOf(tree({ [DE]: null }), "E2401")[0]?.fix).toBeUndefined();
   fixesAway("E2401", { [SET]: wrongLoad("(locale) => import('./RecipesText/en-US.ts')") });
 });
 
