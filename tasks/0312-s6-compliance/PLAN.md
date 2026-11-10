@@ -3,8 +3,8 @@
 **Spec:** a11y pack (ui, testing), CSP (server), PII redaction (std-sessions, schema), evidence bundle (cli) · k.ui, k.server (kernel touch) · **Gate:** S6 exit: external a11y audit + pen test on golden app 3 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10), design only until the S2-S5 pushes
 
 ## Shape (tasks/PROGRAM.md)
-1. [x] Design RFC 0083 `docs/rfc/0083-s6-compliance.md` (draft 416b9ec); reconciling with the accepted 0082 and writing ADRs 0092-0096.
-2. [ ] Orchestrator accepts the RFC; open questions to the user.
+1. [x] Design RFC 0083 `docs/rfc/0083-s6-compliance.md` accepted (ADR-0092 to ADR-0096; rebased on 0082).
+2. [x] Orchestrator accepts the RFC; user answered D2-D5.
 3. [ ] Conformance first, per lane, after the prior pushes.
 4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
 5. [ ] Exit proof: golden app 3 built; the audit and pen test are external (user).
@@ -21,4 +21,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit proof
 
 ## Next action
-Step 1: the design agent is writing `docs/rfc/0083-*.md`; read its report, then step 2.
+Waits for the S2-S5 pushes. Then: orchestrator prep per RFC 0083 "Lanes" (new sections k.a11y, k.security, k.privacy, k.evidence; edits to k.ui, k.schema, k.server, k.head, k.testing, k.ledger, k.cli, std.sessions; BRAND.md measured ratios and the lockup colour; A11Y-TARGET.md sentence; skeletons; deps; budgets), conformance-writers, implementation batch (kernel + a11y, server, sessions, evidence, golden-3 lanes); external audit and pen test are the user's to book.

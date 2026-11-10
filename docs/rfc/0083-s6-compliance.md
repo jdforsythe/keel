@@ -1,6 +1,14 @@
 # RFC 0083: S6 Compliance: accessibility claims, strict CSP, personal data and the evidence bundle
 
-Status: draft. Stage design RFC for S6 (`tasks/PROGRAM.md`, task 0312). Implementation waits for the S2 to S5 pushes. It applies WORKFLOW RFC defaults 1 (seven kernel gaps get kernel changes, K1 to K7, specified in four new kernel sections: k.a11y, k.security, k.privacy, k.evidence), 2 (one way: axe-core replaces the harness's own four rules, and a schema mark, `.pii(class)`, replaces the schema-path subjects of std.sessions' `redact`), 3 (the harness's render check, the check pipeline, std.sessions' redactor, the ctx observer's password mask, the ledger record and the k.cli operations are reused, not duplicated), 4 (personal data never reaches a session, a log, an error text or the bundle; a CSP report logs an origin and a route id), 5 (the policy, the report window, the organizer list and the signing key stay on the server or in the environment), 6 (the policy has no option; personal data in a URL, a reversed focus order and a personal input without `autocomplete` are errors, not advice) and 7 (`@keel/cli`, `@keel/schema` and `@keel/std-sessions` size budgets are re-based; no threshold is lowered). Measurements are from commit `c449c0c` with RFC 0080's and RFC 0081's spec text applied; the orchestrator re-measures when it writes the text into `spec/`.
+Status: accepted (2026-11-10); the user's answers are D1 to D6. Stage design RFC for S6 (`tasks/PROGRAM.md`, task 0312). Implementation waits for the S2 to S5 pushes and builds on RFC 0082's k.testing and k.ledger. It applies WORKFLOW RFC defaults 1 (seven kernel gaps get kernel changes, K1 to K7, specified in four new kernel sections: k.a11y, k.security, k.privacy, k.evidence), 2 (one way: axe-core replaces the harness's own four rules), 3 (the harness's render check, the check pipeline, std.sessions' redactor, the ctx observer's password mask, the ledger record and the k.cli operations are reused, not duplicated), 4 (personal data never reaches a session, a log, an error text or the bundle; a CSP report logs an origin and a route id), 5 (the policy, the report window, the organizer list and the signing key stay on the server or in the environment), 6 (the policy has no option; personal data in a URL, a reversed focus order and a personal input without `autocomplete` are errors, not advice) and 7 (`@keel/cli`, `@keel/schema` and `@keel/std-sessions` size budgets are re-based; no threshold is lowered). ADR-0092 to ADR-0096 record it. Measurements are from commit `c449c0c` with RFC 0080's, RFC 0081's and RFC 0082's spec text applied; the orchestrator re-measures when it writes the text into `spec/`.
+
+## Decisions (user, 2026-11-10)
+- D1: the API shapes are accepted as a set: `.pii(class)` with `PiiClass`, `piiPaths`, `piiValues`; `autocomplete: Autofill` on `Input`, `TextArea`, `Select`; `focusOrder()` on harness handles; `contrastTable(tokens)`; `keel evidence [--out] [--audit]` and `--verify <dir> [--key]` with `KEEL_EVIDENCE_KEY`.
+- D2: std.sessions' `redact` keeps its `tx:`, `store:` and `route:` subjects as they are. A `.pii()` mark redacts values in sessions beside the `redact` entries; it does not replace them, and E2001 is unchanged.
+- D3: no third-party party receives data: CSP reports go to the app's own `/__keel/csp`; advisories come from a `pnpm audit --json` file CI passes, and `keel evidence` makes no network call; the bundle is signed with Ed25519 under a project key, not Sigstore; `client` and `static` deployables get `csp.txt`. The audit is one accessibility firm (WCAG 2.2 AA, a desktop and a mobile screen reader) and one pen-test firm (OWASP ASVS level 2), both given the bundle and THREAT-MODEL; booking them is the user's step in the exit proof.
+- D4: golden-1 and golden-2 change no source.
+- D5: `textSecondary` darkens from `#71717A` to `#6B6B74` (4.75:1 on `surfaceLow`, 5.01:1 on `surface`) in `brandTokens`, and `docs/BRAND.md` states the measured ratios.
+- D6: `client` and `static` deployables get `csp.txt` only in S6; no meta policy.
 
 ## Problem
 S6 must let an outside accessibility auditor and an outside pen tester check a Keel app, and hand them evidence the framework produced rather than assertions. Its exit proof is golden app 3 passing both. These gaps block it (evidence from the code as of this RFC):
@@ -25,7 +33,7 @@ Four claims, each backed by machinery that already runs in CI:
 4. **Evidenced.** `keel evidence` runs check, test and ledger, and writes a dated directory signed with Ed25519 that `keel evidence --verify` checks without the source.
 
 ### 2. Kernel changes
-Four new kernel sections hold the changes; k.ui, k.schema, k.server, k.testing, k.head and k.cli each give up text or gain one pointer. No change to the text of k.store, k.ctx, k.reactive, k.runtime, k.compiler, k.router, k.forms, k.module, k.topology or k.services; the behavior K4 and K5 add to the runtime, forms and the ctx observer is specified in k.security and k.privacy, as k.sync specifies store, ctx and server behavior.
+Four new kernel sections hold the changes; k.ui, k.schema, k.server, k.testing, k.ledger, k.head and k.cli each give up text or gain one pointer. No change to the text of k.store, k.ctx, k.reactive, k.runtime, k.compiler, k.router, k.forms, k.module, k.topology or k.services; the behavior K4 and K5 add to the runtime, forms and the ctx observer is specified in k.security and k.privacy, as k.sync specifies store, ctx and server behavior.
 
 - **K1, k.a11y: required props, contrast and focus order** (moved from k.ui and extended). The required-prop sentence and E1802, E1804 move from k.ui. E1804 also checks text against the nearest ancestor `bg` in the same component and gives large bold text the 3:1 threshold; E1820 reports a reversed `direction` over two or more focusable elements. `Input`, `TextArea` and `Select` gain `autocomplete: Autofill`.
 - **K2, k.a11y: render checks and claims.** The harness runs axe-core (tags `wcag2a` to `wcag22aa`) in place of its four rules, page rules on `renderRoute` only, a contrast check computed from atomic classes and tokens in place of axe's `color-contrast`, and E1821 for a personal control without `autocomplete`. `keel test` writes `reports/a11y.json`; `keel ledger` turns it into `a11y:<routeId>#<criterion>` items. Handles gain `focusOrder()`.
@@ -33,7 +41,7 @@ Four new kernel sections hold the changes; k.ui, k.schema, k.server, k.testing, 
 - **K4, k.security: headers and the policy** (new; the caller cookie sentence moves here from k.server). Six headers on every response, HSTS on https, the nonce policy on every document, `Report-Only` in dev, the `keel` Trusted Types policy in `template()`, `POST /__keel/csp`, E1570 and E1571, and `dist/<name>/csp.txt` for `client` and `static` deployables.
 - **K5, k.privacy: personal data** (new; `s.secret` and E1105 move here from k.schema). `.pii(class)` over a closed `PiiClass`, `piiPaths` and `piiValues`, `data-k-pii` on bound controls with the observer mask, `diag` messages scrubbed, E1111 for marked data in a route's `params` or `search`.
 - **K6, k.evidence and k.cli: the bundle.** `keel evidence` and `--verify`, seven files plus the signature, E1060 to E1064; k.cli gains the command row and the `csp` and `evidence` kinds.
-- **K7, k.testing: pointers.** The render-check sentence defers to k.a11y, and the ledger names a third item kind.
+- **K7, k.testing and k.ledger (RFC 0082): pointers.** k.testing's render-check sentence defers to k.a11y, and k.ledger names a third item kind.
 
 Where the tokens come from (every count `ceil(length / 4)`, the `tooling/budgets.mjs` rule):
 
@@ -42,10 +50,11 @@ Where the tokens come from (every count `ceil(length / 4)`, the `tooling/budgets
 | k.ui | 1,498 | 1,421 | out: the "Required a11y props are in the type: ..." sentence and the E1802 and E1804 rule entries (to k.a11y); in: one pointer sentence. Its two a11y clauses stay, so no k.ui clause renumbers |
 | k.schema | 1,498 | 1,272 | out: the **Secrets** paragraph, E1105 and the "For every generated secret" clause (to k.privacy, verbatim); in: one pointer clause |
 | k.server | 1,499 (RFC 0081) | 1,458 | out: the cookie sentence "The cookie (`HttpOnly; SameSite=Lax; Path=/`) is ..." and the clause "On https the caller cookie is ..." (to k.security, verbatim); in: a Document pointer and two Log entries |
-| k.testing | 1,485 | 1,459 | out: the role-and-name comparison sentence (to k.a11y Render checks); in: a pointer and the third ledger item kind |
-| k.cli | 1,486 | 1,498 | in: the `evidence` row and two kinds; trim: the `keel inspect` summary lists no count names |
+| k.testing | 1,122 (RFC 0082) | 1,081 | out: the role-and-name comparison sentence (to k.a11y Render checks); in: a pointer |
+| k.ledger | 1,413 (RFC 0082) | 1,428 | in: the third ledger item kind |
+| k.cli | 1,488 (RFC 0082) | 1,500 | in: the `evidence` row and two kinds; trim: the `keel inspect` summary lists no count names |
 | k.head | 671 | 766 | in: the focus sentence and one clause |
-| std.sessions | 1,498 (RFC 0081) | 1,498 | the Module paragraph's entry grammar rewritten (`redact` takes `el:` and `error:`; `expose` keeps `tx:`, `store:`, `route:`); E2001 gains the `.pii()` case |
+| std.sessions | 1,498 (RFC 0081) | 1,499 | `record` also redacts `.pii()` values (D2: the `redact` subjects stay); two wording trims pay for it |
 | k.a11y | new | 1,281 | |
 | k.security | new | 1,162 | |
 | k.privacy | new | 1,001 | |
@@ -65,7 +74,7 @@ One export per file, filename equals export; schemas first; effects through `ctx
 | `@keel/check` | rules `contrastInherited` (extends `lowContrast.ts`), `reversedFocusOrder.ts`, `piiInUrl.ts`, `crossOriginUrl.ts`, `crossOriginFetch.ts` | E1804, E1820, E1111, E1570, E1571 |
 | `@keel/server` | the headers, the nonce, `<meta property="csp-nonce">`, `POST /__keel/csp` and the `csp` record (internal); `cspPolicy` and `securityHeaders` (`csp/cspPolicy.ts`, `csp/securityHeaders.ts`, export `./csp`, read by the CLI for `csp.txt` and `security.json`); the `diag` scrub | W1557 (moved text) |
 | `@keel/cli` | `evidence` operation; export `./evidence` with `Manifest`, `A11yReport`, `SecurityReport`, `PiiReport`, `DepsReport`, `EvidenceRecord` (one schema per file); ledger a11y items; `keel build` writes `csp.txt` | E1060 to E1064 |
-| `@keel/std-sessions` | redaction by `piiPaths` and `piiValues`; `redact` subjects `el:` and `error:` only; `record` throws E2001 on any other | E2001 (extended) |
+| `@keel/std-sessions` | `record` redacts `.pii()` values by `piiPaths` and `piiValues`, beside the `redact` entries | none new |
 
 Diagnostics (message under 90 characters, fix when one exists):
 
@@ -82,7 +91,6 @@ Diagnostics (message under 90 characters, fix when one exists):
 | E1062 | `deps.json changed since signing` | none |
 | E1063 | `signature does not verify with key 3f2a9c01d2e4b5a6` | none |
 | E1064 | `--audit file is not pnpm audit --json output` | none |
-| E2001 | `tx:cart.pay is not a redact subject; mark the field .pii()` | removes the entry |
 
 Codes taken: E1111 (k.schema's block E110x), E1570 and E1571 (k.server's block E155x, after RFC 0080's E1561 and E1562), E1820 and E1821 (k.ui's block E18xx), E1060 to E1064 (k.cli's block E105x). No stdlib block is taken. S5 (RFC 0082) must avoid these.
 
@@ -97,7 +105,7 @@ Codes taken: E1111 (k.schema's block E110x), E1570 and E1571 (k.server's block E
 
 **Claims.** `keel test` writes each render check to `reports/a11y.json` (`A11yRun[]`). `keel ledger` reads it with `.keel/routes.json` and emits `a11y:<routeId>#<criterion>` at `example` when a passing `renderRoute` test rendered the route, every rule mapped to the criterion ran and none was violated, and `keel check` reports none of its static codes; else `none`. Only criteria that some rule maps to become items, so the ledger does not grow by every criterion of every route; the evidence bundle lists the others for a person. A claim is about the checks, never about the criterion as a whole: `a11y:shifts.show#1.1.1` at `example` says `image-alt` and the other rules mapped to 1.1.1 passed, not that the alt text is good. `keel ledger --diff` reports a lowered claim as E1706, so the ledger gate covers accessibility regressions.
 
-**Brand.** `brandTokens` passes every pair the golden apps use, measured: `text` 16.60:1 and `accent` 5.22:1 on `surface`; `textSecondary` 4.59:1 on `surface`. It fails one pair no app uses today: `textSecondary` on `surfaceLow`, 4.36:1. The extended E1804 reports that pair wherever a component composes it. Q5 asks whether to darken `textSecondary`.
+**Brand.** `brandTokens` passes every pair the golden apps use, measured: `text` 16.60:1 and `accent` 5.22:1 on `surface`; `textSecondary` 4.59:1 on `surface`. It fails one pair no app uses today: `textSecondary` on `surfaceLow`, 4.36:1. D5 darkens `textSecondary` to `#6B6B74` (4.75:1 on `surfaceLow`, 5.01:1 on `surface`), so every color pair of the brand that holds text passes, and the extended E1804 guards any app tokens that do not.
 
 ### 5. CSP and headers
 **Why a nonce.** A `node` document is rendered per request, so a fresh nonce costs nothing, and with `'strict-dynamic'` the resume entry's imports (Vite chunks, and the locale chunks golden-2 loads) run without listing hosts. Google's strict-CSP guidance and the CSP Evaluator treat `script-src 'self'` as bypassable through any same-origin file that parses as script; a nonce removes the question. A hash-based policy needs an inline loader whose hash is listed, which Keel documents do not have, or matching of hashes against external scripts with `integrity`, which browsers implement unevenly. The nonce is two `ctx.random.id` values (two crypto-random v4 UUIDs on a real ctx, 244 random bits), so it is deterministic under a sim seed and testable.
@@ -106,9 +114,9 @@ Codes taken: E1111 (k.schema's block E110x), E1570 and E1571 (k.server's block E
 
 **One policy.** There is no `createApp({ csp })` option: no app can add `'unsafe-inline'`, a CDN or an analytics host (default 6). A need for another origin is a later RFC, and E1570 and E1571 report it at check time instead of in a browser console. Dev sends the same policy as `Report-Only` with `'unsafe-inline'` in `style-src`, because Vite's dev server injects `<style>` elements.
 
-**Reports.** `POST /__keel/csp` is a kernel route like `/__keel/inspect`. It changes no state, so it skips the write proof (a browser's report request may carry no `Origin`); it is capped at 16 KiB per body and 100 logged reports per 60 s window, and it logs an origin and a route id, never the document URL, its query or a script sample (default 4). Reports go to the app's own log; no third party receives them (Q3).
+**Reports.** `POST /__keel/csp` is a kernel route like `/__keel/inspect`. It changes no state, so it skips the write proof (a browser's report request may carry no `Origin`); it is capped at 16 KiB per body and 100 logged reports per 60 s window, and it logs an origin and a route id, never the document URL, its query or a script sample (default 4). Reports go to the app's own log; no third party receives them (D3).
 
-**Other deployables.** A `client` or `static` document is served by a host Keel does not run, so Keel sends nothing for it. `keel build` writes `dist/<name>/csp.txt` with `script-src 'self'` (no nonce exists without a server), and the evidence bundle records it. A `<meta http-equiv>` policy was rejected for S6: it cannot carry `frame-ancestors` or reporting, and `apps/inspector`, a `client` app, fetches other origins' inspect documents, which `connect-src 'self'` would block (Q6).
+**Other deployables.** A `client` or `static` document is served by a host Keel does not run, so Keel sends nothing for it. `keel build` writes `dist/<name>/csp.txt` with `script-src 'self'` (no nonce exists without a server), and the evidence bundle records it. A `<meta http-equiv>` policy was rejected for S6: it cannot carry `frame-ancestors` or reporting, and `apps/inspector`, a `client` app, fetches other origins' inspect documents, which `connect-src 'self'` would block (D6).
 
 **Headers.** `nosniff`, `Referrer-Policy: same-origin` (no path or query leaves for another origin), `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy: same-origin`, `X-Frame-Options: DENY` beside `frame-ancestors 'none'` for older engines, a `Permissions-Policy` turning off camera, microphone, payment and USB (no Keel capability uses them; geolocation keeps its default for std-geo), and HSTS on https decided by the same rule as the `__Host-` cookie.
 
@@ -117,12 +125,12 @@ Codes taken: E1111 (k.schema's block E110x), E1570 and E1571 (k.server's block E
 
 **Sinks** (default 4). Sessions: std.sessions replaces marked values with generated ones at capture, so a session still parses and replays, and drops them from error text. Inputs: a control bound to a marked path carries `data-k-pii`, and the runtime masks its `input` values before any observer sees them, as it does for password fields. Server log: a `diag` message is scrubbed of `piiValues` of the request's input, loader outputs and factory store states, computed only when a `diag` is written. URLs: E1111 refuses marked data in `params` and `search`, since Keel cannot redact a proxy's log or a browser's history. Evidence bundle: holds no app value. Dev inspect stays unredacted: it is the developer's own data in dev.
 
-**One way** (default 2). `redact` entries keep `el:` (an element whose values have no schema) and `error:` (error `data`, which has no schema). `tx:`, `store:` and `route:` stay `expose` subjects only, for `to-test`. A `tx:`, `store:` or `route:` `redact` entry is E2001 in `keel check`, and `record` throws on it, so an app upgraded without editing its config fails closed instead of recording the value. An `expose` entry under a marked path is E2001: personal data cannot be exposed to a test file.
+**Beside `redact`** (D2). `redact` entries keep all five subjects. A `.pii()` mark redacts the values under it wherever its schema reaches a session; a `redact` entry still names what a module hides beyond its marks, or what has no schema (`el:`, `error:`). A value is redacted when either names it.
 
-**Coverage.** `keel evidence` imports each `*.schema.ts` and lists every marked path with its class. Each path is counted against four sinks, and each sink has one conformance clause that proves its redaction for generated schemas and values: `std.sessions#2` (sessions), `k.privacy#7` (inputs), `k.privacy#6` (log), `k.evidence#5` (bundle). A (path, sink) pair is covered when that clause's ledger rung is `probabilistic` or higher, so all four are written as 100-run properties (std.sessions#2 is `example` today and gains one). Coverage is by construction for declared paths; the independent check is golden-3's canary test (Proposal 9), which puts generated values into every marked field and searches every sink's output for them. A value copied into an unmarked field is not declared and not counted, the same limit THREAT-MODEL states for a revealed secret.
+**Coverage.** `keel evidence` imports each `*.schema.ts` and lists every marked path with its class. Each path is counted against four sinks, and each sink has one conformance clause that proves its redaction for generated schemas and values: `std.sessions#2` (sessions), `k.privacy#7` (inputs), `k.privacy#6` (log), `k.evidence#5` (bundle). A (path, sink) pair is covered when that clause's ledger rung is `probabilistic` or higher, so all four are written as 100-run properties (std.sessions#2 is `example` today; its file gains a `.pii()` property). Coverage is by construction for declared paths; the independent check is golden-3's canary test (Proposal 9), which puts generated values into every marked field and searches every sink's output for them. A value copied into an unmarked field is not declared and not counted, the same limit THREAT-MODEL states for a revealed secret.
 
 ### 7. The evidence bundle
-`keel evidence` runs the k.cli `check`, `test` and `ledger` operations in process, so the bundle and CI agree, and writes `evidence/<date>/`: `manifest.json`, `manifest.sig`, `check.ndjson`, `ledger.ndjson`, `a11y.json`, `security.json`, `pii.json`, `deps.json`. It makes no network request: dependency advisories come from a `pnpm audit --json` file CI writes and passes with `--audit` (Q3). The signature is Ed25519 over the manifest's bytes (deterministic per RFC 8032, so a sim run is byte-equal); the key comes only from `KEEL_EVIDENCE_KEY`, and the manifest carries the public key and its 16-hex `keyId`. A verifier pins the `keyId` the project publishes out of band with `--verify <dir> --key <keyId>`. Failing runs still produce a bundle that records them, and the command exits 1 (E1060): an auditor sees the state as it is.
+`keel evidence` runs the k.cli `check`, `test` and `ledger` operations in process, so the bundle and CI agree, and writes `evidence/<date>/`: `manifest.json`, `manifest.sig`, `check.ndjson`, `ledger.ndjson`, `a11y.json`, `security.json`, `pii.json`, `deps.json`. It makes no network request: dependency advisories come from a `pnpm audit --json` file CI writes and passes with `--audit` (D3). The signature is Ed25519 over the manifest's bytes (deterministic per RFC 8032, so a sim run is byte-equal); the key comes only from `KEEL_EVIDENCE_KEY`, and the manifest carries the public key and its 16-hex `keyId`. A verifier pins the `keyId` the project publishes out of band with `--verify <dir> --key <keyId>`. Failing runs still produce a bundle that records them, and the command exits 1 (E1060): an auditor sees the state as it is.
 
 ### 8. What S6 needs from `@keel/testing` (RFC 0082 coordination)
 S5 owns the harness design. S6 changes only the rule engine at the existing render-check point and adds `focusOrder()`. It needs:
@@ -131,7 +139,7 @@ S5 owns the harness design. S6 changes only the rule engine at the existing rend
 - **R2.** One render-check point (after the first render, after each `fire`, on `settle()`) stays in `@keel/testing`; any simulator or model checker that renders reaches it, so its renders count for claims.
 - **R3.** Harness renders stay on happy-dom, where axe-core 4.14.0 is measured to run.
 - **R4.** `keel test` lets a harness write a report file under `reports/` per run, as Stryker writes `reports/mutation/`.
-- **R5.** RFC 0082's k.testing edits leave the **a11y** paragraph's first sentence and the Ledger paragraph's first sentence in place, or carry K7's two edits; K7 is 26 tokens net negative, so it gives S5 room rather than taking it.
+- **R5.** RFC 0082 (accepted) splits k.testing into k.testing and k.ledger; K7 applies its two edits there: the **a11y** paragraph's second sentence of k.testing and the first sentence of k.ledger. Neither touches k.model or k.sim.
 
 ### 9. Exit proof and golden app 3
 **What it is.** `apps/golden-3`, a volunteer shift sign-up for a food bank, built by an agent from the public docs: anyone signs up for a shift with their name, email, phone and access needs, sees and cancels their own sign-ups, and an organizer sees the roster with contact details and marks attendance. It is the first golden app whose user-facing pages a `node` deployable renders (golden-1 and golden-2 show theirs from `client` deployables), so the nonce policy applies to every page, and it holds personal data in every sink.
@@ -165,14 +173,14 @@ S5 owns the harness design. S6 changes only the rule engine at the existing rend
 - **A third-party report collector** (report-uri.com, Sentry). Sends document URLs to an outside party; the app's own log keeps them redacted.
 - **`s.pii(inner, class)` as a wrapper type like `Secret<T>`.** Every read of an email would need an unwrap, while personal data is meant to flow through the app; the mark belongs on the schema, not the value.
 - **Free-form PII labels.** An auditor's inventory needs a fixed set (principle 4); eight classes cover what golden-3 and the existing apps hold, and `special` groups GDPR article 9 data.
-- **Keeping `tx:`, `store:` and `route:` `redact` subjects beside `.pii()`.** Two ways to mark one value (default 2), and the config form misses the log and input sinks.
+- **Removing `tx:`, `store:` and `route:` from `redact` in favor of `.pii()`.** One way to mark a schema value (default 2), but it changes every project's session config; the user kept the subjects (D2), so both name values and either redacts.
 - **Redacting every unmarked value in logs** (default 4 read literally). Logs carry route ids, codes and statuses; the only values they held were thrown messages, which the scrub now covers, and paths, which E1111 keeps free of marked data. A 404's path is logged as requested (Known limits).
 - **A `@keel/std-evidence` package.** `stdCommand` reserves only `session`; widening it is a k.cli change anyway, and the bundle needs kernel operations (check, test, ledger) in process.
-- **Sigstore or cosign signing.** Ties the bundle to an outside transparency log and an OIDC identity (an external integration); Ed25519 with a project key verifies offline (Q3).
+- **Sigstore or cosign signing.** Ties the bundle to an outside transparency log and an OIDC identity (an external integration); Ed25519 with a project key verifies offline (D3).
 - **Running `pnpm audit` inside `keel evidence`.** A network call to the npm registry from a command CI may run offline; the file input keeps the command offline and the advisories dated.
 
 ## Spec diff
-Token counts are `ceil(length / 4)`, measured by applying these edits to copies of the sections at commit `c449c0c` (k.server and std.sessions with RFC 0080's and RFC 0081's edits applied). Moved text is verbatim.
+Token counts are `ceil(length / 4)`, measured by applying these edits to copies of the sections at commit `c449c0c` (k.server and std.sessions with RFC 0080's and RFC 0081's edits applied; k.testing, k.ledger and k.cli as RFC 0082 leaves them). Moved text is verbatim.
 
 ### spec/kernel/k.a11y.md (new, 1,281)
 ~~~md
@@ -465,14 +473,13 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 - An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403.
 ~~~
 
-### k.testing (1,485 to 1,459)
+### k.testing (1,122 after RFC 0082, to 1,081)
 - a11y: "After the first render and after every `fire`, the harness compares each element's role and name source with the compiler's `a11y.json` (...) and runs axe." becomes "After the first render and after every `fire`, the harness runs the render checks of k.a11y." (the comparison moves to k.a11y Render checks).
-- Ledger: "per public export (`<file>#<name>`) and per spec clause (...)." becomes "per public export (`<file>#<name>`), per spec clause (...) and per route and criterion (`a11y:<routeId>#1.4.3`, k.a11y)."
 - Rules and Conformance unchanged.
 
 Full text after the change:
 ~~~md
-# k.testing: Harness and ledger
+# k.testing: Harness and properties
 status: conformance-covered
 
 **Harness.** From `@keel/testing`:
@@ -508,16 +515,9 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
   payload: {"item":{"id":"i1","qty":-1}}
 ```
 
-**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`), per spec clause (`k.router#3`, the 1-based Conformance sentence) and per route and criterion (`a11y:<routeId>#1.4.3`, k.a11y). A conformance test in any package names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and the final period aside; it may wrap onto the next `//` lines). `rung` is the highest held:
-- `example`: a passing test references the item.
-- `probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed.
-- `exhaustive`: a property whose generator's finite domain was fully enumerated.
-- `proven`: a passing type-level test or prover output; nothing else may claim it.
-- `monitored`: production only; never emitted by the kernel. No evidence: `none`.
+**Ledger, exploration and simulation.** Rungs and `keel ledger`: k.ledger. `explore`: k.model. `simulate` and schedules: k.sim.
 
-`keel ledger --diff` compares with the committed ledger and checks every `conformance-covered` or `frozen` section's clauses.
-
-**Rules.** E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids) · E1706 ledger rung lower than committed, or unsafe count higher · E1707 `keel ledger --diff`: a `conformance-covered` or `frozen` section has a clause at `none`, or no clause list · W1706 conformance header `// Clause:` (not counted; fix rewrites it to `// Spec:`).
+**Rules.** E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids).
 
 **Conformance.**
 - `render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering.
@@ -527,10 +527,48 @@ E1704 cart/addItem.test.ts:3:1 invariant cart.nonNegative failed (seed 4021, run
 - After a resource resolves, `await settle()` makes its ready state visible without any event.
 - A property failing at a seed reports that seed; re-running with `KEEL_SEED` reproduces the same shrunk case.
 - A transaction breaking a declared invariant fails `properties()` with E1704.
+- `navigate(routes.href(id))` on a `renderRoute` handle runs the target's guards and loaders and resolves with its chain rendered and every loader settled.
+~~~
+
+### k.ledger (1,413 in RFC 0082, to 1,428)
+- Ledger: "per public export (`<file>#<name>`) and per spec clause (...)." becomes "per public export (`<file>#<name>`), per spec clause (...) and per route and WCAG criterion (`a11y:<routeId>#1.4.3`, k.a11y)."
+- Rules and Conformance unchanged.
+
+Full text after the change:
+~~~md
+# k.ledger: Ledger and evidence
+status: proposed
+
+**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`), per spec clause (`k.router#3`, the 1-based Conformance sentence) and per route and WCAG criterion (`a11y:<routeId>#1.4.3`, k.a11y). A conformance test in any package names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and the final period aside; it may wrap onto the next `//` lines). `rung` is the highest held:
+- `example`: a passing test references the item.
+- `probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed.
+- `exhaustive`: a passing `explore` (k.model) given `from`, `payloads` or `depth`; evidence lists `depth` when it is a literal.
+- `proven`: a passing type-level test (its body asserts with `expectTypeOf` or `assertType`, which the package's `check` type-checks) or a passing closed-form `explore` (k.model), which passes only when the store's whole space closed; nothing else may claim it.
+- `monitored`: production only, read from an app's `.keel/monitored.json`; never emitted by the kernel. No evidence: `none`.
+
+**Evidence from tests.** A test references an item when its body, or a helper it calls in its own file or a relative import, names it. Property runs are `properties`, `simulate` (k.sim) and fast-check's `assert` and `check`, with `runs` and `seed` read from literal options or imported constants (`properties` and `simulate` default to 100 and 1337); an unresolved value leaves the run `example`. An `explore` call is closed-form when its options object is absent or names none of `from`, `payloads` and `depth`; options the ledger cannot read count as given.
+
+**Production evidence.** An app's `.keel/monitored.json` is `{ v: 1, origin, from, to, tx: { [name]: runs } }`, written by a stdlib monitor (std.monitor). An app export holds `monitored` when its file holds, as a string literal, the name of a transaction with `runs` >= 1, or that name's longest dotted prefix that any file holds (a chart id); evidence lists the runs and `to`. A file failing this shape is E1711 and adds nothing.
+
+**Mutation.** Stryker (`pnpm mutate`, run alone and never inside `pnpm check`) writes `packages/<pkg>/reports/mutation/mutation.json`. `keel ledger` turns each report into one claim per mutated file, `{ file, sha, killed, survived, noCoverage, score }`: `sha` is the sha256 of the source the report holds for that file, and `score` is detected over detected plus undetected (Stryker's formula; timeouts count as detected). A claim is fresh while the file's current source has that `sha`. Each package's score is computed over its fresh claims, with the report's `thresholds.break` as its threshold. `keel ledger` emits one `{ kind: 'ledger.mutation', file, score, survived, fresh }` per claim; compact `packages/store/src/tx.ts 91.2% 3 survived`. `ledger` and `ledger.mutation` are kernel record kinds (k.cli).
+
+**File.** `keel ledger --write <file>` writes `{ version, unsafe, rungs, mutation, exports, clauses }`: `rungs` counts, for each rung, the items holding any evidence on it; `mutation` holds each package's `{ score, threshold }` and the claims, a report on disk replacing the claims of the files it covers and other claims kept. The summary carries the `rungs` counts and the count of `stale` claims.
+
+**Diff.** `keel ledger --diff` compares with the committed ledger, reading reports on disk as `--write` does, and checks every `conformance-covered` or `frozen` section's clauses.
+
+**Rules.** E1706 ledger rung lower than committed, or unsafe count higher · E1707 `keel ledger --diff`: a `conformance-covered` or `frozen` section has a clause at `none`, or no clause list · W1706 conformance header `// Clause:` (not counted; fix rewrites it to `// Spec:`) · E1711 `.keel/monitored.json` fails its shape · E1712 `--diff` without `--scope`: a rung the committed `rungs` counts above 0 is held by no item · E1713 `--diff`: a package's score over fresh claims is below its threshold, or its threshold is below the committed one · W1714 a mutation claim is stale (its file changed since the run).
+
+**Conformance.**
 - An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`.
 - Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706.
 - A `conformance-covered` section with a clause no conformance test cites makes `keel ledger --diff` report E1707 at that clause's line.
-- `navigate(routes.href(id))` on a `renderRoute` handle runs the target's guards and loaders and resolves with its chain rendered and every loader settled.
+- A passing `simulate` with `runs: 100` and a literal seed makes the exports its scenario names `probabilistic`.
+- A passing `explore` with `from`, `payloads` or `depth` makes the transactions it names `exhaustive`; one with none of them makes them `proven`; one whose options are an imported variable gives `exhaustive`.
+- A `.keel/monitored.json` naming `todos.editor.save` with runs 3 gives `monitored` evidence to the export whose file holds `'todos.editor'` and to no other; a file failing its shape is E1711.
+- From a report whose sources match the tree, `keel ledger --write` stores one claim per mutated file with Stryker's counts, and the package score over them; after one file changes, its claim is stale (W1714) and the package score omits it.
+- With a committed ledger whose `rungs.monitored` is 1, removing `.keel/monitored.json` makes `--diff` report E1712.
+- A report whose package score is below its `thresholds.break`, or whose `thresholds.break` is below the committed threshold, makes `--diff` report E1713.
+- A passing test whose body asserts with `expectTypeOf` makes the exports it names `proven`.
 ~~~
 
 ### k.head (671 to 766)
@@ -568,9 +606,9 @@ The document's title is the matched route's `title`. Without one, when a loader 
 - After a client navigation to another route, the focused element is the new page's first `h1`, with `tabindex="-1"`, or `main` when it has none; after a navigation that changes only the search, focus is where it was.
 ~~~
 
-### k.cli (1,486 to 1,498)
+### k.cli (1,488 after RFC 0082, to 1,500)
 - Commands: after the `ledger` row, "| `evidence [--verify dir]` | the signed evidence bundle (k.evidence) |".
-- Output: "Kernel kinds: `diag`, `summary`, `req`, `ledger`, `a11y`." gains "`csp`, `evidence`".
+- Output: "Kernel kinds: `diag`, `summary`, `req`, `a11y`, and k.ledger's." becomes "Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, and k.ledger's."
 - Trim: "and a summary with node, edge, store, id, a11y, route, and section counts" becomes "and a summary of their counts" (no conformance header quotes it).
 
 Full text after the change:
@@ -615,7 +653,7 @@ Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }`
 import { formatter } from '@keel/cli'
 formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}`, pretty: (r) => table(r) })
 ```
-Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: it is the record encoded by its schema as one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `ledger`, `a11y`, `csp`, `evidence`. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
+Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: it is the record encoded by its schema as one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
 **Rules.** I1055 command not available in this build (info; exit 0) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind or std command registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 
@@ -639,10 +677,10 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 - After `stdCommand('session', op)`, `keel session` parses argv with `op.input`, runs `op` and emits its records, and the MCP tools include `session`; unfilled, I1055, exit 0; filling it with another `op` throws E1053.
 ~~~
 
-### std.sessions (1,498 after RFC 0081, to 1,498)
-- Module: "A `redact`/`expose` entry is `<subject>:<target>#<path>`: ... `s.secret` values (also in `nav` search) and password inputs are always redacted;" becomes "`redact` entries are `el:<id>` (its values in every event) and `error:<code>#data.<path>`; `expose` entries `tx:<name>#<path>` (payload), `store:<id>#<path>` (state) and `route:<id>#<path>`. `record` keeps every value but masked `redact` entries and `.pii()` values, which become their schema's generated value. `s.secret` values (also in `nav` search), password and `.pii()` inputs are always redacted;".
-- Rules: E2001 "or whose path its schema lacks (fix removes it)" becomes "or whose path its schema lacks or marks `.pii()` (fix removes it; `record` throws)".
-- Conformance text unchanged; clause 2 gains a 100-run property (Conformance diff).
+### std.sessions (1,498 after RFC 0081, to 1,499)
+- Module: "`record` keeps every value but `redact` entries, which become their schema's generated value" becomes "`record` keeps every value but `redact` entries and `.pii()` values, which become their schema's generated value". The five subjects stay (D2).
+- Trims that pay for it: "`tx:` transaction name (payload)" becomes "`tx:` transaction (payload)"; "`el:` element id" becomes "`el:` element"; "drop every redacted value" becomes "drop redacted values".
+- Rules and Conformance text unchanged; clause 2's file gains a `.pii()` property (Conformance diff).
 
 Full text after the change:
 ~~~md
@@ -650,7 +688,7 @@ Full text after the change:
 status: conformance-covered
 
 **Module.** `@keel/std-sessions` is stdlib module `sessions` (capabilities `clock`, `observe`, `session`, `storage`). Modules set `std['@keel/std-sessions']: { redact?, expose?, readers? }`; only `redact` reaches browsers.
-`redact` entries are `el:<id>` (its values in every event) and `error:<code>#data.<path>`; `expose` entries `tx:<name>#<path>` (payload), `store:<id>#<path>` (state) and `route:<id>#<path>`. `record` keeps every value but masked `redact` entries and `.pii()` values, which become their schema's generated value. `s.secret` values (also in `nav` search), password and `.pii()` inputs are always redacted; error messages and `data` (but `data.at`) drop every redacted value. `to-test` also writes each `s.string()` value no `expose` entry names as `x` repeated.
+A `redact`/`expose` entry is `<subject>:<target>#<path>`: `tx:` transaction (payload), `store:` id (state), `route:` id (`params.*`, `search.*`), `el:` element (its values in every event), `error:` code (`data.*`). `record` keeps every value but `redact` entries and `.pii()` values, which become their schema's generated value (`el:`, `error:` strings: `x` repeated). `s.secret` values (also in `nav` search) and password inputs are always redacted; error messages and `data` (but `data.at`) drop redacted values. `to-test` also writes each `s.string()` value no `expose` entry names as `x` repeated.
 
 **API.** Capability `session(ctx)`: `put(url, s): Promise<Result<null, KeelError>>` (real: POST, non-2xx `sessions.putFailed`; sim: in `taken(): { url, session }[]`) and `id()`: `random.id('Session')` on its own ctx. `record(ctx, { limit = 500, upload?: URL })` returns `{ events(), errors(), stop(): Session }`, one per ctx until `stop()`; with `upload` it puts the session on the first `error`.
 ```ts
@@ -666,7 +704,7 @@ The base (`at`, `route`, `state`) is the ctx's route when `record` starts, else 
 
 **Ingest.** `routes`: `sessions.ingest` (`POST /sessions`, input `Session`, as filed over 256 KiB 413) recomputes `error` and `fingerprint` from `events` and adds it to store `sessions.archive` (per fingerprint `count`, `first`, `last`, newest 5; at most 64 fingerprints and 4 MiB, oldest `last` evicted, never the one written). `sessions.list` (`/sessions/list`, search `{ failing?, since? }`) loads it behind guard `sessions.reader`: `caller` in `readers`, else redirect to `sessions.ingest`.
 
-**Rules.** E2001 `redact`/`expose` entry whose subject is unknown or another module's, or whose path its schema lacks or marks `.pii()` (fix removes it; `record` throws) · E2002 session file fails `sessions.Session` · E2003 replay cannot apply input N or the base · E2004 replay fingerprint differs (`minimize`, `to-test` stop) · E2005 a non-`node` deployable serves `routes` · E2006 a `record` `upload` not credential-free http(s) on the page's origin. E2002-E2004 diag the file at 1:1.
+**Rules.** E2001 `redact`/`expose` entry whose subject is unknown or another module's, or whose path its schema lacks (fix removes it) · E2002 session file fails `sessions.Session` · E2003 replay cannot apply input N or the base · E2004 replay fingerprint differs (`minimize`, `to-test` stop) · E2005 a non-`node` deployable serves `routes` · E2006 a `record` `upload` not credential-free http(s) on the page's origin. E2002-E2004 diag the file at 1:1.
 
 **Conformance.**
 - Under one sim seed, one script of fires produces byte-equal sessions; events are in occurrence order with `at` equal to `ctx.clock.now()` then.
@@ -693,19 +731,19 @@ The base (`at`, `route`, `state`) is the ctx's route when `record` starts, else 
 The conformance-writer of each lane writes the added files from the accepted spec text, skipped until implementation; each clause is cited verbatim by exactly one file. The moved and edited headers below go in one commit tagged `rfc:0083`.
 
 - **Moved, header re-quoted (rfc:0083).** `packages/schema/conformance/secret.test.ts` (`k.schema` to `k.privacy`, clause text unchanged); `packages/server/conformance/caller-cookie-host-prefix.test.ts` (`k.server` to `k.security`, unchanged text); `packages/ui/conformance/rules-e1801-e1802-types.test.ts` ("k.ui Rules E1801 ... and E1802" becomes "k.ui Rules E1801 ...; k.a11y Rules E1802 ..."); `packages/ui/conformance/rules-e1804-contrast.test.ts` ("k.ui Conformance 6 and Rule E1804" becomes "k.ui Conformance 6 and k.a11y Rule E1804"). The two k.ui a11y clauses stay in k.ui, so `ui-base-elements-axe.test.ts`, `base-elements-axe-core.test.ts` and `ui-e1804-contrast.test.ts` keep their headers.
-- **Changed behavior (rfc:0083).** `packages/std-sessions/conformance/redaction.test.ts`, `to-test-redaction.test.ts` and `E2001-redact-path.test.ts` mark their fixture fields with `.pii()` instead of `tx:`, `store:` and `route:` `redact` entries; `E2001-redact-path.test.ts` adds the old subjects and an `expose` under a marked path as E2001 cases and `record` throwing; `redaction.test.ts` becomes a 100-run property over generated payload schemas with marked fields (std.sessions#2 to `probabilistic`). `packages/testing/conformance/rule-E1703.test.ts` keeps its header; its violation ids are axe-core's (`image-alt`, `button-name`, `link-name`, `label` are the same ids).
-- **Renumbered ledger items.** k.schema clauses 10 to 12 become 9 to 11, and k.server clauses after the moved cookie clause move up by one. The orchestrator commits the spec text and the regenerated `tooling/ledger/ledger.json` together; the reviewer checks that each moved clause keeps its rung under its new id.
+- **Changed behavior (rfc:0083).** `packages/std-sessions/conformance/redaction.test.ts` keeps its `redact`-entry cases and adds a 100-run property over generated payload schemas with `.pii()` fields, asserting no marked value appears in the session JSON and the payload parses (std.sessions#2 to `probabilistic`). `to-test-redaction.test.ts` and `E2001-redact-path.test.ts` are unchanged. `packages/testing/conformance/rule-E1703.test.ts` keeps its header; its violation ids are axe-core's (`image-alt`, `button-name`, `link-name`, `label` are the same ids).
+- **Renumbered ledger items.** k.schema clauses 10 to 12 become 9 to 11, and k.server clauses after the moved cookie clause move up by one. RFC 0082's k.testing and k.ledger clause lists are unchanged by this RFC. The orchestrator commits the spec text and the regenerated `tooling/ledger/ledger.json` together; the reviewer checks that each moved clause keeps its rung under its new id.
 - **Kernel, added.** k.a11y: `packages/check/conformance/a11y-contrast-inherited.test.ts`, `a11y-e1820-reversed.test.ts`; `packages/testing/conformance/a11y-render-contrast.test.ts`, `a11y-document-rules.test.ts`, `a11y-axe-e1703.test.ts`, `a11y-e1821-autocomplete.test.ts`, `a11y-focus-order.test.ts`; `packages/cli/conformance/a11y-ledger-claims.test.ts`; `packages/ui/conformance/a11y-contrast-table.test.ts`. k.security: `packages/server/conformance/security-{headers,policy-nonce,dev-report-only,no-inline,report-log,report-window}.test.ts`, `packages/runtime-dom/conformance/security-trusted-types.test.ts`, `packages/check/conformance/security-{e1570,e1571}.test.ts`, `packages/cli/conformance/security-csp-txt.test.ts` (with the moved cookie file). k.privacy: `packages/schema/conformance/privacy-{derivations,pii-paths,pii-values,doc}.test.ts`, `packages/server/conformance/privacy-diag-scrub.test.ts`, `packages/forms/conformance/privacy-input-mask.test.ts`, `packages/check/conformance/privacy-e1111.test.ts` (with the moved secret file). k.head: `packages/router/conformance/head-focus.test.ts`. k.evidence: `packages/cli/conformance/evidence-{write-verify,tamper,no-key,deterministic,no-pii,pii-coverage,security,failing-run,audit}.test.ts`.
 - **Properties for coverage.** `privacy-pii-values`, `privacy-diag-scrub`, `privacy-input-mask` and `evidence-no-pii` run 100 or more seeded runs over generated schemas with marked nodes, so `pii.json` coverage can reach 1.
 - **Not conformance.** Property tests (`test/*.property.test.ts`): `contrastTable` is symmetric in ratio and 21 on black and white; `piiValues` of a value with no marked path is empty; the nonce never repeats across 10,000 sim documents of different seeds; a bundle's verification fails for every single-byte change of any file.
 
 ## Lanes
-**Orchestrator, before the batch.** Write the accepted spec text into `spec/` (four new sections, the seven edits, the map). Write the ADRs. Move `axe-core` 4.14.0 from `packages/ui` devDependencies to `packages/testing` dependencies; add the `./a11y` export to `packages/testing/package.json`, `./csp` to `packages/server`, `./evidence` to `packages/cli`. Add `reports/` to the root `.gitignore`. Re-base `tooling/budgets.json` (Token impact). Correct `docs/BRAND.md`'s contrast column with the measured values, and `docs/A11Y-TARGET.md`'s sentence on what `render` runs, now (principle 11), and again when K2 lands. Add `docs/THREAT-MODEL.md` lines for the policy, the report endpoint and personal data, and `docs/ARCHITECTURE.md` Borrow vs build rows (accessibility rules: borrow axe-core, build token contrast; CSP: build, nonce; evidence signing: borrow `node:crypto` Ed25519). Add the `csp` and `evidence` record kinds to `docs/OUTPUT.md`. Run `pnpm install` once. Shared files stay with the orchestrator: `spec/**`, `docs/adr/**`, `docs/ARCHITECTURE.md`, `docs/OUTPUT.md`, `docs/THREAT-MODEL.md`, `docs/BRAND.md`, `docs/A11Y-TARGET.md`, `docs/HANDOFF.md`, `tooling/budgets.json`, `tooling/ledger/ledger.json`, `tasks/BACKLOG.md`, `pnpm-lock.yaml`, `evals/results/**`. A lane that finds a defect in its spec text reports it and does not edit `spec/`.
+**Orchestrator, before the batch.** Write the accepted spec text into `spec/` (four new sections, the eight edits, the map). Write the ADRs. Move `axe-core` 4.14.0 from `packages/ui` devDependencies to `packages/testing` dependencies; add the `./a11y` export to `packages/testing/package.json`, `./csp` to `packages/server`, `./evidence` to `packages/cli`. Add `reports/` to the root `.gitignore`. Re-base `tooling/budgets.json` (Token impact). Now, ahead of the batch (principle 11): `docs/A11Y-TARGET.md`'s sentence on what `render` runs becomes "`@keel/testing` `render` runs four structural rules (`image-alt`, `button-name`, `link-name`, `label`) and compares roles and names with `a11y.json` (E1702, E1703)", and returns to axe-core when K2 lands; `docs/BRAND.md`'s Stone row becomes `#6B6B74` with its measured ratio 5.01:1 (D5), and the Verified Green and Error Crimson rows state their measured 4.76:1 and 6.15:1; `docs/brand/keel-logo-lockup.svg`'s `#71717A` becomes `#6B6B74`. Add `docs/THREAT-MODEL.md` lines for the policy, the report endpoint and personal data, and `docs/ARCHITECTURE.md` Borrow vs build rows (accessibility rules: borrow axe-core, build token contrast; CSP: build, nonce; evidence signing: borrow `node:crypto` Ed25519). Add the `csp` and `evidence` record kinds to `docs/OUTPUT.md`. Run `pnpm install` once. Shared files stay with the orchestrator: `spec/**`, `docs/adr/**`, `docs/ARCHITECTURE.md`, `docs/OUTPUT.md`, `docs/THREAT-MODEL.md`, `docs/BRAND.md`, `docs/A11Y-TARGET.md`, `docs/HANDOFF.md`, `tooling/budgets.json`, `tooling/ledger/ledger.json`, `tasks/BACKLOG.md`, `pnpm-lock.yaml`, `evals/results/**`. A lane that finds a defect in its spec text reports it and does not edit `spec/`.
 
 | Lane | Owns (exclusive) | Needs | Verify |
 | --- | --- | --- | --- |
 | kernel (K1 static rules, K3, K4 Trusted Types, K5 marks and mask) | `packages/schema/src/**`, `packages/forms/src/**`, `packages/runtime-dom/src/**`, `packages/router/src/**`, `packages/check/src/**`; their conformance files above; kernel changesets | nothing; lands `.pii()`, `piiPaths`, `piiValues`, `data-k-pii` and the mask first, then Trusted Types and focus, then the check rules | `pnpm --filter @keel/schema --filter @keel/forms --filter @keel/runtime-dom --filter @keel/router --filter @keel/check run check`, the same with `run test` |
-| a11y | `packages/ui/src/**`, `packages/testing/src/**`, their conformance files | `data-k-pii` (E1821) from kernel; S5's harness (R1 to R4) | `pnpm --filter @keel/ui --filter @keel/testing run check && pnpm --filter @keel/ui --filter @keel/testing run test` |
+| a11y | `packages/ui/src/**` (including `brand/brandTokens.ts`: `textSecondary` `#6B6B74`, D5), `packages/ui/test/brand.test.ts`, `packages/testing/src/**`, their conformance files | `data-k-pii` (E1821) from kernel; S5's harness (R1 to R4) | `pnpm --filter @keel/ui --filter @keel/testing run check && pnpm --filter @keel/ui --filter @keel/testing run test` |
 | server | `packages/server/src/**`, its conformance files | `piiValues` from kernel | `pnpm --filter @keel/server run check && pnpm --filter @keel/server run test` |
 | sessions | `packages/std-sessions/**` | `piiPaths`, `piiValues`, the mask | `pnpm --filter @keel/std-sessions run check && pnpm --filter @keel/std-sessions run test` |
 | evidence | `packages/cli/src/**`, its conformance files | `A11yRun` and `criteriaOf` from a11y; `cspPolicy` and `securityHeaders` from server; `piiPaths` from kernel | `pnpm --filter @keel/cli run check && pnpm --filter @keel/cli run test` |
@@ -716,14 +754,14 @@ Order: kernel starts first and lands the marks within its first commit, since se
 **Ride-along backlog lines** (only where a lane already owns the package): 0303's `loadAssets` realpath guard (server lane; it sits beside the asset headers K4 adds); 0273 if RFC 0080's `origin` has not closed it (server lane: `sameSite` behind a TLS proxy, the forwarded-proto rule HSTS also uses); 0270 and 0302 if S4's sessions lane left them open (sessions lane); 0258 (E1303 reducer shapes, `packages/check`) with the kernel lane if its rules work leaves room. 0257 and 0261 (`packages/store`, which no lane owns), 0275 (router and std-sessions search defaults) and 0296 (Node globals in client files) wait. 0223 (P1 launch checklist) reuses this stage's evidence bundle for the site's own review.
 
 ## Migration
-- **golden-1 and golden-2 under the policy.** Their pages are `client` deployables (`web`), served by their host, so no policy applies to them; `keel build` adds `dist/web/csp.txt`. Their `api` deployables are `node`: every response gains the six headers, and any document gains the policy, the `nonce` attribute and the `csp-nonce` meta. Measured: neither app has an inline script, style, `style` attribute or `on*` attribute in a served document, a cross-origin URL literal (the only absolute URLs are `vite.config.ts` dev proxies, outside app code) or a data URI in its built CSS, so nothing they serve breaks and no source edit is needed. Their tests assert no security header, and the server conformance regexes for the module script (`document-islands.test.ts` lines 81, 109, 111) accept a trailing `nonce` attribute. Under the extended E1804 neither app composes a failing pair (no component puts `textSecondary` text on `surfaceLow`). Under E1111 neither has personal data in a URL. Fix diff: none.
+- **golden-1 and golden-2 under the policy.** Their pages are `client` deployables (`web`), served by their host, so no policy applies to them; `keel build` adds `dist/web/csp.txt`. Their `api` deployables are `node`: every response gains the six headers, and any document gains the policy, the `nonce` attribute and the `csp-nonce` meta. Measured: neither app has an inline script, style, `style` attribute or `on*` attribute in a served document, a cross-origin URL literal (the only absolute URLs are `vite.config.ts` dev proxies, outside app code) or a data URI in its built CSS, so nothing they serve breaks and no source edit is needed. Their tests assert no security header, and the server conformance regexes for the module script (`document-islands.test.ts` lines 81, 109, 111) accept a trailing `nonce` attribute. Under the extended E1804 neither app composes a failing pair (no component puts `textSecondary` text on `surfaceLow`). D5's darker `textSecondary` reaches golden-1, golden-2 and the inspector through `brandTokens` with no source edit (D4). Under E1111 neither has personal data in a URL. Fix diff: none.
 - **apps/inspector.** A `client` app: unaffected by the policy; its cross-origin fetch of another app's inspect document keeps working, which is why S6 sends no meta policy.
-- **apps/sessions and std-sessions users.** No app sets `tx:`, `store:` or `route:` `redact` entries (searched: none in `apps/`). A project that does gets E2001 from `keel check` with a fix that removes the entry, and `record` throws until the field is marked `.pii()`. Sessions recorded before still parse.
+- **apps/sessions and std-sessions users.** `redact` config is unchanged (D2). A project that marks fields `.pii()` gets their values redacted in sessions in addition to its entries; sessions recorded before still parse.
 - **Kernel callers.** `.pii()`, `autocomplete`, `focusOrder()`, `contrastTable`, the `csp` record kind and `keel evidence` are additions. The harness's E1703 now comes from axe-core: a component that passed the four old rules can fail a WCAG-tagged axe rule, which is the point; each such failure in `packages/*/test` or the golden apps is fixed in the a11y lane's batch, and none is suppressed. Focus after navigation changes `document.activeElement` in router tests that assert it (none found).
 - **Docs.** Listed under Lanes (orchestrator prep and the golden-3 lane).
 
 ## Token impact
-Sections after the change (measured): k.a11y 1,281, k.security 1,162, k.privacy 1,001, k.evidence 1,071 (new); k.ui 1,421 (from 1,498), k.schema 1,272 (from 1,498), k.server 1,458 (from 1,499 after RFC 0081), k.testing 1,459 (from 1,485), k.head 766 (from 671), k.cli 1,498 (from 1,486), std.sessions 1,498 (unchanged). k.cli and std.sessions are within two tokens of the cap: their next change needs a split first (k.cli's seam is its **Inspect** paragraph, std.sessions' its **Ingest** paragraph). A task building a compliant app reads k.a11y, k.security and k.privacy, about 3,450 tokens; the golden-3 spec slice keeps their key lines. The four skills grow by about 160 tokens in total.
+Sections after the change (measured): k.a11y 1,281, k.security 1,162, k.privacy 1,001, k.evidence 1,071 (new); k.ui 1,421 (from 1,498), k.schema 1,272 (from 1,498), k.server 1,458 (from 1,499 after RFC 0081), k.testing 1,081 (from 1,122 after RFC 0082), k.ledger 1,428 (from 1,413 in RFC 0082), k.head 766 (from 671), k.cli 1,500 (from 1,488 after RFC 0082), std.sessions 1,499 (from 1,498). k.cli is at the cap and std.sessions one token under: their next change needs a split first (k.cli's seam is its **Inspect** paragraph, std.sessions' its **Ingest** paragraph). A task building a compliant app reads k.a11y, k.security and k.privacy, about 3,450 tokens; the golden-3 spec slice keeps their key lines. The four skills grow by about 160 tokens in total.
 
 Package sizes (gzip, the `tooling/budgets.mjs` rule; today measured, the rest estimated):
 
@@ -737,7 +775,7 @@ Package sizes (gzip, the `tooling/budgets.mjs` rule; today measured, the rest es
 | `@keel/server` | 14,575 B | +1.3 kB (headers, policy, report endpoint and window, `diag` scrub) | inside RFC 0080's re-base to `16kb` only if S3 and S4 leave 1.3 kB; else re-base to `17kb` |
 | `@keel/testing` | 6,974 B | +1.5 kB (axe-core runner, render contrast, `focusOrder`, report writer; axe-core itself is external) | `9kb` holds |
 | `@keel/cli` | 19,166 B | +3 kB (evidence, verify, SBOM, ledger claims) | `22kb` is crossed; re-base to `24kb` |
-| `@keel/std-sessions` | 6,957 B | +0.2 kB (mark-driven paths, subject check) | `7kb` (7,168 B) is crossed; re-base to `7.5kb` |
+| `@keel/std-sessions` | 6,957 B | +0.15 kB (`.pii()` paths beside `redact` entries) | `7kb` (7,168 B) is crossed; re-base to `7.5kb` |
 
 App bundles grow by the `@keel/ui`, `@keel/forms`, `@keel/runtime-dom` and `@keel/router` deltas, about 0.6 kB gzip; axe-core never ships to a browser.
 
@@ -753,22 +791,15 @@ App bundles grow by the `@keel/ui`, `@keel/forms`, `@keel/runtime-dom` and `@kee
 - **Signing identity.** A signature proves the bundle is unchanged since a holder of the key signed it; who holds the key is the project's process, published as the `keyId`.
 
 ## ADRs
-Written with this RFC's acceptance, in `docs/adr/`, numbered by the orchestrator after RFC 0082's:
-- **Accessibility claims come from axe-core and token contrast, per route and WCAG criterion** (K1, K2, k.a11y). The harness borrows axe-core for WCAG-tagged rules and builds contrast from atomic classes and tokens, since happy-dom has no colors; claims are ledger items `a11y:<routeId>#<criterion>` at `example` or `none`. Chosen over Keel's own rule set (a second engine to maintain), over real browsers in `keel test` (no sim determinism) and over claims per criterion without routes (hides where a failure is).
-- **Focus moves to the page heading after a client navigation** (K3, k.head). The first `h1`, else `main`, with `tabindex="-1"`; search-only navigations keep focus. Chosen over a live-region announcement (the title already changes; screen readers read the focused heading) and over leaving focus (it can sit on a removed link).
-- **One fixed nonce policy with Trusted Types, reports to the app's own log** (K4, k.security). Per-response nonce with `'strict-dynamic'`, no option to widen, `keel` the only Trusted Types policy, `/__keel/csp` without the write proof but capped and redacted; `client` and `static` get `csp.txt`. Chosen over `'self'` allowlists (bypassable), hashes (no inline script to hash), a configurable policy (every option widens it), a meta policy (no `frame-ancestors`, breaks the inspector) and a third-party collector (sends URLs out).
-- **Personal data is a schema mark from a closed class set; sinks redact by schema** (K5, k.privacy, std.sessions). `.pii(class)` keeps types and derivations; sessions, inputs, logs and the bundle redact; URLs refuse marked data; `redact` keeps `el:` and `error:` only. Chosen over a wrapper type (personal data must flow), free labels (no inventory) and config paths beside the mark (two ways).
-- **The evidence bundle is an offline, Ed25519-signed directory built from the k.cli operations** (K6, k.evidence). Runs check, test and ledger in process, holds no app value, verifies without the source. Chosen over Sigstore (external identity and log), over a stdlib command (needs kernel operations; `stdCommand` reserves `session`) and over running `pnpm audit` inside (network).
+Written with this RFC's acceptance, in `docs/adr/`:
+- `0092-accessibility-claims-axe-token-contrast.md`: **Accessibility claims come from axe-core and token contrast, per route and WCAG criterion** (K1, K2, k.a11y). The harness borrows axe-core for WCAG-tagged rules and builds contrast from atomic classes and tokens, since happy-dom has no colors; claims are ledger items `a11y:<routeId>#<criterion>` at `example` or `none`. Chosen over Keel's own rule set (a second engine to maintain), over real browsers in `keel test` (no sim determinism) and over claims per criterion without routes (hides where a failure is).
+- `0093-focus-after-client-navigation.md`: **Focus moves to the page heading after a client navigation** (K3, k.head). The first `h1`, else `main`, with `tabindex="-1"`; search-only navigations keep focus. Chosen over a live-region announcement (the title already changes; screen readers read the focused heading) and over leaving focus (it can sit on a removed link).
+- `0094-fixed-nonce-csp-trusted-types.md`: **One fixed nonce policy with Trusted Types, reports to the app's own log** (K4, k.security). Per-response nonce with `'strict-dynamic'`, no option to widen, `keel` the only Trusted Types policy, `/__keel/csp` without the write proof but capped and redacted; `client` and `static` get `csp.txt`. Chosen over `'self'` allowlists (bypassable), hashes (no inline script to hash), a configurable policy (every option widens it), a meta policy (no `frame-ancestors`, breaks the inspector) and a third-party collector (sends URLs out).
+- `0095-personal-data-schema-mark.md`: **Personal data is a schema mark from a closed class set; sinks redact by schema** (K5, k.privacy, std.sessions). `.pii(class)` keeps types and derivations; sessions, inputs, logs and the bundle redact; URLs refuse marked data; std.sessions' `redact` subjects stay beside the mark (D2). Chosen over a wrapper type (personal data must flow), free labels (no inventory) and replacing the `redact` subjects (rejected by the user, D2).
+- `0096-evidence-bundle-ed25519.md`: **The evidence bundle is an offline, Ed25519-signed directory built from the k.cli operations** (K6, k.evidence). Runs check, test and ledger in process, holds no app value, verifies without the source. Chosen over Sigstore (external identity and log), over a stdlib command (needs kernel operations; `stdCommand` reserves `session`) and over running `pnpm audit` inside (network).
 
 ## Open questions
-Each needs the user under WORKFLOW's escalation list; the recommendation follows each.
-
-- **Q1. New hand-written API shapes** (escalated: new user-facing API). `.pii(class)` with `PiiClass` (`name`, `contact`, `location`, `identifier`, `financial`, `special`, `network`, `content`); `autocomplete: Autofill` on `Input`, `TextArea`, `Select`; `focusOrder()` on harness handles; `contrastTable(tokens)`; `keel evidence [--out] [--audit]` and `--verify <dir> [--key]` with `KEEL_EVIDENCE_KEY`. Recommendation: accept as a set; each is the smallest shape its claim needs (defaults 1 and 6).
-- **Q2. `redact` loses `tx:`, `store:` and `route:`** (escalated: privacy). Recommendation: accept. It does not weaken redaction: every such path becomes a `.pii()` mark that also covers logs and inputs, `record` throws on a leftover entry instead of recording the value, and E1111 removes marked data from URLs (defaults 2 and 4). No app in the repo uses those subjects.
-- **Q3. External parties** (escalated: external integrations). (a) CSP reports go to the app's own `/__keel/csp`, no outside collector: recommend. (b) Dependency advisories come from a `pnpm audit --json` file CI passes; `keel evidence` makes no network call: recommend. (c) Ed25519 with a project key in `KEEL_EVIDENCE_KEY`, not Sigstore: recommend; a later RFC can add a transparency log. (d) The accessibility auditor and the pen-test firm, their dates and budget, and whether the deployment is public or allowlisted: the user's choice; recommend one firm per discipline, a WCAG 2.2 AA scope with a desktop and a mobile screen reader, and an OWASP ASVS level 2 scope, both receiving the bundle and THREAT-MODEL.
-- **Q4. Golden-app migrations** (escalated). golden-1 and golden-2 change no source; their `api` responses gain headers and their builds gain `csp.txt`. Recommendation: accept; no eval reruns beyond the batch-end ones.
-- **Q5. Brand contrast** (a brand decision). `textSecondary` (`#71717A`) on `surfaceLow` measures 4.36:1 and fails 1.4.3 wherever a component composes the pair; BRAND.md's table overstates three ratios. Recommendation: darken `textSecondary` to `#6B6B74` (4.75:1 on `surfaceLow`, 5.01:1 on `surface`) in `brandTokens` and BRAND.md, and correct the table now.
-- **Q6. Policy for `client` and `static` deployables.** Recommendation: `csp.txt` only in S6 (Proposal 5); a later RFC can add per-deployable allowed origins and a build-time meta policy once a declared-origins shape exists.
+None. The escalations the defaults required are answered as D1 to D6.
 
 **Borrow vs build, with evidence.**
 - **axe-core, not more of Keel's own rules.** Keel's harness has four rules; axe-core 4.14.0 is installed, its WCAG 2.0 to 2.2 A and AA tags pass on every base element under happy-dom 21.0.4 in `base-elements-axe-core.test.ts`, and its rule tags give the criterion map the claims need. Build only what happy-dom cannot do: contrast, from tokens.
