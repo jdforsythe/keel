@@ -5,7 +5,7 @@
 ## Shape (tasks/PROGRAM.md)
 1. [x] Design RFC 0080 `docs/rfc/0080-s3-server-depth.md` accepted (9611941; ADR-0073 to ADR-0079; std-streams dropped: live loaders in k.server are the one stream transport, std.channels builds on them).
 2. [x] Orchestrator accepts the RFC; user answered D2-D5.
-3. [ ] Conformance first, per lane, after the S2 push (S2 and S3 both touch server, check, cli, scaffold).
+3. [~] Conformance first: three writers running (kernel sections k.topology/k.server/k.services/k.module; k.compat + k.scaffold; std.jobs + std.schedules) after prep commit 221406e.
 4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
 5. [ ] Exit proof eval.
 
@@ -21,4 +21,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
 
 ## Next action
-Step 2b: a sonnet prep agent is applying RFC 0080 "Spec diff" and the orchestrator prep (k.topology, k.compat, std.jobs, std.schedules; k.server/k.services/k.module/k.scaffold edits; skeletons std-jobs, std-schedules; deps.json; budgets; `pnpm install`). On its report: `pnpm check`, commit `wip: rfc:0080 spec text and skeletons`, then step 3: conformance-writers per lane (kernel: k.topology, k.compat, k.server, k.services, k.module, k.scaffold edits; jobs-schedules; deploy; compat; golden), skipped until implementation; then step 4 per the RFC "Lanes" table (kernel + jobs-schedules, deploy, compat, golden lanes; ≤ 5 + 1). Conformance guard: HEAD subject must carry rfc:0080 for edits to tracked conformance files.
+Step 3 in flight. On each writer's report: run `npx vitest run conformance` in the touched packages (skipped suites must load clean), commit `wip: rfc:0080 <sections> conformance, skipped`. When all three are committed, step 4: launch the implementation lanes per RFC 0080 "Lanes" (kernel: server, services, router, compiler, testing; jobs-schedules; deploy: scaffold, cli, generate.mjs; compat: check + surface artifact; golden last), ≤ 5 + 1; the kernel lane lands the live-loader and topology contract first and reports so dependent lanes can be resumed. Conformance guard: HEAD subject must carry rfc:0080 for edits to tracked conformance files.
