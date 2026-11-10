@@ -32,7 +32,7 @@ function underEnv<T>(tz: string, lang: string, run: () => T): T {
   }
 }
 
-test.skip("With `process.env.TZ` and `process.env.LANG` changed, every export returns equal results for equal arguments.", () => {
+test("With `process.env.TZ` and `process.env.LANG` changed, every export returns equal results for equal arguments.", () => {
   fc.assert(
     fc.property(
       fc.double({ noNaN: true, noDefaultInfinity: true }),

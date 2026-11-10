@@ -17,6 +17,7 @@ const project = (withDep: boolean, code: string): Files => [
 const count = (files: Files, code: string) => check(files, { types: false }).diagnostics.filter((d) => d.code === code);
 const locale = fc.constantFrom("de-DE", "en-US", "ja-JP", "fr-FR");
 
+// Skipped: the E2301 assertions pass; the E1758 assertion waits on the kernel lane adding E1758 to @keel/check.
 test.skip("With `@keel/std-i18n` in a module's `deps`, `keel check` reports one E2301 each for `new Intl.NumberFormat('de-DE')` and `a.localeCompare(b, 'de-DE')` in its files and none for them in a module without it; `n.toLocaleString()` reports E1758 and no E2301.", () => {
   fc.assert(
     fc.property(locale, (l) => {
@@ -34,7 +35,7 @@ test.skip("With `@keel/std-i18n` in a module's `deps`, `keel check` reports one 
   expect(count(project(true, bare), "E2301").length).toBe(0);
 });
 
-test.skip("E2301 message names the stdlib function to call (`formatNumber`, `formatMoney`, `formatDate`, `formatInstant`, `formatDuration`, `compareText`, `plural` or `localeName`) and carries no fix.", () => {
+test("E2301 message names the stdlib function to call (`formatNumber`, `formatMoney`, `formatDate`, `formatInstant`, `formatDuration`, `compareText`, `plural` or `localeName`) and carries no fix.", () => {
   const names = [
     "formatNumber",
     "formatMoney",

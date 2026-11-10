@@ -3,7 +3,7 @@
 import { localeName } from "@keel/std-i18n";
 import { expect, test } from "vitest";
 
-test.skip("`localeName` is `English (United States)`, `Deutsch (Deutschland)` and `日本語 (日本)` for `en-US`, `de-DE` and `ja-JP`.", () => {
+test("`localeName` is `English (United States)`, `Deutsch (Deutschland)` and `日本語 (日本)` for `en-US`, `de-DE` and `ja-JP`.", () => {
   expect(localeName("en-US")).toBe("English (United States)");
   expect(localeName("de-DE")).toBe("Deutsch (Deutschland)");
   expect(localeName("ja-JP")).toBe("日本語 (日本)");

@@ -17,7 +17,7 @@ const TAGS = [
   "zh-CN",
 ] as const;
 
-test.skip("`Locale.parse` accepts each of the 11 tags and rejects `en`, `de-de`, `en_US` and `fr-CA`, each with rule `enum`.", () => {
+test("`Locale.parse` accepts each of the 11 tags and rejects `en`, `de-de`, `en_US` and `fr-CA`, each with rule `enum`.", () => {
   for (const tag of TAGS) {
     const r = Locale.parse(tag);
     expect(r.ok).toBe(true);

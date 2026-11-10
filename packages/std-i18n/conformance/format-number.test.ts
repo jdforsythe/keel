@@ -18,7 +18,7 @@ const LOCALES = [
   "zh-CN",
 ] as const;
 
-test.skip("For every generated finite `n` and every `Locale` `l`, `formatNumber(n, l)` equals `new Intl.NumberFormat(l).format(n)`; `formatNumber(1234.5, l)` is `1,234.5` for `en-US`, `1.234,5` for `de-DE` and `1,234.5` for `ja-JP`.", () => {
+test("For every generated finite `n` and every `Locale` `l`, `formatNumber(n, l)` equals `new Intl.NumberFormat(l).format(n)`; `formatNumber(1234.5, l)` is `1,234.5` for `en-US`, `1.234,5` for `de-DE` and `1,234.5` for `ja-JP`.", () => {
   fc.assert(
     fc.property(fc.double({ noNaN: true, noDefaultInfinity: true }), fc.constantFrom(...LOCALES), (n, l) => {
       expect(formatNumber(n, l)).toBe(new Intl.NumberFormat(l).format(n));

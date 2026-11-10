@@ -24,7 +24,7 @@ const forms = fc.record(
   { requiredKeys: ["other"] },
 );
 
-test.skip("`plural(n, 'en-US', { one: '# recipe', other: '# recipes' })` is `1 recipe` for 1 and `2 recipes` for 2; with the same forms, `ja-JP` gives `1 recipes` for 1 and `de-DE` gives `1.234 recipes` for 1234. For every generated `n` and `Locale` `l`, the result is the form `Intl.PluralRules` selects, else `other`, with `#` replaced.", () => {
+test("`plural(n, 'en-US', { one: '# recipe', other: '# recipes' })` is `1 recipe` for 1 and `2 recipes` for 2; with the same forms, `ja-JP` gives `1 recipes` for 1 and `de-DE` gives `1.234 recipes` for 1234. For every generated `n` and `Locale` `l`, the result is the form `Intl.PluralRules` selects, else `other`, with `#` replaced.", () => {
   const f = { one: "# recipe", other: "# recipes" };
   expect(plural(1, "en-US", f)).toBe("1 recipe");
   expect(plural(2, "en-US", f)).toBe("2 recipes");

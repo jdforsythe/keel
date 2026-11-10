@@ -1,7 +1,6 @@
 // Spec: std.money, clause "For every generated `Money` and `Locale` `l`, `formatMoney(m, l)` equals the `Intl` expression above, and the digits of its `integer` and `fraction` parts (`formatToParts`), read as one integer, give back the absolute `amount`; `{ amount: 1800, currency: 'JPY' }` is `¥1,800` in `en-US`, `1.800 ¥` (U+00A0) in `de-DE` and `￥1,800` in `ja-JP`."
 // Spec: std.money API, clause 7 `formatMoney(m, locale)`, rfc:0079. `{ amount: 1250, currency: 'EUR' }` is `€12.50` in `en-US` and `12,50 €` in `de-DE` (U+00A0).
 // Seed 1337
-// Skipped: the current `formatMoney(m)` takes one argument; the implementation lane un-skips.
 import { gen } from "@keel/schema/gen";
 import { Money, formatMoney } from "@keel/std-money";
 import fc from "fast-check";
@@ -29,7 +28,7 @@ function decimal(amount: number, currency: string): string {
   return amount < 0 ? `-${body}` : body;
 }
 
-test.skip("For every generated `Money` and `Locale` `l`, `formatMoney(m, l)` equals the `Intl` expression above, and the digits of its `integer` and `fraction` parts (`formatToParts`), read as one integer, give back the absolute `amount`; `{ amount: 1800, currency: 'JPY' }` is `¥1,800` in `en-US`, `1.800 ¥` (U+00A0) in `de-DE` and `￥1,800` in `ja-JP`.", () => {
+test("For every generated `Money` and `Locale` `l`, `formatMoney(m, l)` equals the `Intl` expression above, and the digits of its `integer` and `fraction` parts (`formatToParts`), read as one integer, give back the absolute `amount`; `{ amount: 1800, currency: 'JPY' }` is `¥1,800` in `en-US`, `1.800 ¥` (U+00A0) in `de-DE` and `￥1,800` in `ja-JP`.", () => {
   fc.assert(
     fc.property(gen(Money), fc.constantFrom(...LOCALES), (m, l) => {
       const nf = new Intl.NumberFormat(l, { style: "currency", currency: m.currency });
