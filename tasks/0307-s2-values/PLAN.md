@@ -19,4 +19,4 @@
 - [ ] `pnpm eval` golden-2: prices and dates in 3 locales
 
 ## Next action
-Step 1: the design agent is writing `docs/rfc/0079-*.md`; read its report, then step 2.
+Step 1: the design agent (opus, relaunched 2026-11-10 after a context clear; no `docs/rfc/0079-*.md` existed yet) is writing `docs/rfc/0079-*.md`. If the file is missing on a fresh start, launch the agent again with the brief in PROGRAM.md "Shape of a stage" 1. Otherwise read its report, then step 2: accept under the WORKFLOW RFC defaults, send the listed open questions to the user, commit `wip: rfc:0079`.
