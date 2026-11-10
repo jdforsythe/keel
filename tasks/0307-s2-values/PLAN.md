@@ -16,7 +16,7 @@
 - D2 (user, 2026-11-10): message catalogs (translated page text) are in S2. Needs a second design pass.
 - D3 (user, 2026-11-10): golden-2 is migrated for the exit proof (price and added-on date per recipe, eval task updated).
 - D4 (user, 2026-11-10): `lang` is allowed on every k.ui base element.
-- D5 (open, user): how the locale is carried: path param `/:locale/...` or `?locale=`. The user asked for pros and cons; working assumption path param until answered.
+- D5 (user, 2026-11-10): the locale is a path param, `/:locale/...`; `?locale=` goes under Alternatives.
 - Note: two design agents ran (the one from before the context clear was still alive). Two drafts exist: `docs/rfc/0079-s2-values.md` (path param, `s.format`, E1758, K4 router, no ctx capability) and `docs/rfc/0079-s2-values-temporal-text-i18n.md` (`?locale=`, `s.refine`/`Refined`, E1601 widened, `i18n(ctx)` capability, `toDecimal` replaces `formatMoney`). A reconcile pass merges them into `0079-s2-values.md` with D2-D4 and the catalog design; the second file is then removed.
 
 ## Verification
@@ -25,4 +25,4 @@
 - [ ] `pnpm eval` golden-2: prices and dates in 3 locales
 
 ## Next action
-Step 2: a reconcile design agent (opus) is merging the two drafts into `docs/rfc/0079-s2-values.md` and adding message catalogs (D2). If no agent is running on a fresh start, launch it again. On its report: get D5 from the user if still open, `git rm` the second draft, set the RFC accepted, then the orchestrator prep in RFC "Lanes", then step 3.
+Step 2: a reconcile design agent (opus) is merging the two drafts into `docs/rfc/0079-s2-values.md` and adding message catalogs (D2). If no agent is running on a fresh start, launch it again. On its report: `git rm` the second draft, set the RFC accepted, then the orchestrator prep in RFC "Lanes", then step 3.
