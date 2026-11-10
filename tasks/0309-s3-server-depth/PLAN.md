@@ -5,8 +5,8 @@
 ## Shape (tasks/PROGRAM.md)
 1. [x] Design RFC 0080 `docs/rfc/0080-s3-server-depth.md` accepted (9611941; ADR-0073 to ADR-0079; std-streams dropped: live loaders in k.server are the one stream transport, std.channels builds on them).
 2. [x] Orchestrator accepts the RFC; user answered D2-D5.
-3. [~] Conformance first: three writers running (kernel sections k.topology/k.server/k.services/k.module; k.compat + k.scaffold; std.jobs + std.schedules) after prep commit 221406e.
-4. [~] Implementation batch: deploy and compat lanes launched (their conformance at 8c7ebe4); kernel and jobs-schedules wait for their writers; golden last.
+3. [x] Conformance first: all three lanes committed, skipped (8c7ebe4, cf47dd4, 5ddedf1).
+4. [~] Implementation batch: kernel (contract first, reports then resumes), deploy, compat, jobs-schedules running; golden last.
 5. [ ] Exit proof eval.
 
 ## Decisions
@@ -21,4 +21,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
 
 ## Next action
-Steps 3-4 in flight. Committed conformance: k.compat + k.scaffold (8c7ebe4), std.jobs + std.schedules (cf47dd4). Running: the kernel-sections writer; implementation agents for deploy (scaffold, cli place/generate, tooling/generate.mjs), compat (check, cli surface.json and --base) and jobs-schedules (std-jobs, std-schedules; may report waiting on the kernel's runner start and app.close()). On each writer's report: load-check and commit `wip: rfc:0080 ... conformance, skipped`, then launch that lane's implementation (kernel: server/services/router/compiler/testing, lands `service({ module })` and live loaders first and reports; jobs-schedules). Lane reports: commit by path with rfc:0080 in the subject. golden lane (golden-1 `digest` module, server.ts removal in golden-1, golden-2, apps/sessions, the split-topology eval) launches when kernel, deploy, compat are committed. Then step 5 (root check/test/build, ledger, budgets, reviewer + red-team, push, mutation alone) and the exit eval.
+Step 4 in flight: four agents (kernel: server/services/router/compiler/testing + cli build entry and dev; deploy: scaffold, cli place/generate, tooling/generate.mjs; compat: check, cli surface.json and --base; jobs-schedules). On the kernel's "contract landed" report: commit by path, resume jobs-schedules (runner start, app.close()) and compat (service({ module }) shape) if they reported waiting, then resume the kernel for steps 2-4. Each lane report: commit by path with rfc:0080 in the subject. golden lane launches when kernel, deploy, compat are committed: golden-1 gains `digest` (a module with a runner), golden-1/golden-2/apps/sessions drop `server.ts` for the generated entry, the split-topology eval (same app as one deployable and as two; same transcripts after id normalisation; no source diff). Then step 5 (root check/test/build, ledger, budgets, reviewer + red-team, push; mutation alone) and the exit eval.
