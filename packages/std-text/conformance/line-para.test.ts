@@ -33,7 +33,7 @@ function lineOk(v: string, min: number, max: number, allowLf: boolean): boolean 
   return v.normalize("NFC") === v && !BIDI.test(text) && !CONTROL.test(text) && n >= min && n <= max;
 }
 
-test.skip("`line({ max: 3 })` accepts three `👨‍👩‍👧` (24 code units) and rejects four; it rejects `''`, `'a\\nb'`, `'a‮b'`, `'a\\u0007'` and `'é'` (not NFC), each with rule `format`.", () => {
+test("`line({ max: 3 })` accepts three `👨‍👩‍👧` (24 code units) and rejects four; it rejects `''`, `'a\\nb'`, `'a‮b'`, `'a\\u0007'` and `'é'` (not NFC), each with rule `format`.", () => {
   const l = line({ max: 3 });
   expect(FAMILY.repeat(3).length).toBe(24);
   expect(l.parse(FAMILY.repeat(3)).ok).toBe(true);
@@ -43,7 +43,7 @@ test.skip("`line({ max: 3 })` accepts three `👨‍👩‍👧` (24 code units)
   }
 });
 
-test.skip("`line({ max: 3 })` rejects every string with a control character, U+2028, U+2029 or a bidi embedding, override or isolate, each with rule `format` (property).", () => {
+test("`line({ max: 3 })` rejects every string with a control character, U+2028, U+2029 or a bidi embedding, override or isolate, each with rule `format` (property).", () => {
   const forbidden = fc.oneof(
     fc.integer({ min: 0, max: 0x1f }),
     fc.integer({ min: 0x7f, max: 0x9f }),
@@ -60,7 +60,7 @@ test.skip("`line({ max: 3 })` rejects every string with a control character, U+2
   );
 });
 
-test.skip("`line` accepts a string exactly when it is NFC, has no forbidden character and has `min` to `max` graphemes (property).", () => {
+test("`line` accepts a string exactly when it is NFC, has no forbidden character and has `min` to `max` graphemes (property).", () => {
   fc.assert(
     fc.property(fc.fullUnicodeString({ maxLength: 12 }), fc.integer({ min: 0, max: 3 }), (v, min) => {
       const max = min + 4;
@@ -70,13 +70,13 @@ test.skip("`line` accepts a string exactly when it is NFC, has no forbidden char
   );
 });
 
-test.skip("`para({ max: 3 })` accepts `'a\\nb'` and rejects `'a\\r\\nb'`.", () => {
+test("`para({ max: 3 })` accepts `'a\\nb'` and rejects `'a\\r\\nb'`.", () => {
   const p = para({ max: 3 });
   expect(p.parse("a\nb").ok).toBe(true);
   expect(rules(p, "a\r\nb")).toContain("format");
 });
 
-test.skip("`para` accepts a string exactly when it is `line`-valid apart from U+000A (property).", () => {
+test("`para` accepts a string exactly when it is `line`-valid apart from U+000A (property).", () => {
   fc.assert(
     fc.property(fc.fullUnicodeString({ maxLength: 12 }), (v) => {
       expect(para({ max: 10 }).parse(v).ok).toBe(lineOk(v, 1, 10, true));

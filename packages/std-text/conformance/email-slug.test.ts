@@ -13,7 +13,7 @@ function rules(
   return r.ok || !r.error ? [] : r.error.data.issues.map((i) => i.rule);
 }
 
-test.skip("`Email` accepts `a.b+c@example.co` and rejects `a@b`, `a..b@example.com`, `é@example.com`, `@example.com` and a 255-character address; `Slug` accepts `pasta-bake-2` and rejects `Pasta`, `-a`, `a--b` and `''`. Each rejection has rule `format`.", () => {
+test("`Email` accepts `a.b+c@example.co` and rejects `a@b`, `a..b@example.com`, `é@example.com`, `@example.com` and a 255-character address; `Slug` accepts `pasta-bake-2` and rejects `Pasta`, `-a`, `a--b` and `''`. Each rejection has rule `format`.", () => {
   const long = `${"a".repeat(64)}@${"a".repeat(63)}.${"a".repeat(63)}.${"a".repeat(58)}.com`;
   expect(long.length).toBe(255);
   expect(Email.parse("a.b+c@example.co").ok).toBe(true);
@@ -26,7 +26,7 @@ test.skip("`Email` accepts `a.b+c@example.co` and rejects `a@b`, `a..b@example.c
   }
 });
 
-test.skip("`Email` keeps the address as written, with no case folding (property).", () => {
+test("`Email` keeps the address as written, with no case folding (property).", () => {
   fc.assert(
     fc.property(fc.stringMatching(/^[A-Za-z0-9]{1,20}$/), fc.stringMatching(/^[A-Za-z0-9]{1,20}$/), (local, label) => {
       const addr = `${local}@${label}.Com`;
@@ -38,7 +38,7 @@ test.skip("`Email` keeps the address as written, with no case folding (property)
   );
 });
 
-test.skip("`Slug` accepts every 1 to 64 character run of `a-z` and `0-9` in hyphen-separated runs and rejects uppercase, 65 characters and edge hyphens (property).", () => {
+test("`Slug` accepts every 1 to 64 character run of `a-z` and `0-9` in hyphen-separated runs and rejects uppercase, 65 characters and edge hyphens (property).", () => {
   fc.assert(
     fc.property(fc.stringMatching(/^[a-z0-9]{1,10}(-[a-z0-9]{1,10}){0,4}$/), (v) => {
       expect(Slug.parse(v).ok).toBe(true);

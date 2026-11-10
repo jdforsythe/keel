@@ -4,7 +4,7 @@ import { line, para } from "@keel/std-text";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
-test.skip("`line({ max: 0 })`, `line({ min: 2, max: 1 })` and `line({ max: 1.5 })` throw.", () => {
+test("`line({ max: 0 })`, `line({ min: 2, max: 1 })` and `line({ max: 1.5 })` throw.", () => {
   expect(() => line({ max: 0 })).toThrow();
   expect(() => line({ min: 2, max: 1 })).toThrow();
   expect(() => line({ max: 1.5 })).toThrow();

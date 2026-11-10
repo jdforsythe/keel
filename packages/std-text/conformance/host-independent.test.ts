@@ -19,7 +19,7 @@ function snapshot(v: string, w: string, l: Locale, max: number): unknown {
   ];
 }
 
-test.skip("With `process.env.TZ` and `process.env.LANG` changed, every export returns equal results for equal arguments.", () => {
+test("With `process.env.TZ` and `process.env.LANG` changed, every export returns equal results for equal arguments.", () => {
   const tz = process.env.TZ;
   const lang = process.env.LANG;
   try {
