@@ -1,3 +1,5 @@
+import { gen } from "@keel/schema/gen";
+import { Locale } from "@keel/std-i18n";
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -7,12 +9,11 @@ import { textCheck } from "../src/textCheck.ts";
 import { truncate } from "../src/truncate.ts";
 
 const SEED = 1337;
-const LOCALES = ["de-DE", "en-GB", "en-US", "es-ES", "fr-FR", "it-IT", "ja-JP", "ko-KR", "nl-NL", "pt-BR", "zh-CN"];
 const word = fc.fullUnicodeString({ maxLength: 8 });
 
 test("compareText is transitive on generated triples for every locale", () => {
   fc.assert(
-    fc.property(word, word, word, fc.constantFrom(...LOCALES), (a, b, c, l) => {
+    fc.property(word, word, word, gen(Locale), (a, b, c, l) => {
       const [x, y, z] = [a, b, c].sort((p, q) => compareText(p, q, l));
       if (x === undefined || y === undefined || z === undefined) throw new Error("three sorted values");
       expect(compareText(x, y, l)).toBeLessThanOrEqual(0);
@@ -25,7 +26,7 @@ test("compareText is transitive on generated triples for every locale", () => {
 
 test("compareText is reflexive: every string equals itself in every locale", () => {
   fc.assert(
-    fc.property(word, fc.constantFrom(...LOCALES), (a, l) => {
+    fc.property(word, gen(Locale), (a, l) => {
       expect(compareText(a, a, l)).toBe(0);
     }),
     { seed: SEED, numRuns: 100 },
