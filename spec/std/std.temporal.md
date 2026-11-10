@@ -17,7 +17,7 @@ formatDate(addedOn, props.params.locale, 'long')          // de-DE: '10. Novembe
 - `DateStyle` is `s.enum(['short', 'medium', 'long', 'full'])`; `UnitStyle` is `s.enum(['long', 'short', 'narrow'])`.
 - `TemporalError` is `KeelError<'temporal.outOfRange', { value: number }>`.
 - `instantOf(ms: number): Result<Instant, TemporalError>` is the instant `Math.floor(ms)` milliseconds after 1970-01-01T00:00:00.000Z; a value that is not finite or falls outside years 0001 to 9999 is `temporal.outOfRange` with `value` `ms`. No export reads the clock: the current instant is `instantOf(ctx.clock.now())`. `epochMs(i: Instant): number` is its inverse.
-- `plainDateOf(i: Instant, zone: TimeZone): PlainDate` is the calendar date at `i` in `zone`.
+- `plainDateOf(i: Instant, zone: TimeZone): PlainDate` is the calendar date at `i` in `zone`; when that date would leave years 0001 to 9999 (about 15 hours from the bounds), it is `i`'s UTC date.
 - `addDays(d: PlainDate, days: number): Result<PlainDate, TemporalError>`: a non-integer `days`, or a result outside years 0001 to 9999, is `temporal.outOfRange` with `value` `days`.
 - `durationOf(ms: number): Duration` for an integer within the bounds (any other `ms` throws, as `encode` of an invalid value does); `durationMs(d: Duration): number` is its inverse.
 - `formatDate(d: PlainDate, locale: Locale, style: DateStyle): string` is `new Intl.DateTimeFormat(locale, { dateStyle: style, timeZone: 'UTC' })` applied to `d` at 00:00 UTC.

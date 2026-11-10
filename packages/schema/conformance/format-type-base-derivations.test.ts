@@ -1,4 +1,4 @@
-// Spec: k.schema, clause "`encode`, `decodeStrings` and JSON Schema are `base`'s (JSON Schema adds `format: name`); `doc()` is `name`; `gen` maps `gen(from)` through `map`, keeping values `parse` accepts." (rfc:0079)
+// Spec: k.schema, clause "`encode` and JSON Schema are `base`'s (JSON Schema adds `format: name`); `decodeStrings` coerces as `base` does and then parses the format, so a value `check` refuses is a `format` issue; `doc()` is `name`; `gen` maps `gen(from)` through `map`, keeping values `parse` accepts." (rfc:0079)
 // Seed 1337. JSON Schema: untestable from the public API (no derivation is exported by `@keel/schema`).
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
@@ -29,29 +29,24 @@ describe("k.schema format types: derivations", () => {
     );
   });
 
-  // Skipped (rfc:0079 kernel lane): asserts decodeStrings returns ok for a value `check` refuses; decodeStrings is coerce-then-parse, so it fails with rule `format`.
-  test.skip("`decodeStrings` is `base`'s: a numeric string decodes as the int `base` decodes, then `check` applies", () => {
+  test("`decodeStrings` is `base`'s: a numeric string decodes as the int `base` decodes, then `check` applies", () => {
     const { Even, Form } = fixture();
     fc.assert(
       fc.property(fc.integer({ min: -1000, max: 1000 }), (n) => {
         const r = Form.decodeStrings(new URLSearchParams({ n: String(n), tag: "t" }));
-        expect(r.ok).toBe(true);
-        if (!r.ok) return;
-        expect(r.value.n).toBe(n);
-        const parsed = Form.parse(r.value);
-        expect(parsed.ok).toBe(n % 2 === 0);
-        if (!parsed.ok) expect(parsed.error.data.issues).toEqual([{ path: ["n"], rule: "format" }]);
+        expect(r.ok).toBe(n % 2 === 0);
+        if (r.ok) expect(r.value.n).toBe(n);
+        else expect(r.error.data.issues).toEqual([{ path: ["n"], rule: "format" }]);
       }),
       opts,
     );
   });
 
-  // Skipped (rfc:0079 kernel lane): `expect(v % 2).toBe(0)` fails for negative even v (-0 is not Object.is 0); test defect.
-  test.skip("`gen` maps `gen(from)` through `map`, keeping values `parse` accepts", () => {
+  test("`gen` maps `gen(from)` through `map`, keeping values `parse` accepts", () => {
     const { Even, Form } = fixture();
     fc.assert(
       fc.property(gen(Even), (v) => {
-        expect(v % 2).toBe(0);
+        expect(v % 2 === 0).toBe(true);
         expect(Even.parse(v).ok).toBe(true);
       }),
       opts,

@@ -8,4 +8,4 @@ The user writes four things: schemas for what the data is, transactions for what
 
 The product is the spec, its conformance suite, and the feedback loop. Runtime implementations are borrowed where mature and replaced only when the spec demands it.
 
-verified: f7a8aa2d15ce5fc0e5b77dd7dac431aea414ec3a
+verified: 30a5850cfed9146e5cd4d7f6a4c58ba5551b2794
