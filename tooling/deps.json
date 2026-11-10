@@ -25,7 +25,9 @@
     "std-sessions",
     "std-temporal",
     "std-text",
-    "std-messages"
+    "std-messages",
+    "std-jobs",
+    "std-schedules"
   ],
   "rule": "a package may import only packages earlier in order, plus ctx and tooling; stdlib packages (std-*) come after the kernel, so no kernel package imports one (RFC 0047)"
 }

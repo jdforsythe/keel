@@ -11,12 +11,13 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E120x | k.reactive | E125x | k.runtime |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component | E145x | k.errors |
-| E150x | k.router, k.prefix | E155x | k.server |
+| E150x | k.router, k.prefix | E155x | k.server, k.topology, k.compat |
 | E160x | k.ctx | E165x | k.services |
 | E170x | k.testing | E175x | k.check |
 | E18xx | k.ui | E19xx | k.forms |
 | E200x | std.sessions | E210x | std.brands |
 | E230x | std.i18n | E240x | std.messages |
+| E250x | std.jobs | E255x | std.schedules |
 
 ## Kernel
 | id | section | status | one line |
@@ -37,7 +38,9 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces, formatter registry |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
 | k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |
-| k.server | Thin server | conformance-covered | loaders, actions, dev server, adapters, local topology |
+| k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
+| k.topology | Deployables | proposed | placement, runners, peers, production entry, deploy files, local topology |
+| k.compat | Surface compatibility | proposed | surface artifact, `accepts`, E1561, E1562 with `--base` |
 | k.head | Document head | conformance-covered | per-route title, `<html lang>` from the prefix param, head links |
 | k.services | Thin services | conformance-covered | typed client from schema, timeouts, ApiError |
 | k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |

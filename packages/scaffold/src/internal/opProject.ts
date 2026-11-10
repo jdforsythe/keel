@@ -22,7 +22,7 @@ import { inputs } from "./inputs.ts";
 const GENERATED = ["turbo.json", ".github/workflows/ci.yml", ".keel/.gitkeep"];
 
 /** `.gitignore` of a workspace project: build and tool output, and recorded user sessions (`.keel/sessions/`). `.keel/` is generated, deterministic and hash-checked (E1005), so it is committed, not ignored. */
-const GITIGNORE = "node_modules\ndist\n.turbo\ncoverage\nreports\n.stryker-tmp\n.keel/sessions/\n";
+const GITIGNORE = "node_modules\ndist\n.turbo\ncoverage\nreports\n.stryker-tmp\n.keel-dev/\n.keel/sessions/\n";
 
 /** `scaffold project <name> [--adapter client|node|static] [--workspace]` (default `client`): root config, tokens, topology, module `app`, generated turbo and CI (a `workspace` app, inside the Keel monorepo, gets `index.html` and `vitest.config.ts` instead, and no turbo, CI or `.keel/`). */
 export function opProject(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {

@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./start": {
+      "types": "./src/start.ts",
+      "default": "./src/start.ts"
     }
   },
   "files": ["dist"],
@@ -17,6 +21,7 @@
     "mutate": "stryker run"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.6",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",

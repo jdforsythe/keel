@@ -18,7 +18,7 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "26.5kb",
+      "max": "29kb",
       "platform": "node"
     },
     "@keel/ctx": "3kb",
@@ -33,7 +33,11 @@
     },
     "@keel/schema": "5kb",
     "@keel/server": {
-      "max": "14.5kb",
+      "max": "16kb",
+      "platform": "node"
+    },
+    "@keel/server/start": {
+      "max": "2kb",
       "platform": "node"
     },
     "@keel/services": "3kb",
@@ -42,12 +46,28 @@
       "max": "4kb",
       "platform": "node"
     },
+    "@keel/std-jobs": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-jobs/tools": {
+      "max": "2.5kb",
+      "platform": "node"
+    },
     "@keel/std-messages": "1.5kb",
     "@keel/std-messages/tools": {
       "max": "6kb",
       "platform": "node"
     },
     "@keel/std-money": "1kb",
+    "@keel/std-schedules": {
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-schedules/tools": {
+      "max": "2.5kb",
+      "platform": "node"
+    },
     "@keel/std-sessions": "7kb",
     "@keel/std-sessions/action": {
       "max": "4.5kb",

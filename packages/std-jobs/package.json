@@ -1,0 +1,39 @@
+{
+  "name": "@keel/std-jobs",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./tools": {
+      "types": "./src/tools/index.ts",
+      "default": "./src/tools/index.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "oxc-parser": "^0.157.0"
+  },
+  "devDependencies": {
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
+  },
+  "peerDependencies": {
+    "fast-check": "^3"
+  }
+}

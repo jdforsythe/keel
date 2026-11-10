@@ -13,10 +13,11 @@ keel scaffold service orders --openapi openapi.json
 keel codemod rename OrderCard OrderTile
 keel codemod move OrderCard --to catalog
 keel codemod add-field Order note 'string.optional'
+keel codemod place digest --to jobs --adapter node
 ```
 
 **Generators.** Each emits spec-conformant files only:
-- `project`: `package.json`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo and CI; `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo and CI. `keel scaffold project <name>` writes under `<name>/` (rfc:0068).
+- `project`: `package.json`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.topology); `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo and CI. `keel scaffold project <name>` writes under `<name>/`.
 - `module`: `modules/<id>/module.ts` and `routes.ts`; adds the module to `topology.ts`.
 - `route`: manifest entry, `*.server.ts` loader, page component, route test.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
@@ -26,9 +27,10 @@ keel codemod add-field Order note 'string.optional'
 **Codemods.**
 - `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a manifest's `routes.href()`), `uses:` list, element-id prefix, test, and manifest entry.
 - `move` relocates a file to another module, updating imports and both manifests.
+- `place` moves a module to a deployable in `topology.ts` (a new deployable needs `--adapter`; an emptied one is removed) and regenerates the deploy files; nothing else changes.
 - `add-field` adds a field to a schema and to every initial state, fixture, and form `initial` that constructs it. Optional fields need no data; required fields take `--default`.
 
-**Turbo emission.** Any operation that adds or removes a module or package regenerates `turbo.json` and CI workflows from the task graph (ADR-0009). Generated files are read-only (E1005).
+**Turbo emission.** Any operation that adds or removes a module or package regenerates `turbo.json`, CI workflows and deploy files (k.topology) from the task graph and topology (ADR-0009). Generated files are read-only (E1005).
 
 **Guarantee.** If `keel check` was clean before an operation, it is clean after. Otherwise nothing is written and E1353 reports the first diagnostic the edit set would introduce.
 
@@ -43,3 +45,4 @@ keel codemod add-field Order note 'string.optional'
 - Running the same generator twice reports E1351 the second time and writes nothing.
 - After `scaffold module`, `turbo.json` equals the generator's output for the new task graph.
 - `keel scaffold project <name>`, with or without `--workspace`, creates every file under `<name>/` and none beside it.
+- `place b --to y --adapter node` then `place b --to x` restores a byte-identical tree; neither writes outside `topology.ts`, `deploy/` and CI workflows.

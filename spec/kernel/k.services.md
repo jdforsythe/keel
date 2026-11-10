@@ -15,9 +15,10 @@ export const api = service({ base: 'https://api.example.com', schema: OrdersApi,
 // in a loader or action
 const r = await api.getOrder({ params: { id } }, ctx) // Result<Order, ApiError>
 ```
-- `endpoints` and `service` come from `@keel/services`. Endpoint keys: `method`, `path`, `params?`, `query?`, `body?`, `output`, `errors?` (status to schema), `timeout?`.
-- `service({ base, schema, timeout? })`; timeout defaults to 10,000 ms; an endpoint `timeout` overrides it. There is no per-call option.
-- A client method takes `{ params?, query?, body? }` and `ctx`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim.
+- `endpoints` and `service` come from `@keel/services`. Endpoint keys: `method`, `path`, `params?`, `query?`, `body?`, `output`, `errors?` (status to schema), `timeout?`, `events?`.
+- `service({ base, schema, timeout? })` calls another service; `service({ module, schema, timeout? })` calls the routes of app module `module` (k.module `deps` and `public.routes` apply), resolved by k.topology: in process, a peer, or in a browser the document's origin; on a ctx no `createApp` bound, `http://<module>.keel.invalid`. The timeout defaults to 10,000 ms; an endpoint `timeout` overrides it; none is per call.
+- A client method takes `{ params?, query?, body?, signal? }` and `ctx`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim.
+- A GET endpoint with `events: true` is an event stream (a k.server live loader): its method returns an `AsyncIterable` of `Result<T, ApiError>`, sends `accept: text/event-stream` and decodes each `data:` line, a k.server `Result`: an `ok` value with `output`, an `err` as `api.status` (200, `body` the error). It ends when the stream ends, after an `err`, or when `signal` aborts; it never reconnects or resumes, so a caller that reopens picks its own backoff. Its timeout applies until the response starts.
 
 **ApiError.** A union of KeelErrors (k.errors), matched on `code`:
 - `api.timeout` `{ ms }`: no response within the timeout, measured on `ctx.clock`; the request is aborted.
@@ -28,9 +29,9 @@ const r = await api.getOrder({ params: { id } }, ctx) // Result<Order, ApiError>
 
 The client never throws; every failure is an `err`.
 
-**Encoding.** Path params are URL-encoded; `query` is encoded by its schema; `body` is JSON by its schema. Every request sends `accept: application/json` and `x-keel: 1` (the k.server same-site proof, RFC 0022). Responses decode with `output`.
+**Encoding.** Path params are URL-encoded; `query` is encoded by its schema; `body` is JSON by its schema. Every request sends `accept: application/json` and `x-keel: 1` (the k.server same-site proof). Responses decode with `output`.
 
-**OpenAPI** (rfc:0034). `openapi(doc, { name })` from `@keel/services/openapi` (build time; `keel scaffold service` writes its output) returns `Result<{ schema, service }, SchemaError>`: the sources of `<Name>Api.schema.ts` (`<Name>Api = endpoints({...})`, one endpoint per operation keyed by its `operationId`, in document order) and `api.ts` (`api = service({ base: servers[0].url, schema })`, importing `./<Name>Api.schema.ts`). Each file's name equals its one export (principle 3, E1752; rfc:0039). From OpenAPI 3 JSON: `{name}` path segments become `:name`; `path` and `query` parameters become `params` and `query` objects (query fields optional unless `required`); a JSON request body is `body`; the lowest 2xx JSON response is `output` (none: `s.json()`); every other numeric status with a JSON body is in `errors`. Schemas: `string` (`minLength`/`maxLength`), `integer` and `number` (`minimum`/`maximum`), `boolean`, `array`, `object` (keys outside `required` optional; `additionalProperties: false` closes it; `additionalProperties` alone is `record`), string `enum`, `const`, `nullable: true` or `type: [T, 'null']`, `oneOf`/`anyOf` (member union), local refs (`#/components/schemas/<Name>` becomes a file-local `const <Name>`, others are inlined); anything else is `s.json()`. A doc outside this subset (no `paths`, a missing or non-identifier `operationId`, a missing or relative server URL, a cyclic ref) is `err`, with issue paths into the doc.
+**OpenAPI**. `openapi(doc, { name })` from `@keel/services/openapi` (build time; `keel scaffold service` writes its output) returns `Result<{ schema, service }, SchemaError>`: the sources of `<Name>Api.schema.ts` (`<Name>Api = endpoints({...})`, one endpoint per operation keyed by its `operationId`, in document order) and `api.ts` (`api = service({ base: servers[0].url, schema })`, importing `./<Name>Api.schema.ts`). Each file's name equals its one export (principle 3, E1752). From OpenAPI 3 JSON: `{name}` path segments become `:name`; `path` and `query` parameters become `params` and `query` objects (query fields optional unless `required`); a JSON request body is `body`; the lowest 2xx JSON response is `output` (none: `s.json()`); every other numeric status with a JSON body is in `errors`. Schemas: `string` (`minLength`/`maxLength`), `integer` and `number` (`minimum`/`maximum`), `boolean`, `array`, `object` (keys outside `required` optional; `additionalProperties: false` closes it; `additionalProperties` alone is `record`), string `enum`, `const`, `nullable: true` or `type: [T, 'null']`, `oneOf`/`anyOf` (member union), local refs (`#/components/schemas/<Name>` becomes a file-local `const <Name>`, others are inlined); anything else is `s.json()`. A doc outside this subset (no `paths`, a missing or non-identifier `operationId`, a missing or relative server URL, a cyclic ref) is `err`, with issue paths into the doc.
 
 **Not here** (stdlib): retries, caching, auth and token refresh, interceptors.
 
@@ -46,3 +47,5 @@ The client never throws; every failure is an `err`.
 - Param value `a/b` is sent as `a%2Fb`.
 - For generated responses of any status and body, no client call throws.
 - The client generated from the OpenAPI fixture has one method per operation, with input and output types matching it.
+- An `events` endpoint against a live loader yielding `ok(1)` then `ok(2)` iterates exactly those, then ends; a `data:` line failing `output` yields one `api.decode` and ends; an aborted `signal` ends it with no further request.
+- On an unbound sim ctx, `service({ module: 'b' })` sends its request to `http://b.keel.invalid` plus the endpoint path.
