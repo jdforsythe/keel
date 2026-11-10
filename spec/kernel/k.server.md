@@ -14,7 +14,7 @@ status: conformance-covered
 
 Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · `keel.conflict` 409 · other `err` 400 · uncaught throw 500 `keel.unexpected` (production: message `unexpected`, no stack). `mode` defaults to `production`. `#k-state` holds every request-scope store.
 
-**Document.** Each route level is a candidate island root by route id. Head: `<title>` the deployable name, entry CSS, `/keel-mark.svg` icon if built. A `keel.notFound` default alert has an `h1`.
+**Document.** Each route level is a candidate island root by route id. Head, `<html lang>` and the `keel.notFound` alert: k.head.
 
 **Topology.** `topology.ts` default-exports `topology({ <name>: { modules, adapter } })`.
 Adapters: `node` (Hono; serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). A deployable's modules share a process; calls between deployables are stdlib.
@@ -42,4 +42,3 @@ Adapters: `node` (Hono; serves the resume entry), `static` (prerendered HTML), `
 - `createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555.
 - Built files are `nosniff`, unhashed ones `no-cache`; a symlink out of `assets/` is not served.
 - Production `createApp` without `assets` rejects at startup with E1555 unless `NODE_ENV` is `development` or `test`.
-- A built document has the head Document names; an unmatched path is 404 with an `h1`.

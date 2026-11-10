@@ -10,7 +10,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "33kb",
+      "max": "34.5kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -24,7 +24,7 @@
     "@keel/ctx": "3kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "8.5kb",
+    "@keel/router": "9kb",
     "@keel/router/match": "2kb",
     "@keel/runtime-dom": "6kb",
     "@keel/scaffold": {
@@ -37,6 +37,17 @@
       "platform": "node"
     },
     "@keel/services": "3kb",
+    "@keel/std-i18n": "1kb",
+    "@keel/std-i18n/tools": {
+      "max": "4kb",
+      "platform": "node"
+    },
+    "@keel/std-messages": "1.5kb",
+    "@keel/std-messages/tools": {
+      "max": "6kb",
+      "platform": "node"
+    },
+    "@keel/std-money": "1kb",
     "@keel/std-sessions": "7kb",
     "@keel/std-sessions/action": {
       "max": "4.5kb",
@@ -54,6 +65,8 @@
       "max": "9kb",
       "platform": "node"
     },
+    "@keel/std-temporal": "2.5kb",
+    "@keel/std-text": "1.5kb",
     "@keel/store": "3kb",
     "@keel/testing": {
       "max": "9kb",

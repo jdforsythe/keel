@@ -142,6 +142,21 @@ importers:
       '@keel/services':
         specifier: workspace:*
         version: link:../../packages/services
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../../packages/std-i18n
+      '@keel/std-messages':
+        specifier: workspace:*
+        version: link:../../packages/std-messages
+      '@keel/std-money':
+        specifier: workspace:*
+        version: link:../../packages/std-money
+      '@keel/std-temporal':
+        specifier: workspace:*
+        version: link:../../packages/std-temporal
+      '@keel/std-text':
+        specifier: workspace:*
+        version: link:../../packages/std-text
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store
@@ -673,11 +688,88 @@ importers:
         specifier: ^21
         version: 21.0.4
 
+  packages/std-i18n:
+    dependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+
+  packages/std-messages:
+    dependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../std-i18n
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../server
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+      happy-dom:
+        specifier: ^21
+        version: 21.0.4
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+
   packages/std-money:
     dependencies:
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../std-i18n
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
@@ -756,6 +848,44 @@ importers:
       happy-dom:
         specifier: ^21
         version: 21.0.4
+
+  packages/std-temporal:
+    dependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../std-i18n
+    devDependencies:
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+
+  packages/std-text:
+    dependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../std-i18n
+    devDependencies:
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
 
   packages/std-timings:
     dependencies:

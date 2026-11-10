@@ -20,6 +20,11 @@
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
+    "@keel/std-i18n": "workspace:*",
+    "@keel/std-messages": "workspace:*",
+    "@keel/std-money": "workspace:*",
+    "@keel/std-temporal": "workspace:*",
+    "@keel/std-text": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*"
   },

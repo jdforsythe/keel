@@ -1,0 +1,30 @@
+{
+  "name": "@keel/std-temporal",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@keel/schema": "workspace:*",
+    "@keel/std-i18n": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
+  },
+  "peerDependencies": {
+    "fast-check": "^3"
+  }
+}

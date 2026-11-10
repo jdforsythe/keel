@@ -11,11 +11,12 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E120x | k.reactive | E125x | k.runtime |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component | E145x | k.errors |
-| E150x | k.router | E155x | k.server |
+| E150x | k.router, k.prefix | E155x | k.server |
 | E160x | k.ctx | E165x | k.services |
 | E170x | k.testing | E175x | k.check |
 | E18xx | k.ui | E19xx | k.forms |
 | E200x | std.sessions | E210x | std.brands |
+| E230x | std.i18n | E240x | std.messages |
 
 ## Kernel
 | id | section | status | one line |
@@ -27,6 +28,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.compiler | Compiler and artifacts | conformance-covered | JSX to DOM ops; dep graph, ID index, route table, a11y expectations |
 | k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes, delegation, resume |
 | k.router | Routes | conformance-covered | manifest, typed params and search, loaders, actions by verb, guards |
+| k.prefix | Implied path prefix | proposed | a leading enum param with `pathDefault` left out of the URL |
 | k.forms | Forms | conformance-covered | form(schema): bindings, validation, submit, server errors |
 | k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS, scoped, a11y-required props |
 | k.ctx | Capabilities | conformance-covered | clock, random, net, storage; real, shell, simulated; observers |
@@ -36,6 +38,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
 | k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |
 | k.server | Thin server | conformance-covered | loaders, actions, dev server, adapters, local topology |
+| k.head | Document head | proposed | per-route title, `<html lang>` from the prefix param, head links |
 | k.services | Thin services | conformance-covered | typed client from schema, timeouts, ApiError |
 | k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |
 
@@ -44,7 +47,11 @@ See `spec/std/README.md`. Sections are added per wave with their own budgets.
 | id | section | status | one line |
 | --- | --- | --- | --- |
 | std.sessions | Sessions | conformance-covered | capture, ingest, replay, minimize, to-test; GitHub Action |
-| std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format |
+| std.i18n | Locales | proposed | schema type registry and check rule registry: `i18n.Locale`, numbers, plurals, E2301 |
+| std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format for a locale |
+| std.temporal | Dates, instants and durations | proposed | schema type registry: instants, dates, zones, durations; format |
+| std.text | Text | proposed | schema type registry: `text.Email`, `Slug`, `line`, `para`, collation |
+| std.messages | Message sets | proposed | check rule registry: message sets, one file per locale, E2401-E2406 |
 | std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
 | std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
 | std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
