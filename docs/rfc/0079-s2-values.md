@@ -1,6 +1,17 @@
 # RFC 0079: S2 Values: locales, money, dates, text and message sets
 
-Status: draft (2026-11-10). Stage design RFC for S2 (`tasks/PROGRAM.md`, task 0307). User decisions it builds on: message catalogs are in S2 (D2), golden-2 is migrated and its eval updated (D3), every k.ui base element takes `lang` (D4), the locale is a path param `/:locale/...` (D5), and a served locale may be declared as an unprefixed default (user request, 2026-11-10). It applies WORKFLOW RFC defaults 1 (each kernel gap gets a kernel change: K1 to K6), 2 (`formatMoney(m)` is replaced, not doubled; one way to show each value), 3 (the rules run in the existing check pipeline, messages travel as loader data, the exit proof extends the existing golden-2 eval), 4 and 5 (nothing new leaves the browser; a message reaches the client only inside an island's loader data), 6 (E1106, E1509, E1758, E2301 and E2401 to E2406 enforce what prose would otherwise ask for) and 7 (`@keel/check` and `@keel/router` size budgets are re-based; no threshold is lowered). The Open questions are the new hand-written API shapes the defaults escalate; the batch proceeds on each recommendation unless the user says otherwise.
+Status: accepted (2026-11-10). Stage design RFC for S2 (`tasks/PROGRAM.md`, task 0307). It applies WORKFLOW RFC defaults 1 (each kernel gap gets a kernel change: K1 to K7), 2 (`formatMoney(m)` is replaced, not doubled; one way to show each value), 3 (the rules run in the existing check pipeline, messages travel as loader data, the exit proof extends the existing golden-2 eval), 4 and 5 (nothing new leaves the browser; a message reaches the client only inside an island's loader data), 6 (E1106, E1509, E1758, E2301 and E2401 to E2406 enforce what prose would otherwise ask for) and 7 (`@keel/check` and `@keel/router` size budgets are re-based; no threshold is lowered). ADR-0068 to ADR-0072 record it.
+
+## Decisions (user, 2026-11-10)
+- D2: message catalogs (translated page text) are in S2.
+- D3: golden-2 is migrated (price and added-on date per recipe, translated copy) and its eval updated.
+- D4: every k.ui base element takes `lang`.
+- D5: the locale is a path param, `/:locale/...`.
+- D6: an app may declare one served locale as an unprefixed default, `s.enum(values, { pathDefault })`; without it every URL carries the prefix.
+- D7: the scaffold `project` template starts with the locale param and an unprefixed default, in a scaffold task after this batch.
+- D8: message sets as Proposal 4 describes them, with E2406 (literal copy) an error.
+- D9: `form(schema, { issueText })` (K5).
+- D10: per-route `<title>` and `<html lang>` are in S2 (Proposal 5, K7).
 
 ## Problem
 S2 must show golden-2's prices, dates and page copy in three locales, proven by an eval. Keel has one value package, `@keel/std-money`, whose only display function, `formatMoney(m)`, writes `12.50 EUR` for everyone. Nothing says where a locale comes from, and these kernel gaps block any locale-aware value:
@@ -11,6 +22,7 @@ S2 must show golden-2's prices, dates and page copy in three locales, proven by 
 4. **Guard redirects drop params.** `runGuards` redirects to `routes.href(g.redirect)` with no params. Under `/:locale`, a denied guest lands on a route whose param is missing.
 5. **Adding a locale moves every URL.** With `/:locale` on every route, an app that served one language at `/recipes` must move it to `/en-US/recipes` when it adds a second.
 6. **Form messages are fixed English.** `messageFor` in forms and router writes `Required` on a German page, and has no case for a new rule.
+7. **The document head is per deployable.** `<title>` is the deployable's name and `<html lang>` is `en` on every page, so a German recipe page is announced in English under the app's name.
 
 `createApp` shares one `ctx` across requests (k.server), so a locale cannot live on `ctx`; loaders see `params`, `search`, `url` and `caller`, never headers. Platform facts, measured on Node 22.23.1 (ICU 78.2) and Node 24.19.0 (ICU 78.3), both CLDR 48.0: no `Temporal` global; `Intl.DurationFormat` exists on 24 and not on 22, which CI runs; `Intl.NumberFormat` formats exact decimal strings; `Intl.Segmenter`, `Intl.ListFormat`, `Intl.PluralRules`, `Intl.Collator` and `Intl.DisplayNames` exist on both. Both give identical strings for every literal in this RFC's conformance clauses and eval table.
 
@@ -32,7 +44,7 @@ An app declares the locales it serves once, as an `s.enum` of `i18n.Locale` tags
 2. A first segment equal to the default: 308 to the path without it, search kept.
 3. Anything else: the whole path matches unprefixed routes and prefixed routes with the default locale; static beats `:param` as today.
 
-**Scaffold.** The scaffold `project` template should be born with `AppLocale = s.enum(['en-US'], { pathDefault: 'en-US' })` and its routes under `/:locale`, so a one-locale app's URLs carry no prefix and adding a locale is one enum member plus one locale file per message set. Every link of a new app then passes a locale from day one, which is the cost. This is a k.scaffold change with its own conformance and template tests, so it is a task after this batch (Open question 1), not a lane here.
+**Scaffold** (D7). The scaffold `project` template is born with `AppLocale = s.enum(['en-US'], { pathDefault: 'en-US' })` and its routes under `/:locale`, so a one-locale app's URLs carry no prefix and adding a locale is one enum member plus one locale file per message set. Every link of a new app then passes a locale from day one, which is the cost. It is a k.scaffold change with its own conformance and template tests, so it is a task after this batch, not a lane here.
 
 ### 2. Kernel changes
 Each is the smallest change that closes its gap; ADRs are listed below. Exact text is in Spec diff.
@@ -42,9 +54,10 @@ Each is the smallest change that closes its gap; ADRs are listed below. Exact te
 - **K3, k.ui: `lang` on every base element** (D4), a string written as the `lang` attribute.
 - **K4, k.router: guard redirects carry params.** The redirect fills its route's params from the matched route's params of the same name; a `redirect` param the matched route lacks is E1508 at runtime, beside the redirect loop it already reports. The gap is any guard on a parameterized route, `/:org/...` as much as `/:locale/...` (default 1). With K6 the carried value is the typed locale and the codec writes the URL, so a guest denied at `/recipes/new` lands on `/` and one denied at `/de-DE/recipes/new` lands on `/de-DE`.
 - **K5, k.forms: `issueText`.** `form(schema, { initial?, id?, issueText? })`. `issueText(issue)` gives a field's error text for a `FieldIssue` `{ rule, path, min?, max?, values?, format? }`; without it the kernel's English text applies, with `Invalid value` for rule `format`. An app passes a function over its message entry and locale, so the form's text is translated with the rest of the page and the kernel stays free of translations.
+- **K7, k.head: per-route title and document language.** Proposal 5. k.server's head sentence and its clause move into the new section with the title and language rules, so k.server drops to 1,462 tokens; k.router gains one pointer sentence and stays under the cap with a trim.
 - **K6, k.prefix: implied path prefix.** A new kernel section, because k.router is at 1,496 tokens after K4 and the mechanism needs about 880. k.router's Matching paragraph points to it in one clause. Its code is E1509 in the k.router block, since every kernel block is assigned.
 
-No change to k.ctx, k.server's spec text, k.runtime, k.module, k.compiler or k.testing. The implementation of K4 and K6 touches `packages/server` (guard redirect, 308) and `packages/testing` (the harness's guard path) without changing their sections.
+No change to k.ctx, k.runtime, k.module, k.compiler or k.testing; k.server changes only by the move to k.head. The implementation of K4, K6 and K7 touches `packages/server` (guard redirect, 308, head) and `packages/testing` (the harness's guard path) without changing k.testing.
 
 ### 3. Package contracts
 Every package here is client-safe, takes no `std` config and ships one export per file. Each formats its own values; `@keel/std-i18n` is the small base the others import. Dependency order in `tooling/deps.json`: `std-i18n` and `std-money` move ahead of the wave-0 packages (std-money now imports std-i18n), then `std-temporal`, `std-text`, `std-messages` after `std-sessions`. Diagnostic blocks: E230x std.i18n, E240x std.messages. Packages without diagnostics get no block, as std.money and std.geo have none today; E22xx and E29xx stay unassigned because `packages/check` tests use E2234 and E29xx as fixture codes.
@@ -72,13 +85,20 @@ Every package here is client-safe, takes no `std` config and ships one export pe
 2. **Files.** One file per locale, `<Set>/<locale>.ts`, default-exporting `Set.text({...})`. A key without params is a string; one with params is `{ text }`, `{ plural: p, ... }` or `{ select: p, cases }`. Adding a locale is one enum member and one file per set.
 3. **Getting a message.** A loader returns `await Set.load(params.locale)` in its data; the component reads `props.data.text.title` (a string) or calls `formatMessage(props.data.text.count, { n }, props.params.locale)`. An object message is not a `Child`, so it cannot render unformatted. There is no provider, hook or ambient locale (principle 2).
 4. **What ships.** Messages are server-only by default (default 5): a static route level renders text into the document and ships nothing; an island level ships the one entry in its loader data inside `#k-state`, and resume keeps the server's text. A `client` deployable's loader runs in the browser, and `load`'s dynamic import makes each locale file its own chunk, so only the active locale is fetched.
-5. **Checker.** E2401 a missing locale file or a malformed `load` (fix) · E2402 a missing translation (no fix: a translation cannot be derived, and copying another locale's text would ship the wrong language) · E2403 an undeclared key in a locale file (fix) · E2404 an unused key (fix) · E2405 a placeholder, `plural` or `select` that does not match the params (fix when the rename is unambiguous) · E2406 literal copy in a component file of a module that lists the package (no fix). A key read in code but not declared is a TypeScript error on the property (E1751), since the entry type is exact.
+5. **Checker.** E2401 a missing locale file or a malformed `load` (fix) · E2402 a missing translation (no fix: a translation cannot be derived, and copying another locale's text would ship the wrong language) · E2403 an undeclared key in a locale file (fix) · E2404 an unused key (fix) · E2405 a placeholder, `plural` or `select` that does not match the params (fix when the rename is unambiguous) · E2406 literal copy in a component or `routes.ts` file of a module that lists the package, an error (no fix). A key read in code but not declared is a TypeScript error on the property (E1751), since the entry type is exact.
 
 Plurals go through std-i18n `plural`; numbers inside messages through `formatNumber`; a date or price param is passed already formatted (`{ date: formatDate(d, locale, 'long') }`), so each value type keeps one formatter. No check rule registry gap exists: the stdlib rules run in the existing pipeline (default 3), and the kernel changes the sets need are K1 (format types) and K5 (form text).
 
-**Per-route `<title>` and `<html lang>`.** Both are page text and page language, and both fit this design without changing it: a route's title is a message read from its loader data, and its document language is `params.locale`. Writing them needs a new field on the route definition (for example `title: (props) => props.data.text.pageTitle`) and a k.server head change, both sections at the token cap, so it is Open question 4. In S2 the `<title>` stays the deployable's name (k.server) or the `index.html` title (a `client` deployable), `<html lang>` stays the template's, and the shell's `lang` marks the page content.
+The page title is a message too: a route's `title` reads it from the same loader data (Proposal 5).
 
-### 5. Exit proof and golden-2
+### 5. Per-route title and document language (K7)
+- **Route field.** A path route may declare `title: (props) => string`, given the route component's props `{ params, search, data }`. golden-2 writes `title: (p) => p.data.text.indexTitle`, or `formatMessage` for a title with params, so the title is a message in the route's set, in the route's locale, and E2406 refuses a literal. A function over typed props keeps it checked by TypeScript and needs no new key syntax; layouts take none, so one route owns its page's title.
+- **Language source.** `<html lang>` is the matched route's value of its prefix param (k.prefix), the param `pathDefault`'s enum types, read from the matched params. No field, no ambient state: the value the URL codec already parsed is the page language, and resume, tests and replay pin it through params as before. A route without a prefix param keeps `en`.
+- **Server.** The head ADR-0067 defines stays, with `<title>` the route's title. The deployable's name becomes the fallback: a route without `title`, a loader `err` in the chain, and a 404.
+- **Client.** At `mount`, at `resume` and after each navigation's chain has rendered, the router sets `document.title` and `document.documentElement.lang` where they differ. Those are two property writes: no text node or element is rebuilt, and resume finds both already right in the served document. A `client` deployable's fallback title is its `index.html` title, read once at `mount`; Vite keeps building that file unchanged.
+- **Spec seam.** k.router and k.server sit at the 1,500-token cap. The head was a self-contained paragraph of k.server (one Document sentence and one clause); it moves, unchanged in meaning, into a new section k.head with the title and language rules. k.server goes from 1,500 to 1,462 tokens; k.router gains the pointer "A path route's `title` names its document (k.head)." and drops "Routes hold the value (`guard: auth`).", which its manifest example already shows (1,496 to 1,499).
+
+### 6. Exit proof and golden-2
 The proof extends the existing `evals/tasks/golden-2` task (default 3): TASK.md gains the values, the locales and the copy, and the hidden `acceptance.test.ts` gains the assertions below, so `pnpm eval --task golden-2 --runner none --strict` is the exit proof and an agent build from scratch is held to the same bar.
 
 **Fixture.** The api runs on a sim ctx with `clock.advance(1794303000000)` (2026-11-10T09:30:00.000Z). Two recipes are posted: "Pasta bake" (30 minutes, `{ amount: 1250, currency: 'EUR' }`) and "Miso soup" (90 minutes, `{ amount: 1800, currency: 'JPY' }`); Pasta bake is made a favorite. Both get `addedOn` `2026-11-10`.
@@ -89,6 +109,9 @@ The proof extends the existing `evals/tasks/golden-2` task (default 3): TASK.md 
 
 | Element | en-US | de-DE | ja-JP |
 | --- | --- | --- | --- |
+| `document.title`, index | `Recipes · Keel` | `Rezepte · Keel` | `レシピ · Keel` |
+| `document.title`, Miso soup | `Miso soup · Recipes` | `Miso soup · Rezepte` | `Miso soup · レシピ` |
+| `document.title`, new recipe | `New recipe · Keel` | `Neues Rezept · Keel` | `新しいレシピ · Keel` |
 | `recipes.home` | `Recipes` | `Rezepte` | `レシピ` |
 | `recipes.newLink` | `New recipe` | `Neues Rezept` | `新しいレシピ` |
 | `recipes.list.title` | `Recipes` | `Rezepte` | `レシピ` |
@@ -106,15 +129,17 @@ The proof extends the existing `evals/tasks/golden-2` task (default 3): TASK.md 
 | `recipes.draft:title:error`, duplicate | `Already in the box` | `Schon in der Sammlung` | `すでに登録されています` |
 
 The eval also asserts:
-- `recipes.shell` has `lang` equal to `L`, and the switcher Links `recipes.locale.en-US`, `recipes.locale.de-DE`, `recipes.locale.ja-JP` read `English (United States)`, `Deutsch (Deutschland)`, `日本語 (日本)`, each with its own `lang`, linking to `/`, `/de-DE` and `/ja-JP`;
+- `document.documentElement.lang` and `recipes.shell`'s `lang` equal `L`. After a client navigation from `recipes.index` to `recipes.show` in `de-DE`, `document.title` is `Miso soup · Rezepte` and the shell's `recipes.home` is the same node; after following `recipes.locale.ja-JP`, `document.title` is `レシピ · Keel` and `lang` is `ja-JP`;
+- the switcher Links `recipes.locale.en-US`, `recipes.locale.de-DE`, `recipes.locale.ja-JP` read `English (United States)`, `Deutsch (Deutschland)`, `日本語 (日本)`, each with its own `lang`, linking to `/`, `/de-DE` and `/ja-JP`;
 - `routes.href('recipes.show', { locale, recipeId })` is `/recipes/<id>` for `en-US` and `/de-DE/recipes/<id>` for `de-DE`;
 - for 20 generated `Money` values posted through the api, the index text equals `formatMoney(m, L)`;
 - a guest at `recipes.new` is redirected to `recipes.index` with the same `locale` (K4), at `/` for `en-US` and `/de-DE` for `de-DE`;
-- with the `recipes` module served by a `node` test topology (as `test/ssrNode.test.ts` does): the documents for `/`, `/de-DE` and `/ja-JP/recipes/<id>` hold the table's strings in those element ids; `/en-US` answers 308 to `/` and `/en-US/recipes/<id>` to `/recipes/<id>`; `/fr-FR` is 404; the `#k-state` of `/de-DE/recipes/<id>` (an island: its Form) contains `Favorit umschalten` and neither `Toggle favorite` nor `お気に入りを切り替え`.
+- with the `recipes` module served by a `node` test topology (as `test/ssrNode.test.ts` does): the documents for `/`, `/de-DE` and `/ja-JP/recipes/<id>` hold the table's strings in those element ids, `<title>` the table's title and `<html lang>` `en-US`, `de-DE` and `ja-JP`; `/en-US` answers 308 to `/` and `/en-US/recipes/<id>` to `/recipes/<id>`; `/fr-FR` is 404; the `#k-state` of `/de-DE/recipes/<id>` (an island: its Form) contains `Favorit umschalten` and neither `Toggle favorite` nor `お気に入りを切り替え`.
 
 **golden-2 changes.**
 - `package.json` and `recipes/module.ts` list `@keel/std-i18n`, `@keel/std-money`, `@keel/std-temporal`, `@keel/std-text`, `@keel/std-messages`; `kitchen/module.ts` lists the value packages it uses and capability `clock`.
 - New in `recipes`: `AppLocale.schema.ts` (`s.enum(['en-US', 'de-DE', 'ja-JP'], { pathDefault: 'en-US' })`), `LocaleParams.schema.ts`, `RecipesText.schema.ts` and `RecipesText/{en-US,de-DE,ja-JP}.ts` (every string the screens show, including the `Keel` mark text and the tagline, so E2406 is clean), `fieldText.ts` (the `issueText` over the entry and locale), `loadShell.server.ts` and `loadNew.server.ts` (each returns `{ text }`; the shell's loader parses `params` with `LocaleParams`, since a layout declares no params).
+- Routes declare `title` from the entry's `indexTitle`, `showTitle` (`{ title }`) and `newTitle`.
 - Routes: `recipes.index` `/:locale`, `recipes.new` `/:locale/recipes/new`, `recipes.show` `/:locale/recipes/:recipeId`; `RecipeParams` gains `locale`. With the unprefixed default, every existing en-US URL (`/`, `/recipes/new`, `/recipes/<id>`) keeps working.
 - `Recipe` gains `price: Money` and `addedOn: PlainDate`; `RecipeDraft` gains `price: Money`; `title` becomes `line({ max: 80 })` in `Recipe`, `RecipeDraft` and `kitchen/NewRecipe`. `postRecipe` mints `addedOn` as `plainDateOf` of `instantOf(ctx.clock.now())`'s value in `UTC`, returning its `err` when out of range.
 - `BoxShell` reads its text and locale, sets `lang` on its root, and shows the switcher. `RecipeList` shows the count, price, date and duration; `RecipePage` shows price and `addedOn`; `NewRecipePage` adds a number `Input` bound to `price.amount` and a `Select` bound to `price.currency`, and passes `issueText`. `RecipeError` shows the error's message as its heading, since an `errorElement` gets no params (Known limits); `loadRecipe`'s `keel.notFound` message comes from the entry.
@@ -122,15 +147,15 @@ The eval also asserts:
 - Tests and README follow the routes; `.api.storage*` (git-ignored dev data) is deleted, since stored recipes lack the new fields.
 
 ## Alternatives
-- **`?locale=` search key** (draft B). No path moves, but search keys are optional by rule (E1504), so a link that omits it falls back to the default without a compile error, and the key must be threaded by hand through guard redirects and form actions. D5 chose the path param; K6 keeps the unprefixed URLs that were the search key's main benefit.
-- **An `i18n(ctx)` capability with browser languages, time zone and `negotiate`** (draft B). The same URL would render differently per browser, a server would see `[]` and `UTC` while the client sees the user's settings, and tests and replay would pin the locale apart from the URL (principles 2, 3, 10). With the locale in the path nothing needs negotiating; `Accept-Language` waits until loaders see headers.
-- **E1601 widened in k.ctx for locale reads** (draft B). E1601's fix is the `ctx` equivalent, and a locale has none: the fix is an argument. k.ctx has 11 tokens of headroom against k.check's 96, and both live in `packages/check`, so the size cost is the same either way.
-- **`s.refine` and `Refined<T, N>`** (draft B). Same mechanics, kept here; the name `format` matches the rule and the JSON Schema keyword, so one word runs from API to diagnostic. Its generator mapping `{ from, map }` won over draft A's `gen(fc)`, which put fast-check types in every stdlib package.
+- **`?locale=` search key**. No path moves, but search keys are optional by rule (E1504), so a link that omits it falls back to the default without a compile error, and the key must be threaded by hand through guard redirects and form actions. D5 chose the path param; K6 keeps the unprefixed URLs that were the search key's main benefit.
+- **An `i18n(ctx)` capability with browser languages, time zone and `negotiate`**. The same URL would render differently per browser, a server would see `[]` and `UTC` while the client sees the user's settings, and tests and replay would pin the locale apart from the URL (principles 2, 3, 10). With the locale in the path nothing needs negotiating; `Accept-Language` waits until loaders see headers.
+- **E1601 widened in k.ctx for locale reads**. E1601's fix is the `ctx` equivalent, and a locale has none: the fix is an argument. k.ctx has 11 tokens of headroom against k.check's 96, and both live in `packages/check`, so the size cost is the same either way.
+- **`s.refine` and `Refined<T, N>`**. Same mechanics, kept here; the name `format` matches the rule and the JSON Schema keyword, so one word runs from API to diagnostic. Its generator mapping `{ from, map }` is kept over `gen(fc)`, which would put fast-check types in every stdlib package.
 - **App-written format types** (no E1106). Every app predicate would bring a generator no one tests, and property tests built on it would trust it.
-- **`formatMoney` moved to std-i18n, with `toDecimal(m)` in std-money** (draft B). std-i18n would import every value package and grow with each new one; keeping each formatter beside its type lets a new value package add its own (principle 3). `toDecimal` has no S2 consumer; `Money.encode` is the machine form.
-- **std-i18n as the home of every formatter, with locale-free std-temporal and std-text** (draft B). Same reason as above.
-- **`PlainTime`, `inZone`, `addDuration`, `between`, `fold`, `negotiate`** (draft B). No S2 consumer; each can be added by a later RFC without changing these signatures.
-- **A separate `golden-2-locales` eval** (draft B). Two evals for one app; extending golden-2 holds the agent-build eval to the S2 bar as well (default 3).
+- **`formatMoney` moved to std-i18n, with `toDecimal(m)` in std-money**. std-i18n would import every value package and grow with each new one; keeping each formatter beside its type lets a new value package add its own (principle 3). `toDecimal` has no S2 consumer; `Money.encode` is the machine form.
+- **std-i18n as the home of every formatter, with locale-free std-temporal and std-text**. Same reason as above.
+- **`PlainTime`, `inZone`, `addDuration`, `between`, `fold`, `negotiate`**. No S2 consumer; each can be added by a later RFC without changing these signatures.
+- **A separate `golden-2-locales` eval**. Two evals for one app; extending golden-2 holds the agent-build eval to the S2 bar as well (default 3).
 - **`Intl.DurationFormat`.** Absent on Node 22, which CI runs.
 - **A k.ui formatting hook** (a text op that formats any registered type for the current locale). It needs an ambient locale (principle 2) and is a second way to show a value (principle 1).
 - **Shipping CLDR data**, or a **`Temporal` polyfill**. 3 to 5 kB per locale with an update duty per CLDR release, or over 20 kB gzip in every bundle that shows a date.
@@ -138,11 +163,15 @@ The eval also asserts:
 - **ICU MessageFormat strings.** A parser of 5 to 10 kB and a second string language TypeScript cannot check; plain templates plus `plural` and `select` objects cover S2.
 - **Messages imported directly by components.** Every locale would ship in every island bundle, and the text would not be loader data that tests and replay already pin.
 - **A context provider or a request-scoped store for the locale.** Action at a distance (principle 2); a store read makes every formatted value an island.
-- **Form messages carried by each format type** (draft A's `message`). English only; `issueText` translates every rule, `format` among them.
+- **Form messages carried by each format type**. English only; `issueText` translates every rule, `format` among them.
 - **The prefixed default answering 404.** Keeps one URL too, but breaks links made before the opt-in; the router already redirects a trailing slash.
 - **`pathDefault` as a manifest option** (`manifest(routes, { prefix })`). Declared once per module, so two modules could disagree, and away from where the locales are declared (principle 4).
 - **Splitting k.router for K6.** Moving clauses would change the quoted header of every moved conformance file; a new section changes none.
-- **Reserving diagnostic blocks for packages with no rules** (both drafts). Map tokens spent on nothing (principle 12).
+- **`title` as a message key string** (`title: 'showTitle'`). The route does not know its set, and a title with params needs a function anyway.
+- **`<title>{route title} · {deployable}</title>`** (RFC 0078's suggestion). The deployable name is not copy and is not translated; an app puts its brand into the message.
+- **A `lang` field on the route, or `<html lang>` copied from the shell's root `lang`.** The first repeats the locale on every route; the second lets an attribute inside a layout change the document (principle 2). The prefix param is already the parsed, typed locale.
+- **Splitting k.router for K7.** Its Client and Form paragraphs would move with at least four quoted clauses; the head was already a self-contained sentence of k.server and moves with one.
+- **Reserving diagnostic blocks for packages with no rules**. Map tokens spent on nothing (principle 12).
 
 ## Spec diff
 Token counts are `ceil(length / 4)`, the rule `tooling/budgets.mjs` uses, measured by applying these edits to copies of the sections. Appended clauses keep every existing clause number; k.router clause 5 and std.money clause 7 change in place. Trims remove citations and restatements only, which CLAUDE.md rule 11 asks for anyway.
@@ -167,19 +196,54 @@ Token counts are `ceil(length / 4)`, the rule `tooling/budgets.mjs` uses, measur
 - Conformance, appended: "A base element given `lang="ja-JP"` has `lang="ja-JP"` in server and client output; without it, none."
 - Trims: "(RFC 0009)", "rfc:0062", "(rfc:0064)", "rfc:0067", "(rfc:0043)", "(k.compiler URL policy)", "(`check`)" after E1801; the `disabled` rationale becomes ", so `disabled` stays the boolean attribute."; the tokens example drops `space 0`, `radius` and `font` (no clause reads them). No conformance clause changes.
 
-### k.router (1,498 to 1,496)
+### k.router (1,498 to 1,499)
 - Matching: "static beats `:param`; no wildcards." gains "; k.prefix elides a leading param."
 - Guards: "on `err` the request redirects to `redirect` with search `{ next: url }`" becomes "on `err` the request redirects to `redirect`, with the matched route's same-name params and search `{ next: url }`".
 - Rules: E1508's "or (runtime) a guard redirect loop." becomes "or (runtime) a guard redirect loop or a missing `redirect` param."
 - Conformance clause 5, in place: "A guard returning `err` redirects to its `redirect` route with `next` and the matched route's same-name params (one missing: E1508); no loader or route component runs."
-- Trims: the example's `search: OrderSearch` and `errorElement: OrderError` (the text describes both); "a statement after the manifest,"; "(client navigation fetches results)"; Artifacts becomes "In `routes.json` (k.compiler), `actions` lists methods; ..." (k.compiler gives its shape).
+- Manifest: after "`errorElement` receives `{ error: KeelError }`." add "A path route's `title` names its document (k.head)."
+- Trims: "Routes hold the value (`guard: auth`)." (the manifest example shows it); the example's `search: OrderSearch` and `errorElement: OrderError` (the text describes both); "a statement after the manifest,"; "(client navigation fetches results)"; Artifacts becomes "In `routes.json` (k.compiler), `actions` lists methods; ..." (k.compiler gives its shape).
+
+### k.server (1,500 to 1,462)
+- Document: "Head: `<title>` the deployable name, entry CSS, `/keel-mark.svg` icon if built. A `keel.notFound` default alert has an `h1`." becomes "Head, `<html lang>` and the `keel.notFound` alert: k.head."
+- Conformance: the clause "A built document has the head Document names; an unmatched path is 404 with an `h1`." moves to k.head as "A built document has the head this section names; an unmatched path is 404 with an `h1`." No other text changes.
+
+### spec/kernel/k.head.md (new, 686)
+~~~md
+# k.head: Document head
+status: proposed
+
+**Purpose.** Every document names its page and its language. The server writes both, and the client router keeps them current on navigation without re-rendering text.
+
+**Title.** A path route may declare `title: (props) => string`, given the route component's props `{ params, search, data }` (k.router), `data` being its loader's `ok` value. A layout with `title` does not compile.
+```ts
+'recipes.show': { path: '/:locale/recipes/:recipeId', params: RecipeParams, loader: loadRecipe,
+  component: RecipePage, title: (p) => formatMessage(p.data.text.showTitle, { title: p.data.recipe.title }, p.params.locale) },
+```
+The document's title is the matched route's `title`. Without one, when a loader in the chain returns `err`, and for a 404, it is the fallback: the served deployable's name on a server, the `index.html` title in a `client` deployable (read once at `mount`).
+
+**Language.** `<html lang>` is the matched route's value of its prefix param (k.prefix), read from the matched params; a route without a prefix param, and a 404, give `en`.
+
+**Server.** The head holds, in order: charset, viewport, `<title>`, a `<link rel="stylesheet">` for each `.css` file under `/assets/` that the build manifest's entry chunk names, and `<link rel="icon" href="/keel-mark.svg">` when the build has the mark. In dev, or without a build, it holds the title only. Each value is escaped and nothing is inline, so a strict CSP allows it. The default alert for `keel.notFound` is `<h1>Not found</h1>`.
+
+**Client.** At `mount`, at `resume` and after each navigation's chain has rendered, the router sets `document.title` and `document.documentElement.lang` by the rules above where they differ. It writes nothing else: no element or text node is rebuilt.
+
+**Rules.** None of its own. A string literal with a letter returned by `title` in a module that lists `@keel/std-messages` is E2406 (std.messages).
+
+**Conformance.**
+- A node document for a route with `title` has `<title>` its return value, escaped; for a route without one, after a loader `err`, and for a 404, the deployable's name.
+- With a prefix param whose `pathDefault` is `en-US`, the document at `/de-DE/...` has `<html lang="de-DE">` and at the unprefixed URL `<html lang="en-US">`; a route with no prefix param has `lang="en"`.
+- After a client navigation from a titled `en-US` route to a titled `de-DE` route, `document.title` and `document.documentElement.lang` are the second route's, and every element of a layout both share keeps its identity.
+- After `resume`, `document.title` and `lang` equal the served document's, and no text node was replaced.
+- A built document has the head this section names; an unmatched path is 404 with an `h1`.
+~~~
 
 ### k.forms (1,154 to 1,279)
 - API: "`form(schema, { initial?, id? })`" becomes "`form(schema, { initial?, id?, issueText? })`".
 - Validation: "Messages derive from `schema.invalid` issues (rule plus constraint)." becomes "Messages derive from `schema.invalid` issues. `issueText(issue): string` gives a field's text for each issue `{ rule, path, min?, max?, values?, format? }` (`FieldIssue`: the constraint from the schema node at the path; `format` is the format type's name); without it the text is English from the rule and constraint, `Invalid value` for `format`."
 - Conformance, appended: "With `issueText`, an invalid field's error text is exactly its return value for that field's issue, whose `rule`, `path` and constraint match the schema; without it, a `format` issue shows `Invalid value`."
 
-### spec/kernel/k.prefix.md (new, 878)
+### spec/kernel/k.prefix.md (new, 889)
 ~~~md
 # k.prefix: Implied path prefix
 status: proposed
@@ -202,7 +266,7 @@ A route is prefixed when its path's first segment is `:p` and its params field `
 2. A first segment equal to `d`: a 308 redirect to the path without it, search kept, as a trailing slash is; the client router replaces the history entry. Each page has one URL.
 3. Otherwise the whole path matches the unprefixed routes and the prefixed routes with `p` set to `d`; static beats `:param` as in k.router. No route left is 404.
 
-`params`, the served route in `#k-state`, the `nav` event (k.ctx) and the harness carry `p` on every URL, so resume, session replay and tests pin it through params. `matchHref` of a step-2 href gives its target's match.
+`params`, the served route in `#k-state`, the `nav` event (k.ctx) and the harness carry `p` on every URL, so resume, session replay and tests pin it through params; it is also the document's `lang` (k.head). `matchHref` of a step-2 href gives its target's match.
 
 **Rules.** E1509 (k.router block), from `manifest` and from `keel check` over a deployable's route table: a static first segment equal to a value of a prefix param; a route whose first segment is another param; a route whose path is a prefixed route's path without the prefix; two prefix params in one table; a `pathDefault` param that is not first in its path. Fix: prepend `/:<p>` to the route's `path` (its params then need the field, E1503).
 
@@ -335,7 +399,7 @@ props.data.recipes.toSorted((a, b) => compareText(a.title, b.title, props.params
 - With `process.env.TZ` and `process.env.LANG` changed, every export returns equal results for equal arguments.
 ~~~
 
-### spec/std/std.messages.md (new, 1,436)
+### spec/std/std.messages.md (new, 1,452)
 ~~~md
 # std.messages: Message sets
 status: proposed
@@ -361,7 +425,7 @@ return ok({ recipes, text: await RecipesText.load(params.locale) })
 - `formatMessage(message, params, locale): string` renders an object message, `params` typed by its key: `{name}` becomes the param, a number through `formatNumber`; `plural` goes through `plural` (std.i18n) with `params[p]`; `select` takes `cases[params[p]]`. A text message is a string and renders as itself; an object is not a `Child` (k.ui), so an object message renders only through `formatMessage`.
 - Text reaches a component as loader data: a loader returns `await Set.load(params.locale)` in its output (the set is a schema) and the component reads `props.data`. A route level with no island ships no message; an island level ships the one entry in its props in `#k-state` (k.runtime), and resume keeps the server's text. In a `client` deployable `load` fetches only the active locale's file, a chunk of its own. A test pins text through `renderRoute` `params`, or passes `await Set.load(l)` in `render` props; a session replays the `nav` and its loaders.
 
-**Rules** (in a module whose `deps` list `@keel/std-messages`). E2401 a locale of the set without `<Set>/<locale>.ts`, or `load` not that exact import (fix: the file with `Set.text({})`, or the exact `load`) · E2402 a locale file without a declared key (no fix: a translation cannot be derived) · E2403 a locale file key the set does not declare (fix: removes it) · E2404 a declared key no other project file reads as `.<key>` (fix: removes it from the declaration) · E2405 a template's `{name}`, `plural` or `select` that does not match its key's params (fix: renames the placeholder when exactly one declared param is absent from that template) · E2406 a JSX text child, or a string literal `label` or `alt`, containing a letter, in a component file (no fix).
+**Rules** (in a module whose `deps` list `@keel/std-messages`). E2401 a locale of the set without `<Set>/<locale>.ts`, or `load` not that exact import (fix: the file with `Set.text({})`, or the exact `load`) · E2402 a locale file without a declared key (no fix: a translation cannot be derived) · E2403 a locale file key the set does not declare (fix: removes it) · E2404 a declared key no other project file reads as `.<key>` (fix: removes it from the declaration) · E2405 a template's `{name}`, `plural` or `select` that does not match its key's params (fix: renames the placeholder when exactly one declared param is absent from that template) · E2406 a JSX text child, a string literal `label` or `alt`, or a string literal a route `title` returns (k.head), containing a letter, in a component or `routes.ts` file (no fix).
 
 **Conformance.**
 - For a fixture set with keys `title` (no params), `count` (`n: s.int()`) and `kind` (`k: s.enum(['a', 'b'])`), every `gen` entry parses and round-trips; `title: 'a{b'`, a template naming `{x}`, a `plural` on `k` and a `select` without case `b` each fail with rule `format` at the key's path; a missing key fails with `required`, an extra one with `unknown-key`.
@@ -375,9 +439,9 @@ return ok({ recipes, text: await RecipesText.load(params.locale) })
 - The package root imports neither `@keel/check` nor `typescript`; `@keel/std-messages/tools` exports the six rules.
 ~~~
 
-### spec/00-map.md (orchestrator; 895 to about 1,010)
+### spec/00-map.md (orchestrator; 895 to about 1,030)
 - Code ranges: the E150x owner becomes "k.router, k.prefix"; add the row "| E230x | std.i18n | E240x | std.messages |".
-- Kernel table, after k.router: "| k.prefix | Implied path prefix | proposed | a leading enum param with `pathDefault` left out of the URL |".
+- Kernel table, after k.router: "| k.prefix | Implied path prefix | proposed | a leading enum param with `pathDefault` left out of the URL |"; after k.server: "| k.head | Document head | proposed | per-route title, `<html lang>` from the prefix param, head links |".
 - Stdlib table: std.i18n ("schema type registry and check rule registry: `i18n.Locale`, numbers, plurals, E2301"), std.temporal ("schema type registry: instants, dates, zones, durations; format"), std.text ("schema type registry: `text.Email`, `Slug`, `line`, `para`, collation"), std.messages ("check rule registry: message sets, one file per locale, E2401-E2406"); std.money's line becomes "schema type registry: `money.Money`, add, format for a locale".
 - `spec/std/README.md`: "S2 (RFC 0079) adds std.i18n, std.temporal, std.text and std.messages and changes std.money."
 
@@ -385,7 +449,8 @@ return ok({ recipes, text: await RecipesText.load(params.locale) })
 The conformance-writer of each lane writes these from the accepted spec text, skipped until implementation; each clause is cited verbatim by exactly one file. k.schema, k.check, k.ui, k.router and k.forms stay `conformance-covered`, so `keel ledger --diff` reports E1707 for each appended clause until its file lands in the kernel lane's commits.
 
 - **Kernel, added.** `packages/schema/conformance/format-type.test.ts`; `packages/check/conformance/E1106-format-in-app.test.ts`; `packages/check/conformance/E1758-ambient-locale.test.ts`; `packages/ui/conformance/lang-attribute.test.ts`; `packages/forms/conformance/issue-text.test.ts`; `packages/router/conformance/prefix-{write,parse,canonical-308,types,guard,e1509,path-default-throws}.test.ts` (k.prefix, one per clause).
-- **Kernel, edited (header gains rfc:0079).** `packages/router/conformance/guard-denied-redirect.test.ts` (clause 5: params carried, a missing one is E1508). No other existing kernel header quotes a changed clause; the trims touch no clause text.
+- **Kernel, added for k.head.** `packages/server/conformance/head-title.test.ts`, `head-lang.test.ts`; `packages/router/conformance/head-client-navigation.test.ts`, `head-resume.test.ts`.
+- **Kernel, edited (header gains rfc:0079).** `packages/router/conformance/guard-denied-redirect.test.ts` (k.router clause 5: params carried, a missing one is E1508). `packages/server/conformance/document-head-0078.test.ts` (its clause moves from k.server to k.head and reads "the head this section names"; the header names k.head). No other existing kernel header quotes a changed or moved clause; the trims touch no clause text.
 - **std-i18n, added.** `registry`, `locale-parse`, `format-number`, `plural`, `locale-name`, `e2301`, `host-independent`, `tools-split` (`.test.ts` in `packages/std-i18n/conformance/`).
 - **std-money, edited (rfc:0079).** `packages/std-money/conformance/format.test.ts` (clause 7). The other five files are unchanged.
 - **std-temporal, added.** `registry`, `gen-roundtrip`, `parse-rejects`, `instant-of`, `plain-date-of`, `add-days`, `duration`, `format-date-instant`, `format-duration`, `host-independent`.
@@ -394,11 +459,11 @@ The conformance-writer of each lane writes these from the accepted spec text, sk
 - **Not conformance.** Property tests per package (`test/*.property.test.ts`): `formatMoney`, `formatDate` and `formatDuration` injective per locale over generated inputs; `addDays` additive; `compareText` transitive on generated triples; `plainDateOf` monotonic in `i` for a fixed zone; `formatMessage` total over generated entries; `routes.href` then match is the identity with and without `pathDefault`.
 
 ## Lanes
-**Orchestrator, before the batch.** Write the accepted spec text into `spec/` (the new files, the kernel and std.money edits, `spec/00-map.md`, `spec/std/README.md`); write ADR-0068 to ADR-0071; create `packages/std-i18n`, `std-temporal`, `std-text` and `std-messages` (`package.json` with dependencies and, for std-i18n and std-messages, the `./tools` export; `tsconfig.json`, `tsconfig.build.json`, `vitest.config.ts`, empty `src/index.ts`, `conformance/`, `unsafe/`, all in the std-money shape); add `@keel/std-i18n` to `packages/std-money/package.json`; set the `tooling/deps.json` order; add the `tooling/budgets.json` entries and re-bases (Token impact); add the five packages to `apps/golden-2/package.json`; run `pnpm install` once, so no lane touches `pnpm-lock.yaml`. Shared files stay with the orchestrator: `spec/**`, `docs/adr/**`, `docs/ARCHITECTURE.md`, `docs/HANDOFF.md`, `tooling/budgets.json`, `tooling/deps.json`, `tooling/ledger/ledger.json`, `tasks/BACKLOG.md`, `pnpm-lock.yaml`, `evals/results/**`. A lane that finds a defect in its spec text reports it and does not edit `spec/`.
+**Orchestrator, before the batch.** Write the accepted spec text into `spec/` (the new files, the kernel and std.money edits, `spec/00-map.md`, `spec/std/README.md`); ADR-0068 to ADR-0072 are written; create `packages/std-i18n`, `std-temporal`, `std-text` and `std-messages` (`package.json` with dependencies and, for std-i18n and std-messages, the `./tools` export; `tsconfig.json`, `tsconfig.build.json`, `vitest.config.ts`, empty `src/index.ts`, `conformance/`, `unsafe/`, all in the std-money shape); add `@keel/std-i18n` to `packages/std-money/package.json`; set the `tooling/deps.json` order; add the `tooling/budgets.json` entries and re-bases (Token impact); add the five packages to `apps/golden-2/package.json`; run `pnpm install` once, so no lane touches `pnpm-lock.yaml`. Shared files stay with the orchestrator: `spec/**`, `docs/adr/**`, `docs/ARCHITECTURE.md`, `docs/HANDOFF.md`, `tooling/budgets.json`, `tooling/deps.json`, `tooling/ledger/ledger.json`, `tasks/BACKLOG.md`, `pnpm-lock.yaml`, `evals/results/**`. A lane that finds a defect in its spec text reports it and does not edit `spec/`.
 
 | Lane | Owns (exclusive) | Needs | Verify |
 | --- | --- | --- | --- |
-| kernel | `packages/schema/**`; `packages/check/**`; `packages/ui/src/**`; `packages/router/src/**`; `packages/forms/src/**`; `packages/server/src/**`; `packages/testing/src/**`; `packages/cli/src/internal/{toJsonSchema,fieldsOf}.ts`; `packages/std-sessions/src/redact.ts` and `src/internal/fake.ts` (the `format` node case); `packages/store/src/internal/persisted.ts`; the kernel conformance files above; kernel changesets | nothing; lands K1 (`s.format`, `Format`, rule `format`, `pathDefault`) as its first commit | `pnpm --filter @keel/schema --filter @keel/check --filter @keel/ui --filter @keel/router --filter @keel/forms --filter @keel/server --filter @keel/testing --filter @keel/cli --filter @keel/std-sessions --filter @keel/store run check`, the same with `run test` |
+| kernel (K1 to K7) | `packages/schema/**`; `packages/check/**`; `packages/ui/src/**`; `packages/router/src/**`; `packages/forms/src/**`; `packages/server/src/**`; `packages/testing/src/**`; `packages/cli/src/internal/{toJsonSchema,fieldsOf}.ts`; `packages/std-sessions/src/redact.ts` and `src/internal/fake.ts` (the `format` node case); `packages/store/src/internal/persisted.ts`; the kernel conformance files above; kernel changesets | nothing; lands K1 (`s.format`, `Format`, rule `format`, `pathDefault`) as its first commit | `pnpm --filter @keel/schema --filter @keel/check --filter @keel/ui --filter @keel/router --filter @keel/forms --filter @keel/server --filter @keel/testing --filter @keel/cli --filter @keel/std-sessions --filter @keel/store run check`, the same with `run test` |
 | i18n-money | `packages/std-i18n/**`, `packages/std-money/**` | nothing; lands `Locale`, `formatNumber` and `plural` as its first commit | `pnpm --filter @keel/std-i18n --filter @keel/std-money run check && pnpm --filter @keel/std-i18n --filter @keel/std-money run test` |
 | std-temporal | `packages/std-temporal/**` | K1; `Locale` | `pnpm --filter @keel/std-temporal run check && pnpm --filter @keel/std-temporal run test` |
 | std-text | `packages/std-text/**` | K1; `Locale` | `pnpm --filter @keel/std-text run check && pnpm --filter @keel/std-text run test` |
@@ -407,16 +472,16 @@ The conformance-writer of each lane writes these from the accepted spec text, sk
 
 Order: kernel and i18n-money start at once. std-temporal, std-text and std-messages write code against the spec text at once and run their tests once K1 and `Locale` are on the branch. std-messages proves its `client` chunk clause first, since the golden-2 design rests on it. golden-2 starts with schemas, message files and the eval task, and finishes last. That is five implementation agents and one kernel agent, the program's batch budget. Mutation runs (kernel packages, then std packages) go alone after the batch. Batch end: root `pnpm check && pnpm test && pnpm build`, `node tooling/budgets.mjs`, ledger diff, reviewer and red-team.
 
-**Ride-along backlog lines** (only where a lane already owns the package): 0292 (golden-2 lane: golden-2's `check` script runs `keel check`); 0306 (kernel lane, `packages/server`: silence the happy-dom module-load stack in server tests); 0291 (kernel lane, `packages/check`: the type pass's Node declarations cost, as its last step if K1 to K6 are green). 0296 needs a rule design of its own and waits; 0302 to 0304 are in packages no lane owns.
+**Ride-along backlog lines** (only where a lane already owns the package): 0292 (golden-2 lane: golden-2's `check` script runs `keel check`); 0306 (kernel lane, `packages/server`: silence the happy-dom module-load stack in server tests); 0291 (kernel lane, `packages/check`: the type pass's Node declarations cost, as its last step if K1 to K7 are green). 0296 needs a rule design of its own and waits; 0302 to 0304 are in packages no lane owns.
 
 ## Migration
 - **Kernel callers.** `s.format`, `Format`, rule `format`, `pathDefault`, `lang`, `issueText`, E1106, E1509 and E1758 are additions. A `switch` over `Rule` or schema node kinds outside the kernel stops compiling until it handles `format`; inside the repository those are `packages/std-sessions` (kernel lane) and none in `apps/`. No app calls a locale API (`grep` of `apps/` for `toLocale`, `localeCompare`, `Intl.` and `navigator.language` is empty), so E1758 reports nothing on upgrade. A guard whose `redirect` route has no params behaves as before; one whose route has params threw at redirect time and now redirects or reports E1508. Without `pathDefault`, matching is unchanged.
 - **`formatMoney`.** `formatMoney(m)` becomes `formatMoney(m, locale)`. No caller exists outside `packages/std-money`; its clause 7 and `test/money.property.test.ts` change with it.
-- **golden-2.** As Proposal 5 lists; en-US URLs keep working through the unprefixed default; `.api.storage*` is deleted.
-- **Docs.** `docs/ARCHITECTURE.md` names the new packages and gains the Borrow vs build row "Dates, zones, locale data: borrow platform `Intl`; build ISO values; no `Temporal` polyfill". Each new package gets a README in the std-money shape. The `keel` skill gains two lines: values are shown with `formatMoney`, `formatDate`, `formatDuration` or `formatNumber` and the route's `locale`; page text comes from a message set through the route's loader.
+- **golden-2.** As Proposal 6 lists; en-US URLs keep working through the unprefixed default; `.api.storage*` is deleted.
+- **Docs.** `docs/ARCHITECTURE.md` names the new packages and gains the Borrow vs build row "Dates, zones, locale data: borrow platform `Intl`; build ISO values; no `Temporal` polyfill". Each new package gets a README in the std-money shape. The `keel` skill gains three lines: a route's `title` reads a message from its loader data; values are shown with `formatMoney`, `formatDate`, `formatDuration` or `formatNumber` and the route's `locale`; page text comes from a message set through the route's loader.
 
 ## Token impact
-Sections after the change (measured): k.schema 1,474, k.check 1,499, k.ui 1,497, k.router 1,496, k.forms 1,279, k.prefix 878 (new), std.i18n 1,096, std.temporal 1,474, std.text 1,029, std.messages 1,436, std.money 817; spec map about 1,010 of 1,200. k.check, k.ui and k.router are within 4 tokens of the cap: their next change needs a split. A golden-2 task reading std.i18n, std.money, std.temporal and std.messages reads about 4,800 tokens of stdlib spec, so the eval's spec slice keeps key lines only, as it does for the kernel. The `keel` skill grows by about 50 tokens.
+Sections after the change (measured): k.schema 1,474, k.check 1,499, k.ui 1,497, k.router 1,499, k.server 1,462 (from 1,500), k.forms 1,279, k.prefix 889 (new), k.head 686 (new), std.i18n 1,096, std.temporal 1,474, std.text 1,029, std.messages 1,452, std.money 817; spec map about 1,030 of 1,200. k.check, k.ui and k.router are within 3 tokens of the cap: their next change needs a split. A golden-2 task reading std.i18n, std.money, std.temporal and std.messages reads about 4,800 tokens of stdlib spec, so the eval's spec slice keeps key lines only, as it does for the kernel. The `keel` skill grows by about 60 tokens.
 
 Package sizes (gzip; `tooling/budgets.mjs` rule):
 
@@ -429,8 +494,9 @@ Package sizes (gzip; `tooling/budgets.mjs` rule):
 | `@keel/std-messages` / `./tools` | new | 1.2 kB / 5 kB | `"1.5kb"` / `{ "max": "6kb", "platform": "node" }` |
 | `@keel/schema` | 4,402 B | +0.35 kB | `5kb` holds |
 | `@keel/check` | 33,538 B | +0.8 kB (E1106, E1758, E1509 over routes.json) | `33kb` (33,792 B) is crossed; re-base to `34.5kb` with the measured bytes in the commit (default 7) |
-| `@keel/router` | 8,376 B | +0.4 kB (K4, K6) | `8.5kb` (8,704 B) is crossed; re-base to `9kb` |
-| `@keel/ui`, `@keel/forms`, `@keel/server` | 3,104 B, 4,115 B, 14,390 B | +20 B, +60 B, +80 B | hold |
+| `@keel/router` | 8,376 B | +0.55 kB (K4, K6, the K7 client writes) | `8.5kb` (8,704 B) is crossed; re-base to `9kb` (9,216 B) |
+| `@keel/server` | 14,390 B | +0.2 kB (K4 redirect, K6 308, K7 title and lang) | `14.5kb` (14,848 B) holds |
+| `@keel/ui`, `@keel/forms` | 3,104 B, 4,115 B | +20 B, +60 B | hold |
 
 An app that formats money, dates and messages adds about 5 kB gzip and no locale data, since `Intl` ships with the engine; a `client` deployable fetches one locale file per message set.
 
@@ -438,7 +504,7 @@ An app that formats money, dates and messages adds about 5 kB gzip and no locale
 - **Cross-engine bytes.** A browser on another CLDR version can write a value with a different space character than the server. Resume keeps the server's text; only an island that re-renders a value shows the browser's form. Conformance pins literals only where Node 22 and 24 agree and compares with the named `Intl` expression elsewhere.
 - **`errorElement` copy.** An `errorElement` receives `{ error }` and no params, so its text comes from the error's message, which the loader writes from its entry. A router-made 404 for a bad param has no locale. Passing params to `errorElement` waits for the k.router split.
 - **Server field messages without JS.** The router's own 422 messages for a no-JS post come from its English `messageFor`; with the runtime loaded, `issueText` covers every client-side issue.
-- **Document head.** `<title>` and `<html lang>` are per deployable until Open question 4 is decided.
+- **Document language without a default.** `<html lang>` comes from the prefix param, so an app that prefixes every URL (no `pathDefault`) keeps `lang="en"` while its shell's `lang` marks the content. The scaffold template starts with a `pathDefault` (D7).
 - **Message text.** Templates have no markup and no literal braces; a sentence with a link is split into messages around a `Link`.
 - **Money input.** golden-2 takes a price in minor units. Parsing `12,50 €` typed in a locale is a later std-money function.
 - **Locale choice.** With no headers in loaders, nothing picks a locale from `Accept-Language`; the switcher and the unprefixed default cover S2.
@@ -446,16 +512,12 @@ An app that formats money, dates and messages adds about 5 kB gzip and no locale
 - **Right-to-left.** No right-to-left tag is in `i18n.Locale` until k.ui has a `dir` story.
 
 ## ADRs
-Numbers from the next free in `docs/adr/` (0067 is the last). The orchestrator writes them at acceptance.
-- **ADR-0068 Format types in k.schema.** Context: stdlib values (dates, zones, bounded text, message templates) need validation a primitive cannot express, and every derivation must still come from the schema. Decision: `s.format(name, base, { check, gen: { from, map } })`, a `format` node kind holding `check` and `gen` beside the JSON node, rule `format`, `Format<T, N>`, JSON Schema `format`, and E1106 keeping it in the stdlib. Alternatives: a pluggable primitive kind, `s.string({ pattern })`, stdlib-private validation, app-written format types. Consequences: one new node kind every walker handles; a serialized node loses its predicate.
-- **ADR-0069 Ambient locale and time zone are E1758.** Context: host locale and zone reads make server and client text differ. Decision: a k.check source rule with E1601's name resolution and no fix, since the fix is an argument. Alternatives: widening E1601 in k.ctx, a stdlib rule that only runs where the stdlib is installed. Consequences: k.check reaches its cap; `@keel/check` re-based.
-- **ADR-0070 The locale is a path param, with an optional unprefixed default.** Context: the locale must be addressable, typed and pinned by tests and replay. Decision: `/:locale/...` typed by an app enum of `i18n.Locale` tags; `pathDefault` on that enum and the k.prefix codec (elide on write, fill on parse, 308 for the prefixed default, E1509 for collisions); guard redirects carry same-name params (K4); `lang` on every base element (K3). Alternatives: `?locale=`, a ctx capability, a request store, `Accept-Language`, a manifest-level prefix option, 404 for the prefixed default. Consequences: every link passes a locale; the scaffold template follows in its own task.
-- **ADR-0071 Message sets are schemas loaded per route.** Context: translated page text with typed params, a closed key vocabulary and only the active locale shipped. Decision: `@keel/std-messages` (`messages`, one file per locale, `load` through a dynamic import, `formatMessage` through std-i18n `plural`), text delivered as loader data, E2401 to E2406, and `form(schema, { issueText })` (K5) for form text. Alternatives: one file per set with all locales, ICU MessageFormat, component imports, a provider, per-format-type English messages. Consequences: each route that shows text has a loader; layouts parse their params; `errorElement` copy comes from the error.
+Written with this RFC's acceptance, in `docs/adr/`:
+- `0068-format-types.md`: format types in k.schema (K1, E1106).
+- `0069-ambient-locale-e1758.md`: ambient locale and time zone are E1758 (K2).
+- `0070-locale-path-param.md`: the locale is a path param, with an optional unprefixed default (K3, K4, K6).
+- `0071-message-sets-issue-text.md`: message sets loaded per route, and `issueText` (K5, std-messages).
+- `0072-route-title-document-lang.md`: per-route title and `<html lang>` (K7, k.head).
 
 ## Open questions
-Each is a new hand-written user-facing API shape, which the defaults escalate. The batch proceeds on each recommendation unless the user says otherwise.
-
-1. **The unprefixed default's declaration.** Recommended: `s.enum(values, { pathDefault })` on the app's locale enum, read by the router through the k.prefix section, with the prefixed default answering 308; the scaffold `project` template is born with `AppLocale = s.enum(['en-US'], { pathDefault: 'en-US' })` and its routes under `/:locale`, in a scaffold task after this batch. Alternatives: a `prefix` option on each `manifest` (declared per module, not where the locales live), a std-i18n wrapper `locales(values, { unprefixed })` (needs the same kernel marker underneath), 404 for the prefixed default, or a scaffold without the locale param (a one-locale app then hand-threads `locale` through every link when it adds a second; the template choice changes only new apps).
-2. **Message sets.** Recommended: Proposal 4 as written: `messages(locales, keys, load)` in `*.schema.ts`, `<Set>/<locale>.ts` files, `Set.load` in loaders, `formatMessage(message, params, locale)`, and E2406 refusing literal copy in a component file of a module that lists the package (proper names such as `Keel` go in the set too). Alternative: one file per set holding every locale (one edit per key, every locale shipped to a `client` deployable).
-3. **`form(schema, { issueText })`** (K5). Recommended: accept, so form errors are translated with the page. Alternative: kernel English for every form error in S2, with golden-2's German form showing `Required`.
-4. **Per-route `<title>` and `<html lang>`.** Recommended: an optional `title: (props) => string` on the route definition, reading a message from loader data, written as `<title>{title} · {deployable}</title>` and set as `document.title` on client navigation, with `<html lang>` taken from `params.locale` when the route has one; in its own RFC after S2, because k.router and k.server are at the token cap and each needs a split. Alternative: one title per deployable in `topology.ts`, with no per-page text and no page language.
+None. The user's answers of 2026-11-10 are Decisions D6 to D10, and the title and language design adds no further user-facing shape beyond the `title` field decided in D10.
