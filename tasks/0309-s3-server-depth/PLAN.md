@@ -6,7 +6,7 @@
 1. [x] Design RFC 0080 `docs/rfc/0080-s3-server-depth.md` accepted (9611941; ADR-0073 to ADR-0079; std-streams dropped: live loaders in k.server are the one stream transport, std.channels builds on them).
 2. [x] Orchestrator accepts the RFC; user answered D2-D5.
 3. [~] Conformance first: three writers running (kernel sections k.topology/k.server/k.services/k.module; k.compat + k.scaffold; std.jobs + std.schedules) after prep commit 221406e.
-4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
+4. [~] Implementation batch: deploy and compat lanes launched (their conformance at 8c7ebe4); kernel and jobs-schedules wait for their writers; golden last.
 5. [ ] Exit proof eval.
 
 ## Decisions
@@ -21,4 +21,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
 
 ## Next action
-Step 3 in flight. On each writer's report: run `npx vitest run conformance` in the touched packages (skipped suites must load clean), commit `wip: rfc:0080 <sections> conformance, skipped`. When all three are committed, step 4: launch the implementation lanes per RFC 0080 "Lanes" (kernel: server, services, router, compiler, testing; jobs-schedules; deploy: scaffold, cli, generate.mjs; compat: check + surface artifact; golden last), ≤ 5 + 1; the kernel lane lands the live-loader and topology contract first and reports so dependent lanes can be resumed. Conformance guard: HEAD subject must carry rfc:0080 for edits to tracked conformance files.
+Steps 3-4 in flight. Committed conformance: k.compat + k.scaffold (8c7ebe4). Running: writers for the kernel sections and for std.jobs/std.schedules; implementation agents for deploy (scaffold, cli place/generate, tooling/generate.mjs) and compat (check, cli surface.json and --base). On each writer's report: load-check and commit `wip: rfc:0080 ... conformance, skipped`, then launch that lane's implementation (kernel: server/services/router/compiler/testing, lands `service({ module })` and live loaders first and reports; jobs-schedules). Lane reports: commit by path with rfc:0080 in the subject. golden lane (golden-1 `digest` module, server.ts removal in golden-1, golden-2, apps/sessions, the split-topology eval) launches when kernel, deploy, compat are committed. Then step 5 (root check/test/build, ledger, budgets, reviewer + red-team, push, mutation alone) and the exit eval.
