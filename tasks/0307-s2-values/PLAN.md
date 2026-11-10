@@ -5,8 +5,8 @@
 ## Shape (tasks/PROGRAM.md)
 1. [x] Design RFC 0079 (`docs/rfc/0079-s2-values.md`, draft) (one opus agent, no code): contract per package, kernel changes, spec diff, conformance clauses, lane split, open questions for the user.
 2. [x] Orchestrator accepts the RFC (rfc:0079 accepted 2026-11-10, ADR-0068 to ADR-0072, commit 4979cfe) under the WORKFLOW RFC defaults; questions the defaults do not settle go to the user.
-3. [~] Conformance first: std.text, std.i18n, std.temporal, std.money clause 7, std.messages committed (de39b2d, df91f42, 8e0729f, d9d080a); kernel lane writer still running: one `conformance-writer` per lane, tests skipped until implementation.
-4. [~] Implementation batch: std-temporal, std-text, i18n-money, std-messages agents running (opus); kernel waits for its conformance; golden-2 last: one agent per lane (std-temporal, std-text, std-i18n, std-money changes, golden-2), one kernel agent; in parallel.
+3. [x] Conformance first: all five lanes committed, skipped (de39b2d, df91f42, 8e0729f, d9d080a, 37a4926): one `conformance-writer` per lane, tests skipped until implementation.
+4. [~] Implementation batch: kernel (K1 first, reports then resumes), i18n-money, std-temporal, std-messages running; std-text paused at 113f420 waiting on K1/Locale; golden-2 last: one agent per lane (std-temporal, std-text, std-i18n, std-money changes, golden-2), one kernel agent; in parallel.
 5. [ ] Root `pnpm check`, `pnpm test`, `pnpm build`; ledger; budgets; reviewer + red-team; in-batch fixes; push.
 6. [ ] Exit proof: the golden-2 eval shows prices and dates in 3 locales.
 
@@ -30,4 +30,4 @@
 - [ ] `pnpm eval` golden-2: prices and dates in 3 locales
 
 ## Next action
-Steps 3-4 in flight. Outstanding: kernel conformance writer (schema, check, ui, forms, router prefix-*, server/router head-*, two edited headers); on its report run `npx vitest run conformance` in each touched package, commit `wip: rfc:0079 kernel conformance, skipped`, launch the kernel implementation agent (K1 first commit). Implementation agents report per lane: commit each by path (`git add packages/<pkg> .changeset/<pkg>-s2.md`), with `rfc:0079` in the subject. Agents that report "waiting on K1/Locale" are resumed by SendMessage once that lane's commit lands. golden-2 lane launches when kernel, i18n-money, temporal and messages are committed. Then step 5: root check/test/build, ledger, budgets, reviewer + red-team, push; step 6: eval. Conformance guard: HEAD subject must carry rfc:0079 for edits to tracked conformance files.
+Step 4 in flight. On "K1 landed" from the kernel agent: commit `wip: rfc:0079 K1 s.format, Format, rule format, pathDefault, E1106` by path, resume the kernel agent (K2-K7), resume std-text (and temporal/messages if they reported waiting). On the i18n-money report: commit, resume lanes waiting on `Locale`. Each lane's report: commit by path with `rfc:0079` in the subject. golden-2 launches when kernel, i18n-money, temporal and messages are committed. Then step 5 (root check/test/build, ledger, budgets, reviewer + red-team, push) and step 6 (eval).
