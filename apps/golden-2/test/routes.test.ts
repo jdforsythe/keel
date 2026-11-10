@@ -2,13 +2,8 @@ import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { Box } from "../modules/recipes/Box.schema.ts";
-import { RecipesText } from "../modules/recipes/RecipesText.schema.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import { asJson, draft, simApi } from "./simApi.ts";
-
-// Load each locale file once up front: the first `import()` of a file reads the disk, which takes longer than the
-// rounds `renderRoute` waits for a loader to settle; later imports resolve from the module cache.
-await Promise.all([RecipesText.load("en-US"), RecipesText.load("de-DE"), RecipesText.load("ja-JP")]);
 
 type Api = Awaited<ReturnType<typeof simApi>>;
 

@@ -1,7 +1,7 @@
 // Hidden acceptance suite for evals/tasks/golden-2 (TASK.md "Acceptance" 6). pass.ts copies it to
 // apps/golden-2/test/__acceptance.test.ts, runs it with the app's vitest config, and deletes it. It reaches the app only
-// through what TASK.md pins: the default `topology`, `routes` of modules kitchen and recipes, route ids, element ids,
-// and the `RecipesText` set. The strings are RFC 0079's eval table; `␣` there is U+00A0 (`NBSP` here).
+// through what TASK.md pins: the default `topology`, `routes` of modules kitchen and recipes, route ids and element ids.
+// The strings are RFC 0079's eval table; `␣` there is U+00A0 (`NBSP` here).
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { createApp, topology as testTopology } from "@keel/server";
@@ -9,7 +9,6 @@ import { formatMoney } from "@keel/std-money";
 import { type A11yNode, renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { routes as kitchen } from "../modules/kitchen/routes.ts";
-import { RecipesText } from "../modules/recipes/RecipesText.schema.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import topology from "../topology.ts";
 
@@ -23,9 +22,6 @@ const BASE = "http://localhost";
 /** 2026-11-10T09:30:00.000Z. */
 const NOW = 1794303000000;
 const JSON_HEADERS = { accept: "application/json", "content-type": "application/json", "x-keel": "1" };
-
-// The first `import()` of a locale file reads the disk, longer than `renderRoute` waits for a loader; load each once.
-await Promise.all(LOCALES.map((l) => RecipesText.load(l)));
 
 /** RFC 0079 "Exit proof and golden-2", per locale. */
 const TABLE = {
