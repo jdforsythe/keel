@@ -28,7 +28,8 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
     case "format": {
       const before = issues.length;
       check(node.base, x, path, issues);
-      if (issues.length === before && formats.get(node)?.test(x) === false) issues.push({ path, rule: "format" });
+      // Fail closed: a format node with no in-memory check (deserialized, or another copy of @keel/schema) refuses.
+      if (issues.length === before && formats.get(node)?.test(x) !== true) issues.push({ path, rule: "format" });
       break;
     }
     case "json":

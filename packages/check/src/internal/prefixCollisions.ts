@@ -148,7 +148,7 @@ const sameEnum = (a: Prefix, b: Prefix): boolean =>
 
 /**
  * E1509 (k.prefix Rules), over the checked files' route table: a `pathDefault` param that is not first in its path;
- * a second prefix param; beside a prefixed route, a route whose static first segment is a value of the prefix param,
+ * a second prefix param; a prefixed route whose second segment is a param (no fix); beside a prefixed route, a route whose static first segment is a value of the prefix param,
  * whose first segment is another param, or whose path is a prefixed route's path without the prefix. Only literal
  * paths and statically resolvable params schemas are read. Fix (the last three): prepend `/:<p>` to the path.
  */
@@ -191,6 +191,11 @@ export function prefixCollisions(files: readonly Checked[]): Diagnostic[] {
     if (!sameEnum(pre, first.pre))
       report(r, `${r.id}: a second prefix param :${pre.name} beside ${first.r.id}'s`, null);
   const pre = first.pre;
+  for (const { r } of prefixed) {
+    const second = r.segs[1];
+    if (second?.param === true)
+      report(r, `${r.id}: second segment :${second.text} could read as :${pre.name} (its default is left out)`, null);
+  }
   const elided = new Map(prefixed.map(({ r }) => [keyOf(r.segs.slice(1)), r.id]));
   for (const r of routes) {
     if (prefixOf(r) !== null) continue;

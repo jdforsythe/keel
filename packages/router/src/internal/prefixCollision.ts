@@ -8,7 +8,8 @@ const keyOf = (p: Prefix): string => JSON.stringify([p.name, p.values, p.d]);
 
 /**
  * Why one route table breaks k.prefix (E1509), or null: a `pathDefault` param that is not first in its path; two
- * prefix params; beside a prefixed route, a route whose static first segment is a value of the prefix param, whose
+ * prefix params; a prefixed route whose second segment is a param (its value could read as a prefix value once the
+ * default's segment is left out); beside a prefixed route, a route whose static first segment is a value of the prefix param, whose
  * first segment is another param, or whose path is a prefixed route's path without the prefix.
  */
 export function prefixCollision(routes: Iterable<Registered>): string | null {
@@ -26,6 +27,9 @@ export function prefixCollision(routes: Iterable<Registered>): string | null {
   const other = prefixed.find((r) => keyOf(r.pre) !== keyOf(first.pre));
   if (other !== undefined) return `${other.id}: a second prefix param ":${other.pre.name}" beside ${first.id}'s`;
   const { pre } = first;
+  for (const r of prefixed)
+    if (r.segments[1]?.kind === "param")
+      return `${r.id}: second segment ":${r.segments[1].name}" could read as :${pre.name} once its default is left out`;
   const elided = new Map(prefixed.map((r) => [patternKey(r.segments.slice(1)), r.id]));
   for (const { id, def, segments } of paths) {
     if (prefixOf(def, segments) !== null) continue;

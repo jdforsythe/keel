@@ -1,4 +1,4 @@
-// Spec: k.prefix Rules, "E1509 ... from `keel check` over a deployable's route table ... Fix: prepend `/:<p>` to the route's `path`" and Conformance "Beside `x.show`, each of `/de-DE/about`, `/:slug` and `/items/:id` is E1509, the fix applied leaves no E1509, and without `pathDefault` none of them is E1509." (rfc:0079)
+// Spec: k.prefix Rules, "E1509 (k.router block), from `manifest` and from `keel check` over a deployable's route table: a static first segment equal to a value of a prefix param; a route whose first segment is another param; a prefixed route whose second segment is a param (its value could read as a locale); a route whose path is a prefixed route's path without the prefix; two prefix params in one table; a `pathDefault` param that is not first in its path. Fix: prepend `/:<p>` to the route's `path` (its params then need the field, E1503)." Conformance: "Beside `x.show`, each of `/de-DE/about`, `/:slug`, `/:p/:slug` and `/items/:id` is E1509, the fix applied leaves no E1509, and without `pathDefault` none of them is E1509." (rfc:0079)
 // Seed 1337. The `manifest` half is packages/router/conformance/prefix-e1509.test.ts. ASSUMPTION: the check reads `routes.ts` and a `*.schema.ts` file beside it, with `topology.ts` naming the module.
 import { check } from "@keel/check";
 import { expect, test } from "vitest";
@@ -14,6 +14,7 @@ const routesFile = (extra: string): string =>
 const EXTRAS: Record<string, string> = {
   "/de-DE/about": `  'x.about': { path: '/de-DE/about', component: page },`,
   "/:slug": `  'x.slug': { path: '/:slug', params: s.object({ slug: s.string() }), component: page },`,
+  "/:p/:slug": `  'x.page': { path: '/:p/:slug', params: s.object({ p: AppLocale, slug: s.string() }), component: page },`,
   "/items/:id": `  'x.twin': { path: '/items/:id', params: s.object({ id: s.string() }), component: page },`,
 };
 const run = (pd: boolean, extra: string) =>
@@ -26,11 +27,11 @@ const run = (pd: boolean, extra: string) =>
     { types: false },
   ).diagnostics.filter((d) => d.code === "E1509");
 
-test("Beside `x.show`, each of `/de-DE/about`, `/:slug` and `/items/:id` is E1509", () => {
+test("Beside `x.show`, each of `/de-DE/about`, `/:slug`, `/:p/:slug` and `/items/:id` is E1509", () => {
   for (const extra of Object.values(EXTRAS)) expect(run(true, extra).length).toBeGreaterThanOrEqual(1);
 });
 
-test("without `pathDefault` none of `/de-DE/about`, `/:slug` and `/items/:id` is E1509", () => {
+test("without `pathDefault` none of `/de-DE/about`, `/:slug`, `/:p/:slug` and `/items/:id` is E1509", () => {
   for (const extra of Object.values(EXTRAS)) expect(run(false, extra)).toEqual([]);
 });
 

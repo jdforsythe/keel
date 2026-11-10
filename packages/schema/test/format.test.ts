@@ -2,7 +2,9 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { s } from "../src/index.ts";
+import type { Node } from "../src/internal/Node.ts";
 import { sampleFormat } from "../src/internal/index.ts";
+import { make } from "../src/internal/make.ts";
 
 const Even = s.format("even", s.int(), {
   check: (v) => v % 2 === 0,
@@ -66,5 +68,17 @@ describe("s.format", () => {
     });
     expect(s.enum(["a", "b"]).node).toEqual({ kind: "enum", values: ["a", "b"] });
     expect(() => s.enum(["a"], { pathDefault: "c" })).toThrow(/pathDefault/);
+  });
+
+  it("a format node with no in-memory check fails closed with rule format", () => {
+    const node: Node = JSON.parse(JSON.stringify(Even));
+    expect(node).toEqual({ kind: "format", name: "even", base: { kind: "int" } });
+    const Lost = make<unknown, false>({ kind: "object", fields: { n: node } }, false);
+    for (const n of [3, 4]) {
+      const r = Lost.parse({ n });
+      expect(r.ok ? [] : r.error.data.issues).toEqual([{ path: ["n"], rule: "format" }]);
+    }
+    const wrongBase = Lost.parse({ n: "x" });
+    expect(wrongBase.ok ? [] : wrongBase.error.data.issues).toEqual([{ path: ["n"], rule: "type" }]);
   });
 });

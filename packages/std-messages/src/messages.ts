@@ -1,4 +1,4 @@
-import { type Schema, s } from "@keel/schema";
+import { type Schema, type SchemaError, s } from "@keel/schema";
 import type { Locale } from "@keel/std-i18n";
 import { asEntry } from "../unsafe/asEntry.ts";
 import type { MessageSet } from "./MessageSet.ts";
@@ -14,6 +14,9 @@ const IDENT = /^[A-Za-z_$][\w$]*$/;
 const BLANK = /^\p{White_Space}*$/u;
 const PARTS = s.array(s.string());
 
+/** The rejection of `load`: the schema issues as JSON, with no locale text and no file path. */
+const fails = (e: SchemaError): Error => new Error(`messages: ${JSON.stringify(e.data.issues)}`);
+
 function messageType(params: ReadonlyMap<string, ParamKind>): Schema<unknown> {
   if (params.size === 0)
     return s.format("message", s.string(), {
@@ -26,7 +29,7 @@ function messageType(params: ReadonlyMap<string, ParamKind>): Schema<unknown> {
         },
       },
     });
-  return s.format(`message(${[...params.keys()].join(", ")})`, s.json(), {
+  return s.format(`message(${[...params.keys()]})`, s.json(), {
     check: (v) => messageOk(v, params),
     gen: { from: PARTS, map: (parts) => genMessage(parts, params) },
   });
@@ -42,7 +45,7 @@ export function messages<L extends Locale, const K extends Keys>(
   keys: K,
   load: (locale: L) => Promise<unknown>,
 ): MessageSet<L, K> {
-  if (locales.node.kind !== "enum") throw new Error("messages: locales is not an s.enum");
+  if (locales.node.kind !== "enum") throw new Error("messages: locales not an s.enum");
   const shape: Record<string, Schema<unknown>> = {};
   for (const [key, params] of Object.entries(keys)) {
     if (!IDENT.test(key)) throw new Error(`messages: bad key '${key}'`);
@@ -59,11 +62,14 @@ export function messages<L extends Locale, const K extends Keys>(
     ...set,
     text: (entry) => asEntry<Entry<K>>(entry),
     load: async (locale) => {
-      const file: unknown = await load(locale);
+      // The locale is parsed before `load` runs, so no value outside the set's enum reaches the dynamic import.
+      const tag = locales.parse(locale);
+      if (!tag.ok) throw fails(tag.error);
+      const file: unknown = await load(tag.value);
       const entry = typeof file === "object" && file !== null && "default" in file ? file.default : undefined;
       const r = set.parse(entry);
       if (r.ok) return r.value;
-      throw new Error(`messages: ${locale} entry fails: ${JSON.stringify(r.error.data.issues)}`);
+      throw fails(r.error);
     },
   };
 }
