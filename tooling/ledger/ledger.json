@@ -5,9 +5,9 @@
     "check": 73.3,
     "cli": 90.9,
     "compiler": 88.2,
-    "ctx": 83,
+    "ctx": 76.8,
     "forms": 93.7,
-    "reactive": 87.5,
+    "reactive": 84.7,
     "router": 89.5,
     "runtime-dom": 75.6,
     "scaffold": 81.4,
@@ -641,7 +641,7 @@
       "pkg": "check",
       "name": "check",
       "file": "packages/check/src/check.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "check",
@@ -1017,6 +1017,12 @@
     },
     {
       "pkg": "std-sessions",
+      "name": "runAction",
+      "file": "packages/std-sessions/src/runAction.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-sessions",
       "name": "toTest",
       "file": "packages/std-sessions/src/toTest.ts",
       "rung": "none"
@@ -1115,7 +1121,7 @@
       "pkg": "sessions",
       "name": "Home",
       "file": "sessions:ops/Home.ts",
-      "rung": "none"
+      "rung": "example"
     }
   ],
   "clauses": [
@@ -1161,6 +1167,10 @@
     },
     {
       "item": "k.check#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.check#12",
       "rung": "example"
     },
     {
@@ -1336,6 +1346,10 @@
       "rung": "example"
     },
     {
+      "item": "k.component#9",
+      "rung": "example"
+    },
+    {
       "item": "k.ctx#1",
       "rung": "probabilistic"
     },
@@ -1396,6 +1410,14 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.ctx#16",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.ctx#17",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.errors#1",
       "rung": "probabilistic"
     },
@@ -1425,6 +1447,26 @@
     },
     {
       "item": "k.errors#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#13",
       "rung": "example"
     },
     {
@@ -1573,15 +1615,39 @@
     },
     {
       "item": "k.reactive#11",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.reactive#12",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.reactive#13",
       "rung": "example"
+    },
+    {
+      "item": "k.reactive#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#16",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#17",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.reactive#18",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.reactive#19",
+      "rung": "probabilistic"
     },
     {
       "item": "k.router#1",
@@ -1689,6 +1755,10 @@
     },
     {
       "item": "k.runtime#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.runtime#13",
       "rung": "example"
     },
     {
@@ -1952,6 +2022,14 @@
       "rung": "example"
     },
     {
+      "item": "k.store#22",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#23",
+      "rung": "example"
+    },
+    {
       "item": "k.testing#1",
       "rung": "example"
     },
@@ -2209,7 +2287,7 @@
     },
     {
       "item": "std.sessions#11",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.sessions#12",
@@ -2218,14 +2296,6 @@
     {
       "item": "std.sessions#13",
       "rung": "probabilistic"
-    },
-    {
-      "item": "std.sessions#14",
-      "rung": "example"
-    },
-    {
-      "item": "std.sessions#15",
-      "rung": "example"
     },
     {
       "item": "std.timings#1",

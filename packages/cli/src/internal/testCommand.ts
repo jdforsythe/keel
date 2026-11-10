@@ -13,6 +13,15 @@ const VITEST_CONFIG = /(^|\/)vitest\.config\.[cm]?[jt]s$/;
 
 const EMPTY: TestReport = { diagnostics: [], tests: 0, failed: 0, skipped: 0, errors: 0 };
 
+/** A run that ended without vitest handing over its instance: a failure, never an empty green report. */
+const NOT_STARTED: TestReport = {
+  diagnostics: [{ kind: "diag", code: "T0001", message: "vitest ended the run without starting it" }],
+  tests: 0,
+  failed: 0,
+  skipped: 0,
+  errors: 1,
+};
+
 async function vitestRun(root: string, filters: readonly string[]): Promise<TestReport> {
   let report = EMPTY;
   let run: Vitest | undefined;
@@ -21,7 +30,7 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
       run = vitest;
     },
     onTestRunEnd: (_modules: readonly unknown[], errors: readonly unknown[]): void => {
-      report = testResults(run?.state.getFiles() ?? [], errors, root);
+      report = run === undefined ? NOT_STARTED : testResults(run.state.getFiles(), errors, root);
     },
   };
   const exitCode = process.exitCode;

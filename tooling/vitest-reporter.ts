@@ -16,7 +16,13 @@ export class KeelReporter implements Reporter {
   }
 
   onTestRunEnd(_modules: readonly unknown[], errors: readonly unknown[]): void {
-    const r = testResults(this.run?.state.getFiles() ?? [], errors, process.cwd());
+    // Without the instance there is no task tree to read: report that as an error, never as an empty green run.
+    const started = this.run !== undefined;
+    const r = testResults(
+      this.run?.state.getFiles() ?? [],
+      started ? errors : [new Error("vitest ended the run without starting it")],
+      process.cwd(),
+    );
     const diags: Diag[] = r.diagnostics.map((d) => ({ ...d }));
     const bad = r.failed > 0 || r.errors > 0;
     const summary: Summary = {

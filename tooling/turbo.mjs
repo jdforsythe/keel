@@ -24,8 +24,8 @@ const NOISE = [
   /^\s*(ELIFECYCLE|ERROR)\b/,
 ];
 
-// Each vitest run fills every core by itself, so test tasks run four at a time: the same wall time as the
-// default of ten, without type-check heavy tests starving past their timeout.
+// Each vitest run fills every core by itself, so test tasks run four at a time: more would starve the
+// type-check heavy tests past their timeout without finishing sooner.
 const limit = task === "test" && !extra.some((a) => a.startsWith("--concurrency")) ? ["--concurrency=4"] : [];
 
 await run(task ?? "turbo", () => {

@@ -1,4 +1,5 @@
-// Seed 1337 (no generated inputs: the clause is about two fixed project roots)
+// Seed 1337 (no property test and no generated inputs: the clause is about fixed project roots)
+// Spec: k.check, clause "A file reading `process.env` and importing `node:path` checks clean in a project whose root resolves `@types/node` and reports E1751 in one whose root does not." (rfc:0076)
 import { mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -34,4 +35,8 @@ test("A file reading process.env and importing node:path reports E1751 in a proj
 
 test("The only ambient types are Node's, loaded when @types/node resolves from the project root: without it a file with no Node names reports no E1751", () => {
   expect(e1751(PLAIN_FILE, emptyRoot)).toEqual([]);
+});
+
+test("A project root with no node_modules of its own resolves @types/node from an ancestor directory", () => {
+  expect(e1751(NODE_FILE, import.meta.dirname)).toEqual([]);
 });

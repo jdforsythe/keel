@@ -65,6 +65,7 @@ function workflow(source) {
 const outputs = {
   "turbo.json": turbo(),
   ".github/workflows/ci.yml": workflow("ci.source.json"),
+  ".github/workflows/audit.yml": workflow("audit.source.json"),
   ".github/workflows/sessions-nightly.yml": workflow("sessions-nightly.source.json"),
 };
 const check = parseArgs().flags.has("check");
