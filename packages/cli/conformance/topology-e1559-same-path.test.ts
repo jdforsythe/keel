@@ -48,6 +48,7 @@ describe("k.topology: E1559", () => {
       fc.asyncProperty(fc.stringMatching(/^\/[a-z]{1,8}$/), async (p) => {
         const lines = await e1559(false, p, p);
         expect(lines).toHaveLength(1);
+        expect(lines[0]).toContain("E1559");
         expect(lines[0]).toContain("a.page");
         expect(lines[0]).toContain("b.page");
         expect(await e1559(true, p, p)).toEqual([]);

@@ -1,0 +1,52 @@
+// @vitest-environment happy-dom
+// Spec: k.topology Conformance. Seed 1337 (fc.assert below). No wall time; the peer answers through a sim net route.
+// Fixture: deployable `x` serves module `a`, deployable `y` serves module `b`; `x` names `y` in `peers` by URL
+// `http://y.test`, and `routes.json` in `artifacts` tells `x` which paths `y` serves.
+import fc from "fast-check";
+import { describe, expect, test } from "vitest";
+import { topology } from "@keel/server";
+import { SEED, createAppLoose, pageManifest, simCtx, writeArtifacts, type Fetcher } from "./topology-fixtures.ts";
+
+describe("k.topology: forwarding of unserved paths", () => {
+  test.skip("`x` answers a path of `b` with `y`'s status, headers and body; one carrying `x-keel-forwarded` is not forwarded.", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), fc.stringMatching(/^[a-z0-9]{0,6}$/), async (title, q) => {
+        const a = pageManifest("a", "/a", "A");
+        const b = pageManifest("b", "/b", title);
+        const t = topology({ x: { modules: ["a"], adapter: "node" }, y: { modules: ["b"], adapter: "node" } });
+        const yCtx = simCtx();
+        const y: Fetcher = await createAppLoose({ topology: t, deployable: "y", routes: b, ctx: yCtx });
+        const seen: Request[] = [];
+        const xCtx = simCtx();
+        xCtx.net.route("http://y.test/*", (req) => {
+          seen.push(req.clone());
+          return y.fetch(req);
+        });
+        const x = await createAppLoose({
+          topology: t,
+          deployable: "x",
+          routes: a,
+          ctx: xCtx,
+          peers: { y: "http://y.test" },
+          artifacts: writeArtifacts(pageManifest("b", "/b", title)),
+        });
+        const url = `http://localhost/b${q === "" ? "" : `?q=${q}`}`;
+        const headers = { accept: "application/json", "x-trace": q };
+        const direct = await y.fetch(new Request(url, { headers }));
+        const viaX = await x.fetch(new Request(url, { headers }));
+        expect(viaX.status).toBe(direct.status);
+        expect(await viaX.text()).toBe(await direct.text());
+        expect(viaX.headers.get("content-type")).toBe(direct.headers.get("content-type"));
+        expect(seen).toHaveLength(1);
+        expect(new URL(seen[0]?.url ?? "").search).toBe(q === "" ? "" : `?q=${q}`);
+        expect(seen[0]?.headers.get("x-trace")).toBe(q);
+        expect(seen[0]?.headers.get("x-keel-forwarded")).not.toBeNull();
+
+        const again = await x.fetch(new Request(url, { headers: { ...headers, "x-keel-forwarded": "1" } }));
+        expect(again.status).toBe(404);
+        expect(seen).toHaveLength(1);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  });
+});

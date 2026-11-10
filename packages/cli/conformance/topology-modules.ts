@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
-import type { SimCtx } from "@keel/ctx";
+import type { Ctx, SimCtx } from "@keel/ctx";
 import { action, loader, manifest, routesArtifact } from "@keel/router";
 import type { Manifest, RouteDef } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
@@ -43,10 +43,10 @@ export function bClient() {
     bump: { method: "POST", path: "/b/:n", params: Params, body: Nothing, output: Item },
   });
   const made: unknown = Reflect.apply(service, undefined, [{ module: "b", schema }]);
-  return { schema, call: (name: "get" | "bump", n: string, ctx: SimCtx) => callClient(made, name, n, ctx) };
+  return { schema, call: (name: "get" | "bump", n: string, ctx: Ctx) => callClient(made, name, n, ctx) };
 }
 
-async function callClient(client: unknown, name: string, n: string, ctx: SimCtx) {
+async function callClient(client: unknown, name: string, n: string, ctx: Ctx) {
   const fn: unknown = typeof client === "object" && client !== null ? Reflect.get(client, name) : undefined;
   if (typeof fn !== "function") throw new Error(`client has no ${name}`);
   const input = name === "bump" ? { params: { n }, body: {} } : { params: { n } };
@@ -54,21 +54,21 @@ async function callClient(client: unknown, name: string, n: string, ctx: SimCtx)
   return r;
 }
 
-const readCount = async (ctx: SimCtx) => Number((await ctx.storage.get("b.count")) ?? "0");
+const readCount = async (ctx: Ctx) => Number((await ctx.storage.get("b.count")) ?? "0");
 
 export function moduleB() {
   const get = loader({ output: Item, params: Params }, async (a, ctx) =>
-    ok({ n: a.params.n, count: await readCount(ctx as SimCtx) }),
+    ok({ n: a.params.n, count: await readCount(ctx) }),
   );
   const bump = action({ input: Nothing, params: Params }, async (_i, a, ctx) => {
-    const c = (await readCount(ctx as SimCtx)) + 1;
+    const c = (await readCount(ctx)) + 1;
     await ctx.storage.set("b.count", String(c));
     return ok(null);
   });
   const routes = manifest({ "b.item": { path: "/b/:n", params: Params, loader: get, component: view } });
   routes.actions({ "b.item": { POST: bump } });
   const runner = {
-    run: async (ctx: SimCtx) => {
+    run: async (ctx: Ctx) => {
       await ctx.storage.set("b.started", "1");
     },
   };
@@ -77,11 +77,11 @@ export function moduleB() {
 
 export function moduleA(call: ReturnType<typeof bClient>["call"]) {
   const get = loader({ output: Item, params: Params }, async (a, ctx) => {
-    const r = await call("get", a.params.n, ctx as SimCtx);
+    const r = await call("get", a.params.n, ctx);
     return isOkItem(r) ? ok(r.value) : err(s.error("a.upstream", Nothing).make({}));
   });
   const post = action({ input: Nothing, params: Params }, async (_i, a, ctx) => {
-    await call("bump", a.params.n, ctx as SimCtx);
+    await call("bump", a.params.n, ctx);
     await ctx.storage.set("a.last", a.params.n);
     return ok(null);
   });
