@@ -1,6 +1,13 @@
 # RFC 0080: S3 Server depth: deployables, jobs, schedules, streams and surface compatibility
 
-Status: draft (2026-11-10). Stage design RFC for S3 (`tasks/PROGRAM.md`, task 0309). It applies WORKFLOW RFC defaults 1 (each gap the stdlib packages expose gets a kernel change: K1 to K7), 2 (the generated production entry replaces the hand-written `server.ts` in every app; one HTTP client for every call between modules), 3 (the deploy files reuse the scaffold's generators and `tooling/generate.mjs --check`; the compat rules run in the check pipeline; the exit proof extends the existing `golden-1-api` eval), 4 (job inputs that hold a secret are refused, the inspector shows no input, streams store nothing), 5 (jobs, schedules and topics are server-only; nothing new reaches a browser unless a route the app declares sends it), 6 (E1559 to E1562, E2501 to E2602 enforce what prose would otherwise ask for) and 7 (`@keel/server`, `@keel/compiler` and `@keel/check` budgets are re-based; no threshold is lowered). The Open questions are the user's: new hand-written API shapes, golden-app migrations, external integrations and one auth-relevant choice.
+Status: accepted (2026-11-10); the user's answers are D1 to D4, and D5 reconciles the stream transport with RFC 0081. Stage design RFC for S3 (`tasks/PROGRAM.md`, task 0309). It applies WORKFLOW RFC defaults 1 (each gap the stdlib packages expose gets a kernel change: K1 to K7), 2 (the generated production entry replaces the hand-written `server.ts` in every app; one HTTP client for every call between modules; one stream transport, which S4 builds on), 3 (the deploy files reuse the scaffold's generators and `tooling/generate.mjs --check`; the compat rules run in the check pipeline; the exit proof extends the existing `golden-1-api` eval), 4 (job inputs that hold a secret are refused, the inspector shows no input, event streams store nothing), 5 (jobs and schedules are server-only; nothing new reaches a browser unless a route the app declares sends it), 6 (E1558 to E1562 and E2501 to E2553 enforce what prose would otherwise ask for) and 7 (`@keel/server`, `@keel/compiler` and `@keel/check` budgets are re-based; no threshold is lowered). ADR-0073 to ADR-0079 record it.
+
+## Decisions (2026-11-10)
+- D1 (user): the API shapes are accepted as a set: `service({ module })` and `events: true` endpoints, `runners.server.ts`, live loaders, the std-jobs and std-schedules APIs, `keel codemod place`, `keel check --base`.
+- D2 (user): the golden-app migrations are approved: generated entries replace every hand-written `server.ts` (golden-1, golden-2, `apps/sessions`), and golden-1 gains the `digest` module.
+- D3 (user): Docker and CI as Proposal 6 describes: `node:22-slim` pinned by digest (the multi-platform index `sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d`, read with `docker buildx imagetools inspect` on 2026-11-10), a generated workflow that builds images and never pushes, and a golden-1 image-build job in this repository's CI.
+- D4 (user): one `KEEL_SECRET` per app, shared by its deployables.
+- D5 (reconciliation with RFC 0081): the stream transport is the kernel's alone, a k.server live loader read by a k.services `events` endpoint (Proposal 4). `@keel/std-streams` is not created: its topic fan-out would be a second fan-out beside std.channels' hub, its replay by id is what RFC 0081 declines (no resume), and its reconnect would be a second backoff beside std.channels' `subscribe` (principle 1). Its draft APIs (`topic`, `publish`, `follow`, `subscribe`) and codes leave with it; E2600-E2649 stay std.channels'.
 
 Design basis: RFC 0079 as accepted (its spec diff is not yet in `spec/`). Every count below for k.server applies 0079's edit first (1,500 to 1,462). If 0079 changes again before the S3 batch, only the k.server counts move; nothing here depends on 0079's other sections.
 
@@ -25,15 +32,15 @@ A split moves modules between deployables by editing `topology.ts` and nothing e
 - the generated files (`.keel/`, `deploy/`, the CI workflow, `dist/`) differ, and each is fresh (no E1005);
 - a client of the app sees the same statuses, bodies, event streams and stored state through any `node` deployable, up to the ids `ctx.random` mints.
 
-Three rules make that hold. Placement lives only in `topology.ts` (routes, actions, live loaders, jobs, schedules and topics belong to a module, and a module to one deployable). A module calls another module's routes only through a k.services client, `service({ module })`, which encodes, checks and decodes the same way whether the callee is in the same process or a peer, so co-location never changes a value. And every module's state lives in its own `ctx.storage` keys or its own memory, never shared across modules, so a module carries its state with it.
+Three rules make that hold. Placement lives only in `topology.ts` (routes, actions, live loaders, jobs and schedules belong to a module, and a module to one deployable). A module calls another module's routes only through a k.services client, `service({ module })`, which encodes, checks and decodes the same way whether the callee is in the same process or a peer, so co-location never changes a value. And every module's state lives in its own `ctx.storage` keys or its own memory, never shared across modules, so a module carries its state with it.
 
 ### 2. Kernel changes
 Exact text is in Spec diff. ADR outlines are below.
 
 - **K1, k.topology (new section): placement, route table, runners, peers, production entry, deploy files, local topology.** k.server's Topology paragraph and its rules E1552 and E1553 move here unchanged in meaning, so no conformance header changes.
-- **K2, k.server: live loaders and the public origin.** A loader whose `fn` is an async generator is live: a document or JSON GET takes its first yield; a GET with `accept: text/event-stream` gets every yield as one `data:` line (its `Result` JSON), with a `:` line each 15 s on `ctx.clock`, until `fn` returns or its `signal` aborts (request abort, `close()`). E1558 refuses a live loader in a non-`node` deployable. `createApp({ origin })` sets the public origin, which replaces the request's in `url`, the same-site check and `Secure` (closes backlog 0273 and the proxy half of 0274).
+- **K2, k.server: live loaders and the public origin.** A loader whose `fn` is an async generator is live: a document or JSON GET takes its first yield; a GET with `accept: text/event-stream` gets every yield as one `data:` line (its `Result` JSON), with a `:` line each 15 s on `ctx.clock`, until `fn` returns or its `signal` aborts (request abort, `close()`); a guard denial there is 403 `keel.denied`. E1558 refuses a live loader in a non-`node` deployable. `createApp({ origin })` sets the public origin, which replaces the request's in `url`, the same-site check and `Secure` (closes backlog 0273 and the proxy half of 0274); its text sits in k.topology beside `KEEL_ORIGIN`, since k.server has no room.
 - **K3, k.topology runners and `close()`.** `modules/<id>/runners.server.ts` exports `runners`, a list of `Runner`s `{ run(ctx, signal) }`; `createApp({ runners })` runs the served deployable's runners once after startup and restarts a rejected one after 1,000 ms on `ctx.clock`; `app.close()` aborts every runner's `signal` and every open event stream and resolves when every `run` has settled. This is the lifecycle std-jobs and std-schedules need (default 1). No new `ctx` capability: scheduling is `ctx.clock.after(ms, signal)`, which already exists with real, shell and sim implementations, and the process lifecycle is the `signal` each runner gets.
-- **K4, k.services: `service({ module })` and `events` endpoints.** `module` names an app module whose routes the client calls; k.topology resolves it in process, to a peer's URL, or in a browser to the document's origin. A GET endpoint with `events: true` reads a live loader as an `AsyncIterable<Result<T, ApiError>>`. This replaces "calls between deployables are stdlib": one client for every HTTP call (default 2).
+- **K4, k.services: `service({ module })` and `events` endpoints.** `module` names an app module whose routes the client calls; k.topology resolves it in process, to a peer's URL, or in a browser to the document's origin. A GET endpoint with `events: true` reads a live loader as an `AsyncIterable<Result<T, ApiError>>`, with no reconnect or resume. This replaces "calls between deployables are stdlib": one client for every HTTP call (default 2).
 - **K5, k.module: calls are access.** A `service({ module })` endpoint is cross-module access like an import or an `href()`: E1152 without the module in `deps`, E1157 for a route outside its `public.routes`.
 - **K6, k.compat (new section): surface compatibility.** `.keel/surface.json`, the `accepts` relation on schemas, E1561 (an endpoint the route refuses, in the tree) and E1562 (a route change a deployed caller in another deployable refuses, with `keel check --base`).
 - **K7, k.scaffold: deploy files and `place`.** The `project` generator and the operations that change modules write the deploy files; `keel codemod place <module> --to <deployable> [--adapter]` is the split as an operation (principle 7).
@@ -41,19 +48,18 @@ Exact text is in Spec diff. ADR outlines are below.
 No change to k.ctx, k.router, k.compiler, k.check, k.cli, k.testing or k.errors text. The implementation touches `packages/router` (the loader type accepts an async generator), `packages/compiler` (the server bundle, the local topology in the dev server, the `surface.json` artifact), `packages/testing` (the harness takes a live loader's first yield, as the server does) and `packages/cli` (`--base`, deploy file freshness, `keel dev` storage flags) without changing their sections: each behavior is specified in the section that owns the concept (k.server, k.topology, k.compat).
 
 ### 3. Package contracts
-Each package is a stdlib module (k.module extension point) with a `module.ts` at its root, one export per file, schemas first, every effect through `ctx`. Dependency order in `tooling/deps.json`: `std-jobs`, then `std-schedules`, then `std-streams`, after S2's `std-messages`. Diagnostic blocks of 50, as the kernel's: E2500-E2549 std.jobs, E2550-E2599 std.schedules, E2600-E2649 std.streams. Blocks of 50 leave E2650-E2899 for S4 and later; E22xx and E29xx stay unassigned (fixture codes, RFC 0079).
+Each package is a stdlib module (k.module extension point) with a `module.ts` at its root, one export per file, schemas first, every effect through `ctx`. Dependency order in `tooling/deps.json`: `std-jobs`, then `std-schedules`, after S2's `std-messages`. Diagnostic blocks of 50, as the kernel's: E2500-E2549 std.jobs, E2550-E2599 std.schedules; RFC 0081 takes E2600-E2749; E22xx and E29xx stay unassigned (fixture codes, RFC 0079).
 
 | Package | Purpose | Extension points | Rules | Effects | Size (gzip) |
 | --- | --- | --- | --- | --- | --- |
 | `@keel/std-jobs` | Durable background jobs per module: enqueue, retry with backoff, lease, restart | module manifest; inspector hook `jobs.queue`; check rules | E2501-E2504 (`./tools`) | `clock` (`now`, `after`), `random.id`, `storage` | 2.5 kB node; `./tools` 2 kB |
 | `@keel/std-schedules` | Five-field cron in a time zone, enqueuing a module's jobs, with catch-up after downtime | module manifest; check rules | E2551-E2553 (`./tools`) | `clock`, `storage`; `Intl.DateTimeFormat` for zones | 2 kB node; `./tools` 2.5 kB |
-| `@keel/std-streams` | Topics: in-process fan-out with replay by id, served by live loaders; `subscribe` with reconnect | module manifest; check rules | E2601-E2602 (`./tools`) | `random.id`, `clock.after` (reconnect), `net` through k.services | 1 kB; `./tools` 1.5 kB node |
 
 **std-jobs.** A job is `job({ input, attempts, timeoutMs }, fn)` in its own `*.server.ts` file; a module's jobs are one table, `export const jobs = queue({...})` in `modules/<id>/jobs.server.ts`, keyed by module-prefixed ids. `jobs.enqueue(ctx, id, input, { delayMs?, key? })` is typed by the table, as `routes.href` is by the manifest. The queue is a `Runner`: the module lists it in `runners.server.ts`, so it runs where the module is placed. Jobs run at least once: a job leased when a process stops runs again at the next start, so `fn` must be idempotent, and `key` makes an enqueue idempotent too (it matches a pending job or one of the last 1,000 finished). A module enqueues only its own jobs (its queue is never public, E2502); another module asks it through one of its actions over k.services, so a job can never land in a deployable that does not run it. Concurrency is the module's `std['@keel/std-jobs']` config, `{ concurrency }`, 1 to 16 (k.module std config, server-only).
 
 **std-schedules.** `schedule(jobs, { '<module>.<name>': { cron, zone, job, input, missed } })` is a `Runner` that enqueues `job` at each fire time with key `<id>@<t>`, then stores the fire time as its mark. The key makes a crash between the two steps harmless; the mark lets a restart catch up (`missed: 'once'`, the default, enqueues one job for the latest missed time; `'skip'` none). `cron` is the POSIX five-field subset with steps; anything else is E2551 at check time from the literal and a throw at construction. `zone` is S2's `temporal.TimeZone`; local times come from `Intl.DateTimeFormat`, with the gap and overlap rules in std.schedules.
 
-**std-streams.** A topic is a module's in-process fan-out: `topic('<module>.<name>', Event, { keep })`, `publish(ctx, v)`, and `follow(ctx, after, signal)`, which a live loader yields from. Deliveries carry ids `<epoch>.<seq>`, so a client that reconnects with `after` gets what it missed while it is still kept, and `streams.gap` when it is not (another epoch after a restart, or older than `keep`). `subscribe(ctx, method, input, { signal })` wraps a k.services `events` method with reconnects on `ctx.clock`. The transport is the kernel's (K2, K4); the package adds fan-out, ids, replay and reconnect. Binding a stream to a component (a live resource) is S4's std-live, which builds on these.
+**Streams.** No package (D5). Streaming is the kernel transport of Proposal 4: a live loader serves a stream and an `events` endpoint reads one. Fan-out to the streams open in a process, membership and reconnect policy are a consumer's, and S4's std.channels is the first.
 
 **What survives a restart, and where.**
 
@@ -62,10 +68,30 @@ Each package is a stdlib module (k.module extension point) with a `module.ts` at
 | Request-scope server stores (existing) | `ctx.storage` `keel.store.<id>` | yes | as today |
 | Job queue, leases, last 1,000 finished keys, newest 100 failures | `ctx.storage` `std.jobs.<module>` | yes | inputs encoded by their schema; `s.secret` refused (E2503); failures keep the error code, never the input; the inspector shows counts and codes |
 | Schedule marks | `ctx.storage` `std.schedules.<module>` | yes | fire times only |
-| Topic deliveries | memory of the app's `ctx` | no (new epoch) | nothing stored; a delivery reaches a client only through a route the app declares, behind its guard |
+| Open event streams | the serving process | no; a client reopens and re-reads | nothing stored; an event reaches a client only through a route the app declares, behind its guard |
 | Production storage | the file `--localstorage-file` names, on volume `/data` in the image | yes | the volume belongs to one deployable |
 
-### 4. Topology split
+### 4. Stream transport: the contract RFC 0081 builds on
+S3 defines one way to stream (D5). RFC 0081's std.channels builds on it as follows, by its requirements T1 to T6:
+
+- **T1, route kind.** A live loader: a route's `loader` whose `fn` is an async generator, in a `node` deployable (E1558). Its `output` schema types each event and encodes it. There is no `stream` route field: a second server-function kind beside `loader` would be a second way to read (principle 1), and k.router has no room.
+- **T2, loader request flow.** An event-stream GET runs the loader flow: `params` and `search` parsed by schema (404), then guards before the first byte, where a denial answers 403 `keel.denied` (a stream has no document to redirect); `caller` comes from the signed cookie and is never minted (k.server mints only on a write); the loader's `stores` factory runs once at open, and nothing saves.
+- **T3, lifetime.** `fn` gets `signal`, aborted when the request aborts and when `app.close()` runs; the stream ends when `fn` returns or `signal` aborts; a `:` heartbeat goes out every 15 s of `ctx.clock`. The kernel sets no cap on open streams: a cap is a consumer's policy, and std.channels' `perCaller` and `maxStreams` config is where it lives.
+- **T4, reader.** A k.services endpoint with `events: true`, read over `ctx.net.fetch` with a streaming body, through `service({ base })` or `service({ module })`. Each `data:` line is the loader's `Result` JSON: an `ok` value is decoded with `output`, an `err` arrives as `api.status` (200, `body` the error) and ends the iteration. It never reconnects; the caller owns its backoff on `ctx.clock`.
+- **T5, sim.** `createApp`'s `fetch` returns the stream as a `Response` body, so a sim net route `req => app.fetch(req)` carries it unchanged; when the body errors (RFC 0081's offline switch), the reader yields `api.network` and ends.
+- **T6, no resume.** None is provided: no `id:` lines, no `Last-Event-ID`, nothing kept after an event is written. A consumer that needs to catch up re-reads on open, as std.channels' `reset` does.
+
+Wire format: `content-type: text/event-stream`, `cache-control: no-store`, one `data: <Result JSON>` line and a blank line per yield, a `:` line and a blank line per heartbeat. The writer borrows Hono's `streamSSE` (`hono/streaming`, already a dependency of `@keel/server`; RFC 0081 measured it through `app.fetch` and a sim net route), with heartbeats driven by `ctx.clock`; the reader is built in `@keel/services`, since fetch streams and `TextDecoderStream` exist on Node 22, Node 24 and every browser Keel targets.
+
+**What RFC 0081 changes to match** (for the S4 agent):
+1. `channelRoute` returns `{ id, path, loader, actions: { POST } }`, its `loader` a live loader yielding `ChannelEvent<M>`, instead of a `stream` field.
+2. `subscribe` reads through a k.services `events: true` endpoint built from the channel declaration (`publish` already goes through `@keel/services`). There is no "std.streams reader", no `@keel/std-streams` package and no `std-streams` entry ahead of `std-channels` in `tooling/deps.json`. Its ARCHITECTURE row reads "Server push: borrow Hono `streamSSE` through k.server live loaders; build invalidation and channels".
+3. T3's configurable cap is std.channels' own config; the kernel adds none.
+4. k.server is 1,491 tokens with this RFC, and RFC 0081's Server state edit makes it 1,499 (measured on the combined text), so 0081's count reads 1,491 to 1,499.
+5. `@keel/server`: this RFC re-bases the budget to 16 kB with S2's, S3's and S4's growth inside it (Token impact), so 0081's "about 180 B left for RFC 0080" becomes "inside RFC 0080's re-base".
+6. Codes and ADRs: E2500-E2599 are this RFC's and E2600-E2749 stay 0081's. This RFC's ADRs are 0073 to 0079, so 0081's start at 0080.
+
+### 5. Topology split
 **Placement.** `topology.ts` keeps its shape, `topology({ <name>: { modules, adapter } })`. A module (app or stdlib) is in one deployable (E1552). Nothing else names a deployable: the generated entry is built per deployable, `createApp` gets its name from the entry, and app code never reads it.
 
 **Route table.** The generated entry imports each of its app modules' `routes` (`modules/<id>/routes.ts`; a stdlib module's routes arrive through an app module's spread, as `apps/sessions` does today) and merges them for `createApp({ routes })`, whose `selectDeployable` already keeps the served deployable's routes. A path served by two deployables is E1559, checked over `routes.json` and `topology.ts`; with S2's k.prefix the check compares the expanded paths. E1552's "module with no route" case becomes "no route and no runner", so a deployable of only jobs is valid.
@@ -82,13 +108,13 @@ import topology from '/topology.ts'
 import { routes as api } from '/modules/api/routes.ts'
 start({ topology, deployable: 'api', routes: [api], runners: {} })
 ```
-`start` parses `process.env` with `DeployEnv` (`PORT`, `KEEL_ORIGIN`, `KEEL_SECRET`, `KEEL_PEER_<NAME>` per other `node` deployable), prints one E1560 and exits 1 on a failure (naming the key, never the value), then serves `createApp` with `@hono/node-server`, and on SIGTERM or SIGINT stops listening, awaits `close()` and exits 0. `@keel/server/start` is a new node-only export of the kernel package, so the browser and `createApp` budgets carry none of it. The entry is the only code that reads `process.env`, as `server.ts` is today. `KEEL_SECRET` is one value for all of an app's deployables, so `caller` is the same hash wherever a request lands (Open question 4).
+`start` parses `process.env` with `DeployEnv` (`PORT`, `KEEL_ORIGIN`, `KEEL_SECRET`, `KEEL_PEER_<NAME>` per other `node` deployable), prints one E1560 and exits 1 on a failure (naming the key, never the value), then serves `createApp` with `@hono/node-server`, and on SIGTERM or SIGINT stops listening, awaits `close()` and exits 0. `@keel/server/start` is a new node-only export of the kernel package, so the browser and `createApp` budgets carry none of it. The entry is the only code that reads `process.env`, as `server.ts` is today. `KEEL_SECRET` is one value for all of an app's deployables, so `caller` is the same hash wherever a request lands (D4).
 
 **Local topology.** `keel dev` runs every deployable in one process on one origin. The compiler plugin's dev server serves `client` and `static` entries through Vite with HMR, and creates one dev `createApp` per `node` deployable through Vite's SSR loader, each with its own real `ctx` (storage in `.keel-dev/storage`, which the scaffold git-ignores), its runners, and the others as in-process peers. A request goes to the deployable whose route table holds its path. The Vite proxy the golden apps configure for `/api` is then unnecessary and is removed (Migration).
 
 **Tests.** A test serves a split in one process with `createApp` per deployable and `peers` set to the other apps, under sim ctxs; the harness needs no new API.
 
-### 5. Generated Docker and CI
+### 6. Generated Docker and CI
 One pure generator in `@keel/scaffold`, `deployFiles(topology, project)`, returns the deploy files; three callers use it (default 3):
 
 - `keel build` writes them beside the build, as it writes `.keel/` artifacts;
@@ -99,7 +125,7 @@ Generated, per project:
 
 | File | When | Content |
 | --- | --- | --- |
-| `deploy/<name>/Dockerfile` | each `node` deployable | `FROM node:22-slim@sha256:<digest>` (the digest is part of the generator, updated with Keel releases); `WORKDIR /app`; `COPY dist/<name>/ ./`; `USER node`; `VOLUME /data`; `EXPOSE 8080`; `CMD ["node", "--experimental-webstorage", "--localstorage-file=/data/storage", "--disable-warning=ExperimentalWarning", "server.mjs"]`. Build context: the project root. |
+| `deploy/<name>/Dockerfile` | each `node` deployable | `FROM node:22-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d` (D3; the digest is part of the generator and moves with Keel releases); `WORKDIR /app`; `COPY dist/<name>/ ./`; `USER node`; `VOLUME /data`; `EXPOSE 8080`; `CMD ["node", "--experimental-webstorage", "--localstorage-file=/data/storage", "--disable-warning=ExperimentalWarning", "server.mjs"]`. Build context: the project root. |
 | `deploy/compose.yaml` | at least one `node` deployable | one service and one named volume per `node` deployable; `KEEL_PEER_<NAME>: http://<name>:8080` for each peer; `KEEL_ORIGIN` and `KEEL_SECRET` passed from the environment (`${KEEL_SECRET:?}`), never written. |
 | `.github/workflows/ci.yml` | projects outside the Keel monorepo (as today) | a job per deployable with `paths` filters over its modules plus the shared files (`package.json`, lockfile, `topology.ts`, `tokens.ts`, `vite.config.ts`); steps: SHA-pinned checkout and setup (the repo's own pattern), install, `keel check --base` with the base branch's `.keel/surface.json`, `keel test`, `keel build`, `docker build -f deploy/<name>/Dockerfile .` for `node` deployables, never pushed; a `client` or `static` deployable uploads `dist/<name>` as a workflow artifact. |
 
@@ -109,7 +135,7 @@ The CI job for `--base` reads the base surface with `git show "origin/$BASE_REF:
 
 **Where backlog 0305 fits.** 0305 asks whether a production server serves all of `public/`. It decides what a `node` deployable's image serves besides `/assets/*` and `/keel-mark.svg`, and whether a `client` deployable's build (its `index.html` and `public/`) can be served by a `node` deployable's image instead of a separate static host. S3 does not decide it: the generator writes no image for `client` or `static` deployables, and the CI uploads their build. Once the user answers 0305, the deploy lane's generator is the one place the answer lands.
 
-### 6. Compat check
+### 7. Compat check
 **What it compares.** `.keel/surface.json` (a k.compiler artifact, written by `keel build`): every route's `module`, `path`, `params`, `search`, GET answer and per-method action `input` and answer; every `service({ module })` call's calling module and endpoint schemas. The build evaluates `routes.ts` (as for `routes.json`) and each `endpoints` file a `service({ module })` names, so `keel check` stays static (it reads the artifact; a stale one is E1005).
 
 **The relation.** `accepts(A, B)`: every value `B` admits parses with `A`, decided structurally on k.schema kinds (spec text in k.compat). It is conservative: when it cannot decide, it reports.
@@ -125,14 +151,14 @@ E1562 modules/digest/RefreshInput.schema.ts:4:3 api.refresh (base) sends no sinc
        +  since: s.number().optional(),
 ```
 
-### 7. Exit proof: golden-1, one deployable and two
+### 8. Exit proof: golden-1, one deployable and two
 The proof extends `evals/tasks/golden-1-api` (default 3): its TASK.md gains the `digest` module and drops `server.ts`, its hidden acceptance test gains the in-process split comparison, and its `pass.ts` gains the built-process comparison. `pnpm eval --task golden-1-api --runner none --strict` is the exit proof, and an agent build is held to the same bar.
 
-**golden-1 changes.** A new module `digest` (`deps: ['api', 'todos', '@keel/std-jobs', '@keel/std-schedules', '@keel/std-streams']`, capabilities `clock`, `random`, `storage`, `net`):
+**golden-1 changes** (D2). A new module `digest` (`deps: ['api', 'todos', '@keel/std-jobs', '@keel/std-schedules']`, capabilities `clock`, `random`, `storage`, `net`):
 - `Digest.schema.ts` `{ open: s.int(), done: s.int(), at: s.number() }`; store `digest.latest` in `digestStores.ts`.
-- Job `digest.recount` (`recount.server.ts`): reads the board through `service({ module: 'api', schema: BoardEndpoints })` (`GET /api/lists`), counts open and done todos, saves `digest.latest`, publishes to topic `digest.events`.
-- `jobs.server.ts`, `schedules.server.ts` (`digest.hourly`, `0 * * * *`, `UTC`, job `digest.recount`), `runners.server.ts` (`[jobs, schedules]`), `digestEvents.server.ts` (the topic).
-- Routes: `digest.show` `GET /digest` (loader of `digest.latest`), `digest.refresh` `POST /digest/refresh` (action: `jobs.enqueue(ctx, 'digest.recount', {}, { key: 'recount' })`), `digest.feed` `GET /digest/feed` (live loader following the topic).
+- Job `digest.recount` (`recount.server.ts`): reads the board through `service({ module: 'api', schema: BoardEndpoints })` (`GET /api/lists`), counts open and done todos, saves `digest.latest` with `at` the clock's time.
+- `jobs.server.ts`, `schedules.server.ts` (`digest.hourly`, `0 * * * *`, `UTC`, job `digest.recount`), `runners.server.ts` (`[jobs, schedules]`).
+- Routes: `digest.show` `GET /digest` (loader of `digest.latest`), `digest.refresh` `POST /digest/refresh` (action: `jobs.enqueue(ctx, 'digest.recount', {}, { key: 'recount' })`), `digest.feed` `GET /digest/feed` (a live loader that yields the current digest, then re-reads it through `service({ module: 'digest' })` every 1,000 ms of `ctx.clock` and yields when `at` changes; S4's std.channels replaces the polling with a push).
 - `api/module.ts` lists `api.lists` in `public.routes`. `server.ts` is deleted; the `api` script runs `dist/api/server.mjs`; `vite.config.ts` loses its proxy (`keel dev` serves `api` and `digest`).
 
 Topology A: `{ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api', 'digest'], adapter: 'node' } }`. Topology B: the same `web`, `api: { modules: ['api'] }`, `digest: { modules: ['digest'] }`, both `node`. The repository commits A.
@@ -150,12 +176,12 @@ Topology A: `{ web: { modules: ['todos'], adapter: 'client' }, api: { modules: [
 4. Assert the normalized transcripts equal; a SIGTERM stops every process with exit code 0 within 10 s; restarting B's `digest` on the same storage file answers the same `GET /digest`.
 5. With `KEEL_SECRET` unset, `node dist/api/server.mjs` exits 1 and its output is one E1560 line naming `KEEL_SECRET`.
 
-Docker is not run by the eval (it is not a dependency of the repository's tooling); the image build runs in the generated CI (Open question 3).
+Docker is not run by the eval (it is not a dependency of the repository's tooling); the image build runs in the generated CI and in this repository's golden-1 job (D3).
 
-### 8. What S3 reuses from S2
+### 9. What S3 reuses from S2
 - k.server's room: 0079 moves the head into k.head, which takes k.server from 1,500 to 1,462 tokens; S3 spends it on K2.
 - `temporal.TimeZone` (std.temporal) types a schedule's `zone`, and E1758 keeps app code off host-zone reads, so a schedule's zone is always explicit.
-- The `./tools` pattern for stdlib rules (std-i18n, std-messages) is the pattern std-jobs, std-schedules and std-streams follow.
+- The `./tools` pattern for stdlib rules (std-i18n, std-messages) is the pattern std-jobs and std-schedules follow.
 - k.prefix: E1559 compares paths after the implied prefix expands, so a prefixed route and its unprefixed form in two deployables collide.
 - The S2 kernel lane edits `packages/server` (guard redirect params, 308, head); S3's kernel lane starts from that state. The S2 golden-2 lane edits `apps/golden-2`; S3 touches only its `server.ts`, `package.json`, `README.md` and `vite.config.ts` afterwards.
 
@@ -176,7 +202,8 @@ Docker is not run by the eval (it is not a dependency of the repository's toolin
 - **`EventSource` for streams.** Absent on Node 22 and 24 without a flag, cannot send `x-keel` or `accept`, bypasses `ctx.net` (no sim), and E1601 refuses it in app code. Fetch with a streaming body and `TextDecoderStream` exist on both runtimes and in every browser Keel targets; the SSE framing is about 60 lines.
 - **WebSockets for streams.** Two-way channels are S4's std-channels; a one-way stream over plain HTTP passes proxies, guards and the same-site proof unchanged.
 - **Streams as a new route field or a `stream()` server function.** k.router has no room, and a second server-function kind beside `loader` is a second way to read data (principle 1). A live loader is a loader whose first yield is its ordinary answer.
-- **Stored topics.** Event history that must outlive a process is state, which belongs in a store or a job; keeping deliveries in memory keeps user data out of files (default 4).
+- **A `@keel/std-streams` package with topics, replay by id and reconnect** (this RFC's draft). RFC 0081's std.channels keeps its own fan-out, declines resume and sets its own backoff, so each would be a second way (D5).
+- **A kernel cap on open streams.** A cap is policy that depends on who may open a stream; std.channels' config holds it.
 - **Compat by equal schemas.** Any change would fail, including additive ones; `accepts` allows what an older caller can still parse.
 - **Compat against git history inside the rule.** Rules are pure with no I/O; `--base` hands the old artifact in, and the generated CI fetches it.
 - **Splitting k.server along Build and Dev server (with their clauses)** instead of moving only Topology. It would change five conformance headers; moving the Topology paragraph changes none.
@@ -186,15 +213,15 @@ Docker is not run by the eval (it is not a dependency of the repository's toolin
 ## Spec diff
 Token counts are `ceil(length / 4)`, the rule `tooling/budgets.mjs` uses, measured by applying these edits to copies of the sections (k.server after RFC 0079's edit). Appended clauses keep every existing clause number; no existing clause text changes. Trims remove citations only, which CLAUDE.md rule 11 asks for anyway, or say the same thing in fewer words.
 
-### k.server (1,462 after RFC 0079, to 1,500)
+### k.server (1,462 after RFC 0079, to 1,491; 1,499 with RFC 0081's edit)
 - API: after the `params`/`search` bullet, "- A loader whose `fn` is an async generator is live (E1558): a document or JSON GET takes its first yield, an event-stream GET all; args add `signal`."
-- Server state: before "`caller` is the base64url SHA-256", "`createApp({ origin })` (public) replaces the request's origin in `url`, the same-site check and `Secure`."
-- Request flow: after the GET bullet, "- GET with `accept: text/event-stream` to a live loader's route: a `data:` line per yield (its `Result` JSON), a `:` line per 15 s of `ctx.clock`, until `fn` returns or `signal` aborts (request abort, `close()`). Else 406."
+- Request flow: after the GET bullet, "- GET with `accept: text/event-stream` to a live loader's route: guard denial 403 `keel.denied`, else a `data:` line per yield (its `Result` JSON), a `:` line per 15 s of `ctx.clock`, until `fn` returns or `signal` aborts (request abort, `close()`). Other routes: 406."
 - Topology: the paragraph moves to k.topology.
 - Build: "`keel build` bundles each `node` deployable's entry and islands to `dist/<name>/` (`.vite/manifest.json`). Production `createApp({ assets: 'dist/<name>' })` loads it at startup" becomes "Builds, runners, peers, `keel dev`: k.topology. Production `createApp({ assets: 'dist/<name>' })` loads the client build at startup".
 - Dev server: "`keel dev`: Vite and Hono, one process, HMR, real `ctx`." moves to k.topology (Local topology); the paragraph is renamed **Log.**
 - Rules: E1552 and E1553 move to k.topology; append "· E1558 a live loader a non-`node` deployable serves."
-- Conformance, appended: "An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`."
+- Conformance, appended: "An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403."
+- `createApp({ origin })` is specified in k.topology (Build), beside `KEEL_ORIGIN`.
 
 Full text after the change:
 ~~~md
@@ -207,11 +234,11 @@ status: conformance-covered
 - `params`/`search` are `Infer` of the declared schemas (else `unknown`), the route's own (E1507); `fn` is never annotated; `url` is absolute.
 - A loader whose `fn` is an async generator is live (E1558): a document or JSON GET takes its first yield, an event-stream GET all; args add `signal`.
 
-**Server state.** `stores` names a factory `(ctx) => S` of stores (explicit `id`s) and transactions. Per request each named factory runs once, restoring its stores from `ctx.storage` `keel.store.<id>`; `fn` gets `S`. An action's `ok` saves its changed stores unless another request saved any of the factory's since (409 `keel.conflict`); `err` or a throw saves none. `createApp({ origin })` (public) replaces the request's origin in `url`, the same-site check and `Secure`. `caller` is the base64url SHA-256 of the cookie token, HMAC-signed with `createApp({ secret })` (<32 bytes: E1556; default per process, W1556 in production); `tx` meta `{ caller }` scopes `undoWhere`. The cookie (`HttpOnly; SameSite=Lax; Path=/`) is `__Host-keel-caller`, `Secure` on https (`createApp({ secure })`; default the URL's or `x-forwarded-proto`, W1557 in production), else `keel-caller`. Factory stores skip `#k-state` and inspect; server code never writes module stores; client routers refuse `stores`.
+**Server state.** `stores` names a factory `(ctx) => S` of stores (explicit `id`s) and transactions. Per request each named factory runs once, restoring its stores from `ctx.storage` `keel.store.<id>`; `fn` gets `S`. An action's `ok` saves its changed stores unless another request saved any of the factory's since (409 `keel.conflict`); `err` or a throw saves none. `caller` is the base64url SHA-256 of the cookie token, HMAC-signed with `createApp({ secret })` (<32 bytes: E1556; default per process, W1556 in production); `tx` meta `{ caller }` scopes `undoWhere`. The cookie (`HttpOnly; SameSite=Lax; Path=/`) is `__Host-keel-caller`, `Secure` on https (`createApp({ secure })`; default the URL's or `x-forwarded-proto`, W1557 in production), else `keel-caller`. Factory stores skip `#k-state` and inspect; server code never writes module stores; client routers refuse `stores`.
 
 **Request flow.** Match routes -> parse params (fail: 404) and search (fail: defaults) -> guard (deny: redirect) ->
 - GET: run the chain's loaders concurrently, then stream HTML. A loader `err` renders the route's `errorElement`.
-- GET with `accept: text/event-stream` to a live loader's route: a `data:` line per yield (its `Result` JSON), a `:` line per 15 s of `ctx.clock`, until `fn` returns or `signal` aborts (request abort, `close()`). Else 406.
+- GET with `accept: text/event-stream` to a live loader's route: guard denial 403 `keel.denied`, else a `data:` line per yield (its `Result` JSON), a `:` line per 15 s of `ctx.clock`, until `fn` returns or `signal` aborts (request abort, `close()`). Other routes: 406.
 - POST, PUT, PATCH, DELETE: first the same-site check (`Sec-Fetch-Site` `same-origin`/`none`, its own `Origin`, `accept: application/json` with `x-keel: 1`, or neither; else 403 `keel.denied`, nothing runs). `_method` overrides POST only. A body over `createApp({ maxBodyBytes })` (default 1 MiB) is `keel.payloadTooLarge` (`data: { limit }`), nothing runs. Then decode FormData or JSON (empty: `{}`) by `input` (fail: `keel.fields`, not called), run it, 303 to the target (document) or `Result` JSON (runtime).
 
 Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · `keel.conflict` 409 · other `err` 400 · uncaught throw 500 `keel.unexpected` (production: message `unexpected`, no stack). `mode` defaults to `production`. `#k-state` holds every request-scope store.
@@ -241,10 +268,10 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 - `createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555.
 - Built files are `nosniff`, unhashed ones `no-cache`; a symlink out of `assets/` is not served.
 - Production `createApp` without `assets` rejects at startup with E1555 unless `NODE_ENV` is `development` or `test`.
-- An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`.
+- An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403.
 ~~~
 
-### spec/kernel/k.topology.md (new, 1,497)
+### spec/kernel/k.topology.md (new, 1,496)
 ~~~md
 # k.topology: Deployables
 status: proposed
@@ -257,15 +284,15 @@ status: proposed
 
 **Calls and peers.** A module calls another's routes through `service({ module })` (k.services), encoded and decoded alike in every topology: a split adds latency and `api.network`/`api.timeout` outcomes, never another value. `createApp({ peers: { [deployable]: URL | ServerApp } })` names the other `node` deployables: URLs in production, apps in one process. A `service({ module })` request is answered in process when its module is here or in an in-process peer, else by the peer's URL. A request for a path a peer serves (by `routes.json` in `artifacts`) is forwarded to it: method, path, search, headers but `host`, body; its response is returned unchanged; one carrying `x-keel-forwarded` is not forwarded again.
 
-**Build.** `keel build` writes per `node` deployable `dist/<name>/`: the client build (k.server), `routes.json`, `std.json`, and `server.mjs`, the generated entry with every dependency bundled. `node server.mjs` parses `process.env` with `DeployEnv`: `PORT` (default 8080), `KEEL_ORIGIN` (the public origin, `createApp({ origin })`), `KEEL_SECRET` (32+ bytes, shared by the app's deployables so `caller` agrees), and `KEEL_PEER_<NAME>` for each other `node` deployable. A failure prints one E1560 naming the key, never a value, and exits 1. Then it serves `createApp` (production, real `ctx`, its routes, runners and peers) and on SIGTERM or SIGINT stops listening, awaits `close()` and exits. `ctx.storage` is the file `--localstorage-file` names, the only state that survives a restart.
+**Build.** `keel build` writes per `node` deployable `dist/<name>/`: the client build (k.server), `routes.json`, `std.json`, and `server.mjs`, the generated entry with every dependency bundled. `node server.mjs` parses `process.env` with `DeployEnv`: `PORT` (default 8080), `KEEL_ORIGIN` (`createApp({ origin })`, the public origin, which replaces the request's in `url`, the same-site check and `Secure`), `KEEL_SECRET` (32+ bytes, shared by the app's deployables so `caller` agrees), and `KEEL_PEER_<NAME>` for each other `node` deployable. A failure prints one E1560 naming the key, never a value, and exits 1. Then it serves `createApp` (production, real `ctx`, its routes, runners and peers) and on SIGTERM or SIGINT stops listening, awaits `close()` and exits. `ctx.storage` is the file `--localstorage-file` names, the only state that survives a restart.
 
 **Deploy files.** Derived from `topology.ts` by one generator (`@keel/scaffold`), written by `keel build` and by scaffold operations that change modules or deployables; read-only (E1005, fix: the regenerated file).
-- `deploy/<name>/Dockerfile` per `node` deployable: Node 22 slim pinned by digest, `dist/<name>/` only, user `node`, storage on volume `/data`, port 8080, `CMD` running `server.mjs`.
+- `deploy/<name>/Dockerfile` per `node` deployable: `node:22-slim` by digest, `dist/<name>/` only, user `node`, volume `/data` for storage, port 8080.
 - `deploy/compose.yaml`: a service and volume per `node` deployable, `KEEL_PEER_<NAME>` set to peers' service URLs, other `DeployEnv` keys from the environment.
 - `.github/workflows/ci.yml` (outside the Keel repo): a job per deployable, run when its modules or shared config change: install, `keel check --base` the base branch's surface (k.compat), `keel test`, `keel build`, an unpushed image build per `node` deployable.
 `DeployEnv` values are set where the image runs, never in a generated file.
 
-**Local topology.** `keel dev` serves every deployable in one process on one origin: Vite serves `client` and `static` entries with HMR; each `node` deployable runs its own dev `createApp` (real `ctx`, storage in `.keel-dev/`) and runners, with the others as in-process peers. A request goes to the deployable serving its path.
+**Local topology.** `keel dev` serves every deployable in one process on one origin: Vite serves `client` and `static` entries with HMR; each `node` deployable runs its dev `createApp` (real `ctx`, storage in `.keel-dev/`) and runners, the others its in-process peers, and serves its paths.
 
 **Rules.** E1552 a topology module unknown or in two deployables · E1553 `static` deployable route with params or actions · E1559 one path in two deployables (names both routes) · E1560 the production environment fails `DeployEnv` (at startup).
 
@@ -273,7 +300,7 @@ status: proposed
 - Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states.
 - `x` answers a path of `b` with `y`'s status, headers and body; one carrying `x-keel-forwarded` is not forwarded.
 - With `a` and `b` in one deployable a `service({ module: 'b' })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL.
-- `createApp({ runners })` runs each runner of the served deployable once and none of another; `close()` aborts their signals and resolves after each `run` settles; a `run` that rejects runs again 1,000 ms later on the sim clock.
+- `createApp({ runners })` runs each runner of the served deployable once, none of another; `close()` aborts their signals and resolves once each `run` settles; a rejected `run` runs again 1,000 ms later on the sim clock.
 - `node dist/<name>/server.mjs` of a `keel build` fixture answers its routes on `PORT`; with `KEEL_SECRET` unset or short it exits 1 and prints one E1560 line naming `KEEL_SECRET` and no value.
 - With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 whose fix restores it; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow.
 - Two routes with path `/p` in modules of different deployables are one E1559.
@@ -281,7 +308,7 @@ status: proposed
 - `keel dev` answers a `client` page and a path of each `node` deployable from one process on one origin.
 ~~~
 
-### k.services (1,198 to 1,440)
+### k.services (1,198 to 1,482)
 - API: endpoint keys gain `events?`; the `service` bullet names `module`; a client method takes `signal?`; a new bullet for `events` endpoints.
 - Trims: "(rfc:0034)", "rfc:0039", ", RFC 0022".
 - Conformance, appended: the `events` clause and the unbound-ctx clause.
@@ -308,7 +335,7 @@ const r = await api.getOrder({ params: { id } }, ctx) // Result<Order, ApiError>
 - `endpoints` and `service` come from `@keel/services`. Endpoint keys: `method`, `path`, `params?`, `query?`, `body?`, `output`, `errors?` (status to schema), `timeout?`, `events?`.
 - `service({ base, schema, timeout? })` calls another service; `service({ module, schema, timeout? })` calls the routes of app module `module` (k.module `deps` and `public.routes` apply), resolved by k.topology: in process, a peer, or in a browser the document's origin; on a ctx no `createApp` bound, `http://<module>.keel.invalid`. The timeout defaults to 10,000 ms; an endpoint `timeout` overrides it; none is per call.
 - A client method takes `{ params?, query?, body?, signal? }` and `ctx`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim.
-- A GET endpoint with `events: true` is an event stream (a k.server live loader): its method returns an `AsyncIterable` of `Result<T, ApiError>`, sends `accept: text/event-stream`, decodes each `data:` line with `output`, and ends when the stream ends, after an `err`, or when `signal` aborts. Its timeout applies until the response starts.
+- A GET endpoint with `events: true` is an event stream (a k.server live loader): its method returns an `AsyncIterable` of `Result<T, ApiError>`, sends `accept: text/event-stream` and decodes each `data:` line, a k.server `Result`: an `ok` value with `output`, an `err` as `api.status` (200, `body` the error). It ends when the stream ends, after an `err`, or when `signal` aborts; it never reconnects or resumes, so a caller that reopens picks its own backoff. Its timeout applies until the response starts.
 
 **ApiError.** A union of KeelErrors (k.errors), matched on `code`:
 - `api.timeout` `{ ms }`: no response within the timeout, measured on `ctx.clock`; the request is aborted.
@@ -545,47 +572,18 @@ export const runners = [jobs, schedules]                             // modules/
 - E2552 and E2553 each fire on a fixture and not on its clean twin.
 ~~~
 
-### spec/std/std.streams.md (new, 878)
-~~~md
-# std.streams: Event streams
-status: proposed
-
-**Extension points.** Module manifest (k.module): `@keel/std-streams` is stdlib module `streams`; a module that streams lists it in `deps` and `random` in `capabilities`. Check rule registry (k.check): `@keel/std-streams/tools` registers E2601-E2602. The transport is the kernel's: a k.server live loader serves a stream and a k.services `events` endpoint reads one.
-
-**API** (`@keel/std-streams`).
-```ts
-export const orderEvents = topic('orders.events', OrderEvent, { keep: 100 })      // orderEvents.server.ts
-orderEvents.publish(ctx, { orderId, status: 'paid' })                           // in an action or a job of `orders`
-export const feedOrders = loader({ output: orderEvents.delivery, search: StreamSearch },
-  async function* ({ search, signal }, ctx) { yield* orderEvents.follow(ctx, search.after, signal) })  // feedOrders.server.ts
-for await (const r of subscribe(ctx, api.feed, {}, { signal })) { /* r: Result<Delivery<OrderEvent>, ApiError> */ }
-```
-- `topic(id, Event, { keep = 100 })` holds a fan-out per app `ctx`, in memory. `publish(ctx, v)` parses `v` with `Event` (fail: throws `keel.fields`), gives it the id `<epoch>.<seq>` (`epoch` from `ctx.random.id` at the topic's first use on that ctx, `seq` from 1) and keeps the newest `keep`.
-- `delivery` is the schema `{ id: string, value: Event }`; `StreamSearch` is `{ after?: string }`.
-- `follow(ctx, after, signal)` yields `ok(delivery)`: first the kept deliveries after `after`, then each new one, until `signal` aborts. When `after` has another epoch or is older than the kept ones, it first yields `err` `streams.gap`. A subscriber more than `keep` deliveries behind gets `err` `streams.gap` and continues from the newest.
-- `subscribe(ctx, method, input, { signal })` reads a k.services `events` method (its `query` is `StreamSearch`) and reconnects after a failure, waiting 1,000 ms then doubling up to 30,000 on `ctx.clock`, with `query.after` the last delivery's id; it yields every `ok` and the `err` that preceded a reconnect, and ends when `signal` aborts.
-- Nothing is stored: a restart starts a new epoch, and a reconnecting client gets `streams.gap`. Events that must outlive a process belong in a store or a job.
-- A topic is its module's: it is published and followed only there, so it lives in that module's deployable; other modules and deployables subscribe over HTTP.
-
-**Rules.** E2601 a `topic` id not prefixed by its module id, or a `topic` outside a `*.server.ts` file (fix prefixes the id) · E2602 a topic in `public.exports` (fix removes it).
-
-**Conformance.**
-- Under sim, `follow` after `publish` of `a`, `b`, `c` yields `ok` deliveries in that order with ids `<epoch>.1` to `<epoch>.3`; `follow` with `after` `<epoch>.1` yields `b`, then `c`.
-- `follow` with an `after` of another epoch yields `err` `streams.gap` first, then the kept deliveries.
-- With `keep: 2`, a subscriber that has not read while four are published gets `streams.gap`, then continues from the newest.
-- An event-stream GET of a route whose live loader follows a topic receives each published value as one `data:` line in order (k.server), and a `subscribe` over it yields the same values.
-- After the stream fails, `subscribe` reconnects after 1,000 ms on the sim clock with `after` the last id, and yields no delivery twice.
-- `publish` of a value failing `Event` throws `keel.fields`; nothing is stored in `ctx.storage`.
-- E2601 and E2602 each fire on a fixture and not on its clean twin.
-~~~
-
-### spec/00-map.md (orchestrator; about 1,030 after RFC 0079, to about 1,160)
-- Code ranges: the E155x owner becomes "k.server, k.topology, k.compat"; add the rows "| E250x | std.jobs | E255x | std.schedules |" and "| E260x | std.streams | | |".
+### spec/00-map.md (orchestrator; 829 after RFC 0081, to about 902)
+Assumes RFC 0081's move of the stdlib table to `spec/std/README.md`.
+- Code ranges: the E155x owner becomes "k.server, k.topology, k.compat"; add the row "| E250x | std.jobs | E255x | std.schedules |".
 - Kernel table, after k.server: "| k.topology | Deployables | proposed | placement, runners, peers, production entry, deploy files, local topology |" and "| k.compat | Surface compatibility | proposed | surface artifact, `accepts`, E1561, E1562 with `--base` |".
 - k.server's one line becomes "loaders (live too), actions, dev server, adapters".
-- Stdlib table: std.jobs ("module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2504"), std.schedules ("module manifest: cron in a zone, catch-up, E2551-E2553"), std.streams ("module manifest: topics, replay by id, `subscribe`, E2601-E2602").
-- `spec/std/README.md`: "S3 (RFC 0080) adds std.jobs, std.schedules and std.streams."
-- The map is then within about 40 tokens of its 1,200 cap: S4's rows need a compaction first (one row per code block pair, shorter one-liners).
+
+### spec/std/README.md (orchestrator)
+Two rows for the moved table, and the line "S3 (RFC 0080) adds std.jobs and std.schedules.":
+```
+| std.jobs | Background jobs | proposed | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2504 |
+| std.schedules | Schedules | proposed | module manifest: cron in a zone, catch-up, E2551-E2553 |
+```
 
 ## Conformance diff
 The conformance-writer of each lane writes these from the accepted spec text, skipped until implementation; each clause is cited verbatim by exactly one file. k.server, k.services, k.module and k.scaffold stay `conformance-covered`, so `keel ledger --diff` reports E1707 for each appended clause until its file lands.
@@ -596,22 +594,21 @@ The conformance-writer of each lane writes these from the accepted spec text, sk
 - **Kernel, unchanged headers.** `packages/server/conformance/e1552-topology-modules.test.ts` and `e1553-static-params.test.ts` cite their rule codes, not clause text; the codes move to k.topology and keep their numbers, so the headers stay. `dev-log-stream.test.ts` quotes a clause whose text is unchanged. No existing conformance header quotes a changed or moved clause, so none needs `rfc:0080`.
 - **std-jobs, added.** `delay`, `backoff-failed`, `key-idempotent`, `restart`, `concurrency`, `timeout`, `inspect-no-input`, `rules-e2501-e2504` (`.test.ts` in `packages/std-jobs/conformance/`).
 - **std-schedules, added.** `fire-utc`, `next-property`, `zone-gap-overlap`, `restart-missed`, `e2551-invalid`, `rules-e2552-e2553`.
-- **std-streams, added.** `follow-order`, `gap-epoch`, `gap-slow`, `live-loader-subscribe`, `reconnect`, `publish-invalid`, `rules-e2601-e2602`.
-- **Not conformance.** Property tests per package (`test/*.property.test.ts`): `accepts` is reflexive and transitive on generated schemas; a queue under generated enqueue, failure and restart scripts never loses a job and never runs a finished `key` twice; cron next-time is monotonic; `follow` yields each id at most once per subscriber; the split transcript equality for generated request scripts (golden-1).
+- **Not conformance.** Property tests per package (`test/*.property.test.ts`): `accepts` is reflexive and transitive on generated schemas; a queue under generated enqueue, failure and restart scripts never loses a job and never runs a finished `key` twice; cron next-time is monotonic; an `events` reader over generated yields returns exactly the yielded values; the split transcript equality for generated request scripts (golden-1).
 
 ## Lanes
-**Orchestrator, before the batch.** Write the accepted spec text into `spec/` (k.topology and k.compat new; k.server, k.services, k.module, k.scaffold edits; the three std sections; `spec/00-map.md`; `spec/std/README.md`); write the ADRs; create `packages/std-jobs`, `std-schedules` and `std-streams` in the std-money shape (`package.json` with dependencies and the `./tools` export, `module.ts` at the root, `tsconfig.json`, `tsconfig.build.json`, `vitest.config.ts`, empty `src/index.ts`, `conformance/`, `unsafe/`); add `@hono/node-server` to `packages/server/package.json` and the `./start` export; add the three packages to `apps/golden-1/package.json`; set the `tooling/deps.json` order; add the `tooling/budgets.json` entries and re-bases (Token impact); add `.keel-dev/` to the scaffold template's and the root `.gitignore`; run `pnpm install` once, so no lane touches `pnpm-lock.yaml`. Shared files stay with the orchestrator: `spec/**`, `docs/adr/**`, `docs/ARCHITECTURE.md`, `docs/THREAT-MODEL.md`, `docs/HANDOFF.md`, `tooling/budgets.json`, `tooling/deps.json`, `tooling/ledger/ledger.json`, `tasks/BACKLOG.md`, `pnpm-lock.yaml`, `evals/results/**`. A lane that finds a defect in its spec text reports it and does not edit `spec/`.
+**Orchestrator, before the batch.** Write the accepted spec text into `spec/` (k.topology and k.compat new; k.server, k.services, k.module, k.scaffold edits; the two std sections; `spec/00-map.md`; `spec/std/README.md`); write the ADRs; create `packages/std-jobs` and `std-schedules` in the std-money shape (`package.json` with dependencies and the `./tools` export, `module.ts` at the root, `tsconfig.json`, `tsconfig.build.json`, `vitest.config.ts`, empty `src/index.ts`, `conformance/`, `unsafe/`); add `@hono/node-server` to `packages/server/package.json` and the `./start` export; add the two packages to `apps/golden-1/package.json`; set the `tooling/deps.json` order; add the `tooling/budgets.json` entries and re-bases (Token impact); add `.keel-dev/` to the scaffold template's and the root `.gitignore`; run `pnpm install` once, so no lane touches `pnpm-lock.yaml`. Shared files stay with the orchestrator: `spec/**`, `docs/adr/**`, `docs/ARCHITECTURE.md`, `docs/THREAT-MODEL.md`, `docs/HANDOFF.md`, `tooling/budgets.json`, `tooling/deps.json`, `tooling/ledger/ledger.json`, `tasks/BACKLOG.md`, `pnpm-lock.yaml`, `evals/results/**`. A lane that finds a defect in its spec text reports it and does not edit `spec/`.
 
 | Lane | Owns (exclusive) | Needs | Verify |
 | --- | --- | --- | --- |
 | kernel (K1 to K5 runtime) | `packages/server/**`; `packages/services/**`; `packages/router/src/**`; `packages/compiler/**` except `src/internal/surface*.ts`; `packages/testing/src/**`; the kernel conformance files above; kernel changesets | nothing; lands `Runner`, `createApp({ runners })` and `close()` first, then live loaders, then `service({ module })` and peers, then the entry and the local topology | `pnpm --filter @keel/server --filter @keel/services --filter @keel/router --filter @keel/compiler --filter @keel/testing run check`, the same with `run test` |
-| jobs-schedules | `packages/std-jobs/**`, then `packages/std-schedules/**` | `Runner`, `close()` | `pnpm --filter @keel/std-jobs --filter @keel/std-schedules run check && pnpm --filter @keel/std-jobs --filter @keel/std-schedules run test` |
-| std-streams | `packages/std-streams/**` | live loaders, `events` endpoints | `pnpm --filter @keel/std-streams run check && pnpm --filter @keel/std-streams run test` |
+| std-jobs | `packages/std-jobs/**` | `Runner`, `close()` | `pnpm --filter @keel/std-jobs run check && pnpm --filter @keel/std-jobs run test` |
+| std-schedules | `packages/std-schedules/**` | `Runner`; std-jobs' `queue` and `enqueue` | `pnpm --filter @keel/std-schedules run check && pnpm --filter @keel/std-schedules run test` |
 | deploy | `packages/scaffold/**`; `packages/cli/**` (deploy file writes and E1005 freshness, `--base` plumbing into the check input, `keel dev` storage flags, the `place` operation); `tooling/generate.mjs`; `tooling/deploy.source.json` (new) | the `start` entry's file layout from the kernel lane (the Dockerfile `CMD`) | `pnpm --filter @keel/scaffold --filter @keel/cli run check && pnpm --filter @keel/scaffold --filter @keel/cli run test && node tooling/generate.mjs --check` |
 | compat | `packages/check/**`; `packages/compiler/src/internal/surface*.ts` (the `surface.json` builder; the kernel lane wires it into the artifact list in one line) | the artifact wiring line; `--base` plumbing from the deploy lane | `pnpm --filter @keel/check run check && pnpm --filter @keel/check run test` |
 | golden | `apps/golden-1/**`; `apps/golden-2/{server.ts,package.json,README.md,vite.config.ts}`; `apps/sessions/{server.ts,package.json,README.md}`; `evals/tasks/golden-1-api/**`; `tooling/smoke/**` | every lane | `pnpm --filter golden-1 run check && pnpm --filter golden-1 run test && pnpm eval --task golden-1-api --runner none --strict` |
 
-Order: kernel, deploy and compat start at once (deploy and compat write against the spec text and their own fixtures). jobs-schedules starts when `Runner` and `close()` land (the kernel lane's first commit), std-streams when live loaders land. golden starts with the `digest` schemas and the eval task and finishes last. That is five implementation agents and one kernel agent, the program's batch budget. Mutation runs (kernel packages, then std packages) go alone after the batch. Batch end: root `pnpm check && pnpm test && pnpm build`, `node tooling/budgets.mjs`, ledger diff, reviewer and red-team.
+Order: kernel, deploy and compat start at once (deploy and compat write against the spec text and their own fixtures). std-jobs starts when `Runner` and `close()` land (the kernel lane's first commit); std-schedules writes its parser and rules at once and runs its runner tests once std-jobs lands `queue`. golden starts with the `digest` schemas and the eval task and finishes last. That is five implementation agents and one kernel agent, the program's batch budget. Mutation runs (kernel packages, then std packages) go alone after the batch. Batch end: root `pnpm check && pnpm test && pnpm build`, `node tooling/budgets.mjs`, ledger diff, reviewer and red-team.
 
 **Ride-along backlog lines** (only where a lane already owns the package):
 - 0273 (kernel lane, `packages/server`): the same-site check behind a TLS proxy; `origin` (K2) is the fix.
@@ -620,58 +617,52 @@ Order: kernel, deploy and compat start at once (deploy and compat write against 
 - 0304 (kernel lane, `packages/compiler` and `packages/server`): the node build emits CSS and the head links every chunk's CSS; the kernel lane already changes the node build for `server.mjs`.
 - 0306 (kernel lane, `packages/server`) and 0291 (compat lane, `packages/check`), if the S2 batch has not closed them.
 - 0270 (deploy lane, `packages/cli`): the ledger checks that each code a range clause names appears in a covering test's name, if its fix stays inside `packages/cli`.
-- Not riding: 0296 (needs a rule design), 0302 (`packages/std-sessions`, no lane), 0305 (a user decision; Section 5 says where its answer lands).
+- Not riding: 0296 (needs a rule design), 0302 (`packages/std-sessions`, no lane), 0305 (a user decision; Proposal 6 says where its answer lands).
 
 ## Migration
 - **Kernel callers.** `origin`, `peers`, `runners`, `close()`, live loaders, `service({ module })`, `events`, E1558-E1562 and `@keel/server/start` are additions. `service({ base })` is unchanged and remains the way to call another service. A `createApp` without `origin` behaves as today. E1152 and E1157 now also read `service({ module })`, which no app uses yet, so no diagnostic appears on upgrade. E1552's "deployable naming a module with no route" accepts a module with runners.
-- **Apps.** `server.ts` is replaced by the generated entry in every app (default 2): `apps/golden-1` (Proposal 7), `apps/golden-2` (its `api` script runs `dist/api/server.mjs`; `vite.config.ts` loses its proxy), `apps/sessions` (`KEEL_SESSIONS_SECRET` becomes `KEEL_SECRET`, `KEEL_SESSIONS_PORT` becomes `PORT`, `KEEL_ORIGIN` is set; its README's deployment steps change accordingly). `tooling/smoke/persist.mjs` and its README start `dist/api/server.mjs`. Each app gains generated `deploy/` files and `.keel/surface.json`. The nightly sessions workflow is unaffected (it runs the action, not the server).
+- **Apps.** `server.ts` is replaced by the generated entry in every app (default 2): `apps/golden-1` (Proposal 8), `apps/golden-2` (its `api` script runs `dist/api/server.mjs`; `vite.config.ts` loses its proxy), `apps/sessions` (`KEEL_SESSIONS_SECRET` becomes `KEEL_SECRET`, `KEEL_SESSIONS_PORT` becomes `PORT`, `KEEL_ORIGIN` is set; its README's deployment steps change accordingly). `tooling/smoke/persist.mjs` and its README start `dist/api/server.mjs`. Each app gains generated `deploy/` files and `.keel/surface.json`. The nightly sessions workflow is unaffected (it runs the action, not the server).
 - **golden-2's calls.** It may keep `service({ base })` for now; moving `recipes` to `service({ module: 'kitchen' })` would make `recipes` depend on `kitchen` while `kitchen` imports `recipes` schemas (E1153), so it waits until the shared schemas move to `kitchen`, a later golden-2 task.
-- **Docs.** `docs/ARCHITECTURE.md` gains the stdlib packages and the Borrow vs build rows "Background jobs and schedules: build on `ctx.storage` and `ctx.clock`; no external queue" and "Event streams: borrow fetch streams and `TextDecoderStream`; build SSE framing; no `EventSource`". `docs/THREAT-MODEL.md` gains: forwarding between deployables (no new trust), the shared `KEEL_SECRET`, `origin`, job inputs stored without secrets, topics in memory. Each new package gets a README in the std-money shape. The `keel` and `keel-api` skills gain: calls between modules use `service({ module })`; background work goes in `runners.server.ts`; a live loader is an async generator; a split edits `topology.ts` or runs `keel codemod place`.
+- **Docs.** `docs/ARCHITECTURE.md` gains the stdlib packages and the Borrow vs build rows "Background jobs and schedules: build on `ctx.storage` and `ctx.clock`; no external queue" and "Event streams: borrow Hono `streamSSE` for the writer; build the reader on fetch streams and `TextDecoderStream`; no `EventSource`". `docs/THREAT-MODEL.md` gains: forwarding between deployables (no new trust), the shared `KEEL_SECRET` (D4), `origin`, job inputs stored without secrets, event streams that store nothing. Each new package gets a README in the std-money shape. The `keel` and `keel-api` skills gain: calls between modules use `service({ module })`; background work goes in `runners.server.ts`; a live loader is an async generator, read with an `events: true` endpoint; a split edits `topology.ts` or runs `keel codemod place`.
 
 ## Token impact
-Sections after the change (measured): k.server 1,500 (from 1,462 after RFC 0079), k.topology 1,497 (new), k.compat 889 (new), k.services 1,440, k.module 1,498, k.scaffold 1,117, std.jobs 1,028, std.schedules 824, std.streams 878; spec map about 1,160 of 1,200. k.server, k.topology and k.module are at their cap: the next change to any of them needs a split first. For k.server the seam is the Server state paragraph (its own section with its clauses); S4 (RFC 0081, which expects to touch k.server) should plan for it. A task reading k.topology, k.services and std.jobs reads about 3,970 tokens of spec, inside principle 8's 4k.
+Sections after the change (measured): k.server 1,491 (from 1,462 after RFC 0079; 1,499 with RFC 0081's edit), k.topology 1,496 (new), k.compat 889 (new), k.services 1,482, k.module 1,498, k.scaffold 1,117, std.jobs 1,028, std.schedules 824; spec map about 902 of 1,200 after RFC 0081 moves the stdlib table to `spec/std/README.md` (829 there, plus about 73 here). k.server (with S4), k.topology, k.module and k.services are within 20 tokens of the cap: the next change to any of them needs a split first. For k.server the seam is the Server state paragraph with its clauses. The widest task here, golden-1's `digest` module, reads k.topology, std.jobs and std.schedules: 3,348 tokens.
 
-Package sizes (gzip; `tooling/budgets.mjs` rule; today's bytes measured, estimates are the lanes' to confirm):
+Package sizes (gzip; `tooling/budgets.mjs` rule). "Today" is measured on this branch on 2026-11-10, with S2's kernel lane partly landed; "Measured part" is a prototype or an existing dependency bundled the same way; the rest is estimated.
 
-| Package | Today | Estimate | `budgets.json` |
-| --- | --- | --- | --- |
-| `@keel/server` | 14,390 B (+0.2 kB from S2) | +1.1 kB (runners, `close`, live loaders, `origin`, peers and forwarding) | `14.5kb` is crossed; re-base to `16kb` with the measured bytes in the commit (default 7) |
-| `@keel/server/start` | new | 1.2 kB | `{ "max": "2kb", "platform": "node" }` |
-| `@keel/services` | 1,788 B | +0.6 kB (`module`, `events` and the SSE reader) | `3kb` holds |
-| `@keel/compiler` | 27,099 B | +1.6 kB (server bundle, local topology, `surface.json`) | `26.5kb` is crossed; re-base to `29kb` |
-| `@keel/check` | 33,538 B (+0.8 kB from S2) | +1.3 kB (E1561, E1562, `accepts`, E1152 and E1157 over `service`) | `34.5kb` is crossed; re-base to `36.5kb` |
-| `@keel/cli` | 19,137 B | +1 kB | `22kb` holds |
-| `@keel/scaffold` | 13,558 B | +1.5 kB (deploy templates, `place`) | `16kb` holds, with 1.3 kB left |
-| `@keel/router`, `@keel/testing` | 8,376 B, 6,861 B | types only; +60 B | hold |
-| `@keel/std-jobs` / `./tools` | new | 2.5 kB / 2 kB | `{ "max": "3kb", "platform": "node" }` / `{ "max": "2.5kb", "platform": "node" }` |
-| `@keel/std-schedules` / `./tools` | new | 2 kB / 2.5 kB | `{ "max": "2.5kb", "platform": "node" }` / `{ "max": "3kb", "platform": "node" }` |
-| `@keel/std-streams` / `./tools` | new | 1 kB / 1.5 kB | `"1.5kb"` / `{ "max": "2kb", "platform": "node" }` |
+| Package | Today | Measured part | Estimate | `budgets.json` |
+| --- | --- | --- | --- | --- |
+| `@keel/server` | 14,390 B | SSE writer: Hono `streamSSE`, external to the bundle; a writer and reader prototype is 461 B together | +0.9 kB (runners, `close`, live loaders on `streamSSE`, `origin`, peers and forwarding); with S2's +0.2 kB and S4's +0.08 kB, about 15.6 kB | `14.5kb` is crossed; re-base to `16kb` (16,384 B) with the measured bytes in the commit (default 7), leaving about 0.8 kB |
+| `@keel/server/start` | new | `@hono/node-server` bundled is 8,471 B (external here; inside `server.mjs`) | 1.2 kB | `{ "max": "2kb", "platform": "node" }` |
+| `@keel/services` | 1,788 B | reader half of the 461 B prototype | +0.45 kB (`module`, `events` reader) | `3kb` holds |
+| `@keel/compiler` | 27,099 B | | +1.6 kB (server bundle, local topology, `surface.json`) | `26.5kb` is crossed; re-base to `29kb` |
+| `@keel/check` | 34,676 B | | +1.3 kB (E1561, E1562, `accepts`, E1152 and E1157 over `service`) | `34.5kb` is already crossed by S2's lane; re-base to `36.5kb` |
+| `@keel/cli` | 19,166 B | | +1 kB | `22kb` holds |
+| `@keel/scaffold` | 13,558 B | | +1.5 kB (deploy templates, `place`) | `16kb` holds, with about 1.3 kB left |
+| `@keel/router`, `@keel/testing` | 8,431 B, 6,861 B | | types only; +60 B | hold |
+| `@keel/std-jobs` / `./tools` | new | | 2.5 kB / 2 kB | `{ "max": "3kb", "platform": "node" }` / `{ "max": "2.5kb", "platform": "node" }` |
+| `@keel/std-schedules` / `./tools` | new | five-field parser and next-time search prototype: 695 B | 1.5 kB / 2 kB | `{ "max": "2kb", "platform": "node" }` / `{ "max": "2.5kb", "platform": "node" }` |
 
-The production image of a `node` deployable holds Node 22 slim and `dist/<name>/`; nothing else is installed in it.
+The production image of a `node` deployable holds `node:22-slim` and `dist/<name>/`; nothing else is installed in it.
 
 ## Known limits
-- **One instance per deployable with runners or topics.** `ctx.storage` is a local file and topics are in memory, so two replicas of one deployable would each run the queue and miss each other's deliveries. The generated compose runs one replica. A shared store (S8 std-db) and channels (S4) lift it without an API change.
+- **One instance per deployable with runners.** `ctx.storage` is a local file, so two replicas of one deployable would each run the queue. The generated compose runs one replica. A shared store (S8 std-db) lifts it without an API change; open event streams reach only their own process, which RFC 0081 states for channels.
 - **Enqueue is not part of the action's save.** An action that enqueues and then gets 409 `keel.conflict` leaves the job enqueued; a retried request with the same `key` enqueues nothing new.
 - **Version skew in one direction.** E1562 checks that a new producer accepts an old caller. A new caller against an old producer is a deploy-order rule (producers first) that the generated CI does not enforce.
 - **App secrets.** `DeployEnv` carries the kernel's keys only; an app that needs its own secret (an API token for another service) has no source for it in the generated entry until a later RFC adds secrets through `ctx`.
-- **No registry push, no image for `client` or `static` deployables** (Open question 3, backlog 0305).
-- **Browser use of a stream.** `subscribe` runs in a browser, but binding deliveries to a component is S4's live resource; S3's consumers are server code, jobs and tests.
+- **No registry push, no image for `client` or `static` deployables** (D3, backlog 0305).
+- **Streams in a component.** An `events` reader runs in a browser, but binding events to a component is RFC 0081's std.live; S3's consumers are server code, jobs and tests. golden-1's feed polls until std.channels pushes.
 - **`keel dev` storage.** The dev deployables share one storage file; keys are module-prefixed, so they do not collide.
 
 ## ADRs
-Written by the orchestrator with this RFC's acceptance, numbered after S2's 0068-0072:
-- **Deployables are placed only by `topology.ts`, served by a generated entry** (K1). Placement is one file; a deployable's route table is the union of its modules' routes; the production entry is generated and bundled per `node` deployable, reads only `DeployEnv`, and replaces hand-written `server.ts` everywhere. Records why a generic hand-written entry and a per-deployable hand-written entry were rejected.
-- **Modules call each other through `service({ module })`; node deployables forward to peers** (K4, K5, forwarding). Calls are serialized in every topology so co-location never changes a value; resolution is in process, by peer URL, or by document origin; forwarding makes any `node` deployable an entry; one `KEEL_SECRET` per app. Records the rejected front proxy and `base`-only designs.
-- **Runners and `close()` are a deployable's lifecycle** (K3). Background work is the `runners` export of `runners.server.ts`, started once and restarted on rejection; `close()` aborts each runner's signal and open streams. Records why no `process` capability was added and why file conventions registered by packages were rejected.
-- **Live loaders stream over SSE; `events` endpoints read them** (K2, K4, std-streams). A loader that yields is the one way to stream; fetch streams instead of `EventSource`; topics in memory with replay by id. Records the rejected route field, `stream()` function and WebSocket.
-- **Surface compatibility is checked from `surface.json`** (K6). The `accepts` relation, E1561 in the tree, E1562 against a base surface for callers in other deployables, `--base` from CI. Records why equality and in-rule git access were rejected.
-- **Generated deploy files come from one scaffold generator** (K7, Section 5). Dockerfile, compose and CI per deployable; E1005 with a regenerating fix; `tooling/generate.mjs --check` for the repository's apps; `codemod place`; runtime configuration only through `DeployEnv`.
-- **Jobs run at least once on `ctx.storage`; schedules enqueue with a key** (std-jobs, std-schedules). Lease, backoff, idempotent keys, catch-up policy, the cron subset and zones through `Intl`. Records the rejected external queue, exactly-once and cron libraries.
+Written with this RFC's acceptance:
+- `docs/adr/0073-topology-placement-generated-entry.md`: deployables are placed only by `topology.ts` and served by a generated entry (K1).
+- `docs/adr/0074-module-calls-peers-forwarding.md`: modules call each other through `service({ module })`; node deployables forward to peers; one `KEEL_SECRET` per app (K4, K5, D4).
+- `docs/adr/0075-runners-and-close.md`: runners and `close()` are a deployable's lifecycle (K3).
+- `docs/adr/0076-live-loaders-event-streams.md`: live loaders stream over SSE and `events` endpoints read them; fan-out, resume and reconnect are a consumer's (K2, K4, D5).
+- `docs/adr/0077-surface-compatibility.md`: surface compatibility from `surface.json`, E1561 and E1562 (K6).
+- `docs/adr/0078-generated-deploy-files.md`: Dockerfile, compose and CI per deployable from one scaffold generator; `codemod place` (K7, D3).
+- `docs/adr/0079-jobs-and-schedules.md`: jobs run at least once on `ctx.storage`; schedules enqueue with a key (std-jobs, std-schedules).
 
 ## Open questions
-Each is the user's under the WORKFLOW defaults; each has a recommendation.
-
-1. **New hand-written API shapes.** (a) `service({ module, schema })` and `events: true` endpoints (k.services); (b) the `runners.server.ts` file exporting `runners`; (c) live loaders, an async generator `fn` with `signal`; (d) the std APIs `job`, `queue`, `enqueue`; `schedule` and its table; `topic`, `publish`, `follow`, `subscribe`; (e) `keel codemod place <module> --to <deployable> [--adapter]`; (f) `keel check --base <file>`. Recommended: accept as designed. The alternatives for each are in Alternatives; the shapes follow existing ones (`queue` and `enqueue` mirror `manifest` and `routes.href`, a live loader is a loader).
-2. **Golden-app migrations.** golden-1 gains the `digest` module, loses `server.ts` and its Vite proxy, and its `golden-1-api` eval brief changes; golden-2 and `apps/sessions` lose `server.ts` (sessions' env names change). Recommended: yes, all three, since default 2 asks the generated entry to replace `server.ts` everywhere; keeping `server.ts` in two apps would leave two ways to start a server.
-3. **External integrations.** (a) The Dockerfile's base image is `node:22-slim` pinned by digest in the generator, bumped with Keel releases; recommended. (b) The generated GitHub Actions workflow for projects outside the monorepo: SHA-pinned actions, one job per deployable, image built and never pushed; recommended, with registry push left to a later RFC that adds a schema-declared registry field to a deployable in `topology.ts`. (c) This repository's `ci.yml` (from `tooling/ci.source.json`) gains a job that builds golden-1's images for both topologies on `ubuntu-latest` (Docker is preinstalled there) without pushing; recommended, so the generated Dockerfiles are built somewhere before a person relies on them. (d) The eval runs no Docker.
-4. **One secret per app, shared by its deployables (auth).** Every `node` deployable gets the same `KEEL_SECRET`, so `caller` is equal wherever a request lands and a split changes no stored `tx` meta. The cost: whoever holds one deployable's environment can sign caller cookies the others accept, which is the same trust domain as one deployable today. Recommended: shared, since per-deployable secrets would make a split change `caller` values (Alternatives).
+None. D1 to D4 are the user's answers to the draft's four questions; D5 records the reconciliation with RFC 0081, and Proposal 4 lists what RFC 0081 changes to match.
