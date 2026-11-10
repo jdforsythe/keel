@@ -26,7 +26,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false }): T {
   return r.value;
 }
 
-test.skip("For every `Locale`, style and generated value, `formatDate` and `formatInstant` equal the `Intl` expressions above. `formatDate('2026-11-10', l, 'long')` is `November 10, 2026`, `10. November 2026` and `2026年11月10日` for `en-US`, `de-DE` and `ja-JP`; `formatInstant('2026-11-10T23:30:00.000Z', 'de-DE', 'Asia/Tokyo', 'medium')` is `11.11.2026, 08:30:00`.", () => {
+test("For every `Locale`, style and generated value, `formatDate` and `formatInstant` equal the `Intl` expressions above. `formatDate('2026-11-10', l, 'long')` is `November 10, 2026`, `10. November 2026` and `2026年11月10日` for `en-US`, `de-DE` and `ja-JP`; `formatInstant('2026-11-10T23:30:00.000Z', 'de-DE', 'Asia/Tokyo', 'medium')` is `11.11.2026, 08:30:00`.", () => {
   fc.assert(
     fc.property(
       gen(PlainDate),

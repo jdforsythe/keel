@@ -10,7 +10,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false }): T {
   return r.value;
 }
 
-test.skip("For generated `d` and `n` whose results are in range, `addDays` of `addDays(d, n)`'s value and `-n` is `d`; `addDays('2024-02-28', 1)` is `2024-02-29`; `addDays('9999-12-31', 1)` is `err` with `value` 1.", () => {
+test("For generated `d` and `n` whose results are in range, `addDays` of `addDays(d, n)`'s value and `-n` is `d`; `addDays('2024-02-28', 1)` is `2024-02-29`; `addDays('9999-12-31', 1)` is `err` with `value` 1.", () => {
   fc.assert(
     fc.property(gen(PlainDate), fc.integer({ min: -4_000_000, max: 4_000_000 }), (d, n) => {
       const there = addDays(d, n);

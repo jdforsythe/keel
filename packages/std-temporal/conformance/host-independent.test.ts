@@ -72,7 +72,7 @@ function everyExport(x: {
   ];
 }
 
-test.skip("With `process.env.TZ` set to `Pacific/Kiritimati` and then `America/Adak`, every export returns equal results for equal arguments.", () => {
+test("With `process.env.TZ` set to `Pacific/Kiritimati` and then `America/Adak`, every export returns equal results for equal arguments.", () => {
   const originalTZ = process.env.TZ;
   const inputs = fc.record({
     ms: fc.integer({ min: -62135596800000, max: 253402300799999 }),
@@ -88,16 +88,16 @@ test.skip("With `process.env.TZ` set to `Pacific/Kiritimati` and then `America/A
     unitStyle: fc.constantFrom(...UNIT_STYLES),
   });
   try {
-  fc.assert(
-    fc.property(inputs, (x) => {
-      process.env.TZ = "Pacific/Kiritimati";
-      const a = everyExport(x);
-      process.env.TZ = "America/Adak";
-      const b = everyExport(x);
-      expect(b).toEqual(a);
-    }),
-    { seed: 1337, numRuns: 100 },
-  );
+    fc.assert(
+      fc.property(inputs, (x) => {
+        process.env.TZ = "Pacific/Kiritimati";
+        const a = everyExport(x);
+        process.env.TZ = "America/Adak";
+        const b = everyExport(x);
+        expect(b).toEqual(a);
+      }),
+      { seed: 1337, numRuns: 100 },
+    );
   } finally {
     if (originalTZ === undefined) delete process.env.TZ;
     else process.env.TZ = originalTZ;

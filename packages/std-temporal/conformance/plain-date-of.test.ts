@@ -10,7 +10,7 @@ function must<T>(r: { ok: true; value: T } | { ok: false }): T {
   return r.value;
 }
 
-test.skip("For every generated instant `i`, `plainDateOf(i, UTC)` is the first 10 characters of `i`; for `2026-11-10T23:30:00.000Z` it is `2026-11-11` in `Asia/Tokyo` and `2026-11-10` in `America/New_York`.", () => {
+test("For every generated instant `i`, `plainDateOf(i, UTC)` is the first 10 characters of `i`; for `2026-11-10T23:30:00.000Z` it is `2026-11-11` in `Asia/Tokyo` and `2026-11-10` in `America/New_York`.", () => {
   fc.assert(
     fc.property(gen(Instant), (i) => {
       expect(plainDateOf(i, UTC)).toBe(i.slice(0, 10));

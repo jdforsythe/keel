@@ -4,7 +4,7 @@ import { s } from "@keel/schema";
 import { Duration, Instant, PlainDate, TimeZone } from "@keel/std-temporal";
 import { expect, test } from "vitest";
 
-test.skip("After importing `@keel/std-temporal`, the registry maps the four names to the exports; importing it again does not throw.", async () => {
+test("After importing `@keel/std-temporal`, the registry maps the four names to the exports; importing it again does not throw.", async () => {
   expect(s.registry().get("temporal.Instant")).toBe(Instant);
   expect(s.registry().get("temporal.PlainDate")).toBe(PlainDate);
   expect(s.registry().get("temporal.TimeZone")).toBe(TimeZone);
