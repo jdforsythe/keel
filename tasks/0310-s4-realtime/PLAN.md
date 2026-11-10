@@ -3,8 +3,8 @@
 **Spec:** std.live, std.channels, std.offline, std.conflicts (new, from the design RFC) · k.reactive, k.store, k.server (kernel touch) · **Gate:** S4 exit: multi-user replay finds an injected race · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10), design only until the S2 and S3 batches are pushed
 
 ## Shape (tasks/PROGRAM.md)
-1. [x] Design RFC 0081 `docs/rfc/0081-s4-realtime.md` (draft committed 8efea33); reconcile with the accepted 0080 and ADRs pending.
-2. [ ] Orchestrator accepts the RFC; open questions to the user.
+1. [x] Design RFC 0081 `docs/rfc/0081-s4-realtime.md` accepted (8810645; ADR-0080 to ADR-0085; channels build on k.server live loaders from rfc:0080; no std-streams).
+2. [x] Orchestrator accepts the RFC; user answered D2-D4.
 3. [ ] Conformance first, per lane, after the prior pushes.
 4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
 5. [ ] Exit proof eval.
@@ -20,4 +20,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
 
 ## Next action
-Step 1b: once rfc:0080 is accepted and committed, resume the S4 design agent: reconcile 0081 with 0080's final transport contract, record D2-D4, set accepted, write ADRs 0080-0085 (after S3's 0073-0079). Implementation waits for the S2 and S3 pushes.
+Waits for the S2 and S3 pushes. Then: orchestrator prep per RFC 0081 "Lanes" (spec files k.sync, std.channels, std.live, std.offline, std.conflicts, std.multi; k.store/k.ctx/k.server/std.sessions edits; move the stdlib table to spec/std/README.md; skeletons; deps.json; budgets store 3.5 kB), conformance-writers per lane, implementation batch (kernel + channels, live+offline, sessions-group, conflicts, golden-1 lanes).
