@@ -2,7 +2,7 @@
 // Seed 1337 (no random inputs)
 import { expect, test } from "vitest";
 
-test.skip("`Set.load('de-DE')` resolves to the fixture's `de-DE` entry; for a locale file failing the set it rejects.", async () => {
+test("`Set.load('de-DE')` resolves to the fixture's `de-DE` entry; for a locale file failing the set it rejects.", async () => {
   const { Broken } = await import("./fixtures/Broken.schema.ts");
   const { Demo } = await import("./fixtures/Demo.schema.ts");
   const { default: deDE } = await import("./fixtures/Demo/de-DE.ts");

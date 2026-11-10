@@ -26,6 +26,7 @@ function fixesAway(code: string, overrides: Record<string, string | null>) {
   expect(codesOf(applyFix(files, fix), code)).toEqual([]);
 }
 
+// Waiting on k.check: a RuleDef fix edits only the checked file, so E2401 cannot carry a fix that creates <Set>/<locale>.ts.
 test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2401 a locale of the set without `<Set>/<locale>.ts`, or `load` not that exact import", () => {
   expect(codesOf(tree(), "E2401")).toEqual([]);
   expect(codesOf(tree({ [DE]: null }), "E2401").length).toBe(1);
@@ -35,7 +36,7 @@ test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fi
   fixesAway("E2401", { [SET]: wrongLoad("(locale) => import('./RecipesText/en-US.ts')") });
 });
 
-test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2402 a locale file without a declared key (no fix)", () => {
+test("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2402 a locale file without a declared key (no fix)", () => {
   expect(codesOf(tree(), "E2402")).toEqual([]);
   const d = codesOf(tree({ [DE]: de("{ title: 'Rezepte', count: { plural: 'n', other: '# Rezepte' } }") }), "E2402");
   expect(d.length).toBe(1);
@@ -43,7 +44,7 @@ test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fi
   expect(d[0]?.fix).toBeUndefined();
 });
 
-test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2403 a locale file key the set does not declare (fix removes it)", () => {
+test("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2403 a locale file key the set does not declare (fix removes it)", () => {
   expect(codesOf(tree(), "E2403")).toEqual([]);
   const extra = de(
     "{ title: 'Rezepte', count: { plural: 'n', other: '# Rezepte' }, total: { text: 'Summe {n}' }, extra: 'x' }",
@@ -52,7 +53,7 @@ test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fi
   fixesAway("E2403", { [DE]: extra });
 });
 
-test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2404 a declared key no other project file reads as `.<key>` (fix removes it from the declaration)", () => {
+test("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2404 a declared key no other project file reads as `.<key>` (fix removes it from the declaration)", () => {
   expect(codesOf(tree(), "E2404")).toEqual([]);
   const unread = view("<main><h1>{t.title}</h1><p>{t.count}</p></main>");
   const d = codesOf(tree({ [VIEW]: unread }), "E2404");
@@ -61,7 +62,7 @@ test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fi
   fixesAway("E2404", { [VIEW]: unread });
 });
 
-test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2405 a template's `{name}`, `plural` or `select` that does not match its key's params (fix renames the placeholder when exactly one declared param is absent from that template)", () => {
+test("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2405 a template's `{name}`, `plural` or `select` that does not match its key's params (fix renames the placeholder when exactly one declared param is absent from that template)", () => {
   expect(codesOf(tree(), "E2405")).toEqual([]);
   const entry = (total: string, count = "{ plural: 'n', other: '# Rezepte' }") =>
     de(`{ title: 'Rezepte', count: ${count}, total: ${total} }`);
@@ -85,7 +86,7 @@ test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fi
   expect(codesOf(two, "E2405").every((x) => x.fix === undefined)).toBe(true);
 });
 
-test.skip("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2406 a JSX text child, a string literal `label` or `alt`, or a string literal a route `title` returns, containing a letter, in a component or `routes.ts` file (no fix)", () => {
+test("E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401, E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code: E2406 a JSX text child, a string literal `label` or `alt`, or a string literal a route `title` returns, containing a letter, in a component or `routes.ts` file (no fix)", () => {
   expect(codesOf(tree(), "E2406")).toEqual([]);
   const jsx = codesOf(tree({ [VIEW]: view("<main><h1>Recipes</h1></main>") }), "E2406");
   expect(jsx.length).toBe(1);

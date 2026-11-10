@@ -5,7 +5,7 @@ import { messages } from "@keel/std-messages";
 import { expect, test } from "vitest";
 import { AppLocale } from "./fixtures/AppLocale.schema.ts";
 
-test.skip("`messages` throws for a param schema `s.object({})`.", () => {
+test("`messages` throws for a param schema `s.object({})`.", () => {
   const load = (locale: string) => import(`./fixtures/Demo/${locale}.ts`);
   expect(() => messages(AppLocale, { bad: { o: s.object({}) } }, load)).toThrow();
   // Allowed param schemas do not throw.

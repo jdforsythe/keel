@@ -68,7 +68,7 @@ async function page(path: string): Promise<{ html: string; state: string }> {
   return { html, state };
 }
 
-test.skip("A node document holds a static level's message text and no `#k-state` entry for it; an island level's `#k-state` holds the served locale's entry and no other locale's text.", async () => {
+test("A node document holds a static level's message text and no `#k-state` entry for it; an island level's `#k-state` holds the served locale's entry and no other locale's text.", async () => {
   for (const [served, other] of [
     ["de-DE", "en-US"],
     ["en-US", "de-DE"],

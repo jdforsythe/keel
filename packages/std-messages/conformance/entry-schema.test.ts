@@ -11,7 +11,7 @@ const valid = {
   kind: { select: "k", cases: { a: "A", b: "B" } },
 };
 
-test.skip("For a fixture set with keys `title` (no params), `count` (`n: s.int()`) and `kind` (`k: s.enum(['a', 'b'])`), every `gen` entry parses and round-trips; `title: 'a{b'`, a template naming `{x}`, a `plural` on `k` and a `select` without case `b` each fail with rule `format` at the key's path; a missing key fails with `required`, an extra one with `unknown-key`.", async () => {
+test("For a fixture set with keys `title` (no params), `count` (`n: s.int()`) and `kind` (`k: s.enum(['a', 'b'])`), every `gen` entry parses and round-trips; `title: 'a{b'`, a template naming `{x}`, a `plural` on `k` and a `select` without case `b` each fail with rule `format` at the key's path; a missing key fails with `required`, an extra one with `unknown-key`.", async () => {
   const { Demo } = await import("./fixtures/Demo.schema.ts");
   const issues = (input: unknown) => {
     const r = Demo.parse(input);

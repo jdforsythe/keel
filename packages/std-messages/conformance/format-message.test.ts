@@ -3,7 +3,7 @@
 import { formatMessage } from "@keel/std-messages";
 import { expect, test } from "vitest";
 
-test.skip("`formatMessage({ plural: 'n', one: '# recipe', other: '# recipes' }, { n: 2 }, 'en-US')` is `2 recipes`; `{ text: 'Added {date}' }` with `{ date: 'November 10, 2026' }` is `Added November 10, 2026`; `{ text: '{n} items' }` with `{ n: 1234 }` in `de-DE` is `1.234 items`; a `select` gives the case of the param's value.", () => {
+test("`formatMessage({ plural: 'n', one: '# recipe', other: '# recipes' }, { n: 2 }, 'en-US')` is `2 recipes`; `{ text: 'Added {date}' }` with `{ date: 'November 10, 2026' }` is `Added November 10, 2026`; `{ text: '{n} items' }` with `{ n: 1234 }` in `de-DE` is `1.234 items`; a `select` gives the case of the param's value.", () => {
   expect(formatMessage({ plural: "n", one: "# recipe", other: "# recipes" }, { n: 2 }, "en-US")).toBe("2 recipes");
   expect(formatMessage({ text: "Added {date}" }, { date: "November 10, 2026" }, "en-US")).toBe(
     "Added November 10, 2026",

@@ -124,6 +124,7 @@ afterAll(() => {
   for (const dir of roots) fs.rmSync(dir, { recursive: true, force: true });
 });
 
+// Skipped: the fixture has no index.html and reads dist/web/, but `keel build` builds a client-only topology with the project's own Vite build to dist/ (k.server Build).
 test.skip("A `client` build of a fixture route whose loader loads a set holds each locale's entry in its own chunk, and no other chunk holds an entry's text.", () => {
   const files = jsFiles(dist);
   expect(files.length).toBeGreaterThan(0);

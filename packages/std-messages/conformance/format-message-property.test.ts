@@ -7,7 +7,7 @@ import { expect, test } from "vitest";
 
 const locales = ["en-US", "de-DE"] as const;
 
-test.skip("For every generated entry and params, `formatMessage` of each object message returns a string with no `{`.", async () => {
+test("For every generated entry and params, `formatMessage` of each object message returns a string with no `{`.", async () => {
   const { Demo } = await import("./fixtures/Demo.schema.ts");
   fc.assert(
     fc.property(
