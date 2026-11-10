@@ -17,6 +17,7 @@
 - D3 (user, 2026-11-10): golden-2 is migrated for the exit proof (price and added-on date per recipe, eval task updated).
 - D4 (user, 2026-11-10): `lang` is allowed on every k.ui base element.
 - D5 (user, 2026-11-10): the locale is a path param, `/:locale/...`; `?locale=` goes under Alternatives.
+- D6 (user, 2026-11-10): an app may opt in to an unprefixed default locale (`/recipes` is the default, `/de-DE/recipes` is de-DE) so adding a second locale keeps existing URLs; prefixed everywhere stays the default; `params.locale` stays typed and required in links either way. The declaration shape comes from the reconcile pass and goes back to the user.
 - Note: two design agents ran (the one from before the context clear was still alive). Two drafts exist: `docs/rfc/0079-s2-values.md` (path param, `s.format`, E1758, K4 router, no ctx capability) and `docs/rfc/0079-s2-values-temporal-text-i18n.md` (`?locale=`, `s.refine`/`Refined`, E1601 widened, `i18n(ctx)` capability, `toDecimal` replaces `formatMoney`). A reconcile pass merges them into `0079-s2-values.md` with D2-D4 and the catalog design; the second file is then removed.
 
 ## Verification
