@@ -112,3 +112,22 @@ describe("E1508 guard redirect into its own guard", () => {
     ).toEqual([]);
   });
 });
+
+describe("E1508 guard redirect to an API route", () => {
+  it("a literal redirect naming a literal api: true entry is E1508 at the redirect; a page target is clean", () => {
+    const body =
+      "  'app.api': { api: true, path: '/api/x', loader: read },\n  'app.home': { path: '/', component: Page, guard: auth },\n  'app.login': { path: '/login', component: Page },\n";
+    expect(
+      e1508([
+        guardFile("src/auth.guard.ts", "auth", "'app.api'"),
+        routesFile("import { auth } from './auth.guard.ts'\n", body),
+      ]),
+    ).toEqual(["src/auth.guard.ts:3:39 guard auth redirects to app.api, an API route; redirect to a page"]);
+    expect(
+      e1508([
+        guardFile("src/auth.guard.ts", "auth", "'app.login'"),
+        routesFile("import { auth } from './auth.guard.ts'\n", body),
+      ]),
+    ).toEqual([]);
+  });
+});

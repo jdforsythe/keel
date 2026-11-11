@@ -4,8 +4,10 @@
 import { createCtx } from "@keel/ctx";
 import { type Manifest, type RouteDef, action, guard, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
+import { allowOf } from "../src/internal/allowOf.ts";
 
 const SEED = 1337;
 const BASE = "http://localhost";
@@ -134,5 +136,44 @@ describe("API routes", () => {
       srv: { modules: ["api"], adapter: "node" },
     });
     await expect(createApp({ topology: split, routes, ctx: ctx(), deployable: "web" })).resolves.toBeDefined();
+  });
+
+  it("allowOf lists GET and HEAD (unless an API route without a loader) then exactly the attached methods", () => {
+    const verbs = ["POST", "PUT", "PATCH", "DELETE"] as const;
+    fc.assert(
+      fc.property(fc.subarray([...verbs]), fc.boolean(), fc.boolean(), (methods, withLoader, api) => {
+        const entry = withLoader ? { path: "/x", loader: read } : { path: "/x" };
+        const def = api ? { api: true as const, ...entry } : { ...entry, component: page };
+        const routes = manifest({ "ops.x": def });
+        // The verb set is drawn at run time, so the attach goes through the untyped call `routes.actions` makes.
+        const byVerb = Object.fromEntries(methods.map((m) => [m, write]));
+        if (methods.length > 0) Reflect.apply(routes.actions, undefined, [{ "ops.x": byVerb }]);
+        const reads = api && !withLoader ? [] : ["GET", "HEAD"];
+        expect(allowOf(def)).toBe([...reads, ...methods].join(", "));
+      }),
+      { seed: SEED, numRuns: 100 },
+    );
+  });
+
+  it("a page answers OPTIONS with 405 allowing GET, HEAD and its action methods", async () => {
+    const routes = manifest({
+      "api.n": { api: true, path: "/api/n", loader: read },
+      "ops.home": { path: "/", component: page },
+    });
+    routes.actions({ "ops.home": { POST: write } });
+    const res = await (await boot(routes)).fetch(req("OPTIONS", "/"));
+    expect(res.status).toBe(405);
+    expect(res.headers.get("allow")).toBe("GET, HEAD, POST");
+  });
+
+  it("createApp throws E1508 for a guard redirect naming an API route, and manifest() E1510 for api other than true", async () => {
+    const toApi = guard({ redirect: "api.n" }, async () => err(Denied.make({})));
+    const routes = manifest({
+      "api.n": { api: true, path: "/api/n", loader: read },
+      "ops.home": { path: "/", component: page, guard: toApi },
+    });
+    await expect(boot(routes)).rejects.toMatchObject({ code: "E1508" });
+    const entry = { api: 1, path: "/api/n", loader: read };
+    expect(() => Reflect.apply(manifest, undefined, [{ "api.n": entry }])).toThrow(/^E1510 /);
   });
 });

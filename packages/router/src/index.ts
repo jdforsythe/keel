@@ -8,6 +8,7 @@ export { loader } from "./loader.ts";
 export { manifest } from "./manifest.ts";
 export { routesArtifact } from "./routesArtifact.ts";
 export type { Action } from "./types/Action.ts";
+export type { ApiGuard } from "./types/ApiGuard.ts";
 export type { FormHandle } from "./types/FormHandle.ts";
 export type { FormProps } from "./types/FormProps.ts";
 export type { Guard } from "./types/Guard.ts";

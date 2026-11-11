@@ -13,6 +13,8 @@ import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import { matchHref } from "../src/match/matchHref.ts";
 import { routesArtifact } from "../src/routesArtifact.ts";
+import type { ApiGuard } from "../src/types/ApiGuard.ts";
+import type { Guard } from "../src/types/Guard.ts";
 import type { RouteDef } from "../src/types/RouteDef.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 import { to } from "./to.ts";
@@ -150,5 +152,51 @@ describe("calling an API route", () => {
     unmount();
     router.dispose();
     host.remove();
+  });
+});
+
+describe("api other than true, and a guard redirect naming an API route", () => {
+  it("an entry whose api is anything but true throws E1510 from manifest()", () => {
+    fc.assert(
+      fc.property(fc.constantFrom<unknown>(1, "true", false, null, undefined, {}), fc.boolean(), (api, page) => {
+        const entry = page ? { api, path: "/a", component: view } : { api, path: "/a", loader: read };
+        expect(build({ "t.a": entry })).toBe("E1510 t.a: needs component, or api: true with a path and no view");
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  });
+
+  it("a guard redirect to an API route throws E1508 on the first read of the table, not before", () => {
+    const toApi = guard({ redirect: "t.api" }, async () => err(Denied.make({})));
+    const m = manifest({
+      "t.api": { api: true, path: "/api/x", loader: read },
+      "t.p": { path: "/p", component: view, guard: toApi },
+    });
+    expect(m.kind).toBe("keel.manifest");
+    expect(failure(() => m.href("t.p"))).toBe("E1508 t.p: guard redirect to an API route");
+    const fresh = manifest({
+      "t.api": { api: true, path: "/api/x", loader: read },
+      "t.l": { component: view, guard: toApi },
+    });
+    const ctx = createCtx({ mode: "sim", seed: SEED });
+    expect(failure(() => createRouter(fresh, { ctx, history: memoryHistory("/") }))).toMatch(/^E1508 t\.l: /);
+  });
+
+  it("the exported Guard fits pages, layouts and API routes; ApiGuard fits API routes only", () => {
+    type Accepts<E> = [E] extends [RouteDef] ? true : false;
+    const g: Guard = guard({ redirect: "t.login" }, async () => ok(null));
+    const a: ApiGuard = guard({}, async () => ok(null));
+    expectTypeOf(g).toEqualTypeOf<Guard>();
+    expectTypeOf(a).toEqualTypeOf<ApiGuard>();
+    expectTypeOf<Accepts<{ readonly path: "/p"; component(): Node; readonly guard: Guard }>>().toEqualTypeOf<true>();
+    expectTypeOf<Accepts<{ component(): Node; readonly guard: Guard }>>().toEqualTypeOf<true>();
+    expectTypeOf<Accepts<{ readonly api: true; readonly path: "/a"; readonly guard: Guard }>>().toEqualTypeOf<true>();
+    expectTypeOf<
+      Accepts<{ readonly api: true; readonly path: "/a"; readonly guard: ApiGuard }>
+    >().toEqualTypeOf<true>();
+    expectTypeOf<
+      Accepts<{ readonly path: "/p"; component(): Node; readonly guard: ApiGuard }>
+    >().toEqualTypeOf<false>();
+    expect(manifest({ "t.login": { path: "/login", component: view, guard: g } }).href("t.login")).toBe("/login");
   });
 });

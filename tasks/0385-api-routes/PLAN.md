@@ -1,6 +1,6 @@
 # Task 0385: API routes (RFC 0086)
 
-**Spec:** k.api (new), k.router, k.topology · **Principles:** 1, 4, 5, 8 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open
+**Spec:** k.api (new), k.router, k.topology · **Principles:** 1, 4, 5, 8 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed (2026-11-11)
 
 ## Decisions
 - D1 E1510 and E1511 are both defined in k.api: the map gives the E150x block to k.router and k.prefix, and k.topology owns E155x. k.topology's Rules carry a pointer to E1511.
@@ -13,17 +13,23 @@
 ## Steps
 - [x] 1 ADR-0109, k.api spec text, k.router and k.topology pointers, map row
 - [x] 2 conformance-writer: `packages/router/conformance/api-routes-0086.test.ts`, `packages/server/conformance/api-routes-0086.test.ts`
-- [ ] 3 kernel: router (`RouteDef` arms, `manifest()` E1510, `href`, `matchHref`), compiler (`routes.json` `api: true`), server (API request flow, E1511 in `createApp`), check (E1510, E1511 rules, explain, fixtures), scaffold (`route --api`, templates)
-- [ ] 4 migration: golden-1 `api` and `digest`, std-sessions; guide, `keel-api` skill
-- [ ] 5 reviewer and red-team; findings to the backlog
-- [ ] 6 spec status, changeset, ledger, budgets, backlog, handoff
+- [x] 3 kernel: router (`RouteDef` arms, `manifest()` E1510, `href`, `matchHref`), compiler (`routes.json` `api: true`), server (API request flow, E1511 in `createApp`), check (E1510, E1511 rules, explain, fixtures), scaffold (`route --api`, templates)
+- [x] 4 migration: golden-1 `api` and `digest`, std-sessions; guide, `keel-api` skill
+- [x] 5 reviewer and red-team; findings to the backlog
+- [x] 6 spec status, changeset, ledger, budgets, backlog, handoff
 
 ## Verification
-- [ ] `pnpm check` green
-- [ ] `pnpm test` green, both `api-routes-0086` conformance files included
-- [ ] `pnpm build` green; eval `golden-1-api` converges
-- [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
-- [ ] no stub view left in golden-1 or std-sessions
+- [x] `pnpm check` green
+- [x] `pnpm test` green, both `api-routes-0086` conformance files included
+- [x] `pnpm build` green; eval `golden-1-api` converges
+- [x] ledger not lowered, 0 uncovered; unsafe count unchanged
+- [x] no stub view left in golden-1 or std-sessions
+
+## Outcome
+- D6 the reviewer approved; its low findings and the red-team's five are backlog 0408 to 0418, with 0408, 0410, 0411, 0412 fixed in the batch.
+- D7 k.api also states: `api` other than `true` is E1510; a guard `redirect` naming an API route is E1508 at the first read of the table.
+- Trailers: `ok check 57 tasks`, `ok test 56 tasks`, `ok build 32 tasks`, `ok ledger --diff 634 items, 622 verified, 7 unsafe, 0 warnings, 0 lowered, 0 uncovered`; evals `golden-1-api` and `golden-2` converged (runner none).
+- Not run: mutation on router, server, check, scaffold after this change; Docker and compose.
 
 ## Next action
-Step 3: brief the kernel agent with the code map; the conformance files are committed and fail until it lands.
+None here. RFC 0087 (client hosting) is `tasks/0375-client-hosting/PLAN.md`.

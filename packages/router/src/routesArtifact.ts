@@ -24,7 +24,7 @@ export function routesArtifact(m: Manifest<Readonly<Record<string, RouteDef>>>):
           actions: VERBS.filter((v) => routeActions.get(def)?.[v] !== undefined),
           ...(def.api && { api: def.api }),
           // The guard's `redirect`, or `null` for a guard without one or a value that is not a guard.
-          guard: def.guard === undefined || def.guard === null ? null : (def.guard.redirect ?? null),
+          guard: def.guard?.redirect ?? null,
           layout: def.layout ?? null,
           module: id.split(".")[0] ?? id,
           params: def.params === undefined ? null : jsonSchemaOf(def.params.node),

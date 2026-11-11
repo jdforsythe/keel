@@ -1,5 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import type { KeelError, ObjectSchema } from "@keel/schema";
+import type { ApiGuard } from "./ApiGuard.ts";
 import type { Guard } from "./Guard.ts";
 import type { Loader } from "./Loader.ts";
 import type { RouteProps } from "./RouteProps.ts";
@@ -18,7 +19,7 @@ interface ViewDef extends Base {
   readonly api?: never;
   readonly path?: string;
   readonly layout?: string;
-  readonly guard?: Guard & { readonly redirect: string };
+  readonly guard?: Guard;
   component(props: RouteProps, slots?: undefined, ctx?: Ctx): Node;
   errorElement?(props: { readonly error: KeelError<string, unknown> }): Node;
   /** A path route's document title (k.head), given the route component's props; a layout takes none. */
@@ -29,7 +30,7 @@ interface ViewDef extends Base {
 interface ApiDef extends Base {
   readonly api: true;
   readonly path: string;
-  readonly guard?: Guard;
+  readonly guard?: ApiGuard;
   readonly component?: never;
   readonly errorElement?: never;
   readonly title?: never;

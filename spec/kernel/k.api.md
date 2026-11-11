@@ -27,9 +27,9 @@ An API route keeps `params`, `search`, `loader` and `guard`, takes its actions t
 - A guard denial: 403 `keel.denied` as JSON; the guard's `redirect` is not followed.
 - Every error status of k.server, as the `Result` JSON.
 
-**Calling.** `routes.href` takes page ids only, so `Link`, `navigate`, `Form action` and a guard's `redirect` cannot name an API route. `matchHref` returns `null` for an API route's path and the client router matches none, so a link to one is a document request. Modules call an API route through `service({ module })` (k.services).
+**Calling.** `routes.href` takes page ids only, so `Link`, `navigate` and `Form action` cannot name an API route; a guard `redirect` naming one is E1508 at the first read of the table. `matchHref` returns `null` for an API route's path and the client router matches none, so a link to one is a document request. Modules call an API route through `service({ module })` (k.services).
 
-**Rules.** E1510 an entry with neither `component` nor `api: true`; an API route with `component`, `errorElement`, `title` or `layout`, without `path`, or with neither a loader nor an action. A type error where the literal is checked; `manifest()` throws it for the entry, `routes.actions` or the first read of the table for a missing loader and action. Fix: remove the refused member; none for a missing `component` · E1511 an API route in a module a `client` or `static` deployable serves (k.topology); reported from `topology.ts`, thrown by `createApp`; no fix.
+**Rules.** E1510 an entry with neither `component` nor `api: true`, or with `api` other than `true`; an API route with `component`, `errorElement`, `title` or `layout`, without `path`, or with neither a loader nor an action. A type error where the literal is checked; `manifest()` throws it for the entry, `routes.actions` or the first read of the table for a missing loader and action. Fix: remove the refused member; none for a missing `component` · E1511 an API route in a module a `client` or `static` deployable serves (k.topology); reported from `topology.ts`, thrown by `createApp`; no fix.
 
 **Conformance.**
 - An entry with neither `component` nor `api: true` does not compile, and `manifest()` throws E1510 for it.

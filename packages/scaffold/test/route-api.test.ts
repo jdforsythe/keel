@@ -23,10 +23,12 @@ describe("scaffold route --api", () => {
     const f = apply("route", { id: "orders.list", path: "/api/orders/:id", api: true }, base(false));
     const t = f.get("modules/orders/list.route.test.ts") ?? "";
     expect(t).toContain(`"http://localhost/api/orders/1"`);
-    expect(t).toContain(`from "../../topology.ts"`);
+    // The module alone in a node deployable, whatever the project's topology serves it from.
+    expect(t).toContain(`topology({ api: { modules: ["orders"], adapter: "node" } })`);
+    expect(t).not.toContain("topology.ts");
     expect(t).not.toContain("renderRoute");
     const w = apply("route", { id: "orders.list", path: "/api/orders", api: true }, base(true));
-    expect(w.get("test/orders.list.route.test.ts")).toContain(`from "../topology.ts"`);
+    expect(w.get("test/orders.list.route.test.ts")).toContain(`from "../modules/orders/routes.ts"`);
   });
 
   it("refuses a page file and a repeated id", () => {

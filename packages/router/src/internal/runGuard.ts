@@ -1,10 +1,10 @@
 import type { Ctx } from "@keel/ctx";
 import { type KeelError, type Result, attempt } from "@keel/schema";
-import type { Guard } from "../types/Guard.ts";
+import type { ApiGuard } from "../types/ApiGuard.ts";
 
 /** Run a guard for `url` as `caller`; a throw becomes `keel.unexpected` (anything but `keel.denied` is not a denial). */
 export async function runGuard(
-  g: Guard,
+  g: ApiGuard,
   url: string,
   ctx: Ctx,
   caller: string,

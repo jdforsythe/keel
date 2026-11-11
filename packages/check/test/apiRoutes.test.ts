@@ -122,6 +122,30 @@ describe("E1511 API route without a server", () => {
     expect(run("client", [page])).toEqual([]);
   });
 
+  it("an API entry with no literal api is E1511 from the evaluated routes.json, as createApp throws", () => {
+    const json = (api: boolean): SourceFile => ({
+      path: ".keel/routes.json",
+      source: JSON.stringify({ "a.list": { ...(api && { api: true }), module: "a", path: "/api/list" } }),
+    });
+    const forms = [
+      "export const routes = manifest({ 'a.list': { ['api']: true, path: '/api/list' } })\n",
+      "const A = { api: true } as const\nexport const routes = manifest({ 'a.list': { ...A, path: '/api/list' } })\n",
+      "const e = { api: true, path: '/api/list' } as const\nexport const routes = manifest({ 'a.list': e })\n",
+    ];
+    for (const source of forms) {
+      const files = [{ path: PATH, source }, json(true)];
+      expect(
+        run("client", files)
+          .filter((d) => d.code === "E1511")
+          .map((d) => d.message),
+      ).toEqual(["a.list: API route in client deployable web, which has no server"]);
+      expect(run("node", files).filter((d) => d.code === "E1511")).toEqual([]);
+      expect(run("client", [{ path: PATH, source }, json(false)]).filter((d) => d.code === "E1511")).toEqual([]);
+    }
+    const literal = run("client", [api, json(true)]).filter((d) => d.code === "E1511");
+    expect(literal).toHaveLength(1);
+  });
+
   it("points at the module id in an app's topology.ts", () => {
     const top = {
       path: "apps/x/topology.ts",

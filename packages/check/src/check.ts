@@ -91,8 +91,10 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const compiled = compile(sources, topology === undefined ? {} : { topology });
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;
-    if (topology !== undefined)
-      out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top));
+    if (topology !== undefined) {
+      const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
+      out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
+    }
     for (const d of compiled.diagnostics) {
       const path = d.path === "" ? d.path : `${dir}${d.path}`;
       out.push({ kind: "diag", ...d, path });

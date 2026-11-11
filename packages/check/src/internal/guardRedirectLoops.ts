@@ -11,7 +11,7 @@ import { localNames } from "./modules/localNames.ts";
 import { propertyOf } from "./propertyOf.ts";
 
 type GuardDecl = { readonly name: string; readonly redirect: string; readonly at: number; readonly file: SourceFile };
-type RouteFacts = { readonly layout: string | null; readonly guard: string | null };
+type RouteFacts = { readonly layout: string | null; readonly guard: string | null; readonly api: boolean };
 
 /** A file path without its JS/TS extension, so `./auth.guard.ts`, `./auth.guard.js`, `./auth.guard` meet. */
 const stem = (path: string): string => path.replace(/\.[cm]?[jt]sx?$/, "");
@@ -61,9 +61,11 @@ function scan(c: Checked, guards: Map<string, GuardDecl>, routes: Map<string, Ro
         const id = p.type === "Property" ? keyName(p) : null;
         if (p.type !== "Property" || id === null || p.value.type !== "ObjectExpression") continue;
         const g = propertyOf(p.value, "guard")?.value;
+        const api = propertyOf(p.value, "api")?.value;
         routes.set(id, {
           layout: literal(propertyOf(p.value, "layout")?.value),
           guard: g?.type === "Identifier" ? ref(g.name) : null,
+          api: api?.type === "Literal" && api.value === true,
         });
       }
     },
@@ -84,7 +86,8 @@ function guardedBy(id: string, key: string, routes: ReadonlyMap<string, RouteFac
 }
 
 /**
- * E1508 (k.router, rfc:0051), static half: a guard whose literal `redirect` route has that same guard in its chain,
+ * E1508 (k.router, rfc:0051), static half: a guard whose literal `redirect` is an API route (k.api; a literal
+ * `api: true` entry), which has no page to redirect to, or whose `redirect` route has that same guard in its chain,
  * so a denial redirects into itself. Only what the files show: a literal `redirect`, manifests' literal `layout`
  * and `guard: <identifier>` (local or a relative named import). A computed redirect, a guard reached another way,
  * or a loop through two guards is left to the runtime half (the server and router answer E1508). No fix: which
@@ -96,9 +99,11 @@ export function guardRedirectLoops(files: readonly Checked[]): Diagnostic[] {
   for (const c of files) if (isAppPath(c.file.path)) scan(c, guards, routes);
   const out: Diagnostic[] = [];
   for (const [key, g] of guards) {
-    if (!guardedBy(g.redirect, key, routes)) continue;
+    const api = routes.get(g.redirect)?.api === true;
+    if (!api && !guardedBy(g.redirect, key, routes)) continue;
     const { line, col } = lineCol(g.file.source, g.at);
-    const message = clip(`guard ${g.name} redirects to ${g.redirect}, which ${g.name} guards: a redirect loop`, 89);
+    const why = api ? "an API route; redirect to a page" : `which ${g.name} guards: a redirect loop`;
+    const message = clip(`guard ${g.name} redirects to ${g.redirect}, ${why}`, 89);
     out.push({ kind: "diag", code: "E1508", path: g.file.path, line, col, message, see: "k.router" });
   }
   return out;

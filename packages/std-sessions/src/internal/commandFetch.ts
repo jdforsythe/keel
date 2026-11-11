@@ -43,7 +43,7 @@ async function getJson(io: Io & { fetch: NonNullable<Io["fetch"]> }, url: string
  * `ingest` sends `GET <url>/sessions/list?failing=1&since=<t>` (`accept: application/json`; with
  * `KEEL_SESSIONS_TOKEN` in `io.env`, the caller cookie `__Host-keel-caller` on https, else `keel-caller`) and writes
  * each archived session the same way. Unreachable, non-2xx, or a body without the section or the `sessions.list`
- * result (a reader the guard redirects) is E1056; without `io.fetch`, I1055.
+ * result (a caller the guard denies, answered 403) is E1056; without `io.fetch`, I1055.
  */
 export async function commandFetch(
   op: "capture" | "ingest",
