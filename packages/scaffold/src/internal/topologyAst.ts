@@ -25,7 +25,9 @@ export function topologyAst(src: string): { obj: ObjectExpression; deployables: 
     const a = propertyValue(prop.value, "adapter");
     const adapter = a?.type === "Literal" ? adapterOf(a.value) : null;
     if (list?.type !== "ArrayExpression" || adapter === null) continue;
-    deployables.push({ name, adapter, modules: stringItems(list), prop, list });
+    const h = propertyValue(prop.value, "host");
+    const host = h?.type === "Literal" && typeof h.value === "string" ? h.value : undefined;
+    deployables.push({ name, adapter, modules: stringItems(list), host, prop, list });
   }
   return { obj, deployables };
 }

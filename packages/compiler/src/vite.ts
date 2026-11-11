@@ -7,15 +7,19 @@ import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { RESUME_ENTRY } from "./entry/RESUME_ENTRY.ts";
 import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
+import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
+import { hostClient } from "./internal/hostClient.ts";
+import { indexHtml } from "./internal/indexHtml.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
 import { isSourcePath } from "./internal/isSourcePath.ts";
 import { islandsCode } from "./internal/islandsCode.ts";
+import { keelMark } from "./internal/keelMark.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
@@ -85,6 +89,9 @@ type BuildConfig = {
   };
   builder: { buildApp: (builder: Builder) => Promise<void> };
 };
+/** A `client` deployable's build: the project's own Vite config, written to `dist/<name>/`. */
+type ClientConfig = { build: { outDir: string; emptyOutDir: true } };
+type HtmlTag = { tag: "meta"; attrs: Record<string, string>; injectTo: "head" };
 type Builder = { environments: Record<string, unknown>; build(environment: unknown): Promise<unknown> };
 
 /**
@@ -117,13 +124,18 @@ type Builder = { environments: Record<string, unknown>; build(environment: unkno
 export default function (): {
   name: string;
   enforce: "pre";
-  config: (user: { root?: string }, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => BuildConfig | null;
+  config: (
+    user: { root?: string },
+    env: { command: "build" | "serve"; isSsrBuild?: boolean },
+  ) => BuildConfig | ClientConfig | null;
   configResolved: (config: { root: string; command?: "build" | "serve" }) => void;
   configureServer: (server: DevServer) => void;
   configurePreviewServer: (server: { middlewares: Middlewares }) => void;
   buildStart: (this: { warn?: Warn } | undefined) => Promise<void>;
   resolveId: (id: string) => string | null;
   load: (id: string) => Promise<string | null>;
+  transformIndexHtml: () => HtmlTag[];
+  closeBundle: () => void;
   transform: (code: string, id: string) => { code: string; map: null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
@@ -138,6 +150,8 @@ export default function (): {
   let warn: Warn = () => {};
   /** A node deployable's client build (`config`) leaves `.keel/` to the project's own build: no artifact writes. */
   let clientBuild = false;
+  /** The `client` deployable a `vite build` with `KEEL_DEPLOYABLE` naming one writes to `dist/<name>/` (k.hosting). */
+  let hosting: string | undefined;
   const modules = new Map<string, Entry>();
   // Extra origins the inspect endpoint answers (RFC 0022): comma-separated, e.g. `http://localhost:*`.
   const origins = (process.env.KEEL_INSPECT_ORIGINS ?? "")
@@ -305,9 +319,19 @@ export default function (): {
       const name = process.env.KEEL_DEPLOYABLE;
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
       if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return null;
-      if (parseTopology(fs.readFileSync(file, "utf8")).topology[name]?.adapter !== "node") return null;
-      clientBuild = true;
+      const top = parseTopology(fs.readFileSync(file, "utf8")).topology;
       const out = `dist/${name}`;
+      if (top[name]?.adapter === "client") {
+        hosting = name;
+        // One client build writes `.keel/`, as the project's own build did: the first by name.
+        clientBuild =
+          Object.keys(top)
+            .sort()
+            .find((n) => top[n]?.adapter === "client") !== name;
+        return { build: { outDir: out, emptyOutDir: true } };
+      }
+      if (top[name]?.adapter !== "node") return null;
+      clientBuild = true;
       const at = path.resolve(user.root ?? process.cwd());
       return {
         build: {
@@ -338,6 +362,8 @@ export default function (): {
             fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
             if (fs.existsSync(path.join(at, ".keel", "std.json")))
               fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
+            for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.host === name))
+              hostClient(path.join(at, "dist", c), path.join(at, out), c);
           },
         },
       };
@@ -367,12 +393,15 @@ export default function (): {
     },
     resolveId(id) {
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
+      if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html")) return id;
       if (id === ENTRY_PATH || id === ISLANDS_PATH) return id;
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
       if (id === DEV_ENTRY) return `\0${DEV_ENTRY}`;
       return null;
     },
     async load(id) {
+      if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html"))
+        return indexHtml(hosting, ENTRY_PATH);
       if (id === CSS_ID) {
         if (stale) await refresh();
         return css;
@@ -389,11 +418,28 @@ export default function (): {
       if (d === undefined)
         throw new Error(`keel: ${ENTRY_PATH} needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one`);
       if (!d.client) return RESUME_ENTRY;
+      const all = topology ?? {};
+      const served = Object.values(all).some((x) => x.adapter === "node");
       return entryCode(
         routesFiles().map((f) => `/${f}`),
         CSS_IMPORT,
         clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
+        served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},
       );
+    },
+    transformIndexHtml() {
+      if (hosting === undefined || topology === undefined) return [];
+      const peers = peerOrigins(topology, process.env);
+      if (peers.bad.length > 0) throw new Error(`E1565 ${peers.bad[0]} is not an http(s) origin; set it to one`);
+      return peers.origins.map(([n, origin]) => ({
+        tag: "meta",
+        attrs: { name: "keel-peer", "data-deployable": n, content: origin },
+        injectTo: "head",
+      }));
+    },
+    closeBundle() {
+      const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
+      if (hosting !== undefined && !fs.existsSync(mark)) fs.writeFileSync(mark, keelMark());
     },
     transform(code, id) {
       const rel = relOf(id);

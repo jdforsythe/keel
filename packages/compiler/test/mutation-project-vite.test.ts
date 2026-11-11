@@ -376,7 +376,15 @@ describe("vite: project inputs", () => {
     await p.buildStart.call(undefined);
     expect(Object.keys(artifact("routes.json").data)).toEqual(["a.index", "b.index"]);
     expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(["/modules/a/routes.ts", "/modules/b/routes.ts"], "virtual:keel.css"),
+      entryCode(
+        ["/modules/a/routes.ts", "/modules/b/routes.ts"],
+        "virtual:keel.css",
+        {},
+        {
+          web: ["b", "a", "missing"],
+          api: ["x"],
+        },
+      ),
     );
   });
 
@@ -388,9 +396,10 @@ describe("vite: project inputs", () => {
     for (const m of ["z", "a", "m"]) write(`modules/${m}/routes.ts`, routesTs(m));
     const p = keel();
     p.configResolved({ root });
-    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/m/routes.ts"], "virtual:keel.css"));
+    const all = { zeta: ["z"], api: ["a"], mid: ["m"] };
+    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all));
     process.env.KEEL_DEPLOYABLE = "zeta";
-    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/z/routes.ts"], "virtual:keel.css"));
+    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all));
     process.env.KEEL_DEPLOYABLE = "api";
     expect(await p.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
     process.env.KEEL_DEPLOYABLE = "nope";

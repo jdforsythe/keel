@@ -162,7 +162,7 @@ describe("keel binary", () => {
     expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("build\n");
   }, 30_000);
 
-  it("build runs vite once for the project, then once per node deployable with KEEL_DEPLOYABLE, stopping at a failure", async () => {
+  it("build runs vite once per client, then once per node deployable with KEEL_DEPLOYABLE, stopping at a failure", async () => {
     const d = tmp();
     put(
       d,
@@ -172,7 +172,7 @@ describe("keel binary", () => {
     fakeVite(d, 'echo "${KEEL_DEPLOYABLE-own}" >> runs.txt');
     const r = await keel(d, ["build"]);
     expect(r.code).toBe(0);
-    expect(readFileSync(join(d, "runs.txt"), "utf8")).toBe("own\napi\nz\n");
+    expect(readFileSync(join(d, "runs.txt"), "utf8")).toBe("web\napi\nz\n");
     fakeVite(
       d,
       'echo "${KEEL_DEPLOYABLE-own}" >> fail.txt\n[ "$KEEL_DEPLOYABLE" = api ] && { echo api-broke >&2; exit 3; }\nexit 0',
@@ -180,7 +180,7 @@ describe("keel binary", () => {
     const f = await keel(d, ["build"]);
     expect(f.code).toBe(1);
     expect(f.stderr).toBe("api-broke\n");
-    expect(readFileSync(join(d, "fail.txt"), "utf8")).toBe("own\napi\n");
+    expect(readFileSync(join(d, "fail.txt"), "utf8")).toBe("web\napi\n");
   }, 30_000);
 
   it("build without vite.config.ts is just the engine build", async () => {

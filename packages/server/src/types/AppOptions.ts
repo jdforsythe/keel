@@ -27,7 +27,9 @@ import type { ServerApp } from "./ServerApp.ts";
  * served deployable's modules run once after startup (k.topology Runners). `peers` names the other `node` deployables,
  * by URL or as apps in this process: `service({ module })` calls and requests for the paths they serve (by `routes.json`
  * in `artifacts`) go to them (k.topology Calls and peers). `origin` is the public origin, which replaces the request's in
- * `url`, the same-site check and `Secure` (k.topology Build).
+ * `url`, the same-site check and `Secure` (k.topology Build). `allow` lists the http(s) origins whose requests to API
+ * routes are granted (k.hosting Allowed origins): matched exactly by scheme, host and port; an entry that is not an
+ * http(s) origin matches nothing.
  */
 export type AppOptions = {
   readonly topology: Topology;
@@ -46,4 +48,5 @@ export type AppOptions = {
   readonly runners?: Readonly<Record<string, readonly Runner[]>>;
   readonly peers?: Readonly<Record<string, string | URL | ServerApp>>;
   readonly origin?: string;
+  readonly allow?: readonly string[];
 };

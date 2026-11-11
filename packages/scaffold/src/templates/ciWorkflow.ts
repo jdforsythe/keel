@@ -55,7 +55,7 @@ function job(name: string, adapter: string): string[] {
 
 /**
  * `.github/workflows/ci.yml` of a project outside the Keel monorepo (k.topology Deploy files): a job per deployable
- * (sorted), run when its modules or the shared config change (every job on a push), that checks against the base
+ * (sorted), run when its modules (a host's: and those of the clients it hosts) or the shared config change (every job on a push), that checks against the base
  * branch's surface, tests, builds, and builds an image it never pushes (`node`) or uploads `dist/<name>`.
  */
 export function ciWorkflow(topology: DeployTopology): string {
@@ -85,9 +85,12 @@ export function ciWorkflow(topology: DeployTopology): string {
     "        run: |",
     '          if [ -n "$BASE_REF" ]; then changed=$(git diff --name-only "origin/$BASE_REF...HEAD"); else changed="*"; fi',
     `          hit() { [ "$changed" = "*" ] || printf '%s\\n' "$changed" | grep -Eq "$1"; }`,
-    ...names.map(
-      (n) => `          if hit '${pattern(topology[n]?.modules ?? [])}'; then echo "${n}=true" >> "$GITHUB_OUTPUT"; fi`,
-    ),
+    ...names.map((n) => {
+      // A host's image carries the client builds it hosts (k.hosting Host).
+      const hosted = names.filter((c) => topology[c]?.adapter === "client" && topology[c]?.host === n);
+      const modules = [n, ...hosted].flatMap((d) => topology[d]?.modules ?? []);
+      return `          if hit '${pattern(modules)}'; then echo "${n}=true" >> "$GITHUB_OUTPUT"; fi`;
+    }),
   ];
   for (const n of names) lines.push(...job(n, topology[n]?.adapter ?? "client"));
   lines.push("");

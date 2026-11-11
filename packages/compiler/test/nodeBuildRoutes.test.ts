@@ -56,7 +56,8 @@ afterEach(() => {
 describe("@keel/compiler/vite node deployable build", () => {
   it("writes dist/<name>/routes.json with every module's routes and copies std.json", { timeout: 30000 }, async () => {
     process.env.KEEL_DEPLOYABLE = "api";
-    const config = keel().config({ root }, { command: "build" });
+    const made = keel().config({ root }, { command: "build" });
+    const config = made !== null && "builder" in made ? made : undefined;
     const built: unknown[] = [];
     await config?.builder.buildApp({
       environments: { client: "client", ssr: "ssr" },

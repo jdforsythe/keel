@@ -17,14 +17,22 @@ const q = (s: string): string => JSON.stringify(s);
  * The generated `/@keel/entry.ts` of a `client` deployable (k.server Topology, k.runtime): imports the atomic
  * CSS, builds a real ctx, merges the modules' route manifests (`routesFiles`, root-relative, `/`-prefixed),
  * binds `std` (the client-readable part of the build's `std.json`, embedded as a JSON literal; nothing when empty) to the ctx
- * (k.module Std config, rfc:0069), starts the router on the browser history, and mounts its `App` into `#app` with
+ * (k.module Std config, rfc:0069), binds `service({ module })` for every module of `deployables` (deployable -> its modules) to
+ * the origin its deployable's `keel-peer` tag in the document names, else the document's origin (k.hosting Peers),
+ * starts the router on the browser history, and mounts its `App` into `#app` with
  * the ctx. In a dev build
  * (`import.meta.env.DEV`) it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports.
  */
-export function entryCode(routesFiles: readonly string[], cssId: string, std: StdData = {}): string {
+export function entryCode(
+  routesFiles: readonly string[],
+  cssId: string,
+  std: StdData = {},
+  deployables: Readonly<Record<string, readonly string[]>> = {},
+): string {
   const bind = Object.keys(std).length > 0;
+  const peers = Object.keys(deployables).length > 0;
   const imports = routesFiles.map((f, i) => `import { routes as __keelRoutes${i} } from ${q(f)};`);
   const names = routesFiles.map((_, i) => `__keelRoutes${i}`);
   const table =
@@ -41,6 +49,15 @@ export function entryCode(routesFiles: readonly string[], cssId: string, std: St
     ...imports,
     `const ctx = createCtx({ mode: "real" });`,
     ...(bind ? [`bindStd(ctx, ${JSON.stringify(std)});`] : []),
+    ...(peers
+      ? [
+          `const __keelTags = new Map(Array.from(document.querySelectorAll('meta[name="keel-peer"]'), (m) => [m.dataset.deployable, m.content]));`,
+          `const __keelKey = Symbol.for("keel.modules");`,
+          "const __keelTable = globalThis[__keelKey] instanceof WeakMap ? globalThis[__keelKey] : new WeakMap();",
+          "globalThis[__keelKey] = __keelTable;",
+          `__keelTable.set(ctx, new Map(Object.entries(${JSON.stringify(deployables)}).flatMap(([d, ms]) => ms.map((m) => [m, __keelTags.get(d) ?? location.origin]))));`,
+        ]
+      : []),
     `const router = createRouter(${table}, { ctx, history: browserHistory() });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,

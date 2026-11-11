@@ -14,6 +14,7 @@ import type { Saved } from "./Saved.ts";
  * `secure`, `createApp({ secure })` (undefined: each request URL's scheme decides, RFC 0057). `built` is the production client build
  * (`createApp({ assets })`, k.server Build), undefined in dev or without `assets`. `name` is the served deployable's name, the
  * document title's fallback (k.head). `origin` is the public origin (`createApp({ origin })`, k.topology Build).
+ * `allow` is the set of allowed origins, serialized (`createApp({ allow })`, k.hosting).
  * `lifecycle` aborts on `close()`, ending runners and open event streams.
  */
 export type Served = {
@@ -30,5 +31,6 @@ export type Served = {
   readonly built: BuiltClient | undefined;
   readonly name: string;
   readonly origin: string | undefined;
+  readonly allow: ReadonlySet<string>;
   readonly lifecycle: AbortController;
 };

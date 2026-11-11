@@ -36,10 +36,11 @@ const namedBy = (chunk: unknown): unknown[] =>
  * `etag` from its bytes. The walk descends real directories only; a file (or symlink) under `assets/` is read only
  * when its real path is inside the real `assets/`, and none is when that real path is unknown, so no symlink and no
  * `..` in the manifest reaches outside. `css` lists the stylesheets the manifest's entry chunk names that are served
- * `.css` files, as URL paths; the mark is the only served file outside `/assets/`, so each is under it. Throws E1555 when the manifest is missing or unreadable, has no entry
- * chunk, or its entry file is not under `assets/`.
+ * `.css` files, as URL paths; the mark is the only served file outside `/assets/`, so each is under it. With `hosted` (a `client` deployable names this one its host, k.hosting) it
+ * also reads the top-level `index.html`. Throws E1555 when the manifest is missing or unreadable, has no entry
+ * chunk, or its entry file is not under `assets/`, or when `hosted` and `index.html` is missing.
  */
-export async function loadAssets(dir: string): Promise<BuiltClient> {
+export async function loadAssets(dir: string, hosted = false): Promise<BuiltClient> {
   const fs = await import("node:fs/promises");
   const { join, sep } = await import("node:path");
   const { createHash } = await import("node:crypto");
@@ -78,5 +79,13 @@ export async function loadAssets(dir: string): Promise<BuiltClient> {
   if (!files.has(`/${entry}`)) throw fail(`entry ${entry} is missing`);
   if ((await fs.lstat(join(dir, MARK)).catch(() => undefined))?.isFile()) await add(MARK);
   const css = (isRecord(chunk) && Array.isArray(chunk.css) ? chunk.css : []).map((f: unknown) => `/${f}`);
-  return { entry: `/${entry}`, css: css.filter((f) => f.endsWith(".css") && files.has(f)), files };
+  const index = hosted ? await fs.readFile(join(dir, "index.html")).catch(() => undefined) : undefined;
+  if (hosted && index === undefined)
+    throw codedError("E1555", "assets: index.html of the hosted client is missing; run `keel build`");
+  return {
+    entry: `/${entry}`,
+    css: css.filter((f) => f.endsWith(".css") && files.has(f)),
+    files,
+    index: index && new Uint8Array(index),
+  };
 }

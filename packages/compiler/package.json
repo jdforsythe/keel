@@ -36,6 +36,10 @@
       "types": "./src/std/*.ts",
       "default": "./src/std/*.ts"
     },
+    "./hosting/*": {
+      "types": "./src/hosting/*.ts",
+      "default": "./src/hosting/*.ts"
+    },
     "./testing": {
       "types": "./src/testing/evaluate.ts",
       "default": "./src/testing/evaluate.ts"

@@ -1,5 +1,6 @@
 // The plugin's `config` hook (k.server Build, RFC 0048): a `vite build` whose KEEL_DEPLOYABLE is a node deployable
-// builds the resume entry alone into dist/<name>/ with the client manifest; every other run keeps the project config.
+// builds the resume entry alone into dist/<name>/ with the client manifest; a client deployable's build keeps the
+// project config with its output in dist/<name>/ (k.hosting Artifact); every other run keeps the project config.
 import fs from "node:fs";
 import path from "node:path";
 import { CLIENT_MANIFEST } from "@keel/compiler/entry/CLIENT_MANIFEST";
@@ -25,7 +26,8 @@ afterEach(() => {
 describe("@keel/compiler/vite config (client build of a node deployable)", () => {
   it("builds the resume entry alone into dist/<name>/ with the manifest for a node KEEL_DEPLOYABLE", () => {
     process.env.KEEL_DEPLOYABLE = "api";
-    const config = keel().config({ root }, { command: "build" });
+    const made = keel().config({ root }, { command: "build" });
+    const config = made !== null && "builder" in made ? made : undefined;
     expect(config?.build).toEqual({
       outDir: "dist/api",
       emptyOutDir: true,
@@ -49,11 +51,16 @@ describe("@keel/compiler/vite config (client build of a node deployable)", () =>
     expect(CLIENT_MANIFEST).toBe(".vite/manifest.json");
   });
 
-  it("keeps the project config for serve, ssr, client, static, unknown or unset deployables, or no topology", () => {
+  it("builds a client deployable into dist/<name>/ with the project config", () => {
+    process.env.KEEL_DEPLOYABLE = "web";
+    expect(keel().config({ root }, { command: "build" })).toEqual({ build: { outDir: "dist/web", emptyOutDir: true } });
+  });
+
+  it("keeps the project config for serve, ssr, static, unknown or unset deployables, or no topology", () => {
     process.env.KEEL_DEPLOYABLE = "api";
     expect(keel().config({ root }, { command: "serve" })).toBeNull();
     expect(keel().config({ root }, { command: "build", isSsrBuild: true })).toBeNull();
-    for (const name of ["web", "pre", "nope"]) {
+    for (const name of ["pre", "nope"]) {
       process.env.KEEL_DEPLOYABLE = name;
       expect(keel().config({ root }, { command: "build" })).toBeNull();
     }

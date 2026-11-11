@@ -2,8 +2,8 @@
 // The `keel` binary: the only surface that touches the process. Everything goes through `run` with a host `Io`:
 // the engine loads the files each operation needs and applies its effects; `mcp` and `lsp` stream over stdio.
 // `build` and `dev` hand bundling and serving to Vite when `vite.config.ts` exists; `build` runs Vite once per
-// `viteTargets` (k.server Build: each `node` deployable's client build to `dist/<name>/`); when every deployable is
-// `node`, `routesRun` writes `routes.json` first, since no project build does (rfc:0059); `surfaceRun` then writes
+// `viteTargets` (k.server Build, k.hosting: each `client` and `node` deployable's build to `dist/<name>/`); when every
+// deployable is `node`, `routesRun` writes `routes.json` first, since no other build does; `surfaceRun` then writes
 // `surface.json` (k.compat).
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";

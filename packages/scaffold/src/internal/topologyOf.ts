@@ -7,6 +7,7 @@ export function topologyOf(files: ReadonlyMap<string, string>): DeployTopology |
   const ast = src === undefined ? null : topologyAst(src);
   if (ast === null) return null;
   const out: Record<string, DeployTopology[string]> = {};
-  for (const d of ast.deployables) out[d.name] = { modules: d.modules, adapter: d.adapter };
+  for (const { name, modules, adapter, host } of ast.deployables)
+    out[name] = host === undefined ? { modules, adapter } : { modules, adapter, host };
   return out;
 }

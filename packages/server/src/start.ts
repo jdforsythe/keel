@@ -15,11 +15,17 @@ const line = (text: string): void => {
  * Serve one `node` deployable in production (`@keel/server/start`, k.topology Build; only the generated entry calls
  * it). Parses `process.env` with `DeployEnv`: a failure prints one E1560 naming the key, never its value, and exits 1.
  * Then serves `createApp` (production, real `ctx`, the merged routes, runners, peers by `KEEL_PEER_<NAME>`, `origin`
- * from `KEEL_ORIGIN`) on `PORT`, and on SIGTERM or SIGINT stops listening, awaits `close()` and exits 0.
+ * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, and on SIGTERM or SIGINT stops listening, awaits `close()` and exits 0.
  */
 export async function start(o: StartOptions): Promise<void> {
   const peers = Object.keys(o.topology).filter((n) => n !== o.deployable && o.topology[n]?.adapter === "node");
-  const keys = ["PORT", "KEEL_ORIGIN", "KEEL_SECRET", ...peers.map((p) => `KEEL_PEER_${p.toUpperCase()}`)];
+  const keys = [
+    "PORT",
+    "KEEL_ORIGIN",
+    "KEEL_SECRET",
+    "KEEL_ALLOW_ORIGINS",
+    ...peers.map((p) => `KEEL_PEER_${p.toUpperCase()}`),
+  ];
   const given: Record<string, string> = {};
   for (const k of keys) {
     const v = process.env[k];
@@ -47,6 +53,9 @@ export async function start(o: StartOptions): Promise<void> {
     log: { format: process.env.KEEL_FORMAT === "json" ? "json" : "compact", write: line },
     ...(existsSync(std) ? { std } : {}),
     ...(env.value.KEEL_ORIGIN === undefined ? {} : { origin: env.value.KEEL_ORIGIN }),
+    ...(env.value.KEEL_ALLOW_ORIGINS === undefined
+      ? {}
+      : { allow: env.value.KEEL_ALLOW_ORIGINS.split(",").map((o) => o.trim()) }),
   });
   const server = serve({ fetch: app.fetch, port: env.value.PORT ?? 8080 });
   const stop = (): void => {

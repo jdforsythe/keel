@@ -18,6 +18,7 @@ import { prefixCollisions } from "./internal/prefixCollisions.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { runRules } from "./internal/runRules.ts";
 import { summarize } from "./internal/summarize.ts";
+import { topologyHosts } from "./internal/topologyHosts.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
@@ -66,7 +67,7 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each file plus project passes (E1005
- * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1508, E1511, E1753, E1755, the k.module pass
+ * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1508, E1511, E1566, E1753, E1755, the k.module pass
  * E1151-E1157, and the k.compat pass E1561-E1562 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
@@ -94,6 +95,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
+      out.push(...topologyHosts(dir, topology, top));
     }
     for (const d of compiled.diagnostics) {
       const path = d.path === "" ? d.path : `${dir}${d.path}`;

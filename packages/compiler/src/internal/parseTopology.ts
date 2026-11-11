@@ -20,7 +20,7 @@ const isAdapter = (v: string): v is Deployable["adapter"] => ADAPTERS.some((x) =
 
 /**
  * Read `topology.ts` statically (k.server Topology): `export default topology({ name: { modules: [...],
- * adapter } })` (or a bare object). Only literal deployable names, module ids, and adapters count; anything
+ * adapter, host? } })` (or a bare object). Only literal deployable names, module ids, adapters and hosts count; anything
  * else is a problem (one short line each) and the deployable is skipped. Nothing is executed.
  */
 export function parseTopology(source: string): { topology: Topology; problems: string[] } {
@@ -54,6 +54,7 @@ export function parseTopology(source: string): { topology: Topology; problems: s
     }
     let modules: string[] | undefined;
     let adapter: Deployable["adapter"] | undefined;
+    let host: string | undefined;
     for (const f of v.properties) {
       const k = f.type === "Property" && !f.computed ? keyName(f.key) : undefined;
       if (f.type !== "Property" || k === undefined) continue;
@@ -65,12 +66,13 @@ export function parseTopology(source: string): { topology: Topology; problems: s
           else problems.push(`${name}: module id is not a string literal`);
       } else if (k === "adapter" && fv.type === "Literal" && typeof fv.value === "string" && isAdapter(fv.value))
         adapter = fv.value;
+      else if (k === "host" && fv.type === "Literal" && typeof fv.value === "string") host = fv.value;
     }
     if (modules === undefined || adapter === undefined) {
       problems.push(`${name}: needs modules: [...] and adapter: 'node' | 'static' | 'client'`);
       continue;
     }
-    out[name] = { modules, adapter };
+    out[name] = host === undefined ? { modules, adapter } : { modules, adapter, host };
   }
   return { topology: out, problems };
 }

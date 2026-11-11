@@ -452,6 +452,27 @@ const ROWS: readonly Row[] = [
     "k.compat",
   ],
   [
+    "E1565",
+    "KEEL_PEER_<NAME> at keel build is not an http(s) origin; names the key, never the value",
+    "The client build writes it into index.html as the keel-peer tag service({ module }) calls.",
+    "KEEL_PEER_API=api.example.com -> KEEL_PEER_API=https://api.example.com",
+    "k.hosting",
+  ],
+  [
+    "E1566",
+    "host on a deployable that is not client, naming an unknown or non-node deployable, or two clients naming one host",
+    "A host is the one node deployable that serves a client build's index.html and assets.",
+    "web: { modules, adapter: 'client', host: 'web' } -> host: 'api' (a node deployable)",
+    "k.hosting",
+  ],
+  [
+    "W1567",
+    "an allowed origin that is cross-site to the server: the caller cookie cannot reach it",
+    "The caller cookie is SameSite=Lax; browsers do not send it across sites, so each write is a new caller.",
+    "serve both from one registrable domain (app.example.com, api.example.com) or one origin (host or a CDN route)",
+    "k.hosting",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",

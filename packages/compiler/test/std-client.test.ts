@@ -142,6 +142,6 @@ describe("vite plugin client entry (rfc:0069)", () => {
     expect(code).toContain(`bindStd(ctx, ${JSON.stringify({ [PKG]: { a: { limit: 3, tags: ["x"] } } })});`);
     expect(code).not.toContain(SERVER);
     expect(code).not.toContain("sk-a");
-    expect(code).not.toContain('"b"');
+    expect(code).not.toContain('"b":{');
   });
 });

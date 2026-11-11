@@ -7,6 +7,7 @@ import type { Outcome } from "./Outcome.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployBuildWrites } from "./deployBuildWrites.ts";
+import { hostingDiags } from "./hostingDiags.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
@@ -19,7 +20,7 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
  * `keel build`: compile every app source of the root project (`isSourcePath`, the rule the Vite plugin and `keel
  * check` share, rfc:0050; nested projects by `projectDirs`, rfc:0059) with `@keel/compiler`. Diagnostics flow through unchanged; with no error, the `.keel/` artifacts
  * (`{ data, hash }`, sorted keys, read-only) are returned as writes, with `std.json` from `stdArtifact` after the
- * stdlib `deps` are imported (E1159; its E1158 too, rfc:0066; E1559 from `pathCollisions`), and the deploy files of `topology.ts` (k.topology). Bundling is Vite's: the binary runs `vite build` when `vite.config.ts` exists.
+ * stdlib `deps` are imported (E1159; its E1158 too, rfc:0066; E1559 from `pathCollisions`; E1565 and E1566 from `hostingDiags`), and the deploy files of `topology.ts` (k.topology). Bundling is Vite's: the binary runs `vite build` when `vite.config.ts` exists.
  */
 export async function buildCommand(io: Io): Promise<Outcome> {
   const project = projectFiles(io);
@@ -33,9 +34,12 @@ export async function buildCommand(io: Io): Promise<Outcome> {
   const r = compile(files, topology === undefined ? {} : { topology });
   const std = stdArtifact(files);
   const paths = topology === undefined ? [] : pathCollisions(files, topology, io.cwd);
-  const diags: OutRecord[] = [...loaded, ...r.diagnostics, ...std.diagnostics, ...paths].map((d) =>
-    makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see, fix: d.fix }),
-  );
+  const diags: OutRecord[] = [
+    ...[...loaded, ...r.diagnostics, ...std.diagnostics, ...paths].map((d) =>
+      makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see, fix: d.fix }),
+    ),
+    ...(topology === undefined ? [] : hostingDiags(topology, io.env ?? {})),
+  ];
   const failed = diags.some((d) => typeof d.code === "string" && d.code.startsWith("E"));
   const writes: Write[] = failed
     ? []

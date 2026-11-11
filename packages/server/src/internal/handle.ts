@@ -34,17 +34,19 @@ import { statusOf } from "./statusOf.ts";
  * cookie on its response, `issueCaller`); other methods get 405 (`allowOf`). A GET with `accept: text/event-stream` gets 406 unless
  * the route's loader is live, then 403 `keel.denied` for a guard redirect, else its event stream (`liveStream`).
  * An API route (k.api) is a runtime request whatever `accept` says: JSON only, a guard denial is 403 `keel.denied`
- * (its `redirect` not followed), and a GET or HEAD without a loader is 405.
+ * (its `redirect` not followed), and a GET or HEAD without a loader is 405. A host's GET or HEAD of a path no route
+ * matches that is neither runtime nor an event stream gets the hosted client's `index.html` (k.hosting Host).
  */
 export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Context): Promise<Handled> {
   const url = new URL(raw.url);
   const method = raw.method.toUpperCase();
   const path = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") || "/" : url.pathname;
-  if (isVerb(method) && !sameSite(raw, sv.origin))
+  if (isVerb(method) && !sameSite(raw, sv.origin, rq.allowed))
     return { response: denied("cross-site write refused"), route: undefined, diags: [] };
   const entry = servedEntry(raw, url.pathname, sv.built);
   if (entry !== null) return entry;
   const m = matchUrl(sv.table, `${path}${url.search}`);
+  const accept = raw.headers.get("accept") ?? "";
   const route = m.route?.id;
   const api = m.route?.def.api === true;
   const r: Req = {
@@ -54,10 +56,26 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
     url: sv.origin === undefined ? raw.url : `${sv.origin}${url.pathname}${url.search}`,
     method,
     here: `${path}${url.search}`,
-    runtime: api || (raw.headers.get("accept") ?? "").includes("application/json"),
+    runtime: api || accept.includes("application/json"),
   };
-  if (m.kind === "notFound" && m.route === null)
+  if (m.kind === "notFound" && m.route === null) {
+    const doc = sv.built?.index;
+    // A hosted client's document (k.hosting Host): the router matches its paths in the browser.
+    if (
+      doc !== undefined &&
+      (method === "GET" || method === "HEAD") &&
+      !r.runtime &&
+      !accept.includes("text/event-stream")
+    )
+      return {
+        response: new Response(method === "HEAD" ? null : doc, {
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" },
+        }),
+        route,
+        diags: [],
+      };
     return bareError(r, route, 404, [], {}, { level: -1, bare: true, error: notFound(r.here) });
+  }
   // A trailing slash, or a prefix param's default segment (k.prefix Parse step 2): 308 to the canonical URL.
   if (path !== url.pathname || m.url !== r.here) return { response: redirectResponse(308, m.url), route, diags: [] };
   if (m.kind === "notFound") {
@@ -70,7 +88,7 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
   const live = def.loader;
   if (!write && ((api && !live) || (method !== "GET" && method !== "HEAD")))
     return { response: new Response(null, { status: 405, headers: { allow: allowOf(def) } }), route, diags: [] };
-  const stream = method === "GET" && (raw.headers.get("accept") ?? "").includes("text/event-stream");
+  const stream = method === "GET" && accept.includes("text/event-stream");
   if (stream && live?.live === undefined) return { response: new Response(null, { status: 406 }), route, diags: [] };
   const g = await runGuards(m.route.chain, r.here, m.params, sv.routes, sv.table, sv.ctx, rq.caller.id);
   if (g.kind === "redirect")

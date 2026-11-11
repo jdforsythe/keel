@@ -1,3 +1,4 @@
+import { originOf } from "@keel/compiler/hosting/originOf";
 import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
@@ -8,6 +9,7 @@ import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import type { Served } from "./internal/Served.ts";
+import { allowOf } from "./internal/allowOf.ts";
 import { bindModules } from "./internal/bindModules.ts";
 import { callerOf } from "./internal/callerOf.ts";
 import { callerSigner } from "./internal/callerSigner.ts";
@@ -29,6 +31,7 @@ import { peerOf } from "./internal/peerOf.ts";
 import { peerPaths } from "./internal/peerPaths.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
+import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
 import type { ServerApp } from "./types/ServerApp.ts";
 
@@ -112,7 +115,9 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       }),
     );
   const served = selectDeployable(opts.topology, table, modules, opts.deployable);
-  const built = mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets) : undefined;
+  const name = opts.deployable ?? Object.keys(opts.topology)[0] ?? "";
+  const hosted = Object.values(opts.topology).some((d) => d.adapter === "client" && d.host === name);
+  const built = mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets, hosted) : undefined;
   const sv: Served = {
     table: served,
     ctx: opts.ctx,
@@ -125,12 +130,14 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     keys: await callerSigner(opts.secret),
     secure: opts.secure,
     built,
-    name: opts.deployable ?? Object.keys(opts.topology)[0] ?? "",
+    name,
     origin,
+    allow: new Set((opts.allow ?? []).flatMap((o) => originOf(o) ?? [])),
     lifecycle: new AbortController(),
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
+  const warned = new Set<string>();
   const hono = new Hono();
   hono.all("*", async (c) => {
     const raw = c.req.raw;
@@ -140,11 +147,19 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const peer = inspecting || raw.headers.has("x-keel-forwarded") ? undefined : peerOf(forwards, path);
     const at = peer === undefined || matchUrl(served, path).route !== null ? undefined : peers[peer];
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
+    // An allowed origin (k.hosting): granted on API routes only, by exact match of its serialized origin.
+    const from = raw.headers.get("origin") ?? "";
+    const known = sv.allow.has(from);
+    const hit = known && !inspecting ? matchUrl(served, path).route : null;
+    const api = hit?.def.api === true ? hit.def : undefined;
+    const cross = known && raw.headers.get("sec-fetch-site") === "cross-site" && !warned.has(from);
+    if (cross) warned.add(from);
     // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
     const routed = async () => {
       const rq = {
         scope: scope(() => undefined),
         caller: callerOf(raw, sv.ctx, sv.keys, sv.secure, sv.origin),
+        allowed: api !== undefined,
         held: new Map(),
       };
       isolate(rq.scope);
@@ -152,8 +167,11 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       rq.scope.dispose();
       return r;
     };
-    const ran =
-      at !== undefined
+    // A preflight from an allowed origin to an API route: no guard, loader or action runs.
+    const pre = api !== undefined && raw.method === "OPTIONS" && raw.headers.has("access-control-request-method");
+    const ran = pre
+      ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
+      : at !== undefined
         ? await attempt(() => forward(raw, at, sv))
         : gate === undefined || (gate.ok && raw.method !== "GET")
           ? await routed()
@@ -164,12 +182,20 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
               ).then((r) => ({ ...r, route: undefined })),
             );
     const h = ran.ok ? ran.value : crashed(sv.mode, ran.error);
+    const response = api === undefined ? h.response : withCors(h.response, from, pre ? allowOf(api) : undefined);
     if (log !== undefined) {
+      if (cross)
+        log.write(
+          diagLine(log.format, {
+            code: "W1567",
+            message: `${from} is cross-site: the caller cookie cannot reach it; use one registrable domain or one origin`,
+          }),
+        );
       for (const d of h.diags) log.write(diagLine(log.format, d));
       const ms = Math.max(0, Math.round(sv.ctx.clock.now() - t0));
-      log.write(reqLine(log.format, { method: raw.method, path, route: h.route, status: h.response.status, ms }));
+      log.write(reqLine(log.format, { method: raw.method, path, route: h.route, status: response.status, ms }));
     }
-    return h.response;
+    return response;
   });
   const failed = (message: string) =>
     log?.write(

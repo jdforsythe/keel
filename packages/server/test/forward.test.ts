@@ -73,6 +73,7 @@ async function served(ctx: Ctx): Promise<Served> {
     built: undefined,
     name: "x",
     origin: undefined,
+    allow: new Set(),
     lifecycle: new AbortController(),
   };
 }
