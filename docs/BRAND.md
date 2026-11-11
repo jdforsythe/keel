@@ -33,5 +33,7 @@ A high-contrast parchment surface with deep charcoal text. ISO Ochre is reserved
 The sentence-level rules live in `docs/VOICE.md` (first person, reader as the hero, concrete nouns and numbers, no em dashes, no reversals, no hedging, the full banned list). Two brand-level rules: claims never exceed what the ledger shows (PRINCIPLES 11), and the only nautical term is *Keel*.
 
 ## 6. Where it lives in code
-- `@keel/ui` tokens: the scaffold `project` template emits `tokens.ts` with this palette, these fonts, radius 0, and the hairline divider, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/inspector`.
+- `@keel/ui` tokens: the scaffold `project` template emits `tokens.ts` with this palette, these fonts, radius 0, and the hairline divider, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/inspector`, `apps/sessions`.
 - Fonts are self-hosted (`@keel/ui/fonts`), never fetched from a third party at runtime (THREAT-MODEL CSP).
+
+verified: ca93820d1c28ba356fca552aafde67801229366e

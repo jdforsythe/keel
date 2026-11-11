@@ -94,5 +94,8 @@
       "platform": "node"
     },
     "@keel/ui": "4kb"
+  },
+  "mutate": {
+    "default": 30
   }
 }

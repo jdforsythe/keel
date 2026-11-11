@@ -21,13 +21,21 @@ User rule (2026-11-11): no mutation run may take two hours again, and a run must
 - D7 scoped runs: `tooling/mutate-changed.mjs` passes a package's changed `src` files as `--mutate` when only `src` changed; any test or config change runs the package whole (incremental). `--base <ref>` names the range. The full run stays nightly.
 - D8 timeouts: no source change and no tighter factor. A tighter factor turns slow mutants into false kills (principle 11); loop bounds in check source are a kernel edit for a tooling reason. The budget bounds their cost and the cache pays it once. The 212 timeouts outside the two loop files get a backlog line.
 
+- D9 the runner refuses a second run in a package with a live one (it would remove the first run's sandbox), and removes sandbox copies an interrupted run left. Stryker titles its process `stryker`; that title plus the pid in `run.json` is the liveness test.
+- D10 packages without a vitest config of their own for mutation runs use `tooling/vitest.mutate.config.ts` (their `vitest.config.ts` plus the sequencer); check, scaffold, server name the sequencer in theirs.
+- D11 tooling has a `test` script (`tooling/test/mutate.test.ts`, 12 tests) so the pure parts run in `pnpm test`.
+
+## Measured (ctx, 318 mutants)
+- Cached run 4 s; forced run 12 s. Budget 0.1 min on a forced run: `fail mutate ctx time budget 0.1m reached at 111 of 318 mutants; run again to resume`, exit 1, 150 results saved, the resume reused 150 and finished at 76.8%.
+- `mutate:status` during a run: `ctx 65 of 318 mutants, 7 reused, 881 a minute, about 1m left`; `mutate:stop` ended it with `fail mutate ctx stopped at 65 of 318 mutants; run again to resume` and the resume reused 83.
+
 ## Steps
-1. [ ] `tooling/mutate.mjs` runner (D1, D3, D5) and reporter progress, test times (D4, D6).
-2. [ ] Shared factory: cache home (D2); move the 15 existing caches there.
-3. [ ] `quick-first` sequencer; check, scaffold configs use it; other packages get it through the factory (D6).
-4. [ ] `mutate-changed.mjs` scoped runs (D7).
-5. [ ] CI source: restore/save steps on the new path; regenerate.
-6. [ ] Tests for the pure parts (budget lookup, status line, changed scope, sequencer order).
+1. [x] `tooling/mutate.mjs` runner (D1, D3, D5) and reporter progress, test times (D4, D6).
+2. [x] Shared factory: cache home (D2); move the 15 existing caches there.
+3. [x] `quick-first` sequencer; check, scaffold configs use it; other packages get it through the factory (D6).
+4. [x] `mutate-changed.mjs` scoped runs (D7).
+5. [x] CI source: restore/save steps on the new path; regenerate.
+6. [x] Tests for the pure parts (budget lookup, status line, changed scope, sequencer order).
 7. [ ] docs/TESTING.md, docs/HANDOFF.md, backlog; close.
 
 ## Verification
@@ -37,4 +45,4 @@ User rule (2026-11-11): no mutation run may take two hours again, and a run must
 - `node tooling/mutate-changed.mjs --list --base HEAD~1` names packages and files.
 
 ## Next action
-Step 1.
+Read the check and server runs through the runner (started 2026-11-11), then `pnpm check`, `pnpm test`, step 7, reviewer, close.

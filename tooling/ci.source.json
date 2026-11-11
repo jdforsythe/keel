@@ -2,7 +2,9 @@
   "name": "ci",
   "on": {
     "push": {
-      "branches": ["main"]
+      "branches": [
+        "main"
+      ]
     },
     "pull_request": {},
     "schedule": [
@@ -115,15 +117,23 @@
       "steps": [
         "$setup",
         {
-          "uses": "actions/cache@v4",
+          "uses": "actions/cache/restore@v4",
           "with": {
-            "path": "packages/*/.stryker-tmp/incremental.json",
+            "path": ".git/keel-mutation",
             "key": "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}",
             "restore-keys": "stryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
           }
         },
         {
           "run": "node tooling/mutate-changed.mjs"
+        },
+        {
+          "if": "always()",
+          "uses": "actions/cache/save@v4",
+          "with": {
+            "path": ".git/keel-mutation",
+            "key": "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}"
+          }
         }
       ]
     },
@@ -133,15 +143,23 @@
       "steps": [
         "$setup",
         {
-          "uses": "actions/cache@v4",
+          "uses": "actions/cache/restore@v4",
           "with": {
-            "path": "packages/*/.stryker-tmp/incremental.json",
+            "path": ".git/keel-mutation",
             "key": "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}",
             "restore-keys": "stryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
           }
         },
         {
           "run": "pnpm mutate --filter=\"./packages/*\""
+        },
+        {
+          "if": "always()",
+          "uses": "actions/cache/save@v4",
+          "with": {
+            "path": ".git/keel-mutation",
+            "key": "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}"
+          }
         }
       ]
     },
