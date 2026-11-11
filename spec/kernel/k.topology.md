@@ -1,7 +1,7 @@
 # k.topology: Deployables
 status: implemented
 
-**Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter } })` (`@keel/server`), read statically. Adapters: `node` (Hono; serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module, app or stdlib, is in one deployable; its routes, actions, live loaders and runners run there and no other file names a deployable, so moving modules between deployables edits `topology.ts` alone.
+**Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter, host? } })` (`@keel/server`), read statically. Adapters: `node` (serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module, app or stdlib, is in one deployable; its routes, actions, live loaders and runners run there and no other file names a deployable, so moving a module edits `topology.ts` alone.
 
 **Route table.** A deployable serves its modules' routes: the generated entry merges each module's `routes` into `createApp({ routes })`.
 
@@ -9,7 +9,7 @@ status: implemented
 
 **Calls and peers.** A module calls another's routes through `service({ module })` (k.services), encoded and decoded alike in every topology: a split adds latency and `api.network`/`api.timeout` outcomes, never another value. `createApp({ peers: { [deployable]: URL | ServerApp } })` names the other `node` deployables: URLs in production, apps in one process. A `service({ module })` request is answered in process when its module is here or in an in-process peer, else by the peer's URL. A request for a path a peer serves (by `routes.json` in `artifacts`) is forwarded to the peer's origin: method, path, search, headers but `host` and hop-by-hop ones, body (`maxBodyBytes`); its response, a 3xx too, is returned unchanged (unreachable: 502); one carrying `x-keel-forwarded` is not forwarded again.
 
-**Build.** `keel build` writes per `node` deployable `dist/<name>/`: the client build (k.server), `routes.json` (all modules), `std.json`, and `server.mjs`, the generated entry, dependencies bundled. `node server.mjs` parses `process.env` with `DeployEnv`: `PORT` (default 8080), `KEEL_ORIGIN` (`createApp({ origin })`, the public origin, which replaces the request's in `url`, the same-site check and `Secure`), `KEEL_SECRET` (32+ bytes, shared by the app's deployables so `caller` agrees), and `KEEL_PEER_<NAME>`, an http(s) URL, per other `node` deployable. A failure prints one E1560 naming the key, never a value, and exits 1. Then it serves `createApp` (production, real `ctx`, its routes, runners and peers) and on SIGTERM or SIGINT stops listening, awaits `close()` and exits. `ctx.storage` is the file `--localstorage-file` names, the only state that survives a restart.
+**Build.** `keel build` writes `dist/<name>/` per `client` deployable (k.hosting) and `node` one: the client build (k.server), `routes.json` (all modules), `std.json`, and `server.mjs`, the generated entry, dependencies bundled. `node server.mjs` parses `process.env` with `DeployEnv`: `PORT` (default 8080), `KEEL_ORIGIN` (`createApp({ origin })`, the public origin, which replaces the request's in `url`, the same-site check and `Secure`), `KEEL_SECRET` (32+ bytes, shared by the app's deployables so `caller` agrees), and `KEEL_PEER_<NAME>`, an http(s) URL, per other `node` deployable. A failure prints one E1560 naming the key, never a value, and exits 1. Then it serves `createApp` (production, real `ctx`, its routes, runners and peers) and on SIGTERM or SIGINT stops listening, awaits `close()` and exits. `ctx.storage` is the file `--localstorage-file` names, the only state that survives a restart.
 
 **Deploy files.** Derived from `topology.ts` by `@keel/scaffold`, written by `keel build` and by scaffold operations that change modules or deployables; read-only (E1005, fix: the regenerated file).
 - `deploy/<name>/Dockerfile` per `node` deployable: `node:22-slim` by digest, `dist/<name>/` only, user `node`, volume `/data` for storage, owned by `node`, port 8080.
@@ -19,7 +19,7 @@ status: implemented
 
 **Local topology.** `keel dev` serves every deployable in one process on one origin: Vite serves `client` and `static` entries with HMR; each `node` deployable runs its dev `createApp` (real `ctx`, storage in `.keel-dev/`) and runners, the others its in-process peers, and serves its paths.
 
-**Rules.** E1552 a module unknown or in two deployables · E1553 `static` deployable route with params or actions · E1559 one path in two deployables (names both) · E1511 (k.api) · E1560 the production environment fails `DeployEnv` at startup.
+**Rules.** E1552 a module unknown or in two deployables · E1553 a `static` route with params or actions · E1559 one path in two deployables (names both) · E1511 (k.api) · E1560 the environment fails `DeployEnv` at startup.
 
 **Conformance.**
 - Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states.
