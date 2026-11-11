@@ -1,5 +1,5 @@
 # k.compat: Surface compatibility
-status: proposed
+status: conformance-covered
 
 **Purpose.** Deployables ship at different times, so a module's routes must keep accepting what its callers in other deployables send, and keep answering what they decode. `keel check` proves both from one artifact.
 

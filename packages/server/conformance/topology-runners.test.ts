@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.topology Conformance (Runners). Seed 1337 (fc.assert below). The restart delay is observed on the sim clock only.
+// Spec: k.topology, clause "`createApp({ runners })` runs each runner of the served deployable once, none of another; `close()` aborts their signals and resolves once each `run` settles; a rejected `run` runs again 1,000 ms later on the sim clock."
+// Seed 1337 (fc.assert below). The restart delay is observed on the sim clock only.
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { topology } from "@keel/server";

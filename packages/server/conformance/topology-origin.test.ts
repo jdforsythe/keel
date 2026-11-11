@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.topology Conformance. Seed 1337 (fc.assert below).
+// Spec: k.topology, clause "With `origin` `https://a.example`, a POST with that `Origin` to another host passes the same-site check, and the caller cookie is `__Host-keel-caller`."
+// Seed 1337 (fc.assert below).
 import { action, manifest } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";

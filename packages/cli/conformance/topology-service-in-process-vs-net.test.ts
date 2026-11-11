@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.topology Conformance. Seed 1337 (fc.assert below). Calls are observed on the sim net only.
+// Spec: k.topology, clause "With `a` and `b` in one deployable a `service({ module: 'b' })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL."
+// Seed 1337 (fc.assert below). Calls are observed on the sim net only.
 import { manifest } from "@keel/router";
 import { topology } from "@keel/server";
 import fc from "fast-check";

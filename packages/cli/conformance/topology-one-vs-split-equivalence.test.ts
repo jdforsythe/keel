@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.topology Conformance. Seed 1337 (fc.assert below). Both topologies run under sim ctxs of seed 1337; no wall time.
+// Spec: k.topology, clause "Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states."
+// Seed 1337 (fc.assert below). Both topologies run under sim ctxs of seed 1337; no wall time.
 import { manifest } from "@keel/router";
 import { topology } from "@keel/server";
 import fc from "fast-check";

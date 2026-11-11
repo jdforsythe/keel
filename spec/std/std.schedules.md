@@ -1,5 +1,5 @@
 # std.schedules: Schedules
-status: proposed
+status: conformance-covered
 
 **Extension points.** Module manifest (k.module): `@keel/std-schedules` is stdlib module `schedules`; a module that schedules lists it and `@keel/std-jobs` in `deps`, `clock` and `storage` in `capabilities`. Check rule registry (k.check): `@keel/std-schedules/tools` registers E2551-E2553.
 

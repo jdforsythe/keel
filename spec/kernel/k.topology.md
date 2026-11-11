@@ -1,5 +1,5 @@
 # k.topology: Deployables
-status: proposed
+status: implemented
 
 **Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter } })` (`@keel/server`), read statically. Adapters: `node` (Hono; serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module, app or stdlib, is in one deployable; its routes, actions, live loaders and runners run there and no other file names a deployable, so moving modules between deployables (split or merge) edits `topology.ts` alone.
 

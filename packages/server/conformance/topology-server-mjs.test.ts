@@ -1,4 +1,5 @@
-// Spec: k.topology Conformance. Seed 1337 (fc.assert below). Spawns the built `server.mjs` of a `keel build` fixture.
+// Spec: k.topology, clause "`node dist/<name>/server.mjs` of a `keel build` fixture answers its routes on `PORT`; with `KEEL_SECRET` unset or short it exits 1 and prints one E1560 line naming `KEEL_SECRET` and no value."
+// Seed 1337 (fc.assert below). Spawns the built `server.mjs` of a `keel build` fixture.
 // The listening wait is a bounded retry of `fetch` (no timers); the port is one the OS just freed.
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";

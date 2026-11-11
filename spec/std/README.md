@@ -10,5 +10,5 @@ S3 (RFC 0080) adds std.jobs and std.schedules.
 
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| std.jobs | Background jobs | proposed | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2504 |
-| std.schedules | Schedules | proposed | module manifest: cron in a zone, catch-up, E2551-E2553 |
+| std.jobs | Background jobs | conformance-covered | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2504 |
+| std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |

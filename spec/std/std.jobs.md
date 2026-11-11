@@ -1,5 +1,5 @@
 # std.jobs: Background jobs
-status: proposed
+status: conformance-covered
 
 **Extension points.** Module manifest (k.module): `@keel/std-jobs` is stdlib module `jobs`; a module that defines jobs lists it in `deps` and `clock`, `random` and `storage` in `capabilities`, and is placed in a `node` deployable. Inspector hooks (k.cli): section `jobs.queue`. Check rule registry (k.check): `@keel/std-jobs/tools` registers E2501-E2504.
 
