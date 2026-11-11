@@ -39,8 +39,22 @@ const view = () => document.createElement("main");
 /** `service({ module: 'b' })`: typed loosely until the option exists in `ServiceOptions`. */
 export function bClient() {
   const schema = endpoints({
-    get: { method: "GET", path: "/b/:n", params: Params, output: Item },
-    bump: { method: "POST", path: "/b/:n", params: Params, body: Nothing, output: Item },
+    get: {
+      method: "GET",
+      path: "/b/:n",
+      params: Params,
+      output: s.object({
+        id: s.literal("b.item"),
+        results: s.object({ "b.item": s.object({ ok: s.literal(true), value: Item }) }),
+      }),
+    },
+    bump: {
+      method: "POST",
+      path: "/b/:n",
+      params: Params,
+      body: Nothing,
+      output: s.object({ ok: s.literal(true), value: s.string().nullable() }),
+    },
   });
   const made: unknown = Reflect.apply(service, undefined, [{ module: "b", schema }]);
   return { schema, call: (name: "get" | "bump", n: string, ctx: Ctx) => callClient(made, name, n, ctx) };
@@ -78,7 +92,8 @@ export function moduleB() {
 export function moduleA(call: ReturnType<typeof bClient>["call"]) {
   const get = loader({ output: Item, params: Params }, async (a, ctx) => {
     const r = await call("get", a.params.n, ctx);
-    return isOkItem(r) ? ok(r.value) : err(s.error("a.upstream", Nothing).make({}));
+    const item = isOkItem(r) ? r.value.results["b.item"].value : undefined;
+    return item ? ok(item) : err(s.error("a.upstream", Nothing).make({}));
   });
   const post = action({ input: Nothing, params: Params }, async (_i, a, ctx) => {
     await call("bump", a.params.n, ctx);
@@ -90,7 +105,8 @@ export function moduleA(call: ReturnType<typeof bClient>["call"]) {
   return { routes };
 }
 
-function isOkItem(r: unknown): r is { ok: true; value: { n: string; count: number } } {
+type ItemAnswer = { ok: true; value: { results: { "b.item": { value: { n: string; count: number } } } } };
+function isOkItem(r: unknown): r is ItemAnswer {
   return typeof r === "object" && r !== null && Reflect.get(r, "ok") === true;
 }
 

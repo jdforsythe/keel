@@ -17,8 +17,7 @@ import {
 } from "./topology-modules.ts";
 
 describe("k.topology: module calls", () => {
-  // Skipped: the fixture's GET endpoint decodes `Item`, but k.server/k.compat answer a JSON GET as `{ id, results }`, so getA is 400 (a.upstream), not 200.
-  test.skip("With `a` and `b` in one deployable a `service({ module: 'b' })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL.", async () => {
+  test("With `a` and `b` in one deployable a `service({ module: 'b' })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[0-9]{1,3}$/), async (n) => {
         const { call } = bClient();
@@ -40,6 +39,7 @@ describe("k.topology: module calls", () => {
         await flush();
         const here = await one.fetch(request({ kind: "getA", n }));
         expect(here.status).toBe(200);
+        const hereBody: unknown = await here.json();
         expect(fetched).toEqual([]);
 
         const split = topology({ x: { modules: ["a"], adapter: "node" }, y: { modules: ["b"], adapter: "node" } });
@@ -61,6 +61,8 @@ describe("k.topology: module calls", () => {
         await flush();
         const there = await x.fetch(request({ kind: "getA", n }));
         expect(there.status).toBe(200);
+        expect(await there.json()).toEqual(hereBody);
+        expect(JSON.stringify(hereBody)).toContain(`"n":"${n}"`);
         expect(urls).toHaveLength(1);
         expect(urls[0]?.startsWith("http://y.test/")).toBe(true);
         expect(new URL(urls[0] ?? "").pathname).toBe(`/b/${n}`);
