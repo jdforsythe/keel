@@ -335,7 +335,10 @@ describe("isRouteStateOf", () => {
 });
 
 describe("needsBare", () => {
-  const lvl = (extra: Partial<RouteDef>): Level => ({ id: "x", def: { component: view, ...extra } });
+  const lvl = (extra: Partial<Exclude<RouteDef, { readonly api: true }>>): Level => ({
+    id: "x",
+    def: { component: view, ...extra },
+  });
   const ld = loader({ output: s.object({}) }, async () => ok({}));
   it("only levels above the error level count", () => {
     const chain = [lvl({}), lvl({ loader: ld }), lvl({})];
@@ -547,7 +550,7 @@ describe("hrefIn", () => {
   it("exact error codes and messages", () => {
     expect(fail(() => h("h.layout"))).toEqual({
       code: "E1501",
-      message: 'E1501 href("h.layout"): no declared route with a path has this id',
+      message: 'E1501 href("h.layout"): no declared page has this id',
     });
     expect(fail(() => h("nope")).code).toBe("E1501");
     expect(fail(() => hrefIn(undefined, "nope", {}, {})).code).toBe("E1501");
@@ -598,7 +601,10 @@ describe("routesArtifact details", () => {
 });
 
 describe("runLoaders / runGuard", () => {
-  const lvl = (def: Partial<RouteDef>): Level => ({ id: "l", def: { component: view, ...def } });
+  const lvl = (def: Partial<Exclude<RouteDef, { readonly api: true }>>): Level => ({
+    id: "l",
+    def: { component: view, ...def },
+  });
   const args = { params: {}, search: {}, url: "http://localhost/", caller: "" };
   it("no loader gives ok(undefined); a loader's value is parsed by its output schema", async () => {
     const out = await runLoaders(

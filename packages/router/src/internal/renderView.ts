@@ -9,7 +9,8 @@ const errorAt = (v: View, level: number, error: KeelError<string, unknown>): Nod
 
 function componentAt(v: View, i: number, ctx: Ctx): Node {
   const lvl = v.chain[i];
-  if (lvl === undefined) return document.createComment("");
+  // An API route (k.api) has no component; the client never matches one.
+  if (lvl?.def.component === undefined) return document.createComment("");
   const cell = v.data[i];
   const base = { params: v.params, search: v.search };
   const children = i + 1 < v.chain.length ? () => levelAt(v, i + 1, ctx) : undefined;

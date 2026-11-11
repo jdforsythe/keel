@@ -15,7 +15,7 @@ const [DOM, SERVER, CTX, ROUTER, ROUTER_INTERNAL] = [
  * The `keel dev` server module (k.topology Local topology): after installing the server DOM it creates one dev
  * `createApp` per `node` deployable of `topology`, each with its own real `ctx`, its modules' routes and runners, the
  * `.keel/` artifacts and `std.json`, and the others as in-process peers. It exports `apps`, `[name, app, served]` per
- * deployable, `served(path)` telling whether a route of that deployable matches the path.
+ * deployable, `served(path)` telling whether a route of that deployable (an API route included) matches the path.
  */
 export function devEntryCode(root: string, topology: Topology): string {
   const abs = (rel: string): string => JSON.stringify(path.join(root, rel).split(path.sep).join("/"));

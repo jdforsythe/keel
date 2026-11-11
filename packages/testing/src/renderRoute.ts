@@ -10,7 +10,7 @@ import type { RouteHarness } from "./types/RouteHarness.ts";
 import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
 
 /**
- * Render route `id` of `options.routes` (k.testing Harness): seed `state`, create a router on an in-memory history
+ * Render page `id` of `options.routes` (an API route has no view: its id rejects) (k.testing Harness): seed `state`, create a router on an in-memory history
  * at `routes.href(id, params, search)` (its initial navigation runs the chain's guards and loaders), mount its `App`, and
  * resolve once no navigation is pending and the DOM is quiet; then the `render` checks run (`keel.unexpected`,
  * E1702 with `artifacts`, E1703). The handle is `render`'s plus `route()` and `navigate(href)` (push, then the same

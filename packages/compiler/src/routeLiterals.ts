@@ -86,9 +86,10 @@ function imported(program: Program, local: string): [string, string] | undefined
 
 /**
  * The `redirect` of the guard bound to `name` in the manifest `file`: a `const` there, or one imported from a relative
- * module, initialized as `guard({ redirect: "<literal>" }, fn)`. Undefined when it does not resolve to that shape.
+ * module, initialized as `guard({ redirect: "<literal>" }, fn)`; `null` for `guard({...}, fn)` with no `redirect` and no
+ * spread or computed key. Undefined when it does not resolve to either shape.
  */
-function guardRedirect(file: string, program: Program, name: string, parse: Parsed): string | undefined {
+function guardRedirect(file: string, program: Program, name: string, parse: Parsed): string | null | undefined {
   const imp = imported(program, name);
   const at = imp?.[0].startsWith(".") ? join(file.split("/").slice(0, -1).join("/"), imp[0]) : undefined;
   const other = at === undefined ? undefined : (parse(at) ?? parse(`${at}.ts`));
@@ -99,12 +100,11 @@ function guardRedirect(file: string, program: Program, name: string, parse: Pars
   if (decl === undefined || decl.type === "SpreadElement") return undefined;
   const obj = unwrap(decl);
   if (obj.type !== "ObjectExpression") return undefined;
-  for (const p of obj.properties)
-    if (p.type === "Property" && !p.computed && keyName(p.key) === "redirect") {
-      const v = text(p.value);
-      return v?.value ?? undefined;
-    }
-  return undefined;
+  for (const p of obj.properties) {
+    if (p.type !== "Property" || p.computed) return undefined;
+    if (keyName(p.key) === "redirect") return text(p.value)?.value ?? undefined;
+  }
+  return null;
 }
 
 /** One route entry's literal fields; `unread` gets the fields that are not literals. */
@@ -134,6 +134,10 @@ function readRoute(
     if (t === undefined) unread.push(`${id} ${field}`);
     else out[field] = t.value;
   }
+  const api = props.get("api");
+  const ap = api === undefined ? undefined : unwrap(api);
+  if (ap?.type === "Literal" && typeof ap.value === "boolean") out.api = ap.value;
+  else if (ap !== undefined) unread.push(`${id} api`);
   const g = props.get("guard");
   const gv = g === undefined ? undefined : unwrap(g);
   if (gv === undefined || (gv.type === "Literal" && gv.value === null) || isUndefined(gv)) out.guard = null;
@@ -142,7 +146,7 @@ function readRoute(
     if (redirect === undefined) unread.push(`${id} guard`);
     else out.guard = redirect;
   }
-  // Actions attach with `routes.actions({...})` (rfc:0063); `actions` in an entry is E1505 at evaluation.
+  // Actions attach with `routes.actions({...})`; `actions` in an entry is E1505 at evaluation.
   const av = props.has("actions") || at.acts === null ? null : at.acts.get(id);
   const a = av === undefined || av === null ? av : unwrap(av);
   if (a === undefined || (a !== null && isUndefined(a))) out.actions = [];
@@ -273,8 +277,9 @@ function manifestObject(program: Program | undefined): ObjectExpression | undefi
 /**
  * Read a project's route table from its routes manifests without evaluating them (k.compiler Artifacts): the manifests
  * `vite build` evaluates (`projectManifests`), each `export const routes = manifest({...})` parsed with oxc. Literal
- * route ids, `path`, `layout`, action verbs (from `routes.actions({...})`), `params`/`search` presence, and a guard's
- * `redirect` (a `guard({ redirect: "..." }, fn)` declared in the manifest or imported from a relative module) are read;
+ * route ids, `path`, `layout`, `api`, action verbs (from `routes.actions({...})`), `params`/`search` presence, and a guard's
+ * `redirect` (a `guard({ redirect: "..." }, fn)` declared in the manifest or imported from a relative module; `null` for
+ * a guard declared without one) are read;
  * anything else is named in `unread`. A spread `...x.routes`, `x` the `routes` export of a package the module's
  * `module.ts` lists in `deps`, reads the manifest of the file that export resolves to (from the module's folder, through the package's `exports`,
  * as the std import step resolves it) by the same rule, without running it.

@@ -10,6 +10,7 @@ const f = (path: string, source: string): SourceFile => ({ path, source });
 
 type Entry = {
   actions: string[];
+  api?: true;
   guard: string | null;
   layout: string | null;
   module: string;
@@ -94,6 +95,30 @@ export const routes = manifest({ "m.home": { path: "/home", guard: g, component:
     const ds = at(run(project(prefix, home, ts, [guardFile])), "E1005", json);
     expect(ds).toHaveLength(1);
     expect(ds[0]?.message).toContain('"m.home"');
+  });
+
+  it("api: true in routes.json must match the entry's api literal", () => {
+    const api = `import { manifest } from "@keel/router";
+export const routes = manifest({ "m.home": { api: true, path: "/home" } });
+`;
+    const apiHome = { "m.home": entry({ api: true }) };
+    expect(at(run(project(prefix, apiHome, api)), "E1005", json)).toEqual([]);
+    expect(at(run(project(prefix, home, api)), "E1005", json)[0]?.message).toContain('"m.home"');
+    expect(at(run(project(prefix, apiHome)), "E1005", json)[0]?.message).toContain('"m.home"');
+  });
+
+  it("an api member that is not a literal is not compared (W1005 names it)", () => {
+    const ts = `import { manifest } from "@keel/router";
+const yes = true;
+export const routes = manifest({ "m.home": { api: yes, path: "/home" } });
+`;
+    const ds = run(project(prefix, { "m.home": entry({ api: true }) }, ts));
+    expect(at(ds, "E1005", json)).toEqual([]);
+    expect(at(ds, "W1005", json)[0]?.message).toContain("m.home api");
+    const whole = `import { manifest } from "@keel/router";
+export const routes = manifest({ "m.home": makeRoute() });
+`;
+    expect(at(run(project(prefix, { "m.home": entry({ api: true }) }, whole)), "E1005", json)).toEqual([]);
   });
 
   it("a computed path with a genuine file is W1005 naming the part", () => {

@@ -179,8 +179,32 @@ describe("routeLiterals", () => {
         expect(r?.routes["m.a"]).not.toHaveProperty("guard");
       });
 
+    it("reads a guard declared without redirect as null", () => {
+      const r = read(route, "const g = guard({}, fn);");
+      expect(r?.routes["m.a"]?.guard).toBeNull();
+      expect(r?.unread).toEqual([]);
+    });
+
+    it("names the guard unread when its declaration has a spread", () => {
+      expect(read(route, "const g = guard({ ...d }, fn);")?.unread).toEqual(["m.a guard"]);
+    });
+
     it("reads guard: null as no guard", () => {
       expect(read(`"m.a": { guard: null }`)?.routes["m.a"]?.guard).toBeNull();
+    });
+  });
+
+  describe("api", () => {
+    it("reads a literal api member; none when the entry has no api", () => {
+      const r = read(`"m.a": { api: true, path: "/a" }, "m.b": { path: "/b" }, "m.c": { api: false, path: "/c" }`);
+      expect([r?.routes["m.a"]?.api, r?.routes["m.b"]?.api, r?.routes["m.c"]?.api]).toEqual([true, undefined, false]);
+      expect(r?.unread).toEqual([]);
+    });
+
+    it("names api unread when it is not a boolean literal", () => {
+      const r = read(`"m.a": { api: flag, path: "/a" }`);
+      expect(r?.unread).toEqual(["m.a api"]);
+      expect(r?.routes["m.a"]).not.toHaveProperty("api");
     });
   });
 
@@ -290,6 +314,7 @@ describe("routeLiterals", () => {
     const entry = fc.record({
       path: fc.option(word, { nil: undefined }),
       layout: fc.option(word, { nil: undefined }),
+      api: fc.option(fc.boolean(), { nil: undefined }),
       actions: fc.subarray([...verbs]),
     });
     fc.assert(
@@ -299,6 +324,7 @@ describe("routeLiterals", () => {
             const parts: string[] = [];
             if (e.path !== undefined) parts.push(`path: "/${e.path}"`);
             if (e.layout !== undefined) parts.push(`layout: "m.${e.layout}"`);
+            if (e.api !== undefined) parts.push(`api: ${e.api}`);
             return `"m.${w}": { ${parts.join(", ")} }`;
           })
           .join(",\n");
@@ -312,6 +338,7 @@ describe("routeLiterals", () => {
             {
               path: e.path === undefined ? null : `/${e.path}`,
               layout: e.layout === undefined ? null : `m.${e.layout}`,
+              ...(e.api !== undefined && { api: e.api }),
               guard: null,
               actions: verbs.filter((v) => e.actions.includes(v)),
               params: false,

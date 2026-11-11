@@ -163,7 +163,7 @@ describe("dev log stream", () => {
     expect(nope.status).toBe(405);
     expect(nope.headers.get("allow")).toBe("GET, HEAD, POST, PUT");
     const opt = await app.fetch(req({ method: "OPTIONS", path: "/orders/7" }));
-    expect(opt.headers.get("allow")).toBe("GET, HEAD");
+    expect(opt.headers.get("allow")).toBe("GET, HEAD, POST, PUT");
     const noBody = await app.fetch(new Request(`${BASE}/orders/7`, { method: "POST" }));
     expect(noBody.status).toBe(422);
   });

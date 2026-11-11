@@ -45,6 +45,7 @@ function build(workspace: boolean): Files {
   files = apply("route", { id: "todos.edit", path: "/lists/:listId/todos/:todoId/edit" }, files);
   files = apply("route", { id: "todos.item", path: "/items/:id" }, files);
   files = apply("route", { id: "todos.tagged", path: "/tags/:slug" }, files);
+  files = apply("route", { id: "todos.feed", path: "/api/feed/:slug", api: true }, files);
   files = apply("component", { id: "todos/TodoRow" }, files);
   files = apply("store", { id: "todos.board" }, files);
   files = apply("transaction", { id: "todos.board.addCard" }, files);

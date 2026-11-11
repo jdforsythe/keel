@@ -382,9 +382,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1508",
-    "guard redirect loop: the redirect route is under that guard, or redirects revisit a URL",
-    "A denied request would redirect into the same guard forever. Static only for a literal redirect.",
-    "move 'app.login' out of the guarded layout, or redirect to a route outside it",
+    "guard redirect loop: the redirect route is under that guard, or redirects revisit a URL; a page guard without redirect",
+    "A denied request would redirect into the same guard forever. A guard without redirect guards API routes only.",
+    "move 'app.login' out of the guarded layout; guard({}, fn) -> guard({ redirect: 'app.login' }, fn)",
     "k.router",
   ],
   [
@@ -393,6 +393,20 @@ const ROWS: readonly Row[] = [
     "A path without the default value's segment must have one reading; static beats :param would not decide it.",
     "path: '/about' -> path: '/:locale/about' (and the params field)",
     "k.prefix",
+  ],
+  [
+    "E1510",
+    "manifest entry with neither component nor api: true; an API route with component, errorElement, title or layout, without path, or with neither loader nor action",
+    "An API route answers JSON and has no view; a page cannot lose its view by omission.",
+    "{ api: true, path: '/api/x', loader, component: Page } -> { api: true, path: '/api/x', loader }",
+    "k.api",
+  ],
+  [
+    "E1511",
+    "API route in a module a client or static deployable serves",
+    "Those deployables have no server to answer it.",
+    "serve the module from a node deployable, or move the API route to a module one serves",
+    "k.api",
   ],
   ["E1551", "loader or action declared outside a *.server.ts file", "", "move it into <route>.server.ts", "k.server"],
   [

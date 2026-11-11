@@ -72,7 +72,9 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   const { ctx, history } = opts;
   const caller = opts.caller ?? "";
   const own = tables.get(routes) ?? compileRoutes(routes.routes);
-  const table = compileTable(own, routes.routes);
+  const all = compileTable(own, routes.routes);
+  // The client matches no API route (k.api): a link to one is a document request.
+  const table = all.filter((r) => !r.def.api);
   const root = rooted(() => {
     const view = signal<View | null>(null);
     const place = signal<Place>(MISSING);
@@ -191,7 +193,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       if (t !== token) return;
       if (r.ok) continue;
       if (r.error.code !== "keel.denied") return commit(t, failedAt(m, i, r.error), placeOf(m), mode);
-      const to = redirectTo(g.redirect, m.url, m.params, [...visited, m.url]);
+      const to = redirectTo(g.redirect ?? "", m.url, m.params, [...visited, m.url]);
       if (!to.ok) return commit(t, failedAt(m, i, to.error), placeOf(m), mode);
       return go(to.value, mode === "push" ? "push" : "replace", [...visited, m.url]);
     }
@@ -316,7 +318,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
             const t = a.getAttribute("target");
             if ((t !== null && t !== "" && t !== "_self") || a.hasAttribute("download")) return;
             const u = new URL(a.href, document.baseURI);
-            if (u.origin !== new URL(document.baseURI).origin) return;
+            if (u.origin !== new URL(document.baseURI).origin || matchUrl(all, u.pathname).route?.def.api) return;
             e.preventDefault();
             void go(`${u.pathname}${u.search}${u.hash}`, "push", []);
           };

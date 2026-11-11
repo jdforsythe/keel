@@ -10,7 +10,8 @@ import { prefixCollision } from "./prefixCollision.ts";
 
 /**
  * Validate one manifest and compile its table. Throws an Error with `code`: E1502 two routes with one path
- * pattern, E1503 path/params mismatch or malformed path, E1504 required search field, E1505 an `actions` key on
+ * pattern, E1510 an entry that is no page, layout or API route (k.api), E1508 a guard without `redirect` on a page or
+ * layout, E1503 path/params mismatch or malformed path, E1504 required search field, E1505 an `actions` key on
  * an entry (they attach with `routes.actions`, RFC 0063), E1506 unknown layout, layout with a path, or layout cycle,
  * E1507 a loader declaring a `params` or `search` schema that is not this route's own value (RFC 0027), E1509 a
  * k.prefix collision (`prefixCollision`). Looks at
@@ -20,6 +21,9 @@ export function compileRoutes(routes: Readonly<Record<string, RouteDef>>): Table
   const table = new Map<string, Registered>();
   const patterns = new Map<string, string>();
   for (const [id, def] of Object.entries(routes)) {
+    if (def.api ? !def.path || ["component", "errorElement", "title", "layout"].some((k) => k in def) : !def.component)
+      throw codedError("E1510", `${id}: needs component, or api: true with a path and no view`);
+    if (!def.api && def.guard && !def.guard.redirect) throw codedError("E1508", `${id}: guard without redirect`);
     if (Object.hasOwn(def, "actions"))
       throw codedError("E1505", `${id}: move actions to routes.actions({ "${id}": {...} }) after the manifest`);
     const segments = def.path === undefined ? null : compilePath(id, def.path);

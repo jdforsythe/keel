@@ -370,7 +370,7 @@ describe("guards", () => {
     const alert = t.host.querySelector('[role="alert"]');
     expect(alert?.getAttribute("data-keel-error")).toBe("keel.unexpected");
     expect(alert?.textContent).toBe(
-      'guard redirect to "gu.nowhere" failed: Error: E1501 href("gu.nowhere"): no declared route with a path has this id',
+      'guard redirect to "gu.nowhere" failed: Error: E1501 href("gu.nowhere"): no declared page has this id',
     );
     t.stop();
   });

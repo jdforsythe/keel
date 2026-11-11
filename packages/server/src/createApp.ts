@@ -35,7 +35,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
 /**
  * Build one deployable of `topology` over Hono (k.server; generated server entry and `keel dev` only).
  * Rejects with an Error whose message starts with E1552 (the served deployable names a module no route belongs to,
- * or a module is in two deployables) or E1553 (a `static` deployable has a route with params or actions).
+ * or a module is in two deployables) or E1553 (a `static` deployable has a route with params or actions) or E1511 (a `client` or
+ * `static` deployable serves an API route, k.api).
  * Each request follows the k.server Request flow and writes one `req` record (after any `diag`) to `log`.
  * Each request runs in its own isolated scope (k.store `isolate`): stores created in it register in its own registry,
  * appear in `#k-state` and are disposed after the response. `mode` defaults to `production` (RFC 0022).

@@ -94,6 +94,32 @@ describe("surfaceOf", () => {
     expect(d.services).toHaveLength(1);
   });
 
+  it("records an API route (no component, no layout) with its GET answer and actions", () => {
+    const routes = manifest({
+      "y.feed": {
+        api: true,
+        path: "/y/feed",
+        loader: loader({ output: Item }, async () => ok({ id: "i", title: "t" })),
+      },
+    });
+    routes.actions({ "y.feed": { POST: action({ input: Note }, async () => ok(null)) } });
+    const bound = new Map<object, unknown>(Object.values(routes.routes).map((d) => [d, routeActions.get(d)]));
+    const d = surfaceOf({
+      manifests: [{ file: "modules/y/routes.ts", routes }],
+      actionsOf: (def: object) => bound.get(def),
+      services: [],
+      sources: {},
+    });
+    expect(d.routes).toMatchObject({
+      "y.feed": {
+        module: "y",
+        path: "/y/feed",
+        actions: { POST: { input: { required: ["text"] } } },
+        get: { properties: { id: { const: "y.feed" }, results: { required: ["y.feed"] } } },
+      },
+    });
+  });
+
   it("is deterministic: the same evaluation gives the same JSON", () => {
     fc.assert(
       fc.property(fc.constant(null), () => {

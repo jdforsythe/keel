@@ -17,9 +17,7 @@ export function guardNext(table: readonly Located[], url: string): string {
   for (let level = 0; ; level++) {
     const inner = nextOf(at);
     if (inner === null) return at;
-    targets ??= new Set(
-      table.flatMap((r) => r.chain.flatMap((l) => (l.def.guard === undefined ? [] : [l.def.guard.redirect]))),
-    );
+    targets ??= new Set(table.flatMap((r) => r.chain.flatMap((l) => l.def.guard?.redirect ?? [])));
     const id = matchUrl(table, at).route?.id;
     if (id === undefined || !targets.has(id)) return at;
     if (level >= MAX_GUARD_HOPS || !carriedNext(inner)) return withoutNext(at);

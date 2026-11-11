@@ -94,7 +94,8 @@ describe("evaluateProject (mutation)", () => {
     expect((r.problems[0] ?? "").length).toBeGreaterThan("E1807 ".length);
   });
 
-  // A route's guard is a guard value; routes.json records its `redirect` (RFC 0041). A number or a bare name is dropped.
+  // routes.json records a guard's `redirect`, `null` for a guard value without one (`manifest()` refuses that on a page,
+  // E1508); a non-string `redirect` is dropped.
   it("merges route manifests sorted by id, keeping only valid entries", { timeout: 30000 }, async () => {
     write(
       "r/a.ts",
@@ -113,7 +114,8 @@ describe("evaluateProject (mutation)", () => {
     });
     expect(r.css).toBe("");
     expect(r.problems).toEqual([]);
-    expect(Object.keys(r.routes)).toEqual(["a.y", "g.none", "g.ok", "z.x"]);
+    expect(Object.keys(r.routes)).toEqual(["a.y", "bad.guard", "bad.named", "g.none", "g.ok", "z.x"]);
+    expect(r.routes["bad.guard"]?.guard).toBeNull();
     expect(r.routes["g.none"]?.guard).toBeNull();
     expect(r.routes["a.y"]).toEqual({
       actions: [],

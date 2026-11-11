@@ -23,7 +23,7 @@ const tag = (name: string, kids: Node[] = []): HTMLElement => {
   e.append(...kids);
   return e;
 };
-const page = (shell: Partial<RouteDef>, prefix: string) =>
+const page = (shell: Partial<Exclude<RouteDef, { readonly api: true }>>, prefix: string) =>
   manifest({
     [`${prefix}.shell`]: { component: (p) => tag("shell", p.children === undefined ? [] : [p.children()]), ...shell },
     [`${prefix}.page`]: {
@@ -35,7 +35,7 @@ const page = (shell: Partial<RouteDef>, prefix: string) =>
     },
   });
 
-it.each<[string, Partial<RouteDef>, boolean]>([
+it.each<[string, Partial<Exclude<RouteDef, { readonly api: true }>>, boolean]>([
   ["no loader or guard above: the errorElement renders inside the layouts", {}, true],
   [
     "a layout with a loader: the errorElement renders alone",

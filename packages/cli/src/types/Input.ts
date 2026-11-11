@@ -24,6 +24,7 @@ export type Input = {
   readonly adapter?: "client" | "node" | "static";
   readonly workspace?: boolean;
   readonly file?: string;
+  readonly api?: boolean;
   readonly path?: string;
   readonly openapi?: string;
   readonly to?: string;

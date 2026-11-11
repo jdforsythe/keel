@@ -43,7 +43,8 @@ export function renderChain(input: ChainInput): Rendered {
     const childHtml = (): string => inner;
     const children = Object.assign((): Node => htmlToNode(childHtml()), { toString: childHtml });
     const base = { params: input.params, search: input.search, data: input.data[i] };
-    const out = renderUnit(() => lvl.def.component(last ? base : { ...base, children }, undefined, ctx));
+    // An API route (k.api) has no component and is never rendered.
+    const out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, undefined, ctx) ?? "");
     if (typeof Element !== "undefined" && out instanceof Element && islandIn(out)) {
       out.setAttribute("data-k-island", lvl.id);
       islands[lvl.id] = input.props(i);

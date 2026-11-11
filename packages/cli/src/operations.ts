@@ -32,6 +32,7 @@ const structural = {
   workspace: s.boolean().optional(),
   path: s.string().optional(),
   file: s.string().optional(),
+  api: s.boolean().optional(),
   openapi: s.string().optional(),
   to: s.string().optional(),
   default: s.string().optional(),
@@ -57,7 +58,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "build",
-    description: "Compile the project and write the .keel artifacts; vite build when vite.config.ts exists.",
+    description: "Compile the project and write .keel artifacts; vite build when vite.config.ts exists.",
     input: s.object(diagnostic),
     output: outputOf(),
     positional: [],
@@ -73,7 +74,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "spec",
-    description: "Print one spec section, every spec line citing a code (for), or the map.",
+    description: "Print one spec section, each spec line citing a code (for), or the map.",
     input: s.object({ id: s.string().optional(), for: s.string().optional(), map: s.boolean().optional(), ...common }),
     output: outputOf(SectionSchema, CiteSchema),
     positional: ["id"],
@@ -81,7 +82,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "explain",
-    description: "Meaning and fix pattern of one diagnostic code, at most 120 tokens.",
+    description: "Meaning and fix of one diagnostic code, at most 120 tokens.",
     input: s.object({ code: s.string().optional(), ...common }),
     output: outputOf(ExplainSchema),
     positional: ["code"],
@@ -89,7 +90,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "inspect",
-    description: "Summarize GET /__keel/inspect of a running dev app (default http://localhost:5173).",
+    description: "Summarize GET /__keel/inspect of a dev app (default http://localhost:5173).",
     input: s.object({ url: s.string().optional(), ...common }),
     output: outputOf(InspectStoreSchema, InspectSectionSchema),
     positional: ["url"],
@@ -121,7 +122,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "ledger",
-    description: "Emit the verification ledger (or --write it to a file), or diff it against the committed one.",
+    description: "Emit the ledger, --write it, or diff it against the committed one.",
     input: s.object({
       diff: s.boolean().optional(),
       write: s.string().optional(),

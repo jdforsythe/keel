@@ -1,5 +1,6 @@
 // Not a test file. One triggering fixture and one clean counterpart per kernel E code `check()` reports
 // (`reportedCodes()`, RFC 0065), E1756 aside (a registered rule that throws). Public API only.
+import { fileURLToPath } from "node:url";
 import type { check } from "@keel/check";
 import type { Files } from "./support.ts";
 
@@ -47,6 +48,13 @@ const use = (id: string, from: string, name: string): Files[number] =>
   f(`modules/${id}/Use.ts`, `import { ${name} } from '../${from}/${name}.ts'\nexport const Use = ${name}\n`);
 
 const NO_TYPES: Options = { types: false };
+/** A root where `@keel/router` resolves, for fixtures whose rule reads real types (E1510). */
+const ROUTER_ROOT = fileURLToPath(new URL("../../router/", import.meta.url));
+const apiRoutes = (entries: string): Files[number] =>
+  f(
+    "modules/a/routes.ts",
+    `import { manifest } from '@keel/router'\ndeclare const Page: () => Node\nexport const routes = manifest({ ${entries} })\n`,
+  );
 /** A union prop for E1402 (k.component: one `Case` per variant). */
 const MATCH = `${SCHEMA}import { Match, Case } from '@keel/runtime-dom'\nexport const Props = s.object({ shape: s.union('kind', [s.object({ kind: s.literal('circle') }), s.object({ kind: s.literal('square') })]) })\n`;
 /** Color tokens for E1804: `mid` on `white` is about 3:1, `ink` on `white` passes 4.5:1 in both schemes. */
@@ -430,6 +438,17 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "import { loader } from '@keel/router'\ndeclare const Out: unknown\nexport const load = loader({ output: Out }, async ({ params }) => params)\n",
       ),
     ],
+  },
+  E1510: {
+    opts: { root: ROUTER_ROOT },
+    bad: [apiRoutes("'a.list': { api: true, path: '/api/list', component: Page }")],
+    clean: [apiRoutes("'a.list': { api: true, path: '/api/list' }, 'a.home': { path: '/', component: Page }")],
+  },
+  E1511: {
+    badOpts: { ...NO_TYPES, topology: { web: { modules: ["a"], adapter: "client" } } },
+    cleanOpts: { ...NO_TYPES, topology: { api: { modules: ["a"], adapter: "node" } } },
+    bad: [apiRoutes("'a.list': { api: true, path: '/api/list' }")],
+    clean: [apiRoutes("'a.list': { api: true, path: '/api/list' }")],
   },
   E1561: {
     bad: [surfaceFile(surfaceOf(fields("name", "note"), fields("name")))],

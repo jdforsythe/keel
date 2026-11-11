@@ -3,6 +3,7 @@ import { fieldsError, routeActions } from "@keel/router/internal";
 import { attempt, err, ok } from "@keel/schema";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
+import { allowOf } from "./allowOf.ts";
 import { inRequest } from "./inRequest.ts";
 import { isVerb } from "./isVerb.ts";
 import { jsonResponse } from "./jsonResponse.ts";
@@ -45,8 +46,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const acts = routeActions.get(def);
   const action = isVerb(verb) ? acts?.[verb] : undefined;
   if (action === undefined) {
-    const allow = ["GET", "HEAD", ...Object.keys(acts ?? {})].join(", ");
-    return { response: new Response(null, { status: 405, headers: { allow } }), route: id, diags: [] };
+    return { response: new Response(null, { status: 405, headers: { allow: allowOf(def) } }), route: id, diags: [] };
   }
   const values = valuesOf(form);
   const decoded =

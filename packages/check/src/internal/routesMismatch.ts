@@ -8,8 +8,8 @@ const sameList = (a: unknown, b: readonly string[]): boolean =>
 
 /**
  * The first route id (sorted) where `routes.json` `data` differs from the literals of `routes.ts` (k.compiler
- * Artifacts, rfc:0059), or undefined. A literal id missing from `data`, or a read field that differs (`path`,
- * `layout`, guard `redirect`, `actions`, `params`/`search` presence, `module` from the id), is a mismatch; so is an
+ * Artifacts), or undefined. A literal id missing from `data`, or a read field that differs (`path`, `layout`, `api`
+ * (absent means not an API route), guard `redirect`, `actions`, `params`/`search` presence, `module` from the id), is a mismatch; so is an
  * id in `data` the literals lack when every id was a literal (`closed`).
  */
 export function routesMismatch(data: unknown, literals: RouteLiterals): string | undefined {
@@ -23,6 +23,9 @@ export function routesMismatch(data: unknown, literals: RouteLiterals): string |
       got.module !== (id.split(".")[0] ?? id) ||
       (want.path !== undefined && got.path !== want.path) ||
       (want.layout !== undefined && got.layout !== want.layout) ||
+      (!literals.unread.includes(id) &&
+        !literals.unread.includes(`${id} api`) &&
+        (got.api === true) !== (want.api === true)) ||
       (want.guard !== undefined && got.guard !== want.guard) ||
       (want.actions !== undefined && !sameList(got.actions, want.actions)) ||
       (want.params !== undefined && (got.params !== null) !== want.params) ||

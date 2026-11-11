@@ -8,7 +8,7 @@ export const inputs = {
     workspace: s.boolean().optional(),
   }),
   module: s.object({ id: s.string() }),
-  route: s.object({ id: s.string(), path: s.string(), file: s.string().optional() }),
+  route: s.object({ id: s.string(), path: s.string(), file: s.string().optional(), api: s.boolean().optional() }),
   component: s.object({ id: s.string() }),
   store: s.object({ id: s.string() }),
   transaction: s.object({ id: s.string() }),

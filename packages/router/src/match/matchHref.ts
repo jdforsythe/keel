@@ -12,7 +12,7 @@ const lists = new WeakMap<object, readonly Located[]>();
 /**
  * Match `href` against `routes` as a navigation does (k.router `@keel/router/match`, rfc:0071): static segments beat
  * `:param`, params decode by the route's schema, failing search keys drop. Returns `{ id, params, search }`, or `null`
- * when no path route matches or its params fail. `routes.href(id, params, search)` is the inverse.
+ * when no page matches (an API route's path included, k.api) or its params fail. `routes.href(id, params, search)` is the inverse.
  */
 export function matchHref<M extends Readonly<Record<string, RouteDef>>>(
   routes: Manifest<M>,
@@ -22,7 +22,7 @@ export function matchHref<M extends Readonly<Record<string, RouteDef>>>(
   if (list === undefined) {
     const table = tables.get(routes) ?? compileRoutes(routes.routes);
     list = [...table.values()].flatMap(({ id, def, segments }) =>
-      segments === null ? [] : [{ id, def, segments, chain: [] }],
+      segments === null || def.api ? [] : [{ id, def, segments, chain: [] }],
     );
     lists.set(routes, list);
   }
