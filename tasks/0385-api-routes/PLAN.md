@@ -8,7 +8,7 @@
 
 ## Steps
 - [x] 1 ADR-0109, k.api spec text, k.router and k.topology pointers, map row
-- [ ] 2 conformance-writer: `packages/router/conformance/api-routes-0086.test.ts`, `packages/server/conformance/api-routes-0086.test.ts`
+- [x] 2 conformance-writer: `packages/router/conformance/api-routes-0086.test.ts`, `packages/server/conformance/api-routes-0086.test.ts`
 - [ ] 3 kernel: router (`RouteDef` arms, `manifest()` E1510, `href`, `matchHref`), compiler (`routes.json` `api: true`), server (API request flow, E1511 in `createApp`), check (E1510, E1511 rules, explain, fixtures), scaffold (`route --api`, templates)
 - [ ] 4 migration: golden-1 `api` and `digest`, std-sessions; guide, `keel-api` skill
 - [ ] 5 reviewer and red-team; findings to the backlog
@@ -22,4 +22,4 @@
 - [ ] no stub view left in golden-1 or std-sessions
 
 ## Next action
-Step 2: conformance-writer, then the kernel agent (step 3).
+Step 3: brief the kernel agent with the code map; the conformance files are committed and fail until it lands.
