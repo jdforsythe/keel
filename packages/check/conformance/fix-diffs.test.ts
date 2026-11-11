@@ -300,6 +300,7 @@ const NO_FIX = [
   "E1501", // the target route id is unknown to the checker
   "E1508", // which route leaves the guarded layout is a design choice
   "E1511", // the module's deployable is the author's choice
+  "E1566", // which deployable hosts the client is the author's choice
   "E1551", // moving the declaration to a .server file is a design change
   "E1561", // choosing between the caller's and the producer's schema is a judgment
   "E1562", // the fix edits the route's schema source and needs a rebuilt surface; its fixture is surface data alone

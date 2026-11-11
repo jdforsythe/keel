@@ -450,6 +450,18 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [apiRoutes("'a.list': { api: true, path: '/api/list' }")],
     clean: [apiRoutes("'a.list': { api: true, path: '/api/list' }")],
   },
+  E1566: {
+    badOpts: {
+      ...NO_TYPES,
+      topology: { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "web" } },
+    },
+    cleanOpts: {
+      ...NO_TYPES,
+      topology: { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "api" } },
+    },
+    bad: [f("modules/w/x.ts", "export const x = 1;\n")],
+    clean: [f("modules/w/x.ts", "export const x = 1;\n")],
+  },
   E1561: {
     bad: [surfaceFile(surfaceOf(fields("name", "note"), fields("name")))],
     clean: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],

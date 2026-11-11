@@ -261,6 +261,7 @@ describe("k.hosting", () => {
     expect(bad.status).not.toBe(0);
     const lines = bad.out.split("\n").filter((l) => l.includes("E1565"));
     expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/E1565 /);
     expect(lines[0]).toContain("KEEL_PEER_API");
     expect(bad.out).not.toContain("nope");
   }, 300_000);
@@ -425,6 +426,7 @@ describe("k.hosting", () => {
     await res.text();
     const hits = lines.filter((l) => l.includes("W1567"));
     expect(hits).toHaveLength(1);
+    expect(hits[0]).toMatch(/W1567/);
     expect(hits[0]).toContain('"diag"');
     const same = lines.length;
     await (
