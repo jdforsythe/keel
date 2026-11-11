@@ -35,7 +35,8 @@ import { statusOf } from "./statusOf.ts";
  * the route's loader is live, then 403 `keel.denied` for a guard redirect, else its event stream (`liveStream`).
  * An API route (k.api) is a runtime request whatever `accept` says: JSON only, a guard denial is 403 `keel.denied`
  * (its `redirect` not followed), and a GET or HEAD without a loader is 405. A host's GET or HEAD of a path no route
- * matches that is neither runtime nor an event stream gets the hosted client's `index.html` (k.hosting Host).
+ * matches that is neither runtime, an event stream nor under `/assets/` gets the hosted client's `index.html` (k.hosting
+ * Host).
  */
 export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Context): Promise<Handled> {
   const url = new URL(raw.url);
@@ -65,7 +66,8 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
       doc !== undefined &&
       (method === "GET" || method === "HEAD") &&
       !r.runtime &&
-      !accept.includes("text/event-stream")
+      !accept.includes("text/event-stream") &&
+      !path.startsWith("/assets/")
     )
       return {
         response: new Response(method === "HEAD" ? null : doc, {

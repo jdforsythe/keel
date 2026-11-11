@@ -1,5 +1,6 @@
 import { type Expression, parseSync } from "oxc-parser";
 import type { Topology } from "../types/Topology.ts";
+import { HOST_NOT_LITERAL } from "./HOST_NOT_LITERAL.ts";
 
 type Deployable = Topology[string];
 const ADAPTERS: readonly Deployable["adapter"][] = ["node", "static", "client"];
@@ -21,7 +22,8 @@ const isAdapter = (v: string): v is Deployable["adapter"] => ADAPTERS.some((x) =
 /**
  * Read `topology.ts` statically (k.server Topology): `export default topology({ name: { modules: [...],
  * adapter, host? } })` (or a bare object). Only literal deployable names, module ids, adapters and hosts count; anything
- * else is a problem (one short line each) and the deployable is skipped. Nothing is executed.
+ * else is a problem (one short line each) and the deployable is skipped, except a `host` that is not a string literal,
+ * which is dropped from the kept deployable. Nothing is executed.
  */
 export function parseTopology(source: string): { topology: Topology; problems: string[] } {
   const problems: string[] = [];
@@ -66,7 +68,10 @@ export function parseTopology(source: string): { topology: Topology; problems: s
           else problems.push(`${name}: module id is not a string literal`);
       } else if (k === "adapter" && fv.type === "Literal" && typeof fv.value === "string" && isAdapter(fv.value))
         adapter = fv.value;
-      else if (k === "host" && fv.type === "Literal" && typeof fv.value === "string") host = fv.value;
+      else if (k === "host") {
+        if (fv.type === "Literal" && typeof fv.value === "string") host = fv.value;
+        else problems.push(`${name}: ${HOST_NOT_LITERAL}`);
+      }
     }
     if (modules === undefined || adapter === undefined) {
       problems.push(`${name}: needs modules: [...] and adapter: 'node' | 'static' | 'client'`);

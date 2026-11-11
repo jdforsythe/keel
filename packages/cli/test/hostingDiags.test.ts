@@ -27,6 +27,29 @@ describe("hostingDiags", () => {
     expect(hostingDiags({ api: { ...n, host: "api" } }, {}).map((x) => x.code)).toEqual(["E1566"]);
   });
 
+  it("E1566 for a host that is not a string literal in the source", () => {
+    const source =
+      'const H = "api";\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: H } })';
+    const d = hostingDiags({ api: n, web }, {}, source);
+    expect(d.map((x) => [x.code, x.message])).toEqual([["E1566", "web: host must be a string literal"]]);
+  });
+
+  it("fails keel build on a host that is not a string literal", async () => {
+    const r = await run(["build", "--format=json"], {
+      cwd: "/p",
+      env: {},
+      files: [
+        {
+          path: "topology.ts",
+          source:
+            'export default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: `api` } })',
+        },
+      ],
+    });
+    expect(r.code).not.toBe(0);
+    expect(r.stdout).toContain("E1566");
+  });
+
   it("fails keel build with no writes", async () => {
     const r = await run(["build", "--format=json"], {
       cwd: "/p",

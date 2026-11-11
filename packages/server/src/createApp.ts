@@ -73,7 +73,9 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * resolves when every `run` has settled. `ctx` is bound for `service({ module })` (`bindModules`). A request whose path
  * no route here matches but a peer serves (by `routes.json` in `artifacts`) is forwarded to it unless it carries
  * `x-keel-forwarded` (k.topology Calls and peers; `forward`), and logs its `req` record like a served one. `origin`
- * replaces the request's origin in `url`, the same-site check and `Secure`; with it, no W1557.
+ * replaces the request's origin in `url`, the same-site check and `Secure`; with it, no W1557. An `allow` entry that is
+ * not an http(s) origin rejects with E1560 naming its index, never its value; with any entry, every API-route response
+ * carries `vary: origin` (k.hosting Allowed origins).
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -132,7 +134,13 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     built,
     name,
     origin,
-    allow: new Set((opts.allow ?? []).flatMap((o) => originOf(o) ?? [])),
+    allow: new Set(
+      (opts.allow ?? []).map((o, i) => {
+        const v = originOf(o);
+        if (v === undefined) throw codedError("E1560", `allow[${i}] is not an http(s) origin`);
+        return v;
+      }),
+    ),
     lifecycle: new AbortController(),
   };
   const peers = opts.peers ?? {};
@@ -150,8 +158,8 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     // An allowed origin (k.hosting): granted on API routes only, by exact match of its serialized origin.
     const from = raw.headers.get("origin") ?? "";
     const known = sv.allow.has(from);
-    const hit = known && !inspecting ? matchUrl(served, path).route : null;
-    const api = hit?.def.api === true ? hit.def : undefined;
+    const hit = sv.allow.size > 0 && !inspecting ? matchUrl(served, path).route : null;
+    const api = hit?.def.api === true && known ? hit.def : undefined;
     const cross = known && raw.headers.get("sec-fetch-site") === "cross-site" && !warned.has(from);
     if (cross) warned.add(from);
     // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
@@ -182,7 +190,9 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
               ).then((r) => ({ ...r, route: undefined })),
             );
     const h = ran.ok ? ran.value : crashed(sv.mode, ran.error);
-    const response = api === undefined ? h.response : withCors(h.response, from, pre ? allowOf(api) : undefined);
+    // Every API-route response varies by origin once any origin is allowed, so a shared cache keeps them apart.
+    const response =
+      hit?.def.api !== true ? h.response : withCors(h.response, api && from, api && pre ? allowOf(api) : undefined);
     if (log !== undefined) {
       if (cross)
         log.write(

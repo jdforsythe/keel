@@ -10,13 +10,13 @@ status: proposed
 **Allowed origins.** `DeployEnv` `KEEL_ALLOW_ORIGINS` is a comma-separated list of http(s) origins, `createApp({ allow })`; `*` or a value with a path is E1560; an origin is its own serialization, a trailing `/` allowed. For a request to an API route (k.api) whose `Origin` is in the list:
 - `OPTIONS` with `access-control-request-method`: 204 with `access-control-allow-origin` (that origin), `access-control-allow-methods` (the route's methods), `access-control-allow-headers: accept, content-type, x-keel`, `access-control-allow-credentials: true`, `access-control-max-age: 600` and `vary: origin`; no guard, loader or action runs.
 - Other methods: the response carries `access-control-allow-origin`, `access-control-allow-credentials: true` and `vary: origin`; a write passes the same-site check (k.server).
-Pages, assets and other origins get no header: the preflight is 405 and the write 403.
+With a list set, every API route response carries `vary: origin`. Pages, assets and other origins get no other header: the preflight is 405 and the write 403. `createApp` throws E1560 for an `allow` entry that is no origin.
 
 **Caller.** The caller cookie (k.server) is unchanged, so it reaches the API only when the two origins are same-site. A request from an allowed origin with `sec-fetch-site: cross-site` is one W1567 `diag` per origin.
 
 **Host.** `host: '<name>'` on a `client` deployable names the `node` deployable that serves it. `keel build` also copies the client artifact into `dist/<host>/`, and the host's `createApp` answers a GET or HEAD document request matching none of its routes and no peer's with `index.html` (200, `no-cache`); an unmatched runtime or event-stream request, or a path under `/assets/`, stays 404.
 
-**Rules.** E1565 `KEEL_PEER_<NAME>` at build is not an http(s) origin; names the key, never the value · E1566 `host` on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one host · W1567 an allowed origin that is cross-site to the server: the caller cookie cannot reach it; use one registrable domain or one origin.
+**Rules.** E1565 `KEEL_PEER_<NAME>` at build is not an http(s) origin; names the key, never the value · E1566 `host` that is not a string literal, on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one host · W1567 an allowed origin that is cross-site to the server: the caller cookie cannot reach it; use one registrable domain or one origin.
 
 **Conformance.**
 - `keel build` of a fixture with a `client` deployable `web` writes `dist/web/index.html` and hashed files under `dist/web/assets/`; no file in it holds a URL that is neither root-absolute nor absolute.

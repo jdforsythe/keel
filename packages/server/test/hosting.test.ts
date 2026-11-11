@@ -93,12 +93,42 @@ describe("allowed origins", () => {
     }
   });
 
-  it("an entry that is not an http(s) origin matches nothing", async () => {
-    const a = await app(["*", "null", "https://app.test/path", "file:///x", "nope"]);
-    for (const origin of ["null", "*", "https://app.test", "file://"]) {
-      const pre = await a.fetch(req("OPTIONS", "/api/lists", { origin, "access-control-request-method": "GET" }));
-      expect(pre.status, origin).toBe(405);
+  it("an entry that is not an http(s) origin rejects with E1560 naming its index, never its value", async () => {
+    for (const bad of [
+      "*",
+      "null",
+      "https://app.test/path",
+      "file:///x",
+      "nope",
+      'https://a".test',
+      "https://a%22.test",
+    ]) {
+      const r = app([APP, bad]);
+      await expect(r, bad).rejects.toThrow(/^E1560 allow\[1\] /);
+      await r.catch((e: unknown) => expect(String(e)).not.toContain(bad));
     }
+  });
+
+  it("every API-route response varies by origin once any origin is allowed; pages and assets do not", async () => {
+    const a = await app([APP]);
+    for (const origin of [undefined, "https://other.test", "null"]) {
+      const h: Record<string, string> = origin === undefined ? {} : { origin };
+      for (const r of [
+        req("GET", "/api/lists", { ...h, accept: "application/json" }),
+        req("POST", "/api/lists", { ...h, ...json }),
+        req("OPTIONS", "/api/lists", { ...h, "access-control-request-method": "POST" }),
+      ]) {
+        const res = await a.fetch(r);
+        expect(res.headers.get("vary"), `${origin} ${r.method}`).toContain("origin");
+        expect(res.headers.get("access-control-allow-origin")).toBeNull();
+        expect(res.headers.get("access-control-allow-credentials")).toBeNull();
+      }
+    }
+    const page = await a.fetch(req("GET", "/", { origin: "https://other.test" }));
+    expect(page.headers.get("vary") ?? "").not.toContain("origin");
+    const none = await app([]);
+    const plain = await none.fetch(req("GET", "/api/lists", { accept: "application/json" }));
+    expect(plain.headers.get("vary") ?? "").not.toContain("origin");
   });
 
   it("grants API routes only: a page's preflight is 405 and a page write gets no header", async () => {
@@ -145,6 +175,14 @@ describe("allowed origins", () => {
 });
 
 describe("withCors and sameSite", () => {
+  it("withCors without an origin appends vary alone", () => {
+    for (const o of [undefined, ""]) {
+      const res = withCors(new Response("x", { headers: { vary: "accept" } }), o);
+      expect(res.headers.get("vary")).toBe("accept, origin");
+      expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    }
+  });
+
   it("withCors keeps status, body and headers and appends vary", async () => {
     const res = withCors(new Response("x", { status: 201, headers: { vary: "accept", a: "1" } }), APP);
     expect(res.status).toBe(201);
@@ -215,6 +253,16 @@ describe("host fallback", () => {
     expect((await a.fetch(req("POST", "/no/such/page", json))).status).toBe(404);
   });
 
+  it("a missing path under /assets/ stays 404", async () => {
+    const a = await host(built(true));
+    for (const p of ["/assets/missing.js", "/assets/x/y.css"])
+      for (const accept of ["text/html", "*/*"]) {
+        const res = await a.fetch(req("GET", p, { accept }));
+        expect(res.status, p).toBe(404);
+        expect(await res.text()).not.toBe("<!doctype html><title>web</title>");
+      }
+  });
+
   it("its own routes win, and the client's hashed assets are immutable", async () => {
     const a = await host(built(true));
     const home = await a.fetch(req("GET", "/", { accept: "text/html" }));
@@ -248,6 +296,42 @@ describe("host fallback", () => {
     });
     const res = await a.fetch(req("GET", "/feed", { accept: "text/html" }));
     expect(await res.text()).toBe("peer");
+  });
+
+  it("a path an in-process peer serves is answered by the peer, never with index.html", async () => {
+    const T2 = topology({
+      api: { modules: ["a"], adapter: "node" },
+      other: { modules: ["b"], adapter: "node" },
+      web: { modules: ["w"], adapter: "client", host: "api" },
+    });
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-host-art-"));
+    made.push(dir);
+    fs.writeFileSync(
+      path.join(dir, "routes.json"),
+      JSON.stringify({ data: { "b.feed": { module: "b", path: "/feed" } }, hash: "" }),
+    );
+    const peer = await createApp({
+      topology: T2,
+      deployable: "other",
+      routes: manifest({ "b.feed": { path: "/feed", component: () => document.createElement("article") } }),
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+    });
+    const a = await createApp({
+      topology: T2,
+      deployable: "api",
+      routes: routes(),
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+      assets: built(true),
+      artifacts: dir,
+      peers: { other: peer },
+    });
+    for (const method of ["GET", "HEAD"]) {
+      const res = await a.fetch(req(method, "/feed", { accept: "text/html" }));
+      expect(res.status, method).toBe(200);
+      const body = await res.text();
+      expect(body).not.toBe("<!doctype html><title>web</title>");
+      if (method === "GET") expect(body).toContain("<article");
+    }
   });
 
   it("a host without index.html rejects with E1555; a deployable no client names never serves it", async () => {

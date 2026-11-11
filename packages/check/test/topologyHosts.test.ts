@@ -43,6 +43,17 @@ describe("topologyHosts", () => {
     ).toEqual([]);
   });
 
+  it("reports E1566 for a host that is not a string literal", () => {
+    const source = SOURCE.replace('host: "nowhere"', "host: `api`");
+    const [d, ...rest] = topologyHosts(
+      "",
+      { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client" } },
+      source,
+    );
+    expect(rest).toEqual([]);
+    expect([d?.code, d?.line, d?.message]).toEqual(["E1566", 4, "web: host must be a string literal"]);
+  });
+
   it("runs as a project pass of check()", () => {
     const files = [
       { path: "topology.ts", source: SOURCE },

@@ -5,11 +5,12 @@ import { clip } from "./clip.ts";
 import { lineCol } from "./lineCol.ts";
 
 /**
- * E1566 (k.hosting Host): each bad `host` of `topology` (`hostProblems`), reported at `<dir>topology.ts` on the first
+ * E1566 (k.hosting Host): each bad `host` of `topology`, and each `host` in `source` that is not a string literal
+ * (`hostProblems`), reported at `<dir>topology.ts` on the first
  * `host` after the deployable's name in `source` (its text) when found. No fix.
  */
 export function topologyHosts(dir: string, topology: Topology, source = ""): Diagnostic[] {
-  return hostProblems(topology).map(([name, message]) => {
+  return hostProblems(topology, source).map(([name, message]) => {
     const at = Math.max(0, source.search(new RegExp(`\\b${name}\\b`)));
     const host = source.slice(at).search(/\bhost\b/);
     const { line, col } = lineCol(source, host < 0 ? at : at + host);

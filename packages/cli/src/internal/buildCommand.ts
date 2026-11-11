@@ -38,7 +38,9 @@ export async function buildCommand(io: Io): Promise<Outcome> {
     ...[...loaded, ...r.diagnostics, ...std.diagnostics, ...paths].map((d) =>
       makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see, fix: d.fix }),
     ),
-    ...(topology === undefined ? [] : hostingDiags(topology, io.env ?? {})),
+    ...(topology === undefined
+      ? []
+      : hostingDiags(topology, io.env ?? {}, project.find((f) => f.path === "topology.ts")?.source)),
   ];
   const failed = diags.some((d) => typeof d.code === "string" && d.code.startsWith("E"));
   const writes: Write[] = failed

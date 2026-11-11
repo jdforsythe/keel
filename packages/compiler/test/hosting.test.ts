@@ -20,7 +20,7 @@ import { parseTopology } from "../src/internal/parseTopology.ts";
 import keel from "../src/vite.ts";
 
 const SEED = 1337;
-const host = fc.stringMatching(/^[a-z][a-z0-9-]{0,10}(\.[a-z][a-z0-9-]{0,6}){0,2}$/);
+const host = fc.stringMatching(/^[a-z]([a-z0-9-]{0,9}[a-z0-9])?(\.[a-z]([a-z0-9-]{0,5}[a-z0-9])?){0,2}$/);
 const port = fc.option(fc.integer({ min: 1, max: 65535 }), { nil: undefined });
 
 describe("originOf", () => {
@@ -65,6 +65,48 @@ describe("originOf", () => {
         expect(originOf(v)).toBeUndefined();
       }),
       { seed: SEED, numRuns: 100 },
+    );
+  });
+});
+
+describe("originOf hosts", () => {
+  const unsafe = /["'<>\s]/;
+  it("refuses a host outside DNS, IPv4 or bracketed IPv6 syntax", () => {
+    for (const v of [
+      'https://a".test',
+      "https://a%22.test",
+      "https://a'.test",
+      "https://a<b.test",
+      "https://a%3E.test",
+      "https://a_b.test",
+      "https://-a.test",
+      "https://a-.test",
+      "https://a..test",
+      "https://a.test.",
+      "https://a%20b.test",
+      "https://a$.test",
+    ])
+      expect(originOf(v), v).toBeUndefined();
+    for (const v of [
+      "https://xn--bcher-kva.test",
+      "http://127.0.0.1:3000",
+      "http://[::1]:3000",
+      "https://[2001:db8::1]",
+    ])
+      expect(originOf(v), v).toBe(new URL(v).origin);
+  });
+
+  it("every accepted value round-trips through new URL(v).origin and holds no quote, angle bracket or space", () => {
+    const ch = fc.constantFrom(..."abz09-.\"'<>%_:[]@ \t".split(""), "%22", "%3c", "%20", "xn--");
+    const raw = fc.array(ch, { minLength: 1, maxLength: 12 }).map((cs) => cs.join(""));
+    fc.assert(
+      fc.property(fc.constantFrom("http", "https"), raw, port, (scheme, h, p) => {
+        const o = originOf(`${scheme}://${h}${p === undefined ? "" : `:${p}`}`);
+        if (o === undefined) return;
+        expect(new URL(o).origin).toBe(o);
+        expect(unsafe.test(o)).toBe(false);
+      }),
+      { seed: SEED, numRuns: 2000 },
     );
   });
 });
@@ -123,6 +165,17 @@ describe("parseTopology host", () => {
     );
     expect(topology.web).toEqual({ modules: ["w"], adapter: "client", host: "api" });
     expect(topology.api).toEqual({ modules: ["a"], adapter: "node" });
+  });
+
+  it("reports a host that is not a string literal, as hostProblems does from the source", () => {
+    for (const h of ["`api`", "API", '"a" + "pi"', "`${API}`"]) {
+      const source = `const API = "api";\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: ${h} } })`;
+      const r = parseTopology(source);
+      expect(r.problems, h).toEqual(["web: host must be a string literal"]);
+      expect(r.topology.web).toEqual({ modules: ["w"], adapter: "client" });
+      expect(hostProblems(r.topology, source)).toEqual([["web", "web: host must be a string literal"]]);
+      expect(hostProblems(r.topology)).toEqual([]);
+    }
   });
 });
 
