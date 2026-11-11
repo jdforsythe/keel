@@ -13,11 +13,11 @@ export const routes = manifest({
 })
 routes.actions({ 'orders.show': { POST: updateOrder } })
 ```
-`routes.actions` attaches path routes' actions once each. An entry without `path` is a layout: its `component` renders a `children` slot. A route's chain is the route plus its layouts, outermost first. `component` receives `{ params, search, data }`, where `data` is its loader's `ok` value; `errorElement` receives `{ error: KeelError }`. A path route's `title` names its document (k.head).
+`routes.actions` attaches path routes' actions once each. An entry without `path` is a layout: its `component` renders a `children` slot; `api: true` marks an API route (k.api). A chain is the route plus its layouts, outermost first. `component` receives `{ params, search, data }`, `data` being its loader's `ok` value; `errorElement` receives `{ error: KeelError }`. A page's `title` names its document (k.head).
 
 **Matching.** Segment by segment; static beats `:param`; no wildcards; k.prefix elides a leading param. A trailing slash redirects (308) to the canonical path. Params that fail their schema: 404 with `keel.notFound`; no guard or loader runs. It renders in the chain's nearest `errorElement`, inside the layouts above it unless one declares a loader or guard (then alone). Failing search keys are dropped; the rest parse.
 
-**Links.** `routes.href(id, params?, search?)` returns a branded `Href`: `id` is a path route of that manifest; `params` (required iff declared) and `search` are typed by its schemas. Params are encoded by schema then URL-encoded; search keys are sorted and absent optionals omitted. `Link to`, `navigate`, and `Form action` take `Href` only; other URL attributes follow the k.compiler URL policy. `routes.href`, a router, and guard redirects resolve ids only in their own manifest.
+**Links.** `routes.href(id, params?, search?)` returns a branded `Href`: `id` is a page of that manifest; `params` (required iff declared) and `search` are typed by its schemas. Params are encoded by schema then URL-encoded; search keys are sorted and absent optionals omitted. `Link to`, `navigate`, and `Form action` take `Href` only; other URL attributes follow the k.compiler URL policy. `routes.href`, a router, and guard redirects resolve ids only in their own manifest.
 
 **Guards.**
 ```ts
@@ -27,7 +27,7 @@ export const auth = guard({ redirect: 'app.login' }, async ({ url, caller }, ctx
 
 **Execution.** Guards, loaders, and actions run on the server, or in the browser in a client-only app. API: `@keel/router`; `@keel/router/match`: `matchHref(routes, href)` matches as navigation does: `{ id, params, search }` or `null`; `@keel/router/internal` is not public.
 
-**Client.** `navigate(href, { replace? })` pushes or replaces a history entry. `route()` is a computed of the match `{ id, params, search, pending }`, discriminated by `id`; `pending` is true while a navigation or action is in flight; the previous page stays rendered until the new chain's loaders finish. After a push: scroll to the top (or the hash target) and focus `main` (`tabindex="-1"`). Back or forward restores each history entry's scroll. Revalidation changes neither scroll nor focus. Same-origin link clicks inside the router navigate client-side.
+**Client.** `navigate(href, { replace? })` pushes or replaces a history entry. `route()` is a computed of the match `{ id, params, search, pending }`, discriminated by `id`; `pending` is true while a navigation or action runs; the previous page stays rendered until the new chain's loaders finish. After a push: scroll to the top (or the hash target) and focus `main` (`tabindex="-1"`). Back and forward restore each entry's scroll. Revalidation changes neither scroll nor focus. Same-origin link clicks inside a router navigate client-side.
 
 **Form.** `<Form method action form? error?>`; `action` is an `Href`. Without JS it posts natively (`PUT`/`PATCH`/`DELETE` via a hidden `_method`). Inside a router it submits FormData to the matched route's action and applies its `Result`: `ok(href)` navigates; `ok(null)` re-runs every loader in the current chain once.
 

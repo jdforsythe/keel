@@ -19,7 +19,7 @@ status: implemented
 
 **Local topology.** `keel dev` serves every deployable in one process on one origin: Vite serves `client` and `static` entries with HMR; each `node` deployable runs its dev `createApp` (real `ctx`, storage in `.keel-dev/`) and runners, the others its in-process peers, and serves its paths.
 
-**Rules.** E1552 a topology module unknown or in two deployables · E1553 `static` deployable route with params or actions · E1559 one path in two deployables (names both routes) · E1560 the production environment fails `DeployEnv` (at startup).
+**Rules.** E1552 a module unknown or in two deployables · E1553 `static` deployable route with params or actions · E1559 one path in two deployables (names both) · E1511 (k.api) · E1560 the production environment fails `DeployEnv` at startup.
 
 **Conformance.**
 - Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states.
