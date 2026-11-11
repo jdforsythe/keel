@@ -14,7 +14,7 @@ beforeAll(() => {
 afterAll(() => fs.rmSync(fixture, { recursive: true, force: true }));
 
 describe("k.topology: E1560", () => {
-  test.skip("E1560 the production environment fails DeployEnv (at startup)", () => {
+  test("E1560 the production environment fails DeployEnv (at startup)", () => {
     const entry = path.join(fixture, "dist", "web", "server.mjs");
     fc.assert(
       fc.property(fc.stringMatching(/^[a-zA-Z0-9]{0,31}$/), (secret) => {

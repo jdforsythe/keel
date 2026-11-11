@@ -34,7 +34,7 @@ export async function page(
 ): Promise<Handled> {
   const { chain, def, id } = m.route;
   const publicize = (e: KeelError<string, unknown>) => publicError(e, r.sv.mode);
-  const outcomes = await runLoaders(r, chain, { params: m.params, search: m.search, url: r.raw.url });
+  const outcomes = await runLoaders(r, chain, { params: m.params, search: m.search, url: r.url });
   const diags = outcomes.flatMap((o) => (o.diag === null ? [] : [o.diag]));
   const failedAt = outcomes.findIndex((o) => !o.result.ok);
   const failed = outcomes[failedAt]?.result;

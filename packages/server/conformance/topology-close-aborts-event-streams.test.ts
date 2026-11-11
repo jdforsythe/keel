@@ -9,7 +9,7 @@ import { manifest } from "@keel/router";
 import { createAppLoose, flush, liveLoader, simCtx } from "./topology-fixtures.ts";
 
 describe("k.topology: close and event streams", () => {
-  test.skip("`app.close()` aborts each runner's `signal` and open event stream and resolves when every `run` has settled.", async () => {
+  test("`app.close()` aborts each runner's `signal` and open event stream and resolves when every `run` has settled.", async () => {
     let fnSignal: AbortSignal | undefined;
     const live = liveLoader(s.object({ n: s.int() }), async function* (args: { signal: AbortSignal }) {
       fnSignal = args.signal;

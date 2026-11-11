@@ -2,6 +2,8 @@ import type { Topology } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
 import type { LogSink } from "./LogSink.ts";
+import type { Runner } from "./Runner.ts";
+import type { ServerApp } from "./ServerApp.ts";
 
 /**
  * Options of `createApp` (generated server entry and `keel dev` only; app code sees only `topology`).
@@ -21,10 +23,15 @@ import type { LogSink } from "./LogSink.ts";
  * the request URL's scheme. When secure, the caller cookie is `__Host-keel-caller` with `Secure`, else `keel-caller`.
  * `std` is the path of the build's `.keel/std.json`, read at startup and bound to `ctx`, where stdlib packages read
  * their modules' config with `stdConfig(ctx, pkg, Config)` (k.module Std config, rfc:0066).
+ * `routes` defaults to none (a deployable of runners alone). `runners` lists each module's `Runner`s; those of the
+ * served deployable's modules run once after startup (k.topology Runners). `peers` names the other `node` deployables,
+ * by URL or as apps in this process: `service({ module })` calls and requests for the paths they serve (by `routes.json`
+ * in `artifacts`) go to them (k.topology Calls and peers). `origin` is the public origin, which replaces the request's in
+ * `url`, the same-site check and `Secure` (k.topology Build).
  */
 export type AppOptions = {
   readonly topology: Topology;
-  readonly routes: Manifest<Readonly<Record<string, RouteDef>>>;
+  readonly routes?: Manifest<Readonly<Record<string, RouteDef>>>;
   readonly ctx: Ctx;
   readonly mode?: "dev" | "production";
   readonly deployable?: string;
@@ -36,4 +43,7 @@ export type AppOptions = {
   readonly secret?: string;
   readonly secure?: boolean;
   readonly std?: string;
+  readonly runners?: Readonly<Record<string, readonly Runner[]>>;
+  readonly peers?: Readonly<Record<string, string | URL | ServerApp>>;
+  readonly origin?: string;
 };

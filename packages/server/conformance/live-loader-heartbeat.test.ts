@@ -9,7 +9,7 @@ import { topology } from "@keel/server";
 import { SEED, createAppLoose, flush, liveLoader, simCtx } from "./topology-fixtures.ts";
 
 describe("k.server: live loader heartbeat", () => {
-  test.skip("An event stream writes a `:` line per 15 s of `ctx.clock` until `fn` returns or `signal` aborts.", async () => {
+  test("An event stream writes a `:` line per 15 s of `ctx.clock` until `fn` returns or `signal` aborts.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 4 }), async (beats) => {
         const live = liveLoader(s.object({ n: s.int() }), async function* (args: { signal: AbortSignal }) {

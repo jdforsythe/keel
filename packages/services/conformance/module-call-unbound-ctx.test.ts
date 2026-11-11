@@ -7,7 +7,7 @@ import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 
 describe("k.services: module calls", () => {
-  test.skip("On an unbound sim ctx, `service({ module: 'b' })` sends its request to `http://b.keel.invalid` plus the endpoint path.", async () => {
+  test("On an unbound sim ctx, `service({ module: 'b' })` sends its request to `http://b.keel.invalid` plus the endpoint path.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z0-9]{1,8}$/), async (id) => {
         const schema = endpoints({

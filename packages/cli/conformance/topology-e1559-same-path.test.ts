@@ -43,7 +43,7 @@ const e1559 = async (same: boolean, pa: string, pb: string) => {
 };
 
 describe("k.topology: E1559", () => {
-  test.skip("Two routes with path `/p` in modules of different deployables are one E1559.", async () => {
+  test("Two routes with path `/p` in modules of different deployables are one E1559.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^\/[a-z]{1,8}$/), async (p) => {
         const lines = await e1559(false, p, p);

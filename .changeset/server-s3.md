@@ -1,0 +1,5 @@
+---
+"@keel/server": minor
+---
+
+`createApp({ runners, peers, origin })`: the served deployable's modules' `Runner`s run once after startup (a rejected `run` reruns 1,000 ms later on `ctx.clock`); `app.close()` aborts their signal and open event streams and resolves when every `run` has settled; `routes` is optional. `peers` names the other `node` deployables by URL or as in-process apps: `service({ module })` calls resolve through them, and a request for a path a peer serves (by `routes.json` in `artifacts`) is forwarded once (`x-keel-forwarded`). `origin` replaces the request's origin in `url`, the same-site check and `Secure`. Live loaders: a GET with `accept: text/event-stream` streams one `data:` line per yield and a `:` heartbeat per 15 s of `ctx.clock` (guard denial 403 `keel.denied`; a non-live route 406); E1558 for a live loader in a non-`node` deployable. New `@keel/server/start` (production entry: `DeployEnv`, E1560, `@hono/node-server`, SIGTERM/SIGINT) and `@keel/server/dom` (`installServerDom`). Exports the `Runner` type.

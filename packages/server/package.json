@@ -11,6 +11,10 @@
     "./start": {
       "types": "./src/start.ts",
       "default": "./src/start.ts"
+    },
+    "./dom": {
+      "types": "./src/internal/dom/installServerDom.ts",
+      "default": "./src/internal/dom/installServerDom.ts"
     }
   },
   "files": ["dist"],

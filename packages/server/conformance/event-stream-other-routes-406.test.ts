@@ -6,7 +6,7 @@ import { topology } from "@keel/server";
 import { createAppLoose, pageManifest, simCtx } from "./topology-fixtures.ts";
 
 describe("k.server: event-stream GET", () => {
-  test.skip("A GET with `accept: text/event-stream` to a route whose loader is not live is 406.", async () => {
+  test("A GET with `accept: text/event-stream` to a route whose loader is not live is 406.", async () => {
     const routes: unknown = pageManifest("app", "/plain", "P");
     const app = await createAppLoose({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),

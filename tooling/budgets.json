@@ -36,6 +36,7 @@
       "max": "16kb",
       "platform": "node"
     },
+    "@keel/server/dom": "2kb",
     "@keel/server/start": {
       "max": "2kb",
       "platform": "node"

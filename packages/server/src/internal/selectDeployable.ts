@@ -5,14 +5,14 @@ import { moduleOf } from "./moduleOf.ts";
 
 /**
  * Pick the deployable to serve and validate it. E1552: one module is in two deployables (whole topology), or
- * the served deployable names a module no route belongs to (other deployables' modules are ignored; they
+ * the served deployable names a module no route or runner belongs to (other deployables' modules are ignored; they
  * may be loaded by another process). E1553: a `static` deployable contains a route with params or actions.
- * Returns the routes of the served deployable's modules.
+ * E1558: a non-`node` deployable serves a route with a live loader. Returns the routes of the served deployable's modules.
  */
 export function selectDeployable(
   topology: Topology,
   table: readonly Located[],
-  routeModules: ReadonlySet<string>,
+  known: ReadonlySet<string>,
   name: string | undefined,
 ): readonly Located[] {
   const owner = new Map<string, string>();
@@ -28,8 +28,14 @@ export function selectDeployable(
   if (picked === undefined || dep === undefined)
     throw codedError("E1552", `pass deployable: one of ${names.join(", ") || "(none)"}${name ? `, not ${name}` : ""}`);
   for (const m of dep.modules)
-    if (!routeModules.has(m)) throw codedError("E1552", `deployable ${picked} names unknown module ${m}`);
+    if (!known.has(m)) throw codedError("E1552", `deployable ${picked} names unknown module ${m}`);
   const served = table.filter((r) => dep.modules.includes(moduleOf(r.id)));
+  const live = served.find((r) => r.def.loader?.live !== undefined);
+  if (live !== undefined && dep.adapter !== "node")
+    throw codedError(
+      "E1558",
+      `${dep.adapter} deployable ${picked}: route ${live.id} has a live loader; serve it from a node deployable`,
+    );
   if (dep.adapter === "static")
     for (const r of served) {
       const params = r.def.params !== undefined || r.segments.some((s) => s.kind === "param");

@@ -24,7 +24,7 @@ const freePort = (): Promise<number> =>
   });
 
 describe("k.topology: server.mjs", () => {
-  test.skip("`node dist/<name>/server.mjs` of a `keel build` fixture answers its routes on `PORT`; with `KEEL_SECRET` unset or short it exits 1 and prints one E1560 line naming `KEEL_SECRET` and no value.", async () => {
+  test("`node dist/<name>/server.mjs` of a `keel build` fixture answers its routes on `PORT`; with `KEEL_SECRET` unset or short it exits 1 and prints one E1560 line naming `KEEL_SECRET` and no value.", async () => {
     const entry = path.join(fixture, "dist", "web", "server.mjs");
     expect(fs.existsSync(entry)).toBe(true);
 

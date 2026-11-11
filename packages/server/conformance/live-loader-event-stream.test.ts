@@ -13,7 +13,7 @@ const view = () => document.createElement("main");
 const sse = { accept: "text/event-stream" };
 
 describe("k.server: live loaders", () => {
-  test.skip("An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403.", async () => {
+  test("An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: -1000, max: 1000 }), fc.integer({ min: -1000, max: 1000 }), async (a, b) => {
         let fnSignal: AbortSignal | undefined;

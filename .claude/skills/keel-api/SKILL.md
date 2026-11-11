@@ -19,7 +19,9 @@ export const postTodo = action({ input: TodoDraft, params: ListParams, stores: b
 
 **Cycle:** `routes.ts` and an action returning `ok(routes.href(...))` import each other; import `routes.ts` first (tests too).
 
-**Serve:** `createApp({ topology, routes, ctx: createCtx({ mode: 'real' }), deployable: 'api' })`; `node --experimental-webstorage server.ts`.
+**Serve:** `keel build` writes `dist/<name>/server.mjs` per `node` deployable (no `server.ts`); run it with `PORT`, `KEEL_SECRET` (32+), `KEEL_ORIGIN`, `KEEL_PEER_<NAME>`. `keel dev` serves every deployable on one origin. A split edits `topology.ts` only (or `keel codemod place`).
+
+**Between modules:** `service({ module: 'api', schema })` (module in `deps`, route in its `public.routes`); background work is `export const runners = [...]` in `modules/<id>/runners.server.ts`. A live loader is `loader({ output }, async function* ({ signal }) { yield ok(v) })`, read with an `events: true` GET endpoint (`for await (const r of api.feed({}, ctx))`).
 
 **Client:** `endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardReply, errors: { 422: FieldsReply } } })`; `service({ base, schema })` per call: base `new URL(url).origin` in `*.server.ts`, `location.origin` in components. `await api(origin).lists({}, ctx)`: `Result<Out, ApiError>`. Bodies: GET `{ id, results: { 'api.lists': { ok: true, value } } }`; action `{ ok: true, value }`.
 

@@ -8,7 +8,7 @@ import { topology } from "@keel/server";
 import { SEED, createAppLoose, pageManifest, simCtx, withHeaders } from "./topology-fixtures.ts";
 
 describe("k.topology: origin", () => {
-  test.skip("With `origin` `https://a.example`, a POST with that `Origin` to another host passes the same-site check, and the caller cookie is `__Host-keel-caller`.", async () => {
+  test("With `origin` `https://a.example`, a POST with that `Origin` to another host passes the same-site check, and the caller cookie is `__Host-keel-caller`.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{3,10}$/), async (host) => {
         let calls = 0;

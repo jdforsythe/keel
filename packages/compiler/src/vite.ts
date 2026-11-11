@@ -2,11 +2,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { compile } from "./compile.ts";
 import { CLIENT_MANIFEST } from "./entry/CLIENT_MANIFEST.ts";
+import { DEV_ENTRY } from "./entry/DEV_ENTRY.ts";
 import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { RESUME_ENTRY } from "./entry/RESUME_ENTRY.ts";
+import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
+import { devEntryCode } from "./internal/devEntryCode.ts";
+import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
@@ -15,6 +19,7 @@ import { islandsCode } from "./internal/islandsCode.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
+import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
@@ -41,10 +46,22 @@ type Entry = { source: string; output: Output | undefined; artifacts: Artifacts;
 type ModuleNode = object;
 type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware>): void };
 type DevServer = {
-  moduleGraph: { getModuleById(id: string): ModuleNode | undefined };
+  moduleGraph: { getModuleById(id: string): ModuleNode | undefined; invalidateModule?(module: ModuleNode): void };
   reloadModule(module: ModuleNode): Promise<void>;
+  ssrLoadModule?(id: string): Promise<Record<string, unknown>>;
   middlewares: Middlewares;
 };
+type DevApp = {
+  readonly app: { fetch(req: Request): Promise<Response>; close(): Promise<void> };
+  served(path: string): boolean;
+};
+const isDevApp = (v: unknown): v is [string, DevApp["app"], DevApp["served"]] =>
+  Array.isArray(v) &&
+  typeof v[2] === "function" &&
+  typeof v[1] === "object" &&
+  v[1] !== null &&
+  typeof Reflect.get(v[1], "fetch") === "function" &&
+  typeof Reflect.get(v[1], "close") === "function";
 type Warn = (message: string) => void;
 type BuildConfig = {
   build: {
@@ -53,7 +70,21 @@ type BuildConfig = {
     manifest: string;
     rolldownOptions: { input: Record<string, string> };
   };
+  environments: {
+    ssr: {
+      resolve: { noExternal: true };
+      build: {
+        outDir: string;
+        emptyOutDir: false;
+        manifest: false;
+        copyPublicDir: false;
+        rolldownOptions: { input: string; output: { entryFileNames: string; codeSplitting: false } };
+      };
+    };
+  };
+  builder: { buildApp: (builder: Builder) => Promise<void> };
 };
+type Builder = { environments: Record<string, unknown>; build(environment: unknown): Promise<unknown> };
 
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
@@ -69,10 +100,15 @@ type BuildConfig = {
  * `clientStdData`, reloaded when a manifest changes; rfc:0069), else the resume entry, whose island components
  * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046). A `vite build` whose `KEEL_DEPLOYABLE`
  * is a `node` deployable builds that entry alone (input `entry`) into `dist/<name>/` with hashed `assets/` and the
- * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), and writes no `.keel/` artifacts (the project's own build
- * does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
+ * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), then its generated production entry (`SERVER_ENTRY`,
+ * `serverEntryCode`) with every dependency into `dist/<name>/server.mjs` beside a copy of `.keel/routes.json` and
+ * `.keel/std.json` (k.topology Build), and writes no `.keel/` artifacts (the project's own build does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
  * manifests' `deps` and writes `std.json` (`stdArtifact`); there a bad dep (E1159) or `std` entry (E1158) fails a build
  * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten (rfc:0066).
+ *
+ * With a `node` deployable, the dev server is `keel dev`'s one origin (k.topology Local topology): a request a `node`
+ * deployable's route matches is answered by that deployable's dev app (`DEV_ENTRY`, `devMiddleware`), anything else by
+ * Vite; a changed app source closes the dev apps and the next request loads them again.
  *
  * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
  * stores the open page's dev entry last posted, to the server's own origin and those `KEEL_INSPECT_ORIGINS` lists.
@@ -109,6 +145,23 @@ export default function (): {
     .filter((o) => o !== "");
   const inspect = inspectMiddleware(() => root, origins);
   const written = new Map<string, string>();
+  let devApps: DevApp[] = [];
+  /** `keel dev`: every `node` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
+  const dev = devMiddleware(async () => {
+    const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
+    const apps: unknown = mod?.apps;
+    devApps = (Array.isArray(apps) ? apps : []).filter(isDevApp).map(([, app, served]) => ({ app, served }));
+    return devApps;
+  });
+  /** Close the dev apps (their runners and streams) so the next request loads them again. */
+  const reloadDev = (): void => {
+    const old = devApps;
+    devApps = [];
+    dev.reset();
+    for (const a of old) void a.app.close();
+    const mod = server?.moduleGraph.getModuleById(`\0${DEV_ENTRY}`);
+    if (mod !== undefined) server?.moduleGraph.invalidateModule?.(mod);
+  };
 
   const relOf = (id: string): string | null => {
     if (id.startsWith("\0") || id.startsWith("/@keel/") || id === CSS_ID) return null;
@@ -122,12 +175,16 @@ export default function (): {
   };
   const exists = (rel: string): boolean => fs.existsSync(path.join(root, rel));
 
-  /** The deployable this build serves: `KEEL_DEPLOYABLE`, else the first `client` one by name. */
+  /** The deployable this build serves: `KEEL_DEPLOYABLE`, else the first `client` one by name, else every `node` one's modules. */
   const deployable = (): { name: string; modules: readonly string[]; client: boolean } | undefined => {
     if (topology === undefined) return undefined;
     const names = Object.keys(topology).sort();
     const want = process.env.KEEL_DEPLOYABLE;
     const name = want ?? names.find((n) => topology?.[n]?.adapter === "client");
+    const node = names.filter((n) => topology?.[n]?.adapter === "node");
+    // `keel dev` with no client deployable: one resume entry for every node deployable's islands (one origin).
+    if (name === undefined && node.length > 0)
+      return { name: node[0] ?? "", modules: node.flatMap((n) => topology?.[n]?.modules ?? []), client: false };
     const d = name === undefined ? undefined : topology[name];
     return name === undefined || d === undefined
       ? undefined
@@ -249,12 +306,35 @@ export default function (): {
       if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return null;
       if (parseTopology(fs.readFileSync(file, "utf8")).topology[name]?.adapter !== "node") return null;
       clientBuild = true;
+      const out = `dist/${name}`;
+      const at = path.resolve(user.root ?? process.cwd());
       return {
         build: {
-          outDir: `dist/${name}`,
+          outDir: out,
           emptyOutDir: true,
           manifest: CLIENT_MANIFEST,
           rolldownOptions: { input: { entry: ENTRY_PATH } },
+        },
+        environments: {
+          ssr: {
+            resolve: { noExternal: true },
+            build: {
+              outDir: out,
+              emptyOutDir: false,
+              manifest: false,
+              copyPublicDir: false,
+              rolldownOptions: { input: SERVER_ENTRY, output: { entryFileNames: "server.mjs", codeSplitting: false } },
+            },
+          },
+        },
+        builder: {
+          buildApp: async (b) => {
+            await b.build(b.environments.client);
+            await b.build(b.environments.ssr);
+            for (const f of ["routes.json", "std.json"])
+              if (fs.existsSync(path.join(at, ".keel", f)))
+                fs.copyFileSync(path.join(at, ".keel", f), path.join(at, out, f));
+          },
         },
       };
     },
@@ -266,6 +346,7 @@ export default function (): {
     configureServer(s) {
       server = s;
       s.middlewares.use(inspect);
+      if (Object.values(topology ?? {}).some((d) => d.adapter === "node")) s.middlewares.use(dev.handle);
     },
     configurePreviewServer(s) {
       s.middlewares.use(inspect);
@@ -283,6 +364,8 @@ export default function (): {
     resolveId(id) {
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
       if (id === ENTRY_PATH || id === ISLANDS_PATH) return id;
+      if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
+      if (id === DEV_ENTRY) return `\0${DEV_ENTRY}`;
       return null;
     },
     async load(id) {
@@ -294,6 +377,9 @@ export default function (): {
         return islandsCode(
           routesFiles().map((f) => ({ path: f, source: fs.readFileSync(path.join(root, f), "utf8") })),
         );
+      if (id === `\0${DEV_ENTRY}`) return devEntryCode(root, topology ?? {});
+      const node = deployable();
+      if (id === `\0${SERVER_ENTRY}` && node !== undefined) return serverEntryCode(root, node.name, node.modules);
       if (id !== ENTRY_PATH) return null;
       const d = deployable();
       if (d === undefined)
@@ -318,6 +404,7 @@ export default function (): {
     },
     watchChange(id, change) {
       const rel = relOf(id);
+      if (rel !== null && devApps.length > 0 && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) reloadDev();
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
       else if (rel !== null && MANIFEST.test(rel) && exists(rel)) {
         compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));

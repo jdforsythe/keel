@@ -6,16 +6,24 @@ import { isVerb } from "./isVerb.ts";
 
 /**
  * The caller of `raw` (k.server Server state, RFC 0057, 0060). Over https the cookie is `__Host-keel-caller` and
- * `Secure`, which a sibling host cannot set; else `keel-caller`. https is `secure` when given, else an https request
+ * `Secure`, which a sibling host cannot set; else `keel-caller`. https is `secure` when given, else the public `origin`'s
+ * scheme when given, else an https request
  * URL or a first `x-forwarded-proto` value of `https` (what a TLS-terminating proxy sends). The header only upgrades:
  * it never makes an https URL count as http, and a client that spoofs it over http only gets a `Secure` cookie its
  * browser will not keep. Only a value of that
  * name that `keys` signed counts; any other is ignored, and the request is then cookieless: a write mints a token with
  * `ctx.random.id("Caller")`, signs it, and sets it `HttpOnly; SameSite=Lax; Path=/` (`issueCaller`); a read gets `""`.
  */
-export function callerOf(raw: Request, ctx: Ctx, keys: CallerKeys, secure: boolean | undefined): Caller {
+export function callerOf(
+  raw: Request,
+  ctx: Ctx,
+  keys: CallerKeys,
+  secure: boolean | undefined,
+  origin: string | undefined,
+): Caller {
   const https =
     secure ??
+    (origin === undefined ? undefined : origin.startsWith("https:")) ??
     (new URL(raw.url).protocol === "https:" ||
       (raw.headers.get("x-forwarded-proto") ?? "").split(",")[0]?.trim().toLowerCase() === "https");
   const name = `${https ? "__Host-" : ""}${CALLER_COOKIE}=`;

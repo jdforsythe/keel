@@ -60,7 +60,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const { sv, rq } = r;
   const ran = await attempt(async () => {
     const stores = action.stores === undefined ? undefined : await openStores(sv, rq, action.stores);
-    const at = { params: m.params, url: r.raw.url, caller: rq.caller.id, stores };
+    const at = { params: m.params, url: r.url, caller: rq.caller.id, stores };
     const out = await inRequest(rq, () => action.run(decoded.value, at, sv.ctx));
     if (!out.ok) return out;
     const clash = await saveStores(sv, rq);
@@ -70,7 +70,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   if (!result.ok) rq.held.clear();
   if (result.ok) {
     if (r.runtime) return { response: jsonResponse(200, ok(result.value)), route: id, diags: [] };
-    return { response: redirectResponse(303, result.value ?? r.raw.url), route: id, diags: [] };
+    return { response: redirectResponse(303, result.value ?? r.url), route: id, diags: [] };
   }
   const e = result.error;
   if (r.runtime)

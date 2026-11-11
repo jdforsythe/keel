@@ -22,10 +22,10 @@ const run = async (adapter: "static" | "node") => {
 };
 
 describe("k.server: E1558", () => {
-  test.skip("E1558 a live loader a non-`node` deployable serves", async () => {
+  test("E1558 a live loader a non-`node` deployable serves", async () => {
     expect(await run("static")).toContain("E1558");
   });
-  test.skip("E1558 clean counterpart: the same live loader on a node deployable builds", async () => {
+  test("E1558 clean counterpart: the same live loader on a node deployable builds", async () => {
     expect(await run("node")).toBe("built");
   });
 });

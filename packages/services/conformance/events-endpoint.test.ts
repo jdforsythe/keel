@@ -33,9 +33,8 @@ const watch = () => {
     const fn: unknown = typeof client === "object" && client !== null ? Reflect.get(client, "watch") : undefined;
     if (typeof fn !== "function") throw new Error("client has no watch");
     const it: unknown = Reflect.apply(fn, client, [input, ctx]);
-    if (typeof it !== "object" || it === null || !(Symbol.asyncIterator in it))
-      throw new Error("watch is not async iterable");
-    return it as AsyncIterable<unknown>;
+    if (!isAsyncIterable(it)) throw new Error("watch is not async iterable");
+    return it;
   };
 };
 
@@ -46,7 +45,7 @@ const collect = async (it: AsyncIterable<unknown>): Promise<unknown[]> => {
 };
 
 describe("k.services: events endpoints", () => {
-  test.skip("An `events` endpoint against a live loader yielding `ok(1)` then `ok(2)` iterates exactly those, then ends; a `data:` line failing `output` yields one `api.decode` and ends; an aborted `signal` ends it with no further request.", async () => {
+  test("An `events` endpoint against a live loader yielding `ok(1)` then `ok(2)` iterates exactly those, then ends; a `data:` line failing `output` yields one `api.decode` and ends; an aborted `signal` ends it with no further request.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer(), fc.integer(), async (a, b) => {
         const read = watch();
@@ -100,7 +99,7 @@ describe("k.services: events endpoints", () => {
     );
   });
 
-  test.skip("An `events` endpoint never reconnects or resumes: a stream that ends, or a `data:` line that is an `err`, ends the iteration after one request.", async () => {
+  test("An `events` endpoint never reconnects or resumes: a stream that ends, or a `data:` line that is an `err`, ends the iteration after one request.", async () => {
     const read = watch();
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     let opens = 0;

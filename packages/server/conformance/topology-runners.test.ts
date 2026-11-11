@@ -8,7 +8,7 @@ import { SEED, createAppLoose, flush, pageManifest, simCtx } from "./topology-fi
 type Run = (ctx: unknown, signal: AbortSignal) => Promise<void>;
 
 describe("k.topology: runners", () => {
-  test.skip("`createApp({ runners })` runs each runner of the served deployable once, none of another; `close()` aborts their signals and resolves once each `run` settles; a rejected `run` runs again 1,000 ms later on the sim clock.", async () => {
+  test("`createApp({ runners })` runs each runner of the served deployable once, none of another; `close()` aborts their signals and resolves once each `run` settles; a rejected `run` runs again 1,000 ms later on the sim clock.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 4 }), async (n) => {
         const t = topology({ x: { modules: ["a"], adapter: "node" }, y: { modules: ["b"], adapter: "node" } });

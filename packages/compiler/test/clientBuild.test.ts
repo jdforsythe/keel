@@ -25,14 +25,27 @@ afterEach(() => {
 describe("@keel/compiler/vite config (client build of a node deployable)", () => {
   it("builds the resume entry alone into dist/<name>/ with the manifest for a node KEEL_DEPLOYABLE", () => {
     process.env.KEEL_DEPLOYABLE = "api";
-    expect(keel().config({ root }, { command: "build" })).toEqual({
+    const config = keel().config({ root }, { command: "build" });
+    expect(config?.build).toEqual({
+      outDir: "dist/api",
+      emptyOutDir: true,
+      manifest: CLIENT_MANIFEST,
+      rolldownOptions: { input: { entry: ENTRY_PATH } },
+    });
+    expect(config?.environments.ssr).toEqual({
+      resolve: { noExternal: true },
       build: {
         outDir: "dist/api",
-        emptyOutDir: true,
-        manifest: CLIENT_MANIFEST,
-        rolldownOptions: { input: { entry: ENTRY_PATH } },
+        emptyOutDir: false,
+        manifest: false,
+        copyPublicDir: false,
+        rolldownOptions: {
+          input: "virtual:keel/server",
+          output: { entryFileNames: "server.mjs", codeSplitting: false },
+        },
       },
     });
+    expect(config?.builder.buildApp).toBeTypeOf("function");
     expect(CLIENT_MANIFEST).toBe(".vite/manifest.json");
   });
 

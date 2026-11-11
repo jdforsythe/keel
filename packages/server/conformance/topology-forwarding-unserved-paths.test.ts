@@ -8,7 +8,7 @@ import { topology } from "@keel/server";
 import { SEED, createAppLoose, pageManifest, simCtx, writeArtifacts, type Fetcher } from "./topology-fixtures.ts";
 
 describe("k.topology: forwarding of unserved paths", () => {
-  test.skip("`x` answers a path of `b` with `y`'s status, headers and body; one carrying `x-keel-forwarded` is not forwarded.", async () => {
+  test("`x` answers a path of `b` with `y`'s status, headers and body; one carrying `x-keel-forwarded` is not forwarded.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), fc.stringMatching(/^[a-z0-9]{0,6}$/), async (title, q) => {
         const a = pageManifest("a", "/a", "A");

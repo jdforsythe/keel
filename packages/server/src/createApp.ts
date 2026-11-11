@@ -1,12 +1,14 @@
 import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
-import { compileRoutes, compileTable } from "@keel/router/internal";
+import { manifest } from "@keel/router";
+import { compileRoutes, compileTable, matchUrl } from "@keel/router/internal";
 import { attempt } from "@keel/schema";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import type { Served } from "./internal/Served.ts";
+import { bindModules } from "./internal/bindModules.ts";
 import { callerOf } from "./internal/callerOf.ts";
 import { callerSigner } from "./internal/callerSigner.ts";
 import { codedError } from "./internal/codedError.ts";
@@ -14,13 +16,17 @@ import { crashed } from "./internal/crashed.ts";
 import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
 import { installServerDom } from "./internal/dom/installServerDom.ts";
+import { forward } from "./internal/forward.ts";
 import { handle } from "./internal/handle.ts";
 import { inspectAllowed } from "./internal/inspectAllowed.ts";
 import { inspectResponse } from "./internal/inspectResponse.ts";
+import { keepRunning } from "./internal/keepRunning.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
 import { loadStd } from "./internal/loadStd.ts";
 import { moduleOf } from "./internal/moduleOf.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
+import { peerOf } from "./internal/peerOf.ts";
+import { peerPaths } from "./internal/peerPaths.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -58,12 +64,20 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * icon (`headHtml`, k.server Document).
  * `std` (a `.keel/std.json`) is read once and bound to `ctx` for `stdConfig`: missing, malformed or hand-edited
  * rejects with E1160, a value failing its package's registered schema with E1158 (k.module Std config, rfc:0066).
+ * After startup each `runners` entry of the served deployable's modules runs once on `ctx` (`keepRunning`: a rejection is
+ * a `diag` and a rerun 1,000 ms later on `ctx.clock`); `close()` aborts their signal and open event streams and
+ * resolves when every `run` has settled. `ctx` is bound for `service({ module })` (`bindModules`). A request whose path
+ * no route here matches but a peer serves (by `routes.json` in `artifacts`) is forwarded to it unless it carries
+ * `x-keel-forwarded` (k.topology Calls and peers). `origin` replaces the request's origin in `url`, the same-site check
+ * and `Secure`; with it, no W1557.
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
-  const routes = opts.routes.routes;
+  const routes = (opts.routes ?? manifest({})).routes;
   const table = compileTable(compileRoutes(routes), routes);
-  const modules = new Set(Object.keys(routes).map(moduleOf));
+  const runners = opts.runners ?? {};
+  const modules = new Set([...Object.keys(routes).map(moduleOf), ...Object.keys(runners)]);
+  const origin = opts.origin === undefined ? undefined : new URL(opts.origin).origin;
   const mode = opts.mode ?? "production";
   const env = nodeEnv();
   const deployed = mode === "production" && env !== "development" && env !== "test";
@@ -88,7 +102,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       }),
     );
   // RFC 0060 (backlog 0160): unset, a plain-http hop without x-forwarded-proto gets an unprefixed, non-Secure cookie.
-  if (deployed && opts.secure === undefined)
+  if (deployed && opts.secure === undefined && origin === undefined)
     log?.write(
       diagLine(log.format, {
         code: "W1557",
@@ -102,7 +116,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     table: served,
     ctx: opts.ctx,
     mode,
-    routes: opts.routes,
+    routes: opts.routes ?? manifest({}),
     maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
     saved: new Map(),
@@ -111,19 +125,30 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     secure: opts.secure,
     built,
     name: opts.deployable ?? Object.keys(opts.topology)[0] ?? "",
+    origin,
+    lifecycle: new AbortController(),
   };
+  const peers = opts.peers ?? {};
+  const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
   const hono = new Hono();
   hono.all("*", async (c) => {
     const raw = c.req.raw;
     const t0 = sv.ctx.clock.now();
     const path = new URL(raw.url).pathname;
     const inspecting = sv.mode === "dev" && path === INSPECT_PATH;
+    const peer = inspecting || raw.headers.has("x-keel-forwarded") ? undefined : peerOf(forwards, path);
+    const at = peer === undefined || matchUrl(served, path).route !== null ? undefined : peers[peer];
+    if (at !== undefined) return forward(raw, at, sv.ctx);
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
     const routed = async () => {
-      const rq = { scope: scope(() => undefined), caller: callerOf(raw, sv.ctx, sv.keys, sv.secure), held: new Map() };
+      const rq = {
+        scope: scope(() => undefined),
+        caller: callerOf(raw, sv.ctx, sv.keys, sv.secure, sv.origin),
+        held: new Map(),
+      };
       isolate(rq.scope);
-      const r = await attempt(() => handle(sv, raw, rq));
+      const r = await attempt(() => handle(sv, raw, rq, c));
       rq.scope.dispose();
       return r;
     };
@@ -144,5 +169,22 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     }
     return h.response;
   });
-  return { fetch: async (req) => hono.fetch(req) };
+  const failed = (message: string) =>
+    log?.write(
+      diagLine(log.format, { code: "keel.unexpected", message: `runner rejected, rerun in 1000 ms: ${message}` }),
+    );
+  const app: ServerApp = {
+    fetch: async (req) => hono.fetch(req),
+    close: async () => {
+      sv.lifecycle.abort();
+      unbind();
+      await Promise.all(await running);
+    },
+  };
+  const unbind = bindModules(sv.ctx, opts.topology, sv.name, app, peers);
+  const own = opts.topology[sv.name]?.modules ?? [];
+  const running = Promise.resolve().then(() =>
+    own.flatMap((m) => runners[m] ?? []).map((r) => keepRunning(r, sv.ctx, sv.lifecycle.signal, failed)),
+  );
+  return app;
 }

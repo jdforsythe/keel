@@ -399,7 +399,7 @@ describe("vite: project inputs", () => {
     );
   });
 
-  it("refuses the entry without a topology or without a client deployable", async () => {
+  it("refuses the entry without a topology; with node deployables only it is the resume entry (keel dev)", async () => {
     const msg = "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one";
     const p = keel();
     p.configResolved({ root });
@@ -407,7 +407,7 @@ describe("vite: project inputs", () => {
     write("topology.ts", `export default { api: { modules: ["a"], adapter: "node" } };\n`);
     const q = keel();
     q.configResolved({ root });
-    await expect(q.load("/@keel/entry.ts")).rejects.toThrow(msg);
+    expect(await q.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
   });
 
   it("throws topology problems when building and warns when serving", { timeout: 30000 }, async () => {
