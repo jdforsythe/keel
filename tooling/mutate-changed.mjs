@@ -1,5 +1,5 @@
 // Mutation run for the work at hand: only packages with changed files, and inside a package only its changed
-// `src` files when nothing else in it changed. Range: `--base <ref>...HEAD` (default origin/main, or HEAD~50 without it).
+// `src` files when nothing else in it changed (prose aside). Range: `--base <ref>...HEAD` (default origin/main, or HEAD~50 without it).
 // Stryker is incremental (shared cache, tooling/mutate-cache.ts), so unchanged mutants are reused either way.
 // A change to the shared mutation tooling runs every package whole. Usage: node tooling/mutate-changed.mjs [--base <ref>] [--list]
 import { execFileSync, spawnSync } from "node:child_process";
@@ -34,11 +34,11 @@ export function changedScope(files, all) {
     if (!m || !all.includes(m[1]) || IGNORED.test(f)) continue;
     const e = by.get(m[1]) ?? { src: [], whole: false };
     if (MUTATED.test(m[2])) e.src.push(m[2]);
-    else e.whole = true;
+    else if (!/\.md$/.test(m[2])) e.whole = true;
     by.set(m[1], e);
   }
   return all
-    .filter((p) => by.has(p))
+    .filter((p) => by.get(p)?.whole || by.get(p)?.src.length)
     .map((pkg) => {
       const e = by.get(pkg);
       return e.whole ? { pkg } : { pkg, mutate: e.src };

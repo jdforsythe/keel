@@ -1,6 +1,6 @@
 # Task 0401: mutation run time budget
 
-**Spec:** none (tooling) · docs/TESTING.md Mutation · **Principles:** 11, 12 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-11)
+**Spec:** none (tooling) · docs/TESTING.md Mutation · **Principles:** 11, 12 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed (2026-11-11)
 
 User rule (2026-11-11): no mutation run may take two hours again, and a run must not be silent until its trailer.
 
@@ -25,6 +25,12 @@ User rule (2026-11-11): no mutation run may take two hours again, and a run must
 - D10 packages without a vitest config of their own for mutation runs use `tooling/vitest.mutate.config.ts` (their `vitest.config.ts` plus the sequencer); check, scaffold, server name the sequencer in theirs.
 - D11 tooling has a `test` script (`tooling/test/mutate.test.ts`, 12 tests) so the pure parts run in `pnpm test`.
 
+- D12 (review): every signal claims the run file first (`signalled`), so the budget, `mutate:stop` and Ctrl-C send one SIGINT between them; Stryker runs in its own process group so a terminal's Ctrl-C reaches only the runner. The run file lives in the shared cache (`<pkg>.run.json`, created with `wx`): one run of a package per clone. A run still alive 120 s after its SIGINT is killed. The reporter ends a run whose runner died (parent pid changed). CI saves under a key with the run id and attempt, so a rerun on one commit keeps its progress. `mutate:status --format=json` prints `mutate.run` records. A prose-only change keeps a scoped run scoped.
+- D13 the liveness test (pid from the run file, process titled `stryker` or its bin on the command line) replaces D5's wording; D9's run file moved from `.stryker-tmp/run.json` to the shared cache.
+
+## Review
+Reviewer: request changes, 10 findings, all applied (D12). No second pass.
+
 ## Measured (ctx, 318 mutants)
 - Cached run 4 s; forced run 12 s. Budget 0.1 min on a forced run: `fail mutate ctx time budget 0.1m reached at 111 of 318 mutants; run again to resume`, exit 1, 150 results saved, the resume reused 150 and finished at 76.8%.
 - `mutate:status` during a run: `ctx 65 of 318 mutants, 7 reused, 881 a minute, about 1m left`; `mutate:stop` ended it with `fail mutate ctx stopped at 65 of 318 mutants; run again to resume` and the resume reused 83.
@@ -36,7 +42,7 @@ User rule (2026-11-11): no mutation run may take two hours again, and a run must
 4. [x] `mutate-changed.mjs` scoped runs (D7).
 5. [x] CI source: restore/save steps on the new path; regenerate.
 6. [x] Tests for the pure parts (budget lookup, status line, changed scope, sequencer order).
-7. [ ] docs/TESTING.md, docs/HANDOFF.md, backlog; close.
+7. [x] docs/TESTING.md, docs/HANDOFF.md, backlog; close.
 
 ## Verification
 - `pnpm check` and `pnpm test` green.
@@ -44,5 +50,9 @@ User rule (2026-11-11): no mutation run may take two hours again, and a run must
 - A budget of 0.05 min on a forced run fails with the budget line and leaves a cache.
 - `node tooling/mutate-changed.mjs --list --base HEAD~1` names packages and files.
 
+- After review: a second `mutate:stop` prints `0 stopped`; a second run prints `fail mutate ctx a run of this package is live`; a runner killed with SIGKILL left Stryker to end itself with a saved cache (the resume reused 43).
+- check through the runner from the moved cache: 129 s, 9,953 of 9,958 reused, 74.6% (five mutants changed from Killed to Survived: 0404). server: 26 s, 82.3%.
+- Not run: scaffold and the other eleven packages through the runner (0405); a cold check run under the budget; the CI jobs.
+
 ## Next action
-Read the check and server runs through the runner (started 2026-11-11), then `pnpm check`, `pnpm test`, step 7, reviewer, close.
+None: closed. Follow-ups 0403, 0404, 0405.

@@ -1,6 +1,6 @@
 // Compact Stryker reporter: prints exactly one trailer line per docs/OUTPUT.md (NDJSON summary with KEEL_FORMAT=json;
 // Stryker's CLI rejects unknown flags). While the run is going it keeps `.stryker-tmp/progress.json` current for
-// `pnpm mutate:status`, and it records the dry run's time per test file for the quick-first order.
+// `pnpm mutate:status`, ends a run whose runner died, and records the dry run's time per test file for the quick-first order.
 import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir, packageRelative } from "./mutate-cache.ts";
@@ -15,6 +15,21 @@ class KeelReporter {
     this.pkg = path.basename(process.cwd());
     this.progress = { total: 0, reused: 0, tested: 0, killed: 0, survived: 0, timeout: 0, startedAt: this.t0 };
     this.written = 0;
+    this.parent = process.ppid;
+  }
+  /** A run whose runner is gone has nobody to end it at the budget: it ends itself, once, and saves. */
+  orphaned() {
+    const file = process.env.KEEL_MUTATE_RUN;
+    if (!file || process.ppid === this.parent) return;
+    this.parent = process.ppid;
+    try {
+      const r = JSON.parse(fs.readFileSync(file, "utf8"));
+      if (r.signalled) return;
+      fs.writeFileSync(file, JSON.stringify({ ...r, signalled: true }));
+    } catch {
+      // No run file: nobody else can signal this run.
+    }
+    process.kill(process.pid, "SIGINT");
   }
   save(force) {
     const now = Date.now();
@@ -46,6 +61,7 @@ class KeelReporter {
     else if (result.status === "Survived") p.survived++;
     else if (result.status === "Timeout") p.timeout++;
     this.save(false);
+    this.orphaned();
   }
   onMutationTestReportReady(_report, metrics) {
     this.save(true);

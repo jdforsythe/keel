@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { changedScope } from "../mutate-changed.mjs";
-import { budgetMinutes, statusLine } from "../mutate.mjs";
+import { budgetMinutes, ending, statusLine } from "../mutate.mjs";
 import { packageRelative, readTimes } from "../mutate-cache.ts";
 import { quickFirstOrder } from "../quick-first.ts";
 
@@ -29,6 +29,16 @@ describe("statusLine", () => {
   });
 });
 
+describe("ending", () => {
+  it("names the budget first, then a stop, and anything else a crash", () => {
+    expect(ending({ over: true, signalled: true, code: 130, signal: null })).toBe("budget");
+    expect(ending({ over: false, signalled: true, code: 130, signal: null })).toBe("stopped");
+    expect(ending({ over: false, signalled: false, code: null, signal: "SIGINT" })).toBe("stopped");
+    expect(ending({ over: false, signalled: false, code: null, signal: "SIGKILL" })).toBe("crashed");
+    expect(ending({ over: false, signalled: false, code: 1, signal: null })).toBe("crashed");
+  });
+});
+
 describe("changedScope", () => {
   const all = ["check", "ctx", "schema"];
   it("scopes a package to its changed src files when nothing else in it changed", () => {
@@ -40,6 +50,12 @@ describe("changedScope", () => {
     expect(changedScope(["packages/ctx/src/a.ts", "packages/ctx/test/a.test.ts"], all)).toEqual([{ pkg: "ctx" }]);
     expect(changedScope(["packages/schema/src/index.ts"], all)).toEqual([{ pkg: "schema" }]);
     expect(changedScope(["packages/schema/src/types/T.ts"], all)).toEqual([{ pkg: "schema" }]);
+  });
+  it("keeps a run scoped when only prose changed beside src", () => {
+    expect(changedScope(["packages/ctx/src/a.ts", "packages/ctx/README.md"], all)).toEqual([
+      { pkg: "ctx", mutate: ["src/a.ts"] },
+    ]);
+    expect(changedScope(["packages/ctx/README.md"], all)).toEqual([]);
   });
   it("runs every package whole when the shared mutation tooling changed", () => {
     expect(changedScope(["tooling/quick-first.ts"], all)).toEqual([{ pkg: "check" }, { pkg: "ctx" }, { pkg: "schema" }]);

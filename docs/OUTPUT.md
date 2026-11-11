@@ -24,7 +24,7 @@ Fields: `code` (stable, E/W/I prefix, never renumbered) · `path:line:col` · `m
 - Every command accepts `--quiet` (trailer only) and `--limit N`.
 - `--verbose` exists; skills say to use it only with a stated reason.
 
-**JSON.** NDJSON: `{"kind":"diag","code":"E1042","path":…,"line":…,"col":…,"message":…,"fix":…,"see":…}` per line, then `{"kind":"summary",…}`. Other commands emit their own record kinds (`ledger`, `property`, `example`, `spec.section`, `spec.cite`, `explain.text`, `inspect.section`, `inspect.store`, `scaffold.edit`, `quickfix`, `invalid`, `unparsable`, `session`, `session.issue`, `report.tally`); warnings are `diag` records with a `W` code (W1005, W1556, W1557, W1706). With `--limit N` json caps too; otherwise json is uncapped.
+**JSON.** NDJSON: `{"kind":"diag","code":"E1042","path":…,"line":…,"col":…,"message":…,"fix":…,"see":…}` per line, then `{"kind":"summary",…}`. Other commands emit their own record kinds (`ledger`, `property`, `example`, `spec.section`, `spec.cite`, `explain.text`, `inspect.section`, `inspect.store`, `scaffold.edit`, `quickfix`, `invalid`, `unparsable`, `session`, `session.issue`, `report.tally`, `mutate.run`); warnings are `diag` records with a `W` code (W1005, W1556, W1557, W1706). With `--limit N` json caps too; otherwise json is uncapped.
 
 `session` (std.sessions): `{ kind, id, fingerprint, route, events, inputs, error, file }`; compact `7f3a9c01d2e4 orders.show 42 events orders.locked`, `ok` for no error, ` -> <file>` when one was written. `session.issue` (`keel-session-action`): `{ kind, fingerprint, action, issue }`, `action` one of `created`, `updated`, `commented`; compact `7f3a9c01d2e4 created #12`.
 
