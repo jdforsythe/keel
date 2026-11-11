@@ -60,12 +60,12 @@ const project = (runners: string, adapter = "node"): Files => [
   { path: "topology.ts", source: topo(adapter) },
 ];
 
-test.skip("E2504 fires on a `runners` export lacking `jobs` and not on its clean twin.", () => {
+test("E2504 fires on a `runners` export lacking `jobs` and not on its clean twin.", () => {
   expect(found(project("[]"), "E2504").length).toBe(1);
   expect(found(project("[jobs]"), "E2504").length).toBe(0);
 });
 
-test.skip("E2504 fires on a module with jobs placed in a non-`node` deployable and not in a `node` one.", () => {
+test("E2504 fires on a module with jobs placed in a non-`node` deployable and not in a `node` one.", () => {
   fc.assert(
     fc.property(fc.constantFrom("static", "client"), (adapter) => {
       expect(found(project("[jobs]", adapter), "E2504").length).toBe(1);
@@ -75,7 +75,7 @@ test.skip("E2504 fires on a module with jobs placed in a non-`node` deployable a
   );
 });
 
-test.skip("E2504's fix adds `jobs` to `runners`, and re-checking the patched file reports no E2504.", () => {
+test("E2504's fix adds `jobs` to `runners`, and re-checking the patched file reports no E2504.", () => {
   const files = project("[]");
   const d = found(files, "E2504");
   expect(d.length).toBe(1);

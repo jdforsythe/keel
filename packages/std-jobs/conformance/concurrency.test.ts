@@ -65,10 +65,12 @@ async function drive(concurrency: number, count: number): Promise<{ max: number;
   }
 }
 
+// Skipped: the fixture writes `hash: ""`, which k.module Std config refuses (E1160 at `createApp({ std })`); test/concurrency.test.ts covers the clause with a hashed std.json.
 test.skip("With `concurrency: 2` and five due jobs, at most two `fn` calls are pending at any time.", async () => {
   expect(await drive(2, 5)).toEqual({ max: 2, done: 5 });
 });
 
+// Skipped: the fixture writes `hash: ""`, which k.module Std config refuses (E1160 at `createApp({ std })`); test/concurrency.test.ts covers the clause with a hashed std.json.
 test.skip("For generated `concurrency` from 1 to 16 and generated job counts, the pending `fn` calls never exceed `concurrency` and every job runs.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 16 }), fc.integer({ min: 1, max: 20 }), async (c, n) => {

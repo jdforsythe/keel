@@ -59,7 +59,7 @@ const project = (key: string, path = "modules/orders/jobs.server.ts"): Files => 
   { path: "topology.ts", source: topo("node") },
 ];
 
-test.skip("E2501 fires on a `queue` key not prefixed by its module id and not on its clean twin.", () => {
+test("E2501 fires on a `queue` key not prefixed by its module id and not on its clean twin.", () => {
   fc.assert(
     fc.property(word, (name) => {
       expect(found(project(`${name}`), "E2501").length).toBe(1);
@@ -69,12 +69,12 @@ test.skip("E2501 fires on a `queue` key not prefixed by its module id and not on
   );
 });
 
-test.skip("E2501 fires on a `queue` outside `modules/<id>/jobs.server.ts` and not on its clean twin.", () => {
+test("E2501 fires on a `queue` outside `modules/<id>/jobs.server.ts` and not on its clean twin.", () => {
   expect(found(project("orders.sendReceipt", "modules/orders/other.server.ts"), "E2501").length).toBe(1);
   expect(found(project("orders.sendReceipt"), "E2501").length).toBe(0);
 });
 
-test.skip("E2501's fix prefixes the key with the module id, and re-checking the patched file reports no E2501.", () => {
+test("E2501's fix prefixes the key with the module id, and re-checking the patched file reports no E2501.", () => {
   fc.assert(
     fc.property(word, (name) => {
       const files = project(name);

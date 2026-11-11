@@ -81,7 +81,7 @@ const mkJobs = () => queue({ "orders.digest": job({ input: s.object({}) }, async
 const table = (cron: string, zone = "UTC") =>
   ({ "orders.x": { cron, zone, job: "orders.digest", input: {} } }) as const;
 
-test.skip("`60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON` are each one E2551, and a clean twin is none.", () => {
+test("`60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON` are each one E2551, and a clean twin is none.", () => {
   for (const cron of BAD) {
     const d = found(project({ cron }), "E2551");
     expect(d.length).toBe(1);
@@ -90,25 +90,25 @@ test.skip("`60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON` are each one E255
   expect(found(project({ cron: "0 0 * * 1" }), "E2551").length).toBe(0);
 });
 
-test.skip("E2551 names the field: `60 * * * *` names the minute field.", () => {
+test("E2551 names the field: `60 * * * *` names the minute field.", () => {
   const d = found(project({ cron: "60 * * * *" }), "E2551");
   expect(d[0]?.message.toLowerCase()).toContain("minute");
 });
 
-test.skip("A `zone` literal that is not a `TimeZone` is one E2551, and a clean twin is none.", () => {
+test("A `zone` literal that is not a `TimeZone` is one E2551, and a clean twin is none.", () => {
   expect(found(project({ zone: "Mars/Olympus" }), "E2551").length).toBe(1);
   expect(found(project({ zone: "utc" }), "E2551").length).toBe(1);
   expect(found(project({ zone: "Europe/Berlin" }), "E2551").length).toBe(0);
   expect(found(project({ zone: "UTC" }), "E2551").length).toBe(0);
 });
 
-test.skip("`schedule` throws E2551 for `60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON`, and for a `zone` that does not parse, and not for a valid entry.", () => {
+test("`schedule` throws E2551 for `60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON`, and for a `zone` that does not parse, and not for a valid entry.", () => {
   for (const cron of BAD) expect(() => schedule(mkJobs(), table(cron))).toThrow(/E2551/);
   expect(() => schedule(mkJobs(), table("0 3 * * *", "Mars/Olympus"))).toThrow(/E2551/);
   expect(() => schedule(mkJobs(), table("0 3 * * *", "Europe/Berlin"))).not.toThrow();
 });
 
-test.skip("For generated out-of-range numbers in each of the five fields, `schedule` throws E2551 and `check` reports one E2551.", () => {
+test("For generated out-of-range numbers in each of the five fields, `schedule` throws E2551 and `check` reports one E2551.", () => {
   const limits = [60, 24, 32, 13, 7] as const;
   fc.assert(
     fc.property(fc.integer({ min: 0, max: 4 }), fc.integer({ min: 0, max: 50 }), (i, extra) => {

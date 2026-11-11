@@ -25,7 +25,7 @@ function find(v: unknown, depth = 0): Record<string, unknown> | undefined {
   return undefined;
 }
 
-test.skip("The `jobs.queue` section holds counts and failures and no input value.", async () => {
+test("The `jobs.queue` section holds counts and failures and no input value.", async () => {
   await fc.assert(
     fc.asyncProperty(word, word, fc.integer({ min: 0, max: 3 }), async (failing, waiting, extra) => {
       const ctx = createCtx({ mode: "sim", seed: 1337 });

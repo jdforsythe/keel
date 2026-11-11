@@ -28,7 +28,7 @@ const close = async (app: unknown): Promise<void> => {
   await Reflect.apply(f, app, []);
 };
 
-test.skip("After `close()` while `fn` is pending, a new `createApp` on the same ctx runs that job again.", async () => {
+test("After `close()` while `fn` is pending, a new `createApp` on the same ctx runs that job again.", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   let calls = 0;
   const work = job({ input }, () => {
@@ -47,7 +47,7 @@ test.skip("After `close()` while `fn` is pending, a new `createApp` on the same 
   await close(second);
 });
 
-test.skip("A job finished before `close()` never runs again.", async () => {
+test("A job finished before `close()` never runs again.", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   let calls = 0;
   const work = job({ input }, async () => {
@@ -68,7 +68,7 @@ test.skip("A job finished before `close()` never runs again.", async () => {
   await close(second);
 });
 
-test.skip("A job pending at `close()` runs after the new start.", async () => {
+test("A job pending at `close()` runs after the new start.", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const at: number[] = [];
   const work = job({ input }, async () => {
@@ -87,7 +87,7 @@ test.skip("A job pending at `close()` runs after the new start.", async () => {
   await close(second);
 });
 
-test.skip("When the runner's `signal` aborts no job starts, and running ones get their `signal` aborted and stay leased.", async () => {
+test("When the runner's `signal` aborts no job starts, and running ones get their `signal` aborted and stay leased.", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   let signalSeen: AbortSignal | undefined;
   let calls = 0;

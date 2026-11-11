@@ -73,7 +73,7 @@ export const runners = ${o.runners ?? "[jobs, schedules]"}
   { path: "topology.ts", source: topo("node") },
 ];
 
-test.skip("E2552 fires on a `schedule` key not prefixed by its module id and not on its clean twin.", () => {
+test("E2552 fires on a `schedule` key not prefixed by its module id and not on its clean twin.", () => {
   fc.assert(
     fc.property(word, (name) => {
       expect(found(project({ key: name }), "E2552").length).toBe(1);
@@ -83,12 +83,12 @@ test.skip("E2552 fires on a `schedule` key not prefixed by its module id and not
   );
 });
 
-test.skip("E2552 fires on a `schedule` outside `modules/<id>/schedules.server.ts` and not on its clean twin.", () => {
+test("E2552 fires on a `schedule` outside `modules/<id>/schedules.server.ts` and not on its clean twin.", () => {
   expect(found(project({ path: "modules/orders/other.server.ts" }), "E2552").length).toBe(1);
   expect(found(project(), "E2552").length).toBe(0);
 });
 
-test.skip("E2552's fix prefixes the key with the module id, and re-checking the patched file reports no E2552.", () => {
+test("E2552's fix prefixes the key with the module id, and re-checking the patched file reports no E2552.", () => {
   fc.assert(
     fc.property(word, (name) => {
       const files = project({ key: name });

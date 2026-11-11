@@ -10,7 +10,7 @@ const settle = async () => {
   for (let i = 0; i < 200; i++) await Promise.resolve();
 };
 
-test.skip("Under sim, a job enqueued with `delayMs: 500` runs when the clock reaches 500, not before, with the parsed input; `ok` removes it.", async () => {
+test("Under sim, a job enqueued with `delayMs: 500` runs when the clock reaches 500, not before, with the parsed input; `ok` removes it.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 0, max: 1_000_000 }), fc.integer({ min: 1, max: 5000 }), async (n, delay) => {
       const ctx = createCtx({ mode: "sim", seed: 1337 });

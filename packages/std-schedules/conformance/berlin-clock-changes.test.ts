@@ -39,7 +39,7 @@ const MIN = 60_000;
 
 const cfg = { cron: "30 2 * * *", zone: "Europe/Berlin", job: "orders.digest", input: {} } as const;
 
-test.skip("`30 2 * * *` in `Europe/Berlin` fires at 03:00 local on 2027-03-28 (01:00Z), the first minute after the gap, and not earlier.", async () => {
+test("`30 2 * * *` in `Europe/Berlin` fires at 03:00 local on 2027-03-28 (01:00Z), the first minute after the gap, and not earlier.", async () => {
   const { ctx, jobs, fires } = fixture();
   const schedules = schedule(jobs, { "orders.berlin": cfg });
   ctx.clock.advance(Date.parse("2027-03-27T12:00:00.000Z"));
@@ -57,7 +57,7 @@ test.skip("`30 2 * * *` in `Europe/Berlin` fires at 03:00 local on 2027-03-28 (0
   await stop(running, ac);
 });
 
-test.skip("`30 2 * * *` in `Europe/Berlin` fires once at the first 02:30 on 2026-10-25 (00:30Z), not again at the repeated 02:30 (01:30Z).", async () => {
+test("`30 2 * * *` in `Europe/Berlin` fires once at the first 02:30 on 2026-10-25 (00:30Z), not again at the repeated 02:30 (01:30Z).", async () => {
   const { ctx, jobs, fires } = fixture();
   const schedules = schedule(jobs, { "orders.berlin": cfg });
   ctx.clock.advance(Date.parse("2026-10-24T12:00:00.000Z"));

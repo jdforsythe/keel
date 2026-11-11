@@ -8,6 +8,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./module": {
+      "types": "./module.ts",
+      "default": "./module.ts"
+    },
     "./tools": {
       "types": "./src/tools/index.ts",
       "default": "./src/tools/index.ts"
@@ -15,7 +19,7 @@
   },
   "files": ["dist"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test unsafe",
+    "check": "tsc --noEmit && biome check src test unsafe module.ts",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json"
   },

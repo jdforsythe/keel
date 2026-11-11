@@ -106,7 +106,7 @@ const instantArb = fc
   )
   .map(([minute, off]) => minute * MIN + off);
 
-test.skip("For generated `cron` values and instants `t`, the next fire time after `t` matches the expression, and no minute strictly between them does (checked by a minute-by-minute scan).", async () => {
+test("For generated `cron` values and instants `t`, the next fire time after `t` matches the expression, and no minute strictly between them does (checked by a minute-by-minute scan).", async () => {
   await fc.assert(
     fc.asyncProperty(cronArb, instantArb, async (cron, t) => {
       const matches = matcher(cron);

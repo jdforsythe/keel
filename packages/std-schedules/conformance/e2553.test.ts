@@ -73,13 +73,13 @@ export const runners = ${o.runners ?? "[jobs, schedules]"}
   { path: "topology.ts", source: topo("node") },
 ];
 
-test.skip("E2553 fires on a `runners` export lacking `schedules` and not on its clean twin.", () => {
+test("E2553 fires on a `runners` export lacking `schedules` and not on its clean twin.", () => {
   expect(found(project({ runners: "[jobs]" }), "E2553").length).toBe(1);
   expect(found(project({ runners: "[]" }), "E2553").length).toBe(1);
   expect(found(project({ runners: "[jobs, schedules]" }), "E2553").length).toBe(0);
 });
 
-test.skip("E2553's fix adds `schedules` to `runners`, and re-checking the patched file reports no E2553.", () => {
+test("E2553's fix adds `schedules` to `runners`, and re-checking the patched file reports no E2553.", () => {
   const files = project({ runners: "[jobs]" });
   const d = found(files, "E2553");
   expect(d.length).toBe(1);

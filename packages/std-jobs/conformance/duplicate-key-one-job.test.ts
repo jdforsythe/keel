@@ -21,7 +21,7 @@ function fixture() {
   return { ctx, ran, jobs: queue({ "orders.work": work }) };
 }
 
-test.skip("Two `enqueue`s with one `key` return one id and run once while the first is pending.", async () => {
+test("Two `enqueue`s with one `key` return one id and run once while the first is pending.", async () => {
   await fc.assert(
     fc.asyncProperty(key, async (k) => {
       const { ctx, ran, jobs } = fixture();
@@ -44,7 +44,7 @@ test.skip("Two `enqueue`s with one `key` return one id and run once while the fi
   );
 });
 
-test.skip("Two `enqueue`s with one `key` return one id and run once, also when the second comes after the first finished.", async () => {
+test("Two `enqueue`s with one `key` return one id and run once, also when the second comes after the first finished.", async () => {
   await fc.assert(
     fc.asyncProperty(key, fc.integer({ min: 1, max: 5 }), async (k, repeats) => {
       const { ctx, ran, jobs } = fixture();
@@ -68,7 +68,7 @@ test.skip("Two `enqueue`s with one `key` return one id and run once, also when t
   );
 });
 
-test.skip("Enqueues with distinct keys return distinct ids and each runs once.", async () => {
+test("Enqueues with distinct keys return distinct ids and each runs once.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.uniqueArray(key, { minLength: 2, maxLength: 6 }), async (keys) => {
       const { ctx, ran, jobs } = fixture();

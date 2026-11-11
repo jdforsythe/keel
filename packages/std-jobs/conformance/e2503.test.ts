@@ -66,7 +66,7 @@ const project = (inputSrc: string): Files => [
   { path: "topology.ts", source: topo("node") },
 ];
 
-test.skip("E2503 fires on a job `input` schema holding `s.secret` and not on its clean twin, and carries no fix.", () => {
+test("E2503 fires on a job `input` schema holding `s.secret` and not on its clean twin, and carries no fix.", () => {
   fc.assert(
     fc.property(word, (field) => {
       const bad = found(project(`s.object({ ${field}: s.secret(s.string()) })`), "E2503");
@@ -78,7 +78,7 @@ test.skip("E2503 fires on a job `input` schema holding `s.secret` and not on its
   );
 });
 
-test.skip("E2503 fires on `s.secret` nested in an object, array or optional inside the job `input`.", () => {
+test("E2503 fires on `s.secret` nested in an object, array or optional inside the job `input`.", () => {
   for (const src of [
     "s.object({ a: s.object({ b: s.secret(s.string()) }) })",
     "s.object({ a: s.array(s.secret(s.string())) })",
@@ -88,7 +88,7 @@ test.skip("E2503 fires on `s.secret` nested in an object, array or optional insi
   }
 });
 
-test.skip("A `queue` whose input holds `s.secret` throws E2503.", () => {
+test("A `queue` whose input holds `s.secret` throws E2503.", () => {
   fc.assert(
     fc.property(word, (field) => {
       const bad = job({ input: s.object({ [field]: s.secret(s.string()) }) }, async () => ok(null));

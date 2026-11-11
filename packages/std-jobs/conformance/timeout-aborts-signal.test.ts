@@ -10,7 +10,7 @@ const settle = async () => {
   for (let i = 0; i < 200; i++) await Promise.resolve();
 };
 
-test.skip("An `fn` not settled after `timeoutMs` sees its `signal` aborted, and the run counts as an attempt.", async () => {
+test("An `fn` not settled after `timeoutMs` sees its `signal` aborted, and the run counts as an attempt.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 20 }), async (units) => {
       const timeoutMs = units * 1000;
@@ -48,7 +48,7 @@ test.skip("An `fn` not settled after `timeoutMs` sees its `signal` aborted, and 
   );
 });
 
-test.skip("A throwing `fn` counts as an attempt and is retried after the backoff.", async () => {
+test("A throwing `fn` counts as an attempt and is retried after the backoff.", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const starts: number[] = [];
   const work = job({ input: s.object({}), attempts: 3 }, async () => {

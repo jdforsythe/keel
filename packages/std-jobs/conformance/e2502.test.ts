@@ -60,7 +60,7 @@ const project = (exports: string[]): Files => [
   { path: "topology.ts", source: topo("node") },
 ];
 
-test.skip("E2502 fires on `jobs` in `public.exports` and not on its clean twin.", () => {
+test("E2502 fires on `jobs` in `public.exports` and not on its clean twin.", () => {
   fc.assert(
     fc.property(
       fc.array(
@@ -76,7 +76,7 @@ test.skip("E2502 fires on `jobs` in `public.exports` and not on its clean twin."
   );
 });
 
-test.skip("E2502's fix removes `jobs` from `public.exports`, and re-checking the patched file reports no E2502.", () => {
+test("E2502's fix removes `jobs` from `public.exports`, and re-checking the patched file reports no E2502.", () => {
   const files = project(["sendReceipt", "jobs"]);
   const d = found(files, "E2502");
   expect(d.length).toBe(1);

@@ -61,7 +61,7 @@ async function reopen(missed: "once" | "skip", hours: number) {
   return { ...f, stop: () => stop(two, second) };
 }
 
-test.skip("Closed across three fire times then started, `'once'` enqueues one job, for the latest.", async () => {
+test("Closed across three fire times then started, `'once'` enqueues one job, for the latest.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 3, max: 30 }), async (hours) => {
       const f = await reopen("once", hours);
@@ -74,7 +74,7 @@ test.skip("Closed across three fire times then started, `'once'` enqueues one jo
   );
 });
 
-test.skip("Closed across three fire times then started, `'skip'` enqueues none.", async () => {
+test("Closed across three fire times then started, `'skip'` enqueues none.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 3, max: 30 }), async (hours) => {
       const f = await reopen("skip", hours);
@@ -88,6 +88,7 @@ test.skip("Closed across three fire times then started, `'skip'` enqueues none."
   );
 });
 
+// Skipped: `f.ran` also counts the 10:00 fire's job (key `<id>@10:00`, enqueued before the crash), so the spec gives 2 runs, one per fire time; test/crash.test.ts checks one run per key.
 test.skip("A crash after the enqueue and before the mark gives one job run.", async () => {
   const f = fixture();
   const table = { "orders.hourly": { cron: "0 * * * *", zone: "UTC", job: "orders.digest", input: {} } } as const;
@@ -129,7 +130,7 @@ test.skip("A crash after the enqueue and before the mark gives one job run.", as
   await stop(worker, d);
 });
 
-test.skip("An entry without a mark starts from now: a fire time before the start enqueues nothing.", async () => {
+test("An entry without a mark starts from now: a fire time before the start enqueues nothing.", async () => {
   const f = fixture();
   const table = { "orders.hourly": { cron: "0 * * * *", zone: "UTC", job: "orders.digest", input: {} } } as const;
   f.ctx.clock.advance(T10 + 30 * MIN);
@@ -140,7 +141,7 @@ test.skip("An entry without a mark starts from now: a fire time before the start
   await stop(running, a);
 });
 
-test.skip("When `signal` aborts, the runner stops waiting: `run` settles and no later fire time enqueues.", async () => {
+test("When `signal` aborts, the runner stops waiting: `run` settles and no later fire time enqueues.", async () => {
   const f = fixture();
   const table = { "orders.hourly": { cron: "0 * * * *", zone: "UTC", job: "orders.digest", input: {} } } as const;
   f.ctx.clock.advance(T10 + 30 * MIN);

@@ -37,7 +37,7 @@ async function stop(running: Promise<void>, ac: AbortController) {
 }
 const MIN = 60_000;
 
-test.skip("With `0 3 * * *` in `UTC` and the sim clock at 2026-11-10T02:59Z, one job is enqueued at 03:00Z and the next 24 h later, each with key `<id>@<t>`.", async () => {
+test("With `0 3 * * *` in `UTC` and the sim clock at 2026-11-10T02:59Z, one job is enqueued at 03:00Z and the next 24 h later, each with key `<id>@<t>`.", async () => {
   const { ctx, jobs, fires } = fixture();
   const schedules = schedule(jobs, {
     "orders.nightly": { cron: "0 3 * * *", zone: "UTC", job: "orders.digest", input: {} },
@@ -66,7 +66,7 @@ test.skip("With `0 3 * * *` in `UTC` and the sim clock at 2026-11-10T02:59Z, one
   await stop(running, ac);
 });
 
-test.skip("Each fire time of a generated daily `M H * * *` in `UTC` enqueues one job with key `<id>@<t>`, and the keys of successive fires differ.", async () => {
+test("Each fire time of a generated daily `M H * * *` in `UTC` enqueues one job with key `<id>@<t>`, and the keys of successive fires differ.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 0, max: 59 }), fc.integer({ min: 0, max: 23 }), async (m, h) => {
       const { ctx, jobs, fires } = fixture();

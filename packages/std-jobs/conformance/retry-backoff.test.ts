@@ -38,11 +38,11 @@ async function runCalls(attempts: number, okOn: number, horizonMs: number, step:
   return calls;
 }
 
-test.skip("A job returning `err` twice then `ok` with `attempts: 3` runs at 0, 1,000 and 3,000 ms.", async () => {
+test("A job returning `err` twice then `ok` with `attempts: 3` runs at 0, 1,000 and 3,000 ms.", async () => {
   expect(await runCalls(3, 3, 10_000, 1000)).toEqual([0, 1000, 3000]);
 });
 
-test.skip("With `attempts: 2` a job returning `err` ends in `failed` with its code and no input.", async () => {
+test("With `attempts: 2` a job returning `err` ends in `failed` with its code and no input.", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const work = job({ input, attempts: 2 }, async () => boom());
   const jobs = queue({ "orders.work": work });
@@ -66,7 +66,7 @@ test.skip("With `attempts: 2` a job returning `err` ends in `failed` with its co
   expect(text).not.toContain("secretish");
 });
 
-test.skip("For generated `attempts`, an always-`err` job runs at times whose gaps are `min(1000 * 2^(attempt-1), 3600000)` ms, exactly `attempts` times.", async () => {
+test("For generated `attempts`, an always-`err` job runs at times whose gaps are `min(1000 * 2^(attempt-1), 3600000)` ms, exactly `attempts` times.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 6 }), async (attempts) => {
       const calls = await runCalls(attempts, Number.POSITIVE_INFINITY, 70_000, 1000);
@@ -78,7 +78,7 @@ test.skip("For generated `attempts`, an always-`err` job runs at times whose gap
   );
 });
 
-test.skip("The backoff wait is capped at 3,600,000 ms (the wait after attempt 13 is 3,600,000, not 4,096,000).", async () => {
+test("The backoff wait is capped at 3,600,000 ms (the wait after attempt 13 is 3,600,000, not 4,096,000).", async () => {
   const calls = await runCalls(14, Number.POSITIVE_INFINITY, 8_000_000, 1000);
   expect(calls.length).toBe(14);
   expect((calls[12] ?? 0) - (calls[11] ?? 0)).toBe(2_048_000);
