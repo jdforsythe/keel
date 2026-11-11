@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.server Conformance, event-stream GET of a live loader. Seed 1337 (fc.assert below). No wall time.
+// Spec: k.server, clause "An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403."
+// Seed 1337 (fc.assert below). No wall time.
 import { guard, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
