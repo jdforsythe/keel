@@ -5,6 +5,7 @@
 import { type ChildProcess, execFile, spawn } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
+import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
@@ -36,11 +37,12 @@ const must = (cond: boolean, step: string): void => {
   if (!cond) throw new Fail(step);
 };
 
-/** Every file under `dir` but the generated and installed folders: relative path -> bytes as text. */
+/** Every file under `dir` but the generated and installed folders at its root: relative path -> bytes as text. */
 async function sources(dir: string, rel = "", out = new Map<string, string>()): Promise<Map<string, string>> {
   for (const e of await readdir(join(dir, rel), { withFileTypes: true })) {
     const p = rel === "" ? e.name : `${rel}/${e.name}`;
-    if (SKIP.has(e.name) || e.name.startsWith(".api.storage")) continue;
+    // Generated and installed folders are skipped at the app root only: a source folder of the same name deeper down counts.
+    if (rel === "" && (SKIP.has(e.name) || e.name.startsWith(".api.storage"))) continue;
     if (e.isDirectory()) await sources(dir, p, out);
     else if (e.isFile()) out.set(p, await readFile(join(dir, p), "latin1"));
   }
@@ -98,6 +100,22 @@ const field = (v: unknown, ...keys: string[]): unknown =>
   keys.reduce<unknown>((o, k) => (typeof o === "object" && o !== null ? Reflect.get(o, k) : undefined), v);
 const ids = (v: unknown, key: string): string[] => (Array.isArray(v) ? v.map((x) => String(field(x, key))) : []);
 
+/**
+ * The response headers that are meaningful and deterministic across topologies. Excluded: `date` (clock),
+ * `content-length`, `etag`, `transfer-encoding`, `connection` and `keep-alive` (framing and body bytes that differ
+ * with ids and with the forwarding hop), `x-powered-by`-style server noise. `set-cookie` is kept by shape: its name
+ * and attributes, with the value (which carries the caller id) replaced.
+ */
+function meaningful(h: Headers): Record<string, string | string[] | null> {
+  return {
+    "content-type": h.get("content-type"),
+    location: h.get("location"),
+    "cache-control": h.get("cache-control"),
+    vary: h.get("vary"),
+    "set-cookie": h.getSetCookie().map((c) => c.replace(/^([^=;]+)=[^;]*/, "$1=#value")),
+  };
+}
+
 /** The HTTP script of the in-process proof against `base`, with polling in place of clock control. */
 async function script(base: string): Promise<{ transcript: unknown[]; digest: unknown }> {
   const t: unknown[] = [];
@@ -109,7 +127,7 @@ async function script(base: string): Promise<{ transcript: unknown[]; digest: un
       ...(method === "GET" ? {} : { body: JSON.stringify(body ?? {}) }),
     });
     const parsed: unknown = await res.json().catch(() => null);
-    t.push({ req: `${method} ${path}`, status: res.status, body: parsed });
+    t.push({ req: `${method} ${path}`, status: res.status, headers: meaningful(res.headers), body: parsed });
     return parsed;
   };
   const digest = async (): Promise<unknown> =>
@@ -181,7 +199,7 @@ function normalized(t: unknown): string {
     });
 }
 
-/** The first step where two normalized transcripts differ: `#<index> <request>`, with both statuses when they differ. */
+/** The first step where two normalized transcripts differ: `#<index> <request>`, with both statuses when they differ, else `headers or body`. */
 function firstDifference(a: string, b: string): string {
   const list = (t: string): unknown[] => {
     const v: unknown = JSON.parse(t);
@@ -192,7 +210,7 @@ function firstDifference(a: string, b: string): string {
   const at = i === -1 ? ea.length : i;
   const step = String(field(ea[at], "req") ?? field(eb[at], "req") ?? "event");
   const [sa, sb] = [field(ea[at], "status"), field(eb[at], "status")];
-  return `#${at} ${step}${sa === sb ? " bodies" : `: A ${String(sa)}, B ${String(sb)}`}`;
+  return `#${at} ${step}${sa === sb ? " headers or body" : `: A ${String(sa)}, B ${String(sb)}`}`;
 }
 
 /** Copy `app` to `<tmp>/<name>` without its installed or generated folders, sharing its node_modules. */
@@ -288,10 +306,40 @@ export async function splitBuilt(root: string): Promise<string | undefined> {
     const before = await fetch(`http://127.0.0.1:${pd}/digest`, { headers: { accept: "application/json" } })
       .then((r) => r.text())
       .catch(() => "");
+    const counts = (text: string): unknown => {
+      try {
+        const v: unknown = JSON.parse(text);
+        return field(v, "results", "digest.show", "value");
+      } catch {
+        return undefined;
+      }
+    };
+    const was = counts(before);
+    note(
+      field(was, "open") === 1 && field(was, "done") === 2 && Number(field(was, "at")) > 0,
+      `B digest before restart is not { open: 1, done: 2, at > 0 }: ${before.slice(0, 120)}`,
+    );
+    // B's forwarded hops: the api process logs a /digest request with no matched route only when it forwarded it, and
+    // the digest process logs the refreshes it then served by route.
+    const hops = api.out.join("").split("\n").filter((l) => /^(GET|POST) \/digest\S* \d{3} \d+ms$/.test(l)).length;
+    const served = dig.out.join("").split("\n").filter((l) => /^POST \/digest\/refresh digest\.refresh 200 /.test(l)).length;
+    note(hops > 0 && served > 0, `B forwarded ${hops} /digest requests, digest process served ${served} refreshes`);
     for (const p of procs.splice(0)) {
       const code = await stop(p);
       note(code === 0, `SIGTERM exit ${String(code)}`);
     }
+    // Web storage keeps keys as UTF-16 blobs. The count is written by the digest module into the storage of the process that runs it.
+    const holds = (file: string): boolean => {
+      const db = new DatabaseSync(file);
+      try {
+        return db.prepare("SELECT 1 FROM nodejs_webstorage WHERE key = ?").get(Buffer.from("digest.latest", "utf16le")) !== undefined;
+      } finally {
+        db.close();
+      }
+    };
+    note(holds(join(tmp, "a-api.storage")), "A storage lacks digest.latest");
+    note(holds(digestStorage), "B digest storage lacks digest.latest");
+    note(!holds(join(tmp, "b-api.storage")), "B api storage holds digest.latest");
     const again = serve(b, "digest", pd, digestStorage, peers);
     procs.push(again);
     must(await ready(`http://127.0.0.1:${pd}/digest`), "B digest did not restart");
