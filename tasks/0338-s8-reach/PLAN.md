@@ -3,8 +3,8 @@
 **Spec:** std.db, std.workflows (new); Capacitor and Tauri adapters; verification · k.store, k.ctx, k.server (kernel touch) · **Gate:** S8 exit per the design RFC · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10), design only until the S2-S7 pushes
 
 ## Shape (tasks/PROGRAM.md)
-1. [x] Design RFC 0085 `docs/rfc/0085-s8-reach.md` (draft 3f4c23c); finalizing with the user's answers and ADRs 0103-0108.
-2. [ ] Orchestrator accepts the RFC; open questions to the user.
+1. [x] Design RFC 0085 `docs/rfc/0085-s8-reach.md` accepted (ADR-0103 to ADR-0108).
+2. [x] Orchestrator accepts the RFC; user answered D2-D4.
 3. [ ] Conformance first, per lane, after the prior pushes.
 4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
 5. [ ] Exit proof eval.
@@ -20,4 +20,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit proof
 
 ## Next action
-Step 1: the design agent is writing `docs/rfc/0085-*.md`; read its report, then step 2.
+Waits for the S2-S7 pushes. Before the S8 batch: run backlog 0257 (a revealed secret in a stored snapshot becomes durable on std-db). Then: orchestrator prep per RFC 0085 "Lanes" (k.persist, k.deploy, k.shell, k.prove, std.db, std.workflows, std.shells; edits to k.store, k.ctx, k.server, k.topology, k.compat, k.ledger; skeletons; deps; budgets), conformance-writers, implementation batch (kernel + db, workflows, targets, verify, golden lanes; the verify lane's first commit is the Z3 spike).
