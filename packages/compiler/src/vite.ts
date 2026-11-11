@@ -19,6 +19,7 @@ import { islandsCode } from "./internal/islandsCode.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
+import { projectManifests } from "./internal/projectManifests.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { clientStdData } from "./std/clientStdData.ts";
@@ -101,8 +102,8 @@ type Builder = { environments: Record<string, unknown>; build(environment: unkno
  * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046). A `vite build` whose `KEEL_DEPLOYABLE`
  * is a `node` deployable builds that entry alone (input `entry`) into `dist/<name>/` with hashed `assets/` and the
  * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), then its generated production entry (`SERVER_ENTRY`,
- * `serverEntryCode`) with every dependency into `dist/<name>/server.mjs` beside a copy of `.keel/routes.json` and
- * `.keel/std.json` (k.topology Build), and writes no `.keel/` artifacts (the project's own build does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
+ * `serverEntryCode`) with every dependency into `dist/<name>/server.mjs` beside `routes.json`, every module's routes
+ * (`projectManifests` without a topology, evaluated), and a copy of `.keel/std.json` (k.topology Build), and writes no `.keel/` artifacts (the project's own build does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
  * manifests' `deps` and writes `std.json` (`stdArtifact`); there a bad dep (E1159) or `std` entry (E1158) fails a build
  * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten (rfc:0066).
  *
@@ -331,9 +332,12 @@ export default function (): {
           buildApp: async (b) => {
             await b.build(b.environments.client);
             await b.build(b.environments.ssr);
-            for (const f of ["routes.json", "std.json"])
-              if (fs.existsSync(path.join(at, ".keel", f)))
-                fs.copyFileSync(path.join(at, ".keel", f), path.join(at, out, f));
+            // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
+            const all = projectManifests(undefined, listSources(at));
+            const table = await evaluateProject({ root: at, tokensFile: undefined, routesFiles: all, usages: [] });
+            fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
+            if (fs.existsSync(path.join(at, ".keel", "std.json")))
+              fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
           },
         },
       };
