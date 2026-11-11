@@ -1,15 +1,20 @@
 // True when golden app 1 meets evals/tasks/golden-1-api/TASK.md acceptance: files exist, check and tests green,
 // properties cover transactions and components, every golden-1 ledger item at rung example or better, ledger not regressed,
-// unsafe count 0, build green, quiet output within budgets.
+// unsafe count 0, build green, quiet output within budgets, and the split proof: the hidden in-process suite
+// (acceptance.test.ts, copied into the app, run, and removed) and the built processes (splitBuilt.ts).
 import { execFile } from "node:child_process";
-import { access, readFile, readdir } from "node:fs/promises";
+import { access, copyFile, readFile, readdir, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { splitBuilt } from "./splitBuilt.ts";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const here = dirname(fileURLToPath(import.meta.url));
+const root = join(here, "..", "..", "..");
 const app = join(root, "apps", "golden-1");
 const mod = "modules/todos";
 const api = "modules/api";
+const digest = "modules/digest";
+const ACCEPT = "test/__acceptance.test.ts";
 
 const FILES: readonly string[] = [
   "package.json",
@@ -17,7 +22,6 @@ const FILES: readonly string[] = [
   "vite.config.ts",
   "tokens.ts",
   "topology.ts",
-  "server.ts",
   ...["module", "routes"].map((n) => `${api}/${n}.ts`),
   ...[
     "board",
@@ -60,8 +64,26 @@ const FILES: readonly string[] = [
   ...["AppShell", "ListsPage", "ListPage", "TodoRow", "EditTodoPage", "ListError", "Suggestions"].map(
     (n) => `${mod}/${n}.tsx`,
   ),
-  ...["api", "board", "components", "routes"].map((n) => `test/${n}.test.ts`),
+  ...[
+    "module",
+    "routes",
+    "Digest.schema",
+    "RecountInput.schema",
+    "ListsReply.schema",
+    "board.service",
+    "boardApi",
+    "LATEST_KEY",
+    "readLatest",
+    "writeLatest",
+    "DigestApi",
+    "RefreshApi",
+  ].map((n) => `${digest}/${n}.ts`),
+  ...["recount", "jobs", "schedules", "runners", "loadDigest", "feedDigest", "refresh"].map(
+    (n) => `${digest}/${n}.server.ts`,
+  ),
+  ...["api", "board", "components", "routes", "digest"].map((n) => `test/${n}.test.ts`),
   "test/simApi.ts",
+  "test/apiRoutes.ts",
 ];
 const PROPERTY_TARGETS: readonly string[] = [
   "addList",
@@ -131,10 +153,21 @@ async function ledgerItemsProven(): Promise<boolean> {
   return items.length > 0 && items.every((e) => isRecord(e) && typeof e.rung === "string" && e.rung !== "none");
 }
 
+/** The hidden in-process split suite, copied into the app's tests, run with its vitest config, and removed. */
+async function acceptance(): Promise<boolean> {
+  const target = join(app, ACCEPT);
+  await copyFile(join(here, "acceptance.test.ts"), target);
+  const r = await sh("pnpm", ["--filter", "golden-1", "exec", "vitest", "run", ACCEPT]).finally(() =>
+    rm(target, { force: true }),
+  );
+  return r.ok;
+}
+
 export default async (): Promise<boolean> => {
   for (const f of FILES) if (!(await exists(join(app, f)))) return false;
+  if (await exists(join(app, "server.ts"))) return false;
 
-  const files = await codeFiles();
+  const files = (await codeFiles()).filter((f) => f !== ACCEPT);
   const read = async (f: string): Promise<string> => readFile(join(app, f), "utf8");
   const tests = files.filter((f) => f.startsWith("test/"));
   const sources = files.filter((f) => !f.startsWith("test/"));
@@ -162,5 +195,9 @@ export default async (): Promise<boolean> => {
   if (!(await sh("pnpm", ["ledger", "--diff", "--scope", "golden-1:"])).ok) return false;
   const build = await sh("pnpm", ["--filter", "golden-1", "build"]);
   if (!build.ok) return false;
-  return ledgerItemsProven();
+  if (!(await ledgerItemsProven())) return false;
+  if (!(await acceptance())) return false;
+  const split = await splitBuilt(root);
+  if (split !== undefined) process.stderr.write(`V0001 evals/tasks/golden-1-api/splitBuilt.ts ${split}\n`);
+  return split === undefined;
 };

@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "tsc --noEmit && biome check modules",
+    "check": "tsc --noEmit && biome check modules test && node ../../packages/cli/src/bin.ts check --quiet",
     "test": "vitest run",
     "build": "node ../../packages/cli/src/bin.ts build",
-    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning server.ts"
+    "dev": "node ../../packages/cli/src/bin.ts dev",
+    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.6",

@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "node ../../packages/cli/src/bin.ts build",
+    "dev": "node ../../packages/cli/src/bin.ts dev",
     "check": "tsc --noEmit && biome check modules test && node ../../packages/cli/src/bin.ts check --quiet",
     "test": "vitest run",
-    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning server.ts"
+    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.6",

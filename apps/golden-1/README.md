@@ -2,22 +2,34 @@
 
 The todo app. `topology.ts` defines two deployables:
 
-- `web` (`client`): the browser app, built to `dist/`.
-- `api` (`node`): `server.ts`, on port 4181 (`KEEL_API_PORT` overrides).
+- `web` (`client`): the browser app, built to `dist/`. It reads and writes the board over HTTP.
+- `api` (`node`): the `api` module, which owns the board (`api.board`), and the `digest` module, which counts open and done todos.
+
+`digest` recounts the board on `POST /digest/refresh` and at the start of every hour (UTC). Its job, `digest.recount`, reads `GET /api/lists` through `service({ module: 'api' })` and stores the counts; `GET /digest` answers the newest count and `GET /digest/feed` streams each new one as server-sent events. The job queue and the schedule are the module's runners (`modules/digest/runners.server.ts`), so they run wherever `topology.ts` places `digest`.
 
 ## Dev
-Run these from `apps/golden-1`:
-- `pnpm api` starts the `api` server. Add `NODE_ENV=development` for dev mode.
-- `npx vite` serves `web` and proxies `/api` to the `api` server.
+Run `pnpm dev` from `apps/golden-1`. `keel dev` serves `web` with hot reload and both `api` modules on one origin, with their runners; storage lives in `.keel-dev/`.
 
 ## Production
-1. `pnpm --filter ./apps/golden-1 build` runs `keel build`. It writes three things:
-   - the `.keel/` artifacts;
+1. `pnpm --filter ./apps/golden-1 build` runs `keel build`. It writes:
+   - the `.keel/` artifacts, `surface.json` among them;
    - `dist/`, the `web` client;
-   - `dist/api/`, the `api` client build: the resume entry and its islands, hashed `assets/`, and `.vite/manifest.json` (k.server Build, RFC 0048).
+   - `dist/api/`: `server.mjs`, the generated entry with every dependency bundled, beside the `api` client build, `routes.json` and `std.json`;
+   - `deploy/api/Dockerfile` and `deploy/compose.yaml`, from `topology.ts`.
+2. `pnpm api` runs `dist/api/server.mjs`, with `ctx.storage` in `.api.storage`. It reads its settings from the environment and exits with E1560 when one is missing or invalid:
+   - `KEEL_SECRET`: 32 or more random bytes. It signs caller cookies, so set the same value for every deployable of the app.
+   - `PORT`: default 8080.
+   - `KEEL_ORIGIN`: the public origin, such as `https://todo.example`. Behind a proxy that terminates TLS it makes the caller cookie `Secure` and the same-site check compare against the public host.
+3. On SIGTERM or SIGINT the server stops listening, lets the runners settle and exits 0. A job that was running when it stopped runs again at the next start.
 
-   The `api` build runs after the `web` one, because building `web` empties `dist/`.
-2. `NODE_ENV=production node --experimental-webstorage --localstorage-file=apps/golden-1/.api.storage apps/golden-1/server.ts` starts the `api` server.
-   - It loads the client manifest once, at startup. If `dist/api` is missing, startup fails with E1555, so run step 1 first.
-   - It serves `/assets/*` with `cache-control: public, max-age=31536000, immutable`.
-3. `npx vite preview --port 4180` (in `apps/golden-1`) serves `dist/` and proxies `/api` to 4181.
+`docker compose -f deploy/compose.yaml up` builds and runs the same entry in `node:22-slim`, with storage on the `api-data` volume; it takes `KEEL_SECRET` and `KEEL_ORIGIN` from the environment.
+
+## Splitting
+Moving `digest` into its own deployable edits `topology.ts` alone:
+
+```ts
+api: { modules: ["api"], adapter: "node" },
+digest: { modules: ["digest"], adapter: "node" },
+```
+
+`keel build` then writes `dist/digest/server.mjs` and `deploy/digest/Dockerfile`. Each server gets the other's URL as `KEEL_PEER_API` or `KEEL_PEER_DIGEST`; `digest`'s board read goes to its `api` peer, and `api` forwards `/digest` requests to `digest`.

@@ -7,7 +7,7 @@
     "build": "node ../../packages/cli/src/bin.ts build",
     "check": "tsc --noEmit && biome check modules test",
     "test": "vitest run",
-    "start": "node --experimental-webstorage --localstorage-file=.sessions.storage --disable-warning=ExperimentalWarning server.ts"
+    "start": "node --experimental-webstorage --localstorage-file=.sessions.storage --disable-warning=ExperimentalWarning dist/sessions/server.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.6",

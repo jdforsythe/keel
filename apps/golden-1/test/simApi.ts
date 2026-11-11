@@ -1,8 +1,8 @@
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
-import { routes } from "../modules/api/routes.ts";
 import { Board } from "../modules/todos/Board.schema.ts";
 import topology from "../topology.ts";
+import { apiRoutes } from "./apiRoutes.ts";
 
 /** Where the api deployable keeps `api.board` (k.server Server state: `ctx.storage` key `keel.store.<id>`). */
 export const BOARD_KEY = "keel.store.api.board";
@@ -17,8 +17,8 @@ export function resetApi(): void {
 /** The api's sim ctx: its `storage` is the board's persistence, shared by every `apiApp` until `resetApi`. */
 export const apiCtx = (): SimCtx => server;
 
-/** Serve the real `api` deployable over the api's sim ctx, as server.ts does over the real one. */
-export const apiApp = () => createApp({ topology, routes, ctx: server, deployable: "api" });
+/** Serve the real `api` deployable over the api's sim ctx, as its generated entry does over the real one. */
+export const apiApp = () => createApp({ topology, routes: apiRoutes, ctx: server, deployable: "api" });
 
 /** Store `state` as the api's board (empty log), for apps built after this call. */
 export const seedBoard = (state: Board): Promise<void> =>

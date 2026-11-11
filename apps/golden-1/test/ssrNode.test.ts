@@ -70,5 +70,8 @@ describe("golden-1 documents in plain node (no DOM global)", () => {
       expect(r.html, path).toContain("<!doctype html>");
     }
     expect((await page(app.fetch, "/api/lists")).html).toContain("<li>Home</li>");
+    const digest = await page(app.fetch, "/digest");
+    expect(digest.status).toBe(200);
+    expect(digest.html).toMatch(/<li id="digest\.open"[^>]*>0<\/li>/);
   });
 });

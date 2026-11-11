@@ -27,7 +27,7 @@ function limitLine(limit: (typeof LIMITS)[number], width: number): string {
  * recorder lives until its `stop()`, past this component, and gets the errors the ctx kept since its current route.
  * A server render shows the path and records nothing. A test or replay that started its own recorder keeps that
  * one: `record` returns the ctx's recorder and ignores a second `upload`. `ops.home.limits` shows and hides the
- * archive bounds, one per line, in `ops.home.limits.list`. Plain `.ts` so `node server.ts` loads it.
+ * archive bounds, one per line, in `ops.home.limits.list`. Plain `.ts` (no JSX).
  */
 export default function Home(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
   const path = sessions.href("sessions.ingest");

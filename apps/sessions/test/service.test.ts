@@ -1,5 +1,5 @@
 // @vitest-environment node
-// The ingest service in plain node (no happy-dom), as `server.ts` serves it but over a sim ctx: the home page and the
+// The ingest service in plain node (no happy-dom), as its generated entry serves it but over a sim ctx: the home page and the
 // ingest page render with the deployable's title, an unknown path is a readable 404, a recorded session is ingested, a
 // caller outside `readers` is sent to the ingest page, a reader lists the archive, and the module's `readers` entry
 // reaches the guard through `.keel/std.json`. Seed 1337

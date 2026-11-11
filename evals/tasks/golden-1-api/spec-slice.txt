@@ -1,6 +1,6 @@
-k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.services k.forms k.ui k.testing k.module k.scaffold k.check
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.topology k.services k.forms k.ui k.testing k.module k.scaffold k.check std.jobs std.schedules
 
-Key lines only (current spec, RFCs through 0046). Full text: `pnpm spec <id>`.
+Key lines only (current spec, RFCs through 0080). Full text: `pnpm spec <id>`.
 
 k.schema
 - import { s, ok, err, attempt, type Result } from '@keel/schema'
@@ -56,7 +56,8 @@ k.server
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
 - stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)
-- createApp({ topology, routes, ctx, deployable: 'api' }) from '@keel/server' -> Promise<{ fetch(req) }>
+- createApp({ topology, routes, ctx, deployable: 'api', runners?, peers?, artifacts? }) from '@keel/server' -> Promise<{ fetch(req), close() }> (tests; production runs the generated entry)
+- live loader: loader({ output }, async function* ({ signal }, ctx) { yield ok(v) }); document/JSON GET takes the first yield; accept: text/event-stream gets each yield as a `data:` line (its Result JSON)
 - writes pass the same-site check: send accept: application/json with x-keel: 1 (a services client does)
 - JSON body (content-type application/json) decodes with the action input schema, an empty body as {}; fail: 422 keel.fields naming each bad or missing field, action not called
 - runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; action -> { ok: true, value: null | href } or { ok: false, error: { code, message, data } }
@@ -71,6 +72,22 @@ k.services
 - ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
 - pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body?.error ?? r.error)
 - ctx.net.fetch in app code is E1651; E1652 :param without params field; E1653 body on GET
+- service({ module: 'api', schema }) calls app module api's routes (api in deps, route in its public.routes): in process, a peer, a browser's document origin; on a ctx no createApp bound, http://api.keel.invalid
+
+k.topology
+- each module (app or stdlib) in one deployable; a split edits topology.ts alone
+- keel build writes dist/<name>/server.mjs per node deployable (no server.ts): env PORT (8080), KEEL_SECRET (32+, one for the app), KEEL_ORIGIN, KEEL_PEER_<NAME>; E1560 names a bad key; SIGTERM awaits close() and exits
+- modules/<id>/runners.server.ts: export const runners = [jobs, schedules]; createApp({ runners: { digest: runners } }) runs them after startup; close() aborts them
+- peers: a request for a path a peer serves (routes.json in artifacts) is forwarded; deploy/<name>/Dockerfile and deploy/compose.yaml are generated (E1005)
+
+std.jobs
+- export const recount = job({ input: RecountInput }, async (input, ctx, signal) => ok(null))  // recount.server.ts; at least once, so idempotent
+- export const jobs = queue({ 'digest.recount': recount })  // modules/digest/jobs.server.ts; jobs.enqueue(ctx, 'digest.recount', input, { delayMs?, key? }) -> Result<Id<'Job'>, KeelError>
+- module deps '@keel/std-jobs', capabilities clock random storage; node deployable only; E2501-E2504
+
+std.schedules
+- export const schedules = schedule(jobs, { 'digest.hourly': { cron: '0 * * * *', zone: 'UTC', job: 'digest.recount', input: {} } })  // schedules.server.ts
+- module deps '@keel/std-schedules' and '@keel/std-jobs'; runners lists schedules (E2553); a bad cron is E2551
 
 k.forms
 - import { form } from '@keel/forms'; const f = form(TodoDraft, { initial?, id? }) in a component; f.field('title') f.values() f.errors() f.pending() f.reset()
