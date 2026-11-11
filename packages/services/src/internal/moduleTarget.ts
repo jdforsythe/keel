@@ -7,9 +7,13 @@ import { isFetcher } from "./isFetcher.ts";
  * Resolve `service({ module })` for one call (k.topology Calls and peers): on a ctx a `createApp` bound, the app that
  * serves `module` in this process answers through its `fetch`, and a peer by URL through `ctx.net.fetch`; otherwise a
  * browser calls the document's origin and anything else `http://<module>.keel.invalid`, both through `ctx.net.fetch`.
+ * Over the net a redirect is not followed (`redirect: "manual"`): a 3xx is `api.status` as it is in process.
  */
 export function moduleTarget(ctx: Ctx, module: string): Target {
-  const net = (base: string): Target => ({ base, send: (req) => ctx.net.fetch(req) });
+  const net = (base: string): Target => ({
+    base,
+    send: (req) => ctx.net.fetch(new Request(req, { redirect: "manual" })),
+  });
   const table: unknown = Reflect.get(globalThis, MODULES_KEY);
   const bound: unknown = table instanceof WeakMap ? table.get(ctx) : undefined;
   const at: unknown = bound instanceof Map ? bound.get(module) : undefined;

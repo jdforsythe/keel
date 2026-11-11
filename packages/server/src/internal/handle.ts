@@ -41,7 +41,7 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
     sv,
     rq,
     raw,
-    url: sv.origin === undefined ? raw.url : new URL(`${url.pathname}${url.search}`, sv.origin).href,
+    url: sv.origin === undefined ? raw.url : `${sv.origin}${url.pathname}${url.search}`,
     method,
     here: `${path}${url.search}`,
     runtime: (raw.headers.get("accept") ?? "").includes("application/json"),

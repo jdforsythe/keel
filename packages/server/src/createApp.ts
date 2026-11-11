@@ -68,8 +68,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * a `diag` and a rerun 1,000 ms later on `ctx.clock`); `close()` aborts their signal and open event streams and
  * resolves when every `run` has settled. `ctx` is bound for `service({ module })` (`bindModules`). A request whose path
  * no route here matches but a peer serves (by `routes.json` in `artifacts`) is forwarded to it unless it carries
- * `x-keel-forwarded` (k.topology Calls and peers). `origin` replaces the request's origin in `url`, the same-site check
- * and `Secure`; with it, no W1557.
+ * `x-keel-forwarded` (k.topology Calls and peers; `forward`), and logs its `req` record like a served one. `origin`
+ * replaces the request's origin in `url`, the same-site check and `Secure`; with it, no W1557.
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -138,7 +138,6 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const inspecting = sv.mode === "dev" && path === INSPECT_PATH;
     const peer = inspecting || raw.headers.has("x-keel-forwarded") ? undefined : peerOf(forwards, path);
     const at = peer === undefined || matchUrl(served, path).route !== null ? undefined : peers[peer];
-    if (at !== undefined) return forward(raw, at, sv.ctx);
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
     const routed = async () => {
@@ -153,14 +152,16 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       return r;
     };
     const ran =
-      gate === undefined || (gate.ok && raw.method !== "GET")
-        ? await routed()
-        : await attempt(() =>
-            (gate.ok
-              ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
-              : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
-            ).then((r) => ({ ...r, route: undefined })),
-          );
+      at !== undefined
+        ? await attempt(() => forward(raw, at, sv))
+        : gate === undefined || (gate.ok && raw.method !== "GET")
+          ? await routed()
+          : await attempt(() =>
+              (gate.ok
+                ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
+                : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
+              ).then((r) => ({ ...r, route: undefined })),
+            );
     const h = ran.ok ? ran.value : crashed(sv.mode, ran.error);
     if (log !== undefined) {
       for (const d of h.diags) log.write(diagLine(log.format, d));
