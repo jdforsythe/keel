@@ -18,7 +18,7 @@ description: "Build a Keel app: schemas, stores, components, routes, forms, test
 - Values on screen: `formatMoney`, `formatDate`, `formatDuration` or `formatNumber` with the route's `props.params.locale`; never `toLocaleString`.
 - Page text: a message set loaded by the route's loader (`await Set.load(params.locale)`), read as `props.data.text.<key>`.
 - `tokens.ts`: `defineTokens`; style props take token names only (no `class`, no `styles()`). `<Button id="x.save">Save</Button>` (text is children).
-- `topology.ts`: `topology({ web: { modules, adapter: 'client' } })`; `module.ts`: `module({ id, deps, capabilities, public })`.
+- `topology.ts`: `topology({ web: { modules, adapter: 'client' } })` (`host: '<node deployable>'` makes that server serve the client; `keel build` writes it to `dist/<name>/`); `module.ts`: `module({ id, deps, capabilities, public })`.
 
 **Rules:** no throw/try (use `Result`, `attempt`); no `Date.now`, `Math.random`, `fetch`, `localStorage`, DOM (use `ctx`); ids from `ctx.random.id('Todo')`; no `any`, casts, `!`, `@ts-ignore`.
 

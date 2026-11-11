@@ -1,4 +1,4 @@
-k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.topology k.services k.forms k.ui k.testing k.module k.scaffold k.check std.jobs std.schedules
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.topology k.hosting k.services k.forms k.ui k.testing k.module k.scaffold k.check std.jobs std.schedules
 
 Key lines only (current spec, RFCs through 0080). Full text: `pnpm spec <id>`.
 
@@ -80,7 +80,11 @@ k.topology
 - each module (app or stdlib) in one deployable; a split edits topology.ts alone
 - keel build writes dist/<name>/server.mjs per node deployable (no server.ts): env PORT (8080), KEEL_SECRET (32+, one for the app), KEEL_ORIGIN, KEEL_PEER_<NAME>; E1560 names a bad key; SIGTERM awaits close() and exits
 - modules/<id>/runners.server.ts: export const runners = [jobs, schedules]; createApp({ runners: { digest: runners } }) runs them after startup; close() aborts them
+- a client deployable may carry host: 'api' (k.hosting): topology({ web: { modules: ['todos'], adapter: 'client', host: 'api' }, api: { ... adapter: 'node' } })
 - peers: a request for a path a peer serves (routes.json in artifacts) is forwarded; deploy/<name>/Dockerfile and deploy/compose.yaml are generated (E1005)
+
+k.hosting
+- k.hosting: `host: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<host>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes; E1565 bad peer value, E1566 bad host
 
 std.jobs
 - export const recount = job({ input: RecountInput }, async (input, ctx, signal) => ok(null))  // recount.server.ts; at least once, so idempotent

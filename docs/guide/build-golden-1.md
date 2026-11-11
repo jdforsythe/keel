@@ -56,8 +56,8 @@ todo-by-hand/
   test/               vitest suites and their helpers
   # generated, never edited by hand:
   .keel/              compiler artifacts (JSON, read-only)
-  dist/               the web client build
-  dist/api/           the api deployable: server.mjs and its client build
+  dist/web/           the web client build: static files
+  dist/api/           the api deployable: server.mjs, a copy of the web client and its resume entry
   deploy/             Dockerfile and compose.yaml for node deployables
   .keel-dev/          storage for keel dev
   .api.storage*       storage for the built api server
@@ -213,14 +213,14 @@ Components never write CSS. They take style props whose values are token names (
 import { topology } from "@keel/server";
 
 export default topology({
-  web: { modules: ["todos"], adapter: "client" },
+  web: { modules: ["todos"], adapter: "client", host: "api" },
   api: { modules: ["api", "digest"], adapter: "node" },
 });
 ```
 
 A deployable is a set of modules that builds to one artifact. The adapter decides how it runs:
 
-- `client`: a browser app. Loaders and actions run in the browser with a real `ctx`; the entry mounts the router into `#app`. `keel build` writes it to `dist/`.
+- `client`: a browser app. Loaders and actions run in the browser with a real `ctx`; the entry mounts the router into `#app`. `keel build` writes it to `dist/<name>/`. With `host: "api"`, the `api` deployable also serves it, so one process answers `GET /`.
 - `node`: a server (Hono). It renders pages to HTML, answers JSON and event streams, runs runners, and ships a small resume entry for pages that have interactive parts. `keel build` writes `dist/<name>/server.mjs`.
 - `static`: prerendered HTML. golden-1 does not use it.
 
@@ -244,7 +244,7 @@ You write sources; the plugin and `keel build` derive everything below. Nothing 
 
 | What | Written by | From | Notes |
 | --- | --- | --- | --- |
-| `/@keel/entry.ts`, mount entry | Vite plugin, in memory | `topology.ts`, each module's `routes.ts` | served for a `client` deployable; `keel build` bundles it into `dist/assets/index-*.js`, which `dist/index.html` scripts |
+| `/@keel/entry.ts`, mount entry | Vite plugin, in memory | `topology.ts`, each module's `routes.ts` | served for a `client` deployable; `keel build` bundles it into `dist/web/assets/index-*.js`, which `dist/web/index.html` scripts |
 | `/@keel/entry.ts`, resume entry | Vite plugin, in memory | `topology.ts`, `routes.ts` | served for a `node` deployable's pages; built to `dist/<name>/assets/entry-*.js` |
 | `/@keel/islands.ts` | Vite plugin, in memory | each `routes.ts` | route id to component, for the resume entry |
 | `virtual:keel.css` (served as `/__keel.css`) | Vite plugin | `tokens.ts` and `.keel/styles.json` | one atomic rule per style usage |
@@ -252,8 +252,8 @@ You write sources; the plugin and `keel build` derive everything below. Nothing 
 | `.keel/routes.json` | Vite plugin | the served deployable's `routes.ts`, evaluated in Node | path, params, search, actions, layout, guard per route; for golden-1, the `todos` routes |
 | `.keel/std.json` | Vite plugin and `keel build` | `std` entries in `module.ts` | stdlib config per package and module; `{}` in golden-1 |
 | `.keel/surface.json` | `keel build` only | every module's routes and `service({ module })` calls | the HTTP surface; `keel check --base` compares it against a deployed one |
-| `dist/` | `keel build` (Vite) | `index.html`, the mount entry | the `web` client: static files |
-| `dist/api/` | `keel build` (Vite, `KEEL_DEPLOYABLE=api`) | the `api` and `digest` modules | `server.mjs` with every dependency bundled, the resume entry in `assets/`, `routes.json` (all modules' routes, for forwarding), `std.json` |
+| `dist/web/` | `keel build` (Vite) | `index.html`, the mount entry | the `web` client: static files |
+| `dist/api/` | `keel build` (Vite, `KEEL_DEPLOYABLE=api`) | the `api` and `digest` modules, and the `web` client (`host: "api"`) | `server.mjs` with every dependency bundled, the resume entry and the client's `index.html` and files in `assets/`, `routes.json` (all modules' routes, for forwarding), `std.json` |
 | `deploy/api/Dockerfile`, `deploy/compose.yaml` | `keel build` | `topology.ts` | one Dockerfile per `node` deployable, one compose service each |
 
 Every `.keel/` file is `{ data, hash }` JSON with sorted keys, written read-only (mode 0444). `keel check` recomputes them from your sources, and a file that differs is E1005. A project with no `.keel/` yet checks clean; once a build or test run has written it, editing a source makes `keel check` report E1005 for each stale artifact before your real error. Run `keel build` before `keel check` after edits.
@@ -596,7 +596,7 @@ export const suggestions = endpoints({
 });
 ```
 
-The `base` is the page's origin. A loader or action reads it from its `url` argument; a component reads `location.origin`. Server-side code never reads `location`, and `routes.ts` is evaluated in Node where `location` does not exist, so the client is built per call:
+The `base` is the page's origin, which is the `api` origin because `api` hosts `web`. A loader or action reads it from its `url` argument; a component reads `location.origin`. Server-side code never reads `location`, and `routes.ts` is evaluated in Node where `location` does not exist, so the client is built per call:
 
 ```ts title="modules/todos/todosApi.ts"
 import { service } from "@keel/services";
@@ -2104,6 +2104,7 @@ cp ../../apps/golden-1/test/*.test.ts test/
 | `test/api.test.ts` | `properties` on each `api` transaction (invariants, undo), the `api` HTTP surface, per-caller undo |
 | `test/digest.test.ts` | the job, the schedule on the sim clock, the event-stream feed, a restart with a job left in the queue |
 | `test/ssrNode.test.ts` | the `todos` pages rendered by a `node` adapter in plain Node, no DOM global |
+| `test/host.test.ts` | the `api` app answers `GET /` and an unmatched page with the client's `index.html` |
 
 The shape of a route test, trimmed from the first test in `test/routes.test.ts`:
 
@@ -2132,7 +2133,7 @@ keel build
 keel check
 ```
 
-A clean run prints `ok 72 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 72 tests, 0 failed, 0 skipped`), then `ok build 72 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 88 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
+A clean run prints `ok 74 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 74 tests, 0 failed, 0 skipped`), then `ok build 72 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 89 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
 
 ### Develop
 
@@ -2152,7 +2153,7 @@ NODE_OPTIONS="--experimental-webstorage --localstorage-file=.keel-dev/storage --
 
 ### Build and run the server
 
-`keel build` compiles and checks every source, writes `.keel/` and `.keel/surface.json`, runs Vite once for the `web` client into `dist/` and once per `node` deployable into `dist/<name>/`, and writes `deploy/`. It prints one summary line on success.
+`keel build` compiles and checks every source, writes `.keel/` and `.keel/surface.json`, runs Vite once for the `web` client into `dist/web/` and once per `node` deployable into `dist/<name>/`, and writes `deploy/`. It prints one summary line on success.
 
 `dist/api/server.mjs` is the generated production entry. It installs a server DOM, imports `topology.ts`, each of its modules' `routes.ts` and `runners.server.ts`, and serves them. It reads its settings from the environment and exits 1 with one E1560 line naming the key when one is missing or invalid:
 
@@ -2179,39 +2180,9 @@ curl -s -X POST -H 'accept: application/json' -H 'content-type: application/json
 curl -s localhost:8080/api/lists          # JSON too: an API route has no document view
 ```
 
-`server.mjs` serves the `api` deployable's routes and its own `dist/api/assets/`. It does not serve the `web` client: `GET /` is 404. `dist/` is static files that expect `/api` and `/digest` on their own origin, so in production put a static host and a reverse proxy in front of both. Keel writes no deploy file for a `client` deployable.
+`server.mjs` serves the `api` deployable's routes, its own `dist/api/assets/` and, because `topology.ts` gives `web` the `host: "api"`, the `web` client: `GET /` returns `index.html`, and so does any other page request that no route matches. A request to an unmatched API or event-stream path stays 404. `dist/web/` holds the same client as static files for a static host; `docs/guide/deploy-client.md` shows the three ways to ship it.
 
-`vite preview` cannot show the client build: it answers 404 for `/api` and `/digest`. To see the client build in production, start the `api` server on a high port (`PORT=18080 KEEL_SECRET=… pnpm api`) and run this script from the app folder with `node client-proxy.mjs`. It serves `dist/` with an `index.html` fallback for client routes and proxies `/api` and `/digest` to the node deployable, piping each response so the event stream is not buffered. Both ports come from the environment (`WEB_PORT`, default 15173; `API_PORT`, default 18080).
-
-```js title="client-proxy.mjs"
-import { createServer, request } from 'node:http'
-import { readFile } from 'node:fs/promises'
-import { extname, join, normalize } from 'node:path'
-
-const root = new URL('./dist/', import.meta.url).pathname
-const upstream = Number(process.env.API_PORT ?? 18080)
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' }
-
-createServer(async (req, res) => {
-  const { pathname } = new URL(req.url ?? '/', 'http://localhost')
-  if (/^\/(api|digest)(\/|$)/.test(pathname)) {
-    const hop = request({ port: upstream, path: req.url, method: req.method, headers: req.headers }, (up) => {
-      res.writeHead(up.statusCode ?? 502, up.headers)
-      up.pipe(res)
-    })
-    hop.on('error', () => res.writeHead(502).end())
-    req.pipe(hop)
-    return
-  }
-  const file = join(root, normalize(pathname).replace(/^(\.\.[/\\])+/, ''))
-  const body = await readFile(file).catch(() => null)
-  const found = body !== null && file.startsWith(root) && !pathname.endsWith('/')
-  res.writeHead(200, { 'content-type': types[found ? extname(file) : '.html'] ?? 'application/octet-stream' })
-  res.end(found ? body : await readFile(join(root, 'index.html')))
-}).listen(Number(process.env.WEB_PORT ?? 15173))
-```
-
-This is a stopgap you write yourself. Keel generates no deploy file for the client deployable, and the script does no caching, compression or error pages.
+In a second terminal, `curl -s localhost:8080/ | head -c 15` prints `<!doctype html>`, and the browser at `http://localhost:8080/` shows the app on the same origin as its API.
 
 ### Deploy files
 
@@ -2297,9 +2268,9 @@ The Keel skills in `.claude/skills/keel*/SKILL.md` are terse API cards for the s
 
 ## What this guide leaves out
 
-- The six test suites, copied from `apps/golden-1/test/` in section 9 rather than reprinted.
+- The seven test suites, copied from `apps/golden-1/test/` in section 9 rather than reprinted.
 - `README.md`; golden-1's own is at `apps/golden-1/README.md`.
 - Inspecting a running app (`keel inspect`, `/__keel/inspect`), recorded sessions, and `keel check --base` against a deployed `surface.json`.
-- Running the `web` client in production behind a proxy; Keel has no generated file for it.
+- Shipping the `web` client to a static host or across origins; `docs/guide/deploy-client.md` covers it.
 
 verified: 4b7a637f563daa2284f10170ce2824a4dd55798e

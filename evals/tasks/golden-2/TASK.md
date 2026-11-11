@@ -3,7 +3,7 @@
 Build `apps/golden-2/`: a recipe box whose data lives behind an API, shown in `en-US`, `de-DE` and `ja-JP`. Use only kernel and stdlib APIs from the spec slice; read a full section with `pnpm spec <id>`; skills `keel-api`, `keel-forms`, `keel-testing` are in `.claude/skills/<name>/SKILL.md`. Edit nothing outside `apps/golden-2/` (the root `pnpm install` lockfile change excepted). Scaffold from `apps/` with `keel scaffold project golden-2 --workspace`, which writes `apps/golden-2/` (keep its `index.html` and `vitest.config.ts`; replace its `app` module), then `pnpm install` at the root. `package.json` depends on `@keel/std-i18n`, `@keel/std-money`, `@keel/std-temporal`, `@keel/std-text` and `@keel/std-messages`. Its `check` script runs `tsc --noEmit`, biome and `keel check`. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; invent nothing.
 
 ## Topology
-`topology.ts` default export: `web` (`adapter: 'client'`, module `recipes`) and `api` (`adapter: 'node'`, module `kitchen`, deps `recipes`). Schemas both modules use live in `recipes` and are public exports. `recipes` lists the five stdlib packages in `deps`; `kitchen` lists the value packages it uses and capability `clock`.
+`topology.ts` default export: `web` (`adapter: 'client'`, `host: 'api'`, module `recipes`) and `api` (`adapter: 'node'`, module `kitchen`, deps `recipes`). Schemas both modules use live in `recipes` and are public exports. `recipes` lists the five stdlib packages in `deps`; `kitchen` lists the value packages it uses and capability `clock`.
 
 ## Data
 - `AppLocale = s.enum(['en-US', 'de-DE', 'ja-JP'], { pathDefault: 'en-US' })` (`AppLocale.schema.ts`); `LocaleParams { locale: AppLocale }`.

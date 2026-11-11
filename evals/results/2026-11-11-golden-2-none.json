@@ -19,6 +19,7 @@
     "k.testing",
     "k.module",
     "k.scaffold",
+    "k.hosting",
     "k.check",
     "std.i18n",
     "std.money",
@@ -36,8 +37,8 @@
   },
   "costUsd": 0,
   "unsafeCount": 5,
-  "checkTrailer": "ok budgets 75 measured (3.5s)",
-  "testTrailer": "ok test 56 tasks (0.3s)",
-  "durationMs": 22275,
-  "startedAt": "2026-11-11T22:46:00.761Z"
+  "checkTrailer": "ok budgets 76 measured (3.3s)",
+  "testTrailer": "ok test 56 tasks (0.2s)",
+  "durationMs": 20818,
+  "startedAt": "2026-11-11T23:39:33.594Z"
 }
