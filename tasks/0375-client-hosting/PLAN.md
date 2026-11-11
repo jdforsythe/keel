@@ -8,7 +8,7 @@
 
 ## Steps
 - [x] 1 ADR-0110, k.hosting spec text, pointers in k.topology, k.server, k.services, map row
-- [ ] 2 conformance-writer: `packages/server/conformance/hosting-0087.test.ts`
+- [x] 2 conformance-writer: `packages/server/conformance/hosting-0087.test.ts`
 - [ ] 3 kernel: compiler and cli (`dist/<name>/` for a `client` deployable, `keel-peer` tag, E1565, copy into the host), server (`allow`, `KEEL_ALLOW_ORIGINS`, W1567, `host` document fallback, E1566), services (peer origin in a browser, `credentials`), scaffold (CI job, deploy files), check (E1566, explain rows)
 - [ ] 4 migration: golden-1 and golden-2 `host`, `service({ module })` in golden-1's client, READMEs, `docs/guide/deploy-client.md`, `docs/guide/build-golden-1.md`, `docs/THREAT-MODEL.md`
 - [ ] 5 reviewer and red-team; findings to the backlog
