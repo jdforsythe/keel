@@ -1,6 +1,10 @@
 # RFC 0086: API routes: a route that answers JSON and has no view
 
-Status: draft (2026-11-11). Design RFC for backlog 0385, with the context of 0406. The shape in Proposal 1 is a new hand-written API, so Open questions 1 is the user's call before any spec, conformance or code changes.
+Status: accepted (2026-11-11); the user's answers are D1 and D2. Design RFC for backlog 0385, with the context of 0406.
+
+## Decisions (user, 2026-11-11)
+- D1: the tagged entry of Proposal 1, with the member `api: true`: "tagged is the right way".
+- D2: the user asked whether an API route's actions should sit in the entry, with a verb key implying `api: true`, and was unsure it is worth it. Recorded as not taken (Alternatives, in-entry verbs): actions attach through `routes.actions` for every route. The user may reopen it.
 
 ## Problem
 A route in a `node` deployable that only answers JSON must still carry a view. Evidence from the code as of this RFC:
@@ -65,11 +69,8 @@ The wire format of a `@keel/services` call does not change, so E1561 and E1562 k
 - **A wrapper call, `'api.lists': endpoint({ path, loader })`.** The compiler reads `routes.ts` literals statically (RFC 0059); a call per entry needs a new case in that reader, and a literal member does not.
 - **A sentinel view, `component: json`.** One type and no union, but it spells "no view" as a view, which is the thing the user direction separates.
 - **Serve handlers from the `@keel/services` `endpoints` schema.** The API module would own `Api.schema.ts`, handlers would be typed from it, and E1561 and E1562 would have nothing left to compare. It is the fullest form of "an API is its own thing" and of principle 4. It replaces `loader` and `action` for JSON, changes every golden app's server module and the `Href | null` action result, and is a stage of its own. This RFC does not block it: `api: true` entries are the set such a change would later rewrite.
+- **In-entry verbs, `'api.lists': { path, GET: loadBoard, POST: postList }`, the verb key standing for `api: true`.** It reads like an API and needs no tag. Three costs. In-entry actions were removed by ADR-0052 because an action returning `ok(routes.href(...))` makes the manifest's initializer circular (TS7022); API actions in golden-1 all return `ok(null)`, but one that redirects to a page would bring the error back. Pages would attach actions with `routes.actions` and API routes in the entry: two ways to bind an action, and E1505 with an exception. And a GET-only API route has no verb key unless `loader` is also renamed `GET` there, so the tag would still be needed or the loader would have two names.
 - **Decide by adapter.** Wrong for `apps/sessions` (Problem 4).
-
-## Open questions
-1. **The declaration shape.** Recommended: the `api: true` entry of Proposal 1. Alternatives the user may prefer: the separate `api({...})` export, or the schema-served form as a larger follow-up stage.
-2. **The member name.** `api: true` is recommended; `json: true` is the other candidate.
 
 ## Spec diff
 All four sections touched are at or within 6 tokens of the 1,500 token limit, so the route kinds get a section of their own.

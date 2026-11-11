@@ -1,6 +1,10 @@
 # RFC 0087: Client hosting: a static artifact, a node host, and allowed origins
 
-Status: draft (2026-11-11). Design RFC for backlog 0375, with the context of 0406. It builds on RFC 0086 (API routes). Open questions 1 to 3 are the user's call: one touches the caller cookie and two are new hand-written shapes.
+Status: draft (2026-11-11). Design RFC for backlog 0375, with the context of 0406. It builds on RFC 0086 (API routes). Open questions 1 is the user's call, since it touches the caller cookie; the RFC is accepted once it is answered.
+
+## Decisions (user, 2026-11-11)
+- D1: the node host is declared as `host: '<node deployable>'` on the `client` deployable (Proposal 5).
+- D2: `KEEL_ALLOW_ORIGINS` and the `keel-peer` tag keep the names written here (orchestrator, RFC defaults).
 
 ## Words
 A static host is any server that returns files: S3, a CDN, nginx. The `static` adapter is a different thing: pages prerendered at build, with no params and no actions (E1553). This RFC is about a `client` deployable, whose loaders, actions and views run in the browser, and never uses "static" for it without "host".
@@ -90,9 +94,7 @@ No deploy file is generated for a static host; hosts differ and the contract is 
 - **Generated files per host (S3 policy, `_redirects`).** One file per vendor to keep current; the three-line contract is stable.
 
 ## Open questions
-1. **The caller on a cross-site split.** Recommended: Proposal 4 as written, same-site only, with W1567. Alternative: also switch the cookie to `SameSite=None; Secure; Partitioned` when an allowed origin is cross-site.
-2. **The `host` field.** Recommended: `host: '<node deployable>'` on the `client` deployable, declared by the scaffold template and golden-1. Alternatives: `serves` on the node deployable; no field, with the node host always on.
-3. **The names `KEEL_ALLOW_ORIGINS` and the `keel-peer` tag.** Recommended as written.
+1. **The caller on a cross-site split.** The user asked how other frameworks handle it; the answer is in `tasks/0406-api-routes-client-hosting/PLAN.md`. Recommended: Proposal 4 as written, same-site only, with W1567, which is the rule Laravel Sanctum sets for cookie-based SPAs. Alternative: also switch the cookie to `SameSite=None; Secure; Partitioned` when an allowed origin is cross-site.
 
 ## Spec diff
 k.topology, k.server and k.services are each within 6 tokens of the 1,500 token limit, so the text goes to a new section.
