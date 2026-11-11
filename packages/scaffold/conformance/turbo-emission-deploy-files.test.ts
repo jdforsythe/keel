@@ -4,7 +4,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { RUNS, SEED, apply, distinctPair, fresh, lowerName, read } from "./fixtures.ts";
 
-test.skip("Any operation that adds or removes a module or package regenerates `turbo.json`, CI workflows and deploy files (k.topology) from the task graph and topology (ADR-0009).", () => {
+test("Any operation that adds or removes a module or package regenerates `turbo.json`, CI workflows and deploy files (k.topology) from the task graph and topology (ADR-0009).", () => {
   fc.assert(
     fc.property(distinctPair(lowerName), ([a, b]) => {
       const root = apply("project", { name: "shop", adapter: "node" }, new Map()).files;
@@ -22,7 +22,7 @@ test.skip("Any operation that adds or removes a module or package regenerates `t
   );
 });
 
-test.skip("removing a module through rename or move leaves turbo.json, CI and deploy files regenerated with no stale module", () => {
+test("removing a module through rename or move leaves turbo.json, CI and deploy files regenerated with no stale module", () => {
   const files = apply("rename", { kind: "module", from: "catalog", to: "market" }, fresh()).files;
   expect(read(files, "turbo.json")).not.toContain("modules/catalog/");
   expect(read(files, ".github/workflows/ci.yml")).not.toContain("catalog");

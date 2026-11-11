@@ -1,25 +1,12 @@
 import type { Argument, Expression, ObjectProperty } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { SchemaSource } from "./SchemaSource.ts";
-import { joinPath } from "./modules/joinPath.ts";
+import { importTarget } from "./importTarget.ts";
 import { parseFile } from "./parseFile.ts";
 import { schemaSourceOf } from "./schemaSourceOf.ts";
 
 const MAX_HOPS = 8;
-const SUFFIXES = ["", ".ts", ".tsx", "/index.ts"];
-
 type Walk = { readonly project: readonly SourceFile[]; readonly seen: Map<string, number> };
-
-/** The project file a relative specifier in `from` names, or undefined (package specifiers included). */
-function target(from: string, spec: string, project: readonly SourceFile[]): SourceFile | undefined {
-  if (!spec.startsWith("./") && !spec.startsWith("../")) return undefined;
-  const base = joinPath(from.slice(0, Math.max(0, from.lastIndexOf("/"))), spec);
-  for (const suffix of SUFFIXES) {
-    const hit = project.find((f) => f.path === `${base}${suffix}`);
-    if (hit !== undefined) return hit;
-  }
-  return undefined;
-}
 
 /** A static property key's name, or undefined for a computed or non-string key. */
 function keyOf(p: ObjectProperty): string | undefined {
@@ -37,7 +24,7 @@ function binding(name: string, src: SchemaSource, path: readonly string[], hops:
   const init = src.consts.get(name);
   if (init !== undefined) return hops >= MAX_HOPS ? null : walk(init, src, path, hops + 1, w);
   const imp = src.imports.get(name);
-  const file = imp === undefined ? undefined : target(src.path, imp.source, w.project);
+  const file = imp === undefined ? undefined : importTarget(src.path, imp.source, w.project);
   if (imp === undefined || file === undefined) return null;
   const parsed = parseFile(file);
   if (!parsed.ok) return null;

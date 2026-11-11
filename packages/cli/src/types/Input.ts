@@ -34,4 +34,5 @@ export type Input = {
   readonly failing?: boolean;
   readonly since?: string;
   readonly "max-runs"?: number;
+  readonly base?: string;
 };

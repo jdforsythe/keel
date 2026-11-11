@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import type { Io } from "../types/Io.ts";
 import { applyWrites } from "./applyWrites.ts";
 import { readProject } from "./readProject.ts";
@@ -18,6 +20,13 @@ export function hostIo(stream: boolean): Io {
     fetch: (url: string, init?: RequestInit) => (init === undefined ? fetch(url) : fetch(url, init)),
     load: (scope) => (scope === "none" ? [] : readProject(cwd, scope)),
     apply: (writes) => applyWrites(cwd, writes),
+    read: (path) => {
+      try {
+        return readFileSync(resolve(cwd, path), "utf8");
+      } catch {
+        return undefined;
+      }
+    },
     ...(stream
       ? {
           stdin: process.stdin,

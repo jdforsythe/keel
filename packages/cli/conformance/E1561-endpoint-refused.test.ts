@@ -33,7 +33,7 @@ test.skip("An endpoint whose `body` lacks a field the route's `input` requires i
   );
 });
 
-test.skip("E1561: an endpoint whose `output` or `errors` refuse the route's answer is one E1561 at the endpoint naming the refused path", () => {
+test("E1561: an endpoint whose `output` or `errors` refuse the route's answer is one E1561 at the endpoint naming the refused path", () => {
   const out = diags(
     run({ output: "s.object({ id: s.string() })", endpointOutput: "s.object({ id: s.string(), extra: s.string() })" }),
     "E1561",
@@ -43,11 +43,11 @@ test.skip("E1561: an endpoint whose `output` or `errors` refuse the route's answ
   expect(out[0]?.fix).toBeUndefined();
 });
 
-test.skip("E1561: an endpoint whose method and path match no route of that module is E1561", () => {
+test("E1561: an endpoint whose method and path match no route of that module is E1561", () => {
   expect(diags(run({ path: "/y/missing" }), "E1561")).toHaveLength(1);
 });
 
-test.skip("E1561 is reported in every topology: one deployable or two", () => {
+test("E1561 is reported in every topology: one deployable or two", () => {
   const input = "s.object({ name: s.string(), note: s.string() })";
   const body = "s.object({ name: s.string() })";
   expect(diags(run({ input, body, split: false }), "E1561")).toHaveLength(1);

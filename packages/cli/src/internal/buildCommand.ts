@@ -2,9 +2,11 @@ import { compile, isSourcePath, projectDirs, stdArtifact } from "@keel/compiler"
 import { importDeps } from "@keel/compiler/std/importDeps";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
+import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { codeFiles } from "./codeFiles.ts";
+import { deployBuildWrites } from "./deployBuildWrites.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
@@ -17,7 +19,7 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
  * `keel build`: compile every app source of the root project (`isSourcePath`, the rule the Vite plugin and `keel
  * check` share, rfc:0050; nested projects by `projectDirs`, rfc:0059) with `@keel/compiler`. Diagnostics flow through unchanged; with no error, the `.keel/` artifacts
  * (`{ data, hash }`, sorted keys, read-only) are returned as writes, with `std.json` from `stdArtifact` after the
- * stdlib `deps` are imported (E1159; its E1158 too, rfc:0066). Bundling is Vite's: the binary runs `vite build` when `vite.config.ts` exists.
+ * stdlib `deps` are imported (E1159; its E1158 too, rfc:0066), and the deploy files of `topology.ts` (k.topology). Bundling is Vite's: the binary runs `vite build` when `vite.config.ts` exists.
  */
 export async function buildCommand(io: Io): Promise<Outcome> {
   const project = projectFiles(io);
@@ -34,12 +36,15 @@ export async function buildCommand(io: Io): Promise<Outcome> {
     makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see, fix: d.fix }),
   );
   const failed = diags.some((d) => typeof d.code === "string" && d.code.startsWith("E"));
-  const writes = failed
+  const writes: Write[] = failed
     ? []
     : [
-        ...ARTIFACTS.map((name) => ({ path: `.keel/${name}`, data: r.artifacts[name], hash: r.hashes[name] })),
-        { path: ".keel/std.json", data: std.data, hash: std.hash },
-      ].map(({ path, data, hash }) => ({ path, content: `${canonicalJson({ data, hash })}\n`, readonly: true }));
+        ...[
+          ...ARTIFACTS.map((name) => ({ path: `.keel/${name}`, data: r.artifacts[name], hash: r.hashes[name] })),
+          { path: ".keel/std.json", data: std.data, hash: std.hash },
+        ].map(({ path, data, hash }) => ({ path, content: `${canonicalJson({ data, hash })}\n`, readonly: true })),
+        ...deployBuildWrites(project),
+      ];
   const errors = diags.filter((d) => typeof d.code === "string" && d.code.startsWith("E")).length;
   return {
     records: [...diags, summary("build", diags, { files: files.length, artifacts: writes.length, errors })],

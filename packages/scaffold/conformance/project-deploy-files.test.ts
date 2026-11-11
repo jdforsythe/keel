@@ -8,7 +8,7 @@ const out = (input: Record<string, unknown>): Files => apply("project", input, n
 const nodeNames = (files: Files): string[] =>
   find(files, /^deploy\/[^/]+\/Dockerfile$/).map((p) => p.split("/")[1] ?? "");
 
-test.skip("project yields turbo.json, .github/workflows/ci.yml and, per node deployable, deploy/<name>/Dockerfile plus deploy/compose.yaml; none of them for a client or static deployable", () => {
+test("project yields turbo.json, .github/workflows/ci.yml and, per node deployable, deploy/<name>/Dockerfile plus deploy/compose.yaml; none of them for a client or static deployable", () => {
   fc.assert(
     fc.property(fc.constantFrom("client", "node", "static", undefined), (adapter) => {
       const files = out(adapter === undefined ? { name: "shop" } : { name: "shop", adapter });
@@ -26,7 +26,7 @@ test.skip("project yields turbo.json, .github/workflows/ci.yml and, per node dep
   );
 });
 
-test.skip("project --workspace adds index.html and vitest.config.ts instead of turbo and CI, and writes no deploy file", () => {
+test("project --workspace adds index.html and vitest.config.ts instead of turbo and CI, and writes no deploy file", () => {
   for (const adapter of ["client", "node", "static"]) {
     const files = out({ name: "shop", adapter, workspace: true });
     expect(files.has("index.html")).toBe(true);

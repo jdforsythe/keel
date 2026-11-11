@@ -52,6 +52,64 @@ const MATCH = `${SCHEMA}import { Match, Case } from '@keel/runtime-dom'\nexport 
 /** Color tokens for E1804: `mid` on `white` is about 3:1, `ink` on `white` passes 4.5:1 in both schemes. */
 const TOKENS = { color: { mid: "#949494", ink: "#111111", white: "#ffffff" }, fontSize: { sm: "14px" } };
 
+/** A `.keel/surface.json` (k.compat) over `data`: canonical `{ data, hash }`, the hash the compiler's FNV-1a of it. */
+const surfaceFile = (data: unknown): Files[number] => {
+  const canon = (v: unknown): string =>
+    JSON.stringify(v, (_k, x: unknown) =>
+      x === null || typeof x !== "object" || Array.isArray(x)
+        ? x
+        : Object.fromEntries(
+            Object.keys(x)
+              .sort()
+              .map((k) => [k, Reflect.get(x, k)]),
+          ),
+    );
+  let h = 0x811c9dc5;
+  for (const ch of canon(data))
+    for (let i = 0; i < ch.length; i++) h = Math.imul(h ^ ch.charCodeAt(i), 0x01000193) >>> 0;
+  return f(".keel/surface.json", `${canon({ data, hash: `fnv1a:${h.toString(16).padStart(8, "0")}` })}\n`);
+};
+const ANSWER = {
+  type: "object",
+  properties: { ok: { const: true }, value: { anyOf: [{ type: "string" }, { type: "null" }] } },
+  required: ["ok", "value"],
+  additionalProperties: false,
+};
+const fields = (...names: string[]) => ({
+  type: "object",
+  properties: Object.fromEntries(names.map((n) => [n, { type: "string" }])),
+  required: names,
+});
+/** Module `a` calls `POST /y/save` of module `y` with `body`; the route's action input is `input`. */
+const surfaceOf = (input: unknown, body: unknown) => ({
+  routes: {
+    "y.save": {
+      module: "y",
+      path: "/y/save",
+      file: "modules/y/routes.ts",
+      params: null,
+      search: null,
+      get: {},
+      actions: { POST: { input, answer: ANSWER } },
+    },
+  },
+  services: [
+    {
+      file: "modules/a/api.ts",
+      caller: "a",
+      module: "y",
+      endpoints: {
+        save: { method: "POST", path: "/y/save", params: null, query: null, body, output: ANSWER, errors: {} },
+      },
+    },
+  ],
+  sources: {},
+});
+const SPLIT = {
+  x: { modules: ["a"], adapter: "node" },
+  y: { modules: ["y"], adapter: "node" },
+} as const;
+
 export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1000: { bad: [f("a.ts", "export const = ;\n")], clean: [f("a.ts", "export const a = 1\n")] },
   E1001: {
@@ -372,6 +430,19 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "import { loader } from '@keel/router'\ndeclare const Out: unknown\nexport const load = loader({ output: Out }, async ({ params }) => params)\n",
       ),
     ],
+  },
+  E1561: {
+    bad: [surfaceFile(surfaceOf(fields("name", "note"), fields("name")))],
+    clean: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],
+  },
+  E1562: {
+    badOpts: { base: surfaceOf(fields("name"), fields("name")), topology: SPLIT },
+    cleanOpts: {
+      base: surfaceOf(fields("name"), fields("name")),
+      topology: { x: { modules: ["a", "y"], adapter: "node" } },
+    },
+    bad: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],
+    clean: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],
   },
   E1508: {
     opts: NO_TYPES,

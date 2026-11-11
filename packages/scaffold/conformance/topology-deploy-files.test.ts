@@ -28,7 +28,7 @@ const changed = (before: Files, after: Files) =>
   [...new Set([...before.keys(), ...after.keys()])].filter((p) => before.get(p) !== after.get(p)).sort();
 
 describe("k.topology: deploy files", () => {
-  test.skip("With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 whose fix restores it; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow.", async () => {
+  test("With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 whose fix restores it; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow.", async () => {
     const files = topologyFiles();
     expect(dockerfiles(files)).toEqual(["deploy/x/Dockerfile", "deploy/y/Dockerfile"]);
     expect(files.has("deploy/compose.yaml")).toBe(true);

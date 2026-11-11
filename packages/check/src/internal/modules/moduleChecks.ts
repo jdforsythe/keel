@@ -1,6 +1,7 @@
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import type { Checked } from "../Checked.ts";
+import { samePath } from "../compat/samePath.ts";
 import { isTestPath } from "../isTestPath.ts";
 import { stemOf } from "../stemOf.ts";
 import type { FileFacts } from "./FileFacts.ts";
@@ -9,6 +10,7 @@ import type { ModuleInfo } from "./ModuleInfo.ts";
 import { addEntryFix } from "./addEntryFix.ts";
 import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
+import { endpointPaths } from "./endpointPaths.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { prefixFix } from "./prefixFix.ts";
@@ -24,6 +26,9 @@ type Project = {
   readonly byKey: ReadonlyMap<string, ModuleInfo>;
   /** Route id -> the module whose `manifest({...})` declares it (first by path). */
   readonly routeOwner: ReadonlyMap<string, ModuleInfo>;
+  /** Literal route paths declared in each module. */
+  readonly paths: ReadonlyMap<ModuleInfo, readonly { readonly id: string; readonly path: string }[]>;
+  readonly files: readonly SourceFile[];
 };
 
 const values = (m: Manifest, k: "deps" | "capabilities" | "exports" | "routes"): Set<string> =>
@@ -68,7 +73,8 @@ function ownerOf(route: string, p: Project): ModuleInfo | undefined {
 }
 
 /**
- * E1151, E1152, E1156, E1157 for one file of a non-opaque module. Fixes add the missing entry to a manifest list:
+ * E1151, E1152, E1156, E1157 for one file of a non-opaque module (`service({ module })` calls: the module must be in
+ * `deps`, and each route an endpoint `path` reaches in it public). Fixes add the missing entry to a manifest list:
  * the target's `public.exports` (E1151) or `public.routes` (E1157), this module's `deps` (E1152) or `capabilities` (E1156).
  */
 function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Diagnostic[] {
@@ -99,6 +105,23 @@ function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Di
     const msg = `route ${short(h.value)} is not in public.routes of module ${t}; ${own} cannot link to it`;
     out.push(moduleDiag("E1157", file, h.start, msg, addEntryFix(target.file, tm.routes, h.value)));
   }
+  for (const sv of facts.services) {
+    const target = p.byKey.get(sv.module.value);
+    if (target === undefined || target === module) continue;
+    const t = short(target.key);
+    notInDeps(target, sv.module.start, `module ${own} calls service ${t}, which is not in its deps`);
+    const tm = target.manifest;
+    const ids = new Set(
+      endpointPaths(sv.schema, file, p.files).flatMap((path) =>
+        (p.paths.get(target) ?? []).filter((r) => samePath(r.path, path)).map((r) => r.id),
+      ),
+    );
+    for (const id of ids) {
+      if (tm === null || values(tm, "routes").has(id)) continue;
+      const msg = `route ${short(id)} is not in public.routes of module ${t}; ${own} cannot call it`;
+      out.push(moduleDiag("E1157", file, sv.module.start, msg, addEntryFix(target.file, tm.routes, id)));
+    }
+  }
   const caps = values(man, "capabilities");
   const reported = new Set<string>();
   for (const c of facts.ctx) {
@@ -115,7 +138,7 @@ function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Di
  * The k.module project pass (E1151-E1158) over every parsed code file: discover manifests (`modules/<id>/module.ts`
  * and stdlib `node_modules/@keel/std-x/module.ts`), map each non-test file to its module by folder, read the
  * manifests statically, then check deps cycles, the public surface, `std` config (E1158), id prefixes, and cross-module access from
- * imports, `href()` calls, and `ctx` capability uses. Files outside every module are not checked. Deterministic:
+ * imports, `href()` calls, `service({ module })` calls, and `ctx` capability uses. Files outside every module are not checked. Deterministic:
  * files are visited in path order and the caller sorts the result.
  */
 export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
@@ -126,6 +149,7 @@ export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
   const stems = new Map<ModuleInfo, Set<string>>();
   const routes = new Map<ModuleInfo, Set<string>>();
   const routeOwner = new Map<string, ModuleInfo>();
+  const paths = new Map<ModuleInfo, { id: string; path: string }[]>();
   const ordered = [...checked].sort((a, b) => (a.file.path < b.file.path ? -1 : a.file.path > b.file.path ? 1 : 0));
   for (const { file, parsed } of ordered) {
     const module = moduleOf(file.path, modules);
@@ -135,12 +159,13 @@ export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
     stems.set(module, (stems.get(module) ?? new Set()).add(stemOf(file.path)));
     const declared = routes.get(module) ?? new Set();
     routes.set(module, declared);
+    paths.set(module, [...(paths.get(module) ?? []), ...facts.paths]);
     for (const r of facts.routes) {
       declared.add(r.value);
       if (!routeOwner.has(r.value)) routeOwner.set(r.value, module);
     }
   }
-  const project: Project = { modules, byKey, routeOwner };
+  const project: Project = { modules, byKey, routeOwner, paths, files: checked.map((c) => c.file) };
   const out: Diagnostic[] = [...depsCycles(modules, byKey)];
   for (const m of modules) {
     out.push(...publicMissing(m, stems.get(m) ?? new Set(), routes.get(m) ?? new Set()));

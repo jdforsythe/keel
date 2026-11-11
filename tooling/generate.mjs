@@ -1,7 +1,9 @@
-// Generates turbo.json and the .github/workflows/*.yml files from tooling/*.source.json.
+// Generates turbo.json and the .github/workflows/*.yml files from tooling/*.source.json, and the deploy files
+// (k.topology) of each app in tooling/deploy.source.json with the @keel/scaffold generator `keel build` uses.
 // Usage: node tooling/generate.mjs [--check]   (--check exits 2 with S0007 on drift)
 import fs from "node:fs";
 import path from "node:path";
+import { deployDrift } from "../packages/scaffold/src/deployDrift.ts";
 import { parseArgs, run } from "./output.ts";
 
 const here = import.meta.dirname;
@@ -62,11 +64,33 @@ function workflow(source) {
   return `# _generated: edit tooling/${source} and run pnpm generate. Do not edit by hand.\n${yaml({ ...rest, jobs: expanded })}\n`;
 }
 
+/** The files under `dir` that decide its deploy files, and the deploy files it holds: path relative to `dir` -> text. */
+function deployTree(dir) {
+  const tree = new Map();
+  const add = (rel) => {
+    const p = path.join(root, dir, rel);
+    if (fs.existsSync(p)) tree.set(rel, fs.readFileSync(p, "utf8"));
+  };
+  for (const rel of ["topology.ts", "turbo.json", ".github/workflows/ci.yml", "deploy/compose.yaml"]) add(rel);
+  const deploy = path.join(root, dir, "deploy");
+  if (fs.existsSync(deploy)) for (const name of fs.readdirSync(deploy).sort()) add(`deploy/${name}/Dockerfile`);
+  return tree;
+}
+
+/** Deploy files of each app in `tooling/deploy.source.json`: repo path -> text, or null for one to remove. */
+function deployOutputs() {
+  const out = {};
+  for (const dir of readJson("deploy.source.json").apps)
+    for (const d of deployDrift(deployTree(dir), true)) out[`${dir}/${d.path}`] = d.want;
+  return out;
+}
+
 const outputs = {
   "turbo.json": turbo(),
   ".github/workflows/ci.yml": workflow("ci.source.json"),
   ".github/workflows/audit.yml": workflow("audit.source.json"),
   ".github/workflows/sessions-nightly.yml": workflow("sessions-nightly.source.json"),
+  ...deployOutputs(),
 };
 const check = parseArgs().flags.has("check");
 
@@ -86,10 +110,12 @@ await run("generate", () => {
         message: "generated file differs from source; run pnpm generate",
         see: "tooling/generate.mjs",
       });
+    else if (content === null) fs.rmSync(p, { force: true });
     else {
       fs.mkdirSync(path.dirname(p), { recursive: true });
       fs.writeFileSync(p, content);
     }
   }
-  return { diags, counts: { files: Object.keys(outputs).length }, ...(diags.length ? { exit: 2 } : {}) };
+  const apps = readJson("deploy.source.json").apps.length;
+  return { diags, counts: { files: Object.keys(outputs).length, apps }, ...(diags.length ? { exit: 2 } : {}) };
 });

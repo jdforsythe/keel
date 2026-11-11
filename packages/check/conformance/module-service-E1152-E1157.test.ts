@@ -27,7 +27,7 @@ const mk = (a: string, b: string, pub: string, priv: string, target: string, dep
 ];
 
 describe("k.module: service({ module }) access", () => {
-  test.skip("E1152 import from, `href()` or `service` into, a module not in `deps` (fix adds it)", () => {
+  test("E1152 import from, `href()` or `service` into, a module not in `deps` (fix adds it)", () => {
     fc.assert(
       fc.property(distinct, ([a, b, pub, priv]) => {
         const d = codesOf(mk(a, b, pub, priv, pub, []), "E1152");
@@ -39,7 +39,7 @@ describe("k.module: service({ module }) access", () => {
     );
   });
 
-  test.skip("E1157 `href()` or `service` to a non-public route of another module (fix adds it to that module's `public.routes`)", () => {
+  test("E1157 `href()` or `service` to a non-public route of another module (fix adds it to that module's `public.routes`)", () => {
     fc.assert(
       fc.property(distinct, ([a, b, pub, priv]) => {
         const d = codesOf(mk(a, b, pub, priv, priv, [b]), "E1157");

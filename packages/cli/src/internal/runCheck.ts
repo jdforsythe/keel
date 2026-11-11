@@ -12,11 +12,13 @@ import { relPath } from "./relPath.ts";
  * hashes the compiler derives from every source of its project in `project`, not only the checked ones (rfc:0050, rfc:0055).
  * First the `@keel/std-*` packages in the `deps` of `project`'s app manifests are imported, so their rules and config
  * schemas register (k.module Std config, rfc:0066); one that cannot be is E1159, listed before the check's diagnostics.
+ * `base` is the parsed `surface.json` of `keel check --base` (k.compat E1562).
  */
 export async function runCheck(
   cwd: string,
   files: readonly SourceFile[],
   project: readonly SourceFile[] = files,
+  base?: unknown,
 ): Promise<Diag[]> {
   const loaded = await importDeps(cwd, project);
   const topology = projectTopology(project);
@@ -25,7 +27,7 @@ export async function runCheck(
     ...loaded,
     ...check(
       files.map((f) => ({ path: f.path, source: f.source })),
-      { root: cwd, ...options, project },
+      { root: cwd, ...options, project, ...(base === undefined ? {} : { base }) },
     ).diagnostics,
   ];
   return found.map((d) => ({

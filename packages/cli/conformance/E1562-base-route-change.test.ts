@@ -49,7 +49,7 @@ test.skip("With a base where `y`'s action input is `{ name }` and its caller `a`
   );
 });
 
-test.skip("E1562: modules in one deployable are not compared; moving `a` to another deployable makes the same change E1562", () => {
+test("E1562: modules in one deployable are not compared; moving `a` to another deployable makes the same change E1562", () => {
   const { dir, base } = baseSurface(project({ input: NAME, split: false }));
   dirs.push(dir);
   write(dir, project({ input: "s.object({ name: s.string(), note: s.string() })", body: NAME, split: true }));
@@ -67,7 +67,7 @@ test.skip("E1562: a change that no base endpoint refuses (an added optional fiel
   expect(keel(dir, ["check", "--base", base]).records.some((r) => r.kind === "diag" && r.code === "E1562")).toBe(false);
 });
 
-test.skip("E1562: a file named by `--base` that is not a surface is an error, not a pass", () => {
+test("E1562: a file named by `--base` that is not a surface is an error, not a pass", () => {
   // untestable beyond the clause text: the spec names no code for an unreadable base; asserted only as not-a-clean-exit.
   const dir = materialize(project({ split: true }));
   dirs.push(dir);

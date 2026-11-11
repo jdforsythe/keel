@@ -1,7 +1,6 @@
 import type { Result } from "@keel/schema";
 import MagicString from "magic-string";
 import { Visitor } from "oxc-parser";
-import { turboJson } from "../templates/turboJson.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { RenameSpec } from "./RenameSpec.ts";
@@ -14,10 +13,12 @@ import { isGenerated } from "./isGenerated.ts";
 import { isLowerCamel } from "./isLowerCamel.ts";
 import { moduleIds } from "./moduleIds.ts";
 import { parseSource } from "./parseSource.ts";
+import { regenerated } from "./regenerated.ts";
 import { renameSource } from "./renameSource.ts";
 import { routeId } from "./routeId.ts";
 import { routeTable } from "./routeTable.ts";
 import { sortedKeys } from "./sortedKeys.ts";
+import { withWrites } from "./withWrites.ts";
 
 /** Rewrite every string literal equal to `from` (module ids in manifests and topology) to `to`. */
 function renameLiterals(path: string, src: string, from: string, to: string): string {
@@ -39,8 +40,8 @@ function renameLiterals(path: string, src: string, from: string, to: string): st
 /**
  * `codemod rename module <from> <to>`: moves `modules/<from>` to `modules/<to>`, rewrites the manifest id and
  * the module's entry in other manifests' `deps` and in `topology.ts`, every route and store id that starts with
- * `<from>.`, imports of the moved files, and files under `test/` named `<from>.*`. turbo.json is regenerated
- * when the project has one.
+ * `<from>.`, imports of the moved files, and files under `test/` named `<from>.*`. turbo.json, the CI workflow and
+ * the deploy files are regenerated when the project has them.
  */
 export function renameModule(
   from: string,
@@ -81,9 +82,6 @@ export function renameModule(
       writes.set(next, out);
     } else if (out !== src) writes.set(path, out);
   }
-  if (files.has("turbo.json")) {
-    const rest = moduleIds(files).filter((m) => m !== from);
-    writes.set("turbo.json", turboJson([...rest, to]));
-  }
-  return commit(files, writes, files.has("turbo.json") ? ["turbo.json"] : []);
+  const gen = regenerated(withWrites(files, writes));
+  return commit(files, new Map([...writes, ...gen]), [...gen.keys()]);
 }

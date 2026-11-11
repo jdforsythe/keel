@@ -1,38 +1,27 @@
 import type { Result } from "@keel/schema";
-import MagicString from "magic-string";
-import { ciWorkflow } from "../templates/ciWorkflow.ts";
 import { moduleTs } from "../templates/moduleTs.ts";
 import { routesTs } from "../templates/routesTs.ts";
-import { turboJson } from "../templates/turboJson.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { Writes } from "./Writes.ts";
-import { appendItems } from "./appendItems.ts";
 import { badInput } from "./badInput.ts";
-import { callArgObject } from "./callArgObject.ts";
 import { commit } from "./commit.ts";
 import { fail } from "./fail.ts";
 import { inputs } from "./inputs.ts";
+import { insertItem } from "./insertItem.ts";
 import { isLowerCamel } from "./isLowerCamel.ts";
-import { moduleIds } from "./moduleIds.ts";
-import { parseSource } from "./parseSource.ts";
-import { propertyValue } from "./propertyValue.ts";
+import { regenerated } from "./regenerated.ts";
 import { targetsGenerated } from "./targetsGenerated.ts";
+import { topologyAst } from "./topologyAst.ts";
+import { withWrites } from "./withWrites.ts";
 
-/** Add `id` to the `modules` list of the first deployable in `topology.ts`; null when there is no such list. */
+/** Add `id` to the `modules` list of the first deployable in `topology.ts`, sorted; null when there is no such list. */
 function addToTopology(src: string, id: string): string | null {
-  const program = parseSource("topology.ts", src);
-  const obj = program === null ? null : callArgObject(program, "topology");
-  const first = obj?.properties[0];
-  if (first?.type !== "Property" || first.value.type !== "ObjectExpression") return null;
-  const list = propertyValue(first.value, "modules");
-  if (list?.type !== "ArrayExpression") return null;
-  const ms = new MagicString(src);
-  appendItems(ms, src, list, [id]);
-  return ms.toString();
+  const first = topologyAst(src)?.deployables[0];
+  return first === undefined ? null : insertItem(src, first.list, id);
 }
 
-/** `scaffold module <id>`: manifest and routes, the module added to `topology.ts`, turbo and CI regenerated. */
+/** `scaffold module <id>`: manifest and routes, the module added to `topology.ts`, turbo, CI and deploy files regenerated. */
 export function opModule(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.module.parse(input);
   if (!r.ok) return badInput("module", r.error);
@@ -51,10 +40,6 @@ export function opModule(input: unknown, files: ReadonlyMap<string, string>): Re
     [`modules/${id}/routes.ts`, routesTs()],
     ["topology.ts", nextTopo],
   ]);
-  const generated: string[] = [];
-  if (files.has("turbo.json")) generated.push("turbo.json");
-  if (files.has(".github/workflows/ci.yml")) generated.push(".github/workflows/ci.yml");
-  if (generated.includes("turbo.json")) writes.set("turbo.json", turboJson([...moduleIds(files), id]));
-  if (generated.includes(".github/workflows/ci.yml")) writes.set(".github/workflows/ci.yml", ciWorkflow());
-  return commit(files, writes, generated);
+  const gen = regenerated(withWrites(files, writes));
+  return commit(files, new Map([...writes, ...gen]), [...gen.keys()]);
 }

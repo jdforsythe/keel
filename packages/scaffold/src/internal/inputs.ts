@@ -19,5 +19,10 @@ export const inputs = {
     to: s.string(),
   }),
   move: s.object({ name: s.string(), to: s.string() }),
+  place: s.object({
+    module: s.string(),
+    to: s.string(),
+    adapter: s.enum(["client", "node", "static"]).optional(),
+  }),
   "add-field": s.object({ schema: s.string(), field: s.string(), type: s.string() }),
 };

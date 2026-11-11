@@ -13,7 +13,7 @@ const run = (sh: Parameters<typeof project>[0]) => {
   return buildAndCheck(dir);
 };
 
-test.skip("A `service({ module: 'b' })` endpoint in module `a` reports E1152 without `b` in `deps` and E1157 for a route not in `b`'s `public.routes`.", () => {
+test("A `service({ module: 'b' })` endpoint in module `a` reports E1152 without `b` in `deps` and E1157 for a route not in `b`'s `public.routes`.", () => {
   const noDeps = run({ deps: [] });
   expect(diags(noDeps, "E1152").length).toBeGreaterThanOrEqual(1);
   expect(diags(noDeps, "E1152")[0]?.path).toBe("modules/a/api.ts");

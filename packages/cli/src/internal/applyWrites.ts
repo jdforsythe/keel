@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync, rmdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import type { Write } from "../types/Write.ts";
 
@@ -6,7 +6,7 @@ import type { Write } from "../types/Write.ts";
  * Binary only: apply an edit set under `cwd`, all or nothing on paths: any write that resolves outside `cwd`
  * (absolute, `..`, or `cwd` itself) rejects the whole set before anything is written. Existing files keep their
  * mode (generated read-only files are made writable for the write, then restored); `readonly` writes end at
- * 0444. `null` content removes the file.
+ * 0444. `null` content removes the file, then each parent directory it leaves empty, up to `cwd`.
  */
 export function applyWrites(cwd: string, writes: readonly Write[]): void {
   const root = resolve(cwd);
@@ -20,6 +20,8 @@ export function applyWrites(cwd: string, writes: readonly Write[]): void {
     const mode = existsSync(abs) ? statSync(abs).mode & 0o777 : undefined;
     if (w.content === null) {
       if (mode !== undefined) rmSync(abs, { force: true });
+      for (let dir = dirname(abs); dir !== root && existsSync(dir) && readdirSync(dir).length === 0; dir = dirname(dir))
+        rmdirSync(dir);
       continue;
     }
     mkdirSync(dirname(abs), { recursive: true });

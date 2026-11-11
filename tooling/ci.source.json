@@ -94,6 +94,20 @@
         }
       ]
     },
+    "golden-1-images": {
+      "needs": "build",
+      "runs-on": "ubuntu-latest",
+      "steps": [
+        "$setup",
+        {
+          "run": "pnpm build"
+        },
+        {
+          "name": "docker build per node deployable, never pushed",
+          "run": "for f in apps/golden-1/deploy/*/Dockerfile; do n=$(basename \"$(dirname \"$f\")\"); docker build -f \"$f\" -t \"golden-1-$n\" apps/golden-1; done"
+        }
+      ]
+    },
     "mutate-pr": {
       "if": "github.event_name == 'pull_request'",
       "needs": "test",

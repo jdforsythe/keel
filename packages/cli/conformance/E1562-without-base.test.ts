@@ -9,7 +9,7 @@ afterAll(() => {
   for (const d of dirs) cleanup(d);
 });
 
-test.skip("`keel check` without `--base` reports no E1562", () => {
+test("`keel check` without `--base` reports no E1562", () => {
   const dir = materialize(
     project({
       input: "s.object({ name: s.string(), note: s.string() })",
@@ -21,7 +21,7 @@ test.skip("`keel check` without `--base` reports no E1562", () => {
   expect(diags(buildAndCheck(dir), "E1562")).toEqual([]);
 });
 
-test.skip("a changed byte of `.keel/surface.json` is E1005", () => {
+test("a changed byte of `.keel/surface.json` is E1005", () => {
   const dir = materialize(project());
   dirs.push(dir);
   expect(keel(dir, ["build"]).status).toBe(0);

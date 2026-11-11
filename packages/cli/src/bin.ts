@@ -3,11 +3,13 @@
 // the engine loads the files each operation needs and applies its effects; `mcp` and `lsp` stream over stdio.
 // `build` and `dev` hand bundling and serving to Vite when `vite.config.ts` exists; `build` runs Vite once per
 // `viteTargets` (k.server Build: each `node` deployable's client build to `dist/<name>/`); when every deployable is
-// `node`, `routesRun` writes `routes.json` first, since no project build does (rfc:0059).
+// `node`, `routesRun` writes `routes.json` first, since no project build does (rfc:0059); `surfaceRun` then writes
+// `surface.json` (k.compat).
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { hostIo } from "./internal/hostIo.ts";
 import { routesRun } from "./internal/routesRun.ts";
+import { surfaceRun } from "./internal/surfaceRun.ts";
 import { viteRun } from "./internal/viteRun.ts";
 import { viteTargets } from "./internal/viteTargets.ts";
 import { run } from "./run.ts";
@@ -30,6 +32,9 @@ else {
     const routes = await routesRun(cwd, topology);
     for (const note of routes.notes) process.stderr.write(note);
     if (routes.code !== 0) process.exitCode = routes.code;
+    const surface = routes.code === 0 ? await surfaceRun(cwd) : { code: 0, notes: [] };
+    for (const note of surface.notes) process.stderr.write(note);
+    if (surface.code !== 0) process.exitCode = surface.code;
     for (const target of routes.code === 0 ? viteTargets(topology) : []) {
       const b = viteRun(cwd, "build", target);
       for (const note of b?.notes ?? []) process.stderr.write(note);

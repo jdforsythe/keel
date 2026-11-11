@@ -1,4 +1,5 @@
 import { type Argument, type Expression, type Program, Visitor } from "oxc-parser";
+import { propertyOf } from "../propertyOf.ts";
 import type { Entry } from "./Entry.ts";
 import type { FileFacts } from "./FileFacts.ts";
 import { localNames } from "./localNames.ts";
@@ -38,6 +39,16 @@ function keysOf(a: Argument | undefined): Entry[] {
   return out;
 }
 
+/** `{ id, path }` of each entry of a literal manifest argument whose `path` is a string literal. */
+function pathsOf(a: Argument | undefined): { id: string; path: string }[] {
+  if (a === undefined || a.type !== "ObjectExpression") return [];
+  return keysOf(a).flatMap((k) => {
+    const v = propertyOf(a, k.value)?.value;
+    const p = v?.type === "ObjectExpression" ? literal(propertyOf(v, "path")?.value) : null;
+    return p === null ? [] : [{ id: k.value, path: p.value }];
+  });
+}
+
 /** The literal `id` of the last object argument (`store(schema, initial, { id })`). */
 function storeId(args: readonly Argument[]): Entry | null {
   const last = args[args.length - 1];
@@ -52,19 +63,22 @@ function storeId(args: readonly Argument[]): Entry | null {
 /**
  * Collect a file's module facts in one AST walk (k.module): imports, route ids passed to `href()` or to the
  * manifest member form `<routes>.href('id', params?)` (rfc:0041; both during the transition), `manifest({...})` route
- * keys, `store(..., { id })`, `transaction(store, 'name', ...)`, `s.error('code', ...)`, `ctx.<cap>` uses, and, as capability
+ * keys and literal paths, `service({ module, schema })` calls from `@keel/services`, `store(..., { id })`, `transaction(store, 'name', ...)`, `s.error('code', ...)`, `ctx.<cap>` uses, and, as capability
  * `observe` (rfc:0071), an `observe` import from `@keel/ctx` (any alias) or `<namespace>.observe`. Callees count only
  * when imported from their kernel package (`@keel/router`, `@keel/store`, `@keel/schema`).
  */
 export function scanFile(program: Program): FileFacts {
   const href = localNames(program, "href", "@keel/router");
   const manifest = localNames(program, "manifest", "@keel/router");
+  const service = localNames(program, "service", "@keel/services");
   const store = localNames(program, "store", "@keel/store");
   const transaction = localNames(program, "transaction", "@keel/store");
   const schema = localNames(program, "s", "@keel/schema");
   const imports: Entry[] = [];
   const hrefs: Entry[] = [];
   const routes: Entry[] = [];
+  const paths: { id: string; path: string }[] = [];
+  const services: { module: Entry; schema: Expression | null }[] = [];
   const ids: IdFact[] = [];
   const ctx: Entry[] = [];
   // `observe` is a capability (rfc:0071): its import from @keel/ctx (any alias), or `<namespace>.observe`.
@@ -96,8 +110,15 @@ export function scanFile(program: Program): FileFacts {
         if (href.has(c.name)) {
           const e = literal(a[0]);
           if (e !== null) hrefs.push(e);
-        } else if (manifest.has(c.name)) routes.push(...keysOf(a[0]));
-        else if (store.has(c.name)) {
+        } else if (manifest.has(c.name)) {
+          routes.push(...keysOf(a[0]));
+          paths.push(...pathsOf(a[0]));
+        } else if (service.has(c.name)) {
+          const opts = a[0]?.type === "ObjectExpression" ? a[0] : undefined;
+          const m = opts === undefined ? null : literal(propertyOf(opts, "module")?.value);
+          if (opts !== undefined && m !== null)
+            services.push({ module: m, schema: propertyOf(opts, "schema")?.value ?? null });
+        } else if (store.has(c.name)) {
           const e = storeId(a);
           if (e !== null) ids.push({ ...e, kind: "store id" });
         } else if (transaction.has(c.name)) {
@@ -132,5 +153,5 @@ export function scanFile(program: Program): FileFacts {
       }
     },
   }).visit(program);
-  return { imports, hrefs, routes, ids, ctx };
+  return { imports, hrefs, routes, paths, services, ids, ctx };
 }

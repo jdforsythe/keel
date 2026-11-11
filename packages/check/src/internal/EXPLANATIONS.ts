@@ -131,7 +131,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1152",
-    "import from, or href() into, a module not in deps",
+    "import from, href() or service into, a module not in deps",
     "",
     "add the module to deps in the manifest",
     "k.module",
@@ -166,7 +166,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1157",
-    "href() to a non-public route of another module",
+    "href() or service to a non-public route of another module",
     "",
     "link to a public route, or make the route public",
     "k.module",
@@ -422,6 +422,20 @@ const ROWS: readonly Row[] = [
     "Production documents load the built resume entry the manifest names.",
     "run keel build, then pass assets: 'dist/<deployable>'",
     "k.server",
+  ],
+  [
+    "E1561",
+    "service({ module }) endpoint its route does not accept, or whose output or errors refuse the route's answer",
+    "Checked from .keel/surface.json in every topology; the message names the first refused path.",
+    "declare the endpoint with the producer's schemas (the route's input, the answer it sends)",
+    "k.compat",
+  ],
+  [
+    "E1562",
+    "route change a deployed caller in another deployable refuses (keel check --base <surface.json>)",
+    "Deployables ship at different times; callers deployed with the route ship with it and are skipped.",
+    "note: s.string() -> note: s.string().optional() for an added required field",
+    "k.compat",
   ],
   [
     "E1601",

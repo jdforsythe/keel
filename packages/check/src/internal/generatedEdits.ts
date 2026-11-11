@@ -3,6 +3,8 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import type { Expected } from "./Expected.ts";
 import { artifactDir } from "./artifactDir.ts";
 import { canonicalJson } from "./canonicalJson.ts";
+import { readSurface } from "./compat/readSurface.ts";
+import { staleSource } from "./compat/staleSource.ts";
 import { hashOf } from "./hashOf.ts";
 import { routesMismatch } from "./routesMismatch.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
@@ -26,9 +28,14 @@ function parse(text: string): { ok: true; value: unknown } | { ok: false } {
  * malformed: reported, never hashed, no diff. A self-consistent file whose hash is not the expected one (forged or
  * stale) must be regenerated (no diff). One whose expected hash is `null` (`routes.json` beside an evaluated
  * `routes.ts`) is compared with the manifests' literals (rfc:0059): a mismatch is E1005, and parts that are not literals
- * are W1005, named. When only the bytes differ (data and hash intact) the fix restores them.
+ * are W1005, named. `surface.json` (k.compat) is derived by evaluation: intact when every source it records is unchanged
+ * in `sources`. When only the bytes differ (data and hash intact) the fix restores them.
  */
-export function generatedEdits(files: readonly SourceFile[], expected: ReadonlyMap<string, Expected>): Diagnostic[] {
+export function generatedEdits(
+  files: readonly SourceFile[],
+  expected: ReadonlyMap<string, Expected>,
+  sources: readonly SourceFile[],
+): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const file of files) {
     const name = GENERATED.exec(file.path)?.[1];
@@ -39,11 +46,16 @@ export function generatedEdits(files: readonly SourceFile[], expected: ReadonlyM
     const value = parsed.ok ? parsed.value : null;
     const data: unknown = typeof value === "object" && value !== null ? Reflect.get(value, "data") : undefined;
     const hash: unknown = typeof value === "object" && value !== null ? Reflect.get(value, "hash") : undefined;
-    const known = Object.hasOwn(hashes, name);
-    const want = known ? hashes[name] : undefined;
+    const surface = name === "surface.json" ? readSurface(data) : undefined;
+    const known = surface !== undefined || Object.hasOwn(hashes, name);
+    const want = known && surface === undefined ? hashes[name] : undefined;
     const hasData = typeof value === "object" && value !== null && Object.hasOwn(value, "data");
     const consistent = hasData && typeof hash === "string" && hash === hashOf(data);
-    const intact = consistent && (want === null || want === hash);
+    const fresh =
+      surface === undefined
+        ? want === null || want === hash
+        : surface !== null && staleSource(surface, artifactDir(file.path) ?? "", sources) === undefined;
+    const intact = consistent && fresh;
     const canonical = `${canonicalJson({ data, hash })}\n`;
     const shown = `.keel/${name.slice(0, 30)}`;
     const at = { path: file.path, line: 1, col: 1, see: "k.compiler" };

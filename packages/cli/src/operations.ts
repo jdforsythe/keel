@@ -41,8 +41,8 @@ const structural = {
 export const operations: readonly Operation[] = [
   {
     name: "check",
-    description: "Run the k.check pipeline over the project, or the given paths.",
-    input: s.object({ paths, ...diagnostic }),
+    description: "Run k.check over the project or the given paths.",
+    input: s.object({ paths, base: s.string().optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
     scope: "query",
@@ -113,7 +113,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "codemod",
-    description: "Structural codemod: rename, move, add-field (k.scaffold).",
+    description: "Structural codemod: rename, move, add-field, place (k.scaffold).",
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],

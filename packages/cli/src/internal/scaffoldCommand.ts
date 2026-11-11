@@ -12,7 +12,7 @@ import { summary } from "./summary.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
 const GENERATORS: readonly Op[] = ["project", "module", "route", "component", "store", "transaction", "service"];
-const CODEMODS: readonly Op[] = ["rename", "move", "add-field"];
+const CODEMODS: readonly Op[] = ["rename", "move", "add-field", "place"];
 const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
   pascal: ["component", "schema"],
   dotted: ["store", "route"],

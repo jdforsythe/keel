@@ -17,6 +17,7 @@ import {
 } from "./topology-modules.ts";
 
 describe("k.topology: module calls", () => {
+  // Skipped: the fixture's GET endpoint decodes `Item`, but k.server/k.compat answer a JSON GET as `{ id, results }`, so getA is 400 (a.upstream), not 200.
   test.skip("With `a` and `b` in one deployable a `service({ module: 'b' })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[0-9]{1,3}$/), async (n) => {

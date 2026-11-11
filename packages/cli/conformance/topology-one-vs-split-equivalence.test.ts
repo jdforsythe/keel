@@ -24,7 +24,7 @@ const op = fc.record({
 });
 
 describe("k.topology: one process and split", () => {
-  test.skip("Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states.", async () => {
+  test("Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(op, { maxLength: 8 }), async (script) => {
         const { call } = bClient();

@@ -37,6 +37,8 @@ export function scaffoldInput(
       return pick({ kind: input.kind, from: a, to: b });
     case "move":
       return pick({ name: a, to: input.to });
+    case "place":
+      return pick({ module: a, to: input.to, adapter: input.adapter });
     case "add-field":
       return pick({
         schema: a,

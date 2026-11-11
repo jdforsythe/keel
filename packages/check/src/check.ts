@@ -5,6 +5,7 @@ import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
+import { compatChecks } from "./internal/compat/compatChecks.ts";
 import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
 import { generatedEdits } from "./internal/generatedEdits.ts";
 import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
@@ -64,8 +65,8 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each file plus project passes (E1005
- * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1508, E1753, E1755, and the k.module pass
- * E1151-E1157), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
+ * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1508, E1753, E1755, the k.module pass
+ * E1151-E1157, and the k.compat pass E1561-E1562 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
   const code = files.filter((f) => isCodePath(f.path));
@@ -117,7 +118,8 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...prefixCollisions(checked),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
-    ...generatedEdits(files, expectedHashes(files, opts)),
+    ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),
+    ...compatChecks(files, opts.project ?? files, (dir) => topologyOf(dir, all, opts), opts.base),
   );
 
   const diagnostics = normalize(out);

@@ -1,4 +1,4 @@
-/** A k.scaffold operation: seven generators and three codemods. */
+/** A k.scaffold operation: seven generators and four codemods. */
 export type Op =
   | "project"
   | "module"
@@ -9,4 +9,5 @@ export type Op =
   | "service"
   | "rename"
   | "move"
+  | "place"
   | "add-field";

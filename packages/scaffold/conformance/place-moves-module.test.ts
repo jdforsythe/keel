@@ -17,7 +17,7 @@ const setup = (adapter?: string): string => {
 const topologyOf = (dir: string): string => readTree(dir).get("topology.ts") ?? "";
 
 describe("codemod place", () => {
-  test.skip("`place` moves a module to a deployable in `topology.ts` (a new deployable needs `--adapter`; an emptied one is removed) and regenerates the deploy files; nothing else changes.", () => {
+  test("`place` moves a module to a deployable in `topology.ts` (a new deployable needs `--adapter`; an emptied one is removed) and regenerates the deploy files; nothing else changes.", () => {
     fc.assert(
       fc.property(fc.constantFrom("orders", "catalog"), lowerName, (mod, to) => {
         const dir = setup();
@@ -34,7 +34,7 @@ describe("codemod place", () => {
     );
   }, 120000);
 
-  test.skip("place: a new deployable needs `--adapter` (k.cli E1052) and nothing is written", () => {
+  test("place: a new deployable needs `--adapter` (k.cli E1052) and nothing is written", () => {
     const dir = setup();
     const before = readTree(dir);
     const r = keel(dir, ["codemod", "place", "orders", "--to", "jobs"]);
@@ -43,7 +43,7 @@ describe("codemod place", () => {
     expect(readTree(dir)).toEqual(before);
   }, 120000);
 
-  test.skip("place: moving the last module of a deployable removes the deployable and its deploy files", () => {
+  test("place: moving the last module of a deployable removes the deployable and its deploy files", () => {
     const dir = setup();
     const first = deployables(topologyOf(dir))[0] ?? "";
     expect(keel(dir, ["codemod", "place", "orders", "--to", "jobs", "--adapter", "node"]).status).toBe(0);
@@ -52,7 +52,7 @@ describe("codemod place", () => {
     expect(readTree(dir).has("deploy/jobs/Dockerfile")).toBe(false);
   }, 120000);
 
-  test.skip("place: an unknown module, or a project without `topology.ts`, reports k.cli E1052 and writes nothing", () => {
+  test("place: an unknown module, or a project without `topology.ts`, reports k.cli E1052 and writes nothing", () => {
     const dir = setup();
     const before = readTree(dir);
     const unknown = keel(dir, ["codemod", "place", "nope", "--to", "jobs", "--adapter", "node"]);

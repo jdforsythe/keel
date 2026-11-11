@@ -10,7 +10,7 @@ afterAll(() => {
   for (const d of dirs) cleanup(d);
 });
 
-test.skip("`place b --to y --adapter node` then `place b --to x` restores a byte-identical tree; neither writes outside `topology.ts`, `deploy/` and CI workflows.", () => {
+test("`place b --to y --adapter node` then `place b --to x` restores a byte-identical tree; neither writes outside `topology.ts`, `deploy/` and CI workflows.", () => {
   fc.assert(
     fc.property(
       fc.constantFrom("orders", "catalog"),
@@ -37,7 +37,7 @@ test.skip("`place b --to y --adapter node` then `place b --to x` restores a byte
   );
 }, 240000);
 
-test.skip("place: `--dry-run` writes nothing", () => {
+test("place: `--dry-run` writes nothing", () => {
   const dir = materialize(base());
   dirs.push(dir);
   const start = readTree(dir);
