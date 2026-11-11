@@ -10,7 +10,6 @@
     "start": "node --experimental-webstorage --localstorage-file=.sessions.storage --disable-warning=ExperimentalWarning dist/sessions/server.mjs"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.6",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
