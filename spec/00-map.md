@@ -41,7 +41,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
 | k.topology | Deployables | implemented | placement, runners, peers, production entry, deploy files, local topology |
 | k.compat | Surface compatibility | conformance-covered | surface artifact, `accepts`, E1561, E1562 with `--base` |
-| k.api | API routes | proposed | `api: true` entries: JSON, no view, E1510, E1511 |
+| k.api | API routes | conformance-covered | `api: true` entries: JSON, no view, E1510, E1511 |
 | k.head | Document head | conformance-covered | per-route title, `<html lang>` from the prefix param, head links |
 | k.services | Thin services | conformance-covered | typed client from schema, timeouts, ApiError |
 | k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |

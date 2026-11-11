@@ -5,11 +5,9 @@ import { createApp } from "@keel/server";
 import { render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { Digest } from "../modules/digest/Digest.schema.ts";
-import DigestApi from "../modules/digest/DigestApi.ts";
 import { LATEST_KEY } from "../modules/digest/LATEST_KEY.ts";
 import { ListsReply } from "../modules/digest/ListsReply.schema.ts";
 import { RecountInput } from "../modules/digest/RecountInput.schema.ts";
-import RefreshApi from "../modules/digest/RefreshApi.ts";
 import { boardApi } from "../modules/digest/boardApi.ts";
 import { feedDigest } from "../modules/digest/feedDigest.server.ts";
 import { jobs } from "../modules/digest/jobs.server.ts";
@@ -99,7 +97,7 @@ function dataLines(res: Response) {
   };
 }
 
-describe("digest schemas and views", () => {
+describe("digest schemas and routes", () => {
   it("Digest counts are non-negative ints; RecountInput is empty; ListsReply is the api.lists Result", () => {
     expect(Digest.parse({ open: 2, done: 1, at: 0 }).ok).toBe(true);
     expect(Digest.parse({ open: -1, done: 1, at: 0 }).ok).toBe(false);
@@ -107,14 +105,11 @@ describe("digest schemas and views", () => {
     const reply = { id: "api.lists", results: { "api.lists": { ok: true, value: { ...board, canUndo: false } } } };
     expect(ListsReply.parse(reply).ok).toBe(true);
   });
-  it("DigestApi shows the open and done counts; RefreshApi names its one method", () => {
-    const t = render(DigestApi, { props: { data: { open: 2, done: 1, at: 0 } } });
-    expect([t.find("digest.open").text, t.find("digest.done").text]).toEqual(["2", "1"]);
-    t.dispose();
-    const r = render(RefreshApi, { props: {} });
-    expect(r.find("digest.action").text).toBe("POST only");
-    r.dispose();
-    expect(routes.routes["digest.feed"].component).toBe(DigestApi);
+  it("the digest routes are API routes without a view", () => {
+    for (const id of ["digest.show", "digest.refresh", "digest.feed"] as const) {
+      expect(routes.routes[id]).toMatchObject({ api: true });
+      expect("component" in routes.routes[id]).toBe(false);
+    }
   });
 });
 

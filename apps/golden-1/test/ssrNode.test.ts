@@ -60,18 +60,18 @@ describe("golden-1 documents in plain node (no DOM global)", () => {
     expect(missing.html).toContain('id="todos.error.message" class="k-m-0 k-font-mono k-fontSize-sm">No list nope</p>');
   });
 
-  it("renders the api deployable's GET routes as documents", async () => {
+  it("answers the api deployable's GET routes as JSON whatever accept says", async () => {
     await seedBoard(seeded);
     const app = await apiApp();
     for (const id of ["api.lists", "api.suggestions"] as const) {
       const path = apiRoutes.routes[id].path;
       const r = await page(app.fetch, path);
       expect(r.status, path).toBe(200);
-      expect(r.html, path).toContain("<!doctype html>");
+      expect(r.html, path).not.toContain("<!doctype html>");
+      expect(JSON.parse(r.html).id, path).toBe(id);
     }
-    expect((await page(app.fetch, "/api/lists")).html).toContain("<li>Home</li>");
     const digest = await page(app.fetch, "/digest");
     expect(digest.status).toBe(200);
-    expect(digest.html).toMatch(/<li id="digest\.open"[^>]*>0<\/li>/);
+    expect(JSON.parse(digest.html).id).toBe("digest.show");
   });
 });

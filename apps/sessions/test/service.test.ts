@@ -1,7 +1,7 @@
 // @vitest-environment node
-// The ingest service in plain node (no happy-dom), as its generated entry serves it but over a sim ctx: the home page and the
-// ingest page render with the deployable's title, an unknown path is a readable 404, a recorded session is ingested, a
-// caller outside `readers` is sent to the ingest page, a reader lists the archive, and the module's `readers` entry
+// The ingest service in plain node (no happy-dom), as its generated entry serves it but over a sim ctx: the home page renders and the
+// ingest route answers a GET with 405 (an API route), an unknown path is a readable 404, a recorded session is ingested, a
+// caller outside `readers` is denied with 403, a reader lists the archive, and the module's `readers` entry
 // reaches the guard through `.keel/std.json`. Seed 1337
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -45,7 +45,7 @@ function recorded(n: number): Session {
 
 const page = async (fetch: (r: Request) => Promise<Response>, path: string) => {
   const res = await fetch(new Request(`${BASE}${path}`, { headers: { accept: "text/html" } }));
-  return { status: res.status, html: await res.text() };
+  return { status: res.status, headers: res.headers, html: await res.text() };
 };
 const ingest = (fetch: (r: Request) => Promise<Response>, s: Session, cookie = "") =>
   fetch(
@@ -63,15 +63,14 @@ describe("apps/sessions in plain node", () => {
     expect(typeof document).toBe("undefined");
   });
 
-  it("renders the home page and the ingest page", async () => {
+  it("renders the home page; the ingest route is an API route that answers a GET with 405", async () => {
     const { app } = await service();
     const home = await page(app.fetch, "/");
     expect(home.status).toBe(200);
     expect(home.html).toContain("Keel sessions");
-    expect(home.html).toContain('href="/sessions"');
-    const intro = await page(app.fetch, "/sessions");
-    expect(intro.status).toBe(200);
-    expect(intro.html).toContain('id="sessions.intro"');
+    expect(home.html).toContain('id="ops.home.endpoint"');
+    const ingestGet = await page(app.fetch, "/sessions");
+    expect([ingestGet.status, ingestGet.headers.get("allow")]).toEqual([405, "POST"]);
   });
 
   it("titles every page with the deployable name; an unknown path is a readable 404", async () => {
@@ -83,7 +82,7 @@ describe("apps/sessions in plain node", () => {
     expect(missing.html).toContain("<h1>Not found</h1>");
   });
 
-  it("ingests a session; a caller outside readers is redirected to the ingest page; a reader lists it", async () => {
+  it("ingests a session; a caller outside readers is denied with 403; a reader lists it", async () => {
     const { ctx, app } = await service();
     const first = await ingest(app.fetch, recorded(1));
     expect(first.status).toBe(200);
@@ -92,8 +91,9 @@ describe("apps/sessions in plain node", () => {
     expect((await ingest(app.fetch, recorded(2), cookie)).status).toBe(200);
 
     const denied = await list(app.fetch, cookie);
-    expect(denied.status).toBe(302);
-    expect(denied.headers.get("location")).toMatch(/^\/sessions\?next=/);
+    expect(denied.status).toBe(403);
+    expect(denied.headers.get("location")).toBeNull();
+    expect((await denied.json()).error.code).toBe("keel.denied");
 
     bindStd(ctx, {
       "@keel/std-sessions": { ops: { readers: [createHash("sha256").update(token).digest("base64url")] } },

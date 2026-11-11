@@ -1,6 +1,5 @@
 import { manifest } from "@keel/router";
 import { ListSearch } from "./routes/ListSearch.schema.ts";
-import SessionsView from "./routes/SessionsView.ts";
 import { ingestSession } from "./routes/ingestSession.ts";
 import { listSessions } from "./routes/listSessions.ts";
 import { reader } from "./routes/reader.guard.ts";
@@ -11,13 +10,13 @@ import { reader } from "./routes/reader.guard.ts";
  * `{ failing?, since? }`) reads it behind guard `sessions.reader`. A deployable unions `routes.routes`.
  */
 export const routes = manifest({
-  "sessions.ingest": { path: "/sessions", component: SessionsView },
+  "sessions.ingest": { api: true, path: "/sessions" },
   "sessions.list": {
+    api: true,
     path: "/sessions/list",
     search: ListSearch,
     guard: reader,
     loader: listSessions,
-    component: SessionsView,
   },
 });
 routes.actions({ "sessions.ingest": { POST: ingestSession } });

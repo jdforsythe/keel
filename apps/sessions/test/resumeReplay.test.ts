@@ -22,7 +22,7 @@ import topology from "../topology.ts";
 /** A page whose own effect reads a computed that throws once its button is clicked. */
 function Fx(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
   if (ctx !== undefined && typeof location !== "undefined")
-    record(ctx, { upload: new URL(sessions.href("sessions.ingest"), location.origin) });
+    record(ctx, { upload: new URL(sessions.routes["sessions.ingest"].path, location.origin) });
   const open = signal(false);
   const width = computed(() => (open.get() ? "x".repeat(-1).length : 0));
   effect(() => {
@@ -37,7 +37,7 @@ function Fx(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
 /** A page whose text binding reads a computed that throws once its button is clicked. */
 function Bind(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
   if (ctx !== undefined && typeof location !== "undefined")
-    record(ctx, { upload: new URL(sessions.href("sessions.ingest"), location.origin) });
+    record(ctx, { upload: new URL(sessions.routes["sessions.ingest"].path, location.origin) });
   const open = signal(false);
   return Box({
     as: "main",

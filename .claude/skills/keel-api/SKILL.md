@@ -15,7 +15,7 @@ export const postTodo = action({ input: TodoDraft, params: ListParams, stores: b
   return r.ok ? ok(null) : err(r.error)
 })
 ```
-`routes.ts` (plain `.ts`): `'api.lists': { path: '/api/lists', loader: loadBoard, component: BoardApi }`, then `routes.actions({ 'api.lists': { POST: postList } })`. Undo: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. Bodies are `application/json` Results (`keel.fields` 422).
+`routes.ts` (plain `.ts`): `'api.lists': { api: true, path: '/api/lists', loader: loadBoard }` (an API route has no `component`; the server answers it with JSON whatever `accept` says), then `routes.actions({ 'api.lists': { POST: postList } })`. Undo: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. Bodies are `application/json` Results (`keel.fields` 422).
 
 **Cycle:** `routes.ts` and an action returning `ok(routes.href(...))` import each other; import `routes.ts` first (tests too).
 

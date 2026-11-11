@@ -287,7 +287,7 @@ Follow `http://localhost:5173/lists/l1` in `keel dev`:
 8. `loadList` stores the board in the client store `todos.view` (transaction `todos.hydrate`) and returns the list.
 9. The router renders the chain, outermost first: the layout `todos.shell` (`AppShell`), with `ListPage` as its children, given `{ params, search, data }`. `ListPage` reads the todos from `todos.view`.
 
-A `node` deployable's page goes the other way. A request reaches `server.mjs`; `createApp` matches the route, runs guards and loaders on the server, and streams HTML with the request's store state in `<script type="application/json" id="k-state">`. If the page has an island (a component with an event handler, an effect, or a read of client-writable state), the HTML scripts the resume entry, which restores state from `#k-state` and attaches handlers to the server's DOM using `/@keel/islands.ts`, without rendering again. golden-1's `api` pages are static lists, so they ship no script. A request with `accept: application/json` gets the loader `Result` instead of HTML.
+A `node` deployable's page goes the other way. A request reaches `server.mjs`; `createApp` matches the route, runs guards and loaders on the server, and streams HTML with the request's store state in `<script type="application/json" id="k-state">`. If the page has an island (a component with an event handler, an effect, or a read of client-writable state), the HTML scripts the resume entry, which restores state from `#k-state` and attaches handlers to the server's DOM using `/@keel/islands.ts`, without rendering again. A request with `accept: application/json` gets the loader `Result` instead of HTML. golden-1's `api` routes are API routes: they answer JSON only.
 
 ## 5. Modules and file conventions
 
@@ -311,7 +311,7 @@ Keel decides what a file is from its name, and holds you to one export per file 
 | `name.guard.ts` | one `guard` | a convention from the Keel skills; no rule enforces the suffix |
 | `name.service.ts` | one `endpoints` declaration | golden-1's convention; k.services names this file `<Name>Api.schema.ts` |
 | `Name.tsx` | one component, default export, plus optional `Props` and `uses` | PascalCase; only a component file may export `Props` |
-| `Name.ts` (PascalCase) | a component without JSX, written as function calls | its default export takes props; golden-1's `api` and `digest` document views |
+| `Name.ts` (PascalCase) | a component without JSX, written as function calls | its default export takes props |
 | `name.ts` | one function, store or value | `module.ts` and `routes.ts` have fixed names |
 | `jobs.server.ts`, `schedules.server.ts`, `runners.server.ts` | the stdlib queue, the schedules, the runners | fixed names; E2501, E2552, E2504 |
 
@@ -556,6 +556,7 @@ export const todos = endpoints({
   createList: { method: "POST", path: "/api/lists", body: ListDraft, output: ActionReply },
   addTodo: {
     method: "POST",
+    api: true,
     path: "/api/lists/:listId/todos",
     params: s.object({ listId: s.id("TodoList") }),
     body: TodoDraft,
@@ -563,12 +564,14 @@ export const todos = endpoints({
   },
   toggleTodo: {
     method: "POST",
+    api: true,
     path: "/api/todos/:todoId/toggle",
     params: s.object({ todoId: s.id("Todo") }),
     output: ActionReply,
   },
   editTodo: {
     method: "POST",
+    api: true,
     path: "/api/todos/:todoId",
     params: s.object({ todoId: s.id("Todo") }),
     body: TodoDraft,
@@ -1689,60 +1692,15 @@ export const postUndo = action({ input: s.object({}), stores: boardStores }, (_i
 );
 ```
 
-### Document views
+### API routes
 
-Every route needs a `component`, even one that clients call for JSON. A browser that opens `/api/lists` gets this HTML; a request with `accept: application/json` gets the loader `Result`. These are PascalCase `.ts` files without JSX: base elements called as functions.
-
-```ts title="modules/api/BoardApi.ts"
-import { Box } from "@keel/ui";
-import type { BoardView } from "../todos/BoardView.schema.ts";
-
-/**
- * Document view of `api.lists` (list names); runtime requests (`accept: application/json`) get the loader `Result`.
- * Plain `.ts` (no JSX).
- */
-export default function BoardApi(props: { readonly data: BoardView }): Node {
-  return Box({ as: "ul", id: "api.lists", children: props.data.lists.map((l) => Box({ as: "li", children: l.name })) });
-}
-```
-
-```ts title="modules/api/SuggestionsApi.ts"
-import { Box } from "@keel/ui";
-import type { Suggestion } from "../todos/Suggestion.schema.ts";
-
-/**
- * Document view of `api.suggestions`; runtime requests (`accept: application/json`) get the loader `Result`.
- * Plain `.ts` (no JSX).
- */
-export default function SuggestionsApi(props: { readonly data: readonly Suggestion[] }): Node {
-  return Box({
-    as: "ul",
-    id: "api.suggestions",
-    children: props.data.map((x) => Box({ as: "li", children: x.title })),
-  });
-}
-```
-
-```ts title="modules/api/ActionApi.ts"
-import { Box } from "@keel/ui";
-
-/**
- * Document view of the `api` routes that only take actions (POST with `accept: application/json` gets the action
- * `Result`). Plain `.ts` (no JSX).
- */
-export default function ActionApi(): Node {
-  return Box({ id: "api.action", children: "POST only" });
-}
-```
+Every `api` entry is an API route: `api: true`, a `path`, and no `component`. A request for one gets JSON whatever its `accept` says: the loader `Result` for a GET, the action `Result` for a write. A GET to a route with no loader is 405, and `routes.href`, `Link` and `navigate` do not take an API route's id.
 
 ### Routes
 
 ```ts title="modules/api/routes.ts"
 import { manifest } from "@keel/router";
 import { ListParams } from "../todos/ListParams.schema.ts";
-import ActionApi from "./ActionApi.ts";
-import BoardApi from "./BoardApi.ts";
-import SuggestionsApi from "./SuggestionsApi.ts";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { loadBoard } from "./loadBoard.server.ts";
 import { loadSuggestions } from "./loadSuggestions.server.ts";
@@ -1754,24 +1712,24 @@ import { postUndo } from "./postUndo.server.ts";
 
 /** The `api` deployable (node): it owns the board (`api.board`); `todos` reads and writes it over HTTP. */
 export const routes = manifest({
-  "api.lists": { path: "/api/lists", loader: loadBoard, component: BoardApi },
+  "api.lists": { api: true, path: "/api/lists", loader: loadBoard },
   "api.listTodos": {
+    api: true,
     path: "/api/lists/:listId/todos",
     params: ListParams,
-    component: ActionApi,
   },
   "api.todo": {
+    api: true,
     path: "/api/todos/:todoId",
     params: TodoIdParams,
-    component: ActionApi,
   },
   "api.todoToggle": {
+    api: true,
     path: "/api/todos/:todoId/toggle",
     params: TodoIdParams,
-    component: ActionApi,
   },
-  "api.undo": { path: "/api/undo", component: ActionApi },
-  "api.suggestions": { path: "/api/suggestions", loader: loadSuggestions, component: SuggestionsApi },
+  "api.undo": { api: true, path: "/api/undo" },
+  "api.suggestions": { api: true, path: "/api/suggestions", loader: loadSuggestions },
 });
 routes.actions({
   "api.lists": { POST: postList },
@@ -2012,59 +1970,22 @@ export const refresh = action({ input: RecountInput }, async (input, _args, ctx)
 });
 ```
 
-```ts title="modules/digest/DigestApi.ts"
-import { type Infer, s } from "@keel/schema";
-import { Box } from "@keel/ui";
-import { Digest } from "./Digest.schema.ts";
-
-export const Props = s.object({ data: Digest });
-
-/**
- * Document view of `digest.show` and `digest.feed`: the open and done counts. Runtime requests
- * (`accept: application/json`) get the loader `Result`, event-stream requests every yield.
- */
-export default function DigestApi(props: Infer<typeof Props>): Node {
-  return Box({
-    as: "ul",
-    id: "digest.counts",
-    children: () => [
-      Box({ as: "li", id: "digest.open", children: String(props.data.open) }),
-      Box({ as: "li", id: "digest.done", children: String(props.data.done) }),
-    ],
-  });
-}
-```
-
-```ts title="modules/digest/RefreshApi.ts"
-import { type Infer, s } from "@keel/schema";
-import { Box } from "@keel/ui";
-
-export const Props = s.object({});
-
-/** Document view of `digest.refresh`, which only takes POST (`accept: application/json` gets the action `Result`). */
-export default function RefreshApi(_props: Infer<typeof Props>): Node {
-  return Box({ id: "digest.action", children: "POST only" });
-}
-```
-
 ```ts title="modules/digest/routes.ts"
 import { manifest } from "@keel/router";
-import DigestApi from "./DigestApi.ts";
-import RefreshApi from "./RefreshApi.ts";
 import { feedDigest } from "./feedDigest.server.ts";
 import { loadDigest } from "./loadDigest.server.ts";
 import { refresh } from "./refresh.server.ts";
 
 /** The `digest` module: board counts that `digest.recount` keeps, on request and every hour. */
 export const routes = manifest({
-  "digest.show": { path: "/digest", loader: loadDigest, component: DigestApi },
-  "digest.refresh": { path: "/digest/refresh", component: RefreshApi },
-  "digest.feed": { path: "/digest/feed", loader: feedDigest, component: DigestApi },
+  "digest.show": { api: true, path: "/digest", loader: loadDigest },
+  "digest.refresh": { api: true, path: "/digest/refresh" },
+  "digest.feed": { api: true, path: "/digest/feed", loader: feedDigest },
 });
 routes.actions({ "digest.refresh": { POST: refresh } });
 ```
 
-With the three modules written, `keel check` should print `ok check 80 files, 0 errors, 0 warnings`.
+With the three modules written, `keel check` should print `ok check 75 files, 0 errors, 0 warnings`.
 
 ## 9. Tests
 
@@ -2211,7 +2132,7 @@ keel build
 keel check
 ```
 
-A clean run prints `ok 72 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 72 tests, 0 failed, 0 skipped`), then `ok build 77 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 93 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
+A clean run prints `ok 72 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 72 tests, 0 failed, 0 skipped`), then `ok build 72 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 88 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
 
 ### Develop
 
@@ -2255,7 +2176,7 @@ Try it with curl. A write needs `x-keel: 1` with `accept: application/json` to p
 curl -s -H 'accept: application/json' localhost:8080/api/lists
 curl -s -X POST -H 'accept: application/json' -H 'content-type: application/json' -H 'x-keel: 1' \
   -d '{"name":"Home"}' localhost:8080/api/lists
-curl -s localhost:8080/api/lists          # the BoardApi document view
+curl -s localhost:8080/api/lists          # JSON too: an API route has no document view
 ```
 
 `server.mjs` serves the `api` deployable's routes and its own `dist/api/assets/`. It does not serve the `web` client: `GET /` is 404. `dist/` is static files that expect `/api` and `/digest` on their own origin, so in production put a static host and a reverse proxy in front of both. Keel writes no deploy file for a `client` deployable.

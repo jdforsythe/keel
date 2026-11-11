@@ -1,5 +1,10 @@
 // @vitest-environment happy-dom
-// Spec: k.api (RFC 0086), Conformance clauses 1-4. Property seed: 1337.
+// Spec: k.api, clause "An entry with neither `component` nor `api: true` does not compile, and `manifest()` throws E1510 for it."
+// Spec: k.api, clause "An API entry with `component` does not compile and throws E1510."
+// Spec: k.api, clause "`routes.href` of an API route's id does not compile; `matchHref` of its path is `null`."
+// Spec: k.api, clause "E1510 has a triggering fixture and a clean one."
+// Spec: k.api, clause "A guard without `redirect` on an API route denies with 403 `keel.denied`; on a page it does not compile and `manifest()` throws E1508."
+// Seed 1337.
 // Compile failures are asserted at the type level: the literal is not assignable to the parameter `manifest` infers for
 // it (checked by tsc); the runtime throw is reached with Reflect.apply (the mechanism rules-e1501-e1506.test.ts uses for ill-typed input).
 import { action, guard, loader, manifest } from "@keel/router";

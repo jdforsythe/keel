@@ -1,5 +1,5 @@
 # k.api: API routes
-status: proposed
+status: conformance-covered
 
 **Purpose.** A route that answers JSON has no view. It is declared in the module's one manifest (k.router), marked so no page can lose its view by omission.
 

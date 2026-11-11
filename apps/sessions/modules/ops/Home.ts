@@ -3,7 +3,7 @@ import { computed, signal } from "@keel/reactive";
 import type { Slots } from "@keel/runtime-dom";
 import { record } from "@keel/std-sessions";
 import { routes as sessions } from "@keel/std-sessions/routes";
-import { Box, Button, Heading, Link, Text } from "@keel/ui";
+import { Box, Button, Heading, Text } from "@keel/ui";
 
 /** The archive bounds `ops.home.limits` shows, in the order the ingest applies them. */
 const LIMITS = [
@@ -30,7 +30,7 @@ function limitLine(limit: (typeof LIMITS)[number], width: number): string {
  * archive bounds, one per line, in `ops.home.limits.list`. Plain `.ts` (no JSX).
  */
 export default function Home(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
-  const path = sessions.href("sessions.ingest");
+  const path = sessions.routes["sessions.ingest"].path;
   const own = typeof self !== "undefined" && typeof self.origin === "string" ? self.origin : undefined;
   const origin = typeof location === "undefined" ? null : (own ?? location.origin);
   const upload = origin === null || origin === "null" ? null : URL.parse(path, origin);
@@ -53,7 +53,6 @@ export default function Home(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
         children: "This service keeps recorded sessions: 64 fingerprints, the newest 5 of each, 256 KiB per session.",
       }),
       Text({ as: "p", id: "ops.home.endpoint", m: "0", font: "mono", fontSize: "sm", children: endpoint }),
-      Link({ id: "ops.home.ingest", fg: "accent", to: path, children: "Ingest endpoint" }),
       Button({
         id: "ops.home.limits",
         onClick: () => open.set(!open.get()),

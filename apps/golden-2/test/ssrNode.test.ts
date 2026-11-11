@@ -85,11 +85,12 @@ describe("golden-2 documents in plain node (no DOM global)", () => {
     expect((await page(web.fetch, "/fr-FR")).status).toBe(404);
   });
 
-  it("renders the api deployable's GET route as a document", async () => {
+  it("answers the api deployable's GET route as JSON whatever accept says", async () => {
     const { api } = await apps();
     await seed(api, "Stew");
     const r = await page(api.fetch, "/api/recipes");
     expect(r.status).toBe(200);
-    expect(r.html).toContain('<main><div id="kitchen.api">api</div></main>');
+    expect(r.html).not.toContain("<!doctype html>");
+    expect(JSON.parse(r.html).id).toBe("kitchen.recipes");
   });
 });

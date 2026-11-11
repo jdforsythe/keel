@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 7,
   "mutationScore": {
-    "check": 74.7,
+    "check": 74.6,
     "cli": 90.9,
     "compiler": 88.2,
     "ctx": 76.8,
@@ -19,24 +19,6 @@
     "ui": 70.3
   },
   "exports": [
-    {
-      "pkg": "golden-1",
-      "name": "ActionApi",
-      "file": "golden-1:api/ActionApi.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "BoardApi",
-      "file": "golden-1:api/BoardApi.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "SuggestionsApi",
-      "file": "golden-1:api/SuggestionsApi.ts",
-      "rung": "example"
-    },
     {
       "pkg": "golden-1",
       "name": "TodoIdParams",
@@ -129,12 +111,6 @@
     },
     {
       "pkg": "golden-1",
-      "name": "DigestApi",
-      "file": "golden-1:digest/DigestApi.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "LATEST_KEY",
       "file": "golden-1:digest/LATEST_KEY.ts",
       "rung": "example"
@@ -149,12 +125,6 @@
       "pkg": "golden-1",
       "name": "RecountInput",
       "file": "golden-1:digest/RecountInput.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "RefreshApi",
-      "file": "golden-1:digest/RefreshApi.ts",
       "rung": "example"
     },
     {
@@ -431,12 +401,6 @@
       "pkg": "golden-1",
       "name": "view",
       "file": "golden-1:todos/view.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "KitchenApi",
-      "file": "golden-2:kitchen/KitchenApi.ts",
       "rung": "example"
     },
     {
@@ -1485,6 +1449,46 @@
     }
   ],
   "clauses": [
+    {
+      "item": "k.api#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.api#10",
+      "rung": "example"
+    },
     {
       "item": "k.check#1",
       "rung": "example"

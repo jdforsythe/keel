@@ -3,7 +3,6 @@ import { scope } from "@keel/reactive";
 import { isolate } from "@keel/store";
 import { properties } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import KitchenApi from "../modules/kitchen/KitchenApi.ts";
 import { NewRecipe } from "../modules/kitchen/NewRecipe.schema.ts";
 import { addRecipe } from "../modules/kitchen/addRecipe.ts";
 import { boxStores } from "../modules/kitchen/boxStores.ts";
@@ -45,7 +44,6 @@ describe("kitchen transactions", () => {
     expect(typeof loadRecipes).toBe("object");
     expect(typeof postRecipe).toBe("object");
     expect(typeof postFavorite).toBe("object");
-    expect(typeof KitchenApi).toBe("function");
   });
 });
 

@@ -1,5 +1,11 @@
 // @vitest-environment happy-dom
-// Spec: k.api (RFC 0086), Conformance clauses 5-9. Seed 1337: no generated input beyond fixed fc picks.
+// Spec: k.api, clause "A GET with `accept: text/html` to an API route with a loader gets the JSON body and status a runtime GET gets."
+// Spec: k.api, clause "A GET to an API route without a loader is 405 with `allow` listing its action methods."
+// Spec: k.api, clause "A form POST to an API route gets the action's `Result` as JSON with no `Location`."
+// Spec: k.api, clause "A denying guard with a `redirect` answers 403 `keel.denied` and no `Location`."
+// Spec: k.api, clause "A guard without `redirect` on an API route denies with 403 `keel.denied`; on a page it does not compile and `manifest()` throws E1508."
+// Spec: k.api, clause "`createApp` for a `client` deployable serving an API route throws E1511."
+// Seed 1337.
 // ASSUMPTION: createApp throws (rejects with a message mentioning the code) as e1553-static-params.test.ts assumes.
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";

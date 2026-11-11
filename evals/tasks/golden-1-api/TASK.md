@@ -23,7 +23,7 @@ Build `apps/golden-1/`: the todo app of the client-only brief, but the data live
   - `Digest.schema.ts` `{ open: s.int({ min: 0 }), done: s.int({ min: 0 }), at: s.number() }`, kept in `ctx.storage` key `digest.latest` (`LATEST_KEY`, `readLatest`: zero counts at 0 before the first count or when unparseable; `writeLatest`).
   - Job `digest.recount` (`recount.server.ts`, input `RecountInput` `{}`): reads `GET /api/lists` through `boardApi = service({ module: 'api', schema: board })` (`board.service.ts`, output `ListsReply`), counts open and done todos, writes them with `at` the `ctx.clock` time; the api's error is its `err`.
   - `jobs.server.ts` `queue({ 'digest.recount': recount })`; `schedules.server.ts` `digest.hourly` (`0 * * * *`, `UTC`, job `digest.recount`, input `{}`); `runners.server.ts` `[jobs, schedules]`.
-  - Routes: `digest.show` `GET /digest` (`loadDigest`), `digest.refresh` `POST /digest/refresh` (`refresh`: `jobs.enqueue(ctx, 'digest.recount', input)`), `digest.feed` `GET /digest/feed` (`feedDigest`, a live loader: the stored digest, then each different one, read every 1,000 ms of `ctx.clock`). Components `DigestApi` (`digest.counts`, `digest.open`, `digest.done`) and `RefreshApi` (`digest.action`), plain `.ts` with `Props`.
+  - Routes: `digest.show` `GET /digest` (`loadDigest`), `digest.refresh` `POST /digest/refresh` (`refresh`: `jobs.enqueue(ctx, 'digest.recount', input)`), `digest.feed` `GET /digest/feed` (`feedDigest`, a live loader: the stored digest, then each different one, read every 1,000 ms of `ctx.clock`). All three are API routes (`api: true`, no component).
 - Splitting `digest` into its own `node` deployable edits `topology.ts` alone (`api: { modules: ['api'] }`, `digest: { modules: ['digest'] }`).
 - `todos`: a `@keel/services` client for all six endpoints (built at call time, base `location.origin`; `Suggestions` calls it with its `ctx`, never `ctx.net.fetch`); a view store `todos.view` changed only by one transaction `todos.hydrate` (replaces the state); loaders re-read the board (`GET /api/lists`) and hydrate, then pick by id; route actions post through the client and return `ok(null)` (revalidation re-reads) or `ok(href)`; the edit action passes the api's 422 `keel.fields` on to the Form. Components that cannot revalidate (`TodoRow` toggle, `AppShell` Undo) write then re-read via a `syncAfter(ctx, write)` helper.
 
@@ -31,15 +31,15 @@ Build `apps/golden-1/`: the todo app of the client-only brief, but the data live
 ```
 apps/golden-1/{package.json,tsconfig.json,vite.config.ts,tokens.ts,topology.ts}   scripts: check (tsc, biome, keel check), test, build, dev, api
 apps/golden-1/modules/api/{module,routes}.ts
-apps/golden-1/modules/api/{board,boardStores,addList,addTodo,toggleTodo,editTodo,ActionApi,BoardApi,SuggestionsApi}.ts  and  TodoIdParams.schema.ts
-  (ActionApi, BoardApi, SuggestionsApi: plain .ts components, no JSX, each exporting Props for render and typing its first parameter `Infer<typeof Props>`)
+apps/golden-1/modules/api/{board,boardStores,addList,addTodo,toggleTodo,editTodo}.ts  and  TodoIdParams.schema.ts
+  (every `api` route is an API route: `api: true`, no component, so the module has no component files)
 apps/golden-1/modules/api/{loadBoard,loadSuggestions,postList,postTodo,postEdit,postToggle,postUndo}.server.ts
 apps/golden-1/modules/todos/{module,routes,editable.guard,view,hydrate,refreshView,syncAfter,todosApi}.ts
 apps/golden-1/modules/todos/{todos,suggestions}.service.ts
 apps/golden-1/modules/todos/{TodoList,Todo,Board,BoardView,BoardReply,ActionReply,FieldsReply,ListDraft,TodoDraft,Suggestion,SuggestionsReply,ListParams,ListSearch,TodoParams}.schema.ts
 apps/golden-1/modules/todos/{loadIndex,loadList,loadTodo,createList,createTodo,updateTodo}.server.ts
 apps/golden-1/modules/todos/{AppShell,ListsPage,ListPage,TodoRow,EditTodoPage,ListError,Suggestions}.tsx
-apps/golden-1/modules/digest/{module,routes,boardApi,LATEST_KEY,readLatest,writeLatest,DigestApi,RefreshApi}.ts  and  board.service.ts
+apps/golden-1/modules/digest/{module,routes,boardApi,LATEST_KEY,readLatest,writeLatest}.ts  and  board.service.ts
 apps/golden-1/modules/digest/{Digest,RecountInput,ListsReply}.schema.ts
 apps/golden-1/modules/digest/{recount,jobs,schedules,runners,loadDigest,feedDigest,refresh}.server.ts
 apps/golden-1/test/{api,board,components,routes,digest}.test.ts  and  test/{simApi,apiRoutes}.ts
@@ -49,7 +49,7 @@ apps/golden-1/test/{api,board,components,routes,digest}.test.ts  and  test/{simA
 - `test/simApi.ts` serves the real api deployable (`createApp(...).fetch` over `apiRoutes`, the `api` and `digest` routes merged as the generated entry merges them; sim ctx) behind sim `ctx.net` `/api/*`, recording requests, so client tests see real bodies.
 - `api.test.ts`: `properties()` on the four `api` transactions; the invariant; every endpoint through `createApp().fetch` (runtime JSON), including 404, 422 (a field error, and an empty JSON body, which decodes as `{}`), undo. Import a module's `routes.ts` before any of its `*.server.ts`.
 - `board.test.ts`: `properties(hydrate)`. `components.test.ts`: `properties()` for `TodoRow` and `Suggestions`; Suggestions loading to ready and to error on a sim 500; Undo disabled/enabled.
-- `digest.test.ts`: the schemas and views; `readLatest`/`writeLatest`; `recount` through `boardApi` (success, and an api 500 storing nothing); `refresh` enqueues; served with its runners: refresh, the hourly schedule, the event-stream feed, a job enqueued before `close()` running after the next start.
+- `digest.test.ts`: the schemas and the API routes; `readLatest`/`writeLatest`; `recount` through `boardApi` (success, and an api 500 storing nothing); `refresh` enqueues; served with its runners: refresh, the hourly schedule, the event-stream feed, a job enqueued before `close()` running after the next start.
 - `routes.test.ts`: the former examples (filter, notFound, readOnly, invalid add focuses title, duplicate title error) plus a `renderRoute` refresh test: create a list, then a second `renderRoute` with an empty `todos.view` (new client, same api) still shows it.
 
 ## Acceptance (checked by `pass.ts`)

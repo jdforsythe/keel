@@ -16,7 +16,7 @@ The base (`at`, `route`, `state`) is the ctx's route when `record` starts, else 
 
 **Commands** (k.cli `session`). `capture [url]` saves `sessions.live` · `ingest <url> [--failing] [--since t]` fetches `sessions.list` (cookie `KEEL_SESSIONS_TOKEN`) to `.keel/sessions/<fingerprint>-<n>.json` · `replay <f>` · `minimize <f> [--max-runs n]` rewrites `<f>` · `to-test <f>` writes `modules/<route module>/test/session-<fingerprint>.test.ts`: header `// Session: <fingerprint>, seed <n>`. The last three run under `keel test` on the deployable serving `route.id`, with its modules' `redact`. The Action `@keel/std-sessions/action` runs them nightly: one `keel-session` issue per reproduced fingerprint, never a push.
 
-**Ingest.** `routes`: `sessions.ingest` (`POST /sessions`, input `Session`, as filed over 256 KiB 413) recomputes `error` and `fingerprint` from `events` and adds it to store `sessions.archive` (per fingerprint `count`, `first`, `last`, newest 5; at most 64 fingerprints and 4 MiB, oldest `last` evicted, never the one written). `sessions.list` (`/sessions/list`, search `{ failing?, since? }`) loads it behind guard `sessions.reader`: `caller` in `readers`, else redirect to `sessions.ingest`.
+**Ingest.** API `routes` (k.api): `sessions.ingest` (`POST /sessions`, input `Session`, as filed over 256 KiB 413) recomputes `error` and `fingerprint` from `events` and adds it to store `sessions.archive` (per fingerprint `count`, `first`, `last`, newest 5; at most 64 fingerprints and 4 MiB, oldest `last` evicted, never the one written). `sessions.list` (`/sessions/list`, search `{ failing?, since? }`) loads it behind guard `sessions.reader`: `caller` in `readers`, else 403 `keel.denied`.
 
 **Rules.** E2001 `redact`/`expose` entry whose subject is unknown or another module's, or whose path its schema lacks (fix removes it) · E2002 session file fails `sessions.Session` · E2003 replay cannot apply input N or the base · E2004 replay fingerprint differs (`minimize`, `to-test` stop) · E2005 a non-`node` deployable serves `routes` · E2006 a `record` `upload` not credential-free http(s) on the page's origin. E2002-E2004 diag the file at 1:1.
 
@@ -28,7 +28,7 @@ The base (`at`, `route`, `state`) is the ctx's route when `record` starts, else 
 - `minimize` output reproduces the fingerprint; removing any one of its input events does not; two runs are equal.
 - The `to-test` file passes `keel check`, fails under `keel test` on the buggy fixture, and passes once the fix is applied.
 - A `to-test` file holds no recorded `s.string()` value outside `expose`, and no `s.secret` or password value.
-- A valid POST to `sessions.ingest` is listed under its fingerprint; invalid input is 422 `keel.fields`; a sixth of one fingerprint keeps 5, counts 6; a caller not in `readers` is redirected.
+- A valid POST to `sessions.ingest` is listed under its fingerprint; invalid input is 422 `keel.fields`; a sixth of one fingerprint keeps 5, counts 6; a caller not in `readers` gets 403 `keel.denied`.
 - The `session` capability has all three implementations; shell `put` returns `ok(null)` and sends nothing.
 - Without a global `document`, `record` records no event through transactions and errors and never calls `put`.
 - E2001-E2005 each fire on a fixture, not on its clean twin.

@@ -30,9 +30,6 @@ const FILES: readonly string[] = [
     "addTodo",
     "toggleTodo",
     "editTodo",
-    "ActionApi",
-    "BoardApi",
-    "SuggestionsApi",
   ].map((n) => `${api}/${n}.ts`),
   `${api}/TodoIdParams.schema.ts`,
   ...["loadBoard", "loadSuggestions", "postList", "postTodo", "postEdit", "postToggle", "postUndo"].map(
@@ -75,8 +72,6 @@ const FILES: readonly string[] = [
     "LATEST_KEY",
     "readLatest",
     "writeLatest",
-    "DigestApi",
-    "RefreshApi",
   ].map((n) => `${digest}/${n}.ts`),
   ...["recount", "jobs", "schedules", "runners", "loadDigest", "feedDigest", "refresh"].map(
     (n) => `${digest}/${n}.server.ts`,

@@ -24,7 +24,7 @@ const stamped = (n: Node, id: string): Node => {
 /** The fixture page: in the browser it records with an upload to this origin; its button throws. */
 function Drill(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
   if (ctx !== undefined && typeof location !== "undefined")
-    record(ctx, { upload: new URL(sessions.href("sessions.ingest"), location.origin) });
+    record(ctx, { upload: new URL(sessions.routes["sessions.ingest"].path, location.origin) });
   return Box({
     as: "main",
     id: "ops.drill",

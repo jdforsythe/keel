@@ -1,4 +1,4 @@
-// Spec: std.sessions, clause "A valid POST to `sessions.ingest` is listed under its fingerprint; invalid input is 422 `keel.fields`; a sixth of one fingerprint keeps 5, counts 6; a caller not in `readers` is redirected."
+// Spec: std.sessions, clause "A valid POST to `sessions.ingest` is listed under its fingerprint; invalid input is 422 `keel.fields`; a sixth of one fingerprint keeps 5, counts 6; a caller not in `readers` gets 403 `keel.denied`."
 // @vitest-environment node
 // Seed 1337
 import { createHash } from "node:crypto";
@@ -156,18 +156,16 @@ describe("std.sessions: ingest", () => {
     );
   });
 
-  test("a caller not in `readers` is redirected to `sessions.ingest`", async () => {
+  test("a caller not in `readers` gets 403 `keel.denied`", async () => {
     await fc.assert(
       fc.asyncProperty(codeArb, async (code) => {
         const { app, ctx } = await boot();
         const writer = callerValue(await send(app, make("s-1", code)));
         allow(ctx, `${writer}-someone-else`);
         const res = await list(app, writer);
-        expect(res.status).toBe(302);
-        const location = res.headers.get("location") ?? "";
-        expect(location.startsWith("/sessions?")).toBe(true);
-        expect(new URL(location, "http://localhost").searchParams.has("next")).toBe(true);
-        expect(await res.text()).not.toContain("failed");
+        expect(res.status).toBe(403);
+        expect(res.headers.get("location")).toBeNull();
+        expect(await res.text()).toContain("keel.denied");
       }),
       { seed: 1337, numRuns: 4 },
     );

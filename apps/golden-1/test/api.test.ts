@@ -3,9 +3,6 @@ import { scope } from "@keel/reactive";
 import { isolate } from "@keel/store";
 import { properties, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import ActionApi from "../modules/api/ActionApi.ts";
-import BoardApi from "../modules/api/BoardApi.ts";
-import SuggestionsApi from "../modules/api/SuggestionsApi.ts";
 import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
 import { addList } from "../modules/api/addList.ts";
 import { addTodo } from "../modules/api/addTodo.ts";
@@ -197,6 +194,7 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
     const html = await (
       await app.fetch(new Request(`${ORIGIN}/api/lists`, { headers: { accept: "text/html" } }))
     ).text();
+    expect(JSON.parse(html).id).toBe("api.lists");
     expect(html).not.toContain("api.board");
     expect(html).not.toContain("api.addList");
     expect(JSON.stringify(await lists(app))).not.toContain("api.addList");
@@ -225,7 +223,7 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
   });
 });
 
-describe("api route components", () => {
+describe("api routes", () => {
   it("loadSuggestions returns the same sorted titles on every call", async () => {
     const first = await loadSuggestions.run(
       { params: {}, search: {}, url: "http://localhost/api/suggestions", caller: "c1", stores: undefined },
@@ -239,21 +237,15 @@ describe("api route components", () => {
       ),
     ).toEqual(first);
   });
-  it("SuggestionsApi, BoardApi and ActionApi render the document views", async () => {
-    expect([routes.routes["api.suggestions"].component, routes.routes["api.lists"].component]).toEqual([
-      SuggestionsApi,
-      BoardApi,
-    ]);
-    expect(routes.routes["api.undo"].component).toBe(ActionApi);
-    const s = await renderRoute("api.suggestions", { routes });
-    expect(s.find("api.suggestions").text).toBe("BreadEggsMilk");
-    s.dispose();
-    // The loader runs only on the node deployable: read the document it serves over the seeded api.
+  it("API routes have no view: accept text/html still gets JSON, a GET without a loader is 405", async () => {
+    expect(routes.routes["api.lists"]).toMatchObject({ api: true });
+    expect("component" in routes.routes["api.undo"]).toBe(false);
     await seedBoard(boardOf({ lists: [L], todos: [] }));
-    const doc = await (await apiApp()).fetch(new Request(`${ORIGIN}/api/lists`, { headers: { accept: "text/html" } }));
-    expect(await doc.text()).toContain("Home");
-    const a = await renderRoute("api.undo", { routes });
-    expect(a.find("api.action").text).toBe("POST only");
-    a.dispose();
+    const app = await apiApp();
+    const doc = await app.fetch(new Request(`${ORIGIN}/api/lists`, { headers: { accept: "text/html" } }));
+    expect([doc.status, doc.headers.get("content-type")?.startsWith("application/json")]).toEqual([200, true]);
+    expect((await doc.json()).results["api.lists"].value.lists[0].name).toBe("Home");
+    const undo = await app.fetch(new Request(`${ORIGIN}/api/undo`, { headers: { accept: "text/html" } }));
+    expect([undo.status, undo.headers.get("allow")]).toEqual([405, "POST"]);
   });
 });
