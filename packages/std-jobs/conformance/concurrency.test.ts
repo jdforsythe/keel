@@ -2,14 +2,15 @@
 // Seed 1337
 // Assumption: `createApp` needs no `routes` for a deployable whose module only has runners (`@keel/router` is not a dependency of this package).
 // Assumption: module `std` config reaches the runner through `createApp({ std })` (k.module Std config): a file `{ data, hash }`
-// with `data` as `{ [pkg]: { [moduleId]: config } }`; the empty `hash` is the one unverified detail of the fixture.
+// with `data` as `{ [pkg]: { [moduleId]: config } }` and `hash` as `stdArtifact` computes it from the module manifest.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { stdArtifact } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
+import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { job, queue } from "@keel/std-jobs";
-import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
@@ -26,7 +27,13 @@ async function drive(concurrency: number, count: number): Promise<{ max: number;
   const dir = mkdtempSync(join(tmpdir(), "keel-jobs-"));
   try {
     const file = join(dir, "std.json");
-    writeFileSync(file, JSON.stringify({ data: { "@keel/std-jobs": { orders: { concurrency } } }, hash: "" }));
+    const { data, hash } = stdArtifact([
+      {
+        path: "modules/orders/module.ts",
+        source: `import { module } from "@keel/compiler"\nexport default module({ id: "orders", deps: ["@keel/std-jobs"], capabilities: ["clock", "random", "storage"], std: { "@keel/std-jobs": { concurrency: ${concurrency} } } })\n`,
+      },
+    ]);
+    writeFileSync(file, JSON.stringify({ data, hash }));
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     const gates: (() => void)[] = [];
     let pending = 0;
@@ -65,13 +72,11 @@ async function drive(concurrency: number, count: number): Promise<{ max: number;
   }
 }
 
-// Skipped: the fixture writes `hash: ""`, which k.module Std config refuses (E1160 at `createApp({ std })`); test/concurrency.test.ts covers the clause with a hashed std.json.
-test.skip("With `concurrency: 2` and five due jobs, at most two `fn` calls are pending at any time.", async () => {
+test("With `concurrency: 2` and five due jobs, at most two `fn` calls are pending at any time.", async () => {
   expect(await drive(2, 5)).toEqual({ max: 2, done: 5 });
 });
 
-// Skipped: the fixture writes `hash: ""`, which k.module Std config refuses (E1160 at `createApp({ std })`); test/concurrency.test.ts covers the clause with a hashed std.json.
-test.skip("For generated `concurrency` from 1 to 16 and generated job counts, the pending `fn` calls never exceed `concurrency` and every job runs.", async () => {
+test("For generated `concurrency` from 1 to 16 and generated job counts, the pending `fn` calls never exceed `concurrency` and every job runs.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 16 }), fc.integer({ min: 1, max: 20 }), async (c, n) => {
       expect(await drive(c, n)).toEqual({ max: Math.min(c, n), done: n });

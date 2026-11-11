@@ -5,9 +5,9 @@
 // Assumption: a fire is observed by spying `jobs.enqueue` (the schedule calls `queue.enqueue(ctx, job, input, { key })`); the key suffix `<t>`
 // is accepted as epoch milliseconds or as the `Instant` text of the fire minute.
 import { createCtx } from "@keel/ctx";
+import { ok, s } from "@keel/schema";
 import { job, queue } from "@keel/std-jobs";
 import { schedule } from "@keel/std-schedules";
-import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test, vi } from "vitest";
 
@@ -76,6 +76,13 @@ function expand(f: string, r: Range): Set<number> {
   }
   return out;
 }
+// UTC calendar fields of an epoch number, without constructing a Date; 1970-01-01 (day 0) was a Thursday (4).
+const utcDate = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
 function matcher(cron: string): (ms: number) => boolean {
   const [mi = "", ho = "", dm = "", mo = "", dw = ""] = cron.split(" ");
   const sets = [
@@ -88,11 +95,12 @@ function matcher(cron: string): (ms: number) => boolean {
   const domR = dm !== "*";
   const dowR = dw !== "*";
   return (ms) => {
-    const d = new Date(ms);
-    if (!sets[0].has(d.getUTCMinutes()) || !sets[1].has(d.getUTCHours()) || !sets[3].has(d.getUTCMonth() + 1))
-      return false;
-    const a = sets[2].has(d.getUTCDate());
-    const b = sets[4].has(d.getUTCDay());
+    const day = Math.floor(ms / 86_400_000);
+    const p = Object.fromEntries(utcDate.formatToParts(ms).map((x) => [x.type, Number(x.value)]));
+    const minute = Math.floor(ms / MIN) % 1440;
+    if (!sets[0].has(minute % 60) || !sets[1].has(Math.floor(minute / 60)) || !sets[3].has(p.month ?? 0)) return false;
+    const a = sets[2].has(p.day ?? 0);
+    const b = sets[4].has((day + 4) % 7);
     return domR && dowR ? a || b : domR ? a : dowR ? b : true;
   };
 }

@@ -3,9 +3,9 @@
 // Assumption: a fire is observed by spying `jobs.enqueue` (the schedule calls `queue.enqueue(ctx, job, input, { key })`); the key suffix `<t>`
 // is accepted as epoch milliseconds or as the `Instant` text of the fire minute.
 import { createCtx } from "@keel/ctx";
+import { ok, s } from "@keel/schema";
 import { job, queue } from "@keel/std-jobs";
 import { schedule } from "@keel/std-schedules";
-import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test, vi } from "vitest";
 
@@ -88,8 +88,7 @@ test("Closed across three fire times then started, `'skip'` enqueues none.", asy
   );
 });
 
-// Skipped: `f.ran` also counts the 10:00 fire's job (key `<id>@10:00`, enqueued before the crash), so the spec gives 2 runs, one per fire time; test/crash.test.ts checks one run per key.
-test.skip("A crash after the enqueue and before the mark gives one job run.", async () => {
+test("A crash after the enqueue and before the mark gives one job run.", async () => {
   const f = fixture();
   const table = { "orders.hourly": { cron: "0 * * * *", zone: "UTC", job: "orders.digest", input: {} } } as const;
   f.ctx.clock.advance(T10 - 30 * MIN);
@@ -125,7 +124,10 @@ test.skip("A crash after the enqueue and before the mark gives one job run.", as
   f.ctx.clock.advance(10 * MIN);
   await settle();
   expect(f.fires[2]?.key).toBe(f.fires[1]?.key);
-  expect(f.ran.length).toBe(1);
+  // one job run per fire time: 10:00 and the crashed 11:00, enqueued twice under one key
+  const keys = new Set(f.fires.map((x) => x.key));
+  expect(keys.size).toBe(2);
+  expect(f.ran.length).toBe(keys.size);
   await stop(third, c);
   await stop(worker, d);
 });
