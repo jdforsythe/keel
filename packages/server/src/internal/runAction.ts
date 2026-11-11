@@ -35,7 +35,8 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   if (bytes === null) return { response: payloadTooLarge(r.sv.maxBody), route: id, diags: [] };
   const typed = new Response(bytes, { headers: { "content-type": r.raw.headers.get("content-type") ?? "" } });
   // A JSON body (a `@keel/services` client, k.services Encoding) carries no `_method`; an empty one is `{}` (rfc:0068).
-  const sent = json ? await attempt(async (): Promise<unknown> => (bytes.length ? typed.json() : {})) : null;
+  const body = async (): Promise<unknown> => (bytes.length ? typed.json() : {});
+  const sent = json ? await attempt(body) : null;
   const read = json ? null : await attempt(() => typed.formData());
   const form = read?.ok === true ? read.value : new FormData();
   const override = r.method === "POST" ? form.get("_method") : null;
