@@ -123,6 +123,108 @@
     },
     {
       "pkg": "golden-1",
+      "name": "Digest",
+      "file": "golden-1:digest/Digest.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "DigestApi",
+      "file": "golden-1:digest/DigestApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "LATEST_KEY",
+      "file": "golden-1:digest/LATEST_KEY.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListsReply",
+      "file": "golden-1:digest/ListsReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "RecountInput",
+      "file": "golden-1:digest/RecountInput.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "RefreshApi",
+      "file": "golden-1:digest/RefreshApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "board",
+      "file": "golden-1:digest/board.service.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "boardApi",
+      "file": "golden-1:digest/boardApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "feedDigest",
+      "file": "golden-1:digest/feedDigest.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "jobs",
+      "file": "golden-1:digest/jobs.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "loadDigest",
+      "file": "golden-1:digest/loadDigest.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "readLatest",
+      "file": "golden-1:digest/readLatest.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "recount",
+      "file": "golden-1:digest/recount.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "refresh",
+      "file": "golden-1:digest/refresh.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "runners",
+      "file": "golden-1:digest/runners.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "schedules",
+      "file": "golden-1:digest/schedules.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "writeLatest",
+      "file": "golden-1:digest/writeLatest.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "ActionReply",
       "file": "golden-1:todos/ActionReply.schema.ts",
       "rung": "example"
@@ -807,6 +909,12 @@
     },
     {
       "pkg": "compiler",
+      "name": "pathCollisions",
+      "file": "packages/compiler/src/pathCollisions.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "compiler",
       "name": "projectDirs",
       "file": "packages/compiler/src/projectDirs.ts",
       "rung": "none"
@@ -969,6 +1077,18 @@
     },
     {
       "pkg": "scaffold",
+      "name": "deployDrift",
+      "file": "packages/scaffold/src/deployDrift.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "scaffold",
+      "name": "deployFiles",
+      "file": "packages/scaffold/src/deployFiles.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "scaffold",
       "name": "scaffold",
       "file": "packages/scaffold/src/scaffold.ts",
       "rung": "example"
@@ -1017,6 +1137,12 @@
     },
     {
       "pkg": "server",
+      "name": "start",
+      "file": "packages/server/src/start.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "server",
       "name": "topology",
       "file": "packages/server/src/topology.ts",
       "rung": "probabilistic"
@@ -1052,6 +1178,18 @@
       "rung": "probabilistic"
     },
     {
+      "pkg": "std-jobs",
+      "name": "job",
+      "file": "packages/std-jobs/src/job.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-jobs",
+      "name": "queue",
+      "file": "packages/std-jobs/src/queue.ts",
+      "rung": "example"
+    },
+    {
       "pkg": "std-messages",
       "name": "formatMessage",
       "file": "packages/std-messages/src/formatMessage.ts",
@@ -1080,6 +1218,12 @@
       "name": "tallyOf",
       "file": "packages/std-report/src/tallyOf.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-schedules",
+      "name": "schedule",
+      "file": "packages/std-schedules/src/schedule.ts",
+      "rung": "example"
     },
     {
       "pkg": "std-sessions",
@@ -1459,6 +1603,30 @@
     },
     {
       "item": "k.cli#17",
+      "rung": "example"
+    },
+    {
+      "item": "k.compat#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.compat#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.compat#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.compat#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.compat#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.compat#6",
       "rung": "example"
     },
     {
@@ -2070,6 +2238,10 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#9",
+      "rung": "example"
+    },
+    {
       "item": "k.schema#1",
       "rung": "probabilistic"
     },
@@ -2182,6 +2354,10 @@
       "rung": "example"
     },
     {
+      "item": "k.server#17",
+      "rung": "example"
+    },
+    {
       "item": "k.services#1",
       "rung": "probabilistic"
     },
@@ -2215,6 +2391,14 @@
     },
     {
       "item": "k.services#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.services#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.services#11",
       "rung": "example"
     },
     {
@@ -2352,6 +2536,42 @@
     {
       "item": "k.testing#11",
       "rung": "example"
+    },
+    {
+      "item": "k.topology#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.topology#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.topology#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#9",
+      "rung": "none"
     },
     {
       "item": "k.ui#1",
@@ -2510,6 +2730,38 @@
       "rung": "example"
     },
     {
+      "item": "std.jobs#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.jobs#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.jobs#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.jobs#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.jobs#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.jobs#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.jobs#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.jobs#8",
+      "rung": "example"
+    },
+    {
       "item": "std.messages#1",
       "rung": "probabilistic"
     },
@@ -2595,6 +2847,30 @@
     },
     {
       "item": "std.report#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.schedules#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.schedules#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.schedules#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.schedules#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.schedules#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.schedules#6",
       "rung": "example"
     },
     {

@@ -14,7 +14,12 @@
     }
   },
   "bin": {
-    "keel": "./dist/src/bin.js"
+    "keel": "./src/bin.ts"
+  },
+  "publishConfig": {
+    "bin": {
+      "keel": "./dist/src/bin.js"
+    }
   },
   "files": ["dist"],
   "scripts": {

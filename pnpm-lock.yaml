@@ -103,6 +103,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
@@ -164,6 +167,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -259,6 +265,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing

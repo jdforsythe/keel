@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node ../../packages/cli/src/bin.ts build",
-    "dev": "node ../../packages/cli/src/bin.ts dev",
-    "check": "tsc --noEmit && biome check modules test && node ../../packages/cli/src/bin.ts check --quiet",
+    "build": "keel build",
+    "dev": "keel dev",
+    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
     "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
@@ -29,6 +29,7 @@
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
+    "@keel/cli": "workspace:*",
     "@types/node": "^22",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
