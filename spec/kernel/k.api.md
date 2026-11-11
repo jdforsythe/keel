@@ -18,7 +18,7 @@ export const routes = manifest({
 })
 routes.actions({ 'api.lists': { POST: postList } })
 ```
-An API route keeps `params`, `search`, `loader` and `guard`, takes its actions through `routes.actions`, and has a loader or an action. In `routes.json` its entry has `api: true`.
+An API route keeps `params`, `search`, `loader` and `guard`, takes its actions through `routes.actions`, and has a loader or an action. A guard's `redirect` is optional: a guard without one guards API routes only, and on a page or layout it is a type error and `manifest()` throws E1508 (k.router). In `routes.json` an API route's entry has `api: true`.
 
 **Requests.** The server answers an API route as a runtime request (k.server) whatever `accept` says; it renders no HTML and is no island root.
 - GET with a loader: `{ id, results }` as JSON with the loader's status. With `accept: text/event-stream` on a live loader: the stream.
@@ -40,4 +40,5 @@ An API route keeps `params`, `search`, `loader` and `guard`, takes its actions t
 - A GET to an API route without a loader is 405 with `allow` listing its action methods.
 - A form POST to an API route gets the action's `Result` as JSON with no `Location`.
 - A denying guard with a `redirect` answers 403 `keel.denied` and no `Location`.
+- A guard without `redirect` on an API route denies with 403 `keel.denied`; on a page it does not compile and `manifest()` throws E1508.
 - `createApp` for a `client` deployable serving an API route throws E1511.
