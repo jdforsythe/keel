@@ -2,7 +2,7 @@
 
 Canonical names. Changing one requires an RFC.
 
-- **kernel**: the frozen core: schema, reactive, store, compiler, runtime-dom, router, forms, ui, check, cli, scaffold, testing, server (thin), services (thin), ctx.
+- **kernel**: the frozen core: schema, reactive, store, runtime-dom, compiler, router, forms, ui, check, scaffold, testing, server (thin), services (thin), cli, ctx.
 - **stdlib**: modules built on kernel extension points, versioned separately, frozen individually; packages `@keel/std-<x>`, after the kernel in dependency order (no kernel package imports one).
 - **module**: a vertical slice (schemas, routes, components, handlers) with a manifest declaring its public surface.
 - **deployable**: a composition of modules declared in `topology.ts` that builds to one artifact.
@@ -20,4 +20,4 @@ Canonical names. Changing one requires an RFC.
 - **unsafe**: the only named path around a guarantee; requires a justification string; counted in the ledger.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 
-verified: 2bcf3e93f03e71b8d7a97a1d5a4132aac4f48074
+verified: 63ed103a67d4cae493e71083ed648dc848321362
