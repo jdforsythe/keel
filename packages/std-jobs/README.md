@@ -1,6 +1,6 @@
 # @keel/std-jobs
 
-**Spec:** std.jobs · **Status:** proposed · **verified:** (none)
+**Spec:** std.jobs · **Status:** conformance-covered · **verified:** (none)
 
 Durable background jobs per module: enqueue, retry with backoff, lease and restart.
 

@@ -1,6 +1,6 @@
 # @keel/check
 
-**Spec:** k.check (+ k.module checks, k.compat) · **Status:** proposed · **verified:** (none)
+**Spec:** k.check (+ k.module checks, k.compat) · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

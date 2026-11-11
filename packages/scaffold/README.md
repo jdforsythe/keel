@@ -1,6 +1,6 @@
 # @keel/scaffold
 
-**Spec:** k.scaffold · **Status:** proposed · **verified:** (none)
+**Spec:** k.scaffold · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 
