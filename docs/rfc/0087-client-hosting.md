@@ -1,9 +1,10 @@
 # RFC 0087: Client hosting: a static artifact, a node host, and allowed origins
 
-Status: draft (2026-11-11). Design RFC for backlog 0375, with the context of 0406. It builds on RFC 0086 (API routes). Open questions 1 is the user's call, since it touches the caller cookie; the RFC is accepted once it is answered.
+Status: accepted (2026-11-11); the user's answers are D1 and D3. Design RFC for backlog 0375, with the context of 0406. It builds on RFC 0086 (API routes).
 
 ## Decisions (user, 2026-11-11)
 - D1: the node host is declared as `host: '<node deployable>'` on the `client` deployable (Proposal 5).
+- D3: the caller cookie stays same-site only, with W1567 (Proposal 4). A caller token for cross-site clients is recorded as a later feature in `tasks/FUTURE.md`.
 - D2: `KEEL_ALLOW_ORIGINS` and the `keel-peer` tag keep the names written here (orchestrator, RFC defaults).
 
 ## Words
@@ -86,15 +87,12 @@ No deploy file is generated for a static host; hosts differ and the contract is 
 - **Allowed origins on every route.** Pages are never fetched across origins; limiting the grant to `api: true` routes keeps HTML and assets out of it (RFC default 6).
 - **The API origin compiled into the JavaScript.** Every environment needs its own build and the hashed file names change with it.
 - **A config file fetched at startup.** One more request before the first loader, and a second file with the tag's job.
-- **`SameSite=None; Secure` for the cookie when origins are cross-site.** Safari and Firefox block the cookie as third-party, so it fixes Chrome only, and it moves the write defense from the cookie attribute to the origin list alone. Left to the user as Open questions 1.
+- **`SameSite=None; Secure` for the cookie when origins are cross-site.** Safari and Firefox block the cookie as third-party, so it fixes Chrome only, and it moves the write defense from the cookie attribute to the origin list alone. Refused by D3.
 - **The caller token in a response header, kept by the client in `localStorage`.** Works cross-site, and gives any script on the page the token that `HttpOnly` withholds.
 - **A host chosen automatically when there is one `node` deployable.** A second `node` deployable would silently change what the first serves (principle 2).
 - **`serves: 'web'` on the `node` deployable.** Equivalent. `host` on the client keeps the field beside the artifact it places.
 - **A generated static file server for the client (`dist/web/server.mjs`).** A second node process that still needs allowed origins and the same-site rule; the node host covers the default with one.
 - **Generated files per host (S3 policy, `_redirects`).** One file per vendor to keep current; the three-line contract is stable.
-
-## Open questions
-1. **The caller on a cross-site split.** The user asked how other frameworks handle it; the answer is in `tasks/0406-api-routes-client-hosting/PLAN.md`. Recommended: Proposal 4 as written, same-site only, with W1567, which is the rule Laravel Sanctum sets for cookie-based SPAs. Alternative: also switch the cookie to `SameSite=None; Secure; Partitioned` when an allowed origin is cross-site.
 
 ## Spec diff
 k.topology, k.server and k.services are each within 6 tokens of the 1,500 token limit, so the text goes to a new section.

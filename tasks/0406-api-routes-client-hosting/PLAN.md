@@ -1,6 +1,6 @@
 # Task 0406: design RFCs for API routes (0385) and client hosting (0375)
 
-**Spec:** k.router, k.topology, k.server, k.services (new: k.api, k.hosting) · **Principles:** 1, 2, 4, 5, 8 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** RFC 0086 accepted; RFC 0087 waits on one answer (caller cookie on a cross-site split)
+**Spec:** k.router, k.topology, k.server, k.services (new: k.api, k.hosting) · **Principles:** 1, 2, 4, 5, 8 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed (2026-11-11): RFC 0086 and RFC 0087 accepted
 
 ## Facts read before design (nothing run)
 - `component` is required by `RouteDef`'s type only; no runtime or check rule reads it.
@@ -20,13 +20,15 @@
 
 - D5 (user, 2026-11-11) 0086: tagged entry `api: true` chosen. In-entry verbs asked about and not taken (RFC 0086 D2 and Alternatives); the user may reopen it.
 - D6 (user, 2026-11-11) 0087: `host` on the `client` deployable chosen.
-- D7 0087 caller cookie: the user asked how other frameworks handle a cross-site SPA and API. Answer given: (a) Laravel Sanctum's cookie mode requires the SPA and API to share a top-level domain and points cross-site apps to API tokens; (b) Express or Koa with `cors({ origin, credentials: true })` and Rails or Django with their CORS packages need `SameSite=None; Secure` on the session cookie when cross-site, which Safari and Firefox block as a third-party cookie; (c) most cross-site SPAs skip cookies and send a bearer token in `Authorization`, kept in memory or `localStorage`; (d) Next, Remix and SvelteKit serve pages and API from one origin; (e) the common production fix is one domain, with a CDN routing API paths to the server. The caller cookie is an anonymous identity, not a login; a token path belongs to an auth stdlib module. Recommendation unchanged: same-site only with W1567. Waiting on the user's choice.
+- D7 0087 caller cookie: the user asked how other frameworks handle a cross-site SPA and API. Answer given: (a) Laravel Sanctum's cookie mode requires the SPA and API to share a top-level domain and points cross-site apps to API tokens; (b) Express or Koa with `cors({ origin, credentials: true })` and Rails or Django with their CORS packages need `SameSite=None; Secure` on the session cookie when cross-site, which Safari and Firefox block as a third-party cookie; (c) most cross-site SPAs skip cookies and send a bearer token in `Authorization`, kept in memory or `localStorage`; (d) Next, Remix and SvelteKit serve pages and API from one origin; (e) the common production fix is one domain, with a CDN routing API paths to the server. The caller cookie is an anonymous identity, not a login; a token path belongs to an auth stdlib module. Recommendation unchanged: same-site only with W1567. 
+- D8 (user, 2026-11-11) 0087: same-site only accepted; the caller token goes to `tasks/FUTURE.md`.
+- D9 (user rule, 2026-11-11) ideas outside the plans are built when the work in hand needs them, else they accumulate in `tasks/FUTURE.md` for after the beta release.
 
 ## Verification
 - [x] `pnpm check` green with both RFC files
 - [x] RFC 0086 accepted with the user's answers recorded
 - [x] RFC 0087 `host` answer recorded
-- [ ] user answers RFC 0087 Open questions 1; then mark it accepted
+- [x] RFC 0087 accepted with the caller cookie answer recorded
 
 ## Next action
-Open the implementation task for RFC 0086 in a fresh context: ADR, spec text for k.api, conformance-writer from k.api, then router, server, check and scaffold, golden-1 and std-sessions migration, reviewer and red-team. When the user answers RFC 0087 Open questions 1, record it, mark 0087 accepted and implement it after 0086.
+None here. Implement RFC 0086 in a fresh context (ADR, k.api spec text, conformance-writer, router, server, check, scaffold, golden-1 and std-sessions migration, reviewer and red-team), then RFC 0087 the same way.
