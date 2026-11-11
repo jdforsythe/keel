@@ -94,4 +94,21 @@ describe("k.api", () => {
     expect(await run("client")).toContain("E1511");
     expect(await run("node")).toBe("built");
   });
+
+  it("An API route guarded by a denying guard without `redirect` answers 403 `keel.denied` as JSON and no `Location`, for GET and a same-site POST.", async () => {
+    const denyOpen = guard({}, async () => err(Denied.make({})));
+    const routes = manifest({
+      "api.lists": { api: true, path: "/api/lists", loader: read, guard: denyOpen },
+      "ops.home": { path: "/", component: page },
+    });
+    routes.actions({ "api.lists": { POST: write } });
+    const app = await boot(routes);
+    for (const req of [get("/api/lists", { accept: "application/json" }), post("/api/lists", { note: "hi" })]) {
+      const res = await app.fetch(req);
+      expect(res.status).toBe(403);
+      expect(res.headers.get("location")).toBeNull();
+      expect(res.headers.get("content-type") ?? "").toContain("application/json");
+      expect(JSON.stringify(await res.json())).toContain("keel.denied");
+    }
+  });
 });

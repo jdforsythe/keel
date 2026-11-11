@@ -2,9 +2,9 @@
 // Spec: k.api (RFC 0086), Conformance clauses 1-4. Property seed: 1337.
 // Compile failures are asserted with `@ts-expect-error` on the one offending line; the runtime throw is reached with
 // Reflect.apply (the mechanism rules-e1501-e1506.test.ts uses for ill-typed input).
-import { action, loader, manifest } from "@keel/router";
+import { action, guard, loader, manifest } from "@keel/router";
 import { matchHref } from "@keel/router/match";
-import { ok, s } from "@keel/schema";
+import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
@@ -78,5 +78,14 @@ describe("k.api", () => {
       return m.href("t.none");
     });
     expect(neither).toBe("E1510");
+  });
+
+  it("A guard without `redirect` on a page does not compile and `manifest()` throws E1508; on an API route it builds clean.", () => {
+    const open = guard({}, async () => err(s.error("keel.denied", s.object({})).make({})));
+    // @ts-expect-error a guard without redirect guards API routes only
+    const bad = () => manifest({ "t.one": { path: "/t", component: page, guard: open } });
+    expect(codeOf(bad)).toBe("E1508");
+    expect(build({ path: "/t", component: page, guard: open })).toBe("E1508");
+    expect(build({ api: true, path: "/t", loader: read, guard: open })).toBeNull();
   });
 });
