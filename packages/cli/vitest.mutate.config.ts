@@ -19,6 +19,7 @@ export default mergeConfig(
         "conformance/artifact-routes-literals.test.ts",
         "conformance/artifact-tamper-e1005.test.ts",
         "conformance/check-budget-injected10.test.ts",
+        "conformance/dev-port-0091.test.ts",
         "conformance/ledger-diff-e1706-cli.test.ts",
         "conformance/ledger-diff-e1707-cli.test.ts",
         "conformance/ledger-rung-promotion-cli.test.ts",

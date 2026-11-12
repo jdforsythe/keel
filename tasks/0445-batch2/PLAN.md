@@ -50,5 +50,7 @@
 - check stopped at its 30 m budget at 9,489 of 10,261 mutants; compiler at 9,762 of 10,606; scaffold at 3,587 of 3,704: no score, run again to resume.
 - cli: Stryker's dry run had failing tests ("There were failed tests in the initial test run"); reactive: "No tests were executed". Neither has a score. cli's dry run met batch 3's in-flight cli edits, and may also be the first real sandbox run of the tests 0443 un-excluded; reactive needs a look at its mutate config and changed scope.
 
+- Diagnosed without Stryker: cli's sandbox dry run fails on `conformance/dev-port-0091.test.ts` (it spawns `bin.ts` three levels up, which the sandbox copy lacks), now in the mutation-only exclude list; whether that file existed when the cli dry run ran is not established, so the next run decides. reactive: the scoped run passes the changed files as vitest `related` files and no test imported `src/internal/index.ts` or `reaction.ts`; `packages/reactive/test/internal-reaction.test.ts` (4 tests) imports them.
+
 ## Next action
 Run `pnpm mutate:changed --base e192395` again, alone, after batch 3's review pass (it resumes check, compiler and scaffold); diagnose the cli and reactive dry runs first. Record the scores in `docs/HANDOFF.md`.
