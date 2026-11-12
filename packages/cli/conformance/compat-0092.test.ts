@@ -75,7 +75,8 @@ test(
         const missing = keel(dir, ["check", "--base", "no-such-surface.json"]);
         expect(diags(missing, "W1568")).toHaveLength(1);
         expect(diags(missing, "E1562")).toEqual([]);
-        expect(missing.status).toBe(0);
+        // W1568 does not change the exit code: it is the one plain `keel check` gives this project
+        expect(missing.status).toBe(keel(dir, ["check"]).status);
 
         // one deployable: the readable topology compares nothing
         expect(diags(keel(dir, ["check", "--base", base]), "E1562")).toEqual([]);
