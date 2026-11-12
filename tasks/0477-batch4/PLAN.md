@@ -15,10 +15,14 @@
 - [ ] 4 S4: conformance-writers per lane, then the implementation batch (tracked in tasks/0310-s4-realtime/PLAN.md)
 - [ ] 5 reviewer and red-team over this batch's diff; ledger, budgets, changesets, backlog, handoff, push
 
+## Notes
+- lane A done: Amendment in `docs/rfc/0091-friction-batch3.md` (AM-1 blank optional strings absent in `decodeStrings` and forms `coerceText`; AM-2 the `keel.unreachable` mapping for `module` services only, read bounded at 1 KiB on the stream since the server's 502 carries no `content-length`; AM-3 `keel dev` starts Vite in process and uses the config's `server.port`); spec sentences in k.schema, k.forms, k.services, k.cli; conformance committed (schema, forms `blank-optional-0091`, services `network-failure`, cli `dev-port-0091`: the cli file takes about 160 s). Consequences: a whitespace-only `KEEL_ORIGIN` reads as unset; a whitespace-only nullable key still fails `required`. Implementation agents running: AM-1 and AM-2 (schema, forms, services); AM-3 (cli).
+- lane P done (committed): S4 prep; decisions D5-D16 and the lane table are in tasks/0310-s4-realtime/PLAN.md. To settle in S4's kernel or offline lane: what an outbox entry becomes on a 502 `keel.unreachable` (a `base` service now reports `api.status`, so `failed`, not `queued`). S4 conformance-writers running: k.sync (store, ctx, server), std.channels, std.live and std.offline; std.multi and std.conflicts next. S4 conformance is committed red (wip) and goes green lane by lane.
+
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green
 - [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
 - [ ] mutation scores recorded for every package batches 2 and 3 changed
 
 ## Next action
-Collect lanes M, P, L, A; commit each by explicit path after `node tooling/format-check.mjs`.
+Collect: lane L (S3 leftovers), lane M (mutation), the two amendment implementers, three S4 conformance-writers. Then the std.multi and std.conflicts writers, then S4 implementation: the kernel lane first (K1+K2, K4, K3 per the S4 plan), stdlib lanes as their needs land.
