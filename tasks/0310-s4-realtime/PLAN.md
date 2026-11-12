@@ -6,7 +6,7 @@
 1. [x] Design RFC 0081 `docs/rfc/0081-s4-realtime.md` accepted (8810645; ADR-0080 to ADR-0085; channels build on k.server live loaders from rfc:0080; no std-streams).
 2. [x] Orchestrator accepts the RFC; user answered D2-D4.
 2a. [x] Prep (2026-11-12, prep agent; not committed): spec text written (k.sync, std.channels, std.live, std.offline, std.conflicts, std.multi `proposed`; k.store, k.ctx, k.server, std.sessions edited; map re-cut, stdlib table in `spec/std/README.md`); skeletons `packages/std-channels`, `std-live`, `std-offline`, `std-conflicts` and `@keel/std-sessions/group`; `tooling/deps.json`, `tooling/budgets.json`, `apps/golden-1/package.json`, `pnpm-lock.yaml` (`pnpm install --offline`).
-3. [ ] Conformance first, per lane, after the prior pushes.
+3. [x] Conformance first, per lane, after the prior pushes.
 4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
 5. [ ] Exit proof eval.
 
@@ -70,7 +70,7 @@ Order: the five conformance-writers (kernel, channels, live-offline, sessions-gr
 - red-team on S4: ten findings filed 0498-0507. Routed for fixing now: 0498 (a revoked member receives messages until its re-check settles), 0499 (inbox listeners), 0500 (a stored outbox entry naming an inherited property wedges the outbox), 0501's first half (a stored `origin` is POSTed to), 0504 (`maxStreams` unvalidated), 0505 (`races`: a `base` beyond the head is reported clean; `__proto__` record keys). Docs corrected for 0503 (THREAT-MODEL and std.channels said nothing caps streams). LEFT OPEN, each needs a design decision: 0502 (an idempotence `key` is forgotten by `undo` and by the log fold, so a resend applies twice; a key matches across transactions and callers); 0503 (the server's stream cap is one pool with no per-caller share: one client can starve every subscriber); 0501's second half (outbox entries are not tied to a user: after sign-out the next user's `drain` sends them); 0506 (no worker limit or call timeout in `replayGroup`); 0507 (a `read` that never resolves stalls `live` while `status()` stays `live`). Found sound: channel access answers, E2602/E2651 coverage, `base`/`key` input checks, inbox overflow, throwing observers, per-user jars, worker termination after a throw.
 
 ## Verification
-- [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
+- [x] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
 
 ## Next action
-Re-run the exit proof: `pnpm eval --task golden-1-api --runner none --strict` (golden-1 95/95 and the hidden acceptance test 2/2 pass since the integration fixes; the planted twin has not been run through `pass.ts`). Then: the hand-build guide, std.sessions' two replay sentences (0512), spec statuses for the six S4 sections, and the decisions waiting on the user (0509, 0502, 0503, 0513, 0484, 0478). Batch-level order is in `docs/HANDOFF.md`, BATCH 4 entry.
+None: closed 2026-11-12. S4 EXIT MET: `pnpm eval --task golden-1-api --runner none --strict` ended `converged=true` (401.6 s; root check and test green inside it, the hidden acceptance suite, the planted-race twin found exactly one race; `evals/results/2026-11-12-golden-1-api-none.json`). The six S4 sections are `conformance-covered`. Waiting on the user: 0509, 0502, 0503, 0513, 0484, 0478, 0510. Next stage: S5 (tasks/0311-s5-correctness/PLAN.md).

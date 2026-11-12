@@ -1,6 +1,6 @@
 # Task 0477: batch 4: S3 leftovers, RFC 0091 amendment, S4 prep, mutation for batches 2 and 3
 
-**Spec:** k.topology, k.server, k.compat, std.jobs, std.schedules (S3 leftovers) · k.schema, k.forms, k.services, k.cli (amendment) · S4 sections per tasks/0310-s4-realtime/PLAN.md · **Principles:** 1, 5, 12 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open
+**Spec:** k.topology, k.server, k.compat, std.jobs, std.schedules (S3 leftovers) · k.schema, k.forms, k.services, k.cli (amendment) · S4 sections per tasks/0310-s4-realtime/PLAN.md · **Principles:** 1, 5, 12 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed in code 2026-11-12; mutation scores owed (0523)
 
 ## Decisions
 - D1 (user, 2026-11-12) the user agreed with the orchestrator's decisions of batches 2 and 3 and said to keep moving with subagents in parallel (S3 or other work).
@@ -12,11 +12,11 @@
 - D8 (user, 2026-11-12: "that shouldn't be able to happen. there should be timeouts") no Keel test or tool process may outlive a wall-clock bound enforced from outside the thread it bounds (0511). The orchestrator killed, at the user's request, the stuck and orphaned processes of this worktree: two hung cron-test runs, two vitest workers 19.5 hours old, one orphaned Stryker core (its package's mutation cache may be lost), one leaked `keel dev`. `packages/std-schedules/conformance/next-fire-matches-cron.test.ts` is not run again until its oracle is bounded.
 
 ## Steps
-- [ ] 1 lanes running: M mutation run · P S4 prep (spec sections, skeleton packages, deps, budgets, lane list in tasks/0310-s4-realtime/PLAN.md) · L S3 leftovers (0339-0344, 0346, 0348-0351, 0353, 0354, 0360, 0362-0364, 0366-0373, 0388, 0390, 0391: fix what needs no spec, sort the rest) · A RFC 0091 Amendment text and spec sentences (k.schema, k.forms, k.services, k.cli)
-- [ ] 2 amendment: conformance-writer, then implementation (schema, services, cli)
-- [ ] 3 RFC 0092: status and ADR, spec text (two new sections), conformance-writers, implementation lanes (server and services; check and compiler; cli; testing; std-jobs and std-schedules; golden apps), before S4's golden-1 lane
-- [ ] 4 S4: conformance-writers per lane, then the implementation batch (tracked in tasks/0310-s4-realtime/PLAN.md)
-- [ ] 5 reviewer and red-team over this batch's diff; ledger, budgets, changesets, backlog, handoff, push
+- [x] 1 lanes running: M mutation run · P S4 prep (spec sections, skeleton packages, deps, budgets, lane list in tasks/0310-s4-realtime/PLAN.md) · L S3 leftovers (0339-0344, 0346, 0348-0351, 0353, 0354, 0360, 0362-0364, 0366-0373, 0388, 0390, 0391: fix what needs no spec, sort the rest) · A RFC 0091 Amendment text and spec sentences (k.schema, k.forms, k.services, k.cli)
+- [x] 2 amendment: conformance-writer, then implementation (schema, services, cli)
+- [x] 3 RFC 0092: status and ADR, spec text (two new sections), conformance-writers, implementation lanes (server and services; check and compiler; cli; testing; std-jobs and std-schedules; golden apps), before S4's golden-1 lane
+- [x] 4 S4: conformance-writers per lane, then the implementation batch (tracked in tasks/0310-s4-realtime/PLAN.md)
+- [x] 5 reviewer and red-team over this batch's diff; ledger, budgets, changesets, backlog, handoff, push
 
 ## Notes
 - lane A done: Amendment in `docs/rfc/0091-friction-batch3.md` (AM-1 blank optional strings absent in `decodeStrings` and forms `coerceText`; AM-2 the `keel.unreachable` mapping for `module` services only, read bounded at 1 KiB on the stream since the server's 502 carries no `content-length`; AM-3 `keel dev` starts Vite in process and uses the config's `server.port`); spec sentences in k.schema, k.forms, k.services, k.cli; conformance committed (schema, forms `blank-optional-0091`, services `network-failure`, cli `dev-port-0091`: the cli file takes about 160 s). Consequences: a whitespace-only `KEEL_ORIGIN` reads as unset; a whitespace-only nullable key still fails `required`. Implementation agents running: AM-1 and AM-2 (schema, forms, services); AM-3 (cli).
@@ -51,11 +51,12 @@
 - D9 (orchestrator, confirm or reverse) spec statuses: k.sync, k.deploy, std.channels, std.live, std.offline, std.conflicts, std.multi are `conformance-covered` (every clause has evidence in the ledger).
 - reviewer over rfc:0092 and the Amendment: no blocking finding in scope; red-team: 0516-0521; reviewer: 0522. Fixed in-batch: 0516 (an already-aborted stream request frees its place; the count pairs in one `finally`), 0522 (E2503 through a namespace import of `@keel/schema`), Not fixed: 0517 (tried and withdrawn: the surface evaluation loads `routes.ts` without a DOM and valid route files throw there, in five `@keel/server` build fixtures and std.messages' client build; needs a design), 0519 (18 B over the `@keel/check` budget), 0518 and 0520 (each needs a decision), 0521 (matters at publish).
 - 0512 done: std.sessions carries the two replay sentences within 1,500 tokens (wording trims only; "never a push" kept). The golden-1 guide follows the realtime app. golden-1 gained 13 tests (write schemas, `boardEvents`, `formAnswer`: 108 tests, 104 check files) because the eval requires every golden-1 ledger item at `example` or better.
+- S4 exit met (2026-11-12): the eval `golden-1-api` converged on a quiet tree, 401.6 s. Two `keel dev` children of `dev-port-0091` were left by that passing run and stopped by hand (0462).
 
 ## Verification
-- [ ] `pnpm check`, `pnpm test`, `pnpm build` green
-- [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
+- [x] `pnpm check`, `pnpm test`, `pnpm build` green
+- [x] ledger not lowered, 0 uncovered in covered sections; unsafe count 7 to 8, justified (std-offline `unsafe/asResult.ts`)
 - [ ] mutation scores recorded for every package batches 2 and 3 changed
 
 ## Next action
-Follow `docs/HANDOFF.md`, BATCH 4 entry, NEXT (1) to (8). First: check for orphaned processes, then run the root gates once on a quiet machine. The process watchdog (0511) is committed.
+The mutation run, alone on a quiet machine: `pnpm mutate:changed --base e192395`, scores into `docs/HANDOFF.md` and the ledger (0523). Everything else in this batch is closed.

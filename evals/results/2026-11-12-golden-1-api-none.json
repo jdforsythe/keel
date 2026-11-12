@@ -31,7 +31,7 @@
   ],
   "model": "none",
   "runner": "none",
-  "converged": false,
+  "converged": true,
   "iterations": 1,
   "tokens": {
     "input": 0,
@@ -39,8 +39,8 @@
   },
   "costUsd": 0,
   "unsafeCount": 5,
-  "checkTrailer": "ok budgets 92 measured (3.9s)",
-  "testTrailer": " ELIFECYCLE  Test failed. See above for more details.",
-  "durationMs": 90859,
-  "startedAt": "2026-11-12T19:33:36.527Z"
+  "checkTrailer": "ok budgets 92 measured (5.7s)",
+  "testTrailer": "ok test 64 tasks (257.2s)",
+  "durationMs": 401635,
+  "startedAt": "2026-11-12T20:40:31.169Z"
 }
