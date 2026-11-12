@@ -543,3 +543,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 
 ## Batch 4, 2026-11-12 (tasks/0477-batch4)
 - [ ] 0477 batch 4: S3 leftovers, the RFC 0091 Amendment (0466, 0468, 0471), S4 prep, mutation for batches 2 and 3 · tasks/0477-batch4/PLAN.md
+- [ ] 0478 std-channels: every cookieless caller has caller `""`, so all of them together share one `perCaller` allowance (8 streams per process); decide whether cookieless opens get their own bound or are refused · std-channels · std.channels
