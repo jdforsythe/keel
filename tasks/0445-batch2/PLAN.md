@@ -45,5 +45,10 @@
 - [x] ledger not lowered, 0 uncovered; unsafe count unchanged (7)
 - [x] golden-1 list page: focus stays on the toggled control (test): met as D5 states (runtime-dom conformance for identity and focus; golden-1 asserts the a11y tree)
 
+## Mutation (run of 2026-11-12, `pnpm mutate:changed --base e192395`, 6,456 s, made while batch 3's lanes were editing and testing the same tree)
+- router 82.0% (threshold 80%), runtime-dom 80.5% (70%), server 83.7% (70%), ui 74.5% (70%): above threshold.
+- check stopped at its 30 m budget at 9,489 of 10,261 mutants; compiler at 9,762 of 10,606; scaffold at 3,587 of 3,704: no score, run again to resume.
+- cli: Stryker's dry run had failing tests ("There were failed tests in the initial test run"); reactive: "No tests were executed". Neither has a score. cli's dry run met batch 3's in-flight cli edits, and may also be the first real sandbox run of the tests 0443 un-excluded; reactive needs a look at its mutate config and changed scope.
+
 ## Next action
-When the mutation run ends (`pnpm mutate:status`): record each package's score in `docs/HANDOFF.md` (mutation line) and here; a package under threshold (docs/TESTING.md) gets tests or a backlog line. Then tick step 5 and 0445 in `tasks/BACKLOG.md`.
+Run `pnpm mutate:changed --base e192395` again, alone, after batch 3's review pass (it resumes check, compiler and scaffold); diagnose the cli and reactive dry runs first. Record the scores in `docs/HANDOFF.md`.
