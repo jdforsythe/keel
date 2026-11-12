@@ -3,7 +3,7 @@
 // Assumption: config reaches `createApp({ std })` from the serving module's manifest `std: { '@keel/std-channels': { perCaller } }`.
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { serve, settle, waitFor } from "./fixtures.ts";
+import { type Stream, serve, settle, waitFor } from "./fixtures.ts";
 
 const CLAUSE =
   "An open past `perCaller` streams for one caller gets `{ kind: 'closed', reason: 'full' }` as its only event, and the earlier streams continue.";
@@ -13,7 +13,7 @@ async function check(perCaller: number | undefined, cap: number): Promise<void> 
   try {
     const cookie = await h.enroll();
     const other = await h.enroll();
-    const kept = [];
+    const kept: Stream[] = [];
     for (let i = 0; i < cap; i++) kept.push(await h.open("r", cookie));
     await waitFor(() => kept.every((st) => st.events.length >= 1));
     const over = await h.open("r", cookie);

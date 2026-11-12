@@ -2,7 +2,7 @@
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { serve, settle, waitFor } from "./fixtures.ts";
+import { type Stream, serve, settle, waitFor } from "./fixtures.ts";
 
 test("After a save that makes `member` false for an open stream's caller, that stream gets `{ kind: 'closed', reason: 'denied' }` and ends, and the other members' streams continue.", async () => {
   await fc.assert(
@@ -12,7 +12,7 @@ test("After a save that makes `member` false for an open stream's caller, that s
       try {
         const cookies: string[] = [];
         for (let i = 0; i < count; i++) cookies.push(await h.enroll());
-        const streams = [];
+        const streams: Stream[] = [];
         for (const c of cookies) streams.push(await h.open("r", c));
         await waitFor(() => streams.every((st) => st.events.length >= 1));
         await h.leave(cookies[gone] ?? "");

@@ -186,7 +186,7 @@ export async function serve(o: ServeOptions = {}): Promise<Harness> {
       return o.member === undefined ? stores.members.get("ids").includes(caller) : o.member(caller);
     },
   });
-  const join = action({ input: Nothing, stores: factory }, async (_i, { caller, stores }) => {
+  const joinAction = action({ input: Nothing, stores: factory }, async (_i, { caller, stores }) => {
     tx(stores.join, { id: caller });
     return ok(null);
   });
@@ -218,7 +218,7 @@ export async function serve(o: ServeOptions = {}): Promise<Harness> {
   });
   routes.actions({
     "chan.room": route.actions,
-    "chan.join": { POST: join },
+    "chan.join": { POST: joinAction },
     "chan.leave": { POST: leave },
     "chan.bump": { POST: bump },
     "chan.note": { POST: note },

@@ -5,6 +5,7 @@
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
 import { check } from "@keel/check";
 import { s } from "@keel/schema";
+import type { Schema } from "@keel/schema";
 import { channel } from "@keel/std-channels";
 import "@keel/std-channels/tools";
 import fc from "fast-check";
@@ -34,8 +35,8 @@ const wrap = (inner: string, depth: number, kind: "object" | "array"): string =>
   for (let i = 0; i < depth; i++) out = kind === "object" ? `s.object({ k: ${out} })` : `s.array(${out})`;
   return out;
 };
-const wrapSchema = (inner: ReturnType<typeof s.string>, depth: number, kind: "object" | "array"): unknown => {
-  let out: unknown = inner;
+const wrapSchema = (inner: Schema<unknown>, depth: number, kind: "object" | "array"): Schema<unknown> => {
+  let out: Schema<unknown> = inner;
   for (let i = 0; i < depth; i++)
     out =
       kind === "object" ? Reflect.apply(s.object, undefined, [{ k: out }]) : Reflect.apply(s.array, undefined, [out]);
