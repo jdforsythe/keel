@@ -4,7 +4,7 @@
 
 ## Decisions
 - D1 (user, 2026-11-12) the user agreed with the orchestrator's decisions of batches 2 and 3 and said to keep moving with subagents in parallel (S3 or other work).
-- D2 (orchestrator, under D1) the three red-team findings that questioned RFC 0091 are answered in an Amendment to it: a blank value for an optional key is absent in `decodeStrings` (0468); the `keel.unreachable` to `api.network` mapping applies to `service({ module })` calls only, with a bounded body read (0471); `keel dev` without `--port` uses the port Vite resolves from the project's config (0466). 0470 (the OpenAPI importer and `minLength: 1`) stays open for the user.
+- D2 (orchestrator, under D1) the three red-team findings that questioned RFC 0091 are answered in an Amendment to it: a blank value for an optional key is absent in `decodeStrings` (0468); the `keel.unreachable` to `api.network` mapping applies to `service({ module })` calls only, with a bounded body read (0471); `keel dev` without `--port` uses the port Vite resolves from the project's config (0466). 0470 is closed by the user (2026-11-12): a blank value does not meet `min` 1, in the importer's mapping too.
 - D3 (orchestrator) the mutation run for batches 2 and 3 (`pnpm mutate:changed --base e192395`) runs in the background while lanes work, as the user asked for parallel work; a package that stops at its budget is resumed by a later run.
 
 ## Steps
