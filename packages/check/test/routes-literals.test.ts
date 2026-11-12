@@ -109,8 +109,8 @@ export const routes = manifest({ "m.home": { api: true, path: "/home" } });
 
   it("an api member that is not a literal is not compared (W1005 names it)", () => {
     const ts = `import { manifest } from "@keel/router";
-const yes = true;
-export const routes = manifest({ "m.home": { api: yes, path: "/home" } });
+const yes = () => true;
+export const routes = manifest({ "m.home": { api: yes(), path: "/home" } });
 `;
     const ds = run(project(prefix, { "m.home": entry({ api: true }) }, ts));
     expect(at(ds, "E1005", json)).toEqual([]);

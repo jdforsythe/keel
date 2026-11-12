@@ -1,4 +1,5 @@
 import { type Expression, parseSync } from "oxc-parser";
+import { deployableNameProblem } from "../hosting/deployableNameProblem.ts";
 import type { Topology } from "../types/Topology.ts";
 import { HOST_NOT_LITERAL } from "./HOST_NOT_LITERAL.ts";
 
@@ -21,8 +22,8 @@ const isAdapter = (v: string): v is Deployable["adapter"] => ADAPTERS.some((x) =
 
 /**
  * Read `topology.ts` statically (k.server Topology): `export default topology({ name: { modules: [...],
- * adapter, host? } })` (or a bare object). Only literal deployable names, module ids, adapters and hosts count; anything
- * else is a problem (one short line each) and the deployable is skipped, except a `host` that is not a string literal,
+ * adapter, host? } })` (or a bare object). Only literal deployable names (in the form `deployableNameProblem` takes),
+ * module ids, adapters and hosts count; anything else is a problem (one short line each) and the deployable is skipped, except a `host` that is not a string literal,
  * which is dropped from the kept deployable. Nothing is executed.
  */
 export function parseTopology(source: string): { topology: Topology; problems: string[] } {
@@ -47,6 +48,11 @@ export function parseTopology(source: string): { topology: Topology; problems: s
     const name = p.type === "Property" && !p.computed ? keyName(p.key) : undefined;
     if (p.type !== "Property" || name === undefined) {
       problems.push("deployable name is not a literal");
+      continue;
+    }
+    const bad = deployableNameProblem(name);
+    if (bad !== undefined) {
+      problems.push(bad);
       continue;
     }
     const v = unwrap(p.value);

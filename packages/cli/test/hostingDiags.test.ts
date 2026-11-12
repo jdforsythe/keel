@@ -50,6 +50,32 @@ describe("hostingDiags", () => {
     expect(r.stdout).toContain("E1566");
   });
 
+  it("fails keel build with E1552 on an adapter, modules or name the static read cannot take", async () => {
+    for (const [deployable, message] of [
+      [
+        'api: { modules: ["a"], adapter: ADAPTER }',
+        "api: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
+      ],
+      [
+        'api: { modules: MODULES, adapter: "node" }',
+        "api: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
+      ],
+      [
+        'Api: { modules: ["a"], adapter: "node" }',
+        "Api: name must be lowercase letters, digits and -, starting with a letter",
+      ],
+    ]) {
+      const source = `export default topology({ ${deployable} })`;
+      const r = await run(["build", "--format=json"], { cwd: "/p", env: {}, files: [{ path: "topology.ts", source }] });
+      expect(r.code, deployable).not.toBe(0);
+      const diags = r.stdout
+        .split("\n")
+        .filter((l) => l.includes('"E1552"'))
+        .map((l) => JSON.parse(l));
+      expect(diags.map((d) => [d.path, d.see, d.message])).toEqual([["topology.ts", "k.topology", message]]);
+    }
+  });
+
   it("fails keel build with no writes", async () => {
     const r = await run(["build", "--format=json"], {
       cwd: "/p",

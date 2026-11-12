@@ -84,17 +84,36 @@ function imported(program: Program, local: string): [string, string] | undefined
   return undefined;
 }
 
+type At = { file: string; program: Program; parse: Parsed; acts: Map<string, Expression> | null };
+
 /**
- * The `redirect` of the guard bound to `name` in the manifest `file`: a `const` there, or one imported from a relative
- * module, initialized as `guard({ redirect: "<literal>" }, fn)`; `null` for `guard({...}, fn)` with no `redirect` and no
- * spread or computed key. Undefined when it does not resolve to either shape.
+ * `e` unwrapped and, while an identifier, followed (8 hops at most) to the initializer that binds it: a top-level
+ * declaration of `at.file`, else one a relative module it imports from declares under the imported name; with the
+ * file that initializer is read in.
  */
-function guardRedirect(file: string, program: Program, name: string, parse: Parsed): string | null | undefined {
-  const imp = imported(program, name);
-  const at = imp?.[0].startsWith(".") ? join(file.split("/").slice(0, -1).join("/"), imp[0]) : undefined;
-  const other = at === undefined ? undefined : (parse(at) ?? parse(`${at}.ts`));
-  const init = declared(program, name) ?? (other && imp && declared(other, imp[1]));
-  if (init?.type !== "CallExpression" || init.callee.type !== "Identifier" || init.callee.name !== "guard")
+function follow(e: Expression, from: At): [Expression, At] {
+  let v = unwrap(e);
+  let at = from;
+  for (let hop = 0; hop < 8 && v.type === "Identifier"; hop++) {
+    const local = declared(at.program, v.name);
+    const imp = imported(at.program, v.name);
+    const file = imp?.[0].startsWith(".") ? join(at.file.split("/").slice(0, -1).join("/"), imp[0]) : undefined;
+    const other = local || file === undefined ? undefined : (at.parse(file) ?? at.parse(`${file}.ts`));
+    const init = local ?? (other && imp && declared(other, imp[1]));
+    if (init === undefined) break;
+    if (other && file !== undefined) at = { ...at, file, program: other };
+    v = init;
+  }
+  return [v, at];
+}
+
+/**
+ * The `redirect` of the guard `g`, followed to `guard({ redirect: "<literal>" }, fn)`; `null` for `guard({...}, fn)`
+ * with no `redirect` and no spread or computed key. Undefined when it does not resolve to either shape.
+ */
+function guardRedirect(g: Expression, at: At): string | null | undefined {
+  const [init] = follow(g, at);
+  if (init.type !== "CallExpression" || init.callee.type !== "Identifier" || init.callee.name !== "guard")
     return undefined;
   const decl = init.arguments[0];
   if (decl === undefined || decl.type === "SpreadElement") return undefined;
@@ -107,26 +126,36 @@ function guardRedirect(file: string, program: Program, name: string, parse: Pars
   return null;
 }
 
+/** A key's name: non-computed, or computed from a literal (`['api']`); undefined otherwise. */
+const propName = (p: { computed: boolean; key: { type: string } }): string | undefined =>
+  !p.computed || p.key.type === "Literal" ? keyName(p.key) : undefined;
+
+/**
+ * The fields of entry `e` (followed, `follow`), each with the file it is read in; a spread of an object that follows
+ * to a literal is merged in order. Undefined when `e`, a spread or a key is not read statically.
+ */
+function fields(e: Expression, at: At, depth = 0): Map<string, [Expression, At]> | undefined {
+  const [v, here] = follow(e, at);
+  if (v.type !== "ObjectExpression" || depth > 8) return undefined;
+  const out = new Map<string, [Expression, At]>();
+  for (const p of v.properties) {
+    const inner = p.type === "SpreadElement" ? fields(p.argument, here, depth + 1) : undefined;
+    const k = p.type === "Property" ? propName(p) : undefined;
+    if (p.type === "SpreadElement" ? inner === undefined : k === undefined) return undefined;
+    for (const [n, x] of inner ?? []) out.set(n, x);
+    if (p.type === "Property" && k !== undefined) out.set(k, [p.value, here]);
+  }
+  return out;
+}
+
 /** One route entry's literal fields; `unread` gets the fields that are not literals. */
-function readRoute(
-  id: string,
-  value: Expression,
-  at: { file: string; program: Program; parse: Parsed; acts: Map<string, Expression> | null },
-  unread: string[],
-): RouteLiteral {
-  const v = unwrap(value);
-  if (
-    v.type !== "ObjectExpression" ||
-    v.properties.some((p) => p.type === "SpreadElement" || (p.type === "Property" && p.computed))
-  ) {
+function readRoute(id: string, value: Expression, at: At, unread: string[]): RouteLiteral {
+  const all = fields(value, at);
+  if (all === undefined) {
     unread.push(id);
     return {};
   }
-  const props = new Map<string, Expression>();
-  for (const p of v.properties) {
-    const k = p.type === "Property" ? keyName(p.key) : undefined;
-    if (p.type === "Property" && k !== undefined) props.set(k, p.value);
-  }
+  const props = new Map([...all].map(([k, [e]]) => [k, e]));
   const out: { -readonly [K in keyof RouteLiteral]: RouteLiteral[K] } = {};
   for (const field of ["path", "layout"] as const) {
     const e = props.get(field);
@@ -134,15 +163,15 @@ function readRoute(
     if (t === undefined) unread.push(`${id} ${field}`);
     else out[field] = t.value;
   }
-  const api = props.get("api");
-  const ap = api === undefined ? undefined : unwrap(api);
+  const api = all.get("api");
+  const ap = api === undefined ? undefined : follow(...api)[0];
   if (ap?.type === "Literal" && typeof ap.value === "boolean") out.api = ap.value;
   else if (ap !== undefined) unread.push(`${id} api`);
-  const g = props.get("guard");
-  const gv = g === undefined ? undefined : unwrap(g);
+  const g = all.get("guard");
+  const gv = g === undefined ? undefined : unwrap(g[0]);
   if (gv === undefined || (gv.type === "Literal" && gv.value === null) || isUndefined(gv)) out.guard = null;
   else {
-    const redirect = gv.type === "Identifier" ? guardRedirect(at.file, at.program, gv.name, at.parse) : undefined;
+    const redirect = g === undefined ? undefined : guardRedirect(...g);
     if (redirect === undefined) unread.push(`${id} guard`);
     else out.guard = redirect;
   }
@@ -359,7 +388,7 @@ export function routeLiterals(
         else open(`${spec ?? file} ${textOf(file)?.slice(p.start, p.end)}`);
         continue;
       }
-      const id = p.computed ? undefined : keyName(p.key);
+      const id = propName(p);
       if (id === undefined) open(`${spec ?? file} ids`);
       else routes.set(id, readRoute(id, p.value, { file, program, parse: within, acts }, unread));
     }

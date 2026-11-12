@@ -18,7 +18,7 @@ import { prefixCollisions } from "./internal/prefixCollisions.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { runRules } from "./internal/runRules.ts";
 import { summarize } from "./internal/summarize.ts";
-import { topologyHosts } from "./internal/topologyHosts.ts";
+import { topologyDiags } from "./internal/topologyDiags.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
@@ -95,7 +95,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
-      out.push(...topologyHosts(dir, topology, top));
+      out.push(...topologyDiags(dir, topology, top));
     }
     for (const d of compiled.diagnostics) {
       const path = d.path === "" ? d.path : `${dir}${d.path}`;

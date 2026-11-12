@@ -418,10 +418,10 @@ const ROWS: readonly Row[] = [
   ["E1551", "loader or action declared outside a *.server.ts file", "", "move it into <route>.server.ts", "k.server"],
   [
     "E1552",
-    "topology names an unknown module or one module in two deployables",
+    "topology.ts is not statically readable, a deployable name is not [a-z][a-z0-9-]*, or a module is unknown or in two deployables",
     "",
-    "list each existing module in exactly one deployable",
-    "k.server",
+    "write literal names, modules and adapters; list each existing module in exactly one deployable",
+    "k.topology",
   ],
   [
     "E1553",

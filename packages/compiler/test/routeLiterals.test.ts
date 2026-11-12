@@ -128,6 +128,29 @@ describe("routeLiterals", () => {
     });
   });
 
+  it("follows an entry, a spread and api to constants, here or in a relative module, and literal computed keys", () => {
+    const base = {
+      path: "modules/m/base.ts",
+      source: 'const on = true;\nexport const base = { api: on, path: "/b" };\n',
+    };
+    const r = read(
+      `"m.a": e, ["m.b"]: { ...base, ["path"]: "/c" }, "m.c": { api: yes }`,
+      `import { base } from "./base";\nconst yes = true;\nconst e = { ...base };`,
+      [base],
+    );
+    expect([r?.routes["m.a"], r?.routes["m.b"]?.path, r?.routes["m.c"]?.api, r?.unread]).toEqual([
+      { path: "/b", layout: null, api: true, guard: null, actions: [], params: false, search: false },
+      "/c",
+      true,
+      [],
+    ]);
+  });
+
+  it("leaves an entry unread when a spread, a key or the entry does not follow to a literal", () => {
+    for (const body of [`"m.a": { ...f() }`, `"m.a": { [k]: true }`, `"m.a": make()`, `"m.a": { ...gone }`])
+      expect(read(body)?.unread).toEqual(["m.a"]);
+  });
+
   describe("guard", () => {
     const route = `"m.a": { guard: g }`;
     it("reads a locally declared guard redirect", () => {

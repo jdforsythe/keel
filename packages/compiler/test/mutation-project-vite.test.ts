@@ -424,7 +424,7 @@ describe("vite: project inputs", () => {
     const p = keel();
     expect(() => p.configResolved({ root, command: "build" })).toThrow(
       new Error(
-        "keel: topology.ts: a: not an object; b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
+        "E1552 topology.ts a: not an object\nE1552 topology.ts b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
       ),
     );
     const q = keel();
@@ -434,7 +434,7 @@ describe("vite: project inputs", () => {
     const warnings: string[] = [];
     await r.buildStart.call({ warn: (m: string) => void warnings.push(m) });
     expect(warnings).toEqual([
-      "keel: topology.ts: a: not an object; b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
+      "E1552 topology.ts a: not an object\nE1552 topology.ts b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
     ]);
   });
 

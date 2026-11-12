@@ -7,12 +7,14 @@
 - D3 E1405 is specified in k.component Shape beside E1401; lane A owns the compiler rule files, lane C owns only `packages/compiler/test/clientBuild.test.ts` in the compiler.
 - D4 (orchestrator) a `PORT` that cannot be bound is E1560 (the environment failing at startup), not a new code; k.topology Build says so (the section is at its 1,500-token limit, so the listening line is held by the server test only). The server prints `ok listening on port N` once listening. `keel build` counts every artifact it is responsible for, written or unchanged (k.cli is silent and at its token limit: the cli test holds it).
 - D5 (orchestrator) the golden-1 verification line is met by the runtime-dom conformance file (element identity and `document.activeElement` across a refresh, an insert and a removal) and a golden-1 test that a toggle changes one checked state in an otherwise identical a11y tree; an app-level focus assertion needs a k.testing change (backlog 0446, an RFC), not taken in this batch. No browser pass was run.
+- D6 (orchestrator, confirm or reverse) E1552 is widened rather than a new code: a `topology.ts` the static read cannot take (non-literal name, `modules`, `adapter`; no `topology({...})`; a syntax error) and a deployable name outside the one form are E1552 from `keel check`, `keel build` and the server's `topology()`. k.topology Rules and the explain row say so.
+- D7 (orchestrator, confirm or reverse) deployable names are `[a-z][a-z0-9-]*` (the form the server conformance files already generate). Two consequences are filed, not fixed: `KEEL_PEER_<NAME>` for a name with `-` is not a POSIX variable name (0449); the scaffold's E1352 form is lowerCamel, so it refuses `-` and accepts `apiEdge`, which every reader now refuses (0450).
 - D2 wave 1 lanes, disjoint packages: (A) runtime-dom, reactive, ui, check: RFC 0090; (B) scaffold: 0437; (C) compiler, cli, server `start`: 0444, 0398, 0399, 0379 message; (F) router: 0433. Wave 2 after A and C land: 0409, 0431, 0440 (check, compiler), 0443 (tests locate the repo from the mutation sandbox), 0389.
 
 ## Steps
 - [x] 1 RFC 0090 accepted, ADR-0113, k.component text (Control flow sentence, E1405 in Shape, two Conformance clauses; E1405 in k.check's fix list), conformance files (runtime-dom `for-keyed-rows-0090`, check `E1405-top-level-prop-read`, E1405 in `fixtures-by-code.ts` and `fix-diffs.test.ts`): committed bebbef9 (wip, tests red until lane A lands). The runtime-dom tests drive the `list` op from `@keel/runtime-dom/ops`.
 - [x] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation, from the held patches in `tasks/0432-friction-batch1/`) running
-- [ ] 3 wave 2 lanes
+- [ ] 3 wave 2 lanes: 0389, 0431, 0409, 0440 done; 0443 not started
 - [ ] 4 reviewer and red-team; findings to the backlog
 - [ ] 5 ledger, budgets, mutation for changed packages, backlog, handoff, push
 
@@ -28,10 +30,13 @@
 - lane A reported (RFC 0090), committed f6ccd57: both held patches applied unchanged; `for-keyed-rows-0090` 8/8; `@keel/ui` binds every prop given as a getter (`as` and `level` choose the tag and stay read-once), `test/keptRow.test.ts`; E1405 in `compiler/src/internal/rules/ruleTopLevelPropRead.ts`, one hit in the repo (golden-1 `ListPage.tsx`, fixed with the rule's fix). Bytes: runtime-dom 4,128, ui 3,453, compiler 28,153, check 42,489. Rule limits filed 0447. k.component E1405 sentence made exact.
 - lane F's manifest typing (530af9c) turned E1510/E1508 into E1751 in 9 check tests; fixed in `router/src/types/RouteTitles.ts` (each member is a `RouteDef`, so a refused entry fails at its own key again); check 1027 pass, root test 56 tasks green.
 
+- wave 2 reported (0431, 0409, 0440): `compiler/src/hosting/topologyReadProblems.ts` replaces `hostLiteralProblems.ts`; `check/src/internal/topologyDiags.ts` replaces `topologyHosts.ts`; `routeLiterals.ts` follows an entry, a spread or an `api:` value to a `const` in the file or a relative import (8 hops) and reads literal computed keys, so E1511 shows from source (silent still: values from calls or conditionals, package imports other than `...x.routes`, namespace or default imports, re-exports, `Object.assign`, non-literal keys); `deployableNameProblem.ts` enforced in `parseTopology` and server `topology()`. compiler 946, check 1030, server 478, cli 558 pass; root test 56 tasks green; root check green but budgets. Bytes: check 42,628 (limit 42,496), compiler 28,415, cli 20,070, server 17,523 (limit 17,408): re-base both at step 5.
+- An agent's formatter run twice reflowed files it did not own (two conformance files, `compiler/vitest.mutate.config.ts`, `server/vitest.stryker.config.mjs`); restored to HEAD both times (0451).
+
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green
 - [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
 - [ ] golden-1 list page: focus stays on the toggled control (test)
 
 ## Next action
-Collect the wave 2 agent (0431, 0409, 0440). Then 0443, then steps 4 and 5 (server budget re-base 17,490 B).
+0443 (tests locate the repo from the mutation sandbox; drop the mutation-only exclusions), then step 4 (reviewer and red-team over `git diff 84238ef...HEAD`), then step 5.

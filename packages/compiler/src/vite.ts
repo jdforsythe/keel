@@ -8,6 +8,7 @@ import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { RESUME_ENTRY } from "./entry/RESUME_ENTRY.ts";
 import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
+import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
@@ -231,13 +232,14 @@ export default function (): {
   const readTopology = (): void => {
     topology = undefined;
     if (!exists("topology.ts")) return;
-    const r = parseTopology(fs.readFileSync(path.join(root, "topology.ts"), "utf8"));
-    if (r.problems.length > 0) {
-      const message = `keel: topology.ts: ${r.problems.join("; ")}`;
+    const source = fs.readFileSync(path.join(root, "topology.ts"), "utf8");
+    const problems = topologyReadProblems(source);
+    if (problems.length > 0) {
+      const message = problems.map(([code, , p]) => `${code} topology.ts ${p}`).join("\n");
       if (command === "build") throw new Error(message);
       warn(message);
     }
-    topology = r.topology;
+    topology = parseTopology(source).topology;
   };
 
   const flush = (): { id: string; file: string }[] => {
