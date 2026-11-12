@@ -169,7 +169,7 @@ Every section stays at or under 1,500 tokens (figures in Spec diff). Package siz
   | `localesLabel` | Language | Sprache | 言語 |
   | `filtersLabel` | Filters | Filter | 絞り込み |
 
-  `BoxShell.tsx` passes `label={props.data.text.navLabel}` and `label={props.data.text.localesLabel}`, `RecipeList.tsx` `label={props.data.text.filtersLabel}`. The names follow the page's locale, as the rest of the page does.
+  `BoxShell.tsx` passes `label={props.data.text.navLabel}` to its `nav` and `label={props.data.text.localesLabel}` to the language switcher, which is a `section` (a region), so the two landmarks differ by role whatever their messages say; `RecipeList.tsx` `label={props.data.text.filtersLabel}`. The names follow the page's locale, as the rest of the page does.
 - **Both:** no change for D-A (their `focus` fires target inputs), D-C (no test asserts the `min` text for an empty value), D-D, D-E or D-F (deployable names `web`, `api`, `sessions`).
 - **Projects outside the repo:** a deployable named with `-` reads `KEEL_PEER_MY_API` where it read `KEEL_PEER_MY-API`; `keel build` regenerates `deploy/compose.yaml` (E1005 otherwise).
 

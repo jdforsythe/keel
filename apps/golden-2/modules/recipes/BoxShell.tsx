@@ -48,7 +48,7 @@ export default function BoxShell(props: Infer<typeof Props> & { readonly childre
             {props.data.text.tagline}
           </Text>
         </Box>
-        <Box as="nav" id="recipes.nav" direction="row" align="center" gap="4">
+        <Box as="nav" id="recipes.nav" label={props.data.text.navLabel} direction="row" align="center" gap="4">
           <Link id="recipes.home" to={routes.href("recipes.index", { locale: props.params.locale })} fg="text">
             {props.data.text.home}
           </Link>
@@ -56,7 +56,16 @@ export default function BoxShell(props: Infer<typeof Props> & { readonly childre
             {props.data.text.newLink}
           </Link>
         </Box>
-        <Box as="nav" id="recipes.locales" direction="row" align="center" gap="3" font="mono" fontSize="xs">
+        <Box
+          as="section"
+          id="recipes.locales"
+          label={props.data.text.localesLabel}
+          direction="row"
+          align="center"
+          gap="3"
+          font="mono"
+          fontSize="xs"
+        >
           <For each={served} key="id">
             {(l) => (
               <Link

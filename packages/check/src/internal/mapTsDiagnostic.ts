@@ -8,8 +8,12 @@ import { manifestEntry } from "./manifestEntry.ts";
 import { nodeAt } from "./nodeAt.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
-/** `@keel/ui` base elements and their a11y-required props (k.ui), reported as E1802 when missing. */
+/**
+ * `@keel/ui` base elements and their a11y-required props (k.ui), reported as E1802 when missing. `Box` needs
+ * `label` only with `as` `nav` or `aside`, so only TypeScript's named missing `label` maps.
+ */
 const A11Y: ReadonlyMap<string, readonly string[]> = new Map([
+  ["Box", ["label"]],
   ["Button", ["children"]],
   ["Checkbox", ["label"]],
   ["Heading", ["level"]],
@@ -131,7 +135,7 @@ export function mapTsDiagnostic(
   const required = tag === null ? undefined : A11Y.get(tag);
   if (required !== undefined && missing !== undefined && required.includes(missing))
     return diag("E1802", `<${tag}> is missing a11y-required prop ${missing}`, "k.ui");
-  if (required !== undefined && MISSING_PROPS.has(d.code) && atTagName(node))
+  if (required !== undefined && tag !== "Box" && MISSING_PROPS.has(d.code) && atTagName(node))
     return diag("E1802", `<${tag}> is missing a11y-required prop ${required.join(" or ")}`, "k.ui");
   if (tag === "For" && missing === "key")
     return diag("E1001", 'For needs key="<field>" naming a field of the item', "k.compiler");

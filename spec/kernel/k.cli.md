@@ -9,7 +9,7 @@ status: conformance-covered
 | `check [paths]` | k.check over the code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
 | `test [paths]` | harness under sim ctx |
 | `build` | production build per deployable |
-| `dev [--port N]` | dev server and log stream on port N (default 5173; in use: E1560, exit 1) |
+| `dev [--port N]` | dev server and log stream (default 5173; in use: E1560) |
 | `spec <id>` / `--for <code>` / `--map` | one section, sections citing a code, or the map |
 | `explain <code>` | <= 120 tokens: meaning and fix pattern |
 | `inspect [url]` | summarize a running dev app's inspect document |
@@ -28,7 +28,7 @@ Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `-
 import { inspector } from '@keel/compiler/inspect/inspector'
 inspector({ id: 'orders.recent', schema: Recent, read: (ctx) => recent(ctx) })
 ```
-Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, also on the dev log). A client-only app's entry posts them.
+Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged). A client-only app's entry posts them.
 
 **Output.** Exactly OUTPUT.md. Default `compact` when stdout is not a TTY or `KEEL_AGENT=1`, else `pretty`. Exit codes: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
 

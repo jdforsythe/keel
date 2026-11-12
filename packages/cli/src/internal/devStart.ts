@@ -8,7 +8,7 @@ import { summary } from "./summary.ts";
 import { viteRun } from "./viteRun.ts";
 
 /** The port `keel dev` serves on without `--port`. */
-export const DEFAULT_DEV_PORT = 5173;
+const DEFAULT_DEV_PORT = 5173;
 
 /**
  * Binary only: `keel dev` over a Vite project. Flags are parsed and validated by the `dev` input schema; a port that

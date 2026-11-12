@@ -3159,6 +3159,12 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       block("link", T("src/A.tsx", `${ui}export default function A() { return <Link id="l" /> }\n`)),
       block("select", T("src/A.tsx", `${ui}export default function A() { return <Select id="s" /> }\n`)),
       block("textarea", T("src/A.tsx", `${ui}export default function A() { return <TextArea id="t" /> }\n`)),
+      block("box nav", T("src/A.tsx", `${ui}export default function A() { return <Box as="nav" id="n" /> }\n`)),
+      block(
+        "box aside label",
+        T("src/A.tsx", `${ui}export default function A() { return <Box as="aside" id="n" label="x" /> }\n`),
+      ),
+      block("box div label", T("src/A.tsx", `${ui}export default function A() { return <Box id="n" label="x" /> }\n`)),
       block("text fine", T("src/A.tsx", `${ui}export default function A() { return <Text>x</Text> }\n`)),
       block(
         "for no key",
@@ -3313,6 +3319,12 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       E1802 2:39 <Select> is missing a11y-required prop label
       # textarea
       E1802 2:39 <TextArea> is missing a11y-required prop label
+      # box nav
+      E1802 2:39 <Box> is missing a11y-required prop label
+      # box aside label
+
+      # box div label
+      E1751 2:39 TS2322 Type '{ id: string; label: string; }' is not assignable to type 'StyleValues<Co...
       # text fine
 
       # for no key

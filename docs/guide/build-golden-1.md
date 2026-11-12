@@ -1166,7 +1166,7 @@ export default function AppShell(
             golden-1 / todos
           </Text>
         </Box>
-        <Box as="nav" id="todos.nav" direction="row" align="center" gap="4">
+        <Box as="nav" id="todos.nav" label="Main" direction="row" align="center" gap="4">
           <Link id="todos.home" to={routes.href("todos.index")} fg="text">
             Home
           </Link>

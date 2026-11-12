@@ -11,7 +11,8 @@ const tagName = (n: Node): string => (n instanceof Element ? n.localName : "");
 
 describe("as is checked at runtime", () => {
   it("Box and Text render every tag in their set, and their defaults", () => {
-    for (const as of BOX) expect(tagName(Box({ as }))).toBe(as);
+    for (const as of BOX)
+      expect(tagName(as === "nav" || as === "aside" ? Box({ as, label: "x" }) : Box({ as }))).toBe(as);
     for (const as of TEXT) expect(tagName(Text({ as }))).toBe(as);
     expect(tagName(Box({}))).toBe("div");
     expect(tagName(Text({}))).toBe("span");

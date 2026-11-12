@@ -30,7 +30,7 @@ describe("DeployEnv peers", () => {
         expect(r.ok).toBe(false);
         if (r.ok) return;
         expect(r.error.data.issues[0]?.path).toEqual(["KEEL_PEER_API"]);
-        expect(["format", "min"]).toContain(r.error.data.issues[0]?.rule);
+        expect(["format", "min", "required"]).toContain(r.error.data.issues[0]?.rule);
       }),
       { seed: SEED, numRuns: 200 },
     );

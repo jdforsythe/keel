@@ -7,12 +7,14 @@
 - D2 (orchestrator) the mutation run of batch 2 (`pnpm mutate:changed --base e192395`) keeps running while these lanes work, on the user's instruction to work concurrently; lanes may slow it and its packages are measured on their state when each run starts.
 - D3 (orchestrator) the items that need a kernel shape (0446, 0394, 0395, 0377, 0387, 0449, 0450) go through one RFC, 0091, drafted by a design agent under the WORKFLOW RFC defaults; the orchestrator accepts it and records each answer for the user to confirm or reverse.
 - D4 (orchestrator, confirm or reverse) RFC 0091 (`docs/rfc/0091-friction-batch3.md`) is accepted with every recommended answer: A `fire` `focus`/`blur` move focus, the `focused` flag is the one query, E1719; B, C a `string` with `min` >= 1 refuses `''` and whitespace-only as rule `required`, no trim, no new option; D `keel dev --port N` (default 5173, a busy port is E1560, no fallback port); E an unreachable peer is 502 `keel.unreachable`, `api.network` to a `service()` caller; F names stay `[a-z][a-z0-9-]*`, the peer key maps `-` to `_` through one `peerKey`, scaffold E1352 uses the same name check; G `Box` `label` as `aria-label`, required with `as="nav"` or `as="aside"` (E1802), golden-1 and golden-2 gain landmark labels.
+- D5 (orchestrator) golden-2's language switcher is `<Box as="section" label>` (a region), not a second `nav`: with two `nav` landmarks in one component, generated messages can be equal and `landmark-unique` fails the component's property test; two roles cannot collide. The RFC's Migration says so.
+- D6 (orchestrator) the forms conformance generator in `issue-text.test.ts` draws one letter for its short title (`''` is `required` under D-C); listed in the RFC's Conformance diff.
 
 ## Steps
 - [x] 0 commit the seven 0438 files (6cfe27f)
 - [x] 1 wave 1 lanes (T5's rule is in the tree, uncommitted until item G lands): T1 tooling: `biome.json` ignores, `tooling/format-check.mjs` in `pnpm check`, the two rfc:0090 conformance files formatted (0438, 0451) · T2 router: `title` `params` and `search` typed (0448) · T3 server: HEAD keeps `content-length` (0458); runtime-dom: resume-then-refresh keyed-row test (0459) · T4 check: E1005 names the command and prints after source diagnostics (0376) · T5 testing: `landmark-unique` (0397) · T6 design: `docs/rfc/0091-friction-batch3.md`
 - [ ] 2 record batch 2's mutation scores when its run ends (tasks/0445-batch2/PLAN.md Next action)
-- [ ] 3 accept RFC 0091, ADR, spec text, conformance-writer, implementation lanes
+- [x] 3 accept RFC 0091, ADR, spec text, conformance-writer, implementation lanes A-G
 - [ ] 4 reviewer and red-team; findings to the backlog
 - [ ] 5 ledger, budgets, changesets, backlog, handoff, push
 
@@ -24,6 +26,15 @@
 - T4 done (0376 a, b): E1005 messages end `; run keel build`; E1005 and W1005 sort and group after every other code (`check/src/internal/artifactRank.ts`, `test/artifact-order.test.ts`); check 1033, cli 558 pass; check 42,667 B of 42,752. Part c not done: `surface.json` is written only by the cli's `surfaceRun` (a Vite SSR evaluation), which the compiler's plugin cannot call; refreshing it in dev and test needs the evaluator moved (filed 0461). Unverified: that `keel build` rewrites every `.keel/*.json`.
 - RFC 0091: spec, ADR-0114 committed a61146e; conformance committed in three `test: rfc:0091` commits (testing `fire-focus-0091`, ui `box-label-0091`, schema `blank-required-0091`, forms `required-message-0091`, cli `dev-port-0091`, scaffold `peer-key-0091`; changed: services `network-failure`, server `topology-forwarding-unserved-paths`). Gaps: no test for the JSON Schema `pattern` (no public export; the implementer adds a unit test), none for `id` keeping `min` (RFC only, not spec text), and the k.ui clause "two `nav` boxes with distinct labels pass axe" is unwritten (to add in packages/testing conformance). The schema/forms/cli writer opened `packages/forms/src/types/*` and `packages/schema/src/s.ts` against its rule and said so; its tests rest on spec and RFC text.
 - implementation lanes running: A testing (+ golden-1 focus assertion), B/C schema and forms (+ `apps/golden-1/test/blankRequired.test.ts`), D cli, E server error table and services, F compiler `peerKey`, scaffold, G ui and app landmark labels (+ the held `landmark-unique` rule).
+- E done (93ba165): `keel.unreachable` 502 in `server/src/internal/forward.ts` and `statusOf.ts`; services `exchange.ts` maps it to `api.network`.
+- A done: `testing/src/internal/focusable.ts`, `moveFocus.ts`; `fire` focus/blur call `el.focus()`/`el.blur()`; E1719; testing 308 pass, 7,440 B; check 42,732 B of 42,752. golden-1's toggle test asserts `focused` after the write (batch 2 D5's gap is closed); its suggestions test fired focus on an `h2` (now E1719) and settles instead.
+- open: `mcp.tools-list` 1,525 of 1,500 tokens (lane D's flag).
+- F done: `compiler/src/hosting/peerKey.ts` replaces the copies in `peerOrigins.ts`, server `start.ts` and `DeployEnv.ts`, scaffold `composeYaml.ts`; `opPlace` uses `deployableNameProblem` (E1352, writes nothing) and writes a name with `-` as a quoted key; `@keel/scaffold` now depends on `@keel/compiler` (lockfile). Not checked: committed `deploy/compose.yaml` under apps, `pnpm build`. To re-run when the lanes are in: server `deployEnv.test.ts` (an empty env string is now `required`), scaffold `topology-deploy-files` and cli `E1561` (timeouts under load).
+- B/C done (3a85b71): blank is "no `\S` character"; `schema/src/internal/leafRule.ts`, `gen.ts`; JSON Schema `pattern` in `router/src/internal/jsonSchemaOf.ts` and `cli/src/internal/toJsonSchema.ts`; `apps/golden-1/test/blankRequired.test.ts` (4 tests); server `deployEnv.test.ts` accepts `required`.
+- D done (d0a6d92): `cli/src/internal/devStart.ts`, `portBusy.ts`, `portDiag.ts`; Vite runs `--strictPort`; three MCP command descriptions shortened to keep `mcp.tools-list` under 1,500 tokens; k.cli trimmed to the 1,500 tokens its conformance test counts.
+- G done: `Box` props are a union on `as` (`label` required for `nav`, `aside`; optional for `section`, `main`, `header`, `footer`; refused otherwise); `check/src/internal/mapTsDiagnostic.ts` maps the missing `label` to E1802; ui 3,490 B; the `landmark-unique` rule is committed with it. Open: the E1805 fix still writes `<Box as="aside">` without a label (file).
+- LEFT RUNNING, could not be stopped (the kill was denied): two `bin.ts dev --port` processes, PIDs 48176 and 71236, from runs of `cli/conformance/dev-port-0091.test.ts`, which leaks its child when a run fails or times out (file).
+- root check, build green; root test green except scaffold `topology-deploy-files` timing out under the mutation run's load (passes alone, 18.6 s).
 
 ## Verification
 - [ ] `pnpm check` (with the format gate), `pnpm test`, `pnpm build` green
@@ -31,4 +42,4 @@
 - [ ] `pnpm exec biome format .` reports nothing
 
 ## Next action
-Collect lanes A-G; commit each by explicit path after `node tooling/format-check.mjs`. Add the missing axe clause through the conformance-writer. Record batch 2's mutation scores when its run ends. Then step 4.
+Step 4: reviewer and red-team over `git diff c331d76...HEAD`; the missing k.ui axe clause through the conformance-writer. Step 2 when the mutation run ends.

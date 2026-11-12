@@ -1,7 +1,7 @@
 import net from "node:net";
 
 /** The host Vite's dev server binds when the config names none. */
-export const DEV_HOST = "localhost";
+const DEV_HOST = "localhost";
 
 const bindable = (port: number, host: string | undefined): Promise<boolean> =>
   new Promise((resolve) => {

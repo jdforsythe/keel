@@ -19,7 +19,7 @@ export default function RecipeList(props: Infer<typeof Props>) {
         {props.data.text.listTitle}
       </Heading>
       <Box direction="row" align="baseline" justify="between" gap="4" font="mono" fontSize="sm">
-        <Box as="nav" id="recipes.filters" direction="row" gap="4">
+        <Box as="nav" id="recipes.filters" label={props.data.text.filtersLabel} direction="row" gap="4">
           <Link
             id="recipes.filter.all"
             to={routes.href("recipes.index", { locale: props.params.locale }, { only: "all" })}

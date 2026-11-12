@@ -15,12 +15,37 @@ const hiddenWithin = (el: Element, root: Element): boolean => {
   return false;
 };
 
+const LANDMARKS: ReadonlySet<string> = new Set([
+  "banner",
+  "complementary",
+  "contentinfo",
+  "main",
+  "navigation",
+  "region",
+  "search",
+  "form",
+]);
+const NAMED_ONLY: ReadonlySet<string> = new Set(["region", "form"]);
+const SECTIONING: ReadonlySet<string> = new Set(["article", "aside", "main", "nav", "section"]);
+
+/** A landmark per axe: region and form count only with a name; header and footer only outside sectioning content. */
+const isLandmark = (el: Element, role: string, name: string): boolean => {
+  if (!LANDMARKS.has(role)) return false;
+  if (NAMED_ONLY.has(role) && name === "") return false;
+  const tag = el.tagName.toLowerCase();
+  if ((tag === "header" || tag === "footer") && !el.hasAttribute("role"))
+    for (let n = el.parentElement; n !== null; n = n.parentElement)
+      if (SECTIONING.has(n.tagName.toLowerCase())) return false;
+  return true;
+};
+
 /**
  * Minimal axe-compatible structural rules over the rendered subtree (axe-core is not a dependency):
- * image-alt, button-name, link-name, label. Hidden subtrees are skipped.
+ * image-alt, button-name, link-name, label, landmark-unique (landmarks of one role need distinct names). Hidden subtrees are skipped.
  */
 export function axe(root: Element): Violation[] {
   const out: Violation[] = [];
+  const landmarks: { el: Element; key: string }[] = [];
   for (const el of Array.from(root.getElementsByTagName("*"))) {
     if (hiddenWithin(el, root)) continue;
     const tag = el.tagName.toLowerCase();
@@ -40,6 +65,17 @@ export function axe(root: Element): Violation[] {
       !named()
     )
       out.push({ rule: "label", at: where(el), help: "has no label; add <label for> or aria-label" });
+    else if (isLandmark(el, role, nameOf(el, role)))
+      landmarks.push({ el, key: `${role}\n${nameOf(el, role).toLowerCase()}` });
   }
+  const seen = new Map<string, number>();
+  for (const { key } of landmarks) seen.set(key, (seen.get(key) ?? 0) + 1);
+  for (const { el, key } of landmarks)
+    if ((seen.get(key) ?? 0) > 1)
+      out.push({
+        rule: "landmark-unique",
+        at: where(el),
+        help: "shares its landmark role and name with another landmark; give each a distinct label",
+      });
   return out;
 }
