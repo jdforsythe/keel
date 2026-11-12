@@ -34,6 +34,7 @@ Without JS the server runs the same flow: it decodes FormData with the action's 
 - Submitting invalid values sends no request.
 - Submitting invalid values sets an error on every invalid field.
 - Submitting invalid values focuses the first invalid field.
+- A field of `s.string({ min: 1 })` shows one message for an absent value, `''` and `'  '`: the `required` one.
 - For every generated valid value, FormData encode then decode by the schema returns an equal value.
 - A `keel.fields` response sets exactly the listed field errors and clears all others.
 - Any other `err` renders in the `error` slot and leaves values intact.

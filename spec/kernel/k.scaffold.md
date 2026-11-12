@@ -34,7 +34,7 @@ keel codemod place digest --to jobs --adapter node
 
 **Guarantee.** If `keel check` was clean before an operation, it is clean after. Otherwise nothing is written and E1353 reports the first diagnostic the edit set would introduce.
 
-**Rules.** E1351 target id already exists (fix: use a codemod) · E1352 id violates naming: route, store, and transaction ids are dotted lowerCamel segments prefixed by the module id; components PascalCase · E1353 operation aborted, would break check; nothing written · E1354 `add-field` of a required field without `--default` while constructors exist. Input that fails the operation's schema, an unknown target, or a missing `topology.ts` reports k.cli E1052; an unknown operation E1051.
+**Rules.** E1351 target id already exists (fix: use a codemod) · E1352 id violates naming: route, store, and transaction ids are dotted lowerCamel segments prefixed by the module id; components PascalCase; deployable names as k.topology E1552 · E1353 operation aborted, would break check; nothing written · E1354 `add-field` of a required field without `--default` while constructors exist. Input that fails the operation's schema, an unknown target, or a missing `topology.ts` reports k.cli E1052; an unknown operation E1051.
 
 **Conformance.**
 - Each generator run in a fresh project leaves `keel check` and `keel test` clean.
@@ -46,3 +46,4 @@ keel codemod place digest --to jobs --adapter node
 - After `scaffold module`, `turbo.json` equals the generator's output for the new task graph.
 - `keel scaffold project <name>`, with or without `--workspace`, creates every file under `<name>/` and none beside it.
 - `place b --to y --adapter node` then `place b --to x` restores a byte-identical tree; neither writes outside `topology.ts`, `deploy/` and CI workflows.
+- With `node` deployables `api` and `my-api`, `deploy/compose.yaml` sets `KEEL_PEER_MY_API` for `api`; `place b --to apiEdge --adapter node` is E1352 and writes nothing.
