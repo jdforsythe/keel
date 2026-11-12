@@ -50,13 +50,39 @@ function text(e: Expression): Field {
   return undefined;
 }
 
-/** The initializer of the top-level `const <name> = ...` (exported or not) in `program`. */
+/**
+ * The initializer of the top-level `const <name> = ...` (exported or not) in `program`. A `let` or `var` may be
+ * reassigned, so it has none.
+ */
 function declared(program: Program, name: string): Expression | undefined {
   for (const s of program.body) {
     const decl = s.type === "ExportNamedDeclaration" ? s.declaration : s;
-    if (decl === null || decl.type !== "VariableDeclaration") continue;
+    if (decl === null || decl.type !== "VariableDeclaration" || decl.kind !== "const") continue;
     for (const d of decl.declarations)
       if (d.id.type === "Identifier" && d.id.name === name && d.init !== null) return unwrap(d.init);
+  }
+  return undefined;
+}
+
+/**
+ * The local name `program` exports as `name`: `export const name`, or `export { local as name }` with no `from`.
+ * Undefined when no such export is found, or it re-exports from another module.
+ */
+function exportedLocal(program: Program, name: string): string | undefined {
+  for (const s of program.body) {
+    if (s.type !== "ExportNamedDeclaration") continue;
+    const d = s.declaration;
+    if (
+      d?.type === "VariableDeclaration" &&
+      d.declarations.some((x) => x.id.type === "Identifier" && x.id.name === name)
+    )
+      return name;
+    for (const sp of s.specifiers) {
+      const out = sp.exported.type === "Identifier" ? sp.exported.name : sp.exported.value;
+      if (out !== name) continue;
+      if (s.source !== null || sp.local.type !== "Identifier") return undefined;
+      return sp.local.name;
+    }
   }
   return undefined;
 }
@@ -88,21 +114,28 @@ type At = { file: string; program: Program; parse: Parsed; acts: Map<string, Exp
 
 /**
  * `e` unwrapped and, while an identifier, followed (8 hops at most) to the initializer that binds it: a top-level
- * declaration of `at.file`, else one a relative module it imports from declares under the imported name; with the
- * file that initializer is read in.
+ * `const` of `at.file`, else, for a named import from a relative module, the `const` that module exports under the
+ * imported name (`exportedLocal`); with the file that initializer is read in. A name it cannot resolve stays an
+ * identifier, which every reader takes as unread.
  */
 function follow(e: Expression, from: At): [Expression, At] {
   let v = unwrap(e);
   let at = from;
-  for (let hop = 0; hop < 8 && v.type === "Identifier"; hop++) {
-    const local = declared(at.program, v.name);
-    const imp = imported(at.program, v.name);
+  let name = v.type === "Identifier" ? v.name : undefined;
+  for (let hop = 0; hop < 8 && name !== undefined; hop++) {
+    const init = declared(at.program, name);
+    if (init !== undefined) {
+      v = init;
+      name = init.type === "Identifier" ? init.name : undefined;
+      continue;
+    }
+    const imp = imported(at.program, name);
     const file = imp?.[0].startsWith(".") ? join(at.file.split("/").slice(0, -1).join("/"), imp[0]) : undefined;
-    const other = local || file === undefined ? undefined : (at.parse(file) ?? at.parse(`${file}.ts`));
-    const init = local ?? (other && imp && declared(other, imp[1]));
-    if (init === undefined) break;
-    if (other && file !== undefined) at = { ...at, file, program: other };
-    v = init;
+    const other = file === undefined ? undefined : (at.parse(file) ?? at.parse(`${file}.ts`));
+    const local = other && imp && exportedLocal(other, imp[1]);
+    if (file === undefined || other === undefined || local === undefined) break;
+    at = { ...at, file, program: other };
+    name = local;
   }
   return [v, at];
 }

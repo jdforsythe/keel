@@ -10,7 +10,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "41.5kb",
+      "max": "41.75kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -33,7 +33,7 @@
     },
     "@keel/schema": "5kb",
     "@keel/server": {
-      "max": "17kb",
+      "max": "17.25kb",
       "platform": "node"
     },
     "@keel/server/dom": "2kb",

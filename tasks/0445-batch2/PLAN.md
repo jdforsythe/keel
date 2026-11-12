@@ -9,13 +9,14 @@
 - D5 (orchestrator) the golden-1 verification line is met by the runtime-dom conformance file (element identity and `document.activeElement` across a refresh, an insert and a removal) and a golden-1 test that a toggle changes one checked state in an otherwise identical a11y tree; an app-level focus assertion needs a k.testing change (backlog 0446, an RFC), not taken in this batch. No browser pass was run.
 - D6 (orchestrator, confirm or reverse) E1552 is widened rather than a new code: a `topology.ts` the static read cannot take (non-literal name, `modules`, `adapter`; no `topology({...})`; a syntax error) and a deployable name outside the one form are E1552 from `keel check`, `keel build` and the server's `topology()`. k.topology Rules and the explain row say so.
 - D7 (orchestrator, confirm or reverse) deployable names are `[a-z][a-z0-9-]*` (the form the server conformance files already generate). Two consequences are filed, not fixed: `KEEL_PEER_<NAME>` for a name with `-` is not a POSIX variable name (0449); the scaffold's E1352 form is lowerCamel, so it refuses `-` and accepts `apiEdge`, which every reader now refuses (0450).
+- D8 budgets re-based (rule: thresholds are sizes, never lowered): `@keel/check` 41.5kb to 41.75kb (42,628 B: the E1405 explain row, `topologyDiags`); `@keel/server` 17kb to 17.25kb (17,523 B: `stripHop`, the name check in `topology()`).
 - D2 wave 1 lanes, disjoint packages: (A) runtime-dom, reactive, ui, check: RFC 0090; (B) scaffold: 0437; (C) compiler, cli, server `start`: 0444, 0398, 0399, 0379 message; (F) router: 0433. Wave 2 after A and C land: 0409, 0431, 0440 (check, compiler), 0443 (tests locate the repo from the mutation sandbox), 0389.
 
 ## Steps
 - [x] 1 RFC 0090 accepted, ADR-0113, k.component text (Control flow sentence, E1405 in Shape, two Conformance clauses; E1405 in k.check's fix list), conformance files (runtime-dom `for-keyed-rows-0090`, check `E1405-top-level-prop-read`, E1405 in `fixtures-by-code.ts` and `fix-diffs.test.ts`): committed bebbef9 (wip, tests red until lane A lands). The runtime-dom tests drive the `list` op from `@keel/runtime-dom/ops`.
 - [x] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation, from the held patches in `tasks/0432-friction-batch1/`) running
 - [x] 3 wave 2 lanes: 0389, 0431, 0409, 0440 done; 0443 partly (see Notes)
-- [ ] 4 reviewer and red-team; findings to the backlog
+- [x] 4 reviewer (approve) and red-team (0452-0457); all six and the reviewer's two lows fixed in-batch; 0458, 0459 filed
 - [ ] 5 ledger, budgets, mutation for changed packages, backlog, handoff, push
 
 - lane B reported (0437): `opProject.ts` writes `.gitignore` for every `project` run, test in `test/project-brand.test.ts`, scaffold tests 220 pass; budget bytes not read (measure at step 5); proposed k.scaffold clause: "`project` writes a `.gitignore` listing `node_modules`, `dist`, `.keel-dev/` and `.keel/sessions/`, and not `.keel/`" (not added yet). Changeset: scaffold patch.
@@ -36,10 +37,13 @@
 - 0443 partly done: `tooling/repo-root.ts` (`@keel/tooling/repo-root`, `repoRoot(import.meta.dirname)` walks up to `pnpm-workspace.yaml`); mutation-only exclusions dropped for cli 2 files, compiler 3 files and the brand-mark test, server 1 file, check's E1510/E1508 pattern. Remaining exclusions are conformance files (cli 13, server 4 and `test/productionEntryBundle.test.ts`, check 3 and the E1501/E1510 fixture names): clearing them edits conformance helpers, which needs an `rfc:` commit; the compiler's no-root test stays excluded though it no longer calls `process.chdir` (untested under Stryker). Evidence: each package's mutate config run from a hand-made `.stryker-tmp/sandbox-*` copy (compiler 946, server 463, check 852, cli 501 pass); no Stryker dry run. 0443 stays open for the remainder.
 - reviewer: approve. Lows to fix in-batch: the E1405 fix changes meaning when the const is a callee or holds an optional chain; `topologyReadProblems` names the wrong deployable for a key holding `: `. Filed: a forwarded HEAD response loses `content-length`.
 
+- review and red-team fixes: E1405 covers a keyed `For` row callback's top-level const and its fix keeps meaning (parenthesised initializer; no fix when the const is called); `routeLiterals` reads through `const` and the export list only; E1552 messages are one line and name the deployable from its key; `Select` applies its bound value after a rebuild; server.mjs E1560 lines follow `KEEL_FORMAT`. No new E1405 hit in the repo. compiler 28,953 B of 29,696.
+- root check, test (56 tasks), build (32 tasks) green; ledger 644 items, 633 verified, 7 unsafe, 0 lowered, 0 uncovered.
+
 ## Verification
-- [ ] `pnpm check`, `pnpm test`, `pnpm build` green
-- [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
-- [ ] golden-1 list page: focus stays on the toggled control (test)
+- [x] `pnpm check`, `pnpm test`, `pnpm build` green
+- [x] ledger not lowered, 0 uncovered; unsafe count unchanged (7)
+- [x] golden-1 list page: focus stays on the toggled control (test): met as D5 states (runtime-dom conformance for identity and focus; golden-1 asserts the a11y tree)
 
 ## Next action
-Collect the red-team report; one agent applies the reviewer's two fixes and the red-team's in-batch ones; file the rest. Then step 5.
+Step 5 remainder: `pnpm mutate:changed --base e192395` (runs alone, 30 min budget per package), then handoff and push.

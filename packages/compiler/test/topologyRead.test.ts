@@ -72,6 +72,30 @@ describe("topologyReadProblems", () => {
     expect(parseTopology(top(`"../x": { modules: ["a"], adapter: "node" }`)).topology).toEqual({});
   });
 
+  it("names the deployable from its key, never from the message, so a key with ': ' is attributed whole", () => {
+    expect(topologyReadProblems(top(`"A: b": { modules: ["a"], adapter: "node" }`))).toEqual([
+      ["E1552", "A: b", "A: b: name must be lowercase letters, digits and -, starting with a letter"],
+    ]);
+    expect(parseTopology(top(`"A: b": { modules: ["a"], adapter: "node" }`)).problems).toEqual([
+      ["A: b", "A: b: name must be lowercase letters, digits and -, starting with a letter"],
+    ]);
+  });
+
+  it("keeps every message on one line, quoting a name with a control or non-ASCII character", () => {
+    const [problem] = topologyReadProblems(top(`"a\\nE0000 x": { modules: ["a"], adapter: "node" }`));
+    expect(problem).toEqual([
+      "E1552",
+      "a\nE0000 x",
+      '"a\\nE0000 x": name must be lowercase letters, digits and -, starting with a letter',
+    ]);
+    fc.assert(
+      fc.property(fc.fullUnicodeString({ maxLength: 12 }), (n) => {
+        expect(deployableNameProblem(n) ?? "").not.toMatch(/[\n\r\u2028\u2029]/);
+      }),
+      { seed: SEED },
+    );
+  });
+
   it("reports whole-file problems with no deployable", () => {
     expect(topologyReadProblems("export const x = 1;\n")).toEqual([["E1552", "", "no default export"]]);
     expect(topologyReadProblems("export default topology({")[0]?.slice(0, 2)).toEqual(["E1552", ""]);

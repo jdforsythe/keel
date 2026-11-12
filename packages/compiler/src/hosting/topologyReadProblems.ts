@@ -9,9 +9,5 @@ import { parseTopology } from "../internal/parseTopology.ts";
  * server never parses source.
  */
 export function topologyReadProblems(source: string): [string, string, string][] {
-  return parseTopology(source).problems.map((p) => [
-    p.endsWith(HOST_NOT_LITERAL) ? "E1566" : "E1552",
-    p.startsWith("syntax error") ? "" : (/^(.*?): /.exec(p)?.[1] ?? ""),
-    p,
-  ]);
+  return parseTopology(source).problems.map(([name, p]) => [p.endsWith(HOST_NOT_LITERAL) ? "E1566" : "E1552", name, p]);
 }

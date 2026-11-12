@@ -173,7 +173,7 @@ describe("parseTopology host", () => {
     for (const h of ["`api`", "API", '"a" + "pi"', "`${API}`"]) {
       const source = `const API = "api";\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: ${h} } })`;
       const r = parseTopology(source);
-      expect(r.problems, h).toEqual(["web: host must be a string literal"]);
+      expect(r.problems, h).toEqual([["web", "web: host must be a string literal"]]);
       expect(r.topology.web).toEqual({ modules: ["w"], adapter: "client" });
       expect(topologyReadProblems(source)).toEqual([["E1566", "web", "web: host must be a string literal"]]);
       expect(hostProblems(r.topology)).toEqual([]);

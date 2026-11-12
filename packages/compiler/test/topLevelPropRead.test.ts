@@ -87,4 +87,73 @@ describe("E1405: a top-level prop read reaching a binding", () => {
       { seed: SEED, numRuns: 50 },
     );
   });
+  it("the fix keeps meaning: an optional chain is parenthesized under a member access, and a called const has no fix", () => {
+    expect(applied("  const t = props.a?.b;\n  return <Text>{t.c}</Text>")).toContain("<Text>{(props.a?.b).c}</Text>");
+    expect(applied("  const l = props.a?.b;\n  return <Text>{l.length}</Text>")).toContain("{(props.a?.b).length}");
+    expect(applied("  const l = props.a?.b;\n  return <Text>{l}</Text>")).toContain("<Text>{props.a?.b}</Text>");
+    expect(applied("  const l = props.a.b;\n  return <Text>{l.c}</Text>")).toContain("<Text>{props.a.b.c}</Text>");
+    for (const use of ["fmt(1)", "fmt?.(1)", "fmt`x`"]) {
+      const ds = e1405(`const fmt = props.format; return <Text>{${use}}</Text>`);
+      expect([ds.length, ds[0]?.fix], use).toEqual([1, undefined]);
+    }
+  });
+
+  it("property: the fixed binding gives the value or the throw the const did, over initializers, uses and props", () => {
+    const inits = fc.constantFrom("props.a?.b", "props.a.b", "props.a ?? props.b", 'props.a || "x"', "props.a?.b ?? 1");
+    const uses = fc.constantFrom("v", "v.c", "v?.c", "v[0]", "`${v}`", "v.c.d");
+    const leaf = fc.constantFrom(undefined, null, "s", 0, { c: 1 }, { c: { d: 2 } });
+    const value = fc.oneof(leaf, fc.record({ b: leaf, c: leaf }));
+    const run = (f: (p: unknown) => unknown, p: unknown): unknown => {
+      try {
+        return { value: f(p) };
+      } catch {
+        return "throws";
+      }
+    };
+    fc.assert(
+      fc.property(inits, uses, value, value, (init, use, a, b) => {
+        const fixed = applied(`  const v = ${init};\n  return <Text>{${use}}</Text>`);
+        const read = /<Text>\{(.*)\}<\/Text>/.exec(fixed)?.[1] ?? "";
+        const before = new Function("props", `const v = ${init}; return ${use};`);
+        const after = new Function("props", `return ${read};`);
+        expect(
+          run((p) => after(p), { a, b }),
+          read,
+        ).toEqual(run((p) => before(p), { a, b }));
+      }),
+      { seed: SEED, numRuns: 200 },
+    );
+  });
+});
+
+describe("E1405: a keyed For row's const read once from the item", () => {
+  const row = (body: string, key = ' key="id"', fn = "(t) =>"): string =>
+    `return <For each={props.items}${key}>{${fn} { ${body} }}</For>`;
+
+  it("reports a row const read from the item or props and used in a row binding", () => {
+    const ds = e1405(row("const label = t.label; return <Text>{label}</Text>;"));
+    expect(ds.map((d) => d.message)).toEqual(["t.label read once in C; read it in the binding"]);
+    expect(e1405(row("const label = t.a?.b ?? props.label; return <Box id={label}>x</Box>;"))).toHaveLength(1);
+    expect(e1405(row("const c = props.label; return <Text>{c}</Text>;"))).toHaveLength(1);
+    expect(e1405(row("const label = t.label; return <Text>{label}</Text>;", ' key="id"', "function (t)"))).toHaveLength(
+      1,
+    );
+  });
+
+  it("does not report an unkeyed row, a handler or nested function use, or a non-read initializer", () => {
+    expect(e1405(row("const label = t.label; return <Text>{label}</Text>;", ""))).toEqual([]);
+    expect(e1405(row("const l = t.label; return <Button onClick={() => alert(l)}>x</Button>;"))).toEqual([]);
+    expect(e1405(row("const l = fmt(t.label); return <Text>{l}</Text>;"))).toEqual([]);
+    expect(e1405(row("const l = t; return <Text>{l.label}</Text>;"))).toEqual([]);
+    expect(e1405(row("let l = t.label; return <Text>{l}</Text>;"))).toEqual([]);
+    expect(e1405(row("const l = other.label; return <Text>{l}</Text>;"))).toEqual([]);
+    expect(e1405(row("const t2 = (t) => t.label; return <Text>{t2(t)}</Text>;"))).toEqual([]);
+  });
+
+  it("the fix reads the item in the binding and drops the const, and the fixed source reports no E1405", () => {
+    const fixed = applied(`  ${row("const label = t.label;\n  return <Text>{label}</Text>;")}`);
+    expect(fixed).toContain("return <Text>{t.label}</Text>;");
+    expect(fixed).not.toContain("const label");
+    expect(compile([{ path: "C.tsx", source: fixed }]).diagnostics.map((d) => d.code)).not.toContain("E1405");
+  });
 });

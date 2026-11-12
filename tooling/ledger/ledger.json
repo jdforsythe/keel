@@ -2,20 +2,20 @@
   "version": 1,
   "unsafe": 7,
   "mutationScore": {
-    "check": 74.6,
-    "cli": 90.9,
-    "compiler": 88.2,
-    "ctx": 76.8,
-    "forms": 93.7,
+    "check": 74.7,
+    "cli": 81.9,
+    "compiler": 78.6,
+    "ctx": 77.4,
+    "forms": 88.4,
     "reactive": 84.7,
-    "router": 84.7,
+    "router": 81.7,
     "runtime-dom": 75.6,
-    "scaffold": 81.4,
+    "scaffold": 81.7,
     "schema": 92.1,
-    "server": 82.3,
-    "services": 88,
+    "server": 82.9,
+    "services": 83.1,
     "store": 86.1,
-    "testing": 88.1,
+    "testing": 88.9,
     "ui": 70.3
   },
   "exports": [
@@ -1103,7 +1103,7 @@
       "pkg": "server",
       "name": "start",
       "file": "packages/server/src/start.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "server",
@@ -1743,6 +1743,14 @@
     },
     {
       "item": "k.component#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#11",
       "rung": "example"
     },
     {

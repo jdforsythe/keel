@@ -151,6 +151,32 @@ describe("routeLiterals", () => {
       expect(read(body)?.unread).toEqual(["m.a"]);
   });
 
+  it("reads a value only through a const, so a reassigned let or a var is unread, never its first value", () => {
+    for (const pre of ["let on = false;\non = true;", "var on = false;", "let on = false;"]) {
+      const r = read(`"m.a": { path: "/a", api: on }`, pre);
+      expect([r?.routes["m.a"]?.api, r?.unread], pre).toEqual([undefined, ["m.a api"]]);
+    }
+  });
+
+  it("follows an import through the module's export list, and unreads a name it cannot resolve", () => {
+    const at = (source: string) =>
+      read(`"m.a": { path: "/a", api: on }`, `import { on } from "./flag";`, [{ path: "modules/m/flag.ts", source }]);
+    const unread = [undefined, ["m.a api"]];
+    for (const [source, want] of [
+      ["const on = false;\nconst real = true;\nexport { real as on };", [true, []]],
+      ["export const on = true;", [true, []]],
+      ["const real = true;\nexport { real as on };\nexport const other = false;", [true, []]],
+      ["const on = false;\nexport { on as other };", unread],
+      ["const on = false;", unread],
+      ["export let on = false;", unread],
+      ['const on = false;\nexport { on } from "./elsewhere";', unread],
+      ['import { real } from "./real";\nexport { real as on };', unread],
+    ] as const) {
+      const r = at(source);
+      expect([r?.routes["m.a"]?.api, r?.unread], source).toEqual(want);
+    }
+  });
+
   describe("guard", () => {
     const route = `"m.a": { guard: g }`;
     it("reads a locally declared guard redirect", () => {
