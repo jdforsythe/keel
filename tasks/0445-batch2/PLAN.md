@@ -1,0 +1,25 @@
+# Task 0445: keyed rows (RFC 0090) and no-decision backlog items, batch 2
+
+**Spec:** k.component, k.runtime, k.check, k.scaffold, k.topology, k.head · **Principles:** 1, 2, 5 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open
+
+## Decisions
+- D1 (orchestrator, for the user to confirm or reverse; the user said to decide and keep moving) RFC 0090 is accepted with: Q1 yes, a keyed row keeps its nodes and a top-level read of the item does not re-render it; Q2 a kernel check rule, E1405, an error with a fix (WORKFLOW RFC default 6: enforcement over documentation); Q3 the hand-built `For` keeps its present behavior.
+- D3 E1405 is specified in k.component Shape beside E1401; lane A owns the compiler rule files, lane C owns only `packages/compiler/test/clientBuild.test.ts` in the compiler.
+- D2 wave 1 lanes, disjoint packages: (A) runtime-dom, reactive, ui, check: RFC 0090; (B) scaffold: 0437; (C) compiler, cli, server `start`: 0444, 0398, 0399, 0379 message; (F) router: 0433. Wave 2 after A and C land: 0409, 0431, 0440 (check, compiler), 0443 (tests locate the repo from the mutation sandbox), 0389.
+
+## Steps
+- [ ] 1 RFC 0090 accepted, ADR-0113, k.component text (Control flow sentence, E1405 in Shape, two Conformance clauses; E1405 in k.check's fix list): done in the tree, uncommitted. conformance-writer running (runtime-dom `for-keyed-rows-0090`, check `E1405-top-level-prop-read`)
+- [ ] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation) starts when the conformance tests exist, from the held patches in `tasks/0432-friction-batch1/`
+- [ ] 3 wave 2 lanes
+- [ ] 4 reviewer and red-team; findings to the backlog
+- [ ] 5 ledger, budgets, mutation for changed packages, backlog, handoff, push
+
+- lane B reported (0437): `opProject.ts` writes `.gitignore` for every `project` run, test in `test/project-brand.test.ts`, scaffold tests 220 pass; budget bytes not read (measure at step 5); proposed k.scaffold clause: "`project` writes a `.gitignore` listing `node_modules`, `dist`, `.keel-dev/` and `.keel/sessions/`, and not `.keel/`" (not added yet). Changeset: scaffold patch.
+
+## Verification
+- [ ] `pnpm check`, `pnpm test`, `pnpm build` green
+- [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
+- [ ] golden-1 list page: focus stays on the toggled control (test)
+
+## Next action
+Collect the conformance-writer report, commit step 1 as `rfc:0090` (spec, RFC, ADR, the two conformance files only; the seven 0438 files stay uncommitted), then start lane A. Collect lanes B, C, F.

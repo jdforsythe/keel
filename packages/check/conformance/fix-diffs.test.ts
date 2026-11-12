@@ -1,5 +1,5 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
-// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
+// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
 // Spec: k.module, Rules, "No fix edits a file under `node_modules/`."
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -220,6 +220,17 @@ const FIXED: FixedCase[] = [
     opts: {},
   },
   {
+    name: "E1405",
+    code: "E1405",
+    files: [
+      f(
+        "C.tsx",
+        `import { Text } from '@keel/ui'\nexport default function C(props: { label: string }) { const label = props.label; return <Text>{label}</Text> }\n`,
+      ),
+    ],
+    opts: NO_TYPES,
+  },
+  {
     name: "E1805",
     code: "E1805",
     files: [f("C.tsx", `${UI}export default function C() { return <Box><h2>Orders</h2></Box> }\n`)],
@@ -266,6 +277,7 @@ const FIX = [
   "E1157",
   "E1401",
   "E1403",
+  "E1405",
   "E1451",
   "E1452",
   "E1507",

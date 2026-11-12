@@ -1,6 +1,11 @@
 # RFC 0090: a keyed `For` row keeps its element
 
-Status: draft (2026-11-12), written by the orchestrator for the user; nothing is built on it. For backlog 0392 and 0439.
+Status: accepted by the orchestrator (2026-11-12) under WORKFLOW RFC defaults 1 and 6, after the user said to decide and keep moving; the user confirms or reverses it (`docs/HANDOFF.md`, pending decisions). For backlog 0392 and 0439.
+
+## Decisions (orchestrator, 2026-11-12)
+- D1: the guarantee of Proposal 1 as written.
+- D2: Proposal 3 is a kernel check rule, E1405, an error with a fix.
+- D3: the hand-built `For` keeps its present behavior.
 
 ## Problem
 In golden-1's list page, focus drops to `<body>` after every write. Measured in a browser (backlog 0392) and reproduced in `packages/runtime-dom` tests:
@@ -20,7 +25,7 @@ It cannot land alone. A component that reads a getter prop once goes stale in a 
 ## Proposal
 1. **Guarantee (k.component).** A `For` row whose key stays across a change of `each` keeps its nodes. Its bindings update from the new item. A top-level read of the item in the row body does not re-render the row. An insert or a removal moves no surviving row.
 2. **`@keel/ui` binds every prop it renders.** No control reads a prop once into the DOM.
-3. **A check rule for the hazard.** A component that writes a prop to the DOM outside a binding (a top-level `props.x` read whose value reaches an attribute, a text node or a child's props) is a diagnostic with a fix that wraps the read in a binding. The compiler already emits getters for props at call sites, so the rule is local to the component file. The code and whether it is an error or a warning are for the user.
+3. **A check rule for the hazard.** A component that writes a prop to the DOM outside a binding (a top-level `props.x` read whose value reaches an attribute, a text node or a child's props) is a diagnostic with a fix that wraps the read in a binding. The compiler already emits getters for props at call sites, so the rule is local to the component file. It is E1405 (k.component), an error.
 4. **Unkeyed `For`** keeps its present behavior.
 
 ## Alternatives
@@ -29,14 +34,9 @@ It cannot land alone. A component that reads a getter prop once goes stale in a 
 - **Keep item identity in the store (structural sharing in `syncAfter`).** Fewer rows rebuild, but the changed row is the focused one, so focus is still lost.
 - **Land the runtime patch and the two `ui` fixes without the rule.** Fixes golden-1 and leaves the stale-prop hazard for every other component.
 
-## Questions for the user
-1. Is the guarantee of Proposal 1 the one wanted, including "a top-level read does not re-render"?
-2. Proposal 3: a kernel check rule (error or warning), or documentation only?
-3. Should the hand-built `For` (not compiled) follow the same rule, or keep re-rendering?
-
 ## Spec diff
 - **k.component** Control flow: one sentence (Proposal 1) and one Conformance clause: "Replacing `each` with new objects of the same keys keeps each surviving row's element and `document.activeElement`, and updates the changed row's text."
-- **k.check** or **k.component** Rules: the rule of Proposal 3, if taken.
+- **k.component** Rules: E1405.
 
 ## Token impact
 k.component gains about 50 tokens. `@keel/runtime-dom` 4,066 B to 4,128 B of 6 kB.

@@ -378,6 +378,18 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("C.tsx", `${UI}export default function C() { return <Box><Box id="x">1</Box><Box id="y">2</Box></Box> }\n`),
     ],
   },
+  E1405: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${UI}export default function C(props: { label: string }) { const label = props.label; return <Text>{label}</Text> }\n`,
+      ),
+    ],
+    clean: [
+      f("C.tsx", `${UI}export default function C(props: { label: string }) { return <Text>{props.label}</Text> }\n`),
+    ],
+  },
   E1451: {
     bad: [f("src/f.ts", "export function f(n: number) {\n  if (n < 0) throw new Error('neg')\n  return n\n}\n")],
     clean: [f("src/f.ts", "export function f(n: number) {\n  return n\n}\n")],
