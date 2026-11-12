@@ -26,13 +26,13 @@ import { treeOf } from "./treeOf.ts";
 import { unexpected } from "./unexpected.ts";
 
 /**
- * Mount `view` through runtime-dom (`ctx`, root-Boundary `onError`) inside a scope, in a container on
- * `document.body`, and build the harness. `check()` raises the first root-Boundary catch (`keel.unexpected`),
+ * Mount `view` through runtime-dom (`ctx`, root-Boundary `onError`), or run `start`, inside a scope, in a container
+ * on `document.body`, and build the harness. `check()` raises the first root-Boundary catch (`keel.unexpected`),
  * then E1702 against `a11y` (when given), then E1703; `fire` runs it after settling. `dispose` unmounts, runs
  * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
  */
 export function openHarness(setup: HarnessSetup): { readonly harness: Harness; check(): void } {
-  const { view, ctx, seeded, a11y: expected, busy, teardown } = setup;
+  const { ctx, seeded, a11y: expected, busy, teardown } = setup;
   const container = document.createElement("div");
   document.body.appendChild(container);
   let unmount: (() => void) | undefined;
@@ -56,12 +56,14 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
   };
   try {
     owner = scope(() => {
-      unmount = mount(view, container, {
-        ctx,
-        onError: (error) => {
-          caught.push(error);
-        },
-      });
+      if ("start" in setup) setup.start(container);
+      else
+        unmount = mount(setup.view, container, {
+          ctx,
+          onError: (error) => {
+            caught.push(error);
+          },
+        });
     });
   } catch (error) {
     dispose();

@@ -53,10 +53,10 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1006",
-    "routes.ts fails to evaluate",
-    "A throw or a missing routes export drops that manifest's routes.",
+    "routes.ts or an endpoints file fails to evaluate",
+    "A throw drops that manifest's routes or that file's endpoints; keel build fails.",
     "fix the throw, or export const routes",
-    "k.compiler",
+    "k.compiler, k.compat",
   ],
   [
     "E1049",
@@ -473,6 +473,20 @@ const ROWS: readonly Row[] = [
     "k.hosting",
   ],
   [
+    "E1567",
+    "service({ base }) whose endpoint a route of an app module of this app serves",
+    "A base service calls this app's routes past the module checks; a URL literal base is another service.",
+    "use service({ module }); add the module to deps and the routes to its public.routes",
+    "k.compat",
+  ],
+  [
+    "W1568",
+    "keel check --base names no readable surface of this version; E1562 not checked",
+    "The first pull request has no base surface, so this warns instead of failing.",
+    "fetch the base branch's .keel/surface.json, or rebuild it with this keel",
+    "k.compat",
+  ],
+  [
     "W1567",
     "an allowed origin that is cross-site to the server: the caller cookie cannot reach it",
     "The caller cookie is SameSite=Lax; browsers do not send it across sites, so each write is a new caller.",
@@ -544,6 +558,13 @@ const ROWS: readonly Row[] = [
     "focus fired where a user cannot focus",
     "",
     "give the element a role that takes focus, or fire focus before blur",
+    "k.testing",
+  ],
+  [
+    "E1720",
+    "resumeDocument: the document did not resume",
+    "",
+    "add the island's route to routes, or fix the state the server wrote",
     "k.testing",
   ],
   [
