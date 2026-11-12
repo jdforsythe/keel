@@ -21,8 +21,56 @@
   "exports": [
     {
       "pkg": "golden-1",
+      "name": "Board",
+      "file": "golden-1:api/Board.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "BoardView",
+      "file": "golden-1:api/BoardView.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListDraft",
+      "file": "golden-1:api/ListDraft.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "ListParams",
+      "file": "golden-1:api/ListParams.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Suggestion",
+      "file": "golden-1:api/Suggestion.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Todo",
+      "file": "golden-1:api/Todo.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoDraft",
+      "file": "golden-1:api/TodoDraft.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "TodoIdParams",
       "file": "golden-1:api/TodoIdParams.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "TodoList",
+      "file": "golden-1:api/TodoList.schema.ts",
       "rung": "example"
     },
     {
@@ -207,20 +255,8 @@
     },
     {
       "pkg": "golden-1",
-      "name": "Board",
-      "file": "golden-1:todos/Board.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "BoardReply",
       "file": "golden-1:todos/BoardReply.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "BoardView",
-      "file": "golden-1:todos/BoardView.schema.ts",
       "rung": "example"
     },
     {
@@ -237,12 +273,6 @@
     },
     {
       "pkg": "golden-1",
-      "name": "ListDraft",
-      "file": "golden-1:todos/ListDraft.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "ListError",
       "file": "golden-1:todos/ListError.tsx",
       "rung": "probabilistic"
@@ -251,12 +281,6 @@
       "pkg": "golden-1",
       "name": "ListPage",
       "file": "golden-1:todos/ListPage.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "ListParams",
-      "file": "golden-1:todos/ListParams.schema.ts",
       "rung": "example"
     },
     {
@@ -273,12 +297,6 @@
     },
     {
       "pkg": "golden-1",
-      "name": "Suggestion",
-      "file": "golden-1:todos/Suggestion.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "Suggestions",
       "file": "golden-1:todos/Suggestions.tsx",
       "rung": "probabilistic"
@@ -287,24 +305,6 @@
       "pkg": "golden-1",
       "name": "SuggestionsReply",
       "file": "golden-1:todos/SuggestionsReply.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "Todo",
-      "file": "golden-1:todos/Todo.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "TodoDraft",
-      "file": "golden-1:todos/TodoDraft.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "TodoList",
-      "file": "golden-1:todos/TodoList.schema.ts",
       "rung": "example"
     },
     {
@@ -1935,6 +1935,30 @@
     },
     {
       "item": "k.head#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.hosting#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.hosting#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.hosting#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.hosting#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.hosting#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.hosting#6",
       "rung": "example"
     },
     {

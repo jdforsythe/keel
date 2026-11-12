@@ -18,11 +18,11 @@ const seeded = boardOf({
   todos: [{ id: "t1", listId: "l1", title: "Milk", priority: "normal", done: false }],
 });
 
-/** The `todos` pages as a node deployable whose loaders reach the `api` deployable through `ctx.net`. */
+/** The `todos` pages as a node deployable whose loaders reach the `api` module (unbound: `http://api.keel.invalid`) through `ctx.net`. */
 async function webApp() {
   const api = await apiApp();
   const ctx = createCtx({ mode: "sim", seed: 1 });
-  ctx.net.route(`${BASE}/api/*`, (req) => api.fetch(req));
+  ctx.net.route("http://api.keel.invalid/api/*", (req) => api.fetch(req));
   return createApp({ topology: topology({ web: { modules: ["todos"], adapter: "node" } }), routes, ctx });
 }
 

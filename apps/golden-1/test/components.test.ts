@@ -127,7 +127,7 @@ describe("suggestions", () => {
       accepts.push(req.headers.get("accept"));
       return served(["Milk"]);
     });
-    const r = await service({ base: location.origin, schema: suggestions }).list({}, ctx);
+    const r = await service({ module: "api", schema: suggestions }).list({}, ctx);
     expect(r.ok && r.value.results["api.suggestions"].value).toEqual([{ title: "Milk" }]);
     expect(accepts).toEqual(["application/json"]);
   });

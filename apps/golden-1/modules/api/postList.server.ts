@@ -1,7 +1,7 @@
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
-import { ListDraft } from "../todos/ListDraft.schema.ts";
+import { ListDraft } from "./ListDraft.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
 /** `POST /api/lists`: add a list with a ctx-minted id, recorded with this caller (undo, `postUndo`). */

@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
-import type { Board } from "../todos/Board.schema.ts";
+import type { Board } from "./Board.schema.ts";
 
 /** `api.addList` on `board` (`boardStores`): append a list; a duplicate id leaves the board unchanged. */
 export const addList = (board: Store<Board>) =>

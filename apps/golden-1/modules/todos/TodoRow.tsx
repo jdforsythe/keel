@@ -2,7 +2,7 @@ import type { Ctx } from "@keel/ctx";
 import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Checkbox, Link, Text } from "@keel/ui";
-import { Todo } from "./Todo.schema.ts";
+import { Todo } from "../api/Todo.schema.ts";
 import { hydrate } from "./hydrate.ts";
 import { routes } from "./routes.ts";
 import { syncAfter } from "./syncAfter.ts";
@@ -14,8 +14,7 @@ export const uses = [hydrate];
 /** One todo: a done Checkbox (posts `/api/todos/:todoId/toggle`, then re-reads the board), priority, Edit link. */
 export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const toggle = (): void => {
-    if (ctx !== undefined)
-      void syncAfter(ctx, todosApi(location.origin).toggleTodo({ params: { todoId: props.todo.id } }, ctx));
+    if (ctx !== undefined) void syncAfter(ctx, todosApi.toggleTodo({ params: { todoId: props.todo.id } }, ctx));
   };
   return (
     <Box as="li" id={`todos.row.${props.todo.id}`} direction="row" align="center" gap="3" px="3" py="2" bg="card">

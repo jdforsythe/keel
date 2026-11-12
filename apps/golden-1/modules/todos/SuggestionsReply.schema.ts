@@ -1,5 +1,5 @@
 import { s } from "@keel/schema";
-import { Suggestion } from "./Suggestion.schema.ts";
+import { Suggestion } from "../api/Suggestion.schema.ts";
 
 /** The `api` deployable's runtime answer to `GET /api/suggestions` (k.server): the `api.suggestions` loader `Result`. */
 export const SuggestionsReply = s.object({

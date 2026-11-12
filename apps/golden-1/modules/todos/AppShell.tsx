@@ -24,10 +24,7 @@ export default function AppShell(
 ) {
   const empty = computed(() => !view.get("canUndo"));
   const undo = (): void => {
-    if (ctx !== undefined)
-      void todosApi(location.origin)
-        .undo({}, ctx)
-        .then(() => refreshView(location.origin, ctx));
+    if (ctx !== undefined) void todosApi.undo({}, ctx).then(() => refreshView(ctx));
   };
   return (
     <Box id="todos.shell" direction="column" bg="surface" fg="text" font="serif" fontSize="md">

@@ -69,10 +69,11 @@ k.server
 k.services
 - import { endpoints, service } from '@keel/services'; endpoints in a *.service.ts file, body/output schemas in *.schema.ts
 - export const todos = endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardReply }, editTodo: { method: 'POST', path: '/api/todos/:todoId', params: TodoIdParams, body: TodoDraft, output: ActionReply, errors: { 422: FieldsReply } } })
-- service({ base, schema }) built per call (base new URL(url).origin in *.server.ts); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
+- service({ module: 'api', schema }): the topology resolves the origin (a browser: the peer's or the page's); the endpoints must agree with the module's public.routes (E1152, E1157, E1561: errors must accept any error answer of the route); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
 - output describes the whole runtime body (see k.server); read r.value.results['api.lists'].value
 - ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
 - pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body?.error ?? r.error)
+- in an unbound sim ctx a service({ module: 'api' }) call goes to http://api.keel.invalid plus the path; route that host with ctx.net.route
 - ctx.net.fetch in app code is E1651; E1652 :param without params field; E1653 body on GET
 - service({ module: 'api', schema }) calls app module api's routes (api in deps, route in its public.routes): in process, a peer, a browser's document origin; on a ctx no createApp bound, http://api.keel.invalid
 

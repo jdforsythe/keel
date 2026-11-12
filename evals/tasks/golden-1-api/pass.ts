@@ -32,6 +32,9 @@ const FILES: readonly string[] = [
     "editTodo",
   ].map((n) => `${api}/${n}.ts`),
   `${api}/TodoIdParams.schema.ts`,
+  ...["TodoList", "Todo", "Board", "BoardView", "ListDraft", "TodoDraft", "Suggestion", "ListParams"].map(
+    (n) => `${api}/${n}.schema.ts`,
+  ),
   ...["loadBoard", "loadSuggestions", "postList", "postTodo", "postEdit", "postToggle", "postUndo"].map(
     (n) => `${api}/${n}.server.ts`,
   ),
@@ -40,18 +43,10 @@ const FILES: readonly string[] = [
   ),
   ...["todos", "suggestions"].map((n) => `${mod}/${n}.service.ts`),
   ...[
-    "TodoList",
-    "Todo",
-    "Board",
-    "BoardView",
     "BoardReply",
     "ActionReply",
     "FieldsReply",
-    "ListDraft",
-    "TodoDraft",
-    "Suggestion",
     "SuggestionsReply",
-    "ListParams",
     "ListSearch",
     "TodoParams",
   ].map((n) => `${mod}/${n}.schema.ts`),

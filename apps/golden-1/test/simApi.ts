@@ -1,6 +1,6 @@
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
-import { Board } from "../modules/todos/Board.schema.ts";
+import { Board } from "../modules/api/Board.schema.ts";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
 

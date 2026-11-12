@@ -1,6 +1,6 @@
 # Golden app 1 (API-backed)
 
-Build `apps/golden-1/`: the todo app of the client-only brief, but the data lives behind an API, with a `digest` module that counts the board in the background. Two deployables in `topology.ts`: `web` (`adapter: 'client'`, `host: 'api'`, module `todos`) and `api` (`adapter: 'node'`, modules `api` (deps `todos`) and `digest`). Use only kernel APIs from the spec slice; read a section with `pnpm spec <id>`. Edit nothing outside `apps/golden-1/`. Scaffold with `scaffold('project', { workspace: true })` (CLI, from `apps/`: `keel scaffold project golden-1 --workspace`, which writes `apps/golden-1/`; keep its `index.html`, `vitest.config.ts`). If the slice leaves an API unspecified, report `blocked: <section> <question>`; invent nothing.
+Build `apps/golden-1/`: the todo app of the client-only brief, but the data lives behind an API, with a `digest` module that counts the board in the background. Two deployables in `topology.ts`: `web` (`adapter: 'client'`, `host: 'api'`, module `todos`) and `api` (`adapter: 'node'`, modules `api` (no app deps; it owns the contract schemas) and `digest`). Use only kernel APIs from the spec slice; read a section with `pnpm spec <id>`. Edit nothing outside `apps/golden-1/`. Scaffold with `scaffold('project', { workspace: true })` (CLI, from `apps/`: `keel scaffold project golden-1 --workspace`, which writes `apps/golden-1/`; keep its `index.html`, `vitest.config.ts`). If the slice leaves an API unspecified, report `blocked: <section> <question>`; invent nothing.
 
 ## Behavior (UI unchanged)
 - `/` (`todos.index`): lists with open-todo counts; a Form adding a list.
@@ -18,25 +18,26 @@ Build `apps/golden-1/`: the todo app of the client-only brief, but the data live
   - `api.todoToggle`: POST `/api/todos/:todoId/toggle`.
   - `api.undo`: POST `/api/undo` (`undoWhere` this caller's last entry; nothing of the caller's is a no-op); `canUndo` is true when the log's last entry is the caller's.
   - `api.suggestions`: GET `/api/suggestions` (fixed titles).
-- No hand-written server: `keel build` writes `dist/api/server.mjs` (k.topology Build) and the `web` client as static files in `dist/web/`; because `web` has `host: 'api'` the same build copies the client into `dist/api/`, so `GET /` on `server.mjs` is the app (k.hosting); script `api` runs it with `--experimental-webstorage --localstorage-file=.api.storage`. `vite.config.ts` is `defineConfig({ plugins: [keel()] })`: `keel dev` serves every deployable on one origin. `api/module.ts` lists `api.lists` in `public.routes`.
-- `digest` (deps `api`, `todos`, `@keel/std-jobs`, `@keel/std-schedules`; capabilities `clock`, `random`, `storage`, `net`; std.jobs, std.schedules, k.topology Runners):
+- No hand-written server: `keel build` writes `dist/api/server.mjs` (k.topology Build) and the `web` client as static files in `dist/web/`; because `web` has `host: 'api'` the same build copies the client into `dist/api/`, so `GET /` on `server.mjs` is the app (k.hosting); script `api` runs it with `--experimental-webstorage --localstorage-file=.api.storage`. `vite.config.ts` is `defineConfig({ plugins: [keel()] })`: `keel dev` serves every deployable on one origin. `api/module.ts` lists the schemas `todos` and `digest` import in `public.exports` and every route the clients call (`api.lists`, `api.listTodos`, `api.todo`, `api.todoToggle`, `api.undo`, `api.suggestions`) in `public.routes`.
+- `digest` (deps `api`, `@keel/std-jobs`, `@keel/std-schedules`; capabilities `clock`, `random`, `storage`, `net`; std.jobs, std.schedules, k.topology Runners):
   - `Digest.schema.ts` `{ open: s.int({ min: 0 }), done: s.int({ min: 0 }), at: s.number() }`, kept in `ctx.storage` key `digest.latest` (`LATEST_KEY`, `readLatest`: zero counts at 0 before the first count or when unparseable; `writeLatest`).
   - Job `digest.recount` (`recount.server.ts`, input `RecountInput` `{}`): reads `GET /api/lists` through `boardApi = service({ module: 'api', schema: board })` (`board.service.ts`, output `ListsReply`), counts open and done todos, writes them with `at` the `ctx.clock` time; the api's error is its `err`.
   - `jobs.server.ts` `queue({ 'digest.recount': recount })`; `schedules.server.ts` `digest.hourly` (`0 * * * *`, `UTC`, job `digest.recount`, input `{}`); `runners.server.ts` `[jobs, schedules]`.
   - Routes: `digest.show` `GET /digest` (`loadDigest`), `digest.refresh` `POST /digest/refresh` (`refresh`: `jobs.enqueue(ctx, 'digest.recount', input)`), `digest.feed` `GET /digest/feed` (`feedDigest`, a live loader: the stored digest, then each different one, read every 1,000 ms of `ctx.clock`). All three are API routes (`api: true`, no component).
 - Splitting `digest` into its own `node` deployable edits `topology.ts` alone (`api: { modules: ['api'] }`, `digest: { modules: ['digest'] }`).
-- `todos`: a `@keel/services` client for all six endpoints (built at call time, base `location.origin`; `Suggestions` calls it with its `ctx`, never `ctx.net.fetch`); a view store `todos.view` changed only by one transaction `todos.hydrate` (replaces the state); loaders re-read the board (`GET /api/lists`) and hydrate, then pick by id; route actions post through the client and return `ok(null)` (revalidation re-reads) or `ok(href)`; the edit action passes the api's 422 `keel.fields` on to the Form. Components that cannot revalidate (`TodoRow` toggle, `AppShell` Undo) write then re-read via a `syncAfter(ctx, write)` helper.
+- `todos` (deps `api`): a `@keel/services` client for all six endpoints (`service({ module: 'api', schema })`, no origin; `Suggestions` calls it with its `ctx`, never `ctx.net.fetch`; the 422 `errors` schema admits any error answer of the route, k.compat E1561); a view store `todos.view` changed only by one transaction `todos.hydrate` (replaces the state); loaders re-read the board (`GET /api/lists`) and hydrate, then pick by id; route actions post through the client and return `ok(null)` (revalidation re-reads) or `ok(href)`; the edit action passes the api's 422 `keel.fields` on to the Form. Components that cannot revalidate (`TodoRow` toggle, `AppShell` Undo) write then re-read via a `syncAfter(ctx, write)` helper.
 
 ## Files (exactly these)
 ```
 apps/golden-1/{package.json,tsconfig.json,vite.config.ts,tokens.ts,topology.ts}   scripts: check (tsc, biome, keel check), test, build, dev, api
 apps/golden-1/modules/api/{module,routes}.ts
+apps/golden-1/modules/api/{TodoList,Todo,Board,BoardView,ListDraft,TodoDraft,Suggestion,ListParams}.schema.ts
 apps/golden-1/modules/api/{board,boardStores,addList,addTodo,toggleTodo,editTodo}.ts  and  TodoIdParams.schema.ts
   (every `api` route is an API route: `api: true`, no component, so the module has no component files)
 apps/golden-1/modules/api/{loadBoard,loadSuggestions,postList,postTodo,postEdit,postToggle,postUndo}.server.ts
 apps/golden-1/modules/todos/{module,routes,editable.guard,view,hydrate,refreshView,syncAfter,todosApi}.ts
 apps/golden-1/modules/todos/{todos,suggestions}.service.ts
-apps/golden-1/modules/todos/{TodoList,Todo,Board,BoardView,BoardReply,ActionReply,FieldsReply,ListDraft,TodoDraft,Suggestion,SuggestionsReply,ListParams,ListSearch,TodoParams}.schema.ts
+apps/golden-1/modules/todos/{BoardReply,ActionReply,FieldsReply,SuggestionsReply,ListSearch,TodoParams}.schema.ts
 apps/golden-1/modules/todos/{loadIndex,loadList,loadTodo,createList,createTodo,updateTodo}.server.ts
 apps/golden-1/modules/todos/{AppShell,ListsPage,ListPage,TodoRow,EditTodoPage,ListError,Suggestions}.tsx
 apps/golden-1/modules/digest/{module,routes,boardApi,LATEST_KEY,readLatest,writeLatest}.ts  and  board.service.ts

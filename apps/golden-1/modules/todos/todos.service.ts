@@ -1,14 +1,14 @@
 import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
+import { ListDraft } from "../api/ListDraft.schema.ts";
+import { TodoDraft } from "../api/TodoDraft.schema.ts";
 import { ActionReply } from "./ActionReply.schema.ts";
 import { BoardReply } from "./BoardReply.schema.ts";
 import { FieldsReply } from "./FieldsReply.schema.ts";
-import { ListDraft } from "./ListDraft.schema.ts";
-import { TodoDraft } from "./TodoDraft.schema.ts";
 
 /**
  * The board endpoints of the golden-1 `api` deployable (it owns the data; k.server runtime `Result` bodies),
- * served from the page's origin (vite proxies `/api`). Build the client at call time with `todosApi(origin)`.
+ * resolved by the topology (`todosApi`).
  */
 export const todos = endpoints({
   lists: { method: "GET", path: "/api/lists", output: BoardReply },

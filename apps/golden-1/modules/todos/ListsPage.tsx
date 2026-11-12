@@ -3,7 +3,7 @@ import { Form } from "@keel/router";
 import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Text } from "@keel/ui";
-import { ListDraft } from "./ListDraft.schema.ts";
+import { ListDraft } from "../api/ListDraft.schema.ts";
 import { routes } from "./routes.ts";
 import { view } from "./view.ts";
 

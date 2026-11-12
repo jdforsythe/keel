@@ -1,7 +1,7 @@
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
-import { TodoDraft } from "../todos/TodoDraft.schema.ts";
+import { TodoDraft } from "./TodoDraft.schema.ts";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { boardStores } from "./boardStores.ts";
 

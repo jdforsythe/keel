@@ -5,18 +5,18 @@ import { s } from "@keel/schema";
 import { service } from "@keel/services";
 import { properties } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { Board } from "../modules/api/Board.schema.ts";
+import { BoardView } from "../modules/api/BoardView.schema.ts";
+import { ListDraft } from "../modules/api/ListDraft.schema.ts";
+import { ListParams } from "../modules/api/ListParams.schema.ts";
+import { Suggestion } from "../modules/api/Suggestion.schema.ts";
+import { Todo } from "../modules/api/Todo.schema.ts";
+import { TodoDraft } from "../modules/api/TodoDraft.schema.ts";
+import { TodoList } from "../modules/api/TodoList.schema.ts";
 import { ActionReply } from "../modules/todos/ActionReply.schema.ts";
-import { Board } from "../modules/todos/Board.schema.ts";
 import { BoardReply } from "../modules/todos/BoardReply.schema.ts";
-import { BoardView } from "../modules/todos/BoardView.schema.ts";
 import { FieldsReply } from "../modules/todos/FieldsReply.schema.ts";
-import { ListDraft } from "../modules/todos/ListDraft.schema.ts";
-import { ListParams } from "../modules/todos/ListParams.schema.ts";
-import { Suggestion } from "../modules/todos/Suggestion.schema.ts";
 import { SuggestionsReply } from "../modules/todos/SuggestionsReply.schema.ts";
-import { Todo } from "../modules/todos/Todo.schema.ts";
-import { TodoDraft } from "../modules/todos/TodoDraft.schema.ts";
-import { TodoList } from "../modules/todos/TodoList.schema.ts";
 import { TodoParams } from "../modules/todos/TodoParams.schema.ts";
 import { createList } from "../modules/todos/createList.server.ts";
 import { createTodo } from "../modules/todos/createTodo.server.ts";
@@ -51,8 +51,7 @@ const seedServer = () => {
 const LISTS = new URL("/api/lists", location.href).href;
 /** `todos.toggleTodo` for `t1`: params parse into the branded id the endpoint takes. */
 const T1 = s.object({ todoId: s.id("Todo") }).parse({ todoId: milk.id });
-const toggleT1 = (ctx: Ctx) =>
-  T1.ok ? todosApi(location.origin).toggleTodo({ params: T1.value }, ctx) : Promise.resolve(T1);
+const toggleT1 = (ctx: Ctx) => (T1.ok ? todosApi.toggleTodo({ params: T1.value }, ctx) : Promise.resolve(T1));
 
 describe("schemas", () => {
   it("Board, BoardView, TodoList and Todo accept the model and reject bad values", () => {
@@ -89,7 +88,7 @@ describe("todos.view", () => {
   it("refreshView reads GET /api/lists into the view; syncAfter writes then refreshes", async () => {
     await seedServer();
     const { ctx, sent } = await simApi();
-    expect((await refreshView(location.origin, ctx)).ok).toBe(true);
+    expect((await refreshView(ctx)).ok).toBe(true);
     expect(view.get("lists")).toEqual([L]);
     const r = await syncAfter(ctx, toggleT1(ctx));
     expect(r.ok && r.value.todos[0]?.done).toBe(true);
@@ -106,7 +105,7 @@ describe("todos.view", () => {
   it("a failed read leaves the view unchanged", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     ctx.net.route(LISTS, () => new Response("boom", { status: 500 }));
-    const r = await refreshView(location.origin, ctx);
+    const r = await refreshView(ctx);
     expect(r.ok ? null : r.error.code).toBe("api.status");
     expect(view.snapshot().state).toEqual(shown.state);
   });
@@ -120,7 +119,7 @@ describe("todos service", () => {
       seen.push(`${req.headers.get("accept")} ${req.headers.get("content-type")} ${await req.text()}`);
       return new Response(JSON.stringify({ ok: true, value: null }));
     });
-    const r = await service({ base: location.origin, schema: todos }).createList({ body: { name: "Work" } }, ctx);
+    const r = await service({ module: "api", schema: todos }).createList({ body: { name: "Work" } }, ctx);
     expect(r).toEqual({ ok: true, value: { ok: true, value: null } });
     expect(seen).toEqual(['application/json application/json {"name":"Work"}']);
   });

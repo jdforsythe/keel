@@ -9,6 +9,7 @@ import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
+import { hostLiteralProblems } from "../src/hosting/hostLiteralProblems.ts";
 import { hostProblems } from "../src/hosting/hostProblems.ts";
 import { originOf } from "../src/hosting/originOf.ts";
 import { peerOrigins } from "../src/hosting/peerOrigins.ts";
@@ -167,13 +168,13 @@ describe("parseTopology host", () => {
     expect(topology.api).toEqual({ modules: ["a"], adapter: "node" });
   });
 
-  it("reports a host that is not a string literal, as hostProblems does from the source", () => {
+  it("reports a host that is not a string literal, as hostLiteralProblems does from the source", () => {
     for (const h of ["`api`", "API", '"a" + "pi"', "`${API}`"]) {
       const source = `const API = "api";\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: ${h} } })`;
       const r = parseTopology(source);
       expect(r.problems, h).toEqual(["web: host must be a string literal"]);
       expect(r.topology.web).toEqual({ modules: ["w"], adapter: "client" });
-      expect(hostProblems(r.topology, source)).toEqual([["web", "web: host must be a string literal"]]);
+      expect(hostLiteralProblems(source)).toEqual([["web", "web: host must be a string literal"]]);
       expect(hostProblems(r.topology)).toEqual([]);
     }
   });

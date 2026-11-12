@@ -1,5 +1,5 @@
 import { manifest } from "@keel/router";
-import { ListParams } from "../todos/ListParams.schema.ts";
+import { ListParams } from "./ListParams.schema.ts";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { loadBoard } from "./loadBoard.server.ts";
 import { loadSuggestions } from "./loadSuggestions.server.ts";

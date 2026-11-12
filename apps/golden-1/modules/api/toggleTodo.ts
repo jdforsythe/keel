@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
-import type { Board } from "../todos/Board.schema.ts";
+import type { Board } from "./Board.schema.ts";
 
 /** `api.toggleTodo` on `board` (`boardStores`): flip `done` of todo `id`; an unknown id leaves the board unchanged. */
 export const toggleTodo = (board: Store<Board>) =>

@@ -1,9 +1,9 @@
 import { manifest } from "@keel/router";
+import { ListParams } from "../api/ListParams.schema.ts";
 import AppShell from "./AppShell.tsx";
 import EditTodoPage from "./EditTodoPage.tsx";
 import ListError from "./ListError.tsx";
 import ListPage from "./ListPage.tsx";
-import { ListParams } from "./ListParams.schema.ts";
 import { ListSearch } from "./ListSearch.schema.ts";
 import ListsPage from "./ListsPage.tsx";
 import { TodoParams } from "./TodoParams.schema.ts";

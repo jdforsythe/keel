@@ -1,5 +1,5 @@
 # k.hosting: Client hosting
-status: proposed
+status: implemented
 
 **Purpose.** A `client` deployable builds to files any static host can serve, finds its API by a tag, and may be served by a `node` deployable instead.
 

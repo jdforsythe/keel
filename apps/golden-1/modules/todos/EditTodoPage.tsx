@@ -2,8 +2,8 @@ import { form } from "@keel/forms";
 import { Form } from "@keel/router";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Select, Text } from "@keel/ui";
-import { Todo } from "./Todo.schema.ts";
-import { TodoDraft } from "./TodoDraft.schema.ts";
+import { Todo } from "../api/Todo.schema.ts";
+import { TodoDraft } from "../api/TodoDraft.schema.ts";
 import { routes } from "./routes.ts";
 
 export const Props = s.object({

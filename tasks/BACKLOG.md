@@ -482,3 +482,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0425 docs: the nginx example in `docs/guide/deploy-client.md` was written and not run (nginx is not installed here); the guide's "7 artifacts" on a first build is unverified · docs · 0375
 - [ ] 0426 docs: `docs/GLOSSARY.md` defines the kernel as "the frozen core" while the freeze is provisional (0034 D8); a term definition, so it needs the user or an RFC · docs
 - [ ] 0427 server: `@keel/server` is at 17,138 B of 17,152 B; the next server change re-bases with the reason (replaces 0391) · server · k.server
+- [ ] 0428 check: E1561 compares an endpoint's `errors[422]` with a generic error answer, so golden-1's `FieldsReply` had to widen to `code: s.string()`, `data: s.json()`; a declared error shape narrower than "any error" should be accepted when the route can answer it · check · k.compat, k.services · 0375
+- [ ] 0429 evals: task `golden-1` does not converge: its `pass.ts` expects client-only files (`modules/todos/board.ts`) the app does not have; update or retire the task · evals
+- [ ] 0430 scaffold: `keel codemod move` aborts with E1153 on the interim cycle when several schemas move between two modules; seven of eight moves in golden-1 were done by hand. A batch move, or a cycle check after the last move · scaffold · k.scaffold · 0375
+- [ ] 0431 compiler: a non-literal `adapter` or `modules` in `topology.ts` makes `keel build` throw an uncoded `keel: topology.ts: ...` error and `keel check` reports nothing; give it a code as E1566 has for `host` · compiler, check · k.topology
+

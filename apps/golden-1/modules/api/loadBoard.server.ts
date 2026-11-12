@@ -1,6 +1,6 @@
 import { loader } from "@keel/router";
 import { ok } from "@keel/schema";
-import { BoardView } from "../todos/BoardView.schema.ts";
+import { BoardView } from "./BoardView.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
 /** `GET /api/lists`: every list and todo, and whether `POST /api/undo` would undo this caller's last write. */

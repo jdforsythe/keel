@@ -2,7 +2,7 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "todos",
-  deps: [],
+  deps: ["api"],
   capabilities: ["net", "storage"],
-  public: { exports: ["Suggestion", "Board", "BoardView", "ListDraft", "TodoDraft", "ListParams"], routes: [] },
+  public: { exports: [], routes: [] },
 });

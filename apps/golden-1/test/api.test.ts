@@ -3,6 +3,8 @@ import { scope } from "@keel/reactive";
 import { isolate } from "@keel/store";
 import { properties, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import type { Board } from "../modules/api/Board.schema.ts";
+import { ListParams } from "../modules/api/ListParams.schema.ts";
 import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
 import { addList } from "../modules/api/addList.ts";
 import { addTodo } from "../modules/api/addTodo.ts";
@@ -18,8 +20,6 @@ import { postToggle } from "../modules/api/postToggle.server.ts";
 import { postUndo } from "../modules/api/postUndo.server.ts";
 import { routes } from "../modules/api/routes.ts";
 import { toggleTodo } from "../modules/api/toggleTodo.ts";
-import type { Board } from "../modules/todos/Board.schema.ts";
-import { ListParams } from "../modules/todos/ListParams.schema.ts";
 import { at, boardOf } from "./at.ts";
 import { BOARD_KEY, apiApp, apiCtx, readBoard, resetApi, seedBoard } from "./simApi.ts";
 
