@@ -1,10 +1,12 @@
+import { computed } from "@keel/reactive";
 import { anchored } from "../internal/anchored.ts";
 import { list } from "../ops/list.ts";
 
 /**
  * `<For each={xs} key="id">{(item, index) => ...}</For>` (k.component). Compiler intrinsic: compiled code
- * calls the `list` op with live accessors. At runtime (hand-built trees) a row re-renders when its item
- * object changes; a move keeps the row (and its `index` argument is the index when it rendered).
+ * calls the `list` op with live accessors, so a row whose key stays keeps its nodes. At runtime (hand-built trees)
+ * the row receives plain values, so it re-renders when its item object changes; a move keeps the row (and its
+ * `index` argument is the index when it rendered).
  */
 export function For<T extends object>(props: {
   readonly each: readonly T[];
@@ -30,7 +32,8 @@ export function For<T extends object>(props: {
       each,
       keyOf,
       (item) => {
-        const value = item();
+        // Through a computed: a top-level read of `item()` is untracked in a row, and this row must track it.
+        const value = computed(item).get();
         return props.children(value, indexOf.get(keyOf(value)) ?? 0);
       },
       props.empty,

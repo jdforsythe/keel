@@ -1,4 +1,5 @@
 import { appendChildren } from "../internal/appendChildren.ts";
+import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { make } from "../internal/make.ts";
 import { renderChildren } from "../internal/renderChildren.ts";
@@ -20,8 +21,7 @@ export function Box(
   },
 ): Node {
   return make(tagOf("Box as", BOX_TAGS, props.as, "div"), (el) => {
-    if (props.id !== undefined) el.setAttribute("id", props.id);
-    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
+    applyIdLang(el, props);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));
   });

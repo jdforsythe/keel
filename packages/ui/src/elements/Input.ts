@@ -2,12 +2,17 @@ import type { Field } from "@keel/forms";
 import type { Computed } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
 import { applyDisabled } from "../internal/applyDisabled.ts";
+import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { attrOf } from "../internal/attrOf.ts";
+import { isGetter } from "../internal/isGetter.ts";
 import { isReadable } from "../internal/isReadable.ts";
+import { keptFirst } from "../internal/keptFirst.ts";
 import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import { markFirst } from "../internal/markFirst.ts";
+import { plain } from "../internal/plain.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type InputType = "text" | "email" | "password" | "number" | "search" | "tel" | "url" | "date";
@@ -34,10 +39,10 @@ export function Input(
 ): Node {
   return labelled("input", props, false, (id) =>
     make("input", (el) => {
-      el.setAttribute("type", props.type ?? "text");
+      attrOf(el, "type", isGetter(props, "type"), () => props.type ?? "text");
       el.setAttribute("id", id);
-      if (props.lang !== undefined) el.setAttribute("lang", props.lang);
-      if (props.name !== undefined) el.setAttribute("name", props.name);
+      applyIdLang(el, props, false);
+      attrOf(el, "name", isGetter(props, "name"), () => props.name);
       const v = props.value;
       // A reactive value's first value is also the default (rfc:0062); a password never enters the markup.
       if (isReadable(v))
@@ -53,8 +58,16 @@ export function Input(
             },
           ),
         );
-      else if (v !== undefined) el.setAttribute("value", v);
-      applyDisabled(el, props.disabled);
+      else {
+        if (v !== undefined) el.setAttribute("value", v);
+        if (isGetter(props, "value"))
+          prop(
+            el,
+            "value",
+            keptFirst(el, "value", () => plain(props.value)),
+          );
+      }
+      applyDisabled(el, props);
       applyStyle(el, props);
       const h = props.onInput;
       if (h !== undefined) listen(el, "input", () => h(el.value));

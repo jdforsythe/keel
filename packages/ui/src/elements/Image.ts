@@ -1,5 +1,7 @@
-import { safeUrl } from "@keel/runtime-dom/url";
+import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { attrOf } from "../internal/attrOf.ts";
+import { isGetter } from "../internal/isGetter.ts";
 import { make } from "../internal/make.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
@@ -17,13 +19,11 @@ export function Image(
   } & Alt,
 ): Node {
   return make("img", (el) => {
-    if (props.src !== undefined) el.setAttribute("src", safeUrl("src", props.src));
-    if (props.id !== undefined) el.setAttribute("id", props.id);
-    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
-    if (props.decorative === true) {
-      el.setAttribute("alt", "");
-      el.setAttribute("role", "presentation");
-    } else el.setAttribute("alt", props.alt ?? "");
+    attrOf(el, "src", isGetter(props, "src"), () => props.src);
+    applyIdLang(el, props);
+    const live = isGetter(props, "alt") || isGetter(props, "decorative");
+    attrOf(el, "alt", live, () => (props.decorative === true ? "" : (props.alt ?? "")));
+    attrOf(el, "role", live, () => (props.decorative === true ? "presentation" : null));
     applyStyle(el, props);
   });
 }

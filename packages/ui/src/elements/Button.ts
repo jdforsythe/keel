@@ -1,7 +1,10 @@
 import type { Computed } from "@keel/reactive";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyDisabled } from "../internal/applyDisabled.ts";
+import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { attrOf } from "../internal/attrOf.ts";
+import { isGetter } from "../internal/isGetter.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import { renderChildren } from "../internal/renderChildren.ts";
@@ -25,10 +28,9 @@ export function Button(
   },
 ): Node {
   return make("button", (el) => {
-    el.setAttribute("type", props.type ?? "button");
-    if (props.id !== undefined) el.setAttribute("id", props.id);
-    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
-    applyDisabled(el, props.disabled);
+    attrOf(el, "type", isGetter(props, "type"), () => props.type ?? "button");
+    applyIdLang(el, props);
+    applyDisabled(el, props);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));
     listen(el, "click", props.onClick);

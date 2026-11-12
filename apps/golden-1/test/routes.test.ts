@@ -161,6 +161,24 @@ describe("event props", () => {
   });
 });
 
+describe("todos.list keyed rows", () => {
+  it("toggling a todo re-reads the board and changes only the toggled control's checked state", async () => {
+    await seedBoard(boardOf(seeded));
+    const { ctx } = await simApi();
+    const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
+    const before = r.a11y("todos.items");
+    await r.fire("todos.toggle.t1", { type: "change" });
+    expect(r.find("todos.toggle.t1")).toMatchObject({ role: "checkbox", name: "Done: Milk", state: { checked: true } });
+    const flip = (n: A11yNode): A11yNode => ({
+      ...n,
+      state: n.id === "todos.toggle.t1" ? { ...n.state, checked: true } : n.state,
+      children: n.children.map(flip),
+    });
+    expect(r.a11y("todos.items")).toEqual(flip(before));
+    r.dispose();
+  });
+});
+
 describe("todos.edit", () => {
   it("readOnly redirects to todos.index", async () => {
     await seedBoard(boardOf(seeded));

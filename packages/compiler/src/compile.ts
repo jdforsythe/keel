@@ -16,6 +16,7 @@ import { ruleControlFlow } from "./internal/rules/ruleControlFlow.ts";
 import { rulePropsDestructuring } from "./internal/rules/rulePropsDestructuring.ts";
 import { ruleRawHtml } from "./internal/rules/ruleRawHtml.ts";
 import { ruleServerImport } from "./internal/rules/ruleServerImport.ts";
+import { ruleTopLevelPropRead } from "./internal/rules/ruleTopLevelPropRead.ts";
 import { ruleUrlLiteral } from "./internal/rules/ruleUrlLiteral.ts";
 import type { A11yEntry } from "./types/A11yEntry.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
@@ -100,6 +101,7 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
       ...ruleServerImport(a, clientOnly(a.path, options.topology)),
       ...ruleAndJsx(a),
       ...ruleControlFlow(a),
+      ...ruleTopLevelPropRead(a),
       ...destructuring.diagnostics,
     );
     const elements = collectElements(a);

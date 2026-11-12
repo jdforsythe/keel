@@ -310,6 +310,13 @@ const ROWS: readonly Row[] = [
     "k.component",
   ],
   [
+    "E1405",
+    "a prop read at a component's top level reaches the DOM or a child's props",
+    "Read once: a kept For row or a changed prop shows the old value.",
+    "const l = props.label; {l} -> {props.label}",
+    "k.component",
+  ],
+  [
     "E1451",
     "throw in app code",
     "Expected failures are Result values; bugs reach the nearest Boundary.",

@@ -1,10 +1,15 @@
 import type { Field } from "@keel/forms";
 import type { Computed } from "@keel/reactive";
+import { effect } from "@keel/reactive";
 import { prop } from "@keel/runtime-dom/ops";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyDisabled } from "../internal/applyDisabled.ts";
+import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { attrOf } from "../internal/attrOf.ts";
+import { isGetter } from "../internal/isGetter.ts";
 import { isReadable } from "../internal/isReadable.ts";
+import { keptFirst } from "../internal/keptFirst.ts";
 import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
@@ -32,19 +37,29 @@ export function Select(
   return labelled("select", props, false, (id) =>
     make("select", (el) => {
       el.setAttribute("id", id);
-      if (props.lang !== undefined) el.setAttribute("lang", props.lang);
-      if (props.name !== undefined) el.setAttribute("name", props.name);
+      applyIdLang(el, props, false);
+      attrOf(el, "name", isGetter(props, "name"), () => props.name);
       const v = props.value;
-      appendChildren(
-        el,
-        (props.options ?? []).map((o) =>
+      const optionsOf = (os: readonly Option[] | undefined): Node[] =>
+        (os ?? []).map((o) =>
           make("option", (opt) => {
             opt.setAttribute("value", o.value);
             if (typeof v === "string" && v === o.value) opt.setAttribute("selected", "");
             opt.appendChild(document.createTextNode(o.label));
           }),
-        ),
-      );
+        );
+      let shown = props.options;
+      appendChildren(el, optionsOf(shown));
+      // A new options array replaces the options; the selected value stays.
+      if (isGetter(props, "options"))
+        effect(() => {
+          const os = props.options;
+          if (os === shown) return;
+          shown = os;
+          const keep = el.value;
+          el.replaceChildren(...optionsOf(os));
+          el.value = keep;
+        });
       // A reactive value's first value is also the default (rfc:0062): its option carries `selected`.
       if (isReadable(v))
         prop(
@@ -60,7 +75,13 @@ export function Select(
                 ?.setAttribute("selected", ""),
           ),
         );
-      applyDisabled(el, props.disabled);
+      else if (isGetter(props, "value"))
+        prop(
+          el,
+          "value",
+          keptFirst(el, "value", () => (typeof props.value === "string" ? props.value : el.value)),
+        );
+      applyDisabled(el, props);
       applyStyle(el, props);
       const h = props.onChange;
       if (h !== undefined) listen(el, "change", () => h(el.value));

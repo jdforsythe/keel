@@ -1,7 +1,9 @@
 import type { Href } from "@keel/router";
-import { safeUrl } from "@keel/runtime-dom/url";
 import { appendChildren } from "../internal/appendChildren.ts";
+import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { attrOf } from "../internal/attrOf.ts";
+import { isGetter } from "../internal/isGetter.ts";
 import { make } from "../internal/make.ts";
 import { renderChildren } from "../internal/renderChildren.ts";
 import type { Child } from "../types/Child.ts";
@@ -18,9 +20,8 @@ export function Link(
   },
 ): Node {
   return make("a", (el) => {
-    el.setAttribute("href", safeUrl("href", props.to));
-    if (props.id !== undefined) el.setAttribute("id", props.id);
-    if (props.lang !== undefined) el.setAttribute("lang", props.lang);
+    attrOf(el, "href", isGetter(props, "to"), () => props.to);
+    applyIdLang(el, props);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));
   });

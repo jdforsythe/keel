@@ -95,13 +95,25 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
         {props.data.name}
       </Heading>
       <Box as="section" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
-        <Link id="todos.filter.all" to={routes.href("todos.list", { listId }, { filter: "all" })} fg="text">
+        <Link
+          id="todos.filter.all"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "all" })}
+          fg="text"
+        >
           All
         </Link>
-        <Link id="todos.filter.active" to={routes.href("todos.list", { listId }, { filter: "active" })} fg="text">
+        <Link
+          id="todos.filter.active"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "active" })}
+          fg="text"
+        >
           Active
         </Link>
-        <Link id="todos.filter.done" to={routes.href("todos.list", { listId }, { filter: "done" })} fg="text">
+        <Link
+          id="todos.filter.done"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "done" })}
+          fg="text"
+        >
           Done
         </Link>
       </Box>
