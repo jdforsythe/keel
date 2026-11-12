@@ -269,10 +269,12 @@ export async function lostUpdate(g: Group, first = "Oat milk", second = "Soy mil
   const click = async (u: 0 | 1, id: string): Promise<void> => {
     await g.user(u).fire(id, { type: "click" });
     await g.settle();
+    await g.advance(1);
   };
   const type = async (u: 0 | 1, value: string): Promise<void> => {
     await g.user(u).fire("todo.draft", { type: "input", value });
     await g.settle();
+    await g.advance(1);
   };
   await click(0, "todo.refresh");
   await click(1, "todo.refresh");

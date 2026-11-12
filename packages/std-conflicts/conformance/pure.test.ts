@@ -46,9 +46,9 @@ describe("std.conflicts: races is pure", () => {
           { t: "edit", id: "x", title: first, base: 1 },
           { t: "edit", id: "x", title: second, base: 1 },
         ];
+        const snap = deepFreeze(snapshotOf({}, ops));
         const live = open({}, ops);
         try {
-          const snap = deepFreeze(snapshotOf({}, ops));
           const before = JSON.stringify(snap);
           const liveBefore = JSON.stringify(live.stores.board.snapshot({ meta: true }));
           const a = races(snap, boardStores());
