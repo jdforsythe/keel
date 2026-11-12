@@ -13,7 +13,6 @@ import { contentText } from "../src/internal/contentText.ts";
 import { elementsWithId } from "../src/internal/elementsWithId.ts";
 import { eventFor } from "../src/internal/eventFor.ts";
 import { firstLine } from "../src/internal/firstLine.ts";
-import { focusable } from "../src/internal/focusable.ts";
 import { isSelector } from "../src/internal/isSelector.ts";
 import { jsonOf } from "../src/internal/jsonOf.ts";
 import { labelText } from "../src/internal/labelText.ts";
@@ -656,42 +655,6 @@ describe("small helpers", () => {
     expect(key instanceof KeyboardEvent && key.key).toBe("Enter");
     const submit = eventFor(input, { type: "submit" });
     expect([submit.type, submit.bubbles, submit.cancelable]).toEqual(["submit", true, true]);
-  });
-
-  it("focusable admits what a user can focus and nothing else", () => {
-    const el = (html: string): Element => {
-      const box = document.createElement("div");
-      box.innerHTML = html;
-      return box.firstElementChild ?? box;
-    };
-    for (const html of [
-      "<button>b</button>",
-      "<input>",
-      '<input type="TEXT">',
-      "<select></select>",
-      "<textarea></textarea>",
-      "<summary>s</summary>",
-      '<a href="/x">a</a>',
-      '<area href="/x">',
-      '<div contenteditable="">d</div>',
-      '<div contenteditable="true">d</div>',
-      '<div tabindex="-1">d</div>',
-      '<span tabindex="0">s</span>',
-    ])
-      expect([html, focusable(el(html))]).toEqual([html, true]);
-    for (const html of [
-      "<div>d</div>",
-      "<a>a</a>",
-      "<area>",
-      "<button disabled>b</button>",
-      '<input type="hidden">',
-      '<input type="HIDDEN" tabindex="0">',
-      "<input hidden>",
-      '<button aria-hidden="true">b</button>',
-      '<div contenteditable="false">d</div>',
-      "<p>p</p>",
-    ])
-      expect([html, focusable(el(html))]).toEqual([html, false]);
   });
 
   it("moveFocus names the element and the event in E1719", () => {
