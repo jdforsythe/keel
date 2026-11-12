@@ -19,13 +19,18 @@ export interface Store<T> {
   get<K extends keyof T>(key: K): T[K];
   /** A computed over the committed state. Call inside a scope. */
   select<R>(fn: (state: T) => R): Computed<R>;
+  /** The count of the store's changes: 0 when new, one more per commit and per undo that undoes. Reactive. */
+  head(): number;
   /** Committed entries, oldest first. Reactive. */
   log(): readonly LogEntry[];
-  /** JSON-safe copy of state, log and `initial`; log entries carry `meta` only with `{ meta: true }` (never for clients). */
+  /** JSON-safe copy of state, log, `initial` and `head`; log entries carry `meta` only with `{ meta: true }` (never for clients). */
   snapshot(options?: { readonly meta?: boolean }): Snapshot<T>;
-  /** Decode a snapshot and replace state and log; `schema.invalid` leaves the store unchanged. */
+  /**
+   * Decode a snapshot and replace state, log and head (without `head`: the latest entry's `id`, else 0);
+   * `schema.invalid` leaves the store unchanged.
+   */
   restore(snapshot: unknown): Result<T, SchemaError>;
-  /** Drop the last log entry and restore the state before it; false when the log is empty. */
+  /** Drop the last log entry and restore the state before it, raising the head; false when the log is empty. */
   undo(): boolean;
   /**
    * Undo the latest entry only when `pred(entry)` holds for it; true when it did. An older matching entry is never

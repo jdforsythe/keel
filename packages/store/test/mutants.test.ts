@@ -181,7 +181,7 @@ describe("restore", () => {
     expect(last?.at).toBe(3);
   });
 
-  it("restore keeps seq/tick at least their prior maximum", () => {
+  it("restore sets the head from the snapshot and keeps the tick at least its prior maximum", () => {
     const k = makeCounter();
     tx(k.add, { by: 1 });
     tx(k.add, { by: 1 });
@@ -189,7 +189,8 @@ describe("restore", () => {
     const empty = makeCounter().c.snapshot();
     expect(k.c.restore(empty).ok).toBe(true);
     tx(k.add, { by: 1 });
-    expect(k.c.log()[0]?.id).toBe(4);
+    expect(k.c.log()[0]?.id).toBe(1);
+    expect(k.c.head()).toBe(1);
     expect(k.c.log()[0]?.at).toBe(4);
   });
 

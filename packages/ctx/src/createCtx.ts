@@ -8,6 +8,7 @@ import { realClock } from "./internal/realClock.ts";
 import { realNet } from "./internal/realNet.ts";
 import { realRandom } from "./internal/realRandom.ts";
 import { realStorage } from "./internal/realStorage.ts";
+import { report } from "./internal/report.ts";
 import { simClock } from "./internal/simClock.ts";
 import { simNet } from "./internal/simNet.ts";
 import { simRandom } from "./internal/simRandom.ts";
@@ -28,10 +29,16 @@ export function createCtx(opts: CtxOptions): Ctx;
 export function createCtx(opts: CtxOptions): Ctx {
   const mode = opts.mode ?? defaultMode();
   const seed = opts.seed ?? 0;
+  // The net reports connectivity changes on the ctx it belongs to; a window listener must not keep that ctx alive.
+  const self: { ref?: WeakRef<Ctx> } = {};
+  const changed = (online: boolean): void => report(self.ref?.deref(), { kind: "net", online });
   if (mode === "sim") {
-    const sim: SimCtx = { clock: simClock(), random: simRandom(seed), net: simNet(), storage: simStorage() };
+    const sim: SimCtx = { clock: simClock(), random: simRandom(seed), net: simNet(changed), storage: simStorage() };
+    self.ref = new WeakRef(sim);
     return seal(sim, mode, seed, opts.seed);
   }
-  const ctx: Ctx = { clock: realClock(), random: realRandom(), net: realNet(), storage: opts.storage ?? realStorage() };
+  const net = realNet(changed);
+  const ctx: Ctx = { clock: realClock(), random: realRandom(), net, storage: opts.storage ?? realStorage() };
+  self.ref = new WeakRef(ctx);
   return seal(ctx, mode, seed, opts.seed);
 }

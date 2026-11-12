@@ -6,7 +6,8 @@ import type { FireEvent } from "./FireEvent.ts";
  * with the matched route's id, path pattern, decoded params and search, and their schemas. `fire`: an input event
  * dispatched to element `id`, before its handlers (a password `input` value arrives as `x` repeated). `resource`:
  * `Match` rendered a resource state (`id`: the resource's `inspect()` node id). `error`: a Boundary caught, or a loader
- * or action returned `err`.
+ * or action returned `err`. `save`: an action saved `store`, now at `head`. `net`: `ctx.net.online()` changed. Neither
+ * `save` nor `net` is replayed to a later observer.
  */
 export type CtxEvent =
   | {
@@ -32,4 +33,6 @@ export type CtxEvent =
       readonly error: KeelError<string, unknown>;
       /** Set only when the event is replayed to a new observer: `clock.now()` when it was reported. */
       readonly at?: number;
-    };
+    }
+  | { readonly kind: "save"; readonly store: string; readonly head: number }
+  | { readonly kind: "net"; readonly online: boolean };
