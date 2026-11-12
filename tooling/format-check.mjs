@@ -6,22 +6,31 @@ import { run } from "./output.ts";
 
 const root = path.join(import.meta.dirname, "..");
 
+/** A path as one shell word: bare when it is plain, else single-quoted with embedded quotes escaped. */
+function shellWord(file) {
+  return /^[\w@%+=:,./-]+$/.test(file) ? file : `'${file.replaceAll("'", "'\\''")}'`;
+}
+
+const fileOf = (d) => String(d.location?.path?.file ?? "").replace(/^\.\//, "");
+
 /** Biome's JSON report to diagnostics: one F0001 per unformatted file, one F0002 per other error. */
 export function parseReport(text) {
   const report = JSON.parse(text);
   const diags = [];
-  for (const d of report.diagnostics ?? []) {
-    if (d.severity !== "error") continue;
-    const file = String(d.location?.path?.file ?? "").replace(/^\.\//, "");
-    if (d.category === "format")
+  const errors = (report.diagnostics ?? []).filter((d) => d.severity === "error");
+  const unreadable = new Set(errors.filter((d) => d.category !== "format").map(fileOf));
+  for (const d of errors) {
+    const file = fileOf(d);
+    if (d.category === "format") {
+      if (unreadable.has(file)) continue;
       diags.push({
         kind: "diag",
         code: "F0001",
         path: file,
         message: "not formatted",
-        fix: `pnpm exec biome format --write ${file}`,
+        fix: `pnpm exec biome format --write ${shellWord(file)}`,
       });
-    else
+    } else
       diags.push({
         kind: "diag",
         code: "F0002",

@@ -22,6 +22,22 @@ describe("parseReport", () => {
       },
     ]);
   });
+  it("quotes a path with a space or a single quote in the fix line", () => {
+    const fix = (file: string) =>
+      parseReport(report([{ category: "format", severity: "error", location: { path: { file } } }])).diags[0]?.fix;
+    expect(fix("a b/c.ts")).toBe("pnpm exec biome format --write 'a b/c.ts'");
+    expect(fix("it's.ts")).toBe("pnpm exec biome format --write 'it'\\''s.ts'");
+  });
+  it("reports only F0002 for a file Biome could not parse", () => {
+    const at = { path: { file: "x.ts" } };
+    const { diags } = parseReport(
+      report([
+        { category: "parse", severity: "error", description: "bad", location: at },
+        { category: "format", severity: "error", location: at },
+      ]),
+    );
+    expect(diags.map((d) => d.code)).toEqual(["F0002"]);
+  });
   it("makes an F0002 for a file Biome could not read, one line", () => {
     const { diags } = parseReport(
       report([

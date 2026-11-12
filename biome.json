@@ -32,7 +32,8 @@
       "**/conformance/.tmp-*/**",
       ".fixtures/**",
       "**/.keel/**",
-      "**/reports/**",
+      "packages/*/reports/**",
+      "tooling/reports/**",
       "**/.stryker-tmp/**"
     ]
   }
