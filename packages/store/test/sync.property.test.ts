@@ -176,6 +176,26 @@ describe("@keel/store sync properties", () => {
       opts,
     );
   });
+
+  it("restoring a snapshot the store produced sets head() to its head, and the next commit's id is head + 1", () => {
+    fc.assert(
+      fc.property(modeArb, fc.array(stepArb, { maxLength: 30 }), (mode, steps) => {
+        const src = make(mode);
+        for (const st of steps) step(src, st);
+        const snap = src.bag.snapshot();
+        const dst = make(mode);
+        tx(dst.push, { v: 0 });
+        expect(dst.bag.restore(snap).ok).toBe(true);
+        expect(dst.bag.head()).toBe(snap.head);
+        const r = tx(dst.push, { v: 0 });
+        if (r.ok) expect(dst.bag.log().at(-1)?.id).toBe(snap.head + 1);
+        else expect(dst.bag.get("items").length).toBe(CAP);
+        src.dispose();
+        dst.dispose();
+      }),
+      opts,
+    );
+  });
 });
 
 describe("@keel/store sync examples", () => {
@@ -222,6 +242,41 @@ describe("@keel/store sync examples", () => {
       if (!r.ok) expect(r.error.code).toBe("schema.invalid");
       expect(k.bag.head()).toBe(1);
     }
+    k.dispose();
+  });
+
+  it("a snapshot whose head is below its latest entry's id is schema.invalid and changes nothing", () => {
+    const k = make("reject");
+    for (const v of [1, 2, 3]) tx(k.push, { v });
+    const dst = make("reject");
+    tx(dst.push, { v: 9 });
+    const snap = k.bag.snapshot();
+    for (const head of [0, 1, 2]) {
+      const r = dst.bag.restore({ ...snap, head });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error.code).toBe("schema.invalid");
+      expect(dst.bag.head()).toBe(1);
+      expect(dst.bag.get("items")).toEqual([9]);
+    }
+    expect(tx(dst.push, { v: 4 }).ok).toBe(true);
+    expect(dst.bag.log().map((e) => e.id)).toEqual([1, 2]);
+    expect(dst.bag.restore({ ...snap, head: 3 }).ok).toBe(true);
+    expect(dst.bag.restore({ ...snap, head: 7 }).ok).toBe(true);
+    expect(dst.bag.head()).toBe(7);
+    k.dispose();
+    dst.dispose();
+  });
+
+  it("restore may lower a live store's head: it sets the head of any valid snapshot", () => {
+    const k = make("reject");
+    tx(k.push, { v: 1 });
+    const older = k.bag.snapshot();
+    for (const v of [2, 3, 4]) tx(k.push, { v });
+    expect(k.bag.head()).toBe(4);
+    expect(k.bag.restore(older).ok).toBe(true);
+    expect(k.bag.head()).toBe(1);
+    expect(tx(k.push, { v: 5 }, { base: 1 }).ok).toBe(true);
+    expect(k.bag.log().map((e) => e.id)).toEqual([1, 2]);
     k.dispose();
   });
 

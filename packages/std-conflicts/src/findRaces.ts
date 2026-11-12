@@ -1,6 +1,4 @@
-import type { JsonValue } from "@keel/schema";
 import { type SessionGroup, replayGroup } from "@keel/std-sessions/group";
-import type { Snapshot } from "@keel/store";
 import type { FindRacesOptions } from "./FindRacesOptions.ts";
 import type { FindRacesResult } from "./FindRacesResult.ts";
 import type { Race } from "./Race.ts";
@@ -17,15 +15,15 @@ export async function findRaces(group: SessionGroup, options: FindRacesOptions):
   const races: Race[] = [];
   const unchecked: Unchecked[] = [];
   for (const id of Object.keys(replay.server).sort()) {
-    const raw: unknown = replay.server[id];
-    const parsed: unknown = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (!isSnapshot(parsed)) continue;
+    const parsed = parse(replay.server[id]);
     for (const factory of options.stores) {
+      // The store's own `restore` validates the stored value; one it refuses is not examined (null: `withFactory`
+      // throws on undefined).
       const found = withFactory(factory, (made) => {
         const st = made.stores.find((x) => x.id === id);
-        return st === undefined ? undefined : checkStore(st, made.txs, parsed);
+        return st?.restore(parsed).ok === true ? checkStore(st, made.txs, st.snapshot({ meta: true })) : null;
       });
-      if (found === undefined) continue;
+      if (found === null) continue;
       races.push(...found.races);
       unchecked.push(...found.unchecked);
       break;
@@ -34,5 +32,11 @@ export async function findRaces(group: SessionGroup, options: FindRacesOptions):
   return { replay, races, unchecked };
 }
 
-const isSnapshot = (v: unknown): v is Snapshot<JsonValue> =>
-  typeof v === "object" && v !== null && "state" in v && Array.isArray(Reflect.get(v, "log")) && "initial" in v;
+// A stored value as JSON text is parsed; text that is not JSON is `undefined`, which no store restores.
+const parse = (raw: unknown): unknown => {
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return undefined;
+  }
+};

@@ -212,8 +212,9 @@ export function store<T extends object>(
       const codec = logSchema(payloads);
       const whole = s.object({ state: schema, log: codec, initial: schema }).parse(snap);
       if (!whole.ok) return whole;
-      const rawHead = typeof snap === "object" && snap !== null ? Reflect.get(snap, "head") : undefined;
-      const head = rawHead === undefined ? ok(undefined) : baseSchema.parse(rawHead);
+      // A head below the latest entry's id would let the next commit reuse an id: the snapshot is invalid.
+      const latest = whole.value.log.at(-1)?.id ?? 0;
+      const head = s.object({ head: s.int({ min: latest }).optional() }).parse(snap);
       if (!head.ok) return head;
       const state = copy(schema, whole.value.state);
       if (!state.ok) return state;
@@ -229,7 +230,7 @@ export function store<T extends object>(
         next.push({ entry: freeze({ ...e, payload: bound.value.payload }), apply: bound.value.apply });
       }
       for (const r of next) tick = Math.max(tick, r.entry.at);
-      seq = head.value ?? next.at(-1)?.entry.id ?? 0;
+      seq = head.value.head ?? latest;
       const restored = freeze(state.value);
       const kept = trim(freeze(initial.value), next, limit);
       base = kept.base;

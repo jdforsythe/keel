@@ -24,4 +24,13 @@ describe("canonical", () => {
     expect(canonical([{ id: 1 }, { id: 2 }])).not.toBe(canonical([{ id: 2 }, { id: 1 }]));
     expect(canonical([{ id: "a" }, 3])).not.toBe(canonical([3, { id: "a" }]));
   });
+  test("record keys __proto__, constructor and toString compare by value like any other key", () => {
+    for (const key of ["__proto__", "constructor", "toString", "a"]) {
+      // JSON.parse makes `key` an own property, as a stored state holds it.
+      const one = JSON.parse(`{${JSON.stringify(key)}:1,"z":0}`);
+      const two = JSON.parse(`{${JSON.stringify(key)}:2,"z":0}`);
+      expect(canonical(one)).not.toBe(canonical(two));
+      expect(canonical(one)).toBe(`{${JSON.stringify(key)}:1,"z":0}`);
+    }
+  });
 });

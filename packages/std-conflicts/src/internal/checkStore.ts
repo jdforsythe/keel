@@ -25,7 +25,9 @@ export function checkStore(
   log.forEach((e, i) => {
     const base = e.base;
     if (base === undefined) return;
-    if (base < start) {
+    // A base older than the kept log, or not below the entry's own id (no commit could have seen it), has no
+    // rebuildable state.
+    if (base < start || base >= e.id) {
       unchecked.push({ store: st.id, id: e.id, reason: "folded" });
       return;
     }
@@ -42,7 +44,11 @@ export function checkStore(
       snap.initial,
       seen.filter((x) => x.id <= base),
     );
-    if (at === undefined) return;
+    // The kept log cannot rebuild the base state (`initial` fails to restore or a kept entry fails to replay).
+    if (at === undefined) {
+      unchecked.push({ store: st.id, id: e.id, reason: "folded" });
+      return;
+    }
     const after = applyAll(st, txs, at.state, [...concurrent, e]);
     const before = applyAll(st, txs, at.state, [e, ...concurrent]);
     const kind =

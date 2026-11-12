@@ -1,4 +1,6 @@
+import { s } from "@keel/schema";
 import { races } from "@keel/std-conflicts";
+import { store, transaction } from "@keel/store";
 import { describe, expect, test } from "vitest";
 import { boardStores, snapshotAfter, tallyStores } from "./helpers.ts";
 
@@ -51,5 +53,55 @@ describe("races", () => {
       return { board, a };
     };
     expect(() => races(snap, partial())).toThrow(/no transaction t.rename/);
+  });
+
+  test("an entry whose base state cannot be rebuilt because initial fails to restore is unchecked folded", () => {
+    const snap = snapshotAfter(boardStores(), [add("a", "x"), rename("a", "y", 0)]);
+    const broken = { ...snap, initial: { titles: "none" } };
+    expect(races(broken, boardStores())).toEqual({
+      races: [],
+      unchecked: [{ store: "t.board", id: 2, reason: "folded" }],
+    });
+  });
+
+  test("an entry whose base state cannot be rebuilt because a kept entry fails to replay is unchecked folded", () => {
+    const snap = snapshotAfter(boardStores(), [add("a", "x"), add("b", "y"), add("c", "z"), rename("c", "w", 2)]);
+    // Replaying `add a x` onto this initial breaks the unique-title invariant.
+    const broken = { ...snap, initial: { titles: [{ id: "q", title: "x" }] } };
+    expect(races(broken, boardStores())).toEqual({
+      races: [],
+      unchecked: [{ store: "t.board", id: 4, reason: "folded" }],
+    });
+  });
+
+  test("when two stores of the factory hold the snapshot, the factory's first is checked", () => {
+    const snap = snapshotAfter(boardStores(), [add("a", "x"), rename("a", "y"), add("b", "z"), rename("a", "w", 1)]);
+    const Board = s.object({ titles: s.array(s.object({ id: s.string(), title: s.string() })) });
+    const Item = s.object({ id: s.string(), title: s.string() });
+    const board = (id: string) => {
+      const b = store(Board, { titles: [] }, { id });
+      const a = transaction(b, "t.add", Item, (st, p) => ({ titles: [...st.titles, p] }), { concurrent: "rebase" });
+      const r = transaction(
+        b,
+        "t.rename",
+        Item,
+        (st, p) => ({ titles: st.titles.map((x) => (x.id === p.id ? { ...x, title: p.title } : x)) }),
+        { concurrent: "rebase" },
+      );
+      return [b, a, r];
+    };
+    const twins = (ids: readonly string[]) => () => Object.fromEntries(ids.flatMap(board).map((v, i) => [i, v]));
+    expect(races(snap, twins(["t.one", "t.two"])).races.map((r) => r.store)).toEqual(["t.one"]);
+    expect(races(snap, twins(["t.two", "t.one"])).races.map((r) => r.store)).toEqual(["t.two"]);
+  });
+
+  test("an entry whose base is not below its own id is unchecked folded", () => {
+    for (const base of [2, 5]) {
+      const snap = snapshotAfter(boardStores(), [add("a", "x"), rename("a", "y", base)]);
+      expect(races(snap, boardStores())).toEqual({
+        races: [],
+        unchecked: [{ store: "t.board", id: 2, reason: "folded" }],
+      });
+    }
   });
 });

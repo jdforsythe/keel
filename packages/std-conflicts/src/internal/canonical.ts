@@ -15,11 +15,13 @@ const order = (v: unknown): unknown => {
         .map((t): unknown => JSON.parse(t.text));
     return v.map(order);
   }
-  if (typeof v === "object" && v !== null) {
-    const out: { [key: string]: unknown } = {};
-    for (const k of Object.keys(v).sort()) out[k] = order(Reflect.get(v, k));
-    return out;
-  }
+  // `fromEntries` defines own properties, so a key such as `__proto__` is kept, not assigned through the prototype.
+  if (typeof v === "object" && v !== null)
+    return Object.fromEntries(
+      Object.keys(v)
+        .sort()
+        .map((k) => [k, order(Reflect.get(v, k))]),
+    );
   return v;
 };
 
