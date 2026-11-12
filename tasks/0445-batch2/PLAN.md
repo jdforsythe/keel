@@ -11,7 +11,7 @@
 
 ## Steps
 - [x] 1 RFC 0090 accepted, ADR-0113, k.component text (Control flow sentence, E1405 in Shape, two Conformance clauses; E1405 in k.check's fix list), conformance files (runtime-dom `for-keyed-rows-0090`, check `E1405-top-level-prop-read`, E1405 in `fixtures-by-code.ts` and `fix-diffs.test.ts`): committed bebbef9 (wip, tests red until lane A lands). The runtime-dom tests drive the `list` op from `@keel/runtime-dom/ops`.
-- [ ] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation, from the held patches in `tasks/0432-friction-batch1/`) running
+- [x] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation, from the held patches in `tasks/0432-friction-batch1/`) running
 - [ ] 3 wave 2 lanes
 - [ ] 4 reviewer and red-team; findings to the backlog
 - [ ] 5 ledger, budgets, mutation for changed packages, backlog, handoff, push
@@ -26,7 +26,7 @@
 - 0389 done: `packages/server/src/internal/stripHop.ts` is the one header list for both directions; a forwarded response drops hop-by-hop, `connection`-named, `content-encoding` and `content-length` headers; `test/forwardResponseHeaders.test.ts`; server 477 pass, 17,490 B (re-base at step 5). k.topology sentence corrected and the section trimmed to stay at 1,500 tokens. Changeset: server patch.
 
 - lane A reported (RFC 0090), committed f6ccd57: both held patches applied unchanged; `for-keyed-rows-0090` 8/8; `@keel/ui` binds every prop given as a getter (`as` and `level` choose the tag and stay read-once), `test/keptRow.test.ts`; E1405 in `compiler/src/internal/rules/ruleTopLevelPropRead.ts`, one hit in the repo (golden-1 `ListPage.tsx`, fixed with the rule's fix). Bytes: runtime-dom 4,128, ui 3,453, compiler 28,153, check 42,489. Rule limits filed 0447. k.component E1405 sentence made exact.
-- OPEN: lane F's manifest typing (530af9c) turned E1510/E1508 into E1751 in 9 check tests; sent back to the router agent.
+- lane F's manifest typing (530af9c) turned E1510/E1508 into E1751 in 9 check tests; fixed in `router/src/types/RouteTitles.ts` (each member is a `RouteDef`, so a refused entry fails at its own key again); check 1027 pass, root test 56 tasks green.
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green
@@ -34,4 +34,4 @@
 - [ ] golden-1 list page: focus stays on the toggled control (test)
 
 ## Next action
-Collect the router agent's E1510/E1508 fix and commit it. Then wave 2 rest (0409, 0431, 0440, 0443), then steps 4 and 5.
+Collect the wave 2 agent (0431, 0409, 0440). Then 0443, then steps 4 and 5 (server budget re-base 17,490 B).
