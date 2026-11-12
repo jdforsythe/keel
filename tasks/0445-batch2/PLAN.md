@@ -1,6 +1,6 @@
 # Task 0445: keyed rows (RFC 0090) and no-decision backlog items, batch 2
 
-**Spec:** k.component, k.runtime, k.check, k.scaffold, k.topology, k.head · **Principles:** 1, 2, 5 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open
+**Spec:** k.component, k.runtime, k.check, k.scaffold, k.topology, k.head · **Principles:** 1, 2, 5 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed in code; mutation scores pending
 
 ## Decisions
 - D1 (orchestrator, for the user to confirm or reverse; the user said to decide and keep moving) RFC 0090 is accepted with: Q1 yes, a keyed row keeps its nodes and a top-level read of the item does not re-render it; Q2 a kernel check rule, E1405, an error with a fix (WORKFLOW RFC default 6: enforcement over documentation); Q3 the hand-built `For` keeps its present behavior.
@@ -17,7 +17,7 @@
 - [x] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation, from the held patches in `tasks/0432-friction-batch1/`) running
 - [x] 3 wave 2 lanes: 0389, 0431, 0409, 0440 done; 0443 partly (see Notes)
 - [x] 4 reviewer (approve) and red-team (0452-0457); all six and the reviewer's two lows fixed in-batch; 0458, 0459 filed
-- [ ] 5 ledger, budgets, mutation for changed packages, backlog, handoff, push
+- [ ] 5 ledger, budgets, backlog, handoff done; mutation for the changed packages started (`pnpm mutate:changed --base e192395`), scores not recorded; push
 
 - lane B reported (0437): `opProject.ts` writes `.gitignore` for every `project` run, test in `test/project-brand.test.ts`, scaffold tests 220 pass; budget bytes not read (measure at step 5); proposed k.scaffold clause: "`project` writes a `.gitignore` listing `node_modules`, `dist`, `.keel-dev/` and `.keel/sessions/`, and not `.keel/`" (not added yet). Changeset: scaffold patch.
 
@@ -46,4 +46,4 @@
 - [x] golden-1 list page: focus stays on the toggled control (test): met as D5 states (runtime-dom conformance for identity and focus; golden-1 asserts the a11y tree)
 
 ## Next action
-Step 5 remainder: `pnpm mutate:changed --base e192395` (runs alone, 30 min budget per package), then handoff and push.
+When the mutation run ends (`pnpm mutate:status`): record each package's score in `docs/HANDOFF.md` (mutation line) and here; a package under threshold (docs/TESTING.md) gets tests or a backlog line. Then tick step 5 and 0445 in `tasks/BACKLOG.md`.
