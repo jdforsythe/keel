@@ -14,6 +14,7 @@ import { assertAccessible } from "./assertAccessible.ts";
 import { assertArtifacts } from "./assertArtifacts.ts";
 import { eventFor } from "./eventFor.ts";
 import { fail } from "./fail.ts";
+import { moveFocus } from "./moveFocus.ts";
 import { nameOf } from "./nameOf.ts";
 import { nodeOf } from "./nodeOf.ts";
 import { resolve } from "./resolve.ts";
@@ -94,6 +95,12 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
   const fire = async (id: string, event: TestEvent): Promise<void> => {
     live();
     const el = resolve(container, id);
+    const act =
+      event.type === "focus" || event.type === "blur"
+        ? moveFocus(el, event.type)
+        : () => {
+            el.dispatchEvent(eventFor(el, event));
+          };
     const errors: unknown[] = [];
     const onError = (e: Event): void => {
       errors.push(e instanceof ErrorEvent ? e.error : e);
@@ -102,13 +109,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     const win = document.defaultView;
     win?.addEventListener("error", onError);
     try {
-      await settle(
-        container,
-        () => {
-          el.dispatchEvent(eventFor(el, event));
-        },
-        busy,
-      );
+      await settle(container, act, busy);
     } finally {
       win?.removeEventListener("error", onError);
     }

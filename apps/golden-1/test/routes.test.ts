@@ -96,7 +96,7 @@ describe("todos.list", () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();
     const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
-    await r.fire("todos.suggestions.title", { type: "focus" });
+    await r.settle();
     expect(r.find("todos.suggestions.list").text).toBe("BreadEggsMilk");
     r.dispose();
   });
@@ -162,13 +162,18 @@ describe("event props", () => {
 });
 
 describe("todos.list keyed rows", () => {
-  it("toggling a todo re-reads the board and changes only the toggled control's checked state", async () => {
+  it("toggling a todo re-reads the board, keeps focus on the toggled control and changes only its checked state", async () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();
     const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
+    await r.fire("todos.toggle.t1", { type: "focus" });
     const before = r.a11y("todos.items");
     await r.fire("todos.toggle.t1", { type: "change" });
-    expect(r.find("todos.toggle.t1")).toMatchObject({ role: "checkbox", name: "Done: Milk", state: { checked: true } });
+    expect(r.find("todos.toggle.t1")).toMatchObject({
+      role: "checkbox",
+      name: "Done: Milk",
+      state: { checked: true, focused: true },
+    });
     const flip = (n: A11yNode): A11yNode => ({
       ...n,
       state: n.id === "todos.toggle.t1" ? { ...n.state, checked: true } : n.state,

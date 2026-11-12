@@ -540,6 +540,13 @@ const ROWS: readonly Row[] = [
   ],
   ["E1706", "ledger rung lower than committed", "", "restore the missing tests or properties", "k.testing"],
   [
+    "E1719",
+    "focus fired where a user cannot focus",
+    "",
+    "give the element a role that takes focus, or fire focus before blur",
+    "k.testing",
+  ],
+  [
     "E1751",
     "TS type error with no Keel rule code (message starts with the TS code)",
     "",
