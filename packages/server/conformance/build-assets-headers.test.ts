@@ -1,5 +1,5 @@
-// Spec: k.server, clause "Built files are `nosniff`, unhashed ones `no-cache`; a symlink out of `assets/` is not served."
-// Spec: k.server Rules E1555 (a manifest entry whose file escapes the build dir)
+// Spec: k.deploy, clause "Built files are `nosniff`, unhashed ones `no-cache`; a symlink out of `assets/` is not served."
+// Spec: k.deploy Rules E1555 (a manifest entry whose file escapes the build dir)
 // Seed: 1337 (no generated inputs). The dist/web fixture is hand-built in a realpath'd tmp dir; `keel build` is not run.
 // @vitest-environment node
 import fs from "node:fs";
@@ -72,7 +72,7 @@ afterAll(() => {
   for (const dir of roots) fs.rmSync(dir, { recursive: true, force: true });
 });
 
-describe("k.server: built files are nosniff, unhashed ones no-cache; a symlink out of assets/ is not served", () => {
+describe("k.deploy: built files are nosniff, unhashed ones no-cache; a symlink out of assets/ is not served", () => {
   it("manifest-named hashed files are 200, nosniff and immutable (entry and css)", async () => {
     for (const url of ["/assets/entry-B1x2Y3z4.js", "/assets/entry-Ab12Cd34.css"]) {
       const res = await get(url);

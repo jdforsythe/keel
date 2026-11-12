@@ -1,4 +1,4 @@
-// Spec: k.topology, clause "`node dist/<name>/server.mjs` of a `keel build` fixture answers its routes on `PORT`; with `KEEL_SECRET` unset or short it exits 1 and prints one E1560 line naming `KEEL_SECRET` and no value."
+// Spec: k.deploy, clause "`node dist/<name>/server.mjs` of a `keel build` fixture answers its routes on `PORT`; with `KEEL_SECRET` unset or short it exits 1 and prints one E1560 line naming `KEEL_SECRET` and no value."
 // Seed 1337 (fc.assert below). Spawns the built `server.mjs` of a `keel build` fixture.
 // The listening wait is a bounded retry of `fetch` (no timers); the port is one the OS just freed.
 import { spawn, spawnSync } from "node:child_process";
@@ -24,7 +24,7 @@ const freePort = (): Promise<number> =>
     });
   });
 
-describe("k.topology: server.mjs", () => {
+describe("k.deploy: server.mjs", () => {
   test("`node dist/<name>/server.mjs` of a `keel build` fixture answers its routes on `PORT`; with `KEEL_SECRET` unset or short it exits 1 and prints one E1560 line naming `KEEL_SECRET` and no value.", async () => {
     const entry = path.join(fixture, "dist", "web", "server.mjs");
     expect(fs.existsSync(entry)).toBe(true);

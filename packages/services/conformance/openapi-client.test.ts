@@ -8,7 +8,7 @@ import { openapi } from "@keel/services/openapi";
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { api } from "./fixtures/openapi/api.ts";
-// Spec: k.services, clause "The client generated from the OpenAPI fixture has one method per operation, with input and output types matching it."
+// Spec: k.openapi, clause "The client generated from the OpenAPI fixture has one method per operation, with input and output types matching it."
 // seed 1337 (every fast-check run below passes { seed: 1337 }); no wall clock, no Math.random.
 // `fixtures/openapi/OrdersApi.schema.ts` and `fixtures/openapi/api.ts` are generated from `fixtures/orders.openapi.json`
 // by `openapi(doc, { name: "orders" })` and committed; the first test pins them byte-for-byte.
@@ -121,7 +121,7 @@ const expectedSchema = endpoints({
 const BASE = "https://api.example.com";
 const expected = service({ base: BASE, schema: expectedSchema });
 
-describe("k.services: the client generated from the OpenAPI fixture", () => {
+describe("k.openapi: the client generated from the OpenAPI fixture", () => {
   it("openapi(doc, { name }) is ok and its schema and service sources equal the committed generated files byte-for-byte", () => {
     const r = openapi(doc, { name: "orders" });
     expect(r.ok).toBe(true);

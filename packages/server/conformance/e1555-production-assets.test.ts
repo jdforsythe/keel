@@ -1,5 +1,5 @@
-// Spec: k.server, clause "Production `createApp` without `assets` rejects at startup with E1555 unless `NODE_ENV` is `development` or `test`." (RFC 0052)
-// Spec: k.server Rules E1555
+// Spec: k.deploy, clause "Production `createApp` without `assets` rejects at startup with E1555 unless `NODE_ENV` is `development` or `test`." (RFC 0052)
+// Spec: k.deploy Rules E1555
 // Seed: 1337 (fc.assert seed below). In-process createApp, no listening server; NODE_ENV is stubbed per test.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
@@ -22,7 +22,7 @@ const appFor = (modules: readonly string[], mode?: "dev" | "production") => {
   });
 };
 
-describe("k.server: production createApp without assets", () => {
+describe("k.deploy: production createApp without assets", () => {
   it("Production `createApp` without `assets` rejects at startup with E1555 unless `NODE_ENV` is `development` or `test`.", async () => {
     for (const env of [undefined, "production", "prod", "Production", "staging"]) {
       vi.stubEnv("NODE_ENV", env);

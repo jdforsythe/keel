@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.server, clause "`createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555." (RFC 0048)
-// Spec: k.server Rules E1555
+// Spec: k.deploy, clause "`createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555." (RFC 0048)
+// Spec: k.deploy Rules E1555
 // Seed: 1337 (no generated inputs; the fixture is built once through the real CLI). In-process createApp, no listening server.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -135,7 +135,7 @@ async function moduleSrc(app: Fetcher): Promise<string> {
   return src;
 }
 
-describe("k.server: createApp({ assets }) on a keel build node fixture", () => {
+describe("k.deploy: createApp({ assets }) on a keel build node fixture", () => {
   it("createApp({ assets }) on a keel build node fixture scripts a 200 JavaScript resume entry, immutable", async () => {
     expect(fs.existsSync(path.join(fixture, "dist", "web", ".vite", "manifest.json"))).toBe(true);
     const app = await appFor(path.join(fixture, "dist", "web"));
