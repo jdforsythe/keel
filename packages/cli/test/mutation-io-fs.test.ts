@@ -357,70 +357,55 @@ describe("viteRun", () => {
     chmodSync(join(d, "node_modules/.bin/vite"), 0o755);
   };
 
-  it("is undefined without vite.config.ts, in both modes", () => {
+  it("is undefined without vite.config.ts", () => {
     const d = tmp();
-    expect(viteRun(d, "build")).toBeUndefined();
-    expect(viteRun(d, "dev")).toBeUndefined();
+    expect(viteRun(d)).toBeUndefined();
   });
 
   it("build runs `vite build` in cwd; success is silent", () => {
     const d = tmp();
     fakeVite(d, 'echo "$@" > args.txt\npwd > cwd.txt\necho noisy\necho noisy-err >&2');
-    expect(viteRun(d, "build")).toEqual({ code: 0, tail: "", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 0, tail: "", notes: [] });
     expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("build\n");
     // rfc:0055: a successful build keeps the plugin's Keel-coded lines (stdout and stderr), a failed one does not.
     fakeVite(d, 'echo "[plugin keel] keel: W1005 .keel/routes.json differed; rewritten"\necho "keel: E1006 x" >&2');
-    expect(viteRun(d, "build")?.notes).toEqual(["W1005 .keel/routes.json differed; rewritten\n", "E1006 x\n"]);
+    expect(viteRun(d)?.notes).toEqual(["W1005 .keel/routes.json differed; rewritten\n", "E1006 x\n"]);
     fakeVite(d, 'echo "keel: W1005 y"\nexit 3');
-    expect(viteRun(d, "build")).toEqual({ code: 3, tail: "keel: W1005 y\n", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 3, tail: "keel: W1005 y\n", notes: [] });
     expect(realpathSync(readFileSync(join(d, "cwd.txt"), "utf8").trim())).toBe(d);
   });
 
   it("build with a deployable sets KEEL_DEPLOYABLE for that run only", () => {
     const d = tmp();
     fakeVite(d, 'echo "${KEEL_DEPLOYABLE-unset}" >> env.txt');
-    expect(viteRun(d, "build", "api")).toEqual({ code: 0, tail: "", notes: [] });
-    expect(viteRun(d, "build")).toEqual({ code: 0, tail: "", notes: [] });
+    expect(viteRun(d, "api")).toEqual({ code: 0, tail: "", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 0, tail: "", notes: [] });
     expect(readFileSync(join(d, "env.txt"), "utf8")).toBe(`api\n${process.env.KEEL_DEPLOYABLE ?? "unset"}\n`);
-  });
-
-  it("dev with a port passes it with --strictPort", () => {
-    const d = tmp();
-    fakeVite(d, 'echo "$@" > args.txt');
-    expect(viteRun(d, "dev", undefined, 49152)).toEqual({ code: 0, tail: "", notes: [] });
-    expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("--port 49152 --strictPort\n");
-  });
-
-  it("dev runs plain `vite`, hands over the terminal and returns its code with no tail", () => {
-    const d = tmp();
-    fakeVite(d, 'echo "args=$#" > args.txt\nexit 4');
-    expect(viteRun(d, "dev")).toEqual({ code: 4, tail: "", notes: [] });
-    expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("args=0\n");
   });
 
   it("build failure returns the last five lines of stderr, trimmed, with a trailing newline", () => {
     const d = tmp();
     fakeVite(d, 'echo out-ignored\nfor i in 1 2 3 4 5 6 7; do echo "err$i" >&2; done\necho >&2\nexit 2');
-    expect(viteRun(d, "build")).toEqual({ code: 2, tail: "err3\nerr4\nerr5\nerr6\nerr7\n", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 2, tail: "err3\nerr4\nerr5\nerr6\nerr7\n", notes: [] });
   });
 
   it("build failure falls back to stdout when stderr is empty, and to a bare newline when both are", () => {
     const d = tmp();
     fakeVite(d, 'echo "  only stdout  "\nexit 1');
-    expect(viteRun(d, "build")).toEqual({ code: 1, tail: "only stdout\n", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 1, tail: "only stdout\n", notes: [] });
     fakeVite(d, "exit 9");
-    expect(viteRun(d, "build")).toEqual({ code: 9, tail: "\n", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 9, tail: "\n", notes: [] });
   });
 
   it("build failure keeps fewer than five lines whole", () => {
     const d = tmp();
     fakeVite(d, 'printf "a\\nb\\n" >&2\nexit 1');
-    expect(viteRun(d, "build")).toEqual({ code: 1, tail: "a\nb\n", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 1, tail: "a\nb\n", notes: [] });
   });
 
   it("a vite killed by a signal has no status and counts as code 1", () => {
     const d = tmp();
     fakeVite(d, "kill -9 $$");
-    expect(viteRun(d, "build")).toEqual({ code: 1, tail: "\n", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 1, tail: "\n", notes: [] });
   });
 });

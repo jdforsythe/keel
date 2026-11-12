@@ -4,27 +4,17 @@ import { join } from "node:path";
 import { keelLines } from "./keelLines.ts";
 
 /**
- * Binary only: bundle or serve with Vite when the project has `vite.config.ts`. `build` captures Vite's output
- * and returns its last lines only on failure (OUTPUT.md: success is silent), and on success its Keel-coded lines
- * (`notes`: a rewritten `routes.json`, W1005, rfc:0055); `dev` hands the terminal to Vite, on `port` with `--strictPort` when given.
- * Undefined when there is no Vite config. `deployable` sets `KEEL_DEPLOYABLE` for that run (k.server Build).
+ * Binary only: `vite build` when the project has `vite.config.ts`. Vite's output is captured: its last lines are
+ * returned only on failure (OUTPUT.md: success is silent), and on success its Keel-coded lines (`notes`, such as a
+ * rewritten `routes.json`, W1005). Undefined when there is no Vite config. `deployable` sets `KEEL_DEPLOYABLE` for that
+ * run (k.server Build).
  */
-export function viteRun(
-  cwd: string,
-  mode: "build" | "dev",
-  deployable?: string,
-  port?: number,
-): { code: number; tail: string; notes: string[] } | undefined {
+export function viteRun(cwd: string, deployable?: string): { code: number; tail: string; notes: string[] } | undefined {
   if (!existsSync(join(cwd, "vite.config.ts"))) return undefined;
-  const args =
-    mode === "build"
-      ? ["--no-install", "vite", "build"]
-      : ["--no-install", "vite", ...(port === undefined ? [] : ["--port", String(port), "--strictPort"])];
   const env = deployable === undefined ? process.env : { ...process.env, KEEL_DEPLOYABLE: deployable };
-  const r = spawnSync("npx", args, { cwd, env, encoding: "utf8", stdio: mode === "build" ? "pipe" : "inherit" });
+  const r = spawnSync("npx", ["--no-install", "vite", "build"], { cwd, env, encoding: "utf8", stdio: "pipe" });
   const code = r.status ?? 1;
-  const tail =
-    code === 0 || mode === "dev" ? "" : `${(r.stderr || r.stdout || "").trim().split("\n").slice(-5).join("\n")}\n`;
-  const notes = code === 0 && mode === "build" ? keelLines(`${r.stdout ?? ""}\n${r.stderr ?? ""}`) : [];
+  const tail = code === 0 ? "" : `${(r.stderr || r.stdout || "").trim().split("\n").slice(-5).join("\n")}\n`;
+  const notes = code === 0 ? keelLines(`${r.stdout ?? ""}\n${r.stderr ?? ""}`) : [];
   return { code, tail, notes };
 }

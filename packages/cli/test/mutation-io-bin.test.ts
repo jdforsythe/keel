@@ -10,6 +10,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import net from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -33,6 +34,44 @@ const fakeVite = (d: string, body: string): void => {
   put(d, "node_modules/.bin/vite", `#!/bin/sh\n${body}\n`);
   chmodSync(join(d, "node_modules/.bin/vite"), 0o755);
 };
+/**
+ * A project-local `vite` module: `createServer` records its options in `opts.json` and returns a server whose resolved
+ * port is the one in `config-port.txt` (when present) or the given one; `listen` and `close` leave `listened` and
+ * `closed`. Nothing binds, so the binary exits once `keel dev` returns.
+ */
+const fakeViteModule = (d: string): void => {
+  put(d, "vite.config.ts", "export default {}\n");
+  put(d, "node_modules/vite/package.json", `${JSON.stringify({ name: "vite", type: "module", main: "index.js" })}\n`);
+  put(
+    d,
+    "node_modules/vite/index.js",
+    [
+      'import { existsSync, readFileSync, writeFileSync } from "node:fs";',
+      'export const version = "0.0.0-fake";',
+      "export async function createServer(opts) {",
+      '  writeFileSync("opts.json", JSON.stringify(opts));',
+      '  const port = existsSync("config-port.txt") ? Number(readFileSync("config-port.txt", "utf8")) : opts.server.port;',
+      "  return {",
+      "    config: { server: { port }, logger: { info: (m) => process.stdout.write(`${m}\\n`) } },",
+      '    async listen() { writeFileSync("listened", ""); },',
+      '    async close() { writeFileSync("closed", ""); },',
+      "    printUrls() { process.stdout.write(`  Local: http://localhost:${port}/\\n`); },",
+      "    bindCLIShortcuts() {},",
+      "  };",
+      "}",
+      "",
+    ].join("\n"),
+  );
+};
+/** A port free right now: a listener on port 0 is closed first. */
+const freePort = (): Promise<number> =>
+  new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.listen(0, () => {
+      const addr = srv.address();
+      srv.close(() => (typeof addr === "object" && addr !== null ? resolve(addr.port) : reject(new Error("no port"))));
+    });
+  });
 const cleanEnv = (): Record<string, string> => {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
@@ -127,13 +166,64 @@ describe("keel binary", () => {
     expect(r.code).toBe(0);
   }, 30_000);
 
-  it("dev hands over to vite when vite.config.ts exists: the default port, strict, its exit code, its output", async () => {
+  it("dev runs the project's vite in process: --port given is passed with strictPort, then it listens and prints", async () => {
     const d = tmp();
-    fakeVite(d, 'echo "$@" > args.txt\necho from-vite\nexit 7');
-    const r = await keel(d, ["dev", "--port", "49731"]);
-    expect(r.code).toBe(7);
-    expect(r.stdout).toBe("from-vite\n");
-    expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("--port 49731 --strictPort\n");
+    fakeViteModule(d);
+    const port = await freePort();
+    const r = await keel(d, ["dev", "--port", String(port)]);
+    expect(r.code).toBe(0);
+    expect(JSON.parse(readFileSync(join(d, "opts.json"), "utf8"))).toEqual({
+      root: d,
+      server: { strictPort: true, port },
+    });
+    expect(existsSync(join(d, "listened"))).toBe(true);
+    expect(existsSync(join(d, "closed"))).toBe(false);
+    expect(r.stdout).toMatch(/^\n {2}VITE v0\.0\.0-fake {2}ready in \d+ ms\n\n/);
+    expect(r.stdout).toContain(`  Local: http://localhost:${port}/\n`);
+    expect(r.stderr).toBe("");
+  }, 30_000);
+
+  it("dev without --port passes no port and serves on the one vite resolved from the config", async () => {
+    const d = tmp();
+    fakeViteModule(d);
+    const port = await freePort();
+    put(d, "config-port.txt", String(port));
+    const r = await keel(d, ["dev"]);
+    expect(r.code).toBe(0);
+    expect(JSON.parse(readFileSync(join(d, "opts.json"), "utf8"))).toEqual({ root: d, server: { strictPort: true } });
+    expect(existsSync(join(d, "listened"))).toBe(true);
+    expect(r.stdout).toContain(`localhost:${port}/`);
+  }, 30_000);
+
+  it("dev with the resolved port in use is one E1560 line naming it, exit 1; the server is closed, never listens", async () => {
+    const d = tmp();
+    fakeViteModule(d);
+    const holder = net.createServer();
+    await new Promise<void>((res) => holder.listen(0, res));
+    const addr = holder.address();
+    const port = typeof addr === "object" && addr !== null ? addr.port : -1;
+    try {
+      put(d, "config-port.txt", String(port));
+      const r = await keel(d, ["dev", "--format=json"]);
+      expect(r.code).toBe(1);
+      const lines = r.stdout.split("\n").filter((l) => l.includes("E1560"));
+      expect(lines).toHaveLength(1);
+      expect(JSON.parse(lines[0] ?? "").message).toBe(`dev port ${port} is in use`);
+      expect(existsSync(join(d, "closed"))).toBe(true);
+      expect(existsSync(join(d, "listened"))).toBe(false);
+      expect(r.stdout).not.toContain("VITE");
+    } finally {
+      await new Promise<void>((res) => holder.close(() => res()));
+    }
+  }, 30_000);
+
+  it("dev with vite.config.ts but no vite installed fails with one line on stderr, exit 1", async () => {
+    const d = tmp();
+    put(d, "vite.config.ts", "export default {}\n");
+    const r = await keel(d, ["dev"]);
+    expect(r.code).toBe(1);
+    expect(r.stdout).toBe("");
+    expect(r.stderr).toMatch(/^error when starting dev server: .+\n$/);
   }, 30_000);
 
   it("dev without vite.config.ts, or with arguments, is the engine's answer and never starts vite", async () => {
@@ -143,13 +233,13 @@ describe("keel binary", () => {
     expect(none.stdout).toBe(
       "I1055 dev not available: needs vite.config.ts and the keel binary (vite dev server)\n  see: k.server\nok dev\n",
     );
-    fakeVite(d, "echo ran > ran.txt");
+    fakeViteModule(d);
     const withArg = await keel(d, ["dev", "extra"]);
-    expect(existsSync(join(d, "ran.txt"))).toBe(false);
+    expect(existsSync(join(d, "opts.json"))).toBe(false);
     expect(withArg.stdout).not.toBe("");
     const other = await keel(d, ["explain", "E1051"]);
     expect(other.code).toBe(0);
-    expect(existsSync(join(d, "ran.txt"))).toBe(false);
+    expect(existsSync(join(d, "opts.json"))).toBe(false);
   }, 60_000);
 
   it("build runs vite build after a green engine build; silent on success, engine output kept", async () => {

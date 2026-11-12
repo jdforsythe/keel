@@ -2,6 +2,7 @@
 import net from "node:net";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { devPort } from "../src/internal/devPort.ts";
 import { parseArgv } from "../src/internal/parseArgv.ts";
 import { portBusy } from "../src/internal/portBusy.ts";
 import { portDiag } from "../src/internal/portDiag.ts";
@@ -159,5 +160,33 @@ describe("int flag text", () => {
       }),
       { seed: SEED, numRuns: 2000 },
     );
+  });
+});
+
+describe("devPort", () => {
+  it("--port given wins over whatever vite resolved", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 65535 }), fc.anything(), (flag, resolved) => {
+        expect(devPort(flag, resolved)).toBe(flag);
+      }),
+      { seed: SEED },
+    );
+  });
+
+  it("no flag: the port vite resolved from the config", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 65535 }), (p) => {
+        expect(devPort(undefined, p)).toBe(p);
+      }),
+      { seed: SEED },
+    );
+    expect(devPort(undefined, 1)).toBe(1);
+    expect(devPort(undefined, 65535)).toBe(65535);
+  });
+
+  it("no flag and no usable resolved port: vite's default 5173", () => {
+    for (const v of [undefined, null, 0, -1, 65536, 1.5, Number.NaN, "3000", {}]) {
+      expect(devPort(undefined, v)).toBe(5173);
+    }
   });
 });

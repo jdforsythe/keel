@@ -1,41 +1,77 @@
 import { operations } from "../operations.ts";
+import type { DevServer } from "./DevServer.ts";
+import { devPort } from "./devPort.ts";
+import { errorText } from "./errorText.ts";
 import { hostIo } from "./hostIo.ts";
 import { parseArgv } from "./parseArgv.ts";
 import { portDiag } from "./portDiag.ts";
 import { portProbe } from "./portProbe.ts";
 import { respond } from "./respond.ts";
 import { summary } from "./summary.ts";
-import { viteRun } from "./viteRun.ts";
+import { viteServer } from "./viteServer.ts";
 
-/** The port `keel dev` serves on without `--port`. */
-const DEFAULT_DEV_PORT = 5173;
+/** What `keel dev` hands back to the binary: `serving` keeps the process alive until a signal stops it. */
+type DevOutcome = {
+  readonly code: number;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly serving: boolean;
+};
+
+/** Signals that stop the dev server, with their numbers for the 128 + n exit code. */
+const STOPS = [
+  ["SIGINT", 2],
+  ["SIGTERM", 15],
+] as const;
 
 /**
- * Binary only: `keel dev` over a Vite project. Flags are parsed and validated by the `dev` input schema; a port that
- * will not bind is one E1560 line (exit 1) and Vite is never started, so it cannot move to another port; otherwise
- * Vite gets the port with `--strictPort`. Undefined when the engine answers instead: no `vite.config.ts`, or flags
- * that do not parse (E1052).
+ * Binary only: `keel dev` over a Vite project, with Vite in this process. Flags are parsed and validated by the `dev`
+ * input schema. The project's Vite creates the server (strict port; `--port` when given), the port it resolved is
+ * probed on every address, and a port that will not bind is one E1560 line (exit 1): the server is closed and never
+ * listens, so it cannot move to another port. Otherwise it listens, prints Vite's banner and URLs, and serves until
+ * SIGINT or SIGTERM closes it. Undefined when the engine answers instead: flags that do not parse (E1052).
  */
-export async function devStart(
-  argv: readonly string[],
-  cwd: string,
-): Promise<{ readonly code: number; readonly stdout: string } | undefined> {
+export async function devStart(argv: readonly string[], cwd: string): Promise<DevOutcome | undefined> {
   const parsed = parseArgv(argv, operations);
   if (!parsed.ok || parsed.op.name !== "dev") return undefined;
-  const port = parsed.input.port ?? DEFAULT_DEV_PORT;
-  const blocked = await portProbe(port);
-  if (blocked !== undefined) {
-    const diag = portDiag(port, blocked);
+  const { input } = parsed;
+  const blocked = (port: number, code: string | undefined): DevOutcome => {
+    const diag = portDiag(port, code);
     const r = respond([diag, summary("dev", [diag], { errors: 1 })], hostIo(false), {
       command: "dev",
-      format: parsed.input.format,
-      quiet: parsed.input.quiet,
-      limit: parsed.input.limit,
-      verbose: parsed.input.verbose,
-      code: parsed.input.code,
+      format: input.format,
+      quiet: input.quiet,
+      limit: input.limit,
+      verbose: input.verbose,
+      code: input.code,
     });
-    return { code: r.code, stdout: r.stdout };
+    return { code: r.code, stdout: r.stdout, stderr: "", serving: false };
+  };
+  let server: DevServer;
+  try {
+    server = await viteServer(cwd, input.port);
+  } catch (e) {
+    return { code: 1, stdout: "", stderr: `error when starting dev server: ${errorText(e)}\n`, serving: false };
   }
-  const vite = viteRun(cwd, "dev", undefined, port);
-  return vite === undefined ? undefined : { code: vite.code, stdout: "" };
+  const port = devPort(input.port, server.port);
+  const busy = await portProbe(port);
+  if (busy !== undefined) {
+    await server.close();
+    return blocked(port, busy);
+  }
+  try {
+    await server.listen();
+  } catch (e) {
+    await server.close();
+    return blocked(port, e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : undefined);
+  }
+  for (const [signal, n] of STOPS) {
+    process.once(signal, () => {
+      void server.close().finally(() => process.exit(128 + n));
+    });
+  }
+  server.info(`\n  VITE v${server.version}  ready in ${Math.ceil(performance.now())} ms\n`);
+  server.printUrls();
+  server.shortcuts();
+  return { code: 0, stdout: "", stderr: "", serving: true };
 }
