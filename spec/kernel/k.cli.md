@@ -9,7 +9,7 @@ status: conformance-covered
 | `check [paths]` | k.check over the code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
 | `test [paths]` | harness under sim ctx |
 | `build` | production build per deployable |
-| `dev [--port N]` | dev server and log stream (default 5173; in use: E1560) |
+| `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |
 | `spec <id>` / `--for <code>` / `--map` | one section, sections citing a code, or the map |
 | `explain <code>` | <= 120 tokens: meaning and fix pattern |
 | `inspect [url]` | summarize a running dev app's inspect document |
@@ -21,14 +21,14 @@ status: conformance-covered
 
 Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting commands also accept `--code <code>`.
 
-**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` outside any request scope, `stores` is `{ [id]: { state, log } }` from `stores()`, and `ids`, `a11y`, `routes` are the `.keel/` artifacts. Node deployables serve it from `createApp` with `mode: 'dev'`; client-only apps from the compiler plugin's dev and preview servers, where the live half comes from the open page: its dev entry posts `{ graph, stores, sections }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store, one `inspect.section` per section, and a summary of counts.
+**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` outside any request scope, `stores` is `{ [id]: { state, log } }` from `stores()`, and `ids`, `a11y`, `routes` are the `.keel/` artifacts. Node deployables serve it from `createApp` with `mode: 'dev'`; client-only apps from the compiler plugin's dev and preview servers; the page's dev entry posts `{ graph, stores, sections }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store, one `inspect.section` per section, and a summary of counts.
 
 **Inspector hooks** (extension point).
 ```ts
 import { inspector } from '@keel/compiler/inspect/inspector'
 inspector({ id: 'orders.recent', schema: Recent, read: (ctx) => recent(ctx) })
 ```
-Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged). A client-only app's entry posts them.
+Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged).
 
 **Output.** Exactly OUTPUT.md. Default `compact` when stdout is not a TTY or `KEEL_AGENT=1`, else `pretty`. Exit codes: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
 
@@ -52,7 +52,7 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 - `keel nope` emits E1051 and exits 2.
 - `keel spec k.cli` prints <= 1,500 tokens.
 - `GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the `inspect()` graph; in production mode it is the route table's 404.
-- `keel dev --port <p>` serves on `p`; with `p` in use it prints one E1560 line and exits 1.
+- `keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1.
 - `keel inspect` against an unreachable url emits E1056 and exits 1.
 - A `POST /__keel/inspect` without `Origin` on a dev `createApp` gets 403 `keel.denied`.
 - A dev `createApp` serves each section as `{ doc, value }`; a value failing its schema is `{ doc, error }` with E1057; a second `inspector` with that id throws E1057.

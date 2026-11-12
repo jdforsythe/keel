@@ -184,3 +184,64 @@ The RFC defaults escalate new hand-written user-facing API shapes and migrations
    Taken: accepted as recommended.
 4. **D-B and D-C change what golden-1 and golden-2 accept** (whitespace-only titles and names now fail; empty required text reads "Required" everywhere) with no code edit. Recommended: accept; the only migration is clearing dev storage that holds a blank title.
    Taken: accepted as recommended.
+
+## Amendment (2026-11-12)
+For backlog 0468, 0471 and the second half of 0466. Accepted by the orchestrator under the WORKFLOW RFC defaults, with the answers the user agreed. Sizes are `tooling/spec.mjs`'s count; every addition is paid by a trim that removes no rule, code or conformance clause, and no trimmed text is quoted by a conformance header.
+
+### AM-1 (0468): a blank optional string from outside is absent
+**Problem.** `s.object({ nick: s.string({ min: 1 }).optional() })` given the form value `{ nick: '  ' }` fails rule `required` (D-B), so a form shows "Required" on a field that is not required.
+`decodeStrings` and the form's `coerceText` (which follows its table) turn only `''` into an absent optional key, so a field cleared with spaces reaches `parse` present.
+
+**Decision.** In `decodeStrings` (form posts, query, params, env: strings from outside) and the form's `coerceText`, a value with no non-whitespace character for an optional key whose `string` (under `secret` or `format`) has `min` >= 1 is absent, as `''` already is. Kept as today: `''` for any optional key is absent; `''` and whitespace for a required key stay as given (`parse` then reports `required`); whitespace for an optional key whose `string` has no `min` stays as given (whitespace is content there); a nullable key is unchanged (`''` is null, whitespace stays). Nothing is trimmed: a value is either absent or exactly as typed.
+`parse` of an already-typed value is unchanged: `{ nick: '  ' }` still fails rule `required`. This is the one rule of D-B and D-C, applied to the `string` node whatever its key: `optional()` says the key may be absent, not that a present value may be blank. Treating a blank present value as absent inside `parse` would change the value (drop the key), which D-B rules out, and give one value two outcomes by key. A person's blank only reaches `parse` through `decodeStrings` or `coerceText`, which now drop it, so no form shows "Required" for an optional field.
+Default applied: 6 (the decoder enforces it; no app filters blanks).
+
+**Spec.** k.schema (1,495 to 1,494):
+- `decodeStrings`: replace "empty string for an optional key is absent;" with "for an optional key `''` is absent, as is only whitespace for a `string` with `min` >= 1;".
+- Conformance: replace "`s.string({ min: 1 })` fails `''` and `' '` with rule `required`." with "`s.string({ min: 1 })` fails `''` and `' '` with rule `required`; `decodeStrings` drops both if optional."
+- Trims: " (no `decode`)" in Derivations (the Conformance clause "A schema has no `decode`." states it); "; non-JSON values fail with rule `type`" in Primitives (a Conformance clause states it); Rules "(checker, on source; never runtime codes)" becomes "(checker, on source)"; "`union(key, variants)` (discriminated)" becomes "`union(key, variants)`" (the key is the discriminant; the member form says "no discriminant").
+
+k.forms (1,344 to 1,385): Conformance, after the `required` message clause: "A field of `s.string({ min: 1 }).optional()` holding `''` or `'  '` shows no error and submits without the key; one of `s.string().optional()` submits `'  '`."
+
+**Conformance.** `packages/schema/conformance/blank-required-0091.test.ts`: header and clause text become the changed k.schema clause; new case "`decodeStrings` drops both if optional": for `s.object({ n: s.string({ min: 1 }).optional() })`, `decodeStrings` of `n=` and of `n=` plus generated whitespace gives `{}` and `parse` is `ok`; with `s.string().optional()` the whitespace value is kept as given; with a required `s.string({ min: 1 })` it is kept and fails rule `required`. New file `packages/forms/conformance/blank-optional-0091.test.ts`: the k.forms clause, client submit (no error, the posted FormData or action input has no `n`) and the no-runtime post (no 422 for the blank).
+
+**Size.** `@keel/schema` +30 B; `@keel/forms` +30 B. Implementer: `packages/schema/src/internal/fromStrings.ts` (the `optional` branch), `packages/forms/src/internal/coerceText.ts` (the optional case), their unit tests.
+
+**Migration.** None for the golden apps (no optional `min` >= 1 string field). A `DeployEnv` key such as `KEEL_ORIGIN` (`s.string({ min: 1 }).optional()`) set to only whitespace now reads as unset instead of failing E1560.
+
+### AM-2 (0471): `keel.unreachable` only from a module call, with a bounded read
+**Problem.** Every 502 whose body is a `keel.unreachable` err is `api.network`, so a third-party API called through `service({ base })` that answers that body loses its declared 502 error and `api.status`.
+Every 502 body is buffered whole to look for the code, however large.
+
+**Decision.** The mapping applies only to a `service({ module })` call, the one case where a Keel server's forwarding can have produced the body; `service({ base })` keeps `errors[502]` and `api.status` for every 502. For a module call, a 502 is `api.network` when its `content-type` is JSON and its body, read to at most 1 KiB, is a `Result` `err` with code `keel.unreachable`. The read is bounded on the stream, not by `content-length`: a declared `content-length` over 1,024 skips the read; otherwise at most 1,025 bytes are read from a clone and the clone is cancelled, and a body longer than 1,024 bytes is not `keel.unreachable`. The forwarding origin's 502 (`jsonResponse` in `packages/server/src/internal/forward.ts`) sets `content-type: application/json; charset=utf-8` and no `content-length`, and `stripHop` and proxies can drop or change that header, so requiring it would miss the body it is meant to find; the server is unchanged. A module call's 502 that is not `keel.unreachable` is decoded as today (`errors[502]`, else `api.status`).
+Defaults applied: 1 (only the kernel's own forwarding names the failure) and 3 (the exchange keeps one decode path).
+
+**Spec.** k.services (1,499 to 1,496):
+- ApiError: replace "`api.network` `{}`: `fetch` rejected, or a 502 `keel.unreachable` err came back." with "`api.network` `{}`: `fetch` rejected, or a `module` service got a 502 JSON `keel.unreachable` err of at most 1 KiB."
+- Conformance: replace "A rejected `fetch`, or a 502 `keel.unreachable` err, yields `api.network`." with "A rejected `fetch`, or a 502 `keel.unreachable` err to a `module` service, yields `api.network`; to a `base` service, `api.status`."
+- Trims: " (the k.server same-site proof)" after `x-keel: 1` (k.server defines it); ", so a caller that reopens picks its own backoff" (it follows from "never reconnects or resumes"); the API example's comment line "// in a loader or action" (the `ctx` argument says where it runs).
+
+**Conformance.** `packages/services/conformance/network-failure.test.ts`: both headers quote the changed clause. The rejected-fetch case is unchanged. The 502 case becomes "a 502 `keel.unreachable` err to a `module` service yields `api.network`": `service({ module: 'b', schema })` on an unbound sim ctx, `ctx.net.route('http://b.keel.invalid/x', ...)` answering 502 with `content-type: application/json` and the err body (message from `fc.string({ maxLength: 200 })`). New case "to a `base` service, `api.status`": `service({ base: BASE, schema })` with the same 502 and body yields `api.status` with `status: 502`, and with `errors: { 502: s.object({ ok: s.literal(false) }) }` its `body` is the decoded value.
+
+**Size.** `@keel/services` +60 B. Implementer: `packages/services/src/internal/exchange.ts` (bounded read, module only), `Target.ts` (a flag marking a module target), `moduleTarget.ts` (sets it), `events.ts` (its spread of the target keeps the flag), unit tests.
+
+**Migration.** None: no golden app calls a `base` service that answers `keel.unreachable`.
+
+### AM-3 (0466): `keel dev` without `--port` serves on the project's Vite port
+**Problem.** `keel dev` always passes `--port 5173 --strictPort` to Vite, so `server.port` in a project's `vite.config.ts` is ignored.
+The busy probe then guards 5173, a port the project may not use.
+
+**Decision.** `--port N` given: as D-D. No flag: the port is the one Vite resolves from the project's config (`server.port`; 5173, Vite's default, when the config sets none), strict, and the busy probe (E1560, exit 1, no move to another port) runs against that port. One path for both: `keel dev` imports `vite` from the project (resolved from its `package.json`, as `npx --no-install vite` resolves it today) and calls `createServer({ root, server: { strictPort: true, port: N when given } })`. That evaluates `vite.config.ts` and runs the plugins' `config` hooks once; `server.config.server.port` is then the resolved port before anything listens. `keel dev` probes it with `portProbe` (the four addresses); a port that will not bind prints the one E1560 line, closes the server and exits 1; otherwise it calls `listen()` and `printUrls()`, and the process serves until it is stopped, as the spawned Vite did.
+Rejected: reading `server.port` from the config text (misses a computed value and a plugin's `config` hook); loading the config in `keel dev` and again in a spawned Vite (evaluates it twice); spawning Vite with `--strictPort` alone and mapping its "Port N is already in use" error to E1560 (Vite binds one host and only warns when the port is held on a wildcard address, the case `portProbe` exists for, and its error is stack text, not a code).
+Default applied: 3 (Vite stays the dev server; `keel dev` asks it for its resolved config instead of keeping a second default).
+
+**Spec.** k.cli (1,492 to 1,489; the spec-and-explain test stays green):
+- Commands: replace "| `dev [--port N]` | dev server and log stream (default 5173; in use: E1560) |" with "| `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |".
+- Conformance: replace "`keel dev --port <p>` serves on `p`; with `p` in use it prints one E1560 line and exits 1." with "`keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1."
+- Trims: Inspector hooks " A client-only app's entry posts them." (Inspect says the dev entry posts `sections`); Inspect ", where the live half comes from the open page: its dev entry posts" becomes "; the page's dev entry posts".
+
+**Conformance.** `packages/cli/conformance/dev-port-0091.test.ts`: the header quotes the changed clause; the two `--port` cases and the default-port case stay. New case "`server.port: <p>` in the Vite config serves on `p`": a second fixture (or a rewritten `vite.config.ts`) with `server: { port: p }` for a free `p` and no flag; `keel dev` serves on `p`. New case "with the config's `p` in use it prints one E1560 line and exits 1": the test holds `p`; one E1560 line naming `p`, exit 1, `p + 1` not served.
+
+**Size.** `@keel/cli` +200 B. Implementer: `packages/cli/src/internal/devStart.ts` (create, probe the resolved port, listen or close), `viteRun.ts` (`build` only; the `dev` mode and `port` parameter go), a new internal file that imports the project's `vite` and narrows `createServer` without a cast, unit tests.
+
+**Migration.** A project whose `vite.config.ts` sets `server.port` is now served there; `keel inspect` still defaults to `http://localhost:5173`, so it takes that URL. No golden app sets `server.port`.
