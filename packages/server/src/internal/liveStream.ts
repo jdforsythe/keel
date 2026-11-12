@@ -26,25 +26,27 @@ const HEARTBEAT_MS = 15_000;
 export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<unknown>, c: Context): Handled {
   const { sv, raw } = r;
   if (sv.streams.open >= sv.maxStreams) return { response: busy(sv.maxStreams), route: m.route.id, diags: [] };
-  sv.streams.open++;
   const rq: RequestScope = { ...r.rq, scope: scope(() => undefined, { detached: true }), held: new Map() };
   isolate(rq.scope);
   const ac = new AbortController();
   const stop = (): void => ac.abort();
   const ended = new Promise<undefined>((resolve) => ac.signal.addEventListener("abort", () => resolve(undefined)));
+  sv.streams.open++;
   const response = streamSSE(c, async (stream) => {
     const halt = (): void => {
       stop();
       stream.abort();
     };
-    raw.signal.addEventListener("abort", halt, { once: true });
-    sv.lifecycle.signal.addEventListener("abort", halt, { once: true });
-    stream.onAbort(stop);
-    const beat = (async () => {
-      while ((await attempt(() => sv.ctx.clock.after(HEARTBEAT_MS, ac.signal))).ok) await stream.write(":\n\n");
-    })();
+    let beat: Promise<void> | undefined;
     let it: AsyncIterator<Result<unknown, KeelError<string, unknown>>> | undefined;
     try {
+      raw.signal.addEventListener("abort", halt, { once: true });
+      sv.lifecycle.signal.addEventListener("abort", halt, { once: true });
+      stream.onAbort(stop);
+      if (raw.signal.aborted) halt();
+      beat = (async () => {
+        while ((await attempt(() => sv.ctx.clock.after(HEARTBEAT_MS, ac.signal))).ok) await stream.write(":\n\n");
+      })();
       const stores = live.stores === undefined ? undefined : await openStores(sv, rq, live.stores);
       const args = { params: m.params, search: m.search, url: r.url, caller: rq.caller.id, stores, signal: ac.signal };
       it = live.live?.(args, sv.ctx)[Symbol.asyncIterator]();
