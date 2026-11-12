@@ -448,7 +448,7 @@ describe("errors and not found", () => {
     await settle();
     const alert = t.host.querySelector('[role="alert"]');
     expect(alert?.getAttribute("data-keel-error")).toBe("keel.notFound");
-    expect(alert?.textContent).toBe("keel.notFound");
+    expect(alert?.innerHTML).toBe("<h1>Not found</h1>");
     expect(t.router.route.get()).toEqual({ id: null, params: {}, search: {}, pending: false });
     await t.router.navigate(to("/a"));
     await settle();
