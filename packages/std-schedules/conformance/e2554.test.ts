@@ -57,9 +57,8 @@ test("E2554 is not thrown for a `job` of the queue and its module with an `input
 const T = Date.parse("2026-11-10T02:59:00.000Z");
 async function fireOnce(enqueue: "ok" | "err") {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
-  vi.spyOn(jobs, "enqueue").mockImplementation(async () =>
-    enqueue === "ok" ? ok("id-1") : err({ code: "keel.busy", message: "busy", data: null }),
-  );
+  if (enqueue === "err")
+    vi.spyOn(jobs, "enqueue").mockImplementation(async () => err({ code: "keel.busy", message: "busy", data: null }));
   const marks: string[] = [];
   const set = ctx.storage.set.bind(ctx.storage);
   vi.spyOn(ctx.storage, "set").mockImplementation((k, v) => {
@@ -68,7 +67,9 @@ async function fireOnce(enqueue: "ok" | "err") {
   });
   ctx.clock.advance(T);
   const ac = new AbortController();
-  const outcome = schedule(jobs, { "orders.nightly": entry("orders.digest", { id: "a" }) })
+  const outcome = schedule(jobs, {
+    "orders.nightly": { cron: "0 3 * * *", zone: "UTC", job: "orders.digest", input: { id: "a" } },
+  })
     .run(ctx, ac.signal)
     .then(
       () => "resolved",

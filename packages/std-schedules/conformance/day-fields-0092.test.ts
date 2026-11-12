@@ -29,10 +29,17 @@ function fixture() {
 }
 
 // Next midnight (UTC) strictly after t where `ok(dayOfMonth, dayOfWeek)` holds.
+const utcDay = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", day: "numeric" });
+// Day of month and weekday (Sunday 0) of an instant; 1970-01-01 (day 0) was a Thursday (4).
+const calendarOf = (ms: number): { dom: number; dow: number } => ({
+  dom: Number(utcDay.format(ms)),
+  dow: (Math.floor(ms / DAY) + 4) % 7,
+});
+
 const nextMidnight = (t: number, pass: (dom: number, dow: number) => boolean): number => {
   for (let d = Math.floor(t / DAY) + 1; d < Math.floor(t / DAY) + 800; d++) {
-    const date = new Date(d * DAY);
-    if (pass(date.getUTCDate(), date.getUTCDay())) return d * DAY;
+    const { dom, dow } = calendarOf(d * DAY);
+    if (pass(dom, dow)) return d * DAY;
   }
   throw new Error("fixture: no matching day within 800 days");
 };
@@ -45,10 +52,10 @@ async function firesAround(cron: string, t: number, expected: number): Promise<{
   const ac = new AbortController();
   const running = schedules.run(ctx, ac.signal);
   await settle();
-  ctx.clock.advance(expected - MIN - t);
+  if (expected - MIN >= t) ctx.clock.advance(expected - MIN - t);
   await settle();
   const early = fires.length;
-  ctx.clock.advance(MIN);
+  ctx.clock.advance(expected - ctx.clock.now());
   await settle();
   ac.abort();
   await running.catch(() => undefined);
@@ -66,9 +73,9 @@ test("`0 0 */2 * 1` fires on Mondays that are odd days of the month and on no ot
   await fc.assert(
     fc.asyncProperty(instant, async (t) => {
       const expected = nextMidnight(t, (dom, dow) => dom % 2 === 1 && dow === 1);
-      const date = new Date(expected);
-      expect(date.getUTCDay()).toBe(1);
-      expect(date.getUTCDate() % 2).toBe(1);
+      const { dom, dow } = calendarOf(expected);
+      expect(dow).toBe(1);
+      expect(dom % 2).toBe(1);
       const { early, at } = await firesAround("0 0 */2 * 1", t, expected);
       expect(early).toBe(0);
       expect(at).toEqual([expected]);

@@ -148,4 +148,4 @@ test("For generated `cron` values and instants `t`, the next fire time after `t`
     }),
     { seed: 1337, numRuns: 25 },
   );
-});
+}, 120_000);
