@@ -9,7 +9,7 @@ export const boardOutbox = outbox('todos.outbox', BoardApi, { limit: 100 })
 ```
 `outbox(id, api, { limit = 100, maxBytes = 262144 })` over a k.services `endpoints` map creates the client store `id` (prefixed by its module, E1155), state `{ entries: OutboxEntry[] }`, changed only by its transactions `<id>.add`, `<id>.settle` and `<id>.resolve`. `OutboxEntry` is `{ key, endpoint, origin, input, base, at, state, head?, error? }`, `state` one of `queued`, `sending`, `conflict`, `failed`. `outbox` throws E2651 when an endpoint's body holds an `s.secret`.
 
-**Write.** An endpoint an outbox sends to has `body: s.object({ ..., write: Write })`, where `Write` is `s.object({ key: s.id('Write'), base: s.number({ int: true, min: 0 }) })`. Its action passes both to the store: `tx(t, payload, { meta, ...input.write })` (k.sync).
+**Write.** An endpoint an outbox sends to has `body: s.object({ ..., write: Write })`, where `Write` is `s.object({ key: s.id('Write'), base: s.int({ min: 0 }) })`. Its action passes both to the store: `tx(t, payload, { meta, ...input.write })` (k.sync).
 ```ts
 const r = await send(ctx, boardOutbox, origin, 'editTodo', { params: { todoId }, body: { title, priority } }, { base: view.get('head') })
 ```
