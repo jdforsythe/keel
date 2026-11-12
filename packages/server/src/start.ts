@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { serve } from "@hono/node-server";
+import { peerKey } from "@keel/compiler/hosting/peerKey";
 import { createCtx } from "@keel/ctx";
 import { type RouteDef, manifest } from "@keel/router";
 import { createApp } from "@keel/server";
@@ -20,13 +21,7 @@ const line = (text: string): void => {
  */
 export async function start(o: StartOptions): Promise<void> {
   const peers = Object.keys(o.topology).filter((n) => n !== o.deployable && o.topology[n]?.adapter === "node");
-  const keys = [
-    "PORT",
-    "KEEL_ORIGIN",
-    "KEEL_SECRET",
-    "KEEL_ALLOW_ORIGINS",
-    ...peers.map((p) => `KEEL_PEER_${p.toUpperCase()}`),
-  ];
+  const keys = ["PORT", "KEEL_ORIGIN", "KEEL_SECRET", "KEEL_ALLOW_ORIGINS", ...peers.map(peerKey)];
   const given: Record<string, string> = {};
   for (const k of keys) {
     const v = process.env[k];
@@ -54,7 +49,7 @@ export async function start(o: StartOptions): Promise<void> {
     routes: manifest(routes),
     ctx: createCtx({ mode: "real" }),
     runners: o.runners,
-    peers: Object.fromEntries(peers.map((p) => [p, String(env.value[`KEEL_PEER_${p.toUpperCase()}`])])),
+    peers: Object.fromEntries(peers.map((p) => [p, String(env.value[peerKey(p)])])),
     secret: env.value.KEEL_SECRET,
     assets: o.dir,
     artifacts: o.dir,

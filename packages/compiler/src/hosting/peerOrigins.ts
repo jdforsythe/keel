@@ -1,5 +1,6 @@
 import type { Topology } from "../types/Topology.ts";
 import { originOf } from "./originOf.ts";
+import { peerKey } from "./peerKey.ts";
 
 /**
  * The `keel-peer` origins a `client` build writes (k.hosting Peers): for each `node` deployable of `topology` whose
@@ -13,7 +14,7 @@ export function peerOrigins(
   const origins: [string, string][] = [];
   const bad: string[] = [];
   for (const name of Object.keys(topology).sort()) {
-    const key = `KEEL_PEER_${name.toUpperCase()}`;
+    const key = peerKey(name);
     const value = env[key];
     if (topology[name]?.adapter !== "node" || value === undefined) continue;
     const origin = originOf(value);

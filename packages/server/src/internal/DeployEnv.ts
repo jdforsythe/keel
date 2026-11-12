@@ -1,4 +1,5 @@
 import { originOf } from "@keel/compiler/hosting/originOf";
+import { peerKey } from "@keel/compiler/hosting/peerKey";
 import { type ObjectSchema, attempt, s } from "@keel/schema";
 
 /** An absolute `http:` or `https:` URL (a peer's `KEEL_PEER_<NAME>`). */
@@ -35,5 +36,5 @@ export const DeployEnv = (
     KEEL_ORIGIN: s.string({ min: 1 }).optional(),
     KEEL_SECRET: s.string({ min: 32 }),
     KEEL_ALLOW_ORIGINS: AllowOrigins.optional(),
-    ...Object.fromEntries(peers.map((p) => [`KEEL_PEER_${p.toUpperCase()}`, PeerUrl])),
+    ...Object.fromEntries(peers.map((p) => [peerKey(p), PeerUrl])),
   });

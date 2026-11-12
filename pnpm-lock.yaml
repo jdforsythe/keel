@@ -519,6 +519,9 @@ importers:
 
   packages/scaffold:
     dependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema

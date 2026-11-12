@@ -1,3 +1,4 @@
+import { deployableNameProblem } from "@keel/compiler/hosting/deployableNameProblem";
 import type { Result } from "@keel/schema";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
@@ -8,7 +9,6 @@ import { commit } from "./commit.ts";
 import { fail } from "./fail.ts";
 import { inputs } from "./inputs.ts";
 import { insertItem } from "./insertItem.ts";
-import { isLowerCamel } from "./isLowerCamel.ts";
 import { regenerated } from "./regenerated.ts";
 import { removeDeployable } from "./removeDeployable.ts";
 import { removeItem } from "./removeItem.ts";
@@ -25,7 +25,8 @@ export function opPlace(input: unknown, files: ReadonlyMap<string, string>): Res
   const r = inputs.place.parse(input);
   if (!r.ok) return badInput("place", r.error);
   const { module, to, adapter } = r.value;
-  if (!isLowerCamel(to)) return fail("E1352", "topology.ts", `deployable name ${to} must be lowerCamel`);
+  const problem = deployableNameProblem(to);
+  if (problem !== undefined) return fail("E1352", "topology.ts", problem);
   const src = files.get("topology.ts");
   if (src === undefined) return fail("E1052", "topology.ts", "no topology.ts; run scaffold project first");
   const ast = topologyAst(src);
@@ -42,7 +43,12 @@ export function opPlace(input: unknown, files: ReadonlyMap<string, string>): Res
   const added =
     target !== undefined
       ? insertItem(src, target.list, module)
-      : addDeployable(src, ast.obj, to, `${to}: { modules: [${q}${module}${q}], adapter: ${q}${adapter}${q} }`);
+      : addDeployable(
+          src,
+          ast.obj,
+          to,
+          `${to.includes("-") ? `${q}${to}${q}` : to}: { modules: [${q}${module}${q}], adapter: ${q}${adapter}${q} }`,
+        );
   const mid = topologyAst(added);
   const left = mid?.deployables.find((d) => d.name === from.name);
   if (mid === null || left === undefined) return fail("E1052", "topology.ts", "topology.ts could not be edited");

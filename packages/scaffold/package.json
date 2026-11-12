@@ -17,6 +17,7 @@
     "mutate": "node ../../tooling/mutate.mjs"
   },
   "dependencies": {
+    "@keel/compiler": "workspace:*",
     "@keel/schema": "workspace:*",
     "magic-string": "^1.4.5",
     "oxc-parser": "^0.157.0"

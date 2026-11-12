@@ -1,6 +1,4 @@
-/** `KEEL_PEER_<NAME>` of deployable `name` (k.topology Build). */
-const peerKey = (name: string): string => `KEEL_PEER_${name.toUpperCase()}`;
-
+import { peerKey } from "@keel/compiler/hosting/peerKey";
 /**
  * `deploy/compose.yaml` (k.topology Deploy files): a service and a named volume per `node` deployable (sorted),
  * published on host ports from 8080 up; each peer's `KEEL_PEER_<NAME>` is its service URL. `KEEL_ORIGIN` and
