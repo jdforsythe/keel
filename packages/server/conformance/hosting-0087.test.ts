@@ -236,7 +236,8 @@ describe("k.hosting", () => {
         }
       }
       if (file.endsWith(".css")) {
-        for (const m of text.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)) expect(absolute(m[1] ?? ""), `${file}: ${m[1]}`).toBe(true);
+        for (const m of text.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g))
+          expect(absolute(m[1] ?? ""), `${file}: ${m[1]}`).toBe(true);
       }
       if (file.endsWith(".js")) expect(text).not.toMatch(/(?:from\s*|import\s*\(?\s*)["']\.{1,2}\//);
     }
@@ -365,7 +366,9 @@ describe("k.hosting", () => {
       { seed: SEED, numRuns: 2 },
     );
     await (
-      await app.fetch(withHeaders(new Request("http://localhost/api/lists"), { origin: second, "sec-fetch-site": "cross-site" }))
+      await app.fetch(
+        withHeaders(new Request("http://localhost/api/lists"), { origin: second, "sec-fetch-site": "cross-site" }),
+      )
     ).text();
     expect(w1567()).toHaveLength(2);
     expect(w1567().filter((l) => l.includes(second))).toHaveLength(1);
@@ -430,7 +433,9 @@ describe("k.hosting", () => {
     expect(hits[0]).toContain('"diag"');
     const same = lines.length;
     await (
-      await app.fetch(withHeaders(new Request("http://localhost/api/lists"), { origin: ALLOWED, "sec-fetch-site": "same-site" }))
+      await app.fetch(
+        withHeaders(new Request("http://localhost/api/lists"), { origin: ALLOWED, "sec-fetch-site": "same-site" }),
+      )
     ).text();
     expect(lines.slice(same).filter((l) => l.includes("W1567"))).toHaveLength(0);
   });

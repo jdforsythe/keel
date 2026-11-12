@@ -1,0 +1,30 @@
+diff --git a/packages/ui/src/elements/Checkbox.ts b/packages/ui/src/elements/Checkbox.ts
+index 915c704..afff7e9 100644
+--- a/packages/ui/src/elements/Checkbox.ts
++++ b/packages/ui/src/elements/Checkbox.ts
+@@ -46,7 +46,10 @@ export function Checkbox(
+             },
+           ),
+         );
+-      else if (c === true) el.setAttribute("checked", "");
++      else if (Object.getOwnPropertyDescriptor(props, "checked")?.get !== undefined) {
++        if (c === true) el.setAttribute("checked", "");
++        prop(el, "checked", () => props.checked === true);
++      } else if (c === true) el.setAttribute("checked", "");
+       applyDisabled(el, props.disabled);
+       applyStyle(el, props);
+       const h = props.onChange;
+diff --git a/packages/ui/src/internal/labelled.ts b/packages/ui/src/internal/labelled.ts
+index ca3a511..a6e700f 100644
+--- a/packages/ui/src/internal/labelled.ts
++++ b/packages/ui/src/internal/labelled.ts
+@@ -23,7 +23,8 @@ export function labelled<C extends HTMLInputElement | HTMLSelectElement | HTMLTe
+     const label = (): Node =>
+       make("label", (l) => {
+         l.setAttribute("for", id);
+-        l.appendChild(document.createTextNode(props.label));
++        const t = l.appendChild(document.createTextNode(props.label));
++        text(t, () => props.label);
+       });
+     const l = after ? null : label();
+     const c = control(id);

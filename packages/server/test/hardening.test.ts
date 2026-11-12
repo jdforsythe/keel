@@ -219,7 +219,7 @@ describe("submitted values", () => {
     fd.append("prototype", "p");
     fd.append("tag", "1");
     fd.append("tag", "2");
-    const v = valuesOf(fd);
+    const v = valuesOf(fd, s.object({}).node);
     expect(Object.getPrototypeOf(v)).toBe(Object.prototype);
     expect(Object.keys(v)).toEqual(["note", "tag"]);
     expect(v).toEqual({ note: "a", tag: ["1", "2"] });

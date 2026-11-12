@@ -198,9 +198,9 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
         const effects = [
           effect(() => {
             sync(el);
-            // The first render's value is also the markup default (rfc:0062): server HTML shows it; later writes,
-            // the user's included, change the property only.
-            if (first) markDefault(el);
+            // The first render's value is also the markup default: server HTML shows it; later writes, the user's
+            // included, change the property only. An `s.secret` field writes none.
+            if (first && unwrap(node).kind !== "secret") markDefault(el);
             first = false;
           }),
           effect(() => aria(el)),

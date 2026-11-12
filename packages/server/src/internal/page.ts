@@ -16,13 +16,15 @@ import { publicError } from "./publicError.ts";
 import { renderChain } from "./renderChain.ts";
 import { runLoaders } from "./runLoaders.ts";
 import { statusOf } from "./statusOf.ts";
+import { withoutPasswords } from "./withoutPasswords.ts";
 
 /**
  * Run every loader of the matched chain together, then respond. Runtime requests get
  * `{ id, results: { [levelId]: Result } }`. Documents render the chain: the first loader `err` (chain order)
  * renders the nearest errorElement at or above it with the layouts above intact and sets the status by its
  * code; otherwise `status`, `failure` (an action error at the route) and `submission` (the 422 re-render:
- * field summary before the route component, `form` in `#k-state`) apply. `#k-state` also carries the served `route`
+ * field summary before the route component, `form` in `#k-state` less the keys the page renders as password
+ * inputs, none when rendering threw) apply. `#k-state` also carries the served `route`
  * (`{ id, path, href, params, search }`, encoded) and, when a loader failed, its `error` (`code`, `data.at` only).
  */
 export async function page(
@@ -82,7 +84,7 @@ export async function page(
   // errorElement may have chosen not to show.
   const at = loaderError !== null && isAt(loaderError.data) ? { at: loaderError.data.at } : {};
   const error = loaderError === null ? {} : { error: { code: loaderError.code, message: loaderError.code, data: at } };
-  const extra = { route, ...error, ...(submission === null ? {} : { form: submission }) };
+  const base = { route, ...error };
   if (!rendered.ok) {
     // A throw outside every route boundary: the root default alert, 500.
     const fallback = renderChain({
@@ -96,8 +98,13 @@ export async function page(
       ctx: r.sv.ctx,
       publicize,
     });
-    return { response: documentResponse(r, 500, fallback, extra, rendered.error.message), route: id, diags };
+    return { response: documentResponse(r, 500, fallback, base, rendered.error.message), route: id, diags };
   }
+  const form =
+    submission === null
+      ? {}
+      : { form: { ...submission, values: withoutPasswords(submission.values, rendered.value.html) } };
+  const extra = { ...base, ...form };
   const dev = devMessageOf([shown?.error, rendered.value.caught]);
   const final = rendered.value.caught === null ? code : 500;
   const own = outcomes[chain.length - 1]?.result;

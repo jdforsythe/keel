@@ -33,7 +33,7 @@
     },
     "@keel/schema": "5kb",
     "@keel/server": {
-      "max": "16.75kb",
+      "max": "17kb",
       "platform": "node"
     },
     "@keel/server/dom": "2kb",

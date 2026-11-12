@@ -100,7 +100,7 @@ describe("messages and fields", () => {
     fd.append("b", "3");
     fd.append("f", new File(["x"], "pic.png"));
     fd.append("e", "");
-    expect(valuesOf(fd)).toEqual({ a: "1", b: ["2", "3"], f: "pic.png", e: "" });
+    expect(valuesOf(fd, s.object({}).node)).toEqual({ a: "1", b: ["2", "3"], f: "pic.png", e: "" });
   });
 });
 

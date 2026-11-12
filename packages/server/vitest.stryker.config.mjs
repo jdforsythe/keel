@@ -6,4 +6,9 @@ import { QuickFirst } from "@keel/tooling/quick-first";
 import { defineConfig, mergeConfig } from "vitest/config";
 import base from "./vitest.config.ts";
 
-export default mergeConfig(base, defineConfig({ test: { exclude: ["conformance/build-assets.test.ts", "**/node_modules/**"], sequence: { sequencer: QuickFirst } } }));
+export default mergeConfig(
+  base,
+  defineConfig({
+    test: { exclude: ["conformance/build-assets.test.ts", "**/node_modules/**"], sequence: { sequencer: QuickFirst } },
+  }),
+);
