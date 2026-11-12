@@ -99,3 +99,39 @@ test("A `queue` whose input holds `s.secret` throws E2503.", () => {
     { seed: 1337, numRuns: 20 },
   );
 });
+
+// Spec: std.jobs, clause "E2503 fires for `job` reached through `import * as jobs` and not for a `.secret()` call on an object other than `@keel/schema`'s `s`." (rfc:0092)
+const withJobFile = (source: string): Files =>
+  project("s.object({})").map((f) =>
+    f.path === "modules/orders/sendReceipt.server.ts" ? { path: f.path, source } : f,
+  );
+
+test("E2503 fires for `job` reached through `import * as jobs`.", () => {
+  fc.assert(
+    fc.property(word, (field) => {
+      const viaNamespace = (inner: string) =>
+        withJobFile(
+          `import * as jobs from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nexport const sendReceipt = jobs.job({ input: s.object({ ${field}: ${inner} }) }, async () => ok(null))\n`,
+        );
+      expect(found(viaNamespace("s.secret(s.string())"), "E2503").length).toBe(1);
+      expect(found(viaNamespace("s.string()"), "E2503").length).toBe(0);
+    }),
+    { seed: 1337, numRuns: 20 },
+  );
+});
+
+test("E2503 does not fire for a `.secret()` call on an object other than `@keel/schema`'s `s`.", () => {
+  fc.assert(
+    fc.property(word, (field) => {
+      const vaultInInput = withJobFile(
+        `import { job } from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nconst vault = { secret: (x: unknown) => x }\nexport const sendReceipt = job({ input: vault.secret(s.object({ ${field}: s.string() })) }, async () => ok(null))\n`,
+      );
+      expect(found(vaultInInput, "E2503").length).toBe(0);
+      const vaultInBody = withJobFile(
+        `import { job } from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nconst vault = { secret: (x: unknown) => x }\nexport const sendReceipt = job({ input: s.object({ ${field}: s.string() }) }, async () => { vault.secret(1); return ok(null) })\n`,
+      );
+      expect(found(vaultInBody, "E2503").length).toBe(0);
+    }),
+    { seed: 1337, numRuns: 20 },
+  );
+});

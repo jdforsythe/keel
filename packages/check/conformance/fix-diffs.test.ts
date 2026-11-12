@@ -314,6 +314,7 @@ const NO_FIX = [
   "E1511", // the module's deployable is the author's choice
   "E1566", // which deployable hosts the client is the author's choice
   "E1551", // moving the declaration to a .server file is a design change
+  "E1567", // the module, deps and public.routes edits span files
   "E1561", // choosing between the caller's and the producer's schema is a judgment
   "E1562", // the fix edits the route's schema source and needs a rebuilt surface; its fixture is surface data alone
   "E1603", // the code in the string is the author's

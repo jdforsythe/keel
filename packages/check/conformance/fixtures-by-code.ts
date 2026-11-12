@@ -118,6 +118,24 @@ const SPLIT = {
   y: { modules: ["y"], adapter: "node" },
 } as const;
 
+/** Module `b` serves `GET /b/pub` with a loader; module `a` calls `/b/pub` through `service({ base: <base> })`. */
+const sameAppService = (base: string): Files => [
+  mod("b", [], ["routes"], ["b.pub"]),
+  f(
+    "modules/b/routes.ts",
+    "import { manifest } from '@keel/router'\nexport const routes = manifest({ 'b.pub': { api: true, path: '/b/pub' } })\n",
+  ),
+  mod("a", ["b"], []),
+  f(
+    "modules/a/BApi.schema.ts",
+    `${SERVICES}${SCHEMA}export const BApi = endpoints({ get: { method: 'GET', path: '/b/pub', output: s.json() } })\n`,
+  ),
+  f(
+    "modules/a/api.ts",
+    `import { service } from '@keel/services'\nimport { BApi } from './BApi.schema.ts'\ndeclare const origin: string\nexport const api = service({ base: ${base}, schema: BApi })\n`,
+  ),
+];
+
 export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1000: { bad: [f("a.ts", "export const = ;\n")], clean: [f("a.ts", "export const a = 1\n")] },
   E1001: {
@@ -486,6 +504,13 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     },
     bad: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],
     clean: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],
+  },
+  // E1567 (rfc:0092 B6): module `b` serves GET `/b/pub` (loader, `public.routes`); module `a` calls it through `service({ base })`.
+  // Assumption: `a` lists `b` in `deps` so no other code reports; the callers' `schema` is a sibling `*.schema.ts` of literals, as in module-service-E1152-E1157.test.ts; the rule matches the endpoint's method and `samePath` to a route literal (the RFC does not say the route needs a loader).
+  E1567: {
+    opts: NO_TYPES,
+    bad: sameAppService("origin"),
+    clean: sameAppService("'https://api.example.com'"),
   },
   E1508: {
     opts: NO_TYPES,

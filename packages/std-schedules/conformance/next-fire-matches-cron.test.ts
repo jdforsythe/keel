@@ -1,6 +1,6 @@
 // Spec: std.schedules, clause "For generated `cron` values and instants `t`, the next fire time after `t` matches the expression, and no minute strictly between them does (checked by a minute-by-minute scan)."
 // Assumption: the next fire time is observed as the sim clock reading at the `enqueue` call; the reference matcher below is the spec grammar
-// (fields are `*`, `n`, `a-b`, comma lists, `/step` on `*` and `a-b`; a day matching either restricted day field matches).
+// (fields are `*`, `n`, `a-b`, comma lists, `/step` on `*` and `a-b`; a day field starting with `*` is unrestricted; a day matching either restricted day field matches, else both must match).
 // Seed 1337
 // Assumption: a fire is observed by spying `jobs.enqueue` (the schedule calls `queue.enqueue(ctx, job, input, { key })`); the key suffix `<t>`
 // is accepted as epoch milliseconds or as the `Instant` text of the fire minute.
@@ -58,7 +58,12 @@ const atom = (r: Range, star: boolean) =>
     });
 const field = (r: Range, star: boolean) =>
   fc.array(atom(r, star), { minLength: 1, maxLength: 3 }).map((l) => l.join(","));
-const dayField = (r: Range) => fc.oneof(fc.constant("*"), field(r, false));
+const dayField = (r: Range) =>
+  fc.oneof(
+    fc.constant("*"),
+    fc.integer({ min: 1, max: 5 }).map((n) => `*/${n}`),
+    field(r, false),
+  );
 
 function expand(f: string, r: Range): Set<number> {
   const out = new Set<number>();
@@ -92,8 +97,8 @@ function matcher(cron: string): (ms: number) => boolean {
     expand(mo, [1, 12]),
     expand(dw, [0, 6]),
   ] as const;
-  const domR = dm !== "*";
-  const dowR = dw !== "*";
+  const domR = !dm.startsWith("*");
+  const dowR = !dw.startsWith("*");
   return (ms) => {
     const day = Math.floor(ms / 86_400_000);
     const p = Object.fromEntries(utcDate.formatToParts(ms).map((x) => [x.type, Number(x.value)]));
@@ -101,7 +106,7 @@ function matcher(cron: string): (ms: number) => boolean {
     if (!sets[0].has(minute % 60) || !sets[1].has(Math.floor(minute / 60)) || !sets[3].has(p.month ?? 0)) return false;
     const a = sets[2].has(p.day ?? 0);
     const b = sets[4].has((day + 4) % 7);
-    return domR && dowR ? a || b : domR ? a : dowR ? b : true;
+    return domR && dowR ? a || b : a && b;
   };
 }
 const cronArb = fc
