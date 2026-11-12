@@ -384,6 +384,13 @@ describe("viteRun", () => {
     expect(readFileSync(join(d, "env.txt"), "utf8")).toBe(`api\n${process.env.KEEL_DEPLOYABLE ?? "unset"}\n`);
   });
 
+  it("dev with a port passes it with --strictPort", () => {
+    const d = tmp();
+    fakeVite(d, 'echo "$@" > args.txt');
+    expect(viteRun(d, "dev", undefined, 49152)).toEqual({ code: 0, tail: "", notes: [] });
+    expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("--port 49152 --strictPort\n");
+  });
+
   it("dev runs plain `vite`, hands over the terminal and returns its code with no tail", () => {
     const d = tmp();
     fakeVite(d, 'echo "args=$#" > args.txt\nexit 4');

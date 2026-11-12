@@ -36,4 +36,5 @@ export type Input = {
   readonly since?: string;
   readonly "max-runs"?: number;
   readonly base?: string;
+  readonly port?: number;
 };

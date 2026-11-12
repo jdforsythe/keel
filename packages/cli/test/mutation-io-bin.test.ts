@@ -127,13 +127,13 @@ describe("keel binary", () => {
     expect(r.code).toBe(0);
   }, 30_000);
 
-  it("dev hands over to vite when vite.config.ts exists: plain `vite`, its exit code, its output", async () => {
+  it("dev hands over to vite when vite.config.ts exists: the default port, strict, its exit code, its output", async () => {
     const d = tmp();
-    fakeVite(d, 'echo "args=$#" > args.txt\necho from-vite\nexit 7');
-    const r = await keel(d, ["dev"]);
+    fakeVite(d, 'echo "$@" > args.txt\necho from-vite\nexit 7');
+    const r = await keel(d, ["dev", "--port", "49731"]);
     expect(r.code).toBe(7);
     expect(r.stdout).toBe("from-vite\n");
-    expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("args=0\n");
+    expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("--port 49731 --strictPort\n");
   }, 30_000);
 
   it("dev without vite.config.ts, or with arguments, is the engine's answer and never starts vite", async () => {

@@ -7,6 +7,7 @@
 // `surface.json` (k.compat).
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { devStart } from "./internal/devStart.ts";
 import { hostIo } from "./internal/hostIo.ts";
 import { routesRun } from "./internal/routesRun.ts";
 import { surfaceRun } from "./internal/surfaceRun.ts";
@@ -19,9 +20,11 @@ const head = argv[0];
 const cwd = process.cwd();
 const serving = (head === "mcp" || head === "lsp") && argv.length === 1;
 
-const vite = head === "dev" && argv.length === 1 ? viteRun(cwd, "dev") : undefined;
-if (vite !== undefined) process.exitCode = vite.code;
-else {
+const dev = head === "dev" && existsSync(join(cwd, "vite.config.ts")) ? await devStart(argv, cwd) : undefined;
+if (dev !== undefined) {
+  if (dev.stdout !== "") process.stdout.write(dev.stdout);
+  process.exitCode = dev.code;
+} else {
   const r = await run(argv, hostIo(serving));
   if (r.stdout !== "") process.stdout.write(r.stdout);
   if (r.stderr !== "") process.stderr.write(r.stderr);

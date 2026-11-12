@@ -6,16 +6,20 @@ import { keelLines } from "./keelLines.ts";
 /**
  * Binary only: bundle or serve with Vite when the project has `vite.config.ts`. `build` captures Vite's output
  * and returns its last lines only on failure (OUTPUT.md: success is silent), and on success its Keel-coded lines
- * (`notes`: a rewritten `routes.json`, W1005, rfc:0055); `dev` hands the terminal to Vite.
+ * (`notes`: a rewritten `routes.json`, W1005, rfc:0055); `dev` hands the terminal to Vite, on `port` with `--strictPort` when given.
  * Undefined when there is no Vite config. `deployable` sets `KEEL_DEPLOYABLE` for that run (k.server Build).
  */
 export function viteRun(
   cwd: string,
   mode: "build" | "dev",
   deployable?: string,
+  port?: number,
 ): { code: number; tail: string; notes: string[] } | undefined {
   if (!existsSync(join(cwd, "vite.config.ts"))) return undefined;
-  const args = mode === "build" ? ["--no-install", "vite", "build"] : ["--no-install", "vite"];
+  const args =
+    mode === "build"
+      ? ["--no-install", "vite", "build"]
+      : ["--no-install", "vite", ...(port === undefined ? [] : ["--port", String(port), "--strictPort"])];
   const env = deployable === undefined ? process.env : { ...process.env, KEEL_DEPLOYABLE: deployable };
   const r = spawnSync("npx", args, { cwd, env, encoding: "utf8", stdio: mode === "build" ? "pipe" : "inherit" });
   const code = r.status ?? 1;

@@ -58,7 +58,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "build",
-    description: "Compile the project and write .keel artifacts; vite build when vite.config.ts exists.",
+    description: "Compile the project, write .keel artifacts, vite build.",
     input: s.object(diagnostic),
     output: outputOf(),
     positional: [],
@@ -67,14 +67,14 @@ export const operations: readonly Operation[] = [
   {
     name: "dev",
     description: "Dev server and log stream (k.server).",
-    input: s.object(diagnostic),
+    input: s.object({ port: s.int({ min: 1, max: 65535 }).optional(), ...diagnostic }),
     output: outputOf(ReqSchema),
     positional: [],
     scope: "none",
   },
   {
     name: "spec",
-    description: "Print one spec section, each spec line citing a code (for), or the map.",
+    description: "Print one spec section, sections citing a code, or the map.",
     input: s.object({ id: s.string().optional(), for: s.string().optional(), map: s.boolean().optional(), ...common }),
     output: outputOf(SectionSchema, CiteSchema),
     positional: ["id"],
@@ -82,7 +82,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "explain",
-    description: "Meaning and fix of one diagnostic code, at most 120 tokens.",
+    description: "Meaning and fix of one diagnostic code.",
     input: s.object({ code: s.string().optional(), ...common }),
     output: outputOf(ExplainSchema),
     positional: ["code"],

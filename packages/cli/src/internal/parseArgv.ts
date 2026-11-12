@@ -51,6 +51,10 @@ export function parseArgv(argv: readonly string[], ops: readonly Operation[]): P
         diags.push(makeDiag("E1052", `flag --${flag} given twice`, { see: "k.cli" }));
         continue;
       }
+      if (eq >= 0 && eq === body.length - 1 && node.kind === "int") {
+        diags.push(makeDiag("E1052", `flag --${flag} needs a value`, { see: "k.cli" }));
+        continue;
+      }
       if (eq >= 0) add(flag, body.slice(eq + 1));
       else if (node.kind === "boolean") add(flag, "true");
       else {
