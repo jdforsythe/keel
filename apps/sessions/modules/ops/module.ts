@@ -1,8 +1,9 @@
 import { module } from "@keel/compiler";
 
 /**
- * The ingest service's own module: it serves `@keel/std-sessions/routes` and a home page. `readers` holds the caller
- * hashes `sessions.list` admits: the entry is the hash of the deployed service's reader cookie (README: Readers).
+ * The ingest service's own module: the home page, beside the `sessions` module `topology.ts` places. `readers`
+ * holds the caller hashes `sessions.list` admits: the entry is the hash of the deployed service's reader cookie
+ * (README: Readers).
  */
 export default module({
   id: "ops",

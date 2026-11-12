@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// k.topology Calls and peers with endpoint schemas that decode k.server's wire format (`{ id, results }` for a JSON
-// GET, the action `Result` for a write). Seed 1337; sim ctxs only.
+// k.topology Calls and peers with endpoint schemas that decode a `module` service's unwrapped answers (the GET
+// loader's value, an action's `Href | null`). Seed 1337; sim ctxs only.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -23,17 +23,14 @@ const B = endpoints({
     method: "GET",
     path: "/b/:n",
     params: Params,
-    output: s.object({
-      id: s.literal("b.item"),
-      results: s.object({ "b.item": s.object({ ok: s.literal(true), value: Item }) }),
-    }),
+    output: Item,
   },
   bump: {
     method: "POST",
     path: "/b/:n",
     params: Params,
     body: Nothing,
-    output: s.object({ ok: s.literal(true), value: s.string().nullable() }),
+    output: s.string().nullable(),
   },
 });
 const b = service({ module: "b", schema: B });
@@ -51,7 +48,7 @@ function modules() {
   bRoutes.actions({ "b.item": { POST: bump } });
   const aGet = loader({ output: Item, params: Params }, async (a, ctx) => {
     const r = await b.get({ params: { n: a.params.n } }, ctx);
-    return r.ok ? ok(r.value.results["b.item"].value) : err(s.error("a.upstream", Nothing).make({}));
+    return r.ok ? ok(r.value) : err(s.error("a.upstream", Nothing).make({}));
   });
   const aPost = action({ input: Nothing, params: Params }, async (_i, a, ctx) => {
     const r = await b.bump({ params: { n: a.params.n }, body: {} }, ctx);

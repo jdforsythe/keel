@@ -1,6 +1,7 @@
-import { realpathSync } from "node:fs";
-import { relative } from "node:path";
-import { compile, isSourcePath } from "@keel/compiler";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { join, relative } from "node:path";
+import { compile, isSourcePath, parseTopology } from "@keel/compiler";
+import { stdRoutes } from "@keel/compiler/std/stdRoutes";
 import { createViteServer } from "vitest/node";
 import { applyWrites } from "./applyWrites.ts";
 import { canonicalJson } from "./canonicalJson.ts";
@@ -20,7 +21,8 @@ const firstLine = (e: unknown): string => (e instanceof Error ? e.message : Stri
 
 /**
  * Binary only: `keel build`'s `.keel/surface.json` (k.compat Surface), written read-only as `{ data, hash }`. Each
- * `modules/<m>/routes.ts` and each app file that calls `service({ module })` from `@keel/services` is evaluated in
+ * `modules/<m>/routes.ts`, each placed stdlib module's package `./routes` (`stdRoutes`, named by its import specifier)
+ * and each app file that calls `service({ module })` from `@keel/services` is evaluated in
  * Node through a Vite SSR server rooted at `cwd` (app files compiled by `@keel/compiler`, as the build evaluates
  * them); `service` is replaced by a stand-in that records its options and calls nothing. `surfaceOf` reads the result;
  * the hash of every app file the evaluation read is recorded so `keel check` reports a stale surface (E1005). An
@@ -39,7 +41,17 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
   const calls: { file: string; opts: unknown }[] = [];
   const sources: Record<string, string> = {};
   const notes: string[] = [];
-  const routeFiles = files.filter((f) => ROUTES.test(f.path));
+  const topologyFile = join(root, "topology.ts");
+  const placed = existsSync(topologyFile)
+    ? Object.values(parseTopology(readFileSync(topologyFile, "utf8")).topology).flatMap((d) => d.modules)
+    : [];
+  const routeFiles = [
+    ...files.filter((f) => ROUTES.test(f.path)).map((f) => ({ file: f.path, load: `/${f.path}` })),
+    ...[...new Set(placed)].flatMap((m) => {
+      const at = stdRoutes(root, m);
+      return at === undefined ? [] : [{ file: at[2], load: at[0] }];
+    }),
+  ];
   const callerFiles = files.filter((f) => CALLS.test(f.source) && MODULE_KEY.test(f.source));
   const manifests: { file: string; routes: unknown }[] = [];
   let table: unknown;
@@ -83,8 +95,8 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
           });
     try {
       for (const f of routeFiles) {
-        const m: unknown = await server?.ssrLoadModule(`/${f.path}`).catch(() => undefined);
-        if (isRecord(m)) manifests.push({ file: f.path, routes: m.routes });
+        const m: unknown = await server?.ssrLoadModule(f.load).catch(() => undefined);
+        if (isRecord(m)) manifests.push({ file: f.file, routes: m.routes });
       }
       const internal: unknown =
         manifests.length === 0

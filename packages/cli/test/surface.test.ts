@@ -52,10 +52,11 @@ function evaluated() {
 }
 
 describe("surfaceOf", () => {
-  it("records path routes with params, the chain's GET answer, action input and answer, and module services", () => {
+  it("records path routes with params, the loader's GET answer, action input and answer, and module services", () => {
     const d = surfaceOf(evaluated());
     expect(Object.keys(d.routes ?? {})).toEqual(["y.item"]);
     expect(d).toMatchObject({
+      version: 1,
       routes: {
         "y.item": {
           module: "y",
@@ -63,19 +64,13 @@ describe("surfaceOf", () => {
           file: "modules/y/routes.ts",
           params: { type: "object", required: ["id"] },
           search: null,
-          actions: { POST: { input: { type: "object", required: ["text"] } } },
-          get: {
-            properties: {
-              id: { const: "y.item" },
-              results: {
-                required: ["y.item", "y.shell"],
-                properties: {
-                  "y.shell": { properties: { value: { required: ["user"] } } },
-                  "y.item": { properties: { value: { required: ["id", "title"] } } },
-                },
-              },
+          actions: {
+            POST: {
+              input: { type: "object", required: ["text"] },
+              answer: { anyOf: [{ type: "string" }, { type: "null" }] },
             },
           },
+          get: { type: "object", required: ["id", "title"] },
         },
       },
       services: [
@@ -110,12 +105,13 @@ describe("surfaceOf", () => {
       services: [],
       sources: {},
     });
+    expect(d.version).toBe(1);
     expect(d.routes).toMatchObject({
       "y.feed": {
         module: "y",
         path: "/y/feed",
-        actions: { POST: { input: { required: ["text"] } } },
-        get: { properties: { id: { const: "y.feed" }, results: { required: ["y.feed"] } } },
+        actions: { POST: { input: { required: ["text"] }, answer: { anyOf: [{ type: "string" }, { type: "null" }] } } },
+        get: { type: "object", required: ["id", "title"] },
       },
     });
   });

@@ -11,6 +11,7 @@ import {
 import { appManifest } from "./internal/appManifest.ts";
 import { entryOf } from "./internal/entryOf.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
+import { stdRoutes } from "./std/stdRoutes.ts";
 import type { RouteLiteral } from "./types/RouteLiteral.ts";
 import type { RouteLiterals } from "./types/RouteLiterals.ts";
 import type { SourceFile } from "./types/SourceFile.ts";
@@ -338,7 +339,8 @@ function manifestObject(program: Program | undefined): ObjectExpression | undefi
 
 /**
  * Read a project's route table from its routes manifests without evaluating them (k.compiler Artifacts): the manifests
- * `vite build` evaluates (`projectManifests`), each `export const routes = manifest({...})` parsed with oxc. Literal
+ * `vite build` evaluates (`projectManifests`, a placed stdlib module's package `./routes` file read as a package
+ * fragment), each `export const routes = manifest({...})` parsed with oxc. Literal
  * route ids, `path`, `layout`, `api`, action verbs (from `routes.actions({...})`), `params`/`search` presence, and a guard's
  * `redirect` (a `guard({ redirect: "..." }, fn)` declared in the manifest or imported from a relative module; `null` for
  * a guard declared without one) are read;
@@ -354,12 +356,20 @@ export function routeLiterals(
   files: readonly SourceFile[],
   options: { readonly topology?: Topology | undefined; readonly root?: string | undefined } = {},
 ): RouteLiterals | undefined {
+  const root = options.root ?? process.cwd();
   const manifests = projectManifests(
     options.topology,
     files.map((f) => f.path),
+    root,
   );
   if (manifests.length === 0) return undefined;
-  const root = options.root ?? process.cwd();
+  /** A placed stdlib module's routes file: its import specifier and package directory. */
+  const std = new Map<string, [spec: string, pkg: string]>();
+  for (const d of Object.values(options.topology ?? {}))
+    for (const m of d.modules) {
+      const at = stdRoutes(root, m);
+      if (at !== undefined) std.set(at[0], [at[2], at[1]]);
+    }
   const sources = new Map(files.map((f) => [f.path, f.source]));
   /** A project file's text, or an absolute file's a package fragment reads. */
   const textOf = (p: string): string | undefined => {
@@ -429,8 +439,9 @@ export function routeLiterals(
   for (const file of manifests) {
     const program = parse(file);
     const obj = manifestObject(program);
-    if (program === undefined || obj === undefined) open(file);
-    else read(file, program, obj);
+    const [spec, pkg] = std.get(file) ?? [];
+    if (program === undefined || obj === undefined) open(spec ?? file);
+    else read(file, program, obj, spec, pkg);
   }
   return { routes: Object.fromEntries(routes), closed, unread };
 }

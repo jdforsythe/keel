@@ -17,12 +17,12 @@ keel codemod place digest --to jobs --adapter node
 ```
 
 **Generators.** Each emits spec-conformant files only:
-- `project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.topology); `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo and CI. `keel scaffold project <name>` writes under `<name>/`.
+- `project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.deploy); `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo and CI. `keel scaffold project <name>` writes under `<name>/`.
 - `module`: `modules/<id>/module.ts` and `routes.ts`; adds the module to `topology.ts`.
 - `route`: manifest entry, `*.server.ts` loader, page component, route test; with `--api` an API entry (k.api), its loader and a JSON request test, no component.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
 - `store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test.
-- `service`: endpoint schemas from OpenAPI and the service file (k.services): `modules/<id>/<Id>Api.schema.ts` and `api.ts`; schemas are generated, read-only.
+- `service`: endpoint schemas from OpenAPI and the service file (k.openapi): `modules/<id>/<Id>Api.schema.ts` and `api.ts`; schemas are generated, read-only.
 
 **Codemods.**
 - `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a manifest's `routes.href()`), `uses:` list, element-id prefix, test, and manifest entry.
@@ -30,7 +30,7 @@ keel codemod place digest --to jobs --adapter node
 - `place` moves a module to a deployable in `topology.ts` (a new deployable needs `--adapter`; an emptied one is removed) and regenerates the deploy files; nothing else changes.
 - `add-field` adds a field to a schema and to every initial state, fixture, and form `initial` that constructs it. Optional fields need no data; required fields take `--default`.
 
-**Turbo emission.** Any operation that adds or removes a module or package regenerates `turbo.json`, CI workflows and deploy files (k.topology) from the task graph and topology (ADR-0009). Generated files are read-only (E1005).
+**Turbo emission.** Any operation that adds or removes a module or package regenerates `turbo.json`, CI workflows and deploy files (k.deploy) from the task graph and topology (ADR-0009). Generated files are read-only (E1005).
 
 **Guarantee.** If `keel check` was clean before an operation, it is clean after. Otherwise nothing is written and E1353 reports the first diagnostic the edit set would introduce.
 

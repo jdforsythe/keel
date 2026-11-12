@@ -90,7 +90,11 @@ todo-by-hand/
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
+    "@keel/std-channels": "workspace:*",
+    "@keel/std-conflicts": "workspace:*",
     "@keel/std-jobs": "workspace:*",
+    "@keel/std-live": "workspace:*",
+    "@keel/std-offline": "workspace:*",
     "@keel/std-schedules": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
@@ -284,7 +288,7 @@ Follow `http://localhost:5173/lists/l1` in `keel dev`:
 5. The router matches `/lists/l1` against the manifest in `modules/todos/routes.ts`: route `todos.list`, path `/lists/:listId`. It parses the params with `ListParams` (a failure is a 404 rendered by the route's `errorElement`) and the search with `ListSearch` (failing keys are dropped).
 6. It runs the chain's guards, outermost first (none here), then its loaders. `loadList` runs in the browser with the real `ctx`. It calls `GET /api/lists` through a typed client.
 7. `keel dev` answers `/api/lists` from the `api` deployable's dev server on the same origin. The `api.lists` loader restores `api.board` from storage and answers `{ id, results: { "api.lists": { ok: true, value } } }`.
-8. `loadList` stores the board in the client store `todos.view` (transaction `todos.hydrate`) and returns the list.
+8. The typed client takes the `api.lists` result and decodes its `value` with the endpoint's `output`, `BoardView`. `loadList` stores the board in the client store `todos.view` (transaction `todos.hydrate`) and returns the list.
 9. The router renders the chain, outermost first: the layout `todos.shell` (`AppShell`), with `ListPage` as its children, given `{ params, search, data }`. `ListPage` reads the todos from `todos.view`.
 
 A `node` deployable's page goes the other way. A request reaches `server.mjs`; `createApp` matches the route, runs guards and loaders on the server, and streams HTML with the request's store state in `<script type="application/json" id="k-state">`. If the page has an island (a component with an event handler, an effect, or a read of client-writable state), the HTML scripts the resume entry, which restores state from `#k-state` and attaches handlers to the server's DOM using `/@keel/islands.ts`, without rendering again. A request with `accept: application/json` gets the loader `Result` instead of HTML. golden-1's `api` routes are API routes: they answer JSON only.
@@ -786,7 +790,7 @@ export default module({
 
 ### Schemas
 
-`todos` imports the contract schemas from `api` (`Todo`, `TodoList`, `BoardView`, `ListDraft`, `TodoDraft`, `ListParams`, `Suggestion`; section 6). The schemas below are its own: the route params and search of its pages, and the replies its typed client decodes.
+`todos` imports the contract schemas from `api` (`Todo`, `TodoList`, `BoardView`, `ListDraft`, `TodoDraft`, `ListParams`, `Suggestion`; section 6). The schemas below are its own: the route params and search of its pages, and the error answer its typed client decodes.
 
 
 ```ts title="modules/todos/TodoParams.schema.ts"
@@ -805,58 +809,16 @@ export const ListSearch = s.object({ filter: s.enum(["all", "active", "done"]).o
 export type ListSearch = s.infer<typeof ListSearch>;
 ```
 
-The reply schemas describe what a `node` deployable sends over the wire, so the typed client can decode it. A GET answers `{ id, results: { [routeId]: Result } }`, one `Result` per loader in the route's chain. An action answers its bare `Result`. A failed action input answers 422 with `keel.fields`.
-
-```ts title="modules/todos/BoardReply.schema.ts"
-import { s } from "@keel/schema";
-import { BoardView } from "../api/BoardView.schema.ts";
-
-/** The `api` deployable's runtime answer to `GET /api/lists` (k.server): the `api.lists` loader `Result`. */
-export const BoardReply = s.object({
-  id: s.literal("api.lists"),
-  results: s.object({
-    "api.lists": s.object({ ok: s.literal(true), value: BoardView }),
-  }),
-});
-export type BoardReply = s.infer<typeof BoardReply>;
-```
-
-```ts title="modules/todos/SuggestionsReply.schema.ts"
-import { s } from "@keel/schema";
-import { Suggestion } from "../api/Suggestion.schema.ts";
-
-/** The `api` deployable's runtime answer to `GET /api/suggestions` (k.server): the `api.suggestions` loader `Result`. */
-export const SuggestionsReply = s.object({
-  id: s.literal("api.suggestions"),
-  results: s.object({
-    "api.suggestions": s.object({ ok: s.literal(true), value: s.array(Suggestion) }),
-  }),
-});
-export type SuggestionsReply = s.infer<typeof SuggestionsReply>;
-```
-
-```ts title="modules/todos/ActionReply.schema.ts"
-import { s } from "@keel/schema";
-
-/** The `api` deployable's runtime answer to an action that succeeded (k.server): `ok(null)`, or `ok(href)`. */
-export const ActionReply = s.object({
-  ok: s.literal(true),
-  value: s.string().nullable(),
-});
-export type ActionReply = s.infer<typeof ActionReply>;
-```
+A `module` client decodes the value each route returns, not the wire format around it: a GET endpoint's `output` is the route's loader `output` (`BoardView`), an action's is `s.string().nullable()`, the href it returns or none. The error schemas describe the error answer, a KeelError `{ code, message, data }`. A failed action input answers 422 with `keel.fields`.
 
 ```ts title="modules/todos/FieldsReply.schema.ts"
 import { s } from "@keel/schema";
 
 /**
- * The `api` deployable's error answer to an action (k.server): `err` of a public KeelError. A 422 carries
- * `keel.fields` (field path to message in `data`), which the Form shows next to the field.
+ * The `api` deployable's error answer to an action (k.server): a public KeelError. A 422 carries `keel.fields`
+ * (field path to message in `data`), which the Form shows next to the field.
  */
-export const FieldsReply = s.object({
-  ok: s.literal(false),
-  error: s.object({ code: s.string(), message: s.string(), data: s.json() }),
-});
+export const FieldsReply = s.object({ code: s.string(), message: s.string(), data: s.json() });
 export type FieldsReply = s.infer<typeof FieldsReply>;
 ```
 
@@ -890,54 +852,54 @@ export const hydrate = transaction(view, "todos.hydrate", BoardView, (_state, da
 ```ts title="modules/todos/todos.service.ts"
 import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
+import { BoardView } from "../api/BoardView.schema.ts";
 import { ListDraft } from "../api/ListDraft.schema.ts";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
-import { ActionReply } from "./ActionReply.schema.ts";
-import { BoardReply } from "./BoardReply.schema.ts";
 import { FieldsReply } from "./FieldsReply.schema.ts";
 
 /**
- * The board endpoints of the golden-1 `api` deployable (it owns the data; k.server runtime `Result` bodies),
- * resolved by the topology (`todosApi`).
+ * The board endpoints of the golden-1 `api` deployable (it owns the data), resolved by the topology (`todosApi`):
+ * `lists` answers the `api.lists` loader's value, each action the href it returns (or none).
  */
 export const todos = endpoints({
-  lists: { method: "GET", path: "/api/lists", output: BoardReply },
-  createList: { method: "POST", path: "/api/lists", body: ListDraft, output: ActionReply },
+  lists: { method: "GET", path: "/api/lists", output: BoardView },
+  createList: { method: "POST", path: "/api/lists", body: ListDraft, output: s.string().nullable() },
   addTodo: {
     method: "POST",
     path: "/api/lists/:listId/todos",
     params: s.object({ listId: s.id("TodoList") }),
     body: TodoDraft,
-    output: ActionReply,
+    output: s.string().nullable(),
   },
   toggleTodo: {
     method: "POST",
     path: "/api/todos/:todoId/toggle",
     params: s.object({ todoId: s.id("Todo") }),
-    output: ActionReply,
+    output: s.string().nullable(),
   },
   editTodo: {
     method: "POST",
     path: "/api/todos/:todoId",
     params: s.object({ todoId: s.id("Todo") }),
     body: TodoDraft,
-    output: ActionReply,
+    output: s.string().nullable(),
     errors: { 422: FieldsReply },
   },
-  undo: { method: "POST", path: "/api/undo", output: ActionReply },
+  undo: { method: "POST", path: "/api/undo", output: s.string().nullable() },
 });
 ```
 
 ```ts title="modules/todos/suggestions.service.ts"
+import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
-import { SuggestionsReply } from "./SuggestionsReply.schema.ts";
+import { Suggestion } from "../api/Suggestion.schema.ts";
 
 /**
  * Endpoints of the golden-1 `api` deployable (`api.suggestions` in the `api` module's `public.routes`). The client is
  * `service({ module: 'api', schema: suggestions })`: the topology resolves where `api` runs.
  */
 export const suggestions = endpoints({
-  list: { method: "GET", path: "/api/suggestions", output: SuggestionsReply },
+  list: { method: "GET", path: "/api/suggestions", output: s.array(Suggestion) },
 });
 ```
 
@@ -965,9 +927,8 @@ import { todosApi } from "./todosApi.ts";
 export async function refreshView(ctx: Ctx): Promise<Result<BoardView, KeelError<string, unknown>>> {
   const r = await todosApi.lists({}, ctx);
   if (!r.ok) return r;
-  const data = r.value.results["api.lists"].value;
-  const h = tx(hydrate, data);
-  return h.ok ? ok(data) : h;
+  const h = tx(hydrate, r.value);
+  return h.ok ? ok(r.value) : h;
 }
 ```
 
@@ -1081,7 +1042,7 @@ import { todosApi } from "./todosApi.ts";
  */
 export const updateTodo = action({ input: TodoDraft, params: TodoParams }, async (input, { params }, ctx) => {
   const r = await todosApi.editTodo({ params: { todoId: params.todoId }, body: input }, ctx);
-  if (!r.ok) return err(r.error.data.body?.error ?? r.error);
+  if (!r.ok) return err(r.error.data.body ?? r.error);
   return ok(routes.href("todos.list", { listId: params.listId }));
 });
 ```
@@ -1401,13 +1362,25 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
         {props.data.name}
       </Heading>
       <Box as="section" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
-        <Link id="todos.filter.all" to={routes.href("todos.list", { listId }, { filter: "all" })} fg="text">
+        <Link
+          id="todos.filter.all"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "all" })}
+          fg="text"
+        >
           All
         </Link>
-        <Link id="todos.filter.active" to={routes.href("todos.list", { listId }, { filter: "active" })} fg="text">
+        <Link
+          id="todos.filter.active"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "active" })}
+          fg="text"
+        >
           Active
         </Link>
-        <Link id="todos.filter.done" to={routes.href("todos.list", { listId }, { filter: "done" })} fg="text">
+        <Link
+          id="todos.filter.done"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "done" })}
+          fg="text"
+        >
           Done
         </Link>
       </Box>
@@ -1501,7 +1474,7 @@ const failure = (e: ApiError): Error =>
 async function fetchSuggestions(ctx: Ctx | undefined): Promise<Suggestion[]> {
   if (ctx === undefined) return Promise.reject(new Error("Suggestions need a ctx"));
   const r = await service({ module: "api", schema: suggestions }).list({}, ctx);
-  return r.ok ? r.value.results["api.suggestions"].value : Promise.reject(failure(r.error));
+  return r.ok ? r.value : Promise.reject(failure(r.error));
 }
 
 /** Suggested titles from `GET /api/suggestions` through a typed `suggestions` client, shown by resource state. */
@@ -1691,8 +1664,6 @@ The manifest maps route ids to routes. An entry without `path` is a layout (`tod
 ```ts title="modules/todos/routes.ts"
 import { manifest } from "@keel/router";
 import { ListParams } from "../api/ListParams.schema.ts";
-import { Todo } from "../api/Todo.schema.ts";
-import { TodoList } from "../api/TodoList.schema.ts";
 import AppShell from "./AppShell.tsx";
 import EditTodoPage from "./EditTodoPage.tsx";
 import ListError from "./ListError.tsx";
@@ -1725,10 +1696,7 @@ export const routes = manifest({
     loader: loadList,
     component: ListPage,
     layout: "todos.shell",
-    title: (p) => {
-      const list = TodoList.parse(p.data);
-      return list.ok ? list.value.name : "List";
-    },
+    title: (p) => p.data.name,
     errorElement: ListError,
   },
   "todos.edit": {
@@ -1738,10 +1706,7 @@ export const routes = manifest({
     component: EditTodoPage,
     layout: "todos.shell",
     guard: editable,
-    title: (p) => {
-      const todo = Todo.parse(p.data);
-      return todo.ok ? `Edit ${todo.value.title}` : "Edit todo";
-    },
+    title: (p) => `Edit ${p.data.title}`,
     errorElement: ListError,
   },
 });
@@ -1787,20 +1752,6 @@ import { s } from "@keel/schema";
 /** Input of the `digest.recount` job and of `POST /digest/refresh`: nothing, the job reads the whole board. */
 export const RecountInput = s.object({});
 export type RecountInput = s.infer<typeof RecountInput>;
-```
-
-```ts title="modules/digest/ListsReply.schema.ts"
-import { s } from "@keel/schema";
-import { BoardView } from "../api/BoardView.schema.ts";
-
-/** The `api` module's runtime answer to `GET /api/lists` (k.server): the `api.lists` loader `Result`. */
-export const ListsReply = s.object({
-  id: s.literal("api.lists"),
-  results: s.object({
-    "api.lists": s.object({ ok: s.literal(true), value: BoardView }),
-  }),
-});
-export type ListsReply = s.infer<typeof ListsReply>;
 ```
 
 ```ts title="modules/digest/LATEST_KEY.ts"
@@ -1849,11 +1800,11 @@ export async function writeLatest(ctx: Ctx, digest: Digest): Promise<void> {
 
 ```ts title="modules/digest/board.service.ts"
 import { endpoints } from "@keel/services";
-import { ListsReply } from "./ListsReply.schema.ts";
+import { BoardView } from "../api/BoardView.schema.ts";
 
 /** The `api` route `digest.recount` reads: `api.lists` (in the `api` module's `public.routes`). */
 export const board = endpoints({
-  lists: { method: "GET", path: "/api/lists", output: ListsReply },
+  lists: { method: "GET", path: "/api/lists", output: BoardView },
 });
 ```
 
@@ -1886,7 +1837,7 @@ import { writeLatest } from "./writeLatest.ts";
 export const recount = job({ input: RecountInput }, async (_input, ctx, signal) => {
   const r = await boardApi.lists({ signal }, ctx);
   if (!r.ok) return err(r.error);
-  const todos = r.value.results["api.lists"].value.todos;
+  const todos = r.value.todos;
   const done = todos.filter((t) => t.done).length;
   await writeLatest(ctx, { open: todos.length - done, done, at: ctx.clock.now() });
   return ok(null);
@@ -2285,4 +2236,4 @@ The Keel skills in `.claude/skills/keel*/SKILL.md` are terse API cards for the s
 - Inspecting a running app (`keel inspect`, `/__keel/inspect`), recorded sessions, and `keel check --base` against a deployed `surface.json`.
 - Shipping the `web` client to a static host or across origins; `docs/guide/deploy-client.md` covers it.
 
-verified: 4b7a637f563daa2284f10170ce2824a4dd55798e
+verified: e7eb9c0e5cf941ec5db727036f9648a4d3fcbabb

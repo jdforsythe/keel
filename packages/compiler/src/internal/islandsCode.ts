@@ -51,8 +51,8 @@ function manifests(body: readonly Statement[]): ObjectExpression[] {
 /**
  * The generated `/@keel/islands.ts` (k.runtime, RFC 0046): `export const components`, route id -> the route's
  * component, for the resume entry. Static and best effort, like island marking: in each `routes.ts` (root-relative
- * `path`), a `manifest({...})` entry with a literal route id whose `component` is an imported identifier contributes
- * that import (relative specifiers become root-relative, `/`-prefixed). Anything else (inline components, a file that
+ * `path`, or absolute for a stdlib package's), a `manifest({...})` entry with a literal route id whose `component`
+ * is an imported identifier contributes that import (relative specifiers become root-relative, `/`-prefixed). Anything else (inline components, a file that
  * does not parse) is skipped; `resume` leaves such an island static. Sorted by route id; deterministic.
  */
 export function islandsCode(files: readonly { readonly path: string; readonly source: string }[]): string {
@@ -64,7 +64,8 @@ export function islandsCode(files: readonly { readonly path: string; readonly so
     for (const s of program.body) {
       if (s.type !== "ImportDeclaration" || s.importKind === "type") continue;
       const spec = s.source.value;
-      const source = spec.startsWith(".") ? `/${path.posix.join(path.posix.dirname(f.path), spec)}` : spec;
+      const at = path.posix.join(path.posix.dirname(f.path), spec);
+      const source = !spec.startsWith(".") ? spec : at.startsWith("/") ? at : `/${at}`;
       for (const sp of s.specifiers) {
         if (sp.type === "ImportDefaultSpecifier") bound.set(sp.local.name, { source, imported: "default" });
         if (sp.type !== "ImportSpecifier" || sp.importKind === "type") continue;

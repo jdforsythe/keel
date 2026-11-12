@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { stdRoutes } from "../std/stdRoutes.ts";
 import type { Topology } from "../types/Topology.ts";
 
 /** Specifiers the dev module imports; the app resolves them (the compiler itself never imports them). */
@@ -15,7 +16,8 @@ const [DOM, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
 /**
  * The `keel dev` server module (k.topology Local topology): after installing the server DOM it creates one dev
  * `createApp` per `node` deployable of `topology`, each with its own real `ctx` whose storage is the file
- * `.keel-dev/<name>.storage.json`, its modules' routes and runners, the `.keel/` artifacts and `std.json`, and the
+ * `.keel-dev/<name>.storage.json`, its modules' routes (an app module's `routes.ts`, a stdlib module's package
+ * `./routes` export: `stdRoutes`) and runners, the `.keel/` artifacts and `std.json`, and the
  * others as in-process peers. It exports `apps`, `[name, app, served]` per
  * deployable, `served(path)` telling whether a route of that deployable (an API route included) matches the path.
  */
@@ -42,9 +44,12 @@ export function devEntryCode(root: string, topology: Topology): string {
   const std = has(".keel/std.json") ? `, std: ${abs(".keel/std.json")}` : "";
   for (const name of node) {
     const mods = topology[name]?.modules ?? [];
-    const routes = mods.filter((m) => has(`modules/${m}/routes.ts`));
+    const files = mods.flatMap((m) => {
+      const file = has(`modules/${m}/routes.ts`) ? path.join(root, `modules/${m}/routes.ts`) : stdRoutes(root, m)?.[0];
+      return file === undefined ? [] : [file.split(path.sep).join("/")];
+    });
     const runners = mods.filter((m) => has(`modules/${m}/runners.server.ts`));
-    const imports = routes.map((m) => `...(await import(${abs(`modules/${m}/routes.ts`)})).routes.routes`);
+    const imports = files.map((f) => `...(await import(${JSON.stringify(f)})).routes.routes`);
     const run = runners.map(
       (m) => `${JSON.stringify(m)}: (await import(${abs(`modules/${m}/runners.server.ts`)})).runners`,
     );

@@ -30,6 +30,7 @@ import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
+import { stdRoutes } from "./std/stdRoutes.ts";
 import { stdArtifact } from "./stdArtifact.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
 import type { Output } from "./types/Output.ts";
@@ -104,7 +105,8 @@ type Builder = { environments: Record<string, unknown>; build(environment: unkno
  *
  * Project inputs (D24-D25): `buildStart` compiles every app source once (style usages for the CSS), reads
  * `topology.ts` statically (E1004 exemption for `client` deployables), and evaluates `tokens.ts` and the
- * deployable's `modules/<id>/routes.ts` to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
+ * deployable's modules' routes (an app module's `modules/<id>/routes.ts`, a stdlib module's package `./routes`)
+ * to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
  * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
  * `client` one by name: the `mount` entry for a `client` deployable (binding the client-readable part of `std.json`,
  * `clientStdData`, reloaded when a manifest changes; rfc:0069), else the resume entry, whose island components
@@ -114,7 +116,7 @@ type Builder = { environments: Record<string, unknown>; build(environment: unkno
  * is a `node` deployable builds that entry alone (input `entry`) into `dist/<name>/` with hashed `assets/` and the
  * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), then its generated production entry (`SERVER_ENTRY`,
  * `serverEntryCode`) with every dependency into `dist/<name>/server.mjs` beside `routes.json`, every module's routes
- * (`projectManifests` without a topology, evaluated), and a copy of `.keel/std.json` (k.topology Build), and writes no `.keel/` artifacts (the project's own build does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
+ * (`projectManifests` over every placed module, evaluated), and a copy of `.keel/std.json` (k.topology Build), and writes no `.keel/` artifacts (the project's own build does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
  * manifests' `deps` and writes `std.json` (`stdArtifact`); there a bad dep (E1159) or `std` entry (E1158) fails a build
  * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten (rfc:0066).
  *
@@ -223,7 +225,10 @@ export default function (): {
       ? undefined
       : { name, modules: d.modules, client: d.adapter === "client" };
   };
-  /** `modules/<id>/routes.ts` of the deployable's modules (every module without a topology), root-relative. */
+  /**
+   * The routes files of the deployable's modules (every module without a topology): an app module's
+   * `modules/<id>/routes.ts`, root-relative; a stdlib module's package `./routes` file (`stdRoutes`), absolute.
+   */
   const routesFiles = (want?: string): string[] => {
     const d = deployable(want);
     const ids =
@@ -234,10 +239,10 @@ export default function (): {
             .filter((e) => e.isDirectory())
             .map((e) => e.name)
         : []);
-    return [...ids]
-      .sort()
-      .map((m) => `modules/${m}/routes.ts`)
-      .filter(exists);
+    return [...ids].sort().flatMap((m) => {
+      const file = exists(`modules/${m}/routes.ts`) ? `modules/${m}/routes.ts` : stdRoutes(root, m)?.[0];
+      return file === undefined ? [] : [file];
+    });
   };
 
   /** Dev only: make the browser fetch `keel.css` again (it re-evaluates when stale). */
@@ -376,7 +381,13 @@ export default function (): {
             await b.build(b.environments.client);
             await b.build(b.environments.ssr);
             // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
-            const all = projectManifests(undefined, listSources(at));
+            // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
+            const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
+              modules: d.modules,
+              adapter: "node",
+            });
+            const every = Object.fromEntries(Object.entries(top).map(([n, d]) => [n, asNode(d)]));
+            const all = projectManifests(every, listSources(at), at);
             const table = await evaluateProject({ root: at, tokensFile: undefined, routesFiles: all, usages: [] });
             fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
             if (fs.existsSync(path.join(at, ".keel", "std.json")))
@@ -429,7 +440,7 @@ export default function (): {
       const q = keyed(id);
       if (q?.path === ISLANDS_PATH)
         return islandsCode(
-          routesFiles(q.d).map((f) => ({ path: f, source: fs.readFileSync(path.join(root, f), "utf8") })),
+          routesFiles(q.d).map((f) => ({ path: f, source: fs.readFileSync(path.resolve(root, f), "utf8") })),
         );
       if (id === `\0${DEV_ENTRY}`) return devEntryCode(root, topology ?? {});
       const node = deployable();
@@ -442,7 +453,7 @@ export default function (): {
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       return entryCode(
-        routesFiles(q.d).map((f) => `/${f}`),
+        routesFiles(q.d).map((f) => (path.isAbsolute(f) ? f : `/${f}`)),
         CSS_IMPORT,
         clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
         served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},

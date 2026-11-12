@@ -72,7 +72,7 @@ function entrySource(tokensFile: string | undefined, routesFiles: readonly strin
       "};",
     );
   lines.push(
-    `const routes = Object.assign({}, ${routesFiles.map((f) => `await manifest(${q(f)}, () => import(${q(`./${f}`)}))`).join(", ")});`,
+    `const routes = Object.assign({}, ${routesFiles.map((f) => `await manifest(${q(f)}, () => import(${q(path.isAbsolute(f) ? f : `./${f}`)}))`).join(", ")});`,
     "export default JSON.stringify({ css, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
   );
   return lines.join("\n");

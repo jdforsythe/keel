@@ -8,16 +8,20 @@ import { fileURLToPath } from "node:url";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { createCtx } from "@keel/ctx";
+import { manifest } from "@keel/router";
 import { createApp } from "@keel/server";
 import { Session, SessionsConfig } from "@keel/std-sessions";
+import { routes as sessions } from "@keel/std-sessions/routes";
 import { describe, expect, it } from "vitest";
-import { routes } from "../modules/ops/routes.ts";
+import { routes as ops } from "../modules/ops/routes.ts";
 import topology from "../topology.ts";
 
 const BASE = "http://localhost";
 const STD = fileURLToPath(new URL("../.keel/std.json", import.meta.url));
 /** The hash of the deployed service's reader cookie, as `modules/ops/module.ts` lists it. */
 const READER = "h1NjuCrFnI-AX_1RSVPsvEjwe6-Em7G-6PDzHAqbRfA";
+/** The deployable's table as its generated entry merges it: `ops` and the placed `sessions` package's routes. */
+const routes = manifest({ ...ops.routes, ...sessions.routes });
 
 async function service(std?: string) {
   const ctx = createCtx({ mode: "sim", seed: 1337 });

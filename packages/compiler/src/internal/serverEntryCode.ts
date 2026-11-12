@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { stdRoutes } from "../std/stdRoutes.ts";
 
 /** Specifiers the generated entry imports; the app resolves them (the compiler itself never imports them). */
 const DOM = JSON.stringify("@keel/server/dom");
@@ -8,8 +9,9 @@ const START = JSON.stringify("@keel/server/start");
 /**
  * The generated production entry of `node` deployable `name` (k.deploy Build), a virtual module never written as a
  * source file: it installs the server DOM (`@keel/server/dom`, before any component module builds its templates), then
- * imports `topology.ts`, each of `modules`' `routes.ts` and `runners.server.ts` that exist under `root`, and calls
- * `start` (`@keel/server/start`) with them and its own folder.
+ * imports `topology.ts`, each of `modules`' routes (an app module's `routes.ts` under `root`, a stdlib module's
+ * package `./routes` export: `stdRoutes`) and `runners.server.ts` that exist, and calls `start`
+ * (`@keel/server/start`) with them and its own folder.
  */
 export function serverEntryCode(root: string, name: string, modules: readonly string[]): string {
   const abs = (rel: string): string => JSON.stringify(path.join(root, rel).split(path.sep).join("/"));
@@ -23,8 +25,9 @@ export function serverEntryCode(root: string, name: string, modules: readonly st
   const routes: string[] = [];
   const runners: string[] = [];
   modules.forEach((m, i) => {
-    if (has(`modules/${m}/routes.ts`)) {
-      lines.push(`const { routes: routes${i} } = await import(${abs(`modules/${m}/routes.ts`)});`);
+    const file = has(`modules/${m}/routes.ts`) ? path.join(root, `modules/${m}/routes.ts`) : stdRoutes(root, m)?.[0];
+    if (file !== undefined) {
+      lines.push(`const { routes: routes${i} } = await import(${JSON.stringify(file.split(path.sep).join("/"))});`);
       routes.push(`routes${i}`);
     }
     if (has(`modules/${m}/runners.server.ts`)) {

@@ -107,5 +107,7 @@ export function appManifest(source: string): StaticManifest | null {
       std.push({ key, start: p.key.start, value: json(p.value) });
     }
   }
-  return { deps, std };
+  const idNode = props.get("id");
+  const id = idNode?.type === "Literal" && typeof idNode.value === "string" ? idNode.value : undefined;
+  return { id, deps, std };
 }
