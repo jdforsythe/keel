@@ -20,7 +20,7 @@ type SessionGroup = { v: 1; seed: number; at: number; origin: string; server: { 
 
 **Privacy.** A group is a simulation artifact: `openGroup` runs only on sim ctxs, and a group holds what each user's `record` kept under its `redact` entries.
 
-**Rules.** E2007 a group file fails `SessionGroup` · E2008 a group user's session has no `seed`. Both diag the file at 1:1: `keel session replay <f>` reads a file with a top-level `users` key as a `SessionGroup` (exported by `@keel/std-sessions/group`) and reports them before any replay.
+**Rules.** E2007 a group file fails `SessionGroup` · E2008 a group user's session has no `seed`. Both diag the file at 1:1: `keel session replay <f>` reads a file with a top-level `users` key as a `SessionGroup` (exported by `@keel/std-sessions/group`) and reports them before any replay; a valid group file replays nothing there (`replayGroup` needs the user module and `serve`) and exits 0.
 
 **Conformance.**
 - Under one seed, two runs of one script on `openGroup` give byte-equal groups.

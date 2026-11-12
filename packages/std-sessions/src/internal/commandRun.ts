@@ -59,14 +59,21 @@ function unappliedText(s: Session, n: number): string {
  * find the deployable serving `route.id` in `topology.ts` (none: E2003 for the base), and run the op as a job under
  * the project's `keel test` (`runJob`), replaying with the serving modules' `redact` entries. `replay` reports E2003
  * (an input that does not apply, N from 0 over `events`) and E2004 (fingerprint differs) and one `session` record.
+ * A `replay` file with a top-level `users` key is a `SessionGroup`: `groupDiags` reports E2007 and E2008 (std.multi) and
+ * nothing replays; a valid group gets a summary that says it replays through `replayGroup`, exit 0.
  * `minimize` rewrites `<f>` with the 1-minimal session; `to-test` writes `modules/<m>/test/session-<fingerprint>.test.ts`
  * from the session redacted with the route module's `expose` entries. Both write nothing unless the session reproduces (E2004).
  */
 export async function commandRun(op: Op, target: string, io: Io, maxRuns: number | undefined): Promise<Outcome> {
   const files = projectOf(io);
-  const done = (records: OutRecord[], writes: Outcome["writes"] = [], failed = false): Outcome => {
+  const done = (
+    records: OutRecord[],
+    writes: Outcome["writes"] = [],
+    failed = false,
+    name = `session ${op}`,
+  ): Outcome => {
     const ok = !failed && !records.some((r) => r.kind === "diag" && String(r.code).startsWith("E"));
-    return { records: [...records, { kind: "summary", ok, name: `session ${op}`, counts: { sessions: 1 } }], writes };
+    return { records: [...records, { kind: "summary", ok, name, counts: { sessions: 1 } }], writes };
   };
   const text = sourceOf(io, files, target);
   let raw: unknown;
@@ -77,6 +84,12 @@ export async function commandRun(op: Op, target: string, io: Io, maxRuns: number
   }
   if (raw === undefined)
     return done([sessionDiag("E2002", "session file fails sessions.Session at (root): not JSON", target)]);
+  if (op === "replay" && text !== undefined && typeof raw === "object" && raw !== null && "users" in raw) {
+    const { groupDiags } = await import("@keel/std-sessions/group");
+    const found = groupDiags(text, target);
+    if (found.length > 0) return done(found);
+    return done([], [], false, "session replay: a group file replays through replayGroup");
+  }
   const parsed = Session.parse(raw);
   if (!parsed.ok) {
     const issue = parsed.error.data.issues[0];

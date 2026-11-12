@@ -16,6 +16,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "@keel/check": "workspace:*",
     "@keel/cli": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*",

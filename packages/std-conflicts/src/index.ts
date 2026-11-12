@@ -1,4 +1,6 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
+import "./raceFound.ts";
+import "./raceUnchecked.ts";
 export type { FindRacesOptions } from "./FindRacesOptions.ts";
 export type { FindRacesResult } from "./FindRacesResult.ts";
 export type { Race } from "./Race.ts";

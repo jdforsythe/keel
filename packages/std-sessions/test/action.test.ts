@@ -90,7 +90,7 @@ function world(o: {
         return {
           code: 1,
           stdout: ndjson([
-            { kind: "diag", code: "E1720", message: "vitest include misses .keel/sessions/", fix: "- a\n+ b" },
+            { kind: "diag", code: "E9999", message: "vitest include misses .keel/sessions/", fix: "- a\n+ b" },
             summary(false, `session ${op}`),
           ]),
         };
@@ -297,7 +297,7 @@ describe("runAction", () => {
       `replay ${fileOf(FP, 1)}`,
     ]);
     expect(r.code).toBe(1);
-    expect(r.stdout).toContain("E1720 vitest include misses .keel/sessions/\n  fix: - a\n       + b\n");
+    expect(r.stdout).toContain("E9999 vitest include misses .keel/sessions/\n  fix: - a\n       + b\n");
     expect(r.stdout.trimEnd().split("\n").at(-1)).toBe(
       "fail session action 2 fingerprints, 1 created, 0 updated, 0 commented",
     );

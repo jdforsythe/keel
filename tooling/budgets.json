@@ -106,7 +106,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/tools": {
-      "max": "9kb",
+      "max": "9.25kb",
       "platform": "node"
     },
     "@keel/std-temporal": "2.5kb",

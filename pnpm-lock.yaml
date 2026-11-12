@@ -704,6 +704,9 @@ importers:
 
   packages/std-conflicts:
     dependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
       '@keel/cli':
         specifier: workspace:*
         version: link:../cli
