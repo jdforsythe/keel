@@ -1,8 +1,8 @@
 import { operations } from "../operations.ts";
 import { hostIo } from "./hostIo.ts";
 import { parseArgv } from "./parseArgv.ts";
-import { portBusy } from "./portBusy.ts";
 import { portDiag } from "./portDiag.ts";
+import { portProbe } from "./portProbe.ts";
 import { respond } from "./respond.ts";
 import { summary } from "./summary.ts";
 import { viteRun } from "./viteRun.ts";
@@ -23,8 +23,9 @@ export async function devStart(
   const parsed = parseArgv(argv, operations);
   if (!parsed.ok || parsed.op.name !== "dev") return undefined;
   const port = parsed.input.port ?? DEFAULT_DEV_PORT;
-  if (await portBusy(port)) {
-    const diag = portDiag(port);
+  const blocked = await portProbe(port);
+  if (blocked !== undefined) {
+    const diag = portDiag(port, blocked);
     const r = respond([diag, summary("dev", [diag], { errors: 1 })], hostIo(false), {
       command: "dev",
       format: parsed.input.format,

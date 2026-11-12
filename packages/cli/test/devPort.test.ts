@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { parseArgv } from "../src/internal/parseArgv.ts";
 import { portBusy } from "../src/internal/portBusy.ts";
 import { portDiag } from "../src/internal/portDiag.ts";
+import { portProblem } from "../src/internal/portProblem.ts";
 import { respond } from "../src/internal/respond.ts";
 import { summary } from "../src/internal/summary.ts";
 import { operations } from "../src/operations.ts";
@@ -78,5 +79,85 @@ describe("portBusy", () => {
     expect(await portBusy(port)).toBe(true);
     await new Promise<void>((r) => holder.close(() => r()));
     expect(await portBusy(port)).toBe(false);
+  });
+});
+
+const holdOn = async (
+  host: string,
+): Promise<{ readonly port: number; readonly close: () => Promise<void> } | undefined> => {
+  const holder = net.createServer();
+  const bound = await new Promise<boolean>((resolve) => {
+    holder.once("error", () => resolve(false));
+    holder.listen({ port: 0, host }, () => resolve(true));
+  });
+  if (!bound) return undefined;
+  const addr = holder.address();
+  const port = typeof addr === "object" && addr !== null ? addr.port : -1;
+  return { port, close: () => new Promise<void>((r) => holder.close(() => r())) };
+};
+
+describe("portBusy per address", () => {
+  for (const host of ["127.0.0.1", "0.0.0.0", "::1", "::"]) {
+    it(`a listener on ${host} alone makes the port busy`, async (ctx) => {
+      const held = await holdOn(host);
+      if (held === undefined) return ctx.skip();
+      try {
+        expect(await portBusy(held.port)).toBe(true);
+      } finally {
+        await held.close();
+      }
+    });
+  }
+
+  it("a port nobody holds is not busy", async () => {
+    const held = await holdOn("127.0.0.1");
+    if (held === undefined) throw new Error("no IPv4 loopback");
+    await held.close();
+    expect(await portBusy(held.port)).toBe(false);
+  });
+});
+
+describe("portDiag wording", () => {
+  it("EADDRINUSE says in use, EACCES says cannot be bound, both one E1560 line naming the port", () => {
+    expect(portProblem("EADDRINUSE")).toBe("is in use");
+    expect(portProblem("EACCES")).toBe("cannot be bound");
+    expect(portProblem(undefined)).toBe("is in use");
+    expect(portDiag(80, "EACCES").message).toBe("dev port 80 cannot be bound");
+    expect(portDiag(80, "EADDRINUSE").message).toBe("dev port 80 is in use");
+    expect(portDiag(80).message).toBe("dev port 80 is in use");
+  });
+});
+
+describe("int flag text", () => {
+  it("rejects non-canonical integer text as E1052", () => {
+    for (const v of ["1e3", "+80", "08080", "80.0", "0x50", " 80", "80 ", "-0"]) {
+      const r = parseArgv(["dev", `--port=${v}`], operations);
+      expect(r.ok).toBe(false);
+      expect(!r.ok && r.diags.map((d) => d.code)).toEqual(["E1052"]);
+    }
+  });
+
+  it("accepts --limit with canonical text and still rejects 0", () => {
+    const ok = parseArgv(["dev", "--limit", "5"], operations);
+    expect(ok.ok && ok.input.limit).toBe(5);
+    expect(parseArgv(["dev", "--limit", "05"], operations).ok).toBe(false);
+    expect(parseArgv(["dev", "--limit", "0"], operations).ok).toBe(false);
+  });
+
+  it("every accepted value round-trips through String(Number(x))", () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 8 }), (x) => {
+        const r = parseArgv(["dev", `--port=${x}`], operations);
+        if (r.ok) expect(String(Number(x))).toBe(x);
+      }),
+      { seed: SEED, numRuns: 2000 },
+    );
+    fc.assert(
+      fc.property(fc.stringMatching(/^[-+0-9e. x]{1,6}$/), (x) => {
+        const r = parseArgv(["dev", `--port=${x}`], operations);
+        if (r.ok) expect(String(Number(x))).toBe(x);
+      }),
+      { seed: SEED, numRuns: 2000 },
+    );
   });
 });

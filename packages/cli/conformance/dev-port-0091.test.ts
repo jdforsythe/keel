@@ -108,13 +108,25 @@ const freePort = (): Promise<number> =>
     });
   });
 
-/** Bounded retry of `fetch` until the port answers any HTTP status, or the process exits. */
+/** Whether something accepts a TCP connection on `port` (a socket's errors arrive as events, never as throws). */
+const accepts = (port: number): Promise<boolean> =>
+  new Promise((res) => {
+    const sock = net.connect({ port, host: "localhost" });
+    sock.once("connect", () => {
+      sock.destroy();
+      res(true);
+    });
+    sock.once("error", () => res(false));
+  });
+
+/** Bounded retry until the port accepts a connection and answers any HTTP status, or the process exits. */
 async function served(p: Proc, port: number): Promise<boolean> {
   let done = false;
   void p.exited.then(() => {
     done = true;
   });
   for (let i = 0; i < 4000 && !done; i++) {
+    if (!(await accepts(port))) continue;
     const ok = await fetch(`http://localhost:${port}/`).then(
       () => true,
       () => false,
@@ -159,10 +171,12 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain(String(busy));
         // no move: the next ports are still unserved by this process
-        const next = await fetch(`http://localhost:${busy + 1}/`).then(
-          () => true,
-          () => false,
-        );
+        const next =
+          (await accepts(busy + 1)) &&
+          (await fetch(`http://localhost:${busy + 1}/`).then(
+            () => true,
+            () => false,
+          ));
         expect(next).toBe(false);
       } finally {
         await new Promise<void>((r) => holder.close(() => r()));

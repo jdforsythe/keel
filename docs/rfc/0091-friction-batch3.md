@@ -148,6 +148,7 @@ Written by the `conformance-writer` from the clauses above. This RFC allows thes
 - New files: `packages/testing/conformance/fire-focus-0091.test.ts`; `packages/schema/conformance/blank-required-0091.test.ts`; `packages/forms/conformance/required-message-0091.test.ts`; `packages/cli/conformance/dev-port-0091.test.ts`; `packages/scaffold/conformance/peer-key-0091.test.ts`; `packages/ui/conformance/box-label-0091.test.ts`.
 - Changed clause text, header and a new case: `packages/services/conformance/network-failure.test.ts` (a 502 `keel.unreachable` body); `packages/server/conformance/topology-forwarding-unserved-paths.test.ts` (peer down).
 - Unchanged: `packages/server/conformance/head-title.test.ts` and `document-head-0078.test.ts` (their `[a-z][a-z0-9-]{0,15}` names stay valid).
+- `packages/cli/conformance/dev-port-0091.test.ts` waits for the port with a socket before it fetches: a `fetch` retried against a port that is not yet open can end the run with an uncaught error from the platform's HTTP client.
 - Changed generator: `packages/forms/conformance/issue-text.test.ts` draws its short title from `/^[a-z]$/`, since `''` is rule `required` (D-C), not `min`.
 - Unit tests that assert the old behavior change with the implementation: `packages/schema/test/secret.test.ts` (`Secret.of('')` under `min: 1` is `required`), `packages/testing/test/fire.test.ts` (focus moves), `packages/check/test/mutants.test.ts` (an `aside` fixture gains `label`).
 
