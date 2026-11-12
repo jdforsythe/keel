@@ -40,7 +40,7 @@ const asPath = (p: unknown): string => (Array.isArray(p) ? pathToString(p) : Str
 describe("k.forms issueText", () => {
   test("With `issueText`, an invalid field's error text is exactly its return value for that field's issue", () => {
     fc.assert(
-      fc.property(fc.stringMatching(/^[a-z]{0,1}$/), fc.integer({ min: 121, max: 1000 }), (shortTitle, oldAge) => {
+      fc.property(fc.stringMatching(/^[a-z]$/), fc.integer({ min: 121, max: 1000 }), (shortTitle, oldAge) => {
         run((seen, Schema) => {
           const f = form(Schema, {
             issueText: (issue: Seen) => {

@@ -152,8 +152,9 @@ describe("nodeAt", () => {
 describe("jsonSchemaOf", () => {
   const sortedKeys = (v: unknown): string => JSON.stringify(v);
   it("scalars", () => {
-    expect(jsonSchemaOf(str(2))).toEqual({ minLength: 2, type: "string" });
-    expect(jsonSchemaOf(str(2, 4))).toEqual({ maxLength: 4, minLength: 2, type: "string" });
+    expect(jsonSchemaOf(str(2))).toEqual({ minLength: 2, pattern: "\\S", type: "string" });
+    expect(jsonSchemaOf(str(2, 4))).toEqual({ maxLength: 4, minLength: 2, pattern: "\\S", type: "string" });
+    expect(jsonSchemaOf(str(1))).toEqual({ minLength: 1, pattern: "\\S", type: "string" });
     expect(jsonSchemaOf(str(0, 0))).toEqual({ maxLength: 0, minLength: 0, type: "string" });
     expect(jsonSchemaOf({ kind: "number" })).toEqual({ type: "number" });
     expect(jsonSchemaOf({ kind: "int" })).toEqual({ type: "integer" });
@@ -163,7 +164,7 @@ describe("jsonSchemaOf", () => {
     expect(jsonSchemaOf({ kind: "id", brand: "U" })).toEqual({ minLength: 1, type: "string", "x-keel-id": "U" });
   });
   it("keys are sorted in the serialised form", () => {
-    expect(sortedKeys(jsonSchemaOf(str(2, 4)))).toBe('{"maxLength":4,"minLength":2,"type":"string"}');
+    expect(sortedKeys(jsonSchemaOf(str(2, 4)))).toBe('{"maxLength":4,"minLength":2,"pattern":"\\\\S","type":"string"}');
     expect(sortedKeys(jsonSchemaOf({ kind: "id", brand: "U" }))).toBe(
       '{"minLength":1,"type":"string","x-keel-id":"U"}',
     );

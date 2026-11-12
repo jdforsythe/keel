@@ -52,6 +52,7 @@ function validate(schema: unknown, v: unknown): boolean {
     "oneOf",
     "minLength",
     "maxLength",
+    "pattern",
     "minimum",
     "maximum",
   ]);
@@ -63,6 +64,7 @@ function validate(schema: unknown, v: unknown): boolean {
     const n = [...v].length;
     if (typeof schema.minLength === "number" && n < schema.minLength) return false;
     if (typeof schema.maxLength === "number" && n > schema.maxLength) return false;
+    if (typeof schema.pattern === "string" && !new RegExp(schema.pattern, "u").test(v)) return false;
   }
   if (typeof v === "number") {
     if (typeof schema.minimum === "number" && v < schema.minimum) return false;

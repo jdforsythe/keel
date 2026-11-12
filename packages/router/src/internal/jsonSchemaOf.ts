@@ -21,11 +21,12 @@ export function jsonSchemaOf(node: SchemaNode): JsonValue {
       return isObject(base) ? sorted({ ...base, format: node.name }) : base;
     }
     case "string":
-      return sorted(
-        node.max === undefined
-          ? { type: "string", minLength: node.min }
-          : { type: "string", minLength: node.min, maxLength: node.max },
-      );
+      return sorted({
+        type: "string",
+        minLength: node.min,
+        ...(node.max === undefined ? {} : { maxLength: node.max }),
+        ...(node.min >= 1 ? { pattern: "\\S" } : {}),
+      });
     case "number":
       return sorted({ type: "number" });
     case "int":

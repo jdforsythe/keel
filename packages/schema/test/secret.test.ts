@@ -111,7 +111,7 @@ describe("s.secret", () => {
     expect(r.ok && reveal(r.value)).toBe("pw");
     expect(Pw.parse("").ok).toBe(false);
     const bad = Pw.parse(Secret.of(""));
-    expect(!bad.ok && bad.error.data.issues).toEqual([{ path: [], rule: "min" }]);
+    expect(!bad.ok && bad.error.data.issues).toEqual([{ path: [], rule: "required" }]);
     const wrong = Pw.parse(5);
     expect(!wrong.ok && wrong.error.data.issues).toEqual([{ path: [], rule: "type" }]);
     const plain = { a: "x" };

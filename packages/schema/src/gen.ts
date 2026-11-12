@@ -13,8 +13,12 @@ const limits = (node: { readonly min?: number; readonly max?: number }): { min?:
 /** Arbitrary producing values that satisfy `node`. Optional keys are sometimes absent, never undefined. */
 function arbitrary(node: Node): fc.Arbitrary<unknown> {
   switch (node.kind) {
-    case "string":
-      return fc.string(node.max === undefined ? { minLength: node.min } : { minLength: node.min, maxLength: node.max });
+    case "string": {
+      const text = fc.string(
+        node.max === undefined ? { minLength: node.min } : { minLength: node.min, maxLength: node.max },
+      );
+      return node.min >= 1 ? text.filter((v) => /\S/.test(v)) : text;
+    }
     case "number":
       return fc.double({ noNaN: true, noDefaultInfinity: true, ...limits(node) });
     case "int":

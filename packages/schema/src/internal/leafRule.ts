@@ -11,6 +11,7 @@ export function leafRule(node: Node, x: unknown): Rule | undefined {
   switch (node.kind) {
     case "string":
       if (typeof x !== "string") return "type";
+      if (node.min >= 1 && !/\S/.test(x)) return "required";
       if (x.length < node.min) return "min";
       return node.max !== undefined && x.length > node.max ? "max" : undefined;
     case "number":

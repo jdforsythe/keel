@@ -30,6 +30,7 @@ export function toJsonSchema(node: SchemaNode): JsonSchema {
         type: "string",
         ...(node.min > 0 ? { minLength: node.min } : {}),
         ...(node.max === undefined ? {} : { maxLength: node.max }),
+        ...(node.min >= 1 ? { pattern: "\\S" } : {}),
       };
     case "number":
       return { type: "number", ...bounds(node, false) };
