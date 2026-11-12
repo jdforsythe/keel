@@ -42,6 +42,19 @@
       "platform": "node"
     },
     "@keel/services": "3kb",
+    "@keel/std-channels": "1.5kb",
+    "@keel/std-channels/server": {
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-channels/tools": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-conflicts": {
+      "max": "3kb",
+      "platform": "node"
+    },
     "@keel/std-i18n": "1kb",
     "@keel/std-i18n/tools": {
       "max": "4kb",
@@ -55,12 +68,18 @@
       "max": "2.5kb",
       "platform": "node"
     },
+    "@keel/std-live": "1kb",
     "@keel/std-messages": "1.5kb",
     "@keel/std-messages/tools": {
       "max": "6kb",
       "platform": "node"
     },
     "@keel/std-money": "1kb",
+    "@keel/std-offline": "2kb",
+    "@keel/std-offline/tools": {
+      "max": "3kb",
+      "platform": "node"
+    },
     "@keel/std-schedules": {
       "max": "2kb",
       "platform": "node"
@@ -78,6 +97,10 @@
       "max": "8.5kb",
       "platform": "node"
     },
+    "@keel/std-sessions/group": {
+      "max": "6kb",
+      "platform": "node"
+    },
     "@keel/std-sessions/routes": {
       "max": "3kb",
       "platform": "node"
@@ -88,7 +111,7 @@
     },
     "@keel/std-temporal": "2.5kb",
     "@keel/std-text": "1.5kb",
-    "@keel/store": "3kb",
+    "@keel/store": "3.5kb",
     "@keel/testing": {
       "max": "9kb",
       "platform": "node"

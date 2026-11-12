@@ -51,6 +51,10 @@
     "./action": {
       "types": "./src/action/index.ts",
       "default": "./src/action/index.ts"
+    },
+    "./group": {
+      "types": "./src/group/index.ts",
+      "default": "./src/group/index.ts"
     }
   },
   "bin": {
@@ -73,14 +77,15 @@
     "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/ui": "workspace:*",
-    "oxc-parser": "^0.157.0"
+    "happy-dom": "^21",
+    "oxc-parser": "^0.157.0",
+    "tsx": "^4"
   },
   "devDependencies": {
     "@keel/runtime-dom": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
-    "fast-check": "^3",
-    "happy-dom": "^21"
+    "fast-check": "^3"
   }
 }

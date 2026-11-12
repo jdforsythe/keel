@@ -15,9 +15,11 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E160x | k.ctx | E165x | k.services |
 | E170x | k.testing | E175x | k.check |
 | E18xx | k.ui | E19xx | k.forms |
-| E200x | std.sessions | E210x | std.brands |
+| E200x | std.sessions, std.multi | E210x | std.brands |
 | E230x | std.i18n | E240x | std.messages |
 | E250x | std.jobs | E255x | std.schedules |
+| E260x | std.channels | E265x | std.offline |
+| E270x | std.conflicts | | |
 
 ## Kernel
 | id | section | status | one line |
@@ -39,6 +41,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
 | k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |
 | k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
+| k.sync | Heads and concurrent writes | proposed | store heads, write base and key, reject or rebase, save and net events |
 | k.topology | Deployables | implemented | placement, runners, peers, production entry, deploy files |
 | k.compat | Surface compatibility | conformance-covered | surface artifact, `accepts`, `--base` |
 | k.api | API routes | conformance-covered | `api: true` entries: JSON, no view |
@@ -48,17 +51,4 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |
 
 ## Stdlib
-See `spec/std/README.md`. Sections are added per wave with their own budgets.
-| id | section | status | one line |
-| --- | --- | --- | --- |
-| std.sessions | Sessions | conformance-covered | capture, ingest, replay, minimize, to-test; GitHub Action |
-| std.i18n | Locales | conformance-covered | schema type registry and check rule registry: `i18n.Locale`, numbers, plurals |
-| std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format for a locale |
-| std.temporal | Dates, instants and durations | conformance-covered | schema type registry: instants, dates, zones, durations; format |
-| std.text | Text | conformance-covered | schema type registry: `text.Email`, `Slug`, `line`, `para`, collation |
-| std.messages | Message sets | conformance-covered | check rule registry: message sets, one file per locale |
-| std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
-| std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
-| std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
-| std.timings | Timings | conformance-covered | inspector hooks: `timings.recent` section |
-| std.report | Tally report | conformance-covered | formatter registry: `report.tally` |
+Sections, statuses and their extension points: `spec/std/README.md`.
