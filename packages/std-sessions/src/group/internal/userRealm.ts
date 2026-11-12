@@ -10,6 +10,8 @@ import { applyInput } from "../../internal/applyInput.ts";
 import { decoded } from "../../internal/decoded.ts";
 import { jsonOf } from "../../internal/jsonOf.ts";
 import { liveState } from "../../internal/liveState.ts";
+import { replayStep } from "../../internal/replayStep.ts";
+import { reportUnapplied } from "../../internal/reportUnapplied.ts";
 import { seededState } from "../../internal/seededState.ts";
 import { record } from "../../record.ts";
 import { field } from "./field.ts";
@@ -49,12 +51,14 @@ function parsed<T>(schema: { parse(x: unknown): { ok: true; value: T } | { ok: f
 }
 
 /**
- * One group user (std.multi), in its worker: answers its group's calls on `port`. `open` loads the user module and,
+ * One group user (std.multi), in its worker: answers its group's calls on `port`. `open` loads the user module with
+ * `load` (the worker's project loader, which loaded this module too) and,
  * live, renders its `base` at `at` under `record(ctx, { limit: Infinity })` on a sim ctx of the user's seed, or, for a
  * replay, renders a session's base as std.sessions `replay` does. Requests to `origin` go to the group's server over
- * `port`, their bodies streamed back; other URLs get the sim net's 404.
+ * `port`, their bodies streamed back (a body the user cancels is cancelled at the server); other URLs get the sim
+ * net's 404.
  */
-export function userRealm(port: MessagePort): void {
+export function userRealm(port: MessagePort, load: (url: string) => Promise<unknown>): void {
   const pending = new Map<number, Pending>();
   let nextRid = 0;
   let ctx: SimCtx | undefined;
@@ -63,6 +67,7 @@ export function userRealm(port: MessagePort): void {
   let rec: Recorder | undefined;
   let replaying: Session | null = null;
   let unapplied: number | null = null;
+  let step: ((e: SessionEvent) => Promise<boolean>) | undefined;
 
   const bridge = async (req: Request): Promise<Response> => {
     const rid = nextRid++;
@@ -86,9 +91,15 @@ export function userRealm(port: MessagePort): void {
       p.resolve(new Response(null, init));
       return;
     }
+    const rid = r.value.rid;
     const stream = new ReadableStream<Uint8Array>({
       start(c) {
         p.body = c;
+      },
+      // A body the user cancels is done here: later chunks are dropped, and the server's stream is cancelled too.
+      cancel() {
+        pending.delete(rid);
+        port.postMessage({ t: "cancel", rid });
       },
     });
     p.resolve(new Response(stream, init));
@@ -131,7 +142,7 @@ export function userRealm(port: MessagePort): void {
 
   const open = async (arg: unknown): Promise<null> => {
     const o = parsed(Open, arg, "open");
-    const mod: unknown = await import(o.user);
+    const mod = await load(o.user);
     const table = field(mod, "routes");
     if (!isTable(table)) throw new TypeError(`group: ${o.user} exports no routes`);
     routes = table;
@@ -153,13 +164,15 @@ export function userRealm(port: MessagePort): void {
       return null;
     }
     try {
-      h = await renderRoute(session.route.id, {
+      const r = await renderRoute(session.route.id, {
         routes: table,
         params: decoded(def.params, session.route.params),
         search: decoded(def.search, session.route.search),
         state: seededState(session.state),
         ctx: c,
       });
+      h = r;
+      step = replayStep(rec, (e) => applyInput(r, table, c, e));
     } catch {
       unapplied = -1;
     }
@@ -169,9 +182,12 @@ export function userRealm(port: MessagePort): void {
   const apply = async (arg: unknown): Promise<boolean> => {
     const { index } = parsed(Index, arg, "apply");
     const e = replaying?.events[index];
-    if (unapplied !== null || h === undefined || e === undefined) return false;
-    const ok = await applyInput(h, table(), simCtx(), e);
-    if (!ok) unapplied = index;
+    if (unapplied !== null || step === undefined || e === undefined) return false;
+    const ok = await step(e);
+    if (!ok) {
+      unapplied = index;
+      reportUnapplied(simCtx(), index);
+    }
     return ok;
   };
 

@@ -24,6 +24,7 @@ export async function openGroup(options: GroupOptions): Promise<Group> {
     at,
     server: options.server ?? {},
     count: options.users,
+    user,
   });
   const server: { [store: string]: JsonValue } = {};
   try {

@@ -79,7 +79,9 @@
     "@keel/ui": "workspace:*",
     "happy-dom": "^21",
     "oxc-parser": "^0.157.0",
-    "tsx": "^4"
+    "tsx": "^4",
+    "vite": "^8.3.6",
+    "vitest": "^4.1.12"
   },
   "devDependencies": {
     "@keel/runtime-dom": "workspace:*",

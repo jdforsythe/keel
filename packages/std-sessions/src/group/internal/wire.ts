@@ -26,6 +26,8 @@ export const wire = {
   call: s.object({ t: s.literal("call"), id: s.number(), op: s.string(), arg: s.json() }),
   /** The status and headers of a server response to request `rid`. */
   head: s.object({ t: s.literal("head"), rid: s.number(), status: s.number(), statusText: s.string(), headers }),
+  /** The user cancelled response `rid`'s body: the group cancels the server's. */
+  cancel: s.object({ t: s.literal("cancel"), rid: s.number() }),
   /** The end of response `rid`'s body, or the error that ended it. */
   end: s.object({ t: s.literal("end"), rid: s.number(), error: s.string().optional() }),
   /** What `find` answers. */

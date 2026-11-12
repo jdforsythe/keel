@@ -10,14 +10,18 @@ import { applyInput } from "./applyInput.ts";
 import { decoded } from "./decoded.ts";
 import { jsonOf } from "./jsonOf.ts";
 import { liveState } from "./liveState.ts";
+import { replayStep } from "./replayStep.ts";
+import { reportUnapplied } from "./reportUnapplied.ts";
 import { seededState } from "./seededState.ts";
 
 type Table = Manifest<Readonly<Record<string, RouteDef>>>;
 
 /**
  * Replay `session` (std.sessions API) under `createCtx({ mode: 'sim', seed })`: advance the clock to `at`, render the
- * base with `renderRoute`, then per event advance to its `at` and apply inputs (`fire`, `nav` through `navigate`, `net` through `setOnline`);
- * `tx`, `resource` and `error` events are observations. A store the base `state` lacks starts at its `initial`.
+ * base with `renderRoute`, then per event advance to its `at` and apply inputs (`fire`, `nav` through `navigate`,
+ * `net` through `setOnline`) but those the replay already produced as an earlier input's effect (`replayStep`); `tx`,
+ * `resource` and `error` events are observations. An input that cannot apply ends the replay and is its error (`reportUnapplied`). A store
+ * the base `state` lacks starts at its `initial`.
  * A recorder on the replay's ctx gives `observed`, `error` and the fingerprint `reproduced` compares. `unapplied`: the
  * index of the input it stopped at, -1 for the base, else null. `redact` entries are bound on the replay ctx as the
  * recording ctx had them. Also returns the replay recorder's whole session (`recorded`: inputs and observations in
@@ -58,10 +62,12 @@ export async function replayRun<M extends Readonly<Record<string, RouteDef>>>(
     return finish(liveState(), -1);
   }
   let unapplied: number | null = null;
+  const step = replayStep(rec, (e) => applyInput(h, routes, ctx, e));
   for (const [i, e] of session.events.entries()) {
     if (e.at > ctx.clock.now()) ctx.clock.advance(e.at - ctx.clock.now());
-    if (!(await applyInput(h, routes, ctx, e))) {
+    if (!(await step(e))) {
       unapplied = i;
+      reportUnapplied(ctx, i);
       break;
     }
   }

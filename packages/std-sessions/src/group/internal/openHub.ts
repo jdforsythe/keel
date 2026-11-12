@@ -4,6 +4,8 @@ import type { Snapshot } from "@keel/store";
 import type { Serve } from "../Serve.ts";
 import type { Hub } from "./Hub.ts";
 import type { Outgoing } from "./Outgoing.ts";
+import type { Realm } from "./Realm.ts";
+import { cookieJar } from "./cookieJar.ts";
 import { drained } from "./drained.ts";
 import { startRealm } from "./startRealm.ts";
 import { wire } from "./wire.ts";
@@ -16,8 +18,9 @@ const IDLE_TURNS = 200;
 
 /**
  * Open a hub: a sim ctx of `seed` whose storage starts with `server` (each value as stored, JSON text, under
- * `keel.store.<id>`), its clock at `at`, `serve` over it, and `count` user workers whose requests to `origin` reach
- * that server with a cookie jar each.
+ * `keel.store.<id>`), its clock at `at`, `serve` over it, and `count` user workers, started one at a time, whose
+ * requests to `origin` reach that server with a cookie jar each (`cookieJar`, on the server clock), each loading
+ * modules as the project of user module `user` does.
  */
 export async function openHub(options: {
   readonly serve: Serve;
@@ -26,6 +29,7 @@ export async function openHub(options: {
   readonly at: number;
   readonly server: { readonly [store: string]: JsonValue };
   readonly count: number;
+  readonly user: string;
 }): Promise<Hub> {
   const ctx: SimCtx = createCtx({ mode: "sim", seed: options.seed });
   // The server's own writes name the stores a replay reports; this storage capability is the hub's alone.
@@ -48,25 +52,32 @@ export async function openHub(options: {
   const touch = (): void => {
     activity++;
   };
-  const jars = Array.from({ length: options.count }, () => new Map<string, string>());
+  const jars = Array.from({ length: options.count }, () => cookieJar(() => ctx.clock.now()));
   const fetchAs =
-    (jar: Map<string, string>) =>
+    (jar: ReturnType<typeof cookieJar>) =>
     async (out: Outgoing): Promise<Response> => {
-      if (jar.size > 0) out.headers.set("cookie", [...jar].map(([k, v]) => `${k}=${v}`).join("; "));
+      const req = new Request(out.url, { method: out.method, headers: out.headers, body: out.body });
+      // Set on the built request: a DOM's `Request` (a test's DOM environment) drops a `cookie` given at construction.
+      const cookie = jar.header(out.url);
+      if (cookie === "") req.headers.delete("cookie");
+      else req.headers.set("cookie", cookie);
       waiting++;
       try {
-        const res = await app.fetch(new Request(out.url, { method: out.method, headers: out.headers, body: out.body }));
-        for (const line of setCookies(res.headers)) {
-          const pair = line.split(";")[0] ?? "";
-          const eq = pair.indexOf("=");
-          if (eq > 0) jar.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim());
-        }
+        const res = await app.fetch(req);
+        jar.store(out.url, setCookies(res.headers));
         return res;
       } finally {
         waiting--;
       }
     };
-  const realms = jars.map((jar) => startRealm(options.origin, fetchAs(jar), touch));
+  // One at a time: a worker loading its project writes the project's `.keel/` artifacts, as any Vite run does.
+  const realms: Realm[] = [];
+  try {
+    for (const jar of jars) realms.push(await startRealm(options.origin, options.user, fetchAs(jar), touch));
+  } catch (error) {
+    await Promise.all(realms.map((r) => r.terminate()));
+    throw error;
+  }
 
   const settle = async (): Promise<void> => {
     for (let round = 0; round < MAX_ROUNDS; round++) {

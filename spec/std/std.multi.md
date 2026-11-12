@@ -16,7 +16,7 @@ type SessionGroup = { v: 1; seed: number; at: number; origin: string; server: { 
 
 **Net events.** std.sessions records `{ kind: 'net', online }` (k.sync) as an input; `replay` and `replayGroup` apply it with `setOnline`.
 
-**Replay.** `replayGroup(group, { user, serve })` restores the server storage from `group.server`, opens every user at its session's base, then applies all users' inputs in order of `at`, then user index, then event index, advancing every clock to each `at` and settling after each input. It returns `{ users: ReplayResult[], server: { [store]: Snapshot }, reproduced }`: `server` holds each server store with its log, `reproduced` holds iff every user's fingerprint matches.
+**Replay.** `replayGroup(group, { user, serve })` restores the server storage from `group.server`, opens every user at its session's base, then applies all users' inputs in order of `at`, then user index, then event index, advancing every clock to each `at` and settling after each input. A group that fails `SessionGroup` or holds a session without a `seed` throws E2007 or E2008 before any user opens. It returns `{ users: ReplayResult[], server: { [store]: Snapshot }, reproduced }`: `server` holds each server store with its log, `reproduced` holds iff every user's fingerprint matches.
 
 **Privacy.** A group is a simulation artifact: `openGroup` runs only on sim ctxs, and a group holds what each user's `record` kept under its `redact` entries.
 

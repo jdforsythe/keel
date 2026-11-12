@@ -3,18 +3,25 @@ import { isInput } from "../internal/isInput.ts";
 import type { ReplayGroupOptions } from "./ReplayGroupOptions.ts";
 import type { ReplayGroupResult } from "./ReplayGroupResult.ts";
 import type { SessionGroup } from "./SessionGroup.schema.ts";
+import { groupDiags } from "./groupDiags.ts";
 import { moduleUrl } from "./internal/moduleUrl.ts";
 import { openHub } from "./internal/openHub.ts";
 import { wire } from "./internal/wire.ts";
 
 /**
- * Replay a session group (std.multi): restore the server storage from `group.server`, open every user at its
- * session's base (each in its own worker, under its session's `seed`, as std.sessions `replay` renders a base), then
- * apply all users' inputs in order of `at`, then user index, then event index, advancing every clock to each `at` and
- * settling after each input. A user stops at an input that does not apply. Returns each user's `ReplayResult`, each
- * server store with its log, and `reproduced`: every user's fingerprint matches.
+ * Replay a session group (std.multi): check it as `keel session replay` does (`groupDiags`) and throw the first
+ * diagnostic, its `code` E2007 or E2008, before any worker starts. Then restore the server storage from
+ * `group.server`, open every user at its session's base (each in its own worker, under its session's `seed`, as
+ * std.sessions `replay` renders a base), then apply all users' inputs in order of `at`, then user index, then event
+ * index, advancing every clock to each `at` and settling after each input. An input a user's replay already produced
+ * as an earlier input's effect is passed over (std.sessions `replay`); a user stops at an input that does not apply.
+ * Returns each user's `ReplayResult`, each server store with its log, and `reproduced`: every user's fingerprint
+ * matches.
  */
 export async function replayGroup(group: SessionGroup, options: ReplayGroupOptions): Promise<ReplayGroupResult> {
+  const [bad] = groupDiags(JSON.stringify(group), "group");
+  if (bad !== undefined)
+    throw Object.assign(new Error(`${String(bad.code)} ${String(bad.message)}`), { code: bad.code, see: "std.multi" });
   const user = moduleUrl(String(options.user), process.cwd());
   const h = await openHub({
     serve: options.serve,
@@ -23,6 +30,7 @@ export async function replayGroup(group: SessionGroup, options: ReplayGroupOptio
     at: group.at,
     server: group.server,
     count: group.users.length,
+    user,
   });
   try {
     for (const [i, session] of group.users.entries()) {

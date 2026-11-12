@@ -88,7 +88,7 @@
       "max": "2.5kb",
       "platform": "node"
     },
-    "@keel/std-sessions": "7kb",
+    "@keel/std-sessions": "7.25kb",
     "@keel/std-sessions/action": {
       "max": "4.5kb",
       "platform": "node"
