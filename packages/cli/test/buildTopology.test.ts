@@ -53,7 +53,20 @@ describe("build with a topology", () => {
       cwd: CWD,
       files: [node, routes, ...written],
     });
-    expect(count(first)).toBe(7);
-    expect(count(again)).toBe(7);
+    // four .keel artifacts, std.json, compose, the Dockerfile and the CI workflow
+    expect(count(first)).toBe(8);
+    expect(count(again)).toBe(8);
+    expect(first.writes.map((w) => w.path)).toContain(".github/workflows/ci.yml");
+  });
+
+  it("writes no CI workflow for an app inside a workspace: its CI lives at the workspace root", async () => {
+    const node = {
+      path: "topology.ts",
+      source: "export default topology({ api: { modules: ['todos'], adapter: 'node' } });\n",
+    };
+    const read = (p: string) => (p === "/work/pnpm-workspace.yaml" ? "packages: []\n" : undefined);
+    const inside = await buildCommand({ cwd: CWD, files: [node, routes], read });
+    expect(inside.writes.map((w) => w.path)).not.toContain(".github/workflows/ci.yml");
+    expect(inside.writes.map((w) => w.path)).toContain("deploy/api/Dockerfile");
   });
 });
