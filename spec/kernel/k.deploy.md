@@ -1,5 +1,5 @@
 # k.deploy: Production entry and deploy files
-status: implemented
+status: conformance-covered
 
 **Build.** `keel build` writes `dist/<name>/` per `client` deployable (k.hosting) and `node` one: the client build (k.server), `routes.json` (all modules), `std.json`, and `server.mjs`, the generated entry, bundled. `node server.mjs` parses `process.env` with `DeployEnv`: `PORT` (default 8080), `KEEL_ORIGIN` (optional; `createApp({ origin })`, the public origin, which replaces the request's in `url`, the same-site check and `Secure`), `KEEL_SECRET` (32+ bytes, shared by the app's deployables so `caller` agrees: whoever holds it, or runs code in one deployable, can sign a caller every deployable accepts), and `KEEL_PEER_<NAME>` (`my-api`: `KEEL_PEER_MY_API`), an http(s) URL, required per other `node` deployable. A failure or unbindable `PORT` prints one E1560 naming the key, no value, and exits 1. Then it serves `createApp` (production, real `ctx`, its routes, runners and peers) and on SIGTERM or SIGINT stops listening, awaits `close()` and exits. `ctx.storage` is the file `--localstorage-file` names, the only state that survives a restart.
 

@@ -1,5 +1,5 @@
 # std.offline: Outbox
-status: proposed
+status: conformance-covered
 
 **Extension points.** Check rule registry: E2651 through `@keel/std-offline/tools`. It uses `ctx.storage`, `ctx.net`, `ctx.clock`, `ctx.random` and `observe` (`net` events).
 

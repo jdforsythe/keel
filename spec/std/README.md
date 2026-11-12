@@ -26,8 +26,8 @@ S4 adds std.channels, std.live, std.offline, std.conflicts and std.multi.
 | std.report | Tally report | conformance-covered | formatter registry: `report.tally` |
 | std.jobs | Background jobs | conformance-covered | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2504 |
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
-| std.channels | Channels | proposed | module manifest and check rule registry: named channels over a server event stream, E2601-E2602 |
-| std.live | Live views | proposed | composes std.channels: a client store re-read on every push |
-| std.offline | Outbox | proposed | check rule registry: queued writes with keys and bases, resolve, E2651 |
-| std.conflicts | Races | proposed | formatter registry: order-dependent rebased entries, E2701 |
-| std.multi | Multi-user sessions | proposed | std-sessions: groups of users recorded and replayed under simulation, E2007-E2008 |
+| std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, E2601-E2602 |
+| std.live | Live views | conformance-covered | composes std.channels: a client store re-read on every push |
+| std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
+| std.conflicts | Races | conformance-covered | formatter registry: order-dependent rebased entries, E2701 |
+| std.multi | Multi-user sessions | conformance-covered | std-sessions: groups of users recorded and replayed under simulation, E2007-E2008 |

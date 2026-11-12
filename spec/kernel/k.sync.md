@@ -1,5 +1,5 @@
 # k.sync: Heads, concurrent writes and connectivity
-status: proposed
+status: conformance-covered
 
 Several callers write one server store (k.server Server state), so a client's copy of it is older than the store whenever another caller saved after the client read. This section gives each store a head, lets a write name the head its writer saw, says per transaction what happens when the two differ, and gives `ctx.net` a connectivity state.
 

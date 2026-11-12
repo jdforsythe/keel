@@ -1,5 +1,5 @@
 # std.channels: Channels
-status: proposed
+status: conformance-covered
 
 **Extension points.** Module manifest: stdlib module `channels` (capabilities `clock`, `net`, `observe`), whose route an app lists in a `node` deployable's manifest. Check rule registry: E2601 and E2602 through `@keel/std-channels/tools`.
 

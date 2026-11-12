@@ -41,9 +41,9 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
 | k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |
 | k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
-| k.sync | Heads and concurrent writes | proposed | store heads, write base and key, reject or rebase, save and net events |
+| k.sync | Heads and concurrent writes | conformance-covered | store heads, write base and key, reject or rebase, save and net events |
 | k.topology | Deployables | implemented | placement, route table, runners, peers, `keel dev` |
-| k.deploy | Production entry and deploy files | implemented | `keel build` output, `server.mjs`, `DeployEnv`, assets, deploy files |
+| k.deploy | Production entry and deploy files | conformance-covered | `keel build` output, `server.mjs`, `DeployEnv`, assets, deploy files |
 | k.compat | Surface compatibility | conformance-covered | surface artifact, `accepts`, `--base` |
 | k.api | API routes | conformance-covered | `api: true` entries: JSON, no view |
 | k.hosting | Client hosting | implemented | static artifact, peer tag, allowed origins, `host` |

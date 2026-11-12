@@ -1,5 +1,5 @@
 # std.live: Live views
-status: proposed
+status: conformance-covered
 
 **Extension points.** None of its own: it composes std.channels `subscribe` with a k.store transaction.
 

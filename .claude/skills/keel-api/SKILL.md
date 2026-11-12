@@ -29,4 +29,12 @@ export const postTodo = action({ input: TodoDraft, params: ListParams, stores: b
 
 **View store:** only `hydrate = transaction(view, 'todos.hydrate', BoardView, (_s, d) => d)` changes it; `syncAfter(ctx, write)` writes, then re-reads.
 
+**Concurrent writes:** `transaction(store, name, schema, fn, { concurrent: 'rebase' | 'reject' })`; `'reject'` is the default. A write carries `base` (the head its writer read); when `base` is not the head, `'rebase'` applies it to the current state (use it when the payload holds no value the writer read: a fresh id, a flip), `'reject'` answers 409 `keel.conflict` with `data.head`. Pass `base` to `tx` with the input's `write`.
+
+**Channel (`@keel/std-channels`):** `export const boardChannel = channel('api.board', { path: '/api/board/events', params: s.object({}) })` in a shared file; `message` (a schema) allows `publish`. Server, in `*.server.ts`: `channelRoute(boardChannel, { id: 'api.boardEvents', stores: boardStores, member: () => true })`; list `{ api: true, path, loader }` in the manifest and pass `actions` to `routes.actions`. Client, in a scope: `subscribe(ctx, origin, channel, params, on)` returns `{ status, close }`; `publish(ctx, origin, channel, params, message)`. E2601, E2602.
+
+**Live (`@keel/std-live`):** in a scope, `live(ctx, origin, boardChannel, {}, { read: (c) => api(origin).lists({}, c), hydrate })` re-reads after every save; `status()` is `connecting | live | offline | denied`. It replaces `syncAfter` for views other users change.
+
+**Outbox (`@keel/std-offline`):** `outbox('todos.outbox', endpoints)` (module level or in a scope); endpoint bodies hold `write: Write` and the action passes `{ meta, ...input.write }` to `tx`. `send(ctx, outbox, origin, 'addTodo', { params, body }, { base: view.get('head') })` resolves `sent | queued | conflict | failed`. `drain(ctx, outbox)` in a scope flushes on reconnect. `resolve(ctx, outbox, key, 'mine' | 'theirs')` settles a `conflict` or `failed` entry. E2651.
+
 **Tests:** `app = await createApp(...)` (sim ctx); `app.fetch(new Request(url, { method, headers: { accept: 'application/json', 'content-type': 'application/json' }, body }))`. Client tests route sim `ctx.net` `/api/*` to `app.fetch`.

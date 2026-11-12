@@ -1,5 +1,5 @@
 # std.conflicts: Races
-status: proposed
+status: conformance-covered
 
 A rebased entry (k.sync: it holds `base`) was written by someone who had not seen the entries committed between `base` and it, its concurrent entries. It races them when order matters: applied before them, it gives a different result than after them. A `'rebase'` declaration says any order is acceptable; a race is evidence that the transaction should be `'reject'`, or that its payload carries a value read from a stale copy.
 
