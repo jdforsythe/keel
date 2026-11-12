@@ -563,4 +563,6 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0493 std-offline, compiler: a module-level `outbox(...)` creates its store outside a scope and throws E1203 at import; create the store on first use in the caller's scope, or have the compiler treat it as it treats `store` · std-offline, compiler · std.offline, k.compiler
 - [ ] 0494 std-sessions: each write of one group user carried a different `meta.caller` (observed in the golden-1 exit run, not investigated) · std-sessions, server · std.multi
 - [ ] 0495 std-messages: `conformance/client-chunks.test.ts` fails with "keel build failed" (seen in the root test run on 2026-11-12, after `keel build` moved to `Io.build`) · std-messages, cli · std.messages, k.cli
+- [ ] 0496 ctx: `realNet` never removes its window `online`/`offline` listeners (one pair per real `createCtx`); `simNet` keeps a kill function for each response body until it is read to the end or cancelled, so an unread response is never released · ctx · k.sync
+- [ ] 0497 docs: `rfc:`/`RFC` ids remain in older code comments (`packages/store/src/store.ts`, `trim.ts`, `LOG_LIMIT.ts`, `packages/server/src/internal/saveStores.ts` and others), against the point-in-time rule; sweep with 0229 · store, server · docs
 
