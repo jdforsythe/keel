@@ -1,7 +1,7 @@
 # k.cli: CLI, MCP, LSP
 status: conformance-covered
 
-**One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`. Three surfaces serve the same engine: the `keel` binary (flags parsed by the input schema), `keel mcp` (one MCP tool per operation; input schema as JSON Schema), and `keel lsp` (check diagnostics as LSP diagnostics, fix diffs as code actions, `explain` as hover).
+**One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`. Three surfaces serve the same engine: the `keel` binary (flags parsed by the input schema), `keel mcp` (one MCP tool per operation), and `keel lsp` (check diagnostics as LSP diagnostics, fix diffs as code actions, `explain` as hover).
 
 **Commands.**
 | command | does |
@@ -12,7 +12,7 @@ status: conformance-covered
 | `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |
 | `spec <id>` / `--for <code>` / `--map` | one section, sections citing a code, or the map |
 | `explain <code>` | <= 120 tokens: meaning and fix pattern |
-| `inspect [url]` | summarize a running dev app's inspect document |
+| `inspect [url]` | summarize a dev app's inspect document |
 | `render <routeId\|Component> [--props json]` | a11y tree of one render |
 | `scaffold <op>` / `codemod <op>` | structural operations (k.scaffold) |
 | `ledger` | emit and diff the ledger |
@@ -21,7 +21,7 @@ status: conformance-covered
 
 Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting commands also accept `--code <code>`.
 
-**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` outside any request scope, `stores` is `{ [id]: { state, log } }` from `stores()`, and `ids`, `a11y`, `routes` are the `.keel/` artifacts. Node deployables serve it from `createApp` with `mode: 'dev'`; client-only apps from the compiler plugin's dev and preview servers; the page's dev entry posts `{ graph, stores, sections }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store, one `inspect.section` per section, and a summary of counts.
+**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` outside any request scope, `stores` is `{ [id]: { state, log } }` from `stores()`, and `ids`, `a11y`, `routes` are the `.keel/` artifacts. Node deployables serve it from `createApp` with `mode: 'dev'`; client-only apps from the compiler plugin's dev and preview servers; the page's dev entry posts `{ graph, stores, sections }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store and a summary of counts.
 
 **Inspector hooks** (extension point).
 ```ts
@@ -53,6 +53,7 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 - `keel spec k.cli` prints <= 1,500 tokens.
 - `GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the `inspect()` graph; in production mode it is the route table's 404.
 - `keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1.
+- An MCP `build` writes the `.keel/` files `keel build` writes.
 - `keel inspect` against an unreachable url emits E1056 and exits 1.
 - A `POST /__keel/inspect` without `Origin` on a dev `createApp` gets 403 `keel.denied`.
 - A dev `createApp` serves each section as `{ doc, value }`; a value failing its schema is `{ doc, error }` with E1057; a second `inspector` with that id throws E1057.

@@ -1,6 +1,6 @@
 # RFC 0092: S3 follow-ups (surface answers, deploy section, stream cap, schedules and jobs rules, module services, resume in tests)
 
-Status: draft (2026-11-12), written by a design agent for the orchestrator. For backlog 0339, 0340, 0341, 0342, 0343, 0344, 0346, 0348, 0349, 0350, 0353, 0354, 0360, 0363, 0364, 0368, 0369, 0370, 0371, 0372, 0388. Each decision cites the WORKFLOW RFC default it applies; the points the defaults say to escalate are under Questions.
+Status: accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults, after the user said to keep working; the user confirms or reverses it (`docs/HANDOFF.md`, pending decisions). For backlog 0339, 0340, 0341, 0342, 0343, 0344, 0346, 0348, 0349, 0350, 0353, 0354, 0360, 0363, 0364, 0368, 0369, 0370, 0371, 0372, 0388. Each decision cites the WORKFLOW RFC default it applies; the points the defaults say to escalate are under Questions.
 
 ## Decisions
 Group A: spec text and conformance for behavior that exists or has one answer.
@@ -347,11 +347,18 @@ Every section stays at or under 1,500 (figures in Spec diff); the map stays unde
 - **Projects outside the repo:** a `module` service's `output` and `errors` schemas change as golden-1's do (E1561 points at each); the first CI run after upgrading reports W1568 against the older base surface; `keel build` regenerates `.github/workflows/ci.yml` (E1005 until then); a cron with `*/n` in one day field and the other day field restricted fires on fewer days; an app holding more than 1,000 open event streams per process sets `maxStreams`; a project that re-exports a placed stdlib module's routes from an app module drops the re-export, since the entries now import them.
 
 ## Questions
-The RFC defaults escalate new hand-written user-facing API shapes, anything that weakens privacy or auth, external integrations, and golden-app migrations.
+The RFC defaults escalate new hand-written user-facing API shapes, anything that weakens privacy or auth, external integrations, and golden-app migrations. Answers taken:
 1. **B1, a `module` service unwraps the route's `Result`, with the golden-1 and golden-2 schema migration.** Recommended: accept. Every module call then reads the value its route's loader or action returns, as `events` endpoints already do.
+   Taken: accepted as recommended.
 2. **B6, golden-2's `recipes` calls `kitchen` through `service({ module: 'kitchen' })`, and E1567.** Recommended: accept; it is the migration 0360 asked for, on the app that still needs it.
+   Taken: accepted as recommended.
 3. **B4, `x-keel-forwarded` stays an unsigned loop guard** (the orchestrator's working answer was to sign it). Recommended: keep it unsigned and state it; the signature protects no request and still needs an unsigned loop stop. The signed design is ready under Alternatives if the user prefers it.
+   Taken: accepted as recommended.
 4. **A7, `createApp({ maxStreams })` (default 1,000) and the KeelError code `keel.busy` (503).** Recommended: accept both names and the default.
+   Taken: accepted as recommended.
 5. **B2, `Io.build` on `@keel/cli`'s `Io`** (the working answer was `Io.evaluate`). Recommended: `Io.build`, so MCP `build` writes everything `keel build` writes.
+   Taken: accepted as recommended.
 6. **B5, `resumeDocument(html, { routes, ctx?, artifacts? })` in `@keel/testing`.** Recommended: accept the name and shape; it returns the `render` handle tests already use.
+   Taken: accepted as recommended.
 7. **B3, no `startDev`** (the working answer was to add one). Recommended: no new entry; the clause-9 test spawns `keel dev --port`.
+   Taken: accepted as recommended.

@@ -10,14 +10,14 @@ export const jobs = queue({ 'orders.sendReceipt': sendReceipt })   // modules/or
 export const runners = [jobs]                                       // modules/orders/runners.server.ts (k.topology)
 const r = await jobs.enqueue(ctx, 'orders.sendReceipt', { orderId }, { key: orderId })  // Result<Id<'Job'>, KeelError>
 ```
-- `job({ input, attempts = 3, timeoutMs = 60000 }, fn)`: `fn(input, ctx, signal)` returns `Promise<Result<null, KeelError>>`. `input` holds no `s.secret` (E2503): a job's input is stored.
+- `job({ input, attempts = 3, timeoutMs = 60000 }, fn)` (positive integers, else `job` throws E2505): `fn(input, ctx, signal)` returns `Promise<Result<null, KeelError>>`. `input` holds no `s.secret` (E2503): a job's input is stored.
 - `queue(table)` is a `Runner` with `enqueue(ctx, id, input, { delayMs?, key? })`. `enqueue` parses `input` with the job's schema (fail: `err` `keel.fields`), stores `{ id: random.id('Job'), job, input, at: now + delayMs, attempt: 0 }` under `ctx.storage` key `std.jobs.<module>`, and returns `ok(id)`. A `key` equal to a pending job's, or to one of the last 1,000 finished in that queue (a job that failed after its last attempt is finished), returns that job's id and stores nothing.
 - **Run.** The runner starts due jobs in `at`, then `id` order, at most `concurrency` at once (module `std` config `{ concurrency }`, 1 to 16, default 1). Before `fn` it stores a lease. `ok` removes the job. `err`, a throw, or no result within `timeoutMs` (then `signal` aborts) counts an attempt: the job waits `min(1000 · 2^(attempt-1), 3600000)` ms on `ctx.clock`, and after `attempts` moves to the newest 100 `failed`, with its error code and no input. Between jobs it waits on `ctx.clock.after` for the next `at` or an `enqueue`.
-- **Restart.** Everything above lives in `ctx.storage`, so it survives a restart. A job leased when the process stopped runs again at the next start, counted as an attempt: a job runs at least once, so `fn` must be idempotent. When the runner's `signal` aborts no job starts, and running ones get their `signal` aborted and stay leased.
+- **Restart.** Everything above lives in `ctx.storage`, so it survives a restart. A job leased when the process stopped runs again at the next start, counted as an attempt: a job runs at least once, so `fn` must be idempotent. One runner owns a queue's storage: a second process running it releases the first's leases at start and can run a job twice, so a deployable with jobs runs as one instance. When the runner's `signal` aborts no job starts, and running ones get their `signal` aborted and stay leased.
 - **Inspect.** `jobs.queue` is, per module, `{ pending, running, failed: { id, job, code, at }[] }`: counts and codes, never an input.
 - A job runs only in its module's deployable. Another module starts one by calling an action of the owning module (k.services), never by importing its queue.
 
-**Rules.** E2501 a `queue` key not prefixed by its module id, or a `queue` outside `modules/<id>/jobs.server.ts` (fix prefixes the key) · E2502 `jobs` in `public.exports` (fix removes it) · E2503 a job `input` schema holding `s.secret` (no fix; `queue` also throws it) · E2504 a module with `jobs.server.ts` whose `runners` lacks `jobs` (fix adds it), or placed in a non-`node` deployable.
+**Rules.** E2501 a `queue` key not prefixed by its module id, or a `queue` outside `modules/<id>/jobs.server.ts` (fix prefixes the key) · E2502 `jobs` in `public.exports` (fix removes it) · E2503 a job `input` schema holding `s.secret` (no fix; `queue` also throws it) · E2504 a module with `jobs.server.ts` whose `runners` lacks `jobs` (fix adds it), or placed in a non-`node` deployable · E2505 `attempts` or `timeoutMs` not a positive integer (`job` throws it).
 
 **Conformance.**
 - Under sim, a job enqueued with `delayMs: 500` runs when the clock reaches 500, not before, with the parsed input; `ok` removes it.
@@ -28,3 +28,5 @@ const r = await jobs.enqueue(ctx, 'orders.sendReceipt', { orderId }, { key: orde
 - An `fn` not settled after `timeoutMs` sees its `signal` aborted, and the run counts as an attempt.
 - The `jobs.queue` section holds counts and failures and no input value.
 - E2501-E2504 each fire on a fixture and not on its clean twin; a `queue` whose input holds `s.secret` throws E2503.
+- E2503 fires for `job` reached through `import * as jobs` and not for a `.secret()` call on an object other than `@keel/schema`'s `s`.
+- `job` with `attempts: 0` or `timeoutMs: 1.5` throws E2505.

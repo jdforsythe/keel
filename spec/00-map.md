@@ -11,7 +11,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E120x | k.reactive | E125x | k.runtime |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component | E145x | k.errors |
-| E150x | k.router, k.prefix, k.api | E155x | k.server, k.topology, k.compat, k.hosting |
+| E150x | k.router, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.compat, k.hosting |
 | E160x | k.ctx | E165x | k.services |
 | E170x | k.testing | E175x | k.check |
 | E18xx | k.ui | E19xx | k.forms |
@@ -42,12 +42,14 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |
 | k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
 | k.sync | Heads and concurrent writes | proposed | store heads, write base and key, reject or rebase, save and net events |
-| k.topology | Deployables | implemented | placement, runners, peers, production entry, deploy files |
+| k.topology | Deployables | implemented | placement, route table, runners, peers, `keel dev` |
+| k.deploy | Production entry and deploy files | implemented | `keel build` output, `server.mjs`, `DeployEnv`, assets, deploy files |
 | k.compat | Surface compatibility | conformance-covered | surface artifact, `accepts`, `--base` |
 | k.api | API routes | conformance-covered | `api: true` entries: JSON, no view |
 | k.hosting | Client hosting | implemented | static artifact, peer tag, allowed origins, `host` |
 | k.head | Document head | conformance-covered | per-route title, `<html lang>`, head links |
 | k.services | Thin services | conformance-covered | typed client from schema, timeouts, ApiError |
+| k.openapi | OpenAPI import | conformance-covered | OpenAPI 3 document to endpoints and client sources |
 | k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |
 
 ## Stdlib
