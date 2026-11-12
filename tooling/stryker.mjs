@@ -7,6 +7,9 @@ export const REPORTER = path.join(import.meta.dirname, "stryker-reporter.mjs");
 /** Vitest config for a package that has none of its own for mutation runs. */
 export const VITEST = path.join(import.meta.dirname, "vitest.mutate.config.ts");
 
+/** Test runner processes per run, from `KEEL_MUTATE_CONCURRENCY`; unset leaves Stryker's own choice (one fewer than the cores). */
+const CONCURRENCY = Number.parseInt(process.env.KEEL_MUTATE_CONCURRENCY ?? "", 10) || 0;
+
 /** @param {string} pkg package directory name; names its files in the shared cache @param {number} threshold minimum mutation score (percent) @param {number} [floor] temporary `break` below threshold (needs a TODO + backlog line) */
 export function strykerConfig(pkg, threshold, floor = threshold) {
   return {
@@ -24,5 +27,6 @@ export function strykerConfig(pkg, threshold, floor = threshold) {
     logLevel: "fatal",
     fileLogLevel: "off",
     ignoreStatic: true,
+    ...(CONCURRENCY > 0 ? { concurrency: CONCURRENCY } : {}),
   };
 }

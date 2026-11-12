@@ -11,11 +11,11 @@ Gates, not dates. A gate passes when its criteria are green in CI.
 | S1 Sessions (passed 2026-11-09: nightly run 42711189372 filed issue 1, closed by fba4633) | capture, ingest, replay, minimize, to-test, GitHub Action | Fix loop closes real bugs in Keel's own ingest service |
 | S2 Values (passed 2026-11-10: evals/results/2026-11-10-golden-2-none.json) | money, temporal, text, i18n, message sets | Golden app 2 ships prices and dates in 3 locales |
 | S3 Server depth | jobs, schedules, live loaders, split topology, generated Docker/CI, compat check | Topology split without source changes |
-| S4 Realtime | live resources, channels, offline, conflicts | Multi-user replay under simulation finds injected race |
+| S4 Realtime (passed 2026-11-12: evals/results/2026-11-12-golden-1-api-none.json) | live resources, channels, offline, conflicts | Multi-user replay under simulation finds injected race |
 | S5 Correctness | statecharts, model checking, simulator, mutation in ledger | Every rung populated by real machinery |
 | S6 Compliance | a11y pack, CSP, PII redaction, evidence bundle | External a11y audit and pen test on golden app 3 |
 | S7 UI modules | headless components, tables | Golden app 2 catalog page: all widgets and a paged table, zero a11y violations in three locales; an agent builds a table page from the public docs |
 | S8 Reach | db, workflows, Capacitor, Tauri, verification | Golden app 1 survives SIGKILL on std-db with a byte-equal stored row; a workflow resumes mid-step; Tauri and Android artifacts built in CI with a session replayed in the shell; Z3 proofs recorded as proven |
 | P1 Go public | the kernel `frozen` flip; SVG system diagrams (kernel, stdlib, apps, the compile and check pipeline, resume) on brand; human explanations of what happens and why; agent documentation (skills, spec retrieval, ledger) checked by an eval; public site; launch checklist | A newcomer explains Keel's parts from the diagrams alone; an agent builds a golden app from the public docs; external a11y and security review of the site |
 
-verified: 799b0d37c8ae086faa4a15c09270965dc0a50f80
+verified: c6fcd25a1ec4976da7872ae38fec685b6564a176
