@@ -49,4 +49,31 @@ describe("k.topology: forwarding of unserved paths", () => {
       { seed: SEED, numRuns: 20 },
     );
   });
+
+  test("`x` answers a path of `b` with 502 `keel.unreachable` with `y` down, naming no host.", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), fc.string({ maxLength: 12 }), async (title, cause) => {
+        const a = pageManifest("a", "/a", "A");
+        const t = topology({ x: { modules: ["a"], adapter: "node" }, y: { modules: ["b"], adapter: "node" } });
+        const xCtx = simCtx();
+        xCtx.net.route("http://y.test/*", () => Promise.reject(new Error(`ECONNREFUSED y.test ${cause}`)));
+        const x = await createAppLoose({
+          topology: t,
+          deployable: "x",
+          routes: a,
+          ctx: xCtx,
+          peers: { y: "http://y.test" },
+          artifacts: writeArtifacts(pageManifest("b", "/b", title)),
+        });
+        const res = await x.fetch(new Request("http://localhost/b", { headers: { accept: "application/json" } }));
+        expect(res.status).toBe(502);
+        const body = await res.text();
+        expect(body).toContain("keel.unreachable");
+        expect(body).not.toContain("keel.unexpected");
+        expect(body).not.toContain("y.test");
+        expect(body).not.toContain("ECONNREFUSED");
+      }),
+      { seed: SEED, numRuns: 10 },
+    );
+  });
 });
