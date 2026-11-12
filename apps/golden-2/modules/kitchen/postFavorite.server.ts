@@ -1,8 +1,8 @@
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
-import { Nothing } from "../recipes/Nothing.schema.ts";
-import { RecipeRef } from "../recipes/RecipeRef.schema.ts";
+import { Nothing } from "./Nothing.schema.ts";
+import { RecipeRef } from "./RecipeRef.schema.ts";
 import { boxStores } from "./boxStores.ts";
 
 export const postFavorite = action(

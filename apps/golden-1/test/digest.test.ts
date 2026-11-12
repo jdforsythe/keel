@@ -6,7 +6,6 @@ import { render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { Digest } from "../modules/digest/Digest.schema.ts";
 import { LATEST_KEY } from "../modules/digest/LATEST_KEY.ts";
-import { ListsReply } from "../modules/digest/ListsReply.schema.ts";
 import { RecountInput } from "../modules/digest/RecountInput.schema.ts";
 import { boardApi } from "../modules/digest/boardApi.ts";
 import { feedDigest } from "../modules/digest/feedDigest.server.ts";
@@ -98,12 +97,10 @@ function dataLines(res: Response) {
 }
 
 describe("digest schemas and routes", () => {
-  it("Digest counts are non-negative ints; RecountInput is empty; ListsReply is the api.lists Result", () => {
+  it("Digest counts are non-negative ints; RecountInput is empty", () => {
     expect(Digest.parse({ open: 2, done: 1, at: 0 }).ok).toBe(true);
     expect(Digest.parse({ open: -1, done: 1, at: 0 }).ok).toBe(false);
     expect(RecountInput.parse({}).ok).toBe(true);
-    const reply = { id: "api.lists", results: { "api.lists": { ok: true, value: { ...board, canUndo: false } } } };
-    expect(ListsReply.parse(reply).ok).toBe(true);
   });
   it("the digest routes are API routes without a view", () => {
     for (const id of ["digest.show", "digest.refresh", "digest.feed"] as const) {
@@ -138,7 +135,7 @@ describe("digest jobs and actions on an unbound ctx", () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     ctx.net.route(new URL("/api/*", location.href).href, (req) => app.fetch(req));
     const lists = await boardApi.lists({}, ctx);
-    expect(lists.ok ? lists.value.results["api.lists"].value.todos.length : -1).toBe(3);
+    expect(lists.ok ? lists.value.todos.length : -1).toBe(3);
     ctx.clock.advance(42);
     expect(await recount.fn({}, ctx, new AbortController().signal)).toEqual({ ok: true, value: null });
     expect(await readLatest(ctx)).toEqual({ open: 2, done: 1, at: 42 });

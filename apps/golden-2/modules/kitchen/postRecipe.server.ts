@@ -2,7 +2,7 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { UTC, instantOf, plainDateOf } from "@keel/std-temporal";
 import { tx } from "@keel/store";
-import { RecipeDraft } from "../recipes/RecipeDraft.schema.ts";
+import { RecipeDraft } from "./RecipeDraft.schema.ts";
 import { boxStores } from "./boxStores.ts";
 
 /** Adds a draft dated today in UTC; a title already in the box (ignoring case) is a `keel.fields` error on `title`. */

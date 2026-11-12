@@ -43,10 +43,13 @@ describe("forwarded response headers", () => {
         keys: await callerSigner(undefined),
         secure: undefined,
         built: undefined,
+        entry: "/@keel/entry.ts",
         name: "x",
         origin: undefined,
         allow: new Set(),
         lifecycle: new AbortController(),
+        maxStreams: 1000,
+        streams: { open: 0 },
       };
       const out = await forward(new Request("http://x.test/p"), `http://127.0.0.1:${at}`, sv);
       const h = out.response.headers;
@@ -80,10 +83,13 @@ describe("forwarded HEAD response", () => {
       keys: await callerSigner(undefined),
       secure: undefined,
       built: undefined,
+      entry: "/@keel/entry.ts",
       name: "x",
       origin: undefined,
       allow: new Set(),
       lifecycle: new AbortController(),
+      maxStreams: 1000,
+      streams: { open: 0 },
     };
     return { server, sv, at: port(server.address()) };
   };

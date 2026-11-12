@@ -1,6 +1,6 @@
 import { transaction } from "@keel/store";
 import type { Store } from "@keel/store";
-import type { Box } from "../recipes/Box.schema.ts";
+import type { Box } from "./Box.schema.ts";
 import { NewRecipe } from "./NewRecipe.schema.ts";
 
 /** Adds the payload unless its id, or its title ignoring case, is already in the box; then the state is unchanged. */

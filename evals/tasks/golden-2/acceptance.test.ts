@@ -347,7 +347,8 @@ describe("golden-2 acceptance", () => {
     const env = await setup();
     const { pasta, soup } = await seeded(env);
     const ctx = createCtx({ mode: "sim", seed: 1 });
-    ctx.net.route(`${BASE}/api/*`, (req) => env.api.fetch(req));
+    // A bound ctx with no `kitchen` peer sends a `kitchen` module call to http://kitchen.keel.invalid (k.topology).
+    ctx.net.route("http://kitchen.keel.invalid/api/*", (req) => env.api.fetch(req));
     const web = await createApp({
       topology: testTopology({ web: { modules: ["recipes"], adapter: "node" } }),
       routes,

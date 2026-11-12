@@ -1,7 +1,7 @@
 import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
-import { Box } from "../modules/recipes/Box.schema.ts";
+import { Box } from "../modules/kitchen/Box.schema.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import { asJson, draft, simApi } from "./simApi.ts";
 

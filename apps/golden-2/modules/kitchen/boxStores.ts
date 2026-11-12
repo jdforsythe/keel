@@ -1,5 +1,5 @@
 import { invariant, store } from "@keel/store";
-import { Box } from "../recipes/Box.schema.ts";
+import { Box } from "./Box.schema.ts";
 import { addRecipe } from "./addRecipe.ts";
 import { toggleFavorite } from "./toggleFavorite.ts";
 

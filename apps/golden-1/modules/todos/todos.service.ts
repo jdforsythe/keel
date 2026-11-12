@@ -1,38 +1,37 @@
 import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
+import { BoardView } from "../api/BoardView.schema.ts";
 import { ListDraft } from "../api/ListDraft.schema.ts";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
-import { ActionReply } from "./ActionReply.schema.ts";
-import { BoardReply } from "./BoardReply.schema.ts";
 import { FieldsReply } from "./FieldsReply.schema.ts";
 
 /**
- * The board endpoints of the golden-1 `api` deployable (it owns the data; k.server runtime `Result` bodies),
- * resolved by the topology (`todosApi`).
+ * The board endpoints of the golden-1 `api` deployable (it owns the data), resolved by the topology (`todosApi`):
+ * `lists` answers the `api.lists` loader's value, each action the href it returns (or none).
  */
 export const todos = endpoints({
-  lists: { method: "GET", path: "/api/lists", output: BoardReply },
-  createList: { method: "POST", path: "/api/lists", body: ListDraft, output: ActionReply },
+  lists: { method: "GET", path: "/api/lists", output: BoardView },
+  createList: { method: "POST", path: "/api/lists", body: ListDraft, output: s.string().nullable() },
   addTodo: {
     method: "POST",
     path: "/api/lists/:listId/todos",
     params: s.object({ listId: s.id("TodoList") }),
     body: TodoDraft,
-    output: ActionReply,
+    output: s.string().nullable(),
   },
   toggleTodo: {
     method: "POST",
     path: "/api/todos/:todoId/toggle",
     params: s.object({ todoId: s.id("Todo") }),
-    output: ActionReply,
+    output: s.string().nullable(),
   },
   editTodo: {
     method: "POST",
     path: "/api/todos/:todoId",
     params: s.object({ todoId: s.id("Todo") }),
     body: TodoDraft,
-    output: ActionReply,
+    output: s.string().nullable(),
     errors: { 422: FieldsReply },
   },
-  undo: { method: "POST", path: "/api/undo", output: ActionReply },
+  undo: { method: "POST", path: "/api/undo", output: s.string().nullable() },
 });

@@ -126,7 +126,7 @@ describe("Suggestions", () => {
 });
 
 describe("suggestions", () => {
-  it("lists through ctx.net with accept: application/json and decodes the Result", async () => {
+  it("lists through ctx.net with accept: application/json and decodes the route's Result to its value", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     const accepts: (string | null)[] = [];
     ctx.net.route(SUGGESTIONS, (req) => {
@@ -134,7 +134,7 @@ describe("suggestions", () => {
       return served(["Milk"]);
     });
     const r = await service({ module: "api", schema: suggestions }).list({}, ctx);
-    expect(r.ok && r.value.results["api.suggestions"].value).toEqual([{ title: "Milk" }]);
+    expect(r.ok && r.value).toEqual([{ title: "Milk" }]);
     expect(accepts).toEqual(["application/json"]);
   });
 });

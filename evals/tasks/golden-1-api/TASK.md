@@ -21,7 +21,7 @@ Build `apps/golden-1/`: the todo app of the client-only brief, but the data live
 - No hand-written server: `keel build` writes `dist/api/server.mjs` (k.topology Build) and the `web` client as static files in `dist/web/`; because `web` has `host: 'api'` the same build copies the client into `dist/api/`, so `GET /` on `server.mjs` is the app (k.hosting); script `api` runs it with `--experimental-webstorage --localstorage-file=.api.storage`. `vite.config.ts` is `defineConfig({ plugins: [keel()] })`: `keel dev` serves every deployable on one origin. `api/module.ts` lists the schemas `todos` and `digest` import in `public.exports` and every route the clients call (`api.lists`, `api.listTodos`, `api.todo`, `api.todoToggle`, `api.undo`, `api.suggestions`) in `public.routes`.
 - `digest` (deps `api`, `@keel/std-jobs`, `@keel/std-schedules`; capabilities `clock`, `random`, `storage`, `net`; std.jobs, std.schedules, k.topology Runners):
   - `Digest.schema.ts` `{ open: s.int({ min: 0 }), done: s.int({ min: 0 }), at: s.number() }`, kept in `ctx.storage` key `digest.latest` (`LATEST_KEY`, `readLatest`: zero counts at 0 before the first count or when unparseable; `writeLatest`).
-  - Job `digest.recount` (`recount.server.ts`, input `RecountInput` `{}`): reads `GET /api/lists` through `boardApi = service({ module: 'api', schema: board })` (`board.service.ts`, output `ListsReply`), counts open and done todos, writes them with `at` the `ctx.clock` time; the api's error is its `err`.
+  - Job `digest.recount` (`recount.server.ts`, input `RecountInput` `{}`): reads `GET /api/lists` through `boardApi = service({ module: 'api', schema: board })` (`board.service.ts`, output `BoardView`), counts open and done todos, writes them with `at` the `ctx.clock` time; the api's error is its `err`.
   - `jobs.server.ts` `queue({ 'digest.recount': recount })`; `schedules.server.ts` `digest.hourly` (`0 * * * *`, `UTC`, job `digest.recount`, input `{}`); `runners.server.ts` `[jobs, schedules]`.
   - Routes: `digest.show` `GET /digest` (`loadDigest`), `digest.refresh` `POST /digest/refresh` (`refresh`: `jobs.enqueue(ctx, 'digest.recount', input)`), `digest.feed` `GET /digest/feed` (`feedDigest`, a live loader: the stored digest, then each different one, read every 1,000 ms of `ctx.clock`). All three are API routes (`api: true`, no component).
 - Splitting `digest` into its own `node` deployable edits `topology.ts` alone (`api: { modules: ['api'] }`, `digest: { modules: ['digest'] }`).
@@ -37,11 +37,11 @@ apps/golden-1/modules/api/{board,boardStores,addList,addTodo,toggleTodo,editTodo
 apps/golden-1/modules/api/{loadBoard,loadSuggestions,postList,postTodo,postEdit,postToggle,postUndo}.server.ts
 apps/golden-1/modules/todos/{module,routes,editable.guard,view,hydrate,refreshView,syncAfter,todosApi}.ts
 apps/golden-1/modules/todos/{todos,suggestions}.service.ts
-apps/golden-1/modules/todos/{BoardReply,ActionReply,FieldsReply,SuggestionsReply,ListSearch,TodoParams}.schema.ts
+apps/golden-1/modules/todos/{FieldsReply,ListSearch,TodoParams}.schema.ts
 apps/golden-1/modules/todos/{loadIndex,loadList,loadTodo,createList,createTodo,updateTodo}.server.ts
 apps/golden-1/modules/todos/{AppShell,ListsPage,ListPage,TodoRow,EditTodoPage,ListError,Suggestions}.tsx
 apps/golden-1/modules/digest/{module,routes,boardApi,LATEST_KEY,readLatest,writeLatest}.ts  and  board.service.ts
-apps/golden-1/modules/digest/{Digest,RecountInput,ListsReply}.schema.ts
+apps/golden-1/modules/digest/{Digest,RecountInput}.schema.ts
 apps/golden-1/modules/digest/{recount,jobs,schedules,runners,loadDigest,feedDigest,refresh}.server.ts
 apps/golden-1/test/{api,board,components,routes,digest}.test.ts  and  test/{simApi,apiRoutes}.ts
 ```

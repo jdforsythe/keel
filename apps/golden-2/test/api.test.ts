@@ -1,8 +1,10 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { s } from "@keel/schema";
 import { isolate } from "@keel/store";
 import { properties } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { Box } from "../modules/kitchen/Box.schema.ts";
 import { NewRecipe } from "../modules/kitchen/NewRecipe.schema.ts";
 import { addRecipe } from "../modules/kitchen/addRecipe.ts";
 import { boxStores } from "../modules/kitchen/boxStores.ts";
@@ -10,8 +12,13 @@ import { loadRecipes } from "../modules/kitchen/loadRecipes.server.ts";
 import { postFavorite } from "../modules/kitchen/postFavorite.server.ts";
 import { postRecipe } from "../modules/kitchen/postRecipe.server.ts";
 import { toggleFavorite } from "../modules/kitchen/toggleFavorite.ts";
-import { BoxReply } from "../modules/recipes/BoxReply.schema.ts";
 import { apiApp, apiCtx, asJson, draft } from "./simApi.ts";
+
+/** The runtime body of `GET /api/recipes` (k.server): the `kitchen.recipes` loader `Result`. */
+const BoxBody = s.object({
+  id: s.string(),
+  results: s.object({ "kitchen.recipes": s.object({ ok: s.literal(true), value: Box }) }),
+});
 
 const scopes: { dispose(): void }[] = [];
 afterEach(() => {
@@ -72,7 +79,7 @@ describe("kitchen endpoints", () => {
     expect(body).toContain('"favorite":false');
     expect(body).toContain('"price":{"amount":1800,"currency":"JPY"}');
     expect(body).toContain('"addedOn":"2026-11-10"');
-    const parsed = BoxReply.parse(listed.body);
+    const parsed = BoxBody.parse(listed.body);
     const id = parsed.ok ? (parsed.value.results["kitchen.recipes"].value.recipes[0]?.id ?? "") : "";
     expect(id).not.toBe("");
 

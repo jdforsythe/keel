@@ -5,17 +5,20 @@
 import { createCtx } from "@keel/ctx";
 import { createApp, topology } from "@keel/server";
 import { describe, expect, it } from "vitest";
-import { Box } from "../modules/recipes/Box.schema.ts";
+import { Box } from "../modules/kitchen/Box.schema.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import { apiApp, apiCtx, asJson, draft } from "./simApi.ts";
 
 const BASE = "http://localhost";
 
-/** The `recipes` pages as a node deployable whose loaders reach a fresh `api` deployable through `ctx.net`. */
+/**
+ * The `recipes` pages as a node deployable whose loaders reach a fresh `api` deployable through `ctx.net`: with no
+ * peers and no document, a `kitchen` module call goes to `http://kitchen.keel.invalid`.
+ */
 async function apps() {
   const api = await apiApp(apiCtx());
   const ctx = createCtx({ mode: "sim", seed: 1 });
-  ctx.net.route(`${BASE}/api/*`, (req) => api.fetch(req));
+  ctx.net.route("http://kitchen.keel.invalid/api/*", (req) => api.fetch(req));
   const web = await createApp({ topology: topology({ web: { modules: ["recipes"], adapter: "node" } }), routes, ctx });
   return { api, web };
 }

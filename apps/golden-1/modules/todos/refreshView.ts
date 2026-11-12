@@ -9,7 +9,6 @@ import { todosApi } from "./todosApi.ts";
 export async function refreshView(ctx: Ctx): Promise<Result<BoardView, KeelError<string, unknown>>> {
   const r = await todosApi.lists({}, ctx);
   if (!r.ok) return r;
-  const data = r.value.results["api.lists"].value;
-  const h = tx(hydrate, data);
-  return h.ok ? ok(data) : h;
+  const h = tx(hydrate, r.value);
+  return h.ok ? ok(r.value) : h;
 }

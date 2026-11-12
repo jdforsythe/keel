@@ -8,14 +8,8 @@ type Rec = Readonly<Record<string, unknown>>;
 
 const CALLER = /^modules\/([^/]+)\//;
 const VERBS = ["DELETE", "PATCH", "POST", "PUT"] as const;
-const closed = (properties: Rec): JsonSchema => ({
-  type: "object",
-  properties,
-  required: Object.keys(properties).sort(),
-  additionalProperties: false,
-});
-/** An action's answer to a runtime request (k.server): `ok` of `Href | null`. */
-const ACTION_ANSWER = closed({ ok: { const: true }, value: { anyOf: [{ type: "string" }, { type: "null" }] } });
+/** An action's answer (k.compat Surface): the `ok` value of its `Result`, `Href | null`. */
+const ACTION_ANSWER: JsonSchema = { anyOf: [{ type: "string" }, { type: "null" }] };
 
 /** The JSON Schema of a schema value (`{ node }`), or `null` when `x` is none. */
 function schemaOf(x: unknown): JsonSchema | null {
@@ -31,29 +25,6 @@ function table(manifests: Evaluated["manifests"]): Map<string, { readonly def: R
       if (isRecord(def) && !out.has(id)) out.set(id, { def, file: m.file });
   }
   return out;
-}
-
-/** A path route's GET answer (k.server): `{ id, results }`, one `ok` per chain level, its loader `output` or `null`. */
-function getAnswer(id: string, def: Rec, all: ReturnType<typeof table>): JsonSchema {
-  const levels: [string, Rec][] = [[id, def]];
-  const seen = new Set([id]);
-  for (let up = def.layout; typeof up === "string" && !seen.has(up); ) {
-    const parent = all.get(up)?.def;
-    if (parent === undefined) break;
-    seen.add(up);
-    levels.unshift([up, parent]);
-    up = parent.layout;
-  }
-  const results = Object.fromEntries(
-    levels.map(([lvl, d]) => [
-      lvl,
-      closed({
-        ok: { const: true },
-        value: isRecord(d.loader) ? (schemaOf(d.loader.output) ?? {}) : { type: "null" },
-      }),
-    ]),
-  );
-  return closed({ id: { const: id }, results: closed(results) });
 }
 
 /** One `service({ module })` call: its endpoints' method, path and schemas, or `null` when it is not one. */
@@ -78,10 +49,11 @@ function serviceOf(file: string, opts: unknown): JsonSchema | null {
 
 /**
  * The data of `.keel/surface.json` (k.compat Surface): for each path route its `module` (the id's first segment),
- * `path`, declaring `file`, `params`, `search`, GET answer and, per action method, `input` and answer; for each
- * `service({ module })` call in an app module its `file`, calling module, `module` and endpoints (method, path,
- * `params`, `query`, `body`, `output`, `errors`); and `sources`, the hash of each evaluated file (E1005 freshness).
- * Schemas are JSON Schema, as in `routes.json`; an absent one is `null`.
+ * `path`, declaring `file`, `params`, `search`, GET answer (its loader's `output`; none without a loader) and, per
+ * action method, `input` and answer (`Href | null`); for each `service({ module })` call in an app module its `file`,
+ * calling module, `module` and endpoints (method, path, `params`, `query`, `body`, `output`, `errors`); and
+ * `sources`, the hash of each evaluated file (E1005 freshness).
+ * Schemas are JSON Schema, as in `routes.json`; an absent one is `null`. The file holds `version: 1`.
  */
 export function surfaceOf(e: Evaluated): JsonSchema {
   const all = table(e.manifests);
@@ -97,9 +69,10 @@ export function surfaceOf(e: Evaluated): JsonSchema {
           }),
         );
         const route = { module: id.split(".")[0] ?? id, path: def.path, file, params: schemaOf(def.params) };
-        return [id, { ...route, search: schemaOf(def.search), get: getAnswer(id, def, all), actions }];
+        const get = isRecord(def.loader) ? (schemaOf(def.loader.output) ?? {}) : null;
+        return [id, { ...route, search: schemaOf(def.search), get, actions }];
       }),
   );
   const services = e.services.flatMap((s) => serviceOf(s.file, s.opts) ?? []);
-  return { routes, services, sources: e.sources };
+  return { version: 1, routes, services, sources: e.sources };
 }

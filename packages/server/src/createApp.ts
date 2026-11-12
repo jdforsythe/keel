@@ -1,3 +1,4 @@
+import { ENTRY_PATH } from "@keel/compiler/entry/ENTRY_PATH";
 import { originOf } from "@keel/compiler/hosting/originOf";
 import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { bindStd } from "@keel/compiler/std/bindStd";
@@ -8,6 +9,7 @@ import { attempt } from "@keel/schema";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
+import { DEFAULT_MAX_STREAMS } from "./internal/DEFAULT_MAX_STREAMS.ts";
 import type { Served } from "./internal/Served.ts";
 import { allowOf } from "./internal/allowOf.ts";
 import { bindModules } from "./internal/bindModules.ts";
@@ -60,7 +62,9 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * A production `createApp` without `assets` also rejects with E1555 unless `NODE_ENV` (trimmed, any case) is
  * `development` or `test`; unset counts as production (RFC 0052). Without a build its island documents would load
  * `/@keel/entry.ts`, whose bare `@keel/*` imports only Vite resolves. Whether a page has islands is known only when it
- * renders, so this holds for every deployable. Dev mode, and tests (vitest sets `NODE_ENV=test`), keep serving it.
+ * renders, so this holds for every deployable. Dev mode, and tests (vitest sets `NODE_ENV=test`), keep serving it:
+ * a document scripts `/@keel/entry.ts?d=<deployable>`, the resume entry of `deployable`'s islands (none given:
+ * `/@keel/entry.ts`).
  * A `secret` under 32 bytes (UTF-8) rejects with E1556; under that same production gate, no `secret` writes one W1556
  * `diag` to `log` at startup, since each instance then signs callers with its own random key (RFC 0057, backlog 0159),
  * and no `secure` writes one W1557: https is then the request's URL or `x-forwarded-proto: https` (RFC 0060).
@@ -75,7 +79,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * `x-keel-forwarded` (k.topology Calls and peers; `forward`), and logs its `req` record like a served one. `origin`
  * replaces the request's origin in `url`, the same-site check and `Secure`; with it, no W1557. An `allow` entry that is
  * not an http(s) origin rejects with E1560 naming its index, never its value; with any entry, every API-route response
- * carries `vary: origin` (k.hosting Allowed origins).
+ * carries `vary: origin` (k.hosting Allowed origins). An event-stream GET past `maxStreams` (default 1,000) open streams
+ * gets 503 `keel.busy` (`data: { limit }`) and runs no loader; a stream frees its place when it ends.
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -132,6 +137,9 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     keys: await callerSigner(opts.secret),
     secure: opts.secure,
     built,
+    entry:
+      built?.entry ??
+      (opts.deployable === undefined ? ENTRY_PATH : `${ENTRY_PATH}?d=${encodeURIComponent(opts.deployable)}`),
     name,
     origin,
     allow: new Set(
@@ -142,6 +150,8 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       }),
     ),
     lifecycle: new AbortController(),
+    maxStreams: opts.maxStreams ?? DEFAULT_MAX_STREAMS,
+    streams: { open: 0 },
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));

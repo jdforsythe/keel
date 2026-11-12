@@ -8,6 +8,7 @@ import { streamSSE } from "hono/streaming";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { RequestScope } from "./RequestScope.ts";
+import { busy } from "./busy.ts";
 import { openStores } from "./openStores.ts";
 import { publicError } from "./publicError.ts";
 
@@ -19,10 +20,13 @@ const HEARTBEAT_MS = 15_000;
  * leave the server); a `:` line goes out per 15 s of `ctx.clock`. It ends when `fn` returns or its `signal` aborts:
  * on request abort or `close()` (both also cancel the stream, so a stalled write ends), or when the reader cancels.
  * The factory opens in the stream's own isolated scope, not the request's (disposed when `handle` returns), and that
- * scope is disposed when the stream ends. Written with Hono's `streamSSE`; `cache-control: no-store`.
+ * scope is disposed when the stream ends. Written with Hono's `streamSSE`; `cache-control: no-store`. With
+ * `maxStreams` streams open it is 503 `keel.busy` and opens nothing; a stream holds its place until it ends.
  */
 export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<unknown>, c: Context): Handled {
   const { sv, raw } = r;
+  if (sv.streams.open >= sv.maxStreams) return { response: busy(sv.maxStreams), route: m.route.id, diags: [] };
+  sv.streams.open++;
   const rq: RequestScope = { ...r.rq, scope: scope(() => undefined, { detached: true }), held: new Map() };
   isolate(rq.scope);
   const ac = new AbortController();
@@ -54,6 +58,7 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
         await stream.writeSSE({ data: JSON.stringify(json.ok ? json.value : err(publicError(json.error, sv.mode))) });
       }
     } finally {
+      sv.streams.open--;
       stop();
       raw.signal.removeEventListener("abort", halt);
       sv.lifecycle.signal.removeEventListener("abort", halt);

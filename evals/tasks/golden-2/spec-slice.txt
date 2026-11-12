@@ -77,11 +77,11 @@ k.server
 
 k.services
 - import { endpoints, service } from '@keel/services'; endpoints in a *.service.ts file, body/output schemas in *.schema.ts
-- export const kitchen = endpoints({ box: { method: 'GET', path: '/api/recipes', output: BoxReply }, add: { method: 'POST', path: '/api/recipes', body: RecipeDraft, output: ActionReply, errors: { 422: FieldsReply } }, favorite: { method: 'POST', path: '/api/recipes/:recipeId/favorite', params: RecipeRef, output: ActionReply, errors: { 404: ErrorReply } } })
-- service({ base, schema }) built per call (base new URL(url).origin in *.server.ts); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
-- output describes the whole runtime body (see k.server); read r.value.results['kitchen.recipes'].value
+- export const kitchen = endpoints({ box: { method: 'GET', path: '/api/recipes', output: Box }, add: { method: 'POST', path: '/api/recipes', body: RecipeDraft, output: s.string().nullable(), errors: { 422: ErrorReply } }, favorite: { method: 'POST', path: '/api/recipes/:recipeId/favorite', params: RecipeRef, output: s.string().nullable(), errors: { 404: ErrorReply } } })
+- service({ module: 'kitchen', schema }): the topology resolves the origin; the endpoints must agree with the module's public.routes (E1152, E1157, E1561); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
+- a module service reads the route's Result: output is the loader's value (GET) or the action's Href | null; errors[status] decodes the KeelError { code, message, data }
 - ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
-- pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body?.error ?? r.error)
+- pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body ?? r.error)
 - ctx.net.fetch in app code is E1651; E1652 :param without params field; E1653 body on GET
 
 k.forms

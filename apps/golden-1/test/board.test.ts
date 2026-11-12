@@ -13,10 +13,7 @@ import { Suggestion } from "../modules/api/Suggestion.schema.ts";
 import { Todo } from "../modules/api/Todo.schema.ts";
 import { TodoDraft } from "../modules/api/TodoDraft.schema.ts";
 import { TodoList } from "../modules/api/TodoList.schema.ts";
-import { ActionReply } from "../modules/todos/ActionReply.schema.ts";
-import { BoardReply } from "../modules/todos/BoardReply.schema.ts";
 import { FieldsReply } from "../modules/todos/FieldsReply.schema.ts";
-import { SuggestionsReply } from "../modules/todos/SuggestionsReply.schema.ts";
 import { TodoParams } from "../modules/todos/TodoParams.schema.ts";
 import { createList } from "../modules/todos/createList.server.ts";
 import { createTodo } from "../modules/todos/createTodo.server.ts";
@@ -61,23 +58,21 @@ describe("schemas", () => {
     expect(TodoList.parse({ id: "l1", name: "" }).ok).toBe(false);
     expect(Todo.parse({ id: "t1", listId: "l1", title: "Milk", priority: "urgent", done: false }).ok).toBe(false);
   });
-  it("ListDraft, TodoDraft and Suggestion bound their strings; SuggestionsReply is the api.suggestions Result", () => {
+  it("ListDraft, TodoDraft and Suggestion bound their strings", () => {
     expect(ListDraft.parse({ name: "x".repeat(61) }).ok).toBe(false);
     expect(TodoDraft.parse({ title: "Milk", priority: "high" }).ok).toBe(true);
     expect(TodoDraft.parse({ title: "", priority: "high" }).ok).toBe(false);
     expect(Suggestion.parse({ title: "Eggs" }).ok).toBe(true);
-    const reply = { id: "api.suggestions", results: { "api.suggestions": { ok: true, value: [{ title: "Eggs" }] } } };
-    expect(SuggestionsReply.parse(reply).ok).toBe(true);
-    expect(SuggestionsReply.parse([{ title: "Eggs" }]).ok).toBe(false);
   });
-  it("BoardReply, ActionReply and FieldsReply are the api runtime bodies", () => {
+  it("the todos endpoints answer the route values: the board, an href or none, and a KeelError on 422", () => {
     const value = { lists: [L], todos: [], canUndo: true };
-    expect(BoardReply.parse({ id: "api.lists", results: { "api.lists": { ok: true, value } } }).ok).toBe(true);
-    expect(BoardReply.parse({ id: "api.lists", results: { "api.lists": { ok: false, value } } }).ok).toBe(false);
-    expect(ActionReply.parse({ ok: true, value: null }).ok).toBe(true);
-    expect(ActionReply.parse({ ok: false, value: null }).ok).toBe(false);
-    const fields = { ok: false, error: { code: "keel.fields", message: "m", data: { title: "taken" } } };
-    expect(FieldsReply.parse(fields).ok).toBe(true);
+    expect(todos.lists.output.parse(value).ok).toBe(true);
+    expect(todos.lists.output.parse({ id: "api.lists", results: { "api.lists": { ok: true, value } } }).ok).toBe(false);
+    expect(todos.createList.output.parse(null).ok).toBe(true);
+    expect(todos.createList.output.parse("/lists/l1").ok).toBe(true);
+    expect(todos.createList.output.parse({ ok: true, value: null }).ok).toBe(false);
+    expect(FieldsReply.parse({ code: "keel.fields", message: "m", data: { title: "taken" } }).ok).toBe(true);
+    expect(FieldsReply.parse({ ok: false, error: { code: "keel.fields", message: "m", data: {} } }).ok).toBe(false);
   });
 });
 
@@ -112,7 +107,7 @@ describe("todos.view", () => {
 });
 
 describe("todos service", () => {
-  it("sends accept and a JSON body, and decodes the Result", async () => {
+  it("sends accept and a JSON body, and decodes the action's Result to its value", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     const seen: string[] = [];
     ctx.net.route(LISTS, async (req) => {
@@ -120,7 +115,7 @@ describe("todos service", () => {
       return new Response(JSON.stringify({ ok: true, value: null }));
     });
     const r = await service({ module: "api", schema: todos }).createList({ body: { name: "Work" } }, ctx);
-    expect(r).toEqual({ ok: true, value: { ok: true, value: null } });
+    expect(r).toEqual({ ok: true, value: null });
     expect(seen).toEqual(['application/json application/json {"name":"Work"}']);
   });
 });

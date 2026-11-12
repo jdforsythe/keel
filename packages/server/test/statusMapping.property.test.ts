@@ -20,10 +20,20 @@ const expected = (code: string): number =>
         ? 422
         : code === "keel.unexpected"
           ? 500
-          : 400;
+          : code === "keel.busy"
+            ? 503
+            : 400;
 
 const code = fc.oneof(
-  fc.constantFrom("keel.notFound", "keel.denied", "keel.fields", "keel.unexpected", "schema.invalid", "api.timeout"),
+  fc.constantFrom(
+    "keel.notFound",
+    "keel.denied",
+    "keel.fields",
+    "keel.unexpected",
+    "keel.busy",
+    "schema.invalid",
+    "api.timeout",
+  ),
   fc
     .tuple(fc.stringMatching(/^[a-z][a-zA-Z]{0,7}$/), fc.stringMatching(/^[a-z][a-zA-Z]{0,7}$/))
     .map(([a, b]) => `${a}.${b}`),

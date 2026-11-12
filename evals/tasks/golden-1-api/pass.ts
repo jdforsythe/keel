@@ -35,9 +35,7 @@ const FILES: readonly string[] = [
     (n) => `${mod}/${n}.ts`,
   ),
   ...["todos", "suggestions"].map((n) => `${mod}/${n}.service.ts`),
-  ...["BoardReply", "ActionReply", "FieldsReply", "SuggestionsReply", "ListSearch", "TodoParams"].map(
-    (n) => `${mod}/${n}.schema.ts`,
-  ),
+  ...["FieldsReply", "ListSearch", "TodoParams"].map((n) => `${mod}/${n}.schema.ts`),
   ...["loadIndex", "loadList", "loadTodo", "createList", "createTodo", "updateTodo"].map(
     (n) => `${mod}/${n}.server.ts`,
   ),
@@ -49,7 +47,6 @@ const FILES: readonly string[] = [
     "routes",
     "Digest.schema",
     "RecountInput.schema",
-    "ListsReply.schema",
     "board.service",
     "boardApi",
     "LATEST_KEY",

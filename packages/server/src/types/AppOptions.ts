@@ -30,6 +30,8 @@ import type { ServerApp } from "./ServerApp.ts";
  * `url`, the same-site check and `Secure` (k.topology Build). `allow` lists the http(s) origins whose requests to API
  * routes are granted (k.hosting Allowed origins): matched exactly by scheme, host and port; an entry that is not an
  * http(s) origin rejects with E1560 naming its index. With any entry, every API-route response carries `vary: origin`.
+ * `maxStreams`, a positive integer (default 1000), caps the event streams open at once: one more is 503 `keel.busy`
+ * with `data: { limit }` and runs no loader; a stream frees its place when it ends for any reason.
  */
 export type AppOptions = {
   readonly topology: Topology;
@@ -49,4 +51,5 @@ export type AppOptions = {
   readonly peers?: Readonly<Record<string, string | URL | ServerApp>>;
   readonly origin?: string;
   readonly allow?: readonly string[];
+  readonly maxStreams?: number;
 };

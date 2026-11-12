@@ -7,6 +7,7 @@ import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { RESUME_ENTRY } from "./entry/RESUME_ENTRY.ts";
 import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
+import { resumeEntry } from "./entry/resumeEntry.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
 import { artifactText } from "./internal/artifactText.ts";
@@ -107,7 +108,9 @@ type Builder = { environments: Record<string, unknown>; build(environment: unkno
  * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
  * `client` one by name: the `mount` entry for a `client` deployable (binding the client-readable part of `std.json`,
  * `clientStdData`, reloaded when a manifest changes; rfc:0069), else the resume entry, whose island components
- * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046). A `vite build` whose `KEEL_DEPLOYABLE`
+ * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046). `/@keel/entry.ts?d=<name>` and
+ * `/@keel/islands.ts?d=<name>` are those of deployable `name`: for a `node` one, the resume entry over its own islands,
+ * which its dev documents script (k.server Build). A `vite build` whose `KEEL_DEPLOYABLE`
  * is a `node` deployable builds that entry alone (input `entry`) into `dist/<name>/` with hashed `assets/` and the
  * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), then its generated production entry (`SERVER_ENTRY`,
  * `serverEntryCode`) with every dependency into `dist/<name>/server.mjs` beside `routes.json`, every module's routes
@@ -182,6 +185,13 @@ export default function (): {
     if (mod !== undefined) server?.moduleGraph.invalidateModule?.(mod);
   };
 
+  /** A `/@keel/` id split into its path and its `?d=` deployable (`/@keel/entry.ts?d=web`); undefined for any other. */
+  const keyed = (id: string): { path: string; d: string | undefined } | undefined => {
+    if (!id.startsWith("/@keel/")) return undefined;
+    const u = new URL(id, "http://keel.invalid");
+    return { path: u.pathname, d: u.searchParams.get("d") ?? undefined };
+  };
+
   const relOf = (id: string): string | null => {
     if (id.startsWith("\0") || id.startsWith("/@keel/") || id === CSS_ID) return null;
     const file = id.split("?")[0] ?? id;
@@ -194,11 +204,15 @@ export default function (): {
   };
   const exists = (rel: string): boolean => fs.existsSync(path.join(root, rel));
 
-  /** The deployable this build serves: `KEEL_DEPLOYABLE`, else the first `client` one by name, else every `node` one's modules. */
-  const deployable = (): { name: string; modules: readonly string[]; client: boolean } | undefined => {
+  /**
+   * The deployable this build serves: `want` (a dev entry's `?d=`, else `KEEL_DEPLOYABLE`), else the first `client`
+   * one by name, else every `node` one's modules.
+   */
+  const deployable = (
+    want = process.env.KEEL_DEPLOYABLE,
+  ): { name: string; modules: readonly string[]; client: boolean } | undefined => {
     if (topology === undefined) return undefined;
     const names = Object.keys(topology).sort();
-    const want = process.env.KEEL_DEPLOYABLE;
     const name = want ?? names.find((n) => topology?.[n]?.adapter === "client");
     const node = names.filter((n) => topology?.[n]?.adapter === "node");
     // `keel dev` with no client deployable: one resume entry for every node deployable's islands (one origin).
@@ -210,8 +224,8 @@ export default function (): {
       : { name, modules: d.modules, client: d.adapter === "client" };
   };
   /** `modules/<id>/routes.ts` of the deployable's modules (every module without a topology), root-relative. */
-  const routesFiles = (): string[] => {
-    const d = deployable();
+  const routesFiles = (want?: string): string[] => {
+    const d = deployable(want);
     const ids =
       d?.modules ??
       (exists("modules")
@@ -399,7 +413,8 @@ export default function (): {
     resolveId(id) {
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
       if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html")) return id;
-      if (id === ENTRY_PATH || id === ISLANDS_PATH) return id;
+      const q = keyed(id);
+      if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
       if (id === DEV_ENTRY) return `\0${DEV_ENTRY}`;
       return null;
@@ -411,22 +426,23 @@ export default function (): {
         if (stale) await refresh();
         return css;
       }
-      if (id === ISLANDS_PATH)
+      const q = keyed(id);
+      if (q?.path === ISLANDS_PATH)
         return islandsCode(
-          routesFiles().map((f) => ({ path: f, source: fs.readFileSync(path.join(root, f), "utf8") })),
+          routesFiles(q.d).map((f) => ({ path: f, source: fs.readFileSync(path.join(root, f), "utf8") })),
         );
       if (id === `\0${DEV_ENTRY}`) return devEntryCode(root, topology ?? {});
       const node = deployable();
       if (id === `\0${SERVER_ENTRY}` && node !== undefined) return serverEntryCode(root, node.name, node.modules);
-      if (id !== ENTRY_PATH) return null;
-      const d = deployable();
+      if (q?.path !== ENTRY_PATH) return null;
+      const d = deployable(q.d);
       if (d === undefined)
         throw new Error(`keel: ${ENTRY_PATH} needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one`);
-      if (!d.client) return RESUME_ENTRY;
+      if (!d.client) return q.d === undefined ? RESUME_ENTRY : resumeEntry(q.d);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       return entryCode(
-        routesFiles().map((f) => `/${f}`),
+        routesFiles(q.d).map((f) => `/${f}`),
         CSS_IMPORT,
         clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
         served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},

@@ -1,5 +1,5 @@
 import { s } from "@keel/schema";
-import { Recipe } from "./Recipe.schema.ts";
+import { Recipe } from "../kitchen/Recipe.schema.ts";
 import { RecipesText } from "./RecipesText.schema.ts";
 
 /** Loader data of `recipes.show`: the recipe and the page's copy. */

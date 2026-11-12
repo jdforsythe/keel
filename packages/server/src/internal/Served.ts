@@ -15,7 +15,10 @@ import type { Saved } from "./Saved.ts";
  * (`createApp({ assets })`, k.server Build), undefined in dev or without `assets`. `name` is the served deployable's name, the
  * document title's fallback (k.head). `origin` is the public origin (`createApp({ origin })`, k.topology Build).
  * `allow` is the set of allowed origins, serialized (`createApp({ allow })`, k.hosting).
- * `lifecycle` aborts on `close()`, ending runners and open event streams.
+ * `entry` is the script an island document loads: `built`'s entry, else `/@keel/entry.ts?d=<deployable>`, the resume
+ * entry of `createApp({ deployable })`'s islands (none given: `/@keel/entry.ts`, every `node` module's).
+ * `lifecycle` aborts on `close()`, ending runners and open event streams. `maxStreams` caps the open event streams
+ * (`createApp({ maxStreams })`) and `streams.open` counts them (`liveStream`).
  */
 export type Served = {
   readonly table: readonly Located[];
@@ -29,8 +32,11 @@ export type Served = {
   readonly keys: CallerKeys;
   readonly secure: boolean | undefined;
   readonly built: BuiltClient | undefined;
+  readonly entry: string;
   readonly name: string;
   readonly origin: string | undefined;
   readonly allow: ReadonlySet<string>;
   readonly lifecycle: AbortController;
+  readonly maxStreams: number;
+  readonly streams: { open: number };
 };

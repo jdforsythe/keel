@@ -71,10 +71,13 @@ async function served(ctx: Ctx): Promise<Served> {
     keys: await callerSigner(undefined),
     secure: undefined,
     built: undefined,
+    entry: "/@keel/entry.ts",
     name: "x",
     origin: undefined,
     allow: new Set(),
     lifecycle: new AbortController(),
+    maxStreams: 1000,
+    streams: { open: 0 },
   };
 }
 

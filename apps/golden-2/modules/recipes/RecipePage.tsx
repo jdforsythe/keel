@@ -6,7 +6,7 @@ import { formatMessage } from "@keel/std-messages";
 import { formatMoney } from "@keel/std-money";
 import { durationOf, formatDate, formatDuration } from "@keel/std-temporal";
 import { Box, Button, Heading, Text } from "@keel/ui";
-import { Nothing } from "./Nothing.schema.ts";
+import { Nothing } from "../kitchen/Nothing.schema.ts";
 import { RecipeData } from "./RecipeData.schema.ts";
 import { RecipeParams } from "./RecipeParams.schema.ts";
 import { routes } from "./routes.ts";

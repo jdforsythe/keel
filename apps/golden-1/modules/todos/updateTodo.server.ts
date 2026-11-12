@@ -11,6 +11,6 @@ import { todosApi } from "./todosApi.ts";
  */
 export const updateTodo = action({ input: TodoDraft, params: TodoParams }, async (input, { params }, ctx) => {
   const r = await todosApi.editTodo({ params: { todoId: params.todoId }, body: input }, ctx);
-  if (!r.ok) return err(r.error.data.body?.error ?? r.error);
+  if (!r.ok) return err(r.error.data.body ?? r.error);
   return ok(routes.href("todos.list", { listId: params.listId }));
 });

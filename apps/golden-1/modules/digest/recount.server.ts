@@ -11,7 +11,7 @@ import { writeLatest } from "./writeLatest.ts";
 export const recount = job({ input: RecountInput }, async (_input, ctx, signal) => {
   const r = await boardApi.lists({ signal }, ctx);
   if (!r.ok) return err(r.error);
-  const todos = r.value.results["api.lists"].value.todos;
+  const todos = r.value.todos;
   const done = todos.filter((t) => t.done).length;
   await writeLatest(ctx, { open: todos.length - done, done, at: ctx.clock.now() });
   return ok(null);

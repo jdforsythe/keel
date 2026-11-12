@@ -1,23 +1,21 @@
 import { properties, render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
-import { ActionReply } from "../modules/recipes/ActionReply.schema.ts";
+import { Nothing } from "../modules/kitchen/Nothing.schema.ts";
+import { Recipe } from "../modules/kitchen/Recipe.schema.ts";
+import { RecipeDraft } from "../modules/kitchen/RecipeDraft.schema.ts";
+import { RecipeRef } from "../modules/kitchen/RecipeRef.schema.ts";
 import { AppLocale } from "../modules/recipes/AppLocale.schema.ts";
 import BoxShell from "../modules/recipes/BoxShell.tsx";
 import { ErrorReply } from "../modules/recipes/ErrorReply.schema.ts";
-import { FieldsReply } from "../modules/recipes/FieldsReply.schema.ts";
 import { IndexData } from "../modules/recipes/IndexData.schema.ts";
 import { KeelFields } from "../modules/recipes/KeelFields.schema.ts";
 import { LocaleParams } from "../modules/recipes/LocaleParams.schema.ts";
 import NewRecipePage from "../modules/recipes/NewRecipePage.tsx";
-import { Nothing } from "../modules/recipes/Nothing.schema.ts";
-import { Recipe } from "../modules/recipes/Recipe.schema.ts";
 import { RecipeData } from "../modules/recipes/RecipeData.schema.ts";
-import { RecipeDraft } from "../modules/recipes/RecipeDraft.schema.ts";
 import RecipeError from "../modules/recipes/RecipeError.tsx";
 import RecipeList from "../modules/recipes/RecipeList.tsx";
 import RecipePage from "../modules/recipes/RecipePage.tsx";
 import { RecipeParams } from "../modules/recipes/RecipeParams.schema.ts";
-import { RecipeRef } from "../modules/recipes/RecipeRef.schema.ts";
 import { RecipeSearch } from "../modules/recipes/RecipeSearch.schema.ts";
 import { RecipesText } from "../modules/recipes/RecipesText.schema.ts";
 import deDE from "../modules/recipes/RecipesText/de-DE.ts";
@@ -257,23 +255,21 @@ describe("recipe schemas", () => {
   it("Nothing takes no fields", () => {
     expect(Nothing.parse({}).ok).toBe(true);
   });
-  it("ActionReply, ErrorReply, KeelFields and FieldsReply parse the api's replies", () => {
-    expect(ActionReply.parse({ ok: true, value: null }).ok).toBe(true);
-    expect(ActionReply.parse({ ok: false, value: null }).ok).toBe(false);
-    expect(ErrorReply.parse({ ok: false, error: { code: "keel.notFound", message: "x", data: null } }).ok).toBe(true);
+  it("ErrorReply is the api's KeelError answer; KeelFields narrows a keel.fields one", () => {
+    expect(ErrorReply.parse({ code: "keel.notFound", message: "x", data: null }).ok).toBe(true);
+    expect(ErrorReply.parse({ ok: false, error: { code: "keel.notFound", message: "x", data: null } }).ok).toBe(false);
     const fields = { code: "keel.fields", message: "invalid", data: { title: "Already in the box" } };
     expect(KeelFields.parse(fields).ok).toBe(true);
-    expect(FieldsReply.parse({ ok: false, error: fields }).ok).toBe(true);
-    expect(FieldsReply.parse({ ok: false, error: { ...fields, code: "other" } }).ok).toBe(false);
+    expect(KeelFields.parse({ ...fields, code: "other" }).ok).toBe(false);
   });
 });
 
 describe("kitchen service", () => {
-  it("names the three endpoints and kitchenApi builds a client for them", async () => {
+  it("names the three endpoints and kitchenApi calls the kitchen module for the route's value", async () => {
     expect(Object.keys(kitchen).sort()).toEqual(["add", "box", "favorite"]);
     const api = await simApi();
-    const r = await kitchenApi(location.origin).box({}, api.ctx);
-    expect(r.ok && r.value.results["kitchen.recipes"].value.recipes).toEqual([]);
+    const r = await kitchenApi.box({}, api.ctx);
+    expect(r.ok && r.value.recipes).toEqual([]);
     expect(api.sent).toEqual(["GET /api/recipes"]);
   });
 });
