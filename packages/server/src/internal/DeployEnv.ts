@@ -11,6 +11,12 @@ const PeerUrl = s.format("keel.peerUrl", s.string({ min: 1 }), {
   gen: { from: s.string({ min: 1 }), map: (host) => `http://${host}` },
 });
 
+/** At least 32 UTF-8 bytes (`KEEL_SECRET`, the `createApp({ secret })` floor). */
+const Secret = s.format("keel.secret", s.string({ min: 1 }), {
+  check: (v) => new TextEncoder().encode(v).length >= 32,
+  gen: { from: s.string({ min: 32 }), map: (v) => v },
+});
+
 /** A comma-separated list of http(s) origins (`KEEL_ALLOW_ORIGINS`, k.hosting): no `*`, no path. */
 const AllowOrigins = s.format("keel.allowOrigins", s.string({ min: 1 }), {
   check: (v) => v.split(",").every((o) => originOf(o.trim()) !== undefined),
@@ -19,7 +25,7 @@ const AllowOrigins = s.format("keel.allowOrigins", s.string({ min: 1 }), {
 
 /**
  * The production environment of a `node` deployable (k.topology Build): `PORT` (default 8080), `KEEL_ORIGIN` (the
- * public origin), `KEEL_SECRET` (32+ characters, shared by the app's deployables) and `KEEL_PEER_<NAME>` per peer, an
+ * public origin), `KEEL_SECRET` (32+ UTF-8 bytes, shared by the app's deployables) and `KEEL_PEER_<NAME>` per peer, an
  * absolute http(s) URL; `KEEL_ALLOW_ORIGINS`, the origins `createApp({ allow })` grants (k.hosting Allowed origins).
  */
 export const DeployEnv = (
@@ -34,7 +40,7 @@ export const DeployEnv = (
   s.object({
     PORT: s.int({ min: 0, max: 65535 }).optional(),
     KEEL_ORIGIN: s.string({ min: 1 }).optional(),
-    KEEL_SECRET: s.string({ min: 32 }),
+    KEEL_SECRET: Secret,
     KEEL_ALLOW_ORIGINS: AllowOrigins.optional(),
     ...Object.fromEntries(peers.map((p) => [peerKey(p), PeerUrl])),
   });

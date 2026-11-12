@@ -39,7 +39,10 @@ export async function runQueue(ctx: Ctx, signal: AbortSignal, module: string, ta
         x.l = true;
         x.n++;
       }
-      return { due: due.map((x) => ({ ...x })), next: Math.min(...st.q.filter((x) => !x.l).map((x) => x.at)) };
+      return {
+        due: due.map((x) => ({ ...x })),
+        next: st.q.reduce((m, x) => (x.l ? m : Math.min(m, x.at)), Number.POSITIVE_INFINITY),
+      };
     });
     if (signal.aborted) return;
     for (const x of due) {

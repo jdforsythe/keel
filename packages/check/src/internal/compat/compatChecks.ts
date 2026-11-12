@@ -139,8 +139,11 @@ function endpoints(surface: Surface, s: SurfaceService, ctx: Ctx): Diagnostic[] 
   });
 }
 
-/** Where route `r`'s schema for `found` is written, the refused field when the source spells it out. */
-function routeSpot(r: SurfaceRoute, method: string, found: Found, ctx: Ctx): Spot | null {
+/**
+ * Where route `r`'s schema for `found` is written, the refused field when the source spells it out (`exact`, the
+ * only spot a fix may edit).
+ */
+function routeSpot(r: SurfaceRoute, method: string, found: Found, ctx: Ctx): (Spot & { exact?: Spot }) | null {
   const file = ctx.project.find((f) => f.path === `${ctx.dir}${r.file}`);
   if (file === undefined) return null;
   const p = found.refusal.path;
@@ -148,7 +151,8 @@ function routeSpot(r: SurfaceRoute, method: string, found: Found, ctx: Ctx): Spo
   const inner = found.part === "output" ? (p[0] === "results" ? p.slice(3) : p.slice(1)) : p;
   const schema = routeSchemaAt(file, level, found.part, method, ctx.project);
   const start = keyAt(file, r.id);
-  return fieldAt(schema, inner, ctx.project) ?? fieldAt(schema, [], ctx.project) ?? { file, start, end: start };
+  const exact = fieldAt(schema, inner, ctx.project);
+  return exact === null ? (fieldAt(schema, [], ctx.project) ?? { file, start, end: start }) : { ...exact, exact };
 }
 
 /** E1562 for each base endpoint whose caller and module now sit in different deployables (k.compat Base). */
@@ -181,15 +185,14 @@ function base(current: Surface, before: Surface, topology: Topology | undefined,
         return [
           diag("E1562", ctx, spot, `${ctx.dir}${r.file}`, `${ep} ${SENT[found.part]} ${field}: ${id} refuses it`),
         ];
-      const fixable =
-        spot !== null &&
-        found.refusal.path.length > 0 &&
-        accepts(loosen(found.a, found.refusal.path), found.b) === null;
-      const src = spot?.file.source ?? "";
-      const end = spot?.end ?? 0;
+      const exact = spot?.exact;
+      const src = exact?.file.source ?? "";
+      const end = exact?.end ?? 0;
       const fix =
-        fixable && spot !== null
-          ? unifiedDiff(spot.file.path, src, `${src.slice(0, end)}.optional()${src.slice(end)}`)
+        exact !== undefined &&
+        found.refusal.path.length > 0 &&
+        accepts(loosen(found.a, found.refusal.path), found.b) === null
+          ? unifiedDiff(exact.file.path, src, `${src.slice(0, end)}.optional()${src.slice(end)}`)
           : undefined;
       return [diag("E1562", ctx, spot, `${ctx.dir}${r.file}`, `${ep} sends no ${field}; ${id} requires it`, fix)];
     });

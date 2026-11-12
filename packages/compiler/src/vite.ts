@@ -117,7 +117,7 @@ type Builder = { environments: Record<string, unknown>; build(environment: unkno
  *
  * With a `node` deployable, the dev server is `keel dev`'s one origin (k.topology Local topology): a request a `node`
  * deployable's route matches is answered by that deployable's dev app (`DEV_ENTRY`, `devMiddleware`), anything else by
- * Vite; a changed app source closes the dev apps and the next request loads them again.
+ * Vite; a changed app source closes the dev apps and the next request loads them again, after they have closed.
  *
  * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
  * stores the open page's dev entry last posted, to the server's own origin and those `KEEL_INSPECT_ORIGINS` lists.
@@ -162,19 +162,22 @@ export default function (): {
   const inspect = inspectMiddleware(() => root, origins);
   const written = new Map<string, string>();
   let devApps: DevApp[] = [];
+  /** The closing of the last dev apps: the next ones load after it, so two never run on one storage. */
+  let closed: Promise<unknown> = Promise.resolve();
   /** `keel dev`: every `node` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
   const dev = devMiddleware(async () => {
+    await closed;
     const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
     const apps: unknown = mod?.apps;
     devApps = (Array.isArray(apps) ? apps : []).filter(isDevApp).map(([, app, served]) => ({ app, served }));
     return devApps;
   });
-  /** Close the dev apps (their runners and streams) so the next request loads them again. */
+  /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
     const old = devApps;
     devApps = [];
     dev.reset();
-    for (const a of old) void a.app.close();
+    closed = Promise.allSettled([closed, ...old.map((a) => a.app.close())]);
     const mod = server?.moduleGraph.getModuleById(`\0${DEV_ENTRY}`);
     if (mod !== undefined) server?.moduleGraph.invalidateModule?.(mod);
   };

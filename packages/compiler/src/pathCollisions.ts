@@ -7,8 +7,9 @@ import type { Topology } from "./types/Topology.ts";
 /**
  * E1559 (k.topology Route table): a path served by two deployables. Reads every module's routes manifest without
  * evaluating it (`routeLiterals`); two literal paths collide when they match segment for segment, a `:param` matching
- * any other param. One E1559 per route after the first of its path in another deployable, at that route's id in its
- * `modules/<id>/routes.ts`, naming both routes. `root` is where package manifests resolve from.
+ * any other param, a trailing slash dropped as the router drops it. One E1559 per route after the first of its path
+ * in another deployable, at that route's id in its `modules/<id>/routes.ts`, naming both routes. `root` is where
+ * package manifests resolve from.
  */
 export function pathCollisions(files: readonly SourceFile[], topology: Topology, root?: string): Diagnostic[] {
   const owner = new Map<string, string>();
@@ -21,7 +22,7 @@ export function pathCollisions(files: readonly SourceFile[], topology: Topology,
     const module = id.split(".")[0] ?? id;
     const at = owner.get(module);
     if (typeof path !== "string" || at === undefined) continue;
-    const key = path.replace(/:[^/]+/g, ":");
+    const key = path.replace(/:[^/]+/g, ":").replace(/\/+$/, "");
     const first = seen.get(key);
     if (first === undefined) {
       seen.set(key, { id, at });

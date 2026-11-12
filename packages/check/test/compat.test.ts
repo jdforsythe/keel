@@ -170,4 +170,16 @@ describe("E1562", () => {
     );
     expect(run([routes, apiTs, more], { base: old, topology: SPLIT })).toEqual([]);
   });
+  it("an added required field the route source does not spell out is one E1562 with no fix", () => {
+    const literal = routesTs("    name: s.string(),\n    note: s.string(),");
+    const source = literal.source
+      .replace("const save = action({\n  input: s.object({", "const make = () =>\n  s.object({")
+      .replace("  }),\n}, async", "  })\nconst save = action({\n  input: make(),\n}, async");
+    const routes = f(literal.path, source);
+    const now = surface(data({ input: obj(["name", "note"]), body: obj(["name", "note"]) }, [routes, apiTs]));
+    const d = run([routes, apiTs, now], { base, topology: SPLIT });
+    expect(d.map((x) => [x.code, x.message, x.fix])).toEqual([
+      ["E1562", "a.save (base) sends no note; y.save requires it", undefined],
+    ]);
+  });
 });

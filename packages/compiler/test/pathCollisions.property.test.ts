@@ -42,6 +42,20 @@ describe("pathCollisions", () => {
       { seed: 1337, numRuns: 50 },
     );
   });
+
+  test("a path with a trailing slash collides with the same path without one (the router drops it)", () => {
+    fc.assert(
+      fc.property(fc.array(seg, { minLength: 1, maxLength: 3 }), (parts) => {
+        const p = `/${parts.join("/")}`;
+        const split = {
+          x: { modules: ["a"], adapter: "node" as const },
+          y: { modules: ["b"], adapter: "node" as const },
+        };
+        expect(pathCollisions([routes("a", p), routes("b", `${p}/`)], split).map((d) => d.code)).toEqual(["E1559"]);
+      }),
+      { seed: 1337, numRuns: 30 },
+    );
+  });
 });
 
 describe("serverEntryCode", () => {
