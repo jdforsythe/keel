@@ -717,12 +717,24 @@ importers:
         specifier: workspace:*
         version: link:../store
     devDependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/node':
         specifier: ^22
         version: 22.20.5

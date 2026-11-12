@@ -22,8 +22,12 @@
     "@keel/store": "workspace:*"
   },
   "devDependencies": {
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
+    "@keel/ui": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3"
   },
