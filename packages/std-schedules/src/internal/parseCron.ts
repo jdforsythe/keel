@@ -10,7 +10,7 @@ const FIELDS = [
 
 /**
  * Parse a five-field cron (std.schedules): each field `*`, `n`, `a-b` or a comma list of those, each with an optional
- * `/step` (`n/step` steps from `n` to the field's maximum). A failure is the reason, naming the field.
+ * `/step` (`n/step` steps from `n` to the field's maximum). A day field not starting with `*` is restricted. A failure is the reason, naming the field.
  */
 export function parseCron(text: string): Cron | string {
   const parts = text.trim().split(/\s+/);
@@ -32,5 +32,5 @@ export function parseCron(text: string): Cron | string {
   }
   if (parts.length > 5) return `extra field '${String(parts[5]).slice(0, 20)}'; cron has five`;
   const [mi = [], h = [], dom = [], mon = [], dow = []] = sets;
-  return { mi, h, dom, mon, dow, domR: parts[2] !== "*", dowR: parts[4] !== "*" };
+  return { mi, h, dom, mon, dow, domR: parts[2]?.startsWith("*") === false, dowR: parts[4]?.startsWith("*") === false };
 }

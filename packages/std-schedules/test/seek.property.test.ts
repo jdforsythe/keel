@@ -48,7 +48,7 @@ function matches(cron: string, w: number): boolean {
   if (!has(mi, m % 60, 0, 59) || !has(ho, Math.floor(m / 60), 0, 23) || !has(mo, p.month ?? 0, 1, 12)) return false;
   const a = has(dm, p.day ?? 0, 1, 31);
   const b = has(dw, (((day + 4) % 7) + 7) % 7, 0, 6);
-  return dm !== "*" && dw !== "*" ? a || b : a && b;
+  return !dm.startsWith("*") && !dw.startsWith("*") ? a || b : a && b;
 }
 /** The first fire minute after minute `tm` by scanning, within `limit` minutes. */
 function scan(cron: string, zone: string, tm: number, limit: number): number | undefined {

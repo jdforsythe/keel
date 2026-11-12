@@ -9,8 +9,8 @@ const Marks = s.record(s.number());
 /**
  * A schedule's runner (std.schedules Run, Restart). At start, an entry whose mark is older than its latest fire time
  * enqueues that one (`once`) or none (`skip`); an entry without a mark starts from now. At each fire time `t` it
- * enqueues `job` with key `<id>@<t>` (`t` in epoch ms), then stores `t` as the entry's mark under
- * `std.schedules.<module>`. When `signal` aborts it stops waiting and resolves.
+ * enqueues `job` with key `<id>@<t>` (`t` in epoch ms), then, once `enqueue` returns `ok`, stores `t` as the
+ * entry's mark under `std.schedules.<module>`; an `err` stores no mark and rejects. When `signal` aborts it stops waiting and resolves.
  */
 export async function runSchedule(
   ctx: Ctx,
@@ -25,7 +25,8 @@ export async function runSchedule(
   if (!read.ok) throw new Error(`std.schedules: ${key} does not hold schedule marks`);
   const marks = read.value;
   const fire = async (p: Planned, t: number): Promise<void> => {
-    await queue.enqueue(ctx, p.job, p.input, { key: `${p.id}@${t}` });
+    const r = await queue.enqueue(ctx, p.job, p.input, { key: `${p.id}@${t}` });
+    if (!r.ok) throw new Error(`std.schedules: enqueue ${p.job} failed: ${r.error.code}`);
     marks[p.id] = t;
     await ctx.storage.set(key, JSON.stringify(marks));
   };
