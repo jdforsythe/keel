@@ -6,31 +6,37 @@ import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { relPath } from "./relPath.ts";
 
+/** The surface `version` this keel writes and compares (k.compat Surface). */
+const VERSION = 1;
+
 /**
  * The base surface of `keel check --base <file>` (k.compat Base): the parsed file, from the project's files or else
- * `io.read` (the generated CI writes it outside the tree), resolved against `cwd`; `undefined` without the flag. A
- * missing or non-JSON file, or one that is not a `surface.json` (`{ data: { routes, services } }`), is E1052 naming `--base`.
+ * `io.read` (the generated CI writes it outside the tree), resolved against `cwd`; `undefined` without the flag. A file
+ * that is absent, not JSON, not a `surface.json` (`{ data: { routes, services } }`) or of another `version` is no base:
+ * one W1568 at the file, and no E1562 is checked.
  */
-export function baseInput(
-  input: Input,
-  io: Io,
-): { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly diag: Diag } {
-  if (input.base === undefined) return { ok: true, value: undefined };
-  const name = JSON.stringify(input.base.slice(0, 60));
-  const fail = (why: string) => ({
-    ok: false as const,
-    diag: makeDiag("E1052", `--base file ${why}: ${name}`, { see: "k.compat" }),
-  });
+export function baseInput(input: Input, io: Io): { readonly value: unknown; readonly warn?: Diag } {
+  if (input.base === undefined) return { value: undefined };
   const rel = relPath(io.cwd, input.base);
+  const none = {
+    value: undefined,
+    warn: makeDiag("W1568", `no base surface of version ${VERSION}; E1562 not checked`, {
+      path: rel,
+      line: 1,
+      col: 1,
+      see: "k.compat",
+    }),
+  };
   const source = projectFiles(io).find((f) => f.path === rel)?.source ?? io.read?.(input.base);
-  if (source === undefined) return fail("not found");
+  if (source === undefined) return none;
   let value: unknown;
   try {
     value = JSON.parse(source);
   } catch {
-    return fail("is not valid JSON");
+    return none;
   }
   const data = isRecord(value) ? value.data : undefined;
-  if (!isRecord(data) || !isRecord(data.routes) || !Array.isArray(data.services)) return fail("is not a surface.json");
-  return { ok: true, value };
+  if (!isRecord(data) || !isRecord(data.routes) || !Array.isArray(data.services) || data.version !== VERSION)
+    return none;
+  return { value };
 }

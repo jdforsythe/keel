@@ -10,7 +10,7 @@ const MAX_BYTES = 1_000_000;
 const BUILD_CONFIG = /(?:^|\/)(?:vite|vitest|stryker)\.config\.[cm]?[jt]s$/;
 /** A compiler artifact, `<dir>/.keel/<name>.json` at any depth: each project of a workspace has its own (rfc:0055). */
 const ARTIFACT = /(?:^|\/)\.keel\/[^/]+\.json$/;
-/** Generated deploy files and what decides which exist (k.topology Deploy files): `keel check` compares them (E1005). */
+/** Generated deploy files and what decides which exist (k.deploy Deploy files): `keel check` compares them (E1005). */
 const DEPLOY = /(?:^|\/)(?:deploy\/(?:[^/]+\/Dockerfile|compose\.yaml)|\.github\/workflows\/ci\.yml|turbo\.json)$/;
 const QUERY = (rel: string): boolean =>
   (CODE_FILE.test(rel) && !BUILD_CONFIG.test(rel)) ||

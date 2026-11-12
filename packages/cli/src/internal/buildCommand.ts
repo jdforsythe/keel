@@ -9,6 +9,8 @@ import { codeFiles } from "./codeFiles.ts";
 import { deployArtifactCount } from "./deployArtifactCount.ts";
 import { deployBuildWrites } from "./deployBuildWrites.ts";
 import { hostingDiags } from "./hostingDiags.ts";
+import { inWorkspace } from "./inWorkspace.ts";
+import { isError } from "./isError.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
@@ -21,7 +23,9 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
  * `keel build`: compile every app source of the root project (`isSourcePath`, the rule the Vite plugin and `keel
  * check` share, rfc:0050; nested projects by `projectDirs`, rfc:0059) with `@keel/compiler`. Diagnostics flow through unchanged; with no error, the `.keel/` artifacts
  * (`{ data, hash }`, sorted keys, read-only) are returned as writes, with `std.json` from `stdArtifact` after the
- * stdlib `deps` are imported (E1159; its E1158 too, rfc:0066; E1559 from `pathCollisions`; E1552, E1565 and E1566 from `hostingDiags`), and the deploy files of `topology.ts` (k.topology). Bundling is Vite's: the binary runs `vite build` when `vite.config.ts` exists.
+ * stdlib `deps` are imported (E1159; its E1158 too, rfc:0066; E1559 from `pathCollisions`; E1552, E1565 and E1566 from `hostingDiags`), and the deploy files of `topology.ts` (k.deploy; the CI workflow unless the project is an app inside a workspace).
+ * With no error and a host `Io.build`, the writes are applied and the disk half runs (`routes.json`, `surface.json`,
+ * the Vite builds), its diagnostics, stderr and exit code joining the result: `keel build` and MCP `build` run one path.
  */
 export async function buildCommand(io: Io): Promise<Outcome> {
   const project = projectFiles(io);
@@ -43,8 +47,8 @@ export async function buildCommand(io: Io): Promise<Outcome> {
       ? []
       : hostingDiags(topology, io.env ?? {}, project.find((f) => f.path === "topology.ts")?.source)),
   ];
-  const failed = diags.some((d) => typeof d.code === "string" && d.code.startsWith("E"));
-  const deploy = failed ? [] : deployBuildWrites(project);
+  const failed = diags.some(isError);
+  const deploy = failed ? [] : deployBuildWrites(project, !inWorkspace(io));
   const writes: Write[] = failed
     ? []
     : [
@@ -54,12 +58,16 @@ export async function buildCommand(io: Io): Promise<Outcome> {
         ].map(({ path, data, hash }) => ({ path, content: `${canonicalJson({ data, hash })}\n`, readonly: true })),
         ...deploy,
       ];
-  const errors = diags.filter((d) => typeof d.code === "string" && d.code.startsWith("E")).length;
   const artifacts = failed
     ? 0
     : ARTIFACTS.length + 1 + (topology === undefined ? 0 : deployArtifactCount(project, deploy));
-  return {
-    records: [...diags, summary("build", diags, { files: files.length, artifacts, errors })],
-    writes,
-  };
+  const done = (all: readonly OutRecord[]): OutRecord[] => [
+    ...all,
+    summary("build", all, { files: files.length, artifacts, errors: all.filter(isError).length }),
+  ];
+  if (failed || io.build === undefined) return { records: done(diags), writes };
+  // The disk half reads what the engine wrote, so the writes land first (`Io.build`).
+  io.apply?.(writes);
+  const post = await io.build(io.cwd);
+  return { records: done([...diags, ...post.diagnostics]), writes: [], stderr: post.stderr, code: post.code };
 }

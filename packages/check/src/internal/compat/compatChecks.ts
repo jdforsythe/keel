@@ -25,19 +25,11 @@ import { staleSource } from "./staleSource.ts";
 const SURFACE = /^((?:.*\/)?)\.keel\/surface\.json$/;
 /** What an endpoint without `params`/`query`/`body` sends: nothing (an empty JSON body decodes as `{}`, k.server). */
 const EMPTY = { type: "object", properties: {}, required: [], additionalProperties: false };
-/** Every error answer of a route (k.server): `err` of a public KeelError. */
+/** Every route's error answer (k.compat Surface): a public KeelError `{ code, message, data }`. */
 const ERROR_ANSWER = {
   type: "object",
-  properties: {
-    ok: { const: false },
-    error: {
-      type: "object",
-      properties: { code: { type: "string" }, message: { type: "string" }, data: {} },
-      required: ["code", "data", "message"],
-      additionalProperties: false,
-    },
-  },
-  required: ["error", "ok"],
+  properties: { code: { type: "string" }, message: { type: "string" }, data: {} },
+  required: ["code", "data", "message"],
   additionalProperties: false,
 };
 
@@ -51,11 +43,7 @@ type Found = {
 };
 const SENT: Readonly<Record<Part, string>> = { params: "params", search: "query", input: "body", output: "output" };
 
-const show = (path: readonly string[]): string => {
-  const inner =
-    path[0] === "results" && path[2] === "value" ? path.slice(3) : path[0] === "value" ? path.slice(1) : path;
-  return inner.length === 0 ? "(root)" : inner.join(".");
-};
+const show = (path: readonly string[]): string => (path.length === 0 ? "(root)" : path.join("."));
 
 /** The first part of a request `e` sends that route `r` refuses (params, search, then the action input). */
 function request(r: SurfaceRoute, e: SurfaceEndpoint): Found | null {
@@ -146,12 +134,9 @@ function endpoints(surface: Surface, s: SurfaceService, ctx: Ctx): Diagnostic[] 
 function routeSpot(r: SurfaceRoute, method: string, found: Found, ctx: Ctx): (Spot & { exact?: Spot }) | null {
   const file = ctx.project.find((f) => f.path === `${ctx.dir}${r.file}`);
   if (file === undefined) return null;
-  const p = found.refusal.path;
-  const level = found.part === "output" && p[0] === "results" ? (p[1] ?? r.id) : r.id;
-  const inner = found.part === "output" ? (p[0] === "results" ? p.slice(3) : p.slice(1)) : p;
-  const schema = routeSchemaAt(file, level, found.part, method, ctx.project);
+  const schema = routeSchemaAt(file, r.id, found.part, method, ctx.project);
   const start = keyAt(file, r.id);
-  const exact = fieldAt(schema, inner, ctx.project);
+  const exact = fieldAt(schema, found.refusal.path, ctx.project);
   return exact === null ? (fieldAt(schema, [], ctx.project) ?? { file, start, end: start }) : { ...exact, exact };
 }
 

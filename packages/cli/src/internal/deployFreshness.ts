@@ -15,7 +15,7 @@ const message = (have: string | null, want: string | null): string =>
 
 /**
  * E1005 for each generated deploy file (Dockerfiles, compose, the CI workflow) of each project in `project` that
- * differs from what `deployFiles` derives from its `topology.ts` (k.topology Deploy files), with the regenerated
+ * differs from what `deployFiles` derives from its `topology.ts` (k.deploy Deploy files), with the regenerated
  * file as the fix.
  */
 export function deployFreshness(project: readonly SourceFile[]): Diag[] {
@@ -33,7 +33,7 @@ export function deployFreshness(project: readonly SourceFile[]): Diag[] {
     for (const d of deployDrift(tree)) {
       const path = `${dir}${d.path}`;
       const fix = unifiedDiff(path, d.have, d.want);
-      out.push(makeDiag("E1005", message(d.have, d.want), { path, line: 1, col: 1, fix, see: "k.topology" }));
+      out.push(makeDiag("E1005", message(d.have, d.want), { path, line: 1, col: 1, fix, see: "k.deploy" }));
     }
   }
   return out;

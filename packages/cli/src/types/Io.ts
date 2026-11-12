@@ -1,3 +1,4 @@
+import type { Diag } from "../internal/Diag.ts";
 import type { FileScope } from "./FileScope.ts";
 import type { SourceFile } from "./SourceFile.ts";
 import type { Write } from "./Write.ts";
@@ -9,6 +10,8 @@ import type { Write } from "./Write.ts";
  * as a string they are served in one batch and the replies returned as stdout. `tty` and `env.KEEL_AGENT` select
  * the default format (OUTPUT.md). `fetch` is the network for `inspect` and `session ingest` (absent: I1055); `init` carries headers, method, body.
  * `read` returns the text of a file a flag names outside the loaded scope (`check --base`), relative to `cwd`, or undefined.
+ * `build` is the disk half of `build` after the engine's writes (`routes.json`, `surface.json`, the Vite builds), so
+ * `keel build` and MCP `build` run one path; absent, `build` writes the engine's artifacts only.
  */
 export type Io = {
   readonly cwd: string;
@@ -21,4 +24,7 @@ export type Io = {
   readonly tty?: boolean | undefined;
   readonly fetch?: ((url: string, init?: RequestInit) => Promise<Response>) | undefined;
   readonly read?: ((path: string) => string | undefined) | undefined;
+  readonly build?:
+    | ((cwd: string) => Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }>)
+    | undefined;
 };

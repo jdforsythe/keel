@@ -1,6 +1,7 @@
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import type { Checked } from "../Checked.ts";
+import { endpointRefs } from "../compat/endpointRefs.ts";
 import { samePath } from "../compat/samePath.ts";
 import { isTestPath } from "../isTestPath.ts";
 import { stemOf } from "../stemOf.ts";
@@ -10,7 +11,6 @@ import type { ModuleInfo } from "./ModuleInfo.ts";
 import { addEntryFix } from "./addEntryFix.ts";
 import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
-import { endpointPaths } from "./endpointPaths.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { prefixFix } from "./prefixFix.ts";
@@ -112,7 +112,7 @@ function access({ file, module, facts }: Scanned, man: Manifest, p: Project): Di
     notInDeps(target, sv.module.start, `module ${own} calls service ${t}, which is not in its deps`);
     const tm = target.manifest;
     const ids = new Set(
-      endpointPaths(sv.schema, file, p.files).flatMap((path) =>
+      endpointRefs(sv.schema, file, p.files).flatMap(({ path }) =>
         (p.paths.get(target) ?? []).filter((r) => samePath(r.path, path)).map((r) => r.id),
       ),
     );

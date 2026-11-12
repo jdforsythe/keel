@@ -40,7 +40,8 @@ function job(name: string, adapter: string): string[] {
     `          BASE_REF: ${GITHUB_EXPR("github.base_ref")}`,
     "        run: |",
     '          base="$RUNNER_TEMP/surface.json"',
-    '          if [ -n "$BASE_REF" ] && git show "origin/$BASE_REF:.keel/surface.json" > "$base" 2>/dev/null; then',
+    '          if [ -n "$BASE_REF" ]; then',
+    '            git show "origin/$BASE_REF:.keel/surface.json" > "$base" || rm -f "$base"',
     '            pnpm exec keel check --base "$base"',
     "          else",
     "            pnpm exec keel check",
@@ -54,9 +55,9 @@ function job(name: string, adapter: string): string[] {
 }
 
 /**
- * `.github/workflows/ci.yml` of a project outside the Keel monorepo (k.topology Deploy files): a job per deployable
+ * `.github/workflows/ci.yml` of a project outside the Keel monorepo (k.deploy Deploy files): a job per deployable
  * (sorted), run when its modules (a host's: and those of the clients it hosts) or the shared config change (every job on a push), that checks against the base
- * branch's surface, tests, builds, and builds an image it never pushes (`node`) or uploads `dist/<name>`.
+ * branch's surface (none there: W1568), tests, builds, and builds an image it never pushes (`node`) or uploads `dist/<name>`.
  */
 export function ciWorkflow(topology: DeployTopology): string {
   const names = Object.keys(topology).sort();

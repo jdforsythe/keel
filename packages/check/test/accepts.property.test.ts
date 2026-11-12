@@ -142,6 +142,7 @@ function widen(d: D): fc.Arbitrary<D> {
   }
 }
 
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const J = (d: D) => jsonSchemaOf(build(d).node);
 const sound = (a: D, b: D): void => {
   if (accepts(J(a), J(b)) !== null) return;
@@ -205,5 +206,29 @@ describe("accepts", () => {
       why: "extra",
     });
     expect(accepts(jsonSchemaOf(s.string({ max: 3 }).node), jsonSchemaOf(s.string().node))?.why).toBe("bounds");
+  });
+
+  it("takes a field an open object lacks only when it accepts any value; a closed object never has it", () => {
+    const obj = (fields: Parameters<typeof s.object>[0], closed = false) =>
+      jsonSchemaOf(s.object(fields, { closed }).node);
+    const optA = obj({ a: s.string().optional() });
+    expect(accepts(optA, obj({}))).toEqual({ path: ["a"], why: "open" });
+    expect(accepts(optA, obj({}, true))).toBeNull();
+    expect(accepts(obj({ a: s.json().optional() }), obj({}))).toBeNull();
+    expect(accepts(obj({ a: s.json().nullable().optional() }), obj({}))).toBeNull();
+  });
+
+  it("for an open B, a value carrying a key B lacks, of any JSON value, parses with every A that accepts B", () => {
+    const open = dArb.filter((d) => d.k === "object" && !d.closed);
+    fc.assert(
+      fc.property(open, dArb, fc.constantFrom("name", "note", "qty"), fc.jsonValue(), (b, a, k, x) => {
+        if (b.k !== "object" || b.f.some(([n]) => n === k) || accepts(J(a), J(b)) !== null) return;
+        fc.assert(
+          fc.property(gen(build(b)), (v) => build(a).parse(isObj(v) ? { ...v, [k]: x } : v).ok),
+          { seed: SEED, numRuns: 10 },
+        );
+      }),
+      { seed: SEED, numRuns: 300 },
+    );
   });
 });

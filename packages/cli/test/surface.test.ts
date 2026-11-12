@@ -131,27 +131,26 @@ describe("surfaceOf", () => {
 });
 
 describe("baseInput", () => {
-  const surface = JSON.stringify({ data: { routes: {}, services: [], sources: {} }, hash: "fnv1a:0" });
+  const surface = JSON.stringify({ data: { version: 1, routes: {}, services: [], sources: {} }, hash: "fnv1a:0" });
   const io = (files: Record<string, string>, outside: Record<string, string> = {}) => ({
     cwd: "/w",
     files: Object.entries(files).map(([path, source]) => ({ path: `/w/${path}`, source })),
     read: (p: string) => outside[p],
   });
 
-  it("is undefined without --base, the parsed file from the project or outside it, else E1052 naming --base", () => {
-    expect(baseInput({}, io({}))).toEqual({ ok: true, value: undefined });
-    expect(baseInput({ base: "base.json" }, io({ "base.json": surface }))).toEqual({
-      ok: true,
-      value: JSON.parse(surface),
-    });
-    expect(baseInput({ base: "../b.json" }, io({}, { "../b.json": surface })).ok).toBe(true);
-    for (const [files, why] of [
-      [{}, "not found"],
-      [{ "base.json": "{" }, "is not valid JSON"],
-      [{ "base.json": "{}" }, "is not a surface.json"],
-    ] as const) {
+  it("is undefined without --base, the parsed file from the project or outside it, else one W1568 at the file", () => {
+    expect(baseInput({}, io({}))).toEqual({ value: undefined });
+    expect(baseInput({ base: "base.json" }, io({ "base.json": surface }))).toEqual({ value: JSON.parse(surface) });
+    expect(baseInput({ base: "../b.json" }, io({}, { "../b.json": surface })).warn).toBeUndefined();
+    const older = surface.replace('"version":1', '"version":0');
+    for (const files of [{}, { "base.json": "{" }, { "base.json": "{}" }, { "base.json": older }]) {
       const r = baseInput({ base: "base.json" }, io(files));
-      expect(r.ok ? null : [r.diag.code, r.diag.message]).toEqual(["E1052", `--base file ${why}: "base.json"`]);
+      expect(r.value).toBeUndefined();
+      expect([r.warn?.code, r.warn?.path, r.warn?.message]).toEqual([
+        "W1568",
+        "base.json",
+        "no base surface of version 1; E1562 not checked",
+      ]);
     }
   });
 });

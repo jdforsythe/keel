@@ -24,9 +24,9 @@ const firstLine = (e: unknown): string => (e instanceof Error ? e.message : Stri
  * Node through a Vite SSR server rooted at `cwd` (app files compiled by `@keel/compiler`, as the build evaluates
  * them); `service` is replaced by a stand-in that records its options and calls nothing. `surfaceOf` reads the result;
  * the hash of every app file the evaluation read is recorded so `keel check` reports a stale surface (E1005). An
- * endpoints file that throws is `E1006 <file> failed to evaluate: <message>` on stderr and contributes nothing (a
- * throwing `routes.ts` is reported by the routes evaluation); a failure of the evaluator itself is code 1. A project
- * with neither writes an empty surface without starting the server.
+ * endpoints file that throws is a note `E1006 <file> failed to evaluate: <message>`, records no endpoint and fails the
+ * build (code 1, no file written; a throwing `routes.ts` is reported by the routes evaluation); a failure of the
+ * evaluator itself is code 1. A project with neither writes an empty surface without starting the server.
  */
 export async function surfaceRun(cwd: string): Promise<{ code: number; notes: string[] }> {
   const root = realpathSync(cwd);
@@ -99,6 +99,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
     } finally {
       await server?.close();
     }
+    if (notes.length > 0) return { code: 1, notes };
     const actionsOf = (def: object): unknown => (table instanceof WeakMap ? table.get(def) : undefined);
     const data = surfaceOf({ manifests, actionsOf, services: calls, sources });
     const content = `${canonicalJson({ data, hash: hashOf(data) })}\n`;

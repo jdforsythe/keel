@@ -24,6 +24,7 @@ import { pureTransaction } from "../rules/pureTransaction.ts";
 import { resourceViaMatch } from "../rules/resourceViaMatch.ts";
 import { revealInServerFile } from "../rules/revealInServerFile.ts";
 import { routeSchemaInferred } from "../rules/routeSchemaInferred.ts";
+import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
@@ -43,6 +44,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noNetFetchInApp,
   pathParamsMatch,
   bodyOnGetEndpoint,
+  sameAppBaseService,
   noThrow,
   noTryCatch,
   noAmbientCapability,

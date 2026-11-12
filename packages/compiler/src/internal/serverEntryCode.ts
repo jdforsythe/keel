@@ -6,7 +6,7 @@ const DOM = JSON.stringify("@keel/server/dom");
 const START = JSON.stringify("@keel/server/start");
 
 /**
- * The generated production entry of `node` deployable `name` (k.topology Build), a virtual module never written as a
+ * The generated production entry of `node` deployable `name` (k.deploy Build), a virtual module never written as a
  * source file: it installs the server DOM (`@keel/server/dom`, before any component module builds its templates), then
  * imports `topology.ts`, each of `modules`' `routes.ts` and `runners.server.ts` that exist under `root`, and calls
  * `start` (`@keel/server/start`) with them and its own folder.

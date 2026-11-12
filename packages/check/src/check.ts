@@ -1,6 +1,7 @@
 import path from "node:path";
 import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
+import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
 import { apiWithoutServer } from "./internal/apiWithoutServer.ts";
@@ -31,6 +32,16 @@ function topologyOf(dir: string, all: readonly SourceFile[], opts: CheckOptions)
   if (dir === "") return opts.topology;
   const manifest = all.find((f) => f.path === `${dir}topology.ts`);
   return manifest && parseTopology(manifest.source).topology;
+}
+
+/**
+ * The topology E1562 compares callers by (k.compat Base): with `<dir>topology.ts` present but unreadable (E1552), none
+ * (`{}`), so every caller and route count as split; else `topologyOf`.
+ */
+function compatTopology(dir: string, all: readonly SourceFile[], opts: CheckOptions): Topology | undefined {
+  const source = all.find((f) => f.path === `${dir}topology.ts`)?.source;
+  const unreadable = source !== undefined && topologyReadProblems(source).some(([code]) => code === "E1552");
+  return unreadable ? {} : topologyOf(dir, all, opts);
 }
 
 /**
@@ -125,7 +136,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
     ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),
-    ...compatChecks(files, opts.project ?? files, (dir) => topologyOf(dir, all, opts), opts.base),
+    ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base),
   );
 
   const diagnostics = normalize(out);

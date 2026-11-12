@@ -23,6 +23,11 @@ function fieldsInto(a: unknown, b: Shape & { kind: "object" }, path: readonly st
   return first(Object.keys(b.props).map((k) => () => accepts(a, b.props[k], [...path, k])));
 }
 
+/** A field `a` declares that object `b` lacks: a closed `b` never has it; an open one may, with any value. */
+function lacked(a: Shape & { kind: "object" }, b: Shape & { kind: "object" }, k: string, path: readonly string[]) {
+  return b.closed || accepts(a.props[k], {}) === null ? null : no([...path, k], "open");
+}
+
 function sameKind(a: Shape, b: Shape, path: readonly string[]): Refusal | null {
   switch (a.kind) {
     case "string":
@@ -52,7 +57,10 @@ function sameKind(a: Shape, b: Shape, path: readonly string[]): Refusal | null {
       const keys = Object.keys(a.props).sort();
       return first([
         ...[...a.required].sort().map((k) => () => (b.required.has(k) ? null : no([...path, k], "missing"))),
-        ...keys.map((k) => () => (Object.hasOwn(b.props, k) ? accepts(a.props[k], b.props[k], [...path, k]) : null)),
+        ...keys.map(
+          (k) => () =>
+            Object.hasOwn(b.props, k) ? accepts(a.props[k], b.props[k], [...path, k]) : lacked(a, b, k, path),
+        ),
         () => (a.closed && !b.closed ? no(path, "open") : null),
         ...Object.keys(b.props)
           .sort()
@@ -68,8 +76,8 @@ function sameKind(a: Shape, b: Shape, path: readonly string[]): Refusal | null {
  * Whether the JSON Schema `a` accepts `b` (k.compat Accepts): every value `b` admits parses with `a`, decided on
  * schema kinds, conservatively (`null` when it does; else the first refused field). `s.json()` accepts any; a union
  * `b` is accepted when each member is; a union `a` when one member accepts; literals and enums value by value; number
- * and string bounds inside; arrays and records by item; objects by required fields, field by field, and, when `a` is
- * closed, only a closed `b` with no other field. Two nodes of a kind it does not know are accepted only when equal.
+ * and string bounds inside; arrays and records by item; objects by required fields, field by field (a field an open
+ * `b` lacks only when `a`'s field accepts any value), and, when `a` is closed, only a closed `b` with no other field. Two nodes of a kind it does not know are accepted only when equal.
  */
 export function accepts(a: unknown, b: unknown, path: readonly string[] = []): Refusal | null {
   const A = shapeOf(a);

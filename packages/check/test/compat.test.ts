@@ -8,33 +8,13 @@ import { applyPatch } from "./support/applyPatch.ts";
 
 const SEED = 1337;
 const f = (path: string, source: string): SourceFile => ({ path, source });
-const ANSWER = {
-  type: "object",
-  properties: { ok: { const: true }, value: { anyOf: [{ type: "string" }, { type: "null" }] } },
-  required: ["ok", "value"],
-  additionalProperties: false,
-};
+const ANSWER = { anyOf: [{ type: "string" }, { type: "null" }] };
 const str = { type: "string" };
 const obj = (req: string[], opt: string[] = []) => ({
   type: "object",
   properties: Object.fromEntries([...req, ...opt].map((n) => [n, str])),
   required: req,
 });
-const getAnswer = (out: unknown) => ({
-  type: "object",
-  properties: {
-    id: { const: "y.save" },
-    results: {
-      type: "object",
-      properties: {
-        "y.save": { type: "object", properties: { ok: { const: true }, value: out }, required: ["ok", "value"] },
-      },
-      required: ["y.save"],
-    },
-  },
-  required: ["id", "results"],
-});
-
 const routesTs = (input: string, output = "s.object({ id: s.string() })") =>
   f(
     "modules/y/routes.ts",
@@ -58,7 +38,7 @@ const data = (sv: Sv, sources: readonly SourceFile[]) => ({
       file: "modules/y/routes.ts",
       params: null,
       search: null,
-      get: getAnswer(sv.out ?? obj(["id"])),
+      get: sv.out ?? obj(["id"]),
       actions: { POST: { input: sv.input, answer: ANSWER } },
     },
   },
@@ -138,7 +118,8 @@ describe("E1561", () => {
 });
 
 describe("E1562", () => {
-  const base = data({ input: obj(["name"]), body: obj(["name"]) }, []);
+  // A closed base body never sends a field it lacks, so making the added field optional clears it (k.compat Accepts).
+  const base = data({ input: obj(["name"]), body: { ...obj(["name"]), additionalProperties: false } }, []);
 
   it("an added required field is one E1562 at that field whose fix leaves none; none in one deployable", () => {
     const routes = routesTs("    name: s.string(),\n    note: s.string(),");
@@ -159,7 +140,7 @@ describe("E1562", () => {
   it("a removed output field a base endpoint requires is one E1562 with no fix; an added field is none", () => {
     const routes = routesTs("    name: s.string(),");
     const withTitle = obj(["id", "title"]);
-    const old = data({ input: obj(["name"]), body: obj(["name"]), endpointOut: getAnswer(withTitle) }, []);
+    const old = data({ input: obj(["name"]), body: obj(["name"]), endpointOut: withTitle }, []);
     const now = surface(data({ input: obj(["name"]), body: obj(["name"]) }, [routes, apiTs]));
     const d = run([routes, apiTs, now], { base: old, topology: SPLIT });
     expect(d.map((x) => [x.code, x.message, x.fix])).toEqual([
