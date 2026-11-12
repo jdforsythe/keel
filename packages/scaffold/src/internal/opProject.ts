@@ -19,7 +19,7 @@ import { commit } from "./commit.ts";
 import { fail } from "./fail.ts";
 import { inputs } from "./inputs.ts";
 
-/** `.gitignore` of a workspace project: build and tool output, and recorded user sessions (`.keel/sessions/`). `.keel/` is generated, deterministic and hash-checked (E1005), so it is committed, not ignored. */
+/** `.gitignore` of a project: build and tool output, and recorded user sessions (`.keel/sessions/`). `.keel/` is generated, deterministic and hash-checked (E1005), so it is committed, not ignored. */
 const GITIGNORE = "node_modules\ndist\n.turbo\ncoverage\nreports\n.stryker-tmp\n.keel-dev/\n.keel/sessions/\n";
 
 /** `scaffold project <name> [--adapter client|node|static] [--workspace]` (default `client`): root config, tokens, topology, module `app`, generated turbo, CI and deploy files (a `workspace` app, inside the Keel monorepo, gets `index.html` and `vitest.config.ts` instead, and no turbo, CI, deploy files or `.keel/`). */
@@ -40,11 +40,11 @@ export function opProject(input: unknown, files: ReadonlyMap<string, string>): R
     ["public/keel-mark.svg", keelMarkSvg()],
     ["modules/app/module.ts", moduleTs("app")],
     ["modules/app/routes.ts", routesTs()],
+    [".gitignore", GITIGNORE],
   ]);
   if (workspace) {
     writes.set("index.html", indexHtml(name));
     writes.set("vitest.config.ts", vitestConfigTs());
-    writes.set(".gitignore", GITIGNORE);
     return commit(files, writes);
   }
   const deploy = deployFiles({ web: { modules: ["app"], adapter } }, { ci: true });

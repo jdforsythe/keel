@@ -7,6 +7,7 @@ import type { Manifest } from "./types/Manifest.ts";
 import type { RouteActions } from "./types/RouteActions.ts";
 import type { RouteDef } from "./types/RouteDef.ts";
 import type { RouteFit } from "./types/RouteFit.ts";
+import type { RouteTitles } from "./types/RouteTitles.ts";
 
 type Rec = Readonly<Record<string, unknown>>;
 
@@ -15,9 +16,13 @@ type Rec = Readonly<Record<string, unknown>>;
  * compiles the manifest's own table; manifests never share validation or tables. `routes.href(id, params?, search?)`
  * links within this manifest only (RFC 0041). `routes.actions({ [id]: { POST, ... } })`, a statement after the
  * manifest, attaches each route's actions (RFC 0063; E1505, E1507). At compile time each loader's and action's
- * `params`/`search` must accept `Infer` of the entry's schemas (`RouteFit`, `ActionsFit`).
+ * `params`/`search` must accept `Infer` of the entry's schemas (`RouteFit`, `ActionsFit`), and a `title`'s `data` is
+ * the loader's `output` value (`RouteTitles`).
  */
-export function manifest<M extends Readonly<Record<string, RouteDef>>>(routes: M & RouteFit<M>): Manifest<M> {
+export function manifest<
+  M extends Readonly<Record<string, RouteDef<never>>>,
+  O extends Readonly<Record<string, unknown>> = Readonly<Record<string, unknown>>,
+>(routes: M & RouteFit<M> & RouteTitles<O>): Manifest<M> {
   const table = compileRoutes(routes);
   const href = (id: string, params: Rec = {}, search: Rec = {}): Href => hrefIn(table, id, params, search);
   const actions = (byId: Readonly<Record<string, RouteActions | undefined>>): void => attachActions(table, byId);

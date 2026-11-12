@@ -38,3 +38,16 @@ describe("project template carries the Keel brand (docs/BRAND.md)", () => {
     expect(html).not.toMatch(/https?:\/\//);
   });
 });
+
+describe("project template writes a .gitignore", () => {
+  const empty = new Map<string, string>();
+  for (const workspace of [false, true]) {
+    it(`ignores build and tool output and keeps .keel committed (workspace: ${workspace})`, () => {
+      const text = apply("project", { name: "shop", workspace }, empty).files.get(".gitignore") ?? "";
+      const lines = text.split("\n");
+      for (const l of ["node_modules", "dist", ".keel-dev/", ".keel/sessions/"]) expect(lines).toContain(l);
+      expect(lines).not.toContain(".keel/");
+      expect(lines).not.toContain(".keel/std.json");
+    });
+  }
+});

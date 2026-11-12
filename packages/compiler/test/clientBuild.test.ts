@@ -6,7 +6,7 @@ import path from "node:path";
 import { CLIENT_MANIFEST } from "@keel/compiler/entry/CLIENT_MANIFEST";
 import { ENTRY_PATH } from "@keel/compiler/entry/ENTRY_PATH";
 import keel from "@keel/compiler/vite";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let root = "";
 const saved = process.env.KEEL_DEPLOYABLE;
@@ -87,12 +87,11 @@ describe("@keel/compiler/vite config (client build of a node deployable)", () =>
 
   it("resolves the topology from the working directory when the config has no root", () => {
     process.env.KEEL_DEPLOYABLE = "api";
-    const cwd = process.cwd();
-    process.chdir(root);
+    const spy = vi.spyOn(process, "cwd").mockReturnValue(root);
     try {
       expect(keel().config({}, { command: "build" })?.build.outDir).toBe("dist/api");
     } finally {
-      process.chdir(cwd);
+      spy.mockRestore();
     }
   });
 });

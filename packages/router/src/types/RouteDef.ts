@@ -15,7 +15,7 @@ interface Base {
  * A page (with `path`) or a layout (without; its `component` renders `children`). Its guard has a `redirect` (E1508).
  * `component` and `errorElement` are method signatures so components may declare narrower props.
  */
-interface ViewDef extends Base {
+interface ViewDef<P> extends Base {
   readonly api?: never;
   readonly path?: string;
   readonly layout?: string;
@@ -23,7 +23,7 @@ interface ViewDef extends Base {
   component(props: RouteProps, slots?: undefined, ctx?: Ctx): Node;
   errorElement?(props: { readonly error: KeelError<string, unknown> }): Node;
   /** A path route's document title (k.head), given the route component's props; a layout takes none. */
-  title?(props: RouteProps): string;
+  title?(props: P): string;
 }
 
 /** An API route (k.api): answers JSON, has no view; a loader or actions attached with `routes.actions`. */
@@ -40,6 +40,7 @@ interface ApiDef extends Base {
 /**
  * One manifest entry (k.router, k.api): a page (`path`, `component`), a layout (`component`, no `path`) or an API
  * route (`api: true`, `path`, no view). An entry with neither `component` nor `api: true` is no `RouteDef` (E1510).
- * Actions are not part of an entry: `routes.actions({ [id]: { POST, ... } })` attaches them.
+ * Actions are not part of an entry: `routes.actions({ [id]: { POST, ... } })` attaches them. `P` is the props `title`
+ * receives; `manifest` takes `RouteDef<never>` entries so that `RouteTitles` alone types `title`.
  */
-export type RouteDef = ViewDef | ApiDef;
+export type RouteDef<P = RouteProps> = ViewDef<P> | ApiDef;

@@ -113,7 +113,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       diagLine(log.format, {
         code: "W1557",
         message:
-          "secure: not set, so the caller cookie is Secure only on https or x-forwarded-proto https; pass createApp({ secure: true })",
+          "secure: not set, so the caller cookie is Secure only on https; set an https KEEL_ORIGIN or pass createApp({ secure: true })",
       }),
     );
   const served = selectDeployable(opts.topology, table, modules, opts.deployable);

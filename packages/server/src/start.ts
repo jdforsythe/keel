@@ -37,6 +37,7 @@ export async function start(o: StartOptions): Promise<void> {
     line(`E1560 ${key} fails DeployEnv (${env.error.data.issues[0]?.rule ?? "invalid"}); set it where the image runs`);
     process.exit(1);
   }
+  const json = process.env.KEEL_FORMAT === "json";
   const std = join(o.dir, "std.json");
   const routes: Record<string, RouteDef> = {};
   for (const m of o.routes) Object.assign(routes, m.routes);
@@ -50,14 +51,23 @@ export async function start(o: StartOptions): Promise<void> {
     secret: env.value.KEEL_SECRET,
     assets: o.dir,
     artifacts: o.dir,
-    log: { format: process.env.KEEL_FORMAT === "json" ? "json" : "compact", write: line },
+    log: { format: json ? "json" : "compact", write: line },
     ...(existsSync(std) ? { std } : {}),
     ...(env.value.KEEL_ORIGIN === undefined ? {} : { origin: env.value.KEEL_ORIGIN }),
     ...(env.value.KEEL_ALLOW_ORIGINS === undefined
       ? {}
-      : { allow: env.value.KEEL_ALLOW_ORIGINS.split(",").map((o) => o.trim()) }),
+      : {
+          allow: env.value.KEEL_ALLOW_ORIGINS.split(",").map((o) => o.trim()),
+        }),
   });
-  const server = serve({ fetch: app.fetch, port: env.value.PORT ?? 8080 });
+  const port = env.value.PORT ?? 8080;
+  const server = serve({ fetch: app.fetch, port }, (a) => {
+    line(json ? JSON.stringify({ kind: "summary", name: "listen", port: a.port }) : `ok listening on port ${a.port}`);
+  });
+  server.once("error", (e) => {
+    line(`E1560 PORT ${port} fails to bind (${"code" in e ? e.code : "error"}); free it or set another PORT`);
+    process.exit(1);
+  });
   const stop = (): void => {
     server.close();
     void app.close().then(() => process.exit(0));

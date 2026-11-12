@@ -6,6 +6,7 @@ import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { codeFiles } from "./codeFiles.ts";
+import { deployArtifactCount } from "./deployArtifactCount.ts";
 import { deployBuildWrites } from "./deployBuildWrites.ts";
 import { hostingDiags } from "./hostingDiags.ts";
 import { makeDiag } from "./makeDiag.ts";
@@ -43,6 +44,7 @@ export async function buildCommand(io: Io): Promise<Outcome> {
       : hostingDiags(topology, io.env ?? {}, project.find((f) => f.path === "topology.ts")?.source)),
   ];
   const failed = diags.some((d) => typeof d.code === "string" && d.code.startsWith("E"));
+  const deploy = failed ? [] : deployBuildWrites(project);
   const writes: Write[] = failed
     ? []
     : [
@@ -50,11 +52,14 @@ export async function buildCommand(io: Io): Promise<Outcome> {
           ...ARTIFACTS.map((name) => ({ path: `.keel/${name}`, data: r.artifacts[name], hash: r.hashes[name] })),
           { path: ".keel/std.json", data: std.data, hash: std.hash },
         ].map(({ path, data, hash }) => ({ path, content: `${canonicalJson({ data, hash })}\n`, readonly: true })),
-        ...deployBuildWrites(project),
+        ...deploy,
       ];
   const errors = diags.filter((d) => typeof d.code === "string" && d.code.startsWith("E")).length;
+  const artifacts = failed
+    ? 0
+    : ARTIFACTS.length + 1 + (topology === undefined ? 0 : deployArtifactCount(project, deploy));
   return {
-    records: [...diags, summary("build", diags, { files: files.length, artifacts: writes.length, errors })],
+    records: [...diags, summary("build", diags, { files: files.length, artifacts, errors })],
     writes,
   };
 }

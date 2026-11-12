@@ -1,7 +1,5 @@
 import { manifest } from "@keel/router";
 import { ListParams } from "../api/ListParams.schema.ts";
-import { Todo } from "../api/Todo.schema.ts";
-import { TodoList } from "../api/TodoList.schema.ts";
 import AppShell from "./AppShell.tsx";
 import EditTodoPage from "./EditTodoPage.tsx";
 import ListError from "./ListError.tsx";
@@ -34,10 +32,7 @@ export const routes = manifest({
     loader: loadList,
     component: ListPage,
     layout: "todos.shell",
-    title: (p) => {
-      const list = TodoList.parse(p.data);
-      return list.ok ? list.value.name : "List";
-    },
+    title: (p) => p.data.name,
     errorElement: ListError,
   },
   "todos.edit": {
@@ -47,10 +42,7 @@ export const routes = manifest({
     component: EditTodoPage,
     layout: "todos.shell",
     guard: editable,
-    title: (p) => {
-      const todo = Todo.parse(p.data);
-      return todo.ok ? `Edit ${todo.value.title}` : "Edit todo";
-    },
+    title: (p) => `Edit ${p.data.title}`,
     errorElement: ListError,
   },
 });

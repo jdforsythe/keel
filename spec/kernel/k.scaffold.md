@@ -17,7 +17,7 @@ keel codemod place digest --to jobs --adapter node
 ```
 
 **Generators.** Each emits spec-conformant files only:
-- `project`: `package.json`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.topology); `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo and CI. `keel scaffold project <name>` writes under `<name>/`.
+- `project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.topology); `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo and CI. `keel scaffold project <name>` writes under `<name>/`.
 - `module`: `modules/<id>/module.ts` and `routes.ts`; adds the module to `topology.ts`.
 - `route`: manifest entry, `*.server.ts` loader, page component, route test; with `--api` an API entry (k.api), its loader and a JSON request test, no component.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
