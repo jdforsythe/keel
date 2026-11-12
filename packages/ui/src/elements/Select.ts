@@ -44,19 +44,20 @@ export function Select(
         (os ?? []).map((o) =>
           make("option", (opt) => {
             opt.setAttribute("value", o.value);
-            if (typeof v === "string" && v === o.value) opt.setAttribute("selected", "");
+            const cur = isGetter(props, "value") ? props.value : v;
+            if (typeof cur === "string" && cur === o.value) opt.setAttribute("selected", "");
             opt.appendChild(document.createTextNode(o.label));
           }),
         );
       let shown = props.options;
       appendChildren(el, optionsOf(shown));
-      // A new options array replaces the options; the selected value stays.
+      // A new options array replaces the options; a bound value is applied again, an unbound choice stays.
       if (isGetter(props, "options"))
         effect(() => {
           const os = props.options;
           if (os === shown) return;
           shown = os;
-          const keep = el.value;
+          const keep = isGetter(props, "value") && typeof props.value === "string" ? props.value : el.value;
           el.replaceChildren(...optionsOf(os));
           el.value = keep;
         });

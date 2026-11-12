@@ -215,3 +215,63 @@ describe("a control in a kept row", () => {
     );
   });
 });
+
+describe("Select options rebuilt", () => {
+  const opts = (xs: readonly string[]) => xs.map((v) => ({ value: v, label: v.toUpperCase() }));
+  /** The select built in an untracked scope inside a mount, so its getters are read by its own bindings only. */
+  const inRow = (make: () => Node): { host: HTMLElement; dispose: () => void } => {
+    const host = document.createElement("div");
+    const dispose = mount(() => {
+      const box: { node?: Node } = {};
+      scope(() => {}).run(() => {
+        box.node = make();
+      });
+      if (box.node === undefined) throw new Error("no node");
+      return box.node;
+    }, host);
+    return { host, dispose };
+  };
+  const settle = async (): Promise<void> => {
+    await Promise.resolve();
+    await Promise.resolve();
+  };
+  it("applies the bound value once its option exists", async () => {
+    const value = rootSignal("b");
+    const options = rootSignal(opts(["a", "b"]));
+    const { host, dispose } = inRow(() =>
+      Select({
+        label: "K",
+        get value() {
+          return value.get();
+        },
+        get options() {
+          return options.get();
+        },
+      }),
+    );
+    value.set("c");
+    await settle();
+    options.set(opts(["a", "b", "c"]));
+    await settle();
+    expect(host.querySelector("select")?.value).toBe("c");
+    dispose();
+  });
+  it("keeps the user's choice across a rebuild when value is not bound", async () => {
+    const options = rootSignal(opts(["a", "b"]));
+    const { host, dispose } = inRow(() =>
+      Select({
+        label: "K",
+        get options() {
+          return options.get();
+        },
+      }),
+    );
+    const el = host.querySelector("select");
+    if (el === null) throw new Error("no select");
+    el.value = "b";
+    options.set(opts(["a", "b", "c"]));
+    await settle();
+    expect(el.value).toBe("b");
+    dispose();
+  });
+});

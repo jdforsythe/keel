@@ -1,6 +1,7 @@
 // `start` prints one line when it listens and one coded line, then exits 1, when the port is taken.
+import { EventEmitter } from "node:events";
 import fs from "node:fs";
-import { createServer } from "node:http";
+import { Server, createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -82,5 +83,68 @@ describe("start output", () => {
     write.mockRestore();
     busy.close();
     expect(out).toEqual([`E1560 PORT ${port} fails to bind (EADDRINUSE); free it or set another PORT\n`]);
+  });
+
+  it("with KEEL_FORMAT=json a busy port is one diag record", async () => {
+    const busy = createServer();
+    await new Promise<void>((r) => busy.listen(0, r));
+    const addr = busy.address();
+    const port = typeof addr === "object" && addr !== null ? addr.port : 0;
+    vi.stubEnv("PORT", String(port));
+    vi.stubEnv("KEEL_SECRET", SECRET);
+    vi.stubEnv("KEEL_ORIGIN", "https://app.example");
+    vi.stubEnv("KEEL_FORMAT", "json");
+    const out: string[] = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((t) => {
+      out.push(String(t));
+      return true;
+    });
+    stubExit();
+    await start({ ...options, dir: built() });
+    await vi.waitFor(() => expect(exits).toEqual([1]));
+    write.mockRestore();
+    busy.close();
+    expect(out).toHaveLength(1);
+    const rec: unknown = JSON.parse(out.join(""));
+    expect(rec).toMatchObject({ kind: "diag", code: "E1560" });
+    expect(String(Reflect.get(Object(rec), "message"))).toContain(`PORT ${port} fails to bind (EADDRINUSE)`);
+  });
+
+  it("an error after the server is listening prints no bind failure and does not exit", async () => {
+    vi.stubEnv("PORT", "0");
+    vi.stubEnv("KEEL_SECRET", SECRET);
+    vi.stubEnv("KEEL_ORIGIN", "https://app.example");
+    const out: string[] = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((t) => {
+      out.push(String(t));
+      return true;
+    });
+    stubExit();
+    const seen: Server[] = [];
+    const onceOf = EventEmitter.prototype.once;
+    const once = vi.spyOn(EventEmitter.prototype, "once").mockImplementation(function (this: EventEmitter, ...a) {
+      if (this instanceof Server && a[0] === "error") seen.push(this);
+      return onceOf.apply(this, a);
+    });
+    const onOf = EventEmitter.prototype.on;
+    const on = vi.spyOn(EventEmitter.prototype, "on").mockImplementation(function (this: EventEmitter, ...a) {
+      if (this instanceof Server && a[0] === "error") seen.push(this);
+      return onOf.apply(this, a);
+    });
+    const sig = vi.spyOn(process, "once");
+    await start({ ...options, dir: built() });
+    await vi.waitFor(() => expect(out.some((l) => l.startsWith("ok listening on port "))).toBe(true));
+    const stop = sig.mock.calls.find((c) => c[0] === "SIGTERM")?.[1];
+    sig.mockRestore();
+    once.mockRestore();
+    on.mockRestore();
+    expect(seen.length).toBeGreaterThan(0);
+    const late = Object.assign(new Error("late"), { code: "ECONNRESET" });
+    for (const srv of seen) srv.emit("error", late);
+    expect(exits).toEqual([]);
+    write.mockRestore();
+    if (typeof stop === "function") stop();
+    await vi.waitFor(() => expect(exits).toEqual([0]));
+    expect(out.some((l) => l.includes("fails to bind"))).toBe(false);
   });
 });

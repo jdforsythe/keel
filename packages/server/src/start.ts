@@ -5,6 +5,7 @@ import { createCtx } from "@keel/ctx";
 import { type RouteDef, manifest } from "@keel/router";
 import { createApp } from "@keel/server";
 import { DeployEnv } from "./internal/DeployEnv.ts";
+import { diagLine } from "./internal/diagLine.ts";
 import type { StartOptions } from "./types/StartOptions.ts";
 
 const line = (text: string): void => {
@@ -31,13 +32,19 @@ export async function start(o: StartOptions): Promise<void> {
     const v = process.env[k];
     if (v !== undefined) given[k] = v;
   }
+  const json = process.env.KEEL_FORMAT === "json";
+  const format = json ? "json" : "compact";
   const env = DeployEnv(peers).decodeStrings(given);
   if (!env.ok) {
     const key = String(env.error.data.issues[0]?.path[0] ?? "environment");
-    line(`E1560 ${key} fails DeployEnv (${env.error.data.issues[0]?.rule ?? "invalid"}); set it where the image runs`);
+    line(
+      diagLine(format, {
+        code: "E1560",
+        message: `${key} fails DeployEnv (${env.error.data.issues[0]?.rule ?? "invalid"}); set it where the image runs`,
+      }),
+    );
     process.exit(1);
   }
-  const json = process.env.KEEL_FORMAT === "json";
   const std = join(o.dir, "std.json");
   const routes: Record<string, RouteDef> = {};
   for (const m of o.routes) Object.assign(routes, m.routes);
@@ -64,8 +71,15 @@ export async function start(o: StartOptions): Promise<void> {
   const server = serve({ fetch: app.fetch, port }, (a) => {
     line(json ? JSON.stringify({ kind: "summary", name: "listen", port: a.port }) : `ok listening on port ${a.port}`);
   });
-  server.once("error", (e) => {
-    line(`E1560 PORT ${port} fails to bind (${"code" in e ? e.code : "error"}); free it or set another PORT`);
+  // Only an error before the server listens is the bind failure.
+  server.on("error", (e) => {
+    if (server.listening) return;
+    line(
+      diagLine(format, {
+        code: "E1560",
+        message: `PORT ${port} fails to bind (${"code" in e ? e.code : "error"}); free it or set another PORT`,
+      }),
+    );
     process.exit(1);
   });
   const stop = (): void => {
