@@ -41,7 +41,7 @@ const ROWS: readonly Row[] = [
     "E1005",
     "hand edit to generated output (.keel/, turbo.json, CI workflows, Dockerfiles, API schemas), a .keel/ file older than its sources, or one the compiler does not write",
     "Each .keel/ is compared with its project's sources; routes.json with the literal ids, paths and guards in routes.ts.",
-    "revert the file and regenerate; remove a file the compiler does not write",
+    "run keel build; revert a hand edit; remove a file the compiler does not write",
     "k.compiler",
   ],
   [

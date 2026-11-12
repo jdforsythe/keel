@@ -26,7 +26,7 @@ function parse(text: string): { ok: true; value: unknown } | { ok: false } {
  * in `expected`), else E1005 (not among the compiled artifacts); then `{ data, hash }` in canonical JSON plus a
  * newline, with `hash` the content hash of `data`. A file with no `data` key (for example `{"hash":"abc"}`) is
  * malformed: reported, never hashed, no diff. A self-consistent file whose hash is not the expected one (forged or
- * stale) must be regenerated (no diff). One whose expected hash is `null` (`routes.json` beside an evaluated
+ * stale) must be rebuilt by `keel build` (no diff). One whose expected hash is `null` (`routes.json` beside an evaluated
  * `routes.ts`) is compared with the manifests' literals (rfc:0059): a mismatch is E1005, and parts that are not literals
  * are W1005, named. `surface.json` (k.compat) is derived by evaluation: intact when every source it records is unchanged
  * in `sources`. When only the bytes differ (data and hash intact) the fix restores them.
@@ -78,10 +78,10 @@ export function generatedEdits(
     const message = !known
       ? `${shown} is not among the compiled artifacts; remove it`
       : off !== undefined && intact
-        ? `${shown} differs from routes.ts at "${off.slice(0, 24)}"; regenerate`
+        ? `${shown} differs from routes.ts at "${off.slice(0, 24)}"; run keel build`
         : consistent && !intact
-          ? `generated ${shown} does not match its sources; regenerate`
-          : `hand edit to generated ${shown}; revert and regenerate`;
+          ? `generated ${shown} does not match its sources; run keel build`
+          : `hand edit to generated ${shown}; revert and run keel build`;
     const base: Diagnostic = { kind: "diag", code: "E1005", ...at, message };
     out.push(intact && off === undefined ? { ...base, fix: unifiedDiff(file.path, file.source, canonical) } : base);
   }

@@ -63,7 +63,7 @@ describe.each([
   it("an added route is E1005 naming it, with no fix", () => {
     const ds = at(run(project(prefix, { ...home, "m.admin": entry({ path: "/admin" }) })), "E1005", json);
     expect(ds).toHaveLength(1);
-    expect(ds[0]?.message).toBe('.keel/routes.json differs from routes.ts at "m.admin"; regenerate');
+    expect(ds[0]?.message).toBe('.keel/routes.json differs from routes.ts at "m.admin"; run keel build');
     expect(ds[0]?.fix).toBeUndefined();
   });
 
