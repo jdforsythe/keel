@@ -74,10 +74,16 @@ test("E1562: a change that no base endpoint refuses (an added optional field) is
   expect(keel(dir, ["check", "--base", base]).records.some((r) => r.kind === "diag" && r.code === "E1562")).toBe(false);
 });
 
-test("E1562: a file named by `--base` that is not a surface is an error, not a pass", () => {
-  // untestable beyond the clause text: the spec names no code for an unreadable base; asserted only as not-a-clean-exit.
+test("a base file absent, unreadable or of another `version` is W1568 and no E1562: a file that is not a surface is one W1568 and exits 0", () => {
+  // k.compat Base: "a base file absent, unreadable or of another `version` is W1568 and no E1562".
+  // `{}` holds no `version: 1` (another version); `not json` is unreadable as a surface.
   const dir = materialize(project({ split: true }));
   dirs.push(dir);
-  write(dir, { "bad-base.json": "{}" });
-  expect(keel(dir, ["check", "--base", "bad-base.json"]).status).not.toBe(0);
+  write(dir, { "bad-base.json": "{}", "text-base.json": "not json" });
+  for (const base of ["bad-base.json", "text-base.json"]) {
+    const run = keel(dir, ["check", "--base", base]);
+    expect(diags(run, "W1568"), base).toHaveLength(1);
+    expect(diags(run, "E1562"), base).toEqual([]);
+    expect(run.status, base).toBe(0);
+  }
 });
