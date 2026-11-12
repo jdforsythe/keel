@@ -544,3 +544,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 ## Batch 4, 2026-11-12 (tasks/0477-batch4)
 - [ ] 0477 batch 4: S3 leftovers, the RFC 0091 Amendment (0466, 0468, 0471), S4 prep, mutation for batches 2 and 3 · tasks/0477-batch4/PLAN.md
 - [ ] 0478 std-channels: every cookieless caller has caller `""`, so all of them together share one `perCaller` allowance (8 streams per process); decide whether cookieless opens get their own bound or are refused · std-channels · std.channels
+- [ ] 0479 std-offline: the outbox sends through `service({ base: origin })`, so a 502 `keel.unreachable` from its own app is `api.status` and the entry ends `failed`, though the write never reached a store; treat that answer as retryable (stay `queued`), or let the outbox send through a `module` service · std-offline, services · std.offline, k.services
+- [ ] 0480 std-offline: an `outbox` endpoint that declares no 409 error gets a null conflict body, so a real conflict is resent once and ends `failed` with no head; refuse such an endpoint (a throw beside E2651 and a check rule) · std-offline · std.offline
+- [ ] 0481 spec: std.offline writes `Write` as `s.number({ int: true, min: 0 })`, an option `s.number` does not take; the package uses `s.int({ min: 0 })`; correct the sentence · spec · std.offline
+
