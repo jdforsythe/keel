@@ -47,6 +47,9 @@ const load = async <T>(ctx: SimCtx, id: string): Promise<Snapshot<T> | undefined
   return isSnapshot<T>(parsed) ? parsed : undefined;
 };
 
+export const ItemsState = s.object({ items: s.array(s.string()) });
+export const TitleState = s.object({ title: s.string() });
+
 const Title = s.object({ title: s.string() });
 const Text1 = s.object({ text: s.string() });
 

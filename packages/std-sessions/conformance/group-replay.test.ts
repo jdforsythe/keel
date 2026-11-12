@@ -4,13 +4,15 @@
 import { openGroup, replayGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, type Step, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
+import { ItemsState, SEED, type Step, TitleState, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
 
 const word = fc.stringMatching(/^[a-z]{1,6}$/);
 const user = fc.constantFrom<0 | 1>(0, 1);
 const stepArb: fc.Arbitrary<Step> = fc.oneof(
   fc.tuple(user, word).map(([u, v]): Step => ({ u, do: "note", v })),
-  fc.tuple(user, fc.constantFrom("write", "rename", "probe" as const)).map(([u, d]): Step => ({ u, do: d })),
+  fc
+    .tuple(user, fc.constantFrom<"write" | "rename" | "probe">("write", "rename", "probe"))
+    .map(([u, d]): Step => ({ u, do: d })),
   fc.tuple(user, fc.boolean()).map(([u, b]): Step => ({ u, do: "online", b })),
   fc.integer({ min: 1, max: 400 }).map((advance): Step => ({ advance })),
 );
@@ -21,11 +23,12 @@ const seeded = {
 
 async function record(script: readonly Step[]) {
   const g = await openGroup(groupOptions(SEED, 2, seeded));
-  await drive(g, script);
-  await drive(g, [
-    { u: 0, do: "refresh" },
-    { u: 1, do: "refresh" },
-  ]);
+  // Replay orders inputs by `at`, then user index (std.multi), so live inputs of different users get distinct `at`s.
+  await drive(
+    g,
+    script.flatMap((st): Step[] => [st, { advance: 1 }]),
+  );
+  await drive(g, [{ u: 0, do: "refresh" }, { advance: 1 }, { u: 1, do: "refresh" }]);
   const liveState = [await g.user(0).state(), await g.user(1).state()];
   const liveTitle = (await g.user(0).find("board.title")).text;
   const liveItems = (await g.user(0).find("board.items")).text;
@@ -38,8 +41,12 @@ describe("std.multi: replayGroup", () => {
       fc.asyncProperty(fc.array(stepArb, { maxLength: 8 }), async (script) => {
         const live = await record(script);
         const r = await replayGroup(live.group, { user: USER, serve });
-        expect(r.server.board?.state).toEqual({ title: live.liveTitle });
-        expect(r.server.log?.state.items.join(",")).toBe(live.liveItems);
+        // `server` holds the stores stored under `keel.store.<id>`: `board` was seeded, `log` is stored once saved.
+        const board = TitleState.parse(r.server.board?.state);
+        expect(board.ok && board.value.title).toBe(live.liveTitle);
+        const log = ItemsState.parse(r.server.log?.state);
+        if (log.ok) expect(log.value.items.join(",")).toBe(live.liveItems);
+        else expect(live.liveItems).toBe("");
       }),
       { seed: 1337, numRuns: 4 },
     );

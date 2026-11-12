@@ -9,7 +9,9 @@ const word = fc.stringMatching(/^[a-z]{1,6}$/);
 const user = fc.constantFrom<0 | 1>(0, 1);
 const stepArb: fc.Arbitrary<Step> = fc.oneof(
   fc.tuple(user, word).map(([u, v]): Step => ({ u, do: "note", v })),
-  fc.tuple(user, fc.constantFrom("refresh", "write", "rename", "probe" as const)).map(([u, d]): Step => ({ u, do: d })),
+  fc
+    .tuple(user, fc.constantFrom<"refresh" | "write" | "rename" | "probe">("refresh", "write", "rename", "probe"))
+    .map(([u, d]): Step => ({ u, do: d })),
   fc.tuple(user, fc.boolean()).map(([u, b]): Step => ({ u, do: "online", b })),
   fc.integer({ min: 1, max: 400 }).map((advance): Step => ({ advance })),
 );

@@ -6,7 +6,7 @@
 import { openGroup, replayGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
+import { ItemsState, SEED, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
 
 type Write = { readonly u: 0 | 1; readonly note: string; readonly gap: number };
 const writeArb: fc.Arbitrary<Write> = fc.record({
@@ -44,7 +44,8 @@ describe("std.multi: replay order", () => {
         expected.sort((a, b) => a.at - b.at || a.u - b.u || a.idx - b.idx);
 
         const r = await replayGroup(group, { user: USER, serve });
-        expect(r.server.log?.state.items).toEqual(expected.map((e) => e.text));
+        const log = ItemsState.parse(r.server.log?.state);
+        expect(log.ok && log.value.items).toEqual(expected.map((e) => e.text));
       }),
       { seed: 1337, numRuns: 5 },
     );

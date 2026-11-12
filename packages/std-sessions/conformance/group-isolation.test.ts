@@ -32,15 +32,16 @@ describe("std.multi: users are isolated", () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), fc.constantFrom<0 | 1>(0, 1), async (note, who) => {
         const g = await openGroup(groupOptions(SEED));
-        await drive(g, [{ u: who, do: "note", v: note }]);
         const other = who === 0 ? 1 : 0;
+        const otherBefore = await g.user(other).state();
+        await drive(g, [{ u: who, do: "note", v: note }]);
         const mine = await g.user(who).find("board.local");
         const theirs = await g.user(other).find("board.local");
-        const states = [await g.user(who).state(), await g.user(other).state()];
+        const otherAfter = await g.user(other).state();
         await g.stop();
         expect(mine.text).toBe(note);
         expect(theirs.text).toBe("");
-        expect(JSON.stringify(states[1])).not.toContain(note);
+        expect(otherAfter).toEqual(otherBefore);
       }),
       { seed: 1337, numRuns: 4 },
     );
