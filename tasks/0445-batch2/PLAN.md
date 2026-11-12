@@ -22,10 +22,12 @@
 
 - lane C reported (0444, 0398, 0399, 0379): compiler test spies `process.cwd` for the no-root case; cli `deployArtifactCount` (moved to its own file by the orchestrator for S0001); server `start.ts` listening line and E1560 busy port, test `test/startListen.test.ts`; W1557 names an https `KEEL_ORIGIN`. cli 557, server 475, compiler 938 pass. Server 17,417 B of 17,408 B: re-base at step 5 (D7 rule). Spec sentences added by the orchestrator: k.head (title `data` typed from `output`), k.scaffold (`.gitignore`), k.topology (D4). Changesets: cli patch, server patch.
 
+- 0389 done: `packages/server/src/internal/stripHop.ts` is the one header list for both directions; a forwarded response drops hop-by-hop, `connection`-named, `content-encoding` and `content-length` headers; `test/forwardResponseHeaders.test.ts`; server 477 pass, 17,490 B (re-base at step 5). k.topology sentence corrected and the section trimmed to stay at 1,500 tokens. Changeset: server patch.
+
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green
 - [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
 - [ ] golden-1 list page: focus stays on the toggled control (test)
 
 ## Next action
-Collect lane A. Then commit wave 1 by explicit path, start step 3 (wave 2: 0409, 0431, 0440, 0443, 0389). File the follow-up: `title` `params`/`search` typing.
+Collect lane A. Then wave 2 rest (0409, 0431, 0440, 0443). File the follow-up: `title` `params`/`search` typing. Attribute the uncommitted `packages/server/vitest.stryker.config.mjs` and `packages/compiler/vitest.mutate.config.ts` changes.
