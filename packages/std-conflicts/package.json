@@ -17,13 +17,13 @@
   },
   "dependencies": {
     "@keel/cli": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/std-sessions": "workspace:*",
     "@keel/store": "workspace:*"
   },
   "devDependencies": {
     "@keel/ctx": "workspace:*",
-    "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
