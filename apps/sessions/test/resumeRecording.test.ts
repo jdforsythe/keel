@@ -7,10 +7,10 @@ import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import type { Slots } from "@keel/runtime-dom";
-import { resume } from "@keel/runtime-dom/ops";
 import { createApp } from "@keel/server";
 import { Session, record, session } from "@keel/std-sessions";
 import { routes as sessions } from "@keel/std-sessions/routes";
+import { resumeDocument } from "@keel/testing";
 import { Box, Button } from "@keel/ui";
 import { describe, expect, it } from "vitest";
 import topology from "../topology.ts";
@@ -54,18 +54,14 @@ describe("ops resume recording", () => {
       deployable: "sessions",
     });
     const res = await app.fetch(new Request(`${location.origin}/drill`, { headers: { accept: "text/html" } }));
-    const body = /<body>([\s\S]*)<\/body>/.exec(await res.text())?.[1] ?? "";
-    document.body.innerHTML = body.replace(/<script type="module"[^>]*><\/script>/, "");
-
     const ctx = createCtx({ mode: "sim", seed: 1337 });
-    expect(resume(document.body, { "ops.drill": Drill }, { ctx }).warnings).toEqual([]);
-    const button = document.getElementById("ops.drill.boom");
-    if (button === null) throw new Error("fixture: no server button");
-    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    await Promise.resolve();
+    const t = await resumeDocument(await res.text(), { routes, ctx });
+    expect(t.find("ops.drill.boom").text).toBe("Boom");
+    await t.fire("ops.drill.boom", { type: "click" });
+    // The root Boundary replaced the button with its error marker, so it is gone by id. The marker itself and a second
+    // click on the detached button are not reachable through the handle.
+    expect(() => t.find("ops.drill.boom")).toThrow(/^E1705 /);
 
-    expect(document.querySelector('pre[data-k-error="ops.drill.boom"]')).not.toBeNull();
     const taken = session(ctx).taken();
     expect(taken).toHaveLength(1);
     const [put] = taken;
@@ -81,6 +77,6 @@ describe("ops resume recording", () => {
     );
     expect(posted.status).toBeLessThan(300);
     record(ctx).stop();
-    document.body.innerHTML = "";
+    t.dispose();
   });
 });

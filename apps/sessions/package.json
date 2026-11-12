@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "keel build",
-    "check": "tsc --noEmit && biome check modules test",
+    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
     "start": "node --experimental-webstorage --localstorage-file=.sessions.storage --disable-warning=ExperimentalWarning dist/sessions/server.mjs"
   },

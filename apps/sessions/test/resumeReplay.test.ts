@@ -10,11 +10,11 @@ import type { Ctx } from "@keel/ctx";
 import { computed, effect, signal } from "@keel/reactive";
 import { manifest } from "@keel/router";
 import type { Slots } from "@keel/runtime-dom";
-import { resume } from "@keel/runtime-dom/ops";
 import { createApp } from "@keel/server";
 import type { Session } from "@keel/std-sessions";
 import { record, replay, session } from "@keel/std-sessions";
 import { routes as sessions } from "@keel/std-sessions/routes";
+import { resumeDocument } from "@keel/testing";
 import { Box, Button, Text } from "@keel/ui";
 import { describe, expect, it } from "vitest";
 import topology from "../topology.ts";
@@ -53,10 +53,8 @@ const fxRoutes = manifest({ "ops.fx": { path: "/fx", component: Fx }, ...session
 
 /** Serve `path` with createApp, resume its island under the page's ctx, click `button`; the uploaded session. */
 async function recordedAfterResume(
-  appRoutes: typeof bindRoutes | typeof fxRoutes,
+  appRoutes: Parameters<typeof resumeDocument>[1]["routes"],
   path: string,
-  island: string,
-  component: typeof Bind,
   button: string,
 ): Promise<Session> {
   const app = await createApp({
@@ -66,24 +64,19 @@ async function recordedAfterResume(
     deployable: "sessions",
   });
   const res = await app.fetch(new Request(`${location.origin}${path}`, { headers: { accept: "text/html" } }));
-  const body = /<body>([\s\S]*)<\/body>/.exec(await res.text())?.[1] ?? "";
-  document.body.innerHTML = body.replace(/<script type="module"[^>]*><\/script>/, "");
   const ctx = createCtx({ mode: "sim", seed: 1337 });
-  expect(resume(document.body, { [island]: component }, { ctx }).warnings).toEqual([]);
-  const el = document.getElementById(button);
-  if (el === null) throw new Error(`fixture: no server ${button}`);
-  el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-  await Promise.resolve();
+  const t = await resumeDocument(await res.text(), { routes: appRoutes, ctx });
+  await t.fire(button, { type: "click" });
   const [put] = session(ctx).taken();
   if (put === undefined) throw new Error("no upload");
   record(ctx).stop();
-  document.body.innerHTML = "";
+  t.dispose();
   return put.session;
 }
 
 describe("resume recording replays", () => {
   it("replays a session recorded after resume to the same fingerprint", async () => {
-    const recorded = await recordedAfterResume(bindRoutes, "/bind", "ops.bind", Bind, "ops.bind.go");
+    const recorded = await recordedAfterResume(bindRoutes, "/bind", "ops.bind.go");
     expect(recorded.error?.code).toBe("keel.unexpected");
     expect(recorded.error?.data).toEqual({ at: "ops.bind.list" });
     const out = await replay(recorded, { routes: bindRoutes });
@@ -93,7 +86,7 @@ describe("resume recording replays", () => {
   });
 
   it("replays a page component's own effect throw recorded after resume to the same fingerprint", async () => {
-    const recorded = await recordedAfterResume(fxRoutes, "/fx", "ops.fx", Fx, "ops.fx.go");
+    const recorded = await recordedAfterResume(fxRoutes, "/fx", "ops.fx.go");
     expect(recorded.error?.code).toBe("keel.unexpected");
     expect(recorded.error?.data).toEqual({ at: "" });
     const out = await replay(recorded, { routes: fxRoutes });
