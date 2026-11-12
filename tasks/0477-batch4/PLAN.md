@@ -38,6 +38,10 @@
 - RFC 0092 testing lane committed: `resumeDocument`, E1720. Finding 0482 (high): golden-1's served pages do not resume (a layout island gets no children; no server region markers for `For`/`If`); held as an expected failure in `apps/golden-1/test/resumeDocument.test.ts`.
 - S4 conflicts lane committed and green; every S4 package passes its conformance; eleven `it.todo` tests wait on the two spec sentences recorded in the S4 plan. 0484: replay order at one `at` hides cross-user races.
 - still running: RFC 0092 check/compiler/cli lane (`@keel/check` measured 43,907 B of 43,520 in flight).
+- RFC 0092 check/compiler/cli lane committed: sound `accepts`, GET needs a loader, E1567 (`check/src/rules/sameAppBaseService.ts`), W1568, E1559 in `keel check`, E1006 for a throwing endpoints file, `Io.build` (`cli/src/internal/hostBuild.ts`), `ci.yml` outside a workspace; check 43,481 B of 43,520. Not done there: A12 (stdlib routes from `./routes`), now with a follow-up agent together with the cli unit tests on the old answer, the hand-build guide, and the stale pointers in k.scaffold and k.compiler. Note: W1567 already existed beside the new E1567 (distinct codes).
+- cli conformance fixtures: two W1568 exit-status assertions run on fixtures with unrelated errors; `E1562-base-route-change` tests 1 and 3 use an open base body that the sound `accepts` rule rightly refuses; sent to their writer.
+- S4 spec gaps closed in text (std.conflicts record and store choice, std.multi E2007/E2008 surface, std.offline `Write`); a conformance-writer is filling the eleven todo tests; a sonnet agent wires group files into `keel session replay` and adds explain text for E2701 and W2702.
+- S4 golden-1 lane running: the migration and the exit eval (`pnpm eval --task golden-1-api --runner none --strict`).
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green
@@ -45,4 +49,4 @@
 - [ ] mutation scores recorded for every package batches 2 and 3 changed
 
 ## Next action
-Collect: three RFC 0092 conformance-writers, the sessions-group and live-offline lanes. Then RFC 0092 implementation lanes (server and services; check, compiler and cli; testing; std-jobs and std-schedules; golden apps for B1 and B6), the S4 conflicts lane (needs `replayGroup`), the two S4 spec gaps (E2007/E2008 surface, the `conflicts.race` record), then S4's golden-1 lane and exit eval. Budget re-bases from RFC 0092 B7-B9 go in with its implementation commits.
+Collect: the A12 follow-up agent, the cli conformance fixture fix, the S4 todo-tests writer, the session-replay wiring agent, the golden-1 lane. Then: root check/test/build, ledger (clause numbers moved; unsafe 8), reviewer and red-team over `git diff 1a1715a...HEAD`, handoff, push; the mutation run when the machine is quiet.
