@@ -61,6 +61,56 @@ describe("forwarded response headers", () => {
   });
 });
 
+describe("forwarded HEAD response", () => {
+  const serve = async (head: Record<string, string>) => {
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, head);
+      res.end();
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const sv: Served = {
+      table: [],
+      ctx: createCtx({ mode: "real" }),
+      mode: "production",
+      routes: manifest({}),
+      maxBody: 1024,
+      inspectOrigins: [],
+      saved: new Map(),
+      saving: new Map(),
+      keys: await callerSigner(undefined),
+      secure: undefined,
+      built: undefined,
+      name: "x",
+      origin: undefined,
+      allow: new Set(),
+      lifecycle: new AbortController(),
+    };
+    return { server, sv, at: port(server.address()) };
+  };
+  const close = (s: http.Server) => new Promise<void>((r) => s.close(() => r()));
+
+  it("keeps the peer's content-length", async () => {
+    const { server, sv, at } = await serve({ "content-type": "text/plain", "content-length": "5" });
+    try {
+      const out = await forward(new Request("http://x.test/p", { method: "HEAD" }), `http://127.0.0.1:${at}`, sv);
+      expect(out.response.headers.get("content-length")).toBe("5");
+    } finally {
+      await close(server);
+    }
+  });
+
+  it("drops content-length when the peer response carried a content-encoding", async () => {
+    const { server, sv, at } = await serve({ "content-encoding": "gzip", "content-length": "5" });
+    try {
+      const out = await forward(new Request("http://x.test/p", { method: "HEAD" }), `http://127.0.0.1:${at}`, sv);
+      expect(out.response.headers.has("content-length")).toBe(false);
+      expect(out.response.headers.has("content-encoding")).toBe(false);
+    } finally {
+      await close(server);
+    }
+  });
+});
+
 describe("stripHop", () => {
   const name = fc.stringMatching(/^[a-z][a-z0-9-]{0,12}$/);
   it("drops exactly the hop-by-hop, connection-named and extra names (seed 1337)", () => {

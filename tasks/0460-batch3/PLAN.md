@@ -15,6 +15,10 @@
 - [ ] 4 reviewer and red-team; findings to the backlog
 - [ ] 5 ledger, budgets, changesets, backlog, handoff, push
 
+## Notes
+- T1 done: `tooling/format-check.mjs` (F0001 would reformat, F0002 unreadable; `fix:` names the command), wired into root `check`; `biome.json` ignores `**/.keel/**`, `**/reports/**`, `**/.stryker-tmp/**`; `docs/WORKFLOW.md` Format paragraph; tooling tests 18 pass. The gate fails on any lane's unformatted new file, so each lane's files are formatted by path before its commit.
+- T3 done: a forwarded HEAD response keeps the peer's `content-length` unless it carried a `content-encoding` (server 482 pass, 17,556 B of 17,664); `runtime-dom/test/keyed-rows-resume.test.ts` (3 tests, one property) passes: a resumed list keeps row nodes and focus across a refresh, an insert and a removal. No finding.
+
 ## Verification
 - [ ] `pnpm check` (with the format gate), `pnpm test`, `pnpm build` green
 - [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
