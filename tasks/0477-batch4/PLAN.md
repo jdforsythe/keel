@@ -54,4 +54,4 @@
 - [ ] mutation scores recorded for every package batches 2 and 3 changed
 
 ## Next action
-Collect: the A12 follow-up agent, the cli conformance fixture fix, the S4 todo-tests writer, the session-replay wiring agent, the golden-1 lane. Then: root check/test/build, ledger (clause numbers moved; unsafe 8), reviewer and red-team over `git diff 1a1715a...HEAD`, handoff, push; the mutation run when the machine is quiet.
+Follow `docs/HANDOFF.md`, BATCH 4 entry, NEXT (1) to (8). First: check for orphaned processes, commit the watchdog work (0511) if it is in the tree, then run the root gates once on a quiet machine.
