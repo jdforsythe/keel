@@ -42,6 +42,10 @@
 - cli conformance fixtures: two W1568 exit-status assertions run on fixtures with unrelated errors; `E1562-base-route-change` tests 1 and 3 use an open base body that the sound `accepts` rule rightly refuses; sent to their writer.
 - S4 spec gaps closed in text (std.conflicts record and store choice, std.multi E2007/E2008 surface, std.offline `Write`); a conformance-writer is filling the eleven todo tests; a sonnet agent wires group files into `keel session replay` and adds explain text for E2701 and W2702.
 - S4 golden-1 lane running: the migration and the exit eval (`pnpm eval --task golden-1-api --runner none --strict`).
+- A12 follow-up committed: `compiler/src/std/stdRoutes.ts` is the one resolver for a placed stdlib module's `./routes`; every reader uses it; `apps/sessions` no longer spreads the std routes; the spread form stays valid (its conformance is green). cli surface unit tests on the unwrapped answers; the golden-1 guide matches golden-1 as committed before S4's golden-1 lane (that lane lists what the guide must change next); k.scaffold and k.compiler pointers fixed (k.compiler at 1,500 tokens). `packages/scaffold/conformance/service-file.test.ts`'s header still cites k.services for the OpenAPI line (a one-word `rfc:0092` edit). Filed 0486.
+- S4 gap closers committed: the eleven todo tests are real and pass; `keel session replay` reads group files; explain text for E2007, E2008, E2701, W2702; std.multi states the valid-group case; std-sessions/tools re-based to 9.25kb. Filed 0485. Still undefined in spec, untested: whether a seedless group is also E2007; whether a compact line shows a ref's `key`; the type of `raceRecords`' `server`; the order of mixed records.
+- 0354: a sonnet agent moves the two `apps/sessions` resume tests to `resumeDocument` and adds `keel check` to that app's script.
+- `check.injected10` measured 726 and 899 tokens (limit 600) while other agents were rebuilding `@keel/ui`: TS2307 for `@keel/ui` in the fixture; re-measure on a quiet tree before treating it as real.
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green
