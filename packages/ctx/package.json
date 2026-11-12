@@ -11,6 +11,10 @@
     "./internal": {
       "types": "./src/internal/index.ts",
       "default": "./src/internal/index.ts"
+    },
+    "./node": {
+      "types": "./src/node/index.ts",
+      "default": "./src/node/index.ts"
     }
   },
   "files": ["dist"],

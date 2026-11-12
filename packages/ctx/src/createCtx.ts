@@ -20,7 +20,8 @@ function seal<C extends Ctx>(ctx: C, mode: Mode, seed: number, given: number | u
 
 /**
  * Create a ctx. Registered capabilities build on first access, so `register` may come before or after. Every capability object is fresh per ctx. `shell` delegates to the real implementations
- * until native adapters exist (task 0009 D1). Mode defaults to sim under KEEL_TEST=1, else real.
+ * until native adapters exist. Mode defaults to sim under KEEL_TEST=1, else real. `storage` replaces the platform
+ * `localStorage` in real and shell modes.
  */
 export function createCtx(opts: CtxOptions & { readonly mode: "sim" }): SimCtx;
 export function createCtx(opts: CtxOptions): Ctx;
@@ -31,6 +32,6 @@ export function createCtx(opts: CtxOptions): Ctx {
     const sim: SimCtx = { clock: simClock(), random: simRandom(seed), net: simNet(), storage: simStorage() };
     return seal(sim, mode, seed, opts.seed);
   }
-  const ctx: Ctx = { clock: realClock(), random: realRandom(), net: realNet(), storage: realStorage() };
+  const ctx: Ctx = { clock: realClock(), random: realRandom(), net: realNet(), storage: opts.storage ?? realStorage() };
   return seal(ctx, mode, seed, opts.seed);
 }
