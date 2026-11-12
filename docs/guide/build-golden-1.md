@@ -124,7 +124,7 @@ If you build under `apps/`, change `"name"` now and run `pnpm install` at the ro
   "compilerOptions": {
     "jsxImportSource": "@keel/runtime-dom"
   },
-  "include": ["modules", "test", "tokens.ts", "routes.ts", "topology.ts"]
+  "include": ["modules", "test", "tokens.ts", "topology.ts"]
 }
 ```
 
@@ -331,7 +331,7 @@ import { module } from "@keel/compiler";
 export default module({
   id: "api",
   deps: [],
-  capabilities: ["random"],
+  capabilities: ["random", "storage"],
   public: {
     exports: ["Board", "BoardView", "ListDraft", "ListParams", "Suggestion", "Todo", "TodoDraft", "TodoList"],
     routes: ["api.lists", "api.listTodos", "api.todo", "api.todoToggle", "api.undo", "api.suggestions"],
@@ -381,7 +381,7 @@ import { s } from "@keel/schema";
 import { Todo } from "./Todo.schema.ts";
 import { TodoList } from "./TodoList.schema.ts";
 
-/** State of the `todos.board` store. */
+/** State of the `api.board` store. */
 export const Board = s.object({
   lists: s.array(TodoList),
   todos: s.array(Todo),
@@ -575,7 +575,7 @@ import { editTodo } from "./editTodo.ts";
 import { toggleTodo } from "./toggleTodo.ts";
 
 /**
- * The `api` deployable's server state (k.server Server state, RFC 0044): the board and the `api.*` transactions bound
+ * The `api` deployable's server state (k.server Server state): the board and the `api.*` transactions bound
  * to it. Loaders and actions name it as `stores: boardStores`; each request gets its own instance, restored from and
  * saved to `ctx.storage` (`keel.store.api.board`).
  */
@@ -1400,7 +1400,7 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       <Heading id="todos.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
         {props.data.name}
       </Heading>
-      <Box as="nav" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
+      <Box as="section" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
         <Link id="todos.filter.all" to={routes.href("todos.list", { listId }, { filter: "all" })} fg="text">
           All
         </Link>
@@ -1469,7 +1469,7 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
         fg="text"
         fontSize="sm"
       >
-        Edit
+        Edit {props.todo.title}
       </Link>
     </Box>
   );
@@ -1663,7 +1663,7 @@ export const Props = s.object({
   error: s.object({ code: s.string(), message: s.string() }),
 });
 
-/** `errorElement` of `todos.list` and `todos.edit`: names the error and links home. */
+/** `errorElement` of `todos.index`, `todos.list` and `todos.edit`: names the error and links home. */
 export default function ListError(props: Infer<typeof Props>) {
   return (
     <Box as="section" id="todos.error" direction="column" gap="3" p="4" bg="card" border="error">
@@ -1691,6 +1691,8 @@ The manifest maps route ids to routes. An entry without `path` is a layout (`tod
 ```ts title="modules/todos/routes.ts"
 import { manifest } from "@keel/router";
 import { ListParams } from "../api/ListParams.schema.ts";
+import { Todo } from "../api/Todo.schema.ts";
+import { TodoList } from "../api/TodoList.schema.ts";
 import AppShell from "./AppShell.tsx";
 import EditTodoPage from "./EditTodoPage.tsx";
 import ListError from "./ListError.tsx";
@@ -1713,6 +1715,8 @@ export const routes = manifest({
     loader: loadIndex,
     component: ListsPage,
     layout: "todos.shell",
+    title: () => "Lists",
+    errorElement: ListError,
   },
   "todos.list": {
     path: "/lists/:listId",
@@ -1721,6 +1725,10 @@ export const routes = manifest({
     loader: loadList,
     component: ListPage,
     layout: "todos.shell",
+    title: (p) => {
+      const list = TodoList.parse(p.data);
+      return list.ok ? list.value.name : "List";
+    },
     errorElement: ListError,
   },
   "todos.edit": {
@@ -1730,6 +1738,10 @@ export const routes = manifest({
     component: EditTodoPage,
     layout: "todos.shell",
     guard: editable,
+    title: (p) => {
+      const todo = Todo.parse(p.data);
+      return todo.ok ? `Edit ${todo.value.title}` : "Edit todo";
+    },
     errorElement: ListError,
   },
 });
@@ -2133,7 +2145,7 @@ keel build
 keel check
 ```
 
-A clean run prints `ok 74 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 74 tests, 0 failed, 0 skipped`), then `ok build 72 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 89 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
+A clean run prints `ok 76 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 76 tests, 0 failed, 0 skipped`), then `ok build 72 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 89 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
 
 ### Develop
 

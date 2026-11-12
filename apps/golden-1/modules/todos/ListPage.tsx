@@ -94,7 +94,7 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       <Heading id="todos.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
         {props.data.name}
       </Heading>
-      <Box as="nav" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
+      <Box as="section" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
         <Link id="todos.filter.all" to={routes.href("todos.list", { listId }, { filter: "all" })} fg="text">
           All
         </Link>

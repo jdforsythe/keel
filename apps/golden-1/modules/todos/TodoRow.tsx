@@ -41,7 +41,7 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
         fg="text"
         fontSize="sm"
       >
-        Edit
+        Edit {props.todo.title}
       </Link>
     </Box>
   );

@@ -5,7 +5,7 @@ import { editTodo } from "./editTodo.ts";
 import { toggleTodo } from "./toggleTodo.ts";
 
 /**
- * The `api` deployable's server state (k.server Server state, RFC 0044): the board and the `api.*` transactions bound
+ * The `api` deployable's server state (k.server Server state): the board and the `api.*` transactions bound
  * to it. Loaders and actions name it as `stores: boardStores`; each request gets its own instance, restored from and
  * saved to `ctx.storage` (`keel.store.api.board`).
  */

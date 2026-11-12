@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Server rendering in plain node (backlog 0156): no happy-dom, so createApp installs the DOM-free server tree and
+// Server rendering in plain node : no happy-dom, so createApp installs the DOM-free server tree and
 // every compiled template of the real `todos` pages renders on it. `todos` is a client deployable in topology.ts;
 // here it is served by the node adapter (a test topology) over a sim ctx whose net reaches the real `api` app.
 import { createCtx } from "@keel/ctx";
@@ -41,16 +41,21 @@ describe("golden-1 documents in plain node (no DOM global)", () => {
     const app = await webApp();
     const index = await page(app.fetch, "/");
     expect(index.status).toBe(200);
+    expect(index.html).toContain("<title>Lists</title>");
     expect(index.html).toContain('id="todos.listLink.l1" class="k-fg-text">Home</a>');
     expect(index.html).toContain(">1 open</span>");
     const list = await page(app.fetch, "/lists/l1");
     expect(list.status).toBe(200);
+    expect(list.html).toContain("<title>Home</title>");
+    expect(list.html.match(/<nav/g)).toHaveLength(1);
+    expect(list.html).toContain(">Edit Milk</a>");
     expect(list.html).toContain('id="todos.list.title" class="k-m-0 k-fontSize-2xl k-weight-semibold">Home</h1>');
     expect(list.html).toContain(">Done: Milk</label>");
-    // Backlog 0166 (rfc:0062): `Field.bind` writes the first render's value as the markup default, so the edit form
+    // `Field.bind` writes the first render's value as the markup default, so the edit form
     // shows the todo's values before any script runs (an IDL value alone never reaches the HTML).
     const edit = await page(app.fetch, "/lists/l1/todos/t1/edit");
     expect(edit.status).toBe(200);
+    expect(edit.html).toContain("<title>Edit Milk</title>");
     expect(edit.html).toContain(">Title</label>");
     expect(edit.html).toMatch(/<input type="text"[^>]* name="title" value="Milk">/);
     expect(edit.html).toContain('<option value="low">Low</option><option value="normal" selected="">Normal</option>');

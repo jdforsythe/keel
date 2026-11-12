@@ -146,7 +146,7 @@ describe("todos.list", () => {
   });
 });
 
-describe("event props (RFC 0009)", () => {
+describe("event props", () => {
   it("firing the row checkbox posts the toggle; firing Undo restores the prior board", async () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();

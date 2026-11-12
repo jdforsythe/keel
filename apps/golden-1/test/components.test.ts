@@ -51,7 +51,7 @@ describe("TodoRow", () => {
     const t = render(TodoRow, { props: { todo: milk } });
     expect(t.find("todos.toggle.t1")).toMatchObject({ role: "checkbox", name: "Done: Milk", state: { checked: true } });
     expect(t.find("todos.priority.t1").text).toBe("high");
-    expect(t.find("todos.editLink.t1").name).toBe("Edit");
+    expect(t.find("todos.editLink.t1").name).toBe("Edit Milk");
     t.dispose();
   });
   it("the checkbox posts the toggle to the api and the row shows the re-read board", async () => {
@@ -71,6 +71,12 @@ describe("TodoRow", () => {
 });
 
 describe("AppShell", () => {
+  it("has one navigation landmark", () => {
+    const t = render(AppShell, { props: {}, state: [[view, { lists: [], todos: [], canUndo: false }]] as const });
+    const roles = (nodes: readonly A11yNode[]): string[] => nodes.flatMap((n) => [n.role, ...roles(n.children)]);
+    expect(roles(t.a11y()).filter((r) => r === "navigation")).toHaveLength(1);
+    t.dispose();
+  });
   it("Undo is disabled until the api reports something to undo, then posts /api/undo", async () => {
     const { ctx, sent } = await simApi();
     const t = render(AppShell, { props: {}, ctx });
@@ -164,6 +170,21 @@ describe("ListPage", () => {
     const t = render(ListPage, { props: props(), state, ctx });
     expect(t.find("todos.list.title").text).toBe("Home");
     expect(t.find("todos.filter.done").name).toBe("Done");
+    await t.settle();
+    t.dispose();
+  });
+  it("names each row's edit link by its todo and keeps filters out of the landmarks", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    ctx.net.route(SUGGESTIONS, () => served([]));
+    const t = render(ListPage, { props: props(), state, ctx });
+    const names = (nodes: readonly A11yNode[]): string[] =>
+      nodes.flatMap((n) => [
+        ...(n.role === "link" && n.id.startsWith("todos.editLink.") ? [n.name] : []),
+        ...names(n.children),
+      ]);
+    expect(names(t.a11y())).toEqual(["Edit Milk", "Edit Eggs"]);
+    const roles = (nodes: readonly A11yNode[]): string[] => nodes.flatMap((n) => [n.role, ...roles(n.children)]);
+    expect(roles(t.a11y()).filter((r) => r === "navigation")).toEqual([]);
     await t.settle();
     t.dispose();
   });
