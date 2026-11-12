@@ -540,3 +540,6 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0474 ui: `Box({ as: 'nav', label: '' })` (or `'  '`) type-checks and writes `aria-label=""`, an unnamed `nav` that E1802 lets through; require a non-blank literal or report it in check (`packages/ui/src/elements/Box.ts:34`) · ui, check · k.ui
 - [ ] 0475 testing: `landmark-unique` compares names trimmed and lower-cased but not whitespace-collapsed (`<nav aria-label="Main  nav">` beside `<nav aria-label="Main nav">` passes) and counts `style="display:none"` landmarks (`packages/testing/src/internal/axe.ts:69`) · testing · k.testing
 - [x] 0476 cli: int flags take `--port 1e3`, `--port +80`, `--port 08080` and `--port 80.0` as 1000, 80, 8080 and 80 (two spellings of one value); accept `^[0-9]+$` only (`packages/cli/src/internal/parseArgv.ts`) · cli · k.cli
+
+## Batch 4, 2026-11-12 (tasks/0477-batch4)
+- [ ] 0477 batch 4: S3 leftovers, the RFC 0091 Amendment (0466, 0468, 0471), S4 prep, mutation for batches 2 and 3 · tasks/0477-batch4/PLAN.md
