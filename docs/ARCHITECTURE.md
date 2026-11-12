@@ -10,8 +10,8 @@
 
 | Concern | Decision | Reason |
 | --- | --- | --- |
-| Reactivity engine | Borrow Solid-style signals, wrap | Mature, in-distribution; constraints come from the compiler |
-| Schema validation | Borrow a Standard Schema validator, wrap | Validation is solved; generators and codecs are ours |
+| Reactivity engine | Build Solid-style signals | In-distribution; constraints come from the compiler |
+| Schema validation | Build | Validators, generators and codecs derive from one declaration |
 | Dates, zones, locale data | Borrow platform `Intl`; build ISO values | no `Temporal` polyfill; `Intl` ships with the engine |
 | Parser, transforms | oxc | `check` latency is tokens |
 | Bundler | Vite + rolldown | Ecosystem, adapters |
@@ -25,4 +25,4 @@
 
 **Generated, read-only:** `turbo.json`, CI workflows, Dockerfiles, compose. Hand edits fail `pnpm check`.
 
-verified: 30a5850cfed9146e5cd4d7f6a4c58ba5551b2794
+verified: 40e24cec12b6c28e2fd5d39fda9ba0560e83e889

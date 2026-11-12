@@ -1,6 +1,6 @@
 # Task 0460: batch 3: formatter gate, follow-ups of batch 2, RFC 0091 small kernel shapes
 
-**Spec:** k.check, k.head, k.router, k.topology, k.testing, k.component, k.runtime, k.schema, k.forms, k.cli, k.server · **Principles:** 1, 5, 12 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open
+**Spec:** k.check, k.head, k.router, k.topology, k.testing, k.component, k.runtime, k.schema, k.forms, k.cli, k.server · **Principles:** 1, 5, 12 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed in code; mutation scores pending
 
 ## Decisions
 - D1 (user, 2026-11-12: "finish up with 438 files") the seven files of 0438 are committed as the formatter writes them (6cfe27f): line wraps only. The cause is fixed in lane T1: generated and scratch paths leave Biome's view and `pnpm check` gains a repo-wide format gate.
@@ -14,10 +14,10 @@
 ## Steps
 - [x] 0 commit the seven 0438 files (6cfe27f)
 - [x] 1 wave 1 lanes (T5's rule is in the tree, uncommitted until item G lands): T1 tooling: `biome.json` ignores, `tooling/format-check.mjs` in `pnpm check`, the two rfc:0090 conformance files formatted (0438, 0451) · T2 router: `title` `params` and `search` typed (0448) · T3 server: HEAD keeps `content-length` (0458); runtime-dom: resume-then-refresh keyed-row test (0459) · T4 check: E1005 names the command and prints after source diagnostics (0376) · T5 testing: `landmark-unique` (0397) · T6 design: `docs/rfc/0091-friction-batch3.md`
-- [ ] 2 record batch 2's mutation scores when its run ends (tasks/0445-batch2/PLAN.md Next action)
+- [x] 2 batch 2's mutation run recorded (tasks/0445-batch2/PLAN.md Mutation): four packages scored, three unfinished at budget, cli and reactive dry runs diagnosed and addressed
 - [x] 3 accept RFC 0091, ADR, spec text, conformance-writer, implementation lanes A-G
-- [ ] 4 reviewer and red-team; findings to the backlog
-- [ ] 5 ledger, budgets, changesets, backlog, handoff, push
+- [x] 4 reviewer (request changes: applied or decided, see Notes) and red-team (0465-0476; D7)
+- [x] 5 ledger, budgets, changesets, backlog, handoff, push. Mutation for batches 2 and 3 runs after the push, alone
 
 ## Notes
 - T1 done: `tooling/format-check.mjs` (F0001 would reformat, F0002 unreadable; `fix:` names the command), wired into root `check`; `biome.json` ignores `**/.keel/**`, `**/reports/**`, `**/.stryker-tmp/**`; `docs/WORKFLOW.md` Format paragraph; tooling tests 18 pass. The gate fails on any lane's unformatted new file, so each lane's files are formatted by path before its commit.
@@ -38,11 +38,13 @@
 - root check, build green; root test green except scaffold `topology-deploy-files` timing out under the mutation run's load (passes alone, 18.6 s).
 - reviewer: request changes. In-batch: `focusable` treats `aria-hidden` as unfocusable (a user can still focus it) and ignores `fieldset[disabled]`, `inert`, `hidden` and `display:none` ancestors and some focusable tags; `exchange.ts` buffers every 502 body. Kept by decision: a `Box` whose `as` is a variable that may be `nav` or `aside` must pass `label` (the type is the enforcement; the changeset's migration says so). Checked sound: the blank rule's reach and `gen`, `portBusy`, `opPlace` quoted keys, `artifactRank`, `format-check` output.
 - missing k.ui axe clause: `packages/testing/conformance/landmark-unique-0091.test.ts` (4 tests) committed.
+- fixes after review: cli port probe on both address families, EACCES wording, strict int flags (0465, 0476); `focusable` (0467); format gate quoting and Biome ignore (0472, 0473); `cli/conformance/dev-port-0091.test.ts` waits on a socket before fetching (a retried `fetch` ended runs with an uncaught `setTypeOfService EINVAL` from Node 24.19's HTTP client).
+- docs-freshness: A11Y-TARGET, ARCHITECTURE, BETS, PRINCIPLES, VISION checked and bumped. Edited: A11Y-TARGET names the rules the harness runs and the `Box` label rule; ARCHITECTURE's borrow table says `Build` for reactivity and schema validation, since neither package has the dependency the table named (for the user to confirm: the table records decisions).
 
 ## Verification
-- [ ] `pnpm check` (with the format gate), `pnpm test`, `pnpm build` green
-- [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
-- [ ] `pnpm exec biome format .` reports nothing
+- [x] `pnpm check` (with the format gate), `pnpm test` (56 tasks), `pnpm build` (32 tasks) green
+- [x] ledger 650 items, 639 verified, 7 unsafe, 0 lowered, 0 uncovered
+- [x] `node tooling/format-check.mjs` ok (3,026 files)
 
 ## Next action
-Collect the three fix agents (cli probe and int flags; testing `focusable`; services mapping, format gate, biome ignore); commit each by path; tick 0465, 0467, 0471, 0472, 0473, 0476 in the backlog. Then step 5: root check/test/build, ledger, handoff, push; then the mutation run alone (`pnpm mutate:changed --base e192395`).
+Run `pnpm mutate:changed --base e192395` alone (nothing else running): it resumes check, compiler and scaffold and gives cli and reactive their first scores since the dry-run fixes; batch 3 added schema, forms, services, testing and tooling changes, so follow with the packages it does not cover. Record scores in `docs/HANDOFF.md`. Then S4 per tasks/PROGRAM.md unless the user redirects.

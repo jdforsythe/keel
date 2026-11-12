@@ -502,7 +502,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0444 compiler: `packages/compiler/test/clientBuild.test.ts:91` calls `process.chdir`, which the process rule forbids and Stryker's workers cannot run; pass the directory instead · compiler
 
 ## Batch 2, 2026-11-12 (tasks/0445-batch2)
-- [ ] 0445 batch 2: RFC 0090 keyed rows and E1405, and the no-decision items 0437, 0444, 0398, 0399, 0379, 0433, 0389, 0409, 0431, 0440, 0443 · tasks/0445-batch2/PLAN.md
+- [x] 0445 batch 2: RFC 0090 keyed rows and E1405, and the no-decision items 0437, 0444, 0398, 0399, 0379, 0433, 0389, 0409, 0431, 0440, 0443 · tasks/0445-batch2/PLAN.md
 - [x] 0446 testing: `fire(id, { type: 'focus' })` dispatches an event and moves no focus, and the harness returns no node, so an app test cannot assert that a control keeps focus or its element across a write (golden-1's list page test asserts the a11y tree only). Proposed k.testing sentence: "`fire(id, { type: 'focus' })` moves focus to the element, its focus event reaching handlers once; `blur` removes it", plus a focus query · testing · k.testing · needs an RFC
 - [ ] 0447 compiler: E1405 misses a `let`, a read inside a nested block, a local derived from another local, an initializer with a call, a call-style `.ts` component, and a value reached through a called function; widen it without false positives · compiler, check · k.component
 - [x] 0448 router: a route `title` receives `params` and `search` as `unknown` (golden-2's `recipes.show` annotates its props to read `p.params.locale`); type them as `data` is · router · k.head, k.router
@@ -521,7 +521,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0459 runtime-dom: a server-rendered, resumed list followed by a refresh was not exercised by the keyed-row tests or the red-team pass; add a resume-then-refresh test (row identity and focus) · runtime-dom · k.component, k.runtime
 
 ## Batch 3, 2026-11-12 (tasks/0460-batch3)
-- [ ] 0460 batch 3: the format gate (0438, 0451), 0448, 0458, 0459, 0376, 0397, and RFC 0091 for 0446, 0394, 0395, 0377, 0387, 0449, 0450 · tasks/0460-batch3/PLAN.md
+- [x] 0460 batch 3: the format gate (0438, 0451), 0448, 0458, 0459, 0376, 0397, and RFC 0091 for 0446, 0394, 0395, 0377, 0387, 0449, 0450 · tasks/0460-batch3/PLAN.md
 - [ ] 0461 compiler, cli: vitest and `keel dev` refresh `.keel` artifacts but never `surface.json`, which only the cli's `surfaceRun` writes (a Vite SSR evaluation of route and service files), so `keel check` reports E1005 on it after any surface edit until `keel build`; move the evaluator where the plugin can call it, or have check recompute the surface (an RFC) · compiler, cli, check · k.compat, k.check
 - [ ] 0462 cli: `packages/cli/conformance/dev-port-0091.test.ts` leaves its `keel dev` child running when a run fails or times out (two were left on 2026-11-12, parent PID 1, in `keel-dev-port-*` temp directories); stop the child's process group in a `finally` or `afterEach` (an `rfc:` commit) · cli · k.cli
 - [ ] 0463 compiler: the E1805 fix writes `<Box as="aside">` with no `label`, which is E1802 since `Box` requires a label on `nav` and `aside`; write a placeholder label or drop the fix for those tags · compiler, check · k.ui

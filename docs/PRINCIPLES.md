@@ -15,4 +15,4 @@ Each principle names its consequence. Reviews cite these by number.
 11. **Claims lag machinery.** The ledger reports only rungs that exist. Marketing follows the ledger.
 12. **Tokens are a budget.** Docs, spec, and every tool output are measured in tokens and gated in CI.
 
-verified: 30a5850cfed9146e5cd4d7f6a4c58ba5551b2794
+verified: 40e24cec12b6c28e2fd5d39fda9ba0560e83e889
