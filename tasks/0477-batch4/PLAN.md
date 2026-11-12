@@ -1,6 +1,6 @@
 # Task 0477: batch 4: S3 leftovers, RFC 0091 amendment, S4 prep, mutation for batches 2 and 3
 
-**Spec:** k.topology, k.server, k.compat, std.jobs, std.schedules (S3 leftovers) · k.schema, k.forms, k.services, k.cli (amendment) · S4 sections per tasks/0310-s4-realtime/PLAN.md · **Principles:** 1, 5, 12 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed in code 2026-11-12; mutation scores owed (0523)
+**Spec:** k.topology, k.server, k.compat, std.jobs, std.schedules (S3 leftovers) · k.schema, k.forms, k.services, k.cli (amendment) · S4 sections per tasks/0310-s4-realtime/PLAN.md · **Principles:** 1, 5, 12 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed 2026-11-12
 
 ## Decisions
 - D1 (user, 2026-11-12) the user agreed with the orchestrator's decisions of batches 2 and 3 and said to keep moving with subagents in parallel (S3 or other work).
@@ -55,10 +55,12 @@
 
 - mutation run of 2026-11-12, stopped at the user's request after 54 minutes (the load average passed 50): cli 80.6%, compiler 79.2%, ctx 79.0%, forms 88.5%, reactive 85.6%, router 82.0%, runtime-dom 80.5%; check stopped at its 30-minute budget (9,704 of 10,386 mutants), scaffold stopped at 3,557 of 3,715; not started: schema, server, services, store, testing, ui. The cache is saved; the same command resumes. Ask the user before starting it again: it fills every core.
 
+- mutation complete (2026-11-12, two passes at `KEEL_MUTATE_CONCURRENCY=8`, 53 and 17 minutes; the first pass's check stopped at its 30-minute budget and the second finished it): check 75.7%, cli 80.6%, compiler 79.2%, ctx 79.0%, forms 88.5%, reactive 85.6%, router 82.0%, runtime-dom 80.5%, scaffold 78.7%, schema 91.6%, server 84.1%, services 83.4%, store 88.0%, testing 87.7%, ui 74.5%; every package is at or above its threshold; in the ledger. Four scores are lower than the ledger's previous ones (cli 81.9, scaffold 81.7, schema 92.1, testing 88.9): new code since batch 2 with weaker tests (0524). The cache is `<main clone>/.git/keel-mutation`, with a copy in `keel-mutation-backup` beside it; a run fills its cores, so ask the user before starting one.
+
 ## Verification
 - [x] `pnpm check`, `pnpm test`, `pnpm build` green
 - [x] ledger not lowered, 0 uncovered in covered sections; unsafe count 7 to 8, justified (std-offline `unsafe/asResult.ts`)
-- [ ] mutation scores recorded for every package batches 2 and 3 changed
+- [x] mutation scores recorded for every package batches 2 and 3 changed
 
 ## Next action
-The mutation run, alone on a quiet machine: `pnpm mutate:changed --base e192395`, scores into `docs/HANDOFF.md` and the ledger (0523). Everything else in this batch is closed.
+None: closed. Next stage: S5 (tasks/0311-s5-correctness/PLAN.md).
