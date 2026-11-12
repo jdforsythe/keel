@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Generators "`service`: endpoint schemas from OpenAPI and the service file (k.services); schemas are generated, read-only."
+// Spec: k.scaffold, Generators "`service`: endpoint schemas from OpenAPI and the service file (k.openapi): `modules/<id>/<Id>Api.schema.ts` and `api.ts`; schemas are generated, read-only."
 // Spec: k.scaffold, Turbo emission "Generated files are read-only (E1005)."
 // RFC 0036, RFC 0039: `service { id: "<module>", schema, service }` places the two sources `@keel/services/openapi`
 // generates at modules/<module>/<Module>Api.schema.ts (filename equals its one export `<Module>Api`, k.check E1752) and

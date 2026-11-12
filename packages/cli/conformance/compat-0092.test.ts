@@ -1,4 +1,9 @@
-// Spec: k.compat Conformance (rfc:0092), the five clauses added at its end. Seed 1337. Real binary over a temp project (see compat-support.ts).
+// Spec: k.compat, clause "An open `{ a?: string }` does not accept an open `{}` and accepts a closed `{}`."
+// Spec: k.compat, clause "A GET endpoint to a route with no loader is one E1561."
+// Spec: k.compat, clause "`keel check --base` naming a missing file is one W1568 and exits 0; with `topology.ts` unreadable, a base endpoint the current route refuses is E1562."
+// Spec: k.compat, clause "`service({ base: origin, schema })` with an endpoint that a route of app module `b` serves is one E1567 naming `b`; with `base: 'https://api.example.com'` none."
+// Spec: k.compat, clause "An endpoints file that throws is one E1006 from `keel build`, which exits 1."
+// Seed 1337. Real binary over a temp project (see compat-support.ts).
 // Rules E1561, E1562, E1567, W1568, E1006 (k.compiler). Each clause is one test named with its text.
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
