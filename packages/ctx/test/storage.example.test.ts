@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -41,6 +41,28 @@ describe("ctx.storage backing (k.ctx, k.topology Local topology)", () => {
     const file = join(dir(), "bad.json");
     writeFileSync(file, '{"k":1}');
     await expect(fileStorage(file).get("k")).rejects.toThrow(file);
+  });
+
+  it("a read error other than a missing file rejects with its code and leaves the path untouched", async () => {
+    const file = join(dir(), "isdir.json");
+    mkdirSync(file);
+    const store = fileStorage(file);
+    await expect(store.get("k")).rejects.toThrow(`ctx.storage: ${file} cannot be read (EISDIR)`);
+    await expect(store.set("k", "v")).rejects.toThrow("EISDIR");
+    expect(statSync(file).isDirectory()).toBe(true);
+    expect(() => readFileSync(`${file}.tmp`)).toThrow();
+  });
+
+  it("a file that is not JSON rejects without echoing its contents, and set does not overwrite it", async () => {
+    const file = join(dir(), "corrupt.json");
+    writeFileSync(file, "{not json SECRET-FRAGMENT");
+    const store = fileStorage(file);
+    const e = await store.get("k").catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(Error);
+    expect(String(e)).toContain(`ctx.storage: ${file} is not a JSON object of strings; delete it to start empty`);
+    expect(String(e)).not.toContain("SECRET-FRAGMENT");
+    await expect(store.set("k", "v")).rejects.toThrow(file);
+    expect(readFileSync(file, "utf8")).toBe("{not json SECRET-FRAGMENT");
   });
 
   it("createCtx({ storage }) backs ctx.storage in real mode", async () => {

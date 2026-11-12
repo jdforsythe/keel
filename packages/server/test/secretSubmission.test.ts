@@ -203,8 +203,21 @@ describe("secretKey and withoutPasswords", () => {
     whole: s.secret(s.object({ in: s.string() })),
   });
   it("a key reaching an s.secret node at any nesting is secret; others are not", () => {
-    const hidden = ["b", "b[]", "list.0.k", "map.anything", "pick.v", "whole", "whole.in"];
-    const shown = ["a", "list.0.n", "pick.t", "missing", "", "list", "a.b"];
+    // Under an array, record or union holding a secret every key is secret (`list.0.n`, `pick.t`): the safe direction.
+    const hidden = [
+      "b",
+      "b[]",
+      "list.0.k",
+      "list.0.n",
+      "list",
+      "map.anything",
+      "map.a.b",
+      "pick.v",
+      "pick.t",
+      "whole",
+      "whole.in",
+    ];
+    const shown = ["a", "missing", "", "a.b"];
     for (const k of hidden) expect(secretKey(Deep.node, k), k).toBe(true);
     for (const k of shown) expect(secretKey(Deep.node, k), k).toBe(false);
     expect(secretKey(s.secret(s.string()).node, "anything")).toBe(true);

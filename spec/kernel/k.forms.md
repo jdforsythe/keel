@@ -24,7 +24,7 @@ const f = form(OrderEdit, { initial: order }) // OrderEdit is an s.object in ord
 - `err` with code `keel.fields` (`data: { [path]: message }`): exactly those field errors are set.
 - any other `err`: the `error` slot renders it; values and field errors are unchanged.
 
-Without JS the server runs the same flow: it decodes FormData with the action's input schema and, on `keel.fields`, re-renders the page with the submitted values, less `s.secret` and password-input ones, and errors (k.server).
+Without JS the server runs the same flow: it decodes FormData with the action's input schema and, on `keel.fields`, re-renders the page with the submitted values, less password-input ones and any that may reach an `s.secret`, and errors (k.server).
 
 **Slot** on `<Form>`: `error` for non-field errors (k.ui standard slots); no `loading` slot (rfc:0043).
 

@@ -24,7 +24,7 @@ import { withoutPasswords } from "./withoutPasswords.ts";
  * renders the nearest errorElement at or above it with the layouts above intact and sets the status by its
  * code; otherwise `status`, `failure` (an action error at the route) and `submission` (the 422 re-render:
  * field summary before the route component, `form` in `#k-state` less the keys the page renders as password
- * inputs, none when rendering threw) apply. `#k-state` also carries the served `route`
+ * inputs, none when an errorElement renders instead or rendering threw) apply. `#k-state` also carries the served `route`
  * (`{ id, path, href, params, search }`, encoded) and, when a loader failed, its `error` (`code`, `data.at` only).
  */
 export async function page(
@@ -100,8 +100,10 @@ export async function page(
     });
     return { response: documentResponse(r, 500, fallback, base, rendered.error.message), route: id, diags };
   }
+  // Only the route's own component renders the password inputs that name the keys to drop; at an errorElement the
+  // submission is left out whole.
   const form =
-    submission === null
+    submission === null || shown !== null || rendered.value.caught !== null
       ? {}
       : { form: { ...submission, values: withoutPasswords(submission.values, rendered.value.html) } };
   const extra = { ...base, ...form };

@@ -6,7 +6,8 @@ Status: accepted by the orchestrator (2026-11-12) under WORKFLOW RFC default 4 (
 A document POST that fails its input schema is answered 422 with the page re-rendered and the submission restored. The markup left password inputs empty, but `#k-state` carried every submitted value under `form`, password and `s.secret` fields included, and `Field.bind` wrote an `s.secret` field's value into a text input's `value` attribute. Reproduced with a form holding a `type="password"` input over `s.string`, an `s.secret` field and an array of `s.secret`.
 
 ## Proposal
-- A submitted value for an `s.secret` field (at any depth of the action's `input`) is dropped before the page renders; a union counts when any variant reaches a secret.
+- A submitted value whose key may reach an `s.secret` (at any depth of the action's `input`) is dropped before the page renders. The match is exact through object fields, `optional` and `nullable`; under an array, record or union that holds a secret every value is dropped, plain siblings included, so the walk is linear in the key and errs toward hiding.
+- The submission is restored only when the route's own component rendered: a 422 re-render that shows an `errorElement` carries none of it.
 - A submitted value whose key is the `name` of a rendered `<input type="password">` is dropped from `#k-state` after the page renders.
 - `Field.bind` writes no markup default for an `s.secret` field, as for `password` and `file` inputs. A hidden input is the app's choice.
 - The field comes back empty; other fields keep their values and field errors still show.

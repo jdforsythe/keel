@@ -26,7 +26,7 @@ import { valuesOf } from "./valuesOf.ts";
  * the action runs with `caller` and its `stores` instance (`openStores`); its `ok` saves the changed stores (`saveStores`,
  * else `keel.conflict`); `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
  * the `Result` as JSON with the status of its code. A document `keel.fields` re-renders the page at 422
- * with the submitted values but secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
+ * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
  */
 export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<Handled> {
   const { id, def, chain } = m.route;
