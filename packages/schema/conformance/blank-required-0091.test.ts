@@ -1,5 +1,6 @@
 // Spec: k.schema, API "with `min` >= 1, `''` or only whitespace fails rule `required`; JSON Schema adds `pattern: "\\S"`"
-// Spec: k.schema, clause "`s.string({ min: 1 })` fails `''` and `' '` with rule `required`." (rfc:0091)
+// Spec: k.schema, clause "`s.string({ min: 1 })` fails `''` and `' '` with rule `required`; `decodeStrings` drops both if optional." (rfc:0091)
+// Spec: k.schema, `decodeStrings`: "for an optional key `''` is absent, as is only whitespace for a `string` with `min` >= 1;"
 // Seed 1337. Parsing never trims (RFC 0091 B). The spec text does not state the rule of `id` for `''`: not tested.
 // JSON Schema `pattern: "\\S"`: untestable from the public API of @keel/schema (no derivation is exported); the
 // `gen` clause below keeps the same fact (every generated value has a non-whitespace character).
@@ -18,7 +19,7 @@ const rules = (r: ReturnType<ReturnType<typeof s.string>["parse"]>): string[] =>
   r.ok ? [] : r.error.data.issues.map((i) => i.rule);
 
 describe("k.schema blank required strings (rfc:0091)", () => {
-  it("`s.string({ min: 1 })` fails `''` and `' '` with rule `required`.", () => {
+  it("`s.string({ min: 1 })` fails `''` and `' '` with rule `required`; `decodeStrings` drops both if optional.", () => {
     const S = s.string({ min: 1 });
     for (const v of ["", " "]) {
       const r = S.parse(v);
@@ -116,6 +117,52 @@ describe("k.schema blank required strings (rfc:0091)", () => {
     fc.assert(
       fc.property(whitespace, (v) => {
         expect(s.string().parse(v).ok).toBe(true);
+      }),
+      { seed: SEED, numRuns: RUNS },
+    );
+  });
+
+  it("`decodeStrings` drops both if optional", () => {
+    const Opt = s.object({ n: s.string({ min: 1 }).optional() });
+    const Plain = s.object({ n: s.string().optional() });
+    const Req = s.object({ n: s.string({ min: 1 }) });
+    expect(Opt.decodeStrings(new URLSearchParams("n="))).toEqual({ ok: true, value: {} });
+    fc.assert(
+      fc.property(mins, whitespace, (min, v) => {
+        const O = s.object({ n: s.string({ min }).optional() });
+        // optional with `min` >= 1: '' and whitespace-only are absent, and parse accepts the result
+        for (const blank of ["", v]) {
+          const d = O.decodeStrings({ n: blank });
+          expect(d.ok).toBe(true);
+          if (d.ok) {
+            expect(d.value).toEqual({});
+            expect("n" in d.value).toBe(false);
+          }
+        }
+        expect(Opt.decodeStrings({ n: v }).ok).toBe(true);
+        // required: kept as given, so it fails with rule `required`
+        const r = Req.decodeStrings({ n: v });
+        expect(r.ok).toBe(false);
+        if (!r.ok) expect(r.error.data.issues).toEqual([{ path: ["n"], rule: "required" }]);
+        // optional without `min`: '' is absent, whitespace is content and kept as given (never trimmed)
+        const p = Plain.decodeStrings({ n: v });
+        expect(p.ok).toBe(true);
+        if (p.ok) expect(p.value).toEqual(v === "" ? {} : { n: v });
+        // parse of a typed blank is unchanged
+        expect(rules(Opt.parse({ n: v === "" ? " " : v }))).toEqual(["required"]);
+      }),
+      { seed: SEED, numRuns: RUNS },
+    );
+  });
+
+  it("`decodeStrings` never trims: a value with a non-whitespace character stays as typed for an optional key", () => {
+    const Opt = s.object({ n: s.string({ min: 1 }).optional() });
+    fc.assert(
+      fc.property(whitespace, fc.stringMatching(/^[a-z]{1,5}$/), whitespace, (pre, core, post) => {
+        const v = `${pre}${core}${post}`;
+        const d = Opt.decodeStrings({ n: v });
+        expect(d.ok).toBe(true);
+        if (d.ok) expect(d.value).toEqual({ n: v });
       }),
       { seed: SEED, numRuns: RUNS },
     );

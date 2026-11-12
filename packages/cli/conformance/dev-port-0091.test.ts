@@ -1,5 +1,5 @@
-// Spec: k.cli, clause "`keel dev --port <p>` serves on `p`; with `p` in use it prints one E1560 line and exits 1." (rfc:0091)
-// Spec: k.cli Commands "`dev [--port N]` ... (default 5173; in use: E1560, exit 1)"; Rules E1052 "flag value invalid for the input schema".
+// Spec: k.cli, clause "`keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1." (rfc:0091)
+// Spec: k.cli Commands "`dev [--port N]` ... (default Vite's `server.port` or 5173; in use: E1560, exit 1)"; Rules E1052 "flag value invalid for the input schema".
 // Seed 1337. Spawns the real binary over a temp project with `vite` linked. The wait for the server is a bounded retry of
 // `fetch` (no timers). Ports come from a listener on port 0 that is closed first; a busy port is held by the test's own
 // listener. Only processes the test started are signalled (the child's process group).
@@ -136,6 +136,16 @@ async function served(p: Proc, port: number): Promise<boolean> {
   return false;
 }
 
+const VITE_CONFIG = write_default();
+function write_default(): string {
+  return 'import keel from "@keel/compiler/vite";\nimport { defineConfig } from "vite";\n';
+}
+/** Rewrites the fixture's `vite.config.ts` with `server.port` set to `port`, or restores it when undefined. */
+const setConfigPort = (port: number | undefined): void => {
+  const server = port === undefined ? "" : `server: { port: ${port} }, `;
+  write("vite.config.ts", `${VITE_CONFIG}export default defineConfig({ ${server}plugins: [keel()] });\n`);
+};
+
 const e1560 = (text: string): string[] => text.split("\n").filter((l) => l.includes("E1560"));
 
 describe("k.cli keel dev --port (rfc:0091)", () => {
@@ -179,6 +189,54 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
           ));
         expect(next).toBe(false);
       } finally {
+        await new Promise<void>((r) => holder.close(() => r()));
+      }
+    },
+    SLOW,
+  );
+
+  test(
+    "`server.port: <p>` in the Vite config serves on `p`",
+    async () => {
+      const port = await freePort();
+      setConfigPort(port);
+      const p = startDev([]);
+      try {
+        expect(await served(p, port)).toBe(true);
+      } finally {
+        await stop(p);
+        setConfigPort(undefined);
+      }
+    },
+    SLOW,
+  );
+
+  test(
+    "with the config's `p` in use it prints one E1560 line and exits 1, and does not move to another port",
+    async () => {
+      const holder = net.createServer();
+      await new Promise<void>((r) => holder.listen(0, r));
+      const addr = holder.address();
+      const busy = typeof addr === "object" && addr !== null ? addr.port : -1;
+      setConfigPort(busy);
+      const p = startDev([]);
+      try {
+        expect(busy).toBeGreaterThan(0);
+        const code = await p.exited;
+        expect(code).toBe(1);
+        const lines = e1560(p.out());
+        expect(lines).toHaveLength(1);
+        expect(lines[0]).toContain(String(busy));
+        const next =
+          (await accepts(busy + 1)) &&
+          (await fetch(`http://localhost:${busy + 1}/`).then(
+            () => true,
+            () => false,
+          ));
+        expect(next).toBe(false);
+      } finally {
+        await stop(p);
+        setConfigPort(undefined);
         await new Promise<void>((r) => holder.close(() => r()));
       }
     },
