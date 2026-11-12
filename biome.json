@@ -30,7 +30,10 @@
       "tooling/ledger/ledger.json",
       "**/test/.tmp-*/**",
       "**/conformance/.tmp-*/**",
-      ".fixtures/**"
+      ".fixtures/**",
+      "**/.keel/**",
+      "**/reports/**",
+      "**/.stryker-tmp/**"
     ]
   }
 }

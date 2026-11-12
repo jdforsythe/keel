@@ -99,17 +99,22 @@ describe("k.component: a For row whose key stays keeps its element, focus and bi
 
   it("Replacing `each` with new objects of the same keys updates the changed row's text", async () => {
     await fc.assert(
-      fc.asyncProperty(fc.integer({ min: 1, max: 8 }), fc.nat(), fc.string({ minLength: 1, maxLength: 8 }), async (n, pick, word) => {
-        const m = mountList(todos(ids(n), "a"));
-        const at = pick % n;
-        const next = todos(ids(n), "a").map((t, i) => (i === at ? { ...t, label: `new-${word}` } : { ...t }));
-        m.rows.set(next);
-        await flush();
-        m.lis().forEach((el, i) => {
-          expect(el.querySelector(".t")?.textContent).toBe(i === at ? `new-${word}` : `a:k${i}`);
-        });
-        m.teardown();
-      }),
+      fc.asyncProperty(
+        fc.integer({ min: 1, max: 8 }),
+        fc.nat(),
+        fc.string({ minLength: 1, maxLength: 8 }),
+        async (n, pick, word) => {
+          const m = mountList(todos(ids(n), "a"));
+          const at = pick % n;
+          const next = todos(ids(n), "a").map((t, i) => (i === at ? { ...t, label: `new-${word}` } : { ...t }));
+          m.rows.set(next);
+          await flush();
+          m.lis().forEach((el, i) => {
+            expect(el.querySelector(".t")?.textContent).toBe(i === at ? `new-${word}` : `a:k${i}`);
+          });
+          m.teardown();
+        },
+      ),
       { seed: SEED, numRuns: 25 },
     );
   });

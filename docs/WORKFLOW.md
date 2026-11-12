@@ -12,6 +12,8 @@
 
 **Brand.** `docs/BRAND.md` is the one style and voice guide. New apps start from the scaffold `project` template (brand tokens, self-hosted fonts, the mark); READMEs and docs pass `tooling/voice-lint.mjs`; the lockup goes on every public page.
 
+**Format.** `pnpm check` runs `tooling/format-check.mjs` (F0001), which fails on any file in the repo that Biome would reformat, ignored generated paths aside. An agent formats only the files it edited, by path (`pnpm exec biome format --write <path>`), never a directory or the repo.
+
 **Humans.** Approve RFCs and ADRs, own security, decide freezes, pick design partners.
 
 **Point-in-time docs.** Every doc, README, spec sentence and code comment describes the present. History lives in git and `docs/rfc/`. Before the first public release the RFCs, ADRs, docs and comments are swept: superseded material goes, what remains describes 1.0, and the RFC process restarts from there for outside contributors.

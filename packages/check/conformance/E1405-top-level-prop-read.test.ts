@@ -11,8 +11,7 @@ const e1405 = (source: string, path = "C.tsx") =>
   check(one(source, path), { types: false }).diagnostics.filter((d) => d.code === "E1405");
 
 const UI = `import { Box, Text } from '@keel/ui'\n`;
-const comp = (body: string, head = UI) =>
-  `${head}export default function C(props: { label: string }) { ${body} }\n`;
+const comp = (body: string, head = UI) => `${head}export default function C(props: { label: string }) { ${body} }\n`;
 
 test("`const label = props.label` at a component's top level with `{label}` as a text child is one E1405", () => {
   expect(e1405(comp(`const label = props.label; return <Text>{label}</Text>`))).toHaveLength(1);
