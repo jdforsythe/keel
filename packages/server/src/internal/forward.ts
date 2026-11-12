@@ -1,20 +1,19 @@
-import { attempt } from "@keel/schema";
+import { attempt, err } from "@keel/schema";
 import type { Handled } from "./Handled.ts";
 import type { Peer } from "./Peer.ts";
 import type { Served } from "./Served.ts";
-import { crashed } from "./crashed.ts";
+import { jsonResponse } from "./jsonResponse.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
 import { readCapped } from "./readCapped.ts";
 import { stripHop } from "./stripHop.ts";
-import { unexpected } from "./unexpected.ts";
 
 /**
  * Forward `raw` to `peer` (k.topology Calls and peers): method, path, search, body and headers but hop-by-hop ones
  * (`stripHop`), plus `x-keel-forwarded: 1`. A peer by URL gets the request at that URL's
  * origin plus the path and search, through `ctx.net.fetch`; an in-process peer at the request's own URL. Redirects are
  * not followed, so the peer's response, a 3xx with its `location` and `set-cookie` too, comes back as is but for `stripHop` and `content-encoding` (the body arrives decoded); a HEAD response keeps its `content-length` unless it was encoded. A body over
- * `maxBody` is 413 `keel.payloadTooLarge` and nothing is sent; a peer that cannot be reached is 502 `keel.unexpected`
- * with one `diag`.
+ * `maxBody` is 413 `keel.payloadTooLarge` and nothing is sent; a peer that cannot be reached is 502 `keel.unreachable`
+ * (data `{}`, a message naming no host, address or cause) with one `diag` naming the cause.
  */
 export async function forward(raw: Request, peer: Peer, sv: Served): Promise<Handled> {
   const url = new URL(raw.url);
@@ -42,6 +41,11 @@ export async function forward(raw: Request, peer: Peer, sv: Served): Promise<Han
       headers.set("content-length", length);
     return { response: new Response(stream, { status, statusText, headers }), route: undefined, diags: [] };
   }
-  const failure = unexpected(`peer unreachable: ${sent.error.message}`);
-  return { ...crashed(sv.mode, failure, 502), diags: [failure] };
+  const code = "keel.unreachable";
+  const response = jsonResponse(502, err({ code, message: "peer unreachable", data: {} }));
+  return {
+    response,
+    route: undefined,
+    diags: [{ code, message: `peer unreachable: ${sent.error.message}` }],
+  };
 }

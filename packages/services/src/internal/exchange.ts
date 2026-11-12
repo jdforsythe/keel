@@ -4,16 +4,23 @@ import type { Endpoint } from "../Endpoint.ts";
 import type { Target } from "./Target.ts";
 import { fail } from "./fail.ts";
 import { readJson } from "./readJson.ts";
+import { unreachable } from "./unreachable.ts";
 
 /**
  * Send `req` to `target` (`ctx.net.fetch`, or an app in process) and decode the response: 2xx by `output` (`api.decode` on failure), a declared
  * status by `errors[status]` (body null when it does not decode), any other status `api.status` with body null.
+ * A 502 whose body is a `keel.unreachable` err is `api.network`, ahead of any declared 502.
  */
 export async function exchange(e: Endpoint, req: Request, target: Target): Promise<Result<unknown, ApiError>> {
   const fetched = await attempt(() => target.send(req));
   if (!fetched.ok) return err(fail.network());
   const res = fetched.value;
   const success = res.status >= 200 && res.status < 300;
+  if (res.status === 502) {
+    const body = await attempt(() => res.clone().text());
+    const json = body.ok ? readJson(body.value) : undefined;
+    if (json?.ok && unreachable.parse(json.value).ok) return err(fail.network());
+  }
   const schema = success ? e.output : e.errors?.[res.status];
   if (schema === undefined) return err(fail.status(res.status, null));
   const text = await attempt(() => res.text());

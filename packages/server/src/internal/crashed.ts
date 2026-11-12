@@ -5,14 +5,14 @@ import { escapeHtml } from "./escapeHtml.ts";
 import { publicError } from "./publicError.ts";
 
 /**
- * Last resort when the request flow itself threw (a server bug): `status` (default 500, 502 for an unreachable peer)
+ * Last resort when the request flow itself threw (a server bug): status 500
  * `keel.unexpected`, scrubbed in production.
  */
-export function crashed(mode: Mode, e: KeelError<string, unknown>, status = 500): Handled {
+export function crashed(mode: Mode, e: KeelError<string, unknown>): Handled {
   const shown = publicError(e, mode);
   const body = `<!doctype html><html lang="en"><body><main><div role="alert" data-keel-error="${escapeHtml(shown.code)}">${escapeHtml(shown.message)}</div></main></body></html>`;
   return {
-    response: new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8" } }),
+    response: new Response(body, { status: 500, headers: { "content-type": "text/html; charset=utf-8" } }),
     route: undefined,
     diags: [],
   };

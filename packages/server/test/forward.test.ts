@@ -175,16 +175,20 @@ describe("forward", () => {
     expect(await seen[0]?.text()).toBe("hello");
   });
 
-  it("answers an unreachable peer with 502 keel.unexpected, a diag and the req line", async () => {
+  it("answers an unreachable peer with 502 keel.unreachable, a diag and the req line", async () => {
     const { app, lines } = await front(() => {
       throw new TypeError("fetch failed");
     });
     const res = await app.fetch(new Request("http://front.example/b/save"));
     expect(res.status).toBe(502);
     const body = await res.text();
-    expect(body).toContain('data-keel-error="keel.unexpected"');
+    expect(body).toContain('"code":"keel.unreachable"');
     expect(body).not.toContain("fetch failed");
-    expect(lines).toEqual(["keel.unexpected peer unreachable: TypeError: fetch failed", "GET /b/save 502 0ms"]);
+    expect(JSON.parse(body)).toEqual({
+      ok: false,
+      error: { code: "keel.unreachable", message: "peer unreachable", data: {} },
+    });
+    expect(lines).toEqual(["keel.unreachable peer unreachable: TypeError: fetch failed", "GET /b/save 502 0ms"]);
   });
 
   it("writes one req line per forwarded request", async () => {

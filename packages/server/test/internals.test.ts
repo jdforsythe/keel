@@ -168,6 +168,7 @@ describe("small pure helpers", () => {
           "keel.denied": 403,
           "keel.fields": 422,
           "keel.unexpected": 500,
+          "keel.unreachable": 502,
         };
         expect(statusOf(c)).toBe(Object.hasOwn(known, c) ? known[c] : 400);
       }),
