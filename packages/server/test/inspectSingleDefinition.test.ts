@@ -2,9 +2,10 @@
 // the dev server. A second literal anywhere under packages/*/src is a duplicate to delete.
 import fs from "node:fs";
 import path from "node:path";
+import { repoRoot } from "@keel/tooling/repo-root";
 import { describe, expect, it } from "vitest";
 
-const PACKAGES = path.resolve(import.meta.dirname, "../..");
+const PACKAGES = path.join(repoRoot(import.meta.dirname), "packages");
 
 function sources(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {

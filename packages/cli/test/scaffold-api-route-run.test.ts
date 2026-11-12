@@ -3,13 +3,13 @@
 import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { repoRoot } from "@keel/tooling/repo-root";
 import { expect, it } from "vitest";
 import { run } from "../src/index.ts";
 import { runEngine } from "../src/internal/runEngine.ts";
 
 type Files = { path: string; source: string }[];
-const REPO = fileURLToPath(new URL("../../../", import.meta.url));
+const REPO = repoRoot(import.meta.dirname);
 
 /** Link each dependency of the generated `package.json` into `cwd/node_modules`: a workspace package or the repo's. */
 const link = (cwd: string, manifest: string): void => {

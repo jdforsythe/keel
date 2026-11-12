@@ -1,6 +1,7 @@
 // k.api in keel check: E1510 and E1508 mapped from the type error on a manifest entry, E1511 for an API route a
 // `client` or `static` deployable serves.
-import { fileURLToPath } from "node:url";
+import path from "node:path";
+import { repoRoot } from "@keel/tooling/repo-root";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { check } from "../src/check.ts";
@@ -8,7 +9,7 @@ import type { Diagnostic, SourceFile } from "../src/index.ts";
 import { applyPatch } from "./support/applyPatch.ts";
 
 /** A directory `@keel/router` resolves from, so the manifest's types are checked. */
-const ROOT = fileURLToPath(new URL("../../ui/", import.meta.url));
+const ROOT = path.join(repoRoot(import.meta.dirname), "packages", "ui");
 const PATH = "modules/a/routes.ts";
 const routes = (body: string): SourceFile => ({
   path: PATH,

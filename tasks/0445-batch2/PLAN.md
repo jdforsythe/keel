@@ -14,7 +14,7 @@
 ## Steps
 - [x] 1 RFC 0090 accepted, ADR-0113, k.component text (Control flow sentence, E1405 in Shape, two Conformance clauses; E1405 in k.check's fix list), conformance files (runtime-dom `for-keyed-rows-0090`, check `E1405-top-level-prop-read`, E1405 in `fixtures-by-code.ts` and `fix-diffs.test.ts`): committed bebbef9 (wip, tests red until lane A lands). The runtime-dom tests drive the `list` op from `@keel/runtime-dom/ops`.
 - [x] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation, from the held patches in `tasks/0432-friction-batch1/`) running
-- [ ] 3 wave 2 lanes: 0389, 0431, 0409, 0440 done; 0443 not started
+- [x] 3 wave 2 lanes: 0389, 0431, 0409, 0440 done; 0443 partly (see Notes)
 - [ ] 4 reviewer and red-team; findings to the backlog
 - [ ] 5 ledger, budgets, mutation for changed packages, backlog, handoff, push
 
@@ -33,10 +33,13 @@
 - wave 2 reported (0431, 0409, 0440): `compiler/src/hosting/topologyReadProblems.ts` replaces `hostLiteralProblems.ts`; `check/src/internal/topologyDiags.ts` replaces `topologyHosts.ts`; `routeLiterals.ts` follows an entry, a spread or an `api:` value to a `const` in the file or a relative import (8 hops) and reads literal computed keys, so E1511 shows from source (silent still: values from calls or conditionals, package imports other than `...x.routes`, namespace or default imports, re-exports, `Object.assign`, non-literal keys); `deployableNameProblem.ts` enforced in `parseTopology` and server `topology()`. compiler 946, check 1030, server 478, cli 558 pass; root test 56 tasks green; root check green but budgets. Bytes: check 42,628 (limit 42,496), compiler 28,415, cli 20,070, server 17,523 (limit 17,408): re-base both at step 5.
 - An agent's formatter run twice reflowed files it did not own (two conformance files, `compiler/vitest.mutate.config.ts`, `server/vitest.stryker.config.mjs`); restored to HEAD both times (0451).
 
+- 0443 partly done: `tooling/repo-root.ts` (`@keel/tooling/repo-root`, `repoRoot(import.meta.dirname)` walks up to `pnpm-workspace.yaml`); mutation-only exclusions dropped for cli 2 files, compiler 3 files and the brand-mark test, server 1 file, check's E1510/E1508 pattern. Remaining exclusions are conformance files (cli 13, server 4 and `test/productionEntryBundle.test.ts`, check 3 and the E1501/E1510 fixture names): clearing them edits conformance helpers, which needs an `rfc:` commit; the compiler's no-root test stays excluded though it no longer calls `process.chdir` (untested under Stryker). Evidence: each package's mutate config run from a hand-made `.stryker-tmp/sandbox-*` copy (compiler 946, server 463, check 852, cli 501 pass); no Stryker dry run. 0443 stays open for the remainder.
+- reviewer: approve. Lows to fix in-batch: the E1405 fix changes meaning when the const is a callee or holds an optional chain; `topologyReadProblems` names the wrong deployable for a key holding `: `. Filed: a forwarded HEAD response loses `content-length`.
+
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green
 - [ ] ledger not lowered, 0 uncovered; unsafe count unchanged
 - [ ] golden-1 list page: focus stays on the toggled control (test)
 
 ## Next action
-0443 (tests locate the repo from the mutation sandbox; drop the mutation-only exclusions), then step 4 (reviewer and red-team over `git diff 84238ef...HEAD`), then step 5.
+Collect the red-team report; one agent applies the reviewer's two fixes and the red-team's in-batch ones; file the rest. Then step 5.

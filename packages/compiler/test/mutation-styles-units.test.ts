@@ -1,7 +1,9 @@
 // Mutation-killing unit tests for the small pure helpers under src/internal.
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { repoRoot } from "@keel/tooling/repo-root";
 import type { JSXElement } from "oxc-parser";
 import { describe, expect, it } from "vitest";
-import { className as uiClassName } from "../../ui/src/internal/className.ts";
 import { analyze } from "../src/internal/analyze.ts";
 import { bindsTo } from "../src/internal/bindsTo.ts";
 import { canNest } from "../src/internal/canNest.ts";
@@ -14,6 +16,11 @@ import { roleOf } from "../src/internal/roleOf.ts";
 import { staticValueOf } from "../src/internal/staticValueOf.ts";
 import { tagNameOf } from "../src/internal/tagNameOf.ts";
 import { uiBaseElements } from "../src/internal/uiBaseElements.ts";
+
+const uiNames: typeof import("../../ui/src/internal/className.ts") = await import(
+  pathToFileURL(path.join(repoRoot(import.meta.dirname), "packages", "ui", "src", "internal", "className.ts")).href
+);
+const uiClassName = uiNames.className;
 
 function firstEl(source: string): JSXElement {
   const a = analyze({ path: "T.tsx", source });

@@ -2,11 +2,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { repoRoot } from "@keel/tooling/repo-root";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { routesRun } from "../src/internal/routesRun.ts";
 
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const repo = repoRoot(import.meta.dirname);
 const ROUTES_TS = `import { manifest } from "@keel/router";
 export const routes = manifest({
   "m.home": { path: "/home", component: () => null },

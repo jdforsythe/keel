@@ -6,8 +6,6 @@
 //   ledger-rung-promotion-cli, module-std-deps-loaded, module-std-tools-loaded, workspace-same-diagnostics: spawn
 //   `keel` (packages/cli/src/bin.ts) over a project by a repo-relative path, or scan packages/ and apps/.
 // - conformance/spec-and-explain.test.ts: reads spec/kernel/k.cli.md.
-// - test/routesRun.test.ts, test/scaffold-api-route-run.test.ts: run a generated project whose `@keel/compiler` import
-//   resolves only inside the repo.
 import { QuickFirst } from "@keel/tooling/quick-first";
 import { defineConfig, mergeConfig } from "vitest/config";
 import base from "./vitest.config.ts";
@@ -30,8 +28,6 @@ export default mergeConfig(
         "conformance/spec-and-explain.test.ts",
         "conformance/test-sim-ctx.test.ts",
         "conformance/workspace-same-diagnostics.test.ts",
-        "test/routesRun.test.ts",
-        "test/scaffold-api-route-run.test.ts",
         "**/node_modules/**",
       ],
       sequence: { sequencer: QuickFirst },

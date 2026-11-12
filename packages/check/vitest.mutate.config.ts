@@ -16,10 +16,9 @@ export default defineConfig({
       "conformance/explain.test.ts",
       "conformance/check-json-byte-identical-binary.test.ts",
     ],
-    // Need a sibling package or apps/golden-1 for the type pass via a relative path that does not exist from the sandbox:
-    // E1501 (apps/golden-1), E1510 (`../../router/`, `../ui/`: `@keel/router` is TS2307 from the sandbox).
-    testNamePattern:
-      /^(?!E1501: a string path passed to a navigate function typed|E1510: its fixture triggers|E1510 and E1508 from the type check)/,
+    // Conformance files reach apps/golden-1 and packages/router by a path relative to the file, which does not exist from
+    // the sandbox, and conformance is not edited: E1501 (apps/golden-1), E1510 (`@keel/router` is TS2307 from the sandbox).
+    testNamePattern: /^(?!E1501: a string path passed to a navigate function typed|E1510: its fixture triggers)/,
     passWithNoTests: true,
     sequence: { sequencer: QuickFirst },
     reporters: [new KeelReporter()],

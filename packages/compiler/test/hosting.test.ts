@@ -7,6 +7,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
+import { repoRoot } from "@keel/tooling/repo-root";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { hostProblems } from "../src/hosting/hostProblems.ts";
@@ -270,7 +271,7 @@ describe("client build", () => {
   });
 
   it("the mark is the brand mark", () => {
-    const brand = path.join(import.meta.dirname, "..", "..", "..", "docs", "brand", "keel-mark.svg");
+    const brand = path.join(repoRoot(import.meta.dirname), "docs", "brand", "keel-mark.svg");
     expect(keelMark()).toBe(fs.readFileSync(brand, "utf8").replace(/\n?$/, "\n"));
   });
 });
