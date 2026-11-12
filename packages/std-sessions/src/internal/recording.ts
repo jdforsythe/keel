@@ -17,6 +17,7 @@ import type { Route } from "./Route.ts";
 import { actives } from "./actives.ts";
 import { currentValues } from "./currentValues.ts";
 import { emptySession } from "./emptySession.ts";
+import { isInput } from "./isInput.ts";
 import { jsonOf } from "./jsonOf.ts";
 import { redactionOf } from "./redactionOf.ts";
 import { sessionFingerprint } from "./sessionFingerprint.ts";
@@ -31,7 +32,7 @@ const OVERHEAD = 256;
 const sizeOf = (v: unknown): number => utf8Length(JSON.stringify(v) ?? "");
 
 /**
- * A recorder on `ctx` (std.sessions `record`): `nav`, `fire`, `resource` and `error` from `observe`, `tx` from a
+ * A recorder on `ctx` (std.sessions `record`): `nav`, `fire`, `net`, `resource` and `error` from `observe`, `tx` from a
  * reactive read of every store's `log()`, each redacted as it is appended into a ring buffer of `limit` events whose
  * session JSON stays within `MAX_SESSION_BYTES`: past either bound it cuts its oldest events by the
  * overflow rule. `errors()` keeps the first and last `MAX_ERRORS`. A failed upload (non-2xx, rejected or thrown put)
@@ -114,10 +115,10 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
     // No navigation buffered: rebase to the oldest input but the first, at the state it saw, keeping it and what
     // followed; else to now, keeping the appended event if it is an input (its effects are yet to come) or an error
     // (the one an upload is about).
-    const f = buf.findIndex((e, i) => i > 0 && e.kind === "fire");
+    const f = buf.findIndex((e, i) => i > 0 && isInput(e));
     const from = f > 0 ? inputs.get(buf[f] ?? event) : undefined;
     if (from !== undefined) keep(buf.slice(f), from);
-    else keep(event.kind === "fire" || event.kind === "error" ? [event] : [], here());
+    else keep(isInput(event) || event.kind === "error" ? [event] : [], here());
   };
 
   const append = (event: SessionEvent): void => {
@@ -240,11 +241,15 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       return;
     }
     if (base === undefined) return;
-    if (event.kind === "fire") {
-      const e = redaction.fire({ at, kind: "fire", id: event.id, event: event.event });
+    if (event.kind === "fire" || event.kind === "net") {
+      const e: SessionEvent =
+        event.kind === "net"
+          ? { at, kind: "net", online: event.online }
+          : redaction.fire({ at, kind: "fire", id: event.id, event: event.event });
       inputs.set(e, here());
       append(e);
-    } else append({ at, kind: "resource", id: event.id, state: event.state });
+    } else if (event.kind === "resource") append({ at, kind: "resource", id: event.id, state: event.state });
+    // `save` is a server action's event: a session records the client's inputs and observations only.
   };
   const unobserve = observe(ctx, onEvent);
 

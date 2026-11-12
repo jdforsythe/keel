@@ -25,5 +25,6 @@ export const SessionEvent = s.union("kind", [
   o({ at, kind: s.literal("resource"), id: s.string(), state: s.enum(["loading", "ready", "error"]) }),
   o({ at, kind: s.literal("fire"), id: s.string(), event: testEvent }),
   o({ at, kind: s.literal("error"), route: s.string(), error: keelError }),
+  o({ at, kind: s.literal("net"), online: s.boolean() }),
 ]);
 export type SessionEvent = s.infer<typeof SessionEvent>;

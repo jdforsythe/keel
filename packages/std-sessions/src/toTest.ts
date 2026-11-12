@@ -100,9 +100,11 @@ export function toTest(
   );
   const navs = new Map(options.navs.map((n) => [n.index, n]));
   for (const [i, e] of session.events.entries()) {
-    if (e.kind === "fire") {
+    if (e.kind === "fire" || e.kind === "net") {
       advance(e.at);
-      body.push(`  await h.fire(${lit(e.id)}, ${lit(e.event)});`);
+      body.push(
+        e.kind === "net" ? `  ctx.net.setOnline(${e.online});` : `  await h.fire(${lit(e.id)}, ${lit(e.event)});`,
+      );
     } else if (e.kind === "nav") {
       const n = navs.get(i);
       if (n === undefined) continue;

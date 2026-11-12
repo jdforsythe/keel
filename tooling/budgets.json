@@ -94,7 +94,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/commandJob": {
-      "max": "8.5kb",
+      "max": "8.75kb",
       "platform": "node"
     },
     "@keel/std-sessions/group": {
