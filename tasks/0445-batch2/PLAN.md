@@ -8,8 +8,8 @@
 - D2 wave 1 lanes, disjoint packages: (A) runtime-dom, reactive, ui, check: RFC 0090; (B) scaffold: 0437; (C) compiler, cli, server `start`: 0444, 0398, 0399, 0379 message; (F) router: 0433. Wave 2 after A and C land: 0409, 0431, 0440 (check, compiler), 0443 (tests locate the repo from the mutation sandbox), 0389.
 
 ## Steps
-- [ ] 1 RFC 0090 accepted, ADR-0113, k.component text (Control flow sentence, E1405 in Shape, two Conformance clauses; E1405 in k.check's fix list): done in the tree, uncommitted. conformance-writer running (runtime-dom `for-keyed-rows-0090`, check `E1405-top-level-prop-read`)
-- [ ] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation) starts when the conformance tests exist, from the held patches in `tasks/0432-friction-batch1/`
+- [x] 1 RFC 0090 accepted, ADR-0113, k.component text (Control flow sentence, E1405 in Shape, two Conformance clauses; E1405 in k.check's fix list), conformance files (runtime-dom `for-keyed-rows-0090`, check `E1405-top-level-prop-read`, E1405 in `fixtures-by-code.ts` and `fix-diffs.test.ts`): committed bebbef9 (wip, tests red until lane A lands). The runtime-dom tests drive the `list` op from `@keel/runtime-dom/ops`.
+- [ ] 2 wave 1 lanes: B (scaffold 0437), C (0444, 0398, 0399, 0379), F (router 0433) running; A (RFC 0090 implementation, from the held patches in `tasks/0432-friction-batch1/`) running
 - [ ] 3 wave 2 lanes
 - [ ] 4 reviewer and red-team; findings to the backlog
 - [ ] 5 ledger, budgets, mutation for changed packages, backlog, handoff, push
@@ -22,4 +22,4 @@
 - [ ] golden-1 list page: focus stays on the toggled control (test)
 
 ## Next action
-Collect the conformance-writer report, commit step 1 as `rfc:0090` (spec, RFC, ADR, the two conformance files only; the seven 0438 files stay uncommitted), then start lane A. Collect lanes B, C, F.
+Collect lanes A, C, F (B is in). Then step 3 (wave 2), with the k.scaffold `.gitignore` clause through the conformance-writer.
