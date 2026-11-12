@@ -8,12 +8,12 @@ You need TypeScript, Vite and pnpm, and the terms in `docs/GLOSSARY.md`. Nothing
 
 ## What you build
 
-golden-1 is a todo board: named lists, todos with a title, a priority and a done flag, an edit page, an undo button, a suggestions panel, and a digest that counts open and done todos every hour. It is three modules in two deployables:
+golden-1 is a todo board: named lists, todos with a title, a priority and a done flag, an edit page, an undo button, a suggestions panel, and a digest that counts open and done todos every hour. Every open page follows the board live, and a write goes through an outbox that holds it while the browser is offline. It is three modules in two deployables:
 
 | Module | Deployable | Adapter | Owns |
 | --- | --- | --- | --- |
-| `todos` | `web` | `client` | the pages; it holds a copy of the board and reads and writes it over HTTP |
-| `api` | `api` | `node` | the board itself (`api.board`), its transactions and undo log, the suggestions |
+| `todos` | `web` | `client` | the pages; it holds a copy of the board, follows the board channel and sends writes through an outbox |
+| `api` | `api` | `node` | the board itself (`api.board`), its transactions and undo log, the board channel, the suggestions |
 | `digest` | `api` | `node` | a job that counts the board, an hourly schedule, `GET /digest` and a live feed |
 
 Build order follows the dependencies: project files, then `api` (the other two import its schemas and call its routes), then `todos`, then `digest`, then tests. You can run `keel check` once the three modules exist.
@@ -50,8 +50,8 @@ todo-by-hand/
   .gitignore
   public/keel-mark.svg
   modules/
-    todos/            pages, forms, the client's copy of the board
-    api/              the board, its transactions, the HTTP API
+    todos/            pages, forms, the client's copy of the board, the outbox
+    api/              the board, its transactions, the HTTP API, the board channel
     digest/           job, schedule, runners, live loader
   test/               vitest suites and their helpers
   # generated, never edited by hand:
@@ -102,8 +102,9 @@ todo-by-hand/
   },
   "devDependencies": {
     "@keel/cli": "workspace:*",
-    "@types/node": "^22",
+    "@keel/std-sessions": "workspace:*",
     "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
     "vite": "^8.3.6"
   }
 }
@@ -116,7 +117,7 @@ The scripts:
 - `build` is `keel build`; `dev` is `keel dev`. Both hand bundling and serving to Vite, because `vite.config.ts` exists.
 - `api` starts the built `api` deployable. Node's Web Storage flags make `localStorage` exist and persist to `.api.storage`; `ctx.storage` is that `localStorage`. It needs `KEEL_SECRET` set (section 10).
 
-The dependencies are the Keel packages the app's code imports. `@keel/testing` is listed with them although only tests use it. `@keel/tooling` is this repo's internal tooling package; the app uses it for `keelConfig` in `vitest.config.ts`. vitest, happy-dom, TypeScript and Biome are not declared here: they resolve from the repo root's devDependencies.
+The dependencies are the Keel packages the app's code imports. `@keel/testing` is listed with them although only tests use it. `@keel/std-channels`, `@keel/std-live` and `@keel/std-offline` carry the board channel, the page's live status and the outbox. `@keel/std-sessions` is a dev dependency for session groups (`test/user.ts`). `@keel/tooling` is this repo's internal tooling package; the app uses it for `keelConfig` in `vitest.config.ts`. vitest, happy-dom, TypeScript and Biome are not declared here: they resolve from the repo root's devDependencies.
 
 If you build under `apps/`, change `"name"` now and run `pnpm install` at the root.
 
@@ -285,9 +286,9 @@ Follow `http://localhost:5173/lists/l1` in `keel dev`:
 4. `virtual:keel.css` loads: the atomic classes for every style prop your components use, built from `tokens.ts`.
 5. The router matches `/lists/l1` against the manifest in `modules/todos/routes.ts`: route `todos.list`, path `/lists/:listId`. It parses the params with `ListParams` (a failure is a 404 rendered by the route's `errorElement`) and the search with `ListSearch` (failing keys are dropped).
 6. It runs the chain's guards, outermost first (none here), then its loaders. `loadList` runs in the browser with the real `ctx`. It calls `GET /api/lists` through a typed client.
-7. `keel dev` answers `/api/lists` from the `api` deployable's dev server on the same origin. The `api.lists` loader restores `api.board` from storage and answers `{ id, results: { "api.lists": { ok: true, value } } }`.
+7. `keel dev` answers `/api/lists` from the `api` deployable's dev server on the same origin. The `api.lists` loader restores `api.board` from storage and answers `{ id, results: { "api.lists": { ok: true, value } } }`, the board with its `head`, the count of writes it has taken.
 8. The typed client takes the `api.lists` result and decodes its `value` with the endpoint's `output`, `BoardView`. `loadList` stores the board in the client store `todos.view` (transaction `todos.hydrate`) and returns the list.
-9. The router renders the chain, outermost first: the layout `todos.shell` (`AppShell`), with `ListPage` as its children, given `{ params, search, data }`. `ListPage` reads the todos from `todos.view`.
+9. The router renders the chain, outermost first: the layout `todos.shell` (`AppShell`), with `ListPage` as its children, given `{ params, search, data }`. `ListPage` reads the todos from `todos.view`. `AppShell` also opens `GET /api/board/events`, the board channel, and sends any writes waiting in the outbox. When another page saves the board, the `api` deployable tells this one over that stream, and `AppShell` reads `GET /api/lists` into `todos.view` again.
 
 A `node` deployable's page goes the other way. A request reaches `server.mjs`; `createApp` matches the route, runs guards and loaders on the server, and streams HTML with the request's store state in `<script type="application/json" id="k-state">`. If the page has an island (a component with an event handler, an effect, or a read of client-writable state), the HTML scripts the resume entry, which restores state from `#k-state` and attaches handlers to the server's DOM using `/@keel/islands.ts`, without rendering again. A request with `accept: application/json` gets the loader `Result` instead of HTML. golden-1's `api` routes are API routes: they answer JSON only.
 
@@ -332,16 +333,37 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "api",
-  deps: [],
-  capabilities: ["random", "storage"],
+  deps: ["@keel/std-channels", "@keel/std-offline"],
+  capabilities: ["clock", "net", "observe", "random", "storage"],
   public: {
-    exports: ["Board", "BoardView", "ListDraft", "ListParams", "Suggestion", "Todo", "TodoDraft", "TodoList"],
-    routes: ["api.lists", "api.listTodos", "api.todo", "api.todoToggle", "api.undo", "api.suggestions"],
+    exports: [
+      "Board",
+      "BoardView",
+      "ListDraft",
+      "ListParams",
+      "Suggestion",
+      "Todo",
+      "TodoDraft",
+      "TodoList",
+      "ListWrite",
+      "TodoWrite",
+      "ToggleWrite",
+      "boardChannel",
+    ],
+    routes: [
+      "api.lists",
+      "api.listTodos",
+      "api.todo",
+      "api.todoToggle",
+      "api.undo",
+      "api.suggestions",
+      "api.boardEvents",
+    ],
   },
 });
 ```
 
-`api` has no app dependencies: it owns its contract. `random` mints ids. `public.exports` lists the schemas `todos` and `digest` import. `public.routes` lists every route a caller in another module uses through `service({ module: "api" })`: `digest` calls `api.lists`, and the `todos` client calls all six.
+`api` has no app dependencies: it owns its contract. Its stdlib dependencies are `@keel/std-channels` for the board channel and `@keel/std-offline` for the `Write` schema its write bodies carry. `random` mints ids and `storage` holds the board; the channel's stream uses `clock`, `net` and `observe`. `public.exports` lists the schemas and the channel `todos` and `digest` import. `public.routes` lists every route a caller in another module uses through `service({ module: "api" })`: `digest` calls `api.lists`, and the `todos` client calls all seven, `api.boardEvents` through the board channel.
 
 ### Contract schemas
 
@@ -391,18 +413,22 @@ export const Board = s.object({
 export type Board = s.infer<typeof Board>;
 ```
 
-`BoardView` is the board as `GET /api/lists` serves it, plus `canUndo`. It is also the state of the client store.
+`BoardView` is the board as `GET /api/lists` serves it, plus `canUndo` and `head`, the number of writes the board has taken when it was read. A write names that number as its `base`. It is also the state of the client store.
 
 ```ts title="modules/api/BoardView.schema.ts"
 import { s } from "@keel/schema";
 import { Todo } from "./Todo.schema.ts";
 import { TodoList } from "./TodoList.schema.ts";
 
-/** The board as `GET /api/lists` serves it (`api.lists` loader data) and the `todos.view` store holds it. */
+/**
+ * The board as `GET /api/lists` serves it (`api.lists` loader data) and the `todos.view` store holds it; `head` is the
+ * board's head when it was read, the `base` a write names.
+ */
 export const BoardView = s.object({
   lists: s.array(TodoList),
   todos: s.array(Todo),
   canUndo: s.boolean(),
+  head: s.int({ min: 0 }),
 });
 export type BoardView = s.infer<typeof BoardView>;
 ```
@@ -429,6 +455,44 @@ export const TodoDraft = s.object({
 });
 export type TodoDraft = s.infer<typeof TodoDraft>;
 ```
+
+Write bodies. An outbox sends every board write with a `Write`, from `@keel/std-offline`: a `key` that names the write across retries, so a write the server already took is not applied twice, and a `base`, the head the writer last read. The three bodies add it to the fields of a draft:
+
+```ts title="modules/api/ListWrite.schema.ts"
+import { s } from "@keel/schema";
+import { Write } from "@keel/std-offline";
+
+/** Body of `POST /api/lists`: the new list's name and the write's `key` and `base`. */
+export const ListWrite = s.object({
+  name: s.string({ min: 1, max: 60 }),
+  write: Write,
+});
+export type ListWrite = s.infer<typeof ListWrite>;
+```
+
+```ts title="modules/api/TodoWrite.schema.ts"
+import { s } from "@keel/schema";
+import { Write } from "@keel/std-offline";
+
+/** Body of `POST /api/lists/:listId/todos` and `POST /api/todos/:todoId`: the todo's fields and the write's `key` and `base`. */
+export const TodoWrite = s.object({
+  title: s.string({ min: 1, max: 120 }),
+  priority: s.enum(["low", "normal", "high"]),
+  write: Write,
+});
+export type TodoWrite = s.infer<typeof TodoWrite>;
+```
+
+```ts title="modules/api/ToggleWrite.schema.ts"
+import { s } from "@keel/schema";
+import { Write } from "@keel/std-offline";
+
+/** Body of `POST /api/todos/:todoId/toggle`: the write's `key` and `base`. */
+export const ToggleWrite = s.object({ write: Write });
+export type ToggleWrite = s.infer<typeof ToggleWrite>;
+```
+
+`ListDraft` and `TodoDraft` stay the inputs of the forms; the `todos` actions send them inside these bodies.
 
 Route params and search. Loaders, actions and the route share one schema value; E1507 reports a loader whose `params` is not its route's own. Every search field must be optional (E1504).
 
@@ -489,12 +553,17 @@ export function board() {
 
 Each transaction is a function of the store, so the factory can bind it to that request's board. Transaction functions are pure: no `ctx`, no globals (E1302).
 
+A write names the head it was based on. When the board has moved past that head, the transaction's `concurrent` policy decides. `"rebase"` runs the write over the newer board, which is right when the payload holds nothing the writer read: a list or todo with a fresh id, or a flip of `done`. `"reject"`, the default, refuses it with `keel.conflict`. `api.addList`, `api.addTodo` and `api.toggleTodo` rebase; `api.editTodo` rejects, because its payload carries the title and priority as the editor saw them.
+
 ```ts title="modules/api/addList.ts"
 import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
 import type { Board } from "./Board.schema.ts";
 
-/** `api.addList` on `board` (`boardStores`): append a list; a duplicate id leaves the board unchanged. */
+/**
+ * `api.addList` on `board` (`boardStores`): append a list; a duplicate id leaves the board unchanged. A concurrent write
+ * rebases: a list with a fresh id holds on any board.
+ */
 export const addList = (board: Store<Board>) =>
   transaction(
     board,
@@ -504,6 +573,7 @@ export const addList = (board: Store<Board>) =>
       state.lists.some((l) => l.id === p.id)
         ? state
         : { ...state, lists: [...state.lists, { id: p.id, name: p.name }] },
+    { concurrent: "rebase" },
   );
 ```
 
@@ -512,7 +582,10 @@ import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
 import type { Board } from "./Board.schema.ts";
 
-/** `api.addTodo` on `board` (`boardStores`): append an open todo to list `listId`; an unknown list or a duplicate id leaves the board unchanged. */
+/**
+ * `api.addTodo` on `board` (`boardStores`): append an open todo to list `listId`; an unknown list or a duplicate id
+ * leaves the board unchanged. A concurrent write rebases: a todo with a fresh id holds on any board.
+ */
 export const addTodo = (board: Store<Board>) =>
   transaction(
     board,
@@ -527,6 +600,7 @@ export const addTodo = (board: Store<Board>) =>
       state.todos.some((t) => t.id === p.id) || !state.lists.some((l) => l.id === p.listId)
         ? state
         : { ...state, todos: [...state.todos, { ...p, done: false }] },
+    { concurrent: "rebase" },
   );
 ```
 
@@ -535,12 +609,20 @@ import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
 import type { Board } from "./Board.schema.ts";
 
-/** `api.toggleTodo` on `board` (`boardStores`): flip `done` of todo `id`; an unknown id leaves the board unchanged. */
+/**
+ * `api.toggleTodo` on `board` (`boardStores`): flip `done` of todo `id`; an unknown id leaves the board unchanged. A
+ * concurrent write rebases: a flip carries no value the writer read.
+ */
 export const toggleTodo = (board: Store<Board>) =>
-  transaction(board, "api.toggleTodo", s.object({ id: s.id("Todo") }), (state, p) =>
-    state.todos.some((t) => t.id === p.id)
-      ? { ...state, todos: state.todos.map((t) => (t.id === p.id ? { ...t, done: !t.done } : t)) }
-      : state,
+  transaction(
+    board,
+    "api.toggleTodo",
+    s.object({ id: s.id("Todo") }),
+    (state, p) =>
+      state.todos.some((t) => t.id === p.id)
+        ? { ...state, todos: state.todos.map((t) => (t.id === p.id ? { ...t, done: !t.done } : t)) }
+        : state,
+    { concurrent: "rebase" },
   );
 ```
 
@@ -549,7 +631,10 @@ import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
 import type { Board } from "./Board.schema.ts";
 
-/** `api.editTodo` on `board` (`boardStores`): replace title and priority of todo `id`; an unknown id leaves the board unchanged. */
+/**
+ * `api.editTodo` on `board` (`boardStores`): replace title and priority of todo `id`; an unknown id leaves the board
+ * unchanged. A concurrent write is refused (`reject`, the default): its payload holds both fields as the editor read them.
+ */
 export const editTodo = (board: Store<Board>) =>
   transaction(
     board,
@@ -589,7 +674,7 @@ export function boardStores() {
 
 ### Loaders and actions
 
-`caller` identifies the browser: a hash of a signed `keel-caller` cookie the server sets on the first write. Actions record it as transaction `meta`, so undo can stay per client.
+`caller` identifies the browser: a hash of a signed `keel-caller` cookie the server sets on the first write. Actions record it as transaction `meta`, so undo can stay per client. Each write action also spreads the body's `write` (`key` and `base`) into the options of `tx`, so the store takes the key and applies the policy.
 
 ```ts title="modules/api/loadBoard.server.ts"
 import { loader } from "@keel/router";
@@ -597,11 +682,11 @@ import { ok } from "@keel/schema";
 import { BoardView } from "./BoardView.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
-/** `GET /api/lists`: every list and todo, and whether `POST /api/undo` would undo this caller's last write. */
+/** `GET /api/lists`: every list and todo, whether `POST /api/undo` would undo this caller's last write, and the head. */
 export const loadBoard = loader({ output: BoardView, stores: boardStores }, async ({ caller, stores }) => {
   const { board } = stores;
   const canUndo = board.log().at(-1)?.meta?.caller === caller;
-  return ok({ lists: board.get("lists"), todos: board.get("todos"), canUndo });
+  return ok({ lists: board.get("lists"), todos: board.get("todos"), canUndo, head: board.head() });
 });
 ```
 
@@ -622,12 +707,19 @@ export const loadSuggestions = loader({ output: s.array(Suggestion) }, async () 
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
-import { ListDraft } from "./ListDraft.schema.ts";
+import { ListWrite } from "./ListWrite.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
-/** `POST /api/lists`: add a list with a ctx-minted id, recorded with this caller (undo, `postUndo`). */
-export const postList = action({ input: ListDraft, stores: boardStores }, (input, { caller, stores }, ctx) => {
-  const r = tx(stores.addList, { id: ctx.random.id("TodoList"), name: input.name }, { meta: { caller } });
+/**
+ * `POST /api/lists`: add a list with a ctx-minted id, recorded with this caller (undo, `postUndo`) and the write's key
+ * and base.
+ */
+export const postList = action({ input: ListWrite, stores: boardStores }, (input, { caller, stores }, ctx) => {
+  const r = tx(
+    stores.addList,
+    { id: ctx.random.id("TodoList"), name: input.name },
+    { meta: { caller }, ...input.write },
+  );
   return r.ok ? ok(null) : err(r.error);
 });
 ```
@@ -637,17 +729,21 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { ListParams } from "./ListParams.schema.ts";
-import { TodoDraft } from "./TodoDraft.schema.ts";
+import { TodoWrite } from "./TodoWrite.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
-/** `POST /api/lists/:listId/todos`: add an open todo with a ctx-minted id; an unknown list is `keel.notFound`. */
+/**
+ * `POST /api/lists/:listId/todos`: add an open todo with a ctx-minted id, with the write's key and base; an unknown
+ * list is `keel.notFound`.
+ */
 export const postTodo = action(
-  { input: TodoDraft, params: ListParams, stores: boardStores },
+  { input: TodoWrite, params: ListParams, stores: boardStores },
   (input, { params, caller, stores }, ctx) => {
     const { listId } = params;
     if (!stores.board.get("lists").some((l) => l.id === listId))
       return err({ code: "keel.notFound", message: `No list ${listId}`, data: { listId } });
-    const r = tx(stores.addTodo, { ...input, id: ctx.random.id("Todo"), listId }, { meta: { caller } });
+    const { write, ...draft } = input;
+    const r = tx(stores.addTodo, { ...draft, id: ctx.random.id("Todo"), listId }, { meta: { caller }, ...write });
     return r.ok ? ok(null) : err(r.error);
   },
 );
@@ -655,19 +751,20 @@ export const postTodo = action(
 
 ```ts title="modules/api/postToggle.server.ts"
 import { action } from "@keel/router";
-import { err, ok, s } from "@keel/schema";
+import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
+import { ToggleWrite } from "./ToggleWrite.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
-/** `POST /api/todos/:todoId/toggle`: flip `done`; an unknown todo is `keel.notFound`. */
+/** `POST /api/todos/:todoId/toggle`: flip `done`, with the write's key and base; an unknown todo is `keel.notFound`. */
 export const postToggle = action(
-  { input: s.object({}), params: TodoIdParams, stores: boardStores },
-  (_input, { params, caller, stores }) => {
+  { input: ToggleWrite, params: TodoIdParams, stores: boardStores },
+  (input, { params, caller, stores }) => {
     const { todoId } = params;
     const todo = stores.board.get("todos").find((t) => t.id === todoId);
     if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
-    const r = tx(stores.toggleTodo, { id: todoId }, { meta: { caller } });
+    const r = tx(stores.toggleTodo, { id: todoId }, { meta: { caller }, ...input.write });
     return r.ok ? ok(null) : err(r.error);
   },
 );
@@ -677,30 +774,32 @@ export const postToggle = action(
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
-import { TodoDraft } from "./TodoDraft.schema.ts";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
+import { TodoWrite } from "./TodoWrite.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
- * `POST /api/todos/:todoId`: replace title and priority. `keel.fields` `{ title }` when another todo in the same list
- * has the title; an unknown todo is `keel.notFound`.
+ * `POST /api/todos/:todoId`: replace title and priority, with the write's key and base. `keel.fields` `{ title }` when
+ * another todo in the same list has the title; an unknown todo is `keel.notFound`; a write whose base is not the
+ * board's head is `keel.conflict` (409, `api.editTodo` refuses concurrent writes).
  */
 export const postEdit = action(
-  { input: TodoDraft, params: TodoIdParams, stores: boardStores },
+  { input: TodoWrite, params: TodoIdParams, stores: boardStores },
   (input, { params, caller, stores }) => {
     const { todoId } = params;
     const todos = stores.board.get("todos");
     const todo = todos.find((t) => t.id === todoId);
     if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
-    if (todos.some((t) => t.listId === todo.listId && t.id !== todoId && t.title === input.title))
+    const { write, ...draft } = input;
+    if (todos.some((t) => t.listId === todo.listId && t.id !== todoId && t.title === draft.title))
       return err({ code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } });
-    const r = tx(stores.editTodo, { ...input, id: todoId }, { meta: { caller } });
+    const r = tx(stores.editTodo, { ...draft, id: todoId }, { meta: { caller }, ...write });
     return r.ok ? ok(null) : err(r.error);
   },
 );
 ```
 
-`undoWhere` undoes the newest log entry only when the predicate holds:
+`postEdit` returns the store's `keel.conflict` as a 409 when the edit's base is not the head. `undoWhere` undoes the newest log entry only when the predicate holds:
 
 ```ts title="modules/api/postUndo.server.ts"
 import { action } from "@keel/router";
@@ -719,9 +818,39 @@ export const postUndo = action({ input: s.object({}), stores: boardStores }, (_i
 );
 ```
 
+### The board channel
+
+A channel is a named event stream with a schema for what it carries. `boardChannel` has a name, a path and no params, and declares no message, so nothing is published on it: its one event tells a page that `api.board` was saved.
+
+```ts title="modules/api/boardChannel.ts"
+import { s } from "@keel/schema";
+import { channel } from "@keel/std-channels";
+
+/**
+ * The board's channel: `GET /api/board/events` tells every open page that `api.board` was saved, so it re-reads. It
+ * declares no message, so nothing is published on it.
+ */
+export const boardChannel = channel("api.board", { path: "/api/board/events", params: s.object({}) });
+```
+
+`channelRoute` builds the route that serves it: a loader for the stream at `GET /api/board/events`, and its actions. It names `stores: boardStores` so it sees the board's saves, and `member` decides per open stream whether a caller may listen. The board is public, so every caller is a member.
+
+```ts title="modules/api/boardEvents.server.ts"
+import { channelRoute } from "@keel/std-channels/server";
+import { boardChannel } from "./boardChannel.ts";
+import { boardStores } from "./boardStores.ts";
+
+/** The board channel's event stream: every caller is a member, since the board is public. */
+export const boardEvents = channelRoute(boardChannel, {
+  id: "api.boardEvents",
+  stores: boardStores,
+  member: () => true,
+});
+```
+
 ### API routes
 
-Every `api` entry is an API route: `api: true`, a `path`, and no `component`. A request for one gets JSON whatever its `accept` says: the loader `Result` for a GET, the action `Result` for a write. A GET to a route with no loader is 405, and `routes.href`, `Link` and `navigate` do not take an API route's id.
+Every `api` entry is an API route: `api: true`, a `path`, and no `component`. A request for one gets JSON whatever its `accept` says: the loader `Result` for a GET, the action `Result` for a write. A GET to a route with no loader is 405, and `routes.href`, `Link` and `navigate` do not take an API route's id. `api.boardEvents` takes its path, loader and actions from `boardEvents`, and its GET is an event stream.
 
 ### Routes
 
@@ -729,6 +858,7 @@ Every `api` entry is an API route: `api: true`, a `path`, and no `component`. A 
 import { manifest } from "@keel/router";
 import { ListParams } from "./ListParams.schema.ts";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
+import { boardEvents } from "./boardEvents.server.ts";
 import { loadBoard } from "./loadBoard.server.ts";
 import { loadSuggestions } from "./loadSuggestions.server.ts";
 import { postEdit } from "./postEdit.server.ts";
@@ -737,7 +867,10 @@ import { postTodo } from "./postTodo.server.ts";
 import { postToggle } from "./postToggle.server.ts";
 import { postUndo } from "./postUndo.server.ts";
 
-/** The `api` deployable (node): it owns the board (`api.board`); `todos` reads and writes it over HTTP. */
+/**
+ * The `api` deployable (node): it owns the board (`api.board`); `todos` reads and writes it over HTTP and follows the
+ * board channel (`api.boardEvents`) to re-read after each save.
+ */
 export const routes = manifest({
   "api.lists": { api: true, path: "/api/lists", loader: loadBoard },
   "api.listTodos": {
@@ -757,6 +890,7 @@ export const routes = manifest({
   },
   "api.undo": { api: true, path: "/api/undo" },
   "api.suggestions": { api: true, path: "/api/suggestions", loader: loadSuggestions },
+  "api.boardEvents": { api: true, path: boardEvents.path, loader: boardEvents.loader },
 });
 routes.actions({
   "api.lists": { POST: postList },
@@ -764,12 +898,13 @@ routes.actions({
   "api.todo": { POST: postEdit },
   "api.todoToggle": { POST: postToggle },
   "api.undo": { POST: postUndo },
+  "api.boardEvents": boardEvents.actions,
 });
 ```
 
 ## 7. The todos module
 
-`todos` is the `web` deployable: every page, every form, and a client-side copy of the board. It never owns data; it reads `GET /api/lists` and writes through `POST` routes of the `api` deployable.
+`todos` is the `web` deployable: every page, every form, and a client-side copy of the board. It never owns data; it reads `GET /api/lists`, follows the board channel, and sends every write to a `POST` route of the `api` deployable through an outbox.
 
 ### Manifest
 
@@ -784,11 +919,11 @@ export default module({
 });
 ```
 
-`deps: ["api"]` lets it import the contract schemas and call the `api` routes. `net` is for the HTTP calls; `storage` is for the edit guard. Nothing is public, because nothing outside `todos` imports its files or links to its pages.
+`deps: ["api"]` lets it import the contract schemas and call the `api` routes. `net` is for the HTTP calls; `storage` is for the edit guard and the outbox. Nothing is public, because nothing outside `todos` imports its files or links to its pages.
 
 ### Schemas
 
-`todos` imports the contract schemas from `api` (`Todo`, `TodoList`, `BoardView`, `ListDraft`, `TodoDraft`, `ListParams`, `Suggestion`; section 6). The schemas below are its own: the route params and search of its pages, and the error answer its typed client decodes.
+`todos` imports the contract schemas and the channel from `api` (`Todo`, `TodoList`, `BoardView`, `ListDraft`, `TodoDraft`, `ListParams`, `ListWrite`, `TodoWrite`, `ToggleWrite`, `Suggestion`, `boardChannel`; section 6). The schemas below are its own: the route params and search of its pages, and the error answers its typed clients decode.
 
 
 ```ts title="modules/todos/TodoParams.schema.ts"
@@ -828,8 +963,8 @@ A store holds state of one schema. The only way to change it is a transaction: a
 import { store } from "@keel/store";
 import { BoardView } from "../api/BoardView.schema.ts";
 
-/** The board as the `api` deployable last served it. Changes only through `todos.hydrate` (`refreshView`). */
-export const view = store(BoardView, { lists: [], todos: [], canUndo: false }, { id: "todos.view" });
+/** The board as the `api` deployable last served it. Changes only through `todos.hydrate` (`refreshView`, `live`). */
+export const view = store(BoardView, { lists: [], todos: [], canUndo: false, head: 0 }, { id: "todos.view" });
 ```
 
 ```ts title="modules/todos/hydrate.ts"
@@ -841,48 +976,26 @@ import { view } from "./view.ts";
 export const hydrate = transaction(view, "todos.hydrate", BoardView, (_state, data) => data);
 ```
 
-`todos.view` changes only when a fresh board arrives: the client never edits todos locally, it asks `api` and re-reads.
+`todos.view` changes only when a fresh board arrives, with the `head` it was read at: the client never edits todos locally, it asks `api` and re-reads.
 
 ### Talking to the api deployable
 
 `endpoints` declares an HTTP API as schemas: method, path, params, body, output, and the error bodies by status. `service({ module: "api", schema })` turns it into a typed client whose methods take `({ params, body }, ctx)` and return `Result<output, ApiError>`. They never throw. `ApiError` codes are `api.status` (with `status` and the decoded error body), `api.network`, `api.timeout`, `api.decode` and `api.input`. Requests go through `ctx.net`, never `fetch` (E1601, E1651).
 
+`todos.service.ts` declares the two calls that go through `service({ module })`: the board read and Undo. Board writes carry a key and a base, so they have their own endpoints, sent by the outbox (below).
+
 ```ts title="modules/todos/todos.service.ts"
 import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
 import { BoardView } from "../api/BoardView.schema.ts";
-import { ListDraft } from "../api/ListDraft.schema.ts";
-import { TodoDraft } from "../api/TodoDraft.schema.ts";
-import { FieldsReply } from "./FieldsReply.schema.ts";
 
 /**
- * The board endpoints of the golden-1 `api` deployable (it owns the data), resolved by the topology (`todosApi`):
- * `lists` answers the `api.lists` loader's value, each action the href it returns (or none).
+ * The board read and undo of the golden-1 `api` deployable (it owns the data), resolved by the topology
+ * (`todosApi`): `lists` answers the `api.lists` loader's value, `undo` the href its action returns (or none). Board
+ * writes go through `boardOutbox` (`boardWrites`).
  */
 export const todos = endpoints({
   lists: { method: "GET", path: "/api/lists", output: BoardView },
-  createList: { method: "POST", path: "/api/lists", body: ListDraft, output: s.string().nullable() },
-  addTodo: {
-    method: "POST",
-    path: "/api/lists/:listId/todos",
-    params: s.object({ listId: s.id("TodoList") }),
-    body: TodoDraft,
-    output: s.string().nullable(),
-  },
-  toggleTodo: {
-    method: "POST",
-    path: "/api/todos/:todoId/toggle",
-    params: s.object({ todoId: s.id("Todo") }),
-    output: s.string().nullable(),
-  },
-  editTodo: {
-    method: "POST",
-    path: "/api/todos/:todoId",
-    params: s.object({ todoId: s.id("Todo") }),
-    body: TodoDraft,
-    output: s.string().nullable(),
-    errors: { 422: FieldsReply },
-  },
   undo: { method: "POST", path: "/api/undo", output: s.string().nullable() },
 });
 ```
@@ -901,7 +1014,7 @@ export const suggestions = endpoints({
 });
 ```
 
-`service({ module })` names no origin. The topology resolves it per call: in a browser, the origin of the `api` peer when the build sets `KEEL_PEER_API`, else the page's origin, which is the `api` origin because `api` hosts `web`; on a `ctx` that no `createApp` bound, `http://api.keel.invalid`. `keel check` compares every endpoint with the route it calls (E1561): the endpoint must name a path and method of a route in `api`'s `public.routes`, its `params` and `body` must be accepted by the route, and its `output` and `errors` must accept what the route answers. That is why `errors[422]` is `FieldsReply`, which admits any error answer of the route, not only `keel.fields`. The client needs no origin, so it is one value:
+`service({ module })` names no origin. The topology resolves it per call: in a browser, the origin of the `api` peer when the build sets `KEEL_PEER_API`, else the page's origin, which is the `api` origin because `api` hosts `web`; on a `ctx` that no `createApp` bound, `http://api.keel.invalid`. `keel check` compares every endpoint with the route it calls (E1561): the endpoint must name a path and method of a route in `api`'s `public.routes`, its `params` and `body` must be accepted by the route, and its `output` and `errors` must accept what the route answers. The client needs no origin, so it is one value:
 
 ```ts title="modules/todos/todosApi.ts"
 import { service } from "@keel/services";
@@ -911,7 +1024,7 @@ import { todos } from "./todos.service.ts";
 export const todosApi = service({ module: "api", schema: todos });
 ```
 
-Every loader and every write ends by re-reading the board into `todos.view`:
+Every loader and Undo end by re-reading the board into `todos.view`. Offline, the read cannot go out; `refreshView` then answers the board as last served, so a page still opens while writes wait in the outbox:
 
 ```ts title="modules/todos/refreshView.ts"
 import type { Ctx } from "@keel/ctx";
@@ -920,29 +1033,153 @@ import { tx } from "@keel/store";
 import type { BoardView } from "../api/BoardView.schema.ts";
 import { hydrate } from "./hydrate.ts";
 import { todosApi } from "./todosApi.ts";
+import { view } from "./view.ts";
 
-/** Read the board from `GET /api/lists` into `todos.view` (`todos.hydrate`); every loader and write ends here. */
+/**
+ * Read the board from `GET /api/lists` into `todos.view` (`todos.hydrate`); loaders and Undo end here. Offline, the
+ * read cannot go out and the answer is the board as last served, so a page still opens while writes wait in the outbox.
+ */
 export async function refreshView(ctx: Ctx): Promise<Result<BoardView, KeelError<string, unknown>>> {
   const r = await todosApi.lists({}, ctx);
+  if (!r.ok && r.error.code === "api.network" && !ctx.net.online())
+    return ok({
+      lists: view.get("lists"),
+      todos: view.get("todos"),
+      canUndo: view.get("canUndo"),
+      head: view.get("head"),
+    });
   if (!r.ok) return r;
   const h = tx(hydrate, r.value);
   return h.ok ? ok(r.value) : h;
 }
 ```
 
-```ts title="modules/todos/syncAfter.ts"
-import type { Ctx } from "@keel/ctx";
-import type { KeelError, Result } from "@keel/schema";
-import type { BoardView } from "../api/BoardView.schema.ts";
-import { refreshView } from "./refreshView.ts";
+### Writing through the outbox
 
-/** Await one write a component sent to the `api` deployable; when it succeeded, re-read the board (`refreshView`). */
-export async function syncAfter(
+An outbox holds this client's writes in the order sent. `send` posts one when the client is online and queues it when it is not; `drain` sends the waiting ones; `resolve` settles a write the server refused. The outbox keeps its entries in `ctx.storage`, so they survive a reload. Each write carries a fresh `key`, which lets the server drop a retry it already took, and a `base`, the board `head` the client last read.
+
+The outbox calls the `api` deployable by its origin, not through `service({ module })`, so its endpoints decode the whole answer the server sends. A success is `{ ok: true, value }`, where `value` is the href the action returns or none. A 409 is a refusal the outbox reads itself: `keel.conflict`, with the board's head. A 422 is `{ ok: false, error }` with the `keel.fields` error.
+
+```ts title="modules/todos/WriteAnswer.schema.ts"
+import { s } from "@keel/schema";
+
+/**
+ * A write's answer as the outbox reads it (`boardWrites`): the outbox calls the `api` deployable by its origin, so it
+ * decodes the whole k.server answer, `{ ok: true, value }`, where the value is the href the action returns, or none.
+ */
+export const WriteAnswer = s.object({ ok: s.literal(true), value: s.string().nullable() });
+export type WriteAnswer = s.infer<typeof WriteAnswer>;
+```
+
+```ts title="modules/todos/WriteRefusal.schema.ts"
+import { s } from "@keel/schema";
+import { FieldsReply } from "./FieldsReply.schema.ts";
+
+/** A refused write's 422 answer as the outbox reads it (`boardWrites`): `{ ok: false, error }`, the error `keel.fields`. */
+export const WriteRefusal = s.object({ ok: s.literal(false), error: FieldsReply });
+export type WriteRefusal = s.infer<typeof WriteRefusal>;
+```
+
+```ts title="modules/todos/boardWrites.service.ts"
+import { s } from "@keel/schema";
+import { endpoints } from "@keel/services";
+import { ListWrite } from "../api/ListWrite.schema.ts";
+import { TodoWrite } from "../api/TodoWrite.schema.ts";
+import { ToggleWrite } from "../api/ToggleWrite.schema.ts";
+import { WriteAnswer } from "./WriteAnswer.schema.ts";
+import { WriteRefusal } from "./WriteRefusal.schema.ts";
+
+/**
+ * The board writes of the golden-1 `api` deployable, sent through `boardOutbox`: each body carries the write's `key`
+ * and `base`. A 409 is a refusal the outbox reads (`keel.conflict` with the board's head); a 422 is `keel.fields`.
+ */
+export const boardWrites = endpoints({
+  createList: {
+    method: "POST",
+    path: "/api/lists",
+    body: ListWrite,
+    output: WriteAnswer,
+    errors: { 409: s.json(), 422: WriteRefusal },
+  },
+  addTodo: {
+    method: "POST",
+    path: "/api/lists/:listId/todos",
+    params: s.object({ listId: s.id("TodoList") }),
+    body: TodoWrite,
+    output: WriteAnswer,
+    errors: { 409: s.json(), 422: WriteRefusal },
+  },
+  toggleTodo: {
+    method: "POST",
+    path: "/api/todos/:todoId/toggle",
+    params: s.object({ todoId: s.id("Todo") }),
+    body: ToggleWrite,
+    output: WriteAnswer,
+    errors: { 409: s.json(), 422: WriteRefusal },
+  },
+  editTodo: {
+    method: "POST",
+    path: "/api/todos/:todoId",
+    params: s.object({ todoId: s.id("Todo") }),
+    body: TodoWrite,
+    output: WriteAnswer,
+    errors: { 409: s.json(), 422: WriteRefusal },
+  },
+});
+```
+
+The outbox is a store, so it lives in a scope. A module-level one needs a scope of its own, and `lifetime` is it:
+
+```ts title="modules/todos/boardOutbox.ts"
+import { scope } from "@keel/reactive";
+import { outbox } from "@keel/std-offline";
+import { boardWrites } from "./boardWrites.service.ts";
+
+/** The scope the outbox lives in: as long as the module, as the compiler gives a module-level store. */
+const lifetime = scope(() => undefined);
+
+/**
+ * This client's board writes, in the order sent (store `todos.outbox`, kept in `ctx.storage`): each waits here while
+ * the client is offline, and a write the board refused stays until the user keeps theirs or the other one.
+ */
+export const boardOutbox = lifetime.run(() => outbox("todos.outbox", boardWrites));
+```
+
+`send` and the live stream both need the `api` origin, which is the page's, because `api` hosts `web`. It is undefined off a browser page:
+
+```ts title="modules/todos/pageOrigin.ts"
+/** The page's origin, where the `api` deployable answers (`web` is hosted by `api`); undefined off a browser page. */
+export const pageOrigin = (): string | undefined => (typeof location === "undefined" ? undefined : location.origin);
+```
+
+A Form action cannot leave a write in the outbox the way a checkbox can, because the Form shows its result. `formAnswer` turns an `OutboxResult` into the action's answer: a write that was sent, queued or held as a conflict is `ok(null)`, and the outbox panel shows the last two. A failed write is dropped from the outbox, since the Form reports it: a 422's `keel.fields` goes to the fields, any other error to the Form.
+
+```ts title="modules/todos/formAnswer.ts"
+import type { Ctx } from "@keel/ctx";
+import { type KeelError, type Result, err, ok } from "@keel/schema";
+import { type OutboxResult, resolve } from "@keel/std-offline";
+import { WriteRefusal } from "./WriteRefusal.schema.ts";
+import { boardOutbox } from "./boardOutbox.ts";
+
+/**
+ * What a Form action answers after sending through `boardOutbox`: `ok(null)` once the write is sent, queued or held as
+ * a conflict (the outbox panel shows the last two). A failed write leaves the outbox, since the Form shows it: a 422's
+ * `keel.fields` goes to its fields, any other error to the Form.
+ */
+export async function formAnswer<O>(
   ctx: Ctx,
-  write: Promise<Result<unknown, KeelError<string, unknown>>>,
-): Promise<Result<BoardView, KeelError<string, unknown>>> {
-  const w = await write;
-  return w.ok ? refreshView(ctx) : w;
+  endpoint: string,
+  r: OutboxResult<O>,
+): Promise<Result<null, KeelError<string, unknown>>> {
+  if (r.state !== "failed") return ok(null);
+  const entry = boardOutbox
+    .get("entries")
+    .filter((e) => e.state === "failed" && e.endpoint === endpoint)
+    .at(-1);
+  if (entry !== undefined) await resolve(ctx, boardOutbox, entry.key, "theirs");
+  const e = r.error;
+  const refusal = e.code === "api.status" ? WriteRefusal.parse(e.data.body) : undefined;
+  return err(refusal?.ok === true ? refusal.value.error : e);
 }
 ```
 
@@ -997,51 +1234,65 @@ export const loadTodo = loader({ output: Todo, params: TodoParams }, async ({ pa
 
 An action handles a form post. `action({ input, params? }, fn)`: `fn` gets `(input, { params, url, caller, stores }, ctx)`, with `input` already decoded and validated by its schema (a failure is 422 `keel.fields`, and `fn` is not called). `ok(null)` re-runs the chain's loaders once; `ok(href)` navigates there.
 
+The three form actions send through the outbox: `send(ctx, boardOutbox, origin, endpoint, call, { base })`, where `base` is the `head` in `todos.view` and `origin` is the request `url`'s origin. Each ends in `formAnswer`.
+
 ```ts title="modules/todos/createList.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { send } from "@keel/std-offline";
 import { ListDraft } from "../api/ListDraft.schema.ts";
-import { todosApi } from "./todosApi.ts";
+import { boardOutbox } from "./boardOutbox.ts";
+import { formAnswer } from "./formAnswer.ts";
+import { view } from "./view.ts";
 
-/** POST on `todos.index`: `POST /api/lists` on the `api` deployable, then revalidate (`loadIndex` re-reads). */
-export const createList = action({ input: ListDraft }, async (input, _, ctx) => {
-  const r = await todosApi.createList({ body: input }, ctx);
-  return r.ok ? ok(null) : err(r.error);
+/** POST on `todos.index`: send `POST /api/lists` through the outbox, based on the board as last read; then revalidate. */
+export const createList = action({ input: ListDraft }, async (input, { url }, ctx) => {
+  const origin = new URL(url).origin;
+  const r = await send(ctx, boardOutbox, origin, "createList", { body: input }, { base: view.get("head") });
+  return formAnswer(ctx, "createList", r);
 });
 ```
 
 ```ts title="modules/todos/createTodo.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { send } from "@keel/std-offline";
 import { ListParams } from "../api/ListParams.schema.ts";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
-import { todosApi } from "./todosApi.ts";
+import { boardOutbox } from "./boardOutbox.ts";
+import { formAnswer } from "./formAnswer.ts";
+import { view } from "./view.ts";
 
-/** POST on `todos.list`: `POST /api/lists/:listId/todos` on the `api` deployable, then revalidate. */
-export const createTodo = action({ input: TodoDraft, params: ListParams }, async (input, { params }, ctx) => {
-  const r = await todosApi.addTodo({ params, body: input }, ctx);
-  return r.ok ? ok(null) : err(r.error);
+/** POST on `todos.list`: send `POST /api/lists/:listId/todos` through the outbox, based on the board as last read. */
+export const createTodo = action({ input: TodoDraft, params: ListParams }, async (input, { params, url }, ctx) => {
+  const origin = new URL(url).origin;
+  const r = await send(ctx, boardOutbox, origin, "addTodo", { params, body: input }, { base: view.get("head") });
+  return formAnswer(ctx, "addTodo", r);
 });
 ```
 
-`updateTodo` forwards a 422 `keel.fields` from `api` (a duplicate title) so the form shows it under the title field, and on success returns the list's `Href`. It imports `routes.ts` back for `routes.href`; see the import-order note in section 9.
+`updateTodo` shows a 422 `keel.fields` from `api` (a duplicate title) under the title field. Sent, queued or refused as a conflict, the edit returns the list's `Href`; the outbox panel shows a conflict. It imports `routes.ts` back for `routes.href`; see the import-order note in section 9.
 
 ```ts title="modules/todos/updateTodo.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { ok } from "@keel/schema";
+import { send } from "@keel/std-offline";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
 import { TodoParams } from "./TodoParams.schema.ts";
+import { boardOutbox } from "./boardOutbox.ts";
+import { formAnswer } from "./formAnswer.ts";
 import { routes } from "./routes.ts";
-import { todosApi } from "./todosApi.ts";
+import { view } from "./view.ts";
 
 /**
- * POST on `todos.edit`: `POST /api/todos/:todoId` on the `api` deployable. Its 422 `keel.fields` (`{ title }` when
- * another todo in the list has the title) is passed on to the Form; success goes to the list.
+ * POST on `todos.edit`: send `POST /api/todos/:todoId` through the outbox, based on the board as last read. Sent,
+ * queued or refused as a conflict (the outbox panel shows it), it goes to the list; the api's 422 `keel.fields`
+ * (`{ title }` when another todo in the list has the title) goes to the Form.
  */
-export const updateTodo = action({ input: TodoDraft, params: TodoParams }, async (input, { params }, ctx) => {
-  const r = await todosApi.editTodo({ params: { todoId: params.todoId }, body: input }, ctx);
-  if (!r.ok) return err(r.error.data.body ?? r.error);
-  return ok(routes.href("todos.list", { listId: params.listId }));
+export const updateTodo = action({ input: TodoDraft, params: TodoParams }, async (input, { params, url }, ctx) => {
+  const origin = new URL(url).origin;
+  const call = { params: { todoId: params.todoId }, body: input };
+  const r = await send(ctx, boardOutbox, origin, "editTodo", call, { base: view.get("head") });
+  const answer = await formAnswer(ctx, "editTodo", r);
+  return answer.ok ? ok(routes.href("todos.list", { listId: params.listId })) : answer;
 });
 ```
 
@@ -1074,15 +1325,23 @@ A component file has one default export, a function `(props, slots?, ctx?)`, and
 - Give elements a stable `id`; tests and `.keel/ids.json` address elements by id, and a duplicate is E1404. golden-1 prefixes ids with the module id by convention.
 - Stores, `computed` and `resource` read inside JSX update the DOM when they change. Components never touch `document` or `window` (E1252).
 
-`AppShell` is the layout every page renders inside. It declares `uses = [hydrate]` because its Undo button re-reads the board through `refreshView`, which runs `todos.hydrate`; a component that declares `uses` may run only those transactions (E1301).
+`AppShell` is the layout every page renders inside. It declares `uses = [hydrate]` because its Undo button re-reads the board through `refreshView`, and `live` commits each board it reads with `hydrate`; a component that declares `uses` may run only those transactions (E1301).
+
+`live(ctx, origin, boardChannel, {}, { read, hydrate })` opens the board channel from inside the component. After the stream opens, and after every save, its own included, it runs `read` and commits the board to `todos.view` with `hydrate`. It returns the stream's status, read as `status()`: `live`, `connecting`, `offline` or `denied`. The header shows it as a label. `drain` sends the writes waiting in the outbox, and runs again when the client reconnects. Off a browser page, where there is no `ctx` or origin, the status stays `connecting` and nothing opens.
 
 ```tsx title="modules/todos/AppShell.tsx"
 import type { Ctx } from "@keel/ctx";
 import { computed } from "@keel/reactive";
 import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
+import { type LiveStatus, live } from "@keel/std-live";
+import { drain } from "@keel/std-offline";
 import { Box, Button, Image, Link, Text } from "@keel/ui";
+import { boardChannel } from "../api/boardChannel.ts";
+import OutboxPanel from "./OutboxPanel.tsx";
+import { boardOutbox } from "./boardOutbox.ts";
 import { hydrate } from "./hydrate.ts";
+import { pageOrigin } from "./pageOrigin.ts";
 import { refreshView } from "./refreshView.ts";
 import { routes } from "./routes.ts";
 import { todosApi } from "./todosApi.ts";
@@ -1091,16 +1350,32 @@ import { view } from "./view.ts";
 export const Props = s.object({});
 export const uses = [hydrate];
 
+const LABELS: { readonly [K in LiveStatus]: string } = {
+  live: "Live",
+  connecting: "Connecting",
+  offline: "Offline",
+  denied: "No access",
+};
+
 /**
- * Layout `todos.shell`: home link, Undo, and the page in `main`. Undo posts `/api/undo` (the `api` deployable owns
- * the log and undoes only this client's own last write) and re-reads the board even when refused (another client
- * wrote last), so `canUndo` turns it off; it is disabled while the served board says there is nothing to undo.
+ * Layout `todos.shell`: home link, Undo, the board's live status, the outbox panel and the page in `main`. On a page it
+ * follows the board channel (`live`): after every save, its own included, it re-reads the board into `todos.view`;
+ * and it sends the outbox's waiting writes, again on each reconnect (`drain`). Undo posts `/api/undo` (the `api`
+ * deployable owns the log and undoes only this client's own last write) and re-reads the board even when refused
+ * (another client wrote last), so `canUndo` turns it off; it is disabled while the served board says there is
+ * nothing to undo.
  */
 export default function AppShell(
   props: Infer<typeof Props> & { readonly children?: () => Node },
   _slots?: Slots,
   ctx?: Ctx,
 ) {
+  const origin = pageOrigin();
+  const status =
+    ctx === undefined || origin === undefined
+      ? (): LiveStatus => "connecting"
+      : live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
+  if (ctx !== undefined && origin !== undefined) void drain(ctx, boardOutbox);
   const empty = computed(() => !view.get("canUndo"));
   const undo = (): void => {
     if (ctx !== undefined) void todosApi.undo({}, ctx).then(() => refreshView(ctx));
@@ -1126,6 +1401,17 @@ export default function AppShell(
           </Text>
         </Box>
         <Box as="nav" id="todos.nav" label="Main" direction="row" align="center" gap="4">
+          <Text
+            id="todos.live"
+            font="mono"
+            fontSize="xs"
+            px="2"
+            py="1"
+            fg={status() === "live" ? "verified" : status() === "offline" ? "error" : "textSecondary"}
+            border={status() === "live" ? "verified" : status() === "offline" ? "error" : "hairline"}
+          >
+            {LABELS[status()]}
+          </Text>
           <Link id="todos.home" to={routes.href("todos.index")} fg="text">
             Home
           </Link>
@@ -1148,10 +1434,163 @@ export default function AppShell(
         </Box>
       </Box>
       <Box h="hairline" bg="divider" />
+      <OutboxPanel />
       <Box as="main" id="todos.main" w={{ md: "measure" }} mx={{ md: "auto" }} px={{ base: "3", md: "4" }} py="6">
         {props.children?.()}
       </Box>
     </Box>
+  );
+}
+```
+
+`OutboxPanel` lists the writes the outbox holds, in the order sent, and renders nothing while it is empty. A write is `queued` or `sending`, or the outbox holds it as a `conflict` (the board changed first and the server refused it) or as `failed`. A conflict offers Keep mine, which sends the write again over the newer board, and Keep theirs, which drops it. A failed write offers Dismiss. Both buttons call `resolve`. The panel reads `boardOutbox` directly, so `AppShell` mounts it with no props.
+
+```tsx title="modules/todos/OutboxPanel.tsx"
+import type { Ctx } from "@keel/ctx";
+import { For, If, type Slots } from "@keel/runtime-dom";
+import { type Infer, s } from "@keel/schema";
+import { type OutboxEntry, type Resolution, resolve } from "@keel/std-offline";
+import { Box, Button, Heading, Text } from "@keel/ui";
+import { boardOutbox } from "./boardOutbox.ts";
+
+export const Props = s.object({});
+
+const WRITES: { readonly [endpoint: string]: string } = {
+  createList: "Add list",
+  addTodo: "Add todo",
+  toggleTodo: "Mark todo",
+  editTodo: "Edit todo",
+};
+
+const STATES: { readonly [K in OutboxEntry["state"]]: string } = {
+  queued: "Waiting to send",
+  sending: "Sending",
+  conflict: "Someone changed this board first",
+  failed: "Not saved",
+};
+
+/**
+ * The outbox panel (`todos.outbox`, shown while the outbox holds a write): each waiting, refused or failed board
+ * write in the order sent. A refused write offers Keep mine (send it again over the newer board) and Keep theirs
+ * (drop it); a failed one offers Dismiss.
+ */
+export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
+  const choose = (key: string, resolution: Resolution): void => {
+    if (ctx !== undefined) void resolve(ctx, boardOutbox, key, resolution);
+  };
+  return (
+    <If when={boardOutbox.get("entries").length > 0}>
+      {() => (
+        <Box
+          as="aside"
+          id="todos.outbox"
+          label="Outbox"
+          direction="column"
+          gap="3"
+          w={{ md: "measure" }}
+          mx={{ md: "auto" }}
+          px={{ base: "3", md: "4" }}
+          py="4"
+        >
+          <Heading id="todos.outbox.title" level={2} fontSize="xl" weight="semibold" m="0">
+            Outbox
+          </Heading>
+          <Box
+            as="ul"
+            id="todos.outbox.items"
+            direction="column"
+            gap="hairline"
+            bg="divider"
+            border="hairline"
+            p="0"
+            m="0"
+          >
+            <For each={boardOutbox.get("entries")} key="key">
+              {(entry) => (
+                <Box
+                  as="li"
+                  id={`todos.outbox.entry.${entry.key}`}
+                  direction="row"
+                  align="center"
+                  justify="between"
+                  gap="3"
+                  px="3"
+                  py="2"
+                  bg="card"
+                >
+                  <Text id={`todos.outbox.write.${entry.key}`} font="mono" fontSize="sm">
+                    {WRITES[entry.endpoint] ?? entry.endpoint}
+                  </Text>
+                  <Text
+                    id={`todos.outbox.state.${entry.key}`}
+                    font="mono"
+                    fontSize="xs"
+                    px="2"
+                    py="1"
+                    fg={entry.state === "queued" || entry.state === "sending" ? "textSecondary" : "error"}
+                    border={entry.state === "queued" || entry.state === "sending" ? "hairline" : "error"}
+                  >
+                    {STATES[entry.state]}
+                  </Text>
+                  <If when={entry.state === "conflict"}>
+                    {() => (
+                      <Box direction="row" gap="2">
+                        <Button
+                          id={`todos.outbox.mine.${entry.key}`}
+                          onClick={() => choose(entry.key, "mine")}
+                          font="mono"
+                          fontSize="sm"
+                          px="3"
+                          py="2"
+                          bg="text"
+                          fg="card"
+                          border="rule"
+                          radius="none"
+                        >
+                          Keep mine
+                        </Button>
+                        <Button
+                          id={`todos.outbox.theirs.${entry.key}`}
+                          onClick={() => choose(entry.key, "theirs")}
+                          font="mono"
+                          fontSize="sm"
+                          px="3"
+                          py="2"
+                          bg="card"
+                          fg="text"
+                          border="rule"
+                          radius="none"
+                        >
+                          Keep theirs
+                        </Button>
+                      </Box>
+                    )}
+                  </If>
+                  <If when={entry.state === "failed"}>
+                    {() => (
+                      <Button
+                        id={`todos.outbox.theirs.${entry.key}`}
+                        onClick={() => choose(entry.key, "theirs")}
+                        font="mono"
+                        fontSize="sm"
+                        px="3"
+                        py="2"
+                        bg="card"
+                        fg="text"
+                        border="rule"
+                        radius="none"
+                      >
+                        Dismiss
+                      </Button>
+                    )}
+                  </If>
+                </Box>
+              )}
+            </For>
+          </Box>
+        </Box>
+      )}
+    </If>
   );
 }
 ```
@@ -1260,7 +1699,7 @@ export default function ListsPage(_props: Infer<typeof Props>) {
 }
 ```
 
-`ListPage` filters by the search param, lists rows with `For`, and adds a todo with a form:
+`ListPage` filters by the search param, lists rows with `For`, and adds a todo with a form. `form` takes an `id` (`todos.addForm`), which prefixes the field ids in place of a hash of the schema's shape:
 
 ```tsx title="modules/todos/ListPage.tsx"
 import type { Ctx } from "@keel/ctx";
@@ -1290,7 +1729,7 @@ const PRIORITIES = [
 
 /** Route `todos.list`: the list's todos filtered by `search.filter`, filter links, an add-todo Form, Suggestions. */
 export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
-  const f = form(TodoDraft, { initial: { priority: "normal" } });
+  const f = form(TodoDraft, { id: "todos.addForm", initial: { priority: "normal" } });
   const shown = () =>
     view
       .get("todos")
@@ -1394,26 +1833,32 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
 }
 ```
 
-`TodoRow` posts the toggle straight to `api` with the typed client and re-reads the board:
+`TodoRow` sends the toggle through the outbox and does not re-read the board. The save reaches every open page over the board channel, this one included, and the checkbox follows `todos.view`. So it declares no `uses`:
 
 ```tsx title="modules/todos/TodoRow.tsx"
 import type { Ctx } from "@keel/ctx";
 import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
+import { send } from "@keel/std-offline";
 import { Box, Checkbox, Link, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
-import { hydrate } from "./hydrate.ts";
+import { boardOutbox } from "./boardOutbox.ts";
+import { pageOrigin } from "./pageOrigin.ts";
 import { routes } from "./routes.ts";
-import { syncAfter } from "./syncAfter.ts";
-import { todosApi } from "./todosApi.ts";
+import { view } from "./view.ts";
 
 export const Props = s.object({ todo: Todo });
-export const uses = [hydrate];
 
-/** One todo: a done Checkbox (posts `/api/todos/:todoId/toggle`, then re-reads the board), priority, Edit link. */
+/**
+ * One todo: a done Checkbox (sends `/api/todos/:todoId/toggle` through the outbox, based on the board as last read;
+ * the live board shows the result), priority, Edit link.
+ */
 export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const toggle = (): void => {
-    if (ctx !== undefined) void syncAfter(ctx, todosApi.toggleTodo({ params: { todoId: props.todo.id } }, ctx));
+    const origin = pageOrigin();
+    if (ctx === undefined || origin === undefined) return;
+    const call = { params: { todoId: props.todo.id }, body: {} };
+    void send(ctx, boardOutbox, origin, "toggleTodo", call, { base: view.get("head") });
   };
   return (
     <Box as="li" id={`todos.row.${props.todo.id}`} direction="row" align="center" gap="3" px="3" py="2" bg="card">
@@ -1526,7 +1971,7 @@ export default function Suggestions(_props: Infer<typeof Props>, _slots?: Slots,
 }
 ```
 
-`EditTodoPage` starts its form from the loader's todo. The action's 422 `{ title }` lands on the title field:
+`EditTodoPage` starts its form, `todos.editForm`, from the loader's todo. The action's 422 `{ title }` lands on the title field:
 
 ```tsx title="modules/todos/EditTodoPage.tsx"
 import { form } from "@keel/forms";
@@ -1550,7 +1995,10 @@ const PRIORITIES = [
 
 /** Route `todos.edit`: a Form editing the todo's title and priority; success returns to `todos.list`. */
 export default function EditTodoPage(props: Infer<typeof Props>) {
-  const f = form(TodoDraft, { initial: { title: props.data.title, priority: props.data.priority } });
+  const f = form(TodoDraft, {
+    id: "todos.editForm",
+    initial: { title: props.data.title, priority: props.data.priority },
+  });
   // Router `Form` expects Node children, not the compiler's children thunk, so it is called directly and
   // inserted through a `children()` binding (compiler D31).
   const children = (): Node => {
@@ -1952,7 +2400,7 @@ With the three modules written, `keel check` should print `ok check 72 files, 0 
 
 Tests use `@keel/testing` under a simulated `ctx` (`createCtx({ mode: "sim", seed })`): its clock moves only when a test advances it, its random ids follow the seed, its storage is in memory, and `ctx.net.route(pattern, handler)` answers requests. Tests find elements by id, never by DOM query (E1701), and an id missing from `.keel/ids.json` is E1705.
 
-Three helpers come first. `at.ts` builds the `{ params, url, caller, stores }` argument a loader or action gets, for calling one directly:
+Five helpers come first. `at.ts` builds the `{ params, url, caller, stores }` argument a loader or action gets, for calling one directly:
 
 ```ts title="test/at.ts"
 import type { Schema } from "@keel/schema";
@@ -2013,7 +2461,10 @@ export function resetApi(): void {
 export const apiCtx = (): SimCtx => server;
 
 /** Serve the real `api` deployable over the api's sim ctx, as its generated entry does over the real one. */
-export const apiApp = () => createApp({ topology, routes: apiRoutes, ctx: server, deployable: "api" });
+export const apiApp = () => createApp({ topology, routes: apiRoutes, ctx: server, deployable: "api", secret: SECRET });
+
+/** The api's signing secret in tests: fixed, so one seed mints the same caller ids run after run. */
+export const SECRET = "golden-1 tests sign callers with this";
 
 /** Store `state` as the api's board (empty log), for apps built after this call. */
 export const seedBoard = (state: Board): Promise<void> =>
@@ -2036,7 +2487,19 @@ export async function readBoard(): Promise<Board> {
  * construction, but not set on the headers afterwards.
  */
 export async function simApi(seed = 1) {
+  return client(await apiApp(), seed);
+}
+
+/**
+ * `count` clients of one `api` app (seeds `seed`, `seed + 1`, ...), each a sim ctx with its own cookie jar and `sent`
+ * list, as browsers of different users: a save by one reaches the board stream of every other.
+ */
+export async function simUsers(count: number, seed = 1) {
   const app = await apiApp();
+  return Array.from({ length: count }, (_, i) => client(app, seed + i));
+}
+
+function client(app: { fetch(req: Request): Promise<Response> }, seed: number) {
   const ctx = createCtx({ mode: "sim", seed });
   const sent: string[] = [];
   let jar = "";
@@ -2051,6 +2514,31 @@ export async function simApi(seed = 1) {
 }
 ```
 
+`simApi` gives one client. `simUsers(count)` gives several clients of one `api` app, each with its own cookie jar and `sent` list, as browsers of different users: a save by one reaches the board stream of every other. The app takes a fixed `secret`, so one seed mints the same caller ids on every run.
+
+`write.ts` builds the `Write` an outbox sends, for a test that plays the other user and posts to the `api` deployable directly:
+
+```ts title="test/write.ts"
+import { Write } from "@keel/std-offline";
+
+/** A `Write` (`key`, `base`) as an outbox sends it: `key` parses into the branded id. */
+export function write(key: string, base: number): Write {
+  const r = Write.parse({ key, base });
+  if (!r.ok) throw new Error(r.error.message);
+  return r.value;
+}
+```
+
+`user.ts` names the module a session group runs for each user (`@keel/std-sessions`): the `todos` routes, each user starting at `todos.index`. A group of two users replays against one `api`, and `@keel/std-conflicts` can then look for a race between their writes.
+
+```ts title="test/user.ts"
+import { routes } from "../modules/todos/routes.ts";
+
+/** A session group's user module (std.multi): the `todos` routes, each user starting at `todos.index`. */
+export { routes };
+export const base = { id: "todos.index", params: {}, search: {} };
+```
+
 The suites themselves are long and repetitive, so this guide does not reprint them. Copy them from golden-1:
 
 ```sh
@@ -2062,10 +2550,16 @@ cp ../../apps/golden-1/test/*.test.ts test/
 | `test/routes.test.ts` | `renderRoute` per page: loaders, filters, `fire` on forms, the guard redirect, `errorElement` |
 | `test/components.test.ts` | `render` per component, `properties` for components, the suggestions `resource` states |
 | `test/board.test.ts` | schemas, the todos loaders and actions called directly, `todosApi` against the sim api |
-| `test/api.test.ts` | `properties` on each `api` transaction (invariants, undo), the `api` HTTP surface, per-caller undo |
+| `test/api.test.ts` | `properties` on each `api` transaction (invariants, undo, the rebase and reject policies), the `api` HTTP surface, per-caller undo |
+| `test/realtime.test.ts` | two users on one `api`: the board channel, a write made offline and sent on reconnect, a refused edit in the outbox panel with Keep mine and Keep theirs, one seed giving equal logs |
+| `test/blankRequired.test.ts` | a blank list name or todo title shows Required and adds nothing, on the forms and at the `api` |
+| `test/resumeDocument.test.ts` | a `todos.list` document served by the node adapter and resumed, as the browser's generated entry does |
 | `test/digest.test.ts` | the job, the schedule on the sim clock, the event-stream feed, a restart with a job left in the queue |
 | `test/ssrNode.test.ts` | the `todos` pages rendered by a `node` adapter in plain Node, no DOM global |
 | `test/host.test.ts` | the `api` app answers `GET /` and an unmatched page with the client's `index.html` |
+| `test/writeSchemas.test.ts` | the three write-body schemas at their limits: what each accepts and refuses |
+| `test/boardEvents.test.ts` | the board channel's route, and a subscriber's `reset` then `saved` after another caller's write |
+| `test/formAnswer.test.ts` | a form action's answer for a sent, queued, conflicting and failed outbox write |
 
 The shape of a route test, trimmed from the first test in `test/routes.test.ts`:
 
@@ -2094,7 +2588,7 @@ keel build
 keel check
 ```
 
-A clean run prints `ok 76 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 76 tests, 0 failed, 0 skipped`), then `ok build 72 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 89 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
+A clean run prints `ok 108 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 108 tests, 0 failed, 0 skipped`), then `ok build 79 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 104 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
 
 ### Develop
 
@@ -2132,18 +2626,18 @@ KEEL_ORIGIN=https://todo.example pnpm api
 
 Docker Desktop listens on 8080; if it runs, set `PORT` to another port and use it in the requests below. `ctx.storage`, which holds the board, the digest and the job queue, is the file `--localstorage-file` names (`.api.storage`): the only state that survives a restart. Each request prints one log line such as `GET /api/lists api.lists 200 2ms`. Without `KEEL_ORIGIN` it also prints W1557 at startup: the cookie is `Secure` only for https requests. With `KEEL_ORIGIN` set, `server.mjs` prints nothing at startup. On SIGTERM or SIGINT it stops listening, lets runners settle and exits 0.
 
-Try it with curl. A write needs `x-keel: 1` with `accept: application/json` to pass the same-site check:
+Try it with curl. A write needs `x-keel: 1` with `accept: application/json` to pass the same-site check, and a `write` with a `key` of your choosing and the `base` you read (the `head` of `GET /api/lists`):
 
 ```sh
 curl -s -H 'accept: application/json' localhost:8080/api/lists
 curl -s -X POST -H 'accept: application/json' -H 'content-type: application/json' -H 'x-keel: 1' \
-  -d '{"name":"Home"}' localhost:8080/api/lists
+  -d '{"name":"Home","write":{"key":"w1","base":0}}' localhost:8080/api/lists
 curl -s localhost:8080/api/lists          # JSON too: an API route has no document view
 ```
 
 `server.mjs` serves the `api` deployable's routes, its own `dist/api/assets/` and, because `topology.ts` gives `web` the `host: "api"`, the `web` client: `GET /` returns `index.html`, and so does any other page request that no route matches. A request to an unmatched API or event-stream path stays 404. `dist/web/` holds the same client as static files for a static host; `docs/guide/deploy-client.md` shows the three ways to ship it.
 
-In a second terminal, `curl -s localhost:8080/ | head -c 15` prints `<!doctype html>`, and the browser at `http://localhost:8080/` shows the app on the same origin as its API.
+In a second terminal, `curl -s localhost:8080/ | head -c 15` prints `<!doctype html>`, and the browser at `http://localhost:8080/` shows the app on the same origin as its API. Open it in two browsers: a todo added in one appears in the other, and the header of each reads Live. The board's server state lives in one process, so every user of a board must reach the same `api` server.
 
 ### Deploy files
 
@@ -2224,12 +2718,15 @@ Retrieve a spec section with `pnpm spec <id>` from the repo root; `pnpm spec --f
 | HTTP surface compatibility | `k.compat`; `docs/adr/0077-surface-compatibility.md` |
 | jobs and schedules | `std.jobs`, `std.schedules`; `docs/adr/0079-jobs-and-schedules.md` |
 | live loaders | `k.server`; `docs/adr/0076-live-loaders-event-streams.md` |
+| store heads, `concurrent` policies, writes | `k.sync`; `docs/adr/0080-store-heads-concurrent-writes.md` |
+| channels, `live`, the outbox | `std.channels`, `std.live`, `std.offline`; `docs/adr/0081-push-invalidation-live-loaders.md`, `docs/adr/0082-live-views-are-stores.md`, `docs/adr/0084-offline-outbox.md` |
+| races between users, session groups | `std.conflicts`, `std.multi`; `docs/adr/0085-races-session-groups.md` |
 
 The Keel skills in `.claude/skills/keel*/SKILL.md` are terse API cards for the same material.
 
 ## What this guide leaves out
 
-- The seven test suites, copied from `apps/golden-1/test/` in section 9 rather than reprinted.
+- The ten test suites, copied from `apps/golden-1/test/` in section 9 rather than reprinted.
 - `README.md`; golden-1's own is at `apps/golden-1/README.md`.
 - Inspecting a running app (`keel inspect`, `/__keel/inspect`), recorded sessions, and `keel check --base` against a deployed `surface.json`.
 - Shipping the `web` client to a static host or across origins; `docs/guide/deploy-client.md` covers it.
