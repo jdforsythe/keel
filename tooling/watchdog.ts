@@ -5,6 +5,7 @@
 // `allowed * 2 + grace` (grace 30 s), or when the worker's parent is gone. Real clocks are used on purpose: this
 // is the one place in the test setup that must bound wall-clock time.
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, inject } from "vitest";
 
@@ -24,6 +25,9 @@ const LABEL_BYTES = 1024;
 const KEY = Symbol.for("keel.watchdog");
 /** Import of a cold file (TypeScript, the compiler) under a loaded machine takes tens of seconds; nothing else bounds it. */
 const COLLECT_MS = 60_000;
+
+// A path, not a URL: under a DOM test environment the global `URL` is the DOM's, which `Worker` refuses.
+const THREAD = path.join(path.dirname(fileURLToPath(import.meta.url)), "watchdog-thread.mjs");
 
 const envMs = (name: string, fallback: number): number => {
   const n = Number(process.env[name]);
@@ -53,7 +57,7 @@ function heartbeat(): Beat {
   const labelBuffer = new SharedArrayBuffer(LABEL_BYTES);
   const base = clock();
   const beat: Beat = { slots: new Int32Array(slotBuffer), label: new Uint8Array(labelBuffer), base };
-  const worker = new Worker(new URL("./watchdog-thread.mjs", import.meta.url), {
+  const worker = new Worker(THREAD, {
     workerData: {
       slots: slotBuffer,
       label: labelBuffer,
