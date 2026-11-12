@@ -1,4 +1,5 @@
 import type { Node } from "./Node.ts";
+import { blankAbsent } from "./blankAbsent.ts";
 import { fits } from "./fits.ts";
 import { leafFromString } from "./leafFromString.ts";
 
@@ -41,7 +42,7 @@ export function fromStrings(node: Node, key: string, entries: Entries): unknown 
   if (node.kind === "optional") {
     if (under(entries, key).length === 0) return undefined;
     const v = fromStrings(node.inner, key, entries);
-    return v === "" ? undefined : v;
+    return v === "" || blankAbsent(node.inner, v) ? undefined : v;
   }
   if (node.kind === "nullable") {
     const v = fromStrings(node.inner, key, entries);

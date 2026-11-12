@@ -19,6 +19,7 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
     const cross = origin !== undefined && base !== origin && !base.startsWith(`${origin}/`);
     return {
       base,
+      module: true,
       send: (req) =>
         ctx.net.fetch(
           new Request(req, cross ? { redirect: "manual", credentials: "include" } : { redirect: "manual" }),
@@ -29,7 +30,7 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   const bound: unknown = table instanceof WeakMap ? table.get(ctx) : undefined;
   const at: unknown = bound instanceof Map ? bound.get(module) : undefined;
   if (typeof at === "string") return net(at);
-  if (isFetcher(at)) return { base: `http://${module}.keel.invalid`, send: (req) => at.fetch(req) };
+  if (isFetcher(at)) return { base: `http://${module}.keel.invalid`, module: true, send: (req) => at.fetch(req) };
   if (bound === undefined && origin !== undefined) return net(origin);
   return net(`http://${module}.keel.invalid`);
 }

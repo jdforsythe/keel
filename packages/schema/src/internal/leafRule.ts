@@ -1,5 +1,6 @@
 import type { Node } from "./Node.ts";
 import type { Rule } from "./Rule.ts";
+import { isBlank } from "./isBlank.ts";
 
 function bound(node: { readonly min?: number; readonly max?: number }, x: number): Rule | undefined {
   if (node.min !== undefined && x < node.min) return "min";
@@ -11,7 +12,7 @@ export function leafRule(node: Node, x: unknown): Rule | undefined {
   switch (node.kind) {
     case "string":
       if (typeof x !== "string") return "type";
-      if (node.min >= 1 && !/\S/.test(x)) return "required";
+      if (node.min >= 1 && isBlank(x)) return "required";
       if (x.length < node.min) return "min";
       return node.max !== undefined && x.length > node.max ? "max" : undefined;
     case "number":

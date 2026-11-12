@@ -15,7 +15,7 @@ const WS = [" ", "\t", "\n", "\r", " ", " ", "　", " "];
 const whitespace = fc.array(fc.constantFrom(...WS), { minLength: 0, maxLength: 20 }).map((a) => a.join(""));
 const mins = fc.integer({ min: 1, max: 12 });
 
-const rules = (r: ReturnType<ReturnType<typeof s.string>["parse"]>): string[] =>
+const rules = (r: { ok: true } | { ok: false; error: { data: { issues: readonly { rule: string }[] } } }): string[] =>
   r.ok ? [] : r.error.data.issues.map((i) => i.rule);
 
 describe("k.schema blank required strings (rfc:0091)", () => {

@@ -36,3 +36,31 @@ describe("DeployEnv peers", () => {
     );
   });
 });
+
+describe("DeployEnv KEEL_SECRET", () => {
+  it("accepts a secret of 32 or more UTF-8 bytes and refuses a shorter one, whatever its character count", () => {
+    const chars = fc.constantFrom("a", "é", "€", "😀");
+    fc.assert(
+      fc.property(fc.array(chars, { maxLength: 40 }), (parts) => {
+        const secret = parts.join("");
+        const r = DeployEnv([]).decodeStrings({ KEEL_SECRET: secret });
+        expect(r.ok).toBe(new TextEncoder().encode(secret).length >= 32);
+        if (!r.ok) expect(r.error.data.issues[0]?.path).toEqual(["KEEL_SECRET"]);
+      }),
+      { seed: SEED, numRuns: 300 },
+    );
+  });
+});
+
+describe("DeployEnv KEEL_ORIGIN", () => {
+  it("reads only whitespace as unset", () => {
+    fc.assert(
+      fc.property(fc.stringMatching(/^[ \t\n]{1,6}$/), (blank) => {
+        const r = DeployEnv([]).decodeStrings({ KEEL_SECRET: SECRET, KEEL_ORIGIN: blank });
+        expect(r.ok).toBe(true);
+        if (r.ok) expect(r.value.KEEL_ORIGIN).toBeUndefined();
+      }),
+      { seed: SEED, numRuns: 50 },
+    );
+  });
+});
