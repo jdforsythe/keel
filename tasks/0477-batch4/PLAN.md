@@ -22,6 +22,8 @@
 - S4: conformance committed for k.sync, std.channels, std.live, std.offline; std.multi and std.conflicts being written; kernel lane running K1, K2, K4 (K3 waits for lane L to leave `packages/server/src`). An open budget failure belongs to lane L: `@keel/std-jobs/tools` 2,639 B of 2,560.
 - AM-3 implemented and committed: `cli/src/internal/viteServer.ts` loads the project's own `vite` (checked at runtime, no cast), `devPort.ts` picks flag, then config, then 5173; `dev-port-0091` 6/6 in 61 s; cli bin 24,817 B. Seen by that agent and not its files: six cli tests around E1561/E1562 timing out at 30 s, also alone, with the machine at a load average near 100; to re-run when the machine is quiet.
 - D5 (orchestrator) the mutation run was stopped with `pnpm mutate:stop` (cache saved): with it and five agents running tests the load average passed 100 and tests timed out across lanes. It runs alone once the lanes are in.
+- load: after the mutation runner exited the load average stayed near 100. Most of it is not Keel's: a virtual machine (Virtualization.framework, about 95% of a core, up over a day) and test, type-check, terraform and checkov runs from other workspaces under `orca/workspaces/yard/`. Keel test timeouts in this batch are read with that in mind: re-run a timed-out file alone before calling it a failure, and schedule the mutation run when the machine is quiet.
+- mutation state when stopped: check at its budget (9,435 of 10,286), compiler 9,653 of 10,611, ctx 368 of 458, reactive 127 of 441 (its dry run now finds tests); the other packages were stopped before their first mutant. No new scores.
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green
