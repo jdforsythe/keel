@@ -1,6 +1,9 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { changedScope } from "../mutate-changed.mjs";
-import { budgetMinutes, ending, statusLine } from "../mutate.mjs";
+import { changedScope, stopRequested } from "../mutate-changed.mjs";
+import { budgetMinutes, ending, groupMembers, leftNote, statusLine } from "../mutate.mjs";
 import { packageRelative, readTimes } from "../mutate-cache.ts";
 import { quickFirstOrder } from "../quick-first.ts";
 
@@ -36,6 +39,34 @@ describe("ending", () => {
     expect(ending({ over: false, signalled: false, code: null, signal: "SIGINT" })).toBe("stopped");
     expect(ending({ over: false, signalled: false, code: null, signal: "SIGKILL" })).toBe("crashed");
     expect(ending({ over: false, signalled: false, code: 1, signal: null })).toBe("crashed");
+  });
+});
+
+describe("process groups", () => {
+  it("lists the pids of one group from a ps listing", () => {
+    const listing = "  101   100\n  102   100\n  200   200\n\n garbage\n  103   100\n";
+    expect(groupMembers(listing, 100)).toEqual([101, 102, 103]);
+    expect(groupMembers(listing, 300)).toEqual([]);
+  });
+  it("says whether any process of the group is left", () => {
+    expect(leftNote([])).toBe("no process left");
+    expect(leftNote([41])).toBe("1 process left (pids 41)");
+    expect(leftNote([41, 42])).toBe("2 processes left (pids 41,42)");
+  });
+});
+
+describe("stopRequested", () => {
+  it("is false without a stop file, and for a stop older than the sequence", () => {
+    expect(stopRequested("/nonexistent/stop.json", 0)).toBe(false);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-stop-"));
+    try {
+      const file = path.join(dir, "stop.json");
+      fs.writeFileSync(file, JSON.stringify({ at: 1000 }));
+      expect(stopRequested(file, 500)).toBe(true);
+      expect(stopRequested(file, 2000)).toBe(false);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

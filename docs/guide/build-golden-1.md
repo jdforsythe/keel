@@ -116,7 +116,7 @@ The scripts:
 - `build` is `keel build`; `dev` is `keel dev`. Both hand bundling and serving to Vite, because `vite.config.ts` exists.
 - `api` starts the built `api` deployable. Node's Web Storage flags make `localStorage` exist and persist to `.api.storage`; `ctx.storage` is that `localStorage`. It needs `KEEL_SECRET` set (section 10).
 
-The dependencies are the Keel packages the app's code imports. `@keel/testing` is listed with them although only tests use it. `@keel/tooling` is this repo's internal tooling package; the app uses it for `KeelReporter` in `vitest.config.ts`. vitest, happy-dom, TypeScript and Biome are not declared here: they resolve from the repo root's devDependencies.
+The dependencies are the Keel packages the app's code imports. `@keel/testing` is listed with them although only tests use it. `@keel/tooling` is this repo's internal tooling package; the app uses it for `keelConfig` in `vitest.config.ts`. vitest, happy-dom, TypeScript and Biome are not declared here: they resolve from the repo root's devDependencies.
 
 If you build under `apps/`, change `"name"` now and run `pnpm install` at the root.
 
@@ -149,20 +149,18 @@ The Keel plugin takes no options. It compiles each app source as Vite loads it (
 
 ```ts title="vitest.config.ts"
 import keel from "@keel/compiler/vite";
-import { KeelReporter } from "@keel/tooling/vitest-reporter";
-import { defineConfig } from "vitest/config";
+import { keelConfig } from "@keel/tooling/vitest-config";
 
-export default defineConfig({
+export default keelConfig({
   plugins: [keel()],
   test: {
     include: ["test/**/*.test.{ts,tsx}", "modules/*/test/**/*.test.{ts,tsx}", ".keel/sessions/*.test.ts"],
     environment: "happy-dom",
-    reporters: [new KeelReporter()],
   },
 });
 ```
 
-Tests run through the same plugin, so components compile exactly as they do in the app, and a test run refreshes `.keel/`. `happy-dom` gives components a DOM. The `include` globs cover `test/`, a module's own `modules/<id>/test/`, and recorded sessions. `KeelReporter` prints results in the compact format from `docs/OUTPUT.md`.
+Tests run through the same plugin, so components compile exactly as they do in the app, and a test run refreshes `.keel/`. `happy-dom` gives components a DOM. The `include` globs cover `test/`, a module's own `modules/<id>/test/`, and recorded sessions. `keelConfig` adds the Keel reporter, which prints results in the compact format from `docs/OUTPUT.md`, and the test watchdog, which kills a test that runs far past its timeout (`docs/TESTING.md`).
 
 ### index.html
 

@@ -7,6 +7,7 @@
     "./output": "./output.ts",
     "./quick-first": "./quick-first.ts",
     "./repo-root": "./repo-root.ts",
+    "./vitest-config": "./vitest-config.ts",
     "./vitest-reporter": "./vitest-reporter.ts"
   },
   "scripts": {

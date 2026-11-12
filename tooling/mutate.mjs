@@ -1,11 +1,13 @@
 // The one way a mutation run starts, is watched and is stopped.
 //   node ../../tooling/mutate.mjs [stryker args]   run Stryker for the package in the current directory
 //   node tooling/mutate.mjs --status               one line per live run
-//   node tooling/mutate.mjs --stop                 one SIGINT to every live run this runner started
-// A run over its time budget (tooling/budgets.json `mutate`, minutes) gets one SIGINT: Stryker saves what it has
-// tested to the shared cache and the next run resumes from there. Stryker exits without saving on a second
-// signal, so every signal goes through the run file `<cache>/<pkg>.run.json`: whoever marks it `signalled` first
-// sends the SIGINT and nobody sends another.
+//   node tooling/mutate.mjs --stop                 one SIGINT to every live run's process group, then waits for it
+// Stryker runs in its own process group (the core and the test runners it starts). A run over its time budget
+// (tooling/budgets.json `mutate`, minutes) gets one SIGINT to that group: Stryker saves what it has tested to the
+// shared cache and the next run resumes from there. Stryker exits without saving on a second signal, so every
+// signal goes through the run file `<cache>/<pkg>.run.json`: whoever marks it `signalled` first sends the SIGINT
+// and nobody sends another. A group still alive GRACE_S after its SIGINT is killed (SIGKILL), and every ending is
+// checked by PID: the summary line says whether any process of the group is left.
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -50,6 +52,56 @@ export function ending({ over, signalled, code, signal }) {
   if (over) return "budget";
   if (signalled || code === 130 || signal === "SIGINT") return "stopped";
   return "crashed";
+}
+
+/** Pids in process group `pgid`, from a `ps -A -o pid=,pgid=` listing. */
+export function groupMembers(listing, pgid) {
+  const out = [];
+  for (const line of listing.split("\n")) {
+    const [pid, group] = line.trim().split(/\s+/).map(Number);
+    if (Number.isInteger(pid) && group === pgid) out.push(pid);
+  }
+  return out;
+}
+
+/** The live processes of group `pgid`. */
+export function listGroup(pgid) {
+  const r = spawnSync("ps", ["-A", "-o", "pid=,pgid="], { encoding: "utf8" });
+  return r.status === 0 ? groupMembers(r.stdout, pgid) : [];
+}
+
+/** Sends `signal` to group `pgid`; false when the group is already gone. */
+export function signalGroup(pgid, signal) {
+  try {
+    process.kill(-pgid, signal);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** `no process left` or `2 processes left (pids 41,42)`: the PID check every ending reports. */
+export function leftNote(left) {
+  if (left.length === 0) return "no process left";
+  return `${left.length} process${left.length === 1 ? "" : "es"} left (pids ${left.join(",")})`;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Waits up to `graceMs` for group `pgid` to empty, then SIGKILLs what remains and waits up to `killMs` more.
+ * `{ killed, left }`: whether the SIGKILL was sent, and the pids still alive at the end.
+ */
+export async function endGroup(pgid, { graceMs = GRACE_S * 1000, killMs = 5000, pollMs = 500, beforeKill } = {}) {
+  const until = (deadline) => async () => {
+    while (listGroup(pgid).length > 0 && Date.now() < deadline) await sleep(pollMs);
+  };
+  await until(Date.now() + graceMs)();
+  if (listGroup(pgid).length === 0) return { killed: false, left: [] };
+  beforeKill?.();
+  signalGroup(pgid, "SIGKILL");
+  await until(Date.now() + killMs)();
+  return { killed: true, left: listGroup(pgid) };
 }
 
 const command = (pid) => {
@@ -99,15 +151,29 @@ function status() {
   });
 }
 
+/** The file `mutate-changed` reads between packages: a stop ends its whole sequence, not just the live run. */
+export const stopFile = (cache) => path.join(cache, "stop.json");
+
 function stop() {
-  return run("mutate-stop", () => {
+  return run("mutate-stop", async () => {
+    fs.mkdirSync(mutateCacheDir(root), { recursive: true });
+    fs.writeFileSync(stopFile(mutateCacheDir(root)), JSON.stringify({ at: Date.now() }));
+    // A run another stop or its budget already signalled is waited for too, but gets no second SIGINT.
+    const runs = liveRuns().filter((r) => Number.isInteger(r.pid));
     let stopped = 0;
-    for (const r of liveRuns()) {
-      if (!Number.isInteger(r.pid) || !claimSignal(r.file)) continue;
-      process.kill(r.pid, "SIGINT");
-      stopped++;
-    }
-    return { diags: [], counts: { stopped } };
+    for (const r of runs) if (claimSignal(r.file) && signalGroup(r.pid, "SIGINT")) stopped++;
+    const ends = await Promise.all(
+      runs.map((r) =>
+        endGroup(r.pid, {
+          beforeKill: () => fs.writeFileSync(r.file, JSON.stringify({ ...readJson(r.file), killed: true })),
+        }),
+      ),
+    );
+    const killed = ends.filter((e) => e.killed).length;
+    const left = ends.flatMap((e) => e.left);
+    const line = `ok mutate-stop ${stopped} stopped, ${killed} killed, ${leftNote(left)}`;
+    const diags = left.map((pid) => ({ kind: "diag", code: "M0001", message: `process ${pid} survived SIGKILL` }));
+    return { diags, counts: { stopped, killed, left: left.length }, line };
   });
 }
 
@@ -153,18 +219,18 @@ function mutate(args) {
   const armGrace = () => {
     grace ??= setTimeout(() => {
       killed = true;
-      child.kill("SIGKILL");
+      signalGroup(child.pid, "SIGKILL");
     }, GRACE_S * 1000);
   };
   const interrupt = () => {
-    if (claimSignal(file)) child.kill("SIGINT");
+    if (claimSignal(file)) signalGroup(child.pid, "SIGINT");
     armGrace();
   };
   const timer = setTimeout(() => {
     over = true;
     interrupt();
   }, budget * 60000);
-  // `mutate:stop` signals the child itself; the runner still owes it the grace period.
+  // `mutate:stop` signals the group itself; the runner still owes it the grace period.
   const watch = setInterval(() => {
     if (readJson(file)?.signalled) armGrace();
   }, 5000);
@@ -180,22 +246,40 @@ function mutate(args) {
     fail(`Stryker did not start: ${e.message}`);
   });
   child.on("spawn", () => fs.writeFileSync(file, JSON.stringify({ ...readJson(file), pid: child.pid })));
-  child.on("exit", (code, signal) => {
+  // The runner never leaves the group behind, whichever way it exits.
+  process.on("exit", () => signalGroup(child.pid, "SIGKILL"));
+  child.on("exit", async (code, signal) => {
     done();
-    const signalled = readJson(file)?.signalled === true;
+    const claimed = readJson(file);
+    const signalled = claimed?.signalled === true;
+    killed ||= claimed?.killed === true;
+    // Test runners Stryker started can outlive it; the group ends with its core, checked by PID.
+    const { left } = await endGroup(child.pid, { graceMs: code === 0 ? 0 : 5000 });
     fs.rmSync(file, { force: true });
-    if (code === 0) return;
+    if (code === 0) {
+      if (left.length > 0) fail(`finished, but ${leftNote(left)}`);
+      return;
+    }
     const p = readJson(PROGRESS) ?? { tested: 0, total: 0 };
     const counts = { tested: p.tested, total: p.total, budgetMinutes: budget };
     const at = `at ${n(p.tested)} of ${n(p.total)} mutants`;
-    if (killed)
-      return fail(`did not stop within ${GRACE_S}s of its SIGINT and was killed ${at}; nothing saved`, counts);
+    const gone = leftNote(left);
+    // 130 tells `mutate-changed` the run was stopped or killed on purpose, so it starts no further package.
+    if (killed) {
+      fail(`did not stop within ${GRACE_S}s of its SIGINT and was killed ${at}; nothing saved; ${gone}`, counts);
+      process.exitCode = over ? 1 : 130;
+      return;
+    }
     const how = ending({ over, signalled, code, signal });
     if (how === "budget")
-      return fail(`time budget ${budget}m reached ${at}; run again to resume`, { ...counts, overBudget: 1 });
-    if (how === "stopped") return fail(`stopped ${at}; run again to resume`, { ...counts, stopped: 1 });
+      return fail(`time budget ${budget}m reached ${at}; run again to resume; ${gone}`, { ...counts, overBudget: 1 });
+    if (how === "stopped") {
+      fail(`stopped ${at}; run again to resume; ${gone}`, { ...counts, stopped: 1 });
+      process.exitCode = 130;
+      return;
+    }
     // Stryker printed its own trailer (score under the floor) or its own error; a signal from elsewhere is a crash.
-    if (signal) fail(`Stryker ended on ${signal} ${at}; nothing saved`, counts);
+    if (signal) fail(`Stryker ended on ${signal} ${at}; nothing saved; ${gone}`, counts);
     else process.exitCode = code ?? 1;
   });
 }

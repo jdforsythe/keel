@@ -1,6 +1,5 @@
 import { QuickFirst } from "@keel/tooling/quick-first";
-import { KeelReporter } from "@keel/tooling/vitest-reporter";
-import { defineConfig } from "vitest/config";
+import { keelConfig } from "@keel/tooling/vitest-config";
 
 // Stryker runs tests from a sandbox copy of the package (.stryker-tmp/sandbox-*), where the repo-root `spec/`
 // directory is not reachable. Tests that read spec/kernel/*.md check fixture/spec parity, not rule behaviour,
@@ -8,7 +7,7 @@ import { defineConfig } from "vitest/config";
 // packages/*/conformance; explain.test.ts reads spec/kernel/ through conformance/spec-codes.ts.
 // conformance/check-json-byte-identical-binary.test.ts spawns packages/cli/src/bin.ts by a repo-relative path.
 
-export default defineConfig({
+export default keelConfig({
   test: {
     include: ["test/**/*.test.ts", "conformance/**/*.test.ts"],
     exclude: [
@@ -21,6 +20,5 @@ export default defineConfig({
     testNamePattern: /^(?!E1501: a string path passed to a navigate function typed|E1510: its fixture triggers)/,
     passWithNoTests: true,
     sequence: { sequencer: QuickFirst },
-    reporters: [new KeelReporter()],
   },
 });

@@ -2,9 +2,13 @@
 // `src` files when nothing else in it changed (prose aside). Range: `--base <ref>...HEAD` (default origin/main, or HEAD~50 without it).
 // Stryker is incremental (shared cache, tooling/mutate-cache.ts), so unchanged mutants are reused either way.
 // A change to the shared mutation tooling runs every package whole. Usage: node tooling/mutate-changed.mjs [--base <ref>] [--list]
-import { execFileSync, spawnSync } from "node:child_process";
+// A stop (`pnpm mutate:stop`, Ctrl-C, SIGTERM) ends the whole sequence: the live package's run stops and no further
+// package starts.
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { mutateCacheDir } from "./mutate-cache.ts";
+import { stopFile } from "./mutate.mjs";
 import { run } from "./output.ts";
 
 const root = path.join(import.meta.dirname, "..");
@@ -47,11 +51,21 @@ export function changedScope(files, all) {
 
 const show = (s) => (s.mutate ? `${s.pkg}(${s.mutate.length} files)` : s.pkg);
 
+/** True when a stop was requested at or after `since` (ms): the stop file `mutate:stop` writes. */
+export function stopRequested(file, since) {
+  try {
+    const at = JSON.parse(fs.readFileSync(file, "utf8"))?.at;
+    return typeof at === "number" && at >= since;
+  } catch {
+    return false;
+  }
+}
+
 if (process.argv[1] === new URL(import.meta.url).pathname) {
   const argv = process.argv.slice(2);
   const at = argv.indexOf("--base");
   const base = at >= 0 ? argv[at + 1] : has("origin/main") ? "origin/main" : "HEAD~50";
-  await run("mutate-changed", () => {
+  await run("mutate-changed", async () => {
     const all = fs
       .readdirSync(path.join(root, "packages"))
       .sort()
@@ -61,17 +75,36 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     const scope = changedScope(changed, all);
     const line = `ok mutate-changed ${scope.map(show).join(",") || "none"}`;
     if (argv.includes("--list") || scope.length === 0) return { diags: [], counts: { packages: scope.length }, line };
+    const since = Date.now();
+    const stops = stopFile(mutateCacheDir(root));
+    let child;
+    let signalled = false;
+    // The runner owns the one SIGINT to its Stryker group; a signal here is passed to it once and ends the sequence.
+    for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"])
+      process.on(sig, () => {
+        signalled = true;
+        child?.kill(sig);
+      });
     let exit = 0;
+    let ran = 0;
     for (const s of scope) {
+      if (signalled || stopRequested(stops, since)) break;
       // One package at a time: each Stryker run fills the cores by itself.
-      const r = spawnSync(
+      child = spawn(
         "node",
         [path.join(root, "tooling", "mutate.mjs"), ...(s.mutate ? ["--mutate", s.mutate.join(",")] : [])],
-        { cwd: path.join(root, "packages", s.pkg), encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
+        { cwd: path.join(root, "packages", s.pkg), stdio: ["ignore", "pipe", "inherit"] },
       );
-      if (r.stdout) console.log(r.stdout.trimEnd());
-      exit ||= r.status ?? 1;
+      const out = [];
+      child.stdout.on("data", (b) => out.push(b));
+      const status = await new Promise((resolve) => child.on("close", (code) => resolve(code ?? 1)));
+      const text = Buffer.concat(out).toString("utf8").trimEnd();
+      if (text) console.log(text);
+      ran++;
+      exit ||= status;
+      if (status === 130) break;
     }
-    return { diags: [], counts: { packages: scope.length }, exit, line };
+    const skipped = scope.length - ran;
+    return { diags: [], counts: { packages: scope.length, skipped }, exit, line };
   });
 }

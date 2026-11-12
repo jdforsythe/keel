@@ -1,11 +1,9 @@
-import { KeelReporter } from "@keel/tooling/vitest-reporter";
-import { defineConfig } from "vitest/config";
+import { keelConfig } from "@keel/tooling/vitest-config";
 
-export default defineConfig({
+export default keelConfig({
   test: {
     include: ["test/**/*.test.ts", "conformance/**/*.test.ts"],
     passWithNoTests: true,
     testTimeout: 15_000,
-    reporters: [new KeelReporter()],
   },
 });

@@ -111,7 +111,7 @@ describe("project --workspace", () => {
 
   it("emits index.html and vitest.config.ts, and no turbo, CI or .keel", () => {
     const f = files();
-    expect(f.get("vitest.config.ts")).toContain(`import { KeelReporter } from "@keel/tooling/vitest-reporter";`);
+    expect(f.get("vitest.config.ts")).toContain(`import { keelConfig } from "@keel/tooling/vitest-config";`);
     expect(f.get("vitest.config.ts")).toContain(`environment: "happy-dom"`);
     expect(f.get("vitest.config.ts")).toContain("plugins: [keel()]");
     expect(f.get("index.html")).toContain("/@keel/entry.ts");

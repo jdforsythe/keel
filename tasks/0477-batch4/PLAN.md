@@ -54,4 +54,4 @@
 - [ ] mutation scores recorded for every package batches 2 and 3 changed
 
 ## Next action
-Follow `docs/HANDOFF.md`, BATCH 4 entry, NEXT (1) to (8). First: check for orphaned processes, commit the watchdog work (0511) if it is in the tree, then run the root gates once on a quiet machine.
+Follow `docs/HANDOFF.md`, BATCH 4 entry, NEXT (1) to (8). First: check for orphaned processes, then run the root gates once on a quiet machine. The process watchdog (0511) is committed.

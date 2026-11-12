@@ -1,6 +1,3 @@
-import { defineConfig } from "vitest/config";
-import { KeelReporter } from "./vitest-reporter.ts";
+import { keelConfig } from "./vitest-config.ts";
 
-export default defineConfig({
-  test: { include: ["test/**/*.test.ts"], reporters: [new KeelReporter()] },
-});
+export default keelConfig({ test: { include: ["test/**/*.test.ts"] } });
