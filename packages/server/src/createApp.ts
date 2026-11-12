@@ -80,7 +80,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * replaces the request's origin in `url`, the same-site check and `Secure`; with it, no W1557. An `allow` entry that is
  * not an http(s) origin rejects with E1560 naming its index, never its value; with any entry, every API-route response
  * carries `vary: origin` (k.hosting Allowed origins). An event-stream GET past `maxStreams` (default 1,000) open streams
- * gets 503 `keel.busy` (`data: { limit }`) and runs no loader; a stream frees its place when it ends.
+ * gets 503 `keel.busy` (`data: { limit }`) and runs no loader; a stream frees its place when it ends. A `maxStreams` that is
+ * not an integer of at least 1 rejects with E1560.
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -103,6 +104,8 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       "E1556",
       "secret: createApp({ secret }) needs at least 32 bytes; pass 32+ random bytes from the env",
     );
+  if (opts.maxStreams !== undefined && !(Number.isInteger(opts.maxStreams) && opts.maxStreams >= 1))
+    throw codedError("E1560", "maxStreams: createApp({ maxStreams }) needs an integer of at least 1");
   if (opts.std !== undefined) bindStd(opts.ctx, await loadStd(opts.std));
   const log = opts.log;
   if (deployed && opts.secret === undefined)
