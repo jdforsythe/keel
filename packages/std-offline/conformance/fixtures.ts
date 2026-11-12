@@ -168,7 +168,7 @@ export function startDrain(ctx: SimCtx, o: ReturnType<typeof declare>): () => vo
 /** Copies the persisted outbox from one sim ctx's storage to another's (the same browser storage, a new ctx). */
 export async function copyStorage(from: SimCtx, to: SimCtx, key: string): Promise<void> {
   const raw: unknown = await from.storage.get(key);
-  await to.storage.set(key, raw);
+  if (typeof raw === "string") await to.storage.set(key, raw);
 }
 
 export type Input = { params: { todoId: string }; body: { title: string } };

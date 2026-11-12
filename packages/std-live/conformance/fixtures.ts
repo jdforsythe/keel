@@ -134,11 +134,11 @@ export function createServer() {
   };
 }
 
-export type Read = (ctx: SimCtx) => Promise<Result<BoardValue, KeelError>>;
+export type Read = (ctx: SimCtx) => Promise<Result<BoardValue, KeelError<string, unknown>>>;
 
 /** A read the test resolves by hand; `calls()` counts its invocations, `at(i)` is the clock reading of call i. */
 export function controlled() {
-  const pending: { at: number; done: (r: Result<BoardValue, KeelError>) => void }[] = [];
+  const pending: { at: number; done: (r: Result<BoardValue, KeelError<string, unknown>>) => void }[] = [];
   const read: Read = (c) =>
     new Promise((done) => {
       pending.push({ at: c.clock.now(), done });
@@ -151,7 +151,7 @@ export function controlled() {
       if (p === undefined) throw new Error(`no read ${i}`);
       return p.at;
     },
-    resolve(i: number, r: Result<BoardValue, KeelError>): void {
+    resolve(i: number, r: Result<BoardValue, KeelError<string, unknown>>): void {
       const p = pending[i];
       if (p === undefined) throw new Error(`no read ${i}`);
       p.done(r);
@@ -169,7 +169,8 @@ export function counting(value: () => BoardValue) {
   return { read, calls: (): number => n };
 }
 
-export const boom = (): Result<BoardValue, KeelError> => err({ code: "board.boom", message: "boom", data: {} });
+export const boom = (): Result<BoardValue, KeelError<string, unknown>> =>
+  err({ code: "board.boom", message: "boom", data: {} });
 
 let counter = 0;
 
