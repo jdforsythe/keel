@@ -1,17 +1,24 @@
 // Spec: k.sync Conformance, "An entry's `base` and `key` survive `snapshot()`, a JSON round trip and `restore`."
 // Seed 1337 (fast-check `seed: 1337`).
+import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
-import { store, transaction, tx } from "@keel/store";
+import { isolate, store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { inScope } from "./fixtures";
 
 const Bag = s.object({ items: s.array(s.int()) });
 const Push = s.object({ v: s.int() });
 const opts = { seed: 1337, numRuns: 100 };
 
+/** Run `fn` in a scope with its own registry, so each store of one id lives apart (scope left open: callers use the stores after return). */
+function isolated<T>(fn: () => T): T {
+  const sc = scope(() => {});
+  isolate(sc);
+  return sc.run(fn);
+}
+
 function make() {
-  return inScope(() => {
+  return isolated(() => {
     const bag = store(Bag, { items: [] }, { id: "sync.bag" });
     const push = transaction(bag, "sync.push", Push, (state, { v }) => ({ items: [...state.items, v] }), {
       concurrent: "rebase",

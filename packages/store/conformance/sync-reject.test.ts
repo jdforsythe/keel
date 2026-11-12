@@ -1,17 +1,24 @@
 // Spec: k.sync Conformance, "Under `'reject'`, `tx` with a `base` other than `head()` returns `err` `keel.conflict` with data `{ store, transaction, base, head }` and changes nothing; with `base` equal to `head()` it commits an entry without `base`."
 // Seed 1337 (fast-check `seed: 1337`).
+import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
-import { store, transaction, tx } from "@keel/store";
+import { isolate, store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { inScope } from "./fixtures";
 
 const Bag = s.object({ items: s.array(s.int()) });
 const Push = s.object({ v: s.int() });
 const opts = { seed: 1337, numRuns: 100 };
 
+/** Run `fn` in a scope with its own registry, so each store of one id lives apart (scope left open: callers use the stores after return). */
+function isolated<T>(fn: () => T): T {
+  const sc = scope(() => {});
+  isolate(sc);
+  return sc.run(fn);
+}
+
 function make(explicit: boolean) {
-  return inScope(() => {
+  return isolated(() => {
     const bag = store(Bag, { items: [] }, { id: "sync.bag" });
     const fn = (state: { items: number[] }, { v }: { v: number }) => ({ items: [...state.items, v] });
     const push = explicit

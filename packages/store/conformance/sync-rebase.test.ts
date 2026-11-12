@@ -1,18 +1,25 @@
 // Spec: k.sync Conformance, "Under `'rebase'`, `tx` with a `base` other than `head()` commits on the current state and the entry holds that `base`; an invariant failure is `store.invariant` and commits nothing."
 // Seed 1337 (fast-check `seed: 1337`).
+import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
-import { invariant, store, transaction, tx } from "@keel/store";
+import { invariant, isolate, store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { inScope } from "./fixtures";
 
 const Bag = s.object({ items: s.array(s.int()) });
 const Push = s.object({ v: s.int() });
 const opts = { seed: 1337, numRuns: 100 };
+
+/** Run `fn` in a scope with its own registry, so each store of one id lives apart (scope left open: callers use the stores after return). */
+function isolated<T>(fn: () => T): T {
+  const sc = scope(() => {});
+  isolate(sc);
+  return sc.run(fn);
+}
 const CAP = 6;
 
 function make() {
-  return inScope(() => {
+  return isolated(() => {
     const bag = store(Bag, { items: [] }, { id: "sync.bag" });
     const push = transaction(bag, "sync.push", Push, (state, { v }) => ({ items: [...state.items, v] }), {
       concurrent: "rebase",

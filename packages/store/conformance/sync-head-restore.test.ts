@@ -9,6 +9,12 @@ import { inScope } from "./fixtures";
 const Bag = s.object({ items: s.array(s.int()) });
 const Push = s.object({ v: s.int() });
 const Secretive = s.object({ token: s.secret(s.string()), v: s.int() });
+/** A typed payload holds a `Secret`, which only parsing makes. */
+function sealed(v: number) {
+  const p = Secretive.parse({ token: "t", v });
+  if (!p.ok) throw new Error("secret payload did not parse");
+  return p.value;
+}
 const opts = { seed: 1337, numRuns: 100 };
 
 function make(logLimit?: number) {
@@ -32,7 +38,7 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
 function run(k: ReturnType<typeof make>, steps: readonly Step[]): void {
   for (const st of steps) {
     if (st.kind === "push") tx(k.push, { v: st.v });
-    else if (st.kind === "secret") tx(k.secretPush, { token: "t", v: st.v });
+    else if (st.kind === "secret") tx(k.secretPush, sealed(st.v));
     else k.bag.undo();
   }
 }
@@ -125,7 +131,7 @@ describe("k.sync: head and restore", () => {
         const k = make();
         run(k, steps);
         const before = k.bag.head();
-        expect(tx(k.secretPush, { token: "t", v: 1 }).ok).toBe(true);
+        expect(tx(k.secretPush, sealed(1)).ok).toBe(true);
         expect(k.bag.head()).toBe(before + 1);
         const snap = k.bag.snapshot();
         expect(snap.head).toBe(before + 1);
