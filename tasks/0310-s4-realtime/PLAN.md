@@ -43,6 +43,9 @@ Shared files stay with the orchestrator: `spec/**`, `docs/adr/**`, `docs/ARCHITE
 
 Order: the five conformance-writers (kernel, channels, live-offline, sessions-group, conflicts) run in parallel now. Then implementation: kernel, sessions-group and channels at once (sessions-group proves the worker realm first); live-offline writes std-offline first and std-live once `subscribe` lands; conflicts writes `races`, then `findRaces` once `replayGroup` lands; golden-1 starts with schemas, policies and the eval and finishes last. Ride-along 0270, 0302 (sessions-group). Mutation runs alone after the batch. Orchestrator at batch end: ARCHITECTURE Borrow vs build rows, `keel-api` skill lines, full package READMEs, spec statuses.
 
+## Conformance notes (for the implementation lanes)
+- std.channels (ten files and `fixtures.ts` in `packages/std-channels/conformance/`, committed red). Readings the tests make where the spec is silent; the channels lane implements them or reports a clause it believes wrong: a publish POSTs to the stream's path and search; `status()` is `open` when `reset` arrives, `connecting` between request and `reset`, `offline` at once when subscribed offline; a stream that ends without an event counts as a drop (backoff 1 s, 2 s, 4 s, doubling to a 30 s cap, not reset on response start); reconnect on net online is immediate; default `perCaller` is 8, read from the serving module's `std['@keel/std-channels']`; E2602 is thrown with `code === "E2602"`. Not covered (no Conformance sentence): `maxStreams`, `close()` on the handle, 404 for unparsed params, the name and id prefixes, the heartbeat.
+
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit eval green
 
