@@ -3,6 +3,7 @@
 // no E1561 means the check decided `A` accepts `B`. Slow (a project build per run), so numRuns is small.
 // Schemas: s.string(), s.number(), s.enum([...]), s.array(x), s.object({...}), x.optional(), x.nullable(); the top level is an
 // object (an action's `input` is an object schema). The endpoint's `output` is the action's answer, so only the request decides.
+// `gen(B)` values of an open object carry extra keys of any type (k.compat Accepts: a field an open `B` lacks is accepted only if `A`'s field accepts any value).
 import { type Schema, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
@@ -102,7 +103,13 @@ const gen = (d: D): fc.Arbitrary<unknown> => {
     case "object": {
       const req: Record<string, fc.Arbitrary<unknown>> = {};
       for (const [n, f] of Object.entries(d.f)) req[n] = gen(f);
-      return fc.record(req, { requiredKeys: Object.keys(d.f).filter((n) => !d.opt.includes(n)) });
+      // `B` is open: a value of it may carry keys it does not declare, of any type, including names `A` declares.
+      const extra = fc
+        .dictionary(fc.constantFrom("name", "note", "qty", "zz"), fc.anything(), { maxKeys: 3 })
+        .map((e) => Object.fromEntries(Object.entries(e).filter(([n]) => !(n in d.f))));
+      return fc
+        .tuple(fc.record(req, { requiredKeys: Object.keys(d.f).filter((n) => !d.opt.includes(n)) }), extra)
+        .map(([own, more]) => ({ ...more, ...own }));
     }
   }
 };

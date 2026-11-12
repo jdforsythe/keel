@@ -43,17 +43,14 @@ export function bClient() {
       method: "GET",
       path: "/b/:n",
       params: Params,
-      output: s.object({
-        id: s.literal("b.item"),
-        results: s.object({ "b.item": s.object({ ok: s.literal(true), value: Item }) }),
-      }),
+      output: Item,
     },
     bump: {
       method: "POST",
       path: "/b/:n",
       params: Params,
       body: Nothing,
-      output: s.object({ ok: s.literal(true), value: s.string().nullable() }),
+      output: s.string().nullable(),
     },
   });
   const made: unknown = Reflect.apply(service, undefined, [{ module: "b", schema }]);
@@ -92,7 +89,7 @@ export function moduleB() {
 export function moduleA(call: ReturnType<typeof bClient>["call"]) {
   const get = loader({ output: Item, params: Params }, async (a, ctx) => {
     const r = await call("get", a.params.n, ctx);
-    const item = isOkItem(r) ? r.value.results["b.item"].value : undefined;
+    const item = isOkItem(r) ? r.value : undefined;
     return item ? ok(item) : err(s.error("a.upstream", Nothing).make({}));
   });
   const post = action({ input: Nothing, params: Params }, async (_i, a, ctx) => {
@@ -105,7 +102,7 @@ export function moduleA(call: ReturnType<typeof bClient>["call"]) {
   return { routes };
 }
 
-type ItemAnswer = { ok: true; value: { results: { "b.item": { value: { n: string; count: number } } } } };
+type ItemAnswer = { ok: true; value: { n: string; count: number } };
 function isOkItem(r: unknown): r is ItemAnswer {
   return typeof r === "object" && r !== null && Reflect.get(r, "ok") === true;
 }

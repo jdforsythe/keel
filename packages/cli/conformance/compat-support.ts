@@ -127,13 +127,13 @@ export type Shape = {
   path?: string;
 };
 
-/** The answer of an action to a runtime request (k.server): `ok` of `Href | null`. */
-export const ACTION_ANSWER = "s.object({ ok: s.literal(true), value: s.string().nullable() })";
+/** The answer of an action as a `module` endpoint's `output` (k.compat): the `Result`'s `ok` value, `Href | null`. */
+export const ACTION_ANSWER = "s.string().nullable()";
 
 /**
  * A two-module project: module `a` calls route `y.save` of module `y` through `service({ module: 'y' })` with two
- * endpoints: `save` (POST, `body`, output the action's answer, optional `errors`) and `load` (GET, output the route's
- * `{ id, results }` answer whose loader value is `endpointOutput`, default the loader's own `output`).
+ * endpoints: `save` (POST, `body`, output the action's answer, optional `errors`) and `load` (GET, output the loader's
+ * value, `endpointOutput`, default the loader's own `output`).
  */
 export function project(sh: Shape = {}): Tree {
   const input = sh.input ?? "s.object({ name: s.string() })";
@@ -163,8 +163,7 @@ export function project(sh: Shape = {}): Tree {
       `export const api = service({ module: 'y', schema: endpoints({\n` +
       `  save: { method: 'POST', path: '${sh.path ?? "/y/save"}', body: ${sh.body ?? input}, output: ${ACTION_ANSWER}` +
       `${sh.errors === undefined ? "" : `, errors: { 409: ${sh.errors} }`} },\n` +
-      `  load: { method: 'GET', path: '/y/save', output: s.object({ id: s.literal('y.save'), results: s.object({ 'y.save': ` +
-      `s.object({ ok: s.literal(true), value: ${sh.endpointOutput ?? output} }) }) }) },\n` +
+      `  load: { method: 'GET', path: '/y/save', output: ${sh.endpointOutput ?? output} },\n` +
       `}) })\n`,
   };
 }

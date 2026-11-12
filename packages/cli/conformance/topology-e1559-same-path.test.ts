@@ -1,6 +1,6 @@
-// Spec: k.topology Conformance, "Two routes with path `/p` in modules of different deployables are one E1559." Rule E1559 (names both routes).
-// Seed 1337 (fc.assert below). In-memory project through `run(['build'])`, as module-std-artifact-build.test.ts.
-// ASSUMPTION: `keel build` reports it; the diagnostic message names both route ids.
+// Spec: k.topology Conformance, "Two routes with path `/p` in modules of different deployables are one E1559 in `keel check` and in `keel build`." Rule E1559 (names both routes).
+// Seed 1337 (fc.assert below). In-memory project through `run(['build'])` and `run(['check'])`, as module-std-artifact-build.test.ts.
+// ASSUMPTION: both commands report it; the diagnostic message names both route ids.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -27,8 +27,8 @@ const routesSrc = (id: string, p: string) =>
 const topologySrc = (same: boolean) =>
   `import { topology } from '@keel/server'\nexport default topology({ x: { modules: ['a'${same ? ", 'b'" : ""}], adapter: 'node' }${same ? "" : ", y: { modules: ['b'], adapter: 'node' }"} })\n`;
 
-const e1559 = async (same: boolean, pa: string, pb: string) => {
-  const r = await run(["build", "--format=json"], {
+const e1559 = async (command: "build" | "check", same: boolean, pa: string, pb: string) => {
+  const r = await run([command, "--format=json"], {
     cwd: tmp,
     env: { KEEL_AGENT: "1" },
     files: [
@@ -43,18 +43,20 @@ const e1559 = async (same: boolean, pa: string, pb: string) => {
 };
 
 describe("k.topology: E1559", () => {
-  test("Two routes with path `/p` in modules of different deployables are one E1559.", async () => {
+  test("Two routes with path `/p` in modules of different deployables are one E1559 in `keel check` and in `keel build`.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^\/[a-z]{1,8}$/), async (p) => {
-        const lines = await e1559(false, p, p);
-        expect(lines).toHaveLength(1);
-        expect(lines[0]).toContain("E1559");
-        expect(lines[0]).toContain("a.page");
-        expect(lines[0]).toContain("b.page");
-        expect(await e1559(true, p, p)).toEqual([]);
-        expect(await e1559(false, p, `${p}x`)).toEqual([]);
+        for (const command of ["check", "build"] as const) {
+          const lines = await e1559(command, false, p, p);
+          expect(lines).toHaveLength(1);
+          expect(lines[0]).toContain("E1559");
+          expect(lines[0]).toContain("a.page");
+          expect(lines[0]).toContain("b.page");
+          expect(await e1559(command, true, p, p)).toEqual([]);
+          expect(await e1559(command, false, p, `${p}x`)).toEqual([]);
+        }
       }),
-      { seed: SEED, numRuns: 5 },
+      { seed: SEED, numRuns: 4 },
     );
   });
 });
