@@ -9,7 +9,12 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { createApp, post } from "./fixtures.ts";
 
-const Login = s.object({ kind: s.enum(["open", "closed"]), pin: s.string(), token: s.secret(s.string()), note: s.string() });
+const Login = s.object({
+  kind: s.enum(["open", "closed"]),
+  pin: s.string(),
+  token: s.secret(s.string()),
+  note: s.string(),
+});
 
 function input(type: string, name: string): Node {
   const e = document.createElement("input");
@@ -40,9 +45,15 @@ async function build() {
 }
 
 const htmlEscape = (v: string) =>
-  v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+  v
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 const jsonInner = (v: string) => JSON.stringify(v).slice(1, -1);
-const jsonSafe = (v: string) => jsonInner(v).replaceAll("<", "\\u003c").replaceAll(">", "\\u003e").replaceAll("&", "\\u0026");
+const jsonSafe = (v: string) =>
+  jsonInner(v).replaceAll("<", "\\u003c").replaceAll(">", "\\u003e").replaceAll("&", "\\u0026");
 
 const meta = fc.string({ unit: fc.constantFrom(..."<>\"'&\\/é☃😀 ab1"), maxLength: 12 });
 const secret = meta.map((m) => `Zq7x${m}`);

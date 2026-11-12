@@ -23,14 +23,7 @@ const FILES: readonly string[] = [
   "tokens.ts",
   "topology.ts",
   ...["module", "routes"].map((n) => `${api}/${n}.ts`),
-  ...[
-    "board",
-    "boardStores",
-    "addList",
-    "addTodo",
-    "toggleTodo",
-    "editTodo",
-  ].map((n) => `${api}/${n}.ts`),
+  ...["board", "boardStores", "addList", "addTodo", "toggleTodo", "editTodo"].map((n) => `${api}/${n}.ts`),
   `${api}/TodoIdParams.schema.ts`,
   ...["TodoList", "Todo", "Board", "BoardView", "ListDraft", "TodoDraft", "Suggestion", "ListParams"].map(
     (n) => `${api}/${n}.schema.ts`,
@@ -42,14 +35,9 @@ const FILES: readonly string[] = [
     (n) => `${mod}/${n}.ts`,
   ),
   ...["todos", "suggestions"].map((n) => `${mod}/${n}.service.ts`),
-  ...[
-    "BoardReply",
-    "ActionReply",
-    "FieldsReply",
-    "SuggestionsReply",
-    "ListSearch",
-    "TodoParams",
-  ].map((n) => `${mod}/${n}.schema.ts`),
+  ...["BoardReply", "ActionReply", "FieldsReply", "SuggestionsReply", "ListSearch", "TodoParams"].map(
+    (n) => `${mod}/${n}.schema.ts`,
+  ),
   ...["loadIndex", "loadList", "loadTodo", "createList", "createTodo", "updateTodo"].map(
     (n) => `${mod}/${n}.server.ts`,
   ),

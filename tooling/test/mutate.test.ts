@@ -58,7 +58,11 @@ describe("changedScope", () => {
     expect(changedScope(["packages/ctx/README.md"], all)).toEqual([]);
   });
   it("runs every package whole when the shared mutation tooling changed", () => {
-    expect(changedScope(["tooling/quick-first.ts"], all)).toEqual([{ pkg: "check" }, { pkg: "ctx" }, { pkg: "schema" }]);
+    expect(changedScope(["tooling/quick-first.ts"], all)).toEqual([
+      { pkg: "check" },
+      { pkg: "ctx" },
+      { pkg: "schema" },
+    ]);
   });
   it("skips reports, run state and packages without a Stryker config", () => {
     expect(

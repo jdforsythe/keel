@@ -321,8 +321,14 @@ export async function splitBuilt(root: string): Promise<string | undefined> {
     );
     // B's forwarded hops: the api process logs a /digest request with no matched route only when it forwarded it, and
     // the digest process logs the refreshes it then served by route.
-    const hops = api.out.join("").split("\n").filter((l) => /^(GET|POST) \/digest\S* \d{3} \d+ms$/.test(l)).length;
-    const served = dig.out.join("").split("\n").filter((l) => /^POST \/digest\/refresh digest\.refresh 200 /.test(l)).length;
+    const hops = api.out
+      .join("")
+      .split("\n")
+      .filter((l) => /^(GET|POST) \/digest\S* \d{3} \d+ms$/.test(l)).length;
+    const served = dig.out
+      .join("")
+      .split("\n")
+      .filter((l) => /^POST \/digest\/refresh digest\.refresh 200 /.test(l)).length;
     note(hops > 0 && served > 0, `B forwarded ${hops} /digest requests, digest process served ${served} refreshes`);
     for (const p of procs.splice(0)) {
       const code = await stop(p);
@@ -332,7 +338,10 @@ export async function splitBuilt(root: string): Promise<string | undefined> {
     const holds = (file: string): boolean => {
       const db = new DatabaseSync(file);
       try {
-        return db.prepare("SELECT 1 FROM nodejs_webstorage WHERE key = ?").get(Buffer.from("digest.latest", "utf16le")) !== undefined;
+        return (
+          db.prepare("SELECT 1 FROM nodejs_webstorage WHERE key = ?").get(Buffer.from("digest.latest", "utf16le")) !==
+          undefined
+        );
       } finally {
         db.close();
       }

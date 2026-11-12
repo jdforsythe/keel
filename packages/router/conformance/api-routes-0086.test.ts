@@ -71,11 +71,7 @@ describe("k.api", () => {
   });
 
   it("E1510 has a triggering fixture and a clean one.", () => {
-    const clean = [
-      { api: true, path: "/a", loader: read },
-      { path: "/p", component: page },
-      { component: page },
-    ];
+    const clean = [{ api: true, path: "/a", loader: read }, { path: "/p", component: page }, { component: page }];
     for (const entry of clean) expect(build(entry)).toBeNull();
     expect(build({ api: true, path: "/a", loader: read, title: "x" })).toBe("E1510");
     expect(build({ api: true, loader: read })).toBe("E1510");

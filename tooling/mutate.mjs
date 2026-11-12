@@ -30,7 +30,8 @@ const readJson = (f) => {
 export function budgetMinutes(budgets, pkg) {
   const m = budgets?.mutate ?? {};
   const v = m[`@keel/${pkg}`] ?? m.default;
-  if (typeof v !== "number" || !(v > 0)) throw new Error("tooling/budgets.json: mutate.default must be minutes above 0");
+  if (typeof v !== "number" || !(v > 0))
+    throw new Error("tooling/budgets.json: mutate.default must be minutes above 0");
   return v;
 }
 
@@ -90,7 +91,8 @@ function status() {
     const live = liveRuns();
     for (const r of live) {
       const p = readJson(path.join(r.dir, PROGRESS));
-      if (json()) console.log(JSON.stringify({ kind: "mutate.run", pkg: r.pkg, dir: path.relative(root, r.dir), ...p }));
+      if (json())
+        console.log(JSON.stringify({ kind: "mutate.run", pkg: r.pkg, dir: path.relative(root, r.dir), ...p }));
       else if (!quiet()) console.log(p?.total ? statusLine(r.pkg, p, Date.now()) : `${r.pkg} dry run`);
     }
     return { diags: [], counts: { running: live.length } };
@@ -123,7 +125,8 @@ function mutate(args) {
   const file = path.join(cache, `${pkg}.run.json`);
   fs.mkdirSync(cache, { recursive: true });
   // One run of a package per clone: the cache file is shared by every worktree. `wx` makes the claim atomic.
-  const claim = () => fs.writeFileSync(file, JSON.stringify({ runner: process.pid, dir: process.cwd(), startedAt: t0 }), { flag: "wx" });
+  const claim = () =>
+    fs.writeFileSync(file, JSON.stringify({ runner: process.pid, dir: process.cwd(), startedAt: t0 }), { flag: "wx" });
   try {
     claim();
   } catch {
@@ -185,9 +188,11 @@ function mutate(args) {
     const p = readJson(PROGRESS) ?? { tested: 0, total: 0 };
     const counts = { tested: p.tested, total: p.total, budgetMinutes: budget };
     const at = `at ${n(p.tested)} of ${n(p.total)} mutants`;
-    if (killed) return fail(`did not stop within ${GRACE_S}s of its SIGINT and was killed ${at}; nothing saved`, counts);
+    if (killed)
+      return fail(`did not stop within ${GRACE_S}s of its SIGINT and was killed ${at}; nothing saved`, counts);
     const how = ending({ over, signalled, code, signal });
-    if (how === "budget") return fail(`time budget ${budget}m reached ${at}; run again to resume`, { ...counts, overBudget: 1 });
+    if (how === "budget")
+      return fail(`time budget ${budget}m reached ${at}; run again to resume`, { ...counts, overBudget: 1 });
     if (how === "stopped") return fail(`stopped ${at}; run again to resume`, { ...counts, stopped: 1 });
     // Stryker printed its own trailer (score under the floor) or its own error; a signal from elsewhere is a crash.
     if (signal) fail(`Stryker ended on ${signal} ${at}; nothing saved`, counts);
