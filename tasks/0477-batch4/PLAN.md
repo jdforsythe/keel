@@ -53,6 +53,8 @@
 - 0512 done: std.sessions carries the two replay sentences within 1,500 tokens (wording trims only; "never a push" kept). The golden-1 guide follows the realtime app. golden-1 gained 13 tests (write schemas, `boardEvents`, `formAnswer`: 108 tests, 104 check files) because the eval requires every golden-1 ledger item at `example` or better.
 - S4 exit met (2026-11-12): the eval `golden-1-api` converged on a quiet tree, 401.6 s. Two `keel dev` children of `dev-port-0091` were left by that passing run and stopped by hand (0462).
 
+- mutation run of 2026-11-12, stopped at the user's request after 54 minutes (the load average passed 50): cli 80.6%, compiler 79.2%, ctx 79.0%, forms 88.5%, reactive 85.6%, router 82.0%, runtime-dom 80.5%; check stopped at its 30-minute budget (9,704 of 10,386 mutants), scaffold stopped at 3,557 of 3,715; not started: schema, server, services, store, testing, ui. The cache is saved; the same command resumes. Ask the user before starting it again: it fills every core.
+
 ## Verification
 - [x] `pnpm check`, `pnpm test`, `pnpm build` green
 - [x] ledger not lowered, 0 uncovered in covered sections; unsafe count 7 to 8, justified (std-offline `unsafe/asResult.ts`)
