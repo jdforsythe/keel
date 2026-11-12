@@ -18,7 +18,10 @@ export function resetApi(): void {
 export const apiCtx = (): SimCtx => server;
 
 /** Serve the real `api` deployable over the api's sim ctx, as its generated entry does over the real one. */
-export const apiApp = () => createApp({ topology, routes: apiRoutes, ctx: server, deployable: "api" });
+export const apiApp = () => createApp({ topology, routes: apiRoutes, ctx: server, deployable: "api", secret: SECRET });
+
+/** The api's signing secret in tests: fixed, so one seed mints the same caller ids run after run. */
+export const SECRET = "golden-1 tests sign callers with this";
 
 /** Store `state` as the api's board (empty log), for apps built after this call. */
 export const seedBoard = (state: Board): Promise<void> =>
@@ -41,7 +44,19 @@ export async function readBoard(): Promise<Board> {
  * construction, but not set on the headers afterwards.
  */
 export async function simApi(seed = 1) {
+  return client(await apiApp(), seed);
+}
+
+/**
+ * `count` clients of one `api` app (seeds `seed`, `seed + 1`, ...), each a sim ctx with its own cookie jar and `sent`
+ * list, as browsers of different users: a save by one reaches the board stream of every other.
+ */
+export async function simUsers(count: number, seed = 1) {
   const app = await apiApp();
+  return Array.from({ length: count }, (_, i) => client(app, seed + i));
+}
+
+function client(app: { fetch(req: Request): Promise<Response> }, seed: number) {
   const ctx = createCtx({ mode: "sim", seed });
   const sent: string[] = [];
   let jar = "";

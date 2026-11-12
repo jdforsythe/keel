@@ -2,7 +2,10 @@ import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
 import type { Board } from "./Board.schema.ts";
 
-/** `api.addList` on `board` (`boardStores`): append a list; a duplicate id leaves the board unchanged. */
+/**
+ * `api.addList` on `board` (`boardStores`): append a list; a duplicate id leaves the board unchanged. A concurrent write
+ * rebases: a list with a fresh id holds on any board.
+ */
 export const addList = (board: Store<Board>) =>
   transaction(
     board,
@@ -12,4 +15,5 @@ export const addList = (board: Store<Board>) =>
       state.lists.some((l) => l.id === p.id)
         ? state
         : { ...state, lists: [...state.lists, { id: p.id, name: p.name }] },
+    { concurrent: "rebase" },
   );

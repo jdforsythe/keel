@@ -1,10 +1,12 @@
 // True when golden app 1 meets evals/tasks/golden-1-api/TASK.md acceptance: files exist, check and tests green,
 // properties cover transactions and components, every golden-1 ledger item at rung example or better, ledger not regressed,
-// unsafe count 0, build green, quiet output within budgets, and the split proof: the hidden in-process suite
-// (acceptance.test.ts, copied into the app, run, and removed) and the built processes (splitBuilt.ts).
+// unsafe count 0, build green, quiet output within budgets, the hidden suite (acceptance.test.ts, copied into the app,
+// run, and removed: the split proof and the race proof), the planted-race twin (a sibling copy of the app whose
+// `api.editTodo` rebases, where the same race scenario must find exactly one race), and the built processes
+// (splitBuilt.ts).
 import { execFile } from "node:child_process";
-import { access, copyFile, readFile, readdir, rm } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { access, copyFile, cp, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { splitBuilt } from "./splitBuilt.ts";
 
@@ -31,15 +33,27 @@ const FILES: readonly string[] = [
   ...["loadBoard", "loadSuggestions", "postList", "postTodo", "postEdit", "postToggle", "postUndo"].map(
     (n) => `${api}/${n}.server.ts`,
   ),
-  ...["module", "routes", "editable.guard", "view", "hydrate", "refreshView", "syncAfter", "todosApi"].map(
-    (n) => `${mod}/${n}.ts`,
-  ),
-  ...["todos", "suggestions"].map((n) => `${mod}/${n}.service.ts`),
-  ...["FieldsReply", "ListSearch", "TodoParams"].map((n) => `${mod}/${n}.schema.ts`),
+  ...["boardChannel"].map((n) => `${api}/${n}.ts`),
+  ...["boardEvents"].map((n) => `${api}/${n}.server.ts`),
+  ...["ListWrite", "TodoWrite", "ToggleWrite"].map((n) => `${api}/${n}.schema.ts`),
+  ...[
+    "module",
+    "routes",
+    "editable.guard",
+    "view",
+    "hydrate",
+    "refreshView",
+    "todosApi",
+    "boardOutbox",
+    "formAnswer",
+    "pageOrigin",
+  ].map((n) => `${mod}/${n}.ts`),
+  ...["todos", "suggestions", "boardWrites"].map((n) => `${mod}/${n}.service.ts`),
+  ...["FieldsReply", "ListSearch", "TodoParams", "WriteAnswer", "WriteRefusal"].map((n) => `${mod}/${n}.schema.ts`),
   ...["loadIndex", "loadList", "loadTodo", "createList", "createTodo", "updateTodo"].map(
     (n) => `${mod}/${n}.server.ts`,
   ),
-  ...["AppShell", "ListsPage", "ListPage", "TodoRow", "EditTodoPage", "ListError", "Suggestions"].map(
+  ...["AppShell", "ListsPage", "ListPage", "TodoRow", "EditTodoPage", "ListError", "Suggestions", "OutboxPanel"].map(
     (n) => `${mod}/${n}.tsx`,
   ),
   ...[
@@ -56,10 +70,13 @@ const FILES: readonly string[] = [
   ...["recount", "jobs", "schedules", "runners", "loadDigest", "feedDigest", "refresh"].map(
     (n) => `${digest}/${n}.server.ts`,
   ),
-  ...["api", "board", "components", "routes", "digest"].map((n) => `test/${n}.test.ts`),
+  ...["api", "board", "components", "routes", "digest", "realtime"].map((n) => `test/${n}.test.ts`),
   "test/simApi.ts",
   "test/apiRoutes.ts",
+  "test/user.ts",
 ];
+/** No file the realtime board replaced may remain. */
+const GONE: readonly string[] = [`${mod}/syncAfter.ts`];
 const PROPERTY_TARGETS: readonly string[] = [
   "addList",
   "addTodo",
@@ -68,6 +85,7 @@ const PROPERTY_TARGETS: readonly string[] = [
   "hydrate",
   "TodoRow",
   "Suggestions",
+  "OutboxPanel",
 ];
 const SKIP_DIR = /(^|\/)(node_modules|\.keel|dist|coverage)(\/|$)/;
 const CODE = /\.(ts|tsx|mts|mjs|js)$/;
@@ -138,8 +156,35 @@ async function acceptance(): Promise<boolean> {
   return r.ok;
 }
 
+/** What the twin copy leaves out; its `node_modules` is a link to the app's. */
+const TWIN_SKIP: ReadonlySet<string> = new Set(["node_modules", "dist", ".keel", ".turbo"]);
+
+/**
+ * The planted-race twin: a sibling copy of the app (so tsconfig, `node_modules` and the workspace paths resolve as
+ * for the app) whose `api.editTodo` declares `{ concurrent: 'rebase' }`, a full-field edit declared safe on any state.
+ * The hidden suite's race scenario runs there and must find exactly the one race; the copy is removed.
+ */
+async function plantedTwin(): Promise<boolean> {
+  const twin = await mkdtemp(join(root, "apps", ".golden-1-race-"));
+  try {
+    await cp(app, twin, { recursive: true, filter: (src) => !TWIN_SKIP.has(basename(src)) });
+    await symlink(join(app, "node_modules"), join(twin, "node_modules"));
+    const file = join(twin, api, "editTodo.ts");
+    const src = await readFile(file, "utf8");
+    const planted = src.replace(/,?\s*\);\s*$/, ', { concurrent: "rebase" });\n');
+    if (planted === src) return false;
+    await writeFile(file, planted);
+    await copyFile(join(here, "acceptance.test.ts"), join(twin, ACCEPT));
+    const vitest = join(root, "node_modules", ".bin", "vitest");
+    return (await sh(vitest, ["run", ACCEPT, "-t", "golden-1 race"], twin)).ok;
+  } finally {
+    await rm(twin, { recursive: true, force: true });
+  }
+}
+
 export default async (): Promise<boolean> => {
   for (const f of FILES) if (!(await exists(join(app, f)))) return false;
+  for (const f of GONE) if (await exists(join(app, f))) return false;
   if (await exists(join(app, "server.ts"))) return false;
 
   const files = (await codeFiles()).filter((f) => f !== ACCEPT);
@@ -172,6 +217,7 @@ export default async (): Promise<boolean> => {
   if (!build.ok) return false;
   if (!(await ledgerItemsProven())) return false;
   if (!(await acceptance())) return false;
+  if (!(await plantedTwin())) return false;
   const split = await splitBuilt(root);
   if (split !== undefined) process.stderr.write(`V0001 evals/tasks/golden-1-api/splitBuilt.ts ${split}\n`);
   return split === undefined;

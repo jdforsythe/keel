@@ -5,6 +5,13 @@ The todo app. `topology.ts` defines two deployables:
 - `web` (`client`, `host: 'api'`): the browser app, built to `dist/web/` and copied into `dist/api/`, so `api` serves it. It reads and writes the board over HTTP.
 - `api` (`node`): the `api` module, which owns the board (`api.board`), and the `digest` module, which counts open and done todos.
 
+## Several users
+Every open page follows the board. `api` serves the board channel at `GET /api/board/events`; after any save, each page re-reads `GET /api/lists` into `todos.view`, its own writes included. The header shows the stream's state: Live, Connecting, Offline or No access.
+
+Writes go through an outbox (`todos.outbox`, kept in the browser's storage). Each write names the board head its page last read and a key of its own. Offline, a write waits in the outbox panel and the pages open from the board as last read; on reconnect the outbox sends the waiting writes in order, and a write the server already took is not applied twice. Adding a list, adding a todo and marking a todo done apply over newer writes. An edit carries both fields as the editor saw them, so the server refuses an edit made from an older board; the panel then offers Keep mine, which sends it again over the newer board, and Keep theirs, which drops it.
+
+The server state lives in one process, so every user of the board must reach the same `api` server.
+
 `digest` recounts the board on `POST /digest/refresh` and at the start of every hour (UTC). Its job, `digest.recount`, reads `GET /api/lists` through `service({ module: 'api' })` and stores the counts; `GET /digest` answers the newest count and `GET /digest/feed` streams each new one as server-sent events. The job queue and the schedule are the module's runners (`modules/digest/runners.server.ts`), so they run wherever `topology.ts` places `digest`.
 
 ## Dev

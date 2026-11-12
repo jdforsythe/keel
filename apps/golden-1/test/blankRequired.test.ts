@@ -1,14 +1,17 @@
 import { type A11yNode, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { boardOutbox } from "../modules/todos/boardOutbox.ts";
 import { routes } from "../modules/todos/routes.ts";
 import { view } from "../modules/todos/view.ts";
 import { boardOf } from "./at.ts";
 import { apiApp, readBoard, resetApi, seedBoard, simApi } from "./simApi.ts";
 
 const shown = view.snapshot();
+const queued = boardOutbox.snapshot();
 afterEach(() => {
   resetApi();
   expect(view.restore(shown).ok).toBe(true);
+  expect(boardOutbox.restore(queued).ok).toBe(true);
 });
 
 const L = { id: "l1", name: "Home" };
@@ -91,10 +94,12 @@ describe("blank required text", () => {
   it("the api refuses a whitespace-only list name and todo title and keeps the board", async () => {
     await seedBoard(boardOf(seeded));
     const app = await apiApp();
+    const write = { key: "w1", base: 0 };
     for (const value of BLANKS) {
-      expect((await app.fetch(post("/api/lists", { name: value }))).status).toBe(422);
-      expect((await app.fetch(post("/api/lists/l1/todos", { title: value, priority: "low" }))).status).toBe(422);
-      expect((await app.fetch(post("/api/todos/t1", { title: value, priority: "low" }))).status).toBe(422);
+      expect((await app.fetch(post("/api/lists", { name: value, write }))).status).toBe(422);
+      const todo = { title: value, priority: "low", write };
+      expect((await app.fetch(post("/api/lists/l1/todos", todo))).status).toBe(422);
+      expect((await app.fetch(post("/api/todos/t1", todo))).status).toBe(422);
     }
     expect(await readBoard()).toEqual(boardOf(seeded));
   });

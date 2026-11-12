@@ -12,6 +12,7 @@ import { ListSearch } from "../modules/todos/ListSearch.schema.ts";
 import ListsPage from "../modules/todos/ListsPage.tsx";
 import Suggestions from "../modules/todos/Suggestions.tsx";
 import TodoRow from "../modules/todos/TodoRow.tsx";
+import { boardOutbox } from "../modules/todos/boardOutbox.ts";
 import { routes } from "../modules/todos/routes.ts";
 import { suggestions } from "../modules/todos/suggestions.service.ts";
 import { view } from "../modules/todos/view.ts";
@@ -29,9 +30,11 @@ function controlId(nodes: readonly A11yNode[], name: string): string {
 }
 
 const shown = view.snapshot();
+const queued = boardOutbox.snapshot();
 afterEach(() => {
   resetApi();
   expect(view.restore(shown).ok).toBe(true);
+  expect(boardOutbox.restore(queued).ok).toBe(true);
 });
 
 const L = { id: "l1", name: "Home" };
@@ -54,15 +57,22 @@ describe("TodoRow", () => {
     expect(t.find("todos.editLink.t1").name).toBe("Edit Milk");
     t.dispose();
   });
-  it("the checkbox posts the toggle to the api and the row shows the re-read board", async () => {
+  it("the checkbox sends the toggle through the outbox, based on the view's head", async () => {
     const seed = { lists: [L], todos: [{ ...milk, done: false }] };
     await seedBoard(boardOf(seed));
     const { ctx, sent } = await simApi();
-    const t = render(TodoRow, { props: { todo: { ...milk, done: false } }, ctx });
+    const state = [[view, { lists: [L], todos: [{ ...milk, done: false }], canUndo: false, head: 0 }]] as const;
+    const t = render(TodoRow, { props: { todo: { ...milk, done: false } }, ctx, state });
     await t.fire("todos.toggle.t1", { type: "change" });
     await t.settle();
-    expect(sent).toEqual(["POST /api/todos/t1/toggle", "GET /api/lists"]);
-    expect(t.state(view).todos[0]?.done).toBe(true);
+    expect(sent).toEqual(["POST /api/todos/t1/toggle"]);
+    expect((await readBoard()).todos[0]?.done).toBe(true);
+    expect(boardOutbox.get("entries")).toEqual([]);
+    expect(boardOutbox.log().map((e) => e.name)).toEqual([
+      "todos.outbox.add",
+      "todos.outbox.settle",
+      "todos.outbox.settle",
+    ]);
     t.dispose();
   });
   it("holds its properties", async () => {
@@ -72,7 +82,10 @@ describe("TodoRow", () => {
 
 describe("AppShell", () => {
   it("has one navigation landmark", () => {
-    const t = render(AppShell, { props: {}, state: [[view, { lists: [], todos: [], canUndo: false }]] as const });
+    const t = render(AppShell, {
+      props: {},
+      state: [[view, { lists: [], todos: [], canUndo: false, head: 0 }]] as const,
+    });
     const roles = (nodes: readonly A11yNode[]): string[] => nodes.flatMap((n) => [n.role, ...roles(n.children)]);
     expect(roles(t.a11y()).filter((r) => r === "navigation")).toHaveLength(1);
     t.dispose();
@@ -81,12 +94,12 @@ describe("AppShell", () => {
     const { ctx, sent } = await simApi();
     const t = render(AppShell, { props: {}, ctx });
     expect(t.find("todos.undo").state.disabled).toBe(true);
-    const value = { lists: [L], todos: [], canUndo: true };
+    const value = { lists: [L], todos: [], canUndo: true, head: 0 };
     const t2 = render(AppShell, { props: {}, ctx, state: [[view, value]] });
     expect(t2.find("todos.undo").state.disabled).toBeUndefined();
     await t2.fire("todos.undo", { type: "click" });
     await t2.settle();
-    expect(sent).toEqual(["POST /api/undo", "GET /api/lists"]);
+    expect(sent.filter((x) => x.startsWith("POST"))).toEqual(["POST /api/undo"]);
     expect(t2.state(view).canUndo).toBe(false);
     t2.dispose();
     t.dispose();
@@ -143,7 +156,7 @@ const eggs = { id: "t2", listId: "l1", title: "Eggs", priority: "low", done: fal
 
 describe("ListsPage", () => {
   it("shows each list with its open count and a link to it", () => {
-    const value = { lists: [L], todos: [milk, { ...milk, id: "t2", done: false }], canUndo: false };
+    const value = { lists: [L], todos: [milk, { ...milk, id: "t2", done: false }], canUndo: false, head: 0 };
     const t = render(ListsPage, { props: {}, state: [[view, value]] });
     expect(t.find("todos.lists.title").text).toBe("Lists");
     expect(t.find("todos.listLink.l1").name).toBe("Home");
@@ -163,7 +176,7 @@ describe("ListPage", () => {
     search: filter === undefined ? {} : { filter },
     data: L,
   });
-  const state = [[view, { lists: [L], todos: [milk, eggs], canUndo: false }]] as const;
+  const state = [[view, { lists: [L], todos: [milk, eggs], canUndo: false, head: 0 }]] as const;
   it("shows the list name and its filter links", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     ctx.net.route(SUGGESTIONS, () => served([]));

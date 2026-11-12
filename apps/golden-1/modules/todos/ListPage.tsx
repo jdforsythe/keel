@@ -25,7 +25,7 @@ const PRIORITIES = [
 
 /** Route `todos.list`: the list's todos filtered by `search.filter`, filter links, an add-todo Form, Suggestions. */
 export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
-  const f = form(TodoDraft, { initial: { priority: "normal" } });
+  const f = form(TodoDraft, { id: "todos.addForm", initial: { priority: "normal" } });
   const shown = () =>
     view
       .get("todos")

@@ -2,7 +2,10 @@ import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
 import type { Board } from "./Board.schema.ts";
 
-/** `api.editTodo` on `board` (`boardStores`): replace title and priority of todo `id`; an unknown id leaves the board unchanged. */
+/**
+ * `api.editTodo` on `board` (`boardStores`): replace title and priority of todo `id`; an unknown id leaves the board
+ * unchanged. A concurrent write is refused (`reject`, the default): its payload holds both fields as the editor read them.
+ */
 export const editTodo = (board: Store<Board>) =>
   transaction(
     board,

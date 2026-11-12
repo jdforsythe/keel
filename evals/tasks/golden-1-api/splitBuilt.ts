@@ -148,13 +148,16 @@ async function script(base: string): Promise<{ transcript: unknown[]; digest: un
     return digest();
   };
 
-  await send("POST", "/api/lists", { name: "Home" });
+  // Each write carries its own key; base 0 is stale after the first, so the rebasing writes record it.
+  let keys = 0;
+  const write = () => ({ key: `w${++keys}`, base: 0 });
+  await send("POST", "/api/lists", { name: "Home", write: write() });
   const listId = ids(field(await send("GET", "/api/lists"), "results", "api.lists", "value", "lists"), "id")[0] ?? "";
   for (const title of ["Milk", "Eggs", "Tea"])
-    await send("POST", `/api/lists/${listId}/todos`, { title, priority: "normal" });
+    await send("POST", `/api/lists/${listId}/todos`, { title, priority: "normal", write: write() });
   const board = await send("GET", "/api/lists");
   const [milk = "", eggs = ""] = ids(field(board, "results", "api.lists", "value", "todos"), "id");
-  await send("POST", `/api/todos/${eggs}/toggle`);
+  await send("POST", `/api/todos/${eggs}/toggle`, { write: write() });
   await send("POST", "/digest/refresh");
   t.push({ polled: await until((d) => field(d, "done") === 1) });
   await send("GET", "/digest");
@@ -178,7 +181,7 @@ async function script(base: string): Promise<{ transcript: unknown[]; digest: un
     }
   };
   t.push({ event: await next() });
-  await send("POST", `/api/todos/${milk}/toggle`);
+  await send("POST", `/api/todos/${milk}/toggle`, { write: write() });
   await send("POST", "/digest/refresh");
   t.push({ event: await next() });
   abort.abort();

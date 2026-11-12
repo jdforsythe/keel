@@ -118,6 +118,9 @@ importers:
       '@keel/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@keel/std-sessions':
+        specifier: workspace:*
+        version: link:../../packages/std-sessions
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

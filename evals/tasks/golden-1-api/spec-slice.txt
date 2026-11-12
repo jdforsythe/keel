@@ -1,4 +1,4 @@
-k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.topology k.hosting k.services k.forms k.ui k.testing k.module k.scaffold k.check std.jobs std.schedules
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.topology k.hosting k.services k.forms k.ui k.testing k.module k.scaffold k.check k.sync std.jobs std.schedules std.channels std.live std.offline std.multi std.conflicts
 
 Key lines only (current spec, RFCs through 0080). Full text: `pnpm spec <id>`.
 
@@ -129,3 +129,35 @@ k.scaffold
 k.check
 - one export per file, filename = export (E1752); unsafe needs a justification (E1754)
 - keel check --quiet prints the trailer; keel explain <code>
+
+k.sync
+- store.head(): 0 for a new store, +1 per commit and per undo that undoes; an entry's id is the head it produced; snapshot() holds head
+- tx(t, payload, { meta?, base?, key? }): base = the head the writer last read; concurrent when base !== head(); key (1-64 chars) names one write across retries: a key the kept log holds commits nothing and returns ok (checked before base)
+- transaction(store, name, Payload, fn, { concurrent: 'reject' | 'rebase' }), default 'reject': a concurrent write is err keel.conflict { store, transaction, base, head } (k.server answers 409); 'rebase' runs fn on the current state and the entry keeps base
+- 'rebase' only where the payload holds on any state (a toggle, an add with a fresh id); a payload carrying values the writer read (a full-field edit) keeps 'reject'
+- after an action's save the server ctx observe gets { kind: 'save', store, head } per saved store; ctx.net.online(); sim ctx.net.setOnline(b): offline fetch rejects and open sim bodies error; observe gets { kind: 'net', online }
+
+std.channels
+- import { channel } from '@keel/std-channels'; in a shared file named for the export: export const boardChannel = channel('api.board', { path: '/api/board/events', params: s.object({}) }) (name prefixed by the declaring module; no message: nothing is published)
+- import { channelRoute } from '@keel/std-channels/server'; in a *.server.ts file (E2601): export const boardEvents = channelRoute(boardChannel, { id: 'api.boardEvents', stores: boardStores, member: () => true }); list { api: true, path: boardEvents.path, loader: boardEvents.loader } under its id and pass boardEvents.actions to routes.actions
+- the stream yields { kind: 'reset' } first, then { kind: 'saved', store, head } after each save of a store its stores create, { kind: 'closed', reason: 'denied' | 'full' } before it ends; events carry no data: members re-read through their own loaders
+- a module that declares, serves or follows a channel lists '@keel/std-channels' in deps; the serving module lists capabilities clock, net, observe
+
+std.live
+- import { live } from '@keel/std-live'; inside a scope (a component): const status = live(ctx, origin, boardChannel, {}, { read: (c) => client.lists({}, c), hydrate }); after each reset and saved it runs read and commits tx(hydrate, value); hydrate is in the component's uses
+- one read at a time; status(): 'connecting' | 'live' | 'offline' | 'denied'
+
+std.offline
+- import { outbox, send, drain, resolve, Write } from '@keel/std-offline'; export const boardOutbox = outbox('todos.outbox', endpointsMap) in a client-safe file (store todos.outbox, state { entries }, kept in ctx.storage keel.outbox.<id>)
+- an endpoint an outbox sends to has body s.object({ ..., write: Write }) and declares errors: { 409: s.json() }; its action passes tx(t, payload, { meta, ...input.write }); Write = { key: s.id('Write'), base: s.int({ min: 0 }) }
+- the outbox calls service({ base: origin }): output and errors decode the whole k.server answer ({ ok: true, value } / { ok: false, error })
+- const r = await send(ctx, boardOutbox, origin, 'editTodo', { params, body }, { base: view.get('head') }): r.state 'sent' | 'queued' (offline or network) | 'conflict' (with head) | 'failed' (with error)
+- drain(ctx, boardOutbox) inside a scope: loads the stored outbox and flushes, again on each reconnect; entries go in order, one at a time; resolve(ctx, boardOutbox, key, 'mine' | 'theirs'): mine re-queues a conflict last with base = its head, theirs drops a conflict or failed entry
+- entry: { key, endpoint, origin, input, base, at, state: 'queued' | 'sending' | 'conflict' | 'failed', head?, error? }
+
+std.multi
+- import { openGroup, replayGroup } from '@keel/std-sessions/group' (node): const g = await openGroup({ user: <url of a module exporting { routes, base: { id, params, search } }>, serve: (ctx) => ({ fetch }), users: 2, seed: 11, origin, server: { 'api.board': <snapshot JSON> } })
+- g.user(i).fire/navigate/find/state; g.setOnline(i, b); g.advance(ms); g.settle(); await g.stop() -> SessionGroup; replayGroup(group, { user, serve }) -> { users, server, reproduced }; inputs replay in order of at, then user, then event index
+
+std.conflicts
+- import { findRaces, raceRecords } from '@keel/std-conflicts': findRaces(group, { user, serve, stores: [boardStores] }) -> { replay, races, unchecked }; a race is a rebased entry whose order against its concurrent entries changes the result: E2701 <file>:1:1 race <name> #<id> over <name> #<id>, ... on <store>

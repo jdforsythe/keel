@@ -22,6 +22,7 @@ import { routes } from "../modules/api/routes.ts";
 import { toggleTodo } from "../modules/api/toggleTodo.ts";
 import { at, boardOf } from "./at.ts";
 import { BOARD_KEY, apiApp, apiCtx, readBoard, resetApi, seedBoard } from "./simApi.ts";
+import { write } from "./write.ts";
 
 const scopes: { dispose(): void }[] = [];
 afterEach(() => {
@@ -85,26 +86,36 @@ describe("api.board", () => {
 });
 
 describe("loaders and actions", () => {
-  it("loadBoard serves lists, todos and canUndo", async () => {
+  it("loadBoard serves lists, todos, canUndo and the board's head", async () => {
     const st = seeded(boardOf({ lists: [L], todos: [milk] }));
     const r = await loadBoard.run({ params: {}, search: {}, url: URL_, ...as(st) }, sim());
-    expect(r).toEqual({ ok: true, value: { lists: [L], todos: [milk], canUndo: false } });
+    expect(r).toEqual({ ok: true, value: { lists: [L], todos: [milk], canUndo: false, head: 0 } });
   });
   it("postList, postTodo, postToggle and postEdit commit with ctx-minted ids; postUndo refuses another caller", async () => {
     const st = fresh();
     const a = as(st, "a");
-    expect(await postList.run({ name: "Work" }, { params: {}, url: URL_, ...a }, sim())).toEqual({
-      ok: true,
-      value: null,
-    });
+    expect(await postList.run({ name: "Work", write: write("w1", 0) }, { params: {}, url: URL_, ...a }, sim())).toEqual(
+      {
+        ok: true,
+        value: null,
+      },
+    );
     const listId = st.board.get("lists")[0]?.id ?? "";
     expect(
-      (await postTodo.run({ title: "Milk", priority: "low" }, { ...at(ListParams, { listId }), ...a }, sim())).ok,
+      (
+        await postTodo.run(
+          { title: "Milk", priority: "low", write: write("w2", 1) },
+          { ...at(ListParams, { listId }), ...a },
+          sim(),
+        )
+      ).ok,
     ).toBe(true);
     const todoId = st.board.get("todos")[0]?.id ?? "";
-    expect((await postToggle.run({}, { ...at(TodoIdParams, { todoId }), ...a }, sim())).ok).toBe(true);
+    expect((await postToggle.run({ write: write("w3", 2) }, { ...at(TodoIdParams, { todoId }), ...a }, sim())).ok).toBe(
+      true,
+    );
     const edited = await postEdit.run(
-      { title: "Oat milk", priority: "high" },
+      { title: "Oat milk", priority: "high", write: write("w4", 3) },
       { ...at(TodoIdParams, { todoId }), ...a },
       sim(),
     );
@@ -123,18 +134,28 @@ describe("loaders and actions", () => {
     const a = as(st);
     const code = (r: { ok: boolean; error?: { code: string } }) => (r.ok ? null : r.error?.code);
     expect(
-      code(await postTodo.run({ title: "X", priority: "low" }, { ...at(ListParams, { listId: "nope" }), ...a }, sim())),
+      code(
+        await postTodo.run(
+          { title: "X", priority: "low", write: write("w1", 0) },
+          { ...at(ListParams, { listId: "nope" }), ...a },
+          sim(),
+        ),
+      ),
     ).toBe("keel.notFound");
-    expect(code(await postToggle.run({}, { ...at(TodoIdParams, { todoId: "nope" }), ...a }, sim()))).toBe(
-      "keel.notFound",
-    );
+    expect(
+      code(await postToggle.run({ write: write("w2", 0) }, { ...at(TodoIdParams, { todoId: "nope" }), ...a }, sim())),
+    ).toBe("keel.notFound");
     expect(
       code(
-        await postEdit.run({ title: "X", priority: "low" }, { ...at(TodoIdParams, { todoId: "nope" }), ...a }, sim()),
+        await postEdit.run(
+          { title: "X", priority: "low", write: write("w3", 0) },
+          { ...at(TodoIdParams, { todoId: "nope" }), ...a },
+          sim(),
+        ),
       ),
     ).toBe("keel.notFound");
     const dup = await postEdit.run(
-      { title: "Eggs", priority: "low" },
+      { title: "Eggs", priority: "low", write: write("w4", 0) },
       { ...at(TodoIdParams, { todoId: "t1" }), ...a },
       sim(),
     );
@@ -147,6 +168,51 @@ describe("loaders and actions", () => {
     );
     expect(st.board.get("todos")).toEqual([milk, eggs]);
   });
+  it("a stale edit is keel.conflict with the head; a stale toggle and add rebase and keep their base", async () => {
+    const st = seeded(boardOf({ lists: [L], todos: [milk, eggs] }));
+    const a = as(st);
+    const t1 = at(TodoIdParams, { todoId: "t1" });
+    expect((await postToggle.run({ write: write("w1", 0) }, { ...t1, ...a }, sim())).ok).toBe(true);
+    const stale = await postEdit.run(
+      { title: "Oat milk", priority: "low", write: write("w2", 0) },
+      { ...t1, ...a },
+      sim(),
+    );
+    expect(stale.ok ? null : stale.error).toMatchObject({
+      code: "keel.conflict",
+      data: { store: "api.board", transaction: "api.editTodo", base: 0, head: 1 },
+    });
+    expect((await postToggle.run({ write: write("w3", 0) }, { ...t1, ...a }, sim())).ok).toBe(true);
+    const added = await postTodo.run(
+      { title: "Bread", priority: "low", write: write("w4", 0) },
+      { ...at(ListParams, { listId: "l1" }), ...a },
+      sim(),
+    );
+    expect(added.ok).toBe(true);
+    expect(st.board.log().map((e) => [e.name, e.base])).toEqual([
+      ["api.toggleTodo", undefined],
+      ["api.toggleTodo", 0],
+      ["api.addTodo", 0],
+    ]);
+    expect(st.board.head()).toBe(3);
+  });
+  it("a write sent again with its key commits nothing", async () => {
+    const st = seeded(boardOf({ lists: [L], todos: [milk] }));
+    const a = as(st);
+    const t1 = at(TodoIdParams, { todoId: "t1" });
+    expect((await postToggle.run({ write: write("w1", 0) }, { ...t1, ...a }, sim())).ok).toBe(true);
+    expect((await postToggle.run({ write: write("w1", 0) }, { ...t1, ...a }, sim())).ok).toBe(true);
+    expect([st.board.head(), st.board.get("todos")[0]?.done]).toEqual([1, true]);
+  });
+  it("addList, addTodo and toggleTodo rebase concurrent writes; editTodo refuses them", () => {
+    const st = fresh();
+    expect([st.addList, st.addTodo, st.toggleTodo, st.editTodo].map((t) => t.concurrent)).toEqual([
+      "rebase",
+      "rebase",
+      "rebase",
+      "reject",
+    ]);
+  });
 });
 
 describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
@@ -157,12 +223,12 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       id: "api.lists",
-      results: { "api.lists": { ok: true, value: { lists: [L], todos: [milk], canUndo: false } } },
+      results: { "api.lists": { ok: true, value: { lists: [L], todos: [milk], canUndo: false, head: 0 } } },
     });
   });
   it("every write endpoint commits and answers ok(null); undo reverts the caller's last one only", async () => {
     const app = await apiApp();
-    const created = await app.fetch(post("/api/lists", { name: "Work" }));
+    const created = await app.fetch(post("/api/lists", { name: "Work", write: { key: "w1", base: 0 } }));
     expect([created.status, await created.json()]).toEqual([200, { ok: true, value: null }]);
     // The first write sets the caller cookie (the cookie is the undo scope); this client sends it back, as a browser would.
     const cookie = created.headers.get("set-cookie")?.split(";")[0] ?? "";
@@ -172,10 +238,12 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
       return app.fetch(req);
     };
     const listId = (await readBoard()).lists[0]?.id ?? "";
-    expect((await mine(post(`/api/lists/${listId}/todos`, { title: "Milk", priority: "low" }))).status).toBe(200);
+    const add = { title: "Milk", priority: "low", write: { key: "w2", base: 1 } };
+    expect((await mine(post(`/api/lists/${listId}/todos`, add))).status).toBe(200);
     const todoId = (await readBoard()).todos[0]?.id ?? "";
-    expect((await mine(post(`/api/todos/${todoId}/toggle`))).status).toBe(200);
-    expect((await mine(post(`/api/todos/${todoId}`, { title: "Oat milk", priority: "high" }))).status).toBe(200);
+    expect((await mine(post(`/api/todos/${todoId}/toggle`, { write: { key: "w3", base: 2 } }))).status).toBe(200);
+    const edit = { title: "Oat milk", priority: "high", write: { key: "w4", base: 3 } };
+    expect((await mine(post(`/api/todos/${todoId}`, edit))).status).toBe(200);
     const after = await (await mine(get("/api/lists"))).json();
     expect(after.results["api.lists"].value).toMatchObject({
       lists: [{ id: listId, name: "Work" }],
@@ -189,7 +257,10 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
   });
   it("after 50 writes the served document and JSON name no transaction", async () => {
     const app = await apiApp();
-    for (let i = 0; i < 50; i++) expect((await app.fetch(post("/api/lists", { name: `L${i}` }))).status).toBe(200);
+    for (let i = 0; i < 50; i++) {
+      const body = { name: `L${i}`, write: { key: `w${i}`, base: i } };
+      expect((await app.fetch(post("/api/lists", body))).status).toBe(200);
+    }
     expect(await logLength()).toBe(50);
     const html = await (
       await app.fetch(new Request(`${ORIGIN}/api/lists`, { headers: { accept: "text/html" } }))
@@ -202,11 +273,15 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
   it("bad bodies are 422 keel.fields; unknown ids are 404; a duplicate title is 422 with the field", async () => {
     await seedBoard(boardOf({ lists: [L], todos: [milk, eggs] }));
     const app = await apiApp();
-    const bad = await app.fetch(post("/api/lists", { name: "" }));
+    const bad = await app.fetch(post("/api/lists", { name: "", write: { key: "w1", base: 0 } }));
     expect([bad.status, (await bad.json()).error.code]).toEqual([422, "keel.fields"]);
-    expect((await app.fetch(post("/api/lists/nope/todos", { title: "X", priority: "low" }))).status).toBe(404);
-    expect((await app.fetch(post("/api/todos/nope/toggle"))).status).toBe(404);
-    const dup = await app.fetch(post("/api/todos/t1", { title: "Eggs", priority: "low" }));
+    const w = { key: "w1", base: 0 };
+    expect((await app.fetch(post("/api/lists/nope/todos", { title: "X", priority: "low", write: w }))).status).toBe(
+      404,
+    );
+    expect((await app.fetch(post("/api/todos/nope/toggle", { write: w }))).status).toBe(404);
+    expect((await app.fetch(post("/api/todos/t1/toggle"))).status).toBe(422);
+    const dup = await app.fetch(post("/api/todos/t1", { title: "Eggs", priority: "low", write: w }));
     expect([dup.status, (await dup.json()).error]).toEqual([
       422,
       { code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } },

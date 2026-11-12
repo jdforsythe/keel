@@ -1,20 +1,26 @@
 import type { Ctx } from "@keel/ctx";
 import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
+import { send } from "@keel/std-offline";
 import { Box, Checkbox, Link, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
-import { hydrate } from "./hydrate.ts";
+import { boardOutbox } from "./boardOutbox.ts";
+import { pageOrigin } from "./pageOrigin.ts";
 import { routes } from "./routes.ts";
-import { syncAfter } from "./syncAfter.ts";
-import { todosApi } from "./todosApi.ts";
+import { view } from "./view.ts";
 
 export const Props = s.object({ todo: Todo });
-export const uses = [hydrate];
 
-/** One todo: a done Checkbox (posts `/api/todos/:todoId/toggle`, then re-reads the board), priority, Edit link. */
+/**
+ * One todo: a done Checkbox (sends `/api/todos/:todoId/toggle` through the outbox, based on the board as last read;
+ * the live board shows the result), priority, Edit link.
+ */
 export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const toggle = (): void => {
-    if (ctx !== undefined) void syncAfter(ctx, todosApi.toggleTodo({ params: { todoId: props.todo.id } }, ctx));
+    const origin = pageOrigin();
+    if (ctx === undefined || origin === undefined) return;
+    const call = { params: { todoId: props.todo.id }, body: {} };
+    void send(ctx, boardOutbox, origin, "toggleTodo", call, { base: view.get("head") });
   };
   return (
     <Box as="li" id={`todos.row.${props.todo.id}`} direction="row" align="center" gap="3" px="3" py="2" bg="card">

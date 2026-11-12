@@ -19,7 +19,10 @@ const PRIORITIES = [
 
 /** Route `todos.edit`: a Form editing the todo's title and priority; success returns to `todos.list`. */
 export default function EditTodoPage(props: Infer<typeof Props>) {
-  const f = form(TodoDraft, { initial: { title: props.data.title, priority: props.data.priority } });
+  const f = form(TodoDraft, {
+    id: "todos.editForm",
+    initial: { title: props.data.title, priority: props.data.priority },
+  });
   // Router `Form` expects Node children, not the compiler's children thunk, so it is called directly and
   // inserted through a `children()` binding (compiler D31).
   const children = (): Node => {
