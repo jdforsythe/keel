@@ -519,3 +519,6 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0457 compiler: an E1552 name message embeds the raw name, so a string key with a newline (`"a\nE0000 x": {...}`) prints a forged line in `keel check` and build output; quote or escape the name (`deployableNameProblem.ts:12`) · compiler · k.topology, docs/OUTPUT.md
 - [ ] 0458 server: a forwarded HEAD response loses `content-length` (it is stripped with the hop-by-hop headers because the body was decoded); keep it for HEAD · server · k.topology
 - [ ] 0459 runtime-dom: a server-rendered, resumed list followed by a refresh was not exercised by the keyed-row tests or the red-team pass; add a resume-then-refresh test (row identity and focus) · runtime-dom · k.component, k.runtime
+
+## Batch 3, 2026-11-12 (tasks/0460-batch3)
+- [ ] 0460 batch 3: the format gate (0438, 0451), 0448, 0458, 0459, 0376, 0397, and RFC 0091 for 0446, 0394, 0395, 0377, 0387, 0449, 0450 · tasks/0460-batch3/PLAN.md
