@@ -16,7 +16,8 @@ const MAX_MS = 30_000;
  * `closed` `full`) it reopens 1 s later, doubling to 30 s on `ctx.clock`; a `reset` starts the doubling over. While
  * `ctx.net.online()` is false it sends nothing, aborts an open stream, and reconnects at once on
  * `{ kind: 'net', online: true }`. After `closed` `denied` it stops. Disposing the scope, or `close()`, aborts the
- * request; `on` gets no later event.
+ * request; `on` gets no later event. The stream starts after the current tick, so subscribing while rendering inside
+ * an effect writes nothing.
  */
 export function subscribe<P, M>(
   ctx: Ctx,
@@ -89,6 +90,8 @@ export function subscribe<P, M>(
     }
   };
   owner()?.onDispose(close);
-  void run();
+  // Started after the current tick: a caller rendering inside an effect makes no write (the status starts at its
+  // initial value).
+  void Promise.resolve().then(run);
   return { status: status.get, close };
 }

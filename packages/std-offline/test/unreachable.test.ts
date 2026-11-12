@@ -1,5 +1,5 @@
-// A 502 `keel.unreachable` answer follows k.services: `api.network` through a `module` service (the entry stays
-// `queued`), `api.status` through a `base` service (the entry is `failed`). Seed 1337.
+// A 502 `keel.unreachable` answer is a network failure, as a `module` service reads it (k.services): the entry stays
+// `queued`, whether the answer comes through a `module` service or to the outbox at its origin. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -24,9 +24,9 @@ const unreachable = (): Response =>
   });
 const body = (ctx: SimCtx) => ({ title: "x", write: { key: ctx.random.id("Write"), base: 0 } });
 
-function ctxWith(url: string): SimCtx {
+function ctxWith(url: string, up = (): boolean => false): SimCtx {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
-  ctx.net.route(url, unreachable);
+  ctx.net.route(url, () => (up() ? Response.json({ ok: true, value: {} }) : unreachable()));
   return ctx;
 }
 
@@ -34,18 +34,12 @@ test("through a module service a 502 keel.unreachable is api.network, so its ent
   const ctx = ctxWith("http://api.keel.invalid/save");
   const r = await service({ module: "api", schema: Api }).save({ body: body(ctx) }, ctx);
   expect(r.ok ? undefined : r.error.code).toBe("api.network");
-  expect(outcomeOf(r, false)).toEqual({ state: "queued" });
+  expect(outcomeOf(r, false, Api.save)).toEqual({ state: "queued" });
 });
 
-test("through a base service a 502 keel.unreachable is api.status, so its entry is failed", async () => {
-  const ctx = ctxWith("https://app.example.com/save");
-  const r = await service({ base: "https://app.example.com", schema: Api }).save({ body: body(ctx) }, ctx);
-  expect(r.ok ? undefined : r.error.code).toBe("api.status");
-  expect(outcomeOf(r, false)?.state).toBe("failed");
-});
-
-test("an outbox, which sends through a base service at its origin, leaves that entry failed", async () => {
-  const ctx = ctxWith("https://app.example.com/save");
+test("an outbox sending to its origin leaves that entry queued, and posts it again once the server answers", async () => {
+  let up = false;
+  const ctx = ctxWith("https://app.example.com/save", () => up);
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
     held.o = outbox("unreach.outbox", Api);
@@ -53,7 +47,11 @@ test("an outbox, which sends through a base service at its origin, leaves that e
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
   const r = await send(ctx, o, "https://app.example.com", "save", { body: { title: "x" } }, { base: 0 });
-  expect(r.state).toBe("failed");
-  expect(o.get("entries").map((e) => e.state)).toEqual(["failed"]);
+  expect(r.state).toBe("queued");
+  expect(o.get("entries").map((e) => e.state)).toEqual(["queued"]);
+  up = true;
+  ctx.clock.advance(1000);
+  for (let i = 0; i < 200; i++) await Promise.resolve();
+  expect(o.get("entries")).toEqual([]);
   sc.dispose();
 });

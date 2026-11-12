@@ -5,7 +5,8 @@ const MAX_PENDING = 256;
 
 /**
  * A stream's pending events. `next` resolves the oldest, or undefined once `signal` aborts or the inbox overflowed
- * (`MAX_PENDING` unread events: a reader that stopped reading ends instead of holding memory).
+ * (`MAX_PENDING` unread events: a reader that stopped reading ends instead of holding memory). A wait leaves no
+ * listener on `signal` once it ends.
  */
 export function inbox<M>() {
   const items: ChannelEvent<M>[] = [];
@@ -20,8 +21,12 @@ export function inbox<M>() {
     async next(signal: AbortSignal): Promise<ChannelEvent<M> | undefined> {
       while (items.length === 0 && !over && !signal.aborted)
         await new Promise<void>((r) => {
-          wake = r;
-          signal.addEventListener("abort", () => r(), { once: true });
+          const done = (): void => {
+            signal.removeEventListener("abort", done);
+            r();
+          };
+          wake = done;
+          signal.addEventListener("abort", done, { once: true });
         });
       return over || signal.aborted ? undefined : items.shift();
     },

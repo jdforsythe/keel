@@ -1,7 +1,7 @@
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import type { Ctx } from "@keel/ctx";
 import { action, loader } from "@keel/router";
-import { type KeelError, err, ok, s } from "@keel/schema";
+import { type KeelError, attempt, err, ok, s } from "@keel/schema";
 import type { Channel } from "../Channel.type.ts";
 import { eventsOf } from "../internal/eventsOf.ts";
 import type { ChannelRoute } from "./ChannelRoute.type.ts";
@@ -21,10 +21,11 @@ const closed = (reason: "denied" | "full") => ok({ kind: "closed", reason } as c
 
 /**
  * Serve `channel` (std.channels Serve) from a `*.server.ts` file (else E2601): the API route `{ id, path, loader,
- * actions: { POST } }`. The loader is a live loader: past the serving module's `perCaller` or `maxStreams` its only
- * event is `closed` `full`; when `member` is false `closed` `denied`; else `reset`, then `saved` after each save of a
- * store `stores` creates (with `member` re-checked against the stores as saved: false ends it with `closed` `denied`)
- * and `message` per publish to the same channel and params. `POST { message }` is an action: `member` false is 403,
+ * actions: { POST } }`. The loader is a live loader: when `member` is false its only event is `closed` `denied`; past
+ * the serving module's `perCaller` or `maxStreams` `closed` `full`; else `reset`, then `saved` after each save of a
+ * store `stores` creates (with `member` re-checked against the stores as saved: false, or a failed re-read, ends it
+ * with `closed` `denied`) and `message` per publish to the same channel and params, delivered after any pending
+ * re-check. `POST { message }` is an action: `member` false is 403,
  * else every open member stream of the instance gets the message and it answers `ok(null)`. Params that fail the
  * channel's schema are `keel.notFound`. Events name no caller and hold no store state.
  */
@@ -43,17 +44,18 @@ export function channelRoute<P, M, S>(
         yield err(notFound);
         return;
       }
+      // `member` before the caps: a non-member learns nothing about them; it runs once per open as it does below them.
+      const at = { caller, params: p.value.value, stores };
+      if (!allowed(member, at)) {
+        yield closed("denied");
+        return;
+      }
       const hub = hubOf(ctx);
       const cfg = stdConfig(ctx, "@keel/std-channels", ChannelsConfig)[module] ?? {};
       let mine = 0;
       for (const sk of hub.sinks) if (sk.caller === caller) mine++;
       if (hub.sinks.size >= (cfg.maxStreams ?? 1000) || mine >= (cfg.perCaller ?? 8)) {
         yield closed("full");
-        return;
-      }
-      const at = { caller, params: p.value.value, stores };
-      if (!allowed(member, at)) {
-        yield closed("denied");
         return;
       }
       const box = inbox<M>();
@@ -64,15 +66,18 @@ export function channelRoute<P, M, S>(
       const leave = join(ctx, hub, {
         key: instance(p.value.key),
         caller,
+        // Messages queue behind any pending re-check, so a stream it revokes gets none.
         post: (m) => {
           const r = channel.message?.parse(m);
-          if (r?.ok === true) box.push({ kind: "message", message: r.value });
+          if (r?.ok === true) chain = chain.then(() => void (out || box.push({ kind: "message", message: r.value })));
         },
+        // A re-read or `member` that fails is a denial; the chain goes on for later saves.
         saved: (store, head, read) => {
           if (!ids.has(store)) return;
           chain = chain.then(async () => {
             if (out) return;
-            out = !(await reread(list, read)) || !allowed(member, at);
+            const still = await attempt(async () => (await reread(list, read)) && allowed(member, at));
+            out = !(still.ok && still.value);
             box.push(out ? { kind: "closed", reason: "denied" } : { kind: "saved", store, head });
           });
         },

@@ -57,13 +57,10 @@ async function run(script: readonly Step[]): Promise<{ added: string[]; applied:
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
-  const added: string[] = [];
+  let sent = 0;
   for (const step of script) {
-    if ("send" in step) {
-      void send(ctx, o, ORIGIN, "add", { body: { n: added.length } }, { base: 0 });
-      const last = o.get("entries").at(-1);
-      if (last !== undefined && !added.includes(last.key)) added.push(last.key);
-    } else if ("online" in step) ctx.net.setOnline(step.online);
+    if ("send" in step) void send(ctx, o, ORIGIN, "add", { body: { n: sent++ } }, { base: 0 });
+    else if ("online" in step) ctx.net.setOnline(step.online);
     else if ("drop" in step) drops++;
     else ctx.clock.advance(step.advance);
     await settle();
@@ -74,6 +71,10 @@ async function run(script: readonly Step[]): Promise<{ added: string[]; applied:
   ctx.clock.advance(60_000);
   await settle();
   const left = o.get("entries").length;
+  const added = o
+    .log()
+    .filter((e) => e.name === `${o.id}.add`)
+    .map((e) => String(Reflect.get(Object(e.payload), "key")));
   sc.dispose();
   return { added, applied, left };
 }

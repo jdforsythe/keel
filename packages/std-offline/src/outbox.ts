@@ -1,4 +1,4 @@
-import { owner } from "@keel/reactive";
+import { owner, scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { secretPathOf } from "@keel/schema/internal";
 import type { EndpointMap } from "@keel/services";
@@ -21,10 +21,11 @@ const Settle = s.object({
 const Resolve = s.object({ key: s.string(), resolution: Resolution });
 
 /**
- * Declare an outbox (std.offline) over a k.services `endpoints` map, inside a scope: the client store `id` with state
- * `{ entries }`, changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. `limit` (100) and `maxBytes` (262,144
- * bytes of encoded entries) bound it. Throws E2651 (an Error with `code`) when an endpoint body holds an `s.secret`:
- * entries are stored in the browser.
+ * Declare an outbox (std.offline) over a k.services `endpoints` map: the client store `id` with state `{ entries }`,
+ * changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. Inside a scope the store is created now and the outbox
+ * stops flushing when that scope is disposed; outside one (a module-level declaration) it is created on first use and
+ * lives as long as the module. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it. Throws E2651
+ * (an Error with `code`) when an endpoint body holds an `s.secret`: entries are stored in the browser.
  */
 export function outbox<const D extends EndpointMap>(
   id: string,
@@ -38,36 +39,72 @@ export function outbox<const D extends EndpointMap>(
       throw Object.assign(new Error(message), { code: "E2651" });
     }
   }
-  const st = store(OutboxState, { entries: [] }, { id });
-  const c: Config = {
-    id,
-    api,
-    limit: opts.limit ?? 100,
-    maxBytes: opts.maxBytes ?? 262_144,
-    store: st,
-    add: transaction(st, `${id}.add`, OutboxEntry, (s0, e) => ({ entries: [...s0.entries, e] })),
-    settle: transaction(st, `${id}.settle`, Settle, (s0, { key, state, ...extra }) =>
-      state === "sent"
-        ? { entries: s0.entries.filter((e) => e.key !== key) }
-        : { entries: s0.entries.map((e) => (e.key === key ? { ...e, state, ...extra } : e)) },
-    ),
-    resolve: transaction(st, `${id}.resolve`, Resolve, (s0, { key, resolution }) => {
-      const entries = s0.entries.filter((e) => e.key !== key);
-      const e = s0.entries.find((x) => x.key === key);
-      if (resolution === "theirs" || e?.head === undefined) return { entries };
-      const { head, error, ...plain } = e;
-      return { entries: [...entries, { ...plain, base: head, state: "queued" as const }] };
+  const wire = Object.fromEntries(
+    Object.entries(api).map(([name, e]) => {
+      const errors = Object.fromEntries([409, 502, ...Object.keys(e.errors ?? {})].map((k) => [k, s.json()]));
+      return [name, { ...e, output: s.json(), errors }];
     }),
-    live: true,
-    busy: false,
-    delay: 1000,
-    timer: new AbortController(),
-    waits: new Map(),
-    again: undefined,
+  );
+  let c: Config | undefined;
+  const make = (): Config => {
+    const st = store(OutboxState, { entries: [] }, { id });
+    c = {
+      id,
+      api,
+      wire,
+      limit: opts.limit ?? 100,
+      maxBytes: opts.maxBytes ?? 262_144,
+      store: st,
+      add: transaction(st, `${id}.add`, OutboxEntry, (s0, e) => ({ entries: [...s0.entries, e] })),
+      settle: transaction(st, `${id}.settle`, Settle, (s0, { key, state, ...extra }) =>
+        state === "sent"
+          ? { entries: s0.entries.filter((e) => e.key !== key) }
+          : { entries: s0.entries.map((e) => (e.key === key ? { ...e, state, ...extra } : e)) },
+      ),
+      resolve: transaction(st, `${id}.resolve`, Resolve, (s0, { key, resolution }) => {
+        const entries = s0.entries.filter((e) => e.key !== key);
+        const e = s0.entries.find((x) => x.key === key);
+        if (resolution === "theirs" || e?.head === undefined) return { entries };
+        const { head, error, ...plain } = e;
+        return { entries: [...entries, { ...plain, base: head, state: "queued" as const }] };
+      }),
+      loads: new WeakMap(),
+      live: true,
+      busy: false,
+      delay: 1000,
+      timer: new AbortController(),
+      waits: new Map(),
+      again: undefined,
+    };
+    return c;
   };
-  configOf(st, c);
-  owner()?.onDispose(() => {
-    c.live = false;
+  const sc = owner();
+  sc?.onDispose(() => {
+    if (c) c.live = false;
   });
-  return st;
+  if (sc) make();
+  // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
+  const cfg = (): Config => c ?? scope(() => undefined, { detached: true }).run(make);
+  const st = () => cfg().store;
+  const o: Outbox<D> = {
+    id,
+    get schema() {
+      return st().schema;
+    },
+    get payloads() {
+      return st().payloads;
+    },
+    check: (x) => st().check(x),
+    get: (k) => st().get(k),
+    select: (f) => st().select(f),
+    head: () => st().head(),
+    log: () => st().log(),
+    snapshot: (x) => st().snapshot(x),
+    restore: (x) => st().restore(x),
+    undo: () => st().undo(),
+    undoWhere: (p) => st().undoWhere(p),
+    uses: (t) => st().uses(t),
+  };
+  configOf(o, cfg);
+  return o;
 }
