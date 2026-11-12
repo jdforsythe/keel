@@ -35,6 +35,8 @@
 - G done: `Box` props are a union on `as` (`label` required for `nav`, `aside`; optional for `section`, `main`, `header`, `footer`; refused otherwise); `check/src/internal/mapTsDiagnostic.ts` maps the missing `label` to E1802; ui 3,490 B; the `landmark-unique` rule is committed with it. Open: the E1805 fix still writes `<Box as="aside">` without a label (file).
 - LEFT RUNNING, could not be stopped (the kill was denied): two `bin.ts dev --port` processes, PIDs 48176 and 71236, from runs of `cli/conformance/dev-port-0091.test.ts`, which leaks its child when a run fails or times out (file).
 - root check, build green; root test green except scaffold `topology-deploy-files` timing out under the mutation run's load (passes alone, 18.6 s).
+- reviewer: request changes. In-batch: `focusable` treats `aria-hidden` as unfocusable (a user can still focus it) and ignores `fieldset[disabled]`, `inert`, `hidden` and `display:none` ancestors and some focusable tags; `exchange.ts` buffers every 502 body. Kept by decision: a `Box` whose `as` is a variable that may be `nav` or `aside` must pass `label` (the type is the enforcement; the changeset's migration says so). Checked sound: the blank rule's reach and `gen`, `portBusy`, `opPlace` quoted keys, `artifactRank`, `format-check` output.
+- missing k.ui axe clause: `packages/testing/conformance/landmark-unique-0091.test.ts` (4 tests) committed.
 
 ## Verification
 - [ ] `pnpm check` (with the format gate), `pnpm test`, `pnpm build` green

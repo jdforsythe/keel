@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// `Box as` and `Text as` are closed sets at runtime too (backlog 0123): a value outside the union, such as one
+// `Box as` and `Text as` are closed sets at runtime too: a value outside the union, such as one
 // spread from parsed JSON, throws before any element is created; every member renders its own tag. `Heading
 // level` likewise takes only the integers 1-6 (backlog 0141).
 import { Box, Heading, Text } from "@keel/ui";
