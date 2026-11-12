@@ -3,7 +3,7 @@ status: conformance-covered
 
 **Purpose.** Every document names its page and its language. The server writes both, and the client router keeps them current on navigation without re-rendering text.
 
-**Title.** A path route may declare `title: (props) => string`, given the route component's props `{ params, search, data }` (k.router), `data` being its loader's `ok` value, typed from the loader's `output`. A layout with `title` does not compile.
+**Title.** A path route may declare `title: (props) => string`, given the route component's props `{ params, search, data }` (k.router), `params` and `search` typed from the route's schemas and `data`, its loader's `ok` value, from the loader's `output`. A layout with `title` does not compile.
 ```ts
 'recipes.show': { path: '/:locale/recipes/:recipeId', params: RecipeParams, loader: loadRecipe,
   component: RecipePage, title: (p) => formatMessage(p.data.text.showTitle, { title: p.data.recipe.title }, p.params.locale) },

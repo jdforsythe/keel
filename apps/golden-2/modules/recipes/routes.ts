@@ -1,12 +1,11 @@
 import { manifest } from "@keel/router";
-import type { Infer } from "@keel/schema";
 import { formatMessage } from "@keel/std-messages";
 import BoxShell from "./BoxShell.tsx";
 import { LocaleParams } from "./LocaleParams.schema.ts";
-import NewRecipePage, { type Props as NewProps } from "./NewRecipePage.tsx";
+import NewRecipePage from "./NewRecipePage.tsx";
 import RecipeError from "./RecipeError.tsx";
-import RecipeList, { type Props as IndexProps } from "./RecipeList.tsx";
-import RecipePage, { type Props as ShowProps } from "./RecipePage.tsx";
+import RecipeList from "./RecipeList.tsx";
+import RecipePage from "./RecipePage.tsx";
 import { RecipeParams } from "./RecipeParams.schema.ts";
 import { RecipeSearch } from "./RecipeSearch.schema.ts";
 import { cook } from "./cook.guard.ts";
@@ -26,7 +25,7 @@ export const routes = manifest({
     loader: loadIndex,
     component: RecipeList,
     layout: "recipes.shell",
-    title: (p: Infer<typeof IndexProps>) => p.data.text.indexTitle,
+    title: (p) => p.data.text.indexTitle,
   },
   "recipes.new": {
     path: "/:locale/recipes/new",
@@ -35,7 +34,7 @@ export const routes = manifest({
     component: NewRecipePage,
     layout: "recipes.shell",
     guard: cook,
-    title: (p: Infer<typeof NewProps>) => p.data.text.newTitle,
+    title: (p) => p.data.text.newTitle,
   },
   "recipes.show": {
     path: "/:locale/recipes/:recipeId",
@@ -44,8 +43,7 @@ export const routes = manifest({
     component: RecipePage,
     layout: "recipes.shell",
     errorElement: RecipeError,
-    title: (p: Infer<typeof ShowProps>) =>
-      formatMessage(p.data.text.showTitle, { title: p.data.recipe.title }, p.params.locale),
+    title: (p) => formatMessage(p.data.text.showTitle, { title: p.data.recipe.title }, p.params.locale),
   },
 });
 routes.actions({ "recipes.new": { POST: createRecipe }, "recipes.show": { POST: favoriteRecipe } });
