@@ -168,3 +168,21 @@ test("a stale save is 409 `keel.conflict`: the harness's held save answers the e
     { seed: 1337, numRuns: 8 },
   );
 });
+
+test("a mounted harness navigates away and back after `createApp` saved on its ctx, and shows the new save without a submit of its own", async () => {
+  await fc.assert(
+    fc.asyncProperty(word, word, async (first, second) => {
+      const ctx = createCtx({ mode: "sim", seed: 1337 });
+      const app = await appOn(ctx);
+      expect((await postText(app, first)).status).toBe(200);
+      const h = await renderRoute("sc.page", { routes, ctx });
+      expect(h.find("sc.items").text).toBe(first);
+      expect((await postText(app, second)).status).toBe(200);
+      await h.navigate(routes.href("sc.other"));
+      await h.navigate(routes.href("sc.page"));
+      expect(h.find("sc.items").text).toBe([first, second].join(","));
+      h.dispose();
+    }),
+    { seed: 1337, numRuns: 10 },
+  );
+});
