@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Rule E1558 (k.server): a live loader a non-`node` deployable serves.
+// Rule E1558 (k.topology): a live loader a non-`node` deployable serves.
 // ASSUMPTION (as e1553-static-params.test.ts): building the deployable with createApp reports the code (rejection mentioning it).
 // Seed 1337: no generated input.
 import { manifest } from "@keel/router";
