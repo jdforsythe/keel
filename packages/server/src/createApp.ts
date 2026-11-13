@@ -33,6 +33,7 @@ import { moduleOf } from "./internal/moduleOf.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { peerOf } from "./internal/peerOf.ts";
 import { peerPaths } from "./internal/peerPaths.ts";
+import { reportSource } from "./internal/reportSource.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { scrubbed } from "./internal/scrubbed.ts";
 import { secured } from "./internal/secured.ts";
@@ -160,7 +161,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     lifecycle: new AbortController(),
     maxStreams: opts.maxStreams ?? DEFAULT_MAX_STREAMS,
     streams: { open: 0 },
-    reports: { open: false, logged: 0, dropped: 0 },
+    reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
@@ -206,7 +207,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const ran = pre
       ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
       : path === CSP_PATH
-        ? await attempt(() => cspReport(raw, sv, log))
+        ? await attempt(() => cspReport(raw, sv, log, reportSource(raw, c.env)))
         : at !== undefined
           ? await attempt(() => forward(raw, at, sv))
           : gate === undefined || (gate.ok && raw.method !== "GET")

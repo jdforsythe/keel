@@ -1,7 +1,6 @@
 // Spec: k.security, Conformance "In one window, 50 reports with `x-forwarded-for: 192.0.2.1` log 10 and a later one from `192.0.2.2` is logged; `dropped: 40` follows the window; no record holds an address."
 // Seed: 1337.
 // @vitest-environment happy-dom
-// Skipped until the per-source cap exists.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import { createApp, topology } from "@keel/server";
@@ -50,20 +49,20 @@ const reports = (rs: Record<string, unknown>[]) => rs.filter((r) => r["dropped"]
 const droppedRecords = (rs: Record<string, unknown>[]) => rs.filter((r) => r["dropped"] !== undefined);
 
 describe("k.security: per-source report cap", () => {
-  test.skip("In one window, 50 reports with `x-forwarded-for: 192.0.2.1` log 10", async () => {
+  test("In one window, 50 reports with `x-forwarded-for: 192.0.2.1` log 10", async () => {
     const { app, csp } = await setup();
     for (let i = 0; i < 50; i++) expect((await post(app, "192.0.2.1")).status).toBe(204);
     expect(reports(csp())).toHaveLength(10);
   });
 
-  test.skip("a later report from `192.0.2.2` is logged", async () => {
+  test("a later report from `192.0.2.2` is logged", async () => {
     const { app, csp } = await setup();
     for (let i = 0; i < 50; i++) await post(app, "192.0.2.1");
     expect((await post(app, "192.0.2.2")).status).toBe(204);
     expect(reports(csp())).toHaveLength(11);
   });
 
-  test.skip("`dropped: 40` follows the window", async () => {
+  test("`dropped: 40` follows the window", async () => {
     const { app, ctx, csp } = await setup();
     for (let i = 0; i < 50; i++) await post(app, "192.0.2.1");
     await post(app, "192.0.2.2");
@@ -73,7 +72,7 @@ describe("k.security: per-source report cap", () => {
     expect(droppedRecords(csp())).toEqual([{ kind: "csp", dropped: 40 }]);
   });
 
-  test.skip("no record holds an address", async () => {
+  test("no record holds an address", async () => {
     const { app, ctx, lines } = await setup();
     for (let i = 0; i < 50; i++) await post(app, "192.0.2.1");
     await post(app, "192.0.2.2");
@@ -86,7 +85,7 @@ describe("k.security: per-source report cap", () => {
     }
   });
 
-  test.skip("the source is the last `x-forwarded-for` entry", async () => {
+  test("the source is the last `x-forwarded-for` entry", async () => {
     const { app, csp } = await setup();
     for (let i = 0; i < 20; i++) await post(app, `203.0.113.9, 192.0.2.1`);
     expect(reports(csp())).toHaveLength(10);
@@ -94,7 +93,7 @@ describe("k.security: per-source report cap", () => {
     expect(reports(csp())).toHaveLength(11);
   });
 
-  test.skip("property: n reports from one source log min(n, 10); the window's end counts the rest as `dropped`", async () => {
+  test("property: n reports from one source log min(n, 10); the window's end counts the rest as `dropped`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 60 }), async (n) => {
         const { app, ctx, csp } = await setup();
@@ -108,7 +107,7 @@ describe("k.security: per-source report cap", () => {
     );
   });
 
-  test.skip("with no source (no `x-forwarded-for`), only the global 100 applies", async () => {
+  test("with no source (no `x-forwarded-for`), only the global 100 applies", async () => {
     const { app, csp } = await setup();
     for (let i = 0; i < 30; i++) {
       await app.fetch(
@@ -122,7 +121,7 @@ describe("k.security: per-source report cap", () => {
     expect(reports(csp())).toHaveLength(30);
   });
 
-  test.skip("the per-source counts reset with the window", async () => {
+  test("the per-source counts reset with the window", async () => {
     const { app, ctx, csp } = await setup();
     for (let i = 0; i < 12; i++) await post(app, "192.0.2.1");
     ctx.clock.advance(60_000);
