@@ -18,7 +18,7 @@ status: conformance-covered
 
 **Diff.** `keel ledger --diff` compares with the committed ledger, reading reports on disk as `--write` does, and checks every `conformance-covered` or `frozen` section's clauses.
 
-**Rules.** E1706 ledger rung lower than committed, or unsafe count higher · E1707 `keel ledger --diff`: a `conformance-covered` or `frozen` section has a clause at `none`, or no clause list · W1706 conformance header `// Clause:` (not counted; fix rewrites it to `// Spec:`) · E1711 `.keel/monitored.json` fails its shape · E1712 `--diff` without `--scope`: a rung the committed `rungs` counts above 0 is held by no item · E1713 `--diff`: a package's score over fresh claims is below its threshold, or its threshold is below the committed one · W1714 a mutation claim is stale (its file changed since the run).
+**Rules.** E1706 ledger rung lower than committed, or unsafe count higher · E1707 `keel ledger --diff`: a `conformance-covered` or `frozen` section has a clause at `none`, or no clause list · W1706 conformance header `// Clause:` (not counted; fix rewrites it to `// Spec:`) · E1711 `.keel/monitored.json` fails its shape · E1712 `--diff` without `--scope`: a rung the committed `rungs` counts above 0 is held by no item · E1713 `--diff`: a package's score over fresh claims is below its threshold, or its threshold is below the committed one, or it has claims and none fresh · W1714 a mutation claim is stale (its file changed since the run).
 
 **Conformance.**
 - An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`.
