@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "origin": "http://127.0.0.1:4196",
+  "from": 1794594383362,
+  "to": 1794594383362,
+  "tx": {
+    "api.addList": 1,
+    "api.addTodo": 3,
+    "api.editTodo": 1,
+    "api.toggleTodo": 2
+  }
+}
