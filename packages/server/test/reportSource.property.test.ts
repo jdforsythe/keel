@@ -78,5 +78,7 @@ describe("reportSource", () => {
     expect(reportSource(req(), env)).toBe("192.0.2.50");
     expect(reportSource(req(), { incoming: { socket: {} } })).toBeUndefined();
     expect(reportSource(req(), undefined)).toBeUndefined();
+    expect(reportSource(req(`192.0.2.1, ${"x".repeat(16_000)}`), env)).toBe("x".repeat(64));
+    expect(reportSource(req(), { incoming: { socket: { remoteAddress: "y".repeat(100) } } })).toBe("y".repeat(64));
   });
 });

@@ -27,6 +27,12 @@ const lineArb: fc.Arbitrary<Line> = fc.oneof(
     .map(
       ([f, [l, c]]): Line => ({ text: `    at x (file://${CWD}/lib/${f}.ts:${l}:${c})`, app: `lib/${f}.ts:${l}:${c}` }),
     ),
+  fc.tuple(seg, pos, fc.constantFrom("?t=1&token=x", "#frag", "?v=2#h"), fc.boolean()).map(
+    ([f, [l, c], q, url]): Line => ({
+      text: `    at q (${url ? "file://" : ""}${CWD}/src/${f}.ts${q}:${l}:${c})`,
+      app: `src/${f}.ts:${l}:${c}`,
+    }),
+  ),
   fc
     .tuple(fc.constantFrom("packages/router/src", "node_modules/x", ".keel", "lib/node_modules/y"), seg, pos)
     .map(([d, f, [l, c]]): Line => ({ text: `    at y (${CWD}/${d}/${f}.js:${l}:${c})`, app: null })),

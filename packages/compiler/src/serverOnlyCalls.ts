@@ -11,11 +11,16 @@ const bare = (e: Expression): Expression =>
     ? bare(e.expression)
     : e;
 
+const isLive = (e: Expression | null | undefined): boolean =>
+  e?.type === "FunctionExpression" && e.async && e.generator;
+
 /**
  * E1558 (k.topology): server-only route work in a module a `client` or `static` deployable serves. In each
  * `modules/<m>/**\/*.server.ts(x)` of such a module, a call of `loader` or `action` imported by name from `@keel/router`
  * whose first argument is an object literal with a `stores` key, or a `loader` call whose second argument is an
- * `async function*` expression, is one E1558 at the call. A namespace import, a wrapper or a spread `stores` is not read.
+ * `async function*` expression or names an `async function*` declared at the top of the same file, is one E1558 at
+ * the call. Not read: a namespace import (`import * as`), a wrapper or helper that adds `stores` or calls `loader`, a
+ * spread `stores`, a generator held in a `const` or imported from another file; `createApp` still throws E1558 for each.
  */
 export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology): Diagnostic[] {
   const served = new Map<string, readonly [string, string]>();
@@ -31,11 +36,16 @@ export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology
       lang: f.path.endsWith("x") ? "tsx" : "ts",
     });
     const kinds = new Map<string, string>();
-    for (const s of program.body)
+    // Top-level `async function*` declarations, by name.
+    const gens = new Set<string>();
+    for (const s of program.body) {
       if (s.type === "ImportDeclaration" && s.source.value === "@keel/router" && s.importKind !== "type")
         for (const x of s.specifiers)
           if (x.type === "ImportSpecifier" && x.importKind !== "type" && x.imported.type === "Identifier")
             if (x.imported.name === "loader" || x.imported.name === "action") kinds.set(x.local.name, x.imported.name);
+      const d = s.type === "ExportNamedDeclaration" ? s.declaration : s;
+      if (d?.type === "FunctionDeclaration" && d.async && d.generator && d.id) gens.add(d.id.name);
+    }
     new Visitor({
       CallExpression: (c) => {
         const kind = c.callee.type === "Identifier" ? kinds.get(c.callee.name) : undefined;
@@ -46,10 +56,12 @@ export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology
             (p) =>
               p.type === "Property" &&
               !p.computed &&
-              ((p.key.type === "Identifier" && p.key.name === "stores") ||
-                (p.key.type === "Literal" && p.key.value === "stores")),
+              (p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" && p.key.value) === "stores",
           );
-        const live = kind === "loader" && fn?.type === "FunctionExpression" && fn.async && fn.generator;
+        const live =
+          kind === "loader" &&
+          fn?.type !== "SpreadElement" &&
+          (isLive(fn) || (fn?.type === "Identifier" && gens.has(fn.name)));
         if (kind === undefined || !(stores || live)) return;
         out.push({
           code: "E1558",

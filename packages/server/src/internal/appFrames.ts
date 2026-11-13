@@ -6,9 +6,11 @@ const MAX = 5;
 const IN_PARENS = /\(([^()]+):(\d+):(\d+)\)$/;
 const BARE = /^at (.+):(\d+):(\d+)$/;
 
+/** The file path of a frame location, without any `?query` or `#hash` (a dev server's `?t=` or a token). */
 const fileOf = (at: string): string | undefined => {
-  if (!at.startsWith("file:")) return at;
-  const file = attempt(() => fileURLToPath(at));
+  const bare = at.replace(/[?#].*$/s, "");
+  if (!bare.startsWith("file:")) return bare;
+  const file = attempt(() => fileURLToPath(bare));
   return file.ok ? file.value : undefined;
 };
 
@@ -19,7 +21,7 @@ const library = (rel: string): boolean =>
  * The first 5 stack positions of `thrown` in app code (k.server Log), each `<path>:<line>:<col>` with the path
  * relative to `cwd`. Read from the `at` lines of an `Error`'s `stack`; a position outside `cwd` (Node internals, a home
  * directory, the global store) or under `packages/`, `node_modules/` or `.keel/` is dropped, and function names are not
- * kept. Anything without a string `stack` gives `[]`.
+ * kept, nor is a `?query` or `#hash` on the path. Anything without a string `stack` gives `[]`.
  */
 export function appFrames(thrown: unknown, cwd: string): string[] {
   const stack = thrown instanceof Error ? thrown.stack : undefined;

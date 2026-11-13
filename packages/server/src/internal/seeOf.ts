@@ -20,8 +20,16 @@ const BLOCKS: readonly (readonly [number, string])[] = [
   [1900, "k.forms"],
 ];
 
-/** The spec section owning a kernel diagnostic `code` (`E1508` -> `k.router`); `k.server` for any other code. */
+/** Codes whose rule lives outside their block's section. */
+const MOVED: ReadonlyMap<string, string> = new Map([["E1558", "k.topology"]]);
+
+/**
+ * The spec section owning a kernel diagnostic `code` (`E1508` -> `k.router`, `E1558` -> `k.topology`); `k.server` for
+ * any other code.
+ */
 export function seeOf(code: string): string {
+  const moved = MOVED.get(code);
+  if (moved !== undefined) return moved;
   const digits = /^E(1\d{3})$/.exec(code)?.[1];
   const n = digits === undefined ? undefined : Number(digits);
   let see = "k.server";

@@ -250,6 +250,7 @@ describe("seeOf", () => {
       ["E1549", "k.router"],
       ["E1550", "k.server"],
       ["E1555", "k.server"],
+      ["E1558", "k.topology"],
       ["E1601", "k.ctx"],
       ["E1799", "k.check"],
       ["E1800", "k.ui"],

@@ -15,6 +15,9 @@ const CALLS = {
   plainAction: { flagged: false, src: "action({ input: s.object({}) }, async () => ok(null))" },
   syncGenerator: { flagged: false, src: "loader({ output: s.object({}) }, function* () {})" },
   computed: { flagged: false, src: "loader({ output: s.object({}), ['stores']: () => ({}) }, async () => ok({}))" },
+  namedGenerator: { flagged: true, src: "loader({ output: s.object({}) }, feed)" },
+  namedConstGenerator: { flagged: false, src: "loader({ output: s.object({}) }, stream)" },
+  namedPlain: { flagged: false, src: "loader({ output: s.object({}) }, plain)" },
   spread: { flagged: false, src: "loader({ output: s.object({}), ...extra }, async () => ok({}))" },
 } as const;
 type Kind = keyof typeof CALLS;
@@ -29,7 +32,7 @@ describe("serverOnlyCalls", () => {
         fc.constantFrom<"client" | "static" | "node">("client", "static", "node"),
         (kinds, adapter) => {
           const body = kinds.map((k, i) => `export const X${i} = ${CALLS[k].src}\n`).join("");
-          const source = `${HEAD}const extra = {}\n${body}`;
+          const source = `${HEAD}const extra = {}\nexport async function* feed() {}\nconst stream = async function* () {}\nasync function plain() {}\n${body}`;
           const found = serverOnlyCalls([{ path: "modules/a/a.server.ts", source }], topo(adapter));
           const want = adapter === "node" ? 0 : kinds.filter((k) => CALLS[k].flagged).length;
           expect(found).toHaveLength(want);
@@ -59,6 +62,12 @@ describe("serverOnlyCalls", () => {
     expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: local }], t)).toEqual([]);
     const typeOnly = `import type { loader } from '@keel/router'\ndeclare const f: typeof loader\nexport const L = f({ stores: 1 }, 2)\n`;
     expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: typeOnly }], t)).toEqual([]);
+    const unread = [
+      "import * as r from '@keel/router'\nexport const L = r.loader({ stores: () => ({}) }, async () => 1)\n",
+      "import { loader } from '@keel/router'\nconst withStores = (o: object) => ({ ...o, stores: () => ({}) })\nexport const L = loader(withStores({}), async () => 1)\n",
+      "import { loader } from '@keel/router'\nimport { feed } from './feed'\nexport const L = loader({}, feed)\n",
+    ];
+    for (const source of unread) expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source }], t)).toEqual([]);
     const aliased = `import { loader as l } from '@keel/router'\nexport const L = l({ stores: () => ({}) }, async () => 1)\n`;
     expect(serverOnlyCalls([{ path: "modules/a/deep/x.server.tsx", source: aliased }], t)).toEqual([
       expect.objectContaining({ code: "E1558", line: 2, col: 18 }),
