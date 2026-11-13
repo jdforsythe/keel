@@ -13,34 +13,55 @@ const LOCALS =
 // why: what the message says, or null for no finding.
 const CALLS = {
   loaderStores: {
-    why: "names stores",
+    why: "names stores; serve module a from a node deployable",
     src: "loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))",
   },
   actionStores: {
-    why: "names stores",
+    why: "names stores; serve module a from a node deployable",
     src: "action({ input: s.object({}), 'stores': () => ({}) }, async () => ok(null))",
   },
-  live: { why: "is live", src: "loader({ output: s.object({}) }, async function* () {\n  yield ok({})\n})" },
+  live: {
+    why: "is live; serve module a from a node deployable",
+    src: "loader({ output: s.object({}) }, async function* () {\n  yield ok({})\n})",
+  },
   plain: { why: null, src: "loader({ output: s.object({}) }, async () => ok({}))" },
   plainAction: { why: null, src: "action({ input: s.object({}) }, async () => ok(null))" },
   actionNamedFn: { why: null, src: "action({ input: s.object({}) }, load)" },
   syncGenerator: { why: null, src: "loader({ output: s.object({}) }, function* () {})" },
-  namedGenerator: { why: "is live", src: "loader({ output: s.object({}) }, feed)" },
-  namedConstGenerator: { why: "is live", src: "loader({ output: s.object({}) }, stream)" },
+  namedGenerator: {
+    why: "is live; serve module a from a node deployable",
+    src: "loader({ output: s.object({}) }, feed)",
+  },
+  namedConstGenerator: {
+    why: "is live; serve module a from a node deployable",
+    src: "loader({ output: s.object({}) }, stream)",
+  },
   namedPlain: { why: null, src: "loader({ output: s.object({}) }, plain)" },
   namedArrow: { why: null, src: "loader({ output: s.object({}) }, arrow)" },
   namespaceStores: {
-    why: "names stores",
+    why: "names stores; serve module a from a node deployable",
     src: "r.loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))",
   },
   namespacePlain: { why: null, src: "r.action({ input: s.object({}) }, async () => ok(null))" },
-  computed: { why: "unread", src: "loader({ output: s.object({}), ['stores']: () => ({}) }, async () => ok({}))" },
-  spread: { why: "unread", src: "loader({ output: s.object({}), ...extra }, async () => ok({}))" },
-  optionsIdentifier: { why: "unread", src: "action(extra, async () => ok(null))" },
-  optionsCall: { why: "unread", src: "loader(Object.assign({}, extra), async () => ok({}))" },
-  spreadArgument: { why: "unread", src: "loader(...[extra, plain])" },
-  importedFn: { why: "unread", src: "loader({ output: s.object({}) }, load)" },
-  calledFn: { why: "unread", src: "loader({ output: s.object({}) }, make())" },
+  computed: {
+    why: "options spread or computed; write an object literal",
+    src: "loader({ output: s.object({}), ['stores']: () => ({}) }, async () => ok({}))",
+  },
+  spread: {
+    why: "options spread or computed; write an object literal",
+    src: "loader({ output: s.object({}), ...extra }, async () => ok({}))",
+  },
+  optionsIdentifier: {
+    why: "options not an object literal; write one inline",
+    src: "action(extra, async () => ok(null))",
+  },
+  optionsCall: {
+    why: "options not an object literal; write one inline",
+    src: "loader(Object.assign({}, extra), async () => ok({}))",
+  },
+  spreadArgument: { why: "options not an object literal; write one inline", src: "loader(...[extra, plain])" },
+  importedFn: { why: "fn not a function of this file; define it here", src: "loader({ output: s.object({}) }, load)" },
+  calledFn: { why: "fn not a function of this file; define it here", src: "loader({ output: s.object({}) }, make())" },
 } as const;
 type Kind = keyof typeof CALLS;
 const KINDS = Object.keys(CALLS).filter((k): k is Kind => k in CALLS);
@@ -57,23 +78,12 @@ describe("serverOnlyCalls", () => {
           const source = `${HEAD}${LOCALS}${body}`;
           const found = serverOnlyCalls([{ path: "modules/a/a.server.ts", source }], topo(adapter));
           const want = adapter === "node" ? [] : kinds.flatMap((k) => (CALLS[k].why === null ? [] : [CALLS[k].why]));
-          expect(
-            found.map((d) =>
-              d.message.includes("not statically readable")
-                ? "unread"
-                : d.message.includes("is live")
-                  ? "is live"
-                  : "names stores",
-            ),
-          ).toEqual(want);
+          expect(found.map((d) => d.message.replace(/^\w+ deployable web: (loader|action) /, ""))).toEqual(want);
           for (const d of found) {
             expect(d).toMatchObject({ code: "E1558", path: "modules/a/a.server.ts", see: "k.topology" });
             expect(source.split("\n")[d.line - 1]?.slice(d.col - 1)).toMatch(/^(r\.)?(loader|action)\(/);
-            expect(d.message).toMatch(
-              new RegExp(
-                `^${adapter} deployable web: (loader|action) (names stores|is live|is not statically readable \\(write its options as an object literal and its fn in this file\\)); serve module a from a node deployable$`,
-              ),
-            );
+            expect(d.message).toMatch(new RegExp(`^${adapter} deployable web: (loader|action) `));
+            expect(d.message.length).toBeLessThan(90);
           }
         },
       ),

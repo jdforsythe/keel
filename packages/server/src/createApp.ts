@@ -163,7 +163,9 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     maxStreams: opts.maxStreams ?? DEFAULT_MAX_STREAMS,
     streams: { open: 0 },
     reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
-    frames: appFrames(opts.artifacts),
+    frames: appFrames(opts.artifacts, (message) =>
+      log?.write(diagLine(log.format, { code: "keel.unexpected", message })),
+    ),
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));

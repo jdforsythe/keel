@@ -14,16 +14,16 @@ const bare = (e: Expression): Expression =>
 const isLive = (e: Expression | null | undefined): boolean =>
   e?.type === "FunctionExpression" && e.async && e.generator;
 
-const UNREAD = "is not statically readable (write its options as an object literal and its fn in this file)";
-
 /**
  * E1558 (k.topology): server-only route work in a module a `client` or `static` deployable serves. In each
  * `modules/<m>/**\/*.server.ts(x)` of such a module, a call of `loader` or `action` imported from `@keel/router` (by
  * name, or as a member of an `import * as` namespace) is one E1558 at the call when its options name `stores`, when a
  * loader's `fn` is `async function*`, or when the call cannot be read: options not an object literal, or holding a
  * spread or computed key; a spread argument; a loader `fn` neither a function or arrow expression nor the name of a
- * top-level function or `const` function of the file (an imported `fn` included). Not read: an alias
- * (`const l = loader`) or a call made from another file; `createApp` still throws E1558 for those holding server state.
+ * top-level function or `const` function of the file (an imported `fn` included); its message names which. Not read:
+ * an alias (`const l = loader`), a destructure from a namespace import (`const { loader } = r`), a `fn` that is not
+ * `async function*` but returns a generator, or a call made from another file; `createApp` still throws E1558 for
+ * those holding server state.
  */
 export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology): Diagnostic[] {
   const served = new Map<string, readonly [string, string]>();
@@ -84,20 +84,28 @@ export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology
             (p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" && p.key.value) === "stores",
         );
         const live = kind === "loader" && (isLive(fn) || (fn?.type === "Identifier" && fns.get(fn.name) === true));
-        const unread =
-          opts?.type !== "ObjectExpression" ||
-          c.arguments.some((a) => a.type === "SpreadElement") ||
-          props.some((p) => p.type === "SpreadElement" || p.computed) ||
-          (kind === "loader" &&
-            fn?.type !== "FunctionExpression" &&
-            fn?.type !== "ArrowFunctionExpression" &&
-            !(fn?.type === "Identifier" && fns.has(fn.name)));
-        if (!(stores || live || unread)) return;
+        const serve = `; serve module ${m} from a node deployable`;
+        const why = stores
+          ? `names stores${serve}`
+          : live
+            ? `is live${serve}`
+            : opts?.type !== "ObjectExpression"
+              ? "options not an object literal; write one inline"
+              : c.arguments.some((a) => a.type === "SpreadElement") ||
+                  props.some((p) => p.type === "SpreadElement" || p.computed)
+                ? "options spread or computed; write an object literal"
+                : kind === "loader" &&
+                    fn?.type !== "FunctionExpression" &&
+                    fn?.type !== "ArrowFunctionExpression" &&
+                    !(fn?.type === "Identifier" && fns.has(fn.name))
+                  ? "fn not a function of this file; define it here"
+                  : undefined;
+        if (why === undefined) return;
         out.push({
           code: "E1558",
           path: f.path,
           ...lineCol(f.source, c.start),
-          message: `${at[0]} deployable ${at[1]}: ${kind} ${stores ? "names stores" : live ? "is live" : UNREAD}; serve module ${m} from a node deployable`,
+          message: `${at[0]} deployable ${at[1]}: ${kind} ${why}`,
           see: "k.topology",
         });
       },

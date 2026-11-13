@@ -12,7 +12,8 @@ import { diagLine } from "../src/internal/diagLine.ts";
 
 const SEED = 1337;
 const CWD = "/srv/app";
-const read = appFrames(`${CWD}/.keel`);
+const quiet = (): void => undefined;
+const read = appFrames(`${CWD}/.keel`, quiet);
 const withStack = (lines: readonly string[]): Error => {
   const e = new Error("boom");
   e.stack = ["Error: boom", ...lines].join("\n");
@@ -65,7 +66,7 @@ describe("appFrames", () => {
   });
 
   it("reads none without artifacts", () => {
-    expect(appFrames(undefined)(withStack([`    at f (${CWD}/modules/a/a.ts:1:1)`]))).toEqual([]);
+    expect(appFrames(undefined, quiet)(withStack([`    at f (${CWD}/modules/a/a.ts:1:1)`]))).toEqual([]);
   });
 
   it("maps a server.mjs position through server.mjs.map, read once, and drops one it cannot map", () => {
@@ -80,9 +81,13 @@ describe("appFrames", () => {
     };
     const at = (col: number) => `    at f (${bundle}:1:${col})`;
     try {
-      expect(appFrames(dir)(withStack([at(1)]))).toEqual([]);
+      const warned: string[] = [];
+      const missing = appFrames(dir, (m) => warned.push(m));
+      expect(missing(withStack([at(1)]))).toEqual([]);
+      expect(missing(withStack([at(1)]))).toEqual([]);
+      expect(warned).toEqual(["server.mjs.map missing, over 32 MB or malformed; frames in server.mjs are dropped"]);
       fs.writeFileSync(`${bundle}.map`, JSON.stringify(map));
-      const mapped = appFrames(dir);
+      const mapped = appFrames(dir, quiet);
       expect(mapped(withStack([at(11), at(1), `    at g (file://${bundle}?x=1:1:1)`]))).toEqual([
         "modules/a/a.server.ts:1:1",
         "modules/a/a.server.ts:1:1",
@@ -92,6 +97,49 @@ describe("appFrames", () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("appFrames beside a built server.mjs", () => {
+  const withBundle = (use: (dir: string) => void): void => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-frames-built-"));
+    try {
+      fs.writeFileSync(path.join(dir, "server.mjs"), "");
+      use(dir);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  };
+
+  it("takes a frame Node already mapped (under <artifacts>/) relative to <artifacts>, and drops one outside the project", () => {
+    withBundle((dir) => {
+      const r = appFrames(dir, quiet);
+      const stack = withStack([
+        `    at f (${dir}/modules/a/a.server.ts:4:2)`,
+        `    at g (${path.dirname(dir)}/packages/x.ts:1:1)`,
+        `    at h (${dir}/lib/u.ts:9:9)`,
+      ]);
+      expect(r(stack)).toEqual(["modules/a/a.server.ts:4:2", "lib/u.ts:9:9"]);
+    });
+  });
+
+  it("reports a malformed or over-cap map once and drops server.mjs frames", () => {
+    for (const write of [
+      (f: string) => fs.writeFileSync(f, "{not json"),
+      (f: string) => {
+        fs.writeFileSync(f, "");
+        fs.truncateSync(f, 32 * 1024 * 1024 + 1);
+      },
+    ])
+      withBundle((dir) => {
+        write(path.join(dir, "server.mjs.map"));
+        const warned: string[] = [];
+        const r = appFrames(dir, (m) => warned.push(m));
+        const stack = withStack([`    at f (${dir}/server.mjs:1:1)`]);
+        expect(r(stack)).toEqual([]);
+        expect(r(stack)).toEqual([]);
+        expect(warned).toHaveLength(1);
+      });
   });
 });
 
