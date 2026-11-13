@@ -609,8 +609,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0534 ledger: `proven`/`exhaustive` only for an `explore` imported from `@keel/testing`; computed keys and spread arguments count as given options; a call inside `toThrow`, `thrownSync`, `rejects` or dead code gives nothing (`testFacts.ts`) · cli · HIGH
 - [ ] 0535 testing: `domainOf` leaks its ABSENT marker for a top-level or union optional payload; the closed form reports `complete: true` without running `undefined` · testing · HIGH
 - [ ] 0536 testing: `store.undeclared`, `schema.invalid` and `keel.conflict` on an edge end the path silently in `explore`; they must fail it (E1710) · testing · HIGH
-- [ ] 0537 std-statecharts: non-literal `events`/`guards`/`actions` (a variable, spread or computed key) and an aliased `chart` pass `keel check`, then `chart()` throws at load; make them E2755 · std-statecharts
-- [ ] 0538 std-monitor: two server processes sharing storage double count (one head per store, then every entry above it) and the merge can lose a concurrent write; count each save's `from` to `head` range · std-sessions
+- [x] 0537 std-statecharts: non-literal `events`/`guards`/`actions` (a variable, spread or computed key) and an aliased `chart` pass `keel check`, then `chart()` throws at load; make them E2755 · std-statecharts
+- [ ] 0538 std-monitor: the tally merge is read, add, write (`ctx.storage` has no compare-and-set), so two processes merging at one moment can lose one side's counts; needs an atomic storage update (kernel) · std-sessions · ctx
 - [ ] 0539 ledger: a package whose every mutation claim is stale has no score, so E1713 is skipped · cli
 - [ ] 0540 testing: one `simulate` seed draws different `SimRun`s by plan registration order; draw plans in sorted name order and name them in the failure · testing
 - [ ] 0541 ledger: monitored evidence matches quoted names in raw source (comments included) with a one-segment prefix fallback; match AST string literals with at least two segments · cli
