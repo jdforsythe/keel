@@ -1,7 +1,7 @@
 // Production tallies for golden-1: build a copy of the app whose `readers` holds a fresh reader, serve its production
 // entry on a local port, drive the two-user board script in Chromium, wait for one tally merge, then run
 // `keel session monitor`, which writes apps/golden-1/.keel/monitored.json. The server and the copy are removed after.
-// Usage: node tooling/smoke/monitor.mjs  (SMOKE_PORT, default 4190; SMOKE_OUT, default apps/golden-1/.keel/monitored.json).
+// Usage: node tooling/smoke/monitor.mjs  (SMOKE_PORT, default 4196; SMOKE_OUT, default apps/golden-1/.keel/monitored.json).
 // Needs Playwright's Chromium (`pnpm exec playwright install chromium`). Compact output (docs/OUTPUT.md).
 import { execFile, spawn } from "node:child_process";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
@@ -13,7 +13,7 @@ import { chromium } from "@playwright/test";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const app = join(root, "apps", "golden-1");
 const cli = join(root, "packages", "cli", "src", "bin.ts");
-const port = Number(process.env.SMOKE_PORT ?? 4190);
+const port = Number(process.env.SMOKE_PORT ?? 4196);
 const origin = `http://127.0.0.1:${port}`;
 const out = process.env.SMOKE_OUT ?? join(app, ".keel", "monitored.json");
 const MERGE_WAIT_MS = 90_000;
@@ -64,6 +64,13 @@ try {
     ],
     { cwd: copy, env: { ...process.env, PORT: String(port), KEEL_SECRET: secret, KEEL_ORIGIN: origin } },
   );
+  const serverLog = [];
+  server.stdout.on("data", (d) => serverLog.push(...String(d).trim().split("\n")));
+  server.stderr.on("data", (d) => serverLog.push(...String(d).trim().split("\n")));
+  server.on("exit", (code, signal) => serverLog.push(`exit ${code} ${signal}`));
+  process.on("exit", () => {
+    if (failed > 0) for (const l of serverLog.slice(-8)) console.log(`api ${l}`);
+  });
   const listening = await new Promise((resolve) => {
     const timer = setTimeout(() => resolve(false), 20_000);
     server.stdout.on("data", (d) => {
@@ -78,12 +85,18 @@ try {
   if (!listening) throw new Error("server did not listen");
 
   const b = await chromium.launch();
+  let u0url = () => "";
+  let u1url = () => "";
+  let shown = async () => "";
   try {
     const c0 = await b.newContext();
     const c1 = await b.newContext();
     const u0 = await c0.newPage();
     const u1 = await c1.newPage();
     const errors = [];
+    u0url = () => u0.url();
+    u1url = () => u1.url();
+    shown = () => u0.locator("body").innerText();
     for (const p of [u0, u1]) p.on("pageerror", (e) => errors.push(String(e).split("\n")[0]));
     const done = (p, title) => p.getByRole("checkbox", { name: `Done: ${title}` });
     const addTodo = async (p, title) => {
@@ -92,17 +105,21 @@ try {
       await done(p, title).waitFor({ timeout: 5000 });
     };
     // User 0 makes the board: Home with Milk and Bread.
-    await u0.goto(`${origin}/`, { waitUntil: "networkidle" });
+    // The board stream stays open, so a page never goes network-idle: wait for the board to show Live.
+    const live = (p) => p.locator("#todos\\.live", { hasText: "Live" }).waitFor({ timeout: 10_000 });
+    await u0.goto(`${origin}/`, { waitUntil: "load" });
+    await live(u0);
     await u0.getByLabel("List name").fill("Home");
     await u0.click("#todos\\.addList");
-    await u0.getByRole("link", { name: "Home", exact: true }).click();
+    await u0.locator("#todos\\.main").getByRole("link", { name: "Home", exact: true }).click();
     await u0.locator("#todos\\.list\\.title", { hasText: "Home" }).waitFor({ timeout: 5000 });
     await addTodo(u0, "Milk");
     await addTodo(u0, "Bread");
     const list = u0.url();
     step("board", true, new URL(list).pathname);
     // Both on the list; user 0 marks Milk done and user 1 sees it with no input of its own.
-    await u1.goto(list, { waitUntil: "networkidle" });
+    await u1.goto(list, { waitUntil: "load" });
+    await live(u1);
     await done(u0, "Milk").click();
     let seen = false;
     for (let i = 0; i < 50 && !seen; i++) {
@@ -121,6 +138,7 @@ try {
     step("offline writes", (await u1.locator("#todos\\.outbox").count()) === 1);
     // User 0 renames Milk to Oat milk and adds Eggs.
     await u0.getByRole("link", { name: "Edit Milk" }).click();
+    await u0.locator("#todos\\.save").waitFor({ timeout: 5000 });
     await u0.getByLabel("Title").fill("Oat milk");
     await u0.click("#todos\\.save");
     await done(u0, "Oat milk").waitFor({ timeout: 5000 });
@@ -135,7 +153,8 @@ try {
     step("conflict kept theirs", true);
     for (const e of errors) step("pageerror", false, e);
   } catch (e) {
-    step("script", false, String(e).split("\n")[0]);
+    step("script", false, `${String(e).split("\n")[0]} at ${lines.length} steps; ${u0url()} ${u1url()}`);
+    step("page text", false, (await shown()).replace(/\s+/g, " ").slice(0, 400));
   } finally {
     await b.close();
   }
@@ -143,19 +162,26 @@ try {
   // One merge: the runner writes `sessions.tally` every 60 s of the server's clock.
   const deadline = Date.now() + MERGE_WAIT_MS;
   let merged = false;
+  let lastError = "";
   while (!merged && Date.now() < deadline) {
     await wait(2000);
     const res = await fetch(`${origin}/sessions/tally`, {
       headers: { accept: "application/json", cookie: `keel-caller=${cookie}` },
-    }).catch(() => undefined);
+    }).catch((e) => {
+      lastError = String(e.cause?.code ?? e.cause?.message ?? e.message);
+      return undefined;
+    });
     const body = res?.ok ? await res.json() : undefined;
     const tally = body?.results?.["sessions.tally"]?.value ?? body?.value ?? body;
     merged = tally !== undefined && Object.keys(tally.tx ?? {}).length > 0;
+    if (!merged && Date.now() >= deadline - 2000)
+      step("tally body", false, `${res?.status ?? lastError} ${JSON.stringify(body)}`);
   }
   step("tally merged", merged, `${Math.round((Date.now() - t0) / 1000)}s`);
 
   const monitor = await run([cli, "session", "monitor", origin, "--out", out], root, { KEEL_SESSIONS_TOKEN: cookie });
-  step("session monitor", monitor.ok, monitor.stdout.split("\n").at(-1));
+  const said = monitor.stdout.split("\n");
+  step("session monitor", monitor.ok, monitor.ok ? said[0].replace(/^ok session monitor /, "") : said.join(" | "));
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
 } finally {

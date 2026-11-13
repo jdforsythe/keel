@@ -9,6 +9,13 @@
 // (`api.editTodo` refuses concurrent writes) the edit is a conflict in user 1's outbox and no race is found; on the
 // planted twin pass.ts builds (`api.editTodo` rebases) the edit loses user 0's rename and `findRaces` reports exactly
 // that race.
+// 3. The correctness twins (k.model, k.sim, std.statecharts). Without `KEEL_TWIN` each check holds on the app as
+// shipped: `api.board` explored 3 writes deep from the race fixture keeps its invariant, `editorChart` closes with no
+// unreached or dead state, and the outbox applies each write it let go of once under 100 generated schedules. In the
+// copies pass.ts plants, `KEEL_TWIN` names the change and the check asserts how it fails: `invariant` (`addTodo` drops
+// its duplicate-id test) is E1708 at a shortest path that `restore` and `tx` reproduce; `chart-theirs` (`conflict`
+// loses `theirs`) leaves `conflict` dead; `schedule` (`postToggle` drops `...input.write`) is E1704 shrunk to one
+// `lost` step, replayed alike and printed byte-equal twice.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -19,14 +26,25 @@ import { type Manifest, type RouteDef, manifest, routesArtifact } from "@keel/ro
 import { type ServerApp, topology } from "@keel/server";
 import { createApp } from "@keel/server";
 import { findRaces, raceRecords } from "@keel/std-conflicts";
-import { isolate } from "@keel/store";
+import { drain, send } from "@keel/std-offline";
+import { coverage } from "@keel/std-statecharts";
+import { tx as commit, isolate } from "@keel/store";
+import { SimRun, explore, simulate } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 // @keel/std-sessions is no dependency of golden-1: the group API is read from the workspace package.
 import { type SessionGroup, openGroup, replayGroup } from "../../../packages/std-sessions/src/group/index.ts";
+import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
+import { addList } from "../modules/api/addList.ts";
+import { addTodo } from "../modules/api/addTodo.ts";
+import { board } from "../modules/api/board.ts";
 import { boardStores } from "../modules/api/boardStores.ts";
+import { editTodo } from "../modules/api/editTodo.ts";
 import { routes as apiRoutes } from "../modules/api/routes.ts";
+import { toggleTodo } from "../modules/api/toggleTodo.ts";
 import { routes as digestRoutes } from "../modules/digest/routes.ts";
 import { runners } from "../modules/digest/runners.server.ts";
+import { boardOutbox } from "../modules/todos/boardOutbox.ts";
+import { editorChart } from "../modules/todos/editorChart.ts";
 
 const ORIGIN = "http://localhost";
 const HOUR = 3_600_000;
@@ -36,11 +54,11 @@ const LATEST_KEY = "digest.latest";
 
 const A = topology({
   web: { modules: ["todos"], adapter: "client" },
-  api: { modules: ["api", "digest"], adapter: "node" },
+  api: { modules: ["api", "digest", "sessions"], adapter: "node" },
 });
 const B = topology({
   web: { modules: ["todos"], adapter: "client" },
-  api: { modules: ["api"], adapter: "node" },
+  api: { modules: ["api", "sessions"], adapter: "node" },
   digest: { modules: ["digest"], adapter: "node" },
 });
 type Routes = Manifest<Readonly<Record<string, RouteDef>>>;
@@ -501,4 +519,126 @@ describe("golden-1 race", () => {
     // Live parity: a second live run under the same seed gives a byte-equal group.
     expect(JSON.stringify((await race(twin)).group)).toBe(JSON.stringify(run.group));
   }, 600_000);
+});
+
+// ---- 3. the correctness twins -----------------------------------------------------------------------------------
+
+/** Which planted change this copy carries (pass.ts sets it), else "" for the app as built. */
+const TWIN = process.env.KEEL_TWIN ?? "";
+/** The race fixture's payload lists: todo ids t1 (taken) and t3 (free), two titles, two priorities, lists l1 and l2. */
+const fields = ["t1", "t3"].flatMap((id) =>
+  ["Eggs", "Oat milk"].flatMap((title) => ["low", "high"].map((priority) => ({ id, title, priority }))),
+);
+const PAYLOADS = {
+  "api.addList": [
+    { id: "l1", name: "Home" },
+    { id: "l2", name: "Shop" },
+  ],
+  "api.addTodo": fields.map((f) => ({ ...f, listId: "l1" })),
+  "api.toggleTodo": [{ id: "t1" }, { id: "t3" }],
+  "api.editTodo": fields,
+};
+/** An Error's `code`, `message` and `data`, read without a cast. */
+const failure = (e: unknown) => ({
+  code: field(e, "code"),
+  message: e instanceof Error ? e.message : String(e),
+  data: field(e, "data"),
+});
+async function caught(f: () => unknown): Promise<unknown> {
+  try {
+    await f();
+  } catch (e) {
+    return e;
+  }
+  return undefined;
+}
+
+/** One user toggles Bread (base 2) and edits Milk (base 3) through the outbox, against a fresh api each run. */
+async function outboxScenario({ ctx, run }: { ctx: SimCtx; run: () => Promise<void> }): Promise<void> {
+  const t1 = TodoIdParams.parse({ todoId: "t1" });
+  const t2 = TodoIdParams.parse({ todoId: "t2" });
+  if (!t1.ok || !t2.ok) throw new Error("todo ids do not parse");
+  const server = createCtx({ mode: "sim", seed: 7 });
+  await server.storage.set(BOARD_KEY, BOARD);
+  const app = await createApp({ topology: A, deployable: "api", routes: both, ctx: server, secret: SECRET });
+  ctx.net.route(`${ORIGIN}/api/*`, (req) => app.fetch(req));
+  const page = scope(() => undefined);
+  page.run(() => void drain(ctx, boardOutbox));
+  const settled = (p: Promise<unknown>) =>
+    p.then(
+      () => true,
+      () => false,
+    );
+  const toggled = settled(send(ctx, boardOutbox, ORIGIN, "toggleTodo", { params: t2.value, body: {} }, { base: 2 }));
+  const body = { title: "Oat milk", priority: "high" as const };
+  const edited = settled(send(ctx, boardOutbox, ORIGIN, "editTodo", { params: t1.value, body }, { base: 3 }));
+  await run();
+  await Promise.all([toggled, edited]);
+  page.dispose();
+  const saved: unknown = JSON.parse((await server.storage.get(BOARD_KEY)) ?? "null");
+  const log = field(saved, "log");
+  const count = (name: string) => (Array.isArray(log) ? log.filter((e) => field(e, "name") === name).length : -1);
+  const left = boardOutbox.get("entries");
+  for (const e of left) expect(["queued", "conflict", "failed"]).toContain(e.state);
+  if (!left.some((e) => e.endpoint === "toggleTodo")) expect(count("api.toggleTodo")).toBe(1);
+  if (!left.some((e) => e.endpoint === "editTodo")) expect(count("api.editTodo")).toBe(1);
+}
+
+describe("golden-1 twins", () => {
+  it("api.board explored 3 writes deep from the race fixture", async () => {
+    const sc = scope(() => undefined);
+    isolate(sc);
+    const { b, txs } = sc.run(() => {
+      const b = board();
+      return { b, txs: [addList(b), addTodo(b), toggleTodo(b), editTodo(b)] };
+    });
+    const before = JSON.stringify(b.snapshot({ meta: true }));
+    const go = () => explore(txs, { from: home, payloads: PAYLOADS, depth: 3 });
+    if (TWIN !== "invariant") {
+      const r = go();
+      expect(r.depth).toBe(3);
+      expect(r.states[0]).toEqual(home);
+    } else {
+      const e = failure(await caught(go));
+      expect(e.code).toBe("E1708");
+      const snapshot = field(e.data, "snapshot");
+      expect(field(snapshot, "log")).toEqual([]);
+      expect(field(e.data, "transaction")).toBe("api.addTodo");
+      expect(b.restore(snapshot).ok).toBe(true);
+      const t = txs.find((x) => x.name === field(e.data, "transaction"));
+      const r = t === undefined ? undefined : commit(t, field(e.data, "payload"));
+      expect(r?.ok === false ? r.error.code : "committed").toBe("store.invariant");
+    }
+    sc.dispose();
+    expect(before).not.toBe("");
+  });
+
+  it("editorChart closes over every event", () => {
+    const r = explore(Object.values(editorChart.events));
+    expect(r.complete).toBe(true);
+    const dead = TWIN === "chart-theirs" ? ["conflict"] : [];
+    expect(coverage(editorChart, r)).toEqual({ unreached: [], dead });
+  });
+
+  it("boardOutbox under 100 generated schedules, seed 11", async () => {
+    const go = () => simulate(outboxScenario, { runs: 100, seed: 11 });
+    if (TWIN !== "schedule") {
+      expect(await go()).toEqual({ seed: 11, runs: 100 });
+      return;
+    }
+    const first = failure(await caught(go));
+    expect(first.code).toBe("E1704");
+    const [reason, json] = first.message.split("\n");
+    const run = SimRun.parse(JSON.parse(json ?? "null"));
+    if (!run.ok) throw new Error(`shrunk run does not parse: ${run.error.message}`);
+    const { net, storage, offline } = run.value.schedule;
+    expect(net.filter((s) => s.fault !== "none").map((s) => s.fault)).toEqual(["lost"]);
+    expect(storage.filter((s) => s === "fail")).toEqual([]);
+    expect(offline).toEqual([]);
+    const replayed = failure(await caught(() => simulate(outboxScenario, { replay: run.value })));
+    expect(replayed.code).toBe("E1704");
+    expect(replayed.message.split(" (seed")[0]).toBe(reason?.split(" (seed")[0]);
+    const second = failure(await caught(go));
+    expect(second.message).toBe(first.message);
+  }, 300_000);
 });

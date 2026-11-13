@@ -5,8 +5,8 @@
 import { type ChildProcess, execFile, spawn } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
-import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { setTimeout as sleep } from "node:timers/promises";
 
 const SKIP = new Set(["node_modules", "dist", "deploy", ".keel", ".turbo"]);
@@ -15,7 +15,7 @@ const TOPOLOGY_B = `import { topology } from "@keel/server";
 
 export default topology({
   web: { modules: ["todos"], adapter: "client" },
-  api: { modules: ["api"], adapter: "node" },
+  api: { modules: ["api", "sessions"], adapter: "node" },
   digest: { modules: ["digest"], adapter: "node" },
 });
 `;
