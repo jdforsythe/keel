@@ -499,6 +499,9 @@ importers:
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
     devDependencies:
       '@keel/compiler':
         specifier: workspace:*

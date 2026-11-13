@@ -28,7 +28,8 @@
     "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
-    "@keel/schema": "workspace:*"
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22",
