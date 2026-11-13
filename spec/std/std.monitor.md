@@ -3,7 +3,7 @@ status: proposed
 
 **Module.** Part of `@keel/std-sessions`, subpath `./monitor` (Node only), under the module `sessions` and its config (`readers`). It counts, on a running server, how many times each server-store transaction commits, and gives the count to the ledger as `monitored` evidence (k.ledger). It records names and counts only.
 
-**Count.** `monitor` is a `Runner` (k.topology) that a module lists in `runners.server.ts`. Its `run(ctx, signal)` observes the app's `ctx`: after each `{ kind: 'save', store, head }` (k.sync) it reads `keel.store.<store>` from `ctx.storage` and adds one run per log entry whose `id` is above the last head it counted for that store, keyed by the entry's `name`; at its first save of a store it counts the entries above the head it saw when `run` started, else from 0. Every 60,000 ms on `ctx.clock`, and once when `signal` aborts, it merges the counts into `ctx.storage` key `sessions.tally`:
+**Count.** `monitor` is a `Runner` (k.topology) that a module lists in `runners.server.ts`. Its `run(ctx, signal)` observes the app's `ctx`: after each `{ kind: 'save', store, head, from }` (k.sync) it reads `keel.store.<store>` from `ctx.storage` and adds one run per log entry whose `id` is above the last head it counted for that store, keyed by the entry's `name`; at its first save of a store it counts the entries above that event's `from`. Every 60,000 ms on `ctx.clock`, and once when `signal` aborts, it merges the counts into `ctx.storage` key `sessions.tally`:
 ```ts
 type Tally = { v: 1; from: number; to: number; tx: { [name: string]: number } }
 ```

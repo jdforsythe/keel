@@ -13,7 +13,7 @@ A write that is not concurrent keeps no `base`, so an entry holding `base` is a 
 
 **Write key.** `key` (1 to 64 characters) names one write across retries. When an entry in the kept log holds that `key`, `tx` commits nothing and returns `ok` with the current state; `key` is checked before `base`. The entry keeps `key`. `base` and `key` are entry fields, not `meta`, so `snapshot()` keeps them. A `base` or `key` of the wrong type is `schema.invalid`.
 
-**Saves.** After an action's save (k.server), each store it saved is reported to `observe` on the server ctx as `{ kind: 'save', store, head }`, in save order. A refused or `err` action reports none. The read-set rule is unchanged: a store the action only read and another request saved since is 409, whatever its transactions declare.
+**Saves.** After an action's save (k.server), each store it saved is reported to `observe` on the server ctx as `{ kind: 'save', store, head, from }`, in save order; `from` is the store's head before the save. A refused or `err` action reports none. The read-set rule is unchanged: a store the action only read and another request saved since is 409, whatever its transactions declare.
 
 **Connectivity.** `ctx.net.online(): boolean`. Real and shell: `navigator.onLine` where a global `navigator` exists, updated on the window's `online` and `offline` events; else `true`. Sim: `true` until `setOnline(false)` on the sim net; while offline, `fetch` rejects with a `TypeError` and each response body a sim route returned that is still open errors. Each change is reported to `observe` as `{ kind: 'net', online }`. Neither `save` nor `net` is replayed to a later observer.
 
