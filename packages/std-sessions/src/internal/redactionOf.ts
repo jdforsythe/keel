@@ -1,4 +1,4 @@
-import { type JsonValue, type KeelError, type Schema, s } from "@keel/schema";
+import { type JsonValue, type KeelError, type Schema, piiPaths, s } from "@keel/schema";
 import { redact } from "../redact.ts";
 import type { JsonObject } from "./JsonObject.ts";
 import type { Redaction } from "./Redaction.ts";
@@ -26,7 +26,7 @@ function each(v: JsonValue, fn: (x: string) => string): JsonValue {
 
 /**
  * The redaction for `entries` (`<subject>:<target>#<path>`, every module's `redact` list) under session `seed`:
- * schema-backed values become generated values, `el:` and `error:` values are masked, `s.secret` always goes. An `el:`
+ * schema-backed values (and every `.pii()`-marked path of the schema, beside the entries) become generated values, `el:` and `error:` values are masked, `s.secret` always goes. An `el:`
  * entry masks every input value and one-character key of its element, and so does an element once reported masked
  * (a password, k.ctx). Every value an entry matched is masked again wherever it appears in a later error's message
  * or data, except `data.at` (where it fired, which only an `error:` entry masks), for the newest 256 distinct values
@@ -61,7 +61,7 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
   const under = (key: string, prefix: string): string[] =>
     (paths.get(key) ?? []).filter((p) => p.startsWith(prefix)).map((p) => p.slice(prefix.length));
   const apply = (schema: Schema<unknown, boolean>, value: JsonValue, salt: string, at: readonly string[]) =>
-    redact(schema, value, { paths: at, seed, salt, found });
+    redact(schema, value, { paths: [...at, ...piiPaths(schema).map((m) => m.path)], seed, salt, found });
 
   return {
     tx: (name, schema, payload) => apply(schema ?? json, payload, `tx:${name}`, paths.get(`tx:${name}`) ?? []),

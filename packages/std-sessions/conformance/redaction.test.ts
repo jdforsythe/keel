@@ -117,8 +117,8 @@ describe("std.sessions: redaction", () => {
     );
   });
 
-  // Spec: std.sessions Conformance sentence above, over payload schemas with `.pii()` fields. Skipped until `.pii()` exists.
-  test.skip("A marked payload value never appears in the session JSON, and the payload parses with its transaction's schema, for every generated payload schema with .pii() fields", async () => {
+  // Spec: std.sessions Conformance sentence above, over payload schemas with `.pii()` fields.
+  test("A marked payload value never appears in the session JSON, and the payload parses with its transaction's schema, for every generated payload schema with .pii() fields", async () => {
     await fc.assert(
       fc.asyncProperty(
         payloadArb.chain((piece) => fc.tuple(fc.constant(piece), gen(schemaOf(piece)))),
