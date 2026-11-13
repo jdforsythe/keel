@@ -194,7 +194,11 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       const r = await attempt(() => handle(sv, raw, rq, c));
       rq.scope.dispose();
       if (!r.ok) return r;
-      const diags = r.value.diags.map((d) => ({ ...d, message: scrubbed(d.message, rq.pii) }));
+      const diags = r.value.diags.map((d) => ({
+        ...d,
+        message: scrubbed(d.message, rq.pii),
+        ...(d.frames === undefined ? {} : { frames: d.frames.map((f) => scrubbed(f, rq.pii)) }),
+      }));
       return { ok: true as const, value: { ...r.value, diags } };
     };
     // A preflight from an allowed origin to an API route: no guard, loader or action runs.
@@ -234,9 +238,13 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     }
     return response;
   });
-  const failed = (message: string) =>
+  const failed = (message: string, frames: readonly string[]) =>
     log?.write(
-      diagLine(log.format, { code: "keel.unexpected", message: `runner rejected, rerun in 1000 ms: ${message}` }),
+      diagLine(log.format, {
+        code: "keel.unexpected",
+        message: `runner rejected, rerun in 1000 ms: ${message}`,
+        frames,
+      }),
     );
   const app: ServerApp = {
     fetch: async (req) => hono.fetch(req),

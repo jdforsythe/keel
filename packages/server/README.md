@@ -31,7 +31,7 @@ Every response carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: same
 
 `POST /__keel/csp` takes `application/csp-report` and `application/reports+json` bodies up to 16 KiB (else 413), without the write proof, and answers 204; each violation is one `csp` log record `{ directive, blocked, route }` (`blocked`: `inline`, `eval`, `trusted-types` or an origin; `route`: the route id the document's path matches, else `-`), never a path, query or sample. Past 100 reports in 60 s of `ctx.clock` the rest are counted, and the window's end writes `{ dropped }`. A write behind a TLS-terminating proxy passes the same-site check when its `Origin` is the request's host over https and `x-forwarded-proto` says https.
 
-An uncaught throw in an action or loader is one `keel.unexpected` `diag`; it, the error's message and cause, and every other `diag` of the request hold `[pii]` in place of each `.pii()` value of the decoded action input, the loaders' outputs and the opened stores' states (k.privacy).
+An uncaught throw in an action, loader or runner is one `keel.unexpected` `diag`; in json it carries `frames`, the throw's first 5 stack positions in app code (outside `packages/`, `node_modules/`, `.keel/` and the working directory), each `<path>:<line>:<col>` relative to the working directory; the error itself carries no stack. It, its frames, the error's message and cause, and every other `diag` of the request hold `[pii]` in place of each `.pii()` value of the decoded action input, the loaders' outputs and the opened stores' states (k.privacy).
 
 `@keel/server/csp` exports `cspPolicy({ nonce, dev? } | { peers })` (the policy text) and `securityHeaders({ https })` (the six headers, and HSTS), which `keel build` and `keel evidence` read.
 

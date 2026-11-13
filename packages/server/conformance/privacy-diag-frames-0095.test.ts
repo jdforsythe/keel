@@ -1,7 +1,6 @@
 // Spec: k.privacy, Conformance "An action throwing an `Error` whose stack names a file path holding a marked input value logs that frame with `[pii]` in place of the value."
 // Seed: 1337.
 // @vitest-environment happy-dom
-// Skipped until `diag` records carry scrubbed `frames`.
 // ASSUMED shape (k.server Log): `frames` is an array of strings in json mode. The stack is generated: an app frame whose
 // file name holds the marked `note` value, which is lowercase letters (so no unmarked text can mimic it).
 import { createCtx } from "@keel/ctx";
@@ -42,7 +41,7 @@ async function framesFor(note: string, mode: "dev" | "production"): Promise<unkn
 
 describe("k.privacy: scrubbed diag frames", () => {
   for (const mode of ["dev", "production"] as const) {
-    test.skip(`an action throwing an Error whose stack names a file path holding a marked input value logs that frame with [pii] in place of the value, in ${mode}`, async () => {
+    test(`an action throwing an Error whose stack names a file path holding a marked input value logs that frame with [pii] in place of the value, in ${mode}`, async () => {
       await fc.assert(
         fc.asyncProperty(words, async (note) => {
           const frames = await framesFor(note, mode);

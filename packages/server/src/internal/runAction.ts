@@ -5,6 +5,7 @@ import { saveStores } from "@keel/store/internal";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import { allowOf } from "./allowOf.ts";
+import { caught } from "./caught.ts";
 import { inRequest } from "./inRequest.ts";
 import { isVerb } from "./isVerb.ts";
 import { jsonResponse } from "./jsonResponse.ts";
@@ -65,7 +66,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const { sv, rq } = r;
   const encoded = attempt(() => action.input.encode(decoded.value));
   notePii(rq.pii, action.input, encoded.ok ? encoded.value : decoded.value);
-  const ran = await attempt(async () => {
+  const { result: ran, frames } = await caught(async () => {
     const stores = action.stores === undefined ? undefined : await openFactory(sv.ctx, rq, action.stores);
     const at = { params: m.params, url: r.url, caller: rq.caller.id, stores };
     const out = await inRequest(rq, () => action.run(decoded.value, at, sv.ctx));
@@ -81,7 +82,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   }
   const clean = ran.ok ? null : scrubbedCause(ran.error, rq.pii);
   const thrown =
-    clean === null ? [] : [{ code: "keel.unexpected", message: `action ${id} threw: ${clean.data.cause}` }];
+    clean === null ? [] : [{ code: "keel.unexpected", message: `action ${id} threw: ${clean.data.cause}`, frames }];
   const result = clean === null ? (ran.ok ? ran.value : ran) : err(clean);
   if (!result.ok) rq.held.clear();
   if (result.ok) {

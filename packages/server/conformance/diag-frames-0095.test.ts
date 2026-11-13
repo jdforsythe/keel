@@ -1,7 +1,6 @@
 // Spec: k.server, Conformance "A loader throwing in `modules/a/a.server.ts` logs a `diag` whose `frames` start at that file: at most 5, none under `packages/`, `node_modules/` or outside the working directory."
 // Seed: 1337.
 // @vitest-environment happy-dom
-// Skipped until `diag` records carry `frames`.
 // ASSUMED shape (spec: "each `<path>:<line>:<col>` relative to the working directory"): `frames` is an array of strings in json mode.
 // The throw is a real Error whose `stack` is replaced by a generated V8-style stack: a loader cannot live in a real
 // `modules/a/a.server.ts` inside this suite, so the stack names the file under the working directory.
@@ -83,14 +82,14 @@ async function framesLogged(stack: string, mode: "dev" | "production"): Promise<
 
 describe("k.server: diag frames", () => {
   for (const mode of ["dev", "production"] as const) {
-    test.skip(`a loader throwing in \`modules/a/a.server.ts\` logs a \`diag\` whose \`frames\` start at that file, in ${mode}`, async () => {
+    test(`a loader throwing in \`modules/a/a.server.ts\` logs a \`diag\` whose \`frames\` start at that file, in ${mode}`, async () => {
       const frames = await framesLogged(stackOf([app(12, 5), app(30, 9)]), mode);
       expect(Array.isArray(frames)).toBe(true);
       expect(frames).toEqual(["modules/a/a.server.ts:12:5", "modules/a/a.server.ts:30:9"]);
     });
   }
 
-  test.skip("frames are at most 5", async () => {
+  test("frames are at most 5", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(frameArb, { minLength: 0, maxLength: 12 }), async (frames) => {
         const logged = await framesLogged(stackOf([app(1, 1), ...frames]), "dev");
@@ -100,7 +99,7 @@ describe("k.server: diag frames", () => {
     );
   });
 
-  test.skip("frames hold none under `packages/`, `node_modules/` or outside the working directory: they are the first 5 app frames, relative to the working directory", async () => {
+  test("frames hold none under `packages/`, `node_modules/` or outside the working directory: they are the first 5 app frames, relative to the working directory", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(frameArb, { minLength: 0, maxLength: 14 }), async (frames) => {
         const all = [app(7, 3), ...frames];
@@ -116,7 +115,7 @@ describe("k.server: diag frames", () => {
     );
   });
 
-  test.skip("frames start at the first app frame even when kernel and dependency frames come first", async () => {
+  test("frames start at the first app frame even when kernel and dependency frames come first", async () => {
     const kernel: Frame = { where: "packages", file: "packages/router/src/loader.ts", line: 9, col: 2, parens: true };
     const dep: Frame = { where: "node_modules", file: "node_modules/x/i.js", line: 3, col: 4, parens: false };
     const frames = await framesLogged(stackOf([kernel, dep, app(21, 8)]), "dev");
