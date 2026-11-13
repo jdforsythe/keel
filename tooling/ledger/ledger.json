@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 13,
   "rungs": {
-    "example": 762,
+    "example": 764,
     "probabilistic": 248,
     "exhaustive": 13,
     "proven": 36,
@@ -35,7 +35,7 @@
         "threshold": 80
       },
       "router": {
-        "score": 83.16,
+        "score": 83.29,
         "threshold": 80
       },
       "runtime-dom": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 80.88,
+        "score": 81.2,
         "threshold": 70
       },
       "services": {
@@ -10699,6 +10699,14 @@
     },
     {
       "item": "k.testing#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#12",
       "rung": "example"
     },
     {
