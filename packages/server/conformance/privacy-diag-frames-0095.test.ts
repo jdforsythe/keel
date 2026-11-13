@@ -7,9 +7,19 @@ import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import { topology } from "@keel/server";
+import fs from "node:fs";
+import path from "node:path";
 import fc from "fast-check";
-import { describe, expect, test } from "vitest";
-import { Kind, Params, SEED, createApp, post } from "./fixtures.ts";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { Kind, Params, SEED, post } from "./fixtures.ts";
+import { createAppLoose } from "./topology-fixtures.ts";
+
+// Frames are relative to the folder holding `artifacts`: a scratch `artifacts` folder in the working directory.
+let artifacts = "";
+beforeAll(() => {
+  artifacts = fs.mkdtempSync(path.join(process.cwd(), ".keel-privacy-artifacts-"));
+});
+afterAll(() => fs.rmSync(artifacts, { recursive: true, force: true }));
 
 const Input = s.object({ kind: Kind, note: s.string().pii("content") });
 const words = fc.stringMatching(/^[a-z]{12,20}$/);
@@ -23,11 +33,12 @@ async function framesFor(note: string, mode: "dev" | "production"): Promise<unkn
   });
   routes.actions({ "orders.show": { POST: save } });
   const lines: string[] = [];
-  const app = await createApp({
+  const app = await createAppLoose({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode,
+    artifacts,
     log: { format: "json", write: (l: string) => void lines.push(l) },
   });
   await app.fetch(post("/orders/open", { kind: "open", note }, { accept: "application/json" }));

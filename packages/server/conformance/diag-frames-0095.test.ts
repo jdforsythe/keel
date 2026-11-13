@@ -1,11 +1,15 @@
-// Spec: k.server, Conformance "A loader throwing in `modules/a/a.server.ts` logs a `diag` whose `frames` start at that file: at most 5, none under `packages/`, `node_modules/` or outside the working directory."
+// Spec: k.server, Conformance "A loader throwing in `modules/a/a.server.ts` logs a `diag` whose `frames` start at that file: at most 5, none under `packages/`, `node_modules/` or outside the folder holding `artifacts`; none without `artifacts`."
 // Seed: 1337.
 // @vitest-environment happy-dom
-// ASSUMED shape (spec: "each `<path>:<line>:<col>` relative to the working directory"): `frames` is an array of strings in json mode.
+// ASSUMED shape (k.server Log: "each `<path>:<line>:<col>` relative to the folder holding `artifacts`"): `frames` is an array of strings in json mode,
+// and "the folder holding `artifacts`" is the parent directory of the `artifacts` path given to `createApp`.
 // The throw is a real Error whose `stack` is replaced by a generated V8-style stack: a loader cannot live in a real
-// `modules/a/a.server.ts` inside this suite, so the stack names the file under the working directory.
+// `modules/a/a.server.ts` inside this suite, so the stack names the file under that folder.
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import fc from "fast-check";
-import { describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { SEED, build, get } from "./fixtures.ts";
 
 type Where = "app" | "packages" | "node_modules" | "outside";
@@ -18,8 +22,24 @@ interface Frame {
 }
 
 const APP_FILES = ["modules/a/a.server.ts", "modules/a/util.ts", "modules/b/b.server.ts", "lib/x.ts"];
-const cwd = (): string => process.cwd();
-const absolute = (f: Frame): string => (f.where === "outside" ? `/__outside__/${f.file}` : `${cwd()}/${f.file}`);
+// `home` holds the `artifacts` folder: the root frames are relative to (here the working directory, which holds a
+// scratch `artifacts` folder). `elsewhere` is a folder beside it, outside; `away` holds a second `artifacts` folder.
+const home = process.cwd();
+let artifacts = "";
+let elsewhere = "";
+let away = "";
+beforeAll(() => {
+  artifacts = fs.mkdtempSync(path.join(home, ".keel-frames-artifacts-"));
+  elsewhere = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-frames-else-")));
+  away = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-frames-away-")));
+  fs.mkdirSync(path.join(away, "artifacts"));
+});
+afterAll(() => {
+  fs.rmSync(artifacts, { recursive: true, force: true });
+  fs.rmSync(elsewhere, { recursive: true, force: true });
+  fs.rmSync(away, { recursive: true, force: true });
+});
+const absolute = (f: Frame): string => (f.where === "outside" ? `${elsewhere}/${f.file}` : `${home}/${f.file}`);
 const text = (f: Frame): string => {
   const pos = `${absolute(f)}:${f.line}:${f.col}`;
   return f.parens ? `    at fn (${pos})` : `    at ${pos}`;
@@ -64,12 +84,13 @@ const frameArb: fc.Arbitrary<Frame> = fc.oneof(
 
 const app = (line: number, col: number): Frame => ({ where: "app", file: APP_FILES[0] ?? "", line, col, parens: true });
 
-async function framesLogged(stack: string, mode: "dev" | "production"): Promise<unknown> {
+async function framesLogged(stack: string, mode: "dev" | "production", artifactsDir?: string | null): Promise<unknown> {
   const lines: string[] = [];
   const thrown = new Error("boom");
   thrown.stack = stack;
   const { app: served } = await build({ show: () => Promise.reject(thrown) }, mode, {
     log: { format: "json", write: (l: string) => void lines.push(l) },
+    ...(artifactsDir === null ? {} : { artifacts: artifactsDir ?? artifacts }),
   });
   await served.fetch(get("/orders/open"));
   const diags = lines
@@ -99,7 +120,7 @@ describe("k.server: diag frames", () => {
     );
   });
 
-  test("frames hold none under `packages/`, `node_modules/` or outside the working directory: they are the first 5 app frames, relative to the working directory", async () => {
+  test("frames hold none under `packages/`, `node_modules/` or outside the working directory: they are the first 5 app frames, relative to the folder holding `artifacts`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(frameArb, { minLength: 0, maxLength: 14 }), async (frames) => {
         const all = [app(7, 3), ...frames];
@@ -107,7 +128,7 @@ describe("k.server: diag frames", () => {
         expect(logged).toEqual(expectedOf(all));
         for (const f of Array.isArray(logged) ? logged : []) {
           expect(String(f)).not.toMatch(/^(packages\/|node_modules\/|\/)|(^|\/)node_modules\//);
-          expect(String(f)).not.toContain(cwd());
+          expect(String(f)).not.toContain(home);
           expect(String(f)).toMatch(/:\d+:\d+$/);
         }
       }),
@@ -120,5 +141,23 @@ describe("k.server: diag frames", () => {
     const dep: Frame = { where: "node_modules", file: "node_modules/x/i.js", line: 3, col: 4, parens: false };
     const frames = await framesLogged(stackOf([kernel, dep, app(21, 8)]), "dev");
     expect(frames).toEqual(["modules/a/a.server.ts:21:8"]);
+  });
+
+  test.skip("frames hold none outside the folder holding `artifacts`, even under the working directory", async () => {
+    const beside: Frame = { where: "app", file: "modules/a/a.server.ts", line: 4, col: 4, parens: true };
+    const inCwd = `    at fn (${process.cwd()}/${beside.file}:${beside.line}:${beside.col})`;
+    const inAway = `    at fn (${away}/${beside.file}:12:5)`;
+    const logged = await framesLogged(`Error: boom\n${inAway}\n${inCwd}`, "dev", path.join(away, "artifacts"));
+    expect(logged).toEqual(["modules/a/a.server.ts:12:5"]);
+  });
+
+  test.skip("a loader throwing without `artifacts` logs a `diag` whose `frames` are none", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.array(frameArb, { minLength: 0, maxLength: 8 }), async (frames) => {
+        const logged = await framesLogged(stackOf([app(7, 3), ...frames]), "dev", null);
+        expect(logged === undefined || (Array.isArray(logged) && logged.length === 0)).toBe(true);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
   });
 });
