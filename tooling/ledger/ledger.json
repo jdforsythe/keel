@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 13,
   "rungs": {
-    "example": 764,
+    "example": 765,
     "probabilistic": 248,
     "exhaustive": 13,
     "proven": 36,
@@ -11,7 +11,7 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 75.9,
+        "score": 75.99,
         "threshold": 70
       },
       "cli": {
@@ -39,7 +39,7 @@
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 80.53,
+        "score": 80.34,
         "threshold": 70
       },
       "scaffold": {
@@ -10383,6 +10383,10 @@
     },
     {
       "item": "k.security#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#12",
       "rung": "example"
     },
     {
