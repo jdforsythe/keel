@@ -136,7 +136,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "evidence",
-    description: "Write a signed evidence bundle, or --verify one.",
+    description: "Write a signed evidence bundle, or --verify one with --key <keyId>.",
     input: s.object({
       out: s.string().optional(),
       audit: s.string().optional(),

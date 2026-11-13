@@ -68,8 +68,9 @@ function signed(message: Buffer, sig: Buffer, key: string): boolean {
 }
 
 /**
- * `keel evidence --verify <dir> [--key <keyId>]` (k.evidence Verify). The manifest must parse and its signature
- * verify with its `key`, whose id is `keyId` and, when given, `--key`: otherwise E1063 and nothing else is trusted.
+ * `keel evidence --verify <dir> --key <keyId>` (k.evidence Verify). `--key` is required: the manifest must parse,
+ * the SHA-256 id of its `key` and its `keyId` must equal `--key`, and its signature must verify with that key;
+ * otherwise E1063 and nothing else is trusted.
  * Then each listed file is re-hashed, every other file of the directory is unlisted, and each listed file parses with
  * its schema: E1062 naming the file. A bundle that verifies emits one `evidence` record.
  */
@@ -94,12 +95,16 @@ export function bundleVerify(input: Input, io: Io): Outcome {
   if (!manifest.ok || bytes === undefined || bytes === null || sig === undefined || sig === null)
     return fail([makeDiag("E1063", "manifest.json or manifest.sig missing or unreadable", at("manifest.json"))]);
   const m = manifest.value;
+  // The pinned keyId is the only trust anchor: a key read from the bundle alone proves nothing, since anyone who
+  // edits the files can re-sign them with a fresh key.
+  if (input.key === undefined)
+    return fail([makeDiag("E1063", "--verify needs --key <keyId>, the id the project publishes", at("manifest.json"))]);
+  if (keyIdOf(Buffer.from(m.key, "base64")) !== input.key)
+    return fail([makeDiag("E1063", `bundle key is not --key ${input.key.slice(0, 16)}`, at("manifest.json"))]);
+  if (m.keyId !== input.key)
+    return fail([makeDiag("E1063", `manifest keyId ${m.keyId} is not --key ${input.key}`, at("manifest.json"))]);
   if (!signed(bytes, sig, m.key))
     return fail([makeDiag("E1063", `signature does not verify with key ${m.keyId}`, at("manifest.sig"))]);
-  if (keyIdOf(Buffer.from(m.key, "base64")) !== m.keyId)
-    return fail([makeDiag("E1063", `keyId ${m.keyId} is not the id of the manifest's key`, at("manifest.json"))]);
-  if (input.key !== undefined && input.key !== m.keyId)
-    return fail([makeDiag("E1063", `bundle signed by key ${m.keyId}, not --key ${input.key}`, at("manifest.json"))]);
 
   const diags: Diag[] = [];
   const listed = new Set(m.files.map((f) => f.path));

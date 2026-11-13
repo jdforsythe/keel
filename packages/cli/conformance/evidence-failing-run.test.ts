@@ -38,7 +38,7 @@ describe("k.evidence: failing runs", () => {
       cleanups.push(dir, base);
       expect(readTree(out).size).toBe(8);
       expect(sum(numbersIn(runsOf(out)))).toBe(1);
-      const verified = keelEvidence(dir, ["evidence", "--verify", out]);
+      const verified = keelEvidence(dir, ["evidence", "--verify", out, "--key", keyOf(TEST_KEY_PEM).keyId]);
       expect(verified.status).toBe(0);
       expect(verified.records.filter((r) => r.kind === "evidence")).toEqual([
         expect.objectContaining({ keyId: keyOf(TEST_KEY_PEM).keyId }),
@@ -68,7 +68,7 @@ describe("k.evidence: failing runs", () => {
       expect(run.status).toBe(1);
       expect(diagsOf(run, "E1060")).not.toEqual([]);
       expect(sum(numbersIn(runsOf(out)))).toBeGreaterThanOrEqual(1);
-      expect(keelEvidence(dir, ["evidence", "--verify", out]).status).toBe(0);
+      expect(keelEvidence(dir, ["evidence", "--verify", out, "--key", keyOf(TEST_KEY_PEM).keyId]).status).toBe(0);
     },
     SLOW,
   );

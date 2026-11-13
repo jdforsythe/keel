@@ -43,7 +43,9 @@ writeFileSync(join(dir, "manifest.sig"), `${sign(null, Buffer.from(manifest), pr
 const FILES = readdirSync(dir).sort();
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-const verify = () => bundleVerify({ verify: dir }, { cwd: dir });
+const KEY_ID = keyIdOf(raw);
+const verify = (key: string | null = KEY_ID) =>
+  bundleVerify(key === null ? { verify: dir } : { verify: dir, key }, { cwd: dir });
 const codes = (o: ReturnType<typeof verify>): string[] =>
   o.records.flatMap((r) => (r.kind === "diag" && typeof r.code === "string" ? [r.code] : []));
 
@@ -51,6 +53,34 @@ describe("keel evidence --verify", () => {
   it("passes the untouched bundle with one evidence record of six files", () => {
     expect(FILES).toHaveLength(8);
     expect(verify().records).toEqual([expect.objectContaining({ kind: "evidence", files: 6 })]);
+  });
+
+  it("is E1063 without --key, and for files edited and re-signed with another key", () => {
+    expect(codes(verify(null))).toEqual(["E1063"]);
+    const keep = new Map(FILES.map((f) => [f, readFileSync(join(dir, f))]));
+    try {
+      const other = generateKeyPairSync("ed25519");
+      const otherRaw = other.publicKey.export({ format: "der", type: "spki" }).subarray(12);
+      const text = json({ v: 1, deployables: [{ adapter: "client", name: "w", csp: "default-src *" }] });
+      writeFileSync(join(dir, "security.json"), text);
+      const forged = manifest
+        .replace(raw.toString("base64"), otherRaw.toString("base64"))
+        .replace(KEY_ID, keyIdOf(otherRaw))
+        .replace(sha256Hex(Buffer.from(REPORTS["security.json"] ?? "")), sha256Hex(Buffer.from(text)))
+        .replace(
+          `"bytes": ${Buffer.byteLength(REPORTS["security.json"] ?? "")}`,
+          `"bytes": ${Buffer.byteLength(text)}`,
+        );
+      writeFileSync(join(dir, "manifest.json"), forged);
+      writeFileSync(
+        join(dir, "manifest.sig"),
+        `${sign(null, Buffer.from(forged), other.privateKey).toString("base64")}\n`,
+      );
+      expect(codes(verify())).toEqual(["E1063"]);
+      expect(codes(verify(keyIdOf(otherRaw)))).toEqual([]);
+    } finally {
+      for (const [f, b] of keep) writeFileSync(join(dir, f), b);
+    }
   });
 
   it("fails with E1062 or E1063 for every single-byte change of any file", () => {

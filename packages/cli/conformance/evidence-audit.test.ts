@@ -8,6 +8,7 @@ import {
   AUDIT_JSON,
   TEST_KEY_PEM,
   diagsOf,
+  keyOf,
   fixtureTree,
   keelEvidence,
   parseJson,
@@ -81,7 +82,7 @@ describe("k.evidence: --audit and deps.json advisories", () => {
       const advisories = advisoriesOf(out);
       expect(advisories).not.toBeNull();
       expect(JSON.stringify(advisories)).toContain("1100001");
-      expect(keelEvidence(dir, ["evidence", "--verify", out]).status).toBe(0);
+      expect(keelEvidence(dir, ["evidence", "--verify", out, "--key", keyOf(TEST_KEY_PEM).keyId]).status).toBe(0);
     },
     SLOW,
   );

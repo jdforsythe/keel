@@ -38,7 +38,8 @@ afterAll(() => {
   removeDir(base);
 });
 
-const verify = (args: readonly string[] = []) => keelEvidence(dir, ["evidence", "--verify", out, ...args], {}, "json");
+const verify = (args: readonly string[] = ["--key", keyOf(TEST_KEY_PEM).keyId]) =>
+  keelEvidence(dir, ["evidence", "--verify", out, ...args], {}, "json");
 
 describe("k.evidence: write and verify", () => {
   test(
@@ -69,7 +70,7 @@ describe("k.evidence: write and verify", () => {
   test(
     "Verify: the compact record is `ok evidence <dir> 6 files key <keyId>`",
     () => {
-      const run = keelEvidence(dir, ["evidence", "--verify", out], {}, "compact");
+      const run = keelEvidence(dir, ["evidence", "--verify", out, "--key", keyOf(TEST_KEY_PEM).keyId], {}, "compact");
       const lines = run.stdout.split("\n");
       const keyId = keyOf(TEST_KEY_PEM).keyId;
       expect(lines.filter((l) => /^ok evidence \S+ 6 files key [0-9a-f]{16}$/.test(l))).toHaveLength(1);

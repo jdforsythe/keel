@@ -43,7 +43,7 @@ afterAll(() => {
   removeDir(work);
 });
 
-const verify = (target: string, args: readonly string[] = []) =>
+const verify = (target: string, args: readonly string[] = ["--key", keyOf(TEST_KEY_PEM).keyId]) =>
   keelEvidence(dir, ["evidence", "--verify", target, ...args]);
 const names = (run: ReturnType<typeof verify>, code: string, file: string): boolean =>
   diagsOf(run, code).some((d) => JSON.stringify(d).includes(file));
