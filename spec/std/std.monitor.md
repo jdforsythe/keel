@@ -1,5 +1,5 @@
 # std.monitor: Production tallies
-status: proposed
+status: conformance-covered
 
 **Module.** Part of `@keel/std-sessions`, subpath `./monitor` (Node only), under the module `sessions` and its config (`readers`). It counts, on a running server, how many times each server-store transaction commits, and gives the count to the ledger as `monitored` evidence (k.ledger). It records names and counts only.
 

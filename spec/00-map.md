@@ -40,9 +40,9 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces, formatter registry |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
 | k.testing | Harness and properties | conformance-covered | given state, do events, expect; generated properties |
-| k.model | Exploring a store's transactions | proposed | every reachable state under the invariants; shortest counterexample |
-| k.sim | Schedules and simulation | proposed | delays, faults and offline windows on sim capabilities; simulate |
-| k.ledger | Ledger and evidence | proposed | rungs from tests, explore and production tallies; mutation claims |
+| k.model | Exploring a store's transactions | conformance-covered | every reachable state under the invariants; shortest counterexample |
+| k.sim | Schedules and simulation | conformance-covered | delays, faults and offline windows on sim capabilities; simulate |
+| k.ledger | Ledger and evidence | conformance-covered | rungs from tests, explore and production tallies; mutation claims |
 | k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
 | k.sync | Heads and concurrent writes | conformance-covered | store heads, write base and key, reject or rebase, save and net events |
 | k.topology | Deployables | implemented | placement, route table, runners, peers, `keel dev` |

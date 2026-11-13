@@ -1,5 +1,5 @@
 # k.model: Exploring a store's transactions
-status: proposed
+status: conformance-covered
 
 `explore` visits every state a store reaches from a start state through a set of its transactions and checks the store's invariants (k.store) in each. Where `properties` (k.testing) samples generated states, `explore` enumerates the reachable ones, so a passing run is evidence for every state it visited (k.ledger `exhaustive`, `proven`).
 

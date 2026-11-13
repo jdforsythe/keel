@@ -1,5 +1,5 @@
 # std.statecharts: State charts
-status: proposed
+status: conformance-covered
 
 **Extension points.** Check rule registry: E2751-E2755 through `@keel/std-statecharts/tools`. A chart compiles to a k.store store and one transaction per event, so it needs no capability and no kernel change.
 

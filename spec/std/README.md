@@ -33,5 +33,5 @@ S5 adds std.statecharts and std.monitor.
 | std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
 | std.conflicts | Races | conformance-covered | formatter registry: order-dependent rebased entries, E2701 |
 | std.multi | Multi-user sessions | conformance-covered | std-sessions: groups of users recorded and replayed under simulation, E2007-E2008 |
-| std.statecharts | State charts | proposed | check rule registry: flat charts compiled to a store and transactions, E2751-E2755 |
-| std.monitor | Production tallies | proposed | std-sessions: server transaction counts as `monitored` evidence, E2009-E2010 |
+| std.statecharts | State charts | conformance-covered | check rule registry: flat charts compiled to a store and transactions, E2751-E2755 |
+| std.monitor | Production tallies | conformance-covered | std-sessions: server transaction counts as `monitored` evidence, E2009-E2010 |
