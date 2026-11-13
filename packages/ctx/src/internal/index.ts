@@ -3,3 +3,4 @@
 export { observed } from "./observed.ts";
 export { quiet } from "./quiet.ts";
 export { report } from "./report.ts";
+export { planSchemas } from "./planSchemas.ts";

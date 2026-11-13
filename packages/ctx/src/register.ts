@@ -35,6 +35,6 @@ export function register<T extends object, P = never>(name: string, impls: Capab
     instances.set(ctx, impl);
     return impl;
   };
-  extensions.set(name, { impls, accessor });
+  extensions.set(name, { impls, accessor, plan: impls.plan });
   return accessor;
 }

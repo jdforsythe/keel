@@ -42,13 +42,13 @@ const faultsOf = (run: unknown): string[] => {
 };
 
 describe("k.sim: shrinking", () => {
-  it.skip("a scenario that fails only when a response is `lost` fails `simulate` with E1704", async () => {
+  it("a scenario that fails only when a response is `lost` fails `simulate` with E1704", async () => {
     const e = await thrown(() => simulate(failsOnLost, { runs: 200, seed: SEED }));
     expect(codeOf(e)).toBe("E1704");
     expect(messageOf(e)).toContain(`seed ${SEED}`);
   });
 
-  it.skip("the shrunk `SimRun` holds exactly one `lost` step and no other fault", async () => {
+  it("the shrunk `SimRun` holds exactly one `lost` step and no other fault", async () => {
     const e = await thrown(() => simulate(failsOnLost, { runs: 200, seed: SEED }));
     const run = shrunkRun(e);
     expect(faultsOf(run)).toEqual(["lost"]);
@@ -57,14 +57,14 @@ describe("k.sim: shrinking", () => {
     expect(run.schedule.offline).toEqual([]);
   });
 
-  it.skip("`replay` of the shrunk `SimRun` fails the same way", async () => {
+  it("`replay` of the shrunk `SimRun` fails the same way", async () => {
     const first = await thrown(() => simulate(failsOnLost, { runs: 200, seed: SEED }));
     const replayed = await thrown(() => simulate(failsOnLost, { replay: shrunkRun(first) }));
     expect(codeOf(replayed)).toBe("E1704");
     expect(faultsOf(shrunkRun(replayed))).toEqual(["lost"]);
   });
 
-  it.skip("a scenario that never fails resolves `{ seed, runs }`", async () => {
+  it("a scenario that never fails resolves `{ seed, runs }`", async () => {
     const r = await simulate(async ({ run }) => run(), { runs: 20, seed: SEED });
     expect(r).toEqual({ seed: SEED, runs: 20 });
   });

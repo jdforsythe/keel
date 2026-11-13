@@ -39,20 +39,28 @@ const logSizes = (): string => [...stores()].map(([id, st]) => `${id}:${st.log()
  * length, while `busy()` is null (it names a router navigation's route while one is in flight). A round while busy
  * with nothing moving waits one macrotask turn and does not count toward the 50 quiet-bound rounds; more than 50
  * moving rounds, or `MAX_BUSY_TURNS` busy turns, throws `keel.unexpected` "fire did not settle" (with the pending
- * route id). Deterministic: no clock, no timers.
+ * route id). Without `root` only store logs count. Deterministic: no clock, no timers.
  */
-export async function settle(root: Element, act: () => void, busy: () => string | null = () => null): Promise<void> {
+export async function settle(
+  root: Element | undefined,
+  act: () => void,
+  busy: () => string | null = () => null,
+): Promise<void> {
   let mutations = 0;
-  const observer = new MutationObserver((records) => {
-    mutations += records.length;
-  });
-  observer.observe(root, { subtree: true, childList: true, attributes: true, characterData: true });
+  const observer =
+    root === undefined
+      ? undefined
+      : new MutationObserver((records) => {
+          mutations += records.length;
+        });
+  if (root !== undefined)
+    observer?.observe(root, { subtree: true, childList: true, attributes: true, characterData: true });
   try {
     act();
     let quiet = 0;
     let last = logSizes();
     const changed = (): boolean => {
-      mutations += observer.takeRecords().length;
+      mutations += observer?.takeRecords().length ?? 0;
       return mutations > 0 || logSizes() !== last;
     };
     let turns = 0;
@@ -87,6 +95,6 @@ export async function settle(root: Element, act: () => void, busy: () => string 
       pending === null ? { rounds: MAX_ROUNDS } : { rounds: MAX_ROUNDS, route: pending },
     );
   } finally {
-    observer.disconnect();
+    observer?.disconnect();
   }
 }

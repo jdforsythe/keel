@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { SEED, addItem, cart } from "./fixtures.ts";
 
 describe("k.sim: stores are restored around runs", () => {
-  it.skip("a module store written by one run holds its pre-`simulate` state when the next run starts", async () => {
+  it("a module store written by one run holds its pre-`simulate` state when the next run starts", async () => {
     tx(addItem, { item: { id: "before", qty: 1 } });
     const before = cart.get("items").map((i) => i.id);
     const atStart: string[][] = [];
@@ -23,7 +23,7 @@ describe("k.sim: stores are restored around runs", () => {
     for (const items of atStart) expect(items).toEqual(before);
   });
 
-  it.skip("a module store written by one run holds its pre-`simulate` state after `simulate` resolves", async () => {
+  it("a module store written by one run holds its pre-`simulate` state after `simulate` resolves", async () => {
     const before = cart.snapshot();
     await simulate(
       async ({ run }) => {
@@ -35,7 +35,7 @@ describe("k.sim: stores are restored around runs", () => {
     expect(cart.snapshot()).toEqual(before);
   });
 
-  it.skip("a store written by a failing run is restored too", async () => {
+  it("a store written by a failing run is restored too", async () => {
     const before = cart.snapshot();
     await simulate(
       async () => {
