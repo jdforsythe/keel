@@ -3,6 +3,8 @@ import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { s } from "@keel/schema";
 import { Session } from "../Session.schema.ts";
 import { fileOf } from "./fileOf.ts";
+import { getJson } from "./getJson.ts";
+import { readerHeaders } from "./readerHeaders.ts";
 import { safeUrl } from "./safeUrl.ts";
 import { sessionDiag } from "./sessionDiag.ts";
 import { sessionOut } from "./sessionOut.ts";
@@ -18,23 +20,6 @@ const Listed = s.object({
     "sessions.list": s.object({ ok: s.literal(true), value: s.record(s.object({ sessions: s.array(s.json()) })) }),
   }),
 });
-
-/** Fetch `url` as JSON through `io.fetch`; E1056 (unreachable, non-2xx, not JSON) as a reason string. */
-async function getJson(io: Io & { fetch: NonNullable<Io["fetch"]> }, url: string, init?: RequestInit) {
-  let res: Response;
-  try {
-    res = await io.fetch(url, init);
-  } catch {
-    return { ok: false as const, why: "target unreachable" };
-  }
-  if (!res.ok) return { ok: false as const, why: `target answered ${res.status}` };
-  try {
-    const body: unknown = await res.json();
-    return { ok: true as const, body };
-  } catch {
-    return { ok: false as const, why: "not JSON" };
-  }
-}
 
 /**
  * `keel session capture [url]` and `keel session ingest <url> [--failing] [--since t]` (std.sessions Commands).
@@ -86,10 +71,7 @@ export async function commandFetch(
   const query = new URLSearchParams();
   if (input.failing === true) query.set("failing", "1");
   if (input.since !== undefined) query.set("since", input.since);
-  const token = io.env?.KEEL_SESSIONS_TOKEN;
-  const cookie = base.startsWith("https:") ? "__Host-keel-caller" : "keel-caller";
-  const headers: Record<string, string> = { accept: "application/json" };
-  if (token !== undefined && token !== "") headers.cookie = `${cookie}=${token}`;
+  const headers = readerHeaders(io, base);
   const q = query.toString();
   const got = await getJson(net, `${base}/sessions/list${q === "" ? "" : `?${q}`}`, { headers });
   if (!got.ok) return fail(got.why);

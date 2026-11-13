@@ -19,6 +19,7 @@ import { monitor, monitorRoutes } from "@keel/std-sessions/monitor";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
+import { applyTo } from "./fixtures.ts";
 
 // ---- fixture (shared text of the monitor-* files): a server store with two transactions, an API route table ----------
 // Assumptions (the spec is silent, each is an ordinary reading of k.server / k.router / k.api, as sync-save-observe does):
@@ -208,7 +209,7 @@ const CLAUSE =
 const markerArb = fc.stringMatching(/^[a-z0-9]{8,12}$/).map((m) => `zq9${m}`);
 
 describe("std.monitor: privacy", () => {
-  test.skip(CLAUSE, async () => {
+  test(CLAUSE, async () => {
     await fc.assert(
       fc.asyncProperty(fc.uniqueArray(markerArb, { minLength: 2, maxLength: 5 }), async (markers) => {
         const t = await boot();
@@ -238,6 +239,7 @@ describe("std.monitor: privacy", () => {
         const dir = mkDir();
         const r = await run(["session", "monitor", "http://localhost", "--format=json"], {
           cwd: dir,
+          apply: applyTo(dir),
           env: { KEEL_SESSIONS_TOKEN: token },
           fetch: forwarding(t.tallyApp, token),
         });

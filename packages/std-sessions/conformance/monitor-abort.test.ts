@@ -201,7 +201,7 @@ afterAll(() => {
 const CLAUSE = "Aborting `signal` merges the counts not yet stored, and `run` resolves.";
 
 describe("std.monitor: abort", () => {
-  test.skip(CLAUSE, async () => {
+  test(CLAUSE, async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(opArb, { minLength: 1, maxLength: 8 }), async (ops) => {
         const t = await boot();
@@ -220,7 +220,7 @@ describe("std.monitor: abort", () => {
     );
   });
 
-  test.skip(`${CLAUSE} (counts after an earlier merge are added to the stored ones)`, async () => {
+  test(`${CLAUSE} (counts after an earlier merge are added to the stored ones)`, async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(opArb, { minLength: 1, maxLength: 4 }),

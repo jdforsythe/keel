@@ -21,6 +21,7 @@ import { monitorRoutes } from "@keel/std-sessions/monitor";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
+import { applyTo } from "./fixtures.ts";
 
 // ---- fixture (shared text of the monitor-* files): a server store with two transactions, an API route table ----------
 // Assumptions (the spec is silent, each is an ordinary reading of k.server / k.router / k.api, as sync-save-observe does):
@@ -207,7 +208,7 @@ afterAll(() => {
 const CLAUSE =
   "`keel session monitor` against a served tally writes `.keel/monitored.json` that k.ledger reads; against an unreachable URL it reports E2010 and writes nothing.";
 
-const URL_ = "http://monitor.test:4100";
+const URL_ = "http://127.0.0.1:4100";
 
 /** A booted server holding `tally`, a reader token, and a cwd to run in. */
 async function served(tally: Tally) {
@@ -229,13 +230,14 @@ const records = (stdout: string): Record<string, unknown>[] =>
     });
 
 describe("std.monitor: keel session monitor", () => {
-  test.skip(`${CLAUSE} (a served tally is written as .keel/monitored.json)`, async () => {
+  test(`${CLAUSE} (a served tally is written as .keel/monitored.json)`, async () => {
     await fc.assert(
       fc.asyncProperty(tallyArb, async (tally) => {
         const { t, token, dir } = await served(tally);
         const seen: string[] = [];
         const r = await run(["session", "monitor", URL_, "--format=json"], {
           cwd: dir,
+          apply: applyTo(dir),
           env: { KEEL_SESSIONS_TOKEN: token },
           fetch: forwarding(t.tallyApp, token, seen),
         });
@@ -256,11 +258,12 @@ describe("std.monitor: keel session monitor", () => {
     );
   });
 
-  test.skip(`${CLAUSE} (an unreachable URL reports E2010 and writes nothing)`, async () => {
+  test(`${CLAUSE} (an unreachable URL reports E2010 and writes nothing)`, async () => {
     const dir = mkDir();
     const down = (): Promise<Response> => Promise.reject(new TypeError("fetch failed"));
     const r = await run(["session", "monitor", URL_, "--format=compact"], {
       cwd: dir,
+      apply: applyTo(dir),
       env: { KEEL_SESSIONS_TOKEN: "x" },
       fetch: down,
     });
@@ -270,12 +273,13 @@ describe("std.monitor: keel session monitor", () => {
     expect(fs.existsSync(path.join(dir, ".keel"))).toBe(false);
   });
 
-  test.skip(`${CLAUSE} (it prints one session.monitor record, and the default file is .keel/monitored.json)`, async () => {
+  test(`${CLAUSE} (it prints one session.monitor record, and the default file is .keel/monitored.json)`, async () => {
     await fc.assert(
       fc.asyncProperty(tallyArb, async (tally) => {
         const { t, token, dir } = await served(tally);
         const r = await run(["session", "monitor", URL_, "--format=json"], {
           cwd: dir,
+          apply: applyTo(dir),
           env: { KEEL_SESSIONS_TOKEN: token },
           fetch: forwarding(t.tallyApp, token),
         });
@@ -293,20 +297,22 @@ describe("std.monitor: keel session monitor", () => {
     );
   });
 
-  test.skip(`${CLAUSE} (compact line: ok session monitor <n> transactions, <m> runs -> <file>)`, async () => {
+  test(`${CLAUSE} (compact line: ok session monitor <n> transactions, <m> runs -> <file>)`, async () => {
     const { t, token, dir } = await served({ v: 1, from: 10, to: 70, tx: { "a.one": 4, "a.two": 3 } });
     const r = await run(["session", "monitor", URL_, "--format=compact"], {
       cwd: dir,
+      apply: applyTo(dir),
       env: { KEEL_SESSIONS_TOKEN: token },
       fetch: forwarding(t.tallyApp, token),
     });
     expect(r.stdout).toContain(`ok session monitor 2 transactions, 7 runs -> ${MONITORED}`);
   });
 
-  test.skip(`${CLAUSE} (--out names the file)`, async () => {
+  test(`${CLAUSE} (--out names the file)`, async () => {
     const { t, token, dir } = await served({ v: 1, from: 1, to: 2, tx: { "a.one": 1 } });
     const r = await run(["session", "monitor", URL_, "--out", "out/tally.json", "--format=json"], {
       cwd: dir,
+      apply: applyTo(dir),
       env: { KEEL_SESSIONS_TOKEN: token },
       fetch: forwarding(t.tallyApp, token),
     });

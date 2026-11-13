@@ -1,10 +1,6 @@
 import { defineRule } from "@keel/check";
-import type { Finding, RuleDef } from "@keel/check";
-import { parseTopology } from "@keel/compiler";
-import { lineCol } from "./internal/lineCol.ts";
-import { moduleFile } from "./internal/moduleFile.ts";
-import { reachesSource } from "./internal/reachesSource.ts";
-import { sourcesOf } from "./internal/sourcesOf.ts";
+import type { RuleDef } from "@keel/check";
+import { servedOffNode } from "./internal/servedOffNode.ts";
 
 const SOURCE = "@keel/std-sessions/routes";
 
@@ -22,25 +18,5 @@ export const adapterNotNode: RuleDef = defineRule({
   explain:
     "the sessions ingest route needs a server. A deployable with adapter 'static' or 'client' cannot serve it. " +
     "Fix: topology({ web: { modules: ['cart'], adapter: 'node' } }), or drop the @keel/std-sessions/routes import.",
-  check: ({ file, ast, project }) => {
-    const mf = moduleFile(file.path);
-    if (mf === undefined || mf.rest !== "routes.ts") return [];
-    const sources = sourcesOf(ast).filter((s) => reachesSource(project, file.path, s.value, SOURCE));
-    if (sources.length === 0) return [];
-    const topo = project.find((f) => f.path === `${mf.prefix}topology.ts`);
-    if (topo === undefined) return [];
-    const bad = Object.entries(parseTopology(topo.source).topology).find(
-      ([, d]) => d.adapter !== "node" && d.modules.includes(mf.id),
-    );
-    if (bad === undefined) return [];
-    const out: Finding[] = [];
-    for (const src of sources) {
-      out.push({
-        path: file.path,
-        ...lineCol(file.source, src.start),
-        data: { deployable: bad[0], adapter: bad[1].adapter },
-      });
-    }
-    return out;
-  },
+  check: (input) => servedOffNode(input, ["routes.ts"], SOURCE),
 });

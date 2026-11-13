@@ -201,7 +201,7 @@ afterAll(() => {
 const CLAUSE = "A caller outside `readers` gets 403 `keel.denied` from `sessions.tally`; a reader gets the `Tally`.";
 
 describe("std.monitor: the reader guard", () => {
-  test.skip(`${CLAUSE} (a caller outside readers)`, async () => {
+  test(`${CLAUSE} (a caller outside readers)`, async () => {
     await fc.assert(
       fc.asyncProperty(tallyArb, async (tally) => {
         const t = await boot();
@@ -219,7 +219,7 @@ describe("std.monitor: the reader guard", () => {
     );
   });
 
-  test.skip(`${CLAUSE} (a reader gets the Tally)`, async () => {
+  test(`${CLAUSE} (a reader gets the Tally)`, async () => {
     await fc.assert(
       fc.asyncProperty(tallyArb, async (tally) => {
         const t = await boot();
@@ -236,7 +236,7 @@ describe("std.monitor: the reader guard", () => {
     );
   });
 
-  test.skip(`${CLAUSE} (with nothing stored a reader gets { v: 1, from: 0, to: 0, tx: {} })`, async () => {
+  test(`${CLAUSE} (with nothing stored a reader gets { v: 1, from: 0, to: 0, tx: {} })`, async () => {
     const t = await boot();
     const caller = await mint(t);
     allow(t.ctx, caller);

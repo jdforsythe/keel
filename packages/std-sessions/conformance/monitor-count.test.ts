@@ -202,7 +202,7 @@ const CLAUSE =
   "Under sim, after three saves of a store whose actions committed `api.addTodo` twice and `api.toggleTodo` once, and one clock advance of 60,000 ms, `sessions.tally` holds `tx` `{ 'api.addTodo': 2, 'api.toggleTodo': 1 }`.";
 
 describe("std.monitor: count", () => {
-  test.skip(CLAUSE, async () => {
+  test(CLAUSE, async () => {
     const t = await boot();
     const ac = new AbortController();
     const done = monitor.run(t.ctx, ac.signal);
@@ -220,7 +220,7 @@ describe("std.monitor: count", () => {
     await done;
   });
 
-  test.skip(`${CLAUSE} (property: any sequence of commits)`, async () => {
+  test(`${CLAUSE} (property: any sequence of commits)`, async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(opArb, { minLength: 1, maxLength: 8 }), async (ops) => {
         const t = await boot();

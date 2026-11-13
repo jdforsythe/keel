@@ -6,7 +6,7 @@ export default module({
   deps: [],
   capabilities: ["clock", "observe", "session", "storage"],
   public: {
-    exports: ["record", "replay", "minimize", "session", "Session", "routes"],
-    routes: ["sessions.ingest", "sessions.list"],
+    exports: ["record", "replay", "minimize", "session", "Session", "routes", "monitor", "monitorRoutes", "Tally"],
+    routes: ["sessions.ingest", "sessions.list", "sessions.tally"],
   },
 });

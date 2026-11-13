@@ -21,7 +21,7 @@ import { monitorRoutes } from "@keel/std-sessions/monitor";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
-import { cartModuleFiles, diagCodes, topologySource } from "./fixtures.ts";
+import { applyTo, cartModuleFiles, diagCodes, topologySource } from "./fixtures.ts";
 
 // ---- fixture (shared text of the monitor-* files): a server store with two transactions, an API route table ----------
 // Assumptions (the spec is silent, each is an ordinary reading of k.server / k.router / k.api, as sync-save-observe does):
@@ -226,39 +226,44 @@ const codes = (adapter: "node" | "static" | "client", extra: { path: string; sou
   diagCodes(check([...cartModuleFiles([]), ...extra, topologySource(adapter)], { types: false }));
 
 describe("std.monitor: E2009 fires on a fixture and not on its clean twin.", () => {
-  test.skip("E2009 fires on `monitor` in the runners of a static deployable, not of a node one", () => {
+  test("E2009 fires on `monitor` in the runners of a static deployable, not of a node one", () => {
     const fixture = [RUNNERS("export const runners = [monitor]"), ROUTES_PLAIN];
     expect(codes("static", fixture)).toContain("E2009");
     expect(codes("node", fixture)).not.toContain("E2009");
   });
 
-  test.skip("E2009 fires on `monitor` in the runners of a client deployable, not of a node one", () => {
+  test("E2009 fires on `monitor` in the runners of a client deployable, not of a node one", () => {
     const fixture = [RUNNERS("export const runners = [monitor]"), ROUTES_PLAIN];
     expect(codes("client", fixture)).toContain("E2009");
     expect(codes("node", fixture)).not.toContain("E2009");
   });
 
-  test.skip("E2009 fires on `monitorRoutes` in the routes of a non-node deployable, not of a node one", () => {
+  test("E2009 fires on `monitorRoutes` in the routes of a non-node deployable, not of a node one", () => {
     const fixture = [RUNNERS_PLAIN, ROUTES("export const routes = manifest({})\nexport const listed = monitorRoutes")];
     expect(codes("static", fixture)).toContain("E2009");
     expect(codes("client", fixture)).toContain("E2009");
     expect(codes("node", fixture)).not.toContain("E2009");
   });
 
-  test.skip("E2009 does not fire on a client deployable whose runners and routes hold neither", () => {
+  test("E2009 does not fire on a client deployable whose runners and routes hold neither", () => {
     expect(codes("client", [RUNNERS_PLAIN, ROUTES_PLAIN])).not.toContain("E2009");
   });
 });
 
 describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, not 2xx, or not a `Tally`.", () => {
-  const URL_ = "http://monitor.test:4100";
+  const URL_ = "http://127.0.0.1:4100";
   const answer = (body: string, status: number) => (): Promise<Response> =>
     Promise.resolve(new Response(body, { status }));
 
   const monitorRun = (dir: string, fetch: (url: string) => Promise<Response>) =>
-    run(["session", "monitor", URL_, "--format=compact"], { cwd: dir, env: { KEEL_SESSIONS_TOKEN: "x" }, fetch });
+    run(["session", "monitor", URL_, "--format=compact"], {
+      cwd: dir,
+      apply: applyTo(dir),
+      env: { KEEL_SESSIONS_TOKEN: "x" },
+      fetch,
+    });
 
-  test.skip("E2010 fires on an unreachable URL, writes nothing", async () => {
+  test("E2010 fires on an unreachable URL, writes nothing", async () => {
     const dir = mkDir();
     const r = await monitorRun(dir, () => Promise.reject(new TypeError("fetch failed")));
     expect(r.stdout).toMatch(/E2010/);
@@ -266,7 +271,7 @@ describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, no
     expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
   });
 
-  test.skip("E2010 fires on any non-2xx answer, writes nothing", async () => {
+  test("E2010 fires on any non-2xx answer, writes nothing", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(301, 400, 403, 404, 500, 503), async (status) => {
         const dir = mkDir();
@@ -279,7 +284,7 @@ describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, no
     );
   });
 
-  test.skip("E2010 fires on a 2xx answer that is not a Tally, writes nothing", async () => {
+  test("E2010 fires on a 2xx answer that is not a Tally, writes nothing", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.constantFrom("<html></html>", "{}", "[]", "null", '{"v":2,"from":0,"to":0,"tx":{}}', '{"v":1,"tx":{}}'),
@@ -295,7 +300,7 @@ describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, no
     );
   });
 
-  test.skip("E2010 does not fire on its clean twin, a served Tally", async () => {
+  test("E2010 does not fire on its clean twin, a served Tally", async () => {
     const t = await boot();
     t.map.set(TALLY_KEY, JSON.stringify({ v: 1, from: 0, to: 60_000, tx: { "api.addTodo": 2 } }));
     const token = await mint(t);

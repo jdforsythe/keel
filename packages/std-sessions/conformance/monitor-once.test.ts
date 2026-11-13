@@ -225,7 +225,7 @@ describe("std.monitor: entries are counted once, from where `run` started", () =
     );
   });
 
-  test.skip(`${CLAUSE} (each entry once across saves and merges)`, async () => {
+  test(`${CLAUSE} (each entry once across saves and merges)`, async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(fc.tuple(opArb, fc.boolean()), { minLength: 1, maxLength: 8 }),
