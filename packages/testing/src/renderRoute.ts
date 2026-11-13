@@ -1,6 +1,7 @@
 import { createCtx } from "@keel/ctx";
-import { createRouter } from "@keel/router";
-import type { Manifest, RouteDef, RouteState } from "@keel/router";
+import type { Manifest, RouteDef, RouteState, Router } from "@keel/router";
+import { createRouterWith } from "@keel/router/internal";
+import { serverState } from "@keel/store/internal";
 import { memoryHistory } from "./internal/memoryHistory.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
@@ -18,7 +19,9 @@ import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
  * `<html lang>` (k.head), and a document without a title takes the route id as the server's fallback title. The
  * handle is `render`'s plus `route()` and `navigate(href)` (push, then the same quiescence and checks as `fire`);
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
- * `options.caller` (default `""`).
+ * `options.caller` (default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
+ * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
+ * `state()` hold no factory store.
  */
 export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   id: string,
@@ -36,9 +39,10 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
     else document.documentElement.setAttribute("lang", head.lang);
   };
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
-  let router: ReturnType<typeof createRouter<M>>;
+  let router: Router<RouteState<M>>;
   try {
-    router = createRouter(options.routes, { ctx, history: memoryHistory(url), caller: options.caller ?? "" });
+    const history = memoryHistory(url);
+    router = createRouterWith(options.routes, { ctx, history, caller: options.caller ?? "" }, serverState(ctx));
   } catch (error) {
     for (const [st, snap] of seeded) st.restore(snap);
     restoreHead();
