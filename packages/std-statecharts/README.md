@@ -1,6 +1,6 @@
 # @keel/std-statecharts
 
-**Spec:** std.statecharts · **Status:** declared · **verified:** (none)
+**Spec:** std.statecharts · **Status:** conformance-covered · **verified:** (none)
 
 Flat state charts compiled to a store and one transaction per event, checked by `keel check` and explored by `explore`.
 
@@ -12,7 +12,7 @@ Flat state charts compiled to a store and one transaction per event, checked by 
   - `chart` throws E2751 (a name naming no state), E2753 (a non-final state with no target to another state) and E2754 (a final state with `on`, or an event, guard or action name naming no entry); the message starts with the code.
   - `coverage(chart, result)` takes an `explore` result (k.model) as data and returns `{ unreached, dead }`: the declared states no explored state holds, and the non-final states some terminal state holds, in declaration order.
   - Types `Chart`, `ChartSpec`, `ChartState`, `Coverage`, `StateSpec`, `Target`.
-  - `./tools` (node): rules E2751 (fix: the nearest state name), E2752 (a state unreachable from `initial`, every guard taken as possibly true), E2753 (fix: `{ final: true }` for a state with no `on` entries), E2754, and E2755 (a declaration part that is not a literal; the chart's other rules are then skipped), each registered at import.
+  - `./tools` (node): rules E2751 (fix: the nearest state name), E2752 (a state unreachable from `initial`, every guard taken as possibly true), E2753 (fix: `{ final: true }` for a state with no `on` entries), E2754, and E2755 (a declaration part that is not a literal: a variable, a spread or a computed key in `initial`, `events`, `guards`, `actions`, `states`, `on` or a target; the chart's other rules are then skipped); a `const` bound directly to `chart` is followed, each registered at import.
 - **Dependencies:** `@keel/check` (tools only), `@keel/reactive`, `@keel/schema`, `@keel/store`.
 - **Rungs:** conformance (examples, properties and closed `explore`, seed 1337); properties that a generated declaration throws E2751, E2753 or E2754 or compiles to transactions `properties` accepts, and that `coverage` follows the explored and terminal states.
 

@@ -11,8 +11,8 @@ type ShapeTarget = { to?: Named; guard?: Named; do?: Named };
 const span = (n: Node): Span => ({ start: n.start, end: n.end });
 
 /**
- * The shape of one `chart` call's declaration as written, and `loose`: where its `initial`, `states`, a state, `on`
- * keys, `final` or a target are not literals. `shape` is present only when `loose` is empty.
+ * The shape of one `chart` call's declaration as written, and `loose`: where its `initial`, `events`, `guards`,
+ * `actions`, `states`, a state, `on` keys, `final` or a target are not literals (a variable, a spread, a computed key). `shape` is present only when `loose` is empty.
  */
 export function literalShape(call: Node): { readonly shape?: Shape<Span>; readonly loose: readonly Span[] } {
   const loose: Span[] = [];
@@ -21,10 +21,15 @@ export function literalShape(call: Node): { readonly shape?: Shape<Span>; readon
   const props = entriesOf(decl);
   if (props === undefined) return { loose: [span(decl ?? call)] };
   const get = (name: string): Node | undefined => unwrap(props.find((p) => p.name === name)?.value);
-  const names = (name: string): readonly string[] | undefined => {
+  const names = (name: string): readonly string[] => {
     const n = get(name);
-    return n === undefined ? [] : entriesOf(n)?.map((e) => e.name);
+    const list = n === undefined ? [] : entriesOf(n)?.map((e) => e.name);
+    if (list === undefined && n !== undefined) loose.push(span(n));
+    return list ?? [];
   };
+  const events = names("events");
+  const guards = names("guards");
+  const actions = names("actions");
   const target = (x: unknown, out: ShapeTarget[], listed = false): void => {
     const n = unwrap(x);
     if (n === undefined) return;
@@ -78,17 +83,14 @@ export function literalShape(call: Node): { readonly shape?: Shape<Span>; readon
     });
   }
   if (loose.length > 0 || first === undefined || initial === undefined) return { loose };
-  const events = names("events");
-  const guards = names("guards");
-  const actions = names("actions");
   return {
     loose,
     shape: {
       initial: { name: first, at: span(initial) },
       states,
-      ...(events === undefined ? {} : { events }),
-      ...(guards === undefined ? {} : { guards }),
-      ...(actions === undefined ? {} : { actions }),
+      events,
+      guards,
+      actions,
     },
   };
 }
