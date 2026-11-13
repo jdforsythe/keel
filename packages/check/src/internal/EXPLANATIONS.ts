@@ -550,6 +550,13 @@ const ROWS: readonly Row[] = [
     "k.security",
   ],
   [
+    "E1576",
+    "import of a @keel internal entry in app code or tests",
+    "Internal entries are kernel and stdlib seams, such as the server state runner.",
+    "import { report } from '@keel/ctx/internal' -> produce the event through a public API",
+    "k.security",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",

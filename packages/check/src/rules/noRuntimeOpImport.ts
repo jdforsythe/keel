@@ -1,7 +1,6 @@
-import { Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
-import type { Finding } from "../types/Finding.ts";
+import { moduleSpecifiers } from "../internal/moduleSpecifiers.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
 const OPS = /^@keel\/runtime-dom\/ops(?:\/|$)/;
@@ -16,24 +15,10 @@ export const noRuntimeOpImport: RuleDef = {
   message: "app code imports @keel/runtime-dom/ops; use JSX and If/For/Match from @keel/runtime-dom",
   explain: "Ops are compiler output. App code writes JSX and the intrinsics If, For, Match, Case, Boundary.",
   see: "k.runtime",
-  check: ({ file, ast }) => {
-    if (!isAppPath(file.path)) return [];
-    const out: Finding[] = [];
-    for (const st of ast.body) {
-      const from =
-        st.type === "ImportDeclaration" || st.type === "ExportAllDeclaration"
-          ? st.source
-          : st.type === "ExportNamedDeclaration"
-            ? st.source
-            : null;
-      if (from !== null && OPS.test(from.value)) out.push(findingAt(file, st.start));
-    }
-    new Visitor({
-      ImportExpression: (n) => {
-        if (n.source.type === "Literal" && typeof n.source.value === "string" && OPS.test(n.source.value))
-          out.push(findingAt(file, n.start));
-      },
-    }).visit(ast);
-    return out;
-  },
+  check: ({ file, ast }) =>
+    isAppPath(file.path)
+      ? moduleSpecifiers(ast, false)
+          .filter((m) => OPS.test(m.spec))
+          .map((m) => findingAt(file, m.at))
+      : [],
 };

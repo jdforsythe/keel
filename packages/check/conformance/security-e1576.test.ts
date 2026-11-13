@@ -14,53 +14,53 @@ const codes = (path: string, source: string) =>
   check([{ path, source }], { types: false }).diagnostics.filter((d) => d.code === "E1576");
 
 describe("k.security: E1576", () => {
-  test.skip("`import { serverState } from '@keel/store/internal'` in `modules/a/x.ts` is one E1576", () => {
+  test("`import { serverState } from '@keel/store/internal'` in `modules/a/x.ts` is one E1576", () => {
     expect(codes("modules/a/x.ts", IMPORT)).toHaveLength(1);
   });
 
-  test.skip("`import('@keel/router/internal')` in `test/a.test.ts` is one E1576", () => {
+  test("`import('@keel/router/internal')` in `test/a.test.ts` is one E1576", () => {
     expect(codes("test/a.test.ts", DYNAMIC)).toHaveLength(1);
   });
 
-  test.skip("`export * from '@keel/std-jobs/tools/internal'` is one E1576", () => {
+  test("`export * from '@keel/std-jobs/tools/internal'` is one E1576", () => {
     expect(codes("modules/a/x.ts", REEXPORT)).toHaveLength(1);
   });
 
-  test.skip("the same import in `packages/std-x/src/a.ts` is not E1576", () => {
+  test("the same import in `packages/std-x/src/a.ts` is not E1576", () => {
     expect(codes("packages/std-x/src/a.ts", IMPORT)).toEqual([]);
   });
 
-  test.skip("the same import in `node_modules/@keel/std-x/a.ts` is not E1576", () => {
+  test("the same import in `node_modules/@keel/std-x/a.ts` is not E1576", () => {
     expect(codes("node_modules/@keel/std-x/a.ts", IMPORT)).toEqual([]);
   });
 
-  test.skip("`import '@keel/router/match'` is not E1576", () => {
+  test("`import '@keel/router/match'` is not E1576", () => {
     expect(codes("modules/a/x.ts", "import '@keel/router/match'\n")).toEqual([]);
   });
 
-  test.skip("E1576: a type-only import of an internal entry is reported", () => {
+  test("E1576: a type-only import of an internal entry is reported", () => {
     expect(
       codes("modules/a/x.ts", "import type { ServerState } from '@keel/store/internal'\nexport type T = ServerState\n"),
     ).toHaveLength(1);
   });
 
-  test.skip("E1576: a literal `require` of an internal entry is reported", () => {
+  test("E1576: a literal `require` of an internal entry is reported", () => {
     expect(codes("modules/a/x.ts", "const m = require('@keel/store/internal')\nexport default m\n")).toHaveLength(1);
   });
 
-  test.skip("E1576: a named re-export from an internal entry is reported", () => {
+  test("E1576: a named re-export from an internal entry is reported", () => {
     expect(codes("modules/a/x.ts", "export { serverState } from '@keel/store/internal'\n")).toHaveLength(1);
   });
 
-  test.skip("E1576: a file under `.keel/` is not reported", () => {
+  test("E1576: a file under `.keel/` is not reported", () => {
     expect(codes(".keel/gen/a.ts", IMPORT)).toEqual([]);
   });
 
-  test.skip("E1576: a test file is reported", () => {
+  test("E1576: a test file is reported", () => {
     expect(codes("test/a.test.ts", IMPORT)).toHaveLength(1);
   });
 
-  test.skip("property: any `@keel/<pkg>` specifier with an `internal` path segment is one E1576 outside `packages/`, `node_modules/` and `.keel/`, none inside", () => {
+  test("property: any `@keel/<pkg>` specifier with an `internal` path segment is one E1576 outside `packages/`, `node_modules/` and `.keel/`, none inside", () => {
     const seg = fc.stringMatching(/^[a-z]{2,8}$/);
     fc.assert(
       fc.property(seg, fc.array(seg, { maxLength: 2 }), (pkg, tail) => {
@@ -75,7 +75,7 @@ describe("k.security: E1576", () => {
     );
   });
 
-  test.skip("E1576: carries no fix", () => {
+  test("E1576: carries no fix", () => {
     const [d] = codes("modules/a/x.ts", IMPORT);
     expect(d).toBeDefined();
     expect(d?.fix).toBeUndefined();

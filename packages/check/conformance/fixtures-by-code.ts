@@ -48,6 +48,7 @@ const use = (id: string, from: string, name: string): Files[number] =>
   f(`modules/${id}/Use.ts`, `import { ${name} } from '../${from}/${name}.ts'\nexport const Use = ${name}\n`);
 
 const NO_TYPES: Options = { types: false };
+const IMPORT = "import { serverState } from '@keel/store/internal'\nexport const x = serverState\n";
 /** A root where `@keel/router` resolves, for fixtures whose rule reads real types (E1510). */
 const ROUTER_ROOT = fileURLToPath(new URL("../../router/", import.meta.url));
 const apiRoutes = (entries: string): Files[number] =>
@@ -632,6 +633,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "import { service } from '@keel/services'\nimport { Api } from './Api.schema.ts'\nexport const api = service({ base: 'https://api.example.com', schema: Api })\n",
       ),
     ],
+  },
+  E1576: {
+    opts: NO_TYPES,
+    bad: [f("modules/a/x.ts", IMPORT)],
+    clean: [f("packages/std-x/src/a.ts", IMPORT)],
   },
   E1601: {
     bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],

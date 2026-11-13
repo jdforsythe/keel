@@ -13,6 +13,7 @@ import { noDomGlobal } from "../rules/noDomGlobal.ts";
 import { noDomQueryInTest } from "../rules/noDomQueryInTest.ts";
 import { noEagerChild } from "../rules/noEagerChild.ts";
 import { noInlineStyle } from "../rules/noInlineStyle.ts";
+import { noInternalEntry } from "../rules/noInternalEntry.ts";
 import { noIntrinsicElement } from "../rules/noIntrinsicElement.ts";
 import { noNetFetchInApp } from "../rules/noNetFetchInApp.ts";
 import { noRuntimeOpImport } from "../rules/noRuntimeOpImport.ts";
@@ -65,6 +66,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   resourceViaMatch,
   noDetachedScope,
   noRuntimeOpImport,
+  noInternalEntry,
   noDomGlobal,
   routeSchemaInferred,
   loaderInServerFile,

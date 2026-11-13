@@ -320,6 +320,7 @@ const NO_FIX = [
   "E1567", // the module, deps and public.routes edits span files
   "E1570", // where the asset or form target lives is the author's choice
   "E1571", // moving the call to a server file spans files
+  "E1576", // the public replacement is the author's
   "E1561", // choosing between the caller's and the producer's schema is a judgment
   "E1562", // the fix edits the route's schema source and needs a rebuilt surface; its fixture is surface data alone
   "E1603", // the code in the string is the author's
