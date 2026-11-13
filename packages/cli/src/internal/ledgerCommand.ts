@@ -97,8 +97,8 @@ const ledgerFile = (
  * the notes and the trailer); `--diff` compares with it (default `.keel/ledger.json`, else
  * `tooling/ledger/ledger.json`) and writes nothing: E1706 per lowered rung, E1706 when the unsafe count rose, E1707
  * per clause of a `conformance-covered` section left at `none` (`coverageGaps`), E1712 (no `--scope`) per rung the
- * file counts above 0 that no item holds, E1713 per package whose fresh score is below its threshold or whose
- * threshold is below the committed one. `--scope <prefix>` keeps the items whose key starts with it; the unsafe count
+ * file counts above 0 that no item holds, E1713 per package whose fresh score is below its threshold (a package
+ * with claims and none fresh has no score and fails too) or whose threshold is below the committed one. `--scope <prefix>` keeps the items whose key starts with it; the unsafe count
  * is then the matching apps' (`golden-1:`), compared with zero. The summary counts the items on each rung and the
  * stale claims, each when above 0.
  */
@@ -179,8 +179,12 @@ export function ledgerCommand(input: Input, io: Io): Outcome {
         );
   for (const [pkg, p] of Object.entries(mutation.packages)) {
     const at = { path: reports[pkg] ?? name, see: "k.ledger" };
+    const claimed = mutation.claims.some((c) => c.file.startsWith(`packages/${pkg}/`));
     if (p.score !== undefined && p.score < p.threshold)
       diags.push(makeDiag("E1713", `mutation ${pkg} ${p.score}% is below its threshold ${p.threshold}%`, at));
+    // Claims with none fresh score nothing: no evidence the threshold still holds.
+    else if (p.score === undefined && claimed)
+      diags.push(makeDiag("E1713", `mutation ${pkg}: every claim is stale, so no score meets ${p.threshold}%`, at));
     const was = committed?.mutation?.packages[pkg]?.threshold;
     if (was !== undefined && p.threshold < was)
       diags.push(makeDiag("E1713", `mutation ${pkg} threshold ${p.threshold}% is below the committed ${was}%`, at));

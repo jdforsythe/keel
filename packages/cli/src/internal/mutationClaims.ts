@@ -26,7 +26,7 @@ const parse = (text: string): unknown => {
  * `files` keyed relative to the package) gives one claim per file with a scored mutant, and the package's threshold
  * (`thresholds.break`); a report replaces the committed claims of the files it covers, other claims stay. A claim is
  * fresh while the file on disk hashes to its `sha`. Each package's `score` is detected over detected plus undetected
- * across its fresh claims (absent when none is fresh). Scores are percent, one decimal.
+ * across its fresh claims (absent when none is fresh). Scores are percent, stored to two decimals (`ledger.mutation` shows one).
  */
 export function mutationClaims(
   files: readonly SourceFile[],

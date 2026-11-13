@@ -3,7 +3,7 @@
 // The real `keel` binary over a temp project (OS tmpdir). Each case explores its own one-transaction store, so one
 // `keel ledger` run reports every case. `explore` is @keel/testing's (k.model). Seed: 1337 (no property in this file).
 import { describe, expect, it } from "vitest";
-import { evidenceText, ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";
+import { ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";
 import { keel } from "./test-sim-project.ts";
 
 const OPTIONS = "packages/m/test/options.ts";
@@ -67,6 +67,6 @@ describe("k.ledger: `explore` evidence", () => {
     const record = withProject("ledger-explore-depth", files(), (dir) =>
       ledgerRecord(keel(dir, ["ledger"]), "packages/m/src/withDepth.ts#withDepthSet"),
     );
-    expect(evidenceText(record)).toMatch(/\bdepth\W*2\b/);
+    expect(record?.evidence).toBe("exhaustive depth 2 packages/m/test/withDepth.test.ts");
   }, 60_000);
 });

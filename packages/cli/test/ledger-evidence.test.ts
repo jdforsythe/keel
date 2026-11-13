@@ -252,9 +252,9 @@ describe("testFacts / testEvidence: property runs", () => {
     ]);
   });
 
-  it("properties(...) (k.testing) is a property run: 100 runs and seed 1337 unless given", () => {
+  it("properties(...) from @keel/testing is a property run: 100 runs and seed 1337 unless given; an unimported one is not", () => {
     const src = [
-      'import { properties as props } from "@keel/testing";',
+      'import { properties, properties as props } from "@keel/testing";',
       'it("a", () => properties(X));',
       'it("b", () => props(X, { runs: 50, seed: 3 }));',
     ].join("\n");
@@ -262,6 +262,7 @@ describe("testFacts / testEvidence: property runs", () => {
       { kind: "property", passed: true, runs: 100, seed: 1337 },
       { kind: "property", passed: true, runs: 50, seed: 3 },
     ]);
+    expect(evidence('it("c", () => properties(X));')).toEqual([EX]);
   });
 
   it("a helper's property run counts for the test that calls it", () => {

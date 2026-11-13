@@ -1,4 +1,5 @@
 import type { Evidence } from "@keel/testing";
+import ts from "typescript";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
 import type { Diag } from "./Diag.ts";
@@ -7,7 +8,6 @@ import { TEST_FILE } from "./TEST_FILE.ts";
 import { makeDiag } from "./makeDiag.ts";
 
 const MONITORED = /(?:^|\/)\.keel\/monitored\.json$/;
-const STRING = /(["'`])((?:\\.|(?!\1)[^\\\n])*)\1/g;
 
 const parse = (text: string): unknown => {
   try {
@@ -20,7 +20,8 @@ const parse = (text: string): unknown => {
 /**
  * `monitored` evidence by source file (k.ledger Production evidence): each `<dir>/.keel/monitored.json` covers the code
  * files under `<dir>`; a transaction with `runs` >= 1 gives `{ runs, to }` to every file holding its name as a string
- * literal, else to every file holding its longest dotted prefix that any file holds (a chart id). A file failing the
+ * literal (in the syntax tree: never a comment), else to every file holding its longest dotted prefix of two or more
+ * segments that any file holds (a chart id). A file failing the
  * shape is E1711 and gives nothing.
  */
 export function monitoredEvidence(files: readonly SourceFile[]): {
@@ -33,7 +34,21 @@ export function monitoredEvidence(files: readonly SourceFile[]): {
   const holds = (f: SourceFile): Set<string> => {
     let set = literals.get(f.path);
     if (set === undefined) {
-      set = new Set([...f.source.matchAll(STRING)].map((m) => m[2] ?? ""));
+      const found = new Set<string>();
+      const visit = (n: ts.Node): void => {
+        if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) found.add(n.text);
+        ts.forEachChild(n, visit);
+      };
+      visit(
+        ts.createSourceFile(
+          f.path,
+          f.source,
+          ts.ScriptTarget.Latest,
+          true,
+          /\.[jt]sx$/.test(f.path) ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+        ),
+      );
+      set = found;
       literals.set(f.path, set);
     }
     return set;
@@ -56,7 +71,8 @@ export function monitoredEvidence(files: readonly SourceFile[]): {
     for (const [name, runs] of Object.entries(tally.value.tx)) {
       if (runs < 1) continue;
       const parts = name.split(".");
-      for (let n = parts.length; n > 0; n--) {
+      // The name itself, then its dotted prefixes down to two segments (a chart id), never one segment.
+      for (let n = parts.length; n >= Math.min(2, parts.length); n--) {
         const id = parts.slice(0, n).join(".");
         const holders = code.filter((f) => holds(f).has(id));
         if (holders.length === 0) continue;
