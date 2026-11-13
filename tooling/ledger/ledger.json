@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "unsafe": 10,
+  "unsafe": 13,
   "rungs": {
-    "example": 724,
-    "probabilistic": 235,
+    "example": 762,
+    "probabilistic": 248,
     "exhaustive": 13,
     "proven": 36,
     "monitored": 4
@@ -11,15 +11,15 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 75.51,
+        "score": 75.9,
         "threshold": 70
       },
       "cli": {
-        "score": 78.4,
+        "score": 78.22,
         "threshold": 70
       },
       "compiler": {
-        "score": 79.23,
+        "score": 78.77,
         "threshold": 70
       },
       "ctx": {
@@ -27,7 +27,7 @@
         "threshold": 70
       },
       "forms": {
-        "score": 88.52,
+        "score": 88.06,
         "threshold": 70
       },
       "reactive": {
@@ -35,27 +35,27 @@
         "threshold": 80
       },
       "router": {
-        "score": 82.02,
+        "score": 83.16,
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 80.48,
+        "score": 80.53,
         "threshold": 70
       },
       "scaffold": {
-        "score": 78.72,
+        "score": 78.85,
         "threshold": 70
       },
       "schema": {
-        "score": 91.63,
+        "score": 92.55,
         "threshold": 80
       },
       "server": {
-        "score": 84.03,
+        "score": 80.88,
         "threshold": 70
       },
       "services": {
-        "score": 83.44,
+        "score": 82.36,
         "threshold": 70
       },
       "store": {
@@ -63,11 +63,11 @@
         "threshold": 80
       },
       "testing": {
-        "score": 88,
+        "score": 91.89,
         "threshold": 70
       },
       "ui": {
-        "score": 74.51,
+        "score": 76.81,
         "threshold": 70
       }
     },
@@ -7687,6 +7687,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "idPart",
+      "file": "golden-1:todos/idPart.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "loadIndex",
       "file": "golden-1:todos/loadIndex.server.ts",
       "rung": "example"
@@ -7953,6 +7959,12 @@
       "pkg": "golden-2",
       "name": "fieldText",
       "file": "golden-2:recipes/fieldText.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "idPart",
+      "file": "golden-2:recipes/idPart.ts",
       "rung": "example"
     },
     {
@@ -8446,6 +8458,18 @@
       "name": "pathToString",
       "file": "packages/schema/src/pathToString.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "schema",
+      "name": "piiPaths",
+      "file": "packages/schema/src/piiPaths.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "piiValues",
+      "file": "packages/schema/src/piiValues.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "schema",
@@ -9175,9 +9199,15 @@
     },
     {
       "pkg": "ui",
+      "name": "contrastTable",
+      "file": "packages/ui/src/contrastTable.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ui",
       "name": "defineTokens",
       "file": "packages/ui/src/defineTokens.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "sessions",
@@ -9187,6 +9217,42 @@
     }
   ],
   "clauses": [
+    {
+      "item": "k.a11y#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.a11y#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#9",
+      "rung": "example"
+    },
     {
       "item": "k.api#1",
       "rung": "proven"
@@ -9664,6 +9730,42 @@
       "rung": "example"
     },
     {
+      "item": "k.evidence#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.evidence#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.evidence#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.evidence#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.evidence#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.evidence#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.evidence#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.evidence#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.evidence#9",
+      "rung": "example"
+    },
+    {
       "item": "k.forms#1",
       "rung": "example"
     },
@@ -9745,6 +9847,10 @@
     },
     {
       "item": "k.head#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.head#6",
       "rung": "example"
     },
     {
@@ -9926,6 +10032,38 @@
     {
       "item": "k.prefix#7",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.privacy#1",
+      "rung": "proven"
+    },
+    {
+      "item": "k.privacy#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.privacy#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.privacy#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.privacy#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.privacy#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.privacy#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.privacy#8",
+      "rung": "example"
     },
     {
       "item": "k.reactive#1",
@@ -10193,7 +10331,7 @@
     },
     {
       "item": "k.schema#10",
-      "rung": "proven"
+      "rung": "probabilistic"
     },
     {
       "item": "k.schema#11",
@@ -10204,8 +10342,48 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.schema#13",
-      "rung": "probabilistic"
+      "item": "k.security#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#11",
+      "rung": "example"
     },
     {
       "item": "k.server#1",
@@ -10265,10 +10443,6 @@
     },
     {
       "item": "k.server#15",
-      "rung": "example"
-    },
-    {
-      "item": "k.server#16",
       "rung": "example"
     },
     {
@@ -11081,7 +11255,7 @@
     },
     {
       "item": "std.sessions#2",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.sessions#3",
@@ -11262,6 +11436,1128 @@
     {
       "item": "std.timings#7",
       "rung": "example"
+    }
+  ],
+  "a11y": [
+    {
+      "item": "a11y:todos.edit#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.edit#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.index#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.list#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:todos.shell#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.index#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.new#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.shell#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.show#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:inspector.index#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:ops.home#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.ingest#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.list#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.done#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:notes.home#4.1.2",
+      "rung": "none"
     }
   ]
 }
