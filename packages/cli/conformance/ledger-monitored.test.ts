@@ -23,7 +23,7 @@ const tally = (tx: Record<string, unknown>): string =>
   JSON.stringify({ v: 1, origin: "https://app.example", from: 0, to: 60000, tx });
 
 describe("k.ledger: production evidence from `.keel/monitored.json`", () => {
-  it.skip("A `.keel/monitored.json` naming `todos.editor.save` with runs 3 gives `monitored` evidence to the export whose file holds `'todos.editor'` and to no other; a file failing its shape is E1711.", () => {
+  it("A `.keel/monitored.json` naming `todos.editor.save` with runs 3 gives `monitored` evidence to the export whose file holds `'todos.editor'` and to no other; a file failing its shape is E1711.", () => {
     const run = withProject("ledger-monitored", { ...app, [MONITORED]: tally({ "todos.editor.save": 3 }) }, (dir) =>
       keel(dir, ["ledger"]),
     );
@@ -36,7 +36,7 @@ describe("k.ledger: production evidence from `.keel/monitored.json`", () => {
     expect(diags(run, "E1711")).toEqual([]);
   }, 60_000);
 
-  it.skip("a transaction with runs 0 gives no `monitored` evidence", () => {
+  it("a transaction with runs 0 gives no `monitored` evidence", () => {
     const run = withProject(
       "ledger-monitored-zero",
       { ...app, [MONITORED]: tally({ "todos.editor.save": 0 }) },
@@ -45,7 +45,7 @@ describe("k.ledger: production evidence from `.keel/monitored.json`", () => {
     expect(ledgerRecord(run, EDITOR)?.rung).not.toBe("monitored");
   }, 60_000);
 
-  it.skip("only the longest dotted prefix of the transaction name that a file holds counts, not a shorter one", () => {
+  it("only the longest dotted prefix of the transaction name that a file holds counts, not a shorter one", () => {
     const run = withProject(
       "ledger-monitored-prefix",
       { ...app, [MONITORED]: tally({ "todos.editor.save": 3 }) },
@@ -55,7 +55,7 @@ describe("k.ledger: production evidence from `.keel/monitored.json`", () => {
     expect(ledgerRecord(run, EDITOR)?.rung).toBe("monitored");
   }, 60_000);
 
-  it.skip.each([
+  it.each([
     ["not JSON", "{ nope"],
     [
       "`v` other than 1",

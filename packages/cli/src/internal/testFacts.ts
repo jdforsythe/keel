@@ -22,8 +22,10 @@ const MODIFIERS = new Set([
 /** Bodies that never run, or pass only when they fail: no evidence. */
 const NOT_RUN = new Set(["skip", "todo", "fails"]);
 const FAST_CHECK = "fast-check";
-/** fast-check's default `numRuns`; `properties` (k.testing) defaults to 100 runs and seed 1337 as well. */
+/** fast-check's default `numRuns`; `properties` and `simulate` default to 100 runs and seed 1337 as well. */
 const DEFAULT_RUNS = 100;
+/** Type-level assertions (vitest), which the package's `check` type-checks: a body calling one is `proven`. */
+const TYPE_ASSERTS = new Set(["expectTypeOf", "assertType"]);
 const PROPERTIES_SEED = 1337;
 
 /** `it.skip.each(t)("x", fn)` -> root `it`, modifiers, and every argument along the chain; else undefined. */
@@ -171,7 +173,21 @@ export function testFacts(path: string, source: string): FileFacts {
   };
   visitGlobal(sf);
 
-  /** `fc.assert`/`fc.check` (or the named imports) and `properties(...)`: one property run each. */
+  /** The imported name an identifier callee stands for, else its own text; "" for any other callee. */
+  const nameOf = (ce: ts.Expression): string => (ts.isIdentifier(ce) ? (imports.get(ce.text)?.name ?? ce.text) : "");
+
+  /**
+   * `explore(...)`: closed-form when the options argument is absent or an object naming none of `from`, `payloads` and
+   * `depth`; options the ledger cannot read count as given. `depth` as written, when given.
+   */
+  const exploreRun = (c: ts.CallExpression): { closed: boolean; depth: NumRef } | undefined => {
+    if (nameOf(c.expression) !== "explore") return undefined;
+    const o = options(c.arguments[1], new Set());
+    if (o === undefined) return { closed: false, depth: undefined };
+    return { closed: !["from", "payloads", "depth"].some((k) => o.has(k)), depth: o.get("depth") };
+  };
+
+  /** `fc.assert`/`fc.check` (or the named imports), `properties(...)` and `simulate(...)`: one property run each. */
   const propRun = (c: ts.CallExpression): PropRun | undefined => {
     const ce = c.expression;
     const fc =
@@ -179,7 +195,7 @@ export function testFacts(path: string, source: string): FileFacts {
         ["assert", "check"].includes(ce.name.text) &&
         fromFastCheck(ce.expression, ["default", "*"])) ||
       fromFastCheck(ce, ["assert", "check"]);
-    const keel = !fc && ts.isIdentifier(ce) && (imports.get(ce.text)?.name ?? ce.text) === "properties";
+    const keel = !fc && ["properties", "simulate"].includes(nameOf(ce));
     if (!fc && !keel) return undefined;
     const runsKey = fc ? "numRuns" : "runs";
     const runs = fc ? global.runs : DEFAULT_RUNS;
@@ -202,11 +218,16 @@ export function testFacts(path: string, source: string): FileFacts {
     const names = new Set<string>();
     const calls = new Set<string>();
     const props: PropRun[] = [];
+    const explores: { closed: boolean; depth: NumRef }[] = [];
+    let typed = false;
     const visit = (n: ts.Node): void => {
       if (ts.isTypeNode(n) || ts.isImportDeclaration(n)) return;
       if (ts.isCallExpression(n)) {
         const p = propRun(n);
         if (p !== undefined) props.push(p);
+        const x = exploreRun(n);
+        if (x !== undefined) explores.push(x);
+        if (TYPE_ASSERTS.has(nameOf(n.expression))) typed = true;
       }
       if (ts.isIdentifier(n)) {
         const p = n.parent;
@@ -233,7 +254,13 @@ export function testFacts(path: string, source: string): FileFacts {
       ts.forEachChild(n, visit);
     };
     for (const n of nodes) visit(n);
-    return { names, calls, props: props.map((p) => ({ runs: local(p.runs), seed: local(p.seed) })) };
+    return {
+      names,
+      calls,
+      props: props.map((p) => ({ runs: local(p.runs), seed: local(p.seed) })),
+      explores: explores.map((x) => ({ closed: x.closed, depth: local(x.depth) })),
+      typed,
+    };
   };
 
   const helpers = new Map<string, Use>();

@@ -24,15 +24,15 @@ const rungOf = (test: string, extra: Record<string, string> = {}) =>
   );
 
 describe("k.ledger: type-level evidence", () => {
-  it.skip("A passing test whose body asserts with `expectTypeOf` makes the exports it names `proven`.", () => {
+  it("A passing test whose body asserts with `expectTypeOf` makes the exports it names `proven`.", () => {
     expect(rungOf(typeTest("expectTypeOf(clamp).returns.toBeNumber();"))).toBe("proven");
   }, 60_000);
 
-  it.skip("a passing test whose body asserts with `assertType` makes the exports it names `proven`", () => {
+  it("a passing test whose body asserts with `assertType` makes the exports it names `proven`", () => {
     expect(rungOf(typeTest("assertType<number>(clamp(1, 0, 2));"))).toBe("proven");
   }, 60_000);
 
-  it.skip("a passing test that names the export without asserting its type does not claim `proven`", () => {
+  it("a passing test that names the export without asserting its type does not claim `proven`", () => {
     const noAssertion = typeTest("void clamp(1, 0, 2);");
     expect(rungOf(noAssertion, { [EXAMPLE]: exampleTest })).toBe("example");
   }, 60_000);

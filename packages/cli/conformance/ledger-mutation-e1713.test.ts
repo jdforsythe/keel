@@ -27,7 +27,7 @@ const diffAfter = (replacement: string | undefined) =>
   });
 
 describe("k.ledger: `keel ledger --diff` and mutation thresholds (E1713)", () => {
-  it.skip("A report whose package score is below its `thresholds.break`, or whose `thresholds.break` is below the committed threshold, makes `--diff` report E1713.", () => {
+  it("A report whose package score is below its `thresholds.break`, or whose `thresholds.break` is below the committed threshold, makes `--diff` report E1713.", () => {
     const belowBreak = diffAfter(report(3, 1, 80));
     expect(belowBreak.status).toBe(1);
     expect(diags(belowBreak, "E1713")).toHaveLength(1);
@@ -38,18 +38,18 @@ describe("k.ledger: `keel ledger --diff` and mutation thresholds (E1713)", () =>
     expect(diags(loweredThreshold, "E1713")).toHaveLength(1);
   }, 120_000);
 
-  it.skip("a report unchanged from the committed one gives no E1713", () => {
+  it("a report unchanged from the committed one gives no E1713", () => {
     const diff = diffAfter(undefined);
     expect(diags(diff, "E1713")).toEqual([]);
     expect(diff.status).toBe(0);
   }, 60_000);
 
-  it.skip("a score at or above `thresholds.break` with an unchanged threshold gives no E1713", () => {
+  it("a score at or above `thresholds.break` with an unchanged threshold gives no E1713", () => {
     const diff = diffAfter(report(3, 1, 70));
     expect(diags(diff, "E1713")).toEqual([]);
   }, 60_000);
 
-  it.skip("a raised `thresholds.break` that the score still meets gives no E1713", () => {
+  it("a raised `thresholds.break` that the score still meets gives no E1713", () => {
     const diff = diffAfter(report(4, 0, 90));
     expect(diags(diff, "E1713")).toEqual([]);
   }, 60_000);

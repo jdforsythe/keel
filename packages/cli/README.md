@@ -11,7 +11,7 @@
 
 ## Extension points
 
-`formatter(kind, def)`: one formatter per record kind; a second registration (kernel kinds `diag`, `summary`, `req`, `ledger`, `a11y` included) throws E1053. A record whose kind has no formatter, or that does not fit its schema, renders as E1054.
+`formatter(kind, def)`: one formatter per record kind; a second registration (kernel kinds `diag`, `summary`, `req`, `a11y`, and k.ledger's `ledger` and `ledger.mutation` included) throws E1053. A record whose kind has no formatter, or that does not fit its schema, renders as E1054.
 
 ## Unsafe
 

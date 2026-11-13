@@ -577,6 +577,7 @@ describe("kernelFormatters", () => {
       "summary",
       "req",
       "ledger",
+      "ledger.mutation",
       "a11y",
       "spec.section",
       "spec.cite",
@@ -585,6 +586,17 @@ describe("kernelFormatters", () => {
       "inspect.section",
       "scaffold.edit",
     ]);
+  });
+
+  it("ledger.mutation: compact `<file> <score>% <n> survived`, one decimal, `stale` when not fresh", () => {
+    const r = { kind: "ledger.mutation", file: "packages/store/src/tx.ts", score: 91.25, survived: 3, fresh: true };
+    expect(all("ledger.mutation", r)).toEqual([
+      "packages/store/src/tx.ts 91.3% 3 survived",
+      "packages/store/src/tx.ts: 91.3% (3 survived)",
+    ]);
+    expect(render("ledger.mutation", "compact", { ...r, fresh: false })).toBe(
+      "packages/store/src/tx.ts 91.3% 3 survived stale",
+    );
   });
 
   it("inspect.section: compact and pretty clip the value's JSON at 120 chars", () => {

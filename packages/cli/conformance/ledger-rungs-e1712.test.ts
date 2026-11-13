@@ -20,7 +20,7 @@ const files: Record<string, string> = {
 };
 
 describe("k.ledger: `keel ledger --diff` and a rung no item holds (E1712)", () => {
-  it.skip("With a committed ledger whose `rungs.monitored` is 1, removing `.keel/monitored.json` makes `--diff` report E1712.", () => {
+  it("With a committed ledger whose `rungs.monitored` is 1, removing `.keel/monitored.json` makes `--diff` report E1712.", () => {
     withProject("ledger-e1712", files, (dir) => {
       const written = keel(dir, ["ledger", "--write", COMMITTED]);
       expect(written.status).toBe(0);

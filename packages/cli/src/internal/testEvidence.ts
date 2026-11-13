@@ -16,7 +16,9 @@ const EXTS = ["", ".ts", ".tsx", ".mts", ".js", "/index.ts"];
  * plus, transitively, those of the helpers it calls: top-level functions of its own file, or of a relative import
  * among `files` (fixtures). Its evidence is the strongest property run it or its helpers perform, with `numRuns`
  * and `seed` resolved through constants (imported ones too); unresolved values are omitted, so an unseeded or
- * unknown-run property stays `example` (k.testing Ledger). Bodies without a property run are `example`.
+ * unknown-run property stays `example` (k.ledger). A body that asserts types (`expectTypeOf`, `assertType`) or
+ * runs a closed-form `explore` is `proven`; one running another `explore` is `exhaustive`, with its literal `depth`.
+ * Bodies with none of these and no property run are `example`.
  */
 export function testEvidence(files: readonly SourceFile[]): TestRef[] {
   const facts = new Map<string, FileFacts>(files.map((f) => [f.path, testFacts(f.path, f.source)]));
@@ -41,10 +43,17 @@ export function testEvidence(files: readonly SourceFile[]): TestRef[] {
     for (const test of f.tests) {
       const names = new Set<string>();
       const runs: { runs: number | undefined; seed: number | undefined }[] = [];
+      const depths: (number | undefined)[] = [];
+      let proven = false;
       const seen = new Set<string>();
       const reach = (at: string, use: Use): void => {
         for (const n of use.names) names.add(n);
         for (const p of use.props) runs.push({ runs: resolve(at, p.runs), seed: resolve(at, p.seed) });
+        for (const x of use.explores) {
+          if (x.closed) proven = true;
+          depths.push(resolve(at, x.depth));
+        }
+        if (use.typed) proven = true;
         const here = facts.get(at);
         for (const c of use.calls) {
           const imp = here?.imports.get(c);
@@ -63,15 +72,19 @@ export function testEvidence(files: readonly SourceFile[]): TestRef[] {
         (a, r) => (a === undefined || score(r) > score(a) ? r : a),
         undefined,
       );
-      const ev: Evidence =
-        best === undefined
-          ? { kind: "example", passed: true }
-          : {
-              kind: "property",
-              passed: true,
-              ...(best.runs === undefined ? {} : { runs: best.runs }),
-              ...(best.seed === undefined ? {} : { seed: best.seed }),
-            };
+      const depth = depths.find((d) => d !== undefined);
+      const ev: Evidence = proven
+        ? { kind: "proven", passed: true }
+        : depths.length > 0
+          ? { kind: "exhaustive", passed: true, ...(depth === undefined ? {} : { depth }) }
+          : best === undefined
+            ? { kind: "example", passed: true }
+            : {
+                kind: "property",
+                passed: true,
+                ...(best.runs === undefined ? {} : { runs: best.runs }),
+                ...(best.seed === undefined ? {} : { seed: best.seed }),
+              };
       out.push({ path, names, ev });
     }
   }

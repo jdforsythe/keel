@@ -6,6 +6,7 @@ import type { Entry } from "./Entry.ts";
 import { ExplainSchema } from "./ExplainSchema.ts";
 import { InspectSectionSchema } from "./InspectSectionSchema.ts";
 import { InspectStoreSchema } from "./InspectStoreSchema.ts";
+import { LedgerMutationSchema } from "./LedgerMutationSchema.ts";
 import { LedgerSchema } from "./LedgerSchema.ts";
 import { ReqSchema } from "./ReqSchema.ts";
 import { SectionSchema } from "./SectionSchema.ts";
@@ -26,7 +27,7 @@ const VALUE_MAX = 120;
 const clip = (s: string): string => (s.length > VALUE_MAX ? `${s.slice(0, VALUE_MAX - 3)}...` : s);
 
 /**
- * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, ledger, a11y.
+ * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, a11y, and k.ledger's ledger and ledger.mutation.
  * The cli's own record kinds (spec.section, spec.cite, explain.text, scaffold.edit, inspect.store, inspect.section) go through the same extension point.
  */
 export const kernelFormatters: readonly (readonly [string, Entry])[] = [
@@ -57,6 +58,14 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
       schema: LedgerSchema,
       compact: (r) => `${r.item} ${r.rung} ${r.evidence}`,
       pretty: (r) => `${r.rung.padEnd(13)} ${r.item}\n  evidence: ${r.evidence}`,
+    }),
+  ],
+  [
+    "ledger.mutation",
+    entryOf({
+      schema: LedgerMutationSchema,
+      compact: (r) => `${r.file} ${r.score.toFixed(1)}% ${r.survived} survived${r.fresh ? "" : " stale"}`,
+      pretty: (r) => `${r.file}: ${r.score.toFixed(1)}% (${r.survived} survived)${r.fresh ? "" : ", stale"}`,
     }),
   ],
   [

@@ -29,7 +29,7 @@ const rungOf = (options: string, imports = "", extra: Record<string, string> = {
   );
 
 describe("k.ledger: `simulate` evidence", () => {
-  it.skip("A passing `simulate` with `runs: 100` and a literal seed makes the exports its scenario names `probabilistic`.", () => {
+  it("A passing `simulate` with `runs: 100` and a literal seed makes the exports its scenario names `probabilistic`.", () => {
     const record = rungOf(", { runs: 100, seed: 1337 }");
     expect(record?.rung).toBe("probabilistic");
     const evidence = evidenceText(record);
@@ -37,17 +37,17 @@ describe("k.ledger: `simulate` evidence", () => {
     expect(evidence).toContain("1337");
   }, 60_000);
 
-  it.skip("`simulate` with no options defaults to 100 runs and seed 1337 and gives `probabilistic`", () => {
+  it("`simulate` with no options defaults to 100 runs and seed 1337 and gives `probabilistic`", () => {
     const record = rungOf("");
     expect(record?.rung).toBe("probabilistic");
     expect(evidenceText(record)).toContain("1337");
   }, 60_000);
 
-  it.skip("`simulate` with fewer than 100 literal runs leaves the export `example`", () => {
+  it("`simulate` with fewer than 100 literal runs leaves the export `example`", () => {
     expect(rungOf(", { runs: 99, seed: 1337 }")?.rung).toBe("example");
   }, 60_000);
 
-  it.skip("`simulate` whose `runs` the ledger cannot resolve leaves the export `example`", () => {
+  it("`simulate` whose `runs` the ledger cannot resolve leaves the export `example`", () => {
     const record = rungOf(", { runs: RUNS, seed: 1337 }", 'import { RUNS } from "./runs.ts";', {
       [RUNS]: "export const RUNS: number = [100][0] ?? 100;\n",
     });

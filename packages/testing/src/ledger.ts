@@ -6,8 +6,8 @@ import type { Rung } from "./types/Rung.ts";
 
 /**
  * One ledger record per item, in input order, with the highest rung its passing evidence supports
- * (k.testing Ledger): any passing test is `example`; a passing seeded property with >= 100 runs is
- * `probabilistic`; `exhaustive` and `proven` come only from their own evidence kinds. No passing evidence: `none`.
+ * (k.ledger): any passing test is `example`; a passing seeded property with >= 100 runs is
+ * `probabilistic`; `exhaustive`, `proven` and `monitored` come only from their own evidence kinds. No passing evidence: `none`.
  */
 export function ledger(items: readonly LedgerInput[]): LedgerRecord[] {
   return items.map(({ item, evidence }) => {

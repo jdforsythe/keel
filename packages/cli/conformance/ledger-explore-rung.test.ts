@@ -56,17 +56,17 @@ const files = (): Record<string, string> => {
 };
 
 describe("k.ledger: `explore` evidence", () => {
-  it.skip("A passing `explore` with `from`, `payloads` or `depth` makes the transactions it names `exhaustive`; one with none of them makes them `proven`; one whose options are an imported variable gives `exhaustive`.", () => {
+  it("A passing `explore` with `from`, `payloads` or `depth` makes the transactions it names `exhaustive`; one with none of them makes them `proven`; one whose options are an imported variable gives `exhaustive`.", () => {
     const run = withProject("ledger-explore", files(), (dir) => keel(dir, ["ledger"]));
     for (const c of CASES) {
       expect(ledgerRecord(run, `packages/m/src/${c.name}.ts#${c.name}Set`)?.rung, c.name).toBe(c.rung);
     }
   }, 60_000);
 
-  it.skip("`explore` with a literal `depth` lists that depth in the `exhaustive` evidence", () => {
+  it("`explore` with a literal `depth` lists that depth in the `exhaustive` evidence", () => {
     const record = withProject("ledger-explore-depth", files(), (dir) =>
       ledgerRecord(keel(dir, ["ledger"]), "packages/m/src/withDepth.ts#withDepthSet"),
     );
-    expect(evidenceText(record)).toMatch(/"depth":\s*2\b/);
+    expect(evidenceText(record)).toMatch(/\bdepth\W*2\b/);
   }, 60_000);
 });
