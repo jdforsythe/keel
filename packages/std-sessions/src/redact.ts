@@ -29,7 +29,7 @@ const under = (pattern: readonly (string | null)[], at: readonly string[]): bool
 
 /**
  * Redact an encoded value of `schema` (std.sessions): each value at one of `paths` becomes its field schema's generated
- * value (seeded by `seed`, `salt` and the path), so the result still parses; every `s.secret` field becomes a generated
+ * value, and the keys of a `.pii()`-marked `s.record` become `x0`, `x1`, ... in entry order (distinct, still a record) (seeded by `seed`, `salt` and the path), so the result still parses; every `s.secret` field becomes a generated
  * inner value. Under an `s.json()` field a matched value is masked (`x` repeated, 0, false, null). With `strings`, every
  * `s.string()` value, and every string under `s.json()`, not under an `except` path is written as `x` repeated. Pure.
  */
@@ -43,15 +43,16 @@ export function redact(schema: Schema<unknown, boolean>, value: JsonValue, optio
   const hide = (v: JsonValue, at: readonly string[]): JsonValue =>
     except !== undefined && typeof v === "string" && !except.some((p) => under(p, at)) ? "x".repeat(v.length) : v;
 
-  const walk = (node: TypeNode, v: JsonValue, at: readonly string[], typed: boolean): JsonValue => {
+  const walk = (node: TypeNode, v: JsonValue, at: readonly string[], typed: boolean, inherited = false): JsonValue => {
+    const marked = inherited || (typed && node.pii !== undefined);
     if (patterns.some((p) => matches(p, at))) {
       options.found?.(v);
       return typed ? gen(node, at) : mask(v);
     }
     if (!typed) {
-      if (Array.isArray(v)) return v.map((x, i) => walk(node, x, [...at, String(i)], false));
+      if (Array.isArray(v)) return v.map((x, i) => walk(node, x, [...at, String(i)], false, marked));
       if (isObject(v))
-        return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(node, x, [...at, k], false)]));
+        return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(node, x, [...at, k], false, marked)]));
       return hide(v, at);
     }
     switch (node.kind) {
@@ -61,23 +62,28 @@ export function redact(schema: Schema<unknown, boolean>, value: JsonValue, optio
       case "optional":
         return v === null && node.kind === "nullable" ? v : walk(node.inner, v, at, true);
       case "json":
-        return walk(node, v, at, false);
+        return walk(node, v, at, false, marked);
       case "string":
         return hide(v, at);
       case "format":
-        return walk(node.base, v, at, true);
+        return walk(node.base, v, at, true, marked);
       case "array":
-        return Array.isArray(v) ? v.map((x, i) => walk(node.item, x, [...at, String(i)], true)) : v;
+        return Array.isArray(v) ? v.map((x, i) => walk(node.item, x, [...at, String(i)], true, marked)) : v;
       case "record":
         return isObject(v)
-          ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(node.value, x, [...at, k], true)]))
+          ? Object.fromEntries(
+              Object.entries(v).map(([k, x], i) => {
+                if (marked) options.found?.(k);
+                return [marked ? `x${i}` : k, walk(node.value, x, [...at, k], true, marked)];
+              }),
+            )
           : v;
       case "object":
         return isObject(v)
           ? Object.fromEntries(
               Object.entries(v).map(([k, x]) => {
                 const f = node.fields[k];
-                return [k, f === undefined ? x : walk(f, x, [...at, k], true)];
+                return [k, f === undefined ? x : walk(f, x, [...at, k], true, marked)];
               }),
             )
           : v;
@@ -86,7 +92,7 @@ export function redact(schema: Schema<unknown, boolean>, value: JsonValue, optio
         const variant = node.variants.find(
           (n) => n.kind === "object" && n.fields[node.key]?.kind === "literal" && literalOf(n.fields[node.key]) === tag,
         );
-        return variant === undefined ? v : walk(variant, v, at, true);
+        return variant === undefined ? v : walk(variant, v, at, true, marked);
       }
       default:
         return v;

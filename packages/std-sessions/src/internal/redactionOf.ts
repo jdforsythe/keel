@@ -45,7 +45,7 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
   const masked = new Set<string>();
   const found = (v: JsonValue): void => {
     each(v, (x) => {
-      if (x.length < 3) return x;
+      if (x.length === 0) return x;
       known.delete(x);
       known.add(x);
       const oldest = known.size > REMEMBERED ? known.values().next() : undefined;
@@ -53,9 +53,15 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
       return x;
     });
   };
+  /** Each matched value as it may appear in free text: as is, URL-encoded and JSON-escaped, any case; under 3 characters only as a whole token. */
   const scrub = (text: string): string => {
     let out = text;
-    for (const k of [...known].sort((a, b) => b.length - a.length)) out = out.split(k).join("x".repeat(k.length));
+    const forms = [...known].flatMap((k) => [k, encodeURIComponent(k), JSON.stringify(k).slice(1, -1)]);
+    for (const k of [...new Set(forms)].sort((a, b) => b.length - a.length)) {
+      const body = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(k.length < 3 ? `(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])` : body, "giu");
+      out = out.replace(re, (m) => "x".repeat(m.length));
+    }
     return out;
   };
   const under = (key: string, prefix: string): string[] =>
