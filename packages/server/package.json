@@ -40,6 +40,7 @@
     "hono": "^4.13.16"
   },
   "devDependencies": {
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@keel/ui": "workspace:*",
     "@types/node": "^22",
