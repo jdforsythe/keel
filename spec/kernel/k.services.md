@@ -9,7 +9,7 @@ export const OrdersApi = endpoints({
   addNote: { method: 'POST', path: '/orders/:id/notes', params: s.object({ id: s.id('Order') }),
     body: NoteInput, output: Note, errors: { 409: Conflict } },
 })
-// modules/orders/api.ts
+// modules/orders/api.server.ts
 import { OrdersApi } from './OrdersApi.schema.ts'
 export const api = service({ base: 'https://api.example.com', schema: OrdersApi, timeout: 5000 })
 const r = await api.getOrder({ params: { id } }, ctx) // Result<Order, ApiError>

@@ -22,7 +22,7 @@ keel codemod place digest --to jobs --adapter node
 - `route`: manifest entry, `*.server.ts` loader, page component, route test; with `--api` an API entry (k.api), its loader and a JSON request test, no component.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
 - `store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test.
-- `service`: endpoint schemas from OpenAPI and the service file (k.openapi): `modules/<id>/<Id>Api.schema.ts` and `api.ts`; schemas are generated, read-only.
+- `service`: endpoint schemas from OpenAPI and the service file (k.openapi): `modules/<id>/<Id>Api.schema.ts` and `api.server.ts`; schemas are generated, read-only.
 
 **Codemods.**
 - `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a manifest's `routes.href()`), `uses:` list, element-id prefix, test, and manifest entry.

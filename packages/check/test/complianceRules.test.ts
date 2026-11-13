@@ -64,3 +64,34 @@ it("E1820 counts focusable elements at any depth and reverses only the direct ch
   const [d] = codes(C(src), "E1820");
   expect(d?.fix).toContain('direction="column"><Button>B</Button> <Box><Button>A</Button></Box></Box>');
 });
+
+it("E1571: the OpenAPI service in api.server.ts, called by a loader a route imports, is clean; in api.ts it is not", () => {
+  const files = (service: string): Files => [
+    {
+      path: "modules/orders/OrdersApi.schema.ts",
+      source:
+        "import { s } from '@keel/schema'\nimport { endpoints } from '@keel/services'\nexport const OrdersApi = endpoints({ getOrder: { method: 'GET', path: '/orders/:id', params: s.object({ id: s.string() }), output: s.json() } })\n",
+    },
+    {
+      path: `modules/orders/${service}`,
+      source:
+        "import { service } from '@keel/services'\nimport { OrdersApi } from './OrdersApi.schema.ts'\nexport const api = service({ base: 'https://api.example.com', schema: OrdersApi })\n",
+    },
+    {
+      path: "modules/orders/loadOrder.server.ts",
+      source: `import { loader } from '@keel/router'\nimport { s } from '@keel/schema'\nimport { api } from './${service}'\nexport const loadOrder = loader({ output: s.json() }, (_args, ctx) => api.getOrder({ params: { id: '1' } }, ctx))\n`,
+    },
+    {
+      path: "modules/orders/routes.ts",
+      source:
+        "import { manifest } from '@keel/router'\nimport { loadOrder } from './loadOrder.server.ts'\nconst Page = () => null\nexport const routes = manifest({ 'orders.show': { path: '/orders', loader: loadOrder, component: Page } })\n",
+    },
+  ];
+  const ran = (service: string) =>
+    check(files(service), {
+      types: false,
+      topology: { web: { modules: ["orders"], adapter: "node" } },
+    }).diagnostics.filter((d) => d.code === "E1571" || d.code === "E1004");
+  expect(ran("api.server.ts")).toEqual([]);
+  expect(ran("api.ts").map((d) => d.code)).toEqual(["E1571"]);
+});
