@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@keel/check": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*"
   },

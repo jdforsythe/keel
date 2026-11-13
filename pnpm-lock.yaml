@@ -1130,6 +1130,9 @@ importers:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
