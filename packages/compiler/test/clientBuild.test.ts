@@ -41,9 +41,15 @@ describe("@keel/compiler/vite config (client build of a node deployable)", () =>
         emptyOutDir: false,
         manifest: false,
         copyPublicDir: false,
+        sourcemap: true,
         rolldownOptions: {
           input: "virtual:keel/server",
-          output: { entryFileNames: "server.mjs", codeSplitting: false },
+          output: {
+            entryFileNames: "server.mjs",
+            codeSplitting: false,
+            sourcemapExcludeSources: true,
+            sourcemapPathTransform: expect.any(Function),
+          },
         },
       },
     });

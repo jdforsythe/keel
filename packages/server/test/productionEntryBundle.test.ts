@@ -20,4 +20,15 @@ describe("production entry of a node deployable", () => {
     expect(text).not.toContain("oxc-parser");
     expect(text).not.toContain("oxc-transform");
   });
+
+  it("writes server.mjs.map beside it: positions only, sources relative to the project", () => {
+    const text = fs.readFileSync(path.join(fixture, "dist", "web", "server.mjs"), "utf8");
+    expect(text.trimEnd().endsWith("//# sourceMappingURL=server.mjs.map")).toBe(true);
+    const map: unknown = JSON.parse(fs.readFileSync(path.join(fixture, "dist", "web", "server.mjs.map"), "utf8"));
+    expect(Reflect.has(Object(map), "sourcesContent")).toBe(false);
+    const sources: unknown = Reflect.get(Object(map), "sources");
+    const list: readonly unknown[] = Array.isArray(sources) ? sources : [];
+    expect(list).toContain("topology.ts");
+    for (const s of list) expect(String(s)).not.toMatch(/^\/|^[A-Za-z]:|\\/);
+  });
 });

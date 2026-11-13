@@ -168,7 +168,7 @@ describe("k.deploy: frames through server.mjs.map", () => {
     });
   }, 120_000);
 
-  test.skip("`server.mjs.map` has no `sourcesContent`", () => {
+  test("`server.mjs.map` has no `sourcesContent`", () => {
     const map: unknown = JSON.parse(fs.readFileSync(path.join(fixture, "dist", "web", "server.mjs.map"), "utf8"));
     expect(typeof map).toBe("object");
     expect(Reflect.has(Object(map), "sourcesContent")).toBe(false);
@@ -180,7 +180,7 @@ describe("k.deploy: frames through server.mjs.map", () => {
     expect(sources).toContain("modules/a/a.server.ts");
   });
 
-  test.skip("no response to `GET /server.mjs.map` contains its `mappings`", async () => {
+  test("no response to `GET /server.mjs.map` contains its `mappings`", async () => {
     const map: unknown = JSON.parse(fs.readFileSync(path.join(fixture, "dist", "web", "server.mjs.map"), "utf8"));
     const mappings: unknown = Reflect.get(Object(map), "mappings");
     expect(typeof mappings === "string" && mappings.length > 0).toBe(true);

@@ -372,7 +372,21 @@ export default function (): {
               emptyOutDir: false,
               manifest: false,
               copyPublicDir: false,
-              rolldownOptions: { input: SERVER_ENTRY, output: { entryFileNames: "server.mjs", codeSplitting: false } },
+              // An external map for the server to read frames through: positions only, sources relative to the project.
+              sourcemap: true,
+              rolldownOptions: {
+                input: SERVER_ENTRY,
+                output: {
+                  entryFileNames: "server.mjs",
+                  codeSplitting: false,
+                  sourcemapExcludeSources: true,
+                  sourcemapPathTransform: (rel: string, map: string) =>
+                    path
+                      .relative(at, path.resolve(path.dirname(map), rel))
+                      .split(path.sep)
+                      .join("/"),
+                },
+              },
             },
           },
         },
