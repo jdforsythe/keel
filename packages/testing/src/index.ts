@@ -1,4 +1,5 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
+export { explore } from "./explore.ts";
 export { ledger } from "./ledger.ts";
 export { ledgerDiff } from "./ledgerDiff.ts";
 export { properties } from "./properties.ts";
@@ -9,6 +10,8 @@ export { testResults } from "./testResults.ts";
 export type { A11yNode } from "./types/A11yNode.ts";
 export type { A11yState } from "./types/A11yState.ts";
 export type { Evidence } from "./types/Evidence.ts";
+export type { ExploreOptions } from "./types/ExploreOptions.ts";
+export type { Explored } from "./types/Explored.ts";
 export type { Found } from "./types/Found.ts";
 export type { Harness } from "./types/Harness.ts";
 export type { LedgerDiag } from "./types/LedgerDiag.ts";

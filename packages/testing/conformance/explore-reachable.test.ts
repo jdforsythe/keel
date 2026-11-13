@@ -55,7 +55,7 @@ const model = (start: number, bys: readonly number[], depth: number) => {
 };
 
 describe("k.model: explore visits exactly the states reachable within depth edges", () => {
-  it.skip("from n 0 with step by 1 and 2 and reset, depth 2: five states in visiting order, nine edges", () => {
+  it("from n 0 with step by 1 and 2 and reset, depth 2: five states in visiting order, nine edges", () => {
     const r = explore([step, reset], {
       from: { n: 0 },
       payloads: { "reach.step": [{ by: 1 }, { by: 2 }], "reach.reset": [{}] },
@@ -67,7 +67,7 @@ describe("k.model: explore visits exactly the states reachable within depth edge
     expect(r.complete).toBe(false);
   });
 
-  it.skip("the start state is first and each state appears once", () => {
+  it("the start state is first and each state appears once", () => {
     const r = explore([step, reset], {
       from: { n: 4 },
       payloads: { "reach.step": [{ by: 1 }, { by: 2 }, { by: 3 }], "reach.reset": [{}] },
@@ -78,7 +78,7 @@ describe("k.model: explore visits exactly the states reachable within depth edge
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it.skip("a space exhausted inside depth is complete and every state is expanded", () => {
+  it("a space exhausted inside depth is complete and every state is expanded", () => {
     const r = explore([step, reset], {
       from: { n: 8 },
       payloads: { "reach.step": [{ by: 1 }], "reach.reset": [{}] },
@@ -89,7 +89,7 @@ describe("k.model: explore visits exactly the states reachable within depth edge
     expect(r.edges).toBe(10 * 2);
   });
 
-  it.skip("states and edges equal a reference breadth-first enumeration for every start, payload list and depth", () => {
+  it("states and edges equal a reference breadth-first enumeration for every start, payload list and depth", () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: 9 }),
@@ -110,7 +110,7 @@ describe("k.model: explore visits exactly the states reachable within depth edge
     );
   });
 
-  it.skip("a state is one with another when their JSON encodings with sorted keys are equal", () => {
+  it("a state is one with another when their JSON encodings with sorted keys are equal", () => {
     const r = explore([rebuild], { from: { a: 1, b: 2 }, payloads: { "reach.rebuild": [{}] }, depth: 3 });
     expect(r.states).toHaveLength(1);
     expect(r.edges).toBe(1);

@@ -45,7 +45,7 @@ const outcome = (run: () => unknown) => {
 };
 
 describe("k.model: two calls with equal arguments return equal results", () => {
-  it.skip("two runs over generated starts and depths return equal results, or throw equal errors", () => {
+  it("two runs over generated starts and depths return equal results, or throw equal errors", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 3 }), fc.integer({ min: 0, max: 5 }), (start, depth) => {
         const args = {
@@ -62,13 +62,13 @@ describe("k.model: two calls with equal arguments return equal results", () => {
     );
   });
 
-  it.skip("a run from the store's current state repeats exactly", () => {
+  it("a run from the store's current state repeats exactly", () => {
     const first = explore([step, reset], { depth: 2, payloads: { "det.step": [{ by: 2 }], "det.reset": [{}] } });
     const second = explore([step, reset], { depth: 2, payloads: { "det.step": [{ by: 2 }], "det.reset": [{}] } });
     expect(second).toEqual(first);
   });
 
-  it.skip("two failing runs throw equal errors with equal data", () => {
+  it("two failing runs throw equal errors with equal data", () => {
     const run = () =>
       explore([step, reset], { from: { n: 0 }, payloads: { "det.step": [{ by: 3 }], "det.reset": [{}] }, depth: 5 });
     const a = thrownSync(run);

@@ -561,6 +561,27 @@ const ROWS: readonly Row[] = [
   ],
   ["E1706", "ledger rung lower than committed", "", "restore the missing tests or properties", "k.testing"],
   [
+    "E1708",
+    "explore: an invariant broke, or a transaction threw, on an explored edge",
+    "data.snapshot holds the shortest path; restore it and run data.transaction with data.payload to reproduce.",
+    "fix the transaction or the invariant the counterexample breaks",
+    "k.model",
+  ],
+  [
+    "E1709",
+    "explore: maxStates reached before the space or depth was exhausted, or a closed form that did not close",
+    "Such a run enumerated no finite space and claims nothing.",
+    "explore(txs) -> explore(txs, { from, payloads, depth: 4 })",
+    "k.model",
+  ],
+  [
+    "E1710",
+    "explore: transactions of several stores or repeated names, a bad from or payloads value, no finite domain",
+    "Also a closed form missing a transaction of its store or starting from a store with log entries.",
+    "explore([addTodo]) -> explore([addTodo], { payloads: { 'todos.addTodo': [milk] }, depth: 3 })",
+    "k.model",
+  ],
+  [
     "E1719",
     "focus fired where a user cannot focus",
     "",

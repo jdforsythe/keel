@@ -31,7 +31,7 @@ function mk() {
 const { raise, noop, toggle } = made;
 
 describe("k.model: terminal states", () => {
-  it.skip("the state no transaction moves is terminal and no other state is", () => {
+  it("the state no transaction moves is terminal and no other state is", () => {
     const r = explore([raise, noop], {
       from: { n: 0 },
       payloads: { "term.raise": [{ to: 2 }, { to: 4 }], "term.noop": [{}] },
@@ -41,12 +41,12 @@ describe("k.model: terminal states", () => {
     expect(r.terminal).toEqual([{ n: 4 }]);
   });
 
-  it.skip("a transaction that returns the state unchanged alone makes the start terminal", () => {
+  it("a transaction that returns the state unchanged alone makes the start terminal", () => {
     const r = explore([noop], { from: { n: 3 }, payloads: { "term.noop": [{}] }, depth: 2 });
     expect(r.terminal).toEqual([{ n: 3 }]);
   });
 
-  it.skip("a state with an edge to another is not terminal even when its other edges return it unchanged", () => {
+  it("a state with an edge to another is not terminal even when its other edges return it unchanged", () => {
     const r = explore([noop, raise], {
       from: { n: 0 },
       payloads: { "term.noop": [{}], "term.raise": [{ to: 1 }] },
@@ -55,13 +55,13 @@ describe("k.model: terminal states", () => {
     expect(r.terminal).not.toContainEqual({ n: 0 });
   });
 
-  it.skip("states of a cycle are not terminal", () => {
+  it("states of a cycle are not terminal", () => {
     const r = explore([toggle], { from: { on: false }, payloads: { "term.toggle": [{}] }, depth: 4 });
     expect(r.states).toEqual([{ on: false }, { on: true }]);
     expect(r.terminal).toEqual([]);
   });
 
-  it.skip("for every payload list, terminal is exactly the state at the largest raise, among the visited states", () => {
+  it("for every payload list, terminal is exactly the state at the largest raise, among the visited states", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 5 }), fc.integer({ min: 0, max: 5 }), (a, b) => {
         const r = explore([raise, noop], {

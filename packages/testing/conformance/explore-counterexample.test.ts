@@ -73,7 +73,7 @@ const fewest = (start: number, bys: readonly number[]): number => {
 };
 
 describe("k.model: a broken invariant fails with E1708 and a shortest replayable counterexample", () => {
-  it.skip("a step that pushes n past the limit fails with E1708 naming the store, transaction, steps and states", () => {
+  it("a step that pushes n past the limit fails with E1708 naming the store, transaction, steps and states", () => {
     const { st, step } = build();
     const e = thrownSync(() => explore([step], { from: { n: 0 }, payloads: { [step.name]: [{ by: 3 }] }, depth: 10 }));
     expect(codeOf(e)).toBe("E1708");
@@ -83,7 +83,7 @@ describe("k.model: a broken invariant fails with E1708 and a shortest replayable
     );
   });
 
-  it.skip("data carries the start as snapshot.initial, the transaction name and the payload", () => {
+  it("data carries the start as snapshot.initial, the transaction name and the payload", () => {
     const { step } = build();
     const e = thrownSync(() => explore([step], { from: { n: 0 }, payloads: { [step.name]: [{ by: 3 }] }, depth: 10 }));
     const data = dataOf(e);
@@ -92,13 +92,13 @@ describe("k.model: a broken invariant fails with E1708 and a shortest replayable
     expect(isRecord(data.snapshot) ? data.snapshot.initial : undefined).toEqual({ n: 0 });
   });
 
-  it.skip("data.snapshot log is the fewest-entry path: two steps of 3 reach n 6, whose next step breaks the limit", () => {
+  it("data.snapshot log is the fewest-entry path: two steps of 3 reach n 6, whose next step breaks the limit", () => {
     const { step } = build();
     const e = thrownSync(() => explore([step], { from: { n: 0 }, payloads: { [step.name]: [{ by: 3 }] }, depth: 10 }));
     expect(logOf(dataOf(e).snapshot)).toHaveLength(2);
   });
 
-  it.skip("restore of data.snapshot then tx of data.transaction with data.payload returns store.invariant", () => {
+  it("restore of data.snapshot then tx of data.transaction with data.payload returns store.invariant", () => {
     const { st, step } = build();
     const e = thrownSync(() =>
       explore([step], { from: { n: 0 }, payloads: { [step.name]: [{ by: 2 }, { by: 3 }] }, depth: 10 }),
@@ -111,7 +111,7 @@ describe("k.model: a broken invariant fails with E1708 and a shortest replayable
     expect(r.ok ? undefined : r.error.code).toBe("store.invariant");
   });
 
-  it.skip("for every start and payload list, the snapshot log has the fewest entries of any path to a breaking edge", () => {
+  it("for every start and payload list, the snapshot log has the fewest entries of any path to a breaking edge", () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: LIMIT }),
@@ -134,7 +134,7 @@ describe("k.model: a broken invariant fails with E1708 and a shortest replayable
     );
   });
 
-  it.skip("a transaction whose function throws on an explored edge stops the run with E1708", () => {
+  it("a transaction whose function throws on an explored edge stops the run with E1708", () => {
     const { step, boom } = build();
     const e = thrownSync(() =>
       explore([step, boom], { from: { n: 0 }, payloads: { [step.name]: [{ by: 1 }], [boom.name]: [{}] }, depth: 5 }),
@@ -144,7 +144,7 @@ describe("k.model: a broken invariant fails with E1708 and a shortest replayable
     expect(logOf(dataOf(e).snapshot)).toHaveLength(3);
   });
 
-  it.skip("a run in which no edge breaks an invariant or throws does not fail with E1708", () => {
+  it("a run in which no edge breaks an invariant or throws does not fail with E1708", () => {
     const { step, boom } = build();
     const r = explore([step, boom], {
       from: { n: 0 },

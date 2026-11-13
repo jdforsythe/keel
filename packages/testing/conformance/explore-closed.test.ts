@@ -49,51 +49,51 @@ const codeOf = (e: unknown): string | undefined => (isRecord(e) && typeof e.code
 const messageOf = (e: unknown): string => (isRecord(e) && typeof e.message === "string" ? e.message : String(e));
 
 describe("k.model: closed form", () => {
-  it.skip("a closed form over a store whose space closes returns complete: true", () => {
+  it("a closed form over a store whose space closes returns complete: true", () => {
     const r = explore([next, toRed]);
     expect(r.complete).toBe(true);
     expect(r.states).toEqual([{ phase: "red" }, { phase: "green" }, { phase: "yellow" }]);
     expect(r.edges).toBe(6);
   });
 
-  it.skip("a closed form names its transactions in any order and still closes", () => {
+  it("a closed form names its transactions in any order and still closes", () => {
     const r = explore([toRed, next]);
     expect(r.complete).toBe(true);
     expect(r.states).toHaveLength(3);
   });
 
-  it.skip("a closed form over a line of 100 states closes when maxStates allows it", () => {
+  it("a closed form over a line of 100 states closes when maxStates allows it", () => {
     const r = explore([inc], { maxStates: 1000 });
     expect(r.complete).toBe(true);
     expect(r.states).toHaveLength(100);
     expect(r.depth).toBe(99);
   });
 
-  it.skip("a closed form missing a transaction of the store fails with E1710", () => {
+  it("a closed form missing a transaction of the store fails with E1710", () => {
     expect(codeOf(thrownSync(() => explore([next])))).toBe("E1710");
     expect(codeOf(thrownSync(() => explore([toRed])))).toBe("E1710");
   });
 
-  it.skip("a closed form whose space exceeds maxStates fails with E1709", () => {
+  it("a closed form whose space exceeds maxStates fails with E1709", () => {
     const e = thrownSync(() => explore([inc], { maxStates: 10 }));
     expect(codeOf(e)).toBe("E1709");
   });
 });
 
 describe("k.model: E1709", () => {
-  it.skip("maxStates reached before the space is exhausted is E1709 and the message carries the counts", () => {
+  it("maxStates reached before the space is exhausted is E1709 and the message carries the counts", () => {
     const e = thrownSync(() => explore([inc], { from: { n: 0 }, depth: 50, maxStates: 10 }));
     expect(codeOf(e)).toBe("E1709");
     expect(messageOf(e)).toContain("10");
   });
 
-  it.skip("a run that stops at depth with room under maxStates is not E1709 and is not complete", () => {
+  it("a run that stops at depth with room under maxStates is not E1709 and is not complete", () => {
     const r = explore([inc], { from: { n: 0 }, depth: 3, maxStates: 10 });
     expect(r.states).toEqual([{ n: 0 }, { n: 1 }, { n: 2 }, { n: 3 }]);
     expect(r.complete).toBe(false);
   });
 
-  it.skip("a closed form that did not close is E1709", () => {
+  it("a closed form that did not close is E1709", () => {
     expect(codeOf(thrownSync(() => explore([inc], { maxStates: 99 })))).toBe("E1709");
   });
 });

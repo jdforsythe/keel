@@ -47,7 +47,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 const codeOf = (e: unknown): string | undefined => (isRecord(e) && typeof e.code === "string" ? e.code : undefined);
 
 describe("k.model: explore restores the store's state, log and log meta", () => {
-  it.skip("after explore returns, state, log and meta equal those before the call", () => {
+  it("after explore returns, state, log and meta equal those before the call", () => {
     const { st, step, reset } = build();
     const before = st.snapshot({ meta: true });
     const log = st.log();
@@ -67,7 +67,7 @@ describe("k.model: explore restores the store's state, log and log meta", () => 
     ]);
   });
 
-  it.skip("after explore throws E1708, state, log and meta equal those before the call", () => {
+  it("after explore throws E1708, state, log and meta equal those before the call", () => {
     const { st, step } = build();
     const before = st.snapshot({ meta: true });
     const e = thrownSync(() => explore([step], { from: { n: 0 }, payloads: { [step.name]: [{ by: 3 }] }, depth: 10 }));
@@ -79,7 +79,7 @@ describe("k.model: explore restores the store's state, log and log meta", () => 
     ]);
   });
 
-  it.skip("after explore throws E1709, state, log and meta equal those before the call", () => {
+  it("after explore throws E1709, state, log and meta equal those before the call", () => {
     const { st, step } = build();
     const before = st.snapshot({ meta: true });
     const e = thrownSync(() =>
@@ -89,7 +89,7 @@ describe("k.model: explore restores the store's state, log and log meta", () => 
     expect(st.snapshot({ meta: true })).toEqual(before);
   });
 
-  it.skip("after explore throws E1710, state, log and meta equal those before the call", () => {
+  it("after explore throws E1710, state, log and meta equal those before the call", () => {
     const { st, step } = build();
     const before = st.snapshot({ meta: true });
     const e = thrownSync(() => explore([step], { from: { n: 99 }, depth: 1 }));
@@ -97,7 +97,7 @@ describe("k.model: explore restores the store's state, log and log meta", () => 
     expect(st.snapshot({ meta: true })).toEqual(before);
   });
 
-  it.skip("for every start, payload list and depth, the store ends as it began, whether the run returns or throws", () => {
+  it("for every start, payload list and depth, the store ends as it began, whether the run returns or throws", () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: 9 }),

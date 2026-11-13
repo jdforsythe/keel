@@ -129,66 +129,66 @@ beforeEach(() => {
 });
 
 describe("k.model: payload domains", () => {
-  it.skip("an enum of three members, a boolean and an integer 0 to 2 give 18 payloads, all distinct, as edges from the start", () => {
+  it("an enum of three members, a boolean and an integer 0 to 2 give 18 payloads, all distinct, as edges from the start", () => {
     const r = explore([m.all], { from: { n: 0 }, depth: 1 });
     expect(r.edges).toBe(18);
     expect(seen).toHaveLength(18);
     expect(new Set(seen.map((p) => JSON.stringify(p))).size).toBe(18);
   });
 
-  it.skip("enum members come in declared order", () => {
+  it("enum members come in declared order", () => {
     explore([m.kind], { from: { n: 0 }, depth: 1 });
     expect(seen).toEqual(["c", "a", "b"]);
   });
 
-  it.skip("false comes before true", () => {
+  it("false comes before true", () => {
     explore([m.flag], { from: { n: 0 }, depth: 1 });
     expect(seen).toEqual([false, true]);
   });
 
-  it.skip("integers with min 0 and max 2 ascend", () => {
+  it("integers with min 0 and max 2 ascend", () => {
     explore([m.int], { from: { n: 0 }, depth: 1 });
     expect(seen).toEqual([0, 1, 2]);
   });
 
-  it.skip("a literal is one value", () => {
+  it("a literal is one value", () => {
     explore([m.lit], { from: { n: 0 }, depth: 1 });
     expect(seen).toEqual(["only"]);
   });
 
-  it.skip("an absent optional comes first, then its values", () => {
+  it("an absent optional comes first, then its values", () => {
     explore([m.opt], { from: { n: 0 }, depth: 1 });
     expect(seen).toEqual([undefined, false, true]);
   });
 
-  it.skip("union members come in declared order", () => {
+  it("union members come in declared order", () => {
     explore([m.uni], { from: { n: 0 }, depth: 1 });
     expect(seen).toEqual(["x", 7, false, true]);
   });
 
-  it.skip("a nested object of finite parts enumerates both of its fields", () => {
+  it("a nested object of finite parts enumerates both of its fields", () => {
     explore([m.nested], { from: { n: 0 }, depth: 1 });
     expect(seen).toHaveLength(2);
     expect(new Set(seen.map((p) => JSON.stringify(p))).size).toBe(2);
   });
 
-  it.skip("a domain of 256 values is accepted", () => {
+  it("a domain of 256 values is accepted", () => {
     const r = explore([m.wide], { from: { n: 0 }, depth: 1 });
     expect(r.edges).toBe(256);
   });
 
-  it.skip("a payloads entry replaces the schema's domain and runs in the order given", () => {
+  it("a payloads entry replaces the schema's domain and runs in the order given", () => {
     explore([m.kind], { from: { n: 0 }, depth: 1, payloads: { "dom.kind": [{ k: "b" }, { k: "c" }] } });
     expect(seen).toEqual(["b", "c"]);
   });
 
-  it.skip("an s.string() field with no payloads entry is E1710 and runs no edge", () => {
+  it("an s.string() field with no payloads entry is E1710 and runs no edge", () => {
     const e = thrownSync(() => explore([m.bump, m.str], { from: { n: 0 }, depth: 2 }));
     expect(codeOf(e)).toBe("E1710");
     expect(seen).toEqual([]);
   });
 
-  it.skip("an s.string() field with a payloads entry runs its payloads", () => {
+  it("an s.string() field with a payloads entry runs its payloads", () => {
     const r = explore([m.str], { from: { n: 0 }, depth: 1, payloads: { "dom.str": [{ text: "x" }, { text: "y" }] } });
     expect(r.edges).toBe(2);
     expect(seen).toEqual(["x", "y"]);
@@ -196,27 +196,27 @@ describe("k.model: payload domains", () => {
 });
 
 describe("k.model: E1710", () => {
-  it.skip("transactions of several stores are E1710", () => {
+  it("transactions of several stores are E1710", () => {
     const e = thrownSync(() => explore([m.bump, m.otherTx], { from: { n: 0 }, depth: 1 }));
     expect(codeOf(e)).toBe("E1710");
   });
 
-  it.skip("repeated transaction names are E1710", () => {
+  it("repeated transaction names are E1710", () => {
     const e = thrownSync(() => explore([m.bump, m.bump], { from: { n: 0 }, depth: 1 }));
     expect(codeOf(e)).toBe("E1710");
   });
 
-  it.skip("a from that fails the store's schema is E1710", () => {
+  it("a from that fails the store's schema is E1710", () => {
     const e = thrownSync(() => explore([m.bump], { from: { n: 99 }, depth: 1 }));
     expect(codeOf(e)).toBe("E1710");
   });
 
-  it.skip("a from that fails the store's invariants is E1710", () => {
+  it("a from that fails the store's invariants is E1710", () => {
     const e = thrownSync(() => explore([m.bump], { from: { n: 5 }, depth: 1 }));
     expect(codeOf(e)).toBe("E1710");
   });
 
-  it.skip("a payloads value that fails its schema is E1710 and runs no edge", () => {
+  it("a payloads value that fails its schema is E1710 and runs no edge", () => {
     const e = thrownSync(() =>
       explore([m.int], { from: { n: 0 }, depth: 1, payloads: { "dom.int": [{ i: 1 }, { i: 99 }] } }),
     );
@@ -224,26 +224,26 @@ describe("k.model: E1710", () => {
     expect(seen).toEqual([]);
   });
 
-  it.skip("a transaction with no finite domain is E1710 and the message names it", () => {
+  it("a transaction with no finite domain is E1710 and the message names it", () => {
     const e = thrownSync(() => explore([m.str], { from: { n: 0 }, depth: 1 }));
     expect(codeOf(e)).toBe("E1710");
     expect(messageOf(e)).toContain("dom.str");
     expect(messageOf(e)).toContain("payloads");
   });
 
-  it.skip("a domain of 257 values is not finite enough and is E1710", () => {
+  it("a domain of 257 values is not finite enough and is E1710", () => {
     const e = thrownSync(() => explore([m.wider], { from: { n: 0 }, depth: 1 }));
     expect(codeOf(e)).toBe("E1710");
     expect(messageOf(e)).toContain("dom.wider");
     expect(seen).toEqual([]);
   });
 
-  it.skip("a closed form missing a transaction of its store is E1710", () => {
+  it("a closed form missing a transaction of its store is E1710", () => {
     const e = thrownSync(() => explore([m.tinyBump]));
     expect(codeOf(e)).toBe("E1710");
   });
 
-  it.skip("a closed form starting from a store with log entries is E1710", () => {
+  it("a closed form starting from a store with log entries is E1710", () => {
     expect(tx(m.tinyBump, {}).ok).toBe(true);
     const e = thrownSync(() => explore([m.tinyBump, m.tinyReset]));
     expect(codeOf(e)).toBe("E1710");
