@@ -14,6 +14,7 @@ import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import { markFirst } from "../internal/markFirst.ts";
+import type { Autofill } from "../types/Autofill.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type Option = { readonly value: string; readonly label: string };
@@ -22,6 +23,8 @@ type Option = { readonly value: string; readonly label: string };
 export function Select(
   props: StyleProps & {
     readonly label: string;
+    /** The input purpose, written as the `autocomplete` attribute (k.a11y). */
+    readonly autocomplete?: Autofill;
     readonly disabled?: boolean | Computed<boolean>;
     readonly id?: string /** Written as the `lang` attribute. */;
     readonly lang?: string;
@@ -39,6 +42,7 @@ export function Select(
       el.setAttribute("id", id);
       applyIdLang(el, props, false);
       attrOf(el, "name", isGetter(props, "name"), () => props.name);
+      attrOf(el, "autocomplete", isGetter(props, "autocomplete"), () => props.autocomplete);
       const v = props.value;
       const optionsOf = (os: readonly Option[] | undefined): Node[] =>
         (os ?? []).map((o) =>

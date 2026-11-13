@@ -13,7 +13,7 @@ type ColorName = keyof typeof color;
 const names = Object.keys(color).filter((n): n is ColorName => n in color);
 /** Text colors the brand sets on its surfaces (fg on bg); every pair must pass E1804's 4.5:1. */
 const TEXT: readonly ColorName[] = ["text", "textSecondary", "accent", "verified", "error"];
-const SURFACES: readonly ColorName[] = ["surface", "card"];
+const SURFACES: readonly ColorName[] = ["surface", "surfaceLow", "card"];
 
 describe("brandTokens", () => {
   it("passes TokenSchema", () => {
@@ -26,7 +26,7 @@ describe("brandTokens", () => {
       surfaceLow: "#F3F3F3",
       card: "#FFFFFF",
       text: "#1a191e",
-      textSecondary: "#71717A",
+      textSecondary: "#6B6B74",
       accent: "#b8420d",
       verified: "#15803D",
       error: "#B91C1C",

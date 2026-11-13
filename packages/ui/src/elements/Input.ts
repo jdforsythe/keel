@@ -13,6 +13,7 @@ import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import { markFirst } from "../internal/markFirst.ts";
 import { plain } from "../internal/plain.ts";
+import type { Autofill } from "../types/Autofill.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type InputType = "text" | "email" | "password" | "number" | "search" | "tel" | "url" | "date";
@@ -25,6 +26,8 @@ type InputType = "text" | "email" | "password" | "number" | "search" | "tel" | "
 export function Input(
   props: StyleProps & {
     readonly label: string;
+    /** The input purpose, written as the `autocomplete` attribute (k.a11y). */
+    readonly autocomplete?: Autofill;
     readonly disabled?: boolean | Computed<boolean>;
     readonly id?: string /** Written as the `lang` attribute. */;
     readonly lang?: string;
@@ -43,6 +46,7 @@ export function Input(
       el.setAttribute("id", id);
       applyIdLang(el, props, false);
       attrOf(el, "name", isGetter(props, "name"), () => props.name);
+      attrOf(el, "autocomplete", isGetter(props, "autocomplete"), () => props.autocomplete);
       const v = props.value;
       // A reactive value's first value is also the default (rfc:0062); a password never enters the markup.
       if (isReadable(v))

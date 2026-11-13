@@ -14,7 +14,7 @@ export const brandTokens = defineTokens({
     surfaceLow: "#F3F3F3",
     card: "#FFFFFF",
     text: "#1a191e",
-    textSecondary: "#71717A",
+    textSecondary: "#6B6B74",
     accent: "#b8420d",
     verified: "#15803D",
     error: "#B91C1C",

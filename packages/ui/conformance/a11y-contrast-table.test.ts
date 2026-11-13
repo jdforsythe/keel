@@ -12,7 +12,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
 const names = ["a", "b", "c", "d", "e"] as const;
 
 describe("k.a11y: contrastTable(tokens)", () => {
-  it.skip("has one entry per ordered pair of distinct color tokens per scheme", () => {
+  it("has one entry per ordered pair of distinct color tokens per scheme", () => {
     const rows = contrastTable(tokens);
     // the k.ui tokens have three color tokens: fg, bg, accent
     expect(rows).toHaveLength(3 * 2 * 2);
@@ -21,14 +21,14 @@ describe("k.a11y: contrastTable(tokens)", () => {
     expect(rows.every((r) => r.fg !== r.bg)).toBe(true);
   });
 
-  it.skip("each ratio is WCAG's to two decimals", () => {
+  it("each ratio is WCAG's to two decimals", () => {
     const row = contrastTable(tokens).find((r) => r.scheme === "light" && r.fg === "fg" && r.bg === "bg");
     expect(row?.ratio).toBe(round2(ratio("#111", "#fff")));
     const dark = contrastTable(tokens).find((r) => r.scheme === "dark" && r.fg === "fg" && r.bg === "bg");
     expect(dark?.ratio).toBe(round2(ratio("#eee", "#111")));
   });
 
-  it.skip("for n color tokens it lists n(n-1) pairs per scheme, each ratio equal to the WCAG formula rounded (property)", () => {
+  it("for n color tokens it lists n(n-1) pairs per scheme, each ratio equal to the WCAG formula rounded (property)", () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: names.length }),
@@ -53,7 +53,7 @@ describe("k.a11y: contrastTable(tokens)", () => {
     );
   });
 
-  it.skip("a single color token yields no entries", () => {
+  it("a single color token yields no entries", () => {
     expect(contrastTable(defineTokens({ color: { only: "#000" } }))).toEqual([]);
   });
 });
