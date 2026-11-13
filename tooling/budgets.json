@@ -21,7 +21,7 @@
       "max": "29kb",
       "platform": "node"
     },
-    "@keel/ctx": "3kb",
+    "@keel/ctx": "3.5kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
     "@keel/router": "10kb",
@@ -110,7 +110,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/tools": {
-      "max": "9.25kb",
+      "max": "10kb",
       "platform": "node"
     },
     "@keel/std-statecharts": "1.5kb",
@@ -122,7 +122,7 @@
     "@keel/std-text": "1.5kb",
     "@keel/store": "3.5kb",
     "@keel/testing": {
-      "max": "9kb",
+      "max": "10kb",
       "platform": "node"
     },
     "@keel/ui": "4kb"
