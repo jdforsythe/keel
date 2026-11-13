@@ -640,3 +640,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0563 testing: the saved copy is read from storage once per key, so seeding `ctx.storage.set` directly after an earlier render or app on the same ctx is not seen; say so in the `@keel/testing` README (seed before the first read, or through a harness) · docs
 - [x] 0564 router: `packages/router/src/**/createRouterWith.ts` carries comments naming RFC numbers (moved from the old file); remove them (rule 11) · router
 - [ ] 0565 kernel: `@keel/server/dom` and `@keel/compiler/entry/*` are kernel-only entries without an `internal` segment, so E1576 does not cover them; rename them under `internal` or name them in the rule · server · compiler · check
+- [ ] 0566 server: a production `diag`'s `frames` point into the `server.mjs` bundle; emit source maps at `keel build` and enable them at start (`process.setSourceMapsEnabled`) so frames name app files · server · cli
