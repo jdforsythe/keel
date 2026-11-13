@@ -10,6 +10,8 @@ import { routesMismatch } from "./routesMismatch.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
 const GENERATED = /(?:^|\/)\.keel\/([^/]+\.json)$/;
+/** `.keel/` files k.ledger reads that the compiler never writes: an app's committed ledger and production tallies. */
+const LEDGER_FILES = new Set(["ledger.json", "monitored.json"]);
 
 function parse(text: string): { ok: true; value: unknown } | { ok: false } {
   try {
@@ -20,7 +22,8 @@ function parse(text: string): { ok: true; value: unknown } | { ok: false } {
 }
 
 /**
- * E1005 and W1005 (k.compiler, rfc:0050, rfc:0055) for each `<dir>/.keel/<name>.json` among the checked files.
+ * E1005 and W1005 (k.compiler) for each `<dir>/.keel/<name>.json` among the checked files, except the ledger's own
+ * `ledger.json` and `monitored.json` (k.ledger).
  * `expected` maps a project dir (`artifactDir`) to the hashes the compiler derives from that project's sources:
  * a string, or `null` when only evaluating `routes.ts` derives it. The file must be one the compiler writes (a name
  * in `expected`), else E1005 (not among the compiled artifacts); then `{ data, hash }` in canonical JSON plus a
@@ -39,7 +42,7 @@ export function generatedEdits(
   const out: Diagnostic[] = [];
   for (const file of files) {
     const name = GENERATED.exec(file.path)?.[1];
-    if (name === undefined) continue;
+    if (name === undefined || LEDGER_FILES.has(name)) continue;
     const project = expected.get(artifactDir(file.path) ?? "");
     const hashes = project?.hashes ?? {};
     const parsed = parse(file.source);

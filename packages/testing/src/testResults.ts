@@ -62,6 +62,8 @@ function compactDiff(d: string | undefined): string | undefined {
 /**
  * Turn vitest's finished task tree (`state.getFiles()` and the unhandled errors of `onTestRunEnd`) into OUTPUT.md terms: one T0001 per failed
  * test at its first app frame (`path:line:col` relative to `cwd`), the message `suite > test: first line`, and
+ * a harness failure carrying an E17xx `code` (E1704 `properties` and `simulate`, E1708-E1710 `explore`) as that code
+ * at the test file's own frame, the message `first line (suite > test)`; each with
  * a `fix` carrying the compact diff and up to four more app frames; a file that failed outside any test gets
  * one T0001 at line 1; each unhandled error one T0001 without location. Pure; shared by the cli and the
  * repository's vitest reporter.
@@ -82,17 +84,30 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
         failed++;
         const first: unknown = Array.isArray(result.errors) ? result.errors[0] : undefined;
         const e = isRec(first) ? first : {};
-        const fs = frames(e).slice(0, 5);
+        // A harness failure (E1702-E1710) keeps its code; it is located at the test's own frame when it has one.
+        const raw = str(e.code) ?? "";
+        const coded: `E17${string}` | undefined = /^E17\d\d$/.test(raw) ? `E17${raw.slice(3)}` : undefined;
+        const all = frames(e);
+        const own = coded === undefined ? -1 : all.findIndex((f) => f.file === file);
+        const fs = (own > 0 ? [...all.slice(own, own + 1), ...all.slice(0, own), ...all.slice(own + 1)] : all).slice(
+          0,
+          5,
+        );
         const top = fs[0];
         const more = fs.slice(1).map((f) => `at ${relative(cwd, f.file)}:${f.line}:${f.col}`);
         const fix = [compactDiff(str(e.diff)), ...more].filter((x): x is string => x !== undefined).join("\n");
+        const said = firstLine(str(e.message) ?? "test failed");
         diagnostics.push({
           kind: "diag",
-          code: "T0001",
+          code: coded ?? "T0001",
           path: relative(cwd, top?.file ?? file),
           line: top?.line ?? 1,
           col: top?.col ?? 1,
-          message: clip(`${name.join(" > ")}: ${firstLine(str(e.message) ?? "test failed")}`),
+          message: clip(
+            coded === undefined
+              ? `${name.join(" > ")}: ${said}`
+              : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
+          ),
           ...(fix === "" ? {} : { fix }),
         });
       } else if (state === "skip" || state === "todo" || node.mode === "skip" || node.mode === "todo") skipped++;
