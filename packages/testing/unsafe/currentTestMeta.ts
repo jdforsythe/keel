@@ -9,11 +9,8 @@ interface Worker {
  * reporters as `testCase.meta()`), or `undefined` outside a test (a hook, or no vitest).
  */
 export function currentTestMeta(): Record<string, unknown> | undefined {
-  return unsafe(
-    "vitest keeps the running task on its worker global, which @keel/testing reads without depending on vitest; `meta` is its documented reporter channel",
-    () => {
-      const worker = Reflect.get(globalThis, "__vitest_worker__") as Worker | undefined;
-      return worker?.current?.meta;
-    },
-  );
+  return unsafe("the running vitest task is on its untyped worker global; meta is its reporter channel", () => {
+    const worker = Reflect.get(globalThis, "__vitest_worker__") as Worker | undefined;
+    return worker?.current?.meta;
+  });
 }

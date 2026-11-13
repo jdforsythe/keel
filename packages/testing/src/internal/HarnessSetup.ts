@@ -18,7 +18,7 @@ interface Shared {
   readonly tokens?: Tokens;
   /** What the render checks record as rendered (a route id or a component name). */
   readonly target: CheckSetup["target"];
-  /** A `renderRoute` page: the container is the document's `main`, and axe judges the document (k.a11y). */
+  /** A `renderRoute` page: the chain is the document's `main` landmark, and axe judges the document (k.a11y). */
   readonly page?: boolean;
   /** The id of work the DOM does not show while it is in flight (a router navigation's route), else null. */
   readonly busy?: () => string | null;

@@ -44,7 +44,7 @@ interface Ctx {
  */
 export function axeSync(root: Element | Document, ids: ReadonlySet<string>): AxeOutcome {
   return unsafe(
-    "axe.run resolves through setTimeout, and render() must fail synchronously; this replays axe-core 4.14.0's runRules and Audit.run with each rule's runSync, through internals its typings omit (version pinned)",
+    "render() fails synchronously and axe.run resolves on setTimeout: replays axe-core 4.14.0 runRules via untyped internals",
     () => {
       const a = axe as unknown as Internals;
       const context = new a._thisWillBeDeletedDoNotUse.base.Context(root);

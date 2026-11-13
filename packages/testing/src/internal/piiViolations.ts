@@ -9,6 +9,6 @@ export function piiViolations(root: Element): Violation[] {
       rule: "E1821",
       element: el.id,
       at: where(el),
-      help: `holds ${el.getAttribute("data-k-pii") ?? "personal"} data and has no autocomplete; add the input purpose, or "off"`,
+      help: "holds personal data and has no autocomplete; add its purpose or off",
     }));
 }

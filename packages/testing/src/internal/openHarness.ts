@@ -10,6 +10,7 @@ import type { Found } from "../types/Found.ts";
 import type { Harness } from "../types/Harness.ts";
 import type { TestEvent } from "../types/TestEvent.ts";
 import type { HarnessSetup } from "./HarnessSetup.ts";
+import { asMain } from "./asMain.ts";
 import { eventFor } from "./eventFor.ts";
 import { fail } from "./fail.ts";
 import { focusOrder } from "./focusOrder.ts";
@@ -34,7 +35,7 @@ import { unexpected } from "./unexpected.ts";
 export function openHarness(setup: HarnessSetup): { readonly harness: Harness; check(): void } {
   const { ctx, seeded, a11y, tokens, busy, teardown, target } = setup;
   const page = setup.page === true;
-  const container = document.createElement(page ? "main" : "div");
+  const container = document.createElement("div");
   document.body.appendChild(container);
   let unmount: (() => void) | undefined;
   let owner: Scope | undefined;
@@ -52,6 +53,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
   const check = (): void => {
     const [first] = caught.splice(0);
     if (first !== undefined) throw unexpected(first);
+    if (page) asMain(container);
     renderChecks({
       root: container,
       page,

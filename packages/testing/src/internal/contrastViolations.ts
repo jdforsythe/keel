@@ -20,20 +20,21 @@ const exempt = (el: Element): boolean => {
   return inDisabledFieldset(el);
 };
 
-/** The token `prop` resolves to on `el` at viewport width `w`: its own winning class, else the nearest ancestor's. */
-function tokenAt(map: ClassMap, el: Element, prop: string, w: number): string | undefined {
-  const rank = (bp: string | undefined): number =>
-    bp === undefined ? 0 : 1 + map.breakpoints.findIndex(([n]) => n === bp);
-  const minOf = (bp: string | undefined): number =>
-    bp === undefined ? 0 : (map.breakpoints.find(([n]) => n === bp)?.[1] ?? Number.POSITIVE_INFINITY);
+/**
+ * The token `prop` resolves to on `el` at the breakpoint index `at` (0 base, i + 1 breakpoint i): its own winning
+ * class, else the nearest ancestor's. A class of breakpoint j applies when j's min-width is at most `at`'s; a later
+ * breakpoint in token order wins, as its `min-width` block comes later in the CSS.
+ */
+function tokenAt(map: ClassMap, el: Element, prop: string, at: number): string | undefined {
+  const width = (i: number): number => map.breakpoints[i - 1]?.[1] ?? 0;
   for (let n: Element | null = el; n !== null; n = n.parentElement) {
-    let best: { token: string; rank: number } | undefined;
+    let best: [string, number] | undefined;
     for (const cls of Array.from(n.classList)) {
       const hit = map.byClass.get(cls);
-      if (hit === undefined || hit.prop !== prop || minOf(hit.bp) > w) continue;
-      if (best === undefined || rank(hit.bp) >= best.rank) best = { token: hit.token, rank: rank(hit.bp) };
+      const rank = hit?.bp === undefined ? 0 : 1 + map.breakpoints.findIndex(([b]) => b === hit.bp);
+      if (hit?.prop === prop && width(rank) <= width(at) && rank >= (best?.[1] ?? 0)) best = [hit.token, rank];
     }
-    if (best !== undefined) return best.token;
+    if (best !== undefined) return best[0];
   }
   return undefined;
 }
@@ -47,35 +48,32 @@ function tokenAt(map: ClassMap, el: Element, prop: string, w: number): string | 
 export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
   const map = styleIndex(tokens);
   const colors = tokens.color ?? {};
-  const widths = [0, ...map.breakpoints.map(([n, w]): number => (Number.isNaN(w) ? 0 : w))];
   const out: Violation[] = [];
   for (const el of [root, ...Array.from(root.querySelectorAll("*"))]) {
     if (!ownsText(el) || exempt(el)) continue;
-    const found = widths.flatMap((w, i) =>
-      SCHEMES.flatMap((scheme) => {
-        const fgTok = tokenAt(map, el, "fg", w);
-        if (fgTok === undefined) return [];
-        const bgTok = tokenAt(map, el, "bg", w);
+    let help: string | undefined;
+    for (let at = 0; at <= map.breakpoints.length && help === undefined; at++)
+      for (const scheme of SCHEMES) {
+        const fgTok = tokenAt(map, el, "fg", at);
+        const bgTok = tokenAt(map, el, "bg", at);
         const pick = (t: string | undefined): string => {
           const c = t === undefined ? "#FFFFFF" : colors[t];
-          return c === undefined ? "" : typeof c === "string" ? c : c[scheme];
+          return c === undefined || typeof c === "string" ? (c ?? "") : c[scheme];
         };
         const fg = pick(fgTok);
         const bg = pick(bgTok);
-        if (!HEX.test(fg) || !HEX.test(bg)) return [];
-        const sizeTok = tokenAt(map, el, "fontSize", w);
-        const weightTok = tokenAt(map, el, "weight", w);
-        const size = sizeTok === undefined ? 0 : px(tokens.fontSize?.[sizeTok] ?? "");
-        const weight = weightTok === undefined ? 400 : Number(tokens.weight?.[weightTok]);
+        if (fgTok === undefined || !HEX.test(fg) || !HEX.test(bg)) continue;
+        const sizeTok = tokenAt(map, el, "fontSize", at);
+        const weightTok = tokenAt(map, el, "weight", at);
+        const size = px(sizeTok === undefined ? "" : (tokens.fontSize?.[sizeTok] ?? ""));
+        const weight = Number(weightTok === undefined ? 400 : tokens.weight?.[weightTok]);
         const need = size >= 24 || (size >= 18.66 && weight >= 700) ? 3 : 4.5;
         const ratio = contrast(fg, bg);
-        if (ratio >= need) return [];
-        const bp = i === 0 ? "" : `, ${map.breakpoints[i - 1]?.[0] ?? ""}`;
-        const on = bgTok === undefined ? "#FFFFFF" : `bg ${bgTok}`;
-        return [`is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok} on ${on}, ${scheme}${bp})`];
-      }),
-    );
-    const [help] = found;
+        if (ratio < need) {
+          help = `is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok} on ${bgTok ?? bg}, ${scheme})`;
+          break;
+        }
+      }
     if (help !== undefined) out.push({ rule: "E1804", element: el.id, at: where(el), help });
   }
   return out;

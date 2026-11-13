@@ -10,13 +10,14 @@ import type { RouteHarness } from "./types/RouteHarness.ts";
 import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
 
 /**
- * Render page `id` of `options.routes` (an API route has no view: its id rejects) (k.testing Harness): seed `state`, create a router on an in-memory history
- * at `routes.href(id, params, search)` (its initial navigation runs the chain's guards and loaders), mount its `App`, and
- * resolve once no navigation is pending and the DOM is quiet; then the `render` checks run (`keel.unexpected`,
- * then k.a11y's: E1702, E1703 with the document rules, E1804, E1821). The page is a document: the chain renders
- * inside `main`, the router writes `<title>` and `<html lang>` (k.head), and a document without a title takes the
- * route id as the server's fallback title; `dispose` puts the title and `lang` back. The handle is `render`'s plus `route()` and `navigate(href)` (push, then the same
- * quiescence and checks as `fire`; rfc:0070); `dispose` also disposes the router. Guards, loaders and actions get
+ * Render page `id` of `options.routes` (an API route has no view: its id rejects) (k.testing Harness): seed `state`,
+ * create a router on an in-memory history at `routes.href(id, params, search)` (its initial navigation runs the
+ * chain's guards and loaders), mount its `App`, and resolve once no navigation is pending and the DOM is quiet; then
+ * the render checks run (`keel.unexpected`, then k.a11y's: E1702, E1703 with the document rules, E1804, E1821). The
+ * page is a document: the chain is its `main` landmark unless it renders one, the router writes `<title>` and
+ * `<html lang>` (k.head), and a document without a title takes the route id as the server's fallback title. The
+ * handle is `render`'s plus `route()` and `navigate(href)` (push, then the same quiescence and checks as `fire`);
+ * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
  * `options.caller` (default `""`).
  */
 export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
