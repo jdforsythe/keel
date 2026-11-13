@@ -1,5 +1,7 @@
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
+import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
+import { foreignUrlFetch } from "../rules/foreignUrlFetch.ts";
 import { formatInApp } from "../rules/formatInApp.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
@@ -20,9 +22,11 @@ import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
 import { oneExport } from "../rules/oneExport.ts";
 import { pathParamsMatch } from "../rules/pathParamsMatch.ts";
+import { piiInRouteUrl } from "../rules/piiInRouteUrl.ts";
 import { pureTransaction } from "../rules/pureTransaction.ts";
 import { resourceViaMatch } from "../rules/resourceViaMatch.ts";
 import { revealInServerFile } from "../rules/revealInServerFile.ts";
+import { reversedFocusOrder } from "../rules/reversedFocusOrder.ts";
 import { routeSchemaInferred } from "../rules/routeSchemaInferred.ts";
 import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
@@ -66,4 +70,8 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   loaderInServerFile,
   slotSignature,
   fieldInForm,
+  piiInRouteUrl,
+  foreignUrlAttr,
+  foreignUrlFetch,
+  reversedFocusOrder,
 ];

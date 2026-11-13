@@ -17,19 +17,19 @@ const host = fc.stringMatching(/^[a-z]{3,10}$/);
 const scheme = fc.constantFrom("http", "https");
 
 describe("k.security: E1570", () => {
-  test.skip('E1570: `Image src="https://cdn.example/a.png"` is reported', () => {
+  test('E1570: `Image src="https://cdn.example/a.png"` is reported', () => {
     expect(diags(IMAGE("https://cdn.example/a.png"))).toHaveLength(1);
   });
 
-  test.skip('E1570: `action="https://x.example/"` is reported', () => {
+  test('E1570: `action="https://x.example/"` is reported', () => {
     expect(diags(FORM("https://x.example/"))).toHaveLength(1);
   });
 
-  test.skip('E1570: `src="logo.png"` is not reported', () => {
+  test('E1570: `src="logo.png"` is not reported', () => {
     expect(diags(IMAGE("logo.png"))).toEqual([]);
   });
 
-  test.skip("E1570: any literal absolute http(s) URL in `Image src` is reported, a relative path is not", () => {
+  test("E1570: any literal absolute http(s) URL in `Image src` is reported, a relative path is not", () => {
     fc.assert(
       fc.property(scheme, host, host, (sch, h, file) => {
         expect(diags(IMAGE(`${sch}://${h}.example/${file}.png`))).toHaveLength(1);
@@ -40,7 +40,7 @@ describe("k.security: E1570", () => {
     );
   });
 
-  test.skip("E1570: any literal absolute http(s) URL in `action` is reported", () => {
+  test("E1570: any literal absolute http(s) URL in `action` is reported", () => {
     fc.assert(
       fc.property(scheme, host, (sch, h) => {
         expect(diags(FORM(`${sch}://${h}.example/`))).toHaveLength(1);
@@ -49,7 +49,7 @@ describe("k.security: E1570", () => {
     );
   });
 
-  test.skip("E1570: carries no fix (fix: none)", () => {
+  test("E1570: carries no fix (fix: none)", () => {
     for (const d of [...diags(IMAGE("https://cdn.example/a.png")), ...diags(FORM("https://x.example/"))]) {
       expect(d.fix).toBeUndefined();
     }

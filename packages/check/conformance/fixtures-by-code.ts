@@ -211,6 +211,28 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     ],
     clean: [],
   },
+  E1111: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("app"),
+      f(
+        "modules/app/Params.schema.ts",
+        `${SCHEMA}export const Params = s.object({ email: s.string().pii('contact') })\n`,
+      ),
+      f(
+        "modules/app/routes.ts",
+        "import { manifest } from '@keel/router'\nimport { Params } from './Params.schema.ts'\nconst Page = () => null\nexport const routes = manifest({ 'app.show': { path: '/show/:email', params: Params, component: Page } })\n",
+      ),
+    ],
+    clean: [
+      manifest("app"),
+      f("modules/app/Params.schema.ts", `${SCHEMA}export const Params = s.object({ email: s.string() })\n`),
+      f(
+        "modules/app/routes.ts",
+        "import { manifest } from '@keel/router'\nimport { Params } from './Params.schema.ts'\nconst Page = () => null\nexport const routes = manifest({ 'app.show': { path: '/show/:email', params: Params, component: Page } })\n",
+      ),
+    ],
+  },
   E1151: {
     opts: NO_TYPES,
     bad: [mod("b", [], []), exp("b", "Secret"), mod("a", ["b"], []), use("a", "b", "Secret")],
@@ -573,6 +595,44 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1570: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `import { Image } from '@keel/ui'\nexport default function C() { return <Image src="https://cdn.example/a.png" alt="x" /> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `import { Image } from '@keel/ui'\nexport default function C() { return <Image src="/a.png" alt="x" /> }\n`,
+      ),
+    ],
+  },
+  E1571: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "modules/a/Api.schema.ts",
+        `${SERVICES}${SCHEMA}export const Api = endpoints({ get: { method: 'GET', path: '/x', output: s.json() } })\n`,
+      ),
+      f(
+        "modules/a/api.ts",
+        "import { service } from '@keel/services'\nimport { Api } from './Api.schema.ts'\nexport const api = service({ base: 'https://api.example.com', schema: Api })\n",
+      ),
+    ],
+    clean: [
+      f(
+        "modules/a/Api.schema.ts",
+        `${SERVICES}${SCHEMA}export const Api = endpoints({ get: { method: 'GET', path: '/x', output: s.json() } })\n`,
+      ),
+      f(
+        "modules/a/api.server.ts",
+        "import { service } from '@keel/services'\nimport { Api } from './Api.schema.ts'\nexport const api = service({ base: 'https://api.example.com', schema: Api })\n",
+      ),
+    ],
+  },
   E1601: {
     bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],
     clean: [
@@ -697,6 +757,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f(
         "C.tsx",
         `${UI}import { For } from '@keel/runtime-dom'\nexport default function C(props: { xs: { id: string }[] }) { return <For each={props.xs} key="id" empty={() => <Text>none</Text>}>{(x) => <Text>{x.id}</Text>}</For> }\n`,
+      ),
+    ],
+  },
+  E1820: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${UI}export default function C() { return <Box direction="row-reverse"><Button onClick={() => {}}>A</Button><Button onClick={() => {}}>B</Button></Box> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${UI}export default function C() { return <Box direction="row"><Button onClick={() => {}}>B</Button><Button onClick={() => {}}>A</Button></Box> }\n`,
       ),
     ],
   },

@@ -18,15 +18,15 @@ const B = "<Button onClick={() => {}}>B</Button>";
 const e1820 = (source: string) => check(one(source), { types: false }).diagnostics.filter((d) => d.code === "E1820");
 
 describe("k.a11y: E1820 reversed direction over focusable elements", () => {
-  it.skip('A `Box` with `direction="row-reverse"` over two `Button`s is E1820', () => {
+  it('A `Box` with `direction="row-reverse"` over two `Button`s is E1820', () => {
     expect(e1820(src("row-reverse", `${A}${B}`))).toHaveLength(1);
   });
 
-  it.skip("column-reverse over two focusable base elements is E1820 too", () => {
+  it("column-reverse over two focusable base elements is E1820 too", () => {
     expect(e1820(src("column-reverse", `${A}${B}`))).toHaveLength(1);
   });
 
-  it.skip('its fix leaves `direction="row"` with the children reversed', () => {
+  it('its fix leaves `direction="row"` with the children reversed', () => {
     const source = src("row-reverse", `${A}${B}`);
     const fix = e1820(source)[0]?.fix;
     expect(typeof fix).toBe("string");
@@ -45,19 +45,19 @@ describe("k.a11y: E1820 reversed direction over focusable elements", () => {
     }
   });
 
-  it.skip("over one `Button` it is clean", () => {
+  it("over one `Button` it is clean", () => {
     expect(e1820(src("row-reverse", A))).toEqual([]);
   });
 
-  it.skip("over non-focusable children it is clean", () => {
+  it("over non-focusable children it is clean", () => {
     expect(e1820(src("row-reverse", "<Text>a</Text><Text>b</Text>"))).toEqual([]);
   });
 
-  it.skip("plain `row` and `column` over two Buttons are clean", () => {
+  it("plain `row` and `column` over two Buttons are clean", () => {
     for (const dir of ["row", "column"]) expect(e1820(src(dir, `${A}${B}`))).toEqual([]);
   });
 
-  it.skip("any reversed direction over n focusable children is E1820 exactly when n >= 2 (property)", () => {
+  it("any reversed direction over n focusable children is E1820 exactly when n >= 2 (property)", () => {
     fc.assert(
       fc.property(fc.constantFrom("row-reverse", "column-reverse"), fc.integer({ min: 0, max: 5 }), (dir, n) => {
         const kids = Array.from({ length: n }, () => A).join("");

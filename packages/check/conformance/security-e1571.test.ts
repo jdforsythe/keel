@@ -23,19 +23,19 @@ const host = fc.stringMatching(/^[a-z]{3,10}$/);
 const scheme = fc.constantFrom("http", "https");
 
 describe("k.security: E1571", () => {
-  test.skip("`ctx.net.fetch(new Request('https://api.example/x'))` in a client-reachable file is E1571", () => {
+  test("`ctx.net.fetch(new Request('https://api.example/x'))` in a client-reachable file is E1571", () => {
     expect(codes([{ path: "load.ts", source: FETCH("https://api.example/x") }])).toHaveLength(1);
   });
 
-  test.skip("`ctx.net.fetch(new Request('https://api.example/x'))` in a `*.server.ts` file is not E1571", () => {
+  test("`ctx.net.fetch(new Request('https://api.example/x'))` in a `*.server.ts` file is not E1571", () => {
     expect(codes([{ path: "load.server.ts", source: FETCH("https://api.example/x") }])).toEqual([]);
   });
 
-  test.skip("E1571: a relative URL given to `ctx.net.fetch` in a client-reachable file is not reported", () => {
+  test("E1571: a relative URL given to `ctx.net.fetch` in a client-reachable file is not reported", () => {
     expect(codes([{ path: "load.ts", source: FETCH("/orders") }])).toEqual([]);
   });
 
-  test.skip("property: any literal absolute http(s) URL given to `ctx.net.fetch` is E1571 in client-reachable code only", () => {
+  test("property: any literal absolute http(s) URL given to `ctx.net.fetch` is E1571 in client-reachable code only", () => {
     fc.assert(
       fc.property(scheme, host, (sch, h) => {
         const url = `${sch}://${h}.example/x`;
@@ -46,7 +46,7 @@ describe("k.security: E1571", () => {
     );
   });
 
-  test.skip("E1571: a literal absolute http(s) `service({ base })` in client-reachable code is reported, in a `*.server.ts` file it is not", () => {
+  test("E1571: a literal absolute http(s) `service({ base })` in client-reachable code is reported, in a `*.server.ts` file it is not", () => {
     fc.assert(
       fc.property(scheme, host, (sch, h) => {
         const base = `${sch}://${h}.example`;
@@ -57,7 +57,7 @@ describe("k.security: E1571", () => {
     );
   });
 
-  test.skip("E1571: carries no fix", () => {
+  test("E1571: carries no fix", () => {
     const [d] = codes([{ path: "load.ts", source: FETCH("https://api.example/x") }]);
     expect(d).toBeDefined();
     expect(d?.fix).toBeUndefined();

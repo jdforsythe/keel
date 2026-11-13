@@ -20,7 +20,7 @@ const ext = fc.constantFrom(".ts", ".tsx", ".schema.ts", ".test.ts");
 const reveal = `import { reveal } from '@keel/schema'\nexport const x = reveal\n`;
 
 describe("k.privacy E1105", () => {
-  it.skip("E1105 fires on `reveal` imported from @keel/schema in an app file that is not *.server.ts", () => {
+  it("E1105 fires on `reveal` imported from @keel/schema in an app file that is not *.server.ts", () => {
     fc.assert(
       fc.property(name, ext, (n, e) => {
         const ds = e1105([f(`modules/app/${n}${e}`, reveal)]);
@@ -31,7 +31,7 @@ describe("k.privacy E1105", () => {
     );
   });
 
-  it.skip("E1105 does not fire on the same import in a *.server.ts file", () => {
+  it("E1105 does not fire on the same import in a *.server.ts file", () => {
     fc.assert(
       fc.property(name, (n) => {
         expect(e1105([f(`modules/app/${n}.server.ts`, reveal)])).toHaveLength(0);

@@ -31,7 +31,7 @@ const SEARCH = (leaf: string) => `s.object({ q: ${leaf}.optional() })`;
 const PLAIN = "s.string()";
 
 describe("k.privacy E1111", () => {
-  it.skip("E1111 fires on a marked field in a route's `params` schema, for every class, and not on the unmarked twin", () => {
+  it("E1111 fires on a marked field in a route's `params` schema, for every class, and not on the unmarked twin", () => {
     fc.assert(
       fc.property(classArb, (cls) => {
         const bad = routes(S, PARAMS(`s.string().pii('${cls}')`), SEARCH(PLAIN));
@@ -46,7 +46,7 @@ describe("k.privacy E1111", () => {
     );
   });
 
-  it.skip("E1111 fires on a marked field in a route's `search` schema, for every class, and not on the unmarked twin", () => {
+  it("E1111 fires on a marked field in a route's `search` schema, for every class, and not on the unmarked twin", () => {
     fc.assert(
       fc.property(classArb, (cls) => {
         const bad = routes(S, PARAMS(PLAIN), SEARCH(`s.string().pii('${cls}')`));
@@ -60,7 +60,7 @@ describe("k.privacy E1111", () => {
     );
   });
 
-  it.skip("E1111 fires on a marked node nested in an object or an array inside `params` or `search`", () => {
+  it("E1111 fires on a marked node nested in an object or an array inside `params` or `search`", () => {
     const nested = (leaf: string) => `s.object({ id: s.string(), more: s.object({ deep: ${leaf} }) })`;
     expect(e1111([routes(S, nested("s.string().pii('contact')"), SEARCH(PLAIN))])).toHaveLength(1);
     expect(e1111([routes(S, nested(PLAIN), SEARCH(PLAIN))])).toHaveLength(0);
@@ -69,7 +69,7 @@ describe("k.privacy E1111", () => {
     expect(e1111([routes(S, PARAMS(PLAIN), inArray(PLAIN))])).toHaveLength(0);
   });
 
-  it.skip("E1111 fires when the marked schema is an imported const from a schema file", () => {
+  it("E1111 fires when the marked schema is an imported const from a schema file", () => {
     const schemaFile = (leaf: string) =>
       f("modules/app/Params.schema.ts", `${S}export const Params = s.object({ id: ${leaf} })\n`);
     const table = routes(`import { Params } from './Params.schema.ts'\n`, "Params", SEARCH(PLAIN));
@@ -77,7 +77,7 @@ describe("k.privacy E1111", () => {
     expect(e1111([schemaFile(PLAIN), table])).toHaveLength(0);
   });
 
-  it.skip("E1111 does not fire on a marked field in an action `input`", () => {
+  it("E1111 does not fire on a marked field in an action `input`", () => {
     const Edit = (leaf: string) =>
       f("modules/app/Edit.schema.ts", `${S}export const Edit = s.object({ note: ${leaf}, email: ${leaf} })\n`);
     const save = f(

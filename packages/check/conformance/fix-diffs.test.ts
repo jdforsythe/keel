@@ -200,6 +200,7 @@ const FIXED: FixedCase[] = [
     opts: {},
   },
   { name: "E1806 (JSX element wrapped as a thunk)", code: "E1806", ...fixtureOf("E1806") },
+  { name: "E1820 (plain direction, children reversed)", code: "E1820", ...fixtureOf("E1820") },
   {
     name: "E1403 (&&, rfc:0061)",
     code: "E1403",
@@ -288,6 +289,7 @@ const FIX = [
   "E1805",
   "E1806",
   "E1808",
+  "E1820",
 ];
 const NO_FIX = [
   "E1000", // a syntax error has no unique repair
@@ -297,6 +299,7 @@ const NO_FIX = [
   "E1104", // renaming the file would break imports in other files
   "E1105", // moving to a .server file is a design change
   "E1106", // which stdlib format type to use is the author's choice
+  "E1111", // carrying the value another way (an action input, a session) is a design change
   "E1153", // which dependency edge to cut is a design choice
   "E1158", // adding the dep or dropping the entry is the author's choice
   "E1204", // the Case per resource state is the author's
@@ -315,6 +318,8 @@ const NO_FIX = [
   "E1566", // which deployable hosts the client is the author's choice
   "E1551", // moving the declaration to a .server file is a design change
   "E1567", // the module, deps and public.routes edits span files
+  "E1570", // where the asset or form target lives is the author's choice
+  "E1571", // moving the call to a server file spans files
   "E1561", // choosing between the caller's and the producer's schema is a judgment
   "E1562", // the fix edits the route's schema source and needs a rebuilt surface; its fixture is surface data alone
   "E1603", // the code in the string is the author's

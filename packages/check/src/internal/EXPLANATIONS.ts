@@ -113,7 +113,7 @@ const ROWS: readonly Row[] = [
     "reveal imported outside a *.server.ts file",
     "Secrets are revealed only on the server, never in client code.",
     "move the reveal call into a *.server.ts file",
-    "k.schema",
+    "k.privacy",
   ],
   [
     "E1106",
@@ -121,6 +121,13 @@ const ROWS: readonly Row[] = [
     "Format types are the stdlib's: each brings a generator the stdlib tests.",
     "s.format('day', s.string(), ...) -> PlainDate from @keel/std-temporal",
     "k.schema",
+  ],
+  [
+    "E1111",
+    "a .pii() node in a route params or search schema",
+    "A path or query reaches browser history and proxy logs, which no redaction reaches.",
+    "params: s.object({ email }) -> pass the value in an action input",
+    "k.privacy",
   ],
   [
     "E1151",
@@ -494,6 +501,20 @@ const ROWS: readonly Row[] = [
     "k.hosting",
   ],
   [
+    "E1570",
+    "literal absolute http(s) URL in src, poster, data, srcset, action, formaction or Image src",
+    "The content security policy loads these from this origin only.",
+    'src="https://cdn.example/a.png" -> src="/assets/a.png"',
+    "k.security",
+  ],
+  [
+    "E1571",
+    "literal absolute http(s) URL given to ctx.net.fetch or service({ base }) in client-reachable code",
+    "The policy's connect-src is this origin; reach another origin from a *.server.ts file.",
+    "move the service to a *.server.ts file and call it from a loader or action",
+    "k.security",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",
@@ -703,10 +724,10 @@ const ROWS: readonly Row[] = [
   ["E1803", "style attribute", "", 'style={{ padding: 8 }} -> p="2"', "k.ui"],
   [
     "E1804",
-    "fg/bg contrast below 4.5:1 (3:1 at fontSize >= 24px), per color scheme",
-    "",
+    "text below its contrast threshold, against its own or its nearest ancestor's bg",
+    "4.5:1, or 3:1 when large (fontSize >= 24px, or >= 18.66px at weight >= 700), in light and dark.",
     "pick token colors that pass in light and dark",
-    "k.ui",
+    "k.a11y",
   ],
   ["E1805", "lowercase intrinsic element in app code", "", "<div> -> <Box>, <h2> -> <Heading level={2}>", "k.ui"],
   [
@@ -729,6 +750,20 @@ const ROWS: readonly Row[] = [
     "An eager child is made before its parent and claims its server node at resume (E1253).",
     "children: Input({ label }) -> children: () => Input({ label })",
     "k.ui",
+  ],
+  [
+    "E1820",
+    "reversed direction over two or more focusable elements",
+    "Focus follows document order; a reversed direction shows it backwards.",
+    'direction="row-reverse" -> direction="row" with the children reversed',
+    "k.a11y",
+  ],
+  [
+    "E1821",
+    "a control bound to a .pii() field without autocomplete (render)",
+    "Autocomplete names the purpose of personal data fields (WCAG 1.3.5).",
+    '<Input field={f.field("email")} /> -> add autocomplete="email"',
+    "k.a11y",
   ],
   ["E1901", "input inside a <Form> without field", "", "bind the input to a form path with field(path)", "k.forms"],
   [
