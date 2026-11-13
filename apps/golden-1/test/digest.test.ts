@@ -2,11 +2,13 @@
 // sim ctx: refresh, the hourly schedule, the event-stream feed, and a restart with a job left in the queue.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
+import { service } from "@keel/services";
 import { render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { Digest } from "../modules/digest/Digest.schema.ts";
 import { LATEST_KEY } from "../modules/digest/LATEST_KEY.ts";
 import { RecountInput } from "../modules/digest/RecountInput.schema.ts";
+import { board as boardEndpoints } from "../modules/digest/board.service.ts";
 import { boardApi } from "../modules/digest/boardApi.ts";
 import { feedDigest } from "../modules/digest/feedDigest.server.ts";
 import { jobs } from "../modules/digest/jobs.server.ts";
@@ -125,6 +127,22 @@ describe("digest loaders", () => {
     const args = { params: {}, search: {}, url: `${ORIGIN}/digest`, caller: "", stores: undefined };
     expect(await loadDigest.run(args, ctx)).toEqual({ ok: true, value: { open: 1, done: 2, at: 3 } });
     expect(await feedDigest.run(args, ctx)).toEqual({ ok: true, value: { open: 1, done: 2, at: 3 } });
+  });
+});
+
+describe("digest board service", () => {
+  it("board.lists is GET /api/lists, read as a BoardView from the api module", async () => {
+    await seedBoard(board);
+    const app = await apiApp();
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    ctx.net.route(new URL("/api/*", location.href).href, (req) => app.fetch(req));
+    expect([boardEndpoints.lists.method, boardEndpoints.lists.path]).toEqual(["GET", "/api/lists"]);
+    const r = await service({ module: "api", schema: boardEndpoints }).lists({}, ctx);
+    expect(r.ok ? r.value.todos.map((t) => [t.title, t.done]) : r.error.code).toEqual([
+      ["Milk", false],
+      ["Eggs", true],
+      ["Tea", false],
+    ]);
   });
 });
 
