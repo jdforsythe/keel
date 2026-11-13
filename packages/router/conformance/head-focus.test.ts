@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.head, Conformance "After a client navigation to another route, the focused element is the new page's first `h1`, with `tabindex=\"-1\"`, or `main` when it has none; after a navigation that changes only the search, focus is where it was."
+// Spec: k.head, Conformance "After a client navigation to another route, the focused element is the new page's first `h1`, with `tabindex="-1"`, or `main` when it has none; after a navigation that changes only the search, focus is where it was."
 // Seed 1337.
 // Assumed: the router API of head-fixtures.ts (createRouter, memoryHistory, mount); a layout renders `main` around the chain; `main` receives `tabindex="-1"` as in push-focus-scroll.test.ts.
 import { createCtx } from "@keel/ctx";

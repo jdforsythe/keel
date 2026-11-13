@@ -1,4 +1,4 @@
-// Spec: k.privacy, Conformance "`s.string().pii('contact')` has `doc()` `string pii(contact)` and JSON Schema `x-keel-pii: \"contact\"`."
+// Spec: k.privacy, Conformance "`s.string().pii('contact')` has `doc()` `string pii(contact)` and JSON Schema `x-keel-pii: "contact"`."
 // Seed: 1337.
 // Skipped until `.pii(class)` exists.
 // Untestable here: the JSON Schema half. @keel/schema exports no JSON Schema derivation, so `x-keel-pii` cannot be read from its public API.

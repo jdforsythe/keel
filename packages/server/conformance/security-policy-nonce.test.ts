@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "A production document carries the policy above, and its nonce equals the `nonce` of its module script and of `<meta property=\"csp-nonce\">`; two documents under one sim ctx carry different 64-character nonces."
+// Spec: k.security, Conformance "A production document carries the policy above, and its nonce equals the `nonce` of its module script and of `<meta property="csp-nonce">`; two documents under one sim ctx carry different 64-character nonces."
 // Seed: 1337.
 // @vitest-environment happy-dom
 import { compile } from "@keel/compiler";

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y, Conformance "An `Input` bound to a `.pii('contact')` field without `autocomplete` fails its render with E1821; with `autocomplete=\"email\"` or `\"off\"` it passes and the attribute is in the markup."
+// Spec: k.a11y, Conformance "An `Input` bound to a `.pii('contact')` field without `autocomplete` fails its render with E1821; with `autocomplete="email"` or `"off"` it passes and the attribute is in the markup."
 // Spec: k.a11y, Rules "E1821 a control bound to a `.pii()` field without `autocomplete` (render)"
 // Seed: 1337.
 // Assumed: `form(schema)` from @keel/forms is called in the component body and its `field(path)` is passed as `field` (k.forms, k.ui Input).
