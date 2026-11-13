@@ -33,6 +33,7 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
   for (const s of body.querySelectorAll("script:not(#k-state)")) s.remove();
   const warnings: string[] = [];
   const a11y = options.artifacts?.["a11y.json"];
+  const tokens = options.artifacts?.tokens;
   const { harness } = openHarness({
     start: (container) => {
       container.append(...body.childNodes);
@@ -40,7 +41,9 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
     },
     ctx,
     seeded,
+    target: () => ({ route: null, component: "resumeDocument" }),
     ...(a11y === undefined ? {} : { a11y }),
+    ...(tokens === undefined ? {} : { tokens }),
   });
   try {
     const [first] = warnings;

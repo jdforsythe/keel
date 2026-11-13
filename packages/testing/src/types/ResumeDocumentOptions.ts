@@ -1,6 +1,6 @@
-import type { Artifacts } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
+import type { HarnessArtifacts } from "./HarnessArtifacts.ts";
 
 /**
  * Options of `resumeDocument`: the route table whose components resume the document's islands (by route id), the
@@ -9,5 +9,5 @@ import type { Manifest, RouteDef } from "@keel/router";
 export interface ResumeDocumentOptions<M extends Readonly<Record<string, RouteDef>>> {
   readonly routes: Manifest<M>;
   readonly ctx?: Ctx;
-  readonly artifacts?: Pick<Artifacts, "a11y.json">;
+  readonly artifacts?: HarnessArtifacts;
 }

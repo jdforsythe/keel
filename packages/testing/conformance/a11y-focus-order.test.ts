@@ -11,7 +11,7 @@ import { SEED, simCtx } from "./fixtures.ts";
 import { page } from "./ui-fixtures.ts";
 
 describe("k.a11y: focusOrder()", () => {
-  it.skip("`focusOrder()` lists focusable element ids in document order without disabled or hidden ones", () => {
+  it("`focusOrder()` lists focusable element ids in document order without disabled or hidden ones", () => {
     const t = render(
       page(() =>
         Box({
@@ -35,7 +35,7 @@ describe("k.a11y: focusOrder()", () => {
     t.dispose();
   });
 
-  it.skip("the order is the document order of the buttons for any count (property)", () => {
+  it("the order is the document order of the buttons for any count (property)", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 8 }), (n) => {
         const ids = Array.from({ length: n }, (_, i) => `fo.b${i}`);
@@ -50,7 +50,7 @@ describe("k.a11y: focusOrder()", () => {
     );
   });
 
-  it.skip("an enabled and a disabled button of any mix: only the enabled ones, in order (property)", () => {
+  it("an enabled and a disabled button of any mix: only the enabled ones, in order (property)", () => {
     fc.assert(
       fc.property(fc.array(fc.boolean(), { minLength: 0, maxLength: 8 }), (flags) => {
         const t = render(

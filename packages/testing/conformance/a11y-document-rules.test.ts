@@ -18,7 +18,7 @@ const paragraph = (id: string, text: string): HTMLElement => {
 };
 
 describe("k.a11y: document rules run for a `renderRoute` page only", () => {
-  it.skip("A `render` of a component reports no document rule", () => {
+  it("A `render` of a component reports no document rule", () => {
     // no <title>, no <html lang>, no main, no skip link: a document rule would fail every one of them
     const t = render(
       page(() => paragraph("dr.p", "hello")),
@@ -28,7 +28,7 @@ describe("k.a11y: document rules run for a `renderRoute` page only", () => {
     t.dispose();
   });
 
-  it.skip("a `renderRoute` of a titled route reports no `document-title` or `html-has-lang` violation", async () => {
+  it("a `renderRoute` of a titled route reports no `document-title` or `html-has-lang` violation", async () => {
     const routes = manifest({
       "dr.home": { path: "/dr", component: () => paragraph("dr.home", "home"), title: () => "Home" },
     });
@@ -37,7 +37,7 @@ describe("k.a11y: document rules run for a `renderRoute` page only", () => {
     h.dispose();
   });
 
-  it.skip("any non-empty title leaves the route free of document-title and html-has-lang violations (property)", async () => {
+  it("any non-empty title leaves the route free of document-title and html-has-lang violations (property)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[A-Za-z][A-Za-z0-9 ]{0,20}$/), async (title) => {
         const routes = manifest({
@@ -51,7 +51,7 @@ describe("k.a11y: document rules run for a `renderRoute` page only", () => {
     );
   });
 
-  it.skip("the route's loaded data reaches the title, and the chain renders inside `main` (no landmark-one-main violation)", async () => {
+  it("the route's loaded data reaches the title, and the chain renders inside `main` (no landmark-one-main violation)", async () => {
     const routes = manifest({
       "dr.p": {
         path: "/p/:n",

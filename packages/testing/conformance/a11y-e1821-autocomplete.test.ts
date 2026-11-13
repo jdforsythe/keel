@@ -8,12 +8,13 @@ import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
 import { Input } from "@keel/ui";
+import type { Autofill } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, codeOf, messageOf, simCtx, thrown } from "./fixtures.ts";
 
 const Contact = s.object({ email: s.string().pii("contact") });
-const view = (autocomplete?: string) =>
+const view = (autocomplete?: Autofill) =>
   Object.assign(
     () => {
       const f = form(Contact);
@@ -25,14 +26,14 @@ const view = (autocomplete?: string) =>
   );
 
 describe("k.a11y: E1821 a control bound to a .pii() field without autocomplete", () => {
-  it.skip("E1821 An `Input` bound to a `.pii('contact')` field without `autocomplete` fails its render with E1821", async () => {
+  it("E1821 An `Input` bound to a `.pii('contact')` field without `autocomplete` fails its render with E1821", async () => {
     const e = await thrown(() => render(view(), { props: {}, ctx: simCtx() }));
     expect(codeOf(e)).toBe("E1821");
     expect(messageOf(e)).toContain("pii.email");
   });
 
-  it.skip('with `autocomplete="email"` or `"off"` it passes and the attribute is in the markup', async () => {
-    for (const value of ["email", "off"]) {
+  it('with `autocomplete="email"` or `"off"` it passes and the attribute is in the markup', async () => {
+    for (const value of ["email", "off"] as const) {
       const t = render(view(value), { props: {}, ctx: simCtx() });
       expect(t.find("pii.email").id).toBe("pii.email");
       t.dispose();
@@ -45,7 +46,7 @@ describe("k.a11y: E1821 a control bound to a .pii() field without autocomplete",
     }
   });
 
-  it.skip("any autofill name or `off` on the pii control passes (property)", () => {
+  it("any autofill name or `off` on the pii control passes (property)", () => {
     const names = ["name", "email", "tel", "street-address", "bday", "off"] as const;
     fc.assert(
       fc.property(fc.constantFrom(...names), (value) => {
@@ -56,7 +57,7 @@ describe("k.a11y: E1821 a control bound to a .pii() field without autocomplete",
     );
   });
 
-  it.skip("a control not bound to a pii field needs no `autocomplete`", () => {
+  it("a control not bound to a pii field needs no `autocomplete`", () => {
     const plain = Object.assign(() => Input({ id: "plain", label: "Note" }), { Props: s.object({}) });
     const t = render(plain, { props: {}, ctx: simCtx() });
     t.dispose();

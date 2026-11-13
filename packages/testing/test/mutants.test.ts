@@ -5,7 +5,6 @@ import { s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { testResults } from "../src/index.ts";
-import { assertAccessible } from "../src/internal/assertAccessible.ts";
 import { assertArtifacts } from "../src/internal/assertArtifacts.ts";
 import { axe } from "../src/internal/axe.ts";
 import { clip } from "../src/internal/clip.ts";
@@ -29,6 +28,7 @@ import { rungOf } from "../src/internal/rungOf.ts";
 import { seedFrom } from "../src/internal/seedFrom.ts";
 import { stateOf } from "../src/internal/stateOf.ts";
 import { treeOf } from "../src/internal/treeOf.ts";
+import { violationError } from "../src/internal/violationError.ts";
 
 fc.configureGlobal({ seed: 1337, numRuns: 100 });
 
@@ -361,8 +361,8 @@ describe("nameAndSource", () => {
   });
 });
 
-describe("axe", () => {
-  const rules = (html: string): { rule: string; at: string; help: string }[] => axe(dom(html));
+describe("axe (axe-core)", () => {
+  const rules = (html: string): string[] => axe(dom(html), false).violations.map((v) => v.rule);
 
   it("is clean for named controls and decorative images", () => {
     expect(
@@ -373,97 +373,60 @@ describe("axe", () => {
     expect(rules("<div>text</div><p>more</p>")).toEqual([]);
   });
 
-  it("reports each rule with element location and help text", () => {
-    expect(rules("<img>")).toEqual([
-      { rule: "image-alt", at: "<img>", help: 'has no alt text; add alt, or alt="" if decorative' },
+  it("names the rule and the element of each violation", () => {
+    expect(axe(dom('<img id="i" src="a.png">'), false).violations).toEqual([
+      expect.objectContaining({ rule: "image-alt", element: "i", at: '<img id="i">' }),
     ]);
-    expect(rules('<button id="b"></button>')).toEqual([
-      { rule: "button-name", at: '<button id="b">', help: "has no accessible name; add text or aria-label" },
-    ]);
-    expect(rules('<a href="/x" id="l"></a>')).toEqual([
-      { rule: "link-name", at: '<a id="l">', help: "has no accessible name; add text or aria-label" },
-    ]);
-    expect(rules("<input>")).toEqual([
-      { rule: "label", at: "<input>", help: "has no label; add <label for> or aria-label" },
-    ]);
-    expect(rules("<select></select>").map((v) => v.rule)).toEqual(["label"]);
-    expect(rules("<textarea></textarea>").map((v) => v.rule)).toEqual(["label"]);
-    expect(rules('<div role="button"></div>').map((v) => v.rule)).toEqual(["button-name"]);
-    expect(rules('<div role="link"></div>').map((v) => v.rule)).toEqual(["link-name"]);
-    expect(rules('<input type="checkbox">').map((v) => v.rule)).toEqual(["label"]);
-    expect(rules('<input type="TEXT">').map((v) => v.rule)).toEqual(["label"]);
+    expect(rules('<button id="b"></button>')).toEqual(["button-name"]);
+    expect(rules('<a href="/x" id="l"></a>')).toEqual(["link-name"]);
+    expect(rules("<input>")).toEqual(["label"]);
+    expect(rules("<select></select>")).toEqual(["select-name"]);
+    expect(rules('<div role="button"></div>')).toEqual(["aria-command-name"]);
   });
 
-  it("an img without alt but with another name is fine; a link without href is not a link", () => {
-    expect(rules('<img aria-label="named">')).toEqual([]);
-    expect(rules('<img title="named">')).toEqual([]);
-    expect(rules("<a></a>")).toEqual([]);
-    expect(rules('<img alt="" id="x">')).toEqual([]);
+  it("runs element rules only for a component, and lists what ran", () => {
+    const { ran } = axe(dom("<p>x</p>"), false);
+    expect(ran).toContain("image-alt");
+    expect(ran).toContain("landmark-unique");
+    for (const rule of ["document-title", "html-has-lang", "landmark-one-main", "region", "bypass", "color-contrast"])
+      expect(ran).not.toContain(rule);
   });
 
-  it("skips hidden subtrees and presentation roles but not the root", () => {
-    expect(rules("<div hidden><img><button></button></div>")).toEqual([]);
-    expect(rules('<div aria-hidden="true"><div><img></div></div>')).toEqual([]);
-    expect(rules('<div aria-hidden="false"><img></div>').map((v) => v.rule)).toEqual(["image-alt"]);
-    expect(rules('<button hidden></button><button aria-hidden="true"></button>')).toEqual([]);
-    expect(rules('<button role="presentation"></button><button role="none"></button>')).toEqual([]);
-    const root = document.createElement("div");
-    root.hidden = true;
-    root.innerHTML = "<img>";
-    expect(axe(root).map((v) => v.rule)).toEqual(["image-alt"]);
-  });
-
-  it("reports in document order, one violation per element", () => {
-    expect(rules('<button></button><img><a href="/x"></a><input>').map((v) => v.rule)).toEqual([
-      "button-name",
-      "image-alt",
-      "link-name",
-      "label",
-    ]);
+  it("runs the document rules for a page", () => {
+    document.title = "";
+    const { ran, violations } = axe(dom("<p>x</p>"), true);
+    expect(ran).toContain("document-title");
+    expect(ran).not.toContain("color-contrast");
+    expect(violations.map((v) => v.rule)).toContain("document-title");
   });
 });
 
-describe("assertAccessible", () => {
-  const bad = (n: number): HTMLElement => dom("<button></button>".repeat(n));
-
-  it("passes silently when clean", () => {
-    expect(() => assertAccessible(dom("<button>ok</button>"))).not.toThrow();
-  });
+describe("violationError", () => {
+  const v = (n: number) =>
+    Array.from({ length: n }, () => ({ rule: "button-name", element: "", at: "<button>", help: "has no name" }));
 
   it("names the first violation and up to four more", () => {
-    const line = "button-name: <button> has no accessible name; add text or aria-label";
-    const more = "\n  E1703 button-name: <button> has no accessible name; add text or aria-label";
-    expect(() => assertAccessible(bad(1))).toThrow(new RegExp(`^E1703 ${line}$`));
-    expect(() => assertAccessible(bad(2))).toThrow(`E1703 ${line}${more}`);
+    const line = "button-name: <button> has no name";
+    expect(violationError("E1703", v(1)).message).toBe(`E1703 ${line}`);
+    expect(violationError("E1703", v(2)).message).toBe(`E1703 ${line}\n  E1703 ${line}`);
     for (const n of [3, 4, 5]) {
-      try {
-        assertAccessible(bad(n));
-        expect.unreachable("should throw");
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "";
-        expect(msg.split("\n")).toHaveLength(n);
-        expect(msg).not.toContain("more E1703");
-        expect(Reflect.get(e instanceof Error ? e : {}, "code")).toBe("E1703");
-      }
+      const e = violationError("E1703", v(n));
+      expect(e.message.split("\n")).toHaveLength(n);
+      expect(e.message).not.toContain("more E1703");
+      expect(Reflect.get(e, "code")).toBe("E1703");
     }
   });
 
   it("summarises the overflow past five", () => {
-    try {
-      assertAccessible(bad(8));
-      expect.unreachable("should throw");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "";
-      expect(msg.split("\n")).toHaveLength(6);
-      expect(msg.endsWith("\n  ... +3 more E1703")).toBe(true);
-      expect(msg.startsWith("E1703 button-name: ")).toBe(true);
-    }
-    try {
-      assertAccessible(bad(6));
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e instanceof Error ? e.message : "").toContain("\n  ... +1 more E1703");
-    }
+    const msg = violationError("E1703", v(8)).message;
+    expect(msg.split("\n")).toHaveLength(6);
+    expect(msg.endsWith("\n  ... +3 more E1703")).toBe(true);
+    expect(violationError("E1703", v(6)).message).toContain("\n  ... +1 more E1703");
+  });
+
+  it("starts a rule that is its own code at the element", () => {
+    const e = violationError("E1804", [{ rule: "E1804", element: "t", at: '<p id="t">', help: "is 4.40:1" }]);
+    expect(e.message).toBe('E1804 <p id="t"> is 4.40:1');
   });
 });
 

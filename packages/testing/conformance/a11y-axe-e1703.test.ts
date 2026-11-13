@@ -17,14 +17,14 @@ const input = (id: string, label?: string) =>
   );
 
 describe("k.a11y: axe-core in the harness (E1703)", () => {
-  it.skip("An unlabeled `input` made with the runtime's `element` fails its render with E1703 naming rule `label` and the element id", async () => {
+  it("An unlabeled `input` made with the runtime's `element` fails its render with E1703 naming rule `label` and the element id", async () => {
     const e = await thrown(() => render(input("axe.name"), { props: {}, ctx: simCtx() }));
     expect(codeOf(e)).toBe("E1703");
     expect(messageOf(e)).toContain("label");
     expect(messageOf(e)).toContain("axe.name");
   });
 
-  it.skip("any element id is named in the violation (property)", async () => {
+  it("any element id is named in the violation (property)", async () => {
     const ids = fc.stringMatching(/^[a-z][a-z0-9]{0,8}(\.[a-z][a-z0-9]{0,8}){0,2}$/);
     const cases = fc.sample(ids, { seed: SEED, numRuns: 15 });
     for (const id of cases) {
@@ -35,7 +35,7 @@ describe("k.a11y: axe-core in the harness (E1703)", () => {
     }
   });
 
-  it.skip("the same input with an accessible name renders without E1703", () => {
+  it("the same input with an accessible name renders without E1703", () => {
     const t = render(input("axe.named", "Name"), { props: {}, ctx: simCtx() });
     expect(t.find("axe.named").id).toBe("axe.named");
     t.dispose();

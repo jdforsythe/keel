@@ -16,6 +16,8 @@ export interface Harness {
   /** Wait, without an event or timers, until DOM and store logs are quiet (e.g. after a resource resolves). */
   settle(): Promise<void>;
   find(id: string): Found;
+  /** The ids of focusable elements in sequential focus order, without disabled or hidden ones (k.a11y). */
+  focusOrder(): readonly string[];
   /** Unmount and free every binding, listener, and subscription. Idempotent. */
   dispose(): void;
 }

@@ -44,7 +44,7 @@ const open = (gray: number) =>
   });
 
 describe("k.a11y: render contrast across components (E1804)", () => {
-  it.skip("A `renderRoute` page whose text is 4.4:1 against a `bg` set in another component fails with E1804 naming the text's element id", async () => {
+  it("A `renderRoute` page whose text is 4.4:1 against a `bg` set in another component fails with E1804 naming the text's element id", async () => {
     const g = grayAt(4.4);
     expect(ratioOf(g)).toBeLessThan(4.5);
     const e = await thrown(() => open(g));
@@ -52,7 +52,7 @@ describe("k.a11y: render contrast across components (E1804)", () => {
     expect(messageOf(e)).toContain("ct.msg");
   });
 
-  it.skip("at 4.6:1 it passes", async () => {
+  it("at 4.6:1 it passes", async () => {
     const g = grayAt(4.6);
     expect(ratioOf(g)).toBeGreaterThanOrEqual(4.5);
     const h = await open(g);
@@ -60,7 +60,7 @@ describe("k.a11y: render contrast across components (E1804)", () => {
     h.dispose();
   });
 
-  it.skip("for any gray, the render fails with E1804 exactly when the ratio is below 4.5 (property)", async () => {
+  it("for any gray, the render fails with E1804 exactly when the ratio is below 4.5 (property)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 255 }), async (g) => {
         fc.pre(Math.abs(ratioOf(g) - 4.5) > 0.01);
@@ -74,7 +74,7 @@ describe("k.a11y: render contrast across components (E1804)", () => {
     );
   });
 
-  it.skip("with no painted ancestor the background is #FFFFFF", async () => {
+  it("with no painted ancestor the background is #FFFFFF", async () => {
     const routes = manifest({
       "ct.bare": { path: "/bare", component: () => Text({ id: "ct.bare", fg: "fg", children: "x" }) },
     });
