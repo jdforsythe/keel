@@ -16,7 +16,7 @@ status: conformance-covered
 | `render <routeId\|Component> [--props json]` | a11y tree of one render |
 | `scaffold <op>` / `codemod <op>` | structural operations (k.scaffold) |
 | `ledger` | emit and diff the ledger |
-| `evidence [--verify dir]` | signed evidence bundle (k.evidence) |
+| `evidence [--verify dir --key id]` | signed evidence bundle (k.evidence) |
 
 `session` runs the operation std.sessions registers with `stdCommand('session', op)` (`@keel/cli`) after importing the project's std `deps`; unfilled, I1055.
 

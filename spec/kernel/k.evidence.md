@@ -19,13 +19,13 @@ Every file parses with a schema `@keel/cli/evidence` exports. No file holds an a
 
 **Signing.** The key is `KEEL_EVIDENCE_KEY`, an Ed25519 private key as PKCS#8 PEM, read only from the environment. `key` is its raw public key in base64, `keyId` the first 16 hex characters of that key's SHA-256. The bundle is written whether runs fail or not; failing runs exit 1 with E1060.
 
-**Verify.** `keel evidence --verify <dir> [--key <keyId>]` re-hashes every listed file, finds no unlisted file, checks the signature with `key` (and that `keyId` equals `--key`), and parses each file with its schema. It emits one `evidence` record `{ kind, dir, at, keyId, files }`; compact `ok evidence evidence/2026-11-10 6 files key 3f2a9c01d2e4b5a6`.
+**Verify.** `keel evidence --verify <dir> --key <keyId>` checks that the SHA-256 id of the manifest's `key` and its `keyId` equal `--key` and that the signature verifies with that key, then re-hashes every listed file, finds no unlisted file, and parses each file with its schema. It emits one `evidence` record `{ kind, dir, at, keyId, files }`; compact `ok evidence evidence/2026-11-10 6 files key 3f2a9c01d2e4b5a6`.
 
-**Rules.** E1060 the bundle records a check error or a failed test · E1061 `KEEL_EVIDENCE_KEY` absent or not Ed25519; nothing is written · E1062 a listed file missing, changed or not parsing with its schema, or an unlisted file present (names it) · E1063 signature invalid, or `keyId` differs from `--key` · E1064 `--audit` file is not `pnpm audit --json` output.
+**Rules.** E1060 the bundle records a check error or a failed test · E1061 `KEEL_EVIDENCE_KEY` absent or not Ed25519; nothing is written · E1062 a listed file missing, changed or not parsing with its schema, or an unlisted file present (names it) · E1063 `--key` absent, the key's id or `keyId` not `--key`, or signature invalid · E1064 `--audit` file is not `pnpm audit --json` output.
 
 **Conformance.**
 - On a fixture project with `KEEL_EVIDENCE_KEY` set, `keel evidence` writes exactly the eight files above, and `--verify` of the result emits one `evidence` record and exits 0.
-- Changing a byte of any bundle file, adding a file or removing one makes `--verify` report E1062 naming it; a manifest signed by another key, or a `--key` naming another keyId, is E1063.
+- Changing a byte of any bundle file, adding a file or removing one makes `--verify` report E1062 naming it; a manifest signed by another key, a `--key` naming another keyId, or no `--key`, is E1063.
 - Without `KEEL_EVIDENCE_KEY`, or with an RSA key, the command writes nothing and reports E1061.
 - Under one sim seed and clock, two runs on an unchanged project write byte-equal bundles.
 - No bundle file of a fixture whose stores and tests hold generated `.pii()` values contains any of them.

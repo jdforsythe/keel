@@ -1,6 +1,6 @@
-// Spec: k.evidence, Conformance "Changing a byte of any bundle file, adding a file or removing one makes `--verify` report E1062 naming it; a manifest signed by another key, or a `--key` naming another keyId, is E1063."
+// Spec: k.evidence, Conformance "Changing a byte of any bundle file, adding a file or removing one makes `--verify` report E1062 naming it; a manifest signed by another key, a `--key` naming another keyId, or no `--key`, is E1063."
 // Spec: k.evidence, Rules "E1062 a listed file missing, changed or not parsing with its schema, or an unlisted file present (names it)"
-// Spec: k.evidence, Rules "E1063 signature invalid, or `keyId` differs from `--key`"
+// Spec: k.evidence, Rules "E1063 `--key` absent, the key's id or `keyId` not `--key`, or signature invalid"
 // Seed: 1337. The byte flips are a property (file, position, mask); each run spawns `keel evidence --verify`, so 20 runs.
 // The clause says "any bundle file", but `manifest.json` and `manifest.sig` are not listed in `files`, so for them the
 // test accepts E1062 or E1063 (the spec does not say which); the six listed files must be E1062.
