@@ -19,34 +19,34 @@ const attempt = async (p: Promise<unknown>) => {
 };
 
 describe("k.sim: storage fail", () => {
-  test.skip("a `fail` storage step rejects a `get` with an `Error`", async () => {
+  test("a `fail` storage step rejects a `get` with an `Error`", async () => {
     const st = make(["fail"]);
     const r = await attempt(st.get("k"));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBeInstanceOf(Error);
   });
 
-  test.skip("a `fail` storage step rejects a `set` with an `Error`", async () => {
+  test("a `fail` storage step rejects a `set` with an `Error`", async () => {
     const st = make(["fail"]);
     const r = await attempt(st.set("k", "v"));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBeInstanceOf(Error);
   });
 
-  test.skip("a failed `set` leaves the key's earlier value", async () => {
+  test("a failed `set` leaves the key's earlier value", async () => {
     const st = make(["ok", "fail", "ok"]);
     await st.set("k", "earlier");
     expect((await attempt(st.set("k", "later"))).ok).toBe(false);
     expect(await st.get("k")).toBe("earlier");
   });
 
-  test.skip("a failed `set` of a missing key leaves it missing", async () => {
+  test("a failed `set` of a missing key leaves it missing", async () => {
     const st = make(["fail", "ok"]);
     await attempt(st.set("k", "v"));
     expect(await st.get("k")).toBeNull();
   });
 
-  test.skip("the n-th `get` or `set` takes `storage[n]`, counting both kinds together", async () => {
+  test("the n-th `get` or `set` takes `storage[n]`, counting both kinds together", async () => {
     const st = make(["ok", "ok", "fail", "ok"]);
     await st.set("k", "a");
     expect(await st.get("k")).toBe("a");
@@ -54,7 +54,7 @@ describe("k.sim: storage fail", () => {
     expect(await st.get("k")).toBe("a");
   });
 
-  test.skip("property: a call fails exactly when its step is `fail`, and storage then equals a model that skips failed sets", async () => {
+  test("property: a call fails exactly when its step is `fail`, and storage then equals a model that skips failed sets", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(

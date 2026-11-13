@@ -28,7 +28,7 @@ async function flush(): Promise<void> {
 }
 
 describe("k.sim: net delay", () => {
-  test.skip("two fetches made at time 0 resolve the second at 10 and the first at 50", async () => {
+  test("two fetches made at time 0 resolve the second at 10 and the first at 50", async () => {
     const { ctx, resolvedAt, start } = make([none(50), none(10)]);
     const first = start("/first");
     const second = start("/second");
@@ -46,7 +46,7 @@ describe("k.sim: net delay", () => {
     expect(resolvedAt).toEqual({ "/second": 10, "/first": 50 });
   });
 
-  test.skip("a route that records calls sees the second first", async () => {
+  test("a route that records calls sees the second first", async () => {
     const { ctx, calls, start } = make([none(50), none(10)]);
     const all = Promise.all([start("/first"), start("/second")]);
     ctx.clock.advance(50);
@@ -54,7 +54,7 @@ describe("k.sim: net delay", () => {
     expect(calls).toEqual(["/second", "/first"]);
   });
 
-  test.skip("the route has not run before the delay has passed", async () => {
+  test("the route has not run before the delay has passed", async () => {
     const { ctx, calls, start } = make([none(50)]);
     const p = start("/a");
     ctx.clock.advance(49);
@@ -65,12 +65,16 @@ describe("k.sim: net delay", () => {
     expect(calls).toEqual(["/a"]);
   });
 
-  test.skip("property: fetches resolve in delay order, ties in the order made, each at its delay", async () => {
+  test("property: fetches resolve in delay order, ties in the order made, each at its delay", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(fc.integer({ min: 0, max: 60000 }), { minLength: 1, maxLength: 8 }), async (delays) => {
         const { ctx, calls, resolvedAt, start } = make(delays.map(none));
         const all = Promise.all(delays.map((_, i) => start(`/r${i}`)));
-        ctx.clock.advance(60000);
+        await flush();
+        for (let at = ctx.clock.next(); at !== null; at = ctx.clock.next()) {
+          ctx.clock.advance(at - ctx.clock.now());
+          await flush();
+        }
         await all;
         const want = delays
           .map((d, i) => [d, i] as const)

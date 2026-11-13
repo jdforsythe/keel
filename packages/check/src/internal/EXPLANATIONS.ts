@@ -514,6 +514,13 @@ const ROWS: readonly Row[] = [
     "eval(src) -> call the function src describes",
     "k.ctx",
   ],
+  [
+    "E1604",
+    "schedule on a real or shell ctx, a schedule failing Schedule, or a plan step failing its plan schema",
+    "A schedule drives sim capabilities only; each plan step is parsed by the capability's plan schema.",
+    "createCtx({ mode: 'real', schedule }) -> createCtx({ mode: 'sim', seed, schedule })",
+    "k.sim",
+  ],
   ["E1651", "ctx.net.fetch in app code", "", "declare an endpoint in the service and call it", "k.services"],
   [
     "E1652",

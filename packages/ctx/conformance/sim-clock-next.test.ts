@@ -9,11 +9,11 @@ const SEED = 1337;
 const sim = () => createCtx({ mode: "sim", seed: SEED }).clock;
 
 describe("k.sim: clock.next", () => {
-  test.skip("`clock.next()` is null with no waiter", () => {
+  test("`clock.next()` is null with no waiter", () => {
     expect(sim().next()).toBeNull();
   });
 
-  test.skip("`clock.next()` is the earliest pending `after` deadline", () => {
+  test("`clock.next()` is the earliest pending `after` deadline", () => {
     const c = sim();
     void c.after(80);
     void c.after(30);
@@ -23,7 +23,7 @@ describe("k.sim: clock.next", () => {
     expect(c.next()).toBe(30);
   });
 
-  test.skip("`clock.next()` is null once `advance` has passed every deadline", () => {
+  test("`clock.next()` is null once `advance` has passed every deadline", () => {
     const c = sim();
     void c.after(30);
     void c.after(50);
@@ -33,7 +33,7 @@ describe("k.sim: clock.next", () => {
     expect(c.next()).toBeNull();
   });
 
-  test.skip("`clock.next()` is null once each waiter aborted", async () => {
+  test("`clock.next()` is null once each waiter aborted", async () => {
     const c = sim();
     const a = new AbortController();
     const b = new AbortController();
@@ -46,7 +46,7 @@ describe("k.sim: clock.next", () => {
     expect(c.next()).toBeNull();
   });
 
-  test.skip("property: `clock.next()` is the minimum pending deadline, null when none is pending", () => {
+  test("property: `clock.next()` is the minimum pending deadline, null when none is pending", () => {
     fc.assert(
       fc.property(
         fc.array(fc.integer({ min: 1, max: 1000 }), { maxLength: 10 }),

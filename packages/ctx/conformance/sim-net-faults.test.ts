@@ -30,7 +30,7 @@ function make(faults: Fault[]) {
 }
 
 describe("k.sim: net faults", () => {
-  test.skip("`drop` never runs the route and the fetch rejects with a `TypeError`", async () => {
+  test("`drop` never runs the route and the fetch rejects with a `TypeError`", async () => {
     const { calls, go } = make(["drop"]);
     const r = await go();
     expect(r.ok).toBe(false);
@@ -38,13 +38,13 @@ describe("k.sim: net faults", () => {
     expect(calls.n).toBe(0);
   });
 
-  test.skip("`unavailable` never runs the route", async () => {
+  test("`unavailable` never runs the route", async () => {
     const { calls, go } = make(["unavailable"]);
     await go();
     expect(calls.n).toBe(0);
   });
 
-  test.skip("`lost` runs the route once and the fetch rejects with a `TypeError`", async () => {
+  test("`lost` runs the route once and the fetch rejects with a `TypeError`", async () => {
     const { calls, go } = make(["lost"]);
     const r = await go();
     expect(r.ok).toBe(false);
@@ -52,14 +52,14 @@ describe("k.sim: net faults", () => {
     expect(calls.n).toBe(1);
   });
 
-  test.skip("`unavailable` resolves status 503", async () => {
+  test("`unavailable` resolves status 503", async () => {
     const { go } = make(["unavailable"]);
     const r = await go();
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.res.status).toBe(503);
   });
 
-  test.skip("`none` runs the route once and resolves its response", async () => {
+  test("`none` runs the route once and resolves its response", async () => {
     const { calls, go } = make(["none"]);
     const r = await go();
     expect(r.ok).toBe(true);
@@ -67,7 +67,7 @@ describe("k.sim: net faults", () => {
     expect(calls.n).toBe(1);
   });
 
-  test.skip("property: for any fault series, the route runs once per `none` or `lost` step and never for `drop` or `unavailable`", async () => {
+  test("property: for any fault series, the route runs once per `none` or `lost` step and never for `drop` or `unavailable`", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(fc.constantFrom<Fault>("none", "drop", "lost", "unavailable"), { maxLength: 10 }),

@@ -17,3 +17,5 @@ export type { RouteHandler } from "./RouteHandler.ts";
 export type { SimClock } from "./SimClock.ts";
 export type { SimCtx } from "./SimCtx.ts";
 export type { SimNet } from "./SimNet.ts";
+export { NetStep } from "./NetStep.schema.ts";
+export { Schedule } from "./Schedule.schema.ts";

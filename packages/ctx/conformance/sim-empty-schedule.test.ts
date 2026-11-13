@@ -39,7 +39,7 @@ const opArb: fc.Arbitrary<Op> = fc.oneof(
 );
 
 describe("k.sim: empty schedule", () => {
-  test.skip("a ctx with an empty schedule gives the same results and observer events as one without", async () => {
+  test("a ctx with an empty schedule gives the same results and observer events as one without", async () => {
     const ops: Op[] = [
       { kind: "set", key: "k1", value: "v" },
       { kind: "fetch", path: "/a" },
@@ -51,7 +51,7 @@ describe("k.sim: empty schedule", () => {
     expect(withEmpty).toEqual(without);
   });
 
-  test.skip("property: for any operations, an empty schedule and no schedule agree", async () => {
+  test("property: for any operations, an empty schedule and no schedule agree", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(opArb, { maxLength: 10 }), fc.integer({ min: 0, max: 1000 }), async (ops, seed) => {
         const without = await drive(createCtx({ mode: "sim", seed }), ops);

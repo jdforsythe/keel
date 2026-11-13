@@ -39,27 +39,27 @@ function thrownCode(make: () => void): unknown {
 }
 
 describe("k.sim: plans", () => {
-  test.skip("a registered capability with a `plan` schema receives `plans[name]` in its sim factory", () => {
+  test("a registered capability with a `plan` schema receives `plans[name]` in its sim factory", () => {
     const name = fresh("sim.plan.probe");
     const access = probe(name);
     const ctx = createCtx({ mode: "sim", seed: SEED, schedule: schedule({ [name]: [3, 1, 4] }) });
     expect(access(ctx).plan).toEqual([3, 1, 4]);
   });
 
-  test.skip("the plan defaults to `[]` when `plans` has no entry for the name", () => {
+  test("the plan defaults to `[]` when `plans` has no entry for the name", () => {
     const name = fresh("sim.plan.default");
     const access = probe(name);
     const ctx = createCtx({ mode: "sim", seed: SEED, schedule: schedule({}) });
     expect(access(ctx).plan).toEqual([]);
   });
 
-  test.skip("the plan defaults to `[]` when the ctx has no schedule", () => {
+  test("the plan defaults to `[]` when the ctx has no schedule", () => {
     const name = fresh("sim.plan.noschedule");
     const access = probe(name);
     expect(access(createCtx({ mode: "sim", seed: SEED })).plan).toEqual([]);
   });
 
-  test.skip("property: any plan of steps that parse reaches the sim factory unchanged", () => {
+  test("property: any plan of steps that parse reaches the sim factory unchanged", () => {
     fc.assert(
       fc.property(fc.array(fc.integer({ min: -1000, max: 1000 }), { maxLength: 10 }), (steps) => {
         const name = fresh("sim.plan.prop");
@@ -71,7 +71,7 @@ describe("k.sim: plans", () => {
     );
   });
 
-  test.skip("a plan step that fails its schema throws E1604", () => {
+  test("a plan step that fails its schema throws E1604", () => {
     const name = fresh("sim.plan.bad");
     const access = probe(name);
     const code = thrownCode(() => {
@@ -81,15 +81,15 @@ describe("k.sim: plans", () => {
     expect(code).toBe("E1604");
   });
 
-  test.skip("`schedule` on a real ctx throws E1604", () => {
+  test("`schedule` on a real ctx throws E1604", () => {
     expect(thrownCode(() => createCtx({ mode: "real", seed: SEED, schedule: schedule({}) }))).toBe("E1604");
   });
 
-  test.skip("`schedule` on a shell ctx throws E1604", () => {
+  test("`schedule` on a shell ctx throws E1604", () => {
     expect(thrownCode(() => createCtx({ mode: "shell", seed: SEED, schedule: schedule({}) }))).toBe("E1604");
   });
 
-  test.skip("a `schedule` that fails `Schedule` throws E1604", () => {
+  test("a `schedule` that fails `Schedule` throws E1604", () => {
     // JSON.parse returns the untyped value a caller would read from a file.
     const bad = JSON.parse('{"net":[{"delay":60001,"fault":"none"}],"storage":[],"offline":[],"plans":{}}');
     expect(thrownCode(() => createCtx({ mode: "sim", seed: SEED, schedule: bad }))).toBe("E1604");

@@ -17,14 +17,14 @@ function make(offline: { at: number; ms: number }[]) {
 }
 
 describe("k.sim: offline window", () => {
-  test.skip("`ctx.net.online()` is true before clock time 100", () => {
+  test("`ctx.net.online()` is true before clock time 100", () => {
     const { ctx } = make([{ at: 100, ms: 50 }]);
     expect(ctx.net.online()).toBe(true);
     ctx.clock.advance(99);
     expect(ctx.net.online()).toBe(true);
   });
 
-  test.skip("`ctx.net.online()` is false from clock time 100 to 150", () => {
+  test("`ctx.net.online()` is false from clock time 100 to 150", () => {
     const { ctx } = make([{ at: 100, ms: 50 }]);
     ctx.clock.advance(100);
     expect(ctx.net.online()).toBe(false);
@@ -33,13 +33,13 @@ describe("k.sim: offline window", () => {
     expect(ctx.net.online()).toBe(false);
   });
 
-  test.skip("`ctx.net.online()` is true again at clock time 150", () => {
+  test("`ctx.net.online()` is true again at clock time 150", () => {
     const { ctx } = make([{ at: 100, ms: 50 }]);
     ctx.clock.advance(150);
     expect(ctx.net.online()).toBe(true);
   });
 
-  test.skip("an observer gets the two `net` events", () => {
+  test("an observer gets the two `net` events", () => {
     const { ctx, nets } = make([{ at: 100, ms: 50 }]);
     ctx.clock.advance(99);
     expect(nets()).toEqual([]);
@@ -52,7 +52,7 @@ describe("k.sim: offline window", () => {
     ]);
   });
 
-  test.skip("property: online() is false exactly while the clock is inside a window of one separated window series", () => {
+  test("property: online() is false exactly while the clock is inside a window of one separated window series", () => {
     fc.assert(
       fc.property(
         fc.array(fc.record({ gap: fc.integer({ min: 1, max: 100 }), ms: fc.integer({ min: 1, max: 100 }) }), {
