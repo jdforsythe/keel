@@ -6,19 +6,41 @@ import { serverOnlyCalls } from "../src/serverOnlyCalls.ts";
 import type { Topology } from "../src/types/Topology.ts";
 
 const SEED = 1337;
-const HEAD = "import { action, loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n";
+const HEAD =
+  "import { action, loader } from '@keel/router'\nimport * as r from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { load } from './load'\n";
+const LOCALS =
+  "const extra = {}\nexport async function* feed() {}\nconst stream = async function* () {}\nasync function plain() {}\nconst arrow = async () => ok({})\n";
+// why: what the message says, or null for no finding.
 const CALLS = {
-  loaderStores: { flagged: true, src: "loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))" },
-  actionStores: { flagged: true, src: "action({ input: s.object({}), 'stores': () => ({}) }, async () => ok(null))" },
-  live: { flagged: true, src: "loader({ output: s.object({}) }, async function* () {\n  yield ok({})\n})" },
-  plain: { flagged: false, src: "loader({ output: s.object({}) }, async () => ok({}))" },
-  plainAction: { flagged: false, src: "action({ input: s.object({}) }, async () => ok(null))" },
-  syncGenerator: { flagged: false, src: "loader({ output: s.object({}) }, function* () {})" },
-  computed: { flagged: false, src: "loader({ output: s.object({}), ['stores']: () => ({}) }, async () => ok({}))" },
-  namedGenerator: { flagged: true, src: "loader({ output: s.object({}) }, feed)" },
-  namedConstGenerator: { flagged: false, src: "loader({ output: s.object({}) }, stream)" },
-  namedPlain: { flagged: false, src: "loader({ output: s.object({}) }, plain)" },
-  spread: { flagged: false, src: "loader({ output: s.object({}), ...extra }, async () => ok({}))" },
+  loaderStores: {
+    why: "names stores",
+    src: "loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))",
+  },
+  actionStores: {
+    why: "names stores",
+    src: "action({ input: s.object({}), 'stores': () => ({}) }, async () => ok(null))",
+  },
+  live: { why: "is live", src: "loader({ output: s.object({}) }, async function* () {\n  yield ok({})\n})" },
+  plain: { why: null, src: "loader({ output: s.object({}) }, async () => ok({}))" },
+  plainAction: { why: null, src: "action({ input: s.object({}) }, async () => ok(null))" },
+  actionNamedFn: { why: null, src: "action({ input: s.object({}) }, load)" },
+  syncGenerator: { why: null, src: "loader({ output: s.object({}) }, function* () {})" },
+  namedGenerator: { why: "is live", src: "loader({ output: s.object({}) }, feed)" },
+  namedConstGenerator: { why: "is live", src: "loader({ output: s.object({}) }, stream)" },
+  namedPlain: { why: null, src: "loader({ output: s.object({}) }, plain)" },
+  namedArrow: { why: null, src: "loader({ output: s.object({}) }, arrow)" },
+  namespaceStores: {
+    why: "names stores",
+    src: "r.loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))",
+  },
+  namespacePlain: { why: null, src: "r.action({ input: s.object({}) }, async () => ok(null))" },
+  computed: { why: "unread", src: "loader({ output: s.object({}), ['stores']: () => ({}) }, async () => ok({}))" },
+  spread: { why: "unread", src: "loader({ output: s.object({}), ...extra }, async () => ok({}))" },
+  optionsIdentifier: { why: "unread", src: "action(extra, async () => ok(null))" },
+  optionsCall: { why: "unread", src: "loader(Object.assign({}, extra), async () => ok({}))" },
+  spreadArgument: { why: "unread", src: "loader(...[extra, plain])" },
+  importedFn: { why: "unread", src: "loader({ output: s.object({}) }, load)" },
+  calledFn: { why: "unread", src: "loader({ output: s.object({}) }, make())" },
 } as const;
 type Kind = keyof typeof CALLS;
 const KINDS = Object.keys(CALLS).filter((k): k is Kind => k in CALLS);
@@ -32,16 +54,24 @@ describe("serverOnlyCalls", () => {
         fc.constantFrom<"client" | "static" | "node">("client", "static", "node"),
         (kinds, adapter) => {
           const body = kinds.map((k, i) => `export const X${i} = ${CALLS[k].src}\n`).join("");
-          const source = `${HEAD}const extra = {}\nexport async function* feed() {}\nconst stream = async function* () {}\nasync function plain() {}\n${body}`;
+          const source = `${HEAD}${LOCALS}${body}`;
           const found = serverOnlyCalls([{ path: "modules/a/a.server.ts", source }], topo(adapter));
-          const want = adapter === "node" ? 0 : kinds.filter((k) => CALLS[k].flagged).length;
-          expect(found).toHaveLength(want);
+          const want = adapter === "node" ? [] : kinds.flatMap((k) => (CALLS[k].why === null ? [] : [CALLS[k].why]));
+          expect(
+            found.map((d) =>
+              d.message.includes("not statically readable")
+                ? "unread"
+                : d.message.includes("is live")
+                  ? "is live"
+                  : "names stores",
+            ),
+          ).toEqual(want);
           for (const d of found) {
             expect(d).toMatchObject({ code: "E1558", path: "modules/a/a.server.ts", see: "k.topology" });
-            expect(source.split("\n")[d.line - 1]?.slice(d.col - 1)).toMatch(/^(loader|action)\(/);
+            expect(source.split("\n")[d.line - 1]?.slice(d.col - 1)).toMatch(/^(r\.)?(loader|action)\(/);
             expect(d.message).toMatch(
               new RegExp(
-                `^${adapter} deployable web: (loader|action) (names stores|is live); serve module a from a node deployable$`,
+                `^${adapter} deployable web: (loader|action) (names stores|is live|is not statically readable \\(write its options as an object literal and its fn in this file\\)); serve module a from a node deployable$`,
               ),
             );
           }
@@ -51,7 +81,7 @@ describe("serverOnlyCalls", () => {
     );
   });
 
-  test("reads only *.server.ts(x) under the module's folder, names imported from @keel/router, aliases included", () => {
+  test("reads only *.server.ts(x) under the module's folder, calls of loader and action from @keel/router, renamed imports included", () => {
     const t = topo("client");
     const call = CALLS.loaderStores.src;
     expect(serverOnlyCalls([{ path: "modules/a/a.ts", source: `${HEAD}export const L = ${call}` }], t)).toEqual([]);
@@ -62,12 +92,14 @@ describe("serverOnlyCalls", () => {
     expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: local }], t)).toEqual([]);
     const typeOnly = `import type { loader } from '@keel/router'\ndeclare const f: typeof loader\nexport const L = f({ stores: 1 }, 2)\n`;
     expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: typeOnly }], t)).toEqual([]);
-    const unread = [
-      "import * as r from '@keel/router'\nexport const L = r.loader({ stores: () => ({}) }, async () => 1)\n",
-      "import { loader } from '@keel/router'\nconst withStores = (o: object) => ({ ...o, stores: () => ({}) })\nexport const L = loader(withStores({}), async () => 1)\n",
-      "import { loader } from '@keel/router'\nimport { feed } from './feed'\nexport const L = loader({}, feed)\n",
-    ];
-    for (const source of unread) expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source }], t)).toEqual([]);
+    const helper =
+      "import { loader } from '@keel/router'\nconst withStores = (o: object) => ({ ...o, stores: () => ({}) })\nexport const L = loader(withStores({}), async () => 1)\n";
+    expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: helper }], t)).toEqual([
+      expect.objectContaining({ code: "E1558", line: 3, col: 18 }),
+    ]);
+    const alias =
+      "import { loader } from '@keel/router'\nconst l = loader\nexport const L = l({ stores: 1 }, async () => 1)\n";
+    expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: alias }], t)).toEqual([]);
     const aliased = `import { loader as l } from '@keel/router'\nexport const L = l({ stores: () => ({}) }, async () => 1)\n`;
     expect(serverOnlyCalls([{ path: "modules/a/deep/x.server.tsx", source: aliased }], t)).toEqual([
       expect.objectContaining({ code: "E1558", line: 2, col: 18 }),

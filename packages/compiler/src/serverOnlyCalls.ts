@@ -14,13 +14,16 @@ const bare = (e: Expression): Expression =>
 const isLive = (e: Expression | null | undefined): boolean =>
   e?.type === "FunctionExpression" && e.async && e.generator;
 
+const UNREAD = "is not statically readable (write its options as an object literal and its fn in this file)";
+
 /**
  * E1558 (k.topology): server-only route work in a module a `client` or `static` deployable serves. In each
- * `modules/<m>/**\/*.server.ts(x)` of such a module, a call of `loader` or `action` imported by name from `@keel/router`
- * whose first argument is an object literal with a `stores` key, or a `loader` call whose second argument is an
- * `async function*` expression or names an `async function*` declared at the top of the same file, is one E1558 at
- * the call. Not read: a namespace import (`import * as`), a wrapper or helper that adds `stores` or calls `loader`, a
- * spread `stores`, a generator held in a `const` or imported from another file; `createApp` still throws E1558 for each.
+ * `modules/<m>/**\/*.server.ts(x)` of such a module, a call of `loader` or `action` imported from `@keel/router` (by
+ * name, or as a member of an `import * as` namespace) is one E1558 at the call when its options name `stores`, when a
+ * loader's `fn` is `async function*`, or when the call cannot be read: options not an object literal, or holding a
+ * spread or computed key; a spread argument; a loader `fn` neither a function or arrow expression nor the name of a
+ * top-level function or `const` function of the file (an imported `fn` included). Not read: an alias
+ * (`const l = loader`) or a call made from another file; `createApp` still throws E1558 for those holding server state.
  */
 export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology): Diagnostic[] {
   const served = new Map<string, readonly [string, string]>();
@@ -36,38 +39,65 @@ export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology
       lang: f.path.endsWith("x") ? "tsx" : "ts",
     });
     const kinds = new Map<string, string>();
-    // Top-level `async function*` declarations, by name.
-    const gens = new Set<string>();
+    const spaces = new Set<string>();
+    // Top-level functions by name: a declaration or a `const` function or arrow; true when `async function*`.
+    const fns = new Map<string, boolean>();
     for (const s of program.body) {
       if (s.type === "ImportDeclaration" && s.source.value === "@keel/router" && s.importKind !== "type")
-        for (const x of s.specifiers)
+        for (const x of s.specifiers) {
+          if (x.type === "ImportNamespaceSpecifier") spaces.add(x.local.name);
           if (x.type === "ImportSpecifier" && x.importKind !== "type" && x.imported.type === "Identifier")
             if (x.imported.name === "loader" || x.imported.name === "action") kinds.set(x.local.name, x.imported.name);
-      const d = s.type === "ExportNamedDeclaration" ? s.declaration : s;
-      if (d?.type === "FunctionDeclaration" && d.async && d.generator && d.id) gens.add(d.id.name);
+        }
+      const d = s.type === "ExportNamedDeclaration" || s.type === "ExportDefaultDeclaration" ? s.declaration : s;
+      if (d?.type === "FunctionDeclaration" && d.id) fns.set(d.id.name, d.async && d.generator);
+      if (d?.type === "VariableDeclaration" && d.kind === "const")
+        for (const v of d.declarations) {
+          const init = v.init && bare(v.init);
+          if (
+            v.id.type === "Identifier" &&
+            (init?.type === "FunctionExpression" || init?.type === "ArrowFunctionExpression")
+          )
+            fns.set(v.id.name, isLive(init));
+        }
     }
     new Visitor({
       CallExpression: (c) => {
-        const kind = c.callee.type === "Identifier" ? kinds.get(c.callee.name) : undefined;
-        const [opts, fn] = c.arguments.map((a) => (a.type === "SpreadElement" ? a : bare(a)));
-        const stores =
-          opts?.type === "ObjectExpression" &&
-          opts.properties.some(
-            (p) =>
-              p.type === "Property" &&
-              !p.computed &&
-              (p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" && p.key.value) === "stores",
-          );
-        const live =
-          kind === "loader" &&
-          fn?.type !== "SpreadElement" &&
-          (isLive(fn) || (fn?.type === "Identifier" && gens.has(fn.name)));
-        if (kind === undefined || !(stores || live)) return;
+        const callee = c.callee;
+        const kind =
+          callee.type === "Identifier"
+            ? kinds.get(callee.name)
+            : callee.type === "MemberExpression" &&
+                !callee.computed &&
+                callee.object.type === "Identifier" &&
+                spaces.has(callee.object.name) &&
+                (callee.property.name === "loader" || callee.property.name === "action")
+              ? callee.property.name
+              : undefined;
+        if (kind === undefined) return;
+        const [opts, fn] = c.arguments.map((a) => (a.type === "SpreadElement" ? undefined : bare(a)));
+        const props = opts?.type === "ObjectExpression" ? opts.properties : [];
+        const stores = props.some(
+          (p) =>
+            p.type === "Property" &&
+            !p.computed &&
+            (p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" && p.key.value) === "stores",
+        );
+        const live = kind === "loader" && (isLive(fn) || (fn?.type === "Identifier" && fns.get(fn.name) === true));
+        const unread =
+          opts?.type !== "ObjectExpression" ||
+          c.arguments.some((a) => a.type === "SpreadElement") ||
+          props.some((p) => p.type === "SpreadElement" || p.computed) ||
+          (kind === "loader" &&
+            fn?.type !== "FunctionExpression" &&
+            fn?.type !== "ArrowFunctionExpression" &&
+            !(fn?.type === "Identifier" && fns.has(fn.name)));
+        if (!(stores || live || unread)) return;
         out.push({
           code: "E1558",
           path: f.path,
           ...lineCol(f.source, c.start),
-          message: `${at[0]} deployable ${at[1]}: ${kind} ${live ? "is live" : "names stores"}; serve module ${m} from a node deployable`,
+          message: `${at[0]} deployable ${at[1]}: ${kind} ${stores ? "names stores" : live ? "is live" : UNREAD}; serve module ${m} from a node deployable`,
           see: "k.topology",
         });
       },

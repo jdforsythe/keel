@@ -57,19 +57,19 @@ const e1558 = async (command: "build" | "check", adapter: "client" | "node", id:
 describe("k.topology: E1558 reads what it can and reports what it cannot", () => {
   for (const command of ["check", "build"] as const) {
     for (const v of VARIANTS) {
-      test.skip(`${v} in a \`client\` module's \`*.server.ts\` is one E1558 in \`keel ${command}\`; in a \`node\` deployable's module none`, async () => {
+      test(`${v} in a \`client\` module's \`*.server.ts\` is one E1558 in \`keel ${command}\`; in a \`node\` deployable's module none`, async () => {
         const lines = await e1558(command, "client", "a", SERVER_FILE[v]);
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain("modules/a/a.server.ts");
         expect(await e1558(command, "node", "a", SERVER_FILE[v])).toEqual([]);
       });
     }
-    test.skip(`\`loader({ output }, load)\` with \`load\` an \`async function\` of the file is none in \`keel ${command}\``, async () => {
+    test(`\`loader({ output }, load)\` with \`load\` an \`async function\` of the file is none in \`keel ${command}\``, async () => {
       expect(await e1558(command, "client", "a", PLAIN_ASYNC_FILE)).toEqual([]);
     });
   }
 
-  test.skip("property: for any module id and variant, `check` and `build` each report one E1558 for a `client` deployable and none for `node`", async () => {
+  test("property: for any module id and variant, `check` and `build` each report one E1558 for a `client` deployable and none for `node`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{3,8}$/), fc.constantFrom(...VARIANTS), async (id, v) => {
         for (const command of ["check", "build"] as const) {
