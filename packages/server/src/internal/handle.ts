@@ -1,6 +1,7 @@
 import { matchUrl, needsBare } from "@keel/router/internal";
 import { err } from "@keel/schema";
 import type { Context } from "hono";
+import { cspPolicy } from "../csp/cspPolicy.ts";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { RequestScope } from "./RequestScope.ts";
@@ -36,7 +37,7 @@ import { statusOf } from "./statusOf.ts";
  * An API route (k.api) is a runtime request whatever `accept` says: JSON only, a guard denial is 403 `keel.denied`
  * (its `redirect` not followed), and a GET or HEAD without a loader is 405. A host's GET or HEAD of a path no route
  * matches that is neither runtime, an event stream nor under `/assets/` gets the hosted client's `index.html` (k.hosting
- * Host).
+ * Host), under the `csp.txt` policy (k.security Other deployables).
  */
 export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Context): Promise<Handled> {
   const url = new URL(raw.url);
@@ -71,7 +72,11 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
     )
       return {
         response: new Response(method === "HEAD" ? null : doc, {
-          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" },
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "no-cache",
+            "content-security-policy": cspPolicy({ peers: sv.built?.peers ?? [] }),
+          },
         }),
         route,
         diags: [],

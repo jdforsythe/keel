@@ -1,11 +1,15 @@
 import { clientStdData } from "@keel/compiler/std/clientStdData";
 import { stdBindings } from "@keel/compiler/std/stdBindings";
 import type { DocHead } from "@keel/router/internal";
+import { cspPolicy } from "../csp/cspPolicy.ts";
+import { CSP_PATH } from "./CSP_PATH.ts";
 import type { Rendered } from "./Rendered.ts";
 import type { Req } from "./Req.ts";
 import { documentHtml } from "./documentHtml.ts";
 import { headHtml } from "./headHtml.ts";
 import { moduleOf } from "./moduleOf.ts";
+import { nonceOf } from "./nonceOf.ts";
+import { policyHeader } from "./policyHeader.ts";
 import { snapshotStores } from "./snapshotStores.ts";
 
 /**
@@ -15,7 +19,8 @@ import { snapshotStores } from "./snapshotStores.ts";
  * (`Served.entry`) loads only when an island was rendered; then `std` carries the
  * client-readable part (`clientStdData`: `clientStd` packages, the served deployable's modules) of the `std.json` data
  * `createApp({ std })` bound, which the resume entry binds in the browser (k.module, rfc:0069); absent when that part
- * is empty. HEAD has no body.
+ * is empty. HEAD has no body. Each document draws a fresh nonce (`nonceOf`) and carries the k.security policy with it
+ * (report-only in dev) and `Reporting-Endpoints`.
  */
 export function documentResponse(
   r: Req,
@@ -35,6 +40,7 @@ export function documentResponse(
     ...extra,
     ...(std === undefined ? {} : { std }),
   };
+  const nonce = nonceOf(r.sv.ctx);
   const html = documentHtml(
     rendered.html,
     state,
@@ -42,9 +48,14 @@ export function documentResponse(
     entry,
     headHtml(head.title ?? r.sv.name, r.sv.built),
     head.lang,
+    nonce,
   );
   return new Response(r.method === "HEAD" ? null : html, {
     status,
-    headers: { "content-type": "text/html; charset=utf-8" },
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      [policyHeader(r.sv.mode)]: cspPolicy({ nonce, dev: r.sv.mode === "dev" }),
+      "reporting-endpoints": `keel-csp="${CSP_PATH}"`,
+    },
   });
 }

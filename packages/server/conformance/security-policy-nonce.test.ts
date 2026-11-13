@@ -78,7 +78,7 @@ const get = (app: { fetch(r: Request): Promise<Response> }, p: string): Promise<
   app.fetch(new Request(`http://localhost${p}`));
 
 describe("k.security: policy and nonce", () => {
-  test.skip("A production document carries the policy above", async () => {
+  test("A production document carries the policy above", async () => {
     const { app } = await setup(1337);
     for (const p of ["/counter", "/plain"]) {
       const res = await get(app, p);
@@ -90,7 +90,7 @@ describe("k.security: policy and nonce", () => {
     }
   });
 
-  test.skip('a production document\'s policy nonce equals the `nonce` of its module script and of `<meta property="csp-nonce">`', async () => {
+  test('a production document\'s policy nonce equals the `nonce` of its module script and of `<meta property="csp-nonce">`', async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 1_000_000 }), async (seed) => {
         const { app } = await setup(seed);
@@ -105,7 +105,7 @@ describe("k.security: policy and nonce", () => {
     );
   });
 
-  test.skip("two documents under one sim ctx carry different 64-character nonces", async () => {
+  test("two documents under one sim ctx carry different 64-character nonces", async () => {
     const { app } = await setup(1337);
     const nonces: string[] = [];
     for (let i = 0; i < 6; i++) {

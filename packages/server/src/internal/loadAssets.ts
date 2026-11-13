@@ -1,6 +1,7 @@
 import { CLIENT_MANIFEST } from "@keel/compiler/entry/CLIENT_MANIFEST";
 import type { BuiltClient } from "./BuiltClient.ts";
 import { codedError } from "./codedError.ts";
+import { peersOfIndex } from "./peersOfIndex.ts";
 
 const TYPES: Readonly<Record<string, string>> = {
   js: "text/javascript; charset=utf-8",
@@ -37,7 +38,7 @@ const namedBy = (chunk: unknown): unknown[] =>
  * when its real path is inside the real `assets/`, and none is when that real path is unknown, so no symlink and no
  * `..` in the manifest reaches outside. `css` lists the stylesheets the manifest's entry chunk names that are served
  * `.css` files, as URL paths; the mark is the only served file outside `/assets/`, so each is under it. With `hosted` (a `client` deployable names this one its host, k.hosting) it
- * also reads the top-level `index.html`. Throws E1555 when the manifest is missing or unreadable, has no entry
+ * also reads the top-level `index.html` and its `keel-peer` origins. Throws E1555 when the manifest is missing or unreadable, has no entry
  * chunk, or its entry file is not under `assets/`, or when `hosted` and `index.html` is missing.
  */
 export async function loadAssets(dir: string, hosted = false): Promise<BuiltClient> {
@@ -87,5 +88,6 @@ export async function loadAssets(dir: string, hosted = false): Promise<BuiltClie
     css: css.filter((f) => f.endsWith(".css") && files.has(f)),
     files,
     index: index && new Uint8Array(index),
+    peers: index === undefined ? [] : peersOfIndex(index.toString("utf8")),
   };
 }

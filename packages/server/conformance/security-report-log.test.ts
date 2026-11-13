@@ -3,6 +3,7 @@
 // @vitest-environment happy-dom
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -12,7 +13,11 @@ const ID = "app.item";
 async function setup() {
   const lines: string[] = [];
   const routes = manifest({
-    [ID]: { path: "/items/:slug", component: () => document.createElement("main") },
+    [ID]: {
+      path: "/items/:slug",
+      params: s.object({ slug: s.string() }),
+      component: () => document.createElement("main"),
+    },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
@@ -53,7 +58,7 @@ const post = (app: { fetch(r: Request): Promise<Response> }, type: string, body:
 const word = fc.stringMatching(/^[a-z]{6,12}$/);
 
 describe("k.security: report endpoint log record", () => {
-  test.skip("A `csp-report` POST answers 204 and logs one `csp` record whose `blocked` is the blocked URL's origin and `route` the document's route id", async () => {
+  test("A `csp-report` POST answers 204 and logs one `csp` record whose `blocked` is the blocked URL's origin and `route` the document's route id", async () => {
     await fc.assert(
       fc.asyncProperty(word, word, async (slug, host) => {
         const { app, csp } = await setup();
@@ -74,7 +79,7 @@ describe("k.security: report endpoint log record", () => {
     );
   });
 
-  test.skip("an `application/reports+json` POST answers 204 and logs the same record", async () => {
+  test("an `application/reports+json` POST answers 204 and logs the same record", async () => {
     const { app, csp } = await setup();
     const res = await post(
       app,
@@ -85,13 +90,13 @@ describe("k.security: report endpoint log record", () => {
     expect(csp().map((r) => [r["blocked"], r["route"]])).toEqual([["https://cdn.example", ID]]);
   });
 
-  test.skip("the `route` of a document no route matches is `-`", async () => {
+  test("the `route` of a document no route matches is `-`", async () => {
     const { app, csp } = await setup();
     await post(app, "application/csp-report", legacy("http://localhost/nowhere", "https://cdn.example/x.png"));
     expect(csp().map((r) => r["route"])).toEqual(["-"]);
   });
 
-  test.skip("`blocked` is `inline`, `eval` or `trusted-types` for those violations", async () => {
+  test("`blocked` is `inline`, `eval` or `trusted-types` for those violations", async () => {
     const { app, csp } = await setup();
     for (const blocked of ["inline", "eval", "trusted-types"]) {
       await post(app, "application/csp-report", legacy("http://localhost/items/a", blocked));
@@ -99,7 +104,7 @@ describe("k.security: report endpoint log record", () => {
     expect(csp().map((r) => r["blocked"])).toEqual(["inline", "eval", "trusted-types"]);
   });
 
-  test.skip("no record holds the document's path or query", async () => {
+  test("no record holds the document's path or query", async () => {
     await fc.assert(
       fc.asyncProperty(word, word, async (slug, q) => {
         const { app, lines } = await setup();
@@ -122,7 +127,7 @@ describe("k.security: report endpoint log record", () => {
     );
   });
 
-  test.skip("the endpoint takes the report without the write proof (no Origin header, no caller cookie)", async () => {
+  test("the endpoint takes the report without the write proof (no Origin header, no caller cookie)", async () => {
     const { app } = await setup();
     const res = await post(
       app,

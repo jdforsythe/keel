@@ -28,7 +28,7 @@ async function setup(mode: "dev" | "production") {
 }
 
 describe("k.security: dev report-only policy", () => {
-  test.skip("A dev document carries `Content-Security-Policy-Report-Only` and no enforcing `Content-Security-Policy`", async () => {
+  test("A dev document carries `Content-Security-Policy-Report-Only` and no enforcing `Content-Security-Policy`", async () => {
     const app = await setup("dev");
     for (const p of ["/plain", "/live"]) {
       const res = await app.fetch(new Request(`http://localhost${p}`));
@@ -39,7 +39,7 @@ describe("k.security: dev report-only policy", () => {
     }
   });
 
-  test.skip("a dev document has `'unsafe-inline'` in `style-src` and nowhere else", async () => {
+  test("a dev document has `'unsafe-inline'` in `style-src` and nowhere else", async () => {
     const app = await setup("dev");
     const res = await app.fetch(new Request("http://localhost/plain"));
     const ds = directivesOf(res.headers.get("content-security-policy-report-only") ?? "");
@@ -48,7 +48,7 @@ describe("k.security: dev report-only policy", () => {
     expect(withInline[0]?.startsWith("style-src ")).toBe(true);
   });
 
-  test.skip("a production document has `'unsafe-inline'` nowhere", async () => {
+  test("a production document has `'unsafe-inline'` nowhere", async () => {
     const app = await setup("production");
     const res = await app.fetch(new Request("http://localhost/plain"));
     expect(res.headers.get("content-security-policy") ?? "").not.toContain("'unsafe-inline'");
@@ -56,7 +56,7 @@ describe("k.security: dev report-only policy", () => {
 
   // ASSUMPTION: the spec says "Other responses carry `default-src 'none'; frame-ancestors 'none'` " without naming the header
   // in dev; the enforcing header is expected, report-only is accepted.
-  test.skip("JSON and event-stream responses carry `default-src 'none'; frame-ancestors 'none'`", async () => {
+  test("JSON and event-stream responses carry `default-src 'none'; frame-ancestors 'none'`", async () => {
     for (const mode of ["dev", "production"] as const) {
       const app = await setup(mode);
       const json = await app.fetch(new Request("http://localhost/live", { headers: { accept: "application/json" } }));

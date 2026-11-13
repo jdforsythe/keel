@@ -68,7 +68,7 @@ async function island(mode: "dev" | "production") {
 }
 
 describe("k.security: no inline script, style or handler", () => {
-  test.skip("No document of the fixture app has an inline script other than `#k-state`, a `<style>`, a `style` attribute or an `on*` attribute", async () => {
+  test("No document of the fixture app has an inline script other than `#k-state`, a `<style>`, a `style` attribute or an `on*` attribute", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...MODES), fc.constantFrom("open", "closed"), async (mode, kind) => {
         const { app } = await build({}, mode);

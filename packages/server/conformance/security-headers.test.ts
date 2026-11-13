@@ -66,7 +66,7 @@ function expectSix(res: Response): void {
 }
 
 describe("k.security: the six headers", () => {
-  test.skip("Every `createApp` response, a 404, a 413 and an asset included, carries the six headers", async () => {
+  test("Every `createApp` response, a 404, a 413 and an asset included, carries the six headers", async () => {
     const dist = distDir();
     const app = await setup({ maxBodyBytes: 16, assets: dist });
     const responses: Response[] = [
@@ -87,7 +87,7 @@ describe("k.security: the six headers", () => {
     for (const res of responses) expectSix(res);
   });
 
-  test.skip("property: any unrouted path is a 404 that carries the six headers", async () => {
+  test("property: any unrouted path is a 404 that carries the six headers", async () => {
     const app = await setup();
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{3,12}$/), async (seg) => {
@@ -99,7 +99,7 @@ describe("k.security: the six headers", () => {
     );
   });
 
-  test.skip("`Strict-Transport-Security` is `max-age=63072000` on https", async () => {
+  test("`Strict-Transport-Security` is `max-age=63072000` on https", async () => {
     const app = await setup();
     for (const p of ["/", "/nope"]) {
       const res = await app.fetch(new Request(`https://example.test${p}`));
@@ -108,7 +108,7 @@ describe("k.security: the six headers", () => {
     }
   });
 
-  test.skip("`Strict-Transport-Security` is absent over http", async () => {
+  test("`Strict-Transport-Security` is absent over http", async () => {
     const app = await setup();
     for (const p of ["/", "/nope"]) {
       const res = await app.fetch(new Request(`http://localhost${p}`));
@@ -116,7 +116,7 @@ describe("k.security: the six headers", () => {
     }
   });
 
-  test.skip("`Strict-Transport-Security` follows the cookie's https rule: `secure: true` over an http URL carries it", async () => {
+  test("`Strict-Transport-Security` follows the cookie's https rule: `secure: true` over an http URL carries it", async () => {
     const app = await setup({ secure: true });
     const res = await app.fetch(new Request("http://localhost/"));
     expect(res.headers.get("strict-transport-security")).toBe(HSTS);

@@ -47,7 +47,7 @@ const post = (app: { fetch(r: Request): Promise<Response> }, b: string): Promise
   );
 
 describe("k.security: report window", () => {
-  test.skip("The 101st report within 60 s of the sim clock is not logged", async () => {
+  test("The 101st report within 60 s of the sim clock is not logged", async () => {
     const { app, csp } = await setup();
     for (let i = 0; i < 101; i++) {
       const res = await post(app, body);
@@ -56,7 +56,7 @@ describe("k.security: report window", () => {
     expect(csp().filter((r) => r["dropped"] === undefined)).toHaveLength(100);
   });
 
-  test.skip("one `csp` record with `dropped: 1` follows the window", async () => {
+  test("one `csp` record with `dropped: 1` follows the window", async () => {
     const { app, ctx, csp } = await setup();
     for (let i = 0; i < 101; i++) await post(app, body);
     expect(csp().some((r) => r["dropped"] !== undefined)).toBe(false);
@@ -66,7 +66,7 @@ describe("k.security: report window", () => {
     expect(dropped).toEqual([{ kind: "csp", dropped: 1 }]);
   });
 
-  test.skip("property: past 100 reports in the window the rest are counted, and the window's end writes `dropped: n - 100`", async () => {
+  test("property: past 100 reports in the window the rest are counted, and the window's end writes `dropped: n - 100`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 101, max: 130 }), async (n) => {
         const { app, ctx, csp } = await setup();
@@ -80,7 +80,7 @@ describe("k.security: report window", () => {
     );
   });
 
-  test.skip("a window that saw no more than 100 reports writes no `dropped` record", async () => {
+  test("a window that saw no more than 100 reports writes no `dropped` record", async () => {
     const { app, ctx, csp } = await setup();
     for (let i = 0; i < 100; i++) await post(app, body);
     ctx.clock.advance(60_000);
@@ -88,7 +88,7 @@ describe("k.security: report window", () => {
     expect(csp().filter((r) => r["dropped"] !== undefined)).toEqual([]);
   });
 
-  test.skip("a 17 KiB body is 413 and logs nothing", async () => {
+  test("a 17 KiB body is 413 and logs nothing", async () => {
     const { app, csp } = await setup();
     const big = JSON.stringify({
       "csp-report": { "document-uri": "http://localhost/", "blocked-uri": "x".repeat(17 * 1024) },

@@ -8,6 +8,7 @@ import { compileRoutes, compileTable, matchUrl } from "@keel/router/internal";
 import { attempt } from "@keel/schema";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
+import { CSP_PATH } from "./internal/CSP_PATH.ts";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import { DEFAULT_MAX_STREAMS } from "./internal/DEFAULT_MAX_STREAMS.ts";
 import type { Served } from "./internal/Served.ts";
@@ -17,6 +18,7 @@ import { callerOf } from "./internal/callerOf.ts";
 import { callerSigner } from "./internal/callerSigner.ts";
 import { codedError } from "./internal/codedError.ts";
 import { crashed } from "./internal/crashed.ts";
+import { cspReport } from "./internal/cspReport.ts";
 import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
 import { installServerDom } from "./internal/dom/installServerDom.ts";
@@ -32,6 +34,7 @@ import { nodeEnv } from "./internal/nodeEnv.ts";
 import { peerOf } from "./internal/peerOf.ts";
 import { peerPaths } from "./internal/peerPaths.ts";
 import { reqLine } from "./internal/reqLine.ts";
+import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -82,6 +85,9 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * carries `vary: origin` (k.hosting Allowed origins). An event-stream GET past `maxStreams` (default 1,000) open streams
  * gets 503 `keel.busy` (`data: { limit }`) and runs no loader; a stream frees its place when it ends. A `maxStreams` that is
  * not an integer of at least 1 rejects with E1560.
+ * Every response carries the k.security headers (`secured`); every document its own nonce policy (report-only in dev),
+ * any other response `default-src 'none'; frame-ancestors 'none'`. `POST /__keel/csp` takes policy reports before any
+ * write check or route (`cspReport`) and logs `csp` records.
  */
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
@@ -155,6 +161,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     lifecycle: new AbortController(),
     maxStreams: opts.maxStreams ?? DEFAULT_MAX_STREAMS,
     streams: { open: 0 },
+    reports: { open: false, logged: 0, dropped: 0 },
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
@@ -192,20 +199,25 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const pre = api !== undefined && raw.method === "OPTIONS" && raw.headers.has("access-control-request-method");
     const ran = pre
       ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
-      : at !== undefined
-        ? await attempt(() => forward(raw, at, sv))
-        : gate === undefined || (gate.ok && raw.method !== "GET")
-          ? await routed()
-          : await attempt(() =>
-              (gate.ok
-                ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
-                : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
-              ).then((r) => ({ ...r, route: undefined })),
-            );
+      : path === CSP_PATH
+        ? await attempt(() => cspReport(raw, sv, log))
+        : at !== undefined
+          ? await attempt(() => forward(raw, at, sv))
+          : gate === undefined || (gate.ok && raw.method !== "GET")
+            ? await routed()
+            : await attempt(() =>
+                (gate.ok
+                  ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
+                  : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
+                ).then((r) => ({ ...r, route: undefined })),
+              );
     const h = ran.ok ? ran.value : crashed(sv.mode, ran.error);
     // Every API-route response varies by origin once any origin is allowed, so a shared cache keeps them apart.
-    const response =
-      hit?.def.api !== true ? h.response : withCors(h.response, api && from, api && pre ? allowOf(api) : undefined);
+    const response = secured(
+      hit?.def.api !== true ? h.response : withCors(h.response, api && from, api && pre ? allowOf(api) : undefined),
+      raw,
+      sv,
+    );
     if (log !== undefined) {
       if (cross)
         log.write(

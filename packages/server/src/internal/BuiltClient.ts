@@ -3,12 +3,14 @@
  * of the bundled resume entry the document's module script loads; `css`, the URLs of the stylesheets the manifest's
  * entry chunk names, which every document links; and `files`, every served file by decoded URL path with its content
  * type, whether its name is a content hash the manifest records (`immutable`; else it is served `no-cache`), and its
- * weak `etag`. `index` is the hosted `client` deployable's `index.html` (k.hosting Host), else undefined.
+ * weak `etag`. `index` is the hosted `client` deployable's `index.html` (k.hosting Host), else undefined; `peers` the
+ * origins of its `keel-peer` tags, which its policy's `connect-src` adds (k.security Other deployables).
  */
 export type BuiltClient = {
   readonly entry: string;
   readonly css: readonly string[];
   readonly index?: Uint8Array<ArrayBuffer> | undefined;
+  readonly peers: readonly string[];
   readonly files: ReadonlyMap<
     string,
     {

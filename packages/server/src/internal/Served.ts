@@ -4,6 +4,7 @@ import type { Located } from "@keel/router/internal";
 import type { BuiltClient } from "./BuiltClient.ts";
 import type { CallerKeys } from "./CallerKeys.ts";
 import type { Mode } from "./Mode.ts";
+import type { ReportWindow } from "./ReportWindow.ts";
 import type { Saved } from "./Saved.ts";
 
 /**
@@ -18,7 +19,8 @@ import type { Saved } from "./Saved.ts";
  * `entry` is the script an island document loads: `built`'s entry, else `/@keel/entry.ts?d=<deployable>`, the resume
  * entry of `createApp({ deployable })`'s islands (none given: `/@keel/entry.ts`, every `node` module's).
  * `lifecycle` aborts on `close()`, ending runners and open event streams. `maxStreams` caps the open event streams
- * (`createApp({ maxStreams })`) and `streams.open` counts them (`liveStream`).
+ * (`createApp({ maxStreams })`) and `streams.open` counts them (`liveStream`). `reports` is the CSP report window
+ * (`cspReport`).
  */
 export type Served = {
   readonly table: readonly Located[];
@@ -39,4 +41,5 @@ export type Served = {
   readonly lifecycle: AbortController;
   readonly maxStreams: number;
   readonly streams: { open: number };
+  readonly reports: ReportWindow;
 };
