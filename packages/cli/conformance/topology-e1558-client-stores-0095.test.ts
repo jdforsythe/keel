@@ -1,7 +1,6 @@
 // Spec: k.topology, Conformance "In a module a `client` deployable serves, a `loader` naming `stores`, an `action` naming `stores` and a loader whose `fn` is `async function*` are each one E1558 in `keel check` and `keel build`, and `createApp` for that deployable throws E1558; in a `node` deployable's module none is."
 // Seed: 1337.
 // @vitest-environment happy-dom
-// Skipped until E1558 covers `stores` and `keel check` / `keel build`.
 // In-memory project through `run(['check'])` and `run(['build'])`, as topology-e1559-same-path.test.ts. ASSUMPTION: the
 // diagnostic is reported at the call in `modules/<id>/<name>.server.ts`; each diagnostic is one line of the json stream.
 import fs from "node:fs";
@@ -61,19 +60,19 @@ const e1558 = async (command: "build" | "check", adapter: "client" | "node", id:
 describe("k.topology: E1558 in client modules", () => {
   for (const command of ["check", "build"] as const) {
     for (const v of VARIANTS) {
-      test.skip(`${v} in a module a \`client\` deployable serves is one E1558 in \`keel ${command}\`; in a \`node\` deployable's module none`, async () => {
+      test(`${v} in a module a \`client\` deployable serves is one E1558 in \`keel ${command}\`; in a \`node\` deployable's module none`, async () => {
         const lines = await e1558(command, "client", "a", SERVER_FILE[v]);
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain("modules/a/a.server.ts");
         expect(await e1558(command, "node", "a", SERVER_FILE[v])).toEqual([]);
       });
     }
-    test.skip(`a plain loader in a \`client\` module is not E1558 in \`keel ${command}\``, async () => {
+    test(`a plain loader in a \`client\` module is not E1558 in \`keel ${command}\``, async () => {
       expect(await e1558(command, "client", "a", CLEAN_FILE)).toEqual([]);
     });
   }
 
-  test.skip("property: for any module id and variant, `check` and `build` each report one E1558 for a `client` deployable and none for `node`", async () => {
+  test("property: for any module id and variant, `check` and `build` each report one E1558 for a `client` deployable and none for `node`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{3,8}$/), fc.constantFrom(...VARIANTS), async (id, v) => {
         for (const command of ["check", "build"] as const) {
@@ -111,7 +110,7 @@ const build = (adapter: "client" | "node", v: Variant): Promise<unknown> => {
 
 describe("k.topology: E1558 from createApp", () => {
   for (const v of VARIANTS) {
-    test.skip(`\`createApp\` for a \`client\` deployable throws E1558 for ${v}; for a \`node\` deployable it builds`, async () => {
+    test(`\`createApp\` for a \`client\` deployable throws E1558 for ${v}; for a \`node\` deployable it builds`, async () => {
       expect(await build("client", v)).toContain("E1558");
       expect(await build("node", v)).toBe("built");
     });

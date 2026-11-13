@@ -7,7 +7,8 @@ import { moduleOf } from "./moduleOf.ts";
  * Pick the deployable to serve and validate it. E1552: one module is in two deployables (whole topology), or
  * the served deployable names a module no route or runner belongs to (other deployables' modules are ignored; they
  * may be loaded by another process). E1553: a `static` deployable contains a route with params or actions.
- * E1558: a non-`node` deployable serves a route with a live loader. E1511: a non-`node` deployable serves an API route
+ * E1558 (k.topology): a non-`node` deployable serves a route whose loader is live or names `stores`, or one of whose
+ * actions names `stores`. E1511: a non-`node` deployable serves an API route
  * (k.api). Returns the routes of the served deployable's modules.
  */
 export function selectDeployable(
@@ -34,12 +35,24 @@ export function selectDeployable(
   const api = served.find((r) => r.def.api);
   if (api !== undefined && dep.adapter !== "node")
     throw codedError("E1511", `${dep.adapter} deployable ${picked}: API route ${api.id} needs a node deployable`);
-  const live = served.find((r) => r.def.loader?.live !== undefined);
-  if (live !== undefined && dep.adapter !== "node")
-    throw codedError(
-      "E1558",
-      `${dep.adapter} deployable ${picked}: route ${live.id} has a live loader; serve it from a node deployable`,
-    );
+  if (dep.adapter !== "node")
+    for (const r of served) {
+      const l = r.def.loader;
+      const acted = Object.values(routeActions.get(r.def) ?? {}).some((a) => a?.stores !== undefined);
+      const what =
+        l?.live !== undefined
+          ? "loader is live"
+          : l?.stores !== undefined
+            ? "loader names stores"
+            : acted
+              ? "action names stores"
+              : undefined;
+      if (what !== undefined)
+        throw codedError(
+          "E1558",
+          `${dep.adapter} deployable ${picked}: route ${r.id} ${what}; serve module ${moduleOf(r.id)} from a node deployable`,
+        );
+    }
   if (dep.adapter === "static")
     for (const r of served) {
       const params = r.def.params !== undefined || r.segments.some((s) => s.kind === "param");

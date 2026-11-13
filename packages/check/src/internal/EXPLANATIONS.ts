@@ -487,6 +487,13 @@ const ROWS: readonly Row[] = [
     "k.server",
   ],
   [
+    "E1558",
+    "live loader, or loader or action naming stores, in a module a client or static deployable serves",
+    "Server state and event streams run on a node deployable only; the browser refuses them.",
+    "serve the module from a node deployable, or drop stores from the loader or action",
+    "k.topology",
+  ],
+  [
     "E1561",
     "service({ module }) endpoint its route does not accept, or whose output or errors refuse the route's answer",
     "Checked from .keel/surface.json in every topology; the message names the first refused path.",

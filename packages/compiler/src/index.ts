@@ -4,6 +4,7 @@ export { compile } from "./compile.ts";
 export { isSourcePath } from "./internal/isSourcePath.ts";
 export { parseTopology } from "./internal/parseTopology.ts";
 export { pathCollisions } from "./pathCollisions.ts";
+export { serverOnlyCalls } from "./serverOnlyCalls.ts";
 export { projectDirs } from "./projectDirs.ts";
 export { module } from "./module.ts";
 export { ModuleSchema } from "./ModuleSchema.ts";
