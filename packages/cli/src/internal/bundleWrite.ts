@@ -9,6 +9,7 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { Outcome } from "./Outcome.ts";
 import { a11yClaims } from "./a11yClaims.ts";
+import { a11yFindings } from "./a11yFindings.ts";
 import { a11yReport } from "./a11yReport.ts";
 import { a11yRuleMap } from "./a11yRuleMap.ts";
 import { auditAdvisories } from "./auditAdvisories.ts";
@@ -94,7 +95,7 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
       json(
         await a11yReport(
           io.cwd,
-          a11yClaims(files, map),
+          a11yClaims(files, map, a11yFindings(io.cwd, files)),
           map,
           files.some((f) => f.path === "tokens.ts"),
         ),

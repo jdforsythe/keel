@@ -9,6 +9,7 @@ import { LedgerFileSchema } from "./LedgerFileSchema.ts";
 import type { LedgerItem } from "./LedgerItem.ts";
 import type { Outcome } from "./Outcome.ts";
 import { a11yClaims } from "./a11yClaims.ts";
+import { a11yFindings } from "./a11yFindings.ts";
 import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
 import { makeDiag } from "./makeDiag.ts";
@@ -115,7 +116,7 @@ const ledgerFile = (
 export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = new Map()): Outcome {
   const files = projectFiles(io);
   const built = buildLedger(files);
-  const a11y = a11yClaims(files, a11yMap);
+  const a11y = a11yMap.size === 0 ? [] : a11yClaims(files, a11yMap, a11yFindings(io.cwd, files));
   const byItem = new Map(built.items.map((i) => [i.item, i]));
   const all = ledger(built.items.map((i) => ({ item: i.item, evidence: i.evidence.map((e) => e.ev) })));
   const scope = input.scope ?? "";
