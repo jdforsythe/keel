@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Properties for simulate (k.sim): every SimRun parses and replays to the same trace. Seed: 1337.
-import type { SimCtx } from "@keel/ctx";
+import { type SimCtx, register } from "@keel/ctx";
+import { s } from "@keel/schema";
 import { SimRun, simulate } from "@keel/testing";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -54,5 +55,34 @@ describe("simulate", () => {
       }),
       { seed: 1337, numRuns: 20 },
     );
+  });
+});
+
+describe("simulate plans", () => {
+  it("plans are drawn in capability-name order, whatever the registration order, and a failure names them", async () => {
+    register<object, number>("zz.sim.later", {
+      real: () => ({}),
+      shell: () => ({}),
+      sim: () => ({}),
+      plan: s.int({ min: 0, max: 3 }),
+    });
+    register<object, number>("zz.sim.early", {
+      real: () => ({}),
+      shell: () => ({}),
+      sim: () => ({}),
+      plan: s.int({ min: 0, max: 3 }),
+    });
+    const keys: string[][] = [];
+    const e = await simulate(
+      async ({ schedule }) => {
+        keys.push(Object.keys(schedule.plans));
+        throw new Error("planned failure");
+      },
+      { runs: 1, seed: 1337 },
+    ).catch((x: unknown) => x);
+    const ours = (k: readonly string[]) => k.filter((n) => n.startsWith("zz.sim."));
+    for (const k of keys) expect(ours(k)).toEqual(["zz.sim.early", "zz.sim.later"]);
+    expect(keys.every((k) => [...k].sort().join() === k.join())).toBe(true);
+    expect(e instanceof Error ? e.message.split("\n")[0] : "").toContain("plans zz.sim.early, zz.sim.later");
   });
 });

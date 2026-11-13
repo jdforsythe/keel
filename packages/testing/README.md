@@ -1,6 +1,6 @@
 # @keel/testing
 
-**Spec:** k.testing, k.model, k.sim · **Status:** proposed · **verified:** (none)
+**Spec:** k.testing, k.model, k.sim · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

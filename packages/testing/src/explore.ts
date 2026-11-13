@@ -21,7 +21,8 @@ interface Visit<T> {
  * store's invariants on each edge. Each edge runs as a `properties` case runs a transaction: the store is restored to
  * the state, `tx` commits, the output is read; the store's snapshot from before the call, log `meta` included, is
  * restored at the end. E1708 an edge broke an invariant or threw (`data`: the shortest path as a snapshot, the
- * transaction and the payload) · E1709 `maxStates` reached, or a closed form that did not close · E1710 bad arguments.
+ * transaction and the payload) · E1709 `maxStates` reached, or a closed form that did not close · E1710 bad arguments,
+ * or an edge that `tx` refused before the transaction's function ran (`store.undeclared`, `schema.invalid`, `keel.conflict`).
  */
 export function explore<T>(
   transactions: readonly Transaction<T, unknown>[],
@@ -82,13 +83,17 @@ export function explore<T>(
           at(visit.state);
           let failed: unknown;
           let next: T | undefined;
+          let refused = "";
           try {
             const r = tx(t, payload);
             if (r.ok) next = r.value;
             else if (r.error.code === "store.invariant") failed = r.error;
+            else refused = r.error.code;
           } catch (e) {
             failed = e ?? "throw";
           }
+          // The edge never reached the transaction's function: the run is set up wrong, not the store.
+          if (refused !== "") throw bad(`${t.name} answered ${refused} on an edge, before its function ran`);
           if (failed !== undefined) {
             const steps: Visit<T>[] = [];
             for (let v: Visit<T> | undefined = visit; v?.via !== undefined; v = visits[v.via.from]) steps.unshift(v);

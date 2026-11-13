@@ -46,16 +46,12 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
     };
     await scenario({ ctx, seed: simRun.seed, schedule: simRun.schedule, run });
   };
-  const failed = (reason: unknown, run: number, label: string, simRun: unknown): Error =>
-    fail(
-      "E1704",
-      `simulate: ${clip(firstLine(reason), 70)} (seed ${seed}, run ${run}, ${label})\n${JSON.stringify(simRun)}`,
-      {
-        seed,
-        run,
-        shrunk: simRun,
-      },
-    );
+  const failed = (reason: unknown, run: number, label: string, simRun: SimRun | undefined): Error => {
+    const plans = Object.keys(simRun?.schedule.plans ?? {});
+    const named = plans.length === 0 ? "" : `, plans ${plans.join(", ")}`;
+    const head = `simulate: ${clip(firstLine(reason), 70)} (seed ${seed}, run ${run}, ${label}${named})`;
+    return fail("E1704", `${head}\n${JSON.stringify(simRun)}`, { seed, run, shrunk: simRun });
+  };
   try {
     if (options.replay !== undefined) {
       const parsed = SimRun.parse(options.replay);
@@ -66,7 +62,8 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
       return { seed, runs: 1 };
     }
     const runs = options.runs ?? DEFAULT_RUNS;
-    const plans = planSchemas();
+    // Sorted by name, so one seed draws the same runs whatever order the capabilities registered in.
+    const plans = planSchemas().sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
     const simRun: fc.Arbitrary<SimRun> = fc.record({
       seed: fc.integer({ min: 0, max: 2 ** 31 - 1 }),
       schedule: fc.record({
