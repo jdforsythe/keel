@@ -37,7 +37,7 @@ describe("std.statecharts: compiles to a store and one transaction per event", (
   test.skip("each event's transaction is named `<id>.<event>`", async () => {
     const c = editor("named");
     expect(Object.keys(c.events).sort()).toEqual([...EVENTS].sort());
-    expect(Object.keys(c.store.payloads).sort()).toEqual(EVENTS.map((e) => `${c.store.id}.${e}`).sort());
+    expect([...c.store.payloads.keys()].sort()).toEqual(EVENTS.map((e) => `${c.store.id}.${e}`).sort());
     await tx(c.events.edit, {});
     expect(c.store.log().map((e) => e.name)).toEqual([`${c.store.id}.edit`]);
   });

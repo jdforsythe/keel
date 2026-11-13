@@ -2,8 +2,8 @@
 // Seed: 1337.
 // Assumption: the thrown error's message or `code` carries the rule code; asserted as a match on the code text.
 // E2752 and E2755 are not thrown (Checked paragraph names only E2751, E2753 and E2754), so a chart with an unreachable state does not throw.
-import { s } from "@keel/schema";
-import { chart } from "@keel/std-statecharts";
+import { type Schema, s } from "@keel/schema";
+import { type ChartSpec, chart } from "@keel/std-statecharts";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { nextId } from "./fixtures.ts";
@@ -11,6 +11,9 @@ import { nextId } from "./fixtures.ts";
 const empty = s.object({});
 const data = s.object({ n: s.int({ min: 0, max: 3 }) });
 const base = { data, start: { n: 0 }, events: { go: empty, stop: empty } } as const;
+/** A declaration with every state, event, guard and action name typed `string`, so names `chart`'s types refuse reach its throws. */
+const loose = (spec: ChartSpec<{ n: number }, Readonly<Record<string, Schema<unknown>>>, string, string, string>) =>
+  spec;
 describe("std.statecharts: chart repeats E2751, E2753 and E2754 as throws", () => {
   test.skip("`chart` throws E2751, E2753 and E2754 for those fixtures", () => {
     // clean twin
@@ -20,18 +23,21 @@ describe("std.statecharts: chart repeats E2751, E2753 and E2754 as throws", () =
 
     // E2751: `initial` naming no state, `to` naming no state
     expect(() =>
-      chart(nextId("e1"), { ...base, initial: "z", states: { a: { on: { go: "b" } }, b: { final: true } } }),
+      chart(nextId("e1"), loose({ ...base, initial: "z", states: { a: { on: { go: "b" } }, b: { final: true } } })),
     ).toThrow(/E2751/);
     expect(() =>
-      chart(nextId("e1"), { ...base, initial: "a", states: { a: { on: { go: "zz" } }, b: { final: true } } }),
+      chart(nextId("e1"), loose({ ...base, initial: "a", states: { a: { on: { go: "zz" } }, b: { final: true } } })),
     ).toThrow(/E2751/);
     expect(() =>
-      chart(nextId("e1"), {
-        ...base,
-        initial: "a",
-        states: { a: { on: { go: [{ to: "b", guard: "g" }, { to: "zz" }] } }, b: { final: true } },
-        guards: { g: () => true },
-      }),
+      chart(
+        nextId("e1"),
+        loose({
+          ...base,
+          initial: "a",
+          states: { a: { on: { go: [{ to: "b", guard: "g" }, { to: "zz" }] } }, b: { final: true } },
+          guards: { g: () => true },
+        }),
+      ),
     ).toThrow(/E2751/);
 
     // E2753: a non-final state with no target to another state
@@ -51,25 +57,34 @@ describe("std.statecharts: chart repeats E2751, E2753 and E2754 as throws", () =
       }),
     ).toThrow(/E2754/);
     expect(() =>
-      chart(nextId("e4"), {
-        ...base,
-        initial: "a",
-        states: { a: { on: { go: "b", ghost: "b" } }, b: { final: true } },
-      }),
+      chart(
+        nextId("e4"),
+        loose({
+          ...base,
+          initial: "a",
+          states: { a: { on: { go: "b", ghost: "b" } }, b: { final: true } },
+        }),
+      ),
     ).toThrow(/E2754/);
     expect(() =>
-      chart(nextId("e4"), {
-        ...base,
-        initial: "a",
-        states: { a: { on: { go: { to: "b", guard: "nope" } } }, b: { final: true } },
-      }),
+      chart(
+        nextId("e4"),
+        loose({
+          ...base,
+          initial: "a",
+          states: { a: { on: { go: { to: "b", guard: "nope" } } }, b: { final: true } },
+        }),
+      ),
     ).toThrow(/E2754/);
     expect(() =>
-      chart(nextId("e4"), {
-        ...base,
-        initial: "a",
-        states: { a: { on: { go: { to: "b", do: "nope" } } }, b: { final: true } },
-      }),
+      chart(
+        nextId("e4"),
+        loose({
+          ...base,
+          initial: "a",
+          states: { a: { on: { go: { to: "b", do: "nope" } } }, b: { final: true } },
+        }),
+      ),
     ).toThrow(/E2754/);
 
     // E2752 is the checker's alone: an unreachable state does not throw
@@ -82,13 +97,13 @@ describe("std.statecharts: chart repeats E2751, E2753 and E2754 as throws", () =
     ).not.toThrow();
   });
 
-  test.skip("`chart` throws E2751 for any generated `initial` that is not a declared state", () => {
+  test("`chart` throws E2751 for any generated `initial` that is not a declared state", () => {
     fc.assert(
       fc.property(
         fc.stringMatching(/^[a-z]{1,6}$/).filter((n) => n !== "a" && n !== "b"),
         (initial) => {
           expect(() =>
-            chart(nextId("gen"), { ...base, initial, states: { a: { on: { go: "b" } }, b: { final: true } } }),
+            chart(nextId("gen"), loose({ ...base, initial, states: { a: { on: { go: "b" } }, b: { final: true } } })),
           ).toThrow(/E2751/);
         },
       ),

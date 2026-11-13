@@ -22,8 +22,7 @@ const manifest = `import { module } from "@keel/compiler"
 export default module({ id: "todos", deps: ["@keel/std-statecharts"], capabilities: [] })
 `;
 const found = (files: Files, code: string) => check(files, { types: false }).diagnostics.filter((d) => d.code === code);
-const all = (files: Files) =>
-  check(files, { types: false }).diagnostics.filter((d) => CODES.some((c) => c === d.code));
+const all = (files: Files) => check(files, { types: false }).diagnostics.filter((d) => CODES.some((c) => c === d.code));
 
 function applyFix(files: Files, fix: string): Files {
   const dir = mkdtempSync(join(tmpdir(), "keel-fix-"));
@@ -82,7 +81,7 @@ const CLEAN = project({ states: reachable("") });
 const word = fc.stringMatching(/^[a-z]{3,8}$/).filter((w) => w !== "end");
 
 describe("std.statecharts: keel check rules", () => {
-  test.skip("`keel check` reports E2751 to E2755 on fixtures and nothing on their clean twins", () => {
+  test("`keel check` reports E2751 to E2755 on fixtures and nothing on their clean twins", () => {
     expect(all(CLEAN)).toEqual([]);
     const fixtures: Record<(typeof CODES)[number], Files> = {
       E2751: project({ initial: "'veiwing'", states: reachable("") }),
@@ -100,7 +99,7 @@ describe("std.statecharts: keel check rules", () => {
     }
   });
 
-  test.skip("E2751 `initial` or a `to` naming no state (fix: the nearest state name)", () => {
+  test("E2751 `initial` or a `to` naming no state (fix: the nearest state name)", () => {
     const badInitial = project({ initial: "'veiwing'", states: reachable("") });
     const d = found(badInitial, "E2751");
     expect(d.length).toBe(1);
@@ -143,7 +142,7 @@ describe("std.statecharts: keel check rules", () => {
     );
   });
 
-  test.skip("E2752 a state unreachable from `initial` through `on` targets", () => {
+  test("E2752 a state unreachable from `initial` through `on` targets", () => {
     const d = found(project({ states: reachable("\n    orphan: { on: { edit: 'viewing' } },") }), "E2752");
     expect(d.length).toBe(1);
     expect(d[0]?.message).toContain("orphan");
@@ -165,7 +164,7 @@ describe("std.statecharts: keel check rules", () => {
     expect(found(project({ states: island }), "E2752").length).toBe(2);
   });
 
-  test.skip("E2753 a non-final state with no target to another state (fix: add `final: true`)", () => {
+  test("E2753 a non-final state with no target to another state (fix: add `final: true`)", () => {
     const withStuck = (body: string) =>
       project({ states: reachable(`\n    stuck: ${body},`).replace("cancel: 'viewing'", "cancel: 'stuck'") });
     for (const body of ["{}", "{ on: {} }", "{ on: { edit: 'stuck' } }", "{ on: { edit: { do: 'count' } } }"]) {
@@ -182,7 +181,7 @@ describe("std.statecharts: keel check rules", () => {
     expect(found(CLEAN, "E2753")).toEqual([]);
   });
 
-  test.skip("E2754 a final state with `on`, an `on` event missing from `events`, or a `guard` or `do` naming no entry", () => {
+  test("E2754 a final state with `on`, an `on` event missing from `events`, or a `guard` or `do` naming no entry", () => {
     const variants: Parts[] = [
       { states: reachable("").replace("gaveUp: { final: true }", "gaveUp: { final: true, on: { edit: 'viewing' } }") },
       { states: reachable("").replace("cancel: 'viewing'", "ghost: 'viewing'") },
@@ -193,7 +192,7 @@ describe("std.statecharts: keel check rules", () => {
     expect(found(CLEAN, "E2754")).toEqual([]);
   });
 
-  test.skip("E2755 a `chart` whose `initial`, `states`, `on` keys or targets are not literals (the checker cannot prove it)", () => {
+  test("E2755 a `chart` whose `initial`, `states`, `on` keys or targets are not literals (the checker cannot prove it)", () => {
     const variants: Parts[] = [
       { initial: "pick()", pre: "const pick = () => 'viewing'", states: reachable("") },
       { states: "makeStates()", pre: `const makeStates = () => (${reachable("")})` },

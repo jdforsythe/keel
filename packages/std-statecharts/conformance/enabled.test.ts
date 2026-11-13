@@ -48,7 +48,7 @@ describe("std.statecharts: enabled agrees with tx", () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 3 }), fc.integer({ min: 0, max: 3 }), async (n, by) => {
         const c = gate();
-        const state = { state: "open", data: { n } };
+        const state = { state: "open" as const, data: { n } };
         setState(c.store, state);
         expect(c.enabled(state, "add", { by })).toBe(n + by <= 3);
         expect(c.enabled(state, "tick", {})).toBe(true);
