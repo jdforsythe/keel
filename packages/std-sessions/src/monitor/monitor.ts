@@ -10,7 +10,7 @@ const EVERY = 60_000;
 /**
  * The production tally runner (std.monitor), a k.topology `Runner` a module lists in `runners.server.ts`. `run` observes
  * the server ctx: after each `save` it reads `keel.store.<store>` from `ctx.storage` and counts each log entry above
- * the last head it counted for that store by transaction `name` (a store's first save counts from 0). Every 60,000 ms
+ * the last head it counted for that store by transaction `name` (at a store's first save, above the event's `from`). Every 60,000 ms
  * on `ctx.clock`, and once when `signal` aborts, it merges the counts into `ctx.storage` key `sessions.tally`, then
  * `run` resolves; a merge whose write fails keeps its counts for the next one. Names and counts only:
  * no payload, caller, state or entry time is kept.
@@ -37,7 +37,9 @@ export const monitor: { run(ctx: Ctx, signal: AbortSignal): Promise<void> } = {
         }
       });
     const stop = observe(ctx, (e) => {
-      if (e.kind === "save") void then(() => countStore(ctx, e.store, heads, counts));
+      if (e.kind !== "save") return;
+      if (!heads.has(e.store)) heads.set(e.store, e.from);
+      void then(() => countStore(ctx, e.store, heads, counts));
     });
     try {
       while (!signal.aborted) {

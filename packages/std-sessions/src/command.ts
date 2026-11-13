@@ -35,11 +35,7 @@ export const command: StdOperation = {
   run: async (input, io) => {
     const op = input.op;
     if (op === "capture" || op === "ingest") return commandFetch(op, input, io);
-    if (op === "monitor") {
-      // `out` is this command's own flag, outside k.cli's `Input` union: read it from the validated input.
-      const out: unknown = Reflect.get(input, "out");
-      return commandMonitor(input.target, typeof out === "string" ? out : undefined, io);
-    }
+    if (op === "monitor") return commandMonitor(input.target, input.out, io);
     if (op !== "replay" && op !== "minimize" && op !== "to-test") return { records: [], writes: [] };
     if (input.target === undefined) {
       const d = sessionDiag("E1052", `session ${op} needs a session file`);

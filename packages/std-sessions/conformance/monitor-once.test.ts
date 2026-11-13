@@ -202,7 +202,7 @@ const CLAUSE =
   "Entries committed before `run` started are not counted, and each entry is counted once across saves and merges.";
 
 describe("std.monitor: entries are counted once, from where `run` started", () => {
-  test.skip(`${CLAUSE} (entries committed before run started)`, async () => {
+  test(`${CLAUSE} (entries committed before run started)`, async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(opArb, { minLength: 1, maxLength: 4 }),
