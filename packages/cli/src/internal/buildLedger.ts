@@ -42,8 +42,8 @@ const countUnsafe = (source: string): number =>
   scrubCode(source).reduce((n, l) => n + (l.match(UNSAFE_CALL) ?? []).length, 0);
 
 /** Evidence for `name` from an area's executed tests (`testEvidence`): every test that reaches it. */
-const evidenceFor = (refs: readonly TestRef[], name: string): LedgerItem["evidence"] =>
-  refs.filter((r) => r.names.has(name)).map((r) => ({ ev: r.ev, path: r.path }));
+const evidenceFor = (refs: readonly TestRef[], name: string, file: string): LedgerItem["evidence"] =>
+  refs.filter((r) => r.names.has(name) || r.pinned.has(`${file}#${name}`)).map((r) => ({ ev: r.ev, path: r.path }));
 
 /**
  * Ledger items, pure over the given files (k.ledger; the one implementation, `keel ledger`):
@@ -80,16 +80,12 @@ export function buildLedger(files: readonly SourceFile[]): {
     appUnsafe[a[1]] = (appUnsafe[a[1]] ?? 0) + countUnsafe(f.source);
     if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && TEST_FILE.test(f.path))) add(`apps/${a[1]}`, f);
   }
-  const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs)]));
+  const known = new Set(code.map((f) => f.path));
+  const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs, known)]));
   const monitored = monitoredEvidence(files);
-  const items: LedgerItem[] = [];
+  const found: { item: string; pkg: string; area: string; name: string; path: string }[] = [];
   const push = (item: string, pkg: string, area: string, name: string, path: string): void => {
-    if (items.some((i) => i.item === item)) return;
-    items.push({
-      item,
-      pkg,
-      evidence: [...evidenceFor(refs.get(area) ?? [], name), ...(monitored.byFile.get(path) ?? [])],
-    });
+    if (!found.some((i) => i.item === item)) found.push({ item, pkg, area, name, path });
   };
   for (const f of code) {
     const p = PKG.exec(f.path);
@@ -108,6 +104,17 @@ export function buildLedger(files: readonly SourceFile[]): {
         push(`${a[1]}:${rel}#${name}`, a[1], `apps/${a[1]}`, name, f.path);
     }
   }
+  // A relative import pins a name to the file declaring it; one resolving to a file that only re-exports the name
+  // (an `index.ts`) reaches it by name, as a package import does.
+  const declared = new Set(found.map((i) => `${i.path}#${i.name}`));
+  const loose = (r: TestRef): ReadonlySet<string> =>
+    new Set([...r.names, ...[...r.pinned].filter((k) => !declared.has(k)).map((k) => k.slice(k.lastIndexOf("#") + 1))]);
+  const reach = new Map([...refs].map(([area, rs]) => [area, rs.map((r) => ({ ...r, names: loose(r) }))]));
+  const items: LedgerItem[] = found.map((i) => ({
+    item: i.item,
+    pkg: i.pkg,
+    evidence: [...evidenceFor(reach.get(i.area) ?? [], i.name, i.path), ...(monitored.byFile.get(i.path) ?? [])],
+  }));
   items.sort((x, y) => (x.item < y.item ? -1 : x.item > y.item ? 1 : 0));
 
   const sections = new Set(specClauses(files).map((c) => c.id));

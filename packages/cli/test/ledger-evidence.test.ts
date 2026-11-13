@@ -38,11 +38,11 @@ describe("testFacts / testEvidence: references", () => {
     expect(reached(src)).toEqual([["Four", "one", "three", "two"]]);
   });
 
-  it("a JSX tag and a default import count, the import also by its module's basename", () => {
+  it("a JSX tag counts; a default import that resolves to no known file counts by its module's basename", () => {
     const src = ['import View from "../modules/x/Page.view.tsx";', 'it("t", () => { render(<Card />, View); });'].join(
       "\n",
     );
-    expect(reached(src, [], "packages/a/test/t.test.tsx")).toEqual([["Card", "Page", "View", "render"]]);
+    expect(reached(src, [], "packages/a/test/t.test.tsx")).toEqual([["Card", "Page", "render"]]);
   });
 
   it("declarations, keys and labels are not references", () => {
@@ -113,9 +113,18 @@ describe("testFacts / testEvidence: references", () => {
       "const notFn = 3;",
       'it("t", () => { setup(); build(); loop(); remote(); notFn; missing(); });',
     ].join("\n");
-    expect(reached(src, [fixtures])).toEqual([
-      ["build", "deep", "inner", "loop", "mid", "missing", "notFn", "remote", "setup"].filter((n) => n !== "notFn"),
-    ]);
+    expect(reached(src, [fixtures])).toEqual([["deep", "inner", "loop", "mid", "missing", "remote", "setup"]]);
+  });
+
+  it("a relative import pins its names to the file it resolves to among the known files; others stay by name", () => {
+    const src = [
+      'import { board } from "../src/api/board.ts";',
+      'import { other } from "../src/missing.ts";',
+      'it("t", () => { board(); other(); });',
+    ].join("\n");
+    const [ref] = testEvidence([file(T, src)], new Set(["packages/a/src/api/board.ts"]));
+    expect([...(ref?.pinned ?? [])]).toEqual(["packages/a/src/api/board.ts#board"]);
+    expect([...(ref?.names ?? [])]).toEqual(["other"]);
   });
 
   it("only *.test.* files give tests; helper files with it(...) do not", () => {

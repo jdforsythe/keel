@@ -32,6 +32,9 @@ const KEEL_TESTING = "@keel/testing";
 /** Helpers and matchers whose argument is expected to throw or reject (`thrownSync(() => ...)`, `toThrow`). */
 const THROWS = /throw/i;
 
+/** The file name without extensions: an app file's default export is named after it. */
+const baseOf = (from: string): string => (from.split("/").pop() ?? "").split(".")[0] ?? "";
+
 const isBool = (e: ts.Expression): boolean =>
   e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword;
 
@@ -267,6 +270,7 @@ export function testFacts(path: string, source: string): FileFacts {
 
   const useOf = (nodes: readonly ts.Node[]): Use => {
     const names = new Set<string>();
+    const pins = new Set<string>();
     const calls = new Set<string>();
     const props: PropRun[] = [];
     const explores: { closed: boolean; depth: NumRef }[] = [];
@@ -296,22 +300,30 @@ export function testFacts(path: string, source: string): FileFacts {
       }
       if (ts.isIdentifier(n)) {
         const p = n.parent;
+        const own = imports.get(n.text);
+        // A relative import pins the name to the file it resolves to (`pins`); any other reference is by name.
+        const rel = own?.from.startsWith(".") === true ? own : undefined;
         if (ts.isPropertyAccessExpression(p) && p.name === n) {
           const base = p.expression;
-          if ((ts.isIdentifier(base) && imports.get(base.text)?.name === "*") || isCallee(p)) names.add(n.text);
+          const ns = ts.isIdentifier(base) ? imports.get(base.text) : undefined;
+          if (ns?.name === "*" && ns.from.startsWith(".")) pins.add(`${ns.from}\n${n.text}`);
+          else if (ns?.name === "*" || isCallee(p)) names.add(n.text);
         } else if (
           (ts.isJsxOpeningElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxClosingElement(p)) &&
           p.tagName === n
-        )
-          names.add(n.text);
-        else if (!isDeclName(n)) {
-          const imp = imports.get(n.text);
-          if (imp?.name === "default") {
+        ) {
+          if (rel !== undefined && rel.name !== "*")
+            pins.add(`${rel.from}\n${rel.name === "default" ? baseOf(rel.from) : rel.name}`);
+          else names.add(n.text);
+        } else if (!isDeclName(n)) {
+          if (rel !== undefined && rel.name !== "*")
+            pins.add(`${rel.from}\n${rel.name === "default" ? baseOf(rel.from) : rel.name}`);
+          else if (own?.name === "default") {
             names.add(n.text);
-            names.add((imp.from.split("/").pop() ?? "").split(".")[0] ?? "");
-          } else if (imp !== undefined && imp.name !== "*") names.add(imp.name);
+            names.add(baseOf(own.from));
+          } else if (own !== undefined && own.name !== "*") names.add(own.name);
           if (isCallee(n)) {
-            names.add(n.text);
+            if (rel === undefined) names.add(n.text);
             calls.add(n.text);
           }
         }
@@ -321,6 +333,7 @@ export function testFacts(path: string, source: string): FileFacts {
     for (const n of nodes) visit(n);
     return {
       names,
+      pins,
       calls,
       props: props.map((p) => ({ runs: local(p.runs), seed: local(p.seed) })),
       explores: explores.map((x) => ({ closed: x.closed, depth: local(x.depth) })),

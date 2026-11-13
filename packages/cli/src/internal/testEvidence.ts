@@ -12,7 +12,9 @@ const EXTS = ["", ".ts", ".tsx", ".mts", ".js", "/index.ts"];
 
 /**
  * Evidence from the test files of one area (a package's `test/` and `conformance/`, an app's tests): one `TestRef`
- * per non-skipped `it`/`test` body in a `*.test.*` file. A body reaches the names it references (`testFacts`)
+ * per non-skipped `it`/`test` body in a `*.test.*` file. A body reaches the names it references (`testFacts`); a
+ * name bound by a relative import reaches only the export of the file it resolves to among `known` (by name when it
+ * resolves to none)
  * plus, transitively, those of the helpers it calls: top-level functions of its own file, or of a relative import
  * among `files` (fixtures). Its evidence is the strongest property run it or its helpers perform, with `numRuns`
  * and `seed` resolved through constants (imported ones too); unresolved values are omitted, so an unseeded or
@@ -20,13 +22,14 @@ const EXTS = ["", ".ts", ".tsx", ".mts", ".js", "/index.ts"];
  * runs a closed-form `explore` is `proven`; one running another `explore` is `exhaustive`, with its literal `depth`.
  * Bodies with none of these and no property run are `example`.
  */
-export function testEvidence(files: readonly SourceFile[]): TestRef[] {
+export function testEvidence(files: readonly SourceFile[], known: ReadonlySet<string> = new Set()): TestRef[] {
   const facts = new Map<string, FileFacts>(files.map((f) => [f.path, testFacts(f.path, f.source)]));
-  const target = (from: string, spec: string): string | undefined => {
+  const resolveIn = (from: string, spec: string, has: (p: string) => boolean): string | undefined => {
     if (!spec.startsWith(".")) return undefined;
     const base = posix.normalize(posix.join(posix.dirname(from), spec));
-    return EXTS.map((e) => base + e).find((p) => facts.has(p));
+    return [...EXTS, ".tsx"].map((e) => base.replace(/\.js$/, "") + e).find(has) ?? EXTS.map((e) => base + e).find(has);
   };
+  const target = (from: string, spec: string): string | undefined => resolveIn(from, spec, (p) => facts.has(p));
   const resolve = (path: string, v: NumRef, depth = 0): number | undefined => {
     if (typeof v !== "object") return v;
     const imp = facts.get(path)?.imports.get(v.ref);
@@ -42,12 +45,19 @@ export function testEvidence(files: readonly SourceFile[]): TestRef[] {
     if (!TEST_FILE.test(path)) continue;
     for (const test of f.tests) {
       const names = new Set<string>();
+      const pinned = new Set<string>();
       const runs: { runs: number | undefined; seed: number | undefined }[] = [];
       const depths: (number | undefined)[] = [];
       let proven = false;
       const seen = new Set<string>();
       const reach = (at: string, use: Use): void => {
         for (const n of use.names) names.add(n);
+        for (const pin of use.pins) {
+          const [spec = "", name = ""] = pin.split("\n");
+          const file = resolveIn(at, spec, (p) => known.has(p) || facts.has(p));
+          if (file === undefined) names.add(name);
+          else pinned.add(`${file}#${name}`);
+        }
         for (const p of use.props) runs.push({ runs: resolve(at, p.runs), seed: resolve(at, p.seed) });
         for (const x of use.explores) {
           if (x.closed) proven = true;
@@ -85,7 +95,7 @@ export function testEvidence(files: readonly SourceFile[]): TestRef[] {
                 ...(best.runs === undefined ? {} : { runs: best.runs }),
                 ...(best.seed === undefined ? {} : { seed: best.seed }),
               };
-      out.push({ path, names, ev });
+      out.push({ path, names, pinned, ev });
     }
   }
   return out;
