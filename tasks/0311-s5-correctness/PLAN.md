@@ -6,7 +6,7 @@
 1. [x] Design RFC 0082 `docs/rfc/0082-s5-correctness.md`, accepted 2026-11-10 with ADRs 0086-0091.
 2. [x] Orchestrator accepts the RFC; no open questions.
 2a. [x] Orchestrator prep (RFC Lanes): spec text rebased on the tree after S2-S4, package skeleton, deps, budgets, one `pnpm install`.
-3. [ ] Conformance first, per lane, after the prior pushes.
+3. [~] Conformance first: k.sim, k.model, k.ledger, std.statecharts written and committed (skipped); std.monitor + std.multi#6 writer still running.
 4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
 5. [ ] Exit proof: ledger shows every rung (proven, exhaustive, probabilistic, example, monitored) populated by real machinery.
 
@@ -20,9 +20,12 @@
 - D6 (orchestrator, 2026-11-13; confirm or reverse): the RFC's spec text is written into `spec/` rebased on the tree after S2-S4. Differences from the RFC's text: (1) the ledger clauses were k.testing#9-#11 (a focus clause landed at #4), now k.ledger#1-#3; k.testing#12, #13 are #9, #10; std.multi's schedule clause is #6 and the E2007/E2008 clause is #7. (2) std.monitor's reader guard answers 403 `keel.denied` (what `sessions.reader` does), not a redirect. (3) `sessions.tally` is an API route (k.api). (4) k.testing keeps E1719, E1720 and its current Harness block. (5) all codes the RFC takes were free and are used as written. Tokens: k.ledger 1,413, k.model 1,231, k.sim 1,223, std.statecharts 1,120, std.monitor 840, k.testing 1,135, k.ctx 1,494, k.cli 1,488, std.multi 981, map 1,116.
 - D7 (orchestrator, 2026-11-13): package bytes today differ from the RFC's table: testing 7,951 B (9kb), ctx 2,635 B (3kb), cli 20,451 B (22kb). ctx will not hold +0.55 kB; budgets are re-based after the kernel lane with measured bytes (default 7), not before.
 - Until K4 and the `group-schedule` test land, `keel ledger --diff` reports k.testing#9, #10 and std.multi#6 lowered and std.multi clause 6 uncovered; the ledger is rewritten on a quiet tree at batch end.
+- D8 (orchestrator, 2026-11-13; confirm or reverse), answers to what the conformance writers found unclear: `coverage` is exported from `@keel/std-statecharts` and takes result data only; `enabled`'s `state` is the store value `{ state, data }` and follows the Conformance sentence; a bad plan step may throw E1604 at `createCtx` or first access; `Schedule` is exported from `@keel/ctx`, `SimRun` and `simulate` from `@keel/testing`; k.model's product order is key declaration order, last key fastest; tuples are not a finite part (no `s.tuple`; spec text corrected, and the payload-count clause reads 3 x 2 x 3 for a three-member enum); Stryker report keys are package-relative and a claim's `file` repo-relative; the score scale stays the committed ledger's.
+- D9 (orchestrator, 2026-11-13): mutation lane, done and committed. The stall cut-off lives in `tooling/mutate.mjs`'s runner (not the reporter): a hung Stryker cannot stop itself; the landed SIGINT, grace, SIGKILL path is the one kill path. Stryker's own json report is the claims' input; the Keel reporter writes no second file. Lock file `os.tmpdir()/keel-mutate.lock`. Known: two stale-lock takeovers at one instant can both win.
+- Agents commit their own paths with explicit paths (`rfc:0082 <lane>: ...`); the orchestrator commits shared files.
 
 ## Verification
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit proof
 
 ## Next action
-Step 3: conformance-writers (k.sim, k.model, k.ledger with the eight header edits, std.statecharts, std.monitor + std.multi#6), all in `rfc:0082` commits. Then step 4 lanes per the RFC's Lanes table.
+Running: kernel agent (K1-K4, opus), statecharts agent (opus), std.monitor conformance writer. When the monitor writer reports: commit its files (`rfc:0082`), launch the sessions lane (monitor first, group schedule after K1). When K2 lands: resume statecharts for `coverage` if it stopped. When all lanes are in: golden-1 lane (chart, monitor route, three tests, eval twins, `tooling/smoke/monitor.mjs`), budgets re-base with measured bytes, docs (TESTING, ARCHITECTURE, OUTPUT, skills), root gates, ledger rewrite on a quiet tree, reviewer + red-team, exit proof.
