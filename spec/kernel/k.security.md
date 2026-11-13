@@ -13,7 +13,7 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 
 **Trusted Types.** Where `globalThis.trustedTypes` exists, the runtime's `template()` builds its compiler HTML through the policy `keel`, created once per realm and shared by every runtime copy (a policy the browser refuses throws); a string assigned to any other HTML sink throws.
 
-**Reports.** `POST /__keel/csp` takes `application/csp-report` and `application/reports+json` bodies up to 16 KiB (else 413, nothing logged) without the write proof, since it changes no state, and answers 204. Each report is one `csp` log record `{ kind: 'csp', directive, blocked, route }`: `blocked` is `inline`, `eval`, `trusted-types` or the blocked URL's origin; `route` is the route id the document URL matches, else `-`. No path, query or sample is logged. Past 100 reports in 60 s of `ctx.clock` the rest are counted, and the window's end writes one `csp` record `{ kind, dropped }`.
+**Reports.** `POST /__keel/csp` takes `application/csp-report` and `application/reports+json` bodies up to 16 KiB (else 413, nothing logged) without the write proof, since it changes no state, and answers 204. Each report is one `csp` log record `{ kind: 'csp', directive, blocked, route }`: `blocked` is `inline`, `eval`, `trusted-types` or the blocked URL's origin; `route` is the route id the document URL matches, else `-`. No path, query or sample is logged. In each 60 s of `ctx.clock` at most 100 reports are logged, at most 10 per source (the last `x-forwarded-for` entry, else the peer address; held for the window, never logged; none: the 100 only); the rest are counted, and the window's end writes one `csp` record `{ kind, dropped }`.
 
 **Caller cookie.** The cookie (`HttpOnly; SameSite=Lax; Path=/`) is `__Host-keel-caller`, `Secure` on https (`createApp({ secure })`; default the URL's or `x-forwarded-proto`, W1557 in production), else `keel-caller`.
 
@@ -34,3 +34,4 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 - `ctx.net.fetch(new Request('https://api.example/x'))` in a client-reachable file is E1571; in a `*.server.ts` file it is not.
 - `keel build` of a fixture with a `client` deployable writes its `csp.txt` with `script-src 'self'`.
 - `import { serverState } from '@keel/store/internal'` in `modules/a/x.ts`, `import('@keel/router/internal')` in `test/a.test.ts` and `export * from '@keel/std-jobs/tools/internal'` are each one E1576; the first in `packages/std-x/src/a.ts` or `node_modules/@keel/std-x/a.ts`, and `import '@keel/router/match'`, are not.
+- In one window, 50 reports with `x-forwarded-for: 192.0.2.1` log 10 and a later one from `192.0.2.2` is logged; `dropped: 40` follows the window; no record holds an address.

@@ -18,11 +18,11 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 
 **Document.** Each route level is a candidate island root by route id. Head, `<html lang>` and the `keel.notFound` alert: k.head. Headers, the policy, the caller cookie and `/__keel/csp`: k.security.
 
-**Build.** Production `assets`: k.deploy. Runners, peers, `keel dev`: k.topology. In dev, or with no `assets` in development/test, a document scripts `/@keel/entry.ts?d=<deployable>`, the resume entry of the islands of `createApp({ deployable })`'s modules (none given: every `node` module's).
+**Build.** Production `assets`: k.deploy. Runners, peers, `keel dev` and the document entry without `assets`: k.topology.
 
-**Log.** Stdout log (OUTPUT.md), a record per event: `req`, `diag` per diagnostic or uncaught throw (app frames only, max 5; personal data dropped, k.privacy), `csp` (k.security), `reload`; `createApp({ log: { format: 'compact' | 'json', write } })` gets each line.
+**Log.** Stdout log (OUTPUT.md), a record per event: `req`, `diag` per diagnostic or uncaught throw (personal data dropped, k.privacy; a throw's `frames`: its first 5 stack positions in app code (E1576's), each `<path>:<line>:<col>` relative to the working directory), `csp` (k.security), `reload`; `createApp({ log: { format: 'compact' | 'json', write } })` gets each line.
 
-**Rules.** E1551 `loader`/`action` outside `*.server.ts` · E1554 loader data fails its output schema (dev diag; production 500) · E1558 a live loader a non-`node` deployable serves.
+**Rules.** E1551 `loader`/`action` outside `*.server.ts` · E1554 loader data fails its output schema (dev diag; production 500) · E1558 (k.topology).
 
 **Conformance.**
 - A GET with params that fail the params schema returns 404 and calls no loader.
@@ -40,3 +40,4 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 - An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403.
 - With `maxStreams: 2`, a third open event-stream GET is 503 `keel.busy` and runs no loader; once one closes, the next is served.
 - With a `client` and a `node` deployable in dev, the `node` one's island document scripts `/@keel/entry.ts?d=<name>`, which resumes its islands.
+- A loader throwing in `modules/a/a.server.ts` logs a `diag` whose `frames` start at that file: at most 5, none under `packages/`, `node_modules/` or outside the working directory.

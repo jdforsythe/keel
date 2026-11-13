@@ -11,9 +11,9 @@ status: implemented
 
 **Build.** `keel build`, `server.mjs`, `DeployEnv`, `assets` and deploy files: k.deploy.
 
-**Local topology.** `keel dev` serves every deployable in one process on one origin: Vite serves `client` and `static` entries with HMR; each `node` deployable runs its dev `createApp` (real `ctx`, storage in `.keel-dev/`) and runners, the others its in-process peers, and serves its paths; its documents resume its own islands (k.server Build).
+**Local topology.** `keel dev` serves every deployable in one process on one origin: Vite serves `client` and `static` entries with HMR; each `node` deployable runs its dev `createApp` (real `ctx`, storage in `.keel-dev/`) and runners, the others its in-process peers, and serves its paths; its documents resume its own islands. In dev, or with no `assets` in development/test, a document scripts `/@keel/entry.ts?d=<deployable>`, the resume entry of the islands of `createApp({ deployable })`'s modules (none given: every `node` module's).
 
-**Rules.** E1552 `topology.ts` not statically readable, a name not `[a-z][a-z0-9-]*`, a module unknown or in two deployables · E1553 a `static` route with params or actions · E1559 one path in two deployables (names both; `keel check` and `keel build`) · E1511 (k.api) · E1560 (k.deploy).
+**Rules.** E1552 `topology.ts` not statically readable, a name not `[a-z][a-z0-9-]*`, a module unknown or in two deployables · E1553 a `static` route with params or actions · E1559 one path in two deployables (names both; `keel check` and `keel build`) · E1558 a live loader, or a `loader` or `action` naming `stores`, in a `*.server.ts` of a module a `client` or `static` deployable serves (at the call in `keel check` and `keel build`; `createApp` throws it; fix: none) · E1511 (k.api) · E1560 (k.deploy).
 
 **Conformance.**
 - Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states.
@@ -23,3 +23,4 @@ status: implemented
 - Two routes with path `/p` in modules of different deployables are one E1559 in `keel check` and in `keel build`.
 - With `origin` `https://a.example`, a POST with that `Origin` to another host passes the same-site check, and the caller cookie is `__Host-keel-caller`.
 - `keel dev` answers a `client` page and a path of each `node` deployable from one process on one origin.
+- In a module a `client` deployable serves, a `loader` naming `stores`, an `action` naming `stores` and a loader whose `fn` is `async function*` are each one E1558 in `keel check` and `keel build`, and `createApp` for that deployable throws E1558; in a `node` deployable's module none is.

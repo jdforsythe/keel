@@ -10,7 +10,7 @@ status: conformance-covered
 **Sinks.**
 - Sessions (std.sessions): marked values in payloads, state and error `data` become generated values at capture; error messages drop each.
 - Inputs: a control bound (k.forms `field`) to a marked path carries `data-k-pii="<class>"`, and the ctx observer reports its `input` values and one-character `keydown` keys as `x` repeated, as for a password field (k.ctx).
-- Server log (k.server): before a `diag` record is written, each of `piiValues` of the request's decoded action input, its loaders' outputs and its factories' store states is replaced by `[pii]` in the message.
+- Server log (k.server): before a `diag` record is written, each of `piiValues` of the request's decoded action input, its loaders' outputs and its factories' store states is replaced by `[pii]` in the message and in each of its `frames`.
 - URLs: a marked node in a route's `params` or `search` schema is E1111, since a path or query reaches browser history and proxy logs Keel cannot redact.
 - Evidence bundle (k.evidence): holds no app value.
 In dev, `/__keel/inspect` serves store values unredacted to the developer; it is not a sink.
@@ -26,3 +26,4 @@ In dev, `/__keel/inspect` serves store values unredacted to the developer; it is
 - An action throwing an `Error` whose message holds a marked input value logs a `diag` record holding `[pii]` and not the value, in dev and production.
 - Under a sim ctx, an `input` fired on an `Input` bound to a marked field reaches `observe` as `x` repeated, and the element has `data-k-pii`.
 - A marked field in a route's `params` or `search` schema is E1111; in an action `input` it is not.
+- An action throwing an `Error` whose stack names a file path holding a marked input value logs that frame with `[pii]` in place of the value.
