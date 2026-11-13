@@ -30,3 +30,12 @@ describe("axe verdicts within one test", () => {
     expect(axe(root, false)).not.toBe(first);
   });
 });
+
+describe("two live roots in one document", () => {
+  it("do not share a verdict", () => {
+    document.body.innerHTML = '<div><input id="a" aria-label="A"></div><div><input id="a" aria-label="A"></div>';
+    const [one, two] = Array.from(document.body.children);
+    if (one === undefined || two === undefined) throw new Error("no roots");
+    expect(axe(two, false)).not.toBe(axe(one, false));
+  });
+});

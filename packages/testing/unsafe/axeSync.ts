@@ -9,6 +9,8 @@ interface RawResult {
   readonly id: string;
   readonly result: string;
   readonly help: string;
+  /** Set by `after` when the rule's aggregation threw (`createIncompleteErrorResult`). */
+  readonly error?: unknown;
   /** The failed nodes, grouped by `finalizeRuleResult`. */
   readonly violations: readonly RawNode[];
 }
@@ -40,7 +42,8 @@ interface Ctx {
 /**
  * Run the axe-core rules named in `ids` over `root` synchronously: the steps of `axe.run` (context, each rule's
  * `runSync`, `after`, result metadata, verdicts) without its timers, so a harness render can fail as it returns.
- * A rule that throws, or whose verdict is `cantTell` (axe's `incomplete`), is not run.
+ * A rule whose verdict is `cantTell` (axe's `incomplete`) is not run; a rule that throws, or whose `after` failed, is
+ * `broken`, with its error's first line.
  */
 export function axeSync(root: Element | Document, ids: ReadonlySet<string>): AxeOutcome {
   return unsafe(
@@ -54,12 +57,16 @@ export function axeSync(root: Element | Document, ids: ReadonlySet<string>): Axe
       const options = {};
       try {
         const raw: object[] = [];
+        const broken: { rule: string; message: string }[] = [];
         for (const rule of a._audit.rules) {
           if (!ids.has(rule.id)) continue;
           try {
             raw.push(rule.runSync(context, options));
-          } catch {
-            // an async check or a rule error: no verdict, so not run
+          } catch (error) {
+            broken.push({
+              rule: rule.id,
+              message: String(error instanceof Error ? error.message : error).split("\n")[0] ?? "",
+            });
           }
         }
         const results = a._audit.after(raw, options).map((r) => {
@@ -69,13 +76,14 @@ export function axeSync(root: Element | Document, ids: ReadonlySet<string>): Axe
         const ran: string[] = [];
         const failed: { rule: string; help: string; elements: Element[] }[] = [];
         for (const r of results) {
-          if (r.result === "cantTell") continue;
+          if (r.error !== undefined) broken.push({ rule: r.id, message: String(r.error) });
+          if (r.error !== undefined || r.result === "cantTell") continue;
           ran.push(r.id);
           if (r.result !== "failed") continue;
           const elements = r.violations.flatMap((n) => (n.node === null ? [] : [n.node.element]));
           failed.push({ rule: r.id, help: r.help, elements });
         }
-        return { ran, failed };
+        return { ran, failed, broken };
       } finally {
         a._selectCache = undefined;
         a.teardown();

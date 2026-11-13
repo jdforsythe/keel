@@ -3,7 +3,6 @@ import { contrast } from "@keel/ui/css";
 import type { ClassMap } from "./ClassMap.ts";
 import type { Violation } from "./Violation.ts";
 import { inDisabledFieldset } from "./inDisabledFieldset.ts";
-import { isHidden } from "./isHidden.ts";
 import { px } from "./px.ts";
 import { styleIndex } from "./styleIndex.ts";
 import { where } from "./where.ts";
@@ -16,7 +15,8 @@ const ownsText = (el: Element): boolean =>
 
 const exempt = (el: Element): boolean => {
   for (let n: Element | null = el; n !== null; n = n.parentElement)
-    if (isHidden(n) || n.hasAttribute("disabled") || n.getAttribute("aria-disabled") === "true") return true;
+    if (n.hasAttribute("hidden") || n.hasAttribute("disabled") || n.getAttribute("aria-disabled") === "true")
+      return true;
   return inDisabledFieldset(el);
 };
 
@@ -42,8 +42,10 @@ function tokenAt(map: ClassMap, el: Element, prop: string, at: number): string |
 /**
  * E1804 at render (k.a11y Contrast): every visible, enabled element holding text, per scheme and breakpoint, from
  * its atomic classes and `tokens` (no layout): `fg` its own or inherited, the background the nearest painted
- * ancestor's `bg` (itself included), else `#FFFFFF`; 4.5:1, or 3:1 when large (`fontSize` >= 24px, or >= 18.66px at
- * `weight` >= 700). Text without an `fg` token, or a color that is not hex, is not judged. One violation per element.
+ * ancestor's `bg` (itself included), else `#FFFFFF`; text without an `fg` is `#000000` in both schemes (Keel's CSS
+ * sets no root `color` or `color-scheme`, so the user agent's default text stays). 4.5:1, or 3:1 when large
+ * (`fontSize` >= 24px, or >= 18.66px at `weight` >= 700). Text under `hidden` or disabled is exempt; `aria-hidden`
+ * text is visible and judged. A color that is not hex is not judged. One violation per element.
  */
 export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
   const map = styleIndex(tokens);
@@ -56,13 +58,13 @@ export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
       for (const scheme of SCHEMES) {
         const fgTok = tokenAt(map, el, "fg", at);
         const bgTok = tokenAt(map, el, "bg", at);
-        const pick = (t: string | undefined): string => {
-          const c = t === undefined ? "#FFFFFF" : colors[t];
+        const pick = (t: string | undefined, none: string): string => {
+          const c = t === undefined ? none : colors[t];
           return c === undefined || typeof c === "string" ? (c ?? "") : c[scheme];
         };
-        const fg = pick(fgTok);
-        const bg = pick(bgTok);
-        if (fgTok === undefined || !HEX.test(fg) || !HEX.test(bg)) continue;
+        const fg = pick(fgTok, "#000000");
+        const bg = pick(bgTok, "#FFFFFF");
+        if (!HEX.test(fg) || !HEX.test(bg)) continue;
         const sizeTok = tokenAt(map, el, "fontSize", at);
         const weightTok = tokenAt(map, el, "weight", at);
         const size = px(sizeTok === undefined ? "" : (tokens.fontSize?.[sizeTok] ?? ""));
@@ -70,7 +72,7 @@ export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
         const need = size >= 24 || (size >= 18.66 && weight >= 700) ? 3 : 4.5;
         const ratio = contrast(fg, bg);
         if (ratio < need) {
-          help = `is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok} on ${bgTok ?? bg}, ${scheme})`;
+          help = `is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok ?? fg} on ${bgTok ?? bg}, ${scheme})`;
           break;
         }
       }

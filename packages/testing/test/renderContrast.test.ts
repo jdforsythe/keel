@@ -69,6 +69,22 @@ describe("render contrast (E1804)", () => {
     ).toBe("");
   });
 
+  it("judges aria-hidden text, which stays visible", () => {
+    expect(
+      check(() =>
+        element("div", (el) => {
+          el.setAttribute("aria-hidden", "true");
+          el.append(Text({ id: "t", fg: "low", children: "x" }));
+        }),
+      ),
+    ).toBe("E1804");
+  });
+
+  it("judges text without fg as #000000 in both schemes", () => {
+    expect(check(() => Box({ bg: "paper", children: () => Text({ id: "t", children: "x" }) }))).toBe("");
+    expect(check(() => Box({ bg: "darkOnly", children: () => Text({ id: "t", children: "x" }) }))).toBe("E1804");
+  });
+
   it("the nearest painted ancestor is the background (property)", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 3 }), (depth) => {
