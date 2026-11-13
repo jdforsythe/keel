@@ -89,12 +89,12 @@ test("member is re-checked against the stores as saved when the server ctx repor
   await until(() => st.lines.length === 1);
   const copy = scope(() => undefined).run(() => store(Flag, { on: true }, { id: "t.copy" }));
   await h.ctx.storage.set("keel.store.t.flag", JSON.stringify(copy.snapshot({ meta: true })));
-  report(h.ctx, { kind: "save", store: "t.other", head: 1 });
-  report(h.ctx, { kind: "save", store: "t.flag", head: 1 });
+  report(h.ctx, { kind: "save", store: "t.other", head: 1, from: 0 });
+  report(h.ctx, { kind: "save", store: "t.flag", head: 1, from: 0 });
   await until(() => st.lines.length === 2);
   const offState = { ...copy.snapshot({ meta: true }), state: { on: false } };
   await h.ctx.storage.set("keel.store.t.flag", JSON.stringify(offState));
-  report(h.ctx, { kind: "save", store: "t.flag", head: 2 });
+  report(h.ctx, { kind: "save", store: "t.flag", head: 2, from: 1 });
   await until(() => st.ended());
   expect(st.lines).toEqual([
     { ok: true, value: { kind: "reset" } },

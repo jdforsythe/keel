@@ -94,7 +94,7 @@ test("a re-check whose read of the saved stores rejects ends the stream closed d
   const st = await h.open("?room=a");
   await until(() => st.lines.length === 1);
   h.armed.next = () => Promise.reject(new Error("storage down"));
-  report(h.ctx, { kind: "save", store: "t.flag", head: 1 });
+  report(h.ctx, { kind: "save", store: "t.flag", head: 1, from: 0 });
   await until(() => st.ended() || rejections.length > 0);
   expect(st.lines).toEqual([
     { ok: true, value: { kind: "reset" } },
@@ -102,7 +102,7 @@ test("a re-check whose read of the saved stores rejects ends the stream closed d
   ]);
   const later = await h.open("?room=a");
   await until(() => later.lines.length === 1);
-  report(h.ctx, { kind: "save", store: "t.flag", head: 2 });
+  report(h.ctx, { kind: "save", store: "t.flag", head: 2, from: 1 });
   await until(() => later.lines.length === 2);
   expect(later.lines[1]).toEqual({ ok: true, value: { kind: "saved", store: "t.flag", head: 2 } });
   process.off("unhandledRejection", onRejection);
@@ -118,7 +118,7 @@ test("a message published while a stream's re-check is pending is not delivered 
     new Promise<string | null>((go) => {
       release = () => go(snap(false));
     });
-  report(h.ctx, { kind: "save", store: "t.flag", head: 1 });
+  report(h.ctx, { kind: "save", store: "t.flag", head: 1, from: 0 });
   await until(() => h.armed.called);
   expect((await h.post("?room=a", { message: { text: "late" } })).status).toBe(200);
   await turn();

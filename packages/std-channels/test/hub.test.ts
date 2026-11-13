@@ -24,9 +24,9 @@ test("each save reported on the server ctx reaches every open sink once, in repo
   const b: unknown[] = [];
   const leaveA = join(ctx, hub, sink("x", a));
   const leaveB = join(ctx, hub, sink("y", b));
-  report(ctx, { kind: "save", store: "m.s", head: 1 });
+  report(ctx, { kind: "save", store: "m.s", head: 1, from: 0 });
   report(ctx, { kind: "net", online: false });
-  report(ctx, { kind: "save", store: "m.t", head: 4 });
+  report(ctx, { kind: "save", store: "m.t", head: 4, from: 3 });
   expect(a.map((x) => [Reflect.get(Object(x), "store"), Reflect.get(Object(x), "head")])).toEqual([
     ["m.s", 1],
     ["m.t", 4],
@@ -34,13 +34,13 @@ test("each save reported on the server ctx reaches every open sink once, in repo
   expect(b).toHaveLength(2);
   expect(Reflect.get(Object(a[0]), "read")).toBe(Reflect.get(Object(b[0]), "read"));
   leaveA();
-  report(ctx, { kind: "save", store: "m.s", head: 2 });
+  report(ctx, { kind: "save", store: "m.s", head: 2, from: 1 });
   expect(a).toHaveLength(2);
   expect(b).toHaveLength(3);
   leaveB();
   expect(hub.sinks.size).toBe(0);
   expect(hub.stop).toBeUndefined();
-  report(ctx, { kind: "save", store: "m.s", head: 3 });
+  report(ctx, { kind: "save", store: "m.s", head: 3, from: 2 });
   expect(b).toHaveLength(3);
 });
 
@@ -54,7 +54,7 @@ test("a shared read reads ctx.storage once per key per save", async () => {
     post: () => undefined,
     saved: (_s, _h, read) => reads.push(read("keel.store.m.s"), read("keel.store.m.s")),
   });
-  report(ctx, { kind: "save", store: "m.s", head: 1 });
+  report(ctx, { kind: "save", store: "m.s", head: 1, from: 0 });
   expect(reads[0]).toBe(reads[1]);
   expect(await reads[0]).toBe("1");
   leave();

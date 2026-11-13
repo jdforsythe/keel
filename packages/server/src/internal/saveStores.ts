@@ -12,7 +12,8 @@ type Changed = { readonly o: Opened; readonly raw: string };
 /**
  * Check, then write: every opened key (the read set, RFC 0054) must still hold the copy it was restored from, else
  * `keel.conflict`; each changed key's in-process copy is replaced only after its `ctx.storage.set` resolves. Once every
- * write is stored, each changed store is reported to `observe` as `save` with its head, in save order.
+ * write is stored, each changed store is reported to `observe` as `save` with its head and `from`, the head of the copy it was
+ * restored from (0 when none was saved), in save order.
  */
 async function commit(sv: Served, opened: readonly Opened[], changed: readonly Changed[]): Promise<Conflict | null> {
   const stale = opened.find((o) => sv.saved.get(o.key) !== o.from);
@@ -27,7 +28,16 @@ async function commit(sv: Served, opened: readonly Opened[], changed: readonly C
     }),
   );
   for (const w of wrote) if (w.status === "rejected") throw w.reason;
-  for (const c of changed) report(sv.ctx, { kind: "save", store: c.o.store.id, head: c.o.store.head() });
+  for (const c of changed) {
+    const was = c.o.from.json;
+    const from = typeof was === "object" && was !== null ? Reflect.get(was, "head") : undefined;
+    report(sv.ctx, {
+      kind: "save",
+      store: c.o.store.id,
+      head: c.o.store.head(),
+      from: typeof from === "number" ? from : 0,
+    });
+  }
   return null;
 }
 

@@ -56,8 +56,8 @@ describe("server: concurrent writes", () => {
     expect((await inc(0)).status).toBe(200);
     expect((await inc(1)).status).toBe(200);
     expect(saves).toEqual([
-      { kind: "save", store: "test.count", head: 1 },
-      { kind: "save", store: "test.count", head: 2 },
+      { kind: "save", store: "test.count", head: 1, from: 0 },
+      { kind: "save", store: "test.count", head: 2, from: 1 },
     ]);
   });
 
