@@ -4,7 +4,7 @@ import type { FireEvent } from "./FireEvent.ts";
 /**
  * An event kernel code reports on a ctx (k.ctx Observers). `nav`: a navigation started (before guards),
  * with the matched route's id, path pattern, decoded params and search, and their schemas. `fire`: an input event
- * dispatched to element `id`, before its handlers (a password `input` value arrives as `x` repeated). `resource`:
+ * dispatched to element `id`, before its handlers (a password or `data-k-pii` field's `input` value arrives as `x` repeated). `resource`:
  * `Match` rendered a resource state (`id`: the resource's `inspect()` node id). `error`: a Boundary caught, or a loader
  * or action returned `err`. `save`: an action saved `store`, now at `head`, from head `from` (0: none saved). `net`: `ctx.net.online()` changed. Neither
  * `save` nor `net` is replayed to a later observer.

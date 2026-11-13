@@ -1,7 +1,12 @@
 import type { Node } from "./Node.ts";
 
-/** One-line TypeScript-like rendering of a node. */
+/** One-line TypeScript-like rendering of a node; a marked node ends with ` pii(<class>)`. */
 export function typeText(node: Node): string {
+  const text = bare(node);
+  return node.pii === undefined ? text : `${text} pii(${node.pii})`;
+}
+
+function bare(node: Node): string {
   switch (node.kind) {
     case "string":
       return node.min === 0 && node.max === undefined ? "string" : `string(${node.min}..${node.max ?? ""})`;

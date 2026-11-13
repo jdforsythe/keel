@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { RUNS, SEED, build, distinctSorted, expectedValues, markedRoot } from "./privacy-fixtures";
 
 describe("k.privacy piiValues", () => {
-  it.skip("for every generated schema with marked nodes and every generated value, piiValues returns exactly the non-empty strings and the numbers under marked paths", () => {
+  it("for every generated schema with marked nodes and every generated value, piiValues returns exactly the non-empty strings and the numbers under marked paths", () => {
     fc.assert(
       fc.property(
         markedRoot.chain((spec) => fc.tuple(fc.constant(spec), gen(build(spec)))),
@@ -23,7 +23,7 @@ describe("k.privacy piiValues", () => {
     );
   });
 
-  it.skip("a fixture schema yields its non-empty marked strings and its marked numbers as String(), and nothing unmarked, no boolean, no empty string", () => {
+  it("a fixture schema yields its non-empty marked strings and its marked numbers as String(), and nothing unmarked, no boolean, no empty string", () => {
     const Fixture = s.object({
       name: s.string().pii("name"),
       nick: s.string().pii("name"),

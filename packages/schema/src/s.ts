@@ -16,6 +16,7 @@ import { formats } from "./internal/formats.ts";
 import { fromStrings } from "./internal/fromStrings.ts";
 import { invalid } from "./internal/invalid.ts";
 import { make } from "./internal/make.ts";
+import { mark } from "./internal/mark.ts";
 import { protoPaths } from "./internal/protoPaths.ts";
 import { registry } from "./internal/registry.ts";
 import { stringEntries } from "./internal/stringEntries.ts";
@@ -60,6 +61,20 @@ function format<const N extends string, T, F>(
     },
   });
   return make(node, false);
+}
+
+/** The object schema of an object node: `make` plus `decodeStrings`, and `.pii` keeping both. */
+function objectOf<T>(node: Node): ObjectSchema<T> {
+  const base = make<T, false>(node, false);
+  return {
+    ...base,
+    decodeStrings: (input: StringInput) => {
+      const entries = stringEntries(input);
+      const bad = protoPaths(entries.keys());
+      return bad.length > 0 ? err(invalid(bad)) : base.parse(fromStrings(node, "", entries));
+    },
+    pii: (cls) => objectOf<T>(mark(node, cls)),
+  };
 }
 
 type NumberBounds = { readonly min?: number; readonly max?: number };
@@ -124,15 +139,7 @@ export const s = {
       fields: Object.fromEntries(Object.entries(shape).map(([k, v]) => [k, v.node])),
       ...(opts.closed === true ? { closed: true } : {}),
     };
-    const base = make<ObjectOf<S>, false>(node, false);
-    return {
-      ...base,
-      decodeStrings: (input: StringInput) => {
-        const entries = stringEntries(input);
-        const bad = protoPaths(entries.keys());
-        return bad.length > 0 ? err(invalid(bad)) : base.parse(fromStrings(node, "", entries));
-      },
-    };
+    return objectOf<ObjectOf<S>>(node);
   },
   array: <S extends Schema<unknown>>(item: S): Schema<Infer<S>[]> => make({ kind: "array", item: item.node }, false),
   record: <S extends Schema<unknown>>(value: S): Schema<Record<string, Infer<S>>> =>

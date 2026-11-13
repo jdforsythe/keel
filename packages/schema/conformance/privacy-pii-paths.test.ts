@@ -10,7 +10,7 @@ const listed = (schema: Parameters<typeof piiPaths>[0]) =>
   piiPaths(schema).map((e) => ({ path: dotted(e.path), class: e.class }));
 
 describe("k.privacy piiPaths", () => {
-  it.skip("for every generated schema, piiPaths lists each marked leaf once with its class, in declaration order, an array item as `*`", () => {
+  it("for every generated schema, piiPaths lists each marked leaf once with its class, in declaration order, an array item as `*`", () => {
     fc.assert(
       fc.property(markedRootExclusive, (spec) => {
         expect(listed(build(spec))).toEqual(expectedPaths(spec));
@@ -19,7 +19,7 @@ describe("k.privacy piiPaths", () => {
     );
   });
 
-  it.skip("a marked leaf and a marked array item are listed with their class, the item as `*`, in declaration order", () => {
+  it("a marked leaf and a marked array item are listed with their class, the item as `*`, in declaration order", () => {
     const schema = s.object({
       id: s.int(),
       email: s.string().pii("contact"),
@@ -32,7 +32,7 @@ describe("k.privacy piiPaths", () => {
     ]);
   });
 
-  it.skip("every leaf under a marked object is listed once with the object's class", () => {
+  it("every leaf under a marked object is listed once with the object's class", () => {
     const schema = s.object({
       name: s.string(),
       address: s

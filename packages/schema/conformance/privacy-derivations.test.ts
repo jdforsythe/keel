@@ -17,7 +17,7 @@ const wire = (value: unknown): StringInput => {
 };
 
 describe("k.privacy marked schemas keep every derivation", () => {
-  it.skip("for every generated schema with marked nodes, parse, encode, decodeStrings and gen give what the unmarked schema gives", () => {
+  it("for every generated schema with marked nodes, parse, encode, decodeStrings and gen give what the unmarked schema gives", () => {
     fc.assert(
       fc.property(markedRoot, fc.anything(), (spec, junk) => {
         const marked = buildObject(spec);
@@ -40,7 +40,7 @@ describe("k.privacy marked schemas keep every derivation", () => {
     );
   });
 
-  it.skip("a marked string keeps the string type: parse and encode agree with s.string()", () => {
+  it("a marked string keeps the string type: parse and encode agree with s.string()", () => {
     const marked = s.string().pii("contact");
     fc.assert(
       fc.property(fc.string(), (v) => {

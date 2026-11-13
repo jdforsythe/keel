@@ -70,7 +70,7 @@ const leaves = (n: Node, prefix: string, inherited: Mark): Leaf[] => {
 const texts = fc.array(fc.stringMatching(/^[a-z]{1,16}$/), { minLength: 12, maxLength: 12 });
 
 describe("k.privacy input mask", () => {
-  it.skip("under a sim ctx, an input fired on an Input bound to a marked field reaches observe as x repeated, and the element has data-k-pii", async () => {
+  it("under a sim ctx, an input fired on an Input bound to a marked field reaches observe as x repeated, and the element has data-k-pii", async () => {
     await fc.assert(
       fc.asyncProperty(rootArb, texts, async (spec, pool) => {
         const all = leaves(spec, "", null);
@@ -84,6 +84,8 @@ describe("k.privacy input mask", () => {
               for (const [i, l] of all.entries()) {
                 const el = document.createElement("input");
                 el.setAttribute("data-k", `pm.f${i}`);
+                // `bind` keeps an id already on the element, and the observer reports `id` before `data-k`.
+                el.id = `pm.f${i}`;
                 f.field(l.path).bind(el);
                 main.append(el);
               }
@@ -99,7 +101,7 @@ describe("k.privacy input mask", () => {
         const router = createRouter(routes, { ctx, history: memoryHistory("/pm") });
         const root = document.createElement("div");
         document.body.appendChild(root);
-        const unmount = mount(router.App, root);
+        const unmount = mount(router.App, root, { ctx });
         try {
           await settle();
           for (const [i, l] of all.entries()) {

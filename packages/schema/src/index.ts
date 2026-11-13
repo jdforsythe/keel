@@ -2,6 +2,8 @@
 export type { Format } from "./Format.ts";
 export type { Id } from "./Id.ts";
 export type { Infer } from "./Infer.ts";
+export type { PiiClass } from "./PiiClass.ts";
+export type { PiiPath } from "./PiiPath.ts";
 export type { JsonValue } from "./JsonValue.ts";
 export type { KeelError } from "./KeelError.ts";
 export type { ObjectSchema } from "./ObjectSchema.ts";
@@ -15,4 +17,6 @@ export { err } from "./err.ts";
 export { ok } from "./ok.ts";
 export { s } from "./s.ts";
 export { pathToString } from "./pathToString.ts";
+export { piiPaths } from "./piiPaths.ts";
+export { piiValues } from "./piiValues.ts";
 export { reveal } from "./reveal.ts";

@@ -1,4 +1,5 @@
 import type { JsonValue } from "./JsonValue.ts";
+import type { PiiClass } from "./PiiClass.ts";
 import type { Result } from "./Result.ts";
 import type { SchemaError } from "./SchemaError.ts";
 import type { Node } from "./internal/Node.ts";
@@ -19,4 +20,6 @@ export interface Schema<T, O extends boolean = false> {
   /** `JSON.stringify(schema)` writes its node; a format node keeps its name, never its predicate or generator. */
   toJSON(): Node;
   nullable(): Schema<T | null, O>;
+  /** Marks this node and every value under it as personal data of `cls` (k.privacy); the type and derivations stay. */
+  pii(cls: PiiClass): Schema<T, O>;
 }

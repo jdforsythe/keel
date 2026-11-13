@@ -1,5 +1,10 @@
-/** The descriptor tree: the single source walked by validation, codec, generator and doc. Plain JSON data. */
-export type Node =
+import type { PiiClass } from "../PiiClass.ts";
+
+/**
+ * The descriptor tree: the single source walked by validation, codec, generator and doc. Plain JSON data.
+ * `pii` marks the node and everything under it as personal data (k.privacy); validation, codecs and generators ignore it.
+ */
+export type Node = (
   | { readonly kind: "string"; readonly min: number; readonly max: number | undefined }
   | { readonly kind: "number"; readonly min?: number; readonly max?: number }
   | { readonly kind: "int"; readonly min?: number; readonly max?: number }
@@ -16,4 +21,5 @@ export type Node =
   | { readonly kind: "nullable"; readonly inner: Node }
   | { readonly kind: "optional"; readonly inner: Node }
   | { readonly kind: "secret"; readonly inner: Node }
-  | { readonly kind: "format"; readonly name: string; readonly base: Node };
+  | { readonly kind: "format"; readonly name: string; readonly base: Node }
+) & { readonly pii?: PiiClass };

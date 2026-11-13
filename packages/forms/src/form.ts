@@ -16,6 +16,7 @@ import { getAt } from "./internal/getAt.ts";
 import { issueMessages } from "./internal/issueMessages.ts";
 import { markDefault } from "./internal/markDefault.ts";
 import { nodeAt } from "./internal/nodeAt.ts";
+import { piiClassAt } from "./internal/piiClassAt.ts";
 import { readElement } from "./internal/readElement.ts";
 import { setAt } from "./internal/setAt.ts";
 import { shapeHash } from "./internal/shapeHash.ts";
@@ -116,6 +117,7 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
     const node = segs.length === 0 ? undefined : nodeAt(root, segs);
     if (node === undefined) throw fieldPathError(path);
     known.add(path);
+    const pii = piiClassAt(typed, segs);
     let id = `${formId}:${path}`;
     let errorId = `${id}:error`;
     const write = (r: Reading): void =>
@@ -174,6 +176,8 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
       blur,
       bind: (el) => {
         el.name = path;
+        // A control bound to personal data says so; the ctx observer then masks it as a password (k.privacy).
+        if (pii !== undefined) el.setAttribute("data-k-pii", pii);
         if (!(el instanceof HTMLInputElement && el.type === "radio")) {
           // An id already on the element wins over the counter-derived one (D19); errorId follows it.
           if (el.id === "") el.id = id;

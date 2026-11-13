@@ -10,6 +10,7 @@ import { docOf } from "./docOf.ts";
 import { hasSecret } from "./hasSecret.ts";
 import { invalid } from "./invalid.ts";
 import { issueText } from "./issueText.ts";
+import { mark } from "./mark.ts";
 import { seal } from "./seal.ts";
 import { toJson } from "./toJson.ts";
 
@@ -35,6 +36,7 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
       return toJson(node, value);
     },
     doc: () => docOf(node),
+    pii: (cls) => make<T, O>(mark(node, cls), isOptional),
     toJSON: () => node,
     optional: () => make<T, true>(node.kind === "optional" ? node : { kind: "optional", inner: node }, true),
     nullable() {
