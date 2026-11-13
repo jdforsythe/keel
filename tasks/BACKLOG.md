@@ -616,3 +616,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0541 ledger: monitored evidence matches quoted names in raw source (comments included) with a one-segment prefix fallback; match AST string literals with at least two segments · cli
 - [ ] 0542 tooling: `holderAlive` accepts any live pid whose command line contains "mutate"; the stall clock also counts Stryker's dry-run and checker phases · tooling
 - [ ] 0543 server: a `keel.unexpected` diag from a thrown action or loader carries no frames (`attempt` keeps `cause`, not the stack), while k.server Log asks for app frames, max 5; carry the stack in `data` (k.errors) and scrub it · server · errors · spec
+- [ ] 0544 evidence: `pii.json` coverage reads sink clause rungs from the project's own `spec/` and conformance, so an app outside the monorepo gets coverage 0; ship the kernel's sink rungs with `@keel/cli` or name the source in k.privacy · cli · spec

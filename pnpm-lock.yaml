@@ -360,6 +360,9 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/scaffold':
         specifier: workspace:*
         version: link:../scaffold
@@ -379,9 +382,6 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
     devDependencies:
-      '@keel/ctx':
-        specifier: workspace:*
-        version: link:../ctx
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive

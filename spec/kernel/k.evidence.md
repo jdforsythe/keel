@@ -21,7 +21,7 @@ Every file parses with a schema `@keel/cli/evidence` exports. No file holds an a
 
 **Verify.** `keel evidence --verify <dir> [--key <keyId>]` re-hashes every listed file, finds no unlisted file, checks the signature with `key` (and that `keyId` equals `--key`), and parses each file with its schema. It emits one `evidence` record `{ kind, dir, at, keyId, files }`; compact `ok evidence evidence/2026-11-10 6 files key 3f2a9c01d2e4b5a6`.
 
-**Rules.** E1060 the bundle records a check error or a failed test · E1061 `KEEL_EVIDENCE_KEY` absent or not Ed25519; nothing is written · E1062 a listed file missing or changed, or an unlisted file present (names it) · E1063 signature invalid, or `keyId` differs from `--key` · E1064 `--audit` file is not `pnpm audit --json` output.
+**Rules.** E1060 the bundle records a check error or a failed test · E1061 `KEEL_EVIDENCE_KEY` absent or not Ed25519; nothing is written · E1062 a listed file missing, changed or not parsing with its schema, or an unlisted file present (names it) · E1063 signature invalid, or `keyId` differs from `--key` · E1064 `--audit` file is not `pnpm audit --json` output.
 
 **Conformance.**
 - On a fixture project with `KEEL_EVIDENCE_KEY` set, `keel evidence` writes exactly the eight files above, and `--verify` of the result emits one `evidence` record and exits 0.

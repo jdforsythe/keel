@@ -35,15 +35,15 @@
   "dependencies": {
     "@keel/check": "workspace:*",
     "@keel/compiler": "workspace:*",
-    "@keel/schema": "workspace:*",
+    "@keel/ctx": "workspace:*",
     "@keel/scaffold": "workspace:*",
+    "@keel/schema": "workspace:*",
     "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",
-    "vitest": "^4.1.12",
-    "typescript": "^5.6"
+    "typescript": "^5.6",
+    "vitest": "^4.1.12"
   },
   "devDependencies": {
-    "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",
     "@keel/server": "workspace:*",

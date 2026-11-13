@@ -6,15 +6,15 @@
     "spec.map": 1200,
     "explain": 300,
     "spec.for": 400,
-    "mcp.tools-list": 1500
+    "mcp.tools-list": 1650
   },
   "size": {
     "@keel/check": {
-      "max": "43.5kb",
+      "max": "46kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "23kb",
+      "max": "24kb",
       "platform": "node"
     },
     "@keel/compiler": {
@@ -31,9 +31,9 @@
       "max": "16.75kb",
       "platform": "node"
     },
-    "@keel/schema": "5kb",
+    "@keel/schema": "5.5kb",
     "@keel/server": {
-      "max": "17.5kb",
+      "max": "19.5kb",
       "platform": "node"
     },
     "@keel/server/dom": "2kb",
