@@ -7,6 +7,7 @@ import type { Manifest } from "../evidence/Manifest.ts";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
+import { KERNEL_SINK_RUNGS } from "./KERNEL_SINK_RUNGS.ts";
 import type { Outcome } from "./Outcome.ts";
 import { a11yClaims } from "./a11yClaims.ts";
 import { a11yFindings } from "./a11yFindings.ts";
@@ -104,7 +105,7 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
     ["check.ndjson", ndjson(check)],
     ["deps.json", json(depsReport(io.cwd, advisories))],
     ["ledger.ndjson", ndjson(ledger.records)],
-    ["pii.json", json(await piiReport(io.cwd, files, (clause) => rungs.get(clause) ?? "none"))],
+    ["pii.json", json(await piiReport(io.cwd, files, (c) => rungs.get(c) ?? KERNEL_SINK_RUNGS[c] ?? "none"))],
     ["security.json", json(await securityReport(io.cwd, topology, env))],
   ];
   const pkg = jsonOf(io.read?.("package.json"));
