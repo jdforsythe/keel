@@ -1,5 +1,5 @@
 # k.a11y: Accessibility
-status: proposed
+status: conformance-covered
 
 **Target.** WCAG 2.2 Level A and AA. Each criterion is checked statically (`keel check`), at render (`keel test`), or by a person; the ledger and the evidence bundle (k.evidence) say which.
 

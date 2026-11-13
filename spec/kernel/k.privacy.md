@@ -1,5 +1,5 @@
 # k.privacy: Secrets and personal data
-status: proposed
+status: conformance-covered
 
 **Purpose.** Two schema marks decide what may leave the process. A secret never serializes. Personal data serializes where the app sends it (its stores, its own user's page) and is redacted in every sink: sessions, logs, error text and the evidence bundle.
 

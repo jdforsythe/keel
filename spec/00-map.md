@@ -54,10 +54,10 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.services | Thin services | conformance-covered | typed client from schema, timeouts, ApiError |
 | k.openapi | OpenAPI import | conformance-covered | OpenAPI 3 to endpoints and client sources |
 | k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |
-| k.a11y | Accessibility | proposed | required props, contrast, focus order, axe-core, WCAG claims |
-| k.security | Headers and CSP | proposed | headers, nonce CSP, Trusted Types, caller cookie |
-| k.privacy | Secrets and personal data | proposed | `s.secret`, `.pii(class)`, redacting sinks |
-| k.evidence | Evidence bundle | proposed | `keel evidence`: a signed, offline audit bundle |
+| k.a11y | Accessibility | conformance-covered | required props, contrast, focus order, axe-core, WCAG claims |
+| k.security | Headers and CSP | conformance-covered | headers, nonce CSP, Trusted Types, caller cookie |
+| k.privacy | Secrets and personal data | conformance-covered | `s.secret`, `.pii(class)`, redacting sinks |
+| k.evidence | Evidence bundle | conformance-covered | `keel evidence`: a signed, offline audit bundle |
 
 ## Stdlib
 Sections and statuses: `spec/std/README.md`.

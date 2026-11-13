@@ -1,5 +1,5 @@
 # k.evidence: Evidence bundle
-status: proposed
+status: conformance-covered
 
 **Purpose.** One dated, signed directory that an auditor checks without the source: the ledger, the accessibility results, the headers and policy served, where personal data is and how each sink redacts it, and the dependencies.
 
