@@ -33,4 +33,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit proof
 
 ## Next action
-Reviewer and red-team over `ca16498..HEAD`; fix what is fixable, file the rest; root gates; push; close this plan, update HANDOFF and BACKLOG; then the next stage (S6, tasks/PROGRAM.md) without stopping (the user said to keep going).
+Reviewer: changes requested (one medium: `explore` evidence by name, even inside `toThrow`). Red-team: 0534-0542 filed. Fix batch running in three agents: kernel K7 (0534, 0535, 0536, 0528 if contained, 0539, 0540, 0541, reviewer lows), statecharts (0537, README status), sessions (URL echo in `commandMonitor`, 0538). Then: spec sentences they ask for, mark closed items in BACKLOG, root gates, `pnpm ledger` on a quiet tree, eval rerun, push, close this plan and update HANDOFF; then open S6 (tasks/0312-s6-compliance/PLAN.md) without stopping.
