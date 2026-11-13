@@ -76,3 +76,13 @@ test("a marked object keeps decodeStrings", () => {
   expect(schema.decodeStrings({ n: "4" })).toEqual(s.object({ n: s.int() }).decodeStrings({ n: "4" }));
   expect(schema.doc()).toBe("n: int pii(identifier)");
 });
+
+test("a marked record's keys are personal data, and so are a marked open object's undeclared keys and values", () => {
+  const schema = s.object({ by: s.record(s.number()).pii("contact"), who: s.object({ id: s.int() }).pii("name") });
+  const parsed = schema.parse({ by: { "bob@example.com": 3 }, who: { id: 1, nick: "bobby" } });
+  expect(parsed.ok).toBe(true);
+  if (!parsed.ok) return;
+  expect([...piiValues(schema, parsed.value)].sort()).toEqual(["1", "3", "bob@example.com", "bobby", "nick"].sort());
+  const plain = s.object({ by: s.record(s.number()) });
+  expect(piiValues(plain, { by: { "bob@example.com": 3 } })).toEqual([]);
+});

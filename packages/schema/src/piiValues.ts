@@ -4,18 +4,23 @@ import { fits } from "./internal/fits.ts";
 import { isRecord } from "./internal/isRecord.ts";
 import { variantOf } from "./internal/variantOf.ts";
 
-/** Every string and number in a JSON value. */
+/** Every non-empty string, number and object key in a JSON value. */
 function collect(value: unknown, out: Set<string>): void {
   if (typeof value === "string") {
     if (value !== "") out.add(value);
   } else if (typeof value === "number") out.add(String(value));
   else if (Array.isArray(value)) for (const v of value) collect(v, out);
-  else if (isRecord(value)) for (const v of Object.values(value)) collect(v, out);
+  else if (isRecord(value))
+    for (const [k, v] of Object.entries(value)) {
+      collect(k, out);
+      collect(v, out);
+    }
 }
 
 /**
- * The distinct non-empty strings and numbers (as `String()`) under a marked path of `value`, a valid encoded
- * value of `schema`, in the order met (k.privacy). A secret's marker is not one.
+ * The distinct non-empty strings and numbers (as `String()`) under a marked path of `value`, a valid value of
+ * `schema`, in the order met (k.privacy): also the keys of a marked record, and the undeclared keys and values a
+ * parsed open object under a mark keeps. A secret's marker is not one.
  */
 export function piiValues(schema: Schema<unknown, boolean>, value: unknown): readonly string[] {
   const out = new Set<string>();
@@ -35,11 +40,18 @@ export function piiValues(schema: Schema<unknown, boolean>, value: unknown): rea
         if (Array.isArray(x)) for (const v of x) walk(node.item, v, marked);
         return;
       case "record":
-        if (isRecord(x)) for (const v of Object.values(x)) walk(node.value, v, marked);
+        if (isRecord(x))
+          for (const [k, v] of Object.entries(x)) {
+            if (marked) collect(k, out);
+            walk(node.value, v, marked);
+          }
         return;
       case "object":
-        if (isRecord(x))
-          for (const [k, f] of Object.entries(node.fields)) if (Object.hasOwn(x, k)) walk(f, x[k], marked);
+        if (!isRecord(x)) return;
+        for (const [k, f] of Object.entries(node.fields)) if (Object.hasOwn(x, k)) walk(f, x[k], marked);
+        // A parsed open object keeps undeclared keys; under a mark, their names and values are personal data too.
+        if (marked && node.closed !== true)
+          for (const [k, v] of Object.entries(x)) if (!Object.hasOwn(node.fields, k)) collect({ [k]: v }, out);
         return;
       case "union": {
         const variant = isRecord(x) ? variantOf(node, x[node.key]) : undefined;
