@@ -126,6 +126,9 @@
           "run": "node tooling/mutate-changed.mjs"
         },
         {
+          "run": "pnpm ledger --diff"
+        },
+        {
           "if": "always()",
           "uses": "actions/cache/save@v4",
           "with": {
@@ -150,6 +153,9 @@
         },
         {
           "run": "pnpm mutate --filter=\"./packages/*\""
+        },
+        {
+          "run": "pnpm ledger --diff"
         },
         {
           "if": "always()",

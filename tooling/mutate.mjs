@@ -12,12 +12,17 @@ import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
+import { acquire, lockedDiag } from "./mutateLock.mjs";
 import { mode, quiet, run } from "./output.ts";
 
 const root = path.join(import.meta.dirname, "..");
 const PROGRESS = path.join(".stryker-tmp", "progress.json");
 /** Seconds Stryker has to save and leave after its SIGINT before the runner kills the child it started. */
 const GRACE_S = 120;
+/** Milliseconds with no mutant finished before a run is stalled (E0011); `KEEL_MUTATE_STALL_MS` shortens it for tests. */
+const stallMs = () => Number(process.env.KEEL_MUTATE_STALL_MS) || 10 * 60000;
+/** Milliseconds between the runner's looks at its run (stop requests, stall); `KEEL_MUTATE_POLL_MS` shortens it for tests. */
+const pollMs = () => Number(process.env.KEEL_MUTATE_POLL_MS) || 5000;
 const json = () => mode() === "json" || process.env.KEEL_FORMAT === "json";
 const n = (v) => v.toLocaleString("en-US");
 const readJson = (f) => {
@@ -45,6 +50,17 @@ export function statusLine(pkg, p, now) {
   const left = p.total - Math.max(p.tested, p.reused);
   const eta = rate > 0 ? `about ${Math.ceil(left / rate)}m left` : "no rate yet";
   return `${pkg} ${n(p.tested)} of ${n(p.total)} mutants, ${n(p.reused)} reused, ${Math.round(rate)} a minute, ${eta}`;
+}
+
+/**
+ * The stall clock: `state` is `{ tested, since }`, `p` the run's progress file (undefined before its first write).
+ * Returns the next state and whether the run has gone `limitMs` without a finished mutant. Before the first
+ * progress the clock runs from `state.since`, so a hung dry run is cut off too.
+ */
+export function stallCheck(state, p, now, limitMs) {
+  const tested = p?.tested ?? -1;
+  const next = tested === state.tested ? state : { tested, since: now };
+  return { state: next, stalled: now - next.since >= limitMs };
 }
 
 /** How a run that did not finish ended: `budget`, `stopped`, or `crashed` (a signal nobody here sent). */
@@ -179,13 +195,18 @@ function stop() {
 
 function mutate(args) {
   const pkg = path.basename(process.cwd());
-  const fail = (text, counts = {}) => {
+  const fail = (text, counts = {}, diag) => {
     const ms = Date.now() - t0;
+    if (diag && json()) console.log(JSON.stringify({ kind: "diag", ...diag }));
+    else if (diag) console.log(`${diag.code} ${diag.message}`);
     if (json()) console.log(JSON.stringify({ kind: "summary", ok: false, name: `mutate ${pkg}`, counts, ms }));
     else console.log(`fail mutate ${pkg} ${text} (${(ms / 1000).toFixed(1)}s)`);
     process.exitCode = 1;
   };
   const t0 = Date.now();
+  // One mutation run on the machine; the packages `pnpm mutate` runs one after the other are its descendants and pass.
+  const lock = acquire();
+  if (!lock.held) return fail("not started", {}, lockedDiag(lock.holder));
   const budget = budgetMinutes(readJson(path.join(import.meta.dirname, "budgets.json")), pkg);
   const cache = mutateCacheDir();
   const file = path.join(cache, `${pkg}.run.json`);
@@ -206,7 +227,8 @@ function mutate(args) {
   for (const d of fs.readdirSync(".stryker-tmp"))
     if (d.startsWith("sandbox-")) fs.rmSync(path.join(".stryker-tmp", d), { recursive: true, force: true });
 
-  const bin = path.join(root, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");
+  const bin =
+    process.env.KEEL_MUTATE_BIN || path.join(root, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");
   // Its own process group: a terminal's Ctrl-C reaches the runner only, which passes on exactly one SIGINT.
   const child = spawn(process.execPath, [bin, "run", ...args], {
     stdio: "inherit",
@@ -231,9 +253,19 @@ function mutate(args) {
     interrupt();
   }, budget * 60000);
   // `mutate:stop` signals the group itself; the runner still owes it the grace period.
+  // A run with no mutant finished for `stallMs()` is stalled: it gets the same one SIGINT as a run over budget.
+  let stalled = false;
+  let stall = { tested: -2, since: Date.now() };
   const watch = setInterval(() => {
     if (readJson(file)?.signalled) armGrace();
-  }, 5000);
+    if (stalled) return;
+    const s = stallCheck(stall, readJson(PROGRESS), Date.now(), stallMs());
+    stall = s.state;
+    if (s.stalled) {
+      stalled = true;
+      interrupt();
+    }
+  }, pollMs());
   const done = () => {
     clearTimeout(timer);
     clearTimeout(grace);
@@ -253,6 +285,7 @@ function mutate(args) {
     const claimed = readJson(file);
     const signalled = claimed?.signalled === true;
     killed ||= claimed?.killed === true;
+    stalled &&= code !== 0;
     // Test runners Stryker started can outlive it; the group ends with its core, checked by PID.
     const { left } = await endGroup(child.pid, { graceMs: code === 0 ? 0 : 5000 });
     fs.rmSync(file, { force: true });
@@ -264,6 +297,14 @@ function mutate(args) {
     const counts = { tested: p.tested, total: p.total, budgetMinutes: budget };
     const at = `at ${n(p.tested)} of ${n(p.total)} mutants`;
     const gone = leftNote(left);
+    if (stalled) {
+      const diag = { code: "E0011", message: `mutation run stalled at ${p.tested}/${p.total} mutants` };
+      return fail(
+        `no mutant finished for ${Math.round(stallMs() / 60000)}m; run again to resume; ${gone}`,
+        counts,
+        diag,
+      );
+    }
     // 130 tells `mutate-changed` the run was stopped or killed on purpose, so it starts no further package.
     if (killed) {
       fail(`did not stop within ${GRACE_S}s of its SIGINT and was killed ${at}; nothing saved; ${gone}`, counts);

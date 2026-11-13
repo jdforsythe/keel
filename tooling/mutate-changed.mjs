@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
 import { stopFile } from "./mutate.mjs";
+import { acquire, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
 
 const root = path.join(import.meta.dirname, "..");
@@ -22,7 +23,8 @@ const has = (ref) => {
   }
 };
 
-const SHARED = /^tooling\/(stryker|stryker-reporter|mutate|quick-first|mutate-cache|vitest\.mutate\.config)\.(mjs|ts)$/;
+const SHARED =
+  /^tooling\/(stryker|stryker-reporter|mutate|mutateLock|quick-first|mutate-cache|vitest\.mutate\.config)\.(mjs|ts)$/;
 const IGNORED = /^packages\/[^/]+\/(reports|\.stryker-tmp|node_modules)\//;
 const MUTATED = /^src\/(?!index\.ts$)(?!types\/).+\.ts$/;
 
@@ -75,6 +77,9 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     const scope = changedScope(changed, all);
     const line = `ok mutate-changed ${scope.map(show).join(",") || "none"}`;
     if (argv.includes("--list") || scope.length === 0) return { diags: [], counts: { packages: scope.length }, line };
+    // The whole sequence holds the lock, so no second run starts between two packages; each package's runner passes.
+    const lock = acquire();
+    if (!lock.held) return { diags: [lockedDiag(lock.holder)], counts: { packages: scope.length } };
     const since = Date.now();
     const stops = stopFile(mutateCacheDir(root));
     let child;

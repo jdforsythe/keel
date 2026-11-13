@@ -120,6 +120,7 @@ jobs:
           key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
           restore-keys: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-\nstryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
       - run: node tooling/mutate-changed.mjs
+      - run: pnpm ledger --diff
       - if: "always()"
         uses: actions/cache/save@v4
         with:
@@ -144,6 +145,7 @@ jobs:
           key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
           restore-keys: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-\nstryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
       - run: "pnpm mutate --filter=\"./packages/*\""
+      - run: pnpm ledger --diff
       - if: "always()"
         uses: actions/cache/save@v4
         with:
