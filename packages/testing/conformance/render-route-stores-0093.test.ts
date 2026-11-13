@@ -180,57 +180,58 @@ test.skip("a `Form` submit to a `stores` action saves its changed stores, and th
 
 test.skip("an action's `err` or a throw saves nothing: the stored text stays as it was", async () => {
   await fc.assert(
-    fc.asyncProperty(texts, fc.stringMatching(/^[a-z]{1,8}$/), fc.constantFrom("err", "throw"), async (values, v, mode) => {
-      reset();
-      const ctx = simCtx();
-      expect(await savedItems(ctx)).toBeNull();
-      const fresh = await open(ctx);
-      control.mode = mode;
-      await thrown(() => submit(fresh, v));
-      expect(await ctx.storage.get(KEY)).toBeNull();
-      fresh.dispose();
-      control.mode = "ok";
-      await seeded(ctx, values);
-      const before = await ctx.storage.get(KEY);
-      const h = await open(ctx);
-      control.mode = mode;
-      await thrown(() => submit(h, v));
-      expect(await ctx.storage.get(KEY)).toBe(before);
-      control.mode = "ok";
-      await h.settle();
-      expect(h.find("st.items").text).toBe(values.join(","));
-      h.dispose();
-    }),
+    fc.asyncProperty(
+      texts,
+      fc.stringMatching(/^[a-z]{1,8}$/),
+      fc.constantFrom("err", "throw"),
+      async (values, v, mode) => {
+        reset();
+        const ctx = simCtx();
+        expect(await savedItems(ctx)).toBeNull();
+        const fresh = await open(ctx);
+        control.mode = mode;
+        await thrown(() => submit(fresh, v));
+        expect(await ctx.storage.get(KEY)).toBeNull();
+        fresh.dispose();
+        control.mode = "ok";
+        await seeded(ctx, values);
+        const before = await ctx.storage.get(KEY);
+        const h = await open(ctx);
+        control.mode = mode;
+        await thrown(() => submit(h, v));
+        expect(await ctx.storage.get(KEY)).toBe(before);
+        control.mode = "ok";
+        await h.settle();
+        expect(h.find("st.items").text).toBe(values.join(","));
+        h.dispose();
+      },
+    ),
     { seed: SEED, numRuns: 10 },
   );
 });
 
 test.skip("a stale read is `keel.conflict`: the later save answers the error and nothing of it is stored", async () => {
   await fc.assert(
-    fc.asyncProperty(
-      fc.stringMatching(/^[a-z]{1,8}$/),
-      fc.stringMatching(/^[a-z]{1,8}$/),
-      async (first, second) => {
-        reset();
-        const ctx = simCtx();
-        const slow = await open(ctx);
-        const quick = await open(ctx);
-        control.hold = deferred();
-        const gate = control.hold;
-        control.arrived = deferred();
-        const arrived = control.arrived;
-        await slow.fire("st.text", { type: "input", value: first });
-        const pending = slow.fire("st.form", { type: "submit" });
-        await arrived.promise;
-        await submit(quick, second);
-        gate.resolve();
-        await pending;
-        expect(slow.find("st.err").text).toBe("keel.conflict");
-        expect(await savedItems(ctx)).toEqual([second]);
-        slow.dispose();
-        quick.dispose();
-      },
-    ),
+    fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), fc.stringMatching(/^[a-z]{1,8}$/), async (first, second) => {
+      reset();
+      const ctx = simCtx();
+      const slow = await open(ctx);
+      const quick = await open(ctx);
+      control.hold = deferred();
+      const gate = control.hold;
+      control.arrived = deferred();
+      const arrived = control.arrived;
+      await slow.fire("st.text", { type: "input", value: first });
+      const pending = slow.fire("st.form", { type: "submit" });
+      await arrived.promise;
+      await submit(quick, second);
+      gate.resolve();
+      await pending;
+      expect(slow.find("st.err").text).toBe("keel.conflict");
+      expect(await savedItems(ctx)).toEqual([second]);
+      slow.dispose();
+      quick.dispose();
+    }),
     { seed: SEED, numRuns: 8 },
   );
 });
