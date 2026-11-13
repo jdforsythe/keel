@@ -641,3 +641,5 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0564 router: `packages/router/src/**/createRouterWith.ts` carries comments naming RFC numbers (moved from the old file); remove them (rule 11) · router
 - [x] 0565 kernel: `@keel/server/dom` and `@keel/compiler/entry/*` are kernel-only entries without an `internal` segment, so E1576 does not cover them; rename them under `internal` or name them in the rule · server · compiler · check
 - [ ] 0566 server: a production `diag`'s `frames` point into the `server.mjs` bundle; emit source maps at `keel build` and enable them at start (`process.setSourceMapsEnabled`) so frames name app files · server · cli
+- [ ] 0567 server: `caught` reads `process.cwd()` to make frames relative (a hidden global); `AppOptions` has no project root: add one or derive it from the artifacts dir · server
+- [ ] 0568 compiler: E1558's static read misses a live loader whose generator is a `const` (`const feed = async function* …`), a helper or spread adding `stores`, and `import * as`; `createApp` still throws; the `const` case costs 17 B over the compiler budget · compiler
