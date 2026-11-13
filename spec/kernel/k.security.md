@@ -19,7 +19,7 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 
 **Other deployables.** `client` and `static` documents are served by their host. `keel build` writes their policy to `dist/<name>/csp.txt`: the one above with `script-src 'self'`, no nonce and no report directives, and `connect-src` adding each `keel-peer` origin (k.hosting). A `client` `index.html` a `node` deployable serves as its `host` carries that policy.
 
-**Rules.** E1570 a literal absolute `http(s)` URL in `src`, `poster`, `data`, `srcset`, `action`, `formaction` or `Image src`: the policy blocks another origin (fix: none) · E1571 a literal absolute `http(s)` URL given to `ctx.net.fetch` or `service({ base })` in client-reachable code (E1004's reachability).
+**Rules.** E1570 a literal absolute `http(s)` URL in `src`, `poster`, `data`, `srcset`, `action`, `formaction` or `Image src`: the policy blocks another origin (fix: none) · E1571 a literal absolute `http(s)` URL given to `ctx.net.fetch` or `service({ base })` in client-reachable code (E1004's reachability) · E1576 a `@keel/*` internal entry (a specifier with an `internal` path segment) named by an import, re-export, or literal `import()` or `require` in a file outside `packages/`, `node_modules/` and `.keel/`, tests included: internal entries are kernel and stdlib seams such as the server state runner (fix: none).
 
 **Conformance.**
 - Every `createApp` response, a 404, a 413 and an asset included, carries the six headers; `Strict-Transport-Security` only on https.
@@ -33,3 +33,4 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 - `Image src="https://cdn.example/a.png"` and `action="https://x.example/"` are each E1570; `src="logo.png"` is not.
 - `ctx.net.fetch(new Request('https://api.example/x'))` in a client-reachable file is E1571; in a `*.server.ts` file it is not.
 - `keel build` of a fixture with a `client` deployable writes its `csp.txt` with `script-src 'self'`.
+- `import { serverState } from '@keel/store/internal'` in `modules/a/x.ts`, `import('@keel/router/internal')` in `test/a.test.ts` and `export * from '@keel/std-jobs/tools/internal'` are each one E1576; the first in `packages/std-x/src/a.ts` or `node_modules/@keel/std-x/a.ts`, and `import '@keel/router/match'`, are not.
