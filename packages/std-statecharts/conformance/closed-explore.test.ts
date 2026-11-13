@@ -24,7 +24,7 @@ const lock = (limit: number) =>
   });
 
 describe("std.statecharts: closed-form exploration of a chart", () => {
-  test.skip("Under `explore`'s closed form, a chart with finite `data` and payloads returns `complete: true`", () => {
+  test("Under `explore`'s closed form, a chart with finite `data` and payloads returns `complete: true`", () => {
     const c = editor("closed");
     const r = explore(Object.values(c.events));
     expect(r.complete).toBe(true);
@@ -34,7 +34,7 @@ describe("std.statecharts: closed-form exploration of a chart", () => {
     expect(coverage(c, r).unreached).toEqual([]);
   });
 
-  test.skip("`coverage` lists a state whose only entry is guarded by an unsatisfiable guard in `unreached`", () => {
+  test("`coverage` lists a state whose only entry is guarded by an unsatisfiable guard in `unreached`", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 5 }), (limit) => {
         const c = lock(limit);

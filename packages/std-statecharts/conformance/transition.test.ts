@@ -33,7 +33,7 @@ const sorter = () =>
   });
 
 describe("std.statecharts: a transaction takes the first applicable target", () => {
-  test.skip("`tx` of an event moves to the first target whose guard holds and applies its `do`", async () => {
+  test("`tx` of an event moves to the first target whose guard holds and applies its `do`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 3 }), async (by) => {
         const c = sorter();
@@ -53,7 +53,7 @@ describe("std.statecharts: a transaction takes the first applicable target", () 
     expect(e.store.snapshot().state).toEqual({ state: "gaveUp", data: { attempts: 3 } });
   });
 
-  test.skip("with no applicable target the state and `data` are unchanged", async () => {
+  test("with no applicable target the state and `data` are unchanged", async () => {
     const c = sorter();
     await tx(c.events.never, {});
     expect(c.store.snapshot().state).toEqual({ state: "inbox", data: { n: 0 } });

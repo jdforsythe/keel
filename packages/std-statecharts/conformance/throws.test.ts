@@ -15,7 +15,7 @@ const base = { data, start: { n: 0 }, events: { go: empty, stop: empty } } as co
 const loose = (spec: ChartSpec<{ n: number }, Readonly<Record<string, Schema<unknown>>>, string, string, string>) =>
   spec;
 describe("std.statecharts: chart repeats E2751, E2753 and E2754 as throws", () => {
-  test.skip("`chart` throws E2751, E2753 and E2754 for those fixtures", () => {
+  test("`chart` throws E2751, E2753 and E2754 for those fixtures", () => {
     // clean twin
     expect(() =>
       chart(nextId("ok"), { ...base, initial: "a", states: { a: { on: { go: "b" } }, b: { final: true } } }),

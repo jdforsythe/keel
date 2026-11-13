@@ -25,7 +25,7 @@ const gate = () =>
   });
 
 describe("std.statecharts: enabled agrees with tx", () => {
-  test.skip("`enabled(state, event, payload)` is true exactly when `tx` of that event changes the state's name or applies a `do`", async () => {
+  test("`enabled(state, event, payload)` is true exactly when `tx` of that event changes the state's name or applies a `do`", async () => {
     // the editor: every applicable target changes the name or the data
     await fc.assert(
       fc.asyncProperty(

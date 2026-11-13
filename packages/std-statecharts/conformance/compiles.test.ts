@@ -10,14 +10,14 @@ import { describe, expect, test } from "vitest";
 import { EVENTS, STATES, editor, nextId } from "./fixtures.ts";
 
 describe("std.statecharts: compiles to a store and one transaction per event", () => {
-  test.skip("The compiled store's schema parses `{ state: initial, data: start }`", () => {
+  test("The compiled store's schema parses `{ state: initial, data: start }`", () => {
     const c = editor();
     expect(c.initial).toBe("viewing");
     expect(c.store.schema.parse({ state: c.initial, data: { attempts: 0 } }).ok).toBe(true);
     expect(c.store.snapshot().state).toEqual({ state: "viewing", data: { attempts: 0 } });
   });
 
-  test.skip("the store's schema refuses a state name outside `states`", () => {
+  test("the store's schema refuses a state name outside `states`", () => {
     const c = editor();
     fc.assert(
       fc.property(
@@ -34,7 +34,7 @@ describe("std.statecharts: compiles to a store and one transaction per event", (
     expect(c.store.schema.parse({ state: "viewing", data: { attempts: 0 }, extra: 1 }).ok).toBe(false);
   });
 
-  test.skip("each event's transaction is named `<id>.<event>`", async () => {
+  test("each event's transaction is named `<id>.<event>`", async () => {
     const c = editor("named");
     expect(Object.keys(c.events).sort()).toEqual([...EVENTS].sort());
     expect([...c.store.payloads.keys()].sort()).toEqual(EVENTS.map((e) => `${c.store.id}.${e}`).sort());
@@ -42,7 +42,7 @@ describe("std.statecharts: compiles to a store and one transaction per event", (
     expect(c.store.log().map((e) => e.name)).toEqual([`${c.store.id}.edit`]);
   });
 
-  test.skip("each event's transaction `schema` is that event's payload schema", () => {
+  test("each event's transaction `schema` is that event's payload schema", () => {
     const Bump = s.object({ by: s.int({ min: 0, max: 3 }) });
     const Name = s.object({ label: s.string({ min: 1 }) });
     const c = chart(nextId("schemas"), {

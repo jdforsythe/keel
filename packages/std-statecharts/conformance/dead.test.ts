@@ -24,7 +24,7 @@ const counter = (max: number) =>
   });
 
 describe("std.statecharts: stuck states", () => {
-  test.skip("A state whose every exit is guarded false from some reachable `data` appears in `dead`", () => {
+  test("A state whose every exit is guarded false from some reachable `data` appears in `dead`", () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 4 }), (max) => {
         const c = counter(max);

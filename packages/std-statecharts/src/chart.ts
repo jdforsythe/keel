@@ -1,3 +1,4 @@
+import { owner, scope } from "@keel/reactive";
 import { type Schema, s } from "@keel/schema";
 import { store, transaction } from "@keel/store";
 import { asEvents } from "../unsafe/asEvents.ts";
@@ -31,11 +32,14 @@ export function chart<
   for (const name in spec.states) names.push(name);
   const [first, ...rest] = names;
   if (first === undefined) throw new Error(`E2751 chart ${id}: no states`);
-  const st = store(
-    s.object({ state: s.enum([first, ...rest]), data: spec.data }, { closed: true }),
-    { state: spec.initial, data: spec.start },
-    { id },
-  );
+  const make = () =>
+    store(
+      s.object({ state: s.enum([first, ...rest]), data: spec.data }, { closed: true }),
+      { state: spec.initial, data: spec.start },
+      { id },
+    );
+  // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
+  const st = owner() === undefined ? scope(() => undefined, { detached: true }).run(make) : make();
   const guards = loosen<D, boolean>(spec.guards);
   const actions = loosen<D, D>(spec.actions);
   const pick = (cur: ChartState<S, D>, event: string, payload: unknown) => {

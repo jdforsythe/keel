@@ -63,18 +63,20 @@ describe("chart: a declaration throws a structural code or compiles", () => {
         const badName = !named.includes(spec.initial) || tos.some((t) => !named.includes(t));
         const r = attempt(spec);
         if (badName) expect(r.error).toMatch(/^E275[134] /);
-        if (r.error !== undefined && !/^E1203 /.test(r.error)) expect(r.error).toMatch(/^E275[134] chart todos\.prop/);
+        if (r.error !== undefined) expect(r.error).toMatch(/^E275[134] chart todos\.prop/);
       }),
       { seed: 1337, numRuns: 200 },
     );
   });
 
-  // Runs once `chart` roots its store outside a scope: today `store` throws E1203 there.
-  test.skip("a declaration that does not throw compiles to transactions `properties` accepts", async () => {
+  test("a declaration that does not throw compiles to transactions `properties` accepts", async () => {
     await fc.assert(
       fc.asyncProperty(decl, async (spec) => {
         const r = attempt(spec);
-        if (r.chart === undefined) return expect(r.error).toMatch(/^E275[134] /);
+        if (r.chart === undefined) {
+          expect(r.error).toMatch(/^E275[134] /);
+          return;
+        }
         for (const t of Object.values(r.chart.events))
           await expect(Promise.resolve(properties(t, { runs: 20, seed: 1337 }))).resolves.not.toThrow();
       }),

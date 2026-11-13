@@ -32,7 +32,7 @@ export function editor(name = "editor") {
       cancel: empty,
     },
     guards: { canRetry: (d) => d.attempts < 3 },
-    actions: { count: (d) => ({ attempts: d.attempts + 1 }), reset: () => ({ attempts: 0 }) },
+    actions: { count: (d) => ({ attempts: Math.min(3, d.attempts + 1) }), reset: () => ({ attempts: 0 }) },
     initial: "viewing",
     states: {
       viewing: { on: { edit: "editing" } },
