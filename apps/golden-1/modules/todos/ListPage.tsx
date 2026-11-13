@@ -119,7 +119,11 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       </Box>
       <Box as="ul" id="todos.items" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
         <For each={shown()} key="id">
-          {(todo) => <TodoRow todo={todo} />}
+          {(todo) => (
+            <Box as="li" id={`todos.row.${todo.id}`}>
+              <TodoRow todo={todo} />
+            </Box>
+          )}
         </For>
       </Box>
       {children()}

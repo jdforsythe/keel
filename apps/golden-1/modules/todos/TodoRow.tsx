@@ -13,7 +13,8 @@ export const Props = s.object({ todo: Todo });
 
 /**
  * One todo: a done Checkbox (sends `/api/todos/:todoId/toggle` through the outbox, based on the board as last read;
- * the live board shows the result), priority, Edit link.
+ * the live board shows the result), priority, Edit link. The list that shows it owns the list item
+ * (`todos.row.<id>` in `ListPage`), so a row renders on its own as well.
  */
 export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const toggle = (): void => {
@@ -23,7 +24,7 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
     void send(ctx, boardOutbox, origin, "toggleTodo", call, { base: view.get("head") });
   };
   return (
-    <Box as="li" id={`todos.row.${props.todo.id}`} direction="row" align="center" gap="3" px="3" py="2" bg="card">
+    <Box direction="row" align="center" gap="3" px="3" py="2" bg="card">
       <Checkbox
         id={`todos.toggle.${props.todo.id}`}
         label={`Done: ${props.todo.title}`}
