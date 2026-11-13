@@ -2,13 +2,14 @@
 // Spec: k.testing, Conformance "On one ctx, a save through `renderRoute` is read by `createApp`, and a save through `createApp` by the next `renderRoute` navigation."
 // Spec: k.server Server state: the saved copy is one per `ctx.storage`, shared by every `createApp` and harness render on that ctx; a stale save is 409 `keel.conflict`.
 // Seed: 1337.
-// Skipped until the implementation exists (rfc:0093).
 // ASSUMPTIONS (spec names no shape): a harness submit is `fire(inputId, { type: 'input', value })` then `fire(formId, { type: 'submit' })`;
-// `createApp` is read through a runtime (JSON) GET and written through a runtime (JSON) POST; the loader's `Result` JSON is `{ ok, value }`.
+// `createApp` is read through a runtime (JSON) GET and written through a runtime (JSON) POST; the GET answers the envelope `{ id, results: { [id]: Result } }` and the route's `Result` is `{ ok, value }`.
+// A stale read is `keel.conflict`: the harness holds its save while `createApp` saves on the same ctx.
 import type { Ctx } from "@keel/ctx";
 import { Form, action, loader, manifest } from "@keel/router";
 import type { RouteProps } from "@keel/router";
 import { text } from "@keel/runtime-dom/ops";
+import { Input } from "@keel/ui";
 import { createCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
@@ -40,12 +41,20 @@ const page = (props: RouteProps): Node => {
   const main = el("main", "sc.page");
   const list = el("p", "sc.items");
   text(list, () => itemsOf(props.data).join(","));
-  const input = el("input", "sc.text");
-  input.setAttribute("name", "text");
+  const input = Input({ id: "sc.text", name: "text", label: "Text" });
   const button = el("button", "sc.save");
   button.setAttribute("type", "submit");
   button.textContent = "save";
-  const form = Form({ method: "POST", action: links.href("link.sc"), children: () => [input, button] });
+  const form = Form({
+    method: "POST",
+    action: links.href("link.sc"),
+    error: (e) => {
+      const p = el("p", "sc.err");
+      p.textContent = e.code;
+      return p;
+    },
+    children: () => [input, button],
+  });
   form.id = "sc.form";
   main.append(list, form);
   return main;
@@ -53,8 +62,13 @@ const page = (props: RouteProps): Node => {
 const read = loader({ output: Notes, stores: factory }, async ({ stores }) =>
   ok({ items: [...stores.notes.get("items")] }),
 );
+const control: { hold: Promise<void> | null; arrived: (() => void) | null } = { hold: null, arrived: null };
 const write = action({ input: Add, stores: factory }, async ({ text: t }, { stores }) => {
+  const hold = control.hold;
+  control.hold = null;
   tx(stores.add, { text: t });
+  control.arrived?.();
+  if (hold !== null) await hold;
   return ok(null);
 });
 const routes = manifest({
@@ -77,7 +91,9 @@ const getItems = async (app: App): Promise<readonly string[]> => {
   const res = await app.fetch(new Request("http://localhost/sc", { headers: { accept: "application/json" } }));
   expect(res.status).toBe(200);
   const body: unknown = await res.json();
-  const value: unknown = typeof body === "object" && body !== null ? Reflect.get(body, "value") : undefined;
+  const results: unknown = typeof body === "object" && body !== null ? Reflect.get(body, "results") : undefined;
+  const result: unknown = typeof results === "object" && results !== null ? Reflect.get(results, "sc.page") : undefined;
+  const value: unknown = typeof result === "object" && result !== null ? Reflect.get(result, "value") : undefined;
   return itemsOf(value);
 };
 const postText = (app: App, t: string): Promise<Response> =>
@@ -89,7 +105,7 @@ const postText = (app: App, t: string): Promise<Response> =>
     }),
   );
 
-test.skip("On one ctx, a save through `renderRoute` is read by `createApp`, and a save through `createApp` by the next `renderRoute` navigation", async () => {
+test("On one ctx, a save through `renderRoute` is read by `createApp`, and a save through `createApp` by the next `renderRoute` navigation", async () => {
   await fc.assert(
     fc.asyncProperty(word, word, async (viaHarness, viaApp) => {
       const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -108,7 +124,7 @@ test.skip("On one ctx, a save through `renderRoute` is read by `createApp`, and 
   );
 });
 
-test.skip("two `createApp`s and a harness render on one ctx read each other's saves", async () => {
+test("two `createApp`s and a harness render on one ctx read each other's saves", async () => {
   await fc.assert(
     fc.asyncProperty(word, word, async (a, b) => {
       const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -122,5 +138,33 @@ test.skip("two `createApp`s and a harness render on one ctx read each other's sa
       h.dispose();
     }),
     { seed: 1337, numRuns: 10 },
+  );
+});
+
+test("a stale save is 409 `keel.conflict`: the harness's held save answers the error and only `createApp`'s save is stored", async () => {
+  await fc.assert(
+    fc.asyncProperty(word, word, async (first, second) => {
+      const ctx = createCtx({ mode: "sim", seed: 1337 });
+      const app = await appOn(ctx);
+      const h = await renderRoute("sc.page", { routes, ctx });
+      let release: () => void = () => undefined;
+      control.hold = new Promise<void>((r) => {
+        release = r;
+      });
+      const arrived = new Promise<void>((r) => {
+        control.arrived = r;
+      });
+      await h.fire("sc.text", { type: "input", value: first });
+      const pending = h.fire("sc.form", { type: "submit" });
+      await arrived;
+      control.arrived = null;
+      expect((await postText(app, second)).status).toBe(200);
+      release();
+      await pending;
+      expect(h.find("sc.err").text).toBe("keel.conflict");
+      expect(await getItems(app)).toEqual([second]);
+      h.dispose();
+    }),
+    { seed: 1337, numRuns: 8 },
   );
 });
