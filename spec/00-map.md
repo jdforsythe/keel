@@ -42,7 +42,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.testing | Harness and properties | conformance-covered | given state, do events, expect; generated properties |
 | k.model | Exploring a store's transactions | conformance-covered | reachable states under invariants; shortest counterexample |
 | k.sim | Schedules and simulation | conformance-covered | delays, faults, offline windows; simulate |
-| k.ledger | Ledger and evidence | conformance-covered | rungs from tests, explore and production; mutation claims |
+| k.ledger | Ledger and evidence | conformance-covered | rungs and their producers; mutation claims |
 | k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
 | k.sync | Heads and concurrent writes | conformance-covered | store heads, write bases, reject or rebase |
 | k.topology | Deployables | implemented | placement, route table, runners, peers, `keel dev` |
@@ -54,10 +54,10 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.services | Thin services | conformance-covered | typed client from schema, timeouts, ApiError |
 | k.openapi | OpenAPI import | conformance-covered | OpenAPI 3 to endpoints and client sources |
 | k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |
-| k.a11y | Accessibility | conformance-covered | required props, contrast, focus order, axe-core, WCAG claims |
+| k.a11y | Accessibility | conformance-covered | props, contrast, focus order, axe-core, claims |
 | k.security | Headers and CSP | conformance-covered | headers, nonce CSP, Trusted Types, caller cookie |
 | k.privacy | Secrets and personal data | conformance-covered | `s.secret`, `.pii(class)`, redacting sinks |
-| k.evidence | Evidence bundle | conformance-covered | `keel evidence`: a signed, offline audit bundle |
+| k.evidence | Evidence bundle | conformance-covered | `keel evidence`: a signed bundle |
 
 ## Stdlib
 Sections and statuses: `spec/std/README.md`.
