@@ -1,6 +1,6 @@
 {
   "skill": "keel-api",
   "maxTokens": 600,
-  "prompt": "How do I serve a data API with per-request server stores from a node deployable and call it from a client-only deployable, keeping the client's copy in sync after a write?",
-  "expect": ["createApp", "deployable", "stores", "endpoints", "service", "hydrate", "syncAfter", "application/json"]
+  "prompt": "How do I declare a JSON API route in a Keel node module, call it from a client-only deployable with a typed service client, and keep the client's view store current after a write?",
+  "expect": ["api: true", "createApp", "deployable", "endpoints", "service", "hydrate", "application/json"]
 }

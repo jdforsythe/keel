@@ -1,6 +1,6 @@
 ---
 name: keel-testing
-description: "Test Keel components, routes and transactions with @keel/testing: render, renderRoute, fire, settle, properties, a11y, sim ctx and net routes; E170x"
+description: "Test Keel components and routes with @keel/testing: render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes; E170x"
 ---
 
 # Testing with @keel/testing
@@ -15,20 +15,16 @@ t.state(store)                  // t.state() = all stores by id
 t.a11y()                        // role/name/state tree
 await t.settle()                // flush after a resource resolves, no event
 t.dispose()                     // restores seeded stores
-const r = await renderRoute('todos.list', { routes, params: { listId }, search: {}, state: [], ctx })
+const r = await renderRoute('todos.list', { routes, params: { listId }, search: {}, state: [], ctx, caller })
+await r.navigate(routes.href('todos.show', { id }))
 ```
-- `routes` is the manifest; guards and loaders run before it resolves. Props and `state` parse first (`schema.invalid`, nothing renders).
+- `routes` is the manifest; guards (given `caller`, default `''`) and loaders run before it resolves. Props and `state` parse first (`schema.invalid`, nothing renders).
+- A loader or action naming `stores` runs its factory over the harness ctx's `ctx.storage` (one request per navigation or submit), so a `node` deployable's page is tested like any other; it and `createApp` on one ctx read each other's saves. `state` holds no factory store.
 - Labelled inputs: find the id from `r.a11y()` by label, then `fire(id, { type: 'input', value })`.
 - `fire` resolves after effects, resources and actions go quiet (no timers, else `keel.unexpected`).
-- Harness ctx is always sim (`KEEL_SEED`, default 1337). Use `createCtx({ mode: 'sim', seed })`; advance time with `ctx.clock.advance(ms)`; fake the network with `ctx.net.route(new URL('/api/*', location.href).href, req => new Response(...))` (a handler may return `app.fetch(req)` of a real `createApp`).
-- Reload data between tests: `const base = store.snapshot()` and `store.restore(base)` in `afterEach`.
+- Harness ctx is always sim (`KEEL_SEED`, default 1337). Use `createCtx({ mode: 'sim', seed })`; advance time with `ctx.clock.advance(ms)`; fake the network with `ctx.net.route(new URL('/api/*', location.href).href, req => new Response(...))`.
+- Between tests: `const base = store.snapshot()` and `store.restore(base)` in `afterEach`.
 
-**Properties:** `await properties(Comp | transaction, { runs: 100, seed })`. Components: no throw, a11y matches, no axe violations, deterministic. Transactions: output parses, every `invariant(store, fn)` holds, `undo` restores. Replay with `KEEL_SEED=<n>`.
+**A11y:** a passing `renderRoute` per page (axe-core, token contrast) makes its `a11y:` claims; E1703/E1804/E1821 fail it. `t.focusOrder()`: ids in tab order.
 
-**Reachable states and faults:** `explore([tx1, tx2], { from, payloads, depth })` visits every state a store reaches and checks its invariants (E1708 with a replayable snapshot); with no options and every transaction named it is the closed form, `proven`. `await simulate(async ({ ctx, run }) => { ... await run() ... }, { runs: 100, seed })` runs a scenario under generated schedules of delays, drops, 503s and offline windows. Rungs: `proven` needs a closed `explore` or type-level tests, `exhaustive` an `explore` run, `probabilistic` 100-run `properties` or `simulate`, `monitored` a `.keel/monitored.json` from `keel session monitor`.
-
-**A11y:** a passing `renderRoute` per page (axe-core, token contrast) makes its `a11y:` claims; E1703/E1804/E1821 fail it. `t.focusOrder()`. Canary: fill `piiPaths(S)`, find no `piiValues` in log `write` lines or sim `session(ctx).taken()`. `keel evidence` signs it all.
-
-**Errors:** E1701 selector/DOM query in a test · E1702 role/name differs from `a11y.json` · E1703 axe violation · E1704 property failed (seed, run, shrunk case) · E1705 unknown id (3 nearest listed) · E1706 ledger rung lowered.
-
-Every export is named in a test; 100-run properties lift the ledger to `probabilistic`. Fix by code: `keel explain E1704`.
+**Errors:** E1701 selector/DOM query in a test · E1702 role/name differs from `a11y.json` · E1703 axe violation · E1705 unknown id (3 nearest listed) · E1719 `focus` on an unfocusable element. Properties, `explore`, `simulate`, rungs: keel-correctness.

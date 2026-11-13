@@ -5,7 +5,7 @@ description: "Build Keel forms: form(schema), Field.bind, ui controls with field
 
 # Forms with @keel/forms
 
-Spec: `pnpm spec k.forms`. Define the input as an `s.object` in `*.schema.ts`; the same schema is the action's input.
+Spec: `pnpm spec k.forms`. Define the input as an `s.object` in `*.schema.ts`; the same schema is the action's input. `.pii()` fields: keel-compliance.
 
 ```tsx
 const f = form(OrderEdit, { initial: order })   // in a component scope (else E1203)
@@ -15,15 +15,14 @@ const f = form(OrderEdit, { initial: order })   // in a component scope (else E1
   <Button id="orders.save" type="submit">Save</Button>
 </Form>
 ```
-- `Form` is from `@keel/router`; `action` is the target route's `Href` (`routes.href(id, params)`) whose action (`routes.actions({ [id]: { POST } })`) takes the same schema. Slot: `error` (no `loading`).
+- `Form` is from `@keel/router`; `action` is the target route's `Href` (`routes.href(id, params)`) whose action is bound by `routes.actions({ [id]: { POST } })`. Slot: `error` (no `loading`).
 - `f.field(path)`: typed dotted path (array indexes ok). Handle: `values()`, `errors()`, `pending()` (the one pending state), `reset()`. A `Field` has `name, id, errorId, value(), error(), touched(), set(v), blur(), bind(el)`.
 - Base inputs given `field` call `bind` (name, id, value, `aria-invalid`, `aria-describedby`); for a plain `input` call `field.bind(el)` (returns unbind).
 - Validation is from the schema only: on blur, then each input once an error shows; all on submit. Invalid submit sends nothing and focuses the first invalid field.
 - Action result: `ok` resets to `initial`; `err({ code: 'keel.fields', data: { title: 'Taken' } })` sets exactly those field errors (422 on the server); any other `err` shows in the `error` slot, values kept. Pass a client-service 422 body on: `err(r.error.data.body?.error ?? r.error)`.
-- A `.pii()` field's control gets `data-k-pii` (input masked) and needs `autocomplete` (`email`, ...; `off` for others' data; E1821).
 - Without JS the server decodes FormData by the action input schema and re-renders.
 - Encoding: `schema.decodeStrings(formData)` coerces numbers, checkbox booleans, `a.b` nested keys, repeated keys; `toFormData(schema, value)` is its inverse (except empty optional strings).
 
-**Errors:** E1901 input in a `<Form>` without `field` · E1902 path not in schema · E1903 form schema differs from the action input schema · E1904 `keel.fields` names a path outside the action input.
+**Errors:** E1901 input in a `<Form>` without `field` · E1902 path not in schema.
 
 **Tests:** `renderRoute`, `fire(<field id>, { type: 'input', value })`, `fire(submitId, { type: 'click' })`, then `find(id).state.focused` and `find(`${id}:error`).text`.

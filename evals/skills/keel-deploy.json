@@ -1,0 +1,6 @@
+{
+  "skill": "keel-deploy",
+  "maxTokens": 600,
+  "prompt": "How do I build a Keel app with a client and a node deployable, have the server serve the client, and host the client on a static host instead?",
+  "expect": ["keel build", "server.mjs", "host:", "KEEL_SECRET", "KEEL_PEER_", "KEEL_ALLOW_ORIGINS"]
+}

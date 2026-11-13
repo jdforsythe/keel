@@ -1,0 +1,6 @@
+{
+  "skill": "keel-compliance",
+  "maxTokens": 600,
+  "prompt": "How do I mark personal data in a Keel schema, which inputs need autocomplete, what does the content security policy forbid in app code, and how do I make and verify an evidence bundle?",
+  "expect": [".pii(", "autocomplete", "E1821", "E1570", "keel evidence", "--key"]
+}

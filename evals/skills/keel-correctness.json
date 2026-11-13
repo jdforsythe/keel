@@ -1,0 +1,6 @@
+{
+  "skill": "keel-correctness",
+  "maxTokens": 600,
+  "prompt": "How do I check every reachable state of a Keel store, run a scenario under network faults, and which ledger rung does each tool earn?",
+  "expect": ["explore(", "simulate(", "properties(", "proven", "exhaustive", "probabilistic"]
+}
