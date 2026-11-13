@@ -59,7 +59,7 @@ const CLAUSE =
   "Under one `schedule`, two runs of one script on `openGroup` give byte-equal groups, and with a `lost` step on a user's write the server holds one entry for that write's key.";
 
 describe("std.multi: group schedule", () => {
-  test.skip(`${CLAUSE} (byte-equal groups, and the group keeps the schedule)`, async () => {
+  test(`${CLAUSE} (byte-equal groups, and the group keeps the schedule)`, async () => {
     // Workers make runs slow: few runs, each a pair of full group recordings.
     await fc.assert(
       fc.asyncProperty(scheduleArb, fc.array(stepArb, { maxLength: 8 }), async (schedule, script) => {
@@ -72,7 +72,7 @@ describe("std.multi: group schedule", () => {
     );
   }, 120_000);
 
-  test.skip(`${CLAUSE} (a lost write leaves one entry)`, async () => {
+  test(`${CLAUSE} (a lost write leaves one entry)`, async () => {
     // Two users: user i gets steps i, i + 2, ... of `net`, so `net[w]` is user w's first request, its write.
     await fc.assert(
       fc.asyncProperty(user, word, async (writer, note) => {

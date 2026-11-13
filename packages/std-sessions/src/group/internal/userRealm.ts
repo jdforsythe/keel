@@ -1,5 +1,5 @@
 import type { MessagePort } from "node:worker_threads";
-import { type SimCtx, createCtx } from "@keel/ctx";
+import { Schedule, type SimCtx, createCtx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
 import { type JsonValue, s } from "@keel/schema";
 import { type RouteHarness, renderRoute } from "@keel/testing";
@@ -30,6 +30,7 @@ const Open = s.object({
   origin: s.string(),
   at: s.number(),
   session: Session.nullable(),
+  schedule: Schedule.nullable(),
 });
 const Base = s.object({ id: s.string(), params: s.record(s.json()), search: s.record(s.json()) });
 const Id = s.object({ id: s.string() });
@@ -53,7 +54,7 @@ function parsed<T>(schema: { parse(x: unknown): { ok: true; value: T } | { ok: f
 /**
  * One group user (std.multi), in its worker: answers its group's calls on `port`. `open` loads the user module with
  * `load` (the worker's project loader, which loaded this module too) and,
- * live, renders its `base` at `at` under `record(ctx, { limit: Infinity })` on a sim ctx of the user's seed, or, for a
+ * live, renders its `base` at `at` (on a sim ctx with its `schedule`, when the group has one) under `record(ctx, { limit: Infinity })` on a sim ctx of the user's seed, or, for a
  * replay, renders a session's base as std.sessions `replay` does. Requests to `origin` go to the group's server over
  * `port`, their bodies streamed back (a body the user cancels is cancelled at the server); other URLs get the sim
  * net's 404.
@@ -146,7 +147,7 @@ export function userRealm(port: MessagePort, load: (url: string) => Promise<unkn
     const table = field(mod, "routes");
     if (!isTable(table)) throw new TypeError(`group: ${o.user} exports no routes`);
     routes = table;
-    const c = createCtx({ mode: "sim", seed: o.seed });
+    const c = createCtx({ mode: "sim", seed: o.seed, ...(o.schedule === null ? {} : { schedule: o.schedule }) });
     ctx = c;
     c.net.route(`${o.origin}/*`, bridge);
     if (o.at > c.clock.now()) c.clock.advance(o.at - c.clock.now());

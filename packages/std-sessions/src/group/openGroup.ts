@@ -5,6 +5,7 @@ import type { GroupUser } from "./GroupUser.ts";
 import { SessionGroup } from "./SessionGroup.schema.ts";
 import { moduleUrl } from "./internal/moduleUrl.ts";
 import { openHub } from "./internal/openHub.ts";
+import { userSchedule } from "./internal/userSchedule.ts";
 import { userSeed } from "./internal/userSeed.ts";
 import { wire } from "./internal/wire.ts";
 
@@ -12,7 +13,9 @@ import { wire } from "./internal/wire.ts";
  * Open a session group (std.multi): `serve` over a sim ctx of `seed` whose storage starts with `server`, and `users`
  * users, each in its own worker thread with its own DOM, modules and sim ctx (seed from `seed` and its index), each
  * rendering the user module's `base` at `at` under `record(ctx, { limit: Infinity })` and reaching the server through
- * its sim net at `origin` with its own cookie jar. Users open in index order, the group settling after each.
+ * its sim net at `origin` with its own cookie jar. With `schedule` (k.sim), user `i` of `n` gets every `n`-th `net`
+ * step from `i` and the `offline` windows (`userSchedule`); the server ctx gets none, and the group keeps `schedule`.
+ * Users open in index order, the group settling after each.
  */
 export async function openGroup(options: GroupOptions): Promise<Group> {
   const at = options.at ?? 0;
@@ -30,7 +33,15 @@ export async function openGroup(options: GroupOptions): Promise<Group> {
   try {
     for (const [id, v] of Object.entries(await h.stored())) server[id] = v;
     for (const [i, r] of h.realms.entries()) {
-      await r.call("open", { user, seed: userSeed(options.seed, i), origin: options.origin, at, session: null });
+      const schedule = options.schedule === undefined ? null : userSchedule(options.schedule, i, h.realms.length);
+      await r.call("open", {
+        user,
+        seed: userSeed(options.seed, i),
+        origin: options.origin,
+        at,
+        session: null,
+        schedule,
+      });
       await h.settle();
     }
   } catch (error) {
@@ -83,7 +94,8 @@ export async function openGroup(options: GroupOptions): Promise<Group> {
           if (!s.ok) throw new TypeError("group: bad session");
           sessions.push(s.value);
         }
-        const group = { v: 1, seed: options.seed, at, origin: options.origin, server, users: sessions };
+        const kept = options.schedule === undefined ? {} : { schedule: options.schedule };
+        const group = { v: 1, seed: options.seed, at, origin: options.origin, server, users: sessions, ...kept };
         const r = SessionGroup.parse(group);
         if (!r.ok) throw new TypeError(`group: recorded group fails SessionGroup: ${r.error.message}`);
         return r.value;

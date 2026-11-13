@@ -1,3 +1,4 @@
+import { Schedule } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { Session } from "../Session.schema.ts";
 
@@ -5,7 +6,7 @@ import { Session } from "../Session.schema.ts";
  * A session group (std.multi), registered as `sessions.SessionGroup`: the sessions of several users of one server,
  * recorded under simulation on one timeline. `seed` is the server's sim seed, `at` the time the group opened,
  * `origin` the server's origin, `server` each server store as stored under `keel.store.<id>` when the group opened,
- * and `users` one session per user, in user index order.
+ * `users` one session per user, in user index order, and `schedule` the group's schedule (k.sim) when it had one.
  */
 const SessionGroupShape = s.object(
   {
@@ -15,6 +16,7 @@ const SessionGroupShape = s.object(
     origin: s.string(),
     server: s.record(s.json()),
     users: s.array(Session),
+    schedule: Schedule.optional(),
   },
   { closed: true },
 );
