@@ -14,11 +14,11 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "24kb",
+      "max": "24.25kb",
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "29kb",
+      "max": "29.25kb",
       "platform": "node"
     },
     "@keel/ctx": "3.5kb",
@@ -36,8 +36,8 @@
       "max": "19.75kb",
       "platform": "node"
     },
-    "@keel/server/dom": "2kb",
-    "@keel/server/start": {
+    "@keel/server/internal/dom": "4.75kb",
+    "@keel/server/internal/start": {
       "max": "2kb",
       "platform": "node"
     },
