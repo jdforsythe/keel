@@ -1,4 +1,4 @@
-// Spec: k.testing, clause "An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`."
+// Spec: k.ledger, clause "An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`."
 // Seed: 1337.
 import { ledger } from "@keel/testing";
 import * as fc from "fast-check";
@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { SEED } from "./fixtures.ts";
 import { exampleEv, propEv } from "./ledger-fixtures.ts";
 
-describe("k.testing: an export tested only by examples is example; adding a passing 100-run property makes it probabilistic", () => {
+describe("k.ledger: an export tested only by examples is example; adding a passing 100-run property makes it probabilistic", () => {
   it("examples only gives rung example, for any number of examples", () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 10 }), (n) => {
