@@ -2,7 +2,7 @@
 
 Every `keel` command and every `pnpm` script has one data model and three renderings. The agent-facing rendering is the default.
 
-**Mode.** `--format=compact|json|pretty`. Default `compact` when stdout is not a TTY or `KEEL_AGENT=1`; `pretty` on a human terminal; `json` for tooling.
+**Mode.** `--format=compact|json|pretty`. Default `compact` when stdout is not a TTY or `KEEL_AGENT=1`; `pretty` on a human terminal; `json` for tooling. A built server (`node server.mjs`) takes no flags: `KEEL_FORMAT=json` sets its mode.
 
 **Diagnostic shape** (check, test, build, bench, audit, session):
 
