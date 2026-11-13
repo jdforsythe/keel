@@ -5,7 +5,7 @@ import type { Topology } from "../types/Topology.ts";
 
 /** Specifiers the dev module imports; the app resolves them (the compiler itself never imports them). */
 const [DOM, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
-  "@keel/server/dom",
+  "@keel/server/internal/dom",
   "@keel/server",
   "@keel/ctx",
   "@keel/ctx/node",

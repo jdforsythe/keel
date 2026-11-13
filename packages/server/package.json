@@ -8,13 +8,13 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./start": {
-      "types": "./src/start.ts",
-      "default": "./src/start.ts"
+    "./internal/start": {
+      "types": "./src/internal/start.ts",
+      "default": "./src/internal/start.ts"
     },
-    "./dom": {
-      "types": "./src/internal/dom/installServerDom.ts",
-      "default": "./src/internal/dom/installServerDom.ts"
+    "./internal/dom": {
+      "types": "./src/internal/dom/index.ts",
+      "default": "./src/internal/dom/index.ts"
     },
     "./csp": {
       "types": "./src/csp/index.ts",

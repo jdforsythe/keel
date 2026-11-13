@@ -1,4 +1,4 @@
-import { CLIENT_MANIFEST } from "@keel/compiler/entry/CLIENT_MANIFEST";
+import { CLIENT_MANIFEST } from "@keel/compiler/internal/entry/CLIENT_MANIFEST";
 import type { BuiltClient } from "./BuiltClient.ts";
 import { codedError } from "./codedError.ts";
 import { peersOfIndex } from "./peersOfIndex.ts";

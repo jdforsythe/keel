@@ -24,7 +24,7 @@
       "types": "./src/a11y/index.ts",
       "default": "./src/a11y/index.ts"
     },
-    "./entry/*": {
+    "./internal/entry/*": {
       "types": "./src/entry/*.ts",
       "default": "./src/entry/*.ts"
     },

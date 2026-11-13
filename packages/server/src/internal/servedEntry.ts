@@ -1,5 +1,5 @@
-import { ENTRY_PATH } from "@keel/compiler/entry/ENTRY_PATH";
-import { resumeEntry } from "@keel/compiler/entry/resumeEntry";
+import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
+import { resumeEntry } from "@keel/compiler/internal/entry/resumeEntry";
 import type { BuiltClient } from "./BuiltClient.ts";
 import type { Handled } from "./Handled.ts";
 

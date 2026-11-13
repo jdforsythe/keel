@@ -1,6 +1,6 @@
-import { ENTRY_PATH } from "@keel/compiler/entry/ENTRY_PATH";
 import { originOf } from "@keel/compiler/hosting/originOf";
 import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
+import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";

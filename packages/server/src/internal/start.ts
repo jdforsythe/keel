@@ -5,16 +5,16 @@ import { peerKey } from "@keel/compiler/hosting/peerKey";
 import { createCtx } from "@keel/ctx";
 import { type RouteDef, manifest } from "@keel/router";
 import { createApp } from "@keel/server";
-import { DeployEnv } from "./internal/DeployEnv.ts";
-import { diagLine } from "./internal/diagLine.ts";
-import type { StartOptions } from "./types/StartOptions.ts";
+import type { StartOptions } from "../types/StartOptions.ts";
+import { DeployEnv } from "./DeployEnv.ts";
+import { diagLine } from "./diagLine.ts";
 
 const line = (text: string): void => {
   process.stdout.write(`${text}\n`);
 };
 
 /**
- * Serve one `node` deployable in production (`@keel/server/start`, k.topology Build; only the generated entry calls
+ * Serve one `node` deployable in production (`@keel/server/internal/start`, k.topology Build; only the generated entry calls
  * it). Parses `process.env` with `DeployEnv`: a failure prints one E1560 naming the key, never its value, and exits 1.
  * Then serves `createApp` (production, real `ctx`, the merged routes, runners, peers by `KEEL_PEER_<NAME>`, `origin`
  * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, and on SIGTERM or SIGINT stops listening, awaits `close()` and exits 0.

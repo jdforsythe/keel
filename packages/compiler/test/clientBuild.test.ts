@@ -3,8 +3,8 @@
 // project config with its output in dist/<name>/ (k.hosting Artifact); every other run keeps the project config.
 import fs from "node:fs";
 import path from "node:path";
-import { CLIENT_MANIFEST } from "@keel/compiler/entry/CLIENT_MANIFEST";
-import { ENTRY_PATH } from "@keel/compiler/entry/ENTRY_PATH";
+import { CLIENT_MANIFEST } from "@keel/compiler/internal/entry/CLIENT_MANIFEST";
+import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
 import keel from "@keel/compiler/vite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 

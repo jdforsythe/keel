@@ -5,7 +5,7 @@ import { Server, createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { start } from "../src/start.ts";
+import { start } from "../src/internal/start.ts";
 
 const options = {
   topology: { web: { modules: [], adapter: "node" } },
