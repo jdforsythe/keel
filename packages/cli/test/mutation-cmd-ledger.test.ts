@@ -357,6 +357,7 @@ describe("ledger command", () => {
         { pkg: "a", name: "foo", file: "packages/a/src/foo.ts", rung: "probabilistic" },
       ],
       clauses: [{ item: "k.a#1", rung: "none" }],
+      a11y: [],
     });
     expect(writes[0]?.content?.endsWith("}\n")).toBe(true);
     const none: Write[] = [];

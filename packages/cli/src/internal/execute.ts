@@ -18,7 +18,7 @@ import { testCommand } from "./testCommand.ts";
 import { unavailable } from "./unavailable.ts";
 
 /** The a11y rule map, read only when a project has `.keel/routes.json` (k.a11y Claims items exist only then). */
-const ledgerRules = async (io: Io): Promise<A11yCriteriaMap> =>
+const ledgerRules = (io: Io): A11yCriteriaMap =>
   projectFiles(io).some((f) => /(?:^|\/)\.keel\/routes\.json$/.test(f.path)) ? a11yRuleMap() : new Map();
 
 const only = (records: readonly OutRecord[]): Outcome => ({
@@ -40,7 +40,7 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     case "explain":
       return only(explainCommand(input));
     case "ledger":
-      return ledgerCommand(input, io, await ledgerRules(io));
+      return ledgerCommand(input, io, ledgerRules(io));
     case "evidence": {
       // Behind its own entry, loaded only when the command runs (`@keel/cli` size budget).
       const { evidenceCommand } = await import("@keel/cli/evidence");

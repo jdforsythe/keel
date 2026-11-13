@@ -578,6 +578,7 @@ describe("kernelFormatters", () => {
       "req",
       "ledger",
       "ledger.mutation",
+      "evidence",
       "a11y",
       "spec.section",
       "spec.cite",

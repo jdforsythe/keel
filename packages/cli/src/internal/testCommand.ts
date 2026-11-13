@@ -1,10 +1,12 @@
 import { Writable } from "node:stream";
 import { type TestReport, testResults } from "@keel/testing";
+import { writeA11yReport } from "@keel/testing/a11y";
 import { type Vitest, startVitest } from "vitest/node";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
+import { a11yCases } from "./a11yCases.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 
@@ -41,6 +43,8 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
     },
     onTestRunEnd: (_modules: readonly unknown[], errors: readonly unknown[], reason: string): void => {
       const r = run === undefined ? NOT_STARTED : testResults(run.state.getFiles(), errors, root);
+      // Every render check the harness recorded, to `reports/a11y.json` (k.a11y Claims; `keel ledger` reads it).
+      if (run !== undefined) writeA11yReport(root, a11yCases(run.state.getFiles(), root));
       report = reason === "passed" || r.failed > 0 || r.errors > 0 ? r : notPassed(r, reason);
     },
   };
@@ -68,7 +72,7 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
  * `keel test [paths]`: vitest, programmatically, on `io.cwd` with `KEEL_TEST=1` (k.testing: ctx defaults to sim);
  * vitest's own output is discarded and `@keel/testing` `testResults` (the same walk the repository's
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
- * test failed). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
+ * test failed); every render check the harness recorded goes to `reports/a11y.json` (`writeA11yReport`). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
  * project never touches disk.
  */
 export async function testCommand(input: Input, io: Io): Promise<OutRecord[]> {

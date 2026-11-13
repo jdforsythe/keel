@@ -1,13 +1,13 @@
 import { isRecord } from "./isRecord.ts";
 
 /**
- * `reports/a11y.json` (k.a11y Claims, `A11yRun[]`) read for the ledger: per run the route it rendered (absent for a
- * component render), the rules that ran, and the rules violated (an E1703 violation by its axe rule, any other by its
- * code). Entries that are not runs are skipped; text that is not JSON is no runs.
+ * `reports/a11y.json` (`A11yRun[]` of `@keel/testing/a11y`, k.a11y Claims) read for the ledger: per route render of a
+ * passing test, the rules that ran and the rules violated. Component renders, runs of failing tests and entries that
+ * are not runs are skipped; text that is not JSON is no runs.
  */
 export function a11yRuns(
   text: string | undefined,
-): { readonly route: string | undefined; readonly rules: readonly string[]; readonly violated: readonly string[] }[] {
+): { readonly route: string; readonly rules: readonly string[]; readonly violated: readonly string[] }[] {
   let parsed: unknown;
   try {
     parsed = text === undefined ? [] : JSON.parse(text);
@@ -17,17 +17,12 @@ export function a11yRuns(
   if (!Array.isArray(parsed)) return [];
   const strings = (xs: unknown): string[] =>
     Array.isArray(xs) ? xs.filter((x: unknown): x is string => typeof x === "string") : [];
-  const ruleOf = (v: unknown): string[] => {
-    if (typeof v === "string") return [v];
-    if (!isRecord(v)) return [];
-    if (typeof v.rule === "string") return [v.rule];
-    return typeof v.code === "string" ? [v.code] : [];
-  };
+  const ruleOf = (v: unknown): string[] => (isRecord(v) && typeof v.rule === "string" ? [v.rule] : []);
   return parsed.flatMap((r: unknown) =>
-    isRecord(r) && Array.isArray(r.rules)
+    isRecord(r) && typeof r.route === "string" && r.passed === true && Array.isArray(r.rules)
       ? [
           {
-            route: typeof r.route === "string" ? r.route : undefined,
+            route: r.route,
             rules: strings(r.rules),
             violated: Array.isArray(r.violations) ? r.violations.flatMap(ruleOf) : [],
           },

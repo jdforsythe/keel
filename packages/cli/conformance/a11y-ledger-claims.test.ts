@@ -21,14 +21,16 @@ const tokens = (fg: string): string =>
   `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "${fg}", bg: "#ffffff" } });\n`;
 const TOPOLOGY = `export default { api: { modules: ["m"], adapter: "node" } };\n`;
 
-const PASSING = `// @vitest-environment happy-dom
+// The fixture test's environment line is joined from two parts so vitest does not read it as this file's own.
+const ENV = ["// @vitest", "environment happy-dom"].join("-");
+const PASSING = `${ENV}
 import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import { tokens } from "../../../tokens.ts";
 import { routes } from "../routes.ts";
 
-it.skip("renders the route r", async () => {
+it("renders the route r", async () => {
   const h = await renderRoute("m.r", { routes, ctx: createCtx({ mode: "sim", seed: 1337 }), artifacts: { tokens } });
   expect(h.find("m.r.msg").text).toBe("r");
   h.dispose();
@@ -80,19 +82,19 @@ afterAll(() => {
 });
 
 describe("k.a11y: ledger claims from reports/a11y.json", () => {
-  it.skip("After `keel test` with one passing `renderRoute` test of route `r`, `keel ledger` gives `a11y:r#1.4.3` rung `example`", () => {
+  it("After `keel test` with one passing `renderRoute` test of route `r`, `keel ledger` gives `a11y:r#1.4.3` rung `example`", () => {
     expect(claim(passing, ITEM_R)).toMatchObject({ kind: "ledger", item: ITEM_R, rung: "example" });
   });
 
-  it.skip("`a11y:r2#1.4.3` is rung `none` for an untested route `r2`", () => {
+  it("`a11y:r2#1.4.3` is rung `none` for an untested route `r2`", () => {
     expect(claim(passing, ITEM_R2)).toMatchObject({ kind: "ledger", item: ITEM_R2, rung: "none" });
   });
 
-  it.skip("a violation of a rule mapped to 1.4.3 on `r` makes it `none`", () => {
+  it("a violation of a rule mapped to 1.4.3 on `r` makes it `none`", () => {
     expect(claim(violating, ITEM_R)).toMatchObject({ item: ITEM_R, rung: "none" });
   });
 
-  it.skip("`keel test` writes every render check to `reports/a11y.json` as `A11yRun[]` with route, rules run and violations", () => {
+  it("`keel test` writes every render check to `reports/a11y.json` as `A11yRun[]` with route, rules run and violations", () => {
     const text = readFileSync(join(violatingDir, "reports", "a11y.json"), "utf8");
     const runs: unknown = JSON.parse(text);
     expect(Array.isArray(runs)).toBe(true);
@@ -100,7 +102,7 @@ describe("k.a11y: ledger claims from reports/a11y.json", () => {
     expect(text).toContain("E1804");
   });
 
-  it.skip("every claim is `{ kind: 'ledger', item, rung, evidence }`", () => {
+  it("every claim is `{ kind: 'ledger', item, rung, evidence }`", () => {
     const rec = claim(passing, ITEM_R);
     expect(Object.keys(rec ?? {}).sort()).toEqual(["evidence", "item", "kind", "rung"]);
   });

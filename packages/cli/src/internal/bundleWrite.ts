@@ -76,7 +76,7 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
   const fresh = io.load === undefined ? io : { ...io, files: io.load("ledger") };
   const files = projectFiles(fresh);
   const check = await checkCommand({}, fresh);
-  const map = await a11yRuleMap();
+  const map = a11yRuleMap();
   const ledger = ledgerCommand({}, fresh, map);
   const checkErrors = check.filter((r) => r.kind === "diag" && String(r.code).startsWith("E")).length;
   const trailer = test.find((r) => r.kind === "summary");

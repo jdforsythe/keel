@@ -18,8 +18,8 @@ const routeIds = (source: string): string[] => {
 
 /**
  * The a11y claims of k.a11y Claims, pure over the files: for each route of each project's `.keel/routes.json` and each
- * criterion of `map`, `example` when that project's `reports/a11y.json` has a run of the route, every render rule mapped
- * to the criterion ran in its runs and none was violated; else `none`. A criterion only static codes map to stays
+ * criterion of `map`, `example` when that project's `reports/a11y.json` has a passing test's run of the route, every render
+ * rule mapped to the criterion ran in those runs and none was violated; else `none`. A criterion only static codes map to stays
  * `none`: the ledger does not run `keel check`, so it claims nothing it did not see run.
  */
 export function a11yClaims(files: readonly SourceFile[], map: A11yCriteriaMap): A11yClaim[] {
