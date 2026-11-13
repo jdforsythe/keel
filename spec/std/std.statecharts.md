@@ -9,7 +9,7 @@ export const editorChart = chart('todos.editor', {
   data: EditorData, start: { attempts: 0 },
   events: { edit: s.object({}), save: s.object({}), saved: s.object({}), refused: s.object({}), failed: s.object({}), mine: s.object({}), theirs: s.object({}), cancel: s.object({}) },
   guards: { canRetry: (d) => d.attempts < 3 },
-  actions: { count: (d) => ({ attempts: d.attempts + 1 }), reset: () => ({ attempts: 0 }) },
+  actions: { count: (d) => ({ attempts: Math.min(3, d.attempts + 1) }), reset: () => ({ attempts: 0 }) },
   initial: 'viewing',
   states: {
     viewing: { on: { edit: 'editing' } },
@@ -22,7 +22,7 @@ export const editorChart = chart('todos.editor', {
 ```
 `chart(id, { data, start, events, guards?, actions?, initial, states })`: `id` is the store id, prefixed by the declaring module (E1155). `data` is the schema of the chart's own values and `start` their first value; `events` maps each event to its payload schema. A state is `{ on?, final? }`; `on` maps an event to a target: a state name, `{ to?, guard?, do? }` (`to` absent: stay), or a list of those, tried in order. `guards` are pure predicates `(data, payload) => boolean` and `actions` pure updates `(data, payload) => data`, named by `guard` and `do`.
 
-**Compiles to.** The store `id`, state schema `s.object({ state: s.enum(<state names>), data }, { closed: true })`, initial `{ state: initial, data: start }`; and per event the transaction `<id>.<event>` with that event's payload schema. Its function takes the first target of the current state's `on[event]` whose `guard` holds for `(data, payload)`, applies `do` to `data` and moves to `to`; with no such target the state is unchanged. The chart exposes `store`, `events` (each event's `Transaction`), `states`, `initial`, and `enabled(state, event, payload)`, true when a target applies. Writes go through `tx(editorChart.events.save, {})`, under `uses` (k.store) as any transaction.
+**Compiles to.** The store `id`, state schema `s.object({ state: s.enum(<state names>), data }, { closed: true })`, initial `{ state: initial, data: start }`; and per event the transaction `<id>.<event>` with that event's payload schema. Its function takes the first target of the current state's `on[event]` whose `guard` holds for `(data, payload)`, applies `do` to `data` and moves to `to`; with no such target the state is unchanged. The chart exposes `store`, `events` (each event's `Transaction`), `states`, `initial`, and `enabled(state, event, payload)`, true when that event's transaction would change the state's name or apply a `do`. Writes go through `tx(editorChart.events.save, {})`, under `uses` (k.store) as any transaction.
 
 **Checked.** `keel check` analyzes the declaration as written; `chart` repeats E2751, E2753 and E2754 as throws. Reachability treats every guard as possibly true, so a state E2752 names is unreachable on every run. Guarded reachability and stuck states are k.model's: `coverage(chart, explore(Object.values(chart.events)))` returns `{ unreached, dead }`, the declared states no explored state holds and the non-final states some `terminal` state holds.
 
