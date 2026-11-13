@@ -26,14 +26,14 @@
     "@keel/std-live": "workspace:*",
     "@keel/std-offline": "workspace:*",
     "@keel/std-schedules": "workspace:*",
+    "@keel/std-sessions": "workspace:*",
+    "@keel/std-statecharts": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
     "@keel/cli": "workspace:*",
-    "@keel/std-sessions": "workspace:*",
-    "@keel/std-statecharts": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "vite": "^8.3.6"
