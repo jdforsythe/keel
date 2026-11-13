@@ -34,6 +34,7 @@ import { nodeEnv } from "./internal/nodeEnv.ts";
 import { peerOf } from "./internal/peerOf.ts";
 import { peerPaths } from "./internal/peerPaths.ts";
 import { reqLine } from "./internal/reqLine.ts";
+import { scrubbed } from "./internal/scrubbed.ts";
 import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import { withCors } from "./internal/withCors.ts";
@@ -189,11 +190,14 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
         caller: callerOf(raw, sv.ctx, sv.keys, sv.secure, sv.origin),
         allowed: api !== undefined,
         held: new Map(),
+        pii: new Set<string>(),
       };
       isolate(rq.scope);
       const r = await attempt(() => handle(sv, raw, rq, c));
       rq.scope.dispose();
-      return r;
+      if (!r.ok) return r;
+      const diags = r.value.diags.map((d) => ({ ...d, message: scrubbed(d.message, rq.pii) }));
+      return { ok: true as const, value: { ...r.value, diags } };
     };
     // A preflight from an allowed origin to an API route: no guard, loader or action runs.
     const pre = api !== undefined && raw.method === "OPTIONS" && raw.headers.has("access-control-request-method");

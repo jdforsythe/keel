@@ -6,6 +6,7 @@ import type { RequestScope } from "./RequestScope.ts";
 import type { Saved } from "./Saved.ts";
 import type { Served } from "./Served.ts";
 import { inOrder } from "./inOrder.ts";
+import { notePii } from "./notePii.ts";
 import { savedOf } from "./savedOf.ts";
 
 const DEFAULT_ID = /^store\.\d+$/;
@@ -39,7 +40,9 @@ async function open(sv: Served, rq: RequestScope, factory: Factory): Promise<Hel
       const back = store.restore(from.json);
       if (!back.ok) throw new Error(`store ${store.id}: saved snapshot does not restore: ${back.error.message}`);
     }
-    return { store, key, from, before: JSON.stringify(store.snapshot({ meta: true })) };
+    const snap = store.snapshot({ meta: true });
+    notePii(rq.pii, store.schema, snap.state);
+    return { store, key, from, before: JSON.stringify(snap) };
   });
   return { value, opened };
 }

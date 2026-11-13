@@ -8,6 +8,7 @@ import { inRequest } from "./inRequest.ts";
 import { isVerb } from "./isVerb.ts";
 import { jsonResponse } from "./jsonResponse.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
+import { notePii } from "./notePii.ts";
 import { openStores } from "./openStores.ts";
 import { page } from "./page.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
@@ -15,6 +16,7 @@ import { publicError } from "./publicError.ts";
 import { readCapped } from "./readCapped.ts";
 import { redirectResponse } from "./redirectResponse.ts";
 import { saveStores } from "./saveStores.ts";
+import { scrubbedCause } from "./scrubbedCause.ts";
 import { statusOf } from "./statusOf.ts";
 import { stringRecord } from "./stringRecord.ts";
 import { valuesOf } from "./valuesOf.ts";
@@ -27,6 +29,8 @@ import { valuesOf } from "./valuesOf.ts";
  * else `keel.conflict`); `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
  * the `Result` as JSON with the status of its code. A document `keel.fields` re-renders the page at 422
  * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
+ * A throw is `keel.unexpected` plus a `keel.unexpected` diag; neither holds a `.pii()` value of the decoded input or of
+ * the stores it opened (`notePii`, `scrubbed`; k.privacy Server log).
  */
 export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<Handled> {
   const { id, def, chain } = m.route;
@@ -59,6 +63,8 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   // The action gets this request's instance of its `stores` factory; its `ok` saves the changed stores (or is
   // `keel.conflict`), anything else drops the instances unsaved so a re-render reads storage (k.server Server state).
   const { sv, rq } = r;
+  const encoded = attempt(() => action.input.encode(decoded.value));
+  notePii(rq.pii, action.input, encoded.ok ? encoded.value : decoded.value);
   const ran = await attempt(async () => {
     const stores = action.stores === undefined ? undefined : await openStores(sv, rq, action.stores);
     const at = { params: m.params, url: r.url, caller: rq.caller.id, stores };
@@ -67,17 +73,27 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
     const clash = await saveStores(sv, rq);
     return clash === null ? out : err(clash);
   });
-  const result = ran.ok ? ran.value : ran;
+  // A throw: the stores as the action left them hold `.pii()` values too; its message, cause and diag drop them all.
+  if (!ran.ok) {
+    const held = await attempt(() => Promise.all(rq.held.values()));
+    for (const h of held.ok ? held.value : [])
+      for (const o of h.opened) notePii(rq.pii, o.store.schema, o.store.snapshot().state);
+  }
+  const clean = ran.ok ? null : scrubbedCause(ran.error, rq.pii);
+  const thrown =
+    clean === null ? [] : [{ code: "keel.unexpected", message: `action ${id} threw: ${clean.data.cause}` }];
+  const result = clean === null ? (ran.ok ? ran.value : ran) : err(clean);
   if (!result.ok) rq.held.clear();
   if (result.ok) {
-    if (r.runtime) return { response: jsonResponse(200, ok(result.value)), route: id, diags: [] };
-    return { response: redirectResponse(303, result.value ?? r.url), route: id, diags: [] };
+    if (r.runtime) return { response: jsonResponse(200, ok(result.value)), route: id, diags: thrown };
+    return { response: redirectResponse(303, result.value ?? r.url), route: id, diags: thrown };
   }
   const e = result.error;
   if (r.runtime)
-    return { response: jsonResponse(statusOf(e.code), err(publicError(e, r.sv.mode))), route: id, diags: [] };
+    return { response: jsonResponse(statusOf(e.code), err(publicError(e, r.sv.mode))), route: id, diags: thrown };
   if (e.code === "keel.fields")
     return page(r, m, 422, null, { route: id, method: verb, values, errors: stringRecord(e.data) });
   const level = nearestErrorElement(chain, chain.length - 1);
-  return page(r, m, statusOf(e.code), { level, bare: false, error: e }, null);
+  const shown = await page(r, m, statusOf(e.code), { level, bare: false, error: e }, null);
+  return { ...shown, diags: [...thrown, ...shown.diags] };
 }

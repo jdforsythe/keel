@@ -9,7 +9,7 @@ import { Box, Button, Input, Text } from "@keel/ui";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
-const ENTRY = '<script type="module" src="/@keel/entry.ts"></script>';
+const ENTRY = '<script type="module" src="/@keel/entry.ts" nonce="';
 
 async function page(component: () => Node): Promise<string> {
   const app = await createApp({

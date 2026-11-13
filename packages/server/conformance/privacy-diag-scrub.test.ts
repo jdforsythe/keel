@@ -62,7 +62,7 @@ const words = fc.array(fc.stringMatching(/^[a-z]{12,20}$/), { minLength: 8, maxL
 
 describe("k.privacy server log", () => {
   for (const mode of ["dev", "production"] as const) {
-    it.skip(`an action throwing an Error whose message holds a marked input value logs a diag record holding [pii] and not the value, in ${mode}`, async () => {
+    it(`an action throwing an Error whose message holds a marked input value logs a diag record holding [pii] and not the value, in ${mode}`, async () => {
       await fc.assert(
         fc.asyncProperty(inputArb, words, async (spec, pool) => {
           const all = leaves(spec, "", false);
@@ -81,7 +81,7 @@ describe("k.privacy server log", () => {
           routes.actions({ "orders.show": { POST: save } });
           const lines: string[] = [];
           const app = await createApp({
-            topology: topology({ web: { modules: ["app", "orders"], adapter: "node" } }),
+            topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
             routes,
             ctx: createCtx({ mode: "sim", seed: SEED }),
             mode,

@@ -50,7 +50,7 @@ const built = (): string => {
 };
 const moduleSrc = async (a: { fetch(r: Request): Promise<Response> }, p: string): Promise<string | null> => {
   const html = await (await a.fetch(new Request(`http://localhost${p}`))).text();
-  return /<script type="module" src="([^"]+)">/.exec(html)?.[1] ?? null;
+  return /<script type="module" src="([^"]+)"[^>]*>/.exec(html)?.[1] ?? null;
 };
 
 describe("createApp in a deployed production server (backlog 0127, 0147)", () => {
