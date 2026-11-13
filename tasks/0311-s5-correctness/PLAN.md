@@ -1,10 +1,11 @@
 # Task 0311: S5 Correctness (std-statecharts, model checking, simulator, mutation in ledger)
 
-**Spec:** std.statecharts (new), k.testing, k.ctx (kernel touch), k.cli and tooling for mutation in the ledger · **Gate:** S5 exit: every rung populated by real machinery · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open (2026-11-10), design only until the S2-S4 pushes
+**Spec:** std.statecharts (new), k.testing, k.ctx (kernel touch), k.cli and tooling for mutation in the ledger · **Gate:** S5 exit: every rung populated by real machinery · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open; implementation started 2026-11-13 (S2-S4 pushed)
 
 ## Shape (tasks/PROGRAM.md)
-1. [x] Design RFC 0082 `docs/rfc/0082-s5-correctness.md` (draft 093f1f8); finalizing with the user's answers and ADRs 0086-0091.
-2. [ ] Orchestrator accepts the RFC; open questions to the user.
+1. [x] Design RFC 0082 `docs/rfc/0082-s5-correctness.md`, accepted 2026-11-10 with ADRs 0086-0091.
+2. [x] Orchestrator accepts the RFC; no open questions.
+2a. [ ] Orchestrator prep (RFC Lanes): spec text rebased on the tree after S2-S4, package skeleton, deps, budgets, one `pnpm install`.
 3. [ ] Conformance first, per lane, after the prior pushes.
 4. [ ] Implementation batch; kernel agent; reviewer + red-team; push.
 5. [ ] Exit proof: ledger shows every rung (proven, exhaustive, probabilistic, example, monitored) populated by real machinery.
@@ -21,4 +22,4 @@
 - [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit proof
 
 ## Next action
-Step 1: the design agent is writing `docs/rfc/0082-*.md`; read its report, then step 2.
+Step 2a: two prep agents (spec write-in rebased on the current spec; std-statecharts skeleton, deps, budgets, install). Read their reports, record every deviation from the RFC as a decision here, commit, then step 3 (conformance-writers per lane: kernel k.sim, k.model, k.ledger; statecharts; sessions).
