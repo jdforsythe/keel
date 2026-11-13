@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 13,
   "rungs": {
-    "example": 771,
+    "example": 773,
     "probabilistic": 249,
     "exhaustive": 13,
     "proven": 36,
@@ -19,7 +19,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 79.1,
+        "score": 79.16,
         "threshold": 70
       },
       "ctx": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 82.53,
+        "score": 82.45,
         "threshold": 70
       },
       "services": {
@@ -9682,6 +9682,10 @@
       "rung": "example"
     },
     {
+      "item": "k.deploy#6",
+      "rung": "example"
+    },
+    {
       "item": "k.errors#1",
       "rung": "probabilistic"
     },
@@ -10763,6 +10767,10 @@
     },
     {
       "item": "k.topology#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#9",
       "rung": "example"
     },
     {

@@ -3,7 +3,7 @@
   "runner": "none",
   "model": "none",
   "passed": true,
-  "tokenEstimate": 338,
+  "tokenEstimate": 362,
   "maxTokens": 600,
   "frontmatterOk": true,
   "missing": [],
@@ -12,6 +12,6 @@
     "output": 0
   },
   "costUsd": 0,
-  "durationMs": 1,
-  "startedAt": "2026-11-13T22:58:55.879Z"
+  "durationMs": 2,
+  "startedAt": "2026-11-13T23:27:55.536Z"
 }
