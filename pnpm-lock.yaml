@@ -163,6 +163,9 @@ importers:
       '@keel/services':
         specifier: workspace:*
         version: link:../../packages/services
+      '@keel/std-headless':
+        specifier: workspace:*
+        version: link:../../packages/std-headless
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../../packages/std-i18n
@@ -172,6 +175,9 @@ importers:
       '@keel/std-money':
         specifier: workspace:*
         version: link:../../packages/std-money
+      '@keel/std-tables':
+        specifier: workspace:*
+        version: link:../../packages/std-tables
       '@keel/std-temporal':
         specifier: workspace:*
         version: link:../../packages/std-temporal
@@ -773,6 +779,49 @@ importers:
         specifier: ^3
         version: 3.23.2
 
+  packages/std-headless:
+    dependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/std-statecharts':
+        specifier: workspace:*
+        version: link:../std-statecharts
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
+    devDependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      axe-core:
+        specifier: 4.14.0
+        version: 4.14.0
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+      happy-dom:
+        specifier: ^21
+        version: 21.0.4
+
   packages/std-health:
     dependencies:
       '@keel/compiler':
@@ -1158,6 +1207,52 @@ importers:
       fast-check:
         specifier: ^3
         version: 3.23.2
+
+  packages/std-tables:
+    dependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../std-i18n
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
+    devDependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      axe-core:
+        specifier: 4.14.0
+        version: 4.14.0
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+      happy-dom:
+        specifier: ^21
+        version: 21.0.4
 
   packages/std-temporal:
     dependencies:

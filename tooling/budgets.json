@@ -113,11 +113,13 @@
       "max": "10kb",
       "platform": "node"
     },
+    "@keel/std-headless": "6kb",
     "@keel/std-statecharts": "1.5kb",
     "@keel/std-statecharts/tools": {
       "max": "4kb",
       "platform": "node"
     },
+    "@keel/std-tables": "4kb",
     "@keel/std-temporal": "2.5kb",
     "@keel/std-text": "1.5kb",
     "@keel/store": "3.5kb",
@@ -129,7 +131,8 @@
       "max": "12.5kb",
       "platform": "node"
     },
-    "@keel/ui": "4kb"
+    "@keel/ui": "4kb",
+    "@keel/ui/aria": "2.5kb"
   },
   "mutate": {
     "default": 30
