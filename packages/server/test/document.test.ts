@@ -135,7 +135,7 @@ describe("document", () => {
     expect(Counter.node.kind).toBe("object");
   });
 
-  it("actions and redirects are cache-control: no-store", async () => {
+  it("actions and redirects are cache-control: no-store; a document is private, no-store", async () => {
     const app = await build();
     const ok303 = await app.fetch(post("/", { note: "hello" }));
     expect(ok303.status).toBe(303);
@@ -145,7 +145,7 @@ describe("document", () => {
     const bad = await app.fetch(post("/", { note: "x" }));
     expect(bad.status).toBe(422);
     expect(bad.headers.get("cache-control")).toBe("no-store");
-    expect((await app.fetch(get("/"))).headers.get("cache-control")).toBeNull();
+    expect((await app.fetch(get("/"))).headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("a throw in a route with an errorElement renders it with 500; production hides the message", async () => {

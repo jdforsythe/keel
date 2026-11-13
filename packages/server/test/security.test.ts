@@ -142,6 +142,25 @@ describe("report endpoint", () => {
     ]);
   });
 
+  it("a directive over 64 characters is -, and blocked is at most 64 characters", async () => {
+    const { app, lines } = await setup();
+    const host = `${"h".repeat(80)}.test`;
+    const body = JSON.stringify({
+      "csp-report": {
+        "document-uri": "http://localhost/",
+        "violated-directive": "x".repeat(65),
+        "blocked-uri": `https://${host}/a`,
+      },
+    });
+    await app.fetch(post("application/csp-report", body));
+    expect(lines.filter((l) => l.startsWith("csp "))).toEqual([`csp - ${`https://${host}`.slice(0, 64)} a.home`]);
+  });
+
+  it("a document is cache-control: private, no-store", async () => {
+    const { app } = await setup();
+    expect((await app.fetch(new Request("http://localhost/"))).headers.get("cache-control")).toBe("private, no-store");
+  });
+
   it("an unparsable body answers 204 and logs nothing", async () => {
     const { app, lines } = await setup();
     expect((await app.fetch(post("application/csp-report", "{nope"))).status).toBe(204);

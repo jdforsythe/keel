@@ -3,17 +3,16 @@ type Report = { readonly document: string; readonly directive: string; readonly 
 const isRecord = (v: unknown): v is Readonly<Record<string, unknown>> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 const text = (v: unknown): string => (typeof v === "string" ? v : "");
-const one = (document: string, directive: string, blocked: string): Report => ({
-  document,
-  directive: /^[a-z-]+$/.test(directive.split(" ")[0] ?? "") ? (directive.split(" ")[0] ?? "-") : "-",
-  blocked,
-});
+const one = (document: string, directive: string, blocked: string): Report => {
+  const word = directive.split(" ")[0] ?? "";
+  return { document, directive: /^[a-z-]{1,64}$/.test(word) ? word : "-", blocked };
+};
 
 /**
  * The violations in a report body (k.security Reports), as the browsers send them: `application/csp-report`
  * `{ "csp-report": { "document-uri", "effective-directive" | "violated-directive", "blocked-uri" } }`, or
  * `application/reports+json`, an array of `{ type: "csp-violation", body: { documentURL, effectiveDirective, blockedURL } }`
- * (other report types skipped). A directive is its first word, `-` unless it is a directive name. Anything else is none.
+ * (other report types skipped). A directive is its first word, `-` unless it is a directive name of at most 64 characters. Anything else is none.
  */
 export function cspReports(body: unknown, modern: boolean): Report[] {
   if (!modern) {
