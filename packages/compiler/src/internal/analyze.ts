@@ -56,6 +56,7 @@ export function analyze(file: SourceFile): Analysis {
     parseErrors: parsed.errors.map((e) => ({ message: e.message, start: e.labels[0]?.start ?? 0 })),
     jsx: [],
     imports: [],
+    dynamicImports: [],
     intrinsics: new Map(),
     functions: [],
     idents: [],
@@ -107,6 +108,16 @@ export function analyze(file: SourceFile): Analysis {
   new Visitor({
     JSXElement: (n) => void a.jsx.push(n),
     JSXFragment: (n) => void a.jsx.push(n),
+    ImportExpression: (n) => {
+      const s = n.source;
+      const text =
+        s.type === "Literal"
+          ? s.value
+          : s.type === "TemplateLiteral" && s.expressions.length === 0
+            ? s.quasis[0]?.value.cooked
+            : null;
+      if (typeof text === "string") a.dynamicImports.push({ source: text, start: n.start });
+    },
     ImportDeclaration: (n) => {
       a.imports.push(n);
       a.bindings.push(span(n));

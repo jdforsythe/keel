@@ -26,6 +26,8 @@ export type Analysis = {
   /** All JSX elements and fragments, sorted by start. */
   jsx: (JSXElement | JSXFragment)[];
   imports: ImportDeclaration[];
+  /** `import('<literal>')` calls: the specifier and the call's offset. */
+  dynamicImports: { source: string; start: number }[];
   /** Local name -> intrinsic, for names imported from `@keel/runtime-dom`. */
   intrinsics: Map<string, IntrinsicKind>;
   functions: FnInfo[];
