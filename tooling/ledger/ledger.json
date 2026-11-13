@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 13,
   "rungs": {
-    "example": 765,
-    "probabilistic": 248,
+    "example": 771,
+    "probabilistic": 249,
     "exhaustive": 13,
     "proven": 36,
     "monitored": 4
@@ -15,11 +15,11 @@
         "threshold": 70
       },
       "cli": {
-        "score": 78.22,
+        "score": 78.17,
         "threshold": 70
       },
       "compiler": {
-        "score": 78.77,
+        "score": 79.1,
         "threshold": 70
       },
       "ctx": {
@@ -35,7 +35,7 @@
         "threshold": 80
       },
       "router": {
-        "score": 83.29,
+        "score": 83.14,
         "threshold": 80
       },
       "runtime-dom": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 81.2,
+        "score": 82.53,
         "threshold": 70
       },
       "services": {
@@ -59,11 +59,11 @@
         "threshold": 70
       },
       "store": {
-        "score": 87.96,
+        "score": 91.36,
         "threshold": 80
       },
       "testing": {
-        "score": 91.89,
+        "score": 92.87,
         "threshold": 70
       },
       "ui": {
@@ -8245,6 +8245,12 @@
     },
     {
       "pkg": "compiler",
+      "name": "serverOnlyCalls",
+      "file": "packages/compiler/src/serverOnlyCalls.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "compiler",
       "name": "stdArtifact",
       "file": "packages/compiler/src/stdArtifact.ts",
       "rung": "example"
@@ -8488,12 +8494,6 @@
       "name": "createApp",
       "file": "packages/server/src/createApp.ts",
       "rung": "probabilistic"
-    },
-    {
-      "pkg": "server",
-      "name": "start",
-      "file": "packages/server/src/start.ts",
-      "rung": "example"
     },
     {
       "pkg": "server",
@@ -9542,6 +9542,10 @@
       "rung": "example"
     },
     {
+      "item": "k.compiler#20",
+      "rung": "example"
+    },
+    {
       "item": "k.component#1",
       "rung": "example"
     },
@@ -9763,6 +9767,10 @@
     },
     {
       "item": "k.evidence#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.evidence#10",
       "rung": "example"
     },
     {
@@ -10063,6 +10071,10 @@
     },
     {
       "item": "k.privacy#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.privacy#9",
       "rung": "example"
     },
     {
@@ -10390,6 +10402,10 @@
       "rung": "example"
     },
     {
+      "item": "k.security#13",
+      "rung": "example"
+    },
+    {
       "item": "k.server#1",
       "rung": "example"
     },
@@ -10447,6 +10463,10 @@
     },
     {
       "item": "k.server#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.server#16",
       "rung": "example"
     },
     {
@@ -10739,6 +10759,10 @@
     },
     {
       "item": "k.topology#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#8",
       "rung": "example"
     },
     {
