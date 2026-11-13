@@ -9,7 +9,7 @@ default-src 'none'; script-src 'nonce-<n>' 'strict-dynamic'; style-src 'self'; i
 connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none';
 object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; report-uri /__keel/csp; report-to keel-csp
 ```
-`<n>` is new per response: two `ctx.random.id('Nonce')` values without hyphens. The document writes `nonce="<n>"` on its module script and `<meta property="csp-nonce" nonce="<n>">` in the head, which Vite's preload helper copies to the links it adds; `#k-state` is `application/json` and runs nothing. Dev adds `'unsafe-inline'` to `style-src` for Vite's injected styles. Other responses carry `default-src 'none'; frame-ancestors 'none'`. The policy has no option, so no app widens it.
+`<n>` is new per response: two `ctx.random.id('Nonce')` values without hyphens. A document is `Cache-Control: private, no-store`, so no cache replays its nonce. The document writes `nonce="<n>"` on its module script and `<meta property="csp-nonce" nonce="<n>">` in the head, which Vite's preload helper copies to the links it adds; `#k-state` is `application/json` and runs nothing. Dev adds `'unsafe-inline'` to `style-src` for Vite's injected styles. Other responses carry `default-src 'none'; frame-ancestors 'none'`. The policy has no option, so no app widens it.
 
 **Trusted Types.** Where `globalThis.trustedTypes` exists, the runtime's `template()` builds its compiler HTML through the policy `keel`, created once per realm; a string assigned to any other HTML sink throws.
 

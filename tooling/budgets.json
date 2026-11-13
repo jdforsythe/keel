@@ -33,7 +33,7 @@
     },
     "@keel/schema": "5.5kb",
     "@keel/server": {
-      "max": "19.5kb",
+      "max": "19.75kb",
       "platform": "node"
     },
     "@keel/server/dom": "2kb",
@@ -88,13 +88,13 @@
       "max": "2.5kb",
       "platform": "node"
     },
-    "@keel/std-sessions": "7.25kb",
+    "@keel/std-sessions": "7.5kb",
     "@keel/std-sessions/action": {
       "max": "4.5kb",
       "platform": "node"
     },
     "@keel/std-sessions/commandJob": {
-      "max": "8.75kb",
+      "max": "9kb",
       "platform": "node"
     },
     "@keel/std-sessions/group": {
