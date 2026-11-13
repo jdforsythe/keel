@@ -9,9 +9,9 @@ import { safeUrl } from "./safeUrl.ts";
 import { sessionDiag } from "./sessionDiag.ts";
 import { sessionOut } from "./sessionOut.ts";
 import { sessionText } from "./sessionText.ts";
+import { shownUrl } from "./shownUrl.ts";
 
 const DEFAULT_URL = "http://localhost:5173";
-const clip = (url: string): string => (url.length > 48 ? `${url.slice(0, 45)}...` : url);
 /** The parts of an inspect document `capture` reads (open objects: the rest is ignored). */
 const Inspect = s.object({ sections: s.record(s.object({ value: s.json().optional() })) });
 /** A runtime response of `sessions.list`: `results["sessions.list"]` is `ok(Listing)` (open objects). */
@@ -51,7 +51,7 @@ export async function commandFetch(
   const net = { ...io, fetch };
   const base = (input.target ?? (op === "capture" ? DEFAULT_URL : "")).replace(/\/+$/, "");
   if (base === "") return done([sessionDiag("E1052", "session ingest needs the ingest service url")]);
-  const fail = (why: string): Outcome => done([sessionDiag("E1056", `session ${op} ${why}: ${clip(base)}`)]);
+  const fail = (why: string): Outcome => done([sessionDiag("E1056", `session ${op} ${why}: ${shownUrl(base)}`)]);
   const write = (list: readonly Session[]): Outcome =>
     done(
       list.map((x, i) => sessionOut(x, x.error?.code ?? null, fileOf(x, i))),

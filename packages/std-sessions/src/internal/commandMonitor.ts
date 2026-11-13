@@ -5,6 +5,7 @@ import { getJson } from "./getJson.ts";
 import { readerHeaders } from "./readerHeaders.ts";
 import { safeUrl } from "./safeUrl.ts";
 import { sessionDiag } from "./sessionDiag.ts";
+import { shownUrl } from "./shownUrl.ts";
 
 const MONITORED = ".keel/monitored.json";
 /** A runtime response of `sessions.tally`: `results["sessions.tally"]` is `ok(Tally)`. */
@@ -27,7 +28,7 @@ export async function commandMonitor(target: string | undefined, out: string | u
   if (fetch === undefined) return done([sessionDiag("I1055", "session monitor needs a network (io.fetch)")]);
   const base = (target ?? "").replace(/\/+$/, "");
   if (base === "") return done([sessionDiag("E1052", "session monitor needs the tally service url")]);
-  const fail = (why: string): Outcome => done([sessionDiag("E2010", `session monitor ${why}: ${base.slice(0, 48)}`)]);
+  const fail = (why: string): Outcome => done([sessionDiag("E2010", `session monitor ${why}: ${shownUrl(base)}`)]);
   if (!safeUrl(base)) return fail("needs https");
   const got = await getJson({ ...io, fetch }, `${base}/sessions/tally`, { headers: readerHeaders(io, base) });
   if (!got.ok) return fail(got.why);

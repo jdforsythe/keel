@@ -9,15 +9,15 @@ const EVERY = 60_000;
 
 /**
  * The production tally runner (std.monitor), a k.topology `Runner` a module lists in `runners.server.ts`. `run` observes
- * the server ctx: after each `save` it reads `keel.store.<store>` from `ctx.storage` and counts each log entry above
- * the last head it counted for that store by transaction `name` (at a store's first save, above the event's `from`). Every 60,000 ms
- * on `ctx.clock`, and once when `signal` aborts, it merges the counts into `ctx.storage` key `sessions.tally`, then
- * `run` resolves; a merge whose write fails keeps its counts for the next one. Names and counts only:
- * no payload, caller, state or entry time is kept.
+ * the server ctx: after each `save` it reads `keel.store.<store>` from `ctx.storage` and counts, by transaction `name`, the
+ * log entries that save committed (`from < id <= head`), so another process's commits to a shared storage are left to
+ * that process's monitor. Every 60,000 ms on `ctx.clock`, and once when `signal` aborts, it merges the counts into
+ * `ctx.storage` key `sessions.tally` (read, add, write: `ctx.storage` has no compare-and-set, so two processes merging
+ * at once can lose one side's counts), then `run` resolves; a merge whose write fails keeps its counts for the next
+ * one. Names and counts only: no payload, caller, state or entry time is kept.
  */
 export const monitor: { run(ctx: Ctx, signal: AbortSignal): Promise<void> } = {
   async run(ctx, signal) {
-    const heads = new Map<string, number>();
     let counts = new Map<string, number>();
     let queue: Promise<void> = Promise.resolve();
     const then = (step: () => Promise<void>): Promise<void> => {
@@ -38,8 +38,7 @@ export const monitor: { run(ctx: Ctx, signal: AbortSignal): Promise<void> } = {
       });
     const stop = observe(ctx, (e) => {
       if (e.kind !== "save") return;
-      if (!heads.has(e.store)) heads.set(e.store, e.from);
-      void then(() => countStore(ctx, e.store, heads, counts));
+      void then(() => countStore(ctx, e, counts));
     });
     try {
       while (!signal.aborted) {
