@@ -58,6 +58,7 @@ todo-by-hand/
   .keel/              compiler artifacts (JSON, read-only)
   dist/web/           the web client build: static files
   dist/api/           the api deployable: server.mjs, a copy of the web client and its resume entry
+  dist/api/server.mjs.map  the source map beside server.mjs: project-relative paths, no source text, never served
   deploy/             Dockerfile and compose.yaml for node deployables
   .keel-dev/          storage for keel dev
   .api.storage*       storage for the built api server
