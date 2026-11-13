@@ -4,6 +4,8 @@ import { type Infer, s } from "@keel/schema";
 import { type OutboxEntry, type Resolution, resolve } from "@keel/std-offline";
 import { Box, Button, Heading, Text } from "@keel/ui";
 import { boardOutbox } from "./boardOutbox.ts";
+import { editorStuck } from "./editorStuck.ts";
+import { resolveEdit } from "./resolveEdit.ts";
 
 export const Props = s.object({});
 
@@ -24,11 +26,14 @@ const STATES: { readonly [K in OutboxEntry["state"]]: string } = {
 /**
  * The outbox panel (`todos.outbox`, shown while the outbox holds a write): each waiting, refused or failed board
  * write in the order sent. A refused write offers Keep mine (send it again over the newer board) and Keep theirs
- * (drop it); a failed one offers Dismiss.
+ * (drop it); a failed one offers Dismiss. An edit's choice goes through the editor chart (`resolveEdit`), which turns
+ * Keep mine off once the edit has used its 3 tries.
  */
 export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
-  const choose = (key: string, resolution: Resolution): void => {
-    if (ctx !== undefined) void resolve(ctx, boardOutbox, key, resolution);
+  const choose = (entry: OutboxEntry, resolution: Resolution): void => {
+    if (ctx === undefined) return;
+    if (entry.endpoint === "editTodo") void resolveEdit(ctx, entry.key, resolution);
+    else void resolve(ctx, boardOutbox, entry.key, resolution);
   };
   return (
     <If when={boardOutbox.get("entries").length > 0}>
@@ -89,7 +94,8 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                       <Box direction="row" gap="2">
                         <Button
                           id={`todos.outbox.mine.${entry.key}`}
-                          onClick={() => choose(entry.key, "mine")}
+                          disabled={entry.endpoint === "editTodo" && editorStuck()}
+                          onClick={() => choose(entry, "mine")}
                           font="mono"
                           fontSize="sm"
                           px="3"
@@ -103,7 +109,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                         </Button>
                         <Button
                           id={`todos.outbox.theirs.${entry.key}`}
-                          onClick={() => choose(entry.key, "theirs")}
+                          onClick={() => choose(entry, "theirs")}
                           font="mono"
                           fontSize="sm"
                           px="3"
@@ -122,7 +128,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                     {() => (
                       <Button
                         id={`todos.outbox.theirs.${entry.key}`}
-                        onClick={() => choose(entry.key, "theirs")}
+                        onClick={() => choose(entry, "theirs")}
                         font="mono"
                         fontSize="sm"
                         px="3"

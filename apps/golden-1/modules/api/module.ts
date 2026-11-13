@@ -2,7 +2,7 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "api",
-  deps: ["@keel/std-channels", "@keel/std-offline"],
+  deps: ["@keel/std-channels", "@keel/std-offline", "@keel/std-sessions"],
   capabilities: ["clock", "net", "observe", "random", "storage"],
   public: {
     exports: [
@@ -29,4 +29,5 @@ export default module({
       "api.boardEvents",
     ],
   },
+  std: { "@keel/std-sessions": { readers: [] } },
 });

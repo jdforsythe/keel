@@ -1,4 +1,5 @@
 import { manifest } from "@keel/router";
+import { monitorRoutes } from "@keel/std-sessions/monitor";
 import { ListParams } from "./ListParams.schema.ts";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { boardEvents } from "./boardEvents.server.ts";
@@ -12,9 +13,11 @@ import { postUndo } from "./postUndo.server.ts";
 
 /**
  * The `api` deployable (node): it owns the board (`api.board`); `todos` reads and writes it over HTTP and follows the
- * board channel (`api.boardEvents`) to re-read after each save.
+ * board channel (`api.boardEvents`) to re-read after each save. `sessions.tally` answers the commit counts of the
+ * `monitor` runner to a caller in `readers` (`module.ts`).
  */
 export const routes = manifest({
+  ...monitorRoutes.routes,
   "api.lists": { api: true, path: "/api/lists", loader: loadBoard },
   "api.listTodos": {
     api: true,
