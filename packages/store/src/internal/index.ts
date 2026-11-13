@@ -1,0 +1,17 @@
+// `@keel/store/internal`: the server-state runner `@keel/server` and `@keel/testing` share; not public API.
+// re-exports only (one export per file lives in its own file)
+export { copyOf } from "./copyOf.ts";
+export { inOrder } from "./inOrder.ts";
+export { openStores } from "./openStores.ts";
+export { savedOf } from "./savedOf.ts";
+export { saveStores } from "./saveStores.ts";
+export { serverState } from "./serverState.ts";
+export type { Factory } from "./types/Factory.ts";
+export type { Held } from "./types/Held.ts";
+export type { Opened } from "./types/Opened.ts";
+export type { SaveConflict } from "./types/SaveConflict.ts";
+export type { Saved } from "./types/Saved.ts";
+export type { SavedCopy } from "./types/SavedCopy.ts";
+export type { ServerRequest } from "./types/ServerRequest.ts";
+export type { ServerState } from "./types/ServerState.ts";
+export type { StateRequest } from "./types/StateRequest.ts";

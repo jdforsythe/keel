@@ -1233,6 +1233,9 @@ importers:
 
   packages/store:
     dependencies:
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive

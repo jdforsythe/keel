@@ -66,8 +66,6 @@ async function served(ctx: Ctx): Promise<Served> {
     routes: manifest({}),
     maxBody: 1024,
     inspectOrigins: [],
-    saved: new Map(),
-    saving: new Map(),
     keys: await callerSigner(undefined),
     secure: undefined,
     built: undefined,

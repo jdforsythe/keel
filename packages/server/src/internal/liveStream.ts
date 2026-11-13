@@ -9,7 +9,7 @@ import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { RequestScope } from "./RequestScope.ts";
 import { busy } from "./busy.ts";
-import { openStores } from "./openStores.ts";
+import { openFactory } from "./openFactory.ts";
 import { publicError } from "./publicError.ts";
 
 const HEARTBEAT_MS = 15_000;
@@ -47,7 +47,7 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
       beat = (async () => {
         while ((await attempt(() => sv.ctx.clock.after(HEARTBEAT_MS, ac.signal))).ok) await stream.write(":\n\n");
       })();
-      const stores = live.stores === undefined ? undefined : await openStores(sv, rq, live.stores);
+      const stores = live.stores === undefined ? undefined : await openFactory(sv.ctx, rq, live.stores);
       const args = { params: m.params, search: m.search, url: r.url, caller: rq.caller.id, stores, signal: ac.signal };
       it = live.live?.(args, sv.ctx)[Symbol.asyncIterator]();
       while (it !== undefined) {

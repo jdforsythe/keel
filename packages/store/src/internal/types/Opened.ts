@@ -1,4 +1,4 @@
-import type { Store } from "@keel/store";
+import type { Store } from "../../types/Store.ts";
 import type { Saved } from "./Saved.ts";
 
 /** One factory store of a request: its storage `key`, the copy it was restored `from`, and its snapshot JSON `before` `fn` ran. */

@@ -1,6 +1,7 @@
 import type { Match } from "@keel/router/internal";
 import { fieldsError, routeActions } from "@keel/router/internal";
 import { attempt, err, ok } from "@keel/schema";
+import { saveStores } from "@keel/store/internal";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import { allowOf } from "./allowOf.ts";
@@ -9,13 +10,12 @@ import { isVerb } from "./isVerb.ts";
 import { jsonResponse } from "./jsonResponse.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { notePii } from "./notePii.ts";
-import { openStores } from "./openStores.ts";
+import { openFactory } from "./openFactory.ts";
 import { page } from "./page.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
 import { publicError } from "./publicError.ts";
 import { readCapped } from "./readCapped.ts";
 import { redirectResponse } from "./redirectResponse.ts";
-import { saveStores } from "./saveStores.ts";
 import { scrubbedCause } from "./scrubbedCause.ts";
 import { statusOf } from "./statusOf.ts";
 import { stringRecord } from "./stringRecord.ts";
@@ -25,7 +25,7 @@ import { valuesOf } from "./valuesOf.ts";
  * POST, PUT, PATCH, DELETE (k.server Request flow): the verb is the method, or a POST's `_method` field (k.router
  * Form). A body over `maxBody` bytes is 413 `keel.payloadTooLarge`, action not called. FormData is decoded with the action's input schema; a `content-type: application/json` body (a k.services
  * client) is parsed with it instead, an empty one as `{}` (either fail: `keel.fields`, 422, action not called);
- * the action runs with `caller` and its `stores` instance (`openStores`); its `ok` saves the changed stores (`saveStores`,
+ * the action runs with `caller` and its `stores` instance (`openFactory`); its `ok` saves the changed stores (`saveStores`,
  * else `keel.conflict`); `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
  * the `Result` as JSON with the status of its code. A document `keel.fields` re-renders the page at 422
  * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
@@ -66,11 +66,11 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const encoded = attempt(() => action.input.encode(decoded.value));
   notePii(rq.pii, action.input, encoded.ok ? encoded.value : decoded.value);
   const ran = await attempt(async () => {
-    const stores = action.stores === undefined ? undefined : await openStores(sv, rq, action.stores);
+    const stores = action.stores === undefined ? undefined : await openFactory(sv.ctx, rq, action.stores);
     const at = { params: m.params, url: r.url, caller: rq.caller.id, stores };
     const out = await inRequest(rq, () => action.run(decoded.value, at, sv.ctx));
     if (!out.ok) return out;
-    const clash = await saveStores(sv, rq);
+    const clash = await saveStores(sv.ctx, rq);
     return clash === null ? out : err(clash);
   });
   // A throw: the stores as the action left them hold `.pii()` values too; its message, cause and diag drop them all.

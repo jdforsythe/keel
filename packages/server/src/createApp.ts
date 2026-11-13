@@ -142,8 +142,6 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     routes: opts.routes ?? manifest({}),
     maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
-    saved: new Map(),
-    saving: new Map(),
     keys: await callerSigner(opts.secret),
     secure: opts.secure,
     built,
