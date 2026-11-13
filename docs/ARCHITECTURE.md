@@ -18,6 +18,9 @@
 | HTTP server | Hono | Standard Request/Response, adapters |
 | Test runner | Vitest + fast-check | Property testing |
 | Browser automation | Playwright | Engine matrix |
+| Accessibility rules | Borrow axe-core; build token contrast | Rule engine is a solved problem; contrast comes from the tokens |
+| Content security policy | Build, per-response nonce | The document and the runtime decide what may run |
+| Evidence signing | Borrow `node:crypto` Ed25519 | Platform signatures, no dependency |
 | Compiler artifacts | Build | Nothing emits dep graphs, ID indexes, a11y expectations |
 | Store and log | Build | Core of the thesis |
 | Model checking | Build `explore` over transactions; no TLA+ or Alloy model | The model is the store the app runs |

@@ -15,6 +15,10 @@
     "./dom": {
       "types": "./src/internal/dom/installServerDom.ts",
       "default": "./src/internal/dom/installServerDom.ts"
+    },
+    "./csp": {
+      "types": "./src/csp.ts",
+      "default": "./src/csp.ts"
     }
   },
   "files": ["dist"],

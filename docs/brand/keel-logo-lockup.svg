@@ -15,5 +15,5 @@
   <!-- Structural Hairline Divider -->
   <line x1="68" y1="46" x2="228" y2="46" stroke="#b8420d" stroke-width="1.5"/>
   <!-- Sub-label / Classification -->
-  <text x="68" y="56" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="500" letter-spacing="1.5" fill="#71717A">SYSTEM SPEC v2024.04</text>
+  <text x="68" y="56" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="500" letter-spacing="1.5" fill="#6B6B74">SYSTEM SPEC v2024.04</text>
 </svg>

@@ -14,10 +14,10 @@ A high-contrast parchment surface with deep charcoal text. ISO Ochre is reserved
 | Surface-container-low | `#F3F3F3` | `96% 0.002 80` | 1.1:1 (UI container) |
 | Surface-bright (card) | `#FFFFFF` | `100% 0 0` | 1.05:1 |
 | Text primary / Charcoal | `#1a191e` | `22% 0.01 295` | 16.6:1 (AAA) |
-| Text secondary / Stone | `#71717A` | `50% 0.01 260` | 5.2:1 (AA) |
+| Text secondary / Stone | `#6B6B74` | `50% 0.01 260` | 5.01:1 (AA) |
 | ISO Ochre (accent) | `#b8420d` | `54% 0.16 40` | 5.2:1 (AA) |
-| Verified Green | `#15803D` | `52% 0.15 145` | 5.1:1 (AA) |
-| Error Crimson | `#B91C1C` | `48% 0.20 25` | 5.4:1 (AA) |
+| Verified Green | `#15803D` | `52% 0.15 145` | 4.76:1 (AA) |
+| Error Crimson | `#B91C1C` | `48% 0.20 25` | 6.15:1 (AA) |
 | Hairline divider | `#E4E4E7` | | 1px solid, light mode |
 
 ## 3. Typography
@@ -36,4 +36,4 @@ The sentence-level rules live in `docs/VOICE.md` (first person, reader as the he
 - `@keel/ui` tokens: the scaffold `project` template emits `tokens.ts` with this palette, these fonts, radius 0, and the hairline divider, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/inspector`, `apps/sessions`.
 - Fonts are self-hosted (`@keel/ui/fonts`), never fetched from a third party at runtime (THREAT-MODEL CSP).
 
-verified: ca93820d1c28ba356fca552aafde67801229366e
+verified: dd49b69c281fc02a9b4fef44a764e8844e8cb3e9

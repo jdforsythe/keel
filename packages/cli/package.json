@@ -11,6 +11,10 @@
     "./testing": {
       "types": "./src/testing/respond.ts",
       "default": "./src/testing/respond.ts"
+    },
+    "./evidence": {
+      "types": "./src/evidence.ts",
+      "default": "./src/evidence.ts"
     }
   },
   "bin": {

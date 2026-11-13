@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./a11y": {
+      "types": "./src/a11y.ts",
+      "default": "./src/a11y.ts"
     }
   },
   "files": ["dist"],
@@ -26,6 +30,7 @@
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*",
+    "axe-core": "4.14.0",
     "fast-check": "^3"
   },
   "devDependencies": {
