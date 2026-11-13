@@ -5,6 +5,7 @@ import { send } from "@keel/std-offline";
 import { Box, Checkbox, Link, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
+import { idPart } from "./idPart.ts";
 import { pageOrigin } from "./pageOrigin.ts";
 import { routes } from "./routes.ts";
 import { view } from "./view.ts";
@@ -26,13 +27,13 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
   return (
     <Box direction="row" align="center" gap="3" px="3" py="2" bg="card">
       <Checkbox
-        id={`todos.toggle.${props.todo.id}`}
+        id={`todos.toggle.${idPart(props.todo.id)}`}
         label={`Done: ${props.todo.title}`}
         checked={props.todo.done}
         onChange={toggle}
       />
       <Text
-        id={`todos.priority.${props.todo.id}`}
+        id={`todos.priority.${idPart(props.todo.id)}`}
         font="mono"
         fontSize="xs"
         px="2"
@@ -43,7 +44,7 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
         {props.todo.priority}
       </Text>
       <Link
-        id={`todos.editLink.${props.todo.id}`}
+        id={`todos.editLink.${idPart(props.todo.id)}`}
         to={routes.href("todos.edit", { listId: props.todo.listId, todoId: props.todo.id })}
         fg="text"
         fontSize="sm"

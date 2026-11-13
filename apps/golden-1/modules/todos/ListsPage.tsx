@@ -4,6 +4,7 @@ import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Text } from "@keel/ui";
 import { ListDraft } from "../api/ListDraft.schema.ts";
+import { idPart } from "./idPart.ts";
 import { routes } from "./routes.ts";
 import { view } from "./view.ts";
 
@@ -68,7 +69,7 @@ export default function ListsPage(_props: Infer<typeof Props>) {
           {(list) => (
             <Box
               as="li"
-              id={`todos.listItem.${list.id}`}
+              id={`todos.listItem.${idPart(list.id)}`}
               direction="row"
               justify="between"
               align="baseline"
@@ -77,11 +78,15 @@ export default function ListsPage(_props: Infer<typeof Props>) {
               py="3"
               bg="card"
             >
-              <Link id={`todos.listLink.${list.id}`} to={routes.href("todos.list", { listId: list.id })} fg="text">
+              <Link
+                id={`todos.listLink.${idPart(list.id)}`}
+                to={routes.href("todos.list", { listId: list.id })}
+                fg="text"
+              >
                 {list.name}
               </Link>
               <Text
-                id={`todos.openCount.${list.id}`}
+                id={`todos.openCount.${idPart(list.id)}`}
                 font="mono"
                 fontSize="xs"
                 fg="accent"

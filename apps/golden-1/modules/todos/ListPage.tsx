@@ -8,6 +8,7 @@ import { TodoDraft } from "../api/TodoDraft.schema.ts";
 import { TodoList } from "../api/TodoList.schema.ts";
 import Suggestions from "./Suggestions.tsx";
 import TodoRow from "./TodoRow.tsx";
+import { idPart } from "./idPart.ts";
 import { routes } from "./routes.ts";
 import { view } from "./view.ts";
 
@@ -120,7 +121,7 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       <Box as="ul" id="todos.items" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
         <For each={shown()} key="id">
           {(todo) => (
-            <Box as="li" id={`todos.row.${todo.id}`}>
+            <Box as="li" id={`todos.row.${idPart(todo.id)}`}>
               <TodoRow todo={todo} />
             </Box>
           )}

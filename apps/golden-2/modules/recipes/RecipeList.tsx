@@ -7,6 +7,7 @@ import { Box, Heading, Link, Text } from "@keel/ui";
 import { IndexData } from "./IndexData.schema.ts";
 import { LocaleParams } from "./LocaleParams.schema.ts";
 import { RecipeSearch } from "./RecipeSearch.schema.ts";
+import { idPart } from "./idPart.ts";
 import { routes } from "./routes.ts";
 
 export const Props = s.object({ params: LocaleParams, search: RecipeSearch, data: IndexData });
@@ -51,7 +52,7 @@ export default function RecipeList(props: Infer<typeof Props>) {
           {(r) => (
             <Box
               as="li"
-              id={`recipes.item.${r.id}`}
+              id={`recipes.item.${idPart(r.id)}`}
               direction={{ base: "column", md: "row" }}
               align={{ base: "start", md: "baseline" }}
               justify="between"
@@ -61,18 +62,18 @@ export default function RecipeList(props: Infer<typeof Props>) {
               bg="card"
             >
               <Link
-                id={`recipes.link.${r.id}`}
+                id={`recipes.link.${idPart(r.id)}`}
                 to={routes.href("recipes.show", { locale: props.params.locale, recipeId: r.id })}
                 fg="text"
               >
                 {r.title}
               </Link>
               <Box direction="row" gap="4" font="mono" fontSize="sm" fg="textSecondary">
-                <Text id={`recipes.price.${r.id}`}>{formatMoney(r.price, props.params.locale)}</Text>
-                <Text id={`recipes.minutes.${r.id}`}>
+                <Text id={`recipes.price.${idPart(r.id)}`}>{formatMoney(r.price, props.params.locale)}</Text>
+                <Text id={`recipes.minutes.${idPart(r.id)}`}>
                   {formatDuration(durationOf(r.minutes * 60_000), props.params.locale, "short")}
                 </Text>
-                <Text id={`recipes.added.${r.id}`}>{formatDate(r.addedOn, props.params.locale, "long")}</Text>
+                <Text id={`recipes.added.${idPart(r.id)}`}>{formatDate(r.addedOn, props.params.locale, "long")}</Text>
               </Box>
             </Box>
           )}

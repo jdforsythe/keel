@@ -5,6 +5,7 @@ import { type OutboxEntry, type Resolution, resolve } from "@keel/std-offline";
 import { Box, Button, Heading, Text } from "@keel/ui";
 import { boardOutbox } from "./boardOutbox.ts";
 import { editorStuck } from "./editorStuck.ts";
+import { idPart } from "./idPart.ts";
 import { resolveEdit } from "./resolveEdit.ts";
 
 export const Props = s.object({});
@@ -66,7 +67,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
               {(entry) => (
                 <Box
                   as="li"
-                  id={`todos.outbox.entry.${entry.key}`}
+                  id={`todos.outbox.entry.${idPart(entry.key)}`}
                   direction="row"
                   align="center"
                   justify="between"
@@ -75,11 +76,11 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                   py="2"
                   bg="card"
                 >
-                  <Text id={`todos.outbox.write.${entry.key}`} font="mono" fontSize="sm">
+                  <Text id={`todos.outbox.write.${idPart(entry.key)}`} font="mono" fontSize="sm">
                     {WRITES[entry.endpoint] ?? entry.endpoint}
                   </Text>
                   <Text
-                    id={`todos.outbox.state.${entry.key}`}
+                    id={`todos.outbox.state.${idPart(entry.key)}`}
                     font="mono"
                     fontSize="xs"
                     px="2"
@@ -93,7 +94,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                     {() => (
                       <Box direction="row" gap="2">
                         <Button
-                          id={`todos.outbox.mine.${entry.key}`}
+                          id={`todos.outbox.mine.${idPart(entry.key)}`}
                           disabled={entry.endpoint === "editTodo" && editorStuck()}
                           onClick={() => choose(entry, "mine")}
                           font="mono"
@@ -108,7 +109,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                           Keep mine
                         </Button>
                         <Button
-                          id={`todos.outbox.theirs.${entry.key}`}
+                          id={`todos.outbox.theirs.${idPart(entry.key)}`}
                           onClick={() => choose(entry, "theirs")}
                           font="mono"
                           fontSize="sm"
@@ -127,7 +128,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                   <If when={entry.state === "failed"}>
                     {() => (
                       <Button
-                        id={`todos.outbox.theirs.${entry.key}`}
+                        id={`todos.outbox.theirs.${idPart(entry.key)}`}
                         onClick={() => choose(entry, "theirs")}
                         font="mono"
                         fontSize="sm"

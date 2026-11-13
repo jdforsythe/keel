@@ -5,6 +5,7 @@ import { Box, Image, Link, Text } from "@keel/ui";
 import { AppLocale } from "./AppLocale.schema.ts";
 import { LocaleParams } from "./LocaleParams.schema.ts";
 import { TextData } from "./TextData.schema.ts";
+import { idPart } from "./idPart.ts";
 import { routes } from "./routes.ts";
 
 export const Props = s.object({ params: LocaleParams, data: TextData });
@@ -69,7 +70,7 @@ export default function BoxShell(props: Infer<typeof Props> & { readonly childre
           <For each={served} key="id">
             {(l) => (
               <Link
-                id={`recipes.locale.${l.id}`}
+                id={`recipes.locale.${idPart(l.id)}`}
                 lang={l.id}
                 to={routes.href("recipes.index", { locale: l.id })}
                 fg="textSecondary"
