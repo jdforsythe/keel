@@ -11,7 +11,7 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 ```
 `<n>` is new per response: two `ctx.random.id('Nonce')` values without hyphens. A document is `Cache-Control: private, no-store`, so no cache replays its nonce. The document writes `nonce="<n>"` on its module script and `<meta property="csp-nonce" nonce="<n>">` in the head, which Vite's preload helper copies to the links it adds; `#k-state` is `application/json` and runs nothing. Dev adds `'unsafe-inline'` to `style-src` for Vite's injected styles. Other responses carry `default-src 'none'; frame-ancestors 'none'`. The policy has no option, so no app widens it.
 
-**Trusted Types.** Where `globalThis.trustedTypes` exists, the runtime's `template()` builds its compiler HTML through the policy `keel`, created once per realm; a string assigned to any other HTML sink throws.
+**Trusted Types.** Where `globalThis.trustedTypes` exists, the runtime's `template()` builds its compiler HTML through the policy `keel`, created once per realm and shared by every runtime copy (a policy the browser refuses throws); a string assigned to any other HTML sink throws.
 
 **Reports.** `POST /__keel/csp` takes `application/csp-report` and `application/reports+json` bodies up to 16 KiB (else 413, nothing logged) without the write proof, since it changes no state, and answers 204. Each report is one `csp` log record `{ kind: 'csp', directive, blocked, route }`: `blocked` is `inline`, `eval`, `trusted-types` or the blocked URL's origin; `route` is the route id the document URL matches, else `-`. No path, query or sample is logged. Past 100 reports in 60 s of `ctx.clock` the rest are counted, and the window's end writes one `csp` record `{ kind, dropped }`.
 
