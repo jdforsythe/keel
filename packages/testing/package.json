@@ -34,7 +34,8 @@
     "fast-check": "^3"
   },
   "devDependencies": {
-    "@types/node": "^22",
-    "@keel/tooling": "workspace:*"
+    "@keel/forms": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22"
   }
 }

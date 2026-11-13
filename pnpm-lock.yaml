@@ -1280,6 +1280,9 @@ importers:
         specifier: ^3
         version: 3.23.2
     devDependencies:
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../forms
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

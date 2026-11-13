@@ -1,4 +1,4 @@
-// Spec: k.server, clause "On https the caller cookie is `__Host-keel-caller`; a `keel-caller` there counts as none."
+// Spec: k.security, clause "On https the caller cookie is `__Host-keel-caller`; a `keel-caller` there counts as none."
 // Seed 1337 (no generated inputs). Runs under plain Node: happy-dom strips cookie headers. Runtime (JSON) requests only.
 // @vitest-environment node
 import { createHash } from "node:crypto";
