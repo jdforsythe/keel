@@ -3,7 +3,7 @@
 // Spec: std.statecharts, rule E2752: a state unreachable from `initial` through `on` targets.
 // Spec: std.statecharts, rule E2753: a non-final state with no target to another state (fix: add `final: true`).
 // Spec: std.statecharts, rule E2754: a final state with `on`, an `on` event missing from `events`, or a `guard` or `do` naming no entry.
-// Spec: std.statecharts, rule E2755: a `chart` whose `initial`, `states`, `on` keys or targets are not literals (the checker cannot prove it).
+// Spec: std.statecharts, rule E2755: a `chart` whose `initial`, `events`, `guards`, `actions`, `states`, `on` keys or targets are not literals: a variable, a spread or a computed key (the checker cannot prove it).
 // Seed: 1337.
 // Assumption: as for std.jobs E2501, `check()` imports nothing, so the rules register by importing `@keel/std-statecharts/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`; the chart file is `modules/todos/editorChart.ts` (a client-safe file named for its export).
@@ -192,7 +192,7 @@ describe("std.statecharts: keel check rules", () => {
     expect(found(CLEAN, "E2754")).toEqual([]);
   });
 
-  test("E2755 a `chart` whose `initial`, `states`, `on` keys or targets are not literals (the checker cannot prove it)", () => {
+  test("E2755 a `chart` whose `initial`, `events`, `guards`, `actions`, `states`, `on` keys or targets are not literals: a variable, a spread or a computed key (the checker cannot prove it)", () => {
     const variants: Parts[] = [
       { initial: "pick()", pre: "const pick = () => 'viewing'", states: reachable("") },
       { states: "makeStates()", pre: `const makeStates = () => (${reachable("")})` },

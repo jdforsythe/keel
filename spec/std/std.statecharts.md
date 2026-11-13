@@ -26,7 +26,7 @@ export const editorChart = chart('todos.editor', {
 
 **Checked.** `keel check` analyzes the declaration as written; `chart` repeats E2751, E2753 and E2754 as throws. Reachability treats every guard as possibly true, so a state E2752 names is unreachable on every run. Guarded reachability and stuck states are k.model's: `coverage(chart, explore(Object.values(chart.events)))` returns `{ unreached, dead }`, the declared states no explored state holds and the non-final states some `terminal` state holds.
 
-**Rules.** E2751 `initial` or a `to` naming no state (fix: the nearest state name) · E2752 a state unreachable from `initial` through `on` targets · E2753 a non-final state with no target to another state (fix: add `final: true`) · E2754 a final state with `on`, an `on` event missing from `events`, or a `guard` or `do` naming no entry · E2755 a `chart` whose `initial`, `states`, `on` keys or targets are not literals (the checker cannot prove it).
+**Rules.** E2751 `initial` or a `to` naming no state (fix: the nearest state name) · E2752 a state unreachable from `initial` through `on` targets · E2753 a non-final state with no target to another state (fix: add `final: true`) · E2754 a final state with `on`, an `on` event missing from `events`, or a `guard` or `do` naming no entry · E2755 a `chart` whose `initial`, `events`, `guards`, `actions`, `states`, `on` keys or targets are not literals: a variable, a spread or a computed key (the checker cannot prove it).
 
 **Conformance.**
 - The compiled store's schema parses `{ state: initial, data: start }` and refuses a state name outside `states`; each event's transaction is named `<id>.<event>` and its `schema` is that event's payload schema.
