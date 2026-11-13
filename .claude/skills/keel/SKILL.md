@@ -22,6 +22,8 @@ description: "Build a Keel app: schemas, stores, components, routes, forms, test
 
 **Rules:** no throw/try (use `Result`, `attempt`); no `Date.now`, `Math.random`, `fetch`, `localStorage`, DOM (use `ctx`); ids from `ctx.random.id('Todo')`; no `any`, casts, `!`, `@ts-ignore`.
 
+**Charts:** a flow with states (editing, saving, retrying) is `chart('todos.editor', { data, events, initial, states })` from `@keel/std-statecharts` in a client-safe file; it compiles to a store and a transaction per event (`pnpm spec std.statecharts`).
+
 **Tests:** `render(C, { props, state, ctx })`, `await t.fire(id, { type: 'click' })`, `t.find(id)`; `await renderRoute(id, { routes, params, ctx })`; `properties(C | tx)`. Ids only, never the DOM; every export named in a test.
 
 **Scaffold:** `keel scaffold project <name> --workspace`, then `pnpm install` at the root.

@@ -4,7 +4,7 @@
 
 **Kernel packages, dependency order.** `schema` -> `reactive` -> `store` -> `runtime-dom` -> `compiler` -> `router` -> `forms` -> `ui` -> `check` -> `scaffold` -> `testing` -> `server` (thin) -> `services` (thin) -> `cli` (serves MCP and LSP; the entry point, so it may call everything) -> `ctx`. `tooling/deps.json` enforces downward-only imports.
 
-**Extension points** (kernel work, used by stdlib): schema type registry · check rule registry · capability registry on `ctx` · module manifest · inspector hooks (`@keel/compiler/inspect/inspector`: named, schema-typed sections of the inspect document, k.cli) · output formatter registry. Stdlib packages `packages/std-*` (spec `spec/std/`) come after `ctx` in `tooling/deps.json`; wave 0 uses each point once: std-money, std-brands, std-geo, std-health, std-timings, std-report. The values packages build on platform `Intl` and ISO text: std-i18n (the `Locale` type, `formatNumber`, `plural`; schema type registry and check rule registry), std-money (schema type registry), std-temporal (`Instant`, `PlainDate`, `TimeZone` and `Duration` format types; schema type registry), std-text (`line`, `para`, `Email`, `Slug`; schema type registry) and std-messages (message sets, `formatMessage`; schema type registry and check rule registry).
+**Extension points** (kernel work, used by stdlib): schema type registry · check rule registry · capability registry on `ctx` · module manifest · inspector hooks (`@keel/compiler/inspect/inspector`: named, schema-typed sections of the inspect document, k.cli) · output formatter registry. Stdlib packages `packages/std-*` (spec `spec/std/`) come after `ctx` in `tooling/deps.json`; wave 0 uses each point once: std-money, std-brands, std-geo, std-health, std-timings, std-report. The values packages build on platform `Intl` and ISO text: std-i18n (the `Locale` type, `formatNumber`, `plural`; schema type registry and check rule registry), std-money (schema type registry), std-temporal (`Instant`, `PlainDate`, `TimeZone` and `Duration` format types; schema type registry), std-text (`line`, `para`, `Email`, `Slug`; schema type registry) and std-messages (message sets, `formatMessage`; schema type registry and check rule registry). std-statecharts (`chart`; check rule registry) compiles a state chart to a store and one transaction per event.
 
 **Borrow vs build**
 
@@ -20,6 +20,9 @@
 | Browser automation | Playwright | Engine matrix |
 | Compiler artifacts | Build | Nothing emits dep graphs, ID indexes, a11y expectations |
 | Store and log | Build | Core of the thesis |
+| Model checking | Build `explore` over transactions; no TLA+ or Alloy model | The model is the store the app runs |
+| Simulation | Borrow fast-check generation and shrinking; build schedules in the sim ctx | Faults and delays are inputs a seed replays |
+| State charts | Build on store and transactions; no XState | A chart is a store, so every tool already reads it |
 | check, cli, mcp, lsp | Build | The product |
 | Sessions (stdlib) | Build | The product |
 
