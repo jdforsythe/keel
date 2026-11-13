@@ -95,3 +95,98 @@ it("E1571: the OpenAPI service in api.server.ts, called by a loader a route impo
   expect(ran("api.server.ts")).toEqual([]);
   expect(ran("api.ts").map((d) => d.code)).toEqual(["E1571"]);
 });
+
+it("E1111 reads anyOf members, spreads, namespace imports, re-exports and a const table; it reports what it cannot read", () => {
+  const S = "import { s } from '@keel/schema'\n";
+  const lib: Files = [
+    {
+      path: "src/U.schema.ts",
+      source: `${S}export const Email = s.string().pii('contact')\nexport const F = { e: Email }\n`,
+    },
+    { path: "src/index.ts", source: "export { Email as Mail } from './U.schema.ts'\n" },
+  ];
+  const table = (
+    head: string,
+    search: string,
+    call = "manifest({ 'a.b': { path: '/b', search: SEARCH, component: Page } })",
+  ) => [
+    ...lib,
+    {
+      path: "src/routes.ts",
+      source: `import { manifest } from '@keel/router'\n${S}${head}const Page = () => null\nconst SEARCH = ${search}\nexport const routes = ${call}\n`,
+    },
+  ];
+  const ran = (files: Files) => codes(files, "E1111").map((d) => d.message.split(";")[0]);
+  const marked = "personal data in route search";
+  expect(
+    ran(table("import { Email } from './U.schema.ts'\n", "s.object({ q: s.union([s.string(), Email]) })")),
+  ).toEqual([marked]);
+  expect(ran(table("import { F } from './U.schema.ts'\n", "s.object({ ...F })"))).toEqual([marked]);
+  expect(ran(table("import * as U from './U.schema.ts'\n", "s.object({ q: U.Email })"))).toEqual([marked]);
+  expect(ran(table("import { Mail } from './index.ts'\n", "s.object({ q: Mail.optional() })"))).toEqual([marked]);
+  expect(
+    ran(
+      table(
+        "import { Email } from './U.schema.ts'\nconst TABLE = { 'a.b': { path: '/b', search: s.object({ q: Email }), component: () => null } }\n",
+        "s.object({})",
+        "manifest(TABLE)",
+      ),
+    ),
+  ).toEqual([marked]);
+  expect(ran(table("declare function make(): unknown\n", "make()"))).toEqual(["route search not readable statically"]);
+  expect(ran(table("", "s.object({ q: s.string() })"))).toEqual([]);
+});
+
+it("E1571 reads a const in a template, concatenation, new URL's base, protocol-relative URLs, { net } and a ctx alias", () => {
+  const load = (body: string): Files => [
+    { path: "src/load.ts", source: `const BASE = 'https://api.example'\nexport const load = (ctx) => {\n${body}\n}\n` },
+  ];
+  const n = (body: string) => codes(load(body), "E1571").length;
+  expect(n("return ctx.net.fetch(`${BASE}/x`)")).toBe(1);
+  expect(n("return ctx.net.fetch(BASE + '/x')")).toBe(1);
+  expect(n("return ctx.net.fetch(new URL('/x', 'https://api.example'))")).toBe(1);
+  expect(n("return ctx.net.fetch('//cdn.example/x')")).toBe(1);
+  expect(n("const { net } = ctx\nreturn net.fetch(BASE)")).toBe(1);
+  expect(n("const c = ctx\nreturn c.net.fetch(BASE)")).toBe(1);
+  expect(n("return ctx.net.fetch(`/x/${BASE}`)")).toBe(0);
+  expect(n("return ctx.net.fetch(new URL('/x', location.origin))")).toBe(0);
+});
+
+it("E1570 reads a const, a template head, a concatenation and a protocol-relative URL", () => {
+  const img = (decl: string, src: string): Files => [
+    {
+      path: "src/C.tsx",
+      source: `import { Image } from '@keel/ui'\n${decl}export default function C() { return <Image src={${src}} alt="x" /> }\n`,
+    },
+  ];
+  const n = (decl: string, src: string) => codes(img(decl, src), "E1570").length;
+  expect(n("const CDN = 'https://cdn.example'\n", "CDN")).toBe(1);
+  expect(n("const CDN = 'https://cdn.example'\n", "`${CDN}/a.png`")).toBe(1);
+  expect(n("const CDN = 'https://cdn.example'\n", "CDN + '/a.png'")).toBe(1);
+  expect(n("", "'//cdn.example/a.png'")).toBe(1);
+  expect(n("const P = '/a.png'\n", "P")).toBe(0);
+});
+
+it("E1111: a package's route table spread into an app manifest is the package's, and a project table's `.routes` is read", () => {
+  const S = "import { s } from '@keel/schema'\n";
+  const files = (spread: string, head: string): Files => [
+    { path: "src/P.schema.ts", source: `${S}export const P = s.object({ e: s.string().pii('contact') })\n` },
+    {
+      path: "src/other.ts",
+      source: `import { manifest } from '@keel/router'\nimport { P } from './P.schema.ts'\nexport const other = manifest({ 'o.x': { path: '/o/:e', params: P, component: () => null } })\n`,
+    },
+    {
+      path: "src/routes.ts",
+      source: `import { manifest } from '@keel/router'\n${head}export const routes = manifest({\n  ...${spread},\n  'a.b': { path: '/b', component: () => null },\n})\n`,
+    },
+  ];
+  const ran = (spread: string, head: string) =>
+    codes(files(spread, head), "E1111")
+      .filter((d) => d.path === "src/routes.ts")
+      .map((d) => d.message.split(";")[0]);
+  expect(ran("monitorRoutes.routes", "import { monitorRoutes } from '@keel/std-sessions/monitor'\n")).toEqual([]);
+  expect(ran("other.routes", "import { other } from './other.ts'\n")).toEqual(["personal data in route params"]);
+  expect(ran("make().routes", "declare function make(): { routes: object }\n")).toEqual([
+    "route table not readable statically",
+  ]);
+});

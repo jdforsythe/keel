@@ -159,7 +159,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1111",
-    "a .pii() node in a route params or search schema",
+    "a .pii() node, or a schema it cannot read, in a route params or search",
     "A path or query reaches browser history and proxy logs, which no redaction reaches.",
     "params: s.object({ email }) -> pass the value in an action input",
     "k.privacy",
@@ -537,14 +537,14 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1570",
-    "literal absolute http(s) URL in src, poster, data, srcset, action, formaction or Image src",
+    "absolute or protocol-relative URL in src, poster, data, srcset, action, formaction or Image src",
     "The content security policy loads these from this origin only.",
     'src="https://cdn.example/a.png" -> src="/assets/a.png"',
     "k.security",
   ],
   [
     "E1571",
-    "literal absolute http(s) URL given to ctx.net.fetch or service({ base }) in client-reachable code",
+    "absolute or protocol-relative URL given to ctx.net.fetch or service({ base }) in client code",
     "The policy's connect-src is this origin; reach another origin from a *.server.ts file.",
     "move the service to a *.server.ts file and call it from a loader or action",
     "k.security",
