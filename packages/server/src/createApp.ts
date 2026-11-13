@@ -13,6 +13,7 @@ import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import { DEFAULT_MAX_STREAMS } from "./internal/DEFAULT_MAX_STREAMS.ts";
 import type { Served } from "./internal/Served.ts";
 import { allowOf } from "./internal/allowOf.ts";
+import { appFrames } from "./internal/appFrames.ts";
 import { bindModules } from "./internal/bindModules.ts";
 import { callerOf } from "./internal/callerOf.ts";
 import { callerSigner } from "./internal/callerSigner.ts";
@@ -162,6 +163,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     maxStreams: opts.maxStreams ?? DEFAULT_MAX_STREAMS,
     streams: { open: 0 },
     reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
+    frames: appFrames(opts.artifacts),
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
@@ -258,7 +260,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
   const unbind = bindModules(sv.ctx, opts.topology, sv.name, app, peers);
   const own = opts.topology[sv.name]?.modules ?? [];
   const running = Promise.resolve().then(() =>
-    own.flatMap((m) => runners[m] ?? []).map((r) => keepRunning(r, sv.ctx, sv.lifecycle.signal, failed)),
+    own.flatMap((m) => runners[m] ?? []).map((r) => keepRunning(r, sv.ctx, sv.lifecycle.signal, failed, sv.frames)),
   );
   return app;
 }

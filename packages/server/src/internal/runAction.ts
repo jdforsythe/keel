@@ -73,7 +73,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
     if (!out.ok) return out;
     const clash = await saveStores(sv.ctx, rq);
     return clash === null ? out : err(clash);
-  });
+  }, sv.frames);
   // A throw: the stores as the action left them hold `.pii()` values too; its message, cause and diag drop them all.
   if (!ran.ok) {
     const held = await attempt(() => Promise.all(rq.held.values()));

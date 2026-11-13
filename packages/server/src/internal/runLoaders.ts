@@ -20,7 +20,7 @@ async function runOne(
   const { result: ran, frames } = await caught(async () => {
     const stores = l.stores === undefined ? undefined : await openFactory(sv.ctx, rq, l.stores);
     return rq.scope.run(() => l.run({ ...args, caller: rq.caller.id, stores }, sv.ctx));
-  });
+  }, sv.frames);
   if (!ran.ok) {
     const clean = scrubbedCause(ran.error, rq.pii);
     return {

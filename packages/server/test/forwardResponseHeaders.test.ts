@@ -49,6 +49,7 @@ describe("forwarded response headers", () => {
         maxStreams: 1000,
         streams: { open: 0 },
         reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
+        frames: () => [],
       };
       const out = await forward(new Request("http://x.test/p"), `http://127.0.0.1:${at}`, sv);
       const h = out.response.headers;
@@ -88,6 +89,7 @@ describe("forwarded HEAD response", () => {
       maxStreams: 1000,
       streams: { open: 0 },
       reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
+      frames: () => [],
     };
     return { server, sv, at: port(server.address()) };
   };

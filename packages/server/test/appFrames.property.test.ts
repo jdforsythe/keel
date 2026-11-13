@@ -1,6 +1,9 @@
 // @vitest-environment node
-// appFrames and caught (k.server Log): app positions only, relative, at most 5, in stack order; the KeelError holds no
-// stack. Seed 1337.
+// appFrames and caught (k.server Log): app positions only, relative to the folder holding `artifacts`, at most 5, in
+// stack order; `server.mjs` positions through its map; none without `artifacts`; the KeelError holds no stack. Seed 1337.
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { appFrames } from "../src/internal/appFrames.ts";
@@ -9,6 +12,7 @@ import { diagLine } from "../src/internal/diagLine.ts";
 
 const SEED = 1337;
 const CWD = "/srv/app";
+const read = appFrames(`${CWD}/.keel`);
 const withStack = (lines: readonly string[]): Error => {
   const e = new Error("boom");
   e.stack = ["Error: boom", ...lines].join("\n");
@@ -42,11 +46,11 @@ const lineArb: fc.Arbitrary<Line> = fc.oneof(
 );
 
 describe("appFrames", () => {
-  it("is the first 5 app positions in stack order, relative to the working directory", () => {
+  it("is the first 5 app positions in stack order, relative to the folder holding artifacts", () => {
     fc.assert(
       fc.property(fc.array(lineArb, { maxLength: 15 }), (lines) => {
         const want = lines.flatMap((l) => (l.app === null ? [] : [l.app])).slice(0, 5);
-        expect(appFrames(withStack(lines.map((l) => l.text)), CWD)).toEqual(want);
+        expect(read(withStack(lines.map((l) => l.text)))).toEqual(want);
       }),
       { seed: SEED, numRuns: 300 },
     );
@@ -55,16 +59,46 @@ describe("appFrames", () => {
   it("reads no frame from the message line and none from a value without a stack", () => {
     const e = new Error(`at ${CWD}/modules/a/a.ts:1:1`);
     e.stack = `Error: at ${CWD}/modules/a/a.ts:1:1`;
-    expect(appFrames(e, CWD)).toEqual([]);
-    expect(appFrames("thrown string", CWD)).toEqual([]);
-    expect(appFrames({ stack: `x\n    at ${CWD}/a.ts:1:1` }, CWD)).toEqual([]);
+    expect(read(e)).toEqual([]);
+    expect(read("thrown string")).toEqual([]);
+    expect(read({ stack: `x\n    at ${CWD}/a.ts:1:1` })).toEqual([]);
+  });
+
+  it("reads none without artifacts", () => {
+    expect(appFrames(undefined)(withStack([`    at f (${CWD}/modules/a/a.ts:1:1)`]))).toEqual([]);
+  });
+
+  it("maps a server.mjs position through server.mjs.map, read once, and drops one it cannot map", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-frames-map-"));
+    const bundle = path.join(dir, "server.mjs");
+    // Line 1: col 1 from modules/a/a.server.ts 1:1, col 11 from ../packages/x.ts 5:3.
+    const map = {
+      version: 3,
+      sources: ["modules/a/a.server.ts", "../packages/x.ts"],
+      names: [],
+      mappings: "AAAA,UCIE",
+    };
+    const at = (col: number) => `    at f (${bundle}:1:${col})`;
+    try {
+      expect(appFrames(dir)(withStack([at(1)]))).toEqual([]);
+      fs.writeFileSync(`${bundle}.map`, JSON.stringify(map));
+      const mapped = appFrames(dir);
+      expect(mapped(withStack([at(11), at(1), `    at g (file://${bundle}?x=1:1:1)`]))).toEqual([
+        "modules/a/a.server.ts:1:1",
+        "modules/a/a.server.ts:1:1",
+      ]);
+      fs.rmSync(`${bundle}.map`);
+      expect(mapped(withStack([at(1)]))).toEqual(["modules/a/a.server.ts:1:1"]);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
 describe("caught", () => {
   it("gives attempt's keel.unexpected and keeps the stack out of it", async () => {
-    const e = withStack([`    at f (${process.cwd()}/modules/a/a.server.ts:3:7)`]);
-    const r = await caught(() => Promise.reject(e));
+    const e = withStack([`    at f (${CWD}/modules/a/a.server.ts:3:7)`]);
+    const r = await caught(() => Promise.reject(e), read);
     expect(r.result.ok).toBe(false);
     expect(r.frames).toEqual(["modules/a/a.server.ts:3:7"]);
     expect(JSON.stringify(r.result)).not.toContain("a.server.ts");
@@ -72,10 +106,10 @@ describe("caught", () => {
 
   it("catches a sync throw and resolves a value with no frames", async () => {
     const thrown = (): never => {
-      throw withStack([`    at ${process.cwd()}/lib/x.ts:1:2`]);
+      throw withStack([`    at ${CWD}/lib/x.ts:1:2`]);
     };
-    expect((await caught(thrown)).frames).toEqual(["lib/x.ts:1:2"]);
-    expect(await caught(() => 4)).toEqual({ result: { ok: true, value: 4 }, frames: [] });
+    expect((await caught(thrown, read)).frames).toEqual(["lib/x.ts:1:2"]);
+    expect(await caught(() => 4, read)).toEqual({ result: { ok: true, value: 4 }, frames: [] });
   });
 });
 

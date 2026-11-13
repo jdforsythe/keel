@@ -1,4 +1,6 @@
-import { isAbsolute, relative, sep } from "node:path";
+import { readFileSync } from "node:fs";
+import { SourceMap } from "node:module";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { attempt } from "@keel/schema";
 
@@ -15,27 +17,54 @@ const fileOf = (at: string): string | undefined => {
 };
 
 const library = (rel: string): boolean =>
-  rel.startsWith("packages/") || rel.startsWith(".keel/") || rel.split("/").includes("node_modules");
+  rel === "" ||
+  rel.startsWith("../") ||
+  isAbsolute(rel) ||
+  rel.startsWith("packages/") ||
+  rel.startsWith(".keel/") ||
+  rel.split("/").includes("node_modules");
 
 /**
- * The first 5 stack positions of `thrown` in app code (k.server Log), each `<path>:<line>:<col>` with the path
- * relative to `cwd`. Read from the `at` lines of an `Error`'s `stack`; a position outside `cwd` (Node internals, a home
- * directory, the global store) or under `packages/`, `node_modules/` or `.keel/` is dropped, and function names are not
- * kept, nor is a `?query` or `#hash` on the path. Anything without a string `stack` gives `[]`.
+ * The frame reader of an app whose `createApp({ artifacts })` is `artifacts` (k.server Log): given a thrown value, the
+ * first 5 stack positions of its `stack` in app code, each `<path>:<line>:<col>` relative to the folder holding
+ * `artifacts`. A position in `<artifacts>/server.mjs` (the production bundle) is replaced by its source position in
+ * `server.mjs.map` (its sources are relative to the project already), read once, on the first such frame; with no map or
+ * no mapping there it is dropped. A position outside that folder, or under `packages/`, `node_modules/` or `.keel/`, is
+ * dropped; function names, a `?query` and a `#hash` are not kept. No `artifacts`, or no string `stack`: `[]`.
  */
-export function appFrames(thrown: unknown, cwd: string): string[] {
-  const stack = thrown instanceof Error ? thrown.stack : undefined;
-  if (typeof stack !== "string") return [];
-  const out: string[] = [];
-  for (const raw of stack.split("\n").slice(1)) {
-    const line = raw.trim();
-    const m = line.startsWith("at ") ? (IN_PARENS.exec(line) ?? BARE.exec(line)) : null;
-    const file = m?.[1] === undefined ? undefined : fileOf(m[1]);
-    if (m === null || file === undefined || !isAbsolute(file)) continue;
-    const rel = relative(cwd, file).split(sep).join("/");
-    if (rel === "" || rel.startsWith("../") || isAbsolute(rel) || library(rel)) continue;
-    out.push(`${rel}:${m[2]}:${m[3]}`);
-    if (out.length === MAX) break;
-  }
-  return out;
+export function appFrames(artifacts: string | undefined): (thrown: unknown) => string[] {
+  if (artifacts === undefined) return () => [];
+  const dir = resolve(artifacts);
+  const root = dirname(dir);
+  const bundle = join(dir, "server.mjs");
+  let map: SourceMap | null | undefined;
+  const source = (line: number, col: number): string | undefined => {
+    if (map === undefined) {
+      const read = attempt(() => new SourceMap(JSON.parse(readFileSync(`${bundle}.map`, "utf8"))));
+      map = read.ok ? read.value : null;
+    }
+    const e = map?.findEntry(line - 1, col - 1);
+    return e !== undefined && "originalSource" in e
+      ? `${e.originalSource}:${e.originalLine + 1}:${e.originalColumn + 1}`
+      : undefined;
+  };
+  return (thrown) => {
+    const stack = thrown instanceof Error ? thrown.stack : undefined;
+    if (typeof stack !== "string") return [];
+    const out: string[] = [];
+    for (const raw of stack.split("\n").slice(1)) {
+      const line = raw.trim();
+      const m = line.startsWith("at ") ? (IN_PARENS.exec(line) ?? BARE.exec(line)) : null;
+      const file = m?.[1] === undefined ? undefined : fileOf(m[1]);
+      if (m === null || file === undefined || !isAbsolute(file)) continue;
+      const at =
+        file === bundle
+          ? source(Number(m[2]), Number(m[3]))
+          : `${relative(root, file).split(sep).join("/")}:${m[2]}:${m[3]}`;
+      if (at === undefined || library(at.replace(/:\d+:\d+$/, ""))) continue;
+      out.push(at);
+      if (out.length === MAX) break;
+    }
+    return out;
+  };
 }

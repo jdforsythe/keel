@@ -143,7 +143,7 @@ describe("k.server: diag frames", () => {
     expect(frames).toEqual(["modules/a/a.server.ts:21:8"]);
   });
 
-  test.skip("frames hold none outside the folder holding `artifacts`, even under the working directory", async () => {
+  test("frames hold none outside the folder holding `artifacts`, even under the working directory", async () => {
     const beside: Frame = { where: "app", file: "modules/a/a.server.ts", line: 4, col: 4, parens: true };
     const inCwd = `    at fn (${process.cwd()}/${beside.file}:${beside.line}:${beside.col})`;
     const inAway = `    at fn (${away}/${beside.file}:12:5)`;
@@ -151,7 +151,7 @@ describe("k.server: diag frames", () => {
     expect(logged).toEqual(["modules/a/a.server.ts:12:5"]);
   });
 
-  test.skip("a loader throwing without `artifacts` logs a `diag` whose `frames` are none", async () => {
+  test("a loader throwing without `artifacts` logs a `diag` whose `frames` are none", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(frameArb, { minLength: 0, maxLength: 8 }), async (frames) => {
         const logged = await framesLogged(stackOf([app(7, 3), ...frames]), "dev", null);

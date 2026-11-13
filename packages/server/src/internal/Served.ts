@@ -17,7 +17,7 @@ import type { ReportWindow } from "./ReportWindow.ts";
  * entry of `createApp({ deployable })`'s islands (none given: `/@keel/entry.ts`, every `node` module's).
  * `lifecycle` aborts on `close()`, ending runners and open event streams. `maxStreams` caps the open event streams
  * (`createApp({ maxStreams })`) and `streams.open` counts them (`liveStream`). `reports` is the CSP report window
- * (`cspReport`).
+ * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`).
  */
 export type Served = {
   readonly table: readonly Located[];
@@ -37,4 +37,5 @@ export type Served = {
   readonly maxStreams: number;
   readonly streams: { open: number };
   readonly reports: ReportWindow;
+  readonly frames: (thrown: unknown) => readonly string[];
 };
