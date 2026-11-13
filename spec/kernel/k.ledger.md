@@ -1,7 +1,7 @@
 # k.ledger: Ledger and evidence
 status: conformance-covered
 
-**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence). A conformance test in any package names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and the final period aside; it may wrap onto the next `//` lines). `rung` is the highest held:
+**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`), per spec clause (`k.router#3`, the 1-based Conformance sentence) and per route and WCAG criterion (`a11y:<routeId>#1.4.3`, k.a11y). A conformance test in any package names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and the final period aside; it may wrap onto the next `//` lines). `rung` is the highest held:
 - `example`: a passing test references the item.
 - `probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed.
 - `exhaustive`: a passing `explore` (k.model) given `from`, `payloads` or `depth`; evidence lists `depth` when it is a literal.
@@ -14,7 +14,7 @@ status: conformance-covered
 
 **Mutation.** Stryker (`pnpm mutate`, run alone and never inside `pnpm check`) writes `packages/<pkg>/reports/mutation/mutation.json`. `keel ledger` turns each report into one claim per mutated file, `{ file, sha, killed, survived, noCoverage, score }`: `sha` is the sha256 of the source the report holds for that file, and `score` is detected over detected plus undetected (Stryker's formula; timeouts count as detected). A claim is fresh while the file's current source has that `sha`. Each package's score is computed over its fresh claims, with the report's `thresholds.break` as its threshold. `keel ledger` emits one `{ kind: 'ledger.mutation', file, score, survived, fresh }` per claim; compact `packages/store/src/tx.ts 91.2% 3 survived`. `ledger` and `ledger.mutation` are kernel record kinds (k.cli).
 
-**File.** `keel ledger --write <file>` writes `{ version, unsafe, rungs, mutation, exports, clauses }`: `rungs` counts, for each rung, the items holding any evidence on it; `mutation` holds each package's `{ score, threshold }` and the claims, a report on disk replacing the claims of the files it covers and other claims kept. The summary's `counts` carry the `rungs` counts and the count of `stale` claims. An app's `.keel/ledger.json` and `.keel/monitored.json` are not compiled artifacts; E1005 (k.compiler) passes them over.
+**File.** `keel ledger --write <file>` writes `{ version, unsafe, rungs, mutation, exports, clauses, a11y }`: `rungs` counts, for each rung, the items holding any evidence on it; `mutation` holds each package's `{ score, threshold }` and the claims, a report on disk replacing the claims of the files it covers and other claims kept. The summary's `counts` carry the `rungs` counts and the count of `stale` claims. An app's `.keel/ledger.json` and `.keel/monitored.json` are not compiled artifacts; E1005 (k.compiler) passes them over.
 
 **Diff.** `keel ledger --diff` compares with the committed ledger, reading reports on disk as `--write` does, and checks every `conformance-covered` or `frozen` section's clauses.
 

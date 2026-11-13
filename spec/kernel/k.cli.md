@@ -1,12 +1,12 @@
 # k.cli: CLI, MCP, LSP
 status: conformance-covered
 
-**One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`. Three surfaces serve the same engine: the `keel` binary (flags parsed by the input schema), `keel mcp` (one MCP tool per operation), and `keel lsp` (check diagnostics as LSP diagnostics, fix diffs as code actions, `explain` as hover).
+**One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`. Three surfaces serve it: the `keel` binary (flags parsed by the input schema), `keel mcp` (one MCP tool per operation), and `keel lsp` (check diagnostics as LSP diagnostics, fix diffs as code actions, `explain` as hover).
 
 **Commands.**
 | command | does |
 | --- | --- |
-| `check [paths]` | k.check over the code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
+| `check [paths]` | k.check over code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
 | `test [paths]` | harness under sim ctx |
 | `build` | production build per deployable |
 | `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |
@@ -16,12 +16,13 @@ status: conformance-covered
 | `render <routeId\|Component> [--props json]` | a11y tree of one render |
 | `scaffold <op>` / `codemod <op>` | structural operations (k.scaffold) |
 | `ledger` | emit and diff the ledger |
+| `evidence [--verify dir]` | signed evidence bundle (k.evidence) |
 
 `session` runs the operation std.sessions registers with `stdCommand('session', op)` (`@keel/cli`) after importing the project's std `deps`; unfilled, I1055.
 
-Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting commands also accept `--code <code>`.
+Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting ones also take `--code <code>`.
 
-**Inspect.** In dev, a running app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` outside any request scope, `stores` is `{ [id]: { state, log } }` from `stores()`, and `ids`, `a11y`, `routes` are the `.keel/` artifacts. Node deployables serve it from `createApp` with `mode: 'dev'`; client-only apps from the compiler plugin's dev and preview servers; the page's dev entry posts `{ graph, stores, sections }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store and a summary of counts.
+**Inspect.** In dev, an app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` outside a request scope, `stores` is `{ [id]: { state, log } }` from `stores()`, and `ids`, `a11y`, `routes` are the `.keel/` artifacts. Node deployables serve it from `createApp` with `mode: 'dev'`; client-only apps from the compiler plugin's dev and preview servers; the page's dev entry posts `{ graph, stores, sections }` after mount and whenever it changes (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is the server's own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints one `inspect.store` record per store and a summary of counts.
 
 **Inspector hooks** (extension point).
 ```ts
@@ -37,7 +38,7 @@ Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }`
 import { formatter } from '@keel/cli'
 formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}`, pretty: (r) => table(r) })
 ```
-Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: it is the record encoded by its schema as one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
+Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: the record encoded by its schema, one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
 **Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind or std command registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 

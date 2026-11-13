@@ -6,15 +6,15 @@ status key: proposed | implemented | conformance-covered | frozen. Budget: this 
 Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --for <code>` finds the owner.
 | block | owner | block | owner |
 | --- | --- | --- | --- |
-| E100x | k.compiler | E105x | k.cli |
-| E110x | k.schema | E115x | k.module |
+| E100x | k.compiler | E105x | k.cli, k.evidence |
+| E110x | k.schema, k.privacy | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component | E145x | k.errors |
-| E150x | k.router, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.compat, k.hosting |
+| E150x | k.router, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.compat, k.hosting, k.security |
 | E160x | k.ctx, k.sim | E165x | k.services |
 | E170x | k.testing, k.model, k.ledger | E175x | k.check |
-| E18xx | k.ui | E19xx | k.forms |
+| E18xx | k.ui, k.a11y | E19xx | k.forms |
 | E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
 | E230x | std.i18n | E240x | std.messages |
 | E250x | std.jobs | E255x | std.schedules |
@@ -30,30 +30,34 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.component | Components | conformance-covered | one default export, schema props, named slots, If/For/Match |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX to DOM ops; dep graph, ID index, route table, a11y |
 | k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes, delegation, resume |
-| k.router | Routes | conformance-covered | manifest, typed params and search, loaders, actions by verb, guards |
+| k.router | Routes | conformance-covered | manifest, typed params and search, loaders, actions, guards |
 | k.prefix | Implied path prefix | conformance-covered | a leading enum param with `pathDefault` left out of the URL |
 | k.forms | Forms | conformance-covered | form(schema): bindings, validation, submit, server errors |
-| k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS, scoped, a11y-required props |
+| k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS, scoped |
 | k.ctx | Capabilities | conformance-covered | clock, random, net, storage; real, shell, simulated; observers |
 | k.errors | Results and boundaries | conformance-covered | Result for expected, boundary for unexpected |
 | k.check | Checker and diagnostics | conformance-covered | codes, fix diffs, budgets, rule registry |
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces, formatter registry |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
 | k.testing | Harness and properties | conformance-covered | given state, do events, expect; generated properties |
-| k.model | Exploring a store's transactions | conformance-covered | every reachable state under the invariants; shortest counterexample |
-| k.sim | Schedules and simulation | conformance-covered | delays, faults and offline windows on sim capabilities; simulate |
-| k.ledger | Ledger and evidence | conformance-covered | rungs from tests, explore and production tallies; mutation claims |
+| k.model | Exploring a store's transactions | conformance-covered | reachable states under invariants; shortest counterexample |
+| k.sim | Schedules and simulation | conformance-covered | delays, faults, offline windows; simulate |
+| k.ledger | Ledger and evidence | conformance-covered | rungs from tests, explore and production; mutation claims |
 | k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
-| k.sync | Heads and concurrent writes | conformance-covered | store heads, write base and key, reject or rebase, save and net events |
+| k.sync | Heads and concurrent writes | conformance-covered | store heads, write bases, reject or rebase |
 | k.topology | Deployables | implemented | placement, route table, runners, peers, `keel dev` |
-| k.deploy | Production entry and deploy files | conformance-covered | `keel build` output, `server.mjs`, `DeployEnv`, assets, deploy files |
+| k.deploy | Production entry and deploy files | conformance-covered | `keel build` output, `server.mjs`, `DeployEnv`, deploy files |
 | k.compat | Surface compatibility | conformance-covered | surface artifact, `accepts`, `--base` |
 | k.api | API routes | conformance-covered | `api: true` entries: JSON, no view |
 | k.hosting | Client hosting | implemented | static artifact, peer tag, allowed origins, `host` |
 | k.head | Document head | conformance-covered | per-route title, `<html lang>`, head links |
 | k.services | Thin services | conformance-covered | typed client from schema, timeouts, ApiError |
-| k.openapi | OpenAPI import | conformance-covered | OpenAPI 3 document to endpoints and client sources |
+| k.openapi | OpenAPI import | conformance-covered | OpenAPI 3 to endpoints and client sources |
 | k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |
+| k.a11y | Accessibility | proposed | required props, contrast, focus order, axe-core, WCAG claims |
+| k.security | Headers and CSP | proposed | headers, nonce CSP, Trusted Types, caller cookie |
+| k.privacy | Secrets and personal data | proposed | `s.secret`, `.pii(class)`, redacting sinks |
+| k.evidence | Evidence bundle | proposed | `keel evidence`: a signed, offline audit bundle |
 
 ## Stdlib
-Sections, statuses and their extension points: `spec/std/README.md`.
+Sections and statuses: `spec/std/README.md`.

@@ -14,7 +14,7 @@ The document's title is the matched route's `title`. Without one, when a loader 
 
 **Server.** The head holds, in order: charset, viewport, `<title>`, a `<link rel="stylesheet">` for each `.css` file under `/assets/` that the build manifest's entry chunk names, and `<link rel="icon" href="/keel-mark.svg">` when the build has the mark. In dev, or without a build, it holds the title only. Each value is escaped and nothing is inline, so a strict CSP allows it. The default alert for `keel.notFound` is `<h1>Not found</h1>`.
 
-**Client.** At `mount`, at `resume` and after each navigation's chain has rendered, the router sets `document.title` and `document.documentElement.lang` by the rules above where they differ. It writes nothing else: no element or text node is rebuilt.
+**Client.** At `mount`, at `resume` and after each navigation's chain has rendered, the router sets `document.title` and `document.documentElement.lang` by the rules above where they differ. After a navigation to another route it moves focus to the page's first `h1`, setting `tabindex="-1"`, else to `main`; a navigation within one route keeps focus. It changes nothing else: no element or text node is rebuilt.
 
 **Rules.** None of its own. A string literal with a letter returned by `title` in a module that lists `@keel/std-messages` is E2406 (std.messages).
 
@@ -24,3 +24,4 @@ The document's title is the matched route's `title`. Without one, when a loader 
 - After a client navigation from a titled `en-US` route to a titled `de-DE` route, `document.title` and `document.documentElement.lang` are the second route's.
 - After `resume` of a served document, `document.title` and `lang` equal the served document's.
 - A built document has the head this section names; an unmatched path is 404 with an `h1`.
+- After a client navigation to another route, the focused element is the new page's first `h1`, with `tabindex="-1"`, or `main` when it has none; after a navigation that changes only the search, focus is where it was.
