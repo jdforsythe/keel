@@ -1,13 +1,13 @@
 # Task 0311: S5 Correctness (std-statecharts, model checking, simulator, mutation in ledger)
 
-**Spec:** std.statecharts (new), k.testing, k.ctx (kernel touch), k.cli and tooling for mutation in the ledger · **Gate:** S5 exit: every rung populated by real machinery · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** open; implementation started 2026-11-13 (S2-S4 pushed)
+**Spec:** std.statecharts (new), k.testing, k.ctx (kernel touch), k.cli and tooling for mutation in the ledger · **Gate:** S5 exit: every rung populated by real machinery · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed (2026-11-13)
 
 ## Shape (tasks/PROGRAM.md)
 1. [x] Design RFC 0082 `docs/rfc/0082-s5-correctness.md`, accepted 2026-11-10 with ADRs 0086-0091.
 2. [x] Orchestrator accepts the RFC; no open questions.
 2a. [x] Orchestrator prep (RFC Lanes): spec text rebased on the tree after S2-S4, package skeleton, deps, budgets, one `pnpm install`.
 3. [x] Conformance first, all five suites, un-skipped by the lanes (one std.monitor test waits on K5).
-4. [~] Implementation batch done and committed; reviewer + red-team running; push after.
+4. [x] Implementation batch; reviewer (changes requested, applied) and red-team (0534-0542; 0534-0537, 0539-0541 and 0528 fixed in-batch); pushed.
 5. [x] Exit proof: the committed ledger counts items on every rung (proven 37, exhaustive 14, probabilistic 238, example 717, monitored 5); `pnpm eval --task golden-1-api --runner none --strict` converged=true with the rung guard and four planted twins (`evals/results/2026-11-13-golden-1-api-none.json`).
 
 ## Decisions
@@ -28,9 +28,11 @@
 - D12 (orchestrator, 2026-11-13; confirm or reverse): to hold the MCP `tools/list` budget (1,497 of 1,500 tokens) the sessions agent bounded two `session` flags: `limit` 0 to 1,000,000 and `max-runs` at most 100,000 (42063c9). Statecharts lane done (a18b11c, f65b5a8): 22 tests, none skipped; root entry 1,533 B of 1,536, `./tools` 2,948 B; a target with neither `to` nor `do` is allowed and leaves `enabled` false; E2752 and fix suggestions live in `./tools`; the spec's `editorChart` example caps `attempts` at its schema's `max`.
 - D13 (orchestrator, 2026-11-13; confirm or reverse): kernel K1-K4 done (0ce8d71, 0f8edff, 691f5d6, 9fd71c5). Budgets re-based with measured bytes (default 7): ctx 3.5kb (3,328 B), testing 10kb (10,043 B, 197 B left), std-sessions/tools 10kb (9,992 B), check 43.5kb (44,353 B: the new codes' explanations); cli holds (22,217 of 22,528 B). Kernel decisions: a schedule on a real or shell ctx throws E1604 at `createCtx`, a bad plan step at the capability's first access; offline windows fire during `advance` and are not in `next()`; E1709 fires at the (maxStates+1)th state and `maxStates` clamps at 1,000,000; nullable is not a finite part; every package export is a ledger item, not only functions; a Timeout mutant counts as killed; scores are percent with two decimals; rung and stale counts sit in the summary's `counts`. Ride-alongs 0270 and 0317 not done: each needs spec text first.
 - D14 (orchestrator, 2026-11-13; confirm or reverse): K5 (2dfd2ba) and K6 (0251f45: `.keel/monitored.json` and `.keel/ledger.json` are not compiled artifacts, E1005 passes them over, stated in k.ledger because k.compiler is at its token cap; a failing `explore` or `simulate` test reports its own code). golden-1 migrated (ddd4d68, 32ad955). Ledger rewritten on a quiet tree: 836 items, 808 verified, 10 unsafe (two new in std-statecharts `unsafe/`, justified in code), 717 example, 238 probabilistic, 14 exhaustive, 37 proven, 5 monitored, 19 stale mutation claims, 0 lowered, 0 uncovered. 28 items at `none` (7 before): the ledger now counts every export (0532). The mutation runs for ctx, testing, cli, check, std-statecharts are NOT run (the machine rule says ask first); the 19 stale claims (W1714) say so in the ledger (0533).
+- D15 (orchestrator, 2026-11-13; confirm or reverse): review fixes. The ledger takes evidence only from an `explore`, `simulate` or `properties` imported from `@keel/testing`, never from a call expected to throw or dead code, and matches a test's imported name to the file it resolves to; five items lost a rung they had not earned (k.model#4 to exhaustive, k.sim#8 and k.testing#7 to example, two golden-1 exports, which got tests of their own). An edge `tx` refuses before the function runs is E1710; a package with claims and none fresh is E1713; E2755 covers non-literal `events`, `guards`, `actions`; std.monitor counts each save's own entries. Budgets: testing 10.25kb (10,291 B), cli 23kb (23,097 B). Open: 0525-0527, 0529-0533, 0538, 0542.
 
 ## Verification
-- [ ] `pnpm check`, `pnpm test`, `pnpm build` green; ledger not regressed; reviewer approved; red-team filed; exit proof
+- [x] `pnpm check`, `pnpm test` (66 tasks), `pnpm build` green; `keel ledger --diff` 0 lowered, 0 uncovered against the re-committed ledger; reviewer's findings applied; red-team filed; exit proof (step 5; final counts 36 proven, 13 exhaustive, 235 probabilistic, 724 example, 4 monitored)
+- [ ] NOT DONE: mutation runs for ctx, testing, cli, check, server, std-statecharts, std-sessions (0533; ask the user first); a browser pass beyond the monitor smoke run
 
 ## Next action
-Reviewer: changes requested (one medium: `explore` evidence by name, even inside `toThrow`). Red-team: 0534-0542 filed. Fix batch running in three agents: kernel K7 (0534, 0535, 0536, 0528 if contained, 0539, 0540, 0541, reviewer lows), statecharts (0537, README status), sessions (URL echo in `commandMonitor`, 0538). Then: spec sentences they ask for, mark closed items in BACKLOG, root gates, `pnpm ledger` on a quiet tree, eval rerun, push, close this plan and update HANDOFF; then open S6 (tasks/0312-s6-compliance/PLAN.md) without stopping.
+None; closed. S6 is tasks/0312-s6-compliance/PLAN.md.
