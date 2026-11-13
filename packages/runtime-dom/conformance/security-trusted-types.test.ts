@@ -49,7 +49,7 @@ afterEach(() => {
 const tag = fc.stringMatching(/^[a-z]{3,8}$/);
 
 describe("k.security: Trusted Types in the runtime", () => {
-  test.skip("With a stub `trustedTypes` global, `template()` passes its HTML through policy `keel`", async () => {
+  test("With a stub `trustedTypes` global, `template()` passes its HTML through policy `keel`", async () => {
     await fc.assert(
       fc.asyncProperty(tag, tag, async (id, word) => {
         vi.resetModules();
@@ -68,7 +68,7 @@ describe("k.security: Trusted Types in the runtime", () => {
     );
   });
 
-  test.skip("the policy `keel` is created once however many templates are built", async () => {
+  test("the policy `keel` is created once however many templates are built", async () => {
     const s = stub();
     s.install();
     const { template } = await import("@keel/runtime-dom/ops");
@@ -77,7 +77,7 @@ describe("k.security: Trusted Types in the runtime", () => {
     expect(s.made).toHaveLength(5);
   });
 
-  test.skip("without a `trustedTypes` global `template()` still builds its element", async () => {
+  test("without a `trustedTypes` global `template()` still builds its element", async () => {
     const { template } = await import("@keel/runtime-dom/ops");
     expect(template('<p id="x">y</p>').content.children[0]?.textContent).toBe("y");
   });

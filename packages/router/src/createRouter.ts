@@ -150,6 +150,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
       if (stamp) history.replace(next.url, entry);
     }
     const prev = view.get();
+    const kept = w !== null && prev?.chain === next.chain ? document.activeElement : undefined;
     batch(() => {
       view.set(next);
       place.set(at);
@@ -160,7 +161,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     const reset = resetRoot;
     resetRoot = null;
     reset?.();
-    if (mode === "push" || mode === "replace") afterNavigate(anchor?.parentNode ?? null, next.url);
+    if (mode === "push" || mode === "replace") afterNavigate(anchor?.parentNode ?? null, next.url, kept);
     else if (mode === "pop" && w !== null) w.scrollTo(0, scrolls.get(entry ?? "") ?? 0);
   };
 

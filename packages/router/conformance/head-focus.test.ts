@@ -69,7 +69,7 @@ const open = async (at: string) => {
 const href = (id: Id) => routes.href(id, {}, {});
 
 describe("k.head: focus after navigation", () => {
-  test.skip('After a client navigation to another route, the focused element is the new page\'s first `h1`, with `tabindex="-1"`', async () => {
+  test('After a client navigation to another route, the focused element is the new page\'s first `h1`, with `tabindex="-1"`', async () => {
     const app = await open("/b");
     await app.router.navigate(href("f.a"));
     await settle();
@@ -80,7 +80,7 @@ describe("k.head: focus after navigation", () => {
     app.stop();
   });
 
-  test.skip("or `main` when it has none", async () => {
+  test("or `main` when it has none", async () => {
     const app = await open("/b");
     await app.router.navigate(href("f.plain"));
     await settle();
@@ -90,7 +90,7 @@ describe("k.head: focus after navigation", () => {
     app.stop();
   });
 
-  test.skip("for any pair of distinct routes the focus lands on the target's first h1, or main when it has none (property)", async () => {
+  test("for any pair of distinct routes the focus lands on the target's first h1, or main when it has none (property)", async () => {
     const ids: Id[] = ["f.a", "f.b", "f.plain", "f.s"];
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...ids), fc.constantFrom(...ids), async (from, to) => {
@@ -108,7 +108,7 @@ describe("k.head: focus after navigation", () => {
     );
   });
 
-  test.skip("after a navigation that changes only the search, focus is where it was", async () => {
+  test("after a navigation that changes only the search, focus is where it was", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 99 }), async (q) => {
         const app = await open("/s");
