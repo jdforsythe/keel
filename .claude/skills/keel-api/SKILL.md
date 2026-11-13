@@ -23,6 +23,8 @@ export const postTodo = action({ input: TodoDraft, params: ListParams, stores: b
 
 **Serve the client:** `keel build` writes `dist/<name>/` per `client` deployable (`index.html`, hashed `assets/`, `keel-mark.svg`). `host: '<node deployable>'` on the client deployable copies it into that server, whose `GET /` then returns the app (`pnpm spec k.hosting`). For a static host, build with `KEEL_PEER_API=<origin>` (a `keel-peer` tag; `service({ module })` in a browser calls it with credentials), set `KEEL_ALLOW_ORIGINS` on the server, and keep both on one registrable domain so the caller cookie works. Guide: `docs/guide/deploy-client.md`.
 
+**Policy:** `node` pages carry a fixed nonce CSP: no inline script or style, no other origin (E1570, E1571). Keep privileged caller lists on the server, read by a guard.
+
 **Between modules:** `service({ module: 'api', schema })` (module in `deps`, route in its `public.routes`); background work is `export const runners = [...]` in `modules/<id>/runners.server.ts`. A live loader is `loader({ output }, async function* ({ signal }) { yield ok(v) })`, read with an `events: true` GET endpoint (`for await (const r of api.feed({}, ctx))`).
 
 **Client:** `endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardReply, errors: { 422: FieldsReply } } })`; `service({ base, schema })` per call: base `new URL(url).origin` in `*.server.ts`, `location.origin` in components. `await api(origin).lists({}, ctx)`: `Result<Out, ApiError>`. Bodies: GET `{ id, results: { 'api.lists': { ok: true, value } } }`; action `{ ok: true, value }`.

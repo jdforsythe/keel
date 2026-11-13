@@ -27,6 +27,8 @@ const r = await renderRoute('todos.list', { routes, params: { listId }, search: 
 
 **Reachable states and faults:** `explore([tx1, tx2], { from, payloads, depth })` visits every state a store reaches and checks its invariants (E1708 with a replayable snapshot); with no options and every transaction named it is the closed form, `proven`. `await simulate(async ({ ctx, run }) => { ... await run() ... }, { runs: 100, seed })` runs a scenario under generated schedules of delays, drops, 503s and offline windows. Rungs: `proven` needs a closed `explore` or type-level tests, `exhaustive` an `explore` run, `probabilistic` 100-run `properties` or `simulate`, `monitored` a `.keel/monitored.json` from `keel session monitor`.
 
+**A11y:** a passing `renderRoute` per page (axe-core, token contrast) makes its `a11y:` claims; E1703/E1804/E1821 fail it. `t.focusOrder()`. Canary: fill `piiPaths(S)`, find no `piiValues` in log `write` lines or sim `session(ctx).taken()`. `keel evidence` signs it all.
+
 **Errors:** E1701 selector/DOM query in a test · E1702 role/name differs from `a11y.json` · E1703 axe violation · E1704 property failed (seed, run, shrunk case) · E1705 unknown id (3 nearest listed) · E1706 ledger rung lowered.
 
 Every export is named in a test; 100-run properties lift the ledger to `probabilistic`. Fix by code: `keel explain E1704`.

@@ -21,6 +21,7 @@ First run: `pnpm install && pnpm check`.
 - [docs/BRAND.md](docs/BRAND.md): palette, type, layout, voice rules.
 - [docs/VOICE.md](docs/VOICE.md): how every sentence is written; enforced by `tooling/voice-lint.mjs`.
 - [docs/ROADMAP.md](docs/ROADMAP.md): milestones and exit criteria.
+- [docs/COMPLIANCE.md](docs/COMPLIANCE.md): what a Keel app gets for accessibility, the content security policy and personal data, what its author still owes, and the signed evidence bundle.
 
 ## Golden apps
 
