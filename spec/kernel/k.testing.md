@@ -1,4 +1,4 @@
-# k.testing: Harness and ledger
+# k.testing: Harness and properties
 status: conformance-covered
 
 **Harness.** From `@keel/testing`:
@@ -24,16 +24,9 @@ t.dispose()
 
 **Failure output** (OUTPUT.md): one diagnostic per failure. Property failures print the seed, the run count, and the shrunk case. State mismatches print one compact diff of serialized state.
 
-**Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence). A conformance test in any package names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and the final period aside; it may wrap onto the next `//` lines). `rung` is the highest held:
-- `example`: a passing test references the item.
-- `probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed.
-- `exhaustive`: a property whose generator's finite domain was fully enumerated.
-- `proven`: a passing type-level test or prover output; nothing else may claim it.
-- `monitored`: production only; never emitted by the kernel. No evidence: `none`.
+**Ledger, exploration and simulation.** Rungs and `keel ledger`: k.ledger. `explore`: k.model. `simulate` and schedules: k.sim.
 
-`keel ledger --diff` compares with the committed ledger and checks every `conformance-covered` or `frozen` section's clauses.
-
-**Rules.** E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids) · E1706 ledger rung lower than committed, or unsafe count higher · E1719 `fire` `focus` on an unfocusable element, or `blur` off an unfocused one · E1720 (`resumeDocument`) · E1707 `keel ledger --diff`: a `conformance-covered` or `frozen` section has a clause at `none`, or no clause list · W1706 conformance header `// Clause:` (not counted; fix rewrites it to `// Spec:`).
+**Rules.** E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids) · E1719 `fire` `focus` on an unfocusable element, or `blur` off an unfocused one · E1720 (`resumeDocument`).
 
 **Conformance.**
 - `render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering.
@@ -44,8 +37,5 @@ t.dispose()
 - After a resource resolves, `await settle()` makes its ready state visible without any event.
 - A property failing at a seed reports that seed; re-running with `KEEL_SEED` reproduces the same shrunk case.
 - A transaction breaking a declared invariant fails `properties()` with E1704.
-- An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`.
-- Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706.
-- A `conformance-covered` section with a clause no conformance test cites makes `keel ledger --diff` report E1707 at that clause's line.
 - `navigate(routes.href(id))` on a `renderRoute` handle runs the target's guards and loaders and resolves with its chain rendered and every loader settled.
 - `resumeDocument` of an island document from `createApp` lets `fire` run the island's handlers; an island missing from `routes` is E1720.

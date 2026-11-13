@@ -27,6 +27,7 @@
     "std-live",
     "std-offline",
     "std-conflicts",
+    "std-statecharts",
     "std-temporal",
     "std-text",
     "std-messages",

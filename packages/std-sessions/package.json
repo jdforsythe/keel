@@ -55,6 +55,10 @@
     "./group": {
       "types": "./src/group/index.ts",
       "default": "./src/group/index.ts"
+    },
+    "./monitor": {
+      "types": "./src/monitor/index.ts",
+      "default": "./src/monitor/index.ts"
     }
   },
   "bin": {

@@ -37,7 +37,7 @@ Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }`
 import { formatter } from '@keel/cli'
 formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}`, pretty: (r) => table(r) })
 ```
-Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: it is the record encoded by its schema as one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `ledger`, `a11y`. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
+Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: it is the record encoded by its schema as one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
 **Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind or std command registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 

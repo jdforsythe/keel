@@ -33,6 +33,7 @@
   "devDependencies": {
     "@keel/cli": "workspace:*",
     "@keel/std-sessions": "workspace:*",
+    "@keel/std-statecharts": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "vite": "^8.3.6"

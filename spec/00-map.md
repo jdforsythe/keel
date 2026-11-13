@@ -12,14 +12,14 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component | E145x | k.errors |
 | E150x | k.router, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.compat, k.hosting |
-| E160x | k.ctx | E165x | k.services |
-| E170x | k.testing | E175x | k.check |
+| E160x | k.ctx, k.sim | E165x | k.services |
+| E170x | k.testing, k.model, k.ledger | E175x | k.check |
 | E18xx | k.ui | E19xx | k.forms |
-| E200x | std.sessions, std.multi | E210x | std.brands |
+| E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
 | E230x | std.i18n | E240x | std.messages |
 | E250x | std.jobs | E255x | std.schedules |
 | E260x | std.channels | E265x | std.offline |
-| E270x | std.conflicts | | |
+| E270x | std.conflicts | E275x | std.statecharts |
 
 ## Kernel
 | id | section | status | one line |
@@ -39,7 +39,10 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.check | Checker and diagnostics | conformance-covered | codes, fix diffs, budgets, rule registry |
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces, formatter registry |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
-| k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |
+| k.testing | Harness and properties | conformance-covered | given state, do events, expect; generated properties |
+| k.model | Exploring a store's transactions | proposed | every reachable state under the invariants; shortest counterexample |
+| k.sim | Schedules and simulation | proposed | delays, faults and offline windows on sim capabilities; simulate |
+| k.ledger | Ledger and evidence | proposed | rungs from tests, explore and production tallies; mutation claims |
 | k.server | Thin server | conformance-covered | loaders (live too), actions, dev server, adapters |
 | k.sync | Heads and concurrent writes | conformance-covered | store heads, write base and key, reject or rebase, save and net events |
 | k.topology | Deployables | implemented | placement, route table, runners, peers, `keel dev` |

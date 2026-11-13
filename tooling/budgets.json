@@ -101,12 +101,21 @@
       "max": "6kb",
       "platform": "node"
     },
+    "@keel/std-sessions/monitor": {
+      "max": "2kb",
+      "platform": "node"
+    },
     "@keel/std-sessions/routes": {
       "max": "3kb",
       "platform": "node"
     },
     "@keel/std-sessions/tools": {
       "max": "9.25kb",
+      "platform": "node"
+    },
+    "@keel/std-statecharts": "1.5kb",
+    "@keel/std-statecharts/tools": {
+      "max": "4kb",
       "platform": "node"
     },
     "@keel/std-temporal": "2.5kb",
