@@ -18,7 +18,7 @@ export function afterNavigate(root: ParentNode | null, url: string, kept?: Eleme
         : null;
   if (to instanceof HTMLElement) {
     if (kept === undefined && !to.hasAttribute("tabindex")) to.setAttribute("tabindex", "-1");
-    // Kernel focus, not user input: its focus/blur are not reported to ctx observers (rfc:0070).
+    // Kernel focus, not user input: its focus/blur are not reported to ctx observers.
     quiet(() => to.focus({ preventScroll: true }));
   }
   const { hash } = splitUrl(url);

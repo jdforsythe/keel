@@ -18,7 +18,7 @@ import { snapshotStores } from "./snapshotStores.ts";
  * `islands` (props by component id) and any `extra` entries; `devMessage` shows only in dev. The entry script
  * (`Served.entry`) loads only when an island was rendered; then `std` carries the
  * client-readable part (`clientStdData`: `clientStd` packages, the served deployable's modules) of the `std.json` data
- * `createApp({ std })` bound, which the resume entry binds in the browser (k.module, rfc:0069); absent when that part
+ * `createApp({ std })` bound, which the resume entry binds in the browser (k.module); absent when that part
  * is empty. HEAD has no body. Each document draws a fresh nonce (`nonceOf`) and carries the k.security policy with it
  * (report-only in dev) and `Reporting-Endpoints`; `cache-control: private, no-store`, since no cache may replay its nonce.
  */

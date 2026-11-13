@@ -1,6 +1,6 @@
 /**
  * `process.env.NODE_ENV` trimmed and lowercased, or undefined where `process`, its `env`, or a string value does not
- * exist. `createApp` treats anything but `development` and `test` (unset included) as a deployed production (RFC 0052).
+ * exist. `createApp` treats anything but `development` and `test` (unset included) as a deployed production.
  */
 export function nodeEnv(): string | undefined {
   const proc: unknown = Reflect.get(globalThis, "process");

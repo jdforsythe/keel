@@ -4,7 +4,7 @@ import type { Href } from "../types/Href.ts";
 import type { Verb } from "../types/Verb.ts";
 
 /**
- * What `Form` needs from the router rendering it (RFC 0045): whether the route `action` matches in the router's
+ * What `Form` needs from the router rendering it: whether the route `action` matches in the router's
  * table declares `method`, and `submit`, which gives `null` when the handle's validation stopped it.
  */
 export type RouterCore = {

@@ -5,9 +5,9 @@ import type { Handled } from "./Handled.ts";
 
 /**
  * The client code a document with islands loads, for a GET or HEAD (k.server Build). With a production client build
- * (`built`, RFC 0048), each of its files by decoded URL path (`/assets/*`; a malformed escape matches none), 200 with
+ * (`built`), each of its files by decoded URL path (`/assets/*`; a malformed escape matches none), 200 with
  * its content type, its weak `etag`, and `cache-control` `immutable` for a hashed name the manifest records, else
- * `no-cache`; an `if-none-match` naming the etag (or `*`) gets 304 without a body (RFC 0057). Else `/@keel/entry.ts`:
+ * `no-cache`; an `if-none-match` naming the etag (or `*`) gets 304 without a body. Else `/@keel/entry.ts`:
  * 200 JavaScript, the compiler's `resumeEntry` (of the deployable `?d=` names, if any), the text the Vite plugin
  * serves, which Vite resolves. Every
  * such response is `nosniff`. Null for any other request, which takes the request flow. A path is only a key into the

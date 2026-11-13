@@ -6,7 +6,7 @@ export interface RouteHarness<S> extends Harness {
   route(): S;
   /**
    * Navigate the harness's router to `href` (a push); resolves when the new route is rendered and its loaders have
-   * settled, the quiescence `fire` waits for, then runs the render checks (rfc:0070).
+   * settled, the quiescence `fire` waits for, then runs the render checks.
    */
   navigate(href: Href): Promise<void>;
 }

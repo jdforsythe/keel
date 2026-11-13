@@ -7,9 +7,9 @@ import type { Mode } from "./Mode.ts";
 import type { ReportWindow } from "./ReportWindow.ts";
 
 /**
- * A built deployable: its routes, `ctx`, mode, its manifest (guard redirects resolve in it, RFC 0041), the action body cap in bytes, the extra origins the dev
+ * A built deployable: its routes, `ctx`, mode, its manifest (guard redirects resolve in it), the action body cap in bytes, the extra origins the dev
  * inspect endpoint answers, `keys`, the caller-cookie keys (`callerSigner`), and
- * `secure`, `createApp({ secure })` (undefined: each request URL's scheme decides, RFC 0057). `built` is the production client build
+ * `secure`, `createApp({ secure })` (undefined: each request URL's scheme decides). `built` is the production client build
  * (`createApp({ assets })`, k.server Build), undefined in dev or without `assets`. `name` is the served deployable's name, the
  * document title's fallback (k.head). `origin` is the public origin (`createApp({ origin })`, k.topology Build).
  * `allow` is the set of allowed origins, serialized (`createApp({ allow })`, k.hosting).

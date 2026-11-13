@@ -5,7 +5,7 @@ import type { HarnessArtifacts } from "./HarnessArtifacts.ts";
 
 /**
  * Options of `renderRoute`: the route table, the target's params and search, seeded state, ctx, artifacts, and the
- * `caller` id guards, loaders and actions receive (default `""`, anonymous; rfc:0070).
+ * `caller` id guards, loaders and actions receive (default `""`, anonymous).
  */
 export interface RouteRenderOptions<M extends Readonly<Record<string, RouteDef>>> {
   readonly routes: Manifest<M>;

@@ -8,7 +8,7 @@ const marked = (encoded: unknown, value: unknown): boolean => {
   return Object.entries(encoded).some(([k, e]) => marked(e, Reflect.get(value, k)));
 };
 
-/** Whether `value`, valid under `schema`, holds an `s.secret` value (its encoding writes the marker there; rfc:0071). */
+/** Whether `value`, valid under `schema`, holds an `s.secret` value (its encoding writes the marker there). */
 export function holdsSecret(schema: Schema<unknown> | undefined, value: unknown): boolean {
   return schema !== undefined && marked(schema.encode(value), value);
 }

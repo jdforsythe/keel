@@ -144,7 +144,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
       return;
     }
     const w = typeof window === "undefined" ? null : window;
-    // Scroll is kept per history entry (RFC 0041): save the entry being left, then key the arriving one.
+    // Scroll is kept per history entry: save the entry being left, then key the arriving one.
     if (w !== null && entry !== null && mode !== "stay") scrolls.set(entry, w.scrollY);
     if (mode === "push") {
       entry = `k${++keys}`;
@@ -171,7 +171,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     else if (mode === "pop" && w !== null) w.scrollTo(0, scrolls.get(entry ?? "") ?? 0);
   };
 
-  // A denial's location carries `next` (never nested) and is E1508 when it revisits `visited` or is the ninth (rfc:0051).
+  // A denial's location carries `next` (never nested) and is E1508 when it revisits `visited` or is the ninth.
   const redirectTo = (
     id: string,
     url: string,
@@ -264,7 +264,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     });
   };
 
-  // A Form's `action` is an Href (RFC 0045): its route and params come from matching it in this router's table.
+  // A Form's `action` is an Href: its route and params come from matching it in this router's table.
   const actionAt = (href: Href, method: Verb) => {
     const m = matchUrl(table, href);
     const act = m.kind === "route" ? routeActions.get(m.route.def)?.[method] : undefined;

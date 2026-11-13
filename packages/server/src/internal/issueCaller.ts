@@ -2,7 +2,7 @@ import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 
 /**
- * `h` with the `set-cookie` of a freshly minted, signed caller token (k.server Server state, RFC 0057; `callerOf`
+ * `h` with the `set-cookie` of a freshly minted, signed caller token (k.server Server state; `callerOf`
  * builds it: `HttpOnly`, `SameSite=Lax`, `Path=/`, and over https `__Host-` and `Secure`). A caller that sent a valid
  * cookie gets none.
  */

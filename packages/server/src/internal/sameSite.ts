@@ -1,7 +1,7 @@
 import { httpsOf } from "./httpsOf.ts";
 
 /**
- * Whether a write (POST, PUT, PATCH, DELETE) may run (CSRF, RFC 0022): `Sec-Fetch-Site` is `same-origin` or `none`;
+ * Whether a write (POST, PUT, PATCH, DELETE) may run (CSRF): `Sec-Fetch-Site` is `same-origin` or `none`;
  * or `Origin` is the public origin (`createApp({ origin })`, else the request's own, as https when `x-forwarded-proto` says so); or it carries `accept: application/json` and `x-keel: 1` (a custom header
  * a cross-site page cannot send without a CORS preflight, which only an allowed origin's is granted); or `allowed`, its
  * `Origin` is an allowed origin and the route an API route (k.hosting); or it has neither `Origin` nor

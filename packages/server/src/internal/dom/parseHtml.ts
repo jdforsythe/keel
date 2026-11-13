@@ -50,7 +50,7 @@ export function parseHtml(doc: ServerDocument, html: string, into: ServerNode): 
       } else if (!VOID_TAGS.has(name) && !attrs.trimEnd().endsWith("/")) {
         const content: unknown = Reflect.get(el, "content");
         stack.push({ name, node: content instanceof ServerNode ? content : el });
-        // As in HTML, one newline right after `<textarea>`, `<pre>` or `<listing>` is not content (backlog 0179).
+        // As in HTML, one newline right after `<textarea>`, `<pre>` or `<listing>` is not content.
         const lf = /^(textarea|pre|listing)$/.test(name) && /^\r?\n/.exec(html.slice(last, last + 2));
         if (lf) TOKEN.lastIndex = last += lf[0].length;
       }

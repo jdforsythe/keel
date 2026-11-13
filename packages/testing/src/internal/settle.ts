@@ -33,7 +33,7 @@ const logSizes = (): string => [...stores()].map(([id, st]) => `${id}:${st.log()
 
 /**
  * Run `act`, then wait without timers until triggered work is quiescent: rounds of microtask hops; a round that
- * saw no change then waits until the microtask queue has drained (one macrotask turn, RFC 0036), so a silent
+ * saw no change then waits until the microtask queue has drained (one macrotask turn), so a silent
  * promise chain of any length finishes. Done after
  * two consecutive rounds with no DOM mutation under `root` (MutationObserver) and no change in any store's log
  * length, while `busy()` is null (it names a router navigation's route while one is in flight). A round while busy

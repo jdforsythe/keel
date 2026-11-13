@@ -24,7 +24,7 @@ function badField(v: unknown): string | null {
 }
 
 /**
- * Attach actions to routes of one compiled table (`routes.actions`, RFC 0063). Throws an Error with `code`: E1505 an
+ * Attach actions to routes of one compiled table (`routes.actions`). Throws an Error with `code`: E1505 an
  * id that is not a route with a `path` here, a key that is not POST/PUT/PATCH/DELETE, a value lacking a field of the `action(...)` shape (`undefined` hints an import cycle), a route that already has
  * actions, or one a router or server already compiled (`sealed`: attach in `routes.ts`, before `createApp`); E1507
  * an action declaring a `params` schema that is not the route's own value.

@@ -4,8 +4,7 @@ import { stateJson } from "./stateJson.ts";
 /**
  * The HTML document (k.runtime): `<!doctype html>` with `<html lang>` (k.head), `head` (`headHtml`) after the charset and viewport, the rendered
  * chain (wrapped in `<main>` unless it already has one), an optional dev panel, exactly one `<script type="application/json" id="k-state">`, and the
- * resume entry as `<script type="module" src nonce>` only when the page has islands (`entry` is its URL, else null;
- * rfc:0037: no islands, no runtime JS); `createApp` serves it (`servedEntry`, RFC 0046, 0048). `nonce` is the document's
+ * resume entry as `<script type="module" src nonce>` only when the page has islands (`entry` is its URL, else null: no islands, no runtime JS); `createApp` serves it (`servedEntry`). `nonce` is the document's
  * (k.security Policy): on the module script and on `<meta property="csp-nonce">`, which Vite's preload helper reads.
  */
 export function documentHtml(

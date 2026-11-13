@@ -6,7 +6,7 @@ import { httpsOf } from "./httpsOf.ts";
 import { isVerb } from "./isVerb.ts";
 
 /**
- * The caller of `raw` (k.server Server state, RFC 0057, 0060). Over https the cookie is `__Host-keel-caller` and
+ * The caller of `raw` (k.server Server state). Over https the cookie is `__Host-keel-caller` and
  * `Secure`, which a sibling host cannot set; else `keel-caller`. https is `httpsOf`; a client that spoofs
  * `x-forwarded-proto` over http only gets a `Secure` cookie its browser will not keep. Only a value of that
  * name that `keys` signed counts; any other is ignored, and the request is then cookieless: a write mints a token with

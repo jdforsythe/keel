@@ -11,7 +11,7 @@ const control = (v: string): boolean => {
 };
 
 /**
- * Whether a decoded `next` may be carried forward by a guard redirect (rfc:0051, amended for backlog 0145 and 0146):
+ * Whether a decoded `next` may be carried forward by a guard redirect:
  * at most `MAX_NEXT_LENGTH` long, no ASCII control character (URL parsers strip tab and newline, so `/<TAB>/host`
  * is another origin), resolving against a base to that same origin, and a path that starts with `/` but not `//`
  * or `/\`. Anything else is dropped, never carried.

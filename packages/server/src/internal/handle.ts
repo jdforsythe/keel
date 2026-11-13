@@ -27,11 +27,11 @@ import { statusOf } from "./statusOf.ts";
 
 /**
  * One request (k.server Request flow): a write (POST, PUT, PATCH, DELETE) that is not same-site gets 403
- * `keel.denied` before anything runs (CSRF, RFC 0022, `sameSite`); a GET or HEAD of `/@keel/entry.ts` gets the resume
- * entry, or a production client build's file (`servedEntry`, RFC 0046, 0048); then match the path (no pattern: 404; trailing
+ * `keel.denied` before anything runs (CSRF, `sameSite`); a GET or HEAD of `/@keel/entry.ts` gets the resume
+ * entry, or a production client build's file (`servedEntry`); then match the path (no pattern: 404; trailing
  * slash or a prefix param's default segment: 308 to the canonical path), parse params (fail: 404 at the nearest errorElement, no guard or loader runs) and search
  * (failing keys dropped), run guards outermost first (deny: 302, or 303 for a write, to the redirect route
- * with `next`; a redirect loop or a ninth hop is E1508, rfc:0051), then GET/HEAD render the page and the action verbs run the action (a fresh caller token is set as a
+ * with `next`; a redirect loop or a ninth hop is E1508), then GET/HEAD render the page and the action verbs run the action (a fresh caller token is set as a
  * cookie on its response, `issueCaller`); other methods get 405 (`allowOf`). A GET with `accept: text/event-stream` gets 406 unless
  * the route's loader is live, then 403 `keel.denied` for a guard redirect, else its event stream (`liveStream`).
  * An API route (k.api) is a runtime request whatever `accept` says: JSON only, a guard denial is 403 `keel.denied`

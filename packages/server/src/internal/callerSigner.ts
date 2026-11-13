@@ -3,9 +3,9 @@ import type { CallerKeys } from "./CallerKeys.ts";
 const TOKEN = /^[A-Za-z0-9-]{16,64}$/;
 
 /**
- * The caller-cookie keys under `secret` (`createApp({ secret })`, RFC 0057), else under 32 random bytes drawn here, so
+ * The caller-cookie keys under `secret` (`createApp({ secret })`), else under 32 random bytes drawn here, so
  * a restart, or another instance without the same secret, re-mints callers. Node's `crypto` is imported lazily like
- * `fs`, once, so signing, checking and hashing per request are synchronous (RFC 0054 proposal 4). A value is valid when
+ * `fs`, once, so signing, checking and hashing per request are synchronous. A value is valid when
  * it is `token.mac` with a well-formed token and the token's HMAC, compared in constant time.
  */
 export async function callerSigner(secret?: string): Promise<CallerKeys> {

@@ -1,8 +1,8 @@
 const MARKER = "[secret]";
 
 /**
- * `encoded` (a schema's `encode` output) with each `"[secret]"` marker that stands for a `Secret` in `value` put back
- * (rfc:0071): the encoding prunes undeclared keys and copies every container, while a `Secret` is frozen and opaque,
+ * `encoded` (a schema's `encode` output) with each `"[secret]"` marker that stands for a `Secret` in `value` put back.
+ * The encoding prunes undeclared keys and copies every container, while a `Secret` is frozen and opaque,
  * so sharing it is safe. A string field whose value is the marker text stays a string.
  */
 export function graft(encoded: unknown, value: unknown): unknown {

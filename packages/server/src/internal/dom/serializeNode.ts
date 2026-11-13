@@ -50,7 +50,7 @@ const outer = (node: ServerNode, foreign: boolean): string => {
   if (node instanceof ServerElement) {
     if (VOID_TAGS.has(node.localName)) return openTag(node);
     const html = inner(node, foreign);
-    // The parser drops one newline after these start tags (backlog 0179): a leading one is written twice.
+    // The parser drops one newline after these start tags: a leading one is written twice.
     const lf = !foreign && LEADING_LF.has(node.localName) && /^[\r\n]/.test(html) ? "\n" : "";
     return `${openTag(node)}${lf}${html}</${node.localName}>`;
   }
@@ -66,7 +66,7 @@ const inner = (el: ServerElement, outside: boolean): string => {
       .map((c) => outer(c, foreign))
       .join("");
   // A parser never puts a comment here (HTML) and it means nothing in foreign content, while its data could end
-  // the element when a browser reads the element as HTML (backlog 0140): comments inside are dropped.
+  // the element when a browser reads the element as HTML: comments inside are dropped.
   const kids = el.contentNodes().filter((c) => !(c instanceof ServerComment));
   // Adjacent text children are joined before `rawText`, so `<` + `/script>` cannot meet unescaped.
   const html =

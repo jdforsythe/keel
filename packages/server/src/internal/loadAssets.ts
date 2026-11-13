@@ -15,7 +15,7 @@ const TYPES: Readonly<Record<string, string>> = {
 };
 
 /**
- * A content hash before the extension (RFC 0057, backlog 0161): Vite's `[hash]`, 8 base64url characters that are not
+ * A content hash before the extension: Vite's `[hash]`, 8 base64url characters that are not
  * all lowercase letters (so `island-checkout.js` is a name, not a hash), or a hex run of 8 or more.
  */
 const HASHED = /-((?![a-z]{8}\.)[\w-]{8}|[a-f0-9]{8,})\.\w+$/;

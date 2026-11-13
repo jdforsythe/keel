@@ -115,7 +115,7 @@ export class ServerNode {
 
   /**
    * Every node is an event target, as in the DOM; the server never fires events, so listeners are dropped. The
-   * runtime registers listeners on `document` at import and on elements at render (backlog 0128).
+   * runtime registers listeners on `document` at import and on elements at render.
    */
   addEventListener(_type: string, _listener: unknown, _options?: unknown): void {}
 

@@ -77,11 +77,11 @@ async function nextHop(
  * Run every guard of `chain`, outermost first, before any loader (k.router Guards). `keel.denied` redirects
  * to the guard's `redirect` route with search `next` (the request path and query, or that URL's own `next` when it
  * is a guard's redirect route: never nested, `guardNext`); any other `err`, a throw fails at that level. A route's
- * `guard` is the guard value (RFC 0041); its `redirect` resolves in the deployable's manifest `routes`.
+ * `guard` is the guard value; its `redirect` resolves in the deployable's manifest `routes`.
  * Before answering a redirect, the target's guards run here, hop by hop (the browser would follow): a location
- * visited twice or a ninth redirect is E1508 (rfc:0051), a `keel.unexpected` failure at the denying level with a diag.
+ * visited twice or a ninth redirect is E1508, a `keel.unexpected` failure at the denying level with a diag.
  * On an API route a denial is a `redirect` with location `""`, resolved nowhere (k.api).
- * Every guard gets the request's `caller` id (`""` anonymous; rfc:0070).
+ * Every guard gets the request's `caller` id (`""` anonymous).
  */
 export async function runGuards(
   chain: readonly Level[],

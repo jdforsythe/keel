@@ -20,8 +20,8 @@ const defaultError = (e: KeelError<string, unknown>): string =>
  * components can interpolate it). A failure renders its level's `errorElement` (layouts above intact unless
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
  * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a bound
- * (`data-k`) element outside nested levels' islands, however it was built (template or base element, rfc:0067), is an island: it gets
- * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup, rfc:0037).
+ * (`data-k`) element outside nested levels' islands, however it was built (template or base element), is an island: it gets
+ * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup).
  */
 export function renderChain(input: ChainInput): Rendered {
   const { chain, failure, ctx } = input;
@@ -32,7 +32,7 @@ export function renderChain(input: ChainInput): Rendered {
     const el = chain[i]?.def;
     const shown = input.publicize(error);
     const make = el?.errorElement;
-    // A render unit, as for components: a compiled errorElement's bindings need a mount context (backlog 0156).
+    // A render unit, as for components: a compiled errorElement's bindings need a mount context.
     return make === undefined ? defaultError(shown) : toHtml(renderUnit(() => make({ error: shown })));
   };
 
