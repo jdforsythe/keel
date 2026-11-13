@@ -67,7 +67,7 @@ afterAll(() => {
 });
 
 describe("k.evidence: no personal values in the bundle", () => {
-  test.skip(
+  test(
     "No bundle file of a fixture whose stores and tests hold generated `.pii()` values contains any of them",
     () => {
       expect(cases).toHaveLength(100);
@@ -83,7 +83,7 @@ describe("k.evidence: no personal values in the bundle", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "the bundle is not empty of the cases: `pii.json` names each generated schema export",
     () => {
       const pii = bundle.get("pii.json")?.toString("utf8") ?? "";

@@ -1,3 +1,4 @@
+import { EvidenceRecord } from "../evidence/EvidenceRecord.ts";
 import { A11ySchema } from "./A11ySchema.ts";
 import { CiteSchema } from "./CiteSchema.ts";
 import { DiagSchema } from "./DiagSchema.ts";
@@ -27,7 +28,8 @@ const VALUE_MAX = 120;
 const clip = (s: string): string => (s.length > VALUE_MAX ? `${s.slice(0, VALUE_MAX - 3)}...` : s);
 
 /**
- * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, a11y, and k.ledger's ledger and ledger.mutation.
+ * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, a11y, evidence, and k.ledger's ledger and
+ * ledger.mutation.
  * The cli's own record kinds (spec.section, spec.cite, explain.text, scaffold.edit, inspect.store, inspect.section) go through the same extension point.
  */
 export const kernelFormatters: readonly (readonly [string, Entry])[] = [
@@ -66,6 +68,14 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
       schema: LedgerMutationSchema,
       compact: (r) => `${r.file} ${r.score.toFixed(1)}% ${r.survived} survived${r.fresh ? "" : " stale"}`,
       pretty: (r) => `${r.file}: ${r.score.toFixed(1)}% (${r.survived} survived)${r.fresh ? "" : ", stale"}`,
+    }),
+  ],
+  [
+    "evidence",
+    entryOf({
+      schema: EvidenceRecord,
+      compact: (r) => `ok evidence ${r.dir} ${r.files} files key ${r.keyId}`,
+      pretty: (r) => `evidence ${r.dir}: verified, ${r.files} files signed ${r.at} by key ${r.keyId}`,
     }),
   ],
   [

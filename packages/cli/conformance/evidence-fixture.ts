@@ -126,7 +126,7 @@ it("holds for one value", () => {
 const manifestSrc = (id: string): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
 const routesSrc = (id: string, path: string): string =>
-  `import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
+  `import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nconst Page = () => Text({ id: '${id}.page.text', children: '${id}' })\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
 
 export type FixtureOptions = {
   /** A test that fails (one failed test in `runs`). */

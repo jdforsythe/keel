@@ -13,8 +13,8 @@
       "default": "./src/testing/respond.ts"
     },
     "./evidence": {
-      "types": "./src/evidence.ts",
-      "default": "./src/evidence.ts"
+      "types": "./src/evidence/index.ts",
+      "default": "./src/evidence/index.ts"
     }
   },
   "bin": {

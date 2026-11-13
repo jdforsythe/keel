@@ -3,9 +3,12 @@ import { type Evidence, type LedgerRecord, ledger, ledgerDiff } from "@keel/test
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
+import type { A11yClaim } from "./A11yClaim.ts";
+import type { A11yCriteriaMap } from "./A11yCriteriaMap.ts";
 import { LedgerFileSchema } from "./LedgerFileSchema.ts";
 import type { LedgerItem } from "./LedgerItem.ts";
 import type { Outcome } from "./Outcome.ts";
+import { a11yClaims } from "./a11yClaims.ts";
 import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
 import { makeDiag } from "./makeDiag.ts";
@@ -49,6 +52,7 @@ const describe = (item: LedgerItem | undefined): string => {
 
 /** The file an item lives in: the source file, `apps/<app>/modules/<path>`, or the spec section. */
 const itemPath = (item: string): string => {
+  if (item.startsWith("a11y:")) return "reports/a11y.json";
   const file = item.slice(0, item.lastIndexOf("#"));
   if (file.startsWith("packages/")) return file;
   const at = file.indexOf(":");
@@ -69,13 +73,17 @@ const rungCounts = (items: readonly LedgerItem[]): Record<string, number> => {
   return out;
 };
 
-/** The ledger file: unsafe count, rungs, mutation, exports (`{ pkg, name, file, rung }`), clauses (`{ item, rung }`). */
+/**
+ * The ledger file: unsafe count, rungs, mutation, exports (`{ pkg, name, file, rung }`), clauses (`{ item, rung }`) and
+ * the a11y claims (`{ item, rung }`).
+ */
 const ledgerFile = (
   records: readonly LedgerRecord[],
   byItem: ReadonlyMap<string, LedgerItem>,
   unsafe: number,
   rungs: Readonly<Record<string, number>>,
   mutation: Mutation,
+  a11y: readonly A11yClaim[],
 ): string => {
   const exports: { pkg: string; name: string; file: string; rung: string }[] = [];
   const clauses: { item: string; rung: string }[] = [];
@@ -86,12 +94,14 @@ const ledgerFile = (
     else exports.push({ pkg, name: r.item.slice(at + 1), file: r.item.slice(0, at), rung: r.rung });
   }
   const mut = mutation.claims.length > 0 || Object.keys(mutation.packages).length > 0 ? { mutation } : {};
-  return `${JSON.stringify({ version: 1, unsafe, rungs, ...mut, exports, clauses }, null, 2)}\n`;
+  const claims = a11y.map((c) => ({ item: c.item, rung: c.rung }));
+  return `${JSON.stringify({ version: 1, unsafe, rungs, ...mut, exports, clauses, a11y: claims }, null, 2)}\n`;
 };
 
 /**
  * `keel ledger` (k.ledger), the one ledger implementation: one `ledger` record per export and per spec clause, rung by
- * `@keel/testing` `ledger`, and one `ledger.mutation` record per mutation claim (`mutationClaims`), after any W1706
+ * `@keel/testing` `ledger`, one per route and WCAG criterion (`a11yClaims` over `a11yMap`, k.a11y Claims), and one
+ * `ledger.mutation` record per mutation claim (`mutationClaims`), after any W1706
  * header notes, E1711 and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
  * records there instead (with `rungs` and `mutation`, the reports on disk merged into the file's claims; stdout keeps
  * the notes and the trailer); `--diff` compares with it (default `.keel/ledger.json`, else
@@ -102,13 +112,15 @@ const ledgerFile = (
  * is then the matching apps' (`golden-1:`), compared with zero. The summary counts the items on each rung and the
  * stale claims, each when above 0.
  */
-export function ledgerCommand(input: Input, io: Io): Outcome {
+export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = new Map()): Outcome {
   const files = projectFiles(io);
   const built = buildLedger(files);
+  const a11y = a11yClaims(files, a11yMap);
   const byItem = new Map(built.items.map((i) => [i.item, i]));
   const all = ledger(built.items.map((i) => ({ item: i.item, evidence: i.evidence.map((e) => e.ev) })));
   const scope = input.scope ?? "";
   const records = all.filter((r) => r.item.startsWith(scope));
+  const claims = a11y.filter((c) => c.item.startsWith(scope));
   const apps = Object.keys(built.appUnsafe).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`));
   const unsafe = scope === "" ? built.unsafe : apps.reduce((n, a) => n + (built.appUnsafe[a] ?? 0), 0);
   const name = input.write ?? COMMITTED.find((p) => files.some((f) => f.path === p));
@@ -127,11 +139,15 @@ export function ledgerCommand(input: Input, io: Io): Outcome {
       }),
     );
   const notes = scope === "" ? [...built.diags, ...stale] : [];
-  const rungs = rungCounts(built.items);
-  const shown = scope === "" ? rungs : rungCounts(built.items.filter((i) => i.item.startsWith(scope)));
+  const held = (cs: readonly A11yClaim[], r: Record<string, number>): Record<string, number> => {
+    const n = cs.filter((c) => c.rung === "example").length;
+    return n === 0 ? r : { ...r, example: (r.example ?? 0) + n };
+  };
+  const rungs = held(a11y, rungCounts(built.items));
+  const shown = scope === "" ? rungs : held(claims, rungCounts(built.items.filter((i) => i.item.startsWith(scope))));
   const counts = {
-    items: records.length,
-    verified: records.filter((r) => r.rung !== "none").length,
+    items: records.length + claims.length,
+    verified: records.filter((r) => r.rung !== "none").length + claims.filter((c) => c.rung !== "none").length,
     unsafe,
     warnings: notes.length,
     // Rung and stale counts only when above 0, so a trailer stays one short line.
@@ -145,6 +161,7 @@ export function ledgerCommand(input: Input, io: Io): Outcome {
         rung: r.rung,
         evidence: r.evidence === "none" ? "none" : describe(byItem.get(r.item)),
       })),
+      ...claims.map((c) => ({ kind: "ledger", item: c.item, rung: c.rung, evidence: c.evidence })),
       ...mutation.claims
         .filter((c) => c.file.startsWith(scope))
         .map((c) => ({
@@ -155,7 +172,7 @@ export function ledgerCommand(input: Input, io: Io): Outcome {
           fresh: fresh.has(c.file),
         })),
     ];
-    const content = ledgerFile(all, byItem, built.unsafe, rungs, mutation);
+    const content = ledgerFile(all, byItem, built.unsafe, rungs, mutation, a11y);
     return {
       records: [...notes, ...(input.write === undefined ? out : []), summary("ledger", notes, counts)],
       writes: input.write === undefined ? [] : [{ path: input.write, content, readonly: false }],
@@ -164,8 +181,9 @@ export function ledgerCommand(input: Input, io: Io): Outcome {
   const before = [
     ...(committed?.exports ?? []).map((e) => ({ item: `${e.file}#${e.name}`, rung: e.rung })),
     ...(committed?.clauses ?? []),
+    ...(committed?.a11y ?? []),
   ].filter((r) => r.item.startsWith(scope));
-  const diags = ledgerDiff(before, records).map((d) =>
+  const diags = ledgerDiff(before, [...records, ...claims]).map((d) =>
     makeDiag(d.code, d.message, { path: itemPath(d.item), line: 1, col: 1, see: d.see }),
   );
   const allowed = scope === "" ? committed?.unsafe : 0;

@@ -30,7 +30,7 @@ const runsOf = (out: string): unknown => {
 };
 
 describe("k.evidence: failing runs", () => {
-  test.skip(
+  test(
     "A fixture with a failing test still gets a verifying bundle whose `runs` counts it",
     () => {
       const dir = project(fixtureTree({ failingTest: true }));
@@ -47,7 +47,7 @@ describe("k.evidence: failing runs", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "the command exits 1 with E1060 for a failing test",
     () => {
       const dir = project(fixtureTree({ failingTest: true }));
@@ -59,7 +59,7 @@ describe("k.evidence: failing runs", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "E1060 the bundle records a check error: a fixture with one check error is written, counted, and exits 1",
     () => {
       const dir = project(fixtureTree({ checkError: true }));
@@ -73,7 +73,7 @@ describe("k.evidence: failing runs", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "a clean fixture counts nothing in `runs` and raises no E1060",
     () => {
       const dir = project(fixtureTree());

@@ -39,7 +39,7 @@ const advisoriesOf = (out: string): unknown => {
 };
 
 describe("k.evidence: --audit and deps.json advisories", () => {
-  test.skip(
+  test(
     "An `--audit` file that is not `pnpm audit --json` output is E1064",
     () => {
       const cases: [string, string][] = [
@@ -59,7 +59,7 @@ describe("k.evidence: --audit and deps.json advisories", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "E1064 an `--audit` path that does not exist is not `pnpm audit --json` output",
     () => {
       const { run, base } = writeBundle(dir, TEST_KEY_PEM, ["--audit", join(inputs, "missing.json")]);
@@ -70,7 +70,7 @@ describe("k.evidence: --audit and deps.json advisories", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "a hand-written `pnpm audit --json` file is accepted and its advisory reaches `deps.json`",
     () => {
       const file = join(inputs, "audit.json");
@@ -86,7 +86,7 @@ describe("k.evidence: --audit and deps.json advisories", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "without `--audit`, `deps.json` has `advisories: null`",
     () => {
       const { out, base } = writeBundle(dir, TEST_KEY_PEM);

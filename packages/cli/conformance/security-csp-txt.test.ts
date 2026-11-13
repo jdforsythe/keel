@@ -65,7 +65,7 @@ afterAll(() => {
 });
 
 describe("k.security: csp.txt of a client deployable", () => {
-  test.skip(
+  test(
     "`keel build` of a fixture with a `client` deployable writes its `csp.txt` with `script-src 'self'`",
     () => {
       expect(build(plain, {})).toBe(0);
@@ -77,7 +77,7 @@ describe("k.security: csp.txt of a client deployable", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "`csp.txt` is the document policy with no nonce, no `strict-dynamic` nonce source and no report directives",
     () => {
       expect(build(plain, {})).toBe(0);
@@ -101,7 +101,7 @@ describe("k.security: csp.txt of a client deployable", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "`connect-src` of `csp.txt` adds each `keel-peer` origin",
     () => {
       expect(build(withPeer, { KEEL_PEER_API: "https://api.test" })).toBe(0);

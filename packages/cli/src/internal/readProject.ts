@@ -21,10 +21,13 @@ const QUERY = (rel: string): boolean =>
 /** Stryker reports, read by `ledger` only: the walk enters `reports` only on the path to them. */
 const MUTATION_REPORT = /^packages\/[^/]+\/reports\/mutation\/mutation\.json$/;
 const TO_REPORT = /^packages\/[^/]+\/reports(?:\/mutation)?$/;
+/** A project's render checks (k.a11y Claims), read by `ledger` only; the walk enters any `reports` directory for it. */
+const A11Y_REPORT = /(?:^|\/)reports\/a11y\.json$/;
+const TO_A11Y = /(?:^|\/)reports$/;
 
 /**
  * Binary only: read the project under `cwd` into engine files. `query` (check, spec, test): code, spec
- * markdown, `.keel` artifacts and generated deploy files of every project under `cwd`, and the ledger. `ledger`: `query` plus `packages/<pkg>/reports/mutation/mutation.json`.
+ * markdown, `.keel` artifacts and generated deploy files of every project under `cwd`, and the ledger. `ledger`: `query` plus `packages/<pkg>/reports/mutation/mutation.json` and each project's `reports/a11y.json`.
  * `tree` (scaffold, codemod, build): every text file under 1 MB,
  * since structural operations read manifests, `package.json`, `turbo.json` and CI files too.
  */
@@ -33,13 +36,13 @@ export function readProject(cwd: string, scope: "query" | "ledger" | "tree"): { 
   const want = (rel: string, abs: string): boolean =>
     scope === "tree"
       ? TEXT.test(rel) && statSync(abs).size <= MAX_BYTES
-      : QUERY(rel) || (scope === "ledger" && MUTATION_REPORT.test(rel));
+      : QUERY(rel) || (scope === "ledger" && (MUTATION_REPORT.test(rel) || A11Y_REPORT.test(rel)));
   const walk = (dir: string, rel: string): void => {
     for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
       const r = rel === "" ? e.name : `${rel}/${e.name}`;
       const abs = join(dir, e.name);
       if (e.isDirectory()) {
-        if (!SKIP.has(e.name) || (scope === "ledger" && TO_REPORT.test(r))) walk(abs, r);
+        if (!SKIP.has(e.name) || (scope === "ledger" && (TO_REPORT.test(r) || TO_A11Y.test(r)))) walk(abs, r);
       } else if (e.isFile() && want(r, abs)) out.push({ path: r, source: readFileSync(abs, "utf8") });
     }
   };

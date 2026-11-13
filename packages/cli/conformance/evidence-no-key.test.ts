@@ -42,7 +42,7 @@ const attempt = (name: string, env: Record<string, string>) => {
 };
 
 describe("k.evidence: E1061 without a usable key", () => {
-  test.skip(
+  test(
     "Without `KEEL_EVIDENCE_KEY`, the command writes nothing and reports E1061",
     () => {
       const { run, out, before, after } = attempt("absent", {});
@@ -54,7 +54,7 @@ describe("k.evidence: E1061 without a usable key", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "With an RSA key, the command writes nothing and reports E1061",
     () => {
       const { run, out, before, after } = attempt("rsa", { KEEL_EVIDENCE_KEY: newKeyPem("rsa") });
@@ -66,7 +66,7 @@ describe("k.evidence: E1061 without a usable key", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "E1061 a value that is not a PEM private key at all writes nothing and reports E1061",
     () => {
       const { run, out } = attempt("garbage", { KEEL_EVIDENCE_KEY: "not a key" });

@@ -16,8 +16,16 @@ function bounds(node: { readonly min?: number; readonly max?: number }, safe: bo
   };
 }
 
-/** Derive the JSON Schema of a k.schema node (used for MCP tool input and output schemas). */
+/**
+ * Derive the JSON Schema of a k.schema node (used for MCP tool input and output schemas). A node marked `.pii(class)`
+ * carries `"x-keel-pii": class` (k.privacy).
+ */
 export function toJsonSchema(node: SchemaNode): JsonSchema {
+  const derived = derive(node);
+  return node.pii === undefined ? derived : { ...derived, "x-keel-pii": node.pii };
+}
+
+function derive(node: SchemaNode): JsonSchema {
   switch (node.kind) {
     case "secret":
       return toJsonSchema(node.inner);

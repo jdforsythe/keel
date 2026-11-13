@@ -48,7 +48,7 @@ afterAll(() => {
 });
 
 describe("k.evidence: security.json", () => {
-  test.skip(
+  test(
     "`security.json` holds the k.security policy with `<nonce>` for each `node` deployable",
     () => {
       expect(text).toContain("web");
@@ -67,7 +67,7 @@ describe("k.evidence: security.json", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "`security.json` holds the six response headers k.security sends for each `node` deployable",
     () => {
       for (const header of [
@@ -83,7 +83,7 @@ describe("k.evidence: security.json", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "`security.json` holds the `csp.txt` text for each `client` deployable",
     () => {
       const built = keelEvidence(dir, ["build"]);

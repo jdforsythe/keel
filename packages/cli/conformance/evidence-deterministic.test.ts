@@ -26,7 +26,7 @@ afterAll(() => {
 });
 
 describe("k.evidence: deterministic bundles", () => {
-  test.skip(
+  test(
     "Under one sim seed and clock, two runs on an unchanged project write byte-equal bundles",
     () => {
       const first = writeBundle(dir, TEST_KEY_PEM);

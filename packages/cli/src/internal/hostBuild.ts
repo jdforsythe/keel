@@ -6,11 +6,13 @@ import { stepNotes } from "./stepNotes.ts";
 import { surfaceRun } from "./surfaceRun.ts";
 import { viteRun } from "./viteRun.ts";
 import { viteTargets } from "./viteTargets.ts";
+import { writeCspFiles } from "./writeCspFiles.ts";
 
 /**
  * Binary only: the disk half of `keel build` (`Io.build`), after the engine's writes: `routes.json` when every
  * deployable is `node` (`routesRun`), then `surface.json` (`surfaceRun`, k.compat), then one `vite build` per
- * `viteTargets` (k.server Build, k.hosting), stopping at the first that fails. Keel-coded lines become diagnostics;
+ * `viteTargets` (k.server Build, k.hosting), stopping at the first that fails, then each `client` and `static`
+ * deployable's `csp.txt` (`writeCspFiles`, k.security). Keel-coded lines become diagnostics;
  * `stderr` is a failed step's text (a Vite build's tail). `code` is the largest step code. Keel-coded lines become
  * diagnostics (`stepNotes`); those of `routesRun` and the Vite builds are advisory: printed to stderr (W1005, E1006 for a `routes.ts`
  * that throws) and the exit code left alone, as the plugin's warning does.
@@ -37,6 +39,7 @@ export async function hostBuild(cwd: string): Promise<{ code: number; diagnostic
         break;
       }
     }
+    if (code === 0) advisory.push(...(await writeCspFiles(cwd, topology, process.env)));
   }
   const diagnostics: Diag[] = [];
   for (const [notes, soft] of [

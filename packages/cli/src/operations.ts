@@ -1,4 +1,5 @@
 import { s } from "@keel/schema";
+import { EvidenceRecord } from "./evidence/EvidenceRecord.ts";
 import { A11ySchema } from "./internal/A11ySchema.ts";
 import { CiteSchema } from "./internal/CiteSchema.ts";
 import { EditSchema } from "./internal/EditSchema.ts";
@@ -130,6 +131,20 @@ export const operations: readonly Operation[] = [
       ...diagnostic,
     }),
     output: outputOf(LedgerSchema),
+    positional: [],
+    scope: "ledger",
+  },
+  {
+    name: "evidence",
+    description: "Write a signed evidence bundle, or --verify one.",
+    input: s.object({
+      out: s.string().optional(),
+      audit: s.string().optional(),
+      verify: s.string().optional(),
+      key: s.string().optional(),
+      ...common,
+    }),
+    output: outputOf(EvidenceRecord),
     positional: [],
     scope: "ledger",
   },

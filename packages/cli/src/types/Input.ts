@@ -38,4 +38,7 @@ export type Input = {
   readonly base?: string;
   readonly port?: number;
   readonly out?: string;
+  readonly audit?: string;
+  readonly verify?: string;
+  readonly key?: string;
 };

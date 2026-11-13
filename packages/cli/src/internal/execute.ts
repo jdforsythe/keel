@@ -2,17 +2,24 @@ import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { Operation } from "../types/Operation.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
+import type { A11yCriteriaMap } from "./A11yCriteriaMap.ts";
 import type { Outcome } from "./Outcome.ts";
+import { a11yRuleMap } from "./a11yRuleMap.ts";
 import { buildCommand } from "./buildCommand.ts";
 import { checkCommand } from "./checkCommand.ts";
 import { explainCommand } from "./explainCommand.ts";
 import { inspectCommand } from "./inspectCommand.ts";
 import { ledgerCommand } from "./ledgerCommand.ts";
+import { projectFiles } from "./projectFiles.ts";
 import { scaffoldCommand } from "./scaffoldCommand.ts";
 import { specCommand } from "./specCommand.ts";
 import { stdSlot } from "./stdSlot.ts";
 import { testCommand } from "./testCommand.ts";
 import { unavailable } from "./unavailable.ts";
+
+/** The a11y rule map, read only when a project has `.keel/routes.json` (k.a11y Claims items exist only then). */
+const ledgerRules = async (io: Io): Promise<A11yCriteriaMap> =>
+  projectFiles(io).some((f) => /(?:^|\/)\.keel\/routes\.json$/.test(f.path)) ? a11yRuleMap() : new Map();
 
 const only = (records: readonly OutRecord[]): Outcome => ({
   records,
@@ -33,7 +40,12 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     case "explain":
       return only(explainCommand(input));
     case "ledger":
-      return ledgerCommand(input, io);
+      return ledgerCommand(input, io, await ledgerRules(io));
+    case "evidence": {
+      // Behind its own entry, loaded only when the command runs (`@keel/cli` size budget).
+      const { evidenceCommand } = await import("@keel/cli/evidence");
+      return evidenceCommand(input, io);
+    }
     case "scaffold":
     case "codemod":
       return scaffoldCommand(op.name, input, io);

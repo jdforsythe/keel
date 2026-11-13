@@ -45,7 +45,7 @@ const coverageOf = (pii: unknown): unknown =>
   typeof pii === "object" && pii !== null && "coverage" in pii ? pii.coverage : undefined;
 
 describe("k.evidence: pii.json paths and coverage", () => {
-  test.skip(
+  test(
     "`pii.json` lists every `.pii()` path of the fixture's schema exports with its class",
     () => {
       const dir = project(fixtureTree({ extra: { "modules/a/Account.schema.ts": ACCOUNT } }));
@@ -67,7 +67,7 @@ describe("k.evidence: pii.json paths and coverage", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "`coverage` is 1 when every sink clause is `probabilistic` or higher",
     () => {
       const dir = project(fixtureTree());
@@ -78,7 +78,7 @@ describe("k.evidence: pii.json paths and coverage", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "`coverage` drops when one sink clause is lower than `probabilistic`",
     () => {
       for (const lowered of SINK_CLAUSES) {
@@ -95,7 +95,7 @@ describe("k.evidence: pii.json paths and coverage", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "`pii.json` names each sink's clause: `std.sessions#2`, `k.privacy#7`, `k.privacy#6`, `k.evidence#5`",
     () => {
       const dir = project(fixtureTree());

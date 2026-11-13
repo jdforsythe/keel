@@ -49,7 +49,7 @@ const names = (run: ReturnType<typeof verify>, code: string, file: string): bool
   diagsOf(run, code).some((d) => JSON.stringify(d).includes(file));
 
 describe("k.evidence: tampering and signatures", () => {
-  test.skip(
+  test(
     "the untouched bundle verifies, so each failure below comes from the change made",
     () => {
       expect(verify(work).status).toBe(0);
@@ -57,7 +57,7 @@ describe("k.evidence: tampering and signatures", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "Changing a byte of any listed bundle file makes `--verify` report E1062 naming it",
     async () => {
       await fc.assert(
@@ -87,7 +87,7 @@ describe("k.evidence: tampering and signatures", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "Changing a byte of `manifest.json` or `manifest.sig` makes `--verify` fail with E1062 or E1063",
     () => {
       for (const file of ["manifest.json", "manifest.sig"]) {
@@ -108,7 +108,7 @@ describe("k.evidence: tampering and signatures", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "adding a file makes `--verify` report E1062 naming it",
     () => {
       const extra = join(work, "extra.txt");
@@ -124,7 +124,7 @@ describe("k.evidence: tampering and signatures", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "removing a listed file makes `--verify` report E1062 naming it",
     async () => {
       await fc.assert(
@@ -146,7 +146,7 @@ describe("k.evidence: tampering and signatures", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "a manifest signed by another key is E1063",
     () => {
       const sigPath = join(work, "manifest.sig");
@@ -165,7 +165,7 @@ describe("k.evidence: tampering and signatures", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "a `--key` naming another keyId is E1063, and the bundle's own keyId passes",
     () => {
       const own = keyOf(TEST_KEY_PEM).keyId;

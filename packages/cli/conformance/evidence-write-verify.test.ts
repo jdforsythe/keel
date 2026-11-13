@@ -41,7 +41,7 @@ afterAll(() => {
 const verify = (args: readonly string[] = []) => keelEvidence(dir, ["evidence", "--verify", out, ...args], {}, "json");
 
 describe("k.evidence: write and verify", () => {
-  test.skip(
+  test(
     "On a fixture project with `KEEL_EVIDENCE_KEY` set, `keel evidence` writes exactly the eight files above",
     () => {
       expect([...readTree(out).keys()].sort()).toEqual([...BUNDLE_FILES].sort());
@@ -49,7 +49,7 @@ describe("k.evidence: write and verify", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "`--verify` of the result emits one `evidence` record and exits 0",
     () => {
       const run = verify();
@@ -66,7 +66,7 @@ describe("k.evidence: write and verify", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "Verify: the compact record is `ok evidence <dir> 6 files key <keyId>`",
     () => {
       const run = keelEvidence(dir, ["evidence", "--verify", out], {}, "compact");
@@ -78,7 +78,7 @@ describe("k.evidence: write and verify", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "Signing: `manifest.json` is `{ v: 1, app, at, source, keel, key, keyId, runs, files }` with `files` listing the six other files by sha256 and bytes",
     () => {
       const files = readTree(out);
@@ -106,7 +106,7 @@ describe("k.evidence: write and verify", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "Signing: `manifest.sig` is the Ed25519 signature of `manifest.json`'s bytes, base64, under the manifest's `key`",
     () => {
       const files = readTree(out);
@@ -121,7 +121,7 @@ describe("k.evidence: write and verify", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "Verify: a verifying bundle raises no E1062 or E1063",
     () => {
       const run = verify(["--key", keyOf(TEST_KEY_PEM).keyId]);
