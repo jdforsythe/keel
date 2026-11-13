@@ -1,8 +1,6 @@
 // Spec: k.deploy, Conformance "A loader throwing in `modules/a/a.server.ts` of a `keel build` fixture logs, from `node dist/<name>/server.mjs` in json, `frames` starting `modules/a/a.server.ts:`; `server.mjs.map` has no `sourcesContent`, and no response to `GET /server.mjs.map` contains its `mappings`."
 // Seed: 1337.
 // ASSUMED shape (k.server Log): `frames` is an array of strings in json mode; stdout carries one json record per line.
-// UNSPECIFIED: how `node server.mjs` is put in json mode (no `DeployEnv` key names it); the test reads every stdout line
-// that parses as json and ignores the rest.
 // Pattern of topology-server-mjs.test.ts: symlinked workspace packages, the real CLI builds once, the listening wait is a
 // bounded retry of `fetch` (no timers), the port is one the OS just freed; the child is stopped in a `finally`.
 import { spawn, spawnSync } from "node:child_process";
@@ -116,7 +114,7 @@ async function serving<T>(use: (s: Served) => Promise<T>): Promise<T> {
   const port = await freePort();
   const child = spawn(process.execPath, [entry], {
     cwd: fixture,
-    env: deployEnv({ PORT: String(port), KEEL_SECRET: "s".repeat(32) }),
+    env: deployEnv({ PORT: String(port), KEEL_SECRET: "s".repeat(32), KEEL_FORMAT: "json" }),
     stdio: ["ignore", "pipe", "ignore"],
   });
   let stdout = "";
@@ -149,7 +147,7 @@ const records = (text: string): unknown[] =>
 const isDiag = (r: unknown): boolean => typeof r === "object" && r !== null && Reflect.get(r, "kind") === "diag";
 
 describe("k.deploy: frames through server.mjs.map", () => {
-  test.skip("a loader throwing in `modules/a/a.server.ts` of a `keel build` fixture logs, from `node dist/<name>/server.mjs` in json, `frames` starting `modules/a/a.server.ts:`", async () => {
+  test("a loader throwing in `modules/a/a.server.ts` of a `keel build` fixture logs, from `node dist/<name>/server.mjs` in json, `frames` starting `modules/a/a.server.ts:`", async () => {
     await serving(async ({ port, out }) => {
       const res = await fetch(`http://127.0.0.1:${port}/a`);
       expect(res.status).toBe(500);

@@ -27,6 +27,7 @@ export interface AppOptions {
   guards?: unknown;
   log?: { format: "compact" | "json"; write(line: string): void };
   maxBodyBytes?: number;
+  artifacts?: string;
 }
 export type CreateApp = (o: AppOptions) => App | Promise<App>;
 
