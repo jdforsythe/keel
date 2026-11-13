@@ -2,11 +2,11 @@
   "version": 1,
   "unsafe": 10,
   "rungs": {
-    "example": 717,
-    "probabilistic": 238,
-    "exhaustive": 14,
-    "proven": 37,
-    "monitored": 5
+    "example": 724,
+    "probabilistic": 235,
+    "exhaustive": 13,
+    "proven": 36,
+    "monitored": 4
   },
   "mutation": {
     "packages": {
@@ -7473,7 +7473,7 @@
       "pkg": "golden-1",
       "name": "board",
       "file": "golden-1:digest/board.service.ts",
-      "rung": "exhaustive"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
@@ -9825,7 +9825,7 @@
     },
     {
       "item": "k.model#4",
-      "rung": "proven"
+      "rung": "exhaustive"
     },
     {
       "item": "k.model#5",
@@ -10345,7 +10345,7 @@
     },
     {
       "item": "k.sim#8",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "k.sim#9",
@@ -10513,7 +10513,7 @@
     },
     {
       "item": "k.testing#7",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "k.testing#8",
