@@ -39,13 +39,13 @@ const files = (): Record<string, string> => ({
 });
 
 describe("k.ledger: `prove` evidence", () => {
-  it.skip("A passing `prove` makes the transactions it names `proven`.", () => {
+  it("A passing `prove` makes the transactions it names `proven`.", () => {
     const run = withProject("ledger-prove", files(), (dir) => keel(dir, ["ledger"]));
     expect(ledgerRecord(run, "packages/m/src/proved.ts#provedSet")?.rung).toBe("proven");
     expect(ledgerRecord(run, "packages/m/src/named.ts#namedSet")?.rung).toBe("example");
   }, 60_000);
 
-  it.skip("the `proven` evidence of a passing `prove` lists the Z3 version", () => {
+  it("the `proven` evidence of a passing `prove` lists the Z3 version", () => {
     const record = withProject("ledger-prove-evidence", files(), (dir) =>
       ledgerRecord(keel(dir, ["ledger"]), "packages/m/src/proved.ts#provedSet"),
     );

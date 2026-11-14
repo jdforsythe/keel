@@ -11,6 +11,7 @@ import { scrubCode } from "./scrubCode.ts";
 import { specClauses } from "./specClauses.ts";
 import { specHeaders } from "./specHeaders.ts";
 import { testEvidence } from "./testEvidence.ts";
+import { z3Version } from "./z3Version.ts";
 
 const EXPORT = /^export\s+(?:async\s+)?(?:const|let|function\*?|class)\s+([A-Za-z_$][\w$]*)/;
 const APP_DEFAULT = /^export\s+default\b/;
@@ -56,9 +57,13 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  *   with a leading `// Spec: <id>` header block (`specHeaders`, which may wrap) that quotes the clause (`citesClause`:
  *   backticks, quote style, spacing and case aside). A `// Clause:` header is not read; it is W1706 with the fix.
  * Export items also get `monitored` evidence from `.keel/monitored.json` (`monitoredEvidence`; E1711 when it fails its
- * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`.
+ * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`. `z3` is the Z3
+ * version a `prove` call's `proven` evidence names (default: the installed `z3-solver`'s, `z3Version`).
  */
-export function buildLedger(files: readonly SourceFile[]): {
+export function buildLedger(
+  files: readonly SourceFile[],
+  z3: string | undefined = z3Version(),
+): {
   items: LedgerItem[];
   unsafe: number;
   appUnsafe: Record<string, number>;
@@ -81,7 +86,7 @@ export function buildLedger(files: readonly SourceFile[]): {
     if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && TEST_FILE.test(f.path))) add(`apps/${a[1]}`, f);
   }
   const known = new Set(code.map((f) => f.path));
-  const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs, known)]));
+  const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs, known, z3)]));
   const monitored = monitoredEvidence(files);
   const found: { item: string; pkg: string; area: string; name: string; path: string }[] = [];
   const push = (item: string, pkg: string, area: string, name: string, path: string): void => {

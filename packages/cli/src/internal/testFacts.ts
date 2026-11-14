@@ -230,6 +230,20 @@ export function testFacts(path: string, source: string): FileFacts {
     return "";
   };
 
+  /** `prove` of `@keel/testing/prove` (a named or namespace import; inside `packages/testing`, its own `prove` source). */
+  const isProve = (ce: ts.Expression): boolean => {
+    const from = (f: string): boolean =>
+      f === `${KEEL_TESTING}/prove` ||
+      (f.startsWith(".") && f.includes("prove") && path.startsWith("packages/testing/"));
+    if (ts.isIdentifier(ce)) {
+      const imp = imports.get(ce.text);
+      return imp?.name === "prove" && from(imp.from);
+    }
+    if (!ts.isPropertyAccessExpression(ce) || !ts.isIdentifier(ce.expression) || ce.name.text !== "prove") return false;
+    const imp = imports.get(ce.expression.text);
+    return imp?.name === "*" && from(imp.from);
+  };
+
   /**
    * `explore(...)`: closed-form when the options argument is absent or an object naming none of `from`, `payloads` and
    * `depth`; options the ledger cannot read count as given. `depth` as written, when given.
@@ -275,6 +289,7 @@ export function testFacts(path: string, source: string): FileFacts {
     const props: PropRun[] = [];
     const explores: { closed: boolean; depth: NumRef }[] = [];
     let typed = false;
+    let proves = false;
     const visit = (n: ts.Node): void => {
       if (ts.isTypeNode(n) || ts.isImportDeclaration(n)) return;
       if (ts.isIfStatement(n) && isBool(n.expression)) {
@@ -297,6 +312,7 @@ export function testFacts(path: string, source: string): FileFacts {
         const x = exploreRun(n);
         if (x !== undefined) explores.push(x);
         if (TYPE_ASSERTS.has(nameOf(n.expression))) typed = true;
+        if (isProve(n.expression)) proves = true;
       }
       if (ts.isIdentifier(n)) {
         const p = n.parent;
@@ -338,6 +354,7 @@ export function testFacts(path: string, source: string): FileFacts {
       props: props.map((p) => ({ runs: local(p.runs), seed: local(p.seed) })),
       explores: explores.map((x) => ({ closed: x.closed, depth: local(x.depth) })),
       typed,
+      proves,
     };
   };
 

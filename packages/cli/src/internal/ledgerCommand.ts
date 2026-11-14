@@ -35,7 +35,7 @@ const RANK = ["none", "monitored", "example", "probabilistic", "exhaustive", "pr
 const rankOf = (ev: Evidence): number =>
   RANK.indexOf(ledger([{ item: "", evidence: [ev] }])[0]?.rung ?? "none") * 2 + (ev.kind === "property" ? 1 : 0);
 
-/** One line of evidence: the strongest piece, with its runs, seed, depth and `to`, and how many more back the item. */
+/** One line of evidence: the strongest piece, with its runs, seed, depth, `to` and `z3`, and how many more back the item. */
 const describe = (item: LedgerItem | undefined): string => {
   const all = item?.evidence ?? [];
   const best = all.reduce<(typeof all)[number] | undefined>(
@@ -43,10 +43,10 @@ const describe = (item: LedgerItem | undefined): string => {
     undefined,
   );
   if (best === undefined) return "none";
-  const { kind, runs, seed, depth, to } = best.ev;
+  const { kind, runs, seed, depth, to, z3 } = best.ev;
   const parts = [
     kind,
-    ...Object.entries({ runs, seed, depth, to }).flatMap(([k, v]) => (v === undefined ? [] : [`${k} ${v}`])),
+    ...Object.entries({ runs, seed, depth, to, z3 }).flatMap(([k, v]) => (v === undefined ? [] : [`${k} ${v}`])),
   ];
   return `${parts.join(" ")} ${best.path}${all.length > 1 ? ` +${all.length - 1}` : ""}`;
 };

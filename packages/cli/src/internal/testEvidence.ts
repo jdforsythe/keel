@@ -20,9 +20,14 @@ const EXTS = ["", ".ts", ".tsx", ".mts", ".js", "/index.ts"];
  * and `seed` resolved through constants (imported ones too); unresolved values are omitted, so an unseeded or
  * unknown-run property stays `example` (k.ledger). A body that asserts types (`expectTypeOf`, `assertType`) or
  * runs a closed-form `explore` is `proven`; one running another `explore` is `exhaustive`, with its literal `depth`.
- * Bodies with none of these and no property run are `example`.
+ * One calling `prove` (`@keel/testing/prove`) is `proven` with `z3`, the installed Z3 version, when `z3` is given (no
+ * Z3, no passing `prove`). Bodies with none of these and no property run are `example`.
  */
-export function testEvidence(files: readonly SourceFile[], known: ReadonlySet<string> = new Set()): TestRef[] {
+export function testEvidence(
+  files: readonly SourceFile[],
+  known: ReadonlySet<string> = new Set(),
+  z3?: string,
+): TestRef[] {
   const facts = new Map<string, FileFacts>(files.map((f) => [f.path, testFacts(f.path, f.source)]));
   const resolveIn = (from: string, spec: string, has: (p: string) => boolean): string | undefined => {
     if (!spec.startsWith(".")) return undefined;
@@ -49,6 +54,7 @@ export function testEvidence(files: readonly SourceFile[], known: ReadonlySet<st
       const runs: { runs: number | undefined; seed: number | undefined }[] = [];
       const depths: (number | undefined)[] = [];
       let proven = false;
+      let proved = false;
       const seen = new Set<string>();
       const reach = (at: string, use: Use): void => {
         for (const n of use.names) names.add(n);
@@ -64,6 +70,7 @@ export function testEvidence(files: readonly SourceFile[], known: ReadonlySet<st
           depths.push(resolve(at, x.depth));
         }
         if (use.typed) proven = true;
+        if (use.proves && z3 !== undefined) proved = true;
         const here = facts.get(at);
         for (const c of use.calls) {
           const imp = here?.imports.get(c);
@@ -83,18 +90,20 @@ export function testEvidence(files: readonly SourceFile[], known: ReadonlySet<st
         undefined,
       );
       const depth = depths.find((d) => d !== undefined);
-      const ev: Evidence = proven
-        ? { kind: "proven", passed: true }
-        : depths.length > 0
-          ? { kind: "exhaustive", passed: true, ...(depth === undefined ? {} : { depth }) }
-          : best === undefined
-            ? { kind: "example", passed: true }
-            : {
-                kind: "property",
-                passed: true,
-                ...(best.runs === undefined ? {} : { runs: best.runs }),
-                ...(best.seed === undefined ? {} : { seed: best.seed }),
-              };
+      const ev: Evidence = proved
+        ? { kind: "proven", passed: true, z3: z3 ?? "" }
+        : proven
+          ? { kind: "proven", passed: true }
+          : depths.length > 0
+            ? { kind: "exhaustive", passed: true, ...(depth === undefined ? {} : { depth }) }
+            : best === undefined
+              ? { kind: "example", passed: true }
+              : {
+                  kind: "property",
+                  passed: true,
+                  ...(best.runs === undefined ? {} : { runs: best.runs }),
+                  ...(best.seed === undefined ? {} : { seed: best.seed }),
+                };
       out.push({ path, names, pinned, ev });
     }
   }
