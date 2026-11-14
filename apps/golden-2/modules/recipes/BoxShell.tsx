@@ -97,16 +97,16 @@ export default function BoxShell(
         {props.children?.()}
       </Box>
       <Box px={{ base: "3", md: "6" }} py="4">
-        {Toaster(
-          {
-            id: "recipes.toaster",
-            items: () => toasts.get("items"),
-            onDismiss: dismiss,
-            dismiss: props.data.text.dismiss,
-          },
-          undefined,
-          ctx,
-        )}
+        <Toaster
+          id="recipes.toaster"
+          styles={{
+            toast: { bg: "card", border: "hairline", px: "3", py: "2", font: "mono", fontSize: "sm" },
+            dismiss: { px: "2", py: "1", border: "rule", radius: "none" },
+          }}
+          items={() => toasts.get("items")}
+          onDismiss={dismiss}
+          dismiss={props.data.text.dismiss}
+        />
       </Box>
     </Box>
   );

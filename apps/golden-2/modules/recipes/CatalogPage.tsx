@@ -76,80 +76,9 @@ export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefin
     if (cleared.ok) close();
   };
 
-  const table = (): Node =>
-    DataTable({
-      id: "recipes.table",
-      label: props.data.text.tableLabel,
-      columns: catalogColumns,
-      search: props.search,
-      href,
-      locale: props.params.locale,
-      page: props.data.page,
-      selected: () => picked.get(),
-      onSelect: (keys) => picked.set(keys),
-      text: {
-        headers: {
-          title: props.data.text.titleLabel,
-          price: props.data.text.priceLabel,
-          minutes: props.data.text.minutesLabel,
-          addedOn: props.data.text.addedLabel,
-          favorite: props.data.text.favorite,
-        },
-        pager: props.data.text.pagerLabel,
-        previous: props.data.text.previous,
-        next: props.data.text.next,
-        pageOf: (page, pages) => formatMessage(props.data.text.pageOf, { page, pages }, props.params.locale),
-        selectAll: props.data.text.selectAll,
-        selectRow: (row) => formatMessage(props.data.text.selectRow, { title: row.title }, props.params.locale),
-        actions: props.data.text.actionsLabel,
-      },
-      cells: {
-        price: (row) => (
-          <Text id={`recipes.table.price.${idPart(row.id)}`}>{formatMoney(row.price, props.params.locale)}</Text>
-        ),
-        minutes: (row) => (
-          <Text id={`recipes.table.minutes.${idPart(row.id)}`}>
-            {formatDuration(durationOf(row.minutes * 60_000), props.params.locale, "short")}
-          </Text>
-        ),
-        addedOn: (row) => (
-          <Text id={`recipes.table.added.${idPart(row.id)}`}>
-            {formatDate(row.addedOn, props.params.locale, "long")}
-          </Text>
-        ),
-        favorite: (row) => (
-          <Text id={`recipes.table.favorite.${idPart(row.id)}`}>
-            {row.favorite ? props.data.text.yes : props.data.text.no}
-          </Text>
-        ),
-      },
-      actions: (row) =>
-        Menu(
-          {
-            id: `recipes.menu.${idPart(row.id)}`,
-            trigger: () => formatMessage(props.data.text.rowActions, { title: row.title }, props.params.locale),
-            items: () => [
-              { key: "open", text: props.data.text.openRecipe },
-              ...servedLocales.filter((l) => l !== props.params.locale).map((l) => ({ key: l, text: localeName(l) })),
-            ],
-            onSelect: (key) => {
-              const locale = key === "open" ? props.params.locale : key;
-              void navigate(routes.href("recipes.show", { locale, recipeId: row.id }));
-            },
-          },
-          undefined,
-          ctx,
-        ),
-      empty: () => <Text id="recipes.table.none">{props.data.text.empty}</Text>,
-    });
-
   const recipesPanel = (): Node => (
     <Box id="recipes.catalog.recipes" direction="column" gap="4" py="4">
-      {TableSearch(
-        { id: "recipes.search", label: props.data.text.searchLabel, search: props.search, href },
-        undefined,
-        ctx,
-      )}
+      <TableSearch id="recipes.search" label={props.data.text.searchLabel} search={props.search} href={href} />
       <Box
         as="nav"
         id="recipes.catalog.show"
@@ -166,7 +95,82 @@ export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefin
           {props.data.text.filterFavorites}
         </Link>
       </Box>
-      {table()}
+      <DataTable
+        id="recipes.table"
+        styles={{
+          table: { fontSize: "sm" },
+          header: { px: "2", py: "2", font: "mono", fontSize: "xs" },
+          cell: { px: "2", py: "2" },
+          sort: { fg: "text" },
+          pager: { py: "3", gap: "4", font: "mono", fontSize: "sm" },
+          previous: { fg: "text" },
+          next: { fg: "text" },
+        }}
+        label={props.data.text.tableLabel}
+        columns={catalogColumns}
+        search={props.search}
+        href={href}
+        locale={props.params.locale}
+        page={props.data.page}
+        selected={() => picked.get()}
+        onSelect={(keys) => picked.set(keys)}
+        text={{
+          headers: {
+            title: props.data.text.titleLabel,
+            price: props.data.text.priceLabel,
+            minutes: props.data.text.minutesLabel,
+            addedOn: props.data.text.addedLabel,
+            favorite: props.data.text.favorite,
+          },
+          pager: props.data.text.pagerLabel,
+          previous: props.data.text.previous,
+          next: props.data.text.next,
+          pageOf: (page, pages) => formatMessage(props.data.text.pageOf, { page, pages }, props.params.locale),
+          selectAll: props.data.text.selectAll,
+          selectRow: (row) => formatMessage(props.data.text.selectRow, { title: row.title }, props.params.locale),
+          actions: props.data.text.actionsLabel,
+        }}
+        cells={{
+          price: (row) => (
+            <Text id={`recipes.table.price.${idPart(row.id)}`}>{formatMoney(row.price, props.params.locale)}</Text>
+          ),
+          minutes: (row) => (
+            <Text id={`recipes.table.minutes.${idPart(row.id)}`}>
+              {formatDuration(durationOf(row.minutes * 60_000), props.params.locale, "short")}
+            </Text>
+          ),
+          addedOn: (row) => (
+            <Text id={`recipes.table.added.${idPart(row.id)}`}>
+              {formatDate(row.addedOn, props.params.locale, "long")}
+            </Text>
+          ),
+          favorite: (row) => (
+            <Text id={`recipes.table.favorite.${idPart(row.id)}`}>
+              {row.favorite ? props.data.text.yes : props.data.text.no}
+            </Text>
+          ),
+        }}
+        actions={(row) => (
+          <Menu
+            id={`recipes.menu.${idPart(row.id)}`}
+            styles={{
+              trigger: { px: "3", py: "1", border: "rule", radius: "none", font: "mono", fontSize: "sm" },
+              menu: { bg: "card", border: "hairline", p: "1", m: "0" },
+              item: { px: "3", py: "1", states: { highlighted: { bg: "text", fg: "card" } } },
+            }}
+            trigger={() => formatMessage(props.data.text.rowActions, { title: row.title }, props.params.locale)}
+            items={() => [
+              { key: "open", text: props.data.text.openRecipe },
+              ...servedLocales.filter((l) => l !== props.params.locale).map((l) => ({ key: l, text: localeName(l) })),
+            ]}
+            onSelect={(key) => {
+              const locale = key === "open" ? props.params.locale : key;
+              void navigate(routes.href("recipes.show", { locale, recipeId: row.id }));
+            }}
+          />
+        )}
+        empty={() => <Text id="recipes.table.none">{props.data.text.empty}</Text>}
+      />
       <Box direction="row">
         <Button
           id="recipes.addSelected"
@@ -205,12 +209,16 @@ export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefin
           )}
         </For>
       </Box>
-      {Dialog({
-        id: "recipes.clear",
-        title: props.data.text.clearList,
-        trigger: () => props.data.text.clearList,
-        alert: { description: props.data.text.clearBody },
-        content: (close) => (
+      <Dialog
+        id="recipes.clear"
+        styles={{
+          trigger: { px: "3", py: "1", border: "rule", radius: "none", font: "mono", fontSize: "sm" },
+          dialog: { bg: "card", fg: "text", border: "rule", p: "4" },
+        }}
+        title={props.data.text.clearList}
+        trigger={() => props.data.text.clearList}
+        alert={{ description: props.data.text.clearBody }}
+        content={(close) => (
           <Box direction="row" gap="3">
             <Button id="recipes.clear.cancel" onClick={close} px="4" py="2" border="rule" radius="none">
               {props.data.text.cancel}
@@ -228,8 +236,8 @@ export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefin
               {props.data.text.confirmClear}
             </Button>
           </Box>
-        ),
-      })}
+        )}
+      />
     </Box>
   );
 
@@ -238,59 +246,71 @@ export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefin
       <Heading id="recipes.catalog.title" level={1} fontSize="2xl" weight="semibold" m="0">
         {props.data.text.catalogHeading}
       </Heading>
-      {Combobox(
-        {
-          id: "recipes.find",
-          label: props.data.text.findLabel,
-          text: () => typed.get(),
-          onInput: (t) => typed.set(t),
-          options: () => found.get(),
-          onChange: (recipeId) => {
-            void navigate(routes.href("recipes.show", { locale: props.params.locale, recipeId }));
-          },
-          empty: () => props.data.text.findEmpty,
-        },
-        undefined,
-        ctx,
-      )}
-      {Disclosure({
-        id: "recipes.catalogFilters",
-        summary: () => props.data.text.filtersLabel,
-        children: () =>
-          Listbox(
-            {
-              id: "recipes.currency",
-              label: props.data.text.currencyLabel,
-              mode: "single",
-              options: () => [
+      <Combobox
+        id="recipes.find"
+        styles={{
+          input: { px: "2", py: "1", border: "rule", radius: "none" },
+          list: { bg: "card", border: "hairline", p: "0", m: "0" },
+          option: { px: "3", py: "1", states: { highlighted: { bg: "text", fg: "card" } } },
+        }}
+        label={props.data.text.findLabel}
+        text={() => typed.get()}
+        onInput={(t) => typed.set(t)}
+        options={() => found.get()}
+        onChange={(recipeId) => {
+          void navigate(routes.href("recipes.show", { locale: props.params.locale, recipeId }));
+        }}
+        empty={() => props.data.text.findEmpty}
+      />
+      <Disclosure
+        id="recipes.catalogFilters"
+        styles={{
+          button: { px: "3", py: "1", border: "rule", radius: "none", font: "mono", fontSize: "sm" },
+          panel: { py: "2" },
+        }}
+        summary={() => props.data.text.filtersLabel}
+        {...{
+          children: () => (
+            <Listbox
+              id="recipes.currency"
+              styles={{
+                list: { border: "hairline", p: "0", m: "0" },
+                option: {
+                  px: "3",
+                  py: "1",
+                  states: { highlighted: { bg: "text", fg: "card" }, selected: { weight: "semibold" } },
+                },
+              }}
+              label={props.data.text.currencyLabel}
+              mode="single"
+              options={() => [
                 { key: "any", text: props.data.text.currencyAny },
                 ...currencyOptions.map((c) => ({ key: c, text: c })),
-              ],
-              selected: () => [props.search.currency ?? "any"],
-              onChange: (keys) => {
+              ]}
+              selected={() => [props.search.currency ?? "any"]}
+              onChange={(keys) => {
                 const [key] = keys;
                 void navigate(href(refine("favorite", key === undefined || key === "any" ? {} : { currency: key })));
-              },
-            },
-            undefined,
-            ctx,
+              }}
+            />
           ),
-      })}
-      {Tabs(
-        {
-          id: "recipes.views",
-          label: props.data.text.viewsLabel,
-          tabs: () => [
-            { key: "recipes", text: props.data.text.tabRecipes },
-            { key: "list", text: props.data.text.tabList },
-          ],
-          selected: () => view.get(),
-          onChange: (key) => view.set(key),
-          panel: (key) => (key === "recipes" ? recipesPanel() : listPanel()),
-        },
-        undefined,
-        ctx,
-      )}
+        }}
+      />
+      <Tabs
+        id="recipes.views"
+        styles={{
+          tab: { px: "3", py: "2", font: "mono", fontSize: "sm", states: { selected: { weight: "semibold" } } },
+          panel: { py: "2" },
+        }}
+        label={props.data.text.viewsLabel}
+        tabs={() => [
+          { key: "recipes", text: props.data.text.tabRecipes },
+          { key: "list", text: props.data.text.tabList },
+        ]}
+        selected={() => view.get()}
+        onChange={(key) => view.set(key)}
+        panel={(key) => (key === "recipes" ? recipesPanel() : listPanel())}
+      />
     </Box>
   );
 }

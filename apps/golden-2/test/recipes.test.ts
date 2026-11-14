@@ -265,8 +265,8 @@ describe("recipe schemas", () => {
 });
 
 describe("kitchen service", () => {
-  it("names the three endpoints and kitchenApi calls the kitchen module for the route's value", async () => {
-    expect(Object.keys(kitchen).sort()).toEqual(["add", "box", "favorite"]);
+  it("names the four endpoints and kitchenApi calls the kitchen module for the route's value", async () => {
+    expect(Object.keys(kitchen).sort()).toEqual(["add", "box", "catalog", "favorite"]);
     const api = await simApi();
     const r = await kitchenApi.box({}, api.ctx);
     expect(r.ok && r.value.recipes).toEqual([]);
