@@ -1,13 +1,13 @@
+import type { KeyValueStorage } from "@keel/ctx";
 import type { Cell } from "./Cell.ts";
 import { E1606 } from "./E1606.ts";
-import type { StorageDriver } from "./StorageDriver.ts";
 
 /**
  * k.persist's storage over a native store. Every call runs after the one before it settles, so a `read` is one cut and
  * a `commit` checks and writes with nothing between (std.shells: one page owns the store). A key twice in a `commit`
  * rejects with E1606 and stores nothing.
  */
-export function cellStorage(cell: Cell): StorageDriver {
+export function cellStorage(cell: Cell): KeyValueStorage {
   let tail: Promise<unknown> = Promise.resolve();
   const run = <T>(fn: () => Promise<T>): Promise<T> => {
     const next = tail.then(fn);

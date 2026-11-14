@@ -1,5 +1,5 @@
 import type { Net } from "@keel/ctx";
-import type { StorageDriver } from "./internal/StorageDriver.ts";
+import type { KeyValueStorage } from "@keel/ctx";
 import { capacitorNet } from "./internal/capacitorNet.ts";
 import { preferencesStorage } from "./internal/preferencesStorage.ts";
 
@@ -9,7 +9,7 @@ import { preferencesStorage } from "./internal/preferencesStorage.ts";
  * own origin go there.
  */
 export function capacitorDrivers(opts: { readonly origin: URL }): {
-  readonly storage: StorageDriver;
+  readonly storage: KeyValueStorage;
   readonly net: Net;
 } {
   return { storage: preferencesStorage(), net: capacitorNet(opts.origin) };

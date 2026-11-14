@@ -1,5 +1,5 @@
 import type { Net } from "@keel/ctx";
-import type { StorageDriver } from "./internal/StorageDriver.ts";
+import type { KeyValueStorage } from "@keel/ctx";
 import { storeStorage } from "./internal/storeStorage.ts";
 import { tauriNet } from "./internal/tauriNet.ts";
 
@@ -9,7 +9,7 @@ import { tauriNet } from "./internal/tauriNet.ts";
  * own origin go there, through the http permission the generated capability grants for that origin only.
  */
 export function tauriDrivers(opts: { readonly origin: URL }): {
-  readonly storage: StorageDriver;
+  readonly storage: KeyValueStorage;
   readonly net: Net;
 } {
   return { storage: storeStorage(), net: tauriNet(opts.origin) };
