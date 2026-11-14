@@ -698,6 +698,12 @@ importers:
         specifier: workspace:*
         version: link:../ctx
     devDependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../services
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -815,6 +821,18 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.5.16
         version: 0.5.16
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../server
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -1343,6 +1361,12 @@ importers:
         specifier: 2.5.1
         version: 2.5.1
     devDependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../services
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing

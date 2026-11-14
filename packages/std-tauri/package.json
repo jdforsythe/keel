@@ -22,6 +22,8 @@
     "@tauri-apps/plugin-store": "2.5.1"
   },
   "devDependencies": {
+    "@keel/schema": "workspace:*",
+    "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",

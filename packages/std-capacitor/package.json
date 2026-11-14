@@ -21,6 +21,8 @@
     "@keel/ctx": "workspace:*"
   },
   "devDependencies": {
+    "@keel/schema": "workspace:*",
+    "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",

@@ -52,7 +52,8 @@ export const removalChart = chart('api.removalChart', {
   states: ${states},
 })
 `;
-const EVENTS = `{ begin: s.object({}), hide: s.object({}), purged: s.object({}), stuck: s.object({ code: s.string() }), expired: s.object({}), undo: s.object({}) }`;
+const EVENTS =
+  "{ begin: s.object({}), hide: s.object({}), purged: s.object({}), stuck: s.object({ code: s.string() }), expired: s.object({}), undo: s.object({}) }";
 const STATES = `{
     queued: { on: { begin: 'purging', hide: 'hidden' } },
     purging: { on: { purged: 'purged', stuck: 'stuck' } },
@@ -183,7 +184,8 @@ describe("std.workflows: keel check rules", () => {
   });
 
   // reserving and charging are steps; charging's `failed` target is `stuck` (final) and reserving's `done` leads to charging.
-  const SAGA_EVENTS = `{ begin: s.object({}), reserved: s.object({}), charged: s.object({}), declined: s.object({ code: s.string() }), released: s.object({}), busted: s.object({ code: s.string() }) }`;
+  const SAGA_EVENTS =
+    "{ begin: s.object({}), reserved: s.object({}), charged: s.object({}), declined: s.object({ code: s.string() }), released: s.object({}), busted: s.object({ code: s.string() }) }";
   const sagaStates = (declinedTo: string, extra: string) => `{
     queued: { on: { begin: 'reserving' } },
     reserving: { on: { reserved: 'charging', busted: 'stuck' } },
