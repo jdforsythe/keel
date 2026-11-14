@@ -53,3 +53,25 @@ it("a callback navigates the mounted router: replace rewrites the entry, push ad
 it("with no router mounted it does nothing and resolves", async () => {
   await expect(navigate(routes.href("nv.other"))).resolves.toBeUndefined();
 });
+
+it("with two routers mounted a callback's navigate reaches neither", async () => {
+  const make = () => {
+    const history = memoryHistory("/nv");
+    const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history });
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    return { history, router, host, off: mount(router.App, host) };
+  };
+  const a = make();
+  const b = make();
+  await settle();
+  await navigate(routes.href("nv.other"));
+  await settle();
+  expect(a.history.entries).toEqual(["/nv"]);
+  expect(b.history.entries).toEqual(["/nv"]);
+  for (const x of [a, b]) {
+    x.off();
+    x.router.dispose();
+    x.host.remove();
+  }
+});
