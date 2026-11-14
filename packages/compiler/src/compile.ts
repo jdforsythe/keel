@@ -106,6 +106,7 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
     );
     const elements = collectElements(a);
     const styles = collectStyles(a);
+    diagnostics.push(...styles.diagnostics);
     for (const u of styles.usages) usages.set(canonicalJson(u), u);
     const lowered = lowerFile(a, elements, destructuring.edits, styles.rewrites);
     done.push({ a, elements, bindings: lowered.bindings, code: lowered.code });

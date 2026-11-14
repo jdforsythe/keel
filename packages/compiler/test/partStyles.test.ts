@@ -25,17 +25,27 @@ describe("part styles", () => {
     expect(u).toEqual([{ props: { m: "1" }, state: "expanded" }, { props: { p: "2" } }, { props: { p: "3" } }]);
   });
 
-  test("`styles` on a component of a look-alike `@keel/std-` package is not collected", () => {
+  test("`styles` on a component of any package is collected", () => {
     const { usages: u } = usages(
       `import { Tabs } from '@keel/std-evil'\nexport default function C() { return <Tabs styles={{ tab: { p: '2' } }} /> }\n`,
     );
-    expect(u).toEqual([]);
+    expect(u).toEqual([{ props: { p: "2" } }]);
   });
 
-  test("`styles` on a component not from a `@keel/std-*` package is not collected", () => {
+  test("`styles` on an app's own component is collected", () => {
     const { usages: u } = usages(
       `import { Tabs } from './Tabs.tsx'\nexport default function C() { return <Tabs styles={{ tab: { p: '2' } }} /> }\n`,
     );
-    expect(u).toEqual([]);
+    expect(u).toEqual([{ props: { p: "2" } }]);
+  });
+
+  test("E1823 marks each unreadable value, part and spread; a forwarded `props.styles` member is none", () => {
+    const r = compile([
+      {
+        path: "C.tsx",
+        source: `import { Tabs } from './Tabs.tsx'\nconst t = { p: '2' }\nexport default function C(props: { styles?: { tab?: object } }) { return <><Tabs styles={t} /><Tabs styles={{ tab: t, ...t, panel: { ...t } }} /><Tabs styles={{ ...props.styles, tab: props.styles?.tab }} /></> }\n`,
+      },
+    ]);
+    expect(r.diagnostics.map((d) => `${d.code} ${d.col}`)).toEqual(["E1823 90", "E1823 116", "E1823 119", "E1823 134"]);
   });
 });

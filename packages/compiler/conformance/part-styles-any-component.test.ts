@@ -30,17 +30,17 @@ const styled = (files: { path: string; source: string }[]): Usage[] => {
 };
 
 describe("k.aria: part styles on any component", () => {
-  test.skip("`styles={{ part: { p: '2' } }}` on an app's own component collects the `2` usage once", () => {
+  test("`styles={{ part: { p: '2' } }}` on an app's own component collects the `2` usage once", () => {
     const usages = styled(app("{{ body: { p: '2' } }}"));
     expect(usages.filter((u) => u.props.p === "2")).toHaveLength(1);
   });
 
-  test.skip("`states` in a part of an app's own component are collected under their state", () => {
+  test("`states` in a part of an app's own component are collected under their state", () => {
     const usages = styled(app("{{ body: { states: { hover: { bg: 'accent' } } } }}"));
     expect(usages.filter((u) => u.props.bg === "accent" && u.state === "hover")).toHaveLength(1);
   });
 
-  test.skip("the same part styles on any number of usages give each rule once", () => {
+  test("the same part styles on any number of usages give each rule once", () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 4 }), (n) => {
         const files = [
@@ -55,7 +55,7 @@ describe("k.aria: part styles on any component", () => {
     );
   });
 
-  test.skip("a component forwarding its own `props.styles` collects nothing there and is not an error", () => {
+  test("a component forwarding its own `props.styles` collects nothing there and is not an error", () => {
     const r = compile([
       {
         path: "Wrap.tsx",
