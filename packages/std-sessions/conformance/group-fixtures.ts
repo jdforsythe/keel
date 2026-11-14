@@ -9,6 +9,7 @@
 import type { Ctx, SimCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { text } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 import type { JsonValue } from "@keel/schema";
 import type { openGroup } from "@keel/std-sessions/group";
@@ -121,6 +122,13 @@ const call = async (ctx: Ctx, method: "GET" | "POST", path: string, body?: unkno
   return res.json();
 };
 
+/** A Text whose content is a binding: a component is built once, so what must follow the store is read in a binding (k.runtime Ops). */
+const bound = (id: string, read: () => string): Node => {
+  const node = Text({ id, children: "" });
+  text(node, read);
+  return node;
+};
+
 function build() {
   const View = s.object({
     title: s.string(),
@@ -158,7 +166,7 @@ function build() {
           id: "board.page",
           children: () => [
             Input({ id: "board.note", label: "Note", onInput: (v) => void tx(setNote, { note: v }) }),
-            Text({ id: "board.local", children: () => view.get("note") }),
+            bound("board.local", () => view.get("note")),
             Button({ id: "board.refresh", children: "Refresh", onClick: () => void act(ctx, "GET", "/api/board") }),
             Button({
               id: "board.write",
@@ -175,10 +183,10 @@ function build() {
               children: "Probe",
               onClick: () => void tx(setStatus, { status: String(ctx.net.online()) }),
             }),
-            Text({ id: "board.title", children: () => view.get("title") }),
-            Text({ id: "board.caller", children: () => view.get("caller") }),
-            Text({ id: "board.items", children: () => view.get("items").join(",") }),
-            Text({ id: "board.status", children: () => view.get("status") }),
+            bound("board.title", () => view.get("title")),
+            bound("board.caller", () => view.get("caller")),
+            bound("board.items", () => view.get("items").join(",")),
+            bound("board.status", () => view.get("status")),
           ],
         });
       },
