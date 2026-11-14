@@ -60,7 +60,8 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     return out;
   };
 
-  const select = props.onSelect !== undefined;
+  // `selected` makes the table selectable; the types require `onSelect` with it.
+  const select = props.selected !== undefined;
   const chosen = computed((): readonly Key[] => props.selected?.() ?? []);
   const isChosen = (k: Key): boolean => chosen.get().some((c) => String(c) === String(k));
   const pageKeys = (): Key[] => view.get().rows.map(keyOf);
@@ -123,7 +124,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
       return offset(v) + v.rows.findIndex((r) => keyOf(r) === key) + 2;
     });
     const cells: Node[] = [];
-    if (props.selected !== undefined) {
+    if (select) {
       const name = computed(() => (props.selected === undefined ? "" : props.text.selectRow(row)));
       cells.push(
         Part({
@@ -158,7 +159,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   };
 
   const heads: Node[] = [];
-  if (props.selected !== undefined)
+  if (select)
     heads.push(
       Part({
         ...styles.cell,
