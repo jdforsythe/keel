@@ -8,10 +8,10 @@ import { render } from "@keel/testing";
 import { Box, Button, Text } from "@keel/ui";
 import { signal } from "@keel/reactive";
 import { describe, expect, test } from "vitest";
-import { fruit, page, simCtx } from "./fixtures.ts";
+import { fruit, inScope, page, simCtx } from "./fixtures.ts";
 
 describe("std.headless and std.options: axe violations", () => {
-  test.skip("Every widget of this section and std.options rendered with its required props has no axe violations open and closed: Listbox", async () => {
+  test("Every widget of this section and std.options rendered with its required props has no axe violations open and closed: Listbox", async () => {
     const t = render(
       page((c) =>
         Listbox(
@@ -38,7 +38,7 @@ describe("std.headless and std.options: axe violations", () => {
     t.dispose();
   });
 
-  test.skip("Every widget ... no axe violations open and closed: Listbox named by `labelledBy`", async () => {
+  test("Every widget ... no axe violations open and closed: Listbox named by `labelledBy`", async () => {
     const t = render(
       page((c) =>
         Box({
@@ -67,8 +67,8 @@ describe("std.headless and std.options: axe violations", () => {
     t.dispose();
   });
 
-  test.skip("Every widget ... no axe violations open and closed: Combobox", async () => {
-    const text = signal("");
+  test("Every widget ... no axe violations open and closed: Combobox", async () => {
+    const text = inScope(() => signal(""));
     const t = render(
       page((c) =>
         Combobox(
@@ -94,7 +94,7 @@ describe("std.headless and std.options: axe violations", () => {
     t.dispose();
   });
 
-  test.skip("Every widget ... no axe violations open and closed: Menu", async () => {
+  test("Every widget ... no axe violations open and closed: Menu", async () => {
     const t = render(
       page((c) =>
         Menu(
@@ -119,7 +119,7 @@ describe("std.headless and std.options: axe violations", () => {
   });
 
   test.skip("Every widget ... no axe violations open and closed: Tabs", async () => {
-    const picked = signal("apple");
+    const picked = inScope(() => signal("apple"));
     const t = render(
       page((c) =>
         Tabs(
@@ -145,7 +145,7 @@ describe("std.headless and std.options: axe violations", () => {
     t.dispose();
   });
 
-  test.skip("Every widget ... no axe violations open and closed: Dialog and alert Dialog", async () => {
+  test("Every widget ... no axe violations open and closed: Dialog and alert Dialog", async () => {
     for (const alert of [undefined, "This cannot be undone."]) {
       const t = render(
         page((c) =>
@@ -171,7 +171,7 @@ describe("std.headless and std.options: axe violations", () => {
     }
   });
 
-  test.skip("Every widget ... no axe violations open and closed: Disclosure", async () => {
+  test("Every widget ... no axe violations open and closed: Disclosure", async () => {
     const t = render(
       page((c) =>
         Disclosure(
@@ -189,7 +189,7 @@ describe("std.headless and std.options: axe violations", () => {
     t.dispose();
   });
 
-  test.skip("Every widget ... no axe violations open and closed: Toaster empty and with both tones", async () => {
+  test("Every widget ... no axe violations open and closed: Toaster empty and with both tones", async () => {
     const empty = render(
       page((c) =>
         Toaster({ id: "ax", items: () => [], onDismiss: () => {}, dismiss: "Dismiss", duration: 5000 }, undefined, c),

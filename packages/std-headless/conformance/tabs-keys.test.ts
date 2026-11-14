@@ -9,12 +9,12 @@ import { render } from "@keel/testing";
 import { Text } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, el, fruit, page, shown, simCtx } from "./fixtures.ts";
+import { SEED, el, fruit, inScope, page, shown, simCtx } from "./fixtures.ts";
 
 const keys = fruit.map((o) => o.key);
 
 const mount = (start: string) => {
-  const picked = signal(start);
+  const picked = inScope(() => signal(start));
   const changes: string[] = [];
   const t = render(
     page((c) =>

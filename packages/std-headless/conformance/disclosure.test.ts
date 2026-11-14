@@ -26,7 +26,7 @@ const mount = () =>
   );
 
 describe("std.headless: Disclosure", () => {
-  test.skip('A Disclosure\'s button click shows the panel and sets `aria-expanded="true"`; a second click hides it.', async () => {
+  test('A Disclosure\'s button click shows the panel and sets `aria-expanded="true"`; a second click hides it.', async () => {
     const t = mount();
     expect(t.find("dsc.button").role).toBe("button");
     expect(t.find("dsc.button").state.expanded).toBe(false);
@@ -41,7 +41,7 @@ describe("std.headless: Disclosure", () => {
     t.dispose();
   });
 
-  test.skip("after any number of clicks the panel is shown exactly when `aria-expanded` is true (property)", async () => {
+  test("after any number of clicks the panel is shown exactly when `aria-expanded` is true (property)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 7 }), async (n) => {
         const t = mount();

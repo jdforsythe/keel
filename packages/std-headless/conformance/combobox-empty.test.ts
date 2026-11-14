@@ -7,10 +7,10 @@ import { Combobox } from "@keel/std-headless";
 import type { Option } from "@keel/std-headless";
 import { render } from "@keel/testing";
 import { describe, expect, test } from "vitest";
-import { fruit, page, shown, simCtx } from "./fixtures.ts";
+import { fruit, inScope, page, shown, simCtx } from "./fixtures.ts";
 
 const mount = (options: readonly Option<string>[]) => {
-  const text = signal("");
+  const text = inScope(() => signal(""));
   const t = render(
     page((c) =>
       Combobox(
@@ -33,7 +33,7 @@ const mount = (options: readonly Option<string>[]) => {
 };
 
 describe("std.options: Combobox with no options", () => {
-  test.skip("A Combobox with no options while open hides the `listbox` and shows `empty` in a `status`", async () => {
+  test("A Combobox with no options while open hides the `listbox` and shows `empty` in a `status`", async () => {
     const t = mount([]);
     await t.fire("ce.input", { type: "input", value: "zzz" });
     expect(t.find("ce.input").state.expanded).toBe(true);
@@ -43,7 +43,7 @@ describe("std.options: Combobox with no options", () => {
     t.dispose();
   });
 
-  test.skip("a Combobox with options while open shows the `listbox` and not `empty`", async () => {
+  test("a Combobox with options while open shows the `listbox` and not `empty`", async () => {
     const t = mount(fruit);
     await t.fire("ce.input", { type: "input", value: "a" });
     expect(t.find("ce.input").state.expanded).toBe(true);
@@ -52,7 +52,7 @@ describe("std.options: Combobox with no options", () => {
     t.dispose();
   });
 
-  test.skip("a closed Combobox hides the `listbox` whatever its options", () => {
+  test("a closed Combobox hides the `listbox` whatever its options", () => {
     for (const options of [[], fruit]) {
       const t = mount(options);
       expect(shown("ce.list")).toBe(false);

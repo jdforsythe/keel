@@ -7,10 +7,10 @@ import { Combobox } from "@keel/std-headless";
 import { render } from "@keel/testing";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, fruit, page, simCtx } from "./fixtures.ts";
+import { fruit, inScope, page, SEED, simCtx } from "./fixtures.ts";
 
 const mount = (initial = "") => {
-  const text = signal(initial);
+  const text = inScope(() => signal(initial));
   const inputs: string[] = [];
   const chosen: string[] = [];
   const t = render(
@@ -40,7 +40,7 @@ const mount = (initial = "") => {
 };
 
 describe("std.options: Combobox keys", () => {
-  test.skip('A Combobox\'s ArrowDown opens the list with `aria-expanded="true"` and the first option active', async () => {
+  test('A Combobox\'s ArrowDown opens the list with `aria-expanded="true"` and the first option active', async () => {
     const { t, key } = mount();
     expect(t.find("cb.input").role).toBe("combobox");
     expect(t.find("cb.input").state.expanded).toBe(false);
@@ -50,7 +50,7 @@ describe("std.options: Combobox keys", () => {
     t.dispose();
   });
 
-  test.skip("Enter calls `onChange` with its key and closes the list", async () => {
+  test("Enter calls `onChange` with its key and closes the list", async () => {
     const { t, key, chosen } = mount();
     await key("ArrowDown");
     await key("Enter");
@@ -59,7 +59,7 @@ describe("std.options: Combobox keys", () => {
     t.dispose();
   });
 
-  test.skip("Escape closes an open list and clears the text of a closed one", async () => {
+  test("Escape closes an open list and clears the text of a closed one", async () => {
     const { t, key, inputs, text } = mount("app");
     await key("ArrowDown");
     await key("Escape");
@@ -72,7 +72,7 @@ describe("std.options: Combobox keys", () => {
     t.dispose();
   });
 
-  test.skip("ArrowDown and ArrowUp wrap: n presses of ArrowDown highlight option (n - 1) mod 3 (property)", async () => {
+  test("ArrowDown and ArrowUp wrap: n presses of ArrowDown highlight option (n - 1) mod 3 (property)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 9 }), fc.boolean(), async (n, down) => {
         const { t, key } = mount();
@@ -85,7 +85,7 @@ describe("std.options: Combobox keys", () => {
     );
   });
 
-  test.skip("typing calls `onInput` and opens the list with no option active", async () => {
+  test("typing calls `onInput` and opens the list with no option active", async () => {
     const { t, inputs } = mount();
     await t.fire("cb.input", { type: "input", value: "ap" });
     expect(inputs).toEqual(["ap"]);
@@ -94,7 +94,7 @@ describe("std.options: Combobox keys", () => {
     t.dispose();
   });
 
-  test.skip("Enter with no active option passes through: no `onChange` call and the list stays as it was", async () => {
+  test("Enter with no active option passes through: no `onChange` call and the list stays as it was", async () => {
     const { t, chosen } = mount();
     await t.fire("cb.input", { type: "keydown", key: "Enter" });
     expect(chosen).toEqual([]);

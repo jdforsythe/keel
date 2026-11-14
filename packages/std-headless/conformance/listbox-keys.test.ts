@@ -46,7 +46,7 @@ const mount = (
 const key = (t: ReturnType<typeof mount>, k: string) => t.fire("lb.list", { type: "keydown", key: k });
 
 describe("std.options: Listbox keys", () => {
-  test.skip("A Listbox focused with nothing selected highlights `option.<first>`: the list's `aria-activedescendant` names it and `find` gives `state.active`", async () => {
+  test("A Listbox focused with nothing selected highlights `option.<first>`: the list's `aria-activedescendant` names it and `find` gives `state.active`", async () => {
     const t = mount();
     expect(t.find("lb.list").role).toBe("listbox");
     await t.fire("lb.list", { type: "focus" });
@@ -56,7 +56,7 @@ describe("std.options: Listbox keys", () => {
     t.dispose();
   });
 
-  test.skip("ArrowDown at the last option stays there", async () => {
+  test("ArrowDown at the last option stays there", async () => {
     const t = mount();
     await t.fire("lb.list", { type: "focus" });
     for (let i = 0; i < 6; i++) await key(t, "ArrowDown");
@@ -64,7 +64,7 @@ describe("std.options: Listbox keys", () => {
     t.dispose();
   });
 
-  test.skip("End then Home highlight the last and the first", async () => {
+  test("End then Home highlight the last and the first", async () => {
     const t = mount();
     await t.fire("lb.list", { type: "focus" });
     await key(t, "End");
@@ -74,14 +74,14 @@ describe("std.options: Listbox keys", () => {
     t.dispose();
   });
 
-  test.skip("a focused Listbox with a selected option highlights the first selected option", async () => {
+  test("a focused Listbox with a selected option highlights the first selected option", async () => {
     const t = mount({ selected: ["cherry", "banana"] });
     await t.fire("lb.list", { type: "focus" });
     expect(t.find("lb.list").state.active).toBe("lb.option.banana");
     t.dispose();
   });
 
-  test.skip("ArrowDown and ArrowUp move without wrap, Home and End jump, for any key sequence (property against a clamping model)", async () => {
+  test("ArrowDown and ArrowUp move without wrap, Home and End jump, for any key sequence (property against a clamping model)", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(fc.constantFrom("ArrowDown", "ArrowUp", "Home", "End"), { maxLength: 12 }),
@@ -101,7 +101,7 @@ describe("std.options: Listbox keys", () => {
     );
   });
 
-  test.skip("a horizontal Listbox moves with ArrowRight and ArrowLeft without wrap (property)", async () => {
+  test("a horizontal Listbox moves with ArrowRight and ArrowLeft without wrap (property)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(fc.constantFrom("ArrowRight", "ArrowLeft"), { maxLength: 10 }), async (keys) => {
         const t = mount({ options: five, orientation: "horizontal" });
@@ -118,7 +118,7 @@ describe("std.options: Listbox keys", () => {
     );
   });
 
-  test.skip("blur closes the Listbox: no option stays highlighted", async () => {
+  test("blur closes the Listbox: no option stays highlighted", async () => {
     const t = mount();
     await t.fire("lb.list", { type: "focus" });
     await t.fire("lb.list", { type: "blur" });

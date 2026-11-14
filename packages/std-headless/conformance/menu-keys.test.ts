@@ -43,7 +43,7 @@ const mount = () => {
 };
 
 describe("std.options: Menu keys", () => {
-  test.skip("A Menu trigger's Enter opens the menu with focus on `menu` and the first item highlighted", async () => {
+  test("A Menu trigger's Enter opens the menu with focus on `menu` and the first item highlighted", async () => {
     const { t, open } = mount();
     expect(t.find("mn.trigger").state.expanded).toBe(false);
     await open();
@@ -54,7 +54,7 @@ describe("std.options: Menu keys", () => {
     t.dispose();
   });
 
-  test.skip("ArrowUp on the first wraps to the last", async () => {
+  test("ArrowUp on the first wraps to the last", async () => {
     const { t, open, menu } = mount();
     await open();
     await menu("ArrowUp");
@@ -64,7 +64,7 @@ describe("std.options: Menu keys", () => {
     t.dispose();
   });
 
-  test.skip("Enter calls `onSelect` and returns focus to the trigger", async () => {
+  test("Enter calls `onSelect` and returns focus to the trigger", async () => {
     const { t, open, menu, selected } = mount();
     await open();
     await menu("ArrowDown");
@@ -75,7 +75,7 @@ describe("std.options: Menu keys", () => {
     t.dispose();
   });
 
-  test.skip("Escape returns focus without a call", async () => {
+  test("Escape returns focus without a call", async () => {
     const { t, open, menu, selected } = mount();
     await open();
     await menu("ArrowDown");
@@ -86,7 +86,7 @@ describe("std.options: Menu keys", () => {
     t.dispose();
   });
 
-  test.skip("Tab closes it without moving focus back", async () => {
+  test("Tab closes it without moving focus back", async () => {
     const { t, open, menu, selected } = mount();
     await open();
     await menu("Tab");
@@ -96,7 +96,7 @@ describe("std.options: Menu keys", () => {
     t.dispose();
   });
 
-  test.skip("Space and a click choose too, and ArrowDown, ArrowUp, Home and End keep the highlight in range (property)", async () => {
+  test("Space and a click choose too, and ArrowDown, ArrowUp, Home and End keep the highlight in range (property)", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(fc.constantFrom("ArrowDown", "ArrowUp", "Home", "End"), { maxLength: 10 }),
@@ -118,7 +118,7 @@ describe("std.options: Menu keys", () => {
     );
   });
 
-  test.skip("a click on an item chooses it and an item with `checked` is a `menuitemcheckbox`", async () => {
+  test("a click on an item chooses it and an item with `checked` is a `menuitemcheckbox`", async () => {
     const selected: string[] = [];
     const t = render(
       page((c) =>

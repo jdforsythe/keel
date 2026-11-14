@@ -11,7 +11,7 @@ import { render } from "@keel/testing";
 import { Button } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, headlessSnapshots, page, simCtx } from "./fixtures.ts";
+import { headlessSnapshots, inScope, page, SEED, simCtx } from "./fixtures.ts";
 
 const opts: readonly Option<string>[] = [
   { key: "qk", text: "Quartz" },
@@ -32,7 +32,7 @@ const clean = (): void => {
 const KEYS = ["ArrowDown", "ArrowUp", "Home", "End", "Enter", " ", "Escape", "q", "z", "u"] as const;
 
 describe("std.headless: no chart holds app data", () => {
-  test.skip("No chart's state or log holds a key, a text or a typed character after any Listbox flow", async () => {
+  test("No chart's state or log holds a key, a text or a typed character after any Listbox flow", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(fc.constantFrom(...KEYS), { maxLength: 12 }), async (keys) => {
         const ctx = simCtx();
@@ -69,8 +69,8 @@ describe("std.headless: no chart holds app data", () => {
   });
 
   test.skip("No chart's state or log holds a key, a text or a typed character after a Combobox, Menu or Tabs flow", async () => {
-    const text = signal("");
-    const picked = signal("zk");
+    const text = inScope(() => signal(""));
+    const picked = inScope(() => signal("zk"));
     const tc = render(
       page((c) =>
         Combobox(
@@ -128,7 +128,7 @@ describe("std.headless: no chart holds app data", () => {
     tt.dispose();
   });
 
-  test.skip("No chart's state or log holds a key, a text or a typed character after a Dialog, Disclosure or Toaster flow", async () => {
+  test("No chart's state or log holds a key, a text or a typed character after a Dialog, Disclosure or Toaster flow", async () => {
     const td = render(
       page((c) =>
         Dialog(
@@ -157,15 +157,17 @@ describe("std.headless: no chart holds app data", () => {
     clean();
     ts.dispose();
 
-    const items = signal<readonly ToastItem[]>([
-      { id: "n1", text: "Zinc saved", tone: "status" },
-      { id: "n2", text: "Quartz failed", tone: "alert" },
-    ]);
+    const items = inScope(() =>
+      signal<readonly ToastItem[]>([
+        { id: "n1", text: "Zinc saved", tone: "status" },
+        { id: "n2", text: "Quartz failed", tone: "alert" },
+      ]),
+    );
     const tz = render(
       page((c) =>
         Toaster(
           {
-            id: "nd.tz",
+            id: "nd.tst",
             items: () => items.get(),
             onDismiss: (id) => items.set(items.get().filter((i) => i.id !== id)),
             dismiss: "Close",
@@ -177,9 +179,9 @@ describe("std.headless: no chart holds app data", () => {
       ),
       { props: {}, ctx: simCtx() },
     );
-    await tz.fire("nd.tz.dismiss.n1", { type: "focus" });
+    await tz.fire("nd.tst.dismiss.n1", { type: "focus" });
     clean();
-    await tz.fire("nd.tz.dismiss.n2", { type: "click" });
+    await tz.fire("nd.tst.dismiss.n2", { type: "click" });
     await tz.settle();
     clean();
     tz.dispose();

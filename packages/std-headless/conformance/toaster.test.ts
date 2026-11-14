@@ -9,11 +9,11 @@ import { signal } from "@keel/reactive";
 import { render } from "@keel/testing";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, page, simCtx } from "./fixtures.ts";
+import { inScope, page, SEED, simCtx } from "./fixtures.ts";
 
 const mount = (initial: readonly ToastItem[]) => {
   const ctx = simCtx();
-  const items = signal<readonly ToastItem[]>(initial);
+  const items = inScope(() => signal<readonly ToastItem[]>(initial));
   const dismissed: string[] = [];
   const t = render(
     page((c) =>
@@ -45,7 +45,7 @@ const saved: ToastItem = { id: "saved", text: "Order saved", tone: "status" };
 const failed: ToastItem = { id: "failed", text: "Payment failed", tone: "alert" };
 
 describe("std.headless: Toaster", () => {
-  test.skip("A Toaster renders empty `status` and `alert` regions", () => {
+  test("A Toaster renders empty `status` and `alert` regions", () => {
     const { t } = mount([]);
     expect(t.find("tz.status").role).toBe("status");
     expect(t.find("tz.alert").role).toBe("alert");
@@ -54,7 +54,7 @@ describe("std.headless: Toaster", () => {
     t.dispose();
   });
 
-  test.skip("an item renders in the region of its tone with a dismiss button", () => {
+  test("an item renders in the region of its tone with a dismiss button", () => {
     const { t } = mount([saved, failed]);
     expect(t.find("tz.toast.saved").text).toContain("Order saved");
     expect(t.find("tz.toast.failed").text).toContain("Payment failed");
@@ -66,7 +66,7 @@ describe("std.headless: Toaster", () => {
     t.dispose();
   });
 
-  test.skip("a `status` item with `duration` 5,000 calls `onDismiss` after 5,000 ms of sim clock and not before", async () => {
+  test("a `status` item with `duration` 5,000 calls `onDismiss` after 5,000 ms of sim clock and not before", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 4999 }), async (early) => {
         const { t, dismissed, wait } = mount([saved]);
@@ -84,7 +84,7 @@ describe("std.headless: Toaster", () => {
     );
   });
 
-  test.skip("focus inside it holds it past 5,000 ms", async () => {
+  test("focus inside it holds it past 5,000 ms", async () => {
     const { t, dismissed, wait } = mount([saved]);
     await wait(3000);
     await t.fire("tz.dismiss.saved", { type: "focus" });
@@ -93,7 +93,7 @@ describe("std.headless: Toaster", () => {
     t.dispose();
   });
 
-  test.skip("leaving the item resumes it and starts the full duration again", async () => {
+  test("leaving the item resumes it and starts the full duration again", async () => {
     const { t, dismissed, wait } = mount([saved]);
     await wait(4000);
     await t.fire("tz.dismiss.saved", { type: "focus" });
@@ -106,7 +106,7 @@ describe("std.headless: Toaster", () => {
     t.dispose();
   });
 
-  test.skip("an `alert` item stays", async () => {
+  test("an `alert` item stays", async () => {
     const { t, dismissed, wait } = mount([failed]);
     await wait(600_000);
     expect(dismissed).toEqual([]);

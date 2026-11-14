@@ -34,7 +34,7 @@ const mount = (alert?: string) =>
 const isOpen = (id: string): boolean => el(id)?.hasAttribute("open") === true;
 
 describe("std.headless: Dialog", () => {
-  test.skip("A Dialog's trigger click opens the dialog with focus on its first button", async () => {
+  test("A Dialog's trigger click opens the dialog with focus on its first button", async () => {
     const t = mount();
     expect(isOpen("dlg.dialog")).toBe(false);
     expect(t.find("dlg.trigger").role).toBe("button");
@@ -46,7 +46,7 @@ describe("std.headless: Dialog", () => {
     t.dispose();
   });
 
-  test.skip("Escape closes the dialog and focuses the trigger", async () => {
+  test("Escape closes the dialog and focuses the trigger", async () => {
     const t = mount();
     await t.fire("dlg.trigger", { type: "focus" });
     await t.fire("dlg.trigger", { type: "click" });
@@ -57,7 +57,7 @@ describe("std.headless: Dialog", () => {
     t.dispose();
   });
 
-  test.skip("a click, Enter or Space on the trigger opens, and the dialog is named by its title (property over the opening key)", async () => {
+  test("a click, Enter or Space on the trigger opens, and the dialog is named by its title (property over the opening key)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom("click", "Enter", " "), async (how) => {
         const t = mount();
@@ -71,7 +71,7 @@ describe("std.headless: Dialog", () => {
     );
   });
 
-  test.skip("an `alert` Dialog renders `alertdialog` with `aria-describedby`", async () => {
+  test("an `alert` Dialog renders `alertdialog` with `aria-describedby`", async () => {
     const t = mount("This cannot be undone.");
     expect(t.find("dlg.dialog").role).toBe("alertdialog");
     expect(el("dlg.dialog")?.getAttribute("aria-describedby")).toBe("dlg.description");

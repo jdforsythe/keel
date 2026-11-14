@@ -8,7 +8,11 @@ import { Combobox, Listbox, Menu, Tabs, Toaster } from "@keel/std-headless";
 import { render } from "@keel/testing";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, codeOf, page, simCtx, thrownSync } from "./fixtures.ts";
+import { SEED, page, simCtx, thrownSync } from "./fixtures.ts";
+
+// A throw at render surfaces through the harness's root Boundary as `keel.unexpected` carrying the thrown message (k.errors),
+// so the E-code is read from the message.
+const codeOf = (e: unknown): string | undefined => (e instanceof Error ? /\bE\d{4}\b/.exec(e.message)?.[0] : undefined);
 
 const options = (keys: readonly string[]) => keys.map((key) => ({ key, text: `Item ${key.length}` }));
 
@@ -107,17 +111,17 @@ const badKey = fc.oneof(
 
 describe("std.headless: E2801 keys", () => {
   for (const [name, make] of widgets) {
-    test.skip(`${name}: a key \`a b\` throws E2801`, () => {
+    test(`${name}: a key \`a b\` throws E2801`, () => {
       const e = run(make, ["ok", "a b"]);
       expect(codeOf(e)).toBe("E2801");
     });
 
-    test.skip(`${name}: a repeated key throws E2801`, () => {
+    test(`${name}: a repeated key throws E2801`, () => {
       expect(codeOf(run(make, ["one", "two", "one"]))).toBe("E2801");
     });
   }
 
-  test.skip("E2801 an option, tab or toast key that is not 1 to 64 of `[A-Za-z0-9_-]` throws at render (property)", () => {
+  test("E2801 an option, tab or toast key that is not 1 to 64 of `[A-Za-z0-9_-]` throws at render (property)", () => {
     fc.assert(
       fc.property(fc.constantFrom(...widgets), badKey, ([, make], bad) => {
         expect(codeOf(run(make, ["fine", bad]))).toBe("E2801");
@@ -126,7 +130,7 @@ describe("std.headless: E2801 keys", () => {
     );
   });
 
-  test.skip("E2801 does not fire for distinct keys of 1 to 64 of `[A-Za-z0-9_-]` (property)", () => {
+  test("E2801 does not fire for distinct keys of 1 to 64 of `[A-Za-z0-9_-]` (property)", () => {
     fc.assert(
       fc.property(
         fc.constantFrom(...widgets),

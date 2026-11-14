@@ -39,7 +39,7 @@ const mount = () => {
 };
 
 describe("std.options: typeahead", () => {
-  test.skip("Typing `b`, `e` within 500 ms highlights the first option after the active one whose text starts with `be`", async () => {
+  test("Typing `b`, `e` within 500 ms highlights the first option after the active one whose text starts with `be`", async () => {
     const { t, type, wait, active } = mount();
     await t.fire("ty.list", { type: "focus" });
     expect(active()).toBe("ty.option.apple");
@@ -51,7 +51,7 @@ describe("std.options: typeahead", () => {
     t.dispose();
   });
 
-  test.skip("after 500 ms with no key a new buffer starts", async () => {
+  test("after 500 ms with no key a new buffer starts", async () => {
     const { t, type, wait, active } = mount();
     await t.fire("ty.list", { type: "focus" });
     await type("b");
@@ -62,20 +62,20 @@ describe("std.options: typeahead", () => {
     t.dispose();
   });
 
-  test.skip("typeahead is case-insensitive for any casing of `be` (property)", async () => {
+  test("typeahead is case-insensitive for any casing of `be` (property)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom("be", "BE", "bE", "Be"), async (typed) => {
         const { t, type, active } = mount();
         await t.fire("ty.list", { type: "focus" });
         for (const ch of typed) await type(ch);
-        expect(active()).toBe("ty.option.banana");
+        expect(active()).toBe("ty.option.beet");
         t.dispose();
       }),
       { seed: SEED, numRuns: 4 },
     );
   });
 
-  test.skip("a Menu takes typeahead too: after 500 ms a new buffer starts", async () => {
+  test("a Menu takes typeahead too: after 500 ms a new buffer starts", async () => {
     const ctx = simCtx();
     const t = render(
       page((c) => Menu({ id: "tm", trigger: () => "Words", items: () => words, onSelect: () => {} }, undefined, c)),

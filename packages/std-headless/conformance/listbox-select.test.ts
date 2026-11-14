@@ -43,7 +43,7 @@ const mount = (mode: "single" | "multiple", selected: readonly string[], options
 const key = (t: ReturnType<typeof mount>["t"], k: string) => t.fire("lb.list", { type: "keydown", key: k });
 
 describe("std.options: Listbox selection", () => {
-  test.skip("In single mode Space calls `onChange([key])` with the active key", async () => {
+  test("In single mode Space calls `onChange([key])` with the active key", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 3 }), async (n) => {
         const { t, calls } = mount("single", []);
@@ -57,7 +57,7 @@ describe("std.options: Listbox selection", () => {
     );
   });
 
-  test.skip("in single mode Enter does the same as Space, and a click jumps to the option and does the same", async () => {
+  test("in single mode Enter does the same as Space, and a click jumps to the option and does the same", async () => {
     const { t, calls } = mount("single", []);
     await t.fire("lb.list", { type: "focus" });
     await key(t, "ArrowDown");
@@ -67,7 +67,7 @@ describe("std.options: Listbox selection", () => {
     t.dispose();
   });
 
-  test.skip("in multiple it adds the key and keeps the others", async () => {
+  test("in multiple it adds the key and keeps the others", async () => {
     const { t, calls } = mount("multiple", ["cherry", "date"]);
     await t.fire("lb.list", { type: "focus" });
     expect(t.find("lb.list").state.active).toBe("lb.option.cherry");
@@ -78,7 +78,7 @@ describe("std.options: Listbox selection", () => {
     t.dispose();
   });
 
-  test.skip("in multiple it removes the key and keeps the others", async () => {
+  test("in multiple it removes the key and keeps the others", async () => {
     const { t, calls } = mount("multiple", ["banana", "date"]);
     await t.fire("lb.list", { type: "focus" });
     expect(t.find("lb.list").state.active).toBe("lb.option.banana");
@@ -87,7 +87,7 @@ describe("std.options: Listbox selection", () => {
     t.dispose();
   });
 
-  test.skip("a disabled option is never in a call (property over disabled flags and key sequences, both modes)", async () => {
+  test("a disabled option is never in a call (property over disabled flags and key sequences, both modes)", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.constantFrom<"single" | "multiple">("single", "multiple"),
@@ -109,7 +109,7 @@ describe("std.options: Listbox selection", () => {
     );
   });
 
-  test.skip("a disabled option can be highlighted and Space on it makes no call", async () => {
+  test("a disabled option can be highlighted and Space on it makes no call", async () => {
     const options = base.map((o) => (o.key === "banana" ? { ...o, disabled: true } : o));
     const { t, calls } = mount("single", [], options);
     await t.fire("lb.list", { type: "focus" });
