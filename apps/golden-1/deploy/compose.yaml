@@ -9,6 +9,7 @@ services:
     environment:
       KEEL_ORIGIN: ${KEEL_ORIGIN:?}
       KEEL_SECRET: ${KEEL_SECRET:?}
+      KEEL_DATABASE_URL:
     volumes:
       - api-data:/data
 volumes:

@@ -3,7 +3,7 @@
 The todo app. `topology.ts` defines two deployables:
 
 - `web` (`client`, `host: 'api'`): the browser app, built to `dist/web/` and copied into `dist/api/`, so `api` serves it. It reads and writes the board over HTTP.
-- `api` (`node`): the `api` module, which owns the board (`api.board`); the `digest` module, which counts open and done todos; and the `sessions` module of `@keel/std-sessions`, which answers the production tally (Production tallies below).
+- `api` (`node`, `storage: 'sqlite'`): the `api` module, which owns the board (`api.board`); the `digest` module, which counts open and done todos; and the `sessions` module of `@keel/std-sessions`, which answers the production tally (Production tallies below).
 
 ## Several users
 Every open page follows the board. `api` serves the board channel at `GET /api/board/events`; after any save, each page re-reads `GET /api/lists` into `todos.view`, its own writes included. The header shows the stream's state: Live, Connecting, Offline or No access.
@@ -12,7 +12,7 @@ Writes go through an outbox (`todos.outbox`, kept in the browser's storage). Eac
 
 The edit page keeps its status in a state chart, `editorChart` (`modules/todos/editorChart.ts`, store `todos.editor`): opening the page moves it from `viewing` to `editing`, Save to `saving`, and the outbox's answer to `viewing` (sent), `conflict` (refused) or `saving` again (failed, up to 3 tries, then `gaveUp`). A queued edit stays in `saving` until the outbox sends it; the chart catches up when an edit page opens. In `conflict`, Keep mine in the outbox panel sends the edit again within the 3 tries and Keep theirs drops it; once the tries are used, Keep mine is off. The page names a failed try, a refused edit and a given-up one in `todos.edit.status`, and Save is off in `conflict` and `gaveUp`.
 
-The server state lives in one process, so every user of the board must reach the same `api` server.
+The server state lives in one SQLite file. Every `api` process on that host shares it: a save from one is a 409 `keel.conflict` in another that read the board before it. Pushes reach only the streams open in the process that saved.
 
 `digest` recounts the board on `POST /digest/refresh` and at the start of every hour (UTC). Its job, `digest.recount`, reads `GET /api/lists` through `service({ module: 'api' })` and stores the counts; `GET /digest` answers the newest count and `GET /digest/feed` streams each new one as server-sent events. The job queue and the schedule are the module's runners (`modules/digest/runners.server.ts`), so they run wherever `topology.ts` places `digest`.
 
@@ -33,13 +33,14 @@ Run `pnpm dev` from `apps/golden-1`. `keel dev` serves `web` with hot reload and
    - `dist/web/`, the `web` client as static files (`index.html`, `assets/`, `keel-mark.svg`);
    - `dist/api/`: `server.mjs`, the generated entry with every dependency bundled, beside a copy of the `web` client, `routes.json` and `std.json`;
    - `deploy/api/Dockerfile` and `deploy/compose.yaml`, from `topology.ts`.
-2. `pnpm api` runs `dist/api/server.mjs`, with `ctx.storage` in `.api.storage`. It serves the whole app: `GET /` returns the client's `index.html`, `/api/*` answers the board, and `dist/web/` is the same client for a static host (`docs/guide/deploy-client.md`). It reads its settings from the environment and exits with E1560 when one is missing or invalid:
+2. `pnpm api` runs `dist/api/server.mjs`, with `ctx.storage` in the SQLite file `.api.sqlite` (`@keel/std-db`). A board kept in an older `.api.storage` file is not read: the server starts on an empty database. It serves the whole app: `GET /` returns the client's `index.html`, `/api/*` answers the board, and `dist/web/` is the same client for a static host (`docs/guide/deploy-client.md`). It reads its settings from the environment and exits with E1560 when one is missing or invalid:
    - `KEEL_SECRET`: 32 or more random bytes. It signs caller cookies, so set the same value for every deployable of the app.
    - `PORT`: default 8080.
    - `KEEL_ORIGIN`: the public origin, such as `https://todo.example`. Behind a proxy that terminates TLS it makes the caller cookie `Secure` and the same-site check compare against the public host.
+   - `KEEL_DATABASE_URL`: the SQLite file as a `file:` URL, default `file:/data/keel.sqlite`. Processes on one host may share it; replicas on several hosts need `storage: 'postgres'` and a `postgres:` URL. A file that cannot be opened prints E2153 and exits 1; the URL never appears in a log line.
 3. On SIGTERM or SIGINT the server stops listening, lets the runners settle and exits 0. A job that was running when it stopped runs again at the next start.
 
-`docker compose -f deploy/compose.yaml up` builds and runs the same entry in `node:22-slim`, with storage on the `api-data` volume; it takes `KEEL_SECRET` and `KEEL_ORIGIN` from the environment.
+`docker compose -f deploy/compose.yaml up` builds and runs the same entry in `node:22-slim`, with the SQLite file on the `api-data` volume (`/data/keel.sqlite`); it takes `KEEL_SECRET`, `KEEL_ORIGIN` and `KEEL_DATABASE_URL` from the environment.
 
 ## Splitting
 Moving `digest` into its own deployable edits `topology.ts` alone:

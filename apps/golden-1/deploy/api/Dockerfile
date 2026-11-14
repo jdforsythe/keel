@@ -7,4 +7,4 @@ RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data
 EXPOSE 8080
-CMD ["node", "--experimental-webstorage", "--localstorage-file=/data/storage", "--disable-warning=ExperimentalWarning", "server.mjs"]
+CMD ["node", "--disable-warning=ExperimentalWarning", "server.mjs"]

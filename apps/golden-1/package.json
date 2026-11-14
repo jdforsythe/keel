@@ -8,7 +8,7 @@
     "test": "vitest run",
     "build": "keel build",
     "dev": "keel dev",
-    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
+    "api": "KEEL_DATABASE_URL=file://$PWD/.api.sqlite node --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
     "@keel/compiler": "workspace:*",

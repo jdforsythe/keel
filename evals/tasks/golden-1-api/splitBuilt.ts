@@ -8,6 +8,7 @@ import { createServer } from "node:net";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { setTimeout as sleep } from "node:timers/promises";
+import { pathToFileURL } from "node:url";
 
 const SKIP = new Set(["node_modules", "dist", "deploy", ".keel", ".turbo"]);
 const SECRET = "golden-1-split-proof-secret-of-32-bytes-or-more";
@@ -15,7 +16,7 @@ const TOPOLOGY_B = `import { topology } from "@keel/server";
 
 export default topology({
   web: { modules: ["todos"], adapter: "client" },
-  api: { modules: ["api", "sessions"], adapter: "node" },
+  api: { modules: ["api", "sessions"], adapter: "node", storage: "sqlite" },
   digest: { modules: ["digest"], adapter: "node" },
 });
 `;
@@ -42,7 +43,8 @@ async function sources(dir: string, rel = "", out = new Map<string, string>()): 
   for (const e of await readdir(join(dir, rel), { withFileTypes: true })) {
     const p = rel === "" ? e.name : `${rel}/${e.name}`;
     // Generated and installed folders are skipped at the app root only: a source folder of the same name deeper down counts.
-    if (rel === "" && (SKIP.has(e.name) || e.name.startsWith(".api.storage"))) continue;
+    if (rel === "" && (SKIP.has(e.name) || e.name.startsWith(".api.storage") || e.name.startsWith(".api.sqlite")))
+      continue;
     if (e.isDirectory()) await sources(dir, p, out);
     else if (e.isFile()) out.set(p, await readFile(join(dir, p), "latin1"));
   }
@@ -61,7 +63,12 @@ const freePort = (): Promise<number> =>
   });
 
 type Proc = { child: ChildProcess; out: string[]; exited: Promise<number | null> };
+/**
+ * Serve `dist/<name>/server.mjs` of `copy`. The `api` deployable is `storage: 'sqlite'` in both topologies: its
+ * database is `<storage>.sqlite` (`KEEL_DATABASE_URL`); the others keep web storage in `storage`.
+ */
 function serve(copy: string, name: string, port: number, storage: string, env: Record<string, string>): Proc {
+  const db = name === "api" ? { KEEL_DATABASE_URL: pathToFileURL(`${storage}.sqlite`).href } : {};
   const child = spawn(
     process.execPath,
     [
@@ -70,7 +77,7 @@ function serve(copy: string, name: string, port: number, storage: string, env: R
       "--disable-warning=ExperimentalWarning",
       join(copy, "dist", name, "server.mjs"),
     ],
-    { cwd: copy, env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, ...env }, stdio: "pipe" },
+    { cwd: copy, env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, ...db, ...env }, stdio: "pipe" },
   );
   const out: string[] = [];
   child.stdout?.on("data", (b) => out.push(String(b)));
@@ -221,7 +228,7 @@ async function copyApp(app: string, tmp: string, name: string): Promise<string> 
   const to = join(tmp, name);
   await cp(app, to, {
     recursive: true,
-    filter: (src) => !/[/\\](node_modules|dist|\.turbo)$/.test(src) && !/\.api\.storage/.test(src),
+    filter: (src) => !/[/\\](node_modules|dist|\.turbo)$/.test(src) && !/\.api\.(storage|sqlite)/.test(src),
   });
   await symlink(join(app, "node_modules"), join(to, "node_modules"), "dir");
   return to;
@@ -337,21 +344,22 @@ export async function splitBuilt(root: string): Promise<string | undefined> {
       const code = await stop(p);
       note(code === 0, `SIGTERM exit ${String(code)}`);
     }
-    // Web storage keeps keys as UTF-16 blobs. The count is written by the digest module into the storage of the process that runs it.
-    const holds = (file: string): boolean => {
-      const db = new DatabaseSync(file);
+    // The count is written by the digest module into the storage of the process that runs it: an api process's SQLite
+    // file (std.db `keel_kv`), or the digest process's web storage, which keeps keys as UTF-16 blobs.
+    const holds = (file: string, sqlite: boolean): boolean => {
+      const db = new DatabaseSync(sqlite ? `${file}.sqlite` : file);
       try {
-        return (
-          db.prepare("SELECT 1 FROM nodejs_webstorage WHERE key = ?").get(Buffer.from("digest.latest", "utf16le")) !==
-          undefined
-        );
+        return sqlite
+          ? db.prepare("SELECT 1 FROM keel_kv WHERE key = ?").get("digest.latest") !== undefined
+          : db.prepare("SELECT 1 FROM nodejs_webstorage WHERE key = ?").get(Buffer.from("digest.latest", "utf16le")) !==
+              undefined;
       } finally {
         db.close();
       }
     };
-    note(holds(join(tmp, "a-api.storage")), "A storage lacks digest.latest");
-    note(holds(digestStorage), "B digest storage lacks digest.latest");
-    note(!holds(join(tmp, "b-api.storage")), "B api storage holds digest.latest");
+    note(holds(join(tmp, "a-api.storage"), true), "A storage lacks digest.latest");
+    note(holds(digestStorage, false), "B digest storage lacks digest.latest");
+    note(!holds(join(tmp, "b-api.storage"), true), "B api storage holds digest.latest");
     const again = serve(b, "digest", pd, digestStorage, peers);
     procs.push(again);
     must(await ready(`http://127.0.0.1:${pd}/digest`), "B digest did not restart");
