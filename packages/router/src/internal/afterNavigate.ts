@@ -5,9 +5,10 @@ import { splitUrl } from "./splitUrl.ts";
  * After a navigation initiated by `navigate` (push or replace), inside `root` (k.head Client): to another route,
  * focus the page's first `h1`, else `main` (either given `tabindex="-1"`); within one route (`kept`, the element
  * focused before), focus stays, on the element with its id when the page was rebuilt. Then scroll to the hash
- * target or the top. Revalidation never calls this.
+ * target, else to the top unless the path is `from`'s (a search-only navigation keeps scroll). Revalidation never
+ * calls this.
  */
-export function afterNavigate(root: ParentNode | null, url: string, kept?: Element | null): void {
+export function afterNavigate(root: ParentNode | null, url: string, kept?: Element | null, from?: string): void {
   if (typeof window === "undefined") return;
   const main = root?.querySelector("main") ?? null;
   const to =
@@ -21,8 +22,8 @@ export function afterNavigate(root: ParentNode | null, url: string, kept?: Eleme
     // Kernel focus, not user input: its focus/blur are not reported to ctx observers.
     quiet(() => to.focus({ preventScroll: true }));
   }
-  const { hash } = splitUrl(url);
+  const { path, hash } = splitUrl(url);
   const target = hash === "" ? null : document.getElementById(hash);
   if (target !== null) target.scrollIntoView();
-  else window.scrollTo(0, 0);
+  else if (from === undefined || splitUrl(from).path !== path) window.scrollTo(0, 0);
 }

@@ -15,7 +15,7 @@ describe("k.router scroll and focus", () => {
     expect(window.scrollY).toBe(0);
     app.stop();
   });
-  it.skip("after a search-only push the scroll position is unchanged", async () => {
+  it("after a search-only push the scroll position is unchanged", async () => {
     const app = await start("/orders", { render: true });
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 5000 }), fc.integer({ min: 0, max: 1000 }), async (y, page) => {

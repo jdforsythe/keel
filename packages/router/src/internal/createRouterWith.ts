@@ -167,7 +167,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     const reset = resetRoot;
     resetRoot = null;
     reset?.();
-    if (mode === "push" || mode === "replace") afterNavigate(anchor?.parentNode ?? null, next.url, kept);
+    if (mode === "push" || mode === "replace") afterNavigate(anchor?.parentNode ?? null, next.url, kept, prev?.url);
     else if (mode === "pop" && w !== null) w.scrollTo(0, scrolls.get(entry ?? "") ?? 0);
   };
 
