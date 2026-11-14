@@ -1,7 +1,7 @@
 # k.persist: Storage and durable state
 status: proposed
 
-**Storage.** `ctx.storage` holds string values by string key; each operation returns a promise:
+**Storage.** `ctx.storage` holds string values by string key, as given (secrets: k.privacy); each operation returns a promise:
 - `get(key)`: the value, `null` when absent. `set(key, value)` stores it.
 - `read(keys)`: one value per position asked, a repeated key included, `null` for an absent one, as one cut: no `commit` lands between two of them.
 - `commit(writes)`: each write is `{ key, expect, value? }`, `expect` a value or `null` (absent). When every key holds its `expect`, each `value` is stored and it resolves `true`; otherwise nothing is stored and it resolves `false`. A write without `value` is a condition only. One key twice throws E1606.
