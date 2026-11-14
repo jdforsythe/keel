@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
@@ -12,10 +12,10 @@ const BUILD_CONFIG = /(?:^|\/)(?:vite|vitest|stryker)\.config\.[cm]?[jt]s$/;
 const ARTIFACT = /(?:^|\/)\.keel\/[^/]+\.json$/;
 /**
  * Generated deploy and shell files and what decides which exist and what they hold (k.deploy Deploy files, k.shell
- * Files; `package.json` gives a shell its version): `keel check` compares them (E1005).
+ * Files): `keel check` compares them (E1005). A `package.json` beside a `topology.ts` gives a shell its version.
  */
 const DEPLOY =
-  /(?:^|\/)(?:deploy\/(?:[^/]+\/(?:Dockerfile|capacitor\/capacitor\.config\.json|tauri\/(?:tauri\.conf\.json|Cargo\.toml|build\.rs|src\/(?:main|lib)\.rs|capabilities\/default\.json))|compose\.yaml)|\.github\/workflows\/ci\.yml|turbo\.json|package\.json)$/;
+  /(?:^|\/)(?:deploy\/(?:[^/]+\/(?:Dockerfile|capacitor\/capacitor\.config\.json|tauri\/(?:tauri\.conf\.json|Cargo\.toml|build\.rs|src\/(?:main|lib)\.rs|capabilities\/default\.json))|compose\.yaml)|\.github\/workflows\/ci\.yml|turbo\.json)$/;
 const QUERY = (rel: string): boolean =>
   (CODE_FILE.test(rel) && !BUILD_CONFIG.test(rel)) ||
   (rel.startsWith("spec/") && rel.endsWith(".md")) ||
@@ -31,7 +31,7 @@ const TO_A11Y = /(?:^|\/)reports$/;
 
 /**
  * Binary only: read the project under `cwd` into engine files. `query` (check, spec, test): code, spec
- * markdown, `.keel` artifacts and generated deploy files of every project under `cwd`, and the ledger. `ledger`: `query` plus `packages/<pkg>/reports/mutation/mutation.json` and each project's `reports/a11y.json`.
+ * markdown, `.keel` artifacts, generated deploy files and the `package.json` beside each `topology.ts` of every project under `cwd`, and the ledger. `ledger`: `query` plus `packages/<pkg>/reports/mutation/mutation.json` and each project's `reports/a11y.json`.
  * `tree` (scaffold, codemod, build): every text file under 1 MB,
  * since structural operations read manifests, `package.json`, `turbo.json` and CI files too.
  */
@@ -40,7 +40,9 @@ export function readProject(cwd: string, scope: "query" | "ledger" | "tree"): { 
   const want = (rel: string, abs: string): boolean =>
     scope === "tree"
       ? TEXT.test(rel) && statSync(abs).size <= MAX_BYTES
-      : QUERY(rel) || (scope === "ledger" && (MUTATION_REPORT.test(rel) || A11Y_REPORT.test(rel)));
+      : QUERY(rel) ||
+        (/(?:^|\/)package\.json$/.test(rel) && existsSync(join(abs, "..", "topology.ts"))) ||
+        (scope === "ledger" && (MUTATION_REPORT.test(rel) || A11Y_REPORT.test(rel)));
   const walk = (dir: string, rel: string): void => {
     for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
       const r = rel === "" ? e.name : `${rel}/${e.name}`;
