@@ -781,6 +781,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1822: {
+    opts: NO_TYPES,
+    bad: [f("modules/a/x.ts", "import { Part } from '@keel/ui/aria'\nexport const x = Part\n")],
+    clean: [f("packages/std-x/src/a.ts", "import { Part } from '@keel/ui/aria'\nexport const a = Part\n")],
+  },
   E1901: {
     opts: NO_TYPES,
     bad: [

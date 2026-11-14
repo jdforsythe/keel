@@ -3,11 +3,15 @@
 // Seed: 1337.
 // Behavior extras: the focus fallback, `showModal()` after the commit, platform `close`, a trigger no longer connected.
 // `onDismiss` is not in the Roles table's props for `dialog`; the Behavior paragraph names it, so it is passed here.
-import { signal } from "@keel/reactive";
+import { signal as newSignal, scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
+
+/** Signals and computeds are created in a scope (k.reactive E1203). */
+const owner = scope(() => undefined);
+const signal = <T>(v: T) => owner.run(() => newSignal(v));
 
 const SEED = 1337;
 type Open = ReturnType<typeof signal<boolean>>;
@@ -59,7 +63,7 @@ const setup = (role: Role, content: () => Node[], open: Open = signal(false)): S
 };
 
 describe("k.aria: dialog", () => {
-  test.skip("A `dialog` given `open` true has the `open` attribute and focus on its first `button`", async () => {
+  test("A `dialog` given `open` true has the `open` attribute and focus on its first `button`", async () => {
     for (const role of ["dialog", "alertdialog"] as const) {
       const s = setup(role, () => [button("first"), button("second")]);
       await flush();
@@ -72,7 +76,7 @@ describe("k.aria: dialog", () => {
     }
   });
 
-  test.skip("a `cancel` event calls `onDismiss` and leaves it open", async () => {
+  test("a `cancel` event calls `onDismiss` and leaves it open", async () => {
     const s = setup("dialog", () => [button("first")], signal(true));
     await flush();
     const ev = new Event("cancel", { cancelable: true });
@@ -84,7 +88,7 @@ describe("k.aria: dialog", () => {
     s.off();
   });
 
-  test.skip("`open` false closes it and focuses the element focused before", async () => {
+  test("`open` false closes it and focuses the element focused before", async () => {
     const before = trigger();
     before.focus();
     const s = setup("dialog", () => [button("first")]);
@@ -99,7 +103,7 @@ describe("k.aria: dialog", () => {
     s.off();
   });
 
-  test.skip("`open` true calls `showModal()` after the commit", async () => {
+  test("`open` true calls `showModal()` after the commit", async () => {
     const spy = vi.spyOn(HTMLDialogElement.prototype, "showModal");
     const s = setup("dialog", () => [button("first")]);
     await flush();
@@ -111,7 +115,7 @@ describe("k.aria: dialog", () => {
     s.off();
   });
 
-  test.skip("`open` false calls `close()`", async () => {
+  test("`open` false calls `close()`", async () => {
     const spy = vi.spyOn(HTMLDialogElement.prototype, "close");
     const s = setup("dialog", () => [button("first")], signal(true));
     await flush();
@@ -121,7 +125,7 @@ describe("k.aria: dialog", () => {
     s.off();
   });
 
-  test.skip("focus goes to the first descendant that is a `button`, `input`, `select`, `textarea`, `a[href]` or `tabindex=0`", async () => {
+  test("focus goes to the first descendant that is a `button`, `input`, `select`, `textarea`, `a[href]` or `tabindex=0`", async () => {
     const makers: Record<string, () => HTMLElement> = {
       button: () => document.createElement("button"),
       input: () => document.createElement("input"),
@@ -159,7 +163,7 @@ describe("k.aria: dialog", () => {
     );
   });
 
-  test.skip("with no such descendant, focus goes to the dialog, which has `tabindex=-1`", async () => {
+  test("with no such descendant, focus goes to the dialog, which has `tabindex=-1`", async () => {
     const plain = document.createElement("p");
     plain.textContent = "Nothing to press";
     const s = setup("dialog", () => [plain]);
@@ -171,7 +175,7 @@ describe("k.aria: dialog", () => {
     s.off();
   });
 
-  test.skip("a platform `close` while `open` is true calls `onDismiss`", async () => {
+  test("a platform `close` while `open` is true calls `onDismiss`", async () => {
     const s = setup("dialog", () => [button("first")], signal(true));
     await flush();
     byId(s.host, "dlg").dispatchEvent(new Event("close"));
@@ -180,7 +184,7 @@ describe("k.aria: dialog", () => {
     s.off();
   });
 
-  test.skip("closing returns focus only to an element that is still connected", async () => {
+  test("closing returns focus only to an element that is still connected", async () => {
     const before = trigger();
     before.focus();
     const s = setup("dialog", () => [button("first")]);

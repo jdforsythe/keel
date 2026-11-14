@@ -814,6 +814,13 @@ const ROWS: readonly Row[] = [
     '<Input field={f.field("email")} /> -> add autocomplete="email"',
     "k.a11y",
   ],
+  [
+    "E1822",
+    "@keel/ui/aria imported by app code",
+    "Widget parts carry ARIA contracts a stdlib widget keeps; app code uses the widget.",
+    "import { Part } from '@keel/ui/aria' -> use a @keel/std-headless widget, or a file under unsafe/",
+    "k.aria",
+  ],
   ["E1901", "input inside a <Form> without field", "", "bind the input to a form path with field(path)", "k.forms"],
   [
     "E1902",

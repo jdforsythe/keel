@@ -178,7 +178,7 @@ const cases: [string, () => Node[]][] = [
 
 describe("k.aria: Each role rendered with its required props, inside its required parent and children, has no axe violations", () => {
   for (const [name, make] of cases) {
-    test.skip(`${name} has no axe violations`, async () => {
+    test(`${name} has no axe violations`, async () => {
       const off = mount(() => Part({ id: "wrap", role: "generic", children: make }), container);
       expect(await audit()).toEqual([]);
       off();

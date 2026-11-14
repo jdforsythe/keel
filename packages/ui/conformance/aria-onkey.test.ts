@@ -35,7 +35,7 @@ const listbox = (onKey: (k: KeyInput) => boolean): Node =>
   Part({ id: "lb", role: "listbox", label: "Fruit", onKey, children: () => "o" });
 
 describe("k.aria: onKey", () => {
-  test.skip("`fire(id, { type: 'keydown', key: 'ArrowDown' })` calls `onKey` with `{ key: 'ArrowDown', shift: false, alt: false, mod: false }`", () => {
+  test("`fire(id, { type: 'keydown', key: 'ArrowDown' })` calls `onKey` with `{ key: 'ArrowDown', shift: false, alt: false, mod: false }`", () => {
     const seen: KeyInput[] = [];
     const { host, off } = render(() =>
       listbox((k) => {
@@ -48,7 +48,7 @@ describe("k.aria: onKey", () => {
     off();
   });
 
-  test.skip("a true return from `onKey` cancels the event, a false one does not", () => {
+  test("a true return from `onKey` cancels the event, a false one does not", () => {
     for (const result of [true, false]) {
       const { host, off } = render(() => listbox(() => result));
       const ev = keydown(byId(host, "lb"), { key: "ArrowDown" });
@@ -58,7 +58,7 @@ describe("k.aria: onKey", () => {
     }
   });
 
-  test.skip("`KeyInput` carries the DOM `key`, and `mod` is Ctrl or Meta", () => {
+  test("`KeyInput` carries the DOM `key`, and `mod` is Ctrl or Meta", () => {
     fc.assert(
       fc.property(
         fc.constantFrom("ArrowDown", "ArrowUp", "Home", "End", "Enter", " ", "Escape", "a", "Z"),
@@ -84,7 +84,7 @@ describe("k.aria: onKey", () => {
     );
   });
 
-  test.skip("`onClick`, `onFocus` and `onBlur` run on click, focus and blur", () => {
+  test("`onClick`, `onFocus` and `onBlur` run on click, focus and blur", () => {
     const calls: string[] = [];
     const { host, off } = render(() =>
       Part({
@@ -105,7 +105,7 @@ describe("k.aria: onKey", () => {
     off();
   });
 
-  test.skip("`onInput` on `combobox` receives the value", () => {
+  test("`onInput` on `combobox` receives the value", () => {
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z ]{0,10}$/), (value) => {
         const seen: string[] = [];

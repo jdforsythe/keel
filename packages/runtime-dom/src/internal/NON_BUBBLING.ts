@@ -7,4 +7,6 @@ export const NON_BUBBLING: ReadonlySet<string> = new Set([
   "scroll",
   "load",
   "error",
+  "cancel",
+  "close",
 ]);

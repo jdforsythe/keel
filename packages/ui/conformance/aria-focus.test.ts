@@ -5,12 +5,17 @@
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import * as reactive from "@keel/reactive";
+import { scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { resume } from "@keel/runtime-dom/ops";
 import * as aria from "@keel/ui/aria";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, expectTypeOf, test } from "vitest";
+
+/** Signals and computeds are created in a scope (k.reactive E1203). */
+const owner = scope(() => undefined);
+const owned = <T>(v: T) => owner.run(() => reactive.signal(v));
 
 const SEED = 1337;
 type PartProps = Parameters<typeof Part>[0];
@@ -57,11 +62,11 @@ const make = (kind: Focusable, focus: boolean | reactive.Signal<boolean>): Node 
 const kinds = fc.constantFrom<Focusable[]>("button", "checkbox", "combobox");
 
 describe("k.aria: focus", () => {
-  test.skip("`focus` turning true focuses the element", async () => {
+  test("`focus` turning true focuses the element", async () => {
     await fc.assert(
       fc.asyncProperty(kinds, async (kind) => {
         const prior = outside();
-        const focus = reactive.signal(false);
+        const focus = owned(false);
         const root = host();
         const off = mount(() => make(kind, focus), root);
         await flush();
@@ -75,7 +80,7 @@ describe("k.aria: focus", () => {
     );
   });
 
-  test.skip("`focus` true at the first render leaves focus where it was", async () => {
+  test("`focus` true at the first render leaves focus where it was", async () => {
     await fc.assert(
       fc.asyncProperty(kinds, async (kind) => {
         const prior = outside();
@@ -89,7 +94,7 @@ describe("k.aria: focus", () => {
     );
   });
 
-  test.skip("`focus` true at resume leaves focus where it was", async () => {
+  test("`focus` true at resume leaves focus where it was", async () => {
     const source = `
 import { signal } from "@keel/reactive";
 import { Part } from "@keel/ui/aria";
@@ -123,8 +128,8 @@ export default function FocusIsland(p: { label: string }) {
     expect(document.activeElement).toBe(prior);
   });
 
-  test.skip("`focus` turning from true to false and true again focuses the element again", async () => {
-    const focus = reactive.signal(true);
+  test("`focus` turning from true to false and true again focuses the element again", async () => {
+    const focus = owned(true);
     const root = host();
     const off = mount(() => make("button", focus), root);
     await flush();
@@ -138,7 +143,7 @@ export default function FocusIsland(p: { label: string }) {
     off();
   });
 
-  test.skip("`tabIndex` is `0` or `-1`, never positive (type)", () => {
+  test("`tabIndex` is `0` or `-1`, never positive (type)", () => {
     expectTypeOf<PartProps["tabIndex"]>().toEqualTypeOf<0 | -1 | undefined>();
     const root = host();
     const off = mount(() => Part({ id: "t", role: "generic", tabIndex: -1, children: () => "t" }), root);

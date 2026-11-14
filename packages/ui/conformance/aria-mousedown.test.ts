@@ -28,13 +28,13 @@ const mousedown = (el: Element): MouseEvent => {
 };
 
 describe("k.aria: mousedown", () => {
-  test.skip("A `mousedown` on an `option` is default-prevented", () => {
+  test("A `mousedown` on an `option` is default-prevented", () => {
     const { host, off } = render(() => Part({ id: "o", role: "option", selected: false, children: () => "One" }));
     expect(mousedown(byId(host, "o")).defaultPrevented).toBe(true);
     off();
   });
 
-  test.skip("a `mousedown` on a `menuitem` and on a `menuitemcheckbox` is default-prevented", () => {
+  test("a `mousedown` on a `menuitem` and on a `menuitemcheckbox` is default-prevented", () => {
     const a = render(() => Part({ id: "m", role: "menuitem", children: () => "Open" }));
     expect(mousedown(byId(a.host, "m")).defaultPrevented).toBe(true);
     const b = render(() => Part({ id: "c", role: "menuitemcheckbox", checked: false, children: () => "Wrap" }));
@@ -43,7 +43,7 @@ describe("k.aria: mousedown", () => {
     b.off();
   });
 
-  test.skip("a click on an `option` leaves focus where it was", () => {
+  test("a click on an `option` leaves focus where it was", () => {
     const outside = document.createElement("input");
     outside.setAttribute("aria-label", "outside");
     document.body.appendChild(outside);
@@ -56,7 +56,7 @@ describe("k.aria: mousedown", () => {
     off();
   });
 
-  test.skip("a `mousedown` on a `button` is not default-prevented", () => {
+  test("a `mousedown` on a `button` is not default-prevented", () => {
     const { host, off } = render(() => Part({ id: "b", role: "button", controls: "p", children: () => "Go" }));
     expect(mousedown(byId(host, "b")).defaultPrevented).toBe(false);
     off();

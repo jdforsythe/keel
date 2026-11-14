@@ -1,3 +1,4 @@
+import { ariaImport } from "../rules/ariaImport.ts";
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
@@ -76,4 +77,5 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   foreignUrlAttr,
   foreignUrlFetch,
   reversedFocusOrder,
+  ariaImport,
 ];

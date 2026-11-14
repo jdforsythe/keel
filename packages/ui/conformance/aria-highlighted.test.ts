@@ -2,11 +2,15 @@
 // Spec: k.aria, Conformance "Setting `activeDescendant` to an option's id gives that option `data-k-highlighted` and removes it from the one before."
 // Seed: 1337.
 // Behavior extra: the named element is scrolled into view with `block: 'nearest'`.
-import { signal } from "@keel/reactive";
+import { signal as newSignal, scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
+
+/** Signals and computeds are created in a scope (k.reactive E1203). */
+const owner = scope(() => undefined);
+const signal = <T>(v: T) => owner.run(() => newSignal(v));
 
 const SEED = 1337;
 const IDS = ["o0", "o1", "o2", "o3"] as const;
@@ -42,7 +46,7 @@ const highlighted = (host: ParentNode): string[] =>
   Array.from(host.querySelectorAll("[data-k-highlighted]"), (e) => e.id);
 
 describe("k.aria: highlighted", () => {
-  test.skip("Setting `activeDescendant` to an option's id gives that option `data-k-highlighted` and removes it from the one before", async () => {
+  test("Setting `activeDescendant` to an option's id gives that option `data-k-highlighted` and removes it from the one before", async () => {
     const { host, active, off } = setup("o0");
     await flush();
     expect(highlighted(host)).toEqual(["o0"]);
@@ -53,7 +57,7 @@ describe("k.aria: highlighted", () => {
     off();
   });
 
-  test.skip("after any sequence of `activeDescendant` values exactly the last named option is highlighted", async () => {
+  test("after any sequence of `activeDescendant` values exactly the last named option is highlighted", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(fc.constantFrom(...IDS), { minLength: 1, maxLength: 8 }), async (seq) => {
         const { host, active, off } = setup("o0");
@@ -70,7 +74,7 @@ describe("k.aria: highlighted", () => {
     );
   });
 
-  test.skip("the option `activeDescendant` names is scrolled into view with `block: 'nearest'`", async () => {
+  test("the option `activeDescendant` names is scrolled into view with `block: 'nearest'`", async () => {
     const { host, active, off } = setup("o0");
     await flush();
     const calls: unknown[] = [];

@@ -29,7 +29,7 @@ const byId = (host: HTMLElement, id: string): Element => {
 const text = (): string => "item";
 
 describe("k.aria: roles", () => {
-  test.skip('`option` renders `<li role="option" aria-selected="false">`', () => {
+  test('`option` renders `<li role="option" aria-selected="false">`', () => {
     const { host, off } = render(() => Part({ id: "x", role: "option", selected: false, children: text }));
     const el = byId(host, "x");
     expect(el.tagName).toBe("LI");
@@ -38,7 +38,7 @@ describe("k.aria: roles", () => {
     off();
   });
 
-  test.skip('`tab` renders a `<button type="button" role="tab">`', () => {
+  test('`tab` renders a `<button type="button" role="tab">`', () => {
     const { host, off } = render(() => Part({ id: "x", role: "tab", selected: false, controls: "p", children: text }));
     const el = byId(host, "x");
     expect(el.tagName).toBe("BUTTON");
@@ -47,7 +47,7 @@ describe("k.aria: roles", () => {
     off();
   });
 
-  test.skip('`columnheader` renders a `<th scope="col">` without a `role` attribute', () => {
+  test('`columnheader` renders a `<th scope="col">` without a `role` attribute', () => {
     const { host, off } = render(() => Part({ id: "x", role: "columnheader", sort: "ascending", children: text }));
     const el = byId(host, "x");
     expect(el.tagName).toBe("TH");
@@ -56,7 +56,7 @@ describe("k.aria: roles", () => {
     off();
   });
 
-  test.skip("`dialog` renders a `<dialog>` without a `role` attribute", () => {
+  test("`dialog` renders a `<dialog>` without a `role` attribute", () => {
     const { host, off } = render(() => Part({ id: "x", role: "dialog", labelledBy: "h", open: false, children: text }));
     const el = byId(host, "x");
     expect(el.tagName).toBe("DIALOG");
@@ -168,7 +168,7 @@ describe("k.aria: roles", () => {
     { name: "cell", make: () => Part({ id: "x", role: "cell", colSpan: 1, children: text }), tag: "TD", role: null },
   ];
 
-  test.skip("each role renders its table tag, and writes `role` only where it differs from the tag's implicit role", () => {
+  test("each role renders its table tag, and writes `role` only where it differs from the tag's implicit role", () => {
     fc.assert(
       fc.property(fc.constantFrom(...cases), (c) => {
         const { host, off } = render(c.make);
@@ -184,7 +184,7 @@ describe("k.aria: roles", () => {
     );
   });
 
-  test.skip("`rowgroup` renders `tbody`, and `thead` with `head`", () => {
+  test("`rowgroup` renders `tbody`, and `thead` with `head`", () => {
     const body = render(() => Part({ id: "x", role: "rowgroup", children: text }));
     expect(byId(body.host, "x").tagName).toBe("TBODY");
     const head = render(() => Part({ id: "y", role: "rowgroup", head: true, children: text }));
@@ -193,14 +193,14 @@ describe("k.aria: roles", () => {
     head.off();
   });
 
-  test.skip("`rowheader` renders `th scope=row` and `cell` renders `td`, neither with a `role` attribute", () => {
+  test("`rowheader` renders `th scope=row` and `cell` renders `td`, neither with a `role` attribute", () => {
     const { host, off } = render(() => Part({ id: "x", role: "rowheader", children: text }));
     expect(byId(host, "x").getAttribute("scope")).toBe("row");
     expect(byId(host, "x").hasAttribute("role")).toBe(false);
     off();
   });
 
-  test.skip("`checkbox` takes `checked` of `true`, `false` or `'mixed'` and `button` takes `hasPopup` of `menu`, `listbox` or `dialog`", () => {
+  test("`checkbox` takes `checked` of `true`, `false` or `'mixed'` and `button` takes `hasPopup` of `menu`, `listbox` or `dialog`", () => {
     const states: Of<"checkbox">["checked"][] = [true, false, "mixed"];
     expect(states).toHaveLength(3);
     for (const popup of ["menu", "listbox", "dialog"] as const) {
@@ -212,7 +212,7 @@ describe("k.aria: roles", () => {
     }
   });
 
-  test.skip("`role` fixes the ARIA props `Part` accepts: a prop another role takes is a type error", () => {
+  test("`role` fixes the ARIA props `Part` accepts: a prop another role takes is a type error", () => {
     expectTypeOf<Of<"option">>().toHaveProperty("selected");
     expectTypeOf<Of<"option">>().not.toHaveProperty("checked");
     expectTypeOf<Of<"option">>().not.toHaveProperty("expanded");
