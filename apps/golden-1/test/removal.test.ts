@@ -159,7 +159,11 @@ describe("removal failures and restarts", () => {
   it("three failed purges are compensated by restoring: the list is shown again", async () => {
     const sim = await seeded();
     let refused = 0;
-    const ctx = refusing(sim, (writes) => purges(writes) && ++refused > 0);
+    const ctx = refusing(sim, (writes) => {
+      if (!purges(writes)) return false;
+      refused += 1;
+      return true;
+    });
     const app = await createApp({
       topology,
       routes: apiRoutes,
@@ -184,7 +188,11 @@ describe("removal failures and restarts", () => {
     const sim = await seeded();
     let down = false;
     let tries = 0;
-    const ctx = refusing(sim, (writes) => purges(writes) && (++tries, down));
+    const ctx = refusing(sim, (writes) => {
+      if (!purges(writes)) return false;
+      tries += 1;
+      return down;
+    });
     const serveOn = async () => {
       const app = await createApp({
         topology,
