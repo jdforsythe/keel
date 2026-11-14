@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { KeyValueStorage } from "../KeyValueStorage.ts";
+import { applyCommit } from "../internal/applyCommit.ts";
 
 const codeOf = (e: unknown): unknown => (typeof e === "object" && e !== null && "code" in e ? e.code : undefined);
 
@@ -31,10 +32,11 @@ function load(file: string): Map<string, string> {
 }
 
 /**
- * Node-only `KeyValueStorage` kept in one JSON file, for `createCtx({ storage })`. The file is read on first use;
- * each `set` rewrites it whole through a temporary file and a rename, creating its directory. A missing file is empty;
- * a file that cannot be read or parsed rejects every call and is never overwritten. For development and single-process
- * use: one process owns a file.
+ * Node-only storage driver kept in one JSON file, for `createCtx({ drivers: { storage } })` (k.persist). The file is
+ * read on first use; each `set`, and each `commit` that stores a value, rewrites it whole through a temporary file and
+ * a rename, creating its directory, and only then takes the new contents as current. A missing file is empty; a file
+ * that cannot be read or parsed rejects every call and is never overwritten. For development and single-process use:
+ * one process owns a file.
  */
 export function fileStorage(file: string): KeyValueStorage {
   let data: Map<string, string> | undefined;
@@ -42,15 +44,32 @@ export function fileStorage(file: string): KeyValueStorage {
     data ??= load(file);
     return data;
   };
+  const save = (next: Map<string, string>): void => {
+    mkdirSync(dirname(file), { recursive: true });
+    const tmp = `${file}.tmp`;
+    writeFileSync(tmp, JSON.stringify(Object.fromEntries(next)));
+    renameSync(tmp, file);
+    data = next;
+  };
   return {
     get: async (key) => open().get(key) ?? null,
     set: async (key, value) => {
+      save(new Map(open()).set(key, value));
+    },
+    read: async (keys) => {
       const map = open();
-      map.set(key, value);
-      mkdirSync(dirname(file), { recursive: true });
-      const tmp = `${file}.tmp`;
-      writeFileSync(tmp, JSON.stringify(Object.fromEntries(map)));
-      renameSync(tmp, file);
+      return keys.map((k) => map.get(k) ?? null);
+    },
+    commit: async (writes) => {
+      const map = open();
+      const next = new Map(map);
+      const ok = applyCommit(
+        (k) => map.get(k) ?? null,
+        (k, v) => next.set(k, v),
+        writes,
+      );
+      if (ok && writes.some((w) => w.value !== undefined)) save(next);
+      return ok;
     },
   };
 }

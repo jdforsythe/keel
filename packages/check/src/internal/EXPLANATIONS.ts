@@ -591,6 +591,20 @@ const ROWS: readonly Row[] = [
     "createCtx({ mode: 'real', schedule }) -> createCtx({ mode: 'sim', seed, schedule })",
     "k.sim",
   ],
+  [
+    "E1605",
+    "drivers on a sim ctx",
+    "Simulation keeps the kernel's storage and net, so a run replays.",
+    "createCtx({ mode: 'sim', drivers }) -> createCtx({ mode: 'real', drivers })",
+    "k.persist",
+  ],
+  [
+    "E1606",
+    "one key twice in a commit",
+    "Each key of a commit has one expect and at most one value.",
+    "commit([{ key, expect: a }, { key, expect: b }]) -> commit([{ key, expect: a }])",
+    "k.persist",
+  ],
   ["E1651", "ctx.net.fetch in app code", "", "declare an endpoint in the service and call it", "k.services"],
   [
     "E1652",

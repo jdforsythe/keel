@@ -65,25 +65,50 @@ describe("ctx.storage backing (k.ctx, k.topology Local topology)", () => {
     expect(readFileSync(file, "utf8")).toBe("{not json SECRET-FRAGMENT");
   });
 
-  it("createCtx({ storage }) backs ctx.storage in real mode", async () => {
+  it("createCtx({ drivers: { storage } }) backs ctx.storage in real mode", async () => {
     const file = join(dir(), "s.json");
-    const ctx = createCtx({ mode: "real", storage: fileStorage(file) });
+    const ctx = createCtx({ mode: "real", drivers: { storage: fileStorage(file) } });
     await ctx.storage.set("k", "v");
-    expect(await createCtx({ mode: "real", storage: fileStorage(file) }).storage.get("k")).toBe("v");
+    expect(await createCtx({ mode: "real", drivers: { storage: fileStorage(file) } }).storage.get("k")).toBe("v");
   });
 
-  it("sim ctx storage stays in memory even when storage is given", async () => {
+  it("a sim ctx refuses a storage driver with E1605 and writes no file", () => {
     const file = join(dir(), "s.json");
-    const ctx = createCtx({ mode: "sim", storage: fileStorage(file) });
-    await ctx.storage.set("k", "v");
+    expect(() => createCtx({ mode: "sim", drivers: { storage: fileStorage(file) } })).toThrow(
+      expect.objectContaining({ code: "E1605" }),
+    );
     expect(() => readFileSync(file)).toThrow();
+  });
+
+  it("fileStorage commit rewrites the file only when it stores a value, and a fresh driver reads it", async () => {
+    const file = join(dir(), "c.json");
+    const store = fileStorage(file);
+    expect(await store.commit([{ key: "k", expect: null }])).toBe(true);
+    expect(() => readFileSync(file)).toThrow();
+    expect(await store.commit([{ key: "k", expect: "x", value: "v" }])).toBe(false);
+    expect(() => readFileSync(file)).toThrow();
+    expect(await store.commit([{ key: "k", expect: null, value: "v" }])).toBe(true);
+    expect(await fileStorage(file).read(["k", "j"])).toEqual(["v", null]);
+  });
+
+  it("a fileStorage write that fails leaves its contents as they were", async () => {
+    const d = dir();
+    const file = join(d, "s.json");
+    const store = fileStorage(file);
+    await store.set("k", "v1");
+    mkdirSync(`${file}.tmp`);
+    await expect(store.commit([{ key: "k", expect: "v1", value: "v2" }])).rejects.toThrow();
+    await expect(store.set("k", "v3")).rejects.toThrow();
+    expect(await store.read(["k"])).toEqual(["v1"]);
   });
 
   it.runIf(typeof localStorage === "undefined")(
     "without localStorage, real storage rejects saying which flag or option to use",
     async () => {
       const ctx = createCtx({ mode: "real" });
-      await expect(ctx.storage.get("k")).rejects.toThrow(/--localstorage-file=.*createCtx\(\{ storage \}\)/);
+      await expect(ctx.storage.get("k")).rejects.toThrow(
+        /--localstorage-file=.*createCtx\(\{ drivers: \{ storage \} \}\)/,
+      );
     },
   );
 });

@@ -24,7 +24,7 @@ const makers: ReadonlyArray<() => Ctx> = [
 
 const keyArb = fc.string({ maxLength: 6 });
 
-it.skip("`read(keys)` returns each key's value in the order asked, `null` for an absent key", async () => {
+it("`read(keys)` returns each key's value in the order asked, `null` for an absent key", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.uniqueArray(keyArb, { maxLength: 8 }),

@@ -9,8 +9,12 @@ describe("keel dev storage (k.topology Local topology)", () => {
       y: { modules: ["b"], adapter: "node" },
     });
     expect(code).toContain('const { fileStorage } = await import("@keel/ctx/node");');
-    expect(code).toContain('createCtx({ mode: "real", storage: fileStorage("/p/.keel-dev/x.storage.json") })');
-    expect(code).toContain('createCtx({ mode: "real", storage: fileStorage("/p/.keel-dev/y.storage.json") })');
+    expect(code).toContain(
+      'createCtx({ mode: "real", drivers: { storage: fileStorage("/p/.keel-dev/x.storage.json") } })',
+    );
+    expect(code).toContain(
+      'createCtx({ mode: "real", drivers: { storage: fileStorage("/p/.keel-dev/y.storage.json") } })',
+    );
     expect(code).not.toContain(".keel-dev/web");
     expect(code).not.toContain('createCtx({ mode: "real" })');
   });

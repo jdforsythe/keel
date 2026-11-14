@@ -48,7 +48,7 @@ const keyArb = fc.string({ maxLength: 4 });
 const expectArb = fc.option(fc.string({ maxLength: 4 }), { nil: null });
 const valueArb = fc.option(fc.string({ maxLength: 4 }), { nil: undefined });
 
-it.skip("`createCtx({ mode: 'sim', drivers: {} })` throws E1605; a `commit` naming one key twice throws E1606", async () => {
+it("`createCtx({ mode: 'sim', drivers: {} })` throws E1605; a `commit` naming one key twice throws E1606", async () => {
   expect(thrownCode(() => createCtx({ mode: "sim", drivers: {} }))).toBe("E1605");
   expect(thrownCode(() => createCtx({ mode: "sim", seed: SEED, drivers: {} }))).toBe("E1605");
 
@@ -65,7 +65,7 @@ it.skip("`createCtx({ mode: 'sim', drivers: {} })` throws E1605; a `commit` nami
   );
 });
 
-it.skip("E1605 `drivers` on a `sim` ctx (throws)", () => {
+it("E1605 `drivers` on a `sim` ctx (throws)", () => {
   const net = {
     fetch: () => Promise.resolve(new Response(null)),
     online: () => true,
@@ -85,7 +85,7 @@ it.skip("E1605 `drivers` on a `sim` ctx (throws)", () => {
   );
 });
 
-it.skip("E1606 one key twice in a `commit` (throws)", async () => {
+it("E1606 one key twice in a `commit` (throws)", async () => {
   await fc.assert(
     fc.asyncProperty(fc.array(keyArb, { minLength: 1, maxLength: 5 }), fc.nat(), fc.nat(), async (keys, i, j) => {
       // Distinct keys, then one of them repeated at another position.

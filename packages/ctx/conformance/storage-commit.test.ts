@@ -51,7 +51,7 @@ async function seed(ctx: Ctx, initial: ReadonlyArray<string | null>): Promise<Ma
 }
 const dump = (ctx: Ctx) => ctx.storage.read([...KEYS]);
 
-it.skip("`commit` stores every `value` and resolves `true` when each `expect` matches; with one `expect` stale it stores nothing and resolves `false`; a write without `value` is checked and not stored", async () => {
+it("`commit` stores every `value` and resolves `true` when each `expect` matches; with one `expect` stale it stores nothing and resolves `false`; a write without `value` is checked and not stored", async () => {
   // All expects match: every `value` is stored, a write without `value` leaves its key as it was.
   await fc.assert(
     fc.asyncProperty(initialArb, planArb, async (initial, plan) => {

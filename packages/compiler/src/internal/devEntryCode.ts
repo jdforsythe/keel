@@ -58,7 +58,7 @@ export function devEntryCode(root: string, topology: Topology): string {
       `  const routes = manifest({ ${imports.join(", ")} });`,
       "  const table = compileTable(compileRoutes(routes.routes), routes.routes);",
       `  const others = Object.fromEntries(Object.entries(peers).filter(([n]) => n !== ${JSON.stringify(name)}));`,
-      `  made[${JSON.stringify(name)}] = await createApp({ topology, deployable: ${JSON.stringify(name)}, routes, ctx: createCtx({ mode: "real", storage: fileStorage(${abs(`.keel-dev/${name}.storage.json`)}) }), mode: "dev", runners: { ${run.join(", ")} }, peers: others, artifacts: ${abs(".keel")}${std}, log: { format: "compact", write: (l) => process.stdout.write(l + "\\n") } });`,
+      `  made[${JSON.stringify(name)}] = await createApp({ topology, deployable: ${JSON.stringify(name)}, routes, ctx: createCtx({ mode: "real", drivers: { storage: fileStorage(${abs(`.keel-dev/${name}.storage.json`)}) } }), mode: "dev", runners: { ${run.join(", ")} }, peers: others, artifacts: ${abs(".keel")}${std}, log: { format: "compact", write: (l) => process.stdout.write(l + "\\n") } });`,
       `  apps.push([${JSON.stringify(name)}, made[${JSON.stringify(name)}], (p) => matchUrl(table, p).route !== null]);`,
       "}",
     );

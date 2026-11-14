@@ -19,17 +19,17 @@ test("A second ctx on `f` reads a value set through `createCtx({ mode: 'real', d
   await fc.assert(
     fc.asyncProperty(fc.string(), fc.string(), async (key, value) => {
       const f = join(dir, `s${String(n++)}.json`);
-      const first = createCtx({ mode: "real", storage: fileStorage(f) });
+      const first = createCtx({ mode: "real", drivers: { storage: fileStorage(f) } });
       await first.storage.set(key, value);
-      const second = createCtx({ mode: "real", storage: fileStorage(f) });
+      const second = createCtx({ mode: "real", drivers: { storage: fileStorage(f) } });
       expect(await second.storage.get(key)).toBe(value);
     }),
     { seed: 1337, numRuns: 25 },
   );
 });
 
-// Skipped until implementation: a `sim` ctx given a storage driver throws E1605 (k.persist Drivers).
-it.skip("`createCtx({ mode: 'sim', drivers: { storage } })` throws E1605 and calls no `storage` method", async () => {
+// A `sim` ctx given a storage driver throws E1605 (k.persist Drivers).
+it("`createCtx({ mode: 'sim', drivers: { storage } })` throws E1605 and calls no `storage` method", async () => {
   let calls = 0;
   const counting = {
     get(): Promise<string | null> {

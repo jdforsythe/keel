@@ -24,7 +24,7 @@ function memoryDriver(initial: ReadonlyMap<string, string>) {
   };
 }
 
-it.skip("`createCtx({ mode: 'real', drivers: { storage } })` returns `storage` as `ctx.storage`", async () => {
+it("`createCtx({ mode: 'real', drivers: { storage } })` returns `storage` as `ctx.storage`", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.array(fc.tuple(fc.string({ maxLength: 4 }), fc.string({ maxLength: 4 })), { maxLength: 6 }),

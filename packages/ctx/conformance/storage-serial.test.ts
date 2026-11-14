@@ -47,7 +47,7 @@ function someSerialOrder(
   });
 }
 
-it.skip("for generated interleavings of `commit`s from two apps on one sim ctx, the stored values equal a serial order of the commits that resolved `true`, and a `read` never returns a value from between two writes of one `commit`", async () => {
+it("for generated interleavings of `commit`s from two apps on one sim ctx, the stored values equal a serial order of the commits that resolved `true`, and a `read` never returns a value from between two writes of one `commit`", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.array(opArb, { minLength: 2, maxLength: 7 }),
