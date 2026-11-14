@@ -343,9 +343,9 @@ function parts(el: JSXElement, base: ReadonlySet<string>, out: Leaf[], unread: (
   const value = (e: Expression, then: (o: ObjectExpression) => void): void => {
     const x = unparen(e);
     if (forwards(x, f)) return;
-    if (x.type === "LogicalExpression" && x.operator !== "&&" && forwards(x.left, f)) return value(x.right, then);
-    if (x.type !== "ObjectExpression") return unread(x.start);
-    then(x);
+    if (x.type === "LogicalExpression" && x.operator !== "&&" && forwards(x.left, f)) value(x.right, then);
+    else if (x.type !== "ObjectExpression") unread(x.start);
+    else then(x);
   };
   for (const at of el.openingElement.attributes) {
     // A spread attribute is not read here: `{...props}` forwards the component's own `styles`.

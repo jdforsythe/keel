@@ -64,7 +64,7 @@ describe("E1823 forwarding is resolved by binding", () => {
       expect(e1823(`export default function C(props: { styles?: object }) { return <Tabs styles={${v}} /> }`)).toBe(0);
     expect(
       e1823(
-        `export default function C(props: { styles?: { tab?: object } }) { return <Tabs styles={{ tab: props.styles?.tab ?? {} }} /> }`,
+        "export default function C(props: { styles?: { tab?: object } }) { return <Tabs styles={{ tab: props.styles?.tab ?? {} }} /> }",
       ),
     ).toBe(0);
   });
