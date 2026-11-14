@@ -14,7 +14,7 @@ const sorter = () =>
     start: { n: 0 },
     events: { sort: s.object({ by: s.int({ min: 0, max: 3 }) }), never: s.object({}) },
     guards: { big: (_d, p) => p.by >= 2, nope: () => false },
-    actions: { take: (d, p) => ({ n: d.n + p.by }), zero: () => ({ n: 0 }) },
+    actions: { take: (d, p) => ({ n: Math.min(3, d.n + p.by) }), zero: () => ({ n: 0 }) },
     initial: "inbox",
     states: {
       inbox: {
@@ -32,7 +32,7 @@ const sorter = () =>
   });
 
 describe("std.statecharts: `next` is the state `tx` gives", () => {
-  test.skip("For generated `{ state, data }` and payloads, `next` equals the state `tx` of that event gives from it.", async () => {
+  test("For generated `{ state, data }` and payloads, `next` equals the state `tx` of that event gives from it.", async () => {
     const c = editor("next");
     await fc.assert(
       fc.asyncProperty(
@@ -51,7 +51,7 @@ describe("std.statecharts: `next` is the state `tx` gives", () => {
     );
   });
 
-  test.skip("`next` equals the state `tx` gives for a chart with payloads and guards on them", async () => {
+  test("`next` equals the state `tx` gives for a chart with payloads and guards on them", async () => {
     const c = sorter();
     await fc.assert(
       fc.asyncProperty(
