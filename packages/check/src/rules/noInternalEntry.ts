@@ -20,7 +20,7 @@ export const noInternalEntry: RuleDef = {
   code: "E1576",
   message: (f) =>
     str(f.data, "spec").startsWith("#")
-      ? `${str(f.data, "spec")} may name an entry internal to Keel packages; use a public entry`
+      ? `${str(f.data, "spec")} may name a Keel internal entry; use a relative path or package name`
       : `${str(f.data, "spec")} is internal to Keel packages; use a public entry`,
   explain: "Internal entries are kernel and stdlib seams, such as the server state runner.",
   see: "k.security",

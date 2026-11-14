@@ -824,7 +824,7 @@ const ROWS: readonly Row[] = [
   [
     "E1823",
     "styles not readable statically",
-    "Part styles are collected from the literal at the component; another value ships classes with no rules.",
+    "On every JSX component `styles` is part styles: an object literal of part objects. A prop with another meaning needs another name, or a call from a .ts file.",
     "styles={shared} -> styles={{ table: { p: '2' } }}",
     "k.aria",
   ],

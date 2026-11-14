@@ -33,7 +33,7 @@ describe("E1576 internal entry outside packages", () => {
 
   it("reports a `#` specifier as possibly internal, whatever it names", () => {
     expect(out("E1576", "import { a } from '#lib/a'\nexport const x = a\n")).toEqual([
-      "1:1 #lib/a may name an entry internal to Keel packages; use a public entry",
+      "1:1 #lib/a may name a Keel internal entry; use a relative path or package name",
     ]);
     expect(out("E1576", "import { a } from '#lib/a'\nexport const x = a\n", "packages/std-x/src/x.ts")).toEqual([]);
   });

@@ -49,3 +49,63 @@ describe("part styles", () => {
     expect(r.diagnostics.map((d) => `${d.code} ${d.col}`)).toEqual(["E1823 90", "E1823 116", "E1823 119", "E1823 134"]);
   });
 });
+
+describe("E1823 forwarding is resolved by binding", () => {
+  const e1823 = (body: string, head = ""): number =>
+    compile([
+      {
+        path: "C.tsx",
+        source: `import { Tabs } from './Tabs.tsx'\nimport * as ns from './ns.tsx'\n${head}${body}\n`,
+      },
+    ]).diagnostics.filter((d) => d.code === "E1823").length;
+
+  test("the component's own props.styles, its members, and `?? {}` / `|| {}` over them forward", () => {
+    for (const v of ["props.styles", "props.styles?.tab", "props.styles ?? {}", "props.styles || {}"])
+      expect(e1823(`export default function C(props: { styles?: object }) { return <Tabs styles={${v}} /> }`)).toBe(0);
+    expect(
+      e1823(
+        `export default function C(props: { styles?: { tab?: object } }) { return <Tabs styles={{ tab: props.styles?.tab ?? {} }} /> }`,
+      ),
+    ).toBe(0);
+  });
+
+  test("a styles destructured from the first parameter or by a top-level const forwards", () => {
+    expect(
+      e1823("export default function C({ styles }: { styles?: object }) { return <Tabs styles={styles} /> }"),
+    ).toBe(0);
+    expect(
+      e1823(
+        "export default function C({ styles }: { styles?: { t?: object } }) { return <Tabs styles={styles?.t} /> }",
+      ),
+    ).toBe(0);
+    expect(
+      e1823(
+        "export default function C(props: { styles?: object }) { const { styles } = props; return <Tabs styles={styles} /> }",
+      ),
+    ).toBe(0);
+  });
+
+  test("a shadowing inner parameter and a lowercase helper do not forward", () => {
+    expect(
+      e1823(
+        "export default function C(props: { items: { styles: object }[] }) { return <>{props.items.map((props) => <Tabs styles={props.styles} />)}</> }",
+      ),
+    ).toBe(1);
+    expect(
+      e1823(
+        "function render(props: { styles?: object }) { return <Tabs styles={props.styles} /> }\nexport default render",
+      ),
+    ).toBe(1);
+  });
+
+  test("a member component's styles are collected and checked; a spread of props onto it is not inspected", () => {
+    const r = compile([
+      {
+        path: "C.tsx",
+        source: `import * as ns from './ns.tsx'\nconst s = {}\nexport default function C(props: object) { return <><ns.Tabs styles={{ tab: { p: '2' } }} /><ns.Tabs styles={s} /><ns.Tabs {...props} /></> }\n`,
+      },
+    ]);
+    expect(r.artifacts["styles.json"].usages).toEqual([{ props: { p: "2" } }]);
+    expect(r.diagnostics.filter((d) => d.code === "E1823")).toHaveLength(1);
+  });
+});
