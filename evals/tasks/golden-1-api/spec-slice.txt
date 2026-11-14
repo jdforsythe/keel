@@ -187,3 +187,23 @@ std.monitor
 - import { monitor, monitorRoutes } from '@keel/std-sessions/monitor' (node): runners.server.ts export const runners = [monitor]; routes.ts manifest({ ...monitorRoutes.routes, ... }); module deps '@keel/std-sessions' with std: { '@keel/std-sessions': { readers: [] } }; the deployable lists module 'sessions'
 - monitor counts each server-store commit by transaction name into ctx.storage sessions.tally every 60000 ms and at shutdown; GET /sessions/tally answers it to a caller in readers (403 keel.denied otherwise)
 - KEEL_SESSIONS_TOKEN=<reader cookie> keel session monitor <url> writes .keel/monitored.json, read by keel ledger as the monitored rung
+
+k.persist
+- ctx.storage: get, set, read(keys) one cut, commit([{ key, expect, value? }]) -> true when every expect holds, else false and nothing stored; one key twice E1606
+- an action's ok saves its changed stores in one commit expecting the values it read; false is 409 keel.conflict, so two processes on one driver keep the read-set rule
+- import { commitStores } from '@keel/server' in *.server.ts: await commitStores(ctx, boardStores, (S) => { const r = tx(S.showList, { id }); return r.ok ? ok(null) : err(r.error) }) -> Result; up to 3 runs, then keel.conflict; fn calls transactions only
+- restore of a stored snapshot whose log names a removed transaction keeps state and head and keeps no entry; keel check --base <surface.json>: E1563 a state change stored states fail, W1564 a removed or narrowed transaction
+
+k.deploy
+- topology.ts node deployable storage: 'file' (default) | 'sqlite' (KEEL_DATABASE_URL a file: URL, default file:/data/keel.sqlite) | 'postgres' (postgres: URL, required); the app lists @keel/std-db in dependencies (E1572); a bad database is E2152/E2153, exit 1; the URL is never printed
+
+std.workflows
+- import { workflow, flows } from '@keel/std-workflows' (module deps add '@keel/std-workflows', '@keel/std-jobs', '@keel/std-statecharts'): export const removal = workflow('api.removal', { chart: removalChart, steps: { purging: { run: purge, done: 'purged', failed: 'purgeFailed' } }, waits: { hidden: { ms: 600_000, event: 'expired' } } }) in removal.server.ts
+- a step run(data, ctx, { signal, key }) returns Promise<Result>; its ok value is the done event's payload; err on the last attempt (default 3) sends failed { code }; past its attempts failed { code: 'workflows.attempts' }
+- jobs.server.ts: export const jobs = queue({ ...removal.jobs }); runners.server.ts: export const runners = [jobs, flows(jobs, [removal])]; E2351 workflow outside *.server.ts, E2354 queue or runners missing them
+- removal.stores(ctx) -> { store, start, events, attempt, forget }; in an action's stores factory: tx(S.removal.start, { id: ctx.random.id('Flow'), data: { list } }), tx(S.removal.events.undo, { id, payload: {} }); store state { instances: { [id]: { state, data, entered, attempt } } }
+
+k.prove
+- import { prove } from '@keel/testing/prove' (Node; z3-solver in devDependencies, else E1718): await prove([addList(b), addTodo(b), ...]) -> { proven, z3 }: every invariant holds for every state and payload the schemas allow, by induction; the ledger's proven rung
+- fragment: params, const, return, if/else, ?:, && || !, === !== < <= > >=, + -, literals, object spread and reads, array spread, .length, .map/.some/.every/.find, new Set(a.map(f)) read by .has and .size; anything else (.filter, calls, loops) is E1715
+- E1716 a counterexample (state and payload JSON on the next line); E1717 no verdict within rlimit

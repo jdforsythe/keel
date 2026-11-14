@@ -40,6 +40,7 @@ import { board } from "../modules/api/board.ts";
 import { boardStores } from "../modules/api/boardStores.ts";
 import { editTodo } from "../modules/api/editTodo.ts";
 import { routes as apiRoutes } from "../modules/api/routes.ts";
+import { runners as apiRunners } from "../modules/api/runners.server.ts";
 import { toggleTodo } from "../modules/api/toggleTodo.ts";
 import { routes as digestRoutes } from "../modules/digest/routes.ts";
 import { runners } from "../modules/digest/runners.server.ts";
@@ -76,7 +77,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 2000; i++) await Promise.resolve();
 }
 
-/** A ctx over `sim` whose `api.board` saves wait while `held` is set: a write then holds every later board read. */
+/** A ctx over `sim` whose `api.board` reads and saves wait while `held` is set: a write then holds every later board read. */
 function gated(sim: SimCtx) {
   let held: Promise<void> | undefined;
   let release = (): void => undefined;
@@ -89,6 +90,14 @@ function gated(sim: SimCtx) {
       set: async (key, value) => {
         if (key === BOARD_KEY && held !== undefined) await held;
         await sim.storage.set(key, value);
+      },
+      read: async (keys) => {
+        if (held !== undefined && keys.includes(BOARD_KEY)) await held;
+        return sim.storage.read(keys);
+      },
+      commit: async (writes) => {
+        if (held !== undefined && writes.some((w) => w.key === BOARD_KEY && w.value !== undefined)) await held;
+        return sim.storage.commit(writes);
       },
     },
   };
@@ -304,7 +313,7 @@ it("golden-1 as one node deployable and as two answers one request script alike"
   expect(one.afterRefresh).toEqual({ open: 2, done: 1, at: 0 });
   expect(one.scheduled).toEqual({ ok: true, value: { open: 2, done: 1, at: HOUR } });
   for (const run of [one, two]) {
-    expect(run.leased, "the recount was leased when its deployable closed").toMatchObject([{ l: true }]);
+    expect(run.leased, "the recount was leased when its deployable closed").toMatchObject([{ l: expect.any(Number) }]);
     expect(run.afterRestart).toEqual({ open: 1, done: 2, at: HOUR + 1000 });
     expect(field(run.queue, "q")).toEqual([]);
     expect(field(run.queue, "failed")).toEqual([]);
@@ -641,4 +650,61 @@ describe("golden-1 twins", () => {
     const second = failure(await caught(go));
     expect(second.message).toBe(first.message);
   }, 300_000);
+});
+
+// 4. Storage and workflows across processes (k.persist, std.workflows): two `api` apps on one sim ctx behave as two
+// processes sharing one database.
+describe("golden-1 on shared storage", () => {
+  const BOARD = JSON.stringify({
+    state: {
+      lists: [{ id: "l1", name: "Home" }],
+      todos: [{ id: "t1", listId: "l1", title: "Milk", priority: "normal", done: false }],
+    },
+    log: [],
+    initial: { lists: [], todos: [] },
+    head: 0,
+  });
+  const twoApps = async (withRunners: boolean) => {
+    const ctx = createCtx({ mode: "sim", seed: 3 });
+    await ctx.storage.set(BOARD_KEY, BOARD);
+    const make = () =>
+      createApp({
+        topology: A,
+        deployable: "api",
+        routes: both,
+        ctx,
+        secret: SECRET,
+        ...(withRunners ? { runners: { api: apiRunners } } : {}),
+      });
+    return { ctx, apps: [await make(), await make()] };
+  };
+  it("two processes editing from one board head: the later save is 409 and the stored board is the earlier", async () => {
+    const { ctx, apps } = await twoApps(false);
+    const [p, q] = apps;
+    const edit = (title: string) => post("/api/todos/t1", { title, priority: "high", write: { key: title, base: 0 } });
+    const [a, b] = await Promise.all([p?.fetch(edit("Oat milk")), q?.fetch(edit("Soy milk"))]);
+    expect([a?.status, b?.status].sort()).toEqual([200, 409]);
+    const saved: unknown = JSON.parse((await ctx.storage.get(BOARD_KEY)) ?? "null");
+    const won = a?.status === 200 ? "Oat milk" : "Soy milk";
+    expect(field(saved, "state", "todos", "0", "title")).toBe(won);
+    for (const app of apps) await app.close();
+  });
+  it("a removal served by two processes' runners purges once", async () => {
+    const { ctx, apps } = await twoApps(true);
+    expect((await apps[0]?.fetch(post("/api/lists/l1/remove")))?.status).toBe(200);
+    for (let t = 0; t < 700_000; t += 1000) {
+      ctx.clock.advance(1000);
+      await settle();
+    }
+    const saved: unknown = JSON.parse((await ctx.storage.get(BOARD_KEY)) ?? "null");
+    const names = (v: unknown): string[] => {
+      const log = field(v, "log");
+      return Array.isArray(log) ? log.map((e: unknown) => String(field(e, "name"))) : [];
+    };
+    expect(names(saved).filter((n) => n === "api.purgeList")).toHaveLength(1);
+    expect(field(saved, "state", "lists")).toEqual([]);
+    const flows: unknown = JSON.parse((await ctx.storage.get("keel.store.api.removal")) ?? "null");
+    expect(names(flows).filter((n) => n === "api.removal.purged")).toHaveLength(1);
+    for (const app of apps) await app.close();
+  }, 120_000);
 });

@@ -269,11 +269,13 @@ export async function splitBuilt(root: string): Promise<string | undefined> {
       const checked = await sh(process.execPath, [cli, "check", "--quiet"], dir);
       must(checked.ok, `keel check ${label}: ${checked.stdout.trim().split("\n")[0] ?? ""}`);
     }
-    const dockerfiles = async (dir: string) =>
-      (await readdir(join(dir, "deploy"), { withFileTypes: true }))
-        .filter((e) => e.isDirectory())
-        .map((e) => e.name)
-        .sort();
+    // The deployables with a Dockerfile; `deploy/web/` holds the shell files, not an image.
+    const dockerfiles = async (dir: string) => {
+      const names: string[] = [];
+      for (const e of await readdir(join(dir, "deploy"), { withFileTypes: true }))
+        if (e.isDirectory() && (await readdir(join(dir, "deploy", e.name))).includes("Dockerfile")) names.push(e.name);
+      return names.sort();
+    };
     must((await dockerfiles(a)).join() === "api", "A deploy/ holds a Dockerfile other than api");
     must((await dockerfiles(b)).join() === "api,digest", "B deploy/ lacks api and digest Dockerfiles");
     const composeA = await readFile(join(a, "deploy", "compose.yaml"), "utf8");

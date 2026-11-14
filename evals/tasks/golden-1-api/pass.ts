@@ -4,11 +4,14 @@
 // run, and removed: the split proof, the race proof and the correctness checks), the planted-race twin (a sibling copy
 // of the app whose `api.editTodo` rebases, where the same race scenario must find exactly one race), the rungs of the
 // golden-1 ledger, the correctness twins (an invariant, two chart and a schedule twin, each a sibling copy with one
-// planted change), and the built processes (splitBuilt.ts).
+// planted change), the proof twins (an `addTodo` without its duplicate check, `api.purgeList` given to `prove`), the
+// stored-data twin (`TodoList.hidden` made required: E1563 under `--base`), and the built processes (splitBuilt.ts,
+// restartBuilt.ts).
 import { execFile } from "node:child_process";
 import { access, copyFile, cp, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { restartBuilt } from "./restartBuilt.ts";
 import { splitBuilt } from "./splitBuilt.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -74,8 +77,18 @@ const FILES: readonly string[] = [
   `${mod}/EditorData.schema.ts`,
   `${mod}/editorChart.ts`,
   `${api}/runners.server.ts`,
+  ...["hideList", "showList", "purgeList", "removalChart"].map((n) => `${api}/${n}.ts`),
+  ...["RemovalData", "StepFailure", "Removal", "FlowParams"].map((n) => `${api}/${n}.schema.ts`),
+  ...["removal", "purge", "restore", "jobs", "removalStores", "postRemove", "postUndoRemoval"].map(
+    (n) => `${api}/${n}.server.ts`,
+  ),
+  "deploy/web/capacitor/capacitor.config.json",
+  ...["tauri.conf.json", "Cargo.toml", "build.rs", "src/main.rs", "src/lib.rs", "capabilities/default.json"].map(
+    (n) => `deploy/web/tauri/${n}`,
+  ),
   ...["api", "board", "components", "routes", "digest", "realtime"].map((n) => `test/${n}.test.ts`),
   ...["editorChart", "board.explore", "outbox.sim"].map((n) => `test/${n}.test.ts`),
+  ...["board.prove", "removal", "removalChart.explore", "serverSqlite"].map((n) => `test/${n}.test.ts`),
   "test/simApi.ts",
   "test/apiRoutes.ts",
   "test/user.ts",
@@ -87,6 +100,8 @@ const PROPERTY_TARGETS: readonly string[] = [
   "addTodo",
   "toggleTodo",
   "editTodo",
+  "hideList",
+  "showList",
   "hydrate",
   "TodoRow",
   "Suggestions",
@@ -154,18 +169,21 @@ async function ledgerItemsProven(): Promise<boolean> {
   return items.length > 0 && items.every((e) => isRecord(e) && typeof e.rung === "string" && e.rung !== "none");
 }
 
-/** Items that must hold a rung, by the machinery behind it (k.model, k.sim). */
+/** Items that must hold a rung, by the machinery behind it (k.model, k.prove, k.sim). */
 const RUNG_OF: Readonly<Record<string, string>> = {
   "golden-1:todos/editorChart.ts#editorChart": "proven",
-  "golden-1:api/addList.ts#addList": "exhaustive",
-  "golden-1:api/addTodo.ts#addTodo": "exhaustive",
-  "golden-1:api/toggleTodo.ts#toggleTodo": "exhaustive",
-  "golden-1:api/editTodo.ts#editTodo": "exhaustive",
+  "golden-1:api/removalChart.ts#removalChart": "proven",
+  "golden-1:api/addList.ts#addList": "proven",
+  "golden-1:api/addTodo.ts#addTodo": "proven",
+  "golden-1:api/toggleTodo.ts#toggleTodo": "proven",
+  "golden-1:api/editTodo.ts#editTodo": "proven",
+  "golden-1:api/hideList.ts#hideList": "proven",
+  "golden-1:api/showList.ts#showList": "proven",
   "golden-1:todos/boardOutbox.ts#boardOutbox": "probabilistic",
 };
 
 /**
- * The summary's rung counts hold `proven`, `exhaustive`, `probabilistic` and `example` at 1 or more, with the items
+ * The summary's rung counts hold `proven`, `probabilistic` and `example` at 1 or more, with the items
  * above at their rungs; `monitored` too when the app ships `.keel/monitored.json` (a fresh build has no production).
  * With that file, `keel ledger --diff` reports no E1712; once the committed ledger counts `monitored` items, moving the
  * file aside makes it report E1712 (a rung the file counts that no item holds). The file is put back.
@@ -176,7 +194,7 @@ async function rungs(): Promise<string | undefined> {
   const counts = isRecord(summary) && isRecord(summary.counts) ? summary.counts : {};
   const monitoredFile = join(app, ".keel", "monitored.json");
   const shipped = await exists(monitoredFile);
-  const want = ["proven", "exhaustive", "probabilistic", "example", ...(shipped ? ["monitored"] : [])];
+  const want = ["proven", "probabilistic", "example", ...(shipped ? ["monitored"] : [])];
   for (const r of want) if (!(typeof counts[r] === "number" && counts[r] >= 1)) return `rung ${r} holds no item`;
   for (const [item, rung] of Object.entries(RUNG_OF)) {
     const rec = lines.find((e) => isRecord(e) && e.kind === "ledger" && e.item === item);
@@ -319,6 +337,51 @@ async function correctnessTwins(): Promise<string | undefined> {
   return undefined;
 }
 
+/**
+ * The proof twins (k.prove), each a copy with one planted change, and the stored-data twin (k.compat):
+ * - duplicate: `addTodo` drops its duplicate-id test. `board.prove.test.ts` fails with E1716.
+ * - fragment: `api.purgeList` joins the `prove` list. `board.prove.test.ts` fails with E1715 naming `.filter`.
+ * - required: `TodoList.hidden` loses `.optional()`. `keel check --base` the app's shipped `.keel/surface.json` is one
+ *   E1563 at `lists.[].hidden`.
+ */
+export async function proofTwins(): Promise<string | undefined> {
+  const failing = async (dir: string, code: RegExp): Promise<boolean> => {
+    const r = await sh(vitest, ["run", "test/board.prove.test.ts"], dir);
+    return !r.ok && code.test(r.stdout);
+  };
+  const duplicate = await twin(
+    `${api}/addTodo.ts`,
+    (src) => src.replace(/state\.todos\.some\(\(?(\w+)\)? => \1\.id === (\w+)\.id\)\s*\|\|\s*/, ""),
+    (dir) => failing(dir, /E1716/),
+  );
+  if (!duplicate) return "proof twin (duplicate check removed)";
+  const fragment = await twin(
+    "test/board.prove.test.ts",
+    (src) =>
+      src
+        .replace("hideList(b), showList(b)]", "hideList(b), showList(b), purgeList(b)]")
+        .replace(
+          'import { showList } from "../modules/api/showList.ts";',
+          'import { purgeList } from "../modules/api/purgeList.ts";\nimport { showList } from "../modules/api/showList.ts";',
+        ),
+    (dir) => failing(dir, /E1715[^\n]*filter/),
+  );
+  if (!fragment) return "proof twin (purgeList proved)";
+  const shipped = join(app, ".keel", "surface.json");
+  const required = await twin(
+    `${api}/TodoList.schema.ts`,
+    (src) => src.replace("hidden: s.boolean().optional()", "hidden: s.boolean()"),
+    async (dir) => {
+      if (!(await sh("node", [keelBin, "build"], dir)).ok) return false;
+      const r = await sh("node", [keelBin, "check", "--base", shipped], dir);
+      const e1563 = r.stdout.match(/^E1563 [^\n]*/gm) ?? [];
+      return !r.ok && e1563.length === 1 && (e1563[0] ?? "").includes("lists.[].hidden");
+    },
+  );
+  if (!required) return "stored-data twin (hidden required)";
+  return undefined;
+}
+
 export default async (): Promise<boolean> => {
   for (const f of FILES) if (!(await exists(join(app, f)))) return false;
   for (const f of GONE) if (await exists(join(app, f))) return false;
@@ -362,7 +425,14 @@ export default async (): Promise<boolean> => {
   if (twins !== undefined)
     process.stderr.write(`V0001 evals/tasks/golden-1-api/pass.ts ${twins} did not fail as planted\n`);
   if (twins !== undefined) return false;
+  const proofs = await proofTwins();
+  if (proofs !== undefined)
+    process.stderr.write(`V0001 evals/tasks/golden-1-api/pass.ts ${proofs} did not fail as planted\n`);
+  if (proofs !== undefined) return false;
   const split = await splitBuilt(root);
   if (split !== undefined) process.stderr.write(`V0001 evals/tasks/golden-1-api/splitBuilt.ts ${split}\n`);
-  return split === undefined;
+  if (split !== undefined) return false;
+  const restart = await restartBuilt(root);
+  if (restart !== undefined) process.stderr.write(`V0001 evals/tasks/golden-1-api/restartBuilt.ts ${restart}\n`);
+  return restart === undefined;
 };
