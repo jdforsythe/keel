@@ -6,6 +6,7 @@ import { type KeyInput, Part, type PartStyle } from "@keel/ui/aria";
 import type { Option } from "./Option.ts";
 import type { Named } from "./internal/Named.ts";
 import type { OptionState } from "./internal/OptionState.ts";
+import { content } from "./internal/content.ts";
 import { listChart } from "./internal/listChart.ts";
 import { nameOf } from "./internal/nameOf.ts";
 
@@ -35,8 +36,8 @@ export function Listbox<K extends string>(
     if (props.mode === "single") props.onChange([o.key]);
     else props.onChange(now.includes(o.key) ? now.filter((k) => k !== o.key) : [...now, o.key]);
   };
-  const across = props.orientation === "horizontal";
   const onKey = (k: KeyInput): boolean => {
+    const across = props.orientation === "horizontal";
     if (k.key === (across ? "ArrowRight" : "ArrowDown")) l.move("next", false);
     else if (k.key === (across ? "ArrowLeft" : "ArrowUp")) l.move("prev", false);
     else if (k.key === "Home") l.move("first", false);
@@ -51,8 +52,8 @@ export function Listbox<K extends string>(
     id: `${props.id}.list`,
     role: "listbox",
     tabIndex: 0,
-    multiselectable: props.mode === "multiple",
-    orientation: props.orientation ?? "vertical",
+    multiselectable: computed(() => props.mode === "multiple"),
+    orientation: computed(() => props.orientation ?? "vertical"),
     activeDescendant: l.activeId,
     onFocus: () => {
       const now = props.selected();
@@ -68,25 +69,26 @@ export function Listbox<K extends string>(
     children: () =>
       For({
         get each() {
-          return l.list.get();
+          return l.rows.get();
         },
         key: "key",
-        children: (o) => {
+        children: ({ key }) => {
+          const o = computed(() => l.current(key));
           const s: OptionState = {
-            active: () => l.activeId.get() === l.partId(o),
-            selected: () => props.selected().includes(o.key),
+            active: () => l.activeId.get() === l.partId(key),
+            selected: () => props.selected().includes(key),
           };
           return Part({
             ...props.styles?.option,
-            id: l.partId(o),
+            id: l.partId(key),
             role: "option",
             selected: computed(s.selected),
-            disabled: o.disabled === true,
+            disabled: computed(() => o.get()?.disabled === true),
             onClick: () => {
-              l.jump(l.indexOf(o.key));
-              pick(o);
+              l.jump(l.indexOf(key));
+              pick(o.get());
             },
-            children: () => props.option?.(o, s) ?? o.text,
+            children: () => content(o, props.option, s),
           });
         },
       }),

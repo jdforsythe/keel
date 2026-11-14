@@ -7,6 +7,7 @@ import type { Option } from "../Option.ts";
 import { optionsChart } from "../optionsChart.ts";
 import type { ListState } from "./ListState.ts";
 import { checkKeys } from "./checkKeys.ts";
+import { stableRows } from "./stableRows.ts";
 
 const PAUSE = 500;
 
@@ -53,10 +54,10 @@ export function listChart<O extends Option>(
     known.set(keys);
     if (open.get() && c.store.get("data").active !== at) tx(c.events.jump, { to: at });
   };
-  const partId = (o: O) => `${id}.${part}.${o.key}`;
+  const partId = (key: string) => `${id}.${part}.${key}`;
   const activeId = computed(() => {
     const o = list.get()[index.get()];
-    return o === undefined ? "" : partId(o);
+    return o === undefined ? "" : partId(o.key);
   });
   const jump = (to: number) => {
     sync();
@@ -66,6 +67,11 @@ export function listChart<O extends Option>(
   let last = Number.NEGATIVE_INFINITY;
   return {
     list,
+    rows: stableRows(
+      () => list.get(),
+      (o) => o.key,
+    ),
+    current: (key: string) => list.get().find((o) => o.key === key),
     open,
     index,
     activeId,

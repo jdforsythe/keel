@@ -5,6 +5,7 @@ import { Box, type Child } from "@keel/ui";
 import { type KeyInput, Part, type PartStyle } from "@keel/ui/aria";
 import type { Option } from "./Option.ts";
 import type { OptionState } from "./internal/OptionState.ts";
+import { content } from "./internal/content.ts";
 import { listChart } from "./internal/listChart.ts";
 
 /**
@@ -78,24 +79,26 @@ export function Menu<K extends string>(
         children: () =>
           For({
             get each() {
-              return l.list.get();
+              return l.rows.get();
             },
             key: "key",
-            children: (o) => {
-              const s: OptionState = { active: () => l.activeId.get() === l.partId(o), selected: () => false };
+            children: ({ key }) => {
+              const o = computed(() => l.current(key));
+              const s: OptionState = { active: () => l.activeId.get() === l.partId(key), selected: () => false };
               const common = {
                 ...props.styles?.item,
-                id: l.partId(o),
-                disabled: o.disabled === true,
+                id: l.partId(key),
+                disabled: computed(() => o.get()?.disabled === true),
                 onClick: () => {
-                  l.jump(l.indexOf(o.key));
-                  select(o);
+                  l.jump(l.indexOf(key));
+                  select(o.get());
                 },
-                children: () => props.item?.(o, s) ?? o.text,
+                children: () => content(o, props.item, s),
               };
-              return o.checked === undefined
+              // The role is chosen when the row is made: an item is a checkbox item while it has `checked`.
+              return o.get()?.checked === undefined
                 ? Part({ ...common, role: "menuitem" })
-                : Part({ ...common, role: "menuitemcheckbox", checked: o.checked });
+                : Part({ ...common, role: "menuitemcheckbox", checked: computed(() => o.get()?.checked === true) });
             },
           }),
       }),

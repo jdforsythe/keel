@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { owner } from "@keel/reactive";
+import { computed, owner } from "@keel/reactive";
 import { For } from "@keel/runtime-dom";
 import { instance } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
@@ -7,6 +7,7 @@ import { Box } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
 import type { ToastItem } from "./ToastItem.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
+import { stableRows } from "./internal/stableRows.ts";
 import { toastKey } from "./internal/toastKey.ts";
 import { toastChart } from "./toastChart.ts";
 
@@ -48,7 +49,8 @@ export function Toaster(
   // An instance's key is the lowest slot no live toast holds, never the item's id: no app value enters a chart's
   // store id or log, and the key stays short however many toasts have shown.
   const live = new Set<number>();
-  const toast = (item: ToastItem): Node => {
+  const toast = (tone: ToastItem["tone"], key: string): Node => {
+    const text = computed(() => items().find((i) => i.id === key)?.text ?? "");
     let slot = 0;
     while (live.has(slot)) slot += 1;
     live.add(slot);
@@ -60,11 +62,11 @@ export function Toaster(
       if (told || c.store.get("state") !== "gone") return;
       told = true;
       timer?.abort();
-      props.onDismiss(item.id);
+      props.onDismiss(key);
     };
     const start = () => {
       timer?.abort();
-      if (item.tone !== "status" || props.duration === undefined || ctx === undefined) return;
+      if (tone !== "status" || props.duration === undefined || ctx === undefined) return;
       const run = new AbortController();
       timer = run;
       ctx.clock.after(Math.max(LEAST, props.duration), run.signal).then(
@@ -77,16 +79,16 @@ export function Toaster(
     };
     start();
     owner()?.onDispose(() => timer?.abort());
-    const part = `${id}.toast.${item.id}`;
+    const part = `${id}.toast.${key}`;
     return Part({
       ...props.styles?.toast,
       id: part,
       role: "generic",
       children: () => [
-        item.text,
+        text,
         Part({
           ...props.styles?.dismiss,
-          id: `${id}.dismiss.${item.id}`,
+          id: `${id}.dismiss.${key}`,
           role: "button",
           controls: part,
           onFocus: () => {
@@ -101,24 +103,30 @@ export function Toaster(
             tx(c.events.dismiss, {});
             after();
           },
-          children: () => props.dismiss,
+          children: () => computed(() => props.dismiss),
         }),
       ],
     });
   };
-  const region = (tone: ToastItem["tone"]) =>
-    Part({
+  const region = (tone: ToastItem["tone"]) => {
+    // One row per item id, kept while the id is listed: a new text shows in place and the item's timer runs on.
+    const rows = stableRows(
+      () => items().filter((i) => i.tone === tone),
+      (i) => i.id,
+    );
+    return Part({
       ...props.styles?.[tone],
       id: `${id}.${tone}`,
       role: tone,
       children: () =>
         For({
           get each() {
-            return items().filter((i) => i.tone === tone);
+            return rows.get();
           },
-          key: "id",
-          children: toast,
+          key: "key",
+          children: (row) => toast(tone, row.key),
         }),
     });
+  };
   return Box({ children: () => [region("status"), region("alert")] });
 }

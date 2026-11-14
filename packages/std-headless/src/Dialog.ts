@@ -40,8 +40,10 @@ export function Dialog(
   };
   const alert = props.alert;
   const body = () => [
-    Heading({ id: `${id}.title`, level: props.level ?? 2, children: props.title }),
-    alert === undefined ? [] : Text({ id: `${id}.description`, children: alert.description }),
+    Heading({ id: `${id}.title`, level: props.level ?? 2, children: computed(() => props.title) }),
+    alert === undefined
+      ? []
+      : Text({ id: `${id}.description`, children: computed(() => props.alert?.description ?? "") }),
     props.content(close),
   ];
   const common = {

@@ -6,6 +6,7 @@ import { type KeyInput, Part, type PartStyle } from "@keel/ui/aria";
 import type { Option } from "./Option.ts";
 import type { Named } from "./internal/Named.ts";
 import type { OptionState } from "./internal/OptionState.ts";
+import { content } from "./internal/content.ts";
 import { listChart } from "./internal/listChart.ts";
 import { nameOf } from "./internal/nameOf.ts";
 
@@ -85,24 +86,25 @@ export function Combobox<K extends string>(
         children: () =>
           For({
             get each() {
-              return l.list.get();
+              return l.rows.get();
             },
             key: "key",
-            children: (o) => {
-              const s: OptionState = { active: () => l.activeId.get() === l.partId(o), selected: () => false };
+            children: ({ key }) => {
+              const o = computed(() => l.current(key));
+              const s: OptionState = { active: () => l.activeId.get() === l.partId(key), selected: () => false };
               return Part({
                 ...props.styles?.option,
-                id: l.partId(o),
+                id: l.partId(key),
                 role: "option",
                 selected: computed(s.active),
-                disabled: o.disabled === true,
+                disabled: computed(() => o.get()?.disabled === true),
                 onClick: () => {
-                  if (o.disabled === true) return;
-                  l.jump(l.indexOf(o.key));
+                  if (o.get()?.disabled === true) return;
+                  l.jump(l.indexOf(key));
                   l.choose();
-                  props.onChange(o.key);
+                  props.onChange(key);
                 },
-                children: () => props.option?.(o, s) ?? o.text,
+                children: () => content(o, props.option, s),
               });
             },
           }),

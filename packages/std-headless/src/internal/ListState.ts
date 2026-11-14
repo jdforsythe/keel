@@ -8,7 +8,11 @@ export type ListState<O extends Option> = {
   readonly open: Computed<boolean>;
   readonly index: Computed<number>;
   readonly activeId: Computed<string>;
-  partId(o: O): string;
+  /** One object per key, kept while the key is in the list (`stableRows`). */
+  readonly rows: Computed<readonly { readonly key: O["key"] }[]>;
+  /** The option with this key in the current list. Reactive. */
+  current(key: string): O | undefined;
+  partId(key: string): string;
   back(): boolean;
   activeOption(): O | undefined;
   indexOf(key: string): number;

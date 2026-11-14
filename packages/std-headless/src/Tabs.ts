@@ -6,6 +6,7 @@ import { type KeyInput, Part, type PartStyle } from "@keel/ui/aria";
 import type { Option } from "./Option.ts";
 import type { Named } from "./internal/Named.ts";
 import type { OptionState } from "./internal/OptionState.ts";
+import { content } from "./internal/content.ts";
 import { listChart } from "./internal/listChart.ts";
 import { nameOf } from "./internal/nameOf.ts";
 
@@ -30,8 +31,8 @@ export function Tabs<K extends string>(
 ): Node {
   const id = props.id;
   const l = listChart(id, "tab", props.tabs, ctx);
-  const down = props.orientation === "vertical";
   const onKey = (k: KeyInput): boolean => {
+    const down = props.orientation === "vertical";
     if (k.key === (down ? "ArrowDown" : "ArrowRight")) l.move("next", true);
     else if (k.key === (down ? "ArrowUp" : "ArrowLeft")) l.move("prev", true);
     else if (k.key === "Home") l.move("first", true);
@@ -48,48 +49,49 @@ export function Tabs<K extends string>(
         ...nameOf(props),
         id: `${id}.list`,
         role: "tablist",
-        orientation: props.orientation ?? "horizontal",
+        orientation: computed(() => props.orientation ?? "horizontal"),
         children: () =>
           For({
             get each() {
-              return l.list.get();
+              return l.rows.get();
             },
             key: "key",
-            children: (o) => {
+            children: ({ key }) => {
+              const o = computed(() => l.current(key));
               const s: OptionState = {
-                active: () => l.activeId.get() === l.partId(o),
-                selected: () => props.selected() === o.key,
+                active: () => l.activeId.get() === l.partId(key),
+                selected: () => props.selected() === key,
               };
               return Part({
                 ...props.styles?.tab,
-                id: l.partId(o),
+                id: l.partId(key),
                 role: "tab",
                 selected: computed(s.selected),
-                controls: `${id}.panel.${o.key}`,
+                controls: `${id}.panel.${key}`,
                 tabIndex: computed(() => (s.selected() ? 0 : -1)),
                 focus: computed(() => l.open.get() && s.active()),
-                onFocus: () => l.opened(l.indexOf(o.key)),
+                onFocus: () => l.opened(l.indexOf(key)),
                 onBlur: () => l.close(false),
                 onKey,
-                children: () => props.tab?.(o, s) ?? o.text,
+                children: () => content(o, props.tab, s),
               });
             },
           }),
       }),
       For({
         get each() {
-          return l.list.get();
+          return l.rows.get();
         },
         key: "key",
-        children: (o) =>
+        children: ({ key }) =>
           Part({
             ...props.styles?.panel,
-            id: `${id}.panel.${o.key}`,
+            id: `${id}.panel.${key}`,
             role: "tabpanel",
-            labelledBy: l.partId(o),
+            labelledBy: l.partId(key),
             tabIndex: 0,
-            hidden: computed(() => props.selected() !== o.key),
-            children: () => props.panel(o.key),
+            hidden: computed(() => props.selected() !== key),
+            children: () => props.panel(key),
           }),
       }),
     ],
