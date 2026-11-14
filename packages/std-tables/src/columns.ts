@@ -1,4 +1,4 @@
-import type { ObjectSchema } from "@keel/schema";
+import { type ObjectSchema, piiPaths } from "@keel/schema";
 import type { ColumnKind } from "./ColumnKind.ts";
 import type { ColumnSpec } from "./ColumnSpec.ts";
 import type { Columns } from "./Columns.type.ts";
@@ -35,6 +35,9 @@ export function columns<
   const show = spec.show;
   const rowHeader = spec.rowHeader ?? show[0] ?? fail("show names no column");
   expect("key", [spec.key], ["text", "number"], "text or number");
+  // The key is written into every row's element ids.
+  const mark = piiPaths(row).find((m) => m.path === spec.key || m.path.startsWith(`${spec.key}.`));
+  if (mark !== undefined) fail(`key ${spec.key} is personal (${mark.class}); keys become element ids`);
   expect("show", show, ["text", "number", "enum", "boolean", "value"], "any field");
   kind("rowHeader", rowHeader);
   if (!show.includes(rowHeader)) fail(`rowHeader ${rowHeader} is not in show`);

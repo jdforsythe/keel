@@ -1,8 +1,9 @@
+import { Locale } from "@keel/std-i18n";
 import type { Columns } from "./Columns.type.ts";
 import type { Field } from "./Field.ts";
 import type { TablePage } from "./TablePage.type.ts";
 import type { TableQuery } from "./TableQuery.ts";
-import { ID_SAFE } from "./internal/ID_SAFE.ts";
+import { checkKeys } from "./internal/checkKeys.ts";
 import { compareBy } from "./internal/compareBy.ts";
 
 const fail = (message: string): never => {
@@ -20,23 +21,19 @@ const byKey = (x: unknown, y: unknown): number => {
  * One page of `rows` under `search` (std.tables Query): rows where some `search` column contains `q` and each filter
  * equals, both compared after `toLocaleLowerCase(locale)` for `q`; sorted stably by `sort` and `dir`, ties by key
  * ascending, input order without `sort`; then page `page` clamped to 1 to `pages`. Pure, deterministic and total.
- * Throws E2853 for `pageSize` outside 1 to 500 and for a key repeated or not id-safe.
+ * Throws E2853 for `pageSize` outside 1 to 500, a `locale` that is not a std.i18n `Locale`, and a key repeated or
+ * not id-safe.
  */
 export function applyQuery<T, S extends Field<T>, F extends Field<T>>(
   cols: Columns<T, S, F>,
   rows: readonly T[],
   search: TableQuery<T, S, F>,
-  opts: { readonly pageSize: number; readonly locale: string },
+  opts: { readonly pageSize: number; readonly locale: Locale },
 ): TablePage<T> {
   const { pageSize, locale } = opts;
   if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 500) fail(`pageSize ${pageSize} is outside 1 to 500`);
-  const seen = new Set<string>();
-  for (const row of rows) {
-    const key = String(row[cols.key]);
-    if (!ID_SAFE.test(key)) fail(`row key ${JSON.stringify(key)} is not 1-64 of A-Z a-z 0-9 _ -`);
-    if (seen.has(key)) fail(`row key ${key} repeats`);
-    seen.add(key);
-  }
+  if (!Locale.parse(locale).ok) fail(`locale ${JSON.stringify(locale)} is not a Locale`);
+  checkKeys(rows.map((row) => row[cols.key]));
   const q = search.q;
   const needle = q === undefined || cols.search.length === 0 ? undefined : q.toLocaleLowerCase(locale);
   const kept = rows.filter((row) => {

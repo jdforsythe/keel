@@ -1,12 +1,13 @@
 // `applyQuery` over rows and searches generated from the row schema and its `tableSearch` (`gen`). Seed 1337.
 import { type Infer, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
+import type { Locale } from "@keel/std-i18n";
 import { applyQuery, columns, tableSearch } from "@keel/std-tables";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 
 const SEED = 1337;
-const LOCALE = "de-DE";
+const LOCALE: Locale = "de-DE";
 const Row = s.object({
   id: s.int({ min: 1 }),
   name: s.string({ max: 6 }),

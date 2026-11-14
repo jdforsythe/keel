@@ -1,4 +1,4 @@
-import { computed } from "@keel/reactive";
+import { type Scope, computed, owner } from "@keel/reactive";
 import { For, If } from "@keel/runtime-dom";
 import { formatNumber } from "@keel/std-i18n";
 import { type Child, Link } from "@keel/ui";
@@ -8,13 +8,14 @@ import type { Field } from "./Field.ts";
 import type { TablePage } from "./TablePage.type.ts";
 import type { TableQuery } from "./TableQuery.ts";
 import { applyQuery } from "./applyQuery.ts";
+import { checkKeys } from "./internal/checkKeys.ts";
 import { nextSort } from "./internal/nextSort.ts";
 import { untracked } from "./internal/untracked.ts";
 
 type Key = string | number;
 
-/** By table id: the pager link (`next`, `previous`) that had focus, until focus moves elsewhere. */
-const pagerFocus = new Map<string, string>();
+/** By table id: the pager link (`next`, `previous`) that had focus and the table that saw it, until focus moves on. */
+const pagerFocus = new Map<string, { readonly link: string; readonly by: Scope | undefined }>();
 
 /** The rows before this page: a page before the last holds `pageSize` rows, so no page size is needed. */
 const offset = (v: TablePage<unknown>): number =>
@@ -33,9 +34,13 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   const view = computed(
     (): TablePage<T> =>
       props.page !== undefined
-        ? props.page
+        ? checked(props.page)
         : applyQuery(cols, props.rows(), search, { pageSize: props.pageSize, locale: props.locale }),
   );
+  const checked = (page: TablePage<T>): TablePage<T> => {
+    checkKeys(page.rows.map((row) => row[cols.key]));
+    return page;
+  };
   const keyOf = (row: T): Key => {
     const k: unknown = row[cols.key];
     return typeof k === "number" ? k : String(k);
@@ -216,8 +221,15 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     children: () => computed(() => text.pageOf(view.get().page, view.get().pages)),
   });
   // A pager link focused when the last page was replaced, and missing from this one, hands focus to `status`.
-  const was = pagerFocus.get(id);
+  const was = pagerFocus.get(id)?.link;
   pagerFocus.delete(id);
+  const mine = owner();
+  // A table that unmounts forgets its entry once the commit that removed it has rendered any replacement.
+  mine?.onDispose(() =>
+    queueMicrotask(() => {
+      if (pagerFocus.get(id)?.by === mine) pagerFocus.delete(id);
+    }),
+  );
   const v0 = untracked(() => view.get());
   if ((was === "next" && v0.page >= v0.pages) || (was === "previous" && v0.page <= 1))
     queueMicrotask(() => {
@@ -264,7 +276,8 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   if (pager instanceof HTMLElement) {
     pager.addEventListener("focusin", (e) => {
       const to = e.target instanceof Element ? e.target.id : "";
-      if (to === `${id}.next` || to === `${id}.previous`) pagerFocus.set(id, to.slice(id.length + 1));
+      if (to === `${id}.next` || to === `${id}.previous`)
+        pagerFocus.set(id, { link: to.slice(id.length + 1), by: mine });
     });
     // Focus moving elsewhere forgets the link; a link removed with the page has no next target and is kept.
     pager.addEventListener("focusout", (e) => {

@@ -33,16 +33,19 @@ describe("tableSearch", () => {
           flag: mark(s.boolean(), tagged),
         };
         const Row = whole ? s.object(fields).pii("content") : s.object(fields);
-        const cols = Reflect.apply(columns, undefined, [
-          Row,
-          {
-            key: "id",
-            show: ["title", "region", "flag"],
-            sort: ["title"],
-            search: ["title"],
-            filter: ["region", "flag"],
-          },
-        ]);
+        const spec = {
+          key: "id",
+          show: ["title", "region", "flag"],
+          sort: ["title"],
+          search: ["title"],
+          filter: ["region", "flag"],
+        };
+        // A mark on the whole row marks the key too, which `columns` refuses first.
+        if (whole) {
+          expect(() => Reflect.apply(columns, undefined, [Row, spec])).toThrow(/^E2851 key id is personal/);
+          return;
+        }
+        const cols = Reflect.apply(columns, undefined, [Row, spec]);
         const marked = piiPaths(Row).map((p) => p.path);
         let schema: unknown;
         let thrown: unknown;

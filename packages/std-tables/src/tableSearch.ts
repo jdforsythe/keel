@@ -3,6 +3,7 @@ import { asQuerySchema } from "../unsafe/asQuerySchema.ts";
 import type { Columns } from "./Columns.type.ts";
 import type { Field } from "./Field.ts";
 import type { TableQuery } from "./TableQuery.ts";
+import { Q_MAX } from "./internal/Q_MAX.ts";
 import { fieldsOf } from "./internal/fieldsOf.ts";
 
 const RESERVED: readonly string[] = ["sort", "dir", "page", "q"];
@@ -46,7 +47,7 @@ export function tableSearch<T, S extends Field<T>, F extends Field<T>>(
   if (first !== undefined) shape.sort = s.enum([first, ...rest]).optional();
   shape.dir = s.enum(["asc", "desc"]).optional();
   shape.page = s.int({ min: 1 }).optional();
-  if (cols.search.length > 0) shape.q = s.string({ max: 200 }).optional();
+  if (cols.search.length > 0) shape.q = s.string({ max: Q_MAX }).optional();
   for (const name of cols.filter) shape[name] = filterSchema(fields[name]);
   const schema = s.object(shape);
   made.set(cols, schema);
