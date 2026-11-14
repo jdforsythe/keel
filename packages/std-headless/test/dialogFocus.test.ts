@@ -121,9 +121,7 @@ test("a click that left focus on body returns focus to the trigger at close", as
   t.dispose();
 });
 
-// The Dialog's trigger and dialog go together, so a confirm that deletes its own row removes the open dialog: this
-// passes once `Part` applies its close fallback to a dialog removed while open.
-test.skip("a Dialog whose trigger is gone at close returns focus to `main`", async () => {
+test("a Dialog whose trigger is gone at close returns focus to `main`", async () => {
   const row = flag(true);
   const t = render(
     page((c) =>
