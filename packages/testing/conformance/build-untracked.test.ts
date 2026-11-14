@@ -140,7 +140,7 @@ const forms: readonly [string, (env: Env) => Promise<{ teardown: () => void }>][
   ["as a route page", openRoute],
 ];
 
-describe.skip("k.component: a component is built untracked, a binding is what updates (JSX and route page)", () => {
+describe("k.component: a component is built untracked, a binding is what updates (JSX and route page)", () => {
   for (const [name, open] of forms) {
     it(`A component reading a signal at its top level, ${name}, keeps its nodes, focus and local signals when the signal changes`, async () => {
       await fc.assert(

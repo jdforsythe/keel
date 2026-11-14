@@ -60,7 +60,7 @@ const open = (initial: Shape) => {
 
 const size = fc.integer({ min: 1, max: 1000 });
 
-describe.skip("k.component: a Case reads value() once per tag at build; its binding follows", () => {
+describe("k.component: a Case reads value() once per tag at build; its binding follows", () => {
   it("A `Case` reading `value()` at its top level renders once per tag: a new value under the same tag keeps its element and focus", async () => {
     await fc.assert(
       fc.asyncProperty(size, fc.array(size, { minLength: 1, maxLength: 5 }), async (first, rest) => {

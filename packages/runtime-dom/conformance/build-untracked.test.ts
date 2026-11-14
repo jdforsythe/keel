@@ -66,7 +66,7 @@ const open = (build: (env: Env) => Node) => {
   };
 };
 
-describe.skip("k.component: a component is built untracked, a binding is what updates (.ts call)", () => {
+describe("k.component: a component is built untracked, a binding is what updates (.ts call)", () => {
   for (const [name, build] of forms) {
     it(`A component reading a signal at its top level, from ${name}, keeps its nodes, focus and local signals when the signal changes`, async () => {
       await fc.assert(

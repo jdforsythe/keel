@@ -107,7 +107,7 @@ const submit = async (host: HTMLElement): Promise<void> => {
 
 afterEach(() => document.body.replaceChildren());
 
-describe.skip("k.router: revalidation updates a page's data in place", () => {
+describe("k.router: revalidation updates a page's data in place", () => {
   it("After an `ok(null)` action, a binding reading `props.data` shows the new value", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 4 }), async (times) => {

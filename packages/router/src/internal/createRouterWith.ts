@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { report } from "@keel/ctx/internal";
 import { batch, computed, owner, scope, signal } from "@keel/reactive";
-import { boundary } from "@keel/runtime-dom/ops";
+import { boundary, list } from "@keel/runtime-dom/ops";
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
 import type { ServerState } from "@keel/store/internal";
 import type { Href } from "../types/Href.ts";
@@ -358,8 +358,21 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
         boundary(
           a,
           () => {
-            const v = view.get();
-            return v === null ? document.createComment("") : renderView(v, ctx);
+            // The committed page is a row keyed by its view: a navigation's new view renders anew, revalidation keeps
+            // the view (and the page) and updates `data` through its bindings.
+            const f = document.createDocumentFragment();
+            const at = document.createComment("");
+            f.append(at);
+            list(
+              at,
+              () => {
+                const v = view.get();
+                return v === null ? [] : [v];
+              },
+              (v) => v,
+              (v) => renderView(v(), ctx),
+            );
+            return f;
           },
           (error, reset) => {
             resetRoot = reset;

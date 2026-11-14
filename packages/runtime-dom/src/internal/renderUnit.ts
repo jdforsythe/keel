@@ -1,4 +1,4 @@
-import { effect, scope } from "@keel/reactive";
+import { effect, owner as running, scope } from "@keel/reactive";
 import type { Catcher } from "./Catcher.ts";
 import type { Claim } from "./Claim.ts";
 import { Mismatch } from "./Mismatch.ts";
@@ -13,8 +13,9 @@ import { withCx } from "./withCx.ts";
 /**
  * Render `render()` as a unit owned by the running reactive owner (structural ops call it inside their
  * `home.run`, so the unit outlives reruns of their own effect), inserted before `anchor` (or claimed
- * in place when `claim` is given, on the first run only). The render runs in its own effect so its reads
- * do not subscribe the structural op; if one of them changes, the unit re-renders client-side. A throw
+ * in place when `claim` is given, on the first run only). The render runs untracked, through its scope's `run`:
+ * a reactive read while the unit is built subscribes nothing, so the unit renders once and leaves only by `dispose`;
+ * bindings, computeds and effects made in it update on their own. A throw
  * goes to `catcher` (the unit owner's Boundary): from the render itself, or (k.reactive `scope` onError,
  * after the commit) from any app-level effect or computed created under it. A hydration mismatch goes to
  * the claim's session. Its nodes are the top-level nodes the render returned, each preceded by what the units of
@@ -63,7 +64,10 @@ export function renderUnit(
       try {
         scope(
           () => {
-            box.out = withCx(o, hydrate, render);
+            // Untracked: a read while the unit is built is its value at build; bindings, computeds and effects made
+            // here track their own reads (k.component Build).
+            const sc = running();
+            box.out = sc === undefined ? withCx(o, hydrate, render) : sc.run(() => withCx(o, hydrate, render));
           },
           catcher === null ? {} : { onError },
         );

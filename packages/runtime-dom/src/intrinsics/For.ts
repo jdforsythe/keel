@@ -1,12 +1,12 @@
-import { computed } from "@keel/reactive";
 import { anchored } from "../internal/anchored.ts";
 import { list } from "../ops/list.ts";
 
 /**
  * `<For each={xs} key="id">{(item, index) => ...}</For>` (k.component). Compiler intrinsic: compiled code
- * calls the `list` op with live accessors, so a row whose key stays keeps its nodes. At runtime (hand-built trees)
- * the row receives plain values, so it re-renders when its item object changes; a move keeps the row (and its
- * `index` argument is the index when it rendered).
+ * calls the `list` op with live accessors, so a row whose key stays keeps its nodes. Called as a function (hand-built
+ * trees), `each` is a getter (`get each() { return xs.get(); }`) and the row receives plain values: rows are keyed
+ * by item object, the first per `key`, so a new object for a kept key renders that row anew, an unchanged or moved
+ * object keeps its row (and its `index` argument is the index when it rendered).
  */
 export function For<T extends object>(props: {
   readonly each: readonly T[];
@@ -19,21 +19,23 @@ export function For<T extends object>(props: {
   const keyOf = (item: T): unknown => Reflect.get(item, key);
   const indexOf = new Map<unknown, number>();
   const each = (): readonly T[] => {
-    const xs = props.each;
     indexOf.clear();
-    xs.forEach((x, i) => {
-      if (!indexOf.has(keyOf(x))) indexOf.set(keyOf(x), i);
+    const firsts: T[] = [];
+    props.each.forEach((x, i) => {
+      const k = keyOf(x);
+      if (indexOf.has(k)) return;
+      indexOf.set(k, i);
+      firsts.push(x);
     });
-    return xs;
+    return firsts;
   };
   return anchored((a) =>
     list(
       a,
       each,
-      keyOf,
+      (item) => item,
       (item) => {
-        // Through a computed: a top-level read of `item()` is untracked in a row, and this row must track it.
-        const value = computed(item).get();
+        const value = item();
         return props.children(value, indexOf.get(keyOf(value)) ?? 0);
       },
       props.empty,
