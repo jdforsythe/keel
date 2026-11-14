@@ -137,6 +137,27 @@ it("E1111 reads anyOf members, spreads, namespace imports, re-exports and a cons
   expect(ran(table("", "s.object({ q: s.string() })"))).toEqual([]);
 });
 
+it("E1111: a search schema built by a call to a `@keel/std-*` function is the package's, also through a namespace", () => {
+  const routes = (head: string, search: string): Files => [
+    {
+      path: "src/catalog.ts",
+      source: `import { s } from '@keel/schema'\nimport { columns } from '@keel/std-tables'\nexport const catalog = columns(s.object({ email: s.string().pii('contact') }), {})\n`,
+    },
+    {
+      path: "src/routes.ts",
+      source: `import { manifest } from '@keel/router'\nimport { catalog } from './catalog.ts'\n${head}const Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b', search: ${search}, component: Page } })\n`,
+    },
+  ];
+  expect(codes(routes("import { tableSearch } from '@keel/std-tables'\n", "tableSearch(catalog)"), "E1111")).toEqual(
+    [],
+  );
+  expect(codes(routes("import * as tables from '@keel/std-tables'\n", "tables.tableSearch(catalog)"), "E1111")).toEqual(
+    [],
+  );
+  expect(codes(routes("import { tableSearch } from './local.ts'\n", "tableSearch(catalog)"), "E1111")).toHaveLength(1);
+  expect(codes(routes("import { other } from '@keel/schema'\n", "other(catalog)"), "E1111")).toHaveLength(1);
+});
+
 it("E1571 reads a const in a template, concatenation, new URL's base, protocol-relative URLs, { net } and a ctx alias", () => {
   const load = (body: string): Files => [
     { path: "src/load.ts", source: `const BASE = 'https://api.example'\nexport const load = (ctx) => {\n${body}\n}\n` },

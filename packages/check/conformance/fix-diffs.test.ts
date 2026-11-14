@@ -335,6 +335,7 @@ const NO_FIX = [
   "E1802", // the missing prop value is the author's choice
   "E1803", // the replacement token is the author's choice
   "E1804", // which token pair to use is a design choice
+  "E1822", // which widget replaces the part is the author's choice
   "E1901", // the form path to bind is the author's choice
 ];
 
