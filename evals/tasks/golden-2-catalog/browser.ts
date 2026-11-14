@@ -2,7 +2,7 @@
 // (the `api` deployable, which also serves the `web` client), seed the twelve-recipe fixture through its endpoints,
 // then on Chromium and WebKit (the engines in the local Playwright cache; it downloads nothing) walk the catalog's
 // widgets by keyboard: the finder, the currency filter, a sort link, the pager, row selection and its toast, the tabs,
-// the alert dialog (Tab stays inside it while open) and a row menu. One walk watches for `securitypolicyviolation`
+// the alert dialog (Tab reaches nothing on the page outside it while open) and a row menu. One walk watches for `securitypolicyviolation`
 // events and page errors; a second, in a context with `bypassCSP`, loads axe-core after every step and runs its
 // `color-contrast` rule, which the harness replaces with token contrast in tests. `browserPass` resolves to undefined
 // when all of that holds, else one short reason.
@@ -173,8 +173,11 @@ async function journey(page: Page, check: (step: string) => Promise<void>): Prom
   await check("dialog open");
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press("Tab");
+    // Past the dialog's last control focus may go to the browser's own UI (activeElement is body), never to the page.
     const inside = await page.evaluate(
-      () => document.getElementById("recipes.clear.dialog")?.contains(document.activeElement) === true,
+      () =>
+        document.activeElement === document.body ||
+        document.getElementById("recipes.clear.dialog")?.contains(document.activeElement) === true,
     );
     if (!inside) throw new Error("Tab left the open dialog");
   }
