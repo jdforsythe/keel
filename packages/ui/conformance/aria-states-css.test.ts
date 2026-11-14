@@ -17,7 +17,7 @@ const states: PartState[] = ["selected", "checked", "expanded", "highlighted"];
 const occurrences = (css: string, needle: string): number => css.split(needle).length - 1;
 
 describe("k.aria: part states in the CSS file", () => {
-  test.skip("`p: '2'` puts one rule and `bg: 'accent'` under `highlighted` puts one rule under `[data-k-highlighted]`", () => {
+  test("`p: '2'` puts one rule and `bg: 'accent'` under `highlighted` puts one rule under `[data-k-highlighted]`", () => {
     const { classes, css } = compileStyles({
       tokens,
       usages: [{ props: { p: "2" } }, { props: { bg: "accent" }, state: "highlighted" }],
@@ -36,7 +36,7 @@ describe("k.aria: part states in the CSS file", () => {
     }
   });
 
-  test.skip("each part state writes its selector, once per class however often it is used", () => {
+  test("each part state writes its selector, once per class however often it is used", () => {
     fc.assert(
       fc.property(fc.constantFrom(...states), fc.integer({ min: 1, max: 3 }), (state, times) => {
         const usage = { props: { bg: "accent" }, state } as const;

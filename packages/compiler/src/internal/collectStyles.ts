@@ -34,7 +34,16 @@ const STYLE_PROPS: readonly string[] = [
   "justify",
   "wrap",
 ];
-const STATES: readonly State[] = ["hover", "focusVisible", "active", "disabled"];
+const STATES: readonly State[] = [
+  "selected",
+  "checked",
+  "expanded",
+  "highlighted",
+  "hover",
+  "focusVisible",
+  "active",
+  "disabled",
+];
 
 const isState = (k: string): k is State => STATES.some((s) => s === k);
 
@@ -139,16 +148,32 @@ function classList(leaves: readonly Leaf[]): string[] {
 }
 
 /**
- * Style props on `@keel/ui` base elements (k.ui): every literal token per
+ * Style props on `@keel/ui` base elements and `Part` (k.ui, k.aria), and the `styles={{ <part>: { ... } }}` of a
+ * component imported from a `@keel/std-*` package (part styles, k.aria): every literal token per
  * (prop, breakpoint, state) becomes a usage, including literal leaves of dynamic `?:`/`&&` values so their
  * classes exist in the CSS. A base element without spreads whose class is absent or literal gets its fully
  * static style attributes rewritten into one `class` (the names ui would compute at runtime); dynamic ones stay.
  */
 export function collectStyles(a: Analysis): { usages: StyleUsage[]; rewrites: Map<number, StyleRewrite> } {
   const base = new Set(uiBaseElements(a).keys());
+  const std = new Set<string>();
+  for (const i of a.imports) {
+    const src = i.source.value;
+    if (i.importKind === "type" || (src !== "@keel/ui/aria" && !src.startsWith("@keel/std-"))) continue;
+    for (const s of i.specifiers) {
+      if (s.type !== "ImportSpecifier" || s.importKind === "type") continue;
+      const imported = s.imported.type === "Identifier" ? s.imported.name : s.imported.value;
+      if (src.startsWith("@keel/std-")) std.add(s.local.name);
+      else if (imported === "Part") base.add(s.local.name);
+    }
+  }
   const leaves: Leaf[] = [];
   const rewrites = new Map<number, StyleRewrite>();
-  if (base.size > 0) for (const j of a.jsx) if (j.type === "JSXElement") element(j, base, leaves, rewrites);
+  for (const j of a.jsx)
+    if (j.type === "JSXElement") {
+      element(j, base, leaves, rewrites);
+      parts(j, std, leaves);
+    }
   const byKey = new Map<string, StyleUsage>();
   for (const l of leaves) {
     const key = JSON.stringify([l.prop, l.token, l.breakpoint ?? "", l.state ?? ""]);
@@ -210,4 +235,18 @@ function element(el: JSXElement, base: ReadonlySet<string>, out: Leaf[], rewrite
   if (!rewritable || drop.size === 0) return;
   if (classAttr !== undefined) drop.add(classAttr);
   rewrites.set(el.start, { drop, className: [...classList(fixedLeaves), ...extra].join(" ") });
+}
+
+/** Part styles: each part's style object in the `styles` of a `@keel/std-*` component (never rewritten). */
+function parts(el: JSXElement, std: ReadonlySet<string>, out: Leaf[]): void {
+  const n = el.openingElement.name;
+  if (n.type !== "JSXIdentifier" || !std.has(n.name)) return;
+  for (const at of el.openingElement.attributes) {
+    if (at.type === "JSXSpreadAttribute" || attrNameOf(at.name) !== "styles") continue;
+    const v = at.value;
+    if (v === null || v.type !== "JSXExpressionContainer" || v.expression.type === "JSXEmptyExpression") continue;
+    const x = unparen(v.expression);
+    if (x.type === "ObjectExpression")
+      for (const p of x.properties) if (p.type === "Property") styleObject(p.value, undefined, out);
+  }
 }
