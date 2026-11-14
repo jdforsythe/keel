@@ -1,6 +1,6 @@
 import type { TestEvent } from "../types/TestEvent.ts";
 
-/** The DOM event `fire` dispatches for `event`; `input` writes `value` to the element first. */
+/** The DOM event `fire` dispatches for `event`; `input` writes `value` to the element first; `mod` is `ctrlKey`. */
 export function eventFor(el: Element, event: Exclude<TestEvent, { type: "focus" | "blur" }>): Event {
   switch (event.type) {
     case "click":
@@ -11,7 +11,14 @@ export function eventFor(el: Element, event: Exclude<TestEvent, { type: "focus" 
     case "change":
       return new Event("change", { bubbles: true });
     case "keydown":
-      return new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: event.key });
+      return new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        key: event.key,
+        shiftKey: event.shift === true,
+        altKey: event.alt === true,
+        ctrlKey: event.mod === true,
+      });
     case "submit":
       return new Event("submit", { bubbles: true, cancelable: true });
   }

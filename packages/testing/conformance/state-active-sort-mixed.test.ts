@@ -49,13 +49,13 @@ const View = Object.assign(
 );
 
 describe("k.testing: find(id).state carries active, sort and 'mixed'", () => {
-  it.skip("`find(id).state` has `active: 'c.option.b'` for a combobox whose `aria-activedescendant` is `c.option.b`", () => {
+  it("`find(id).state` has `active: 'c.option.b'` for a combobox whose `aria-activedescendant` is `c.option.b`", () => {
     const t = render(View, { props: { active: "c.option.b", sort: "ascending", checked: "false" }, ctx: simCtx() });
     expect(t.find("c").state.active).toBe("c.option.b");
     t.dispose();
   });
 
-  it.skip("`find(id).state.active` is the id `aria-activedescendant` names, for every option", () => {
+  it("`find(id).state.active` is the id `aria-activedescendant` names, for every option", () => {
     fc.assert(
       fc.property(fc.constantFrom("c.option.a", "c.option.b", "c.option.c"), (active) => {
         const t = render(View, { props: { active, sort: "ascending", checked: "false" }, ctx: simCtx() });
@@ -66,13 +66,13 @@ describe("k.testing: find(id).state carries active, sort and 'mixed'", () => {
     );
   });
 
-  it.skip("`find(id).state` has `sort: 'ascending'` for a header with that `aria-sort`", () => {
+  it("`find(id).state` has `sort: 'ascending'` for a header with that `aria-sort`", () => {
     const t = render(View, { props: { active: "c.option.a", sort: "ascending", checked: "false" }, ctx: simCtx() });
     expect(t.find("col").state.sort).toBe("ascending");
     t.dispose();
   });
 
-  it.skip("`find(id).state.sort` is the `aria-sort` value", () => {
+  it("`find(id).state.sort` is the `aria-sort` value", () => {
     fc.assert(
       fc.property(fc.constantFrom("ascending", "descending"), (sort) => {
         const t = render(View, { props: { active: "c.option.a", sort, checked: "false" }, ctx: simCtx() });
@@ -83,13 +83,13 @@ describe("k.testing: find(id).state carries active, sort and 'mixed'", () => {
     );
   });
 
-  it.skip("`find(id).state` has `checked: 'mixed'` for a mixed checkbox", () => {
+  it("`find(id).state` has `checked: 'mixed'` for a mixed checkbox", () => {
     const t = render(View, { props: { active: "c.option.a", sort: "ascending", checked: "mixed" }, ctx: simCtx() });
     expect(t.find("all").state.checked).toBe("mixed");
     t.dispose();
   });
 
-  it.skip("`find(id).state.checked` is not 'mixed' for a checkbox that is checked or unchecked", () => {
+  it("`find(id).state.checked` is not 'mixed' for a checkbox that is checked or unchecked", () => {
     fc.assert(
       fc.property(fc.constantFrom("true", "false"), (checked) => {
         const t = render(View, { props: { active: "c.option.a", sort: "ascending", checked }, ctx: simCtx() });
