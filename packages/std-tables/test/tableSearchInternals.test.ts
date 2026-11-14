@@ -13,9 +13,13 @@ describe("TableSearch internals", () => {
       fc.asyncProperty(fc.array(fc.integer({ min: 0, max: 299 }), { maxLength: 5 }), async (gaps) => {
         const ctx = createCtx({ mode: "sim", seed: SEED });
         let runs = 0;
-        const d = debounced(ctx.clock, 300, () => {
-          runs += 1;
-        });
+        const d = debounced(
+          ctx.clock,
+          () => 300,
+          () => {
+            runs += 1;
+          },
+        );
         d.push();
         for (const gap of gaps) {
           ctx.clock.advance(gap);
@@ -39,9 +43,13 @@ describe("TableSearch internals", () => {
   test("cancel drops the pending run", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
     let runs = 0;
-    const d = debounced(ctx.clock, 300, () => {
-      runs += 1;
-    });
+    const d = debounced(
+      ctx.clock,
+      () => 300,
+      () => {
+        runs += 1;
+      },
+    );
     d.push();
     d.cancel();
     ctx.clock.advance(1000);

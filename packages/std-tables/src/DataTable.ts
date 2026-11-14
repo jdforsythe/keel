@@ -10,7 +10,6 @@ import type { TableQuery } from "./TableQuery.ts";
 import { applyQuery } from "./applyQuery.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
 import { nextSort } from "./internal/nextSort.ts";
-import { untracked } from "./internal/untracked.ts";
 
 type Key = string | number;
 
@@ -29,13 +28,16 @@ const offset = (v: TablePage<unknown>): number =>
 export function DataTable<T extends object, S extends Field<T>, F extends Field<T>, W extends Field<T>>(
   props: DataTableProps<T, S, F, W>,
 ): Node {
-  const { id, columns: cols, search, text } = props;
+  // Read once: `id`, `columns`, `styles`, and whether `selected`, `actions` and `labelledBy` are given (they shape the
+  // table). Everything else is read where it is shown, so a prop the app changes updates the table in place.
+  const { id, columns: cols } = props;
   const styles = props.styles ?? {};
+  const text = () => props.text;
   const view = computed(
     (): TablePage<T> =>
       props.page !== undefined
         ? checked(props.page)
-        : applyQuery(cols, props.rows(), search, { pageSize: props.pageSize, locale: props.locale }),
+        : applyQuery(cols, props.rows(), props.search, { pageSize: props.pageSize, locale: props.locale }),
   );
   const checked = (page: TablePage<T>): TablePage<T> => {
     checkKeys(page.rows.map((row) => row[cols.key]));
@@ -45,18 +47,20 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     const k: unknown = row[cols.key];
     return typeof k === "number" ? k : String(k);
   };
-  const sorted: string | undefined =
-    search.sort !== undefined && cols.sort.includes(search.sort) ? search.sort : undefined;
+  const sorted = computed((): string | undefined => {
+    const by = props.search.sort;
+    return by !== undefined && cols.sort.includes(by) ? by : undefined;
+  });
   const sortOf = (col: string): "ascending" | "descending" | undefined =>
-    col === sorted ? (search.dir === "desc" ? "descending" : "ascending") : undefined;
+    col === sorted.get() ? (props.search.dir === "desc" ? "descending" : "ascending") : undefined;
   const sortable = (col: string): S | undefined => cols.sort.find((c) => c === col);
   const at = (page: number): TableQuery<T, S, F> => {
-    const out = { ...search, page };
+    const out = { ...props.search, page };
     if (page === 1) Reflect.deleteProperty(out, "page");
     return out;
   };
 
-  const select = props.onSelect;
+  const select = props.onSelect !== undefined;
   const chosen = computed((): readonly Key[] => props.selected?.() ?? []);
   const isChosen = (k: Key): boolean => chosen.get().some((c) => String(c) === String(k));
   const pageKeys = (): Key[] => view.get().rows.map(keyOf);
@@ -69,7 +73,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     const had = chosen.get();
     const drop = new Set(keys.map(String));
     const kept = had.filter((k) => !drop.has(String(k)));
-    select?.(on ? [...kept, ...keys] : kept);
+    props.onSelect?.(on ? [...kept, ...keys] : kept);
   };
   const columnCount = cols.show.length + (select ? 1 : 0) + (props.actions ? 1 : 0);
 
@@ -77,12 +81,22 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     const own = props.cells?.[col];
     if (own !== undefined) return own(row);
     const v: unknown = row[col];
-    return typeof v === "number" ? formatNumber(v, props.locale) : typeof v === "string" ? v : "";
+    return typeof v === "number" ? computed(() => formatNumber(v, props.locale)) : typeof v === "string" ? v : "";
   };
   const headerCell = (col: W): Node => {
-    const sort = sortOf(col);
-    // The header slot renders once, untracked: its own bindings update it, never the enclosing render.
-    const label = (): Child => untracked(() => (props.header ? props.header(col, sort) : text.headers[col]));
+    const sort = computed(() => sortOf(col));
+    // The header slot renders anew when this column's sort changes (a `For` row keyed by it); text is bound.
+    const label = (): Child => {
+      const header = props.header;
+      if (header === undefined) return computed(() => text().headers[col]);
+      return For({
+        get each() {
+          return [{ sort: sort.get() ?? "none" }];
+        },
+        key: "sort",
+        children: () => header(col, sort.get()),
+      });
+    };
     const by = sortable(col);
     return Part({
       ...styles.header,
@@ -92,7 +106,14 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
       children: () =>
         by === undefined
           ? label()
-          : Link({ ...styles.sort, id: `${id}.sort.${col}`, to: props.href(nextSort(search, by)), children: label }),
+          : Link({
+              ...styles.sort,
+              id: `${id}.sort.${col}`,
+              get to() {
+                return props.href(nextSort(props.search, by));
+              },
+              children: label,
+            }),
     });
   };
   const rowOf = (row: T): Node => {
@@ -103,7 +124,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     });
     const cells: Node[] = [];
     if (props.selected !== undefined) {
-      const name = props.text.selectRow(row);
+      const name = computed(() => (props.selected === undefined ? "" : props.text.selectRow(row)));
       cells.push(
         Part({
           ...styles.cell,
@@ -148,7 +169,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
             ...styles.selectAll,
             id: `${id}.selectAll`,
             role: "checkbox",
-            label: props.text.selectAll,
+            label: computed(() => (props.selected === undefined ? "" : props.text.selectAll)),
             checked: pageState,
             onClick: () => toggle(pageKeys(), pageState.get() !== true),
           }),
@@ -157,7 +178,12 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   for (const col of cols.show) heads.push(headerCell(col));
   if (props.actions !== undefined)
     heads.push(
-      Part({ ...styles.header, id: `${id}.actions`, role: "columnheader", children: () => props.text.actions }),
+      Part({
+        ...styles.header,
+        id: `${id}.actions`,
+        role: "columnheader",
+        children: () => computed(() => (props.actions === undefined ? "" : props.text.actions)),
+      }),
     );
 
   const empty = props.empty;
@@ -191,7 +217,10 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
             }),
       }),
   });
-  const named = props.labelledBy !== undefined ? { labelledBy: props.labelledBy } : { label: props.label };
+  const named =
+    props.labelledBy !== undefined
+      ? { labelledBy: computed(() => props.labelledBy ?? "") }
+      : { label: computed(() => props.label ?? "") };
   const table = Part({
     ...styles.table,
     ...named,
@@ -218,7 +247,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     id: `${id}.status`,
     role: "status",
     tabIndex: -1,
-    children: () => computed(() => text.pageOf(view.get().page, view.get().pages)),
+    children: () => computed(() => text().pageOf(view.get().page, view.get().pages)),
   });
   // A pager link focused when the last page was replaced, and missing from this one, hands focus to `status`.
   const was = pagerFocus.get(id)?.link;
@@ -230,7 +259,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
       if (pagerFocus.get(id)?.by === mine) pagerFocus.delete(id);
     }),
   );
-  const v0 = untracked(() => view.get());
+  const v0 = view.get();
   if ((was === "next" && v0.page >= v0.pages) || (was === "previous" && v0.page <= 1))
     queueMicrotask(() => {
       const lost = document.activeElement === null || document.activeElement === document.body;
@@ -240,7 +269,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     ...styles.pager,
     id: `${id}.pager`,
     role: "navigation",
-    label: text.pager,
+    label: computed(() => text().pager),
     children: () => [
       If({
         get when() {
@@ -253,7 +282,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
             get to() {
               return props.href(at(view.get().page - 1));
             },
-            children: text.previous,
+            children: () => computed(() => text().previous),
           }),
       }),
       status,
@@ -268,7 +297,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
             get to() {
               return props.href(at(view.get().page + 1));
             },
-            children: text.next,
+            children: () => computed(() => text().next),
           }),
       }),
     ],

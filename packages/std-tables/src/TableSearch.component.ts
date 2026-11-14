@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { owner } from "@keel/reactive";
+import { computed, owner } from "@keel/reactive";
 import type { Href } from "@keel/router";
 import { findRouter } from "@keel/router/internal";
 import { Input } from "@keel/ui";
@@ -31,23 +31,32 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
   const router = findRouter();
   const clock = (ctx ?? router?.ctx)?.clock;
   const id = `${props.id}.input`;
-  const sent = props.search.q ?? "";
-  const kept = typed.get(id);
-  typed.delete(id);
-  let q = kept !== undefined && kept.slice(0, Q_MAX) === sent ? kept : sent;
+  // The shown text follows `search.q`, or the text typed past `Q_MAX` whose first `Q_MAX` characters it is.
+  const shown = computed(() => {
+    const sent = props.search.q ?? "";
+    const kept = typed.get(id);
+    return kept !== undefined && kept.slice(0, Q_MAX) === sent ? kept : sent;
+  });
+  let q = shown.get();
   const timer =
     router === null || clock === undefined
       ? undefined
-      : debounced(clock, props.delay ?? 300, () => {
-          if (q.length > Q_MAX) typed.set(id, q);
-          void router.navigate(props.href(withQuery(props.search, q.slice(0, Q_MAX))), { replace: true });
-        });
+      : debounced(
+          clock,
+          () => props.delay ?? 300,
+          () => {
+            if (q.length > Q_MAX) typed.set(id, q);
+            else typed.delete(id);
+            void router.navigate(props.href(withQuery(props.search, q.slice(0, Q_MAX))), { replace: true });
+          },
+        );
   owner()?.onDispose(() => timer?.cancel());
   return Input({
     id,
+    // Read once: k.ui `Input` takes `label` as a string.
     label: props.label,
     type: "search",
-    value: q,
+    value: shown,
     onInput: (value) => {
       q = value;
       timer?.push();
