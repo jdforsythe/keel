@@ -1549,6 +1549,9 @@ importers:
       fast-check:
         specifier: ^3
         version: 3.23.2
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
     devDependencies:
       '@keel/forms':
         specifier: workspace:*
