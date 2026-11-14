@@ -1,4 +1,4 @@
-// Properties of the guard redirect helpers (k.router Guards, rfc:0051): `next` never nests, loops and a ninth hop are E1508.
+// Properties of the guard redirect helpers (k.guards): `next` never nests, loops and a ninth hop are E1508.
 // Seed 1337.
 import { err, s } from "@keel/schema";
 import fc from "fast-check";

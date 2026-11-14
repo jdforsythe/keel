@@ -222,7 +222,7 @@ describe("small pure helpers", () => {
     const d = { code: "E1554", message: "m" };
     expect(diagLine("compact", d)).toBe("E1554 m");
     expect(JSON.parse(diagLine("json", d))).toEqual({ kind: "diag", code: "E1554", message: "m", see: "k.server" });
-    expect(JSON.parse(diagLine("json", { code: "E1508", message: "loop" }))).toMatchObject({ see: "k.router" });
+    expect(JSON.parse(diagLine("json", { code: "E1508", message: "loop" }))).toMatchObject({ see: "k.guards" });
     expect(notFound("/u")).toEqual({ code: "keel.notFound", message: "keel.notFound", data: { url: "/u" } });
     const e = codedError("E1", "msg");
     expect(e.message).toBe("E1 msg");
@@ -246,7 +246,7 @@ describe("seeOf", () => {
       ["E1203", "k.reactive"],
       ["E1499", "k.errors"],
       ["E1500", "k.router"],
-      ["E1508", "k.router"],
+      ["E1508", "k.guards"],
       ["E1549", "k.router"],
       ["E1550", "k.server"],
       ["E1555", "k.server"],

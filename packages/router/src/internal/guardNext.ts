@@ -6,7 +6,7 @@ import { nextOf } from "./nextOf.ts";
 import { withoutNext } from "./withoutNext.ts";
 
 /**
- * The `next` a guard redirect carries for denied `url` (k.router Guards): `url` itself, except on a guard's
+ * The `next` a guard redirect carries for denied `url` (k.guards): `url` itself, except on a guard's
  * `redirect` route, where its own `next` is passed on, innermost first, so `next` never nests (`/login?next=%2Fa`
  * denied gives `next=/a`). One pass of at most `MAX_GUARD_HOPS` levels, each `next` at most `MAX_NEXT_LENGTH` long; a `next` that `carriedNext` refuses, or a level past the cap, is dropped: that URL without `next`.
  */

@@ -1,4 +1,4 @@
-// E1508 static half (k.router Rules, rfc:0051): a guard whose literal `redirect` route has that guard in its chain.
+// E1508 static half (k.guards Rules): a guard whose literal `redirect` route has that guard in its chain.
 import { check } from "@keel/check";
 import { describe, expect, it } from "vitest";
 
@@ -28,6 +28,20 @@ describe("E1508 guard redirect into its own guard", () => {
         ),
       ]),
     ).toEqual(["src/auth.guard.ts:3:39 guard auth redirects to app.login, which auth guards: a redirect loop"]);
+  });
+
+  it("the finding cites k.guards", () => {
+    const ds = check(
+      [
+        guardFile("src/auth.guard.ts", "auth", "'app.login'"),
+        routesFile(
+          "import { auth } from './auth.guard.ts'\n",
+          "  'app.shell': { component: Page, guard: auth },\n  'app.login': { path: '/login', component: Page, layout: 'app.shell' },\n",
+        ),
+      ],
+      { types: false },
+    ).diagnostics.filter((d) => d.code === "E1508");
+    expect(ds.map((d) => d.see)).toEqual(["k.guards"]);
   });
 
   it("a route guarded directly, two layouts up, an extensionless or .js import, and a local guard", () => {

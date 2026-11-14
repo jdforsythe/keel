@@ -63,10 +63,10 @@ describe("E1510 and E1508 from the type check of a manifest entry", () => {
   it.each([
     ["page", "  'a.x': { path: '/x', component: Page, guard: g },"],
     ["layout", "  'a.x': { component: Page, guard: g },"],
-  ])("a guard without redirect on a %s is E1508 (k.router)", (_n, body) => {
+  ])("a guard without redirect on a %s is E1508 (k.guards)", (_n, body) => {
     const ds = typed(body);
     expect(brief(ds)).toEqual(["E1508 6:3 a.x: a guard without redirect guards API routes only"]);
-    expect(ds[0]?.see).toBe("k.router");
+    expect(ds[0]?.see).toBe("k.guards");
   });
 
   it("a guard without redirect on an API route, and a page, check clean", () => {

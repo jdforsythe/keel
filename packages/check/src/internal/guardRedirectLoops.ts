@@ -86,7 +86,7 @@ function guardedBy(id: string, key: string, routes: ReadonlyMap<string, RouteFac
 }
 
 /**
- * E1508 (k.router, rfc:0051), static half: a guard whose literal `redirect` is an API route (k.api; a literal
+ * E1508 (k.guards), static half: a guard whose literal `redirect` is an API route (k.api; a literal
  * `api: true` entry), which has no page to redirect to, or whose `redirect` route has that same guard in its chain,
  * so a denial redirects into itself. Only what the files show: a literal `redirect`, manifests' literal `layout`
  * and `guard: <identifier>` (local or a relative named import). A computed redirect, a guard reached another way,
@@ -104,7 +104,7 @@ export function guardRedirectLoops(files: readonly Checked[]): Diagnostic[] {
     const { line, col } = lineCol(g.file.source, g.at);
     const why = api ? "an API route; redirect to a page" : `which ${g.name} guards: a redirect loop`;
     const message = clip(`guard ${g.name} redirects to ${g.redirect}, ${why}`, 89);
-    out.push({ kind: "diag", code: "E1508", path: g.file.path, line, col, message, see: "k.router" });
+    out.push({ kind: "diag", code: "E1508", path: g.file.path, line, col, message, see: "k.guards" });
   }
   return out;
 }

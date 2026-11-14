@@ -21,10 +21,13 @@ const BLOCKS: readonly (readonly [number, string])[] = [
 ];
 
 /** Codes whose rule lives outside their block's section. */
-const MOVED: ReadonlyMap<string, string> = new Map([["E1558", "k.topology"]]);
+const MOVED: ReadonlyMap<string, string> = new Map([
+  ["E1508", "k.guards"],
+  ["E1558", "k.topology"],
+]);
 
 /**
- * The spec section owning a kernel diagnostic `code` (`E1508` -> `k.router`, `E1558` -> `k.topology`); `k.server` for
+ * The spec section owning a kernel diagnostic `code` (`E1508` -> `k.guards`, `E1558` -> `k.topology`); `k.server` for
  * any other code.
  */
 export function seeOf(code: string): string {

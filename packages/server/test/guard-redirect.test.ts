@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Guard redirects on the server (k.router Guards, rfc:0051): writes, failing follow-up hops, foreign `next`, dev log.
+// Guard redirects on the server (k.guards): writes, failing follow-up hops, foreign `next`, dev log.
 import { createCtx } from "@keel/ctx";
 import { action, guard, manifest } from "@keel/router";
 import type { RouteActions, RouteDef } from "@keel/router";

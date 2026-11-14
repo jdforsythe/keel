@@ -434,7 +434,7 @@ const ROWS: readonly Row[] = [
     "guard redirect loop: the redirect route is under that guard, or redirects revisit a URL; a page guard without redirect",
     "A denied request would redirect into the same guard forever. A guard without redirect guards API routes only.",
     "move 'app.login' out of the guarded layout; guard({}, fn) -> guard({ redirect: 'app.login' }, fn)",
-    "k.router",
+    "k.guards",
   ],
   [
     "E1509",

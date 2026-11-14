@@ -9,7 +9,7 @@ type Fn = (
 ) => Promise<Result<null, KeelError<"keel.denied", unknown>>>;
 
 /**
- * Declare a guard (k.router Guards). Routes hold the returned value in `guard`; it runs outermost first, before any
+ * Declare a guard (k.guards). Routes hold the returned value in `guard`; it runs outermost first, before any
  * loader. On `err` (`keel.denied`) navigation redirects to route `redirect` of the router's own manifest, with search
  * `{ next: url }`. A guard without `redirect` is an `ApiGuard`: it guards API routes only (k.api), which answer 403 `keel.denied`.
  * There is no name and no registry: the route's reference is the only way to it.

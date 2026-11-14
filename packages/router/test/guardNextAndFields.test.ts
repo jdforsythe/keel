@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Examples: guard denial redirects with ?next= whether or not the target declares it (k.router Guards);
+// Examples: guard denial redirects with ?next= whether or not the target declares it (k.guards);
 // keel.fields data holds human messages, not rule names (k.forms).
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";

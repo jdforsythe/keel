@@ -125,7 +125,7 @@ export function mapTsDiagnostic(
   const entry = manifestEntry(node, text);
   if (entry !== null) {
     const [code, message, edits] = entry;
-    const base = diag(code, message, code === "E1508" ? "k.router" : "k.api");
+    const base = diag(code, message, code === "E1508" ? "k.guards" : "k.api");
     if (edits === undefined) return base;
     const moved = edits.map((e) => ({ ...e, start: original(e.start), end: original(e.end) }));
     return { ...base, fix: unifiedDiff(path, file.source, applyEdits(file.source, moved)) };

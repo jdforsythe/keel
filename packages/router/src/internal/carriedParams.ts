@@ -5,7 +5,7 @@ import { fieldsOf } from "./fieldsOf.ts";
 
 /**
  * The params a guard redirect to `id` (definition `target`) carries: each of its params fields, from the matched
- * route's params of the same name (k.router Guards). A field the matched route lacks is E1508; the error is the
+ * route's params of the same name (k.guards). A field the matched route lacks is E1508; the error is the
  * message, starting with the code.
  */
 export function carriedParams(id: string, target: RouteDef | undefined, matched: Rec): Result<Rec, string> {

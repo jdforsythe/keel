@@ -74,7 +74,7 @@ async function nextHop(
 }
 
 /**
- * Run every guard of `chain`, outermost first, before any loader (k.router Guards). `keel.denied` redirects
+ * Run every guard of `chain`, outermost first, before any loader (k.guards). `keel.denied` redirects
  * to the guard's `redirect` route with search `next` (the request path and query, or that URL's own `next` when it
  * is a guard's redirect route: never nested, `guardNext`); any other `err`, a throw fails at that level. A route's
  * `guard` is the guard value; its `redirect` resolves in the deployable's manifest `routes`.
