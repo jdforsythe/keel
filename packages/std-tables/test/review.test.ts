@@ -109,3 +109,25 @@ describe("review fixes", () => {
     last.dispose();
   });
 });
+
+describe("marks inside a format", () => {
+  const Email = s.format("Email", s.string().pii("contact"), {
+    check: (v) => v.includes("@"),
+    gen: { from: s.string({ min: 1 }), map: (v) => `${v}@x` },
+  });
+  test("a marked format search column is E2852 and a marked format key is E2851", () => {
+    const Row = s.object({ id: s.int({ min: 1 }), email: Email });
+    expect(throwsCode(() => tableSearch(columns(Row, { key: "id", show: ["email"], search: ["email"] })))).toBe(
+      "E2852",
+    );
+    expect(throwsCode(() => columns(s.object({ email: Email, n: s.int() }), { key: "email", show: ["n"] }))).toBe(
+      "E2851",
+    );
+  });
+  test("a format column is never a filter: its kind is text, so E2851 comes first", () => {
+    const Row = s.object({ id: s.int({ min: 1 }), email: Email });
+    expect(
+      throwsCode(() => Reflect.apply(columns, undefined, [Row, { key: "id", show: ["email"], filter: ["email"] }])),
+    ).toBe("E2851");
+  });
+});
