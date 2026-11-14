@@ -9,9 +9,6 @@ import { Q_MAX } from "./internal/Q_MAX.ts";
 import { debounced } from "./internal/debounced.ts";
 import { withQuery } from "./internal/withQuery.ts";
 
-/** By input id: text typed past `Q_MAX`, kept for the input the navigation rebuilds. */
-const typed = new Map<string, string>();
-
 /**
  * A search input for a table's `q` (std.tables TableSearch): `delay` ms (default 300, on `ctx.clock`) after the last
  * input it replaces the history entry with `href(search)`, `q` set to the first `Q_MAX` characters (absent when
@@ -31,13 +28,18 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
   const router = findRouter();
   const clock = (ctx ?? router?.ctx)?.clock;
   const id = `${props.id}.input`;
-  // The shown text follows `search.q`, or the text typed past `Q_MAX` whose first `Q_MAX` characters it is.
+  // The input keeps its text while `search.q` is the value it last sent (typing goes on during the load, and text past
+  // `Q_MAX` stays); any other `q` (back, forward, a link) replaces it and becomes the new baseline.
+  let q = props.search.q ?? "";
+  let sent = q;
   const shown = computed(() => {
-    const sent = props.search.q ?? "";
-    const kept = typed.get(id);
-    return kept !== undefined && kept.slice(0, Q_MAX) === sent ? kept : sent;
+    const at = props.search.q ?? "";
+    if (at !== sent) {
+      sent = at;
+      q = at;
+    }
+    return q;
   });
-  let q = shown.get();
   const timer =
     router === null || clock === undefined
       ? undefined
@@ -45,9 +47,8 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
           clock,
           () => props.delay ?? 300,
           () => {
-            if (q.length > Q_MAX) typed.set(id, q);
-            else typed.delete(id);
-            void router.navigate(props.href(withQuery(props.search, q.slice(0, Q_MAX))), { replace: true });
+            sent = q.slice(0, Q_MAX);
+            void router.navigate(props.href(withQuery(props.search, sent)), { replace: true });
           },
         );
   owner()?.onDispose(() => timer?.cancel());

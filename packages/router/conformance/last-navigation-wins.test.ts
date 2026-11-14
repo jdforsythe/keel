@@ -71,7 +71,7 @@ afterEach(() => {
 });
 
 describe("k.router: the last navigation started wins", () => {
-  it.skip("Of two navigations started before either settles, the later one's page shows in either settle order", async () => {
+  it("Of two navigations started before either settles, the later one's page shows in either settle order", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.constantFrom(...targets),

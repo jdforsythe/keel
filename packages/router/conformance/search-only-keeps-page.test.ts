@@ -147,7 +147,7 @@ const queries = fc.array(fc.constantFrom("a", "b", "cd", "ef", "ghij"), { minLen
 afterEach(() => document.body.replaceChildren());
 
 describe("k.router: a search-only navigation keeps the page", () => {
-  it.skip("After a search-only navigation each guard and loader of the chain ran once more", async () => {
+  it("After a search-only navigation each guard and loader of the chain ran once more", async () => {
     await fc.assert(
       fc.asyncProperty(queries, async (qs) => {
         const app = await open("/k/1");
@@ -166,7 +166,7 @@ describe("k.router: a search-only navigation keeps the page", () => {
     );
   });
 
-  it.skip("After a search-only navigation the page keeps its nodes", async () => {
+  it("After a search-only navigation the page keeps its nodes", async () => {
     await fc.assert(
       fc.asyncProperty(queries, async (qs) => {
         const app = await open("/k/1");
@@ -194,7 +194,7 @@ describe("k.router: a search-only navigation keeps the page", () => {
     );
   });
 
-  it.skip("After a search-only navigation the page keeps focus", async () => {
+  it("After a search-only navigation the page keeps focus", async () => {
     await fc.assert(
       fc.asyncProperty(queries, async (qs) => {
         const app = await open("/k/1");
@@ -211,7 +211,7 @@ describe("k.router: a search-only navigation keeps the page", () => {
     );
   });
 
-  it.skip("After a search-only navigation the page keeps its local signals", async () => {
+  it("After a search-only navigation the page keeps its local signals", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 5 }), queries, async (clicks, qs) => {
         const app = await open("/k/1");
@@ -232,7 +232,7 @@ describe("k.router: a search-only navigation keeps the page", () => {
     );
   });
 
-  it.skip("After a search-only navigation its `props.search` and `props.data` bindings update", async () => {
+  it("After a search-only navigation its `props.search` and `props.data` bindings update", async () => {
     await fc.assert(
       fc.asyncProperty(queries, async (qs) => {
         const app = await open("/k/1");
@@ -249,7 +249,7 @@ describe("k.router: a search-only navigation keeps the page", () => {
     );
   });
 
-  it.skip("After a search-only navigation a loader `err` renders the `errorElement`", async () => {
+  it("After a search-only navigation a loader `err` renders the `errorElement`", async () => {
     const app = await open("/k/1");
     await goTo(app, 1, "boom");
     const shownError = app.host.querySelector('[data-error="kept.page"]');
@@ -259,7 +259,7 @@ describe("k.router: a search-only navigation keeps the page", () => {
     app.stop();
   });
 
-  it.skip("After a navigation that changes the params a new page is rendered", async () => {
+  it("After a navigation that changes the params a new page is rendered", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 2, max: 9 }), fc.constantFrom("a", "cd"), async (id, q) => {
         const app = await open("/k/1");

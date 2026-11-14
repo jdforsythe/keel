@@ -40,6 +40,7 @@ import { routeActions } from "./routeActions.ts";
 import { routers } from "./routers.ts";
 import { runGuard } from "./runGuard.ts";
 import { runLoaders } from "./runLoaders.ts";
+import { splitUrl } from "./splitUrl.ts";
 import { tables } from "./tables.ts";
 import { unexpected } from "./unexpected.ts";
 import { withNext } from "./withNext.ts";
@@ -358,8 +359,8 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
         boundary(
           a,
           () => {
-            // The committed page is a row keyed by its view: a navigation's new view renders anew, revalidation keeps
-            // the view (and the page) and updates `data` through its bindings.
+            // The committed page is a row keyed by its path: a navigation that changes only the search or hash keeps
+            // the page under the new view; revalidation keeps the view; anything else renders anew.
             const f = document.createDocumentFragment();
             const at = document.createComment("");
             f.append(at);
@@ -369,8 +370,9 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
                 const v = view.get();
                 return v === null ? [] : [v];
               },
-              (v) => v,
-              (v) => renderView(v(), ctx),
+              // A page that rendered keeps its row across navigations to its path: only the search or hash differs.
+              (v) => (v.error === null ? splitUrl(v.url).path : v),
+              (v) => renderView(v, ctx),
             );
             return f;
           },

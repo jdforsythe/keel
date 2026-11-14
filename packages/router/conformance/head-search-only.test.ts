@@ -65,7 +65,7 @@ afterEach(() => {
 });
 
 describe("k.head: a search-only navigation", () => {
-  it.skip("After a search-only navigation, `document.title` is the route's `title` for the new search and data", async () => {
+  it("After a search-only navigation, `document.title` is the route's `title` for the new search and data", async () => {
     await fc.assert(
       fc.asyncProperty(queries, async (qs) => {
         loads = 0;
@@ -91,7 +91,7 @@ describe("k.head: a search-only navigation", () => {
     );
   });
 
-  it.skip('After a search-only navigation the focused element and every `role="status"` node are the same nodes as before', async () => {
+  it('After a search-only navigation the focused element and every `role="status"` node are the same nodes as before', async () => {
     await fc.assert(
       fc.asyncProperty(queries, async (qs) => {
         loads = 0;

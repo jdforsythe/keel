@@ -1,4 +1,4 @@
-import { type Scope, computed, owner } from "@keel/reactive";
+import { computed, effect } from "@keel/reactive";
 import { For, If } from "@keel/runtime-dom";
 import { formatNumber } from "@keel/std-i18n";
 import { type Child, Link } from "@keel/ui";
@@ -12,9 +12,6 @@ import { checkKeys } from "./internal/checkKeys.ts";
 import { nextSort } from "./internal/nextSort.ts";
 
 type Key = string | number;
-
-/** By table id: the pager link (`next`, `previous`) that had focus and the table that saw it, until focus moves on. */
-const pagerFocus = new Map<string, { readonly link: string; readonly by: Scope | undefined }>();
 
 /** The rows before this page: a page before the last holds `pageSize` rows, so no page size is needed. */
 const offset = (v: TablePage<unknown>): number =>
@@ -250,22 +247,17 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     tabIndex: -1,
     children: () => computed(() => text().pageOf(view.get().page, view.get().pages)),
   });
-  // A pager link focused when the last page was replaced, and missing from this one, hands focus to `status`.
-  const was = pagerFocus.get(id)?.link;
-  pagerFocus.delete(id);
-  const mine = owner();
-  // A table that unmounts forgets its entry once the commit that removed it has rendered any replacement.
-  mine?.onDispose(() =>
-    queueMicrotask(() => {
-      if (pagerFocus.get(id)?.by === mine) pagerFocus.delete(id);
-    }),
-  );
-  const v0 = view.get();
-  if ((was === "next" && v0.page >= v0.pages) || (was === "previous" && v0.page <= 1))
-    queueMicrotask(() => {
-      const lost = document.activeElement === null || document.activeElement === document.body;
-      if (lost && status instanceof HTMLElement && status.isConnected) status.focus();
-    });
+  // The pager link (`next`, `previous`) that has focus, until focus moves on; when a new page removes it, `status`
+  // takes focus.
+  let was = "";
+  effect(() => {
+    const v = view.get();
+    if ((was === "next" && v.page >= v.pages) || (was === "previous" && v.page <= 1))
+      queueMicrotask(() => {
+        const lost = document.activeElement === null || document.activeElement === document.body;
+        if (lost && status instanceof HTMLElement && status.isConnected) status.focus();
+      });
+  });
   const pager = Part({
     ...styles.pager,
     id: `${id}.pager`,
@@ -306,12 +298,11 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   if (pager instanceof HTMLElement) {
     pager.addEventListener("focusin", (e) => {
       const to = e.target instanceof Element ? e.target.id : "";
-      if (to === `${id}.next` || to === `${id}.previous`)
-        pagerFocus.set(id, { link: to.slice(id.length + 1), by: mine });
+      if (to === `${id}.next` || to === `${id}.previous`) was = to.slice(id.length + 1);
     });
     // Focus moving elsewhere forgets the link; a link removed with the page has no next target and is kept.
     pager.addEventListener("focusout", (e) => {
-      if (e instanceof FocusEvent && e.relatedTarget !== null) pagerFocus.delete(id);
+      if (e instanceof FocusEvent && e.relatedTarget !== null) was = "";
     });
   }
   return Part({ id, role: "generic", children: () => [table, pager] });

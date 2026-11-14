@@ -71,13 +71,15 @@ describe("review fixes", () => {
       ).toBe("E2853");
   });
 
-  test("a search-only navigation rebuilds the page, so search is read fresh", async () => {
+  test("a search-only navigation keeps the page: the table and its status are the same nodes", async () => {
     useRows(12);
     const h = await renderRoute("tbl.find", { routes, params: {}, search: {}, ctx: simCtx() });
     const before = document.getElementById("cat.table");
+    const status = document.getElementById("cat.status");
     await h.fire("cat.sort.title", { type: "click" });
     await h.settle();
-    expect(document.getElementById("cat.table")).not.toBe(before);
+    expect(document.getElementById("cat.table")).toBe(before);
+    expect(document.getElementById("cat.status")).toBe(status);
     expect(h.find("cat.header.title").state.sort).toBe("ascending");
     h.dispose();
   });
