@@ -43,7 +43,8 @@ it("a page finds its router's ctx and navigates through it, push or replace", as
   await settle();
   expect(router.route.get()).toMatchObject({ search: { q: "b" } });
   expect(history.entries).toEqual(["/fr?q=a", "/fr?q=b"]);
-  expect(findRouter()).toBeNull();
+  expect(findRouter()).toBe(core);
   unmount();
+  expect(findRouter()).toBeNull();
   router.dispose();
 });

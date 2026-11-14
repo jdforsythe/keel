@@ -6,6 +6,7 @@ export { Form } from "./Form.ts";
 export { guard } from "./guard.ts";
 export { loader } from "./loader.ts";
 export { manifest } from "./manifest.ts";
+export { navigate } from "./navigate.ts";
 export { routesArtifact } from "./routesArtifact.ts";
 export type { Action } from "./types/Action.ts";
 export type { ApiGuard } from "./types/ApiGuard.ts";

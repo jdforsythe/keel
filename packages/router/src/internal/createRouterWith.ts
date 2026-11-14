@@ -30,6 +30,7 @@ import { guardNext } from "./guardNext.ts";
 import { hrefIn } from "./hrefIn.ts";
 import { isRouteStateOf } from "./isRouteStateOf.ts";
 import { matchUrl } from "./matchUrl.ts";
+import { mounted } from "./mounted.ts";
 import { needsBare } from "./needsBare.ts";
 import { notFound } from "./notFound.ts";
 import { pageHead } from "./pageHead.ts";
@@ -331,7 +332,14 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
       // The App's own scope is how `Form` finds this router (owner chain, `routers` WeakMap).
       scope(() => {
         const me = owner();
-        if (me !== undefined) routers.set(me, core);
+        if (me !== undefined) {
+          routers.set(me, core);
+          mounted.push(core);
+          me.onDispose(() => {
+            const i = mounted.indexOf(core);
+            if (i >= 0) mounted.splice(i, 1);
+          });
+        }
         if (typeof document !== "undefined") {
           const onClick = (e: MouseEvent): void => {
             const a = e.target instanceof Element ? e.target.closest("a[href]") : null;
