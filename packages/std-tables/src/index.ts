@@ -13,3 +13,4 @@ export { DataTable } from "./DataTable.ts";
 export type { DataTableProps } from "./DataTableProps.ts";
 export type { TableStyles } from "./TableStyles.ts";
 export type { TableText } from "./TableText.ts";
+export { TableSearch } from "./TableSearch.component.ts";

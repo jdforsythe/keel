@@ -13,7 +13,7 @@ import { DataTable, TableSearch, applyQuery, columns, tablePage, tableSearch } f
 import { Box, Text } from "@keel/ui";
 
 export const SEED = 1337;
-export const LOCALE = "en";
+export const LOCALE = "en-US";
 export const PAGE_SIZE = 5;
 
 export const simCtx = () => createCtx({ mode: "sim", seed: SEED });

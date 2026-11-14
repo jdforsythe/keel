@@ -1,5 +1,6 @@
-import { type Computed, computed } from "@keel/reactive";
+import { computed } from "@keel/reactive";
 import { For, If } from "@keel/runtime-dom";
+import { formatNumber } from "@keel/std-i18n";
 import { type Child, Link } from "@keel/ui";
 import { Part } from "@keel/ui/aria";
 import type { DataTableProps } from "./DataTableProps.ts";
@@ -38,7 +39,6 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     const k: unknown = row[cols.key];
     return typeof k === "number" ? k : String(k);
   };
-  const numbers = new Intl.NumberFormat(props.locale);
   const sorted: string | undefined =
     search.sort !== undefined && cols.sort.includes(search.sort) ? search.sort : undefined;
   const sortOf = (col: string): "ascending" | "descending" | undefined =>
@@ -71,7 +71,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     const own = props.cells?.[col];
     if (own !== undefined) return own(row);
     const v: unknown = row[col];
-    return typeof v === "number" ? numbers.format(v) : typeof v === "string" ? v : "";
+    return typeof v === "number" ? formatNumber(v, props.locale) : typeof v === "string" ? v : "";
   };
   const headerCell = (col: W): Node => {
     const sort = sortOf(col);
@@ -184,20 +184,16 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
             }),
       }),
   });
-  // A server page is fixed for this render: `rowCount` only when it holds fewer than `total`. A client source's rows
-  // change in place, and `rowCount` takes a number, so it is always `total + 1` there.
-  const rowCount = (): { readonly rowCount?: number | Computed<number> } => {
-    const v = props.page;
-    if (v === undefined) return { rowCount: computed(() => view.get().total + 1) };
-    return v.rows.length < v.total ? { rowCount: v.total + 1 } : {};
-  };
   const named = props.labelledBy !== undefined ? { labelledBy: props.labelledBy } : { label: props.label };
   const table = Part({
     ...styles.table,
     ...named,
     id: `${id}.table`,
     role: "table",
-    ...rowCount(),
+    rowCount: computed(() => {
+      const v = view.get();
+      return v.rows.length < v.total ? v.total + 1 : undefined;
+    }),
     children: () => [
       Part({
         ...styles.head,

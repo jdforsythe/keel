@@ -1,4 +1,5 @@
 import type { Href } from "@keel/router";
+import type { Locale } from "@keel/std-i18n";
 import type { Columns } from "./Columns.type.ts";
 import type { Field } from "./Field.ts";
 import type { TablePage } from "./TablePage.type.ts";
@@ -21,7 +22,7 @@ export type DataTableProps<T, S extends Field<T>, F extends Field<T>, W extends 
   readonly search: TableQuery<T, S, F>;
   /** The table's own route with a new search: sort, pager and filter links. */
   readonly href: (search: TableQuery<T, S, F>) => Href;
-  readonly locale: string;
+  readonly locale: Locale;
   readonly text: TableText<T, W>;
   readonly header?: (col: W, sort: "ascending" | "descending" | undefined) => Node;
   /** Rendered in one cell spanning the row when `total` is 0. */

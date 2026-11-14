@@ -9,7 +9,7 @@ import { describe, expect, test } from "vitest";
 import { SEED, dataset, routes, simCtx, useRows } from "./fixtures.ts";
 
 describe("std.tables: TableSearch", () => {
-  test.skip("`TableSearch` navigates once, 300 ms after the last of three inputs, with `replace` and no `page`", async () => {
+  test("`TableSearch` navigates once, 300 ms after the last of three inputs, with `replace` and no `page`", async () => {
     useRows(12);
     const ctx = simCtx();
     const h = await renderRoute("tbl.find", { routes, params: {}, search: { sort: "title", page: 2 }, ctx });
@@ -33,7 +33,7 @@ describe("std.tables: TableSearch", () => {
     h.dispose();
   });
 
-  test.skip("for any gaps under 300 ms between three inputs the one navigation comes 300 ms after the last, and an empty `q` is absent (property)", async () => {
+  test("for any gaps under 300 ms between three inputs the one navigation comes 300 ms after the last, and an empty `q` is absent (property)", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.integer({ min: 0, max: 299 }),
