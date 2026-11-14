@@ -1,12 +1,12 @@
-import type { Infer, Schema } from "@keel/schema";
-import type { Store, Transaction } from "@keel/store";
-import type { ChartState } from "./ChartState.ts";
+import type { Schema } from "@keel/schema";
+import type { ChartInstance } from "./ChartInstance.ts";
 import type { StateSpec } from "./StateSpec.ts";
+import type { compileKey } from "./internal/compileKey.ts";
 
 /**
  * A compiled chart (std.statecharts): its store, one transaction per event (`<id>.<event>`), the declared states and
  * `initial`, and `enabled(state, event, payload)`, true when `tx` of that event would change the state's name or apply
- * a `do`.
+ * a `do`. `instance(chart, key)` compiles it again as the store `<id>:<key>`.
  */
 export type Chart<
   D,
@@ -14,10 +14,9 @@ export type Chart<
   S extends string,
   G extends string,
   A extends string,
-> = {
-  readonly store: Store<ChartState<S, D>>;
-  readonly events: { readonly [K in keyof Ev]: Transaction<ChartState<S, D>, Infer<Ev[K]>> };
+> = ChartInstance<D, Ev, S> & {
   readonly states: { readonly [K in S]: StateSpec<keyof Ev & string, S, G, A> };
   readonly initial: S;
-  enabled<K extends keyof Ev>(state: ChartState<S, D>, event: K, payload: Infer<Ev[K]>): boolean;
+  /** Compiles the declaration again, in the calling scope, as the store `id` (what `instance` calls). */
+  readonly [compileKey]: (id: string) => ChartInstance<D, Ev, S>;
 };

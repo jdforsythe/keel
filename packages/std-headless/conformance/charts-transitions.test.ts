@@ -53,7 +53,7 @@ const next = (m: Model, st: Step): Model => {
 };
 
 describe("std.headless: optionsChart transitions", () => {
-  test.skip("`optionsChart` holds the transitions in the table: `open` sets `active` to `at` when below `count`, else -1, and `back` false", async () => {
+  test("`optionsChart` holds the transitions in the table: `open` sets `active` to `at` when below `count`, else -1, and `back` false", async () => {
     const i = inScope(() => instance(optionsChart, nextKey("o")));
     expect(optionsView(i.store.snapshot().state)).toEqual({ state: "closed", active: -1, count: 0, back: false });
     await tx(i.events.open, { count: 3, at: 1 });
@@ -63,7 +63,7 @@ describe("std.headless: optionsChart transitions", () => {
     expect(optionsView(j.store.snapshot().state)?.active).toBe(-1);
   });
 
-  test.skip("`optionsChart`: `close { back }` and `choose` go to `closed` with `active` -1; `choose` sets `back` true", async () => {
+  test("`optionsChart`: `close { back }` and `choose` go to `closed` with `active` -1; `choose` sets `back` true", async () => {
     for (const back of [false, true]) {
       const i = inScope(() => instance(optionsChart, nextKey("o")));
       await tx(i.events.open, { count: 3, at: 2 });
@@ -78,7 +78,7 @@ describe("std.headless: optionsChart transitions", () => {
     expect([v?.state, v?.active, v?.back]).toEqual(["closed", -1, true]);
   });
 
-  test.skip("`optionsChart`: `move` `next` from -1 is 0, `prev` from -1 is `count - 1`; past an end it wraps when `wrap`, else stays", async () => {
+  test("`optionsChart`: `move` `next` from -1 is 0, `prev` from -1 is `count - 1`; past an end it wraps when `wrap`, else stays", async () => {
     const at = async (count: number, start: number, dir: "next" | "prev", wrap: boolean) => {
       const i = inScope(() => instance(optionsChart, nextKey("o")));
       await tx(i.events.open, { count, at: start });
@@ -99,7 +99,7 @@ describe("std.headless: optionsChart transitions", () => {
     expect(optionsView(i.store.snapshot().state)?.active).toBe(0);
   });
 
-  test.skip("`optionsChart`: `jump { to }` in open sets `active` to `to` when below `count`; `items { count }` clamps `active` to `count - 1`", async () => {
+  test("`optionsChart`: `jump { to }` in open sets `active` to `to` when below `count`; `items { count }` clamps `active` to `count - 1`", async () => {
     const i = inScope(() => instance(optionsChart, nextKey("o")));
     await tx(i.events.open, { count: 5, at: 0 });
     await tx(i.events.jump, { to: 3 });
@@ -111,7 +111,7 @@ describe("std.headless: optionsChart transitions", () => {
     expect(optionsView(i.store.snapshot().state)?.active).toBe(-1);
   });
 
-  test.skip("`optionsChart` follows the table for any event sequence (property against a model of the table)", async () => {
+  test("`optionsChart` follows the table for any event sequence (property against a model of the table)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(step, { maxLength: 14 }), async (steps) => {
         const i = inScope(() => instance(optionsChart, nextKey("o")));
@@ -137,7 +137,7 @@ describe("std.headless: optionsChart transitions", () => {
 });
 
 describe("std.headless: openChart and toastChart transitions", () => {
-  test.skip("`openChart` starts `closed`; `open` goes to `open`, `close` to `closed`, `toggle` flips (property over toggle counts)", async () => {
+  test("`openChart` starts `closed`; `open` goes to `open`, `close` to `closed`, `toggle` flips (property over toggle counts)", async () => {
     const i = inScope(() => instance(openChart, nextKey("p")));
     expect(i.store.snapshot().state.state).toBe("closed");
     await tx(i.events.open, {});
@@ -154,7 +154,7 @@ describe("std.headless: openChart and toastChart transitions", () => {
     );
   });
 
-  test.skip("`toastChart` starts `showing`; `pause` and `resume` move between `showing` and `paused`; `expire` in `showing` and `dismiss` go to `gone`", async () => {
+  test("`toastChart` starts `showing`; `pause` and `resume` move between `showing` and `paused`; `expire` in `showing` and `dismiss` go to `gone`", async () => {
     const i = inScope(() => instance(toastChart, nextKey("t")));
     expect(i.store.snapshot().state.state).toBe("showing");
     await tx(i.events.pause, {});
@@ -174,10 +174,12 @@ describe("std.headless: openChart and toastChart transitions", () => {
     expect(k.store.snapshot().state.state).toBe("gone");
   });
 
-  test.skip("`toastChart`: `gone` is final and no event leaves it", async () => {
+  test("`toastChart`: `gone` is final and no event leaves it", async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.constantFrom("pause", "resume", "expire", "dismiss"), { maxLength: 6 }),
+        fc.array(fc.constantFrom("pause" as const, "resume" as const, "expire" as const, "dismiss" as const), {
+          maxLength: 6,
+        }),
         async (evs) => {
           const i = inScope(() => instance(toastChart, nextKey("t")));
           await tx(i.events.dismiss, {});

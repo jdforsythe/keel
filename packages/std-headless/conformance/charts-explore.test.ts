@@ -9,7 +9,7 @@ import { describe, expect, test } from "vitest";
 import { optionsView } from "./fixtures.ts";
 
 describe("std.headless: exploring the charts", () => {
-  test.skip("under `explore`'s closed form `openChart` is `complete` and `coverage` is empty", () => {
+  test("under `explore`'s closed form `openChart` is `complete` and `coverage` is empty", () => {
     const r = explore(Object.values(openChart.events));
     expect(r.complete).toBe(true);
     const c = coverage(openChart, r);
@@ -18,7 +18,7 @@ describe("std.headless: exploring the charts", () => {
     expect(new Set(r.states.map((st) => st.state))).toEqual(new Set(["closed", "open"]));
   });
 
-  test.skip("under `explore`'s closed form `toastChart` is `complete` and `coverage` is empty", () => {
+  test("under `explore`'s closed form `toastChart` is `complete` and `coverage` is empty", () => {
     const r = explore(Object.values(toastChart.events));
     expect(r.complete).toBe(true);
     const c = coverage(toastChart, r);
@@ -27,12 +27,12 @@ describe("std.headless: exploring the charts", () => {
     expect(new Set(r.states.map((st) => st.state))).toEqual(new Set(["showing", "paused", "gone"]));
   });
 
-  test.skip("`explore` of `optionsChart` from `initial` with counts 0, 1 and 3, `at` and `to` -1, 0, 2 and 5, every `by`, `wrap` and `back`, at depth 6, finds no state breaking its invariant", () => {
+  test("`explore` of `optionsChart` from `initial` with counts 0, 1 and 3, `at` and `to` -1, 0, 2 and 5, every `by`, `wrap` and `back`, at depth 6, finds no state breaking its invariant", () => {
     const e = optionsChart.events;
     const counts = [0, 1, 3];
     const marks = [-1, 0, 2, 5];
     const r = explore(Object.values(e), {
-      from: optionsChart.initial,
+      from: { state: optionsChart.initial, data: { active: -1, count: 0, back: false } },
       depth: 6,
       payloads: {
         [e.open.name]: counts.flatMap((count) => marks.map((at) => ({ count, at }))),

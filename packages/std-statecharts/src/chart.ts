@@ -4,10 +4,12 @@ import { store, transaction } from "@keel/store";
 import { asEvents } from "../unsafe/asEvents.ts";
 import { loosen } from "../unsafe/loosen.ts";
 import type { Chart } from "./Chart.type.ts";
+import type { ChartInstance } from "./ChartInstance.ts";
 import type { ChartSpec } from "./ChartSpec.ts";
 import type { ChartState } from "./ChartState.ts";
 import type { LooseState } from "./internal/LooseState.ts";
 import { analyze } from "./internal/analyze.ts";
+import { compileKey } from "./internal/compileKey.ts";
 import { shapeOf } from "./internal/shapeOf.ts";
 import { targetsOf } from "./internal/targetsOf.ts";
 
@@ -32,14 +34,6 @@ export function chart<
   for (const name in spec.states) names.push(name);
   const [first, ...rest] = names;
   if (first === undefined) throw new Error(`E2751 chart ${id}: no states`);
-  const make = () =>
-    store(
-      s.object({ state: s.enum([first, ...rest]), data: spec.data }, { closed: true }),
-      { state: spec.initial, data: spec.start },
-      { id },
-    );
-  // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
-  const st = owner() === undefined ? scope(() => undefined, { detached: true }).run(make) : make();
   const guards = loosen<D, boolean>(spec.guards);
   const actions = loosen<D, D>(spec.actions);
   const pick = (cur: ChartState<S, D>, event: string, payload: unknown) => {
@@ -47,24 +41,29 @@ export function chart<
       if (t.guard === undefined || guards[t.guard]?.(cur.data, payload) === true) return t;
     return undefined;
   };
-  const table: Record<string, ReturnType<typeof transaction<ChartState<S, D>, unknown>>> = {};
-  for (const event of Object.keys(spec.events))
-    table[event] = transaction(st, `${id}.${event}`, spec.events[event] ?? s.object({}), (cur, payload) => {
-      const t = pick(cur, event, payload);
-      const act = t?.do === undefined ? undefined : actions[t.do];
-      return {
-        state: names.find((n) => n === t?.to) ?? cur.state,
-        data: act === undefined ? cur.data : act(cur.data, payload),
-      };
-    });
-  return {
-    store: st,
-    events: asEvents(table),
-    states: spec.states,
-    initial: spec.initial,
-    enabled: (state, event, payload) => {
-      const t = pick(state, String(event), payload);
-      return t !== undefined && (t.do !== undefined || (t.to !== undefined && t.to !== state.state));
-    },
+  const enabled = (state: ChartState<S, D>, event: PropertyKey, payload: unknown) => {
+    const t = pick(state, String(event), payload);
+    return t !== undefined && (t.do !== undefined || (t.to !== undefined && t.to !== state.state));
   };
+  const compile = (sid: string): ChartInstance<D, Ev, S> => {
+    const st = store(
+      s.object({ state: s.enum([first, ...rest]), data: spec.data }, { closed: true }),
+      { state: spec.initial, data: spec.start },
+      { id: sid },
+    );
+    const table: Record<string, ReturnType<typeof transaction<ChartState<S, D>, unknown>>> = {};
+    for (const event of Object.keys(spec.events))
+      table[event] = transaction(st, `${sid}.${event}`, spec.events[event] ?? s.object({}), (cur, payload) => {
+        const t = pick(cur, event, payload);
+        const act = t?.do === undefined ? undefined : actions[t.do];
+        return {
+          state: names.find((n) => n === t?.to) ?? cur.state,
+          data: act === undefined ? cur.data : act(cur.data, payload),
+        };
+      });
+    return { store: st, events: asEvents(table), enabled };
+  };
+  // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
+  const own = owner() === undefined ? scope(() => undefined, { detached: true }).run(() => compile(id)) : compile(id);
+  return { ...own, states: spec.states, initial: spec.initial, [compileKey]: compile };
 }
