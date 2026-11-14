@@ -11,6 +11,10 @@
     "./a11y": {
       "types": "./src/a11y/index.ts",
       "default": "./src/a11y/index.ts"
+    },
+    "./prove": {
+      "types": "./src/prove/index.ts",
+      "default": "./src/prove/index.ts"
     }
   },
   "files": ["dist"],
@@ -36,6 +40,15 @@
   "devDependencies": {
     "@keel/forms": "workspace:*",
     "@keel/tooling": "workspace:*",
-    "@types/node": "^22"
+    "@types/node": "^22",
+    "z3-solver": "5.3.3"
+  },
+  "peerDependencies": {
+    "z3-solver": "5.3.3"
+  },
+  "peerDependenciesMeta": {
+    "z3-solver": {
+      "optional": true
+    }
   }
 }

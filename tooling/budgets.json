@@ -120,6 +120,28 @@
       "platform": "node"
     },
     "@keel/std-tables": "4.25kb",
+    "@keel/std-db/sqlite": {
+      "max": "1.5kb",
+      "platform": "node"
+    },
+    "@keel/std-db/postgres": {
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-db/tools": {
+      "max": "1.5kb",
+      "platform": "node"
+    },
+    "@keel/std-workflows": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-workflows/tools": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-capacitor": "1kb",
+    "@keel/std-tauri": "1kb",
     "@keel/std-temporal": "2.5kb",
     "@keel/std-text": "1.5kb",
     "@keel/store": "3.5kb",
@@ -129,6 +151,10 @@
     },
     "@keel/testing": {
       "max": "12.75kb",
+      "platform": "node"
+    },
+    "@keel/testing/prove": {
+      "max": "5kb",
       "platform": "node"
     },
     "@keel/ui": "4kb",
