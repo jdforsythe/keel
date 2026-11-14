@@ -9,6 +9,7 @@ import type { TablePage } from "./TablePage.type.ts";
 import type { TableQuery } from "./TableQuery.ts";
 import { applyQuery } from "./applyQuery.ts";
 import { nextSort } from "./internal/nextSort.ts";
+import { untracked } from "./internal/untracked.ts";
 
 type Key = string | number;
 
@@ -75,7 +76,8 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   };
   const headerCell = (col: W): Node => {
     const sort = sortOf(col);
-    const label = (): Child => (props.header ? props.header(col, sort) : text.headers[col]);
+    // The header slot renders once, untracked: its own bindings update it, never the enclosing render.
+    const label = (): Child => untracked(() => (props.header ? props.header(col, sort) : text.headers[col]));
     const by = sortable(col);
     return Part({
       ...styles.header,
@@ -216,7 +218,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   // A pager link focused when the last page was replaced, and missing from this one, hands focus to `status`.
   const was = pagerFocus.get(id);
   pagerFocus.delete(id);
-  const v0 = view.get();
+  const v0 = untracked(() => view.get());
   if ((was === "next" && v0.page >= v0.pages) || (was === "previous" && v0.page <= 1))
     queueMicrotask(() => {
       const lost = document.activeElement === null || document.activeElement === document.body;
