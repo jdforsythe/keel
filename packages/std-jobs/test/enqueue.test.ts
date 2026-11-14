@@ -22,7 +22,7 @@ test("A job is stored under `std.jobs.<module>` with its encoded input, `at` and
   expect(r.ok).toBe(true);
   const stored: unknown = JSON.parse((await ctx.storage.get("std.jobs.orders")) ?? "null");
   expect(stored).toEqual({
-    q: [{ id: r.ok ? r.value : "", job: "orders.work", input: { n: 7 }, at: 540, n: 0, l: false }],
+    q: [{ id: r.ok ? r.value : "", job: "orders.work", input: { n: 7 }, at: 540, n: 0, l: 0 }],
     done: [],
     failed: [],
   });

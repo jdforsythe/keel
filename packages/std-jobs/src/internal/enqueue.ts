@@ -31,7 +31,7 @@ export async function enqueue(
     input: j.input.encode(r.value),
     at: ctx.clock.now() + (opts.delayMs ?? 0),
     n: 0,
-    l: false,
+    l: 0,
   };
   const k = opts.key;
   const got = await transact(ctx, module, (st) => {

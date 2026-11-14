@@ -20,7 +20,7 @@ export function finish(
     if (x === undefined) return;
     const now = ctx.clock.now();
     if (code !== undefined && x.n < attempts) {
-      x.l = false;
+      x.l = 0;
       x.at = now + backoff(x.n);
       return;
     }

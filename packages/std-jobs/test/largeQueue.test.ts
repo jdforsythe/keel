@@ -24,9 +24,9 @@ test("A due job runs while 200,000 later jobs wait in the queue", async () => {
     input: { n: i + 1 },
     at: 60_000 + i,
     n: 0,
-    l: false,
+    l: 0,
   }));
-  const due = { id: "due", job: "orders.work", input: { n: 0 }, at: 0, n: 0, l: false };
+  const due = { id: "due", job: "orders.work", input: { n: 0 }, at: 0, n: 0, l: 0 };
   await ctx.storage.set("std.jobs.orders", JSON.stringify({ q: [due, ...later], done: [], failed: [] }));
   const stop = new AbortController();
   const run = jobs.run(ctx, stop.signal);

@@ -1,8 +1,8 @@
 import { s } from "@keel/schema";
 
 /**
- * A module's queue as stored under `ctx.storage` `std.jobs.<module>` (std.jobs): the jobs (`n` runs counted, `l`
- * leased), the keys and ids of the last 1,000 finished jobs, and the newest 100 failures. Inputs are encoded by their
+ * A module's queue as stored under `ctx.storage` `std.jobs.<module>` (std.jobs): the jobs (`n` runs counted, `l` the
+ * end of its lease in `ctx.clock` ms, 0 for none), the keys and ids of the last 1,000 finished jobs, and the newest 100 failures. Inputs are encoded by their
  * job's schema.
  */
 export const State = s.object({
@@ -13,7 +13,7 @@ export const State = s.object({
       input: s.json(),
       at: s.number(),
       n: s.int({ min: 0 }),
-      l: s.boolean(),
+      l: s.number(),
       key: s.string().optional(),
     }),
   ),

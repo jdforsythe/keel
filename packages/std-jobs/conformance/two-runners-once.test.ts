@@ -18,7 +18,7 @@ const close = async (app: unknown): Promise<void> => {
   await Reflect.apply(f, app, []);
 };
 
-test.skip("Two `createApp`s on one sim ctx, each running the queue with five due jobs: each job's `fn` runs once.", async () => {
+test("Two `createApp`s on one sim ctx, each running the queue with five due jobs: each job's `fn` runs once.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.uniqueArray(fc.integer({ min: 0, max: 1000 }), { minLength: 5, maxLength: 5 }), async (ns) => {
       const ctx = createCtx({ mode: "sim", seed: 1337 });
