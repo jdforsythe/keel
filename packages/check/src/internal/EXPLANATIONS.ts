@@ -354,7 +354,7 @@ const ROWS: readonly Row[] = [
   [
     "E1405",
     "a prop read at a component's top level reaches the DOM or a child's props",
-    "Read once: a kept For row or a changed prop shows the old value.",
+    "A body is built once: a read at its top (prop, signal, store, resource, data) keeps its value at build; read it in the binding.",
     "const l = props.label; {l} -> {props.label}",
     "k.component",
   ],
