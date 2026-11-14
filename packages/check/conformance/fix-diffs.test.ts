@@ -336,6 +336,7 @@ const NO_FIX = [
   "E1803", // the replacement token is the author's choice
   "E1804", // which token pair to use is a design choice
   "E1822", // which widget replaces the part is the author's choice
+  "E1823", // which literal to write is the author's choice
   "E1901", // the form path to bind is the author's choice
 ];
 

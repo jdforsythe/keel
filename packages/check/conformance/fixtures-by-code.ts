@@ -786,6 +786,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("modules/a/x.ts", "import { Part } from '@keel/ui/aria'\nexport const x = Part\n")],
     clean: [f("packages/std-x/src/a.ts", "import { Part } from '@keel/ui/aria'\nexport const a = Part\n")],
   },
+  E1823: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        "import { DataTable } from '@keel/std-tables'\nconst shared = { table: { p: '2' } }\nexport default function C() { return <DataTable styles={shared} /> }\n",
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        "import { DataTable } from '@keel/std-tables'\nexport default function C() { return <DataTable styles={{ table: { p: '2' } }} /> }\n",
+      ),
+    ],
+  },
   E1901: {
     opts: NO_TYPES,
     bad: [

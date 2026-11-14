@@ -15,25 +15,25 @@ const codes = (path: string, source: string) =>
   check([{ path, source }], { types: false }).diagnostics.filter((d) => d.code === "E1576");
 
 describe("k.security: E1576 `#` specifiers", () => {
-  test.skip("`import x from '#internal/y'` in app code is one E1576", () => {
+  test("`import x from '#internal/y'` in app code is one E1576", () => {
     expect(codes("modules/a/x.ts", IMPORT)).toHaveLength(1);
   });
 
-  test.skip("a `#`-prefixed dynamic `import()` in app code is one E1576", () => {
+  test("a `#`-prefixed dynamic `import()` in app code is one E1576", () => {
     expect(codes("modules/a/x.ts", DYNAMIC)).toHaveLength(1);
   });
 
-  test.skip("a `#`-prefixed re-export in app code is one E1576", () => {
+  test("a `#`-prefixed re-export in app code is one E1576", () => {
     expect(codes("modules/a/x.ts", REEXPORT)).toHaveLength(1);
   });
 
-  test.skip("the same `#` specifiers in `packages/std-x/src/a.ts` are not E1576", () => {
+  test("the same `#` specifiers in `packages/std-x/src/a.ts` are not E1576", () => {
     expect(codes("packages/std-x/src/a.ts", IMPORT)).toEqual([]);
     expect(codes("packages/std-x/src/a.ts", DYNAMIC)).toEqual([]);
     expect(codes("packages/std-x/src/a.ts", REEXPORT)).toEqual([]);
   });
 
-  test.skip("property: any `#` specifier is one E1576 in app code and none under `packages/`", () => {
+  test("property: any `#` specifier is one E1576 in app code and none under `packages/`", () => {
     const seg = fc.stringMatching(/^[a-z]{2,8}$/);
     fc.assert(
       fc.property(seg, seg, (a, b) => {

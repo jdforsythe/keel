@@ -20,7 +20,7 @@ const reexports = (ast: Program, at: number): boolean =>
  * E1822 (k.aria): a file outside the project root's `packages/`, `node_modules/` and `.keel/`, tests included, names
  * `@keel/ui/aria` (or a path into it) in an import, a re-export, or a literal `import()` or `require()`; a file under
  * `unsafe/` may import it but not re-export it. One finding per statement or call. No fix. A package `imports` alias
- * (`#aria`) is not followed: the checker reads no `package.json`.
+ * (`#aria`) is E1576 instead.
  */
 export const ariaImport: RuleDef = {
   code: "E1822",

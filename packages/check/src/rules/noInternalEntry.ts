@@ -12,18 +12,22 @@ const LIBRARY = /^(?:packages|node_modules|\.keel)\//;
 /**
  * E1576 (k.security): a file outside `packages/`, `node_modules/` and `.keel/` (app code, tests, `unsafe/`, tool
  * scripts) names a `@keel/*` entry with an `internal` path segment in an import (type-only too), a re-export, or a
- * literal `import()` or `require()`. One finding per statement or call. No fix: the public replacement is the
+ * literal `import()` or `require()`, or any `#` specifier (a package `imports` alias, which no `package.json` the
+ * checker reads can resolve). One finding per statement or call. No fix: the public replacement is the
  * author's.
  */
 export const noInternalEntry: RuleDef = {
   code: "E1576",
-  message: (f) => `${str(f.data, "spec")} is internal to Keel packages; use a public entry`,
+  message: (f) =>
+    str(f.data, "spec").startsWith("#")
+      ? `${str(f.data, "spec")} may name an entry internal to Keel packages; use a public entry`
+      : `${str(f.data, "spec")} is internal to Keel packages; use a public entry`,
   explain: "Internal entries are kernel and stdlib seams, such as the server state runner.",
   see: "k.security",
   check: ({ file, ast }) =>
     isCodePath(file.path) && !LIBRARY.test(file.path)
       ? moduleSpecifiers(ast, true)
-          .filter((m) => INTERNAL.test(m.spec))
+          .filter((m) => INTERNAL.test(m.spec) || m.spec.startsWith("#"))
           .map((m) => findingAt(file, m.at, { spec: m.spec }))
       : [],
 };

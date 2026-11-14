@@ -558,7 +558,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1576",
-    "import of a @keel internal entry in app code or tests",
+    "import of a @keel internal entry, or any # specifier, in app code or tests",
     "Internal entries are kernel and stdlib seams, such as the server state runner.",
     "import { report } from '@keel/ctx/internal' -> produce the event through a public API",
     "k.security",
@@ -819,6 +819,13 @@ const ROWS: readonly Row[] = [
     "@keel/ui/aria imported by app code",
     "Widget parts carry ARIA contracts a stdlib widget keeps; app code uses the widget.",
     "import { Part } from '@keel/ui/aria' -> use a @keel/std-headless widget, or a file under unsafe/",
+    "k.aria",
+  ],
+  [
+    "E1823",
+    "styles not readable statically",
+    "Part styles are collected from the literal at the component; another value ships classes with no rules.",
+    "styles={shared} -> styles={{ table: { p: '2' } }}",
     "k.aria",
   ],
   ["E1901", "input inside a <Form> without field", "", "bind the input to a form path with field(path)", "k.forms"],

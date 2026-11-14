@@ -31,6 +31,13 @@ describe("E1576 internal entry outside packages", () => {
     expect(out("E1576", "import '@keel/ctx/internal'\n", "apps/web/packages/x.ts")).toHaveLength(1);
   });
 
+  it("reports a `#` specifier as possibly internal, whatever it names", () => {
+    expect(out("E1576", "import { a } from '#lib/a'\nexport const x = a\n")).toEqual([
+      "1:1 #lib/a may name an entry internal to Keel packages; use a public entry",
+    ]);
+    expect(out("E1576", "import { a } from '#lib/a'\nexport const x = a\n", "packages/std-x/src/x.ts")).toEqual([]);
+  });
+
   it("does not follow a computed specifier, a segment that only contains internal, or a non-@keel package", () => {
     expect(out("E1576", "const n = '@keel/ctx/internal'\nexport const m = import(n)\n")).toEqual([]);
     expect(out("E1576", "import '@keel/ctx/internals'\nimport '@keel/internal'\nimport 'x/internal'\n")).toEqual([]);
