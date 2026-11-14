@@ -9,4 +9,6 @@ export interface RouteHarness<S> extends Harness {
    * settled, the quiescence `fire` waits for, then runs the render checks.
    */
   navigate(href: Href): Promise<void>;
+  /** The in-memory history's entry count (a `replace` leaves it, a push adds one) and `window.scrollY`. */
+  location(): { readonly entries: number; readonly scrollY: number };
 }

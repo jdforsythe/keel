@@ -12,12 +12,13 @@ import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
 
 /**
  * Render page `id` of `options.routes` (an API route has no view: its id rejects) (k.testing Harness): seed `state`,
- * create a router on an in-memory history at `routes.href(id, params, search)` (its initial navigation runs the
+ * create a router on an in-memory history at `url`, else `routes.href(id, params, search)` (its initial navigation runs the
  * chain's guards and loaders), mount its `App`, and resolve once no navigation is pending and the DOM is quiet; then
  * the render checks run (`keel.unexpected`, then k.a11y's: E1702, E1703 with the document rules, E1804, E1821). The
  * page is a document: the chain is its `main` landmark unless it renders one, the router writes `<title>` and
  * `<html lang>` (k.head), and a document without a title takes the route id as the server's fallback title. The
- * handle is `render`'s plus `route()` and `navigate(href)` (push, then the same quiescence and checks as `fire`);
+ * handle is `render`'s plus `route()`, `navigate(href)` (push, then the same quiescence and checks as `fire`) and
+ * `location()` (`{ entries, scrollY }`: the history length and the scroll position);
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
  * `options.caller` (default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
@@ -28,7 +29,7 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   options: RouteRenderOptions<M>,
 ): Promise<RouteHarness<RouteState<M>>> {
   const routes: Manifest<Readonly<Record<string, RouteDef>>> = options.routes;
-  const url = routes.href(id, options.params ?? {}, options.search ?? {});
+  const url = options.url ?? routes.href(id, options.params ?? {}, options.search ?? {});
   const seeded = seedStores(options.state ?? []);
   // The document a server writes always has a title (the deployable's name, k.head); the harness's fallback is the id.
   const head = { title: document.title, lang: document.documentElement.getAttribute("lang") };
@@ -40,8 +41,8 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   };
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   let router: Router<RouteState<M>>;
+  const history = memoryHistory(url);
   try {
-    const history = memoryHistory(url);
     router = createRouterWith(options.routes, { ctx, history, caller: options.caller ?? "" }, serverState(ctx));
   } catch (error) {
     for (const [st, snap] of seeded) st.restore(snap);
@@ -82,5 +83,6 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
       void router.navigate(href);
       await harness.settle();
     },
+    location: () => ({ entries: history.length(), scrollY: window.scrollY }),
   };
 }
