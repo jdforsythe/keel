@@ -19,7 +19,7 @@ Invariant of `optionsChart`: `active` is -1 or below `count`, and -1 in `closed`
 
 **Styling.** `styles` (k.aria) takes the parts each table names; `highlighted` marks the active option.
 
-**Dialog** (APG Dialog (Modal)). `{ id, title: string, level?: 2-6, trigger: () => JSX, content: (close: () => void) => JSX, alert?: { description: string } }`; `openChart`. Parts: `trigger` (`button`, `hasPopup: 'dialog'`, `controls` `<id>.dialog`), `dialog` (`dialog`, or `alertdialog` with `describedBy` `<id>.description`; `labelledBy` `<id>.title`, `open` while `open`), `title` (`Heading`, default level 2), `description` (`Text`). Keys: a click or Enter or Space on the trigger sends `open`; Escape in the dialog sends `close`; Tab stays in the dialog by the platform's modal behavior. Focus moves in on open and back to the trigger on close (k.aria).
+**Dialog** (APG Dialog (Modal)). `{ id, title: string, level?: 2-6, trigger: () => JSX, content: (close: () => void) => JSX, alert?: { description: string } }`; `openChart`. Parts: `trigger` (`button`, `hasPopup: 'dialog'`), `dialog` (`dialog`, or `alertdialog` with `describedBy` `<id>.description`; `labelledBy` `<id>.title`, `open` while `open`), `title` (`Heading`, default level 2), `description` (`Text`). Keys: a click or Enter or Space on the trigger sends `open`; Escape in the dialog sends `close`; Tab stays in the dialog by the platform's modal behavior. Focus moves in on open and back to the trigger on close (k.aria).
 
 **Disclosure** (APG Disclosure). `{ id, summary: () => JSX, children }`; `openChart`. Parts: `button` (`button`, `expanded`, `controls` `<id>.panel`), `panel` (`generic`, `hidden` while closed). A click (Enter, Space) sends `toggle`.
 

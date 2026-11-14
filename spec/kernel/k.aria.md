@@ -11,7 +11,7 @@ status: conformance-covered
 | `option` | `li` | `selected`; `disabled` |
 | `menuitem`, `menuitemcheckbox` | `li` | `checked` (menuitemcheckbox); `disabled` |
 | `combobox` | `input type=text` | `label`, `expanded`, `controls`; `activeDescendant`, `value`; writes `aria-autocomplete="list"` |
-| `button` | `button type=button` | `controls`; `hasPopup` (`menu`, `listbox`, `dialog`), `expanded`, `disabled` |
+| `button` | `button type=button` | none; `controls`, `hasPopup` (`menu`, `listbox`, `dialog`), `expanded`, `disabled` |
 | `checkbox` | `input type=checkbox` | `label`, `checked` (`true`, `false`, `'mixed'`) |
 | `tablist` | `div` | `label`; `orientation` |
 | `tab` | `button type=button` | `selected`, `controls` |
