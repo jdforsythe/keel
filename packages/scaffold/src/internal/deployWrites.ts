@@ -1,3 +1,4 @@
+import { crateName } from "../crateName.ts";
 import { deployFiles } from "../deployFiles.ts";
 import type { Writes } from "./Writes.ts";
 import { readManifest } from "./readManifest.ts";
@@ -9,26 +10,15 @@ const DEPLOY =
   /^deploy\/(?:[^/]+\/(?:Dockerfile|capacitor\/capacitor\.config\.json|tauri\/(?:Cargo\.toml|build\.rs|src\/(?:main|lib)\.rs|capabilities\/default\.json))|compose\.yaml)$/;
 const TAURI_CONF = /^deploy\/[^/]+\/tauri\/tauri\.conf\.json$/;
 
-/** `package.json`'s `version` and its name as a crate name (scope dropped, other characters `-`). */
-function packageFacts(text: string | undefined): { version: string | undefined; crate: string | undefined } {
-  let pkg: unknown;
+/** `package.json`'s `version` (undefined when absent or unreadable). */
+function versionOf(text: string | undefined): string | undefined {
   try {
-    pkg = JSON.parse(text ?? "null");
+    const pkg: unknown = JSON.parse(text ?? "null");
+    const v: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "version") : undefined;
+    return typeof v === "string" ? v : undefined;
   } catch {
-    pkg = null;
+    return undefined;
   }
-  const field = (k: string): unknown => (typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, k) : undefined);
-  const version = field("version");
-  const name = field("name");
-  const crate =
-    typeof name === "string"
-      ? name
-          .replace(/^@[^/]*\//, "")
-          .toLowerCase()
-          .replace(/[^a-z0-9_-]/g, "-")
-          .replace(/^[^a-z]+/, "")
-      : "";
-  return { version: typeof version === "string" ? version : undefined, crate: crate === "" ? undefined : crate };
 }
 
 /**
@@ -55,7 +45,8 @@ export function deployWrites(files: ReadonlyMap<string, string>, always = false,
       return [n, { ...d, modules: [...reach] }];
     }),
   );
-  const want = deployFiles(built, { ci, ...packageFacts(files.get("package.json")), policy });
+  const pkg = files.get("package.json");
+  const want = deployFiles(built, { ci, version: versionOf(pkg), crate: crateName(pkg), policy });
   const paths = [...files.keys()];
   const keep = always || files.has("turbo.json") || paths.some((p) => p.startsWith("deploy/"));
   for (const [p, v] of want) if (p === CI || keep) out.set(p, v);

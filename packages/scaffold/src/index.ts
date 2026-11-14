@@ -9,3 +9,5 @@ export { deployDrift } from "./deployDrift.ts";
 export { deployFiles } from "./deployFiles.ts";
 export { scaffold } from "./scaffold.ts";
 export { tauriHttpCapability } from "./templates/tauriHttpCapability.ts";
+export { shellDeployables } from "./shellDeployables.ts";
+export { crateName } from "./crateName.ts";

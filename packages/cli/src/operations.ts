@@ -60,7 +60,12 @@ export const operations: readonly Operation[] = [
   {
     name: "build",
     description: "Compile the project, write .keel artifacts, vite build.",
-    input: s.object(diagnostic),
+    input: s.object({
+      target: s.enum(["capacitor", "tauri"]).optional(),
+      platform: s.enum(["android", "ios"]).optional(),
+      release: s.boolean().optional(),
+      ...diagnostic,
+    }),
     output: outputOf(),
     positional: [],
     scope: "query",

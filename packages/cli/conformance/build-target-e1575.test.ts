@@ -86,7 +86,7 @@ const naming = (run: { records: Rec[] }, word: string): Rec[] =>
 const dirNames = fc.uniqueArray(fc.stringMatching(/^[a-z]{3,8}$/), { minLength: 0, maxLength: 3 });
 
 describe("k.shell: E1575", () => {
-  test.skip(
+  test(
     "With no `cargo` on `PATH`, `keel build --target tauri` prints one E1575 naming `cargo` and Rust 1.95, exits 1 and writes nothing under `dist/web/tauri/`.",
     () => {
       const run = build([join(scratch, "empty")]);
@@ -98,7 +98,7 @@ describe("k.shell: E1575", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "E1575 a shell build's tool missing or too old (names it and the version needed)",
     () => {
       fc.assert(

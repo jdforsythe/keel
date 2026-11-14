@@ -77,7 +77,7 @@ const e1574 = (run: { records: Rec[] }): Rec[] => run.records.filter((r) => r.ki
 const label = fc.stringMatching(/^[a-z]{3,10}$/);
 
 describe("k.shell: E1574", () => {
-  test.skip(
+  test(
     "`keel build --target tauri` with `KEEL_ORIGIN` unset prints one E1574 naming it and builds nothing; with `http://localhost:8080` it proceeds.",
     () => {
       const unset = build(undefined);
@@ -92,7 +92,7 @@ describe("k.shell: E1574", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "E1574 a shell build without a valid `KEEL_ORIGIN` (names the key)",
     () => {
       fc.assert(

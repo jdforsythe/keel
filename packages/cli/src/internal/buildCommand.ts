@@ -1,5 +1,6 @@
 import { compile, isSourcePath, pathCollisions, projectDirs, serverOnlyCalls, stdArtifact } from "@keel/compiler";
 import { importDeps } from "@keel/compiler/std/importDeps";
+import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { Write } from "../types/Write.ts";
@@ -27,9 +28,19 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
  * stdlib `deps` are imported (E1159; its E1158 too, rfc:0066; E1559 from `pathCollisions`; E1558 from `serverOnlyCalls`; E1552, E1565 and E1566 from `hostingDiags`), and the deploy files of `topology.ts` (k.deploy; the CI workflow unless the project is an app inside a workspace).
  * With no error and a host `Io.build`, the writes are applied and the disk half runs (`routes.json`, `surface.json`,
  * the Vite builds), its diagnostics, stderr and exit code joining the result: `keel build` and MCP `build` run one path.
+ * `--target` (k.shell Build) first runs `shellPlan`'s checks, and any diagnostic there ends the build with nothing
+ * written; after a clean disk half the host (`Io.shell`) builds the shell, and the trailer names each artifact.
  */
-export async function buildCommand(io: Io): Promise<Outcome> {
+export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> {
   const project = projectFiles(io);
+  // Behind its own entry, loaded only for `--target` (`@keel/cli` size budget).
+  const host = input.target === undefined ? undefined : await io.shell?.();
+  const pre =
+    input.target === undefined
+      ? { diags: [], plan: undefined }
+      : (await import("@keel/cli/shell")).shellPlan(input, project, io.env ?? {}, io.cwd, host?.probe);
+  if (pre.diags.length > 0)
+    return { records: [...pre.diags, summary("build", pre.diags, { errors: pre.diags.length })], writes: [] };
   // Only the root project's files: a nested project (`projectDirs`, the rule `keel check` groups by) builds itself.
   const dirs = projectDirs(project);
   const files = codeFiles(io, undefined).filter(
@@ -71,5 +82,21 @@ export async function buildCommand(io: Io): Promise<Outcome> {
   // The disk half reads what the engine wrote, so the writes land first (`Io.build`).
   io.apply?.(writes);
   const post = await io.build(io.cwd);
-  return { records: done([...diags, ...post.diagnostics]), writes: [], stderr: post.stderr, code: post.code };
+  const plan = pre.plan;
+  if (plan === undefined || post.code !== 0 || post.diagnostics.some(isError) || host === undefined)
+    return { records: done([...diags, ...post.diagnostics]), writes: [], stderr: post.stderr, code: post.code };
+  const sh = host.build(io.cwd, plan);
+  const all = [...diags, ...post.diagnostics, ...sh.diagnostics];
+  const records =
+    sh.code === 0 && !all.some(isError)
+      ? [
+          ...all,
+          summary(
+            ["build", ...plan.deployables.flatMap((n, i) => [n, plan.target, sh.artifacts[i] ?? ""])].join(" "),
+            all,
+            {},
+          ),
+        ]
+      : done(all);
+  return { records, writes: [], stderr: post.stderr + sh.stderr, code: Math.max(post.code, sh.code) };
 }

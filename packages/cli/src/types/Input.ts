@@ -16,6 +16,8 @@ export type Input = {
   readonly map?: boolean;
   readonly url?: string;
   readonly target?: string;
+  readonly platform?: "android" | "ios";
+  readonly release?: boolean;
   readonly props?: string;
   readonly op?: string;
   readonly args?: string[];

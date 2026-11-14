@@ -7,7 +7,8 @@ import { readProject } from "./readProject.ts";
 
 /**
  * Binary only: the engine `Io` for this process. Files are loaded per operation scope by the engine (`load`),
- * effects applied under the cwd (`apply`), the disk half of `build` (`hostBuild`); `stream` adds process stdin/stdout for `mcp` and `lsp`.
+ * effects applied under the cwd (`apply`), the disk half of `build` (`hostBuild`), the
+ * host side of `build --target` (`hostShell`); `stream` adds process stdin/stdout for `mcp` and `lsp`.
  */
 export function hostIo(stream: boolean): Io {
   const cwd = process.cwd();
@@ -22,6 +23,8 @@ export function hostIo(stream: boolean): Io {
     load: (scope) => (scope === "none" ? [] : readProject(cwd, scope)),
     apply: (writes) => applyWrites(cwd, writes),
     build: hostBuild,
+    // Behind its own entry, loaded only for `--target` (`@keel/cli` size budget).
+    shell: async () => (await import("@keel/cli/shell")).hostShell,
     read: (path) => {
       try {
         return readFileSync(resolve(cwd, path), "utf8");

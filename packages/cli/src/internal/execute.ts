@@ -34,7 +34,7 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     case "test":
       return only(await testCommand(input, io));
     case "build":
-      return await buildCommand(io);
+      return await buildCommand(io, input);
     case "spec":
       return only(specCommand(input, io));
     case "explain":

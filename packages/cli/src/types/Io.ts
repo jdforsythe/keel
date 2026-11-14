@@ -1,5 +1,6 @@
 import type { Diag } from "../internal/Diag.ts";
 import type { FileScope } from "./FileScope.ts";
+import type { ShellHost } from "./ShellHost.ts";
 import type { SourceFile } from "./SourceFile.ts";
 import type { Write } from "./Write.ts";
 
@@ -11,7 +12,8 @@ import type { Write } from "./Write.ts";
  * the default format (OUTPUT.md). `fetch` is the network for `inspect` and `session ingest` (absent: I1055); `init` carries headers, method, body.
  * `read` returns the text of a file a flag names outside the loaded scope (`check --base`), relative to `cwd`, or undefined.
  * `build` is the disk half of `build` after the engine's writes (`routes.json`, `surface.json`, the Vite builds), so
- * `keel build` and MCP `build` run one path; absent, `build` writes the engine's artifacts only.
+ * `keel build` and MCP `build` run one path; absent, `build` writes the engine's artifacts only. `shell` loads what
+ * `build --target` needs of the host (k.shell Build; absent: every tool is missing and no shell step runs).
  */
 export type Io = {
   readonly cwd: string;
@@ -27,4 +29,5 @@ export type Io = {
   readonly build?:
     | ((cwd: string) => Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }>)
     | undefined;
+  readonly shell?: (() => Promise<ShellHost>) | undefined;
 };
