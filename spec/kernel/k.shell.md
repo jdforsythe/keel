@@ -11,14 +11,14 @@ So `modules/` run unchanged in a browser and in a shell.
 
 **Files.** Derived from `topology.ts` by `@keel/scaffold`, as deploy files are (k.deploy); read-only (E1005, fix: the regenerated file):
 - `deploy/<name>/capacitor/capacitor.config.json`: `appId`, `appName`, `webDir` `www`.
-- `deploy/<name>/tauri/`: `tauri.conf.json` (`identifier`, `productName`, `version`, `build.frontendDist` `www`, one window titled `name`, `app.security.csp` the deployable's `csp.txt` policy (k.security) with `ipc: http://ipc.localhost` added to `connect-src`), `Cargo.toml` (exact versions of `tauri`, `tauri-build`, `tauri-plugin-store`, `tauri-plugin-http`), `build.rs`, `src/main.rs`, `src/lib.rs`, `capabilities/default.json`. Cargo writes `Cargo.lock` there on the first build; it is committed and not generated.
+- `deploy/<name>/tauri/`: `tauri.conf.json` (`identifier`, `productName`, `version`, `build.frontendDist` `www`, one window titled `name`, `app.security.csp` the `client` policy (k.security) without peer origins, with `ipc: http://ipc.localhost` added to `connect-src`), `Cargo.toml` (exact versions of `tauri`, `tauri-build`, `tauri-plugin-store`, `tauri-plugin-http`), `build.rs`, `src/main.rs`, `src/lib.rs`, `capabilities/default.json`. Cargo writes `Cargo.lock` there on the first build; it is committed and not generated.
 
 **Build.** `keel build --target capacitor --platform android|ios` or `keel build --target tauri` [`--release`] builds each `client` deployable declaring that shell:
 1. `KEEL_ORIGIN` from the environment: unset, or not `https:` outside `localhost`, is E1574.
-2. The toolchain, before any work: JDK 21 and the Android SDK; Xcode 26; Rust 1.95 and, on Linux, WebKitGTK 4.1. A missing or older one is E1575 naming it and the version needed.
-3. The shell entry and web build into `dist/<name>/<shell>/www/`, beside the shell files and, for Tauri, the http permission for `KEEL_ORIGIN`. Capacitor's `www/index.html` carries that policy in a `<meta http-equiv>`, without the directives a meta tag ignores.
+2. The toolchain, before any work: JDK 21 and the Android SDK; Xcode 26; Rust 1.95 and, on Linux, WebKitGTK 4.1. A missing or older one is E1575 naming it and the version needed; each missing one, WebKitGTK through `pkg-config`, is its own E1575.
+3. The shell entry and web build into `dist/<name>/<shell>/www/` (the Vite plugin, given `KEEL_SHELL`), beside the shell files and, for Tauri, the http permission for `KEEL_ORIGIN`. Capacitor's `www/index.html` carries that policy in a `<meta http-equiv>`, without the directives a meta tag ignores.
 4. The shell's tools: `cap sync`, then Gradle `assembleDebug` or `xcodebuild` for the simulator without signing; `tauri build --debug --no-bundle`. `--release` builds unsigned release artifacts.
-The trailer names the artifact: `ok build web tauri dist/web/tauri/target/debug/golden-1`. Signing and store upload are not Keel's.
+`--platform` without `--target capacitor`, or that target without it, is E1052 (k.cli), as is a target no `client` deployable declares. The trailer names the artifact: `ok build web tauri dist/web/tauri/target/debug/golden-1`. Signing and store upload are not Keel's.
 
 **CI.** The generated workflow gains a job per shell on its deployable's paths: Tauri on Ubuntu (WebKitGTK packages), Capacitor Android on Ubuntu (JDK 21), each uploading its artifact; Capacitor iOS on macOS, on manual dispatch only.
 

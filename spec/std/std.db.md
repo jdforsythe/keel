@@ -8,15 +8,16 @@ status: proposed
 const storage = await sqlite(new URL('file:/data/keel.sqlite'))   // KeyValueStorage (k.persist)
 const storage = await postgres(new URL(env.KEEL_DATABASE_URL))
 ```
+Each resolves k.persist's storage plus `close()` (k.persist Drivers). In `postgres(url, { clientFactory? })`, `clientFactory` returns a `pg` Pool-shaped object used in place of the pool; `close()` ends it.
 - `sqlite(url)` uses `node:sqlite` (Node 22.13 or later): WAL journal, `synchronous=FULL`, `secure_delete=ON`, `busy_timeout` 5,000 ms; `read` runs in one read transaction, `commit` in `BEGIN IMMEDIATE`.
-- `postgres(url)` uses `pg`, a pool of at most 10 connections, TLS as the URL's `sslmode` says; `read` is one `SELECT`; `commit` is one transaction that takes `pg_advisory_xact_lock` for each key in key order, compares, then writes.
-- Both keep k.persist's contract and expose nothing else: no SQL, query builder or table.
+- `postgres(url)` uses `pg`, a pool of at most 10 connections, TLS as the URL's `sslmode` says; `read` is one `SELECT`; `commit` and `set` are one read committed transaction that takes `pg_advisory_xact_lock` for each key in sorted key order, then compares, then writes in one upsert.
+- Both keep k.persist's contract and expose nothing else: no SQL, query builder or table. A key or value holding U+0000 or a lone surrogate rejects, naming neither.
 
 **Layout.** Two tables: `keel_kv (key text primary key, value text not null)` and `keel_meta (name text primary key, value text not null)`, whose `layout` row is std.db's table version (1). Opening creates or upgrades them in one transaction; a newer `layout` is E2152 and the process exits 1. Other tables are left alone. App schemas never become columns: a store persists as its snapshot (k.persist), and k.compat checks schema changes against stored data (E1563, W1564).
 
 **On disk.** Exactly what `ctx.storage` receives: each server store's `snapshot({ meta: true })` (state, `initial`, `head`, and the kept log with payloads, write keys and `caller` hashes), std.jobs queues, std.schedules marks and std.workflows stores. No `Secret` arrives: `store()` refuses `s.secret` in state (E1303), a snapshot folds a secret payload, job inputs refuse it (E2503), and a secret serializes only as its marker (k.privacy). A value `reveal`ed into a plain field is plain data: it is stored as written, and std.db cannot tell it apart. Personal data (`.pii`, k.privacy) is stored as the store holds it: the database is the app's own data, not a sink. std.db puts no value in a log line, a diagnostic or an error message; they name keys. A value removed from state leaves the database once its last log entry folds past `logLimit`; SQLite then overwrites the freed pages, and Postgres keeps dead row versions until vacuum. Encryption at rest is the volume's or the host's.
 
-**Rules.** E2151 an app file imports `@keel/std-db` (no fix) · E2152 the database's `layout` is newer than the package's (at startup) · E2153 the database cannot be opened or refuses the connection, naming `KEEL_DATABASE_URL` and no part of its value (at startup).
+**Rules.** E2151 an app file imports `@keel/std-db` (no fix) · E2152 the database's `layout` is newer than the package's (at startup) · E2153 the database cannot be opened or refuses the connection, naming `KEEL_DATABASE_URL` and no part of its value (at startup), also when its `layout` is not a version.
 
 **Conformance.**
 - Each driver, on a temporary SQLite file and on Postgres (PGlite, and a Postgres 17 service in CI), passes k.persist's storage clauses.

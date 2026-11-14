@@ -3,12 +3,12 @@ status: proposed
 
 **Storage.** `ctx.storage` holds string values by string key; each operation returns a promise:
 - `get(key)`: the value, `null` when absent. `set(key, value)` stores it.
-- `read(keys)`: the values of several keys, `null` for an absent one, in the order asked, as one cut: no `commit` lands between two of them.
+- `read(keys)`: one value per position asked, a repeated key included, `null` for an absent one, as one cut: no `commit` lands between two of them.
 - `commit(writes)`: each write is `{ key, expect, value? }`, `expect` a value or `null` (absent). When every key holds its `expect`, each `value` is stored and it resolves `true`; otherwise nothing is stored and it resolves `false`. A write without `value` is a condition only. One key twice throws E1606.
 
 Real: the platform's `localStorage` (on Node, the file `--localstorage-file` names; one process). Sim: in memory per ctx; under a schedule (k.sim) a `read` or a `commit` takes one `storage` step, and a failed `commit` stores nothing. Two `createApp`s on one sim ctx behave as two processes sharing one storage. Shell: k.shell.
 
-**Drivers.** `createCtx({ mode, drivers: { storage?, net? } })` gives a `real` or `shell` ctx each object as that capability, which keeps its contract (`storage` above; `net` k.ctx and k.sync). `@keel/ctx/node` `fileStorage(path)` is a storage driver over a JSON file (`keel dev`'s, k.topology). On a `sim` ctx `drivers` throws E1605, as `schedule` off sim throws E1604: simulation stays the kernel's, so runs replay. Generated entries pass drivers (k.deploy, k.shell); app code reaches them only through `ctx`.
+**Drivers.** `createCtx({ mode, drivers: { storage?, net? } })` gives a `real` or `shell` ctx each object as that capability, which keeps its contract (`storage` above; `net` k.ctx and k.sync). `@keel/ctx/node` `fileStorage(path)` is a storage driver over a JSON file (`keel dev`'s, k.topology). On a `sim` ctx `drivers` throws E1605, as `schedule` off sim throws E1604: simulation stays the kernel's, so runs replay. Generated entries pass drivers (k.deploy, k.shell); app code reaches them only through `ctx`. A driver that holds connections has `close()`, resolving once they close; the generated entry awaits it after `app.close()`, and any call after it rejects.
 
 **Server saves.** k.server's state rules hold for every process sharing one driver:
 - A request restores a factory's stores from one `read` of their keys (`keel.store.<id>`).
