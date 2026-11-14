@@ -59,17 +59,29 @@ describe("overlapping requests are serializable (property)", () => {
     await fc.assert(
       fc.asyncProperty(fc.scheduler(), fc.array(request, { minLength: 2, maxLength: 6 }), async (sch, reqs) => {
         const data = new Map<string, string>();
-        // Writers of each key in the order their `set` landed (the key's version order), after INIT.
+        // Writers of each key in the order their write landed (the key's version order), after INIT.
         const versions = new Map<Key, string[]>(KEYS.map((k) => [k, [INIT]]));
+        const land = (key: string, value: string): void => {
+          data.set(key, value);
+          const k = key.slice("keel.store.prop.".length);
+          const parsed = s.object({ state: V }).parse(JSON.parse(value));
+          if (isKey(k) && parsed.ok) versions.get(k)?.push(parsed.value.state.v);
+        };
         const base = createCtx({ mode: "sim", seed: 1337 });
         const storage: Ctx["storage"] = {
           get: (key) => sch.schedule(Promise.resolve(data.get(key) ?? null), `get ${key}`),
           set: (key, value) =>
             sch.schedule(Promise.resolve(), `set ${key}`).then(() => {
-              data.set(key, value);
-              const k = key.slice("keel.store.prop.".length);
-              const parsed = s.object({ state: V }).parse(JSON.parse(value));
-              if (isKey(k) && parsed.ok) versions.get(k)?.push(parsed.value.state.v);
+              land(key, value);
+            }),
+          read: (keys) =>
+            sch.schedule(Promise.resolve(), `read ${keys.join(",")}`).then(() => keys.map((k) => data.get(k) ?? null)),
+          // A commit is compare-and-set where the scheduler lands it (k.persist).
+          commit: (writes) =>
+            sch.schedule(Promise.resolve(), `commit ${writes.map((w) => w.key).join(",")}`).then(() => {
+              if (writes.some((w) => (data.get(w.key) ?? null) !== w.expect)) return false;
+              for (const w of writes) if (w.value !== undefined) land(w.key, w.value);
+              return true;
             }),
         };
         const ctx: Ctx = { clock: base.clock, random: base.random, net: base.net, storage };

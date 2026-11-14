@@ -149,6 +149,22 @@ async function setupSkewRead(holdKey: string, staleReturn: boolean) {
     async set(key: string, value: string): Promise<void> {
       map.set(key, value);
     },
+    // k.persist: a driver's `read` is one cut; the hold sits before it returns, the cut taken before or after the hold.
+    async read(keys: readonly string[]): Promise<(string | null)[]> {
+      const captured = keys.map((k) => map.get(k) ?? null);
+      if (held.armed && keys.includes(holdKey)) {
+        held.armed = false; // hold only the first read of the chosen key after arming
+        held.reached.resolve();
+        await held.release.promise;
+        return staleReturn ? captured : keys.map((k) => map.get(k) ?? null);
+      }
+      return captured;
+    },
+    async commit(writes: ReadonlyArray<{ key: string; expect: string | null; value?: string | undefined }>) {
+      if (writes.some((w) => (map.get(w.key) ?? null) !== w.expect)) return false;
+      for (const w of writes) if (w.value !== undefined) map.set(w.key, w.value);
+      return true;
+    },
   };
   const ctx = { ...base, storage };
   const seen: { lists: readonly number[] | undefined; todos: readonly number[] | undefined } = {

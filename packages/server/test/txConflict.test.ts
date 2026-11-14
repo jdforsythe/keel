@@ -1,25 +1,19 @@
-// An action whose `tx` is refused as concurrent (`keel.conflict`) answers 409 with the refusal, saves nothing and
-// reports no `save`; a write at the current head saves and reports its new head. Seed 1337.
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
+// An action whose `tx` is refused as concurrent (`keel.conflict`) answers 409 with the refusal, saves nothing and
+// reports no `save`; a write at the current head saves and reports its new head. Seed 1337.
+import { mapStorage } from "./mapStorage.ts";
 
 const Count = s.object({ n: s.int() });
 
 async function setup() {
   const map = new Map<string, string>();
   const base = createCtx({ mode: "sim", seed: 1337 });
-  const storage = {
-    get: (key: string) => Promise.resolve(map.get(key) ?? null),
-    set: (key: string, value: string) => {
-      map.set(key, value);
-      return Promise.resolve();
-    },
-  };
-  const ctx = { ...base, storage };
+  const ctx = { ...base, storage: mapStorage(map) };
   const saves: CtxEvent[] = [];
   observe(ctx, (e) => {
     if (e.kind === "save") saves.push(e);

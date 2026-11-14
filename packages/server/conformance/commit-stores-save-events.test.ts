@@ -20,7 +20,7 @@ const factory = () => {
   return { lists, todos, addList, addTodo };
 };
 
-it.skip("`commitStores` reports one `save` event per changed store and none when nothing changed", async () => {
+it("`commitStores` reports one `save` event per changed store and none when nothing changed", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.boolean(),

@@ -78,7 +78,7 @@ async function setup(refuse: boolean) {
   return { app, ...d };
 }
 
-it.skip("an action saving two stores whose `commit` resolves `false` stores neither", async () => {
+it("an action saving two stores whose `commit` resolves `false` stores neither", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (n) => {
       const refused = await setup(true);

@@ -48,7 +48,7 @@ function field(v: unknown, k: string): unknown {
   return typeof v === "object" && v !== null ? Reflect.get(v, k) : undefined;
 }
 
-it.skip("`commitStores` whose `commit` is refused twice then accepted runs `fn` three times and saves once; refused three times it returns `keel.conflict` and saves nothing", async () => {
+it("`commitStores` whose `commit` is refused twice then accepted runs `fn` three times and saves once; refused three times it returns `keel.conflict` and saves nothing", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 0, max: 5 }), fc.integer({ min: 1, max: 1000 }), async (refusals, n) => {
       const d = driver(refusals);

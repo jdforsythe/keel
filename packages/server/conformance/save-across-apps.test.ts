@@ -84,7 +84,7 @@ async function setup() {
 const stateOf = async (ctx: { storage: { get(k: string): Promise<string | null> } }, key: string) =>
   field(JSON.parse((await ctx.storage.get(key)) ?? "null"), "state");
 
-it.skip("two `createApp`s on one sim ctx, overlapping actions that read one store and save another: the later save is 409 and the stored values are the earlier one's", async () => {
+it("two `createApp`s on one sim ctx, overlapping actions that read one store and save another: the later save is 409 and the stored values are the earlier one's", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.constantFrom("A" as const, "B" as const),

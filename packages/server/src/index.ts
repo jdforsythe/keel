@@ -1,4 +1,5 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
+export { commitStores } from "@keel/store/internal";
 export { createApp } from "./createApp.ts";
 export type { AppOptions } from "./types/AppOptions.ts";
 export type { LogSink } from "./types/LogSink.ts";

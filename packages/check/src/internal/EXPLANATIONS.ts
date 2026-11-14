@@ -457,7 +457,13 @@ const ROWS: readonly Row[] = [
     "serve the module from a node deployable, or move the API route to a module one serves",
     "k.api",
   ],
-  ["E1551", "loader or action declared outside a *.server.ts file", "", "move it into <route>.server.ts", "k.server"],
+  [
+    "E1551",
+    "loader, action or commitStores outside a *.server.ts file",
+    "",
+    "move it into <route>.server.ts",
+    "k.server",
+  ],
   [
     "E1552",
     "topology.ts is not statically readable, a deployable name is not [a-z][a-z0-9-]*, or a module is unknown or in two deployables",

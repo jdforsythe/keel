@@ -1,5 +1,5 @@
-// Fixtures for the backlog 0125 save-order tests: a fake `ctx.storage` whose `set` succeeds, rejects, or holds per
-// call, and a one-route counter app over it.
+// Fixtures for the save-order tests: a fake `ctx.storage` whose `commit` succeeds, rejects, or holds per call, and a
+// one-route counter app over it.
 import { type Ctx, createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
@@ -11,32 +11,40 @@ const Count = s.object({ n: s.number() });
 
 export type Plan = "ok" | "reject" | "hold";
 
-/** A `ctx.storage` whose `set` follows `plans` (then `ok`); a write lands, in `landed` order, when its promise resolves. */
+/**
+ * A `ctx.storage` whose `commit` follows `plans` (then `ok`): `reject` rejects, `hold` waits for its `held` release.
+ * A commit is compare-and-set when it lands, and each value it stores is pushed to `landed`.
+ */
 export function fakeStorage() {
   const data = new Map<string, string>();
   const plans: Plan[] = [];
   const landed: string[] = [];
   const held: (() => void)[] = [];
   let calls = 0;
-  const storage = {
-    get: (key: string) => Promise.resolve(data.get(key) ?? null),
-    set: (key: string, value: string) => {
+  const now = (key: string): string | null => data.get(key) ?? null;
+  const storage: Ctx["storage"] = {
+    get: (key) => Promise.resolve(now(key)),
+    set: (key, value) => {
+      data.set(key, value);
+      return Promise.resolve();
+    },
+    read: (keys) => Promise.resolve(keys.map(now)),
+    commit: (writes) => {
       calls += 1;
       const plan = plans.shift() ?? "ok";
       if (plan === "reject") return Promise.reject(new Error("storage unavailable"));
-      const land = () => {
-        data.set(key, value);
-        landed.push(value);
+      const land = (): boolean => {
+        if (writes.some((w) => now(w.key) !== w.expect)) return false;
+        for (const w of writes)
+          if (w.value !== undefined) {
+            data.set(w.key, w.value);
+            landed.push(w.value);
+          }
+        return true;
       };
-      if (plan === "ok") {
-        land();
-        return Promise.resolve();
-      }
-      return new Promise<void>((resolve) => {
-        held.push(() => {
-          land();
-          resolve();
-        });
+      if (plan === "ok") return Promise.resolve(land());
+      return new Promise<boolean>((resolve) => {
+        held.push(() => resolve(land()));
       });
     },
   };

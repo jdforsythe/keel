@@ -1,4 +1,4 @@
-// k.server Server state, backlog 0125: for any sequence of save outcomes (storage `set` resolves or rejects), the
+// k.persist Server saves: for any sequence of save outcomes (storage `commit` resolves or rejects), the
 // stored state and the copy a fresh request reads are the fold of the successful saves only.
 // Seed: 1337 (fc.assert seed below).
 import fc from "fast-check";
