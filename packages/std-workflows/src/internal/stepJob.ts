@@ -9,16 +9,25 @@ import type { LooseStores } from "./LooseStores.ts";
 import type { Model } from "./Model.ts";
 import { rowOf } from "./rowOf.ts";
 
-const failed = <S extends string, D>(S: LooseStores<S, D>, event: string, id: string, code: string): void => {
+/** Commits `failed` `{ code }`; its refusal is an `err` with the refusal's code alone, so the commit saves nothing. */
+const failed = <S extends string, D>(
+  S: LooseStores<S, D>,
+  event: string,
+  id: string,
+  code: string,
+): Result<undefined, KeelError<string, unknown>> => {
   const t = S.events[event];
-  if (t !== undefined) tx(t, { id, payload: { code } });
+  const r = t === undefined ? ok(null) : tx(t, { id, payload: { code } });
+  return r.ok ? ok(undefined) : err({ code: r.error.code, message: "the failed event refused its code", data: {} });
 };
 
 /**
  * The job of step `state` (std.workflows Run), with std.jobs `attempts` one more than the step's: through
  * `commitStores` it stops if the instance moved, commits `attempt` (past `attempts`: `failed` `workflows.attempts`),
  * calls `run` with `signal` and `key` and commits `done` with its `ok` value; an `err` counts a std.jobs attempt, or on
- * the last one commits `failed` with its code. A `done` payload the event refuses commits `failed` with that code.
+ * the last one commits `failed` with its code. A `done` payload the event refuses commits `failed` with that code. A
+ * refused `failed` is an `err` that counts a std.jobs attempt: the next run is past `attempts` and commits `failed`
+ * `workflows.attempts`; if that is refused too, the job ends in std.jobs `failed` with the refusal's code.
  */
 export function stepJob<S extends string, D>(m: Model<S, D>, state: string, step: StepSpec<D, string>): Job<FlowInput> {
   const max = step.attempts ?? m.attempts;
@@ -29,10 +38,7 @@ export function stepJob<S extends string, D>(m: Model<S, D>, state: string, step
       const first = await commitStores(ctx, m.open, (S) => {
         const r = rowOf(S, input, here);
         if (r === undefined) return ok(undefined);
-        if (r.attempt >= max) {
-          failed(S, step.failed, input.id, "workflows.attempts");
-          return ok(undefined);
-        }
+        if (r.attempt >= max) return failed(S, step.failed, input.id, "workflows.attempts");
         tx(S.attempt, input);
         return ok({ data: r.data, last: r.attempt + 1 >= max });
       });
@@ -45,9 +51,9 @@ export function stepJob<S extends string, D>(m: Model<S, D>, state: string, step
         if (rowOf(S, input, here) === undefined) return ok(null);
         const t = S.events[step.done];
         const done = out.ok && t !== undefined ? tx(t, { id: input.id, payload: out.value }) : undefined;
-        if (done === undefined || !done.ok)
-          failed(S, step.failed, input.id, out.ok ? (done?.error.code ?? "") : out.error.code);
-        return ok(null);
+        if (done?.ok) return ok(null);
+        const f = failed(S, step.failed, input.id, out.ok ? (done?.error.code ?? "") : out.error.code);
+        return f.ok ? ok(null) : f;
       });
       return second.ok ? ok(null) : second;
     },
