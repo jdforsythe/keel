@@ -1,9 +1,11 @@
-// `@keel/router/internal`: what @keel/server, @keel/forms and @keel/testing need from the router; not public API.
+// `@keel/router/internal`: what @keel/server, @keel/forms, @keel/testing and stdlib components need from the router;
+// not public API (E1576 outside packages).
 // re-exports only (one export per file lives in its own file)
 export { carriedParams } from "./carriedParams.ts";
 export { compileRoutes } from "./compileRoutes.ts";
 export { compileTable } from "./compileTable.ts";
 export { createRouterWith } from "./createRouterWith.ts";
+export { findRouter } from "./findRouter.ts";
 export { pageHead } from "./pageHead.ts";
 export { fieldsError } from "./fieldsError.ts";
 export { formHandle } from "./formHandle.ts";
@@ -18,6 +20,7 @@ export { withNext } from "./withNext.ts";
 export type { FormSeam } from "./FormSeam.ts";
 export type { DocHead } from "./DocHead.ts";
 export type { Level } from "./Level.ts";
+export type { RouterCore } from "./RouterCore.ts";
 export type { Located } from "./Located.ts";
 export type { Match } from "./Match.ts";
 export type { Segment } from "./Segment.ts";

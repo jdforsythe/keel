@@ -270,7 +270,11 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     const act = m.kind === "route" ? routeActions.get(m.route.def)?.[method] : undefined;
     return m.kind === "route" && act !== undefined ? { act, params: m.params } : null;
   };
+  const navigate = (to: Href, o?: { readonly replace?: boolean }): Promise<void> =>
+    go(to, o?.replace === true ? "replace" : "push", []);
   const core: RouterCore = {
+    ctx,
+    navigate,
     accepts: (href, method) => actionAt(href, method) !== null,
     async submit(req) {
       const handle = req.handle?.[formHandle];
@@ -317,7 +321,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   void go(history.current(), "initial", []);
 
   return {
-    navigate: (to, o) => go(to, o?.replace === true ? "replace" : "push", []),
+    navigate,
     route,
     App() {
       const frag = document.createDocumentFragment();

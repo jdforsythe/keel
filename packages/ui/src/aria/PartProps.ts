@@ -68,9 +68,9 @@ export type PartProps =
   | R<"generic", Kids>
   | R<"navigation", Kids & Named>
   | R<"group", Kids & Named>
-  | R<"table", Kids & Named & { readonly rowCount?: V<number> }>
+  | R<"table", Kids & Named & { readonly rowCount?: V<number | undefined> }>
   | R<"rowgroup", Kids & { readonly head?: boolean }>
-  | R<"row", Kids & { readonly rowIndex?: V<number> }>
+  | R<"row", Kids & { readonly rowIndex?: V<number | undefined> }>
   | R<"columnheader", Kids & { readonly sort?: V<"ascending" | "descending" | undefined> }>
   | R<"rowheader", Kids>
-  | R<"cell", Kids & { readonly colSpan?: V<number> }>;
+  | R<"cell", Kids & { readonly colSpan?: V<number | undefined> }>;
