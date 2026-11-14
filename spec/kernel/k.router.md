@@ -13,7 +13,7 @@ export const routes = manifest({
 })
 routes.actions({ 'orders.show': { POST: updateOrder } })
 ```
-`routes.actions` attaches path routes' actions once each. An entry without `path` is a layout: its `component` renders a `children` slot; `api: true` marks an API route (k.api). A chain is the route plus its layouts, outermost first. `component` receives `{ params, search, data }`, `data` being its loader's `ok` value, a getter that revalidation updates in place (a top-level read keeps the value at build, k.component); `errorElement` receives `{ error: KeelError }`. A page's `title` names its document (k.head).
+`routes.actions` attaches path routes' actions once each. An entry without `path` is a layout: its `component` renders a `children` slot; `api: true` marks an API route (k.api). A chain is the route plus its layouts, outermost first. `component` receives `{ params, search, data }`, `data` being its loader's `ok` value; `search` and `data` are getters that revalidation and a kept page update in place (a top-level read keeps the value at build, k.component); `errorElement` receives `{ error: KeelError }`. A page's `title` names its document (k.head).
 
 **Matching.** Segment by segment; static beats `:param`; no wildcards; k.prefix elides a leading param. A trailing slash redirects (308) to the canonical path. Params that fail their schema: 404 with `keel.notFound`; no guard or loader runs. It renders in the chain's nearest `errorElement`, inside the layouts above it unless one declares a loader or guard (then alone). Failing search keys are dropped; the rest parse.
 
@@ -21,7 +21,7 @@ routes.actions({ 'orders.show': { POST: updateOrder } })
 
 **Execution.** Guards (k.guards), loaders, and actions run on the server, or in the browser in a client-only app. API: `@keel/router`; `@keel/router/match`: `matchHref(routes, href)` matches as navigation does: `{ id, params, search }` or `null`; `@keel/router/internal` is not public.
 
-**Client.** `navigate(href, { replace? })` pushes or replaces a history entry. `navigate` from `@keel/router` navigates the router whose `App` encloses the caller, else the only one mounted; with none or several mounted it does nothing. `route()` is a computed of the match `{ id, params, search, pending }`, discriminated by `id`; `pending` is true while a navigation or action runs; the previous page stays rendered until the new chain's loaders finish. Scroll: a push or replace to another path goes to the top (or the hash target); back or forward restores each entry's; one that changes only the search, and revalidation, keep it. Focus: k.head. Same-origin link clicks inside a router navigate client-side.
+**Client.** `navigate(href, { replace? })` pushes or replaces a history entry. `navigate` from `@keel/router` navigates the router whose `App` encloses the caller, else the only one mounted; with none or several mounted it does nothing. `route()` is a computed of the match `{ id, params, search, pending }`, discriminated by `id`; `pending` is true while a navigation or action runs; the previous page stays rendered until the new chain's loaders finish, and the last navigation started wins. A navigation to the rendered page's path (only the search or hash differs) keeps the page when its guards and loaders succeed: no node is rebuilt. Otherwise the page renders anew. Scroll: a push or replace to another path goes to the top (or the hash target); back or forward restores each entry's; one that changes only the search, and revalidation, keep it. Focus: k.head. Same-origin link clicks inside a router navigate client-side.
 
 **Form.** `<Form method action form? error?>`; `action` is an `Href`. Without JS it posts natively (`PUT`/`PATCH`/`DELETE` via a hidden `_method`). Inside a router it submits FormData to the matched route's action and applies its `Result`: `ok(href)` navigates; `ok(null)` re-runs every loader in the current chain once.
 
@@ -43,3 +43,5 @@ routes.actions({ 'orders.show': { POST: updateOrder } })
 - An action returning `ok(routes.href(id))` compiles unannotated and navigates to `id`; an entry with `actions` throws E1505.
 - `matchHref(routes, routes.href(id, p, q))` is `{ id, params: p, search: q }`; an unmatched href, or one whose params fail, is `null`.
 - After an `ok(null)` action, a binding reading `props.data` shows the new value and the page keeps its nodes and focus.
+- After a search-only navigation each guard and loader of the chain ran once more and the page keeps its nodes, focus and local signals, and its `props.search` and `props.data` bindings update; a loader `err` renders the `errorElement`, a params change a new page.
+- Of two navigations started before either settles, the later one's page shows in either settle order.
