@@ -803,6 +803,9 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
