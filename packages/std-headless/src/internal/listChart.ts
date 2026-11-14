@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { computed } from "@keel/reactive";
+import { computed, signal } from "@keel/reactive";
 import { instance } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import type { KeyInput } from "@keel/ui/aria";
@@ -35,14 +35,25 @@ export function listChart<O extends Option>(
   // Checks the keys at render (E2801) without subscribing the enclosing render to the app's list.
   untracked(() => list.get());
   const size = () => Math.min(list.get().length, 10_000);
-  const sync = () => {
-    if (c.store.get("data").count !== size()) tx(c.events.items, { count: size() });
+  // The keys the chart's indexes refer to: the list as of the chart's last event. A widget signal, never in the chart.
+  const known = signal<readonly string[]>(untracked(() => list.get().map((o) => o.key)));
+  /** The current index of the option the chart's `active` names in `known`, or -1 when its key is gone. */
+  const remap = (at: number): number => {
+    const key = known.get()[at];
+    return key === undefined ? -1 : list.get().findIndex((o) => o.key === key);
   };
   const open = computed(() => c.store.get("state") === "open");
-  const index = computed(() => {
-    const at = c.store.get("data").active;
-    return at < list.get().length ? at : -1;
-  });
+  const index = computed(() => remap(c.store.get("data").active));
+  // Before an event: a changed list sends `items`, then `jump` to where the active key now sits (-1 when gone).
+  const sync = () => {
+    const keys = list.get().map((o) => o.key);
+    const was = known.get();
+    if (keys.length === was.length && keys.every((k, i) => k === was[i])) return;
+    const at = index.get();
+    if (c.store.get("data").count !== size()) tx(c.events.items, { count: size() });
+    known.set(keys);
+    if (open.get() && c.store.get("data").active !== at) tx(c.events.jump, { to: at });
+  };
   const partId = (o: O) => `${id}.${part}.${o.key}`;
   const activeId = computed(() => {
     const o = list.get()[index.get()];
@@ -64,12 +75,15 @@ export function listChart<O extends Option>(
     activeOption: (): O | undefined => list.get()[index.get()],
     indexOf: (key: string) => list.get().findIndex((o) => o.key === key),
     opened: (at: number) => {
+      sync();
       if (!open.get()) tx(c.events.open, { count: size(), at: Math.min(at, 9999) });
     },
     close: (back: boolean) => {
+      sync();
       if (open.get()) tx(c.events.close, { back });
     },
     choose: () => {
+      sync();
       tx(c.events.choose, {});
     },
     move: (by: "next" | "prev" | "first" | "last", wrap: boolean) => {

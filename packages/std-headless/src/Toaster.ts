@@ -7,6 +7,7 @@ import { Box } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
 import type { ToastItem } from "./ToastItem.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
+import { toastKey } from "./internal/toastKey.ts";
 import { untracked } from "./internal/untracked.ts";
 import { toastChart } from "./toastChart.ts";
 
@@ -45,11 +46,15 @@ export function Toaster(
     return xs;
   };
   untracked(items);
-  // An instance's key is a counter, never the item's id: no app value enters a chart's store id or log.
-  let made = 0;
+  // An instance's key is the lowest slot no live toast holds, never the item's id: no app value enters a chart's
+  // store id or log, and the key stays short however many toasts have shown.
+  const live = new Set<number>();
   const toast = (item: ToastItem): Node => {
-    made += 1;
-    const c = instance(toastChart, `${id}.${made}`);
+    let slot = 0;
+    while (live.has(slot)) slot += 1;
+    live.add(slot);
+    owner()?.onDispose(() => live.delete(slot));
+    const c = instance(toastChart, toastKey(id, slot));
     let timer: AbortController | undefined;
     let told = false;
     const after = () => {
