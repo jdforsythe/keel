@@ -165,6 +165,13 @@ const ROWS: readonly Row[] = [
     "k.privacy",
   ],
   [
+    "E1112",
+    "a value reveal returns reaching tx, store, storage set or commit, console, or an Error",
+    "Logs, storage and state keep it as written. Followed through same-file locals; another call, a parameter or an import ends it.",
+    "pass the Secret itself, or store a derived value: a salted scrypt hash checked with timingSafeEqual",
+    "k.privacy",
+  ],
+  [
     "E1151",
     "import of a non-public export of another module",
     "",

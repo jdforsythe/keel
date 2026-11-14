@@ -1,6 +1,7 @@
 import { globalRefs } from "@keel/compiler/internal";
 import { type Expression, type MemberExpression, type SpreadElement, Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
+import { givenValues } from "../internal/givenValues.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { isTestPath } from "../internal/isTestPath.ts";
 import { propertyOf } from "../internal/propertyOf.ts";
@@ -32,8 +33,6 @@ const MAX_DEPTH = 16;
 const SAME_URL: ReadonlySet<string> = new Set(["href", "toString", "valueOf"]);
 /** Calls that return their argument's prototype. */
 const PROTOTYPE_OF: ReadonlySet<string> = new Set(["Object.getPrototypeOf", "Reflect.getPrototypeOf"]);
-/** Assignment operators whose value is the right operand. */
-const ASSIGN: ReadonlySet<string> = new Set(["=", "||=", "&&=", "??="]);
 /** The constant text a string expression starts with and the first part that is not constant (null: none). */
 type Lead = { readonly text: string; readonly rest: Expression | null };
 
@@ -71,17 +70,7 @@ export const noCodeFromString: RuleDef = {
       out.push(findingAt(file, at, { name }));
     };
     /** Values each name is given in the file, at the binding offset: declarations and assignments (rfc:0065). */
-    const values = new Map<string, { at: number; v: Expression }[]>();
-    const give = (name: string, at: number, v: Expression): void =>
-      void values.set(name, [...(values.get(name) ?? []), { at, v }]);
-    new Visitor({
-      VariableDeclarator: (n) => {
-        if (n.id.type === "Identifier" && n.init !== null) give(n.id.name, n.id.start, n.init);
-      },
-      AssignmentExpression: (n) => {
-        if (n.left.type === "Identifier" && ASSIGN.has(n.operator)) give(n.left.name, n.left.start, n.right);
-      },
-    }).visit(ast);
+    const values = givenValues(ast, false);
     const keyOf = (m: MemberExpression): string | null =>
       m.computed ? g.constString(m.property) : m.property.type === "Identifier" ? m.property.name : null;
     /** The value an object literal (through aliases) holds at the member `m` reads, or null. */

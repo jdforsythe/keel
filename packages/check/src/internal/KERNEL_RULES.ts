@@ -28,6 +28,7 @@ import { piiInRouteUrl } from "../rules/piiInRouteUrl.ts";
 import { pureTransaction } from "../rules/pureTransaction.ts";
 import { resourceViaMatch } from "../rules/resourceViaMatch.ts";
 import { revealInServerFile } from "../rules/revealInServerFile.ts";
+import { revealedValue } from "../rules/revealedValue.ts";
 import { reversedFocusOrder } from "../rules/reversedFocusOrder.ts";
 import { routeSchemaInferred } from "../rules/routeSchemaInferred.ts";
 import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
@@ -47,6 +48,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   formatInApp,
   pureTransaction,
   noSecretInState,
+  revealedValue,
   noNetFetchInApp,
   pathParamsMatch,
   bodyOnGetEndpoint,
