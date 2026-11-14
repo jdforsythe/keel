@@ -5,6 +5,7 @@ import { tx } from "@keel/store";
 import type { KeyInput } from "@keel/ui/aria";
 import type { Option } from "../Option.ts";
 import { optionsChart } from "../optionsChart.ts";
+import type { ListState } from "./ListState.ts";
 import { checkKeys } from "./checkKeys.ts";
 import { untracked } from "./untracked.ts";
 
@@ -16,7 +17,12 @@ const PAUSE = 500;
  * length: `open` carries it and every other event sends `items` first when it changed. The typeahead buffer lives
  * here, never in the chart.
  */
-export function listChart<O extends Option>(id: string, part: string, options: () => readonly O[], ctx?: Ctx) {
+export function listChart<O extends Option>(
+  id: string,
+  part: string,
+  options: () => readonly O[],
+  ctx?: Ctx,
+): ListState<O> {
   const c = instance(optionsChart, id);
   const list = computed(() => {
     const xs = options();
@@ -63,7 +69,9 @@ export function listChart<O extends Option>(id: string, part: string, options: (
     close: (back: boolean) => {
       if (open.get()) tx(c.events.close, { back });
     },
-    choose: () => tx(c.events.choose, {}),
+    choose: () => {
+      tx(c.events.choose, {});
+    },
     move: (by: "next" | "prev" | "first" | "last", wrap: boolean) => {
       sync();
       tx(c.events.move, { by, wrap });
