@@ -22,6 +22,7 @@ The server state lives in one SQLite file. Every `api` process on that host shar
 ## Tests and rungs
 - `test/editorChart.test.ts` explores every state of `editorChart` under every event (closed-form `explore`), finds no unreached or dead state (`coverage`), and runs `properties` on each event's transaction.
 - `test/board.explore.test.ts` explores `api.addList`, `api.addTodo`, `api.toggleTodo` and `api.editTodo` 3 writes deep from Home with Milk and Bread, over payloads with two titles, two priorities, and todo ids `t1` (taken) and `t3` (free): 112 states, each keeping the board's invariant.
+- `test/board.prove.test.ts` proves with Z3 (`prove`, `@keel/testing/prove`) that `api.addList`, `api.addTodo`, `api.toggleTodo`, `api.editTodo`, `api.hideList` and `api.showList` keep the board's invariant from every state it allows, with every payload their schemas allow: the `proven` rung. `board.explore` stays the bounded check of the same transactions.
 - `test/outbox.sim.test.ts` runs 100 generated schedules (seed 11) of delays, dropped, lost and unavailable requests, storage failures and offline windows while one user toggles Bread and edits Milk through `boardOutbox`. A write that left the outbox was applied once; any other waits as queued, conflict or failed.
 
 ## Dev

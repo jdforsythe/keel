@@ -1,6 +1,6 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { isolate } from "@keel/store";
+import { isolate, tx } from "@keel/store";
 import { properties, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Board } from "../modules/api/Board.schema.ts";
@@ -11,6 +11,7 @@ import { addTodo } from "../modules/api/addTodo.ts";
 import { board } from "../modules/api/board.ts";
 import { boardStores } from "../modules/api/boardStores.ts";
 import { editTodo } from "../modules/api/editTodo.ts";
+import { hideList } from "../modules/api/hideList.ts";
 import { loadBoard } from "../modules/api/loadBoard.server.ts";
 import { loadSuggestions } from "../modules/api/loadSuggestions.server.ts";
 import { postEdit } from "../modules/api/postEdit.server.ts";
@@ -19,6 +20,7 @@ import { postTodo } from "../modules/api/postTodo.server.ts";
 import { postToggle } from "../modules/api/postToggle.server.ts";
 import { postUndo } from "../modules/api/postUndo.server.ts";
 import { routes } from "../modules/api/routes.ts";
+import { showList } from "../modules/api/showList.ts";
 import { toggleTodo } from "../modules/api/toggleTodo.ts";
 import { at, boardOf } from "./at.ts";
 import { BOARD_KEY, apiApp, apiCtx, readBoard, resetApi, seedBoard } from "./simApi.ts";
@@ -75,6 +77,19 @@ describe("api.board", () => {
     await properties(addTodo(inScope(board)));
     await properties(toggleTodo(inScope(board)));
     await properties(editTodo(inScope(board)));
+    await properties(hideList(inScope(board)));
+    await properties(showList(inScope(board)));
+  });
+  it("hideList and showList mark one list and leave an unknown id unchanged", () => {
+    const work = { id: "l2", name: "Work" };
+    const st = seeded(boardOf({ lists: [L, work], todos: [] }));
+    const id = (listId: string) => at(ListParams, { listId }).params.listId;
+    expect(tx(st.hideList, { id: id("l1") }).ok).toBe(true);
+    expect(st.board.get("lists")).toEqual([{ ...L, hidden: true }, work]);
+    expect(tx(st.hideList, { id: id("l9") }).ok).toBe(true);
+    expect(st.board.get("lists")).toEqual([{ ...L, hidden: true }, work]);
+    expect(tx(st.showList, { id: id("l1") }).ok).toBe(true);
+    expect(st.board.get("lists")).toEqual([{ ...L, hidden: false }, work]);
   });
   it("the invariant rejects a todo in an unknown list and duplicate ids", () => {
     const { board } = fresh();

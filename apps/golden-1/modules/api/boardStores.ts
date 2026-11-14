@@ -2,6 +2,8 @@ import { addList } from "./addList.ts";
 import { addTodo } from "./addTodo.ts";
 import { board } from "./board.ts";
 import { editTodo } from "./editTodo.ts";
+import { hideList } from "./hideList.ts";
+import { showList } from "./showList.ts";
 import { toggleTodo } from "./toggleTodo.ts";
 
 /**
@@ -11,5 +13,13 @@ import { toggleTodo } from "./toggleTodo.ts";
  */
 export function boardStores() {
   const b = board();
-  return { board: b, addList: addList(b), addTodo: addTodo(b), toggleTodo: toggleTodo(b), editTodo: editTodo(b) };
+  return {
+    board: b,
+    addList: addList(b),
+    addTodo: addTodo(b),
+    toggleTodo: toggleTodo(b),
+    editTodo: editTodo(b),
+    hideList: hideList(b),
+    showList: showList(b),
+  };
 }
