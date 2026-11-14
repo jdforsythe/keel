@@ -240,6 +240,23 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1112: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("app"),
+      f(
+        "modules/app/x.server.ts",
+        "import { reveal } from '@keel/schema'\nimport { tx } from '@keel/store'\nconst copy = {}\nexport function run(p) {\n  tx(copy, { t: reveal(p.k) })\n}\n",
+      ),
+    ],
+    clean: [
+      manifest("app"),
+      f(
+        "modules/app/x.server.ts",
+        "import { reveal } from '@keel/schema'\nimport { tx } from '@keel/store'\nconst copy = {}\nconst hash = (x) => x.length\nexport function run(p) {\n  tx(copy, { t: hash(reveal(p.k)) })\n}\n",
+      ),
+    ],
+  },
   E1151: {
     opts: NO_TYPES,
     bad: [mod("b", [], []), exp("b", "Secret"), mod("a", ["b"], []), use("a", "b", "Secret")],
