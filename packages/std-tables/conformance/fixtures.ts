@@ -110,10 +110,15 @@ const catalog = (props: RouteProps, href: (q: Query) => Href): Node =>
     id: "cat",
     label: "Catalog",
     columns: catalogColumns,
-    search: queryOf(props.search),
+    // Accessors, not values: a read at the top of the page body would freeze at build (k.component Build).
+    get search() {
+      return queryOf(props.search);
+    },
     href,
     locale: LOCALE,
-    page: pageOf(props.data),
+    get page() {
+      return pageOf(props.data);
+    },
     text: TEXT,
     cells: CELLS,
   });
@@ -135,7 +140,14 @@ export const routes = manifest({
       Box({
         id: "find.page",
         children: () => [
-          TableSearch({ id: "find", label: "Search the catalog", search: queryOf(props.search), href: findHref }),
+          TableSearch({
+            id: "find",
+            label: "Search the catalog",
+            get search() {
+              return queryOf(props.search);
+            },
+            href: findHref,
+          }),
           catalog(props, findHref),
         ],
       }),
