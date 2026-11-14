@@ -168,6 +168,23 @@ describe("ListsPage", () => {
     expect(t.find("todos.lists.items").text).toBe("");
     t.dispose();
   });
+  it("Remove hides a list behind an undo bar, and Undo shows it again", async () => {
+    await seedBoard(boardOf({ lists: [L, { id: "l2", name: "Work" }], todos: [milk] }));
+    const { ctx, sent } = await simApi();
+    const value = { lists: [L, { id: "l2", name: "Work" }], todos: [milk], canUndo: false, head: 0 };
+    const t = render(ListsPage, { props: {}, state: [[view, value]], ctx });
+    expect(t.find("todos.remove.l1").name).toBe("Remove");
+    await t.fire("todos.remove.l1", { type: "click" });
+    expect(sent).toEqual(["POST /api/lists/l1/remove", "GET /api/lists"]);
+    expect(t.find("todos.lists.items").text).not.toContain("Home");
+    const flow = view.get("removals")?.[0]?.flow ?? "";
+    expect(t.find(`todos.removal.${flow}`).text).toContain("Home is removed in 10 minutes.");
+    await t.fire(`todos.undo.${flow}`, { type: "click" });
+    expect(sent.slice(2)).toEqual([`POST /api/removals/${flow}/undo`, "GET /api/lists"]);
+    expect(view.get("removals")?.map((r) => r.state)).toEqual(["restoring"]);
+    expect(t.find("todos.lists.items").text).not.toContain("Home");
+    t.dispose();
+  });
 });
 
 describe("ListPage", () => {

@@ -2,7 +2,14 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "api",
-  deps: ["@keel/std-channels", "@keel/std-offline", "@keel/std-sessions"],
+  deps: [
+    "@keel/std-channels",
+    "@keel/std-jobs",
+    "@keel/std-offline",
+    "@keel/std-sessions",
+    "@keel/std-statecharts",
+    "@keel/std-workflows",
+  ],
   capabilities: ["clock", "net", "observe", "random", "storage"],
   public: {
     exports: [
@@ -18,6 +25,7 @@ export default module({
       "TodoWrite",
       "ToggleWrite",
       "boardChannel",
+      "Removal",
     ],
     routes: [
       "api.lists",
@@ -27,6 +35,8 @@ export default module({
       "api.undo",
       "api.suggestions",
       "api.boardEvents",
+      "api.removeList",
+      "api.undoRemoval",
     ],
   },
   std: { "@keel/std-sessions": { readers: [] } },

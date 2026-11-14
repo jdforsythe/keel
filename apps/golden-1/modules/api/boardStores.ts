@@ -3,6 +3,7 @@ import { addTodo } from "./addTodo.ts";
 import { board } from "./board.ts";
 import { editTodo } from "./editTodo.ts";
 import { hideList } from "./hideList.ts";
+import { purgeList } from "./purgeList.ts";
 import { showList } from "./showList.ts";
 import { toggleTodo } from "./toggleTodo.ts";
 
@@ -21,5 +22,6 @@ export function boardStores() {
     editTodo: editTodo(b),
     hideList: hideList(b),
     showList: showList(b),
+    purgeList: purgeList(b),
   };
 }

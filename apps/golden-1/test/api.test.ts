@@ -19,6 +19,7 @@ import { postList } from "../modules/api/postList.server.ts";
 import { postTodo } from "../modules/api/postTodo.server.ts";
 import { postToggle } from "../modules/api/postToggle.server.ts";
 import { postUndo } from "../modules/api/postUndo.server.ts";
+import { removalStores } from "../modules/api/removalStores.server.ts";
 import { routes } from "../modules/api/routes.ts";
 import { showList } from "../modules/api/showList.ts";
 import { toggleTodo } from "../modules/api/toggleTodo.ts";
@@ -102,9 +103,12 @@ describe("api.board", () => {
 
 describe("loaders and actions", () => {
   it("loadBoard serves lists, todos, canUndo and the board's head", async () => {
-    const st = seeded(boardOf({ lists: [L], todos: [milk] }));
-    const r = await loadBoard.run({ params: {}, search: {}, url: URL_, ...as(st) }, sim());
-    expect(r).toEqual({ ok: true, value: { lists: [L], todos: [milk], canUndo: false, head: 0 } });
+    const ctx = sim();
+    const st = inScope(() => removalStores(ctx));
+    const state = boardOf({ lists: [L], todos: [milk] });
+    expect(st.board.restore({ state, log: [], initial: state }).ok).toBe(true);
+    const r = await loadBoard.run({ params: {}, search: {}, url: URL_, caller: "c1", stores: st }, ctx);
+    expect(r).toEqual({ ok: true, value: { lists: [L], todos: [milk], canUndo: false, head: 0, removals: [] } });
   });
   it("postList, postTodo, postToggle and postEdit commit with ctx-minted ids; postUndo refuses another caller", async () => {
     const st = fresh();
@@ -238,7 +242,9 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       id: "api.lists",
-      results: { "api.lists": { ok: true, value: { lists: [L], todos: [milk], canUndo: false, head: 0 } } },
+      results: {
+        "api.lists": { ok: true, value: { lists: [L], todos: [milk], canUndo: false, head: 0, removals: [] } },
+      },
     });
   });
   it("every write endpoint commits and answers ok(null); undo reverts the caller's last one only", async () => {

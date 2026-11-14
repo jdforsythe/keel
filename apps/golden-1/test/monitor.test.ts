@@ -21,8 +21,9 @@ const settle = async (): Promise<void> => {
 };
 
 describe("api runners", () => {
-  it("run the monitor, which tallies each committed api write by name into sessions.tally", async () => {
-    expect(runners).toEqual([monitor]);
+  it("run the monitor first, then the removal jobs and flows; the monitor tallies each committed api write by name into sessions.tally", async () => {
+    expect(runners[0]).toBe(monitor);
+    expect(runners).toHaveLength(3);
     const ctx = createCtx({ mode: "sim", seed: 1 });
     const app = await createApp({ topology, routes: apiRoutes, ctx, deployable: "api", runners: { api: runners } });
     open.push(app);
