@@ -675,3 +675,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0595 schema: a marked open object's undeclared keys have no `piiPaths` entry though `piiValues` returns them · schema
 - [ ] 0596 check: E1822 and E1576 do not see a `#alias` import that resolves to an internal entry (the rules read no `package.json`) · check
 - [ ] 0597 kernel: the check rule for E1111 and the compiler's part-styles collection name stdlib packages and an export (`@keel/std-tables` `tableSearch`, `@keel/std-headless`); give std packages a declared registry for "this export returns a search schema that refuses marks" and "these components take part styles", so the kernel names no stdlib package · check · compiler · spec
+- [ ] 0598 docs: `packages/router/README.md` still names RFC numbers ("RFC 0063", "RFC 0071"); sweep every package README and `docs/guide/**` for `RFC NNNN`, `rfc:NNNN` and backlog ids and state the behaviour instead (rule 11) · docs
