@@ -43,7 +43,7 @@ const stepArb = fc.oneof(
   fc.constant({ kind: "drop" as const }),
 );
 
-it.skip("`restore` of a snapshot whose log names an undeclared transaction returns `ok`, keeps `state` and `head()`, and leaves `log()` empty and `snapshot().initial` equal to `state`", () => {
+it("`restore` of a snapshot whose log names an undeclared transaction returns `ok`, keeps `state` and `head()`, and leaves `log()` empty and `snapshot().initial` equal to `state`", () => {
   fc.assert(
     fc.property(
       fc.array(stepArb, { minLength: 0, maxLength: 12 }),

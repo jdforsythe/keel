@@ -211,29 +211,41 @@ export function store<T extends object>(
     },
     restore(snap) {
       const codec = logSchema(payloads);
-      const whole = s.object({ state: schema, log: codec, initial: schema }).parse(snap);
-      if (!whole.ok) return whole;
+      // Each entry's shape first, any name and payload: only those two may fold below.
+      const entry = s.object({
+        id: s.int(),
+        name: s.string(),
+        at: s.number(),
+        meta: metaSchema.optional(),
+        base: baseSchema.optional(),
+        key: keySchema.optional(),
+      });
+      const parsed = s.object({ state: schema, log: s.array(entry) }).parse(snap);
+      if (!parsed.ok) return parsed;
       // A head below the latest entry's id would let the next commit reuse an id: the snapshot is invalid.
-      const latest = whole.value.log.at(-1)?.id ?? 0;
+      const latest = parsed.value.log.at(-1)?.id ?? 0;
       const head = s.object({ head: s.int({ min: latest }).optional() }).parse(snap);
       if (!head.ok) return head;
-      const state = copy(schema, whole.value.state);
+      const state = copy(schema, parsed.value.state);
       if (!state.ok) return state;
-      const log = copy(codec, whole.value.log);
-      if (!log.ok) return log;
-      const initial = copy(schema, whole.value.initial);
-      if (!initial.ok) return initial;
-      const next: Row<T>[] = [];
-      for (const e of log.value) {
-        const bound = binders.get(e.name)?.(e.payload);
-        if (bound === undefined) throw new Error(`unreachable: ${e.name} passed the log schema`);
-        if (!bound.ok) return bound;
-        next.push({ entry: freeze({ ...e, payload: bound.value.payload }), apply: bound.value.apply });
-      }
-      for (const r of next) tick = Math.max(tick, r.entry.at);
-      seq = head.value.head ?? latest;
       const restored = freeze(state.value);
-      const kept = trim(freeze(initial.value), next, limit);
+      // A log this code cannot replay (an undeclared transaction, a refused payload) folds into `state` (k.persist).
+      const log = s.object({ log: codec }).parse(snap);
+      let next: Row<T>[] | undefined = log.ok ? [] : undefined;
+      for (const e of log.ok ? log.value.log : []) {
+        const bound = binders.get(e.name)?.(e.payload);
+        if (bound === undefined || !bound.ok) next = undefined;
+        else next?.push({ entry: freeze({ ...e, payload: bound.value.payload }), apply: bound.value.apply });
+      }
+      let kept: { base: T; rows: Row<T>[] } = { base: restored, rows: [] };
+      if (next !== undefined) {
+        const initial = s.object({ initial: schema }).parse(snap);
+        const init = initial.ok ? copy(schema, initial.value.initial) : initial;
+        if (!init.ok) return init;
+        kept = trim(freeze(init.value), next, limit);
+      }
+      for (const r of next ?? []) tick = Math.max(tick, r.entry.at);
+      seq = head.value.head ?? latest;
       base = kept.base;
       commit(restored, kept.rows);
       return ok(restored);
