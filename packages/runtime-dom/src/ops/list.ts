@@ -1,6 +1,4 @@
 import { computed, effect, scope } from "@keel/reactive";
-import type { Computed } from "@keel/reactive";
-import { reaction } from "@keel/reactive/internal";
 import type { Unit } from "../internal/Unit.ts";
 import { consumed } from "../internal/consumed.ts";
 import { current } from "../internal/current.ts";
@@ -17,8 +15,8 @@ type Row = { unit: Unit | null; rendered: boolean };
  * the order changes rows move (node identity kept); a row is created only for a new key and disposed
  * when its key leaves, so a row whose key stays keeps its nodes (and focus, selection and input state) whatever
  * its item object. `item()`/`index()` give the row's current item and position: a binding reading them updates
- * in place; a read at the top level of the row body is the value at render and never re-renders the row (other
- * top-level reads still do, as in any unit). First key wins.
+ * in place; the row, like every unit, is built untracked, so a read at its top level is the value at build. First key
+ * wins.
  * Rows live in the op's own `home` scope (`home.run`), so reruns of the reconcile effect never dispose them.
  * `empty`, when given, renders (in its own scope) while `each()` has no rows and is removed when rows arrive.
  */
@@ -104,7 +102,6 @@ export function list<T>(
             parent.catcher,
             end,
             () => {
-              const top = reaction();
               // Separate computeds: a move (index change) never invalidates readers of item(), and vice versa.
               const itemC = computed(() => {
                 item = byKey.get().get(k)?.item ?? item;
@@ -114,11 +111,9 @@ export function list<T>(
                 index = byKey.get().get(k)?.index ?? index;
                 return index;
               });
-              // Read from the row body itself (not from a binding or computed inside it): untracked.
-              const read = <V>(c: Computed<V>): V => (reaction() === top ? home.run(() => c.get()) : c.get());
               return render(
-                () => read(itemC),
-                () => read(indexC),
+                () => itemC.get(),
+                () => indexC.get(),
               );
             },
             h,

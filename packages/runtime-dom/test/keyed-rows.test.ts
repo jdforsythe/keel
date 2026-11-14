@@ -174,7 +174,15 @@ describe("keyed list: a surviving key keeps its element", () => {
     const items = rootSignal<Todo[]>(todos("a"));
     const dispose = mount(() => {
       const ul = clone(UL);
-      ul.appendChild(For({ each: items.get(), key: "id", children: (todo) => Row({ todo }) }));
+      ul.appendChild(
+        For({
+          get each() {
+            return items.get();
+          },
+          key: "id",
+          children: (todo) => Row({ todo }),
+        }),
+      );
       return ul;
     }, host);
     expect(titles(host)).toEqual(["a0"]);

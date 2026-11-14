@@ -12,7 +12,8 @@ import { writesOf } from "../internal/writesOf.ts";
 
 /**
  * `Match`/`Case`: render `cases[on()[key]](value)` before `anchor`. The case re-renders only when the
- * tag changes; within a case, `value()` tracks the current union value. An unknown tag renders nothing.
+ * tag changes; a case is built untracked, so a top-level `value()` is the value at build, and its bindings reading
+ * `value()` show each new value. An unknown tag renders nothing.
  * Each case renders in its own scope under the op's `home` scope (`home.run`), disposed when the tag changes.
  * When `on` reads a resource and `key` is `state`, each rendered state is reported to the ctx's observers with the
  * resource's `inspect()` node id (k.ctx Observers, rfc:0070).
