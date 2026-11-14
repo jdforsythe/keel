@@ -10,6 +10,7 @@ import { conflict } from "./internal/conflict.ts";
 import { copy } from "./internal/copy.ts";
 import { coreKey } from "./internal/coreKey.ts";
 import { counter } from "./internal/counter.ts";
+import { declaredSources } from "./internal/declaredSources.ts";
 import { freeze } from "./internal/freeze.ts";
 import { holdsSecret } from "./internal/holdsSecret.ts";
 import { keySchema } from "./internal/keySchema.ts";
@@ -278,6 +279,7 @@ export function store<T extends object>(
           concurrent,
           [coreKey]: (raw, options) => run(t, bind(raw), options),
         };
+        declaredSources.set(t, { fn, guards });
         return t;
       },
       guard(check) {
