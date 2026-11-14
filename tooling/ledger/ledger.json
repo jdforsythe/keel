@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 14,
   "rungs": {
-    "example": 848,
+    "example": 849,
     "probabilistic": 263,
     "exhaustive": 15,
     "proven": 42,
@@ -19,7 +19,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 78.36,
+        "score": 78.19,
         "threshold": 70
       },
       "ctx": {
@@ -11141,6 +11141,10 @@
     },
     {
       "item": "k.ui#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#15",
       "rung": "example"
     },
     {
