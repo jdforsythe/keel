@@ -325,6 +325,7 @@ const NO_FIX = [
   "E1573", // the shell's adapter and app id are the author's
   "E1561", // choosing between the caller's and the producer's schema is a judgment
   "E1562", // the fix edits the route's schema source and needs a rebuilt surface; its fixture is surface data alone
+  "E1563", // as E1562: the fix edits the store's schema source; its fixture is surface data alone
   "E1603", // the code in the string is the author's
   "E1651", // the replacement endpoint is unknown
   "E1701", // the harness id is unknown

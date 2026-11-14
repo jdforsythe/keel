@@ -55,6 +55,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
   const callerFiles = files.filter((f) => CALLS.test(f.source) && MODULE_KEY.test(f.source));
   const manifests: { file: string; routes: unknown }[] = [];
   let table: unknown;
+  let shapes: unknown;
   Reflect.set(globalThis, RECORD, (file: string, opts: unknown) => void calls.push({ file, opts }));
   try {
     const server =
@@ -103,6 +104,9 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
           ? undefined
           : await server?.ssrLoadModule("@keel/router/internal").catch(() => undefined);
       table = isRecord(internal) ? internal.routeActions : undefined;
+      const kept: unknown =
+        manifests.length === 0 ? undefined : await server?.ssrLoadModule("@keel/store/internal").catch(() => undefined);
+      shapes = isRecord(kept) ? kept.storeShapes : undefined;
       for (const f of callerFiles) {
         await server?.ssrLoadModule(`/${f.path}`).catch((e: unknown) => {
           notes.push(`E1006 ${f.path} failed to evaluate: ${firstLine(e).slice(0, 60)}\n`);
@@ -113,7 +117,8 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
     }
     if (notes.length > 0) return { code: 1, notes };
     const actionsOf = (def: object): unknown => (table instanceof WeakMap ? table.get(def) : undefined);
-    const data = surfaceOf({ manifests, actionsOf, services: calls, sources });
+    const storesOf = (factory: unknown): unknown => (typeof shapes === "function" ? shapes(factory) : undefined);
+    const data = surfaceOf({ manifests, actionsOf, storesOf, services: calls, sources });
     const content = `${canonicalJson({ data, hash: hashOf(data) })}\n`;
     applyWrites(root, [{ path: ".keel/surface.json", content, readonly: true }]);
     return { code: 0, notes };

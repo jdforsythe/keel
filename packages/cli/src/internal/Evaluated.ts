@@ -6,6 +6,8 @@ export type Evaluated = {
   readonly actionsOf: (def: object) => unknown;
   /** Each `service(opts)` call made while the files evaluated, with the project-relative file that made it. */
   readonly services: readonly { readonly file: string; readonly opts: unknown }[];
+  /** The stores a `stores` factory creates (`storeShapes` from the evaluated `@keel/store/internal`), else none. */
+  readonly storesOf?: (factory: unknown) => unknown;
   /** The content hash of every app source the evaluation read, by project-relative path. */
   readonly sources: Readonly<Record<string, string>>;
 };

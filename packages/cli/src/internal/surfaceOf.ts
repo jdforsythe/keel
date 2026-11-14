@@ -47,11 +47,37 @@ function serviceOf(file: string, opts: unknown): JsonSchema | null {
   return { file, caller, module: opts.module, endpoints };
 }
 
+/** Each store the routes' loader and action `stores` factories create: its state and payload schemas, by id. */
+function storesOf(e: Evaluated, defs: readonly Rec[]): Record<string, JsonSchema> {
+  const factories = new Set<unknown>();
+  for (const def of defs) {
+    if (isRecord(def.loader) && typeof def.loader.stores === "function") factories.add(def.loader.stores);
+    const bound = e.actionsOf(def);
+    for (const v of VERBS) {
+      const a = isRecord(bound) ? bound[v] : undefined;
+      if (isRecord(a) && typeof a.stores === "function") factories.add(a.stores);
+    }
+  }
+  const out: Record<string, JsonSchema> = {};
+  for (const f of factories) {
+    const shapes = e.storesOf?.(f);
+    for (const sh of Array.isArray(shapes) ? shapes : []) {
+      if (!isRecord(sh) || typeof sh.id !== "string" || out[sh.id] !== undefined) continue;
+      const txs = isRecord(sh.transactions) ? Object.entries(sh.transactions) : [];
+      const transactions = Object.fromEntries(txs.map(([name, p]) => [name, schemaOf(p) ?? {}]));
+      out[sh.id] = { state: schemaOf(sh.state) ?? {}, transactions };
+    }
+  }
+  return out;
+}
+
 /**
  * The data of `.keel/surface.json` (k.compat Surface): for each path route its `module` (the id's first segment),
  * `path`, declaring `file`, `params`, `search`, GET answer (its loader's `output`; none without a loader) and, per
  * action method, `input` and answer (`Href | null`); for each `service({ module })` call in an app module its `file`,
- * calling module, `module` and endpoints (method, path, `params`, `query`, `body`, `output`, `errors`); and
+ * calling module, `module` and endpoints (method, path, `params`, `query`, `body`, `output`, `errors`); `stores`,
+ * each store a loader's or action's `stores` factory creates (one run on a sim ctx) by id, its state schema and each
+ * transaction's payload schema; and
  * `sources`, the hash of each evaluated file (E1005 freshness).
  * Schemas are JSON Schema, as in `routes.json`; an absent one is `null`. The file holds `version: 1`.
  */
@@ -74,5 +100,9 @@ export function surfaceOf(e: Evaluated): JsonSchema {
       }),
   );
   const services = e.services.flatMap((s) => serviceOf(s.file, s.opts) ?? []);
-  return { version: 1, routes, services, sources: e.sources };
+  const stores = storesOf(
+    e,
+    [...all.values()].map((r) => r.def),
+  );
+  return { version: 1, routes, services, stores, sources: e.sources };
 }

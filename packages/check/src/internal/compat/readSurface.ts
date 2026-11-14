@@ -36,7 +36,8 @@ function service(x: unknown): SurfaceService[] {
 
 /**
  * A `surface.json` value (the file's `{ data, hash }`, or its `data`) as `keel check` reads it, or `null` when it is
- * not one: `data` must hold a `routes` object and a `services` array. Malformed entries are skipped.
+ * not one: `data` must hold a `routes` object and a `services` array; `stores` (absent: none) is read too.
+ * Malformed entries are skipped.
  */
 export function readSurface(value: unknown): Surface | null {
   const v = rec(value);
@@ -45,9 +46,16 @@ export function readSurface(value: unknown): Surface | null {
   const sources = new Map(
     Object.entries(rec(data.sources)).flatMap(([p, h]) => (typeof h === "string" ? [[p, h]] : [])),
   );
+  const stores = new Map(
+    Object.entries(rec(data.stores)).map(([id, x]) => {
+      const transactions = new Map(Object.entries(rec(rec(x).transactions)));
+      return [id, { id, state: js(rec(x), "state"), transactions }];
+    }),
+  );
   return {
     routes: Object.entries(data.routes).flatMap(([id, r]) => route(id, r)),
     services: data.services.flatMap(service),
+    stores,
     sources,
   };
 }

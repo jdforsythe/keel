@@ -20,6 +20,7 @@ import { persisted } from "./internal/persisted.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
 import { secretGuard } from "./internal/secretGuard.ts";
+import { storePayloads } from "./internal/storePayloads.ts";
 import { trim } from "./internal/trim.ts";
 import { undeclared } from "./internal/undeclared.ts";
 import { unpersisted } from "./internal/unpersisted.ts";
@@ -301,6 +302,7 @@ export function store<T extends object>(
   };
   // signal() above already threw E1203 outside a scope, so an owner exists here.
   registry.set(id, self);
+  storePayloads.set(self, payloads);
   owner()?.onDispose(() => {
     if (registry.get(id) !== self) return;
     registry.delete(id);

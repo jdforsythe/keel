@@ -21,6 +21,7 @@ import { readSurface } from "./readSurface.ts";
 import { routeFor } from "./routeFor.ts";
 import { routeSchemaAt } from "./routeSchemaAt.ts";
 import { staleSource } from "./staleSource.ts";
+import { storeSchemaAt } from "./storeSchemaAt.ts";
 
 const SURFACE = /^((?:.*\/)?)\.keel\/surface\.json$/;
 /** What an endpoint without `params`/`query`/`body` sends: nothing (an empty JSON body decodes as `{}`, k.server). */
@@ -185,11 +186,47 @@ function base(current: Surface, before: Surface, topology: Topology | undefined,
 }
 
 /**
+ * k.compat Stored data, for each store in both surfaces: E1563 when the current state schema refuses the base one, at
+ * the refused field of the store's schema source, with the E1562 fix (make one added required field optional) when it
+ * clears it; W1564 per base transaction gone or whose payload schema now refuses the base one, at the store.
+ */
+function stored(current: Surface, before: Surface, ctx: Ctx): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  for (const [id, was] of before.stores) {
+    const now = current.stores.get(id);
+    if (now === undefined) continue;
+    const at = storeSchemaAt(ctx.dir, id, ctx.project);
+    const whole = at === null ? null : { file: at.file, start: at.expr.start, end: at.expr.start };
+    const refused = now.state === null || was.state === null ? null : accepts(now.state, was.state);
+    if (refused !== null) {
+      const exact = fieldAt(at, refused.path, ctx.project);
+      const src = exact?.file.source ?? "";
+      const fix =
+        exact !== null && refused.path.length > 0 && accepts(loosen(now.state, refused.path), was.state) === null
+          ? unifiedDiff(exact.file.path, src, `${src.slice(0, exact.end)}.optional()${src.slice(exact.end)}`)
+          : undefined;
+      const m = `store ${id} state refuses its stored states at ${show(refused.path)} (${refused.why})`;
+      out.push(diag("E1563", ctx, exact ?? whole, `${ctx.dir}${ctx.at}`, m, fix));
+    }
+    for (const [name, payload] of was.transactions) {
+      const kept = now.transactions.get(name);
+      const why = kept === undefined ? "is gone" : accepts(kept, payload) === null ? null : "narrows its payload";
+      if (why !== null)
+        out.push(
+          diag("W1564", ctx, whole, `${ctx.dir}${ctx.at}`, `store ${id}: transaction ${name} ${why}; stored logs fold`),
+        );
+    }
+  }
+  return out;
+}
+
+/**
  * The k.compat pass over each `<dir>.keel/surface.json` among `files` that is intact (its `hash` that of its `data`)
  * and fresh (every evaluated source unchanged in `project`; else E1005 reports it): E1561 for every `service({ module })`
  * endpoint its route does not accept or whose `output`/`errors` refuse the route's answer, at the endpoint; and, with a
  * `base` surface (`keel check --base`), E1562 for each base endpoint in another deployable (by `topologyOf(dir)`) that
- * the current route refuses, at the route's schema, with a fix when making one required field optional clears it.
+ * the current route refuses, at the route's schema, with a fix when making one required field optional clears it,
+ * and E1563 and W1564 for its stores (`stored`).
  */
 export function compatChecks(
   files: readonly SourceFile[],
@@ -213,7 +250,7 @@ export function compatChecks(
     if (surface === null || !intact || staleSource(surface, dir, project) !== undefined) continue;
     const ctx: Ctx = { dir, project, at: ".keel/surface.json" };
     for (const s of surface.services) out.push(...endpoints(surface, s, ctx));
-    if (before !== null) out.push(...base(surface, before, topologyOf(dir), ctx));
+    if (before !== null) out.push(...base(surface, before, topologyOf(dir), ctx), ...stored(surface, before, ctx));
   }
   return out;
 }

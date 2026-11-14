@@ -130,7 +130,7 @@ const withField = (f: string, optional: boolean): Shape => ({
 });
 
 describe("k.compat: stored-schema checks through `check --base`", () => {
-  test.skip(
+  test(
     "With a base where store `s` has state `{ a }`, adding a required field `b` is one E1563 at `b` whose fix leaves none, adding an optional one is none, removing a transaction of `s` is one W1564, and without `--base` there is neither.",
     () => {
       fc.assert(
@@ -160,7 +160,7 @@ describe("k.compat: stored-schema checks through `check --base`", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "E1563 a state schema change a base store's stored states fail, naming the store and the first refused path; fix as E1562",
     () => {
       const found = diags(against(BASE, withField("b", false)).run, "E1563");
@@ -172,7 +172,7 @@ describe("k.compat: stored-schema checks through `check --base`", () => {
     SLOW,
   );
 
-  test.skip(
+  test(
     "W1564 a base transaction removed or its payload narrowed, naming it; no fix",
     () => {
       const removed = diags(against(BASE, { ...BASE, txs: [ADD] }).run, "W1564");
