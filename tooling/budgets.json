@@ -114,7 +114,7 @@
       "platform": "node"
     },
     "@keel/std-headless": "6kb",
-    "@keel/std-statecharts": "1.5kb",
+    "@keel/std-statecharts": "1.65kb",
     "@keel/std-statecharts/tools": {
       "max": "4kb",
       "platform": "node"

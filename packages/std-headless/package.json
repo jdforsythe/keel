@@ -21,11 +21,11 @@
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/std-statecharts": "workspace:*",
+    "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
     "@keel/compiler": "workspace:*",
-    "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",

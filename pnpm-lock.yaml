@@ -796,6 +796,9 @@ importers:
       '@keel/std-statecharts':
         specifier: workspace:*
         version: link:../std-statecharts
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
       '@keel/ui':
         specifier: workspace:*
         version: link:../ui
@@ -803,9 +806,6 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@keel/store':
-        specifier: workspace:*
-        version: link:../store
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
