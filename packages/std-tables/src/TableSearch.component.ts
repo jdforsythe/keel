@@ -58,8 +58,9 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
   owner()?.onDispose(() => timer?.cancel());
   return Input({
     id,
-    // Read once: k.ui `Input` takes `label` as a string.
-    label: props.label,
+    get label() {
+      return props.label;
+    },
     type: "search",
     value: shown,
     onInput: (value) => {

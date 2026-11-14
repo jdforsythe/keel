@@ -119,3 +119,34 @@ test("TableSearch shows the q of a search that changes while it is mounted", asy
   expect(Reflect.get(input ?? {}, "value")).toBe("rice");
   t.dispose();
 });
+
+test("TableSearch's label follows a getter label over a signal on the same input", async () => {
+  let rename = (): void => {};
+  const Find = Object.assign(
+    (): Node => {
+      const label = signal("Search recipes");
+      rename = () => label.set("Rezepte suchen");
+      return Box({
+        children: () => [
+          Button({ id: "rn", onClick: () => rename(), children: "Rename" }),
+          TableSearch({
+            id: "find",
+            get label() {
+              return label.get();
+            },
+            search: {},
+            href: serverHref,
+          }),
+        ],
+      });
+    },
+    { Props: s.object({}) },
+  );
+  const t = render(Find, { props: {}, ctx: simCtx() });
+  const input = document.getElementById("find.input");
+  expect(t.find("find.input").name).toBe("Search recipes");
+  await t.fire("rn", { type: "click" });
+  expect(document.getElementById("find.input")).toBe(input);
+  expect(t.find("find.input").name).toBe("Rezepte suchen");
+  t.dispose();
+});
