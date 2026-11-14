@@ -152,9 +152,4 @@ const runsEveryRule = async (task: { readonly meta: object }, only: readonly str
 };
 
 test("each widget, closed and open, runs every WCAG-mapped rule a plain render runs", ({ task }) =>
-  runsEveryRule(task, ["Listbox", "Combobox", "Tabs", "Disclosure", "Toaster"]));
-
-// axe leaves `aria-valid-attr-value` incomplete for `aria-controls` beside `aria-haspopup`, so these triggers pass once
-// `Part`'s `button` takes no `controls`.
-test.skip("a Menu or Dialog trigger lets `aria-valid-attr-value` reach a verdict", ({ task }) =>
-  runsEveryRule(task, ["Menu", "Dialog"]));
+  runsEveryRule(task, ["Listbox", "Combobox", "Menu", "Tabs", "Dialog", "Disclosure", "Toaster"]));

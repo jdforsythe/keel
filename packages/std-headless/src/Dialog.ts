@@ -60,7 +60,6 @@ export function Dialog(
         id: `${id}.trigger`,
         role: "button",
         hasPopup: "dialog",
-        controls: `${id}.dialog`,
         onClick: open,
         onKey: onTrigger,
         children: props.trigger,

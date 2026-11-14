@@ -59,7 +59,6 @@ export function Menu<K extends string>(
         role: "button",
         hasPopup: "menu",
         expanded: l.open,
-        controls: `${id}.menu`,
         focus: computed(() => !l.open.get() && l.back()),
         onClick: () => l.opened(0),
         onKey: onTrigger,
