@@ -4,6 +4,9 @@
 // and the copy table. Every `renderRoute` and `fire` here also runs the harness's render checks (axe-core, token
 // contrast, a11y.json), so a violation in any widget state fails the test that reached it. With `KEEL_TWIN=header`
 // (the planted twin, whose title header text is `''`) only the twin test runs, and it must see E1703.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import type { A11yEntry } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
@@ -123,13 +126,27 @@ async function setup(seed = 1) {
   return { ctx, id, call };
 }
 
+const NAMES: readonly string[] = ["label", "alt", "text", "aria", "none"];
+const isName = (v: unknown): v is A11yEntry["name"] => typeof v === "string" && NAMES.includes(v);
+/** The build's `.keel/a11y.json` (E1702) and the app's tokens (E1804), as the render checks take them. */
+const a11yJson = (): Record<string, A11yEntry> => {
+  const raw: unknown = JSON.parse(readFileSync(join(process.cwd(), ".keel", "a11y.json"), "utf8"));
+  const data = isRecord(raw) && isRecord(raw.data) ? raw.data : {};
+  const out: Record<string, A11yEntry> = {};
+  for (const [id, e] of Object.entries(data))
+    if (isRecord(e) && isName(e.name) && typeof e.tag === "string")
+      out[id] = { name: e.name, role: typeof e.role === "string" ? e.role : null, tag: e.tag };
+  return out;
+};
+const artifacts = { "a11y.json": a11yJson(), tokens };
+
 const live: { dispose(): void }[] = [];
 afterEach(() => {
   for (const h of live.splice(0)) h.dispose();
 });
 type Env = Awaited<ReturnType<typeof setup>>;
 async function open(env: Env, locale: L = "en-US") {
-  const r = await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: env.ctx, artifacts: { tokens } });
+  const r = await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: env.ctx, artifacts });
   live.push(r);
   return r;
 }
@@ -287,7 +304,7 @@ describe.runIf(TWIN)("golden-2-catalog twin", () => {
   it("an empty header text fails the render with E1703", async () => {
     const env = await setup();
     await expect(
-      renderRoute("recipes.catalog", { routes, params: { locale: "en-US" }, ctx: env.ctx, artifacts: { tokens } }),
+      renderRoute("recipes.catalog", { routes, params: { locale: "en-US" }, ctx: env.ctx, artifacts }),
     ).rejects.toThrow(/E1703/);
   });
 });
