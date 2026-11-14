@@ -137,11 +137,11 @@ describe("stateOf", () => {
     expect(st('<button aria-disabled="true"></button>')).toEqual({ disabled: true });
   });
 
-  it("checked only for checkable roles: aria-checked first, else the live property", () => {
+  it("checked only for checkable roles: aria-checked first (mixed is 'mixed'), else the live property", () => {
     for (const role of ["checkbox", "radio", "switch", "menuitemcheckbox", "menuitemradio"]) {
       expect(st('<div aria-checked="true"></div>', role)).toEqual({ checked: true });
       expect(st('<div aria-checked="false"></div>', role)).toEqual({ checked: false });
-      expect(st('<div aria-checked="mixed"></div>', role)).toEqual({ checked: false });
+      expect(st('<div aria-checked="mixed"></div>', role)).toEqual({ checked: "mixed" });
       expect(st("<div></div>", role)).toEqual({ checked: false });
     }
     expect(st('<div aria-checked="true"></div>', "button")).toEqual({});
