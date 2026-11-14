@@ -1,4 +1,4 @@
-import { effect } from "@keel/reactive";
+import { effect, owner } from "@keel/reactive";
 import { attr, on, prop } from "@keel/runtime-dom/ops";
 import type { Value } from "@keel/runtime-dom/ops";
 import { appendChildren } from "../internal/appendChildren.ts";
@@ -158,6 +158,20 @@ export function Part(props: PartProps): Node {
       bound(el);
       let shown = false;
       let back: Element | null = null;
+      // `returnFocus` names the trigger (a click may leave focus on `body`); gone, the element focused at open, else
+      // `main` (`tabindex="-1"`), as after a navigation (k.head).
+      const restore = (): void => {
+        const doc = el.ownerDocument;
+        const named = read(props.returnFocus);
+        const to = [typeof named === "string" ? doc.getElementById(named) : null, back, doc.querySelector("main")].find(
+          (x) => x instanceof HTMLElement && x.isConnected && x !== doc.body,
+        );
+        if (to instanceof HTMLElement) {
+          if (to.localName === "main" && !to.hasAttribute("tabindex")) to.setAttribute("tabindex", "-1");
+          to.focus();
+        }
+        back = null;
+      };
       effect(() => {
         const open = read(props.open) === true;
         queueMicrotask(() => {
@@ -174,21 +188,19 @@ export function Part(props: PartProps): Node {
             }
           } else {
             if (el.open) el.close();
-            // `returnFocus` names the trigger (a click may leave focus on `body`); gone, the element focused at open,
-            // else `main` (`tabindex="-1"`), as after a navigation (k.head).
-            const doc = el.ownerDocument;
-            const named = read(props.returnFocus);
-            const to = [
-              typeof named === "string" ? doc.getElementById(named) : null,
-              back,
-              doc.querySelector("main"),
-            ].find((x) => x instanceof HTMLElement && x.isConnected && x !== doc.body);
-            if (to instanceof HTMLElement) {
-              if (to.localName === "main" && !to.hasAttribute("tabindex")) to.setAttribute("tabindex", "-1");
-              to.focus();
-            }
-            back = null;
+            restore();
           }
+        });
+      });
+      // An open dialog removed with its scope (a confirm that deletes its own row) returns focus the same way, once
+      // the DOM has settled, unless focus already went somewhere else.
+      owner()?.onDispose(() => {
+        if (!shown) return;
+        shown = false;
+        const doc = el.ownerDocument;
+        queueMicrotask(() => {
+          const a = doc.activeElement;
+          if (a === null || a === doc.body || !a.isConnected || el.contains(a)) restore();
         });
       });
       on(el, "cancel", (e) => {
