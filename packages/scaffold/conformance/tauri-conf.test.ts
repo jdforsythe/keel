@@ -54,7 +54,7 @@ const directives = (policy: string): string[] =>
     .filter((d) => d !== "");
 
 describe("k.shell: tauri.conf.json", () => {
-  test.skip(
+  test(
     "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`.",
     () => {
       fc.assert(

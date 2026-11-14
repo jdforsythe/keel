@@ -41,7 +41,7 @@ const names = fc.uniqueArray(
 );
 
 describe("k.deploy: Dockerfile and compose text per storage", () => {
-  test.skip("The Dockerfile of a `'sqlite'` deployable declares `/data` and runs `server.mjs` without `--localstorage-file`; of a `'postgres'` one declares no volume; `compose.yaml` passes `KEEL_DATABASE_URL` from the environment and holds no URL.", () => {
+  test("The Dockerfile of a `'sqlite'` deployable declares `/data` and runs `server.mjs` without `--localstorage-file`; of a `'postgres'` one declares no volume; `compose.yaml` passes `KEEL_DATABASE_URL` from the environment and holds no URL.", () => {
     fc.assert(
       fc.property(names, (ns) => {
         const storage: Record<string, Storage> = {};

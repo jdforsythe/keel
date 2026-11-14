@@ -8,3 +8,4 @@ export type { ScaffoldError } from "./types/ScaffoldError.ts";
 export { deployDrift } from "./deployDrift.ts";
 export { deployFiles } from "./deployFiles.ts";
 export { scaffold } from "./scaffold.ts";
+export { tauriHttpCapability } from "./templates/tauriHttpCapability.ts";

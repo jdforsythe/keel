@@ -14,6 +14,7 @@ import { isError } from "./isError.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
+import { shellPolicy } from "./shellPolicy.ts";
 import { summary } from "./summary.ts";
 
 /** Artifacts `compile` derives on its own (plus `std.json`); `routes.json` needs `routes.ts` evaluated, which the Vite plugin does. */
@@ -49,7 +50,7 @@ export async function buildCommand(io: Io): Promise<Outcome> {
       : hostingDiags(topology, io.env ?? {}, project.find((f) => f.path === "topology.ts")?.source)),
   ];
   const failed = diags.some(isError);
-  const deploy = failed ? [] : deployBuildWrites(project, !inWorkspace(io));
+  const deploy = failed ? [] : deployBuildWrites(project, !inWorkspace(io), await shellPolicy(io.cwd, project));
   const writes: Write[] = failed
     ? []
     : [

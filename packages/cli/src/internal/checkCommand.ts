@@ -9,6 +9,7 @@ import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
 import { runCheck } from "./runCheck.ts";
+import { shellPolicy } from "./shellPolicy.ts";
 import { summary } from "./summary.ts";
 
 /**
@@ -27,7 +28,12 @@ export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
   const paths = (
     topology === undefined ? [] : [...pathCollisions(project, topology, io.cwd), ...serverOnlyCalls(project, topology)]
   ).map((d) => makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see }));
-  const diags = [...(base.warn === undefined ? [] : [base.warn]), ...checked, ...paths, ...deployFreshness(project)];
+  const diags = [
+    ...(base.warn === undefined ? [] : [base.warn]),
+    ...checked,
+    ...paths,
+    ...deployFreshness(project, await shellPolicy(io.cwd, project)),
+  ];
   const errors = diags.filter((d) => d.code.startsWith("E")).length;
   const warnings = diags.filter((d) => d.code.startsWith("W")).length;
   return [...diags, summary("check", diags, { files: files.length, errors, warnings })];

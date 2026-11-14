@@ -1,21 +1,56 @@
+import { capacitorConfig } from "./templates/capacitorConfig.ts";
+import { cargoToml } from "./templates/cargoToml.ts";
 import { ciWorkflow } from "./templates/ciWorkflow.ts";
 import { composeYaml } from "./templates/composeYaml.ts";
 import { dockerfile } from "./templates/dockerfile.ts";
+import { tauriBuildRs } from "./templates/tauriBuildRs.ts";
+import { tauriCapability } from "./templates/tauriCapability.ts";
+import { tauriConf } from "./templates/tauriConf.ts";
+import { tauriLibRs } from "./templates/tauriLibRs.ts";
+import { tauriMainRs } from "./templates/tauriMainRs.ts";
 import type { DeployTopology } from "./types/DeployTopology.ts";
 
 /**
- * The generated deploy files of a project (k.topology Deploy files), path -> text in path order:
- * `deploy/<name>/Dockerfile` per `node` deployable and `deploy/compose.yaml` when there is one, plus
- * `.github/workflows/ci.yml` when `project.ci` (a project outside the Keel monorepo). Pure; equal input gives
- * byte-identical output, whatever the order of deployables or modules in `topology`.
+ * The generated deploy files of a project (k.deploy Deploy files, k.shell Files), path -> text:
+ * `deploy/<name>/Dockerfile` per `node` deployable (per its `storage`) and `deploy/compose.yaml` when there is one;
+ * per `client` deployable declaring a shell, `deploy/<name>/capacitor/capacitor.config.json` or the
+ * `deploy/<name>/tauri/` files (`tauri.conf.json` only with `project.policy`, the deployable's content security
+ * policy); plus `.github/workflows/ci.yml` when `project.ci` (a project outside the Keel monorepo). `project.version`
+ * is the app's `package.json` version (default `0.0.0`), `project.crate` the Tauri crate name (default `app`). Pure; equal
+ * input gives byte-identical output, whatever the order of deployables or modules in `topology`.
  */
-export function deployFiles(topology: DeployTopology, project: { readonly ci: boolean }): Map<string, string> {
-  const nodes = Object.keys(topology)
-    .filter((n) => topology[n]?.adapter === "node")
-    .sort();
-  const out = new Map<string, string>();
-  if (project.ci) out.set(".github/workflows/ci.yml", ciWorkflow(topology));
-  if (nodes.length > 0) out.set("deploy/compose.yaml", composeYaml(nodes));
-  for (const n of nodes) out.set(`deploy/${n}/Dockerfile`, dockerfile(n));
-  return out;
+export function deployFiles(
+  topology: DeployTopology,
+  project: {
+    readonly ci: boolean;
+    readonly version?: string | undefined;
+    readonly crate?: string | undefined;
+    readonly policy?: string | undefined;
+  },
+): Map<string, string> {
+  const names = Object.keys(topology).sort();
+  const nodes = names.filter((n) => topology[n]?.adapter === "node");
+  const version = project.version ?? "0.0.0";
+  const files: [string, string][] = [];
+  if (project.ci) files.push([".github/workflows/ci.yml", ciWorkflow(topology, project.crate ?? "app")]);
+  if (nodes.length > 0) files.push(["deploy/compose.yaml", composeYaml(nodes, (n) => topology[n]?.storage ?? "file")]);
+  for (const n of nodes) files.push([`deploy/${n}/Dockerfile`, dockerfile(n, topology[n]?.storage ?? "file")]);
+  for (const n of names) {
+    const d = topology[n];
+    if (d?.adapter !== "client") continue;
+    const { capacitor, tauri } = d.shells ?? {};
+    if (capacitor !== undefined)
+      files.push([`deploy/${n}/capacitor/capacitor.config.json`, capacitorConfig(capacitor)]);
+    if (tauri === undefined) continue;
+    const at = `deploy/${n}/tauri/`;
+    if (project.policy !== undefined) files.push([`${at}tauri.conf.json`, tauriConf(tauri, version, project.policy)]);
+    files.push(
+      [`${at}Cargo.toml`, cargoToml(project.crate ?? "app", version)],
+      [`${at}build.rs`, tauriBuildRs()],
+      [`${at}src/main.rs`, tauriMainRs()],
+      [`${at}src/lib.rs`, tauriLibRs()],
+      [`${at}capabilities/default.json`, tauriCapability()],
+    );
+  }
+  return new Map(files);
 }

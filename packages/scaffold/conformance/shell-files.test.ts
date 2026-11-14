@@ -2,7 +2,7 @@
 // Seed: 1337 (the file and the byte position of the tamper are generated).
 // The real binary over a temp project (`keel-cli.ts`): `keel build` writes the shell files, `keel check` reads E1005 and its fix (a unified diff of the changed file).
 // ASSUMPTION: `Cargo.lock` is never generated (k.shell Files), so the generated set is exactly the six files listed.
-import { writeFileSync } from "node:fs";
+import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
@@ -63,7 +63,7 @@ const e1005 = (records: { kind: string; code?: unknown; path?: unknown; fix?: un
   records.filter((r) => r.kind === "diag" && r.code === "E1005" && r.path === path);
 
 describe("k.shell: shell files", () => {
-  test.skip(
+  test(
     "With `web` (`client`) declaring `tauri`, `keel build` writes the `deploy/web/tauri/` files and no Capacitor file; a changed byte is E1005 whose fix restores it; removing `tauri` from `topology.ts` removes them.",
     () => {
       expect(keel(dir, ["build"]).status).toBe(0);
@@ -78,6 +78,7 @@ describe("k.shell: shell files", () => {
           const at = n % original.length;
           const tampered = `${original.slice(0, at)}${original[at] === "#" ? "%" : "#"}${original.slice(at + 1)}`;
           try {
+            chmodSync(join(dir, rel), 0o644);
             writeFileSync(join(dir, rel), tampered);
             const found = e1005(keel(dir, ["check"]).records, rel);
             expect(found).toHaveLength(1);
@@ -91,6 +92,7 @@ describe("k.shell: shell files", () => {
         { seed: SEED, numRuns: 4 },
       );
 
+      chmodSync(join(dir, "topology.ts"), 0o644);
       writeFileSync(join(dir, "topology.ts"), topologySrc(false));
       expect(keel(dir, ["build"]).status).toBe(0);
       expect(underTauri(readTree(dir))).toEqual([]);

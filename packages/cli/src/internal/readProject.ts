@@ -4,14 +4,18 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
 
 const SKIP = new Set(["node_modules", "dist", "coverage", "reports", ".turbo", ".git", ".worktrees"]);
-const TEXT = /\.(?:[cm]?[jt]sx?|json|md|ya?ml|css|html|txt)$|(?:^|\/)Dockerfile$/;
+const TEXT = /\.(?:[cm]?[jt]sx?|json|md|ya?ml|css|html|txt|rs|toml)$|(?:^|\/)Dockerfile$/;
 const MAX_BYTES = 1_000_000;
 /** Build configuration is tooling, type-checked by the project's own tsc, not app code for `keel check`. */
 const BUILD_CONFIG = /(?:^|\/)(?:vite|vitest|stryker)\.config\.[cm]?[jt]s$/;
 /** A compiler artifact, `<dir>/.keel/<name>.json` at any depth: each project of a workspace has its own (rfc:0055). */
 const ARTIFACT = /(?:^|\/)\.keel\/[^/]+\.json$/;
-/** Generated deploy files and what decides which exist (k.deploy Deploy files): `keel check` compares them (E1005). */
-const DEPLOY = /(?:^|\/)(?:deploy\/(?:[^/]+\/Dockerfile|compose\.yaml)|\.github\/workflows\/ci\.yml|turbo\.json)$/;
+/**
+ * Generated deploy and shell files and what decides which exist and what they hold (k.deploy Deploy files, k.shell
+ * Files; `package.json` gives a shell its version): `keel check` compares them (E1005).
+ */
+const DEPLOY =
+  /(?:^|\/)(?:deploy\/(?:[^/]+\/(?:Dockerfile|capacitor\/capacitor\.config\.json|tauri\/(?:tauri\.conf\.json|Cargo\.toml|build\.rs|src\/(?:main|lib)\.rs|capabilities\/default\.json))|compose\.yaml)|\.github\/workflows\/ci\.yml|turbo\.json|package\.json)$/;
 const QUERY = (rel: string): boolean =>
   (CODE_FILE.test(rel) && !BUILD_CONFIG.test(rel)) ||
   (rel.startsWith("spec/") && rel.endsWith(".md")) ||

@@ -1,8 +1,9 @@
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Write } from "../types/Write.ts";
 
-/** A generated deploy file path: the CI workflow, a Dockerfile or the compose file. */
-const GENERATED = /^(?:\.github\/workflows\/ci\.yml|deploy\/(?:[^/]+\/Dockerfile|compose\.yaml))$/;
+/** A generated deploy file path: the CI workflow, a Dockerfile, the compose file or a shell file (not `Cargo.lock`). */
+const GENERATED =
+  /^(?:\.github\/workflows\/ci\.yml|deploy\/(?:[^/]+\/(?:Dockerfile|capacitor\/capacitor\.config\.json|tauri\/(?:tauri\.conf\.json|Cargo\.toml|build\.rs|src\/(?:main|lib)\.rs|capabilities\/default\.json))|compose\.yaml))$/;
 
 /**
  * How many deploy files the build is responsible for: every one `topology.ts` wants, written now or already
