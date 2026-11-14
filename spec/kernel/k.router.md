@@ -13,7 +13,7 @@ export const routes = manifest({
 })
 routes.actions({ 'orders.show': { POST: updateOrder } })
 ```
-`routes.actions` attaches path routes' actions once each. An entry without `path` is a layout: its `component` renders a `children` slot; `api: true` marks an API route (k.api). A chain is the route plus its layouts, outermost first. `component` receives `{ params, search, data }`, `data` being its loader's `ok` value; `errorElement` receives `{ error: KeelError }`. A page's `title` names its document (k.head).
+`routes.actions` attaches path routes' actions once each. An entry without `path` is a layout: its `component` renders a `children` slot; `api: true` marks an API route (k.api). A chain is the route plus its layouts, outermost first. `component` receives `{ params, search, data }`, `data` being its loader's `ok` value, a getter that revalidation updates in place (a top-level read keeps the value at build, k.component); `errorElement` receives `{ error: KeelError }`. A page's `title` names its document (k.head).
 
 **Matching.** Segment by segment; static beats `:param`; no wildcards; k.prefix elides a leading param. A trailing slash redirects (308) to the canonical path. Params that fail their schema: 404 with `keel.notFound`; no guard or loader runs. It renders in the chain's nearest `errorElement`, inside the layouts above it unless one declares a loader or guard (then alone). Failing search keys are dropped; the rest parse.
 
@@ -42,3 +42,4 @@ routes.actions({ 'orders.show': { POST: updateOrder } })
 - A loader declared with `params: P` gives `fn` `params` of type `Infer<typeof P>`; `manifest` throws E1507 for another schema value.
 - An action returning `ok(routes.href(id))` compiles unannotated and navigates to `id`; an entry with `actions` throws E1505.
 - `matchHref(routes, routes.href(id, p, q))` is `{ id, params: p, search: q }`; an unmatched href, or one whose params fail, is `null`.
+- After an `ok(null)` action, a binding reading `props.data` shows the new value and the page keeps its nodes and focus.
