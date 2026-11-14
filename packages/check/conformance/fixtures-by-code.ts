@@ -580,7 +580,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     badOpts: { base: storesSurface(fields("a"), {}) },
     cleanOpts: { base: storesSurface(fields("a"), {}) },
     bad: [surfaceFile(storesSurface(fields("a", "b"), {}))],
-    clean: [surfaceFile(storesSurface({ ...fields("a", "b"), required: ["a"] }, {}))],
+    clean: [surfaceFile(storesSurface(fields("a"), {}))],
   },
   // E1567 (rfc:0092 B6): module `b` serves GET `/b/pub` (loader, `public.routes`); module `a` calls it through `service({ base })`.
   // Assumption: `a` lists `b` in `deps` so no other code reports; the callers' `schema` is a sibling `*.schema.ts` of literals, as in module-service-E1152-E1157.test.ts; the rule matches the endpoint's method and `samePath` to a route literal (the RFC does not say the route needs a loader).
