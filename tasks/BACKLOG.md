@@ -654,3 +654,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0577 evals: `golden-2-catalog` lacks the two package twins of the RFC's gate 6 (`optionsChart` clamp, Menu Escape); the RFC's `empty-table-header` twin is not a WCAG-tagged axe rule, the task plants an empty header text instead · evals
 - [ ] 0578 check: a component called as a function inside a JSX expression (`{Combobox(...)}`) compiles to a text binding and renders nothing, silently; report it (nearest rule E1808; fix: the tag form) · check · compiler
 - [ ] 0579 tooling: `keel test` writes `reports/a11y.json` in an app (git-ignored), and `tooling/format-check.mjs` then fails on it (F0001); make format-check skip `reports/` · tooling
+- [ ] 0580 conformance: neither a11y agreement file (`packages/testing/conformance/a11y-json-agreement.test.ts`, `compiler-a11y-no-e1702.test.ts`) has a labelled `Box as="nav"` or `"section"` case; add one in an `rfc:` commit · testing · conformance
