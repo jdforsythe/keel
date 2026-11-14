@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 14,
   "rungs": {
-    "example": 845,
+    "example": 848,
     "probabilistic": 263,
     "exhaustive": 15,
     "proven": 42,
@@ -35,7 +35,7 @@
         "threshold": 80
       },
       "router": {
-        "score": 82.94,
+        "score": 83.18,
         "threshold": 80
       },
       "runtime-dom": {
@@ -10172,6 +10172,10 @@
       "rung": "example"
     },
     {
+      "item": "k.head#7",
+      "rung": "example"
+    },
+    {
       "item": "k.hosting#1",
       "rung": "example"
     },
@@ -10513,6 +10517,14 @@
     },
     {
       "item": "k.router#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.router#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.router#15",
       "rung": "example"
     },
     {

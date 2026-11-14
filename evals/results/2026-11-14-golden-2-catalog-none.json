@@ -23,8 +23,8 @@
   },
   "costUsd": 0,
   "unsafeCount": 5,
-  "checkTrailer": "ok budgets 114 measured (3.8s)",
+  "checkTrailer": "ok budgets 114 measured (3.9s)",
   "testTrailer": "ok test 70 tasks (0.3s)",
-  "durationMs": 61572,
-  "startedAt": "2026-11-14T02:57:06.714Z"
+  "durationMs": 63014,
+  "startedAt": "2026-11-14T03:43:06.654Z"
 }
