@@ -11,7 +11,7 @@ type Common = PartStyle & {
   readonly lang?: string;
   readonly hidden?: V<boolean>;
   /** Never positive. */
-  readonly tabIndex?: 0 | -1;
+  readonly tabIndex?: V<0 | -1>;
   /** Focuses the element when it turns from false to true; never at the first render or at resume. */
   readonly focus?: V<boolean>;
   /** Runs on `keydown`; returning true prevents the default. */

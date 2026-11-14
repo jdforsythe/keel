@@ -144,7 +144,7 @@ export default function FocusIsland(p: { label: string }) {
   });
 
   test("`tabIndex` is `0` or `-1`, never positive (type)", () => {
-    expectTypeOf<PartProps["tabIndex"]>().toEqualTypeOf<0 | -1 | undefined>();
+    expectTypeOf<PartProps["tabIndex"]>().toEqualTypeOf<0 | -1 | reactive.Computed<0 | -1> | undefined>();
     const root = host();
     const off = mount(() => Part({ id: "t", role: "generic", tabIndex: -1, children: () => "t" }), root);
     expect(byId(root, "t").getAttribute("tabindex")).toBe("-1");

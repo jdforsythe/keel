@@ -99,7 +99,7 @@ export function Part(props: PartProps): Node {
     put(el, p, "hidden", "hidden", flag);
     if (tag === "button" || tag === "input") put(el, p, "disabled", "disabled", flag);
     else put(el, p, "disabled", "aria-disabled", text);
-    if (props.tabIndex !== undefined) el.setAttribute("tabindex", String(props.tabIndex));
+    put(el, p, "tabIndex", "tabindex", text);
     if (role === "checkbox") {
       const c = props.checked;
       if (c === true) el.setAttribute("checked", "");
@@ -140,7 +140,8 @@ export function Part(props: PartProps): Node {
       let was: boolean | undefined;
       effect(() => {
         const now = read(props.focus) === true;
-        if (was === false && now) el.focus();
+        // After the commit: handlers that focus and blur run may commit transactions.
+        if (was === false && now) queueMicrotask(() => el.focus());
         was = now;
       });
     }
