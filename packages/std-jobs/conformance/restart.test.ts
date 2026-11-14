@@ -87,7 +87,7 @@ test("A job pending at `close()` runs after the new start.", async () => {
   await close(second);
 });
 
-test("When the runner's `signal` aborts no job starts, and running ones get their `signal` aborted and stay leased.", async () => {
+test("When the runner's `signal` aborts no job starts, and running ones get their `signal` aborted and their leases freed.", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   let signalSeen: AbortSignal | undefined;
   let calls = 0;

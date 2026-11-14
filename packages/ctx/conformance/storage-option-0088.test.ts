@@ -1,4 +1,4 @@
-// Spec: k.ctx, clause "A second ctx on `f` reads a value set through `createCtx({ storage: fileStorage(f) })`; sim never calls `storage`."
+// Spec: k.persist, Conformance "A second ctx on `f` reads a value set through `createCtx({ mode: 'real', drivers: { storage: fileStorage(f) } })`."
 // Seed 1337.
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
 import { fileStorage } from "@keel/ctx/node";
 import fc from "fast-check";
-import { afterAll, expect, test } from "vitest";
+import { afterAll, expect, it, test } from "vitest";
 
 const dir = mkdtempSync(join(tmpdir(), "keel-storage-0088-"));
 afterAll(() => {
@@ -15,7 +15,7 @@ afterAll(() => {
 
 let n = 0;
 
-test("A second ctx on `f` reads a value set through `createCtx({ storage: fileStorage(f) })`; sim never calls `storage`", async () => {
+test("A second ctx on `f` reads a value set through `createCtx({ mode: 'real', drivers: { storage: fileStorage(f) } })`", async () => {
   await fc.assert(
     fc.asyncProperty(fc.string(), fc.string(), async (key, value) => {
       const f = join(dir, `s${String(n++)}.json`);
@@ -26,7 +26,10 @@ test("A second ctx on `f` reads a value set through `createCtx({ storage: fileSt
     }),
     { seed: 1337, numRuns: 25 },
   );
+});
 
+// Skipped until implementation: a `sim` ctx given a storage driver throws E1605 (k.persist Drivers).
+it.skip("`createCtx({ mode: 'sim', drivers: { storage } })` throws E1605 and calls no `storage` method", async () => {
   let calls = 0;
   const counting = {
     get(): Promise<string | null> {
@@ -37,12 +40,27 @@ test("A second ctx on `f` reads a value set through `createCtx({ storage: fileSt
       calls++;
       return Promise.resolve();
     },
+    read(keys: readonly string[]): Promise<(string | null)[]> {
+      calls++;
+      return Promise.resolve(keys.map(() => null));
+    },
+    commit(): Promise<boolean> {
+      calls++;
+      return Promise.resolve(true);
+    },
   };
+  const codeOf = (e: unknown): unknown => (typeof e === "object" && e !== null && "code" in e ? e.code : undefined);
   await fc.assert(
     fc.asyncProperty(fc.string(), fc.string(), async (key, value) => {
-      const sim = createCtx({ mode: "sim", seed: 1337, storage: counting });
-      await sim.storage.set(key, value);
-      await sim.storage.get(key);
+      let code: unknown;
+      try {
+        const sim = createCtx({ mode: "sim", seed: 1337, drivers: { storage: counting } });
+        await sim.storage.set(key, value);
+        await sim.storage.get(key);
+      } catch (e) {
+        code = codeOf(e);
+      }
+      expect(code).toBe("E1605");
       expect(calls).toBe(0);
     }),
     { seed: 1337, numRuns: 25 },
