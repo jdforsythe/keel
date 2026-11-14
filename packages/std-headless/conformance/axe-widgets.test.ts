@@ -118,7 +118,7 @@ describe("std.headless and std.options: axe violations", () => {
     t.dispose();
   });
 
-  test.skip("Every widget ... no axe violations open and closed: Tabs", async () => {
+  test("Every widget ... no axe violations open and closed: Tabs", async () => {
     const picked = inScope(() => signal("apple"));
     const t = render(
       page((c) =>

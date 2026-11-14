@@ -42,7 +42,7 @@ const mount = (start: string) => {
 const tabsIn = (order: readonly string[]) => order.filter((id) => id.startsWith("tb.tab."));
 
 describe("std.options: Tabs keys", () => {
-  test.skip("Tabs: ArrowRight on the last tab calls `onChange` with the first key and focuses it", async () => {
+  test("Tabs: ArrowRight on the last tab calls `onChange` with the first key and focuses it", async () => {
     const { t, changes } = mount("cherry");
     await t.fire("tb.tab.cherry", { type: "focus" });
     await t.fire("tb.tab.cherry", { type: "keydown", key: "ArrowRight" });
@@ -51,7 +51,7 @@ describe("std.options: Tabs keys", () => {
     t.dispose();
   });
 
-  test.skip('only the selected tab has `tabindex="0"` and only its panel is shown', async () => {
+  test('only the selected tab has `tabindex="0"` and only its panel is shown', async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...keys), async (sel) => {
         const { t } = mount(sel);
@@ -67,7 +67,7 @@ describe("std.options: Tabs keys", () => {
     );
   });
 
-  test.skip("`focusOrder()` (k.a11y) holds one tab", async () => {
+  test("`focusOrder()` (k.a11y) holds one tab", async () => {
     const { t } = mount("banana");
     expect(tabsIn(t.focusOrder())).toEqual(["tb.tab.banana"]);
     await t.fire("tb.tab.banana", { type: "focus" });
@@ -78,7 +78,7 @@ describe("std.options: Tabs keys", () => {
     t.dispose();
   });
 
-  test.skip("ArrowRight, ArrowLeft, Home and End call `onChange` with the new active key and focus follows it (property against a wrapping model)", async () => {
+  test("ArrowRight, ArrowLeft, Home and End call `onChange` with the new active key and focus follows it (property against a wrapping model)", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.integer({ min: 0, max: 2 }),

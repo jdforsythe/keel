@@ -68,7 +68,7 @@ describe("std.headless: no chart holds app data", () => {
     );
   });
 
-  test.skip("No chart's state or log holds a key, a text or a typed character after a Combobox, Menu or Tabs flow", async () => {
+  test("No chart's state or log holds a key, a text or a typed character after a Combobox, Menu or Tabs flow", async () => {
     const text = inScope(() => signal(""));
     const picked = inScope(() => signal("zk"));
     const tc = render(
