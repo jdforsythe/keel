@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.aria, Conformance "`focus` turning true focuses the element; `focus` true at the first render, and at resume, leaves focus where it was."
 // Seed: 1337.
-// Behavior extras: `tabIndex` is `0` or `-1`, never positive (type).
+// Spec: k.a11y, Order and focus "No base element takes `tabindex` but `Part` (k.aria), which takes only `0` or `-1`"
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import * as reactive from "@keel/reactive";
