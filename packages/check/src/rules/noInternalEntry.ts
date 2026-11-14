@@ -6,8 +6,8 @@ import type { RuleDef } from "../types/RuleDef.ts";
 
 const INTERNAL = /^@keel\/[^/]+\/(?:[^/]+\/)*internal(?:\/|$)/;
 
-/** Kernel and stdlib code (this repo's `packages/`, a project's `node_modules/`) and generated `.keel/` output. */
-const LIBRARY = /(?:^|\/)(?:packages|node_modules|\.keel)\//;
+/** Kernel and stdlib code (this repo's `packages/`, a project's `node_modules/`) and generated `.keel/` output, at the root. */
+const LIBRARY = /^(?:packages|node_modules|\.keel)\//;
 
 /**
  * E1576 (k.security): a file outside `packages/`, `node_modules/` and `.keel/` (app code, tests, `unsafe/`, tool

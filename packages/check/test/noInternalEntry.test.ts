@@ -26,6 +26,11 @@ describe("E1576 internal entry outside packages", () => {
     expect(out("E1576", "import '@keel/ctx/internal'\n", "scripts/seed.mjs")).toHaveLength(1);
   });
 
+  it("reads a template-literal import() with no substitutions, and anchors packages/ at the root", () => {
+    expect(out("E1576", "export const m = () => import(`@keel/ctx/internal`)\n")).toHaveLength(1);
+    expect(out("E1576", "import '@keel/ctx/internal'\n", "apps/web/packages/x.ts")).toHaveLength(1);
+  });
+
   it("does not follow a computed specifier, a segment that only contains internal, or a non-@keel package", () => {
     expect(out("E1576", "const n = '@keel/ctx/internal'\nexport const m = import(n)\n")).toEqual([]);
     expect(out("E1576", "import '@keel/ctx/internals'\nimport '@keel/internal'\nimport 'x/internal'\n")).toEqual([]);
