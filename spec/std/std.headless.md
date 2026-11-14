@@ -1,7 +1,7 @@
 # std.headless: Headless widgets
 status: conformance-covered
 
-**Package.** `@keel/std-headless`, client-safe, no config, no capability, no CSS. Widgets: `Listbox`, `Combobox`, `Menu`, `Tabs` (std.options), `Dialog`, `Disclosure`, `Toaster` (here); charts `optionsChart`, `openChart`, `toastChart`; types `Option`, `ToastItem`. Each widget is a component file (`.ts`) that calls `Part` (k.aria), base elements and `For` and `If` as functions. Keyboard, focus and ARIA follow the WAI-ARIA Authoring Practices 1.2 pattern each widget names.
+**Package.** `@keel/std-headless`, client-safe, no config, no capability, no CSS. Widgets: `Listbox`, `Combobox`, `Menu`, `Tabs` (std.options), `Dialog`, `Disclosure`, `Toaster` (here); charts `optionsChart`, `openChart`, `toastChart`; types `Option`, `ToastItem`. Each widget is a component file (`.ts`) that calls `Part` (k.aria), base elements and `For` and `If` as functions. Keyboard, focus and ARIA follow the WAI-ARIA Authoring Practices 1.2 pattern each widget names. Read once: `id`, `label` or `labelledBy`, `styles`, a Dialog's `level` and `alert`.
 
 **Ids.** A widget takes `id` and gives each part the id `<id>.<part>` from its table (k.component). Option, tab and toast keys become id segments: 1 to 64 characters of `[A-Za-z0-9_-]`, unique in the widget, else E2801 at render. Tests address parts by these ids.
 
