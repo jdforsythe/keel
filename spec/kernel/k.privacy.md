@@ -15,7 +15,7 @@ status: conformance-covered
 - Evidence bundle (k.evidence): holds no app value.
 In dev, `/__keel/inspect` serves store values unredacted to the developer; it is not a sink.
 
-**Rules.** E1105 `reveal` imported in an app file other than `*.server.ts`, test files included · E1111 a `.pii()` node in a route `params` or `search` schema (fix: none). It also reports a route table, entry, `params` or `search` it cannot read statically (a factory call, a computed key); a package's route table is the package's, and so is a schema returned by an audited stdlib export that refuses a marked column when called (`tableSearch` from `@keel/std-tables`). 
+**Rules.** E1105 `reveal` imported in an app file other than `*.server.ts`, test files included · E1111 a `.pii()` node in a route `params` or `search` schema (fix: none). It also reports a route table, entry, `params` or `search` it cannot read statically (a factory call, a computed key); a route table or schema a package exports is the package's, and so is the schema an export on the checker's closed audited list returns, each one refusing a marked column when called (`tableSearch` from `@keel/std-tables`).
 
 **Conformance.**
 - For every generated secret: it parses; `encode`, `String` and `util.inspect` give the marker, `JSON.stringify` the marker's JSON, `structuredClone` an empty object; parsing a raw value yields a secret revealing it; the marker fails with rule `secret-missing`.
