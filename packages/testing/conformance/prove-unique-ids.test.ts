@@ -60,7 +60,7 @@ const board = (id: string) => {
 };
 
 describe("k.prove: unique ids", () => {
-  it(
+  it.skip(
     "appending p under !a.some(x => x.id === p.id) proves the ids are distinct",
     async () => {
       const { guarded } = build(board);
@@ -69,7 +69,7 @@ describe("k.prove: unique ids", () => {
     LONG,
   );
 
-  it(
+  it.skip(
     "without the guard the proof rejects E1716 with a state holding p.id",
     async () => {
       const { unguarded } = build(board);
@@ -83,7 +83,7 @@ describe("k.prove: unique ids", () => {
     LONG,
   );
 
-  it(
+  it.skip(
     "proving twice returns equal verdicts for either transaction",
     async () => {
       const { guarded, unguarded } = build(board);

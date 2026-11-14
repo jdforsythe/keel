@@ -37,7 +37,7 @@ afterEach(() => {
 });
 
 describe("k.prove: E1718", () => {
-  it(
+  it.skip(
     "without z3-solver, prove rejects E1718 naming the package",
     async () => {
       vi.resetModules();

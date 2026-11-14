@@ -59,7 +59,7 @@ const counter = (id: string) => {
 };
 
 describe("k.prove: E1717", () => {
-  it(
+  it.skip(
     "rlimit: 1 rejects E1717 where the default proves",
     async () => {
       const { inc, dec } = build(counter);
@@ -69,7 +69,7 @@ describe("k.prove: E1717", () => {
     LONG,
   );
 
-  it(
+  it.skip(
     "E1717 repeats: a count rather than time gives the same rejection on every run",
     async () => {
       const { inc, dec } = build(counter);

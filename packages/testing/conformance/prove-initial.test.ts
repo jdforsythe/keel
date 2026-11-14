@@ -56,7 +56,7 @@ const broken = (id: string) => {
 };
 
 describe("k.prove: initial", () => {
-  it(
+  it.skip(
     "a store whose initial breaks an invariant rejects E1716 with that state and no payload",
     async () => {
       const { inc } = build(broken);

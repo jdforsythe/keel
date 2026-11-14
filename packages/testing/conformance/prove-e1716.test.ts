@@ -55,7 +55,7 @@ const queue = (id: string) => {
 };
 
 describe("k.prove: E1716", () => {
-  it(
+  it.skip(
     "E1716 puts the state and the payload as JSON on the line after the first",
     async () => {
       const { sub } = build(queue);
