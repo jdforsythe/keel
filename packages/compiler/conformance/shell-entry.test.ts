@@ -87,7 +87,7 @@ function scripts(root: string): Map<string, string> {
   walk(root);
   return out;
 }
-const SHELL_CTX = /mode\s*:\s*["']shell["']/;
+const SHELL_CTX = /mode\s*:\s*["'`]shell["'`]/;
 const joined = (m: Map<string, string>): string => [...m.values()].join("\n");
 
 describe("k.shell: the shell entry", () => {

@@ -60,6 +60,21 @@ async function boot() {
     async set(key: string, value: string): Promise<void> {
       map.set(key, value);
     },
+    async read(keys: readonly string[]): Promise<(string | null)[]> {
+      return keys.map((k) => map.get(k) ?? null);
+    },
+    async commit(
+      writes: ReadonlyArray<{ key: string; expect: string | null; value?: string | undefined }>,
+    ): Promise<boolean> {
+      if (new Set(writes.map((w) => w.key)).size !== writes.length)
+        throw Object.assign(new Error("commit names one key twice"), { code: "E1606" });
+      if (writes.some((w) => (map.get(w.key) ?? null) !== w.expect)) return false;
+      for (const w of writes) {
+        if (w.value === undefined) map.delete(w.key);
+        else map.set(w.key, w.value);
+      }
+      return true;
+    },
   };
   const ctx = { ...base, storage };
   const add = action({ input: Text1, stores: factory }, async ({ text }, { stores }) => {

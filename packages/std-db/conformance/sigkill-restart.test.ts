@@ -4,9 +4,9 @@
 // The child is a real process and the signal is a real SIGKILL (POSIX); on a platform without it the test cannot run.
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { SEED, appScript, field, removeDir, spawnNode, tempDir, writeScript } from "./fixtures.ts";
 import fc from "fast-check";
 import { expect, test } from "vitest";
+import { SEED, appScript, field, removeDir, spawnNode, tempDir, writeScript } from "./fixtures.ts";
 
 const word = fc.stringMatching(/^[a-z]{1,8}$/);
 

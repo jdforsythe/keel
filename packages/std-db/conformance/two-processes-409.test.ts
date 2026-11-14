@@ -1,24 +1,24 @@
+import { join } from "node:path";
 // Spec: std.db, Conformance "Two processes on one SQLite file, each serving `createApp` on its driver, with overlapping actions on one store: one saves, the other is 409, and the file holds the first's snapshot."
 // Seed: 1337.
 // Assumption: the children are `node --experimental-strip-types` on a script written to a temporary directory (fixtures.ts `appScript`);
 // the action holds after its transaction until the parent sends `release`, so the overlap is made by messages and no timer.
 // Assumption: the notes store's key is `keel.store.t.notes` (k.persist: `keel.store.<id>`).
 import { pathToFileURL } from "node:url";
-import { join } from "node:path";
+import { sqlite } from "@keel/std-db/sqlite";
+import fc from "fast-check";
+import { expect, test } from "vitest";
 import {
-  closeStorage,
   NOTES_KEY,
   SEED,
   appScript,
+  closeStorage,
   field,
   removeDir,
   spawnNode,
   tempDir,
   writeScript,
 } from "./fixtures.ts";
-import { sqlite } from "@keel/std-db/sqlite";
-import fc from "fast-check";
-import { expect, test } from "vitest";
 
 const word = fc.stringMatching(/^[a-z]{1,8}$/);
 
