@@ -22,7 +22,7 @@ const chars = fc.array(fc.constantFrom(..."abcdefgh0123456789"), { minLength: 1,
 describe("std.shells: cookies stay in the shell's cookie store", () => {
   afterEach(end);
 
-  test.skip("a cookie set by a response from `origin` is sent on the next request to `origin` and on none to another origin", async () => {
+  test("a cookie set by a response from `origin` is sent on the next request to `origin` and on none to another origin", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...PAGES), chars, chars, async (page, name, value) => {
         const world = begin(page);
@@ -48,7 +48,7 @@ describe("std.shells: cookies stay in the shell's cookie store", () => {
     );
   });
 
-  test.skip("a cookie set by a response from another origin is not sent to `origin`", async () => {
+  test("a cookie set by a response from another origin is not sent to `origin`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...PAGES), chars, chars, async (page, name, value) => {
         const world = begin(page);

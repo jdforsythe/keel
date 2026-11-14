@@ -21,7 +21,7 @@ const method = fc.constantFrom("GET", "POST", "PUT", "PATCH", "DELETE");
 describe("std.shells: the origin map", () => {
   afterEach(end);
 
-  test.skip("a request on the page's origin reaches `origin` with its path, search, method, headers and body", async () => {
+  test("a request on the page's origin reaches `origin` with its path, search, method, headers and body", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...PAGES), method, path, search, headers, chars, async (page, m, p, q, h, b) => {
         const world = begin(page);
@@ -43,7 +43,7 @@ describe("std.shells: the origin map", () => {
     );
   });
 
-  test.skip("a request to another origin keeps its URL", async () => {
+  test("a request to another origin keeps its URL", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...PAGES), method, path, search, async (page, m, p, q) => {
         const world = begin(page);

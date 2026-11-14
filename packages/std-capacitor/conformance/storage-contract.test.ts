@@ -27,7 +27,7 @@ describe("std.shells: storage passes k.persist's storage clauses", () => {
   });
   afterEach(end);
 
-  test.skip("`get` is `null` for an absent key and `set` stores the value", async () => {
+  test("`get` is `null` for an absent key and `set` stores the value", async () => {
     await fc.assert(
       fc.asyncProperty(fc.string({ minLength: 1, maxLength: 8 }), word, async (key, value) => {
         world.wipe();
@@ -40,7 +40,7 @@ describe("std.shells: storage passes k.persist's storage clauses", () => {
     );
   });
 
-  test.skip("`read(keys)` returns each key's value in the order asked, `null` for an absent key", async () => {
+  test("`read(keys)` returns each key's value in the order asked, `null` for an absent key", async () => {
     await fc.assert(
       fc.asyncProperty(entries, async (es) => {
         world.wipe();
@@ -53,7 +53,7 @@ describe("std.shells: storage passes k.persist's storage clauses", () => {
     );
   });
 
-  test.skip("`commit` stores every `value` and resolves `true` when each `expect` matches", async () => {
+  test("`commit` stores every `value` and resolves `true` when each `expect` matches", async () => {
     await fc.assert(
       fc.asyncProperty(entries, async (es) => {
         world.wipe();
@@ -67,7 +67,7 @@ describe("std.shells: storage passes k.persist's storage clauses", () => {
     );
   });
 
-  test.skip("with one `expect` stale `commit` stores nothing and resolves `false`", async () => {
+  test("with one `expect` stale `commit` stores nothing and resolves `false`", async () => {
     await fc.assert(
       fc.asyncProperty(entries, fc.nat(), async (es, pick) => {
         world.wipe();
@@ -88,7 +88,7 @@ describe("std.shells: storage passes k.persist's storage clauses", () => {
     );
   });
 
-  test.skip("a write without `value` is checked and not stored", async () => {
+  test("a write without `value` is checked and not stored", async () => {
     await fc.assert(
       fc.asyncProperty(entries, async (es) => {
         world.wipe();
@@ -107,7 +107,7 @@ describe("std.shells: storage passes k.persist's storage clauses", () => {
     );
   });
 
-  test.skip("commits run one at a time: of concurrent commits on one `expect`, one resolves `true` and the stored values are that commit's", async () => {
+  test("commits run one at a time: of concurrent commits on one `expect`, one resolves `true` and the stored values are that commit's", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 2, max: 6 }), async (n) => {
         world.wipe();
@@ -130,7 +130,7 @@ describe("std.shells: storage passes k.persist's storage clauses", () => {
     );
   });
 
-  test.skip("a `read` never returns a value from between two writes of one `commit`", async () => {
+  test("a `read` never returns a value from between two writes of one `commit`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 5 }), fc.integer({ min: 1, max: 5 }), async (commits, reads) => {
         world.wipe();
@@ -149,7 +149,7 @@ describe("std.shells: storage passes k.persist's storage clauses", () => {
     );
   });
 
-  test.skip("a `commit` naming one key twice throws E1606", async () => {
+  test("a `commit` naming one key twice throws E1606", async () => {
     const st = storage();
     const err = await Promise.resolve()
       .then(() =>

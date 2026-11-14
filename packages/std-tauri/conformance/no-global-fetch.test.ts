@@ -10,7 +10,7 @@ import { begin, end, ORIGIN, OTHER, PAGES } from "./fixtures.ts";
 describe("std.shells: the global fetch stays unpatched", () => {
   afterEach(end);
 
-  test.skip("Neither package replaces the global `fetch`, and every request goes through the shell's HTTP plugin", async () => {
+  test("Neither package replaces the global `fetch`, and every request goes through the shell's HTTP plugin", async () => {
     const original = globalThis.fetch;
     const calls: string[] = [];
     const guard = (input: unknown): never => {

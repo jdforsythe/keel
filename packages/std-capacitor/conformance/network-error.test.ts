@@ -25,7 +25,7 @@ const chars = fc.array(fc.constantFrom(..."abcdefgh0123456789"), { minLength: 1,
 describe("std.shells: network errors", () => {
   afterEach(end);
 
-  test.skip("a refused connection rejects with a `TypeError`", async () => {
+  test("a refused connection rejects with a `TypeError`", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.constantFrom(...PAGES),
@@ -44,7 +44,7 @@ describe("std.shells: network errors", () => {
     );
   });
 
-  test.skip("a k.services call over a refused connection is `api.network`", async () => {
+  test("a k.services call over a refused connection is `api.network`", async () => {
     begin(PAGES[0]).refuse(true);
     const api = service({
       base: ORIGIN.origin,

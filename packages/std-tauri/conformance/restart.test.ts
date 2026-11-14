@@ -21,7 +21,7 @@ describe("std.shells: a value survives an app restart", () => {
   });
   afterEach(end);
 
-  test.skip("A value `set` through one driver is read by a new driver over the same native store, as after an app restart", async () => {
+  test("A value `set` through one driver is read by a new driver over the same native store, as after an app restart", async () => {
     await fc.assert(
       fc.asyncProperty(pairs, async (ps) => {
         world.wipe();
@@ -37,7 +37,7 @@ describe("std.shells: a value survives an app restart", () => {
     );
   });
 
-  test.skip("a value a `true` `commit` stored is read by a new driver over the same native store", async () => {
+  test("a value a `true` `commit` stored is read by a new driver over the same native store", async () => {
     await fc.assert(
       fc.asyncProperty(pairs, async (ps) => {
         world.wipe();
