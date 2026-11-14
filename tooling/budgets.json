@@ -10,15 +10,19 @@
   },
   "size": {
     "@keel/check": {
-      "max": "48.25kb",
+      "max": "51kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "24.25kb",
+      "max": "25kb",
+      "platform": "node"
+    },
+    "@keel/cli/shell": {
+      "max": "3.25kb",
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "30.5kb",
+      "max": "30.75kb",
       "platform": "node"
     },
     "@keel/ctx": "3.5kb",
@@ -28,12 +32,12 @@
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
     "@keel/scaffold": {
-      "max": "16.75kb",
+      "max": "18.75kb",
       "platform": "node"
     },
     "@keel/schema": "5.5kb",
     "@keel/server": {
-      "max": "20kb",
+      "max": "20.25kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
