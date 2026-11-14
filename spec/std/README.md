@@ -14,6 +14,8 @@ S5 adds std.statecharts and std.monitor.
 
 S7 adds std.headless, std.options and std.tables.
 
+S8 adds std.db, std.workflows and std.shells.
+
 ## Sections
 | id | section | status | one line |
 | --- | --- | --- | --- |
@@ -40,3 +42,6 @@ S7 adds std.headless, std.options and std.tables.
 | std.headless | Headless widgets | conformance-covered | Dialog, Disclosure, Toaster, three charts, E2801 |
 | std.options | Listbox, combobox, menu and tabs | conformance-covered | Listbox, Combobox, Menu, Tabs on `optionsChart` |
 | std.tables | Data tables | conformance-covered | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
+| std.db | SQLite and Postgres storage | proposed | storage drivers (k.persist) and check rule registry: E2151-E2153 |
+| std.workflows | Workflows | proposed | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2354 |
+| std.shells | Shell drivers | proposed | storage and net drivers for Capacitor and Tauri shells |

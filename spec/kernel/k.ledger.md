@@ -5,12 +5,12 @@ status: conformance-covered
 - `example`: a passing test references the item.
 - `probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed.
 - `exhaustive`: a passing `explore` (k.model) given `from`, `payloads` or `depth`; evidence lists `depth` when it is a literal.
-- `proven`: a passing type-level test (its body asserts with `expectTypeOf` or `assertType`, which the package's `check` type-checks) or a passing closed-form `explore` (k.model), which passes only when the store's whole space closed; nothing else may claim it.
+- `proven`: a passing type-level test (its body asserts with `expectTypeOf` or `assertType`, which the package's `check` type-checks), a passing closed-form `explore` (k.model), which passes only when the store's whole space closed, or a passing `prove` (k.prove; evidence lists the Z3 version); nothing else may claim it.
 - `monitored`: production only, read from an app's `.keel/monitored.json`; never emitted by the kernel. No evidence: `none`.
 
 **Evidence from tests.** A test references an item when its body, or a helper it calls in its own file or a relative import, names it. Property runs are `properties`, `simulate` (k.sim) and fast-check's `assert` and `check`, with `runs` and `seed` read from literal options or imported constants (`properties` and `simulate` default to 100 and 1337); an unresolved value leaves the run `example`. An `explore` call is closed-form when its options object is absent or names none of `from`, `payloads` and `depth`; options the ledger cannot read count as given.
 
-**Production evidence.** An app's `.keel/monitored.json` is `{ v: 1, origin, from, to, tx: { [name]: runs } }`, written by a stdlib monitor (std.monitor). An app export holds `monitored` when its file holds, as a string literal, the name of a transaction with `runs` >= 1, or that name's longest dotted prefix that any file holds (a chart id); evidence lists the runs and `to`. A file failing this shape is E1711 and adds nothing.
+**Production evidence.** An app's `.keel/monitored.json` is `{ v: 1, origin, from, to, tx: { [name]: runs } }`, written by std.monitor. An app export holds `monitored` when its file holds, as a string literal, the name of a transaction with `runs` >= 1, or that name's longest dotted prefix that any file holds (a chart id); evidence lists the runs and `to`. A file failing this shape is E1711 and adds nothing.
 
 **Mutation.** Stryker (`pnpm mutate`, run alone and never inside `pnpm check`) writes `packages/<pkg>/reports/mutation/mutation.json`. `keel ledger` turns each report into one claim per mutated file, `{ file, sha, killed, survived, noCoverage, score }`: `sha` is the sha256 of the source the report holds for that file, and `score` is detected over detected plus undetected (Stryker's formula; timeouts count as detected). A claim is fresh while the file's current source has that `sha`. Each package's score is computed over its fresh claims, with the report's `thresholds.break` as its threshold. `keel ledger` emits one `{ kind: 'ledger.mutation', file, score, survived, fresh }` per claim; compact `packages/store/src/tx.ts 91.2% 3 survived`. `ledger` and `ledger.mutation` are kernel record kinds (k.cli).
 
@@ -31,3 +31,4 @@ status: conformance-covered
 - With a committed ledger whose `rungs.monitored` is 1, removing `.keel/monitored.json` makes `--diff` report E1712.
 - A report whose package score is below its `thresholds.break`, or whose `thresholds.break` is below the committed threshold, makes `--diff` report E1713.
 - A passing test whose body asserts with `expectTypeOf` makes the exports it names `proven`.
+- A passing `prove` makes the transactions it names `proven`.
