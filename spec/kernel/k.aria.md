@@ -1,7 +1,7 @@
 # k.aria: Widget parts
 status: proposed
 
-**Part.** `@keel/ui/aria` exports `Part`, the one element stdlib widgets are built from. It is a base element in every k.ui sense: built through the runtime's `element` in document order, so it resumes in place; it takes `id` (required), `role`, `lang`, `hidden`, the style props and a `children` thunk; it is bound (`data-k`) when it has an event prop, a `focus` or `open`, or a signal or computed. Only kernel and stdlib code imports `@keel/ui/aria`: a file outside `packages/`, `node_modules/`, `.keel/` and `unsafe/`, tests included, that imports or re-exports it is E1822.
+**Part.** `@keel/ui/aria` exports `Part`, the one element stdlib widgets are built from. It is a base element in every k.ui sense: built through the runtime's `element` in document order, so it resumes in place; it takes `id` (required), `role`, `lang`, `hidden`, the style props and a `children` thunk; it is bound (`data-k`) when it has an event prop, a `focus` or `open`, or a signal or computed. Only kernel and stdlib code imports `@keel/ui/aria`; a file outside `packages/`, `node_modules/`, `.keel/` and `unsafe/`, tests included, that imports or re-exports it is E1822.
 
 **Roles.** `role` fixes the tag and the ARIA props `Part` accepts (its props type is a union discriminated by `role`; a prop another role takes is a type error). The `role` attribute is written only where it differs from the tag's implicit role.
 
@@ -16,21 +16,21 @@ status: proposed
 | `tablist` | `div` | `label`; `orientation` |
 | `tab` | `button type=button` | `selected`, `controls` |
 | `tabpanel` | `div` | `labelledBy` |
-| `dialog`, `alertdialog` | `dialog` | `labelledBy`, `open`; `describedBy` (required for alertdialog) |
+| `dialog`, `alertdialog` | `dialog` | `labelledBy`, `open`; `describedBy` (required for alertdialog), `onDismiss` |
 | `status`, `alert`, `generic` | `div` | none |
 | `navigation`, `group` | `nav`, `div` | `label` |
 | `table` | `table` | `label`; `rowCount` |
 | `rowgroup` | `tbody`, `thead` with `head` | none |
-| `row` | `tr` | `rowIndex` |
-| `columnheader`, `rowheader`, `cell` | `th scope=col`, `th scope=row`, `td` | `sort` (`ascending`, `descending`; columnheader), `colSpan` (cell) |
+| `row` | `tr` | none; `rowIndex` |
+| `columnheader`, `rowheader`, `cell` | `th scope=col`, `th scope=row`, `td` | none; `sort` (`ascending`, `descending`; columnheader), `colSpan` (cell) |
 
-`label` is a string written as `aria-label`; wherever a role takes `label` it takes `labelledBy` instead, exactly one. `labelledBy`, `describedBy`, `controls` and `activeDescendant` are element ids (`aria-labelledby`, ...). A boolean writes `"true"` or `"false"`; `disabled` writes the attribute on `button` and `input` and `aria-disabled` elsewhere. Each prop takes a value, a signal or a computed (bound as k.ui binds `value`).
+`label` is a string written as `aria-label`; wherever a role takes `label` it takes `labelledBy` instead, exactly one. `labelledBy`, `describedBy`, `controls` and `activeDescendant` are element ids (`aria-labelledby`, ...). A boolean writes `"true"` or `"false"`; `disabled` writes the attribute on `button` and `input` and `aria-disabled` elsewhere. ARIA props and `tabIndex` take a value, a signal or a computed (bound as k.ui's `value`); numbers and `sort` may be undefined.
 
 **Behavior.**
 - `tabIndex` is `0` or `-1`, never positive (type).
-- `focus: boolean`, reactive: when it turns from false to true the element is focused. A first render or a resume never moves focus.
+- `focus: boolean`, reactive: when it turns from false to true it is focused after the commit. Never at first render or resume.
 - `onKey(key: KeyInput) => boolean` runs on `keydown` through the delegated table (k.runtime). `KeyInput` is `{ key, shift, alt, mod }`: `key` the DOM `key`, `mod` Ctrl or Meta. Returning true prevents the default.
-- `onClick`, `onFocus` and `onBlur` (bound directly, k.runtime), and `onInput(value: string)` on `combobox`.
+- `onClick`, `onFocus`, `onBlur` (bound directly, k.runtime); `onInput(value: string)` on `combobox`.
 - On `option`, `menuitem` and `menuitemcheckbox`, `mousedown` is prevented, so a click leaves focus where it was.
 - When `activeDescendant` changes, the element it names gets `data-k-highlighted` (the previous one loses it) and is scrolled into view (`block: 'nearest'`).
 - `dialog`, `alertdialog`: `open` true calls `showModal()` after the commit and focuses the first descendant that is a `button`, `input`, `select`, `textarea`, `a[href]` or `tabindex="0"`, else the dialog (`tabindex="-1"`). `open` false calls `close()` and returns focus to the element focused when it opened, if still connected. A close request (`cancel`) is prevented and calls `onDismiss`; a platform `close` while `open` is true calls it too.
