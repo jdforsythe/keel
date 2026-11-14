@@ -191,7 +191,9 @@ async function journey(page: Page, check: (step: string) => Promise<void>): Prom
   await check("menu open");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
-  await until(page, "menu opens the de-DE recipe", async () => new URL(page.url()).pathname.startsWith("/de-DE/recipes/"));
+  await until(page, "menu opens the de-DE recipe", async () =>
+    new URL(page.url()).pathname.startsWith("/de-DE/recipes/"),
+  );
 }
 
 /** Runs the pass against `app` (its `dist/api/server.mjs`), with axe-core resolved from `@keel/testing` under `root`. */

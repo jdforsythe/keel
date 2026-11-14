@@ -11,6 +11,7 @@ import { renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { routes as kitchen } from "../modules/kitchen/routes.ts";
 import { routes } from "../modules/recipes/routes.ts";
+import { tokens } from "../tokens.ts";
 import topology from "../topology.ts";
 
 type L = "en-US" | "de-DE" | "ja-JP";
@@ -128,7 +129,7 @@ afterEach(() => {
 });
 type Env = Awaited<ReturnType<typeof setup>>;
 async function open(env: Env, locale: L = "en-US") {
-  const r = await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: env.ctx });
+  const r = await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: env.ctx, artifacts: { tokens } });
   live.push(r);
   return r;
 }
@@ -145,7 +146,13 @@ describe.skipIf(TWIN)("golden-2-catalog acceptance", () => {
     const page = isRecord(entry) && isRecord(entry.value) ? entry.value : {};
     expect(page).toMatchObject({ total: 12, page: 1, pages: 3 });
     const rows = Array.isArray(page.rows) ? page.rows : [];
-    expect(rows.map((r) => (isRecord(r) ? r.title : null))).toEqual(["Kimchi", "Hummus", "Focaccia", "Dal", "Gazpacho"]);
+    expect(rows.map((r) => (isRecord(r) ? r.title : null))).toEqual([
+      "Kimchi",
+      "Hummus",
+      "Focaccia",
+      "Dal",
+      "Gazpacho",
+    ]);
     expect(rows.every((r) => isRecord(r) && typeof r.currency === "string")).toBe(true);
   });
 
@@ -279,8 +286,8 @@ describe.skipIf(TWIN)("golden-2-catalog acceptance", () => {
 describe.runIf(TWIN)("golden-2-catalog twin", () => {
   it("an empty header text fails the render with E1703", async () => {
     const env = await setup();
-    await expect(renderRoute("recipes.catalog", { routes, params: { locale: "en-US" }, ctx: env.ctx })).rejects.toThrow(
-      /E1703/,
-    );
+    await expect(
+      renderRoute("recipes.catalog", { routes, params: { locale: "en-US" }, ctx: env.ctx, artifacts: { tokens } }),
+    ).rejects.toThrow(/E1703/);
   });
 });

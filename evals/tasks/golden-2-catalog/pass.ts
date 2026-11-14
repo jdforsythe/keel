@@ -1,14 +1,15 @@
 // True when the catalog page meets evals/tasks/golden-2-catalog/TASK.md acceptance, in this order: the app and its
 // catalog files exist; no unsafe, `any`, casts or suppressions; the app's `check` script and `keel check`; `keel test`
 // (the app's suite, which writes `reports/a11y.json`); every golden-2 ledger item at example or better and the ledger
-// not regressed; every `a11y:recipes.catalog#` claim at example; the std-headless charts at their rungs; the existing
-// golden-2 eval still passing; the build; the hidden suite (acceptance.test.ts, copied into the app, run, removed); the
-// planted twin (a sibling copy whose DataTable gets `''` as the title header text) failing its render
-// with E1703; and the browser pass (browser.ts). A failed gate prints one V0001 line.
+// not regressed; the existing golden-2 eval still passing; the build; the hidden suite (acceptance.test.ts, copied
+// into the app, run, removed); the planted twin (a sibling copy whose DataTable gets `''` as the title header text)
+// failing its render with E1703; the std-headless charts at their rungs; every `a11y:recipes.catalog#` claim with
+// render evidence at example; and the browser pass (browser.ts). A failed gate prints one V0001 line.
 import { execFile } from "node:child_process";
 import { access, copyFile, cp, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { a11yRuleMap } from "../../../packages/cli/src/internal/a11yRuleMap.ts";
 import golden2 from "../golden-2/pass.ts";
 import { browserPass } from "./browser.ts";
 
@@ -38,7 +39,16 @@ const CHARTS: Readonly<Record<string, string>> = {
   "packages/std-headless/src/toastChart.ts#toastChart": "proven",
   "packages/std-headless/src/optionsChart.ts#optionsChart": "exhaustive",
 };
-const WIDGETS: readonly string[] = ["Combobox", "Listbox", "Disclosure", "Tabs", "DataTable", "TableSearch", "Menu", "Dialog"];
+const WIDGETS: readonly string[] = [
+  "Combobox",
+  "Listbox",
+  "Disclosure",
+  "Tabs",
+  "DataTable",
+  "TableSearch",
+  "Menu",
+  "Dialog",
+];
 const SKIP_DIR = /(^|\/)(node_modules|\.keel|dist|coverage|reports)(\/|$)/;
 const CODE = /\.(ts|tsx|mts|mjs|js)$/;
 const BANNED = /\bunsafe\(|@ts-ignore|@ts-expect-error|\bas any\b|:\s*any\b|\bas unknown as\b/;
@@ -140,7 +150,8 @@ export default async (): Promise<boolean> => {
   if (BANNED.test(all)) return fail("unsafe, any, a cast or a suppression in the app");
   const page = text.get("modules/recipes/CatalogPage.tsx") ?? "";
   for (const w of WIDGETS) if (!page.includes(`<${w}`)) return fail(`CatalogPage.tsx renders no ${w}`);
-  if (!(text.get("modules/recipes/BoxShell.tsx") ?? "").includes("<Toaster")) return fail("BoxShell renders no Toaster");
+  if (!(text.get("modules/recipes/BoxShell.tsx") ?? "").includes("<Toaster"))
+    return fail("BoxShell renders no Toaster");
   const kitchen = [...text].filter(([f]) => f.startsWith("modules/kitchen/")).map(([, t]) => t);
   if (!kitchen.some((t) => t.includes("applyQuery("))) return fail("no kitchen loader calls applyQuery");
 
@@ -153,20 +164,23 @@ export default async (): Promise<boolean> => {
   if (items.length === 0) return fail("the ledger has no golden-2 item");
   const none = items.find((r) => r.rung === "none");
   if (none !== undefined) return fail(`${String(none.item)} is at rung none`);
+  if (!(await golden2())) return fail("the golden-2 eval no longer passes");
+  if (!(await sh("pnpm", ["--filter", "golden-2", "build"])).ok) return fail("the build failed");
+  if (!(await hidden(app))) return fail("the hidden suite failed");
+  const planted = await twin();
+  if (planted !== undefined) return fail(planted);
   const claims = await ledger("a11y:recipes.catalog#");
   if (claims.length === 0) return fail("no a11y claim for recipes.catalog");
-  const low = claims.find((r) => r.rung !== "example");
+  // A criterion only static codes map to (k.a11y Claims) has no render evidence and is never at example.
+  const rendered = new Set([...a11yRuleMap()].filter(([, r]) => r.render.length > 0).map(([c]) => c));
+  const low = claims.find((r) => rendered.has(String(r.item).split("#")[1] ?? "") && r.rung !== "example");
   if (low !== undefined) return fail(`${String(low.item)} is at ${String(low.rung)}`);
   const charts = await ledger("packages/std-headless/");
   for (const [item, rung] of Object.entries(CHARTS)) {
     const got = charts.find((r) => r.item === item)?.rung;
     if (got !== rung) return fail(`${item} is at ${String(got)}, not ${rung}`);
   }
-  if (!(await golden2())) return fail("the golden-2 eval no longer passes");
-  if (!(await sh("pnpm", ["--filter", "golden-2", "build"])).ok) return fail("the build failed");
-  if (!(await hidden(app))) return fail("the hidden suite failed");
-  const planted = await twin();
-  if (planted !== undefined) return fail(planted);
+
   const browser = await browserPass(root, app);
   if (browser !== undefined) return fail(`browser pass: ${browser}`);
   return true;
