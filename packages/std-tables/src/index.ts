@@ -9,3 +9,7 @@ export type { TablePage } from "./TablePage.type.ts";
 export type { TableQuery } from "./TableQuery.ts";
 export { tablePage } from "./tablePage.ts";
 export { tableSearch } from "./tableSearch.ts";
+export { DataTable } from "./DataTable.ts";
+export type { DataTableProps } from "./DataTableProps.ts";
+export type { TableStyles } from "./TableStyles.ts";
+export type { TableText } from "./TableText.ts";

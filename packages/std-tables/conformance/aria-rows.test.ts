@@ -10,7 +10,7 @@ import { PAGE_SIZE, SEED, attr, byPrice, dataset, ordered, routes, simCtx, useRo
 const SHOWN = ["title", "price", "minutes", "added", "favorite"] as const;
 
 describe("std.tables: server table rows and headers", () => {
-  test.skip('A page-2 server table of 12 rows at size 5 has `aria-rowcount="13"` and rows `aria-rowindex` 7 to 11; `header.price` has `aria-sort="ascending"` under `sort=price` and no other header has `aria-sort`', async () => {
+  test('A page-2 server table of 12 rows at size 5 has `aria-rowcount="13"` and rows `aria-rowindex` 7 to 11; `header.price` has `aria-sort="ascending"` under `sort=price` and no other header has `aria-sort`', async () => {
     useRows(12);
     const h = await renderRoute("tbl.server", {
       routes,
@@ -37,7 +37,7 @@ describe("std.tables: server table rows and headers", () => {
     h.dispose();
   });
 
-  test.skip("for any row count, page and sorted column, the counts and indexes follow the whole result (property)", async () => {
+  test("for any row count, page and sorted column, the counts and indexes follow the whole result (property)", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.integer({ min: 6, max: 40 }),

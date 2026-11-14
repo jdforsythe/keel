@@ -1,3 +1,5 @@
+import { manifest } from "@keel/router";
+import { matchHref } from "@keel/router/match";
 // `tableSearch` either refuses a table whose query could carry personal data (E2852) or builds a search schema whose
 // keys are `sort`, `dir`, `page`, `q` and unmarked enum or boolean filters. Seed 1337.
 import { type PiiClass, type Schema, piiPaths, s } from "@keel/schema";
@@ -76,5 +78,21 @@ describe("tableSearch", () => {
     expect(tableSearch(cols)).toBe(tableSearch(cols));
     expect(tableSearch(cols).parse({ tag: "a", page: 2 }).ok).toBe(true);
     expect(tableSearch(cols).parse({ q: 1 }).ok).toBe(true); // no `search` columns: `q` is not a query key
+  });
+
+  test("a route drops a `sort` outside the sort columns and keeps the rest of the query", () => {
+    const Row = s.object({ id: s.int(), title: s.string(), on: s.boolean() });
+    const Search = tableSearch(columns(Row, { key: "id", show: ["title", "on"], sort: ["title"], filter: ["on"] }));
+    const routes = manifest({
+      "t.list": { path: "/t", params: s.object({}), search: Search, component: () => document.createComment("") },
+    });
+    fc.assert(
+      fc.property(fc.constantFrom("on", "id", "bogus", "TITLE", ""), (sort) => {
+        const m = matchHref(routes, `/t?sort=${sort}&dir=desc&on=true`);
+        expect(m?.search).toEqual({ dir: "desc", on: true });
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+    expect(matchHref(routes, "/t?sort=title")?.search).toEqual({ sort: "title" });
   });
 });

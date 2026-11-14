@@ -7,7 +7,7 @@ import { describe, expect, test } from "vitest";
 import { PAGE_SIZE, SEED, focusedId, routes, simCtx, useRows } from "./fixtures.ts";
 
 describe("std.tables: pager focus", () => {
-  test.skip("After Next on the next-to-last page, focus is on `status`", async () => {
+  test("After Next on the next-to-last page, focus is on `status`", async () => {
     useRows(12); // three pages of five
     const h = await renderRoute("tbl.server", { routes, params: {}, search: { page: 2 }, ctx: simCtx() });
     expect(h.find("cat.pager").role).toBe("navigation");
@@ -23,7 +23,7 @@ describe("std.tables: pager focus", () => {
     h.dispose();
   });
 
-  test.skip("for any table of three or more pages, Next on the next-to-last page leaves focus on `status` (property)", async () => {
+  test("for any table of three or more pages, Next on the next-to-last page leaves focus on `status` (property)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 2 * PAGE_SIZE + 1, max: 60 }), async (n) => {
         useRows(n);

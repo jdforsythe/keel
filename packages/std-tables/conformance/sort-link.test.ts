@@ -10,7 +10,7 @@ import { SEED, focusedId, paramsOf, routes, simCtx, useRows } from "./fixtures.t
 const SORTS = ["title", "price", "minutes", "added"] as const;
 
 describe("std.tables: sort links", () => {
-  test.skip("`sort.price` links to `dir=desc` when sorted `asc` by price, drops `page`, and after its activation focus stays on it and scroll is unchanged", async () => {
+  test("`sort.price` links to `dir=desc` when sorted `asc` by price, drops `page`, and after its activation focus stays on it and scroll is unchanged", async () => {
     useRows(12);
     const h = await renderRoute("tbl.server", {
       routes,
@@ -37,7 +37,7 @@ describe("std.tables: sort links", () => {
     h.dispose();
   });
 
-  test.skip("a sort link's `dir` is `desc` only on the column already sorted `asc`, else `asc`, and never carries `page` (property)", async () => {
+  test("a sort link's `dir` is `desc` only on the column already sorted `asc`, else `asc`, and never carries `page` (property)", async () => {
     useRows(12);
     await fc.assert(
       fc.asyncProperty(

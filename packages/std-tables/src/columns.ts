@@ -15,10 +15,12 @@ const fail = (message: string): never => {
  * `key` is `text` or `number`, `search` columns are `text`, `filter` columns `enum` or `boolean`, and a `value`
  * column sorts only through `compare`. Throws E2851 for an entry naming no field or a field of the wrong kind.
  */
-export function columns<T, const S extends Field<T> = never, const F extends Field<T, string | boolean> = never>(
-  row: ObjectSchema<T>,
-  spec: ColumnSpec<T, S, F>,
-): Columns<T, S, F> {
+export function columns<
+  T,
+  const W extends Field<T>,
+  const S extends Field<T> = never,
+  const F extends Field<T, string | boolean> = never,
+>(row: ObjectSchema<T>, spec: ColumnSpec<T, S, F, W>): Columns<T, S, F, W> {
   const fields = fieldsOf(row.node);
   const kinds: Record<string, ColumnKind> = {};
   for (const [name, node] of Object.entries(fields)) kinds[name] = kindOf(node);

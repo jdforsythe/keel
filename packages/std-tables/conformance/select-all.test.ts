@@ -3,7 +3,7 @@
 // @vitest-environment happy-dom
 // Assumption: `selected` is `() => readonly key[]` and `onSelect` receives the complete key list (an array or a set; read with spread).
 // Assumption: `find(id).state.checked` is `'mixed'` for a mixed checkbox (k.testing); the A11yState type of this tree may still say boolean.
-import { signal } from "@keel/reactive";
+import { type Signal, scope, signal } from "@keel/reactive";
 import { manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import { DataTable } from "@keel/std-tables";
@@ -26,7 +26,15 @@ import {
 } from "./fixtures.ts";
 
 const ROWS = makeRows(8); // keys 1..8; page 1 holds 1..5, the rest are other pages
-const selection = signal<readonly number[]>([]);
+// signal() must run inside a reactive scope (E1203).
+const selection = (() => {
+  let out: Signal<readonly number[]> | undefined;
+  scope(() => {
+    out = signal<readonly number[]>([]);
+  });
+  if (out === undefined) throw new Error("fixture: scope did not run");
+  return out;
+})();
 const calls: number[][] = [];
 const links = manifest({
   "pick.list": { path: "/pick", params: s.object({}), search: Search, component: () => Text({ children: "target" }) },
@@ -64,7 +72,7 @@ const open = async (keys: readonly number[]) => {
 const ascending = (keys: readonly number[]): number[] => [...keys].sort((a, b) => a - b);
 
 describe("std.tables: select all", () => {
-  test.skip("With two of five page rows selected `selectAll` is `mixed`; activating it calls `onSelect` with all five and the keys of other pages", async () => {
+  test("With two of five page rows selected `selectAll` is `mixed`; activating it calls `onSelect` with all five and the keys of other pages", async () => {
     const h = await open([1, 2, 7]); // two page rows and a key of another page
     expect(h.find("cat.selectAll").role).toBe("checkbox");
     expect(h.find("cat.selectAll").state.checked).toBe("mixed");
@@ -77,7 +85,7 @@ describe("std.tables: select all", () => {
     h.dispose();
   });
 
-  test.skip("for any proper, non-empty selection of the page and any other-page keys, `selectAll` is mixed and selects the whole page (property)", async () => {
+  test("for any proper, non-empty selection of the page and any other-page keys, `selectAll` is mixed and selects the whole page (property)", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc

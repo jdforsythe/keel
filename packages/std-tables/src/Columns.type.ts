@@ -3,11 +3,11 @@ import type { ColumnKind } from "./ColumnKind.ts";
 import type { Field } from "./Field.ts";
 
 /** A checked table definition from `columns`: the row schema, its field lists and each field's kind. */
-export type Columns<T, S extends Field<T>, F extends Field<T>> = {
+export type Columns<T, S extends Field<T>, F extends Field<T>, W extends Field<T> = Field<T>> = {
   readonly row: ObjectSchema<T>;
   readonly key: Field<T, string | number>;
-  readonly rowHeader: Field<T>;
-  readonly show: readonly Field<T>[];
+  readonly rowHeader: W;
+  readonly show: readonly W[];
   readonly sort: readonly S[];
   readonly search: readonly Field<T, string>[];
   readonly filter: readonly F[];

@@ -77,7 +77,7 @@ const routes = manifest({
 const withTitle = rowWith;
 
 describe("std.tables: client table over a store", () => {
-  test.skip("A client table over a store re-sorts when a transaction changes its rows and renders `empty` at `total` 0", async () => {
+  test("A client table over a store re-sorts when a transaction changes its rows and renders `empty` at `total` 0", async () => {
     const h = await renderRoute("tbl.client", {
       routes,
       params: {},
@@ -102,7 +102,7 @@ describe("std.tables: client table over a store", () => {
     empty.dispose();
   });
 
-  test.skip("after any added rows the body is the rows ordered by `sort` and `dir` with ties by key (property)", async () => {
+  test("after any added rows the body is the rows ordered by `sort` and `dir` with ties by key (property)", async () => {
     const titleArb = fc.constantFrom("alpha", "bravo", "charlie", "delta");
     await fc.assert(
       fc.asyncProperty(
