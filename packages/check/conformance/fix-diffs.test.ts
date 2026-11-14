@@ -267,6 +267,7 @@ for (const c of FIXED) {
 
 const FIX = [
   "E1003",
+  "E1572",
   "E1509",
   "E1510",
   "E1005",
@@ -321,6 +322,7 @@ const NO_FIX = [
   "E1570", // where the asset or form target lives is the author's choice
   "E1571", // moving the call to a server file spans files
   "E1576", // the public replacement is the author's
+  "E1573", // the shell's adapter and app id are the author's
   "E1561", // choosing between the caller's and the producer's schema is a judgment
   "E1562", // the fix edits the route's schema source and needs a rebuilt surface; its fixture is surface data alone
   "E1603", // the code in the string is the author's

@@ -10,10 +10,16 @@ const START = JSON.stringify("@keel/server/internal/start");
  * The generated production entry of `node` deployable `name` (k.deploy Build), a virtual module never written as a
  * source file: it installs the server DOM (`@keel/server/internal/dom`, before any component module builds its templates), then
  * imports `topology.ts`, each of `modules`' routes (an app module's `routes.ts` under `root`, a stdlib module's
- * package `./routes` export: `stdRoutes`) and `runners.server.ts` that exist, and calls `start`
- * (`@keel/server/internal/start`) with them and its own folder.
+ * package `./routes` export: `stdRoutes`) and `runners.server.ts` that exist, and, for `storage` `'sqlite'` or
+ * `'postgres'` (k.deploy Storage), the `@keel/std-db` driver named, and calls `start` (`@keel/server/internal/start`)
+ * with them, the driver as `open` and its own folder.
  */
-export function serverEntryCode(root: string, name: string, modules: readonly string[]): string {
+export function serverEntryCode(
+  root: string,
+  name: string,
+  modules: readonly string[],
+  storage: "file" | "sqlite" | "postgres" = "file",
+): string {
   const abs = (rel: string): string => JSON.stringify(path.join(root, rel).split(path.sep).join("/"));
   const has = (rel: string): boolean => fs.existsSync(path.join(root, rel));
   const lines = [
@@ -35,8 +41,11 @@ export function serverEntryCode(root: string, name: string, modules: readonly st
       runners.push(`${JSON.stringify(m)}: runners${i}`);
     }
   });
+  const open = storage === "file" ? "" : ", open";
+  if (open !== "")
+    lines.push(`const { ${storage}: open } = await import(${JSON.stringify(`@keel/std-db/${storage}`)});`);
   lines.push(
-    `await start({ topology, deployable: ${JSON.stringify(name)}, routes: [${routes.join(", ")}], runners: { ${runners.join(", ")} }, dir: import.meta.dirname });`,
+    `await start({ topology, deployable: ${JSON.stringify(name)}, routes: [${routes.join(", ")}], runners: { ${runners.join(", ")} }${open}, dir: import.meta.dirname });`,
   );
   return `${lines.join("\n")}\n`;
 }

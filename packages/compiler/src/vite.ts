@@ -44,6 +44,9 @@ const NOT_APP =
 const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json", "routes.json", "styles.json"];
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
 const CSS_IMPORT = "virtual:keel.css";
+/** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
+const PG_BANNER =
+  "import { createRequire as keelCreateRequire } from 'node:module'; const require = keelCreateRequire(import.meta.url);";
 const CSS_ID = "/__keel.css";
 /** Files whose change can alter the CSS or `routes.json` beyond one module's own usages. */
 const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
@@ -356,6 +359,7 @@ export default function (): {
       }
       if (top[name]?.adapter !== "node") return null;
       clientBuild = true;
+      const pg = top[name]?.storage === "postgres";
       const at = path.resolve(user.root ?? process.cwd());
       return {
         build: {
@@ -376,7 +380,10 @@ export default function (): {
               sourcemap: true,
               rolldownOptions: {
                 input: SERVER_ENTRY,
+                // `pg` (std.db Postgres) requires node built-ins at run time and names an optional `pg-native`.
+                ...(pg ? { external: ["pg-native"] } : {}),
                 output: {
+                  ...(pg ? { banner: PG_BANNER } : {}),
                   entryFileNames: "server.mjs",
                   codeSplitting: false,
                   sourcemapExcludeSources: true,
@@ -458,7 +465,8 @@ export default function (): {
         );
       if (id === `\0${DEV_ENTRY}`) return devEntryCode(root, topology ?? {});
       const node = deployable();
-      if (id === `\0${SERVER_ENTRY}` && node !== undefined) return serverEntryCode(root, node.name, node.modules);
+      if (id === `\0${SERVER_ENTRY}` && node !== undefined)
+        return serverEntryCode(root, node.name, node.modules, topology?.[node.name]?.storage);
       if (q?.path !== ENTRY_PATH) return null;
       const d = deployable(q.d);
       if (d === undefined)

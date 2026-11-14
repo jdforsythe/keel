@@ -11,6 +11,16 @@ const PeerUrl = s.format("keel.peerUrl", s.string({ min: 1 }), {
   gen: { from: s.string({ min: 1 }), map: (host) => `http://${host}` },
 });
 
+/** A URL whose scheme is one of `schemes` (`KEEL_DATABASE_URL`, k.deploy Storage); `attempt` keeps a bad value out of any thrown error. */
+const DatabaseUrl = (schemes: readonly string[]) =>
+  s.format("keel.databaseUrl", s.string({ min: 1 }), {
+    check: (v) => {
+      const u = attempt(() => new URL(v));
+      return u.ok && schemes.includes(u.value.protocol);
+    },
+    gen: { from: s.string({ min: 1 }), map: (v) => `${schemes[0] ?? "file:"}/${encodeURIComponent(v)}` },
+  });
+
 /** At least 32 UTF-8 bytes (`KEEL_SECRET`, the `createApp({ secret })` floor). */
 const Secret = s.format("keel.secret", s.string({ min: 1 }), {
   check: (v) => new TextEncoder().encode(v).length >= 32,
@@ -26,10 +36,13 @@ const AllowOrigins = s.format("keel.allowOrigins", s.string({ min: 1 }), {
 /**
  * The production environment of a `node` deployable (k.topology Build): `PORT` (default 8080), `KEEL_ORIGIN` (the
  * public origin), `KEEL_SECRET` (32+ UTF-8 bytes, shared by the app's deployables) and `KEEL_PEER_<NAME>` per peer, an
- * absolute http(s) URL; `KEEL_ALLOW_ORIGINS`, the origins `createApp({ allow })` grants (k.hosting Allowed origins).
+ * absolute http(s) URL; `KEEL_ALLOW_ORIGINS`, the origins `createApp({ allow })` grants (k.hosting Allowed origins);
+ * `KEEL_DATABASE_URL` (k.deploy Storage): a `file:` URL, optional, for `'sqlite'`, a `postgres:` or `postgresql:` one,
+ * required, for `'postgres'`, not read for `'file'`.
  */
 export const DeployEnv = (
   peers: readonly string[],
+  storage: "file" | "sqlite" | "postgres" = "file",
 ): ObjectSchema<{
   PORT?: number;
   KEEL_ORIGIN?: string;
@@ -43,4 +56,6 @@ export const DeployEnv = (
     KEEL_SECRET: Secret,
     KEEL_ALLOW_ORIGINS: AllowOrigins.optional(),
     ...Object.fromEntries(peers.map((p) => [peerKey(p), PeerUrl])),
+    ...(storage === "sqlite" ? { KEEL_DATABASE_URL: DatabaseUrl(["file:"]).optional() } : {}),
+    ...(storage === "postgres" ? { KEEL_DATABASE_URL: DatabaseUrl(["postgres:", "postgresql:"]) } : {}),
   });

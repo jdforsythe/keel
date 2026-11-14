@@ -21,7 +21,7 @@ export function topology(def: Topology): Topology {
     if (bad !== undefined) throw new Error(`E1552 ${bad}`);
     if (d.modules.length === 0) throw new Error(`E1552 deployable ${name} has no modules`);
     const modules = Object.freeze([...d.modules]);
-    out[name] = Object.freeze(d.host === undefined ? { modules, adapter: d.adapter } : { ...d, modules });
+    out[name] = Object.freeze({ ...d, modules });
   }
   const host = hostProblems(out)[0];
   if (host !== undefined) throw new Error(`E1566 ${host[1]}`);

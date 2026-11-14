@@ -69,7 +69,7 @@ const others = fc.uniqueArray(fc.constantFrom("@keel/ui", "@keel/forms", "@keel/
 });
 
 describe("k.deploy: E1572", () => {
-  test.skip("`storage: 'sqlite'` without `@keel/std-db` in `dependencies` is one E1572 whose fix adds it; with it, none.", () => {
+  test("`storage: 'sqlite'` without `@keel/std-db` in `dependencies` is one E1572 whose fix adds it; with it, none.", () => {
     fc.assert(
       fc.property(others, (deps) => {
         const d = DECLARATIONS["sqlite"];
@@ -87,7 +87,7 @@ describe("k.deploy: E1572", () => {
     );
   });
 
-  test.skip("E1572 a deployable's `storage` or `shells` needs a package the app's `dependencies` lack (fix adds it).", () => {
+  test("E1572 a deployable's `storage` or `shells` needs a package the app's `dependencies` lack (fix adds it).", () => {
     for (const [, d] of Object.entries(DECLARATIONS)) {
       const found = e1572(project(d, []));
       expect(found, d.extra).toHaveLength(1);
@@ -97,7 +97,7 @@ describe("k.deploy: E1572", () => {
     }
   });
 
-  test.skip("E1572 is not reported for `storage: 'file'`, the default, or a deployable declaring neither `storage` nor `shells`", () => {
+  test("E1572 is not reported for `storage: 'file'`, the default, or a deployable declaring neither `storage` nor `shells`", () => {
     const plain = (extra: string): Files => [
       { path: "package.json", source: pkg([]) },
       {

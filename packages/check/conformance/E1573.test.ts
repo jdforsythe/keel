@@ -43,13 +43,13 @@ const notReverseDns = fc.oneof(
 );
 
 describe("k.shell: E1573", () => {
-  test.skip("`shells` on a `node` deployable is one E1573; `id: 'golden'` is one E1573.", () => {
+  test("`shells` on a `node` deployable is one E1573; `id: 'golden'` is one E1573.", () => {
     expect(e1573(project("node", tauri("dev.keel.golden")))).toHaveLength(1);
     expect(e1573(project("client", tauri("golden")))).toHaveLength(1);
     expect(e1573(project("client", tauri("dev.keel.golden")))).toEqual([]);
   });
 
-  test.skip("E1573 `shells` on a deployable that is not `client`, or an `id` that is not reverse-DNS", () => {
+  test("E1573 `shells` on a deployable that is not `client`, or an `id` that is not reverse-DNS", () => {
     fc.assert(
       fc.property(fc.constantFrom<"node" | "static">("node", "static"), reverseDns, (adapter, id) => {
         expect(e1573(project(adapter, tauri(id)))).toHaveLength(1);

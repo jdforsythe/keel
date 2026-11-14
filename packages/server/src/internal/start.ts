@@ -17,11 +17,14 @@ const line = (text: string): void => {
  * Serve one `node` deployable in production (`@keel/server/internal/start`, k.topology Build; only the generated entry calls
  * it). Parses `process.env` with `DeployEnv`: a failure prints one E1560 naming the key, never its value, and exits 1.
  * Then serves `createApp` (production, real `ctx`, the merged routes, runners, peers by `KEEL_PEER_<NAME>`, `origin`
- * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, and on SIGTERM or SIGINT stops listening, awaits `close()` and exits 0.
+ * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, its storage the driver `open` opened on
+ * `KEEL_DATABASE_URL` when given (k.deploy Storage; a std.db E2152 or E2153 prints that diag and exits 1), and on
+ * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0.
  */
 export async function start(o: StartOptions): Promise<void> {
   const peers = Object.keys(o.topology).filter((n) => n !== o.deployable && o.topology[n]?.adapter === "node");
-  const keys = ["PORT", "KEEL_ORIGIN", "KEEL_SECRET", "KEEL_ALLOW_ORIGINS", ...peers.map(peerKey)];
+  const storage = o.topology[o.deployable]?.storage ?? "file";
+  const keys = ["PORT", "KEEL_ORIGIN", "KEEL_SECRET", "KEEL_ALLOW_ORIGINS", "KEEL_DATABASE_URL", ...peers.map(peerKey)];
   const given: Record<string, string> = {};
   for (const k of keys) {
     const v = process.env[k];
@@ -29,7 +32,7 @@ export async function start(o: StartOptions): Promise<void> {
   }
   const json = process.env.KEEL_FORMAT === "json";
   const format = json ? "json" : "compact";
-  const env = DeployEnv(peers).decodeStrings(given);
+  const env = DeployEnv(peers, storage).decodeStrings(given);
   if (!env.ok) {
     const key = String(env.error.data.issues[0]?.path[0] ?? "environment");
     line(
@@ -40,6 +43,17 @@ export async function start(o: StartOptions): Promise<void> {
     );
     process.exit(1);
   }
+  // The URL is a secret (k.deploy Storage): parsed only after DeployEnv accepted it, and never printed.
+  const url = env.value.KEEL_DATABASE_URL;
+  const opened = await (o.open === undefined
+    ? undefined
+    : o.open(new URL(typeof url === "string" ? url : "file:/data/keel.sqlite")).catch((e: unknown) => {
+        const code = typeof e === "object" && e !== null && "code" in e ? e.code : undefined;
+        if (code !== "E2152" && code !== "E2153") throw e;
+        const text = e instanceof Error ? e.message.replace(/^E215[23] /, "") : String(code);
+        line(diagLine(format, { code, message: text }));
+        process.exit(1);
+      }));
   const std = join(o.dir, "std.json");
   const routes: Record<string, RouteDef> = {};
   for (const m of o.routes) Object.assign(routes, m.routes);
@@ -47,7 +61,7 @@ export async function start(o: StartOptions): Promise<void> {
     topology: o.topology,
     deployable: o.deployable,
     routes: manifest(routes),
-    ctx: createCtx({ mode: "real" }),
+    ctx: createCtx({ mode: "real", ...(opened === undefined ? {} : { drivers: { storage: opened } }) }),
     runners: o.runners,
     peers: Object.fromEntries(peers.map((p) => [p, String(env.value[peerKey(p)])])),
     secret: env.value.KEEL_SECRET,
@@ -79,7 +93,10 @@ export async function start(o: StartOptions): Promise<void> {
   });
   const stop = (): void => {
     server.close();
-    void app.close().then(() => process.exit(0));
+    void app
+      .close()
+      .then(() => opened?.close?.())
+      .then(() => process.exit(0));
   };
   process.once("SIGTERM", stop);
   process.once("SIGINT", stop);

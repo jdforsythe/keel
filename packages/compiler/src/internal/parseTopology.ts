@@ -19,10 +19,28 @@ function keyName(k: Expression | { type: string }): string | undefined {
 }
 
 const isAdapter = (v: string): v is Deployable["adapter"] => ADAPTERS.some((x) => x === v);
+type Storage = NonNullable<Deployable["storage"]>;
+const STORAGES: readonly Storage[] = ["file", "sqlite", "postgres"];
+const isStorage = (v: unknown): v is Storage => STORAGES.some((x) => x === v);
+type Shell = { readonly id: string; readonly name: string };
+
+/** A shell's `{ id, name }` when both are string literals, else undefined. */
+function shellOf(e: Expression): Shell | undefined {
+  if (e.type !== "ObjectExpression") return undefined;
+  const got: Record<string, string> = {};
+  for (const f of e.properties) {
+    const k = f.type === "Property" && !f.computed ? keyName(f.key) : undefined;
+    const v = f.type === "Property" ? unwrap(f.value) : undefined;
+    if (k !== undefined && v?.type === "Literal" && typeof v.value === "string") got[k] = v.value;
+  }
+  const { id, name } = got;
+  return id === undefined || name === undefined ? undefined : { id, name };
+}
 
 /**
- * Read `topology.ts` statically (k.server Topology): `export default topology({ name: { modules: [...],
- * adapter, host? } })` (or a bare object). Only literal deployable names (in the form `deployableNameProblem` takes),
+ * Read `topology.ts` statically (k.topology Declaration): `export default topology({ name: { modules: [...],
+ * adapter, host?, storage?, shells? } })` (or a bare object); a `storage` that is not one of its literals, or a
+ * `shells` entry that is not `capacitor` or `tauri` with literal `id` and `name`, is a problem. Only literal deployable names (in the form `deployableNameProblem` takes),
  * module ids, adapters and hosts count; anything else is a problem, `[deployable, message]` (`deployable` is the key,
  * `""` for the whole file; the message is one short line), and the deployable is skipped, except a `host` that is not a
  * string literal, which is dropped from the kept deployable. Nothing is executed.
@@ -65,6 +83,8 @@ export function parseTopology(source: string): { topology: Topology; problems: [
     let modules: string[] | undefined;
     let adapter: Deployable["adapter"] | undefined;
     let host: string | undefined;
+    let storage: Storage | undefined;
+    let shells: { capacitor?: Shell; tauri?: Shell } | undefined;
     for (const f of v.properties) {
       const k = f.type === "Property" && !f.computed ? keyName(f.key) : undefined;
       if (f.type !== "Property" || k === undefined) continue;
@@ -79,13 +99,31 @@ export function parseTopology(source: string): { topology: Topology; problems: [
       else if (k === "host") {
         if (fv.type === "Literal" && typeof fv.value === "string") host = fv.value;
         else problems.push([name, `${name}: ${HOST_NOT_LITERAL}`]);
+      } else if (k === "storage") {
+        if (fv.type === "Literal" && isStorage(fv.value)) storage = fv.value;
+        else problems.push([name, `${name}: storage is not 'file', 'sqlite' or 'postgres'`]);
+      } else if (k === "shells") {
+        shells = {};
+        for (const sf of fv.type === "ObjectExpression" ? fv.properties : []) {
+          const sk = sf.type === "Property" && !sf.computed ? keyName(sf.key) : undefined;
+          const shell = sf.type === "Property" ? shellOf(unwrap(sf.value)) : undefined;
+          if ((sk === "capacitor" || sk === "tauri") && shell !== undefined) shells[sk] = shell;
+          else problems.push([name, `${name}: shells takes capacitor or tauri { id, name } as string literals`]);
+        }
+        if (fv.type !== "ObjectExpression") problems.push([name, `${name}: shells is not an object literal`]);
       }
     }
     if (modules === undefined || adapter === undefined) {
       problems.push([name, `${name}: needs modules: [...] and adapter: 'node' | 'static' | 'client'`]);
       continue;
     }
-    out[name] = host === undefined ? { modules, adapter } : { modules, adapter, host };
+    out[name] = {
+      modules,
+      adapter,
+      ...(host === undefined ? {} : { host }),
+      ...(storage === undefined ? {} : { storage }),
+      ...(shells === undefined ? {} : { shells }),
+    };
   }
   return { topology: out, problems };
 }

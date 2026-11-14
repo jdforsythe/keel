@@ -81,7 +81,7 @@ afterAll(() => fs.rmSync(fixture, { recursive: true, force: true }));
 const SECRET = "s".repeat(32);
 
 describe("k.deploy: KEEL_DATABASE_URL of a 'postgres' deployable", () => {
-  test.skip("With `storage: 'postgres'`, `server.mjs` with `KEEL_DATABASE_URL` unset, or set to a `file:` URL, exits 1 with one E1560 naming `KEEL_DATABASE_URL` and no value.", () => {
+  test("With `storage: 'postgres'`, `server.mjs` with `KEEL_DATABASE_URL` unset, or set to a `file:` URL, exits 1 with one E1560 naming `KEEL_DATABASE_URL` and no value.", () => {
     const entry = path.join(fixture, "dist", "web", "server.mjs");
     const fileUrl = fc.stringMatching(/^[a-z]{3,12}$/).map((name) => `file:/data/${name}-zqmarker.sqlite`);
     fc.assert(

@@ -515,6 +515,48 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("modules/w/x.ts", "export const x = 1;\n")],
     clean: [f("modules/w/x.ts", "export const x = 1;\n")],
   },
+  E1572: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "package.json",
+        `${JSON.stringify({ name: "fx", private: true, dependencies: { "@keel/server": "*" } }, null, 2)}\n`,
+      ),
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['app'], adapter: 'node', storage: 'sqlite' } })\n",
+      ),
+      manifest("app"),
+    ],
+    clean: [
+      f(
+        "package.json",
+        `${JSON.stringify({ name: "fx", private: true, dependencies: { "@keel/server": "*", "@keel/std-db": "*" } }, null, 2)}\n`,
+      ),
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['app'], adapter: 'node', storage: 'sqlite' } })\n",
+      ),
+      manifest("app"),
+    ],
+  },
+  E1573: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['app'], adapter: 'client', shells: { tauri: { id: 'golden', name: 'Golden' } } } })\n",
+      ),
+      manifest("app"),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['app'], adapter: 'client', shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } } } })\n",
+      ),
+      manifest("app"),
+    ],
+  },
   E1561: {
     bad: [surfaceFile(surfaceOf(fields("name", "note"), fields("name")))],
     clean: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],

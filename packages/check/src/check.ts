@@ -20,6 +20,7 @@ import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { runRules } from "./internal/runRules.ts";
 import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
+import { topologyNeeds } from "./internal/topologyNeeds.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
@@ -108,6 +109,10 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
       out.push(...topologyDiags(dir, topology, top));
     }
+    // E1572, E1573: the caller's topology, else the static read of `topology.ts`, beside the project's `package.json`.
+    const needs = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
+    const pkg = all.find((f) => f.path === `${dir}package.json`)?.source;
+    if (needs !== undefined) out.push(...topologyNeeds(dir, needs, top ?? "", pkg));
     for (const d of compiled.diagnostics) {
       const path = d.path === "" ? d.path : `${dir}${d.path}`;
       out.push({ kind: "diag", ...d, path });
