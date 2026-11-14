@@ -48,6 +48,14 @@ Run `pnpm dev` from `apps/golden-1`. `keel dev` serves `web` with hot reload and
 
 `docker compose -f deploy/compose.yaml up` builds and runs the same entry in `node:22-slim`, with the SQLite file on the `api-data` volume (`/data/keel.sqlite`); it takes `KEEL_SECRET`, `KEEL_ORIGIN` and `KEEL_DATABASE_URL` from the environment.
 
+## Native shells
+`web` declares two shells in `topology.ts`: Capacitor (Android and iOS) and Tauri (Linux, macOS and Windows), both with app id `dev.keel.golden1` and the name Golden 1. `keel build` writes their files from `topology.ts`, read-only: `deploy/web/capacitor/capacitor.config.json` and `deploy/web/tauri/` (`tauri.conf.json` with the `web` policy, `Cargo.toml`, `build.rs`, `src/`, `capabilities/`). In a shell the same `todos` module runs on the shell's drivers (`@keel/std-capacitor`, `@keel/std-tauri`): storage in the app's native store, and requests to the page's own origin sent to `KEEL_ORIGIN` through the native HTTP client, which keeps the caller cookie.
+
+- `KEEL_ORIGIN=https://todo.example pnpm exec keel build --target tauri` builds the desktop app (Rust 1.95, the Tauri CLI from `devDependencies`; on Linux WebKitGTK 4.1). Cargo writes `deploy/web/tauri/Cargo.lock` on the first build; commit it.
+- `KEEL_ORIGIN=https://todo.example pnpm exec keel build --target capacitor --platform android` builds a debug APK (JDK 21, the Android SDK); `--platform ios` builds for the simulator without signing (Xcode 26).
+
+A missing or older tool prints E1575 naming it and the version needed, and nothing is built.
+
 ## Splitting
 Moving `digest` into its own deployable edits `topology.ts` alone:
 

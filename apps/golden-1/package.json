@@ -11,6 +11,8 @@
     "api": "KEEL_DATABASE_URL=file://$PWD/.api.sqlite node --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
+    "@capacitor/core": "8.6.0",
+    "@capacitor/preferences": "8.0.1",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
@@ -34,12 +36,20 @@
     "@keel/std-workflows": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
-    "@keel/ui": "workspace:*"
+    "@keel/ui": "workspace:*",
+    "@tauri-apps/api": "2.12.4",
+    "@tauri-apps/plugin-http": "2.9.0",
+    "@tauri-apps/plugin-store": "2.5.1"
   },
   "devDependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/ios": "8.6.2",
     "@keel/cli": "workspace:*",
     "@keel/tooling": "workspace:*",
+    "@tauri-apps/cli": "2.12.4",
     "@types/node": "^22",
-    "vite": "^8.3.6"
+    "vite": "^8.3.6",
+    "z3-solver": "5.3.3"
   }
 }

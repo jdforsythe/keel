@@ -1,0 +1,19 @@
+# _generated: keel writes this from topology.ts (k.shell). Do not edit by hand.
+[package]
+name = "golden-1"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.95"
+publish = false
+
+[lib]
+name = "keel_shell"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.7.4", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.5", features = [] }
+tauri-plugin-store = "=2.5.1"
+tauri-plugin-http = "=2.9.0"

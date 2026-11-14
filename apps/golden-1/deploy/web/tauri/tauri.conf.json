@@ -1,0 +1,19 @@
+{
+  "productName": "Golden 1",
+  "version": "0.0.0",
+  "identifier": "dev.keel.golden1",
+  "build": {
+    "frontendDist": "www"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Golden 1"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types keel"
+    }
+  }
+}
