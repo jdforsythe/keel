@@ -3,7 +3,7 @@
 // Seed: 1337.
 // Assumption: the spec does not say whether `sqlite(url)` / `postgres(url)` call `process.exit(1)` themselves or reject and leave the exit to the caller.
 // These tests need the exit code 1 and the text E2152 on stdout or stderr from the driver alone: SQLite runs in a real child process that opens the
-// driver and nothing else; Postgres on PGlite runs in-process with `process.exit` replaced by a throw, and output captured.
+// driver and nothing else; Postgres on PGlite runs in-process with `process.exit` replaced by a throw, and output captured; a rejection counts as exit 1.
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import fc from "fast-check";
@@ -53,6 +53,8 @@ async function openAt(kind: Kind, layout: number): Promise<{ exit: number | null
     await r.open();
   } catch (e) {
     output += String(e instanceof Error ? e.message : e);
+    // The driver rejects and the generated entry prints the diag and exits 1 (0338 D7), so a rejection is that exit.
+    exit ??= 1;
   }
   vi.restoreAllMocks();
   return { exit, output };
@@ -60,14 +62,14 @@ async function openAt(kind: Kind, layout: number): Promise<{ exit: number | null
 
 for (const kind of ["sqlite", "postgres"] as const) {
   describe(`${kind} driver`, () => {
-    test.skip("An empty database opens at layout 1.", async () => {
+    test("An empty database opens at layout 1.", async () => {
       const r = await rig(kind);
       expect(await r.layout().catch(() => null)).toBeNull();
       await r.open();
       expect(await r.layout()).toBe("1");
     });
 
-    test.skip("a database at layout 2 is E2152 and exit 1.", async () => {
+    test("a database at layout 2 is E2152 and exit 1.", async () => {
       await fc.assert(
         fc.asyncProperty(fc.integer({ min: 2, max: 50 }), async (newer) => {
           const { exit, output } = await openAt(kind, newer);
@@ -78,7 +80,7 @@ for (const kind of ["sqlite", "postgres"] as const) {
       );
     });
 
-    test.skip("E2152 fires when the database's `layout` is newer than the package's, at startup, and not at layout 1.", async () => {
+    test("E2152 fires when the database's `layout` is newer than the package's, at startup, and not at layout 1.", async () => {
       const newer = await openAt(kind, 2);
       expect(newer.output).toContain("E2152");
       expect(newer.exit).toBe(1);

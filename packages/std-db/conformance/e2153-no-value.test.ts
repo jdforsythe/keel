@@ -38,7 +38,7 @@ async function refused(
 }
 
 for (const kind of ["postgres", "sqlite"] as const) {
-  test.skip(`A refused connection prints one E2153 naming \`KEEL_DATABASE_URL\` and no part of its value (${kind}).`, async () => {
+  test(`A refused connection prints one E2153 naming \`KEEL_DATABASE_URL\` and no part of its value (${kind}).`, async () => {
     await fc.assert(
       fc.asyncProperty(secretWord, secretWord, secretWord, async (a, b, c) => {
         const { output, needles } = await refused(kind, a, b, c);
@@ -50,7 +50,7 @@ for (const kind of ["postgres", "sqlite"] as const) {
     );
   });
 
-  test.skip(`E2153 fires when the database cannot be opened, at startup, and the process does not report opened (${kind}).`, async () => {
+  test(`E2153 fires when the database cannot be opened, at startup, and the process does not report opened (${kind}).`, async () => {
     const { output, code } = await refused(kind, "aaaaaaaa", "bbbbbbbb", "cccccccc");
     expect(output).toContain("E2153");
     expect(output).not.toContain("opened");

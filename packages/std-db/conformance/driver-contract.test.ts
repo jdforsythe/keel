@@ -22,7 +22,7 @@ const valueArb = fc.string({ maxLength: 40 });
 
 for (const kind of KINDS) {
   describe(`${kind} driver passes k.persist's storage clauses`, () => {
-    test.skip("`get(key)` is the value, `null` when absent, and `set(key, value)` stores it", async () => {
+    test("`get(key)` is the value, `null` when absent, and `set(key, value)` stores it", async () => {
       const r = await rig(kind);
       const storage = await r.open();
       await fc.assert(
@@ -35,7 +35,7 @@ for (const kind of KINDS) {
       );
     });
 
-    test.skip("`read(keys)` returns each key's value in the order asked, `null` for an absent key", async () => {
+    test("`read(keys)` returns each key's value in the order asked, `null` for an absent key", async () => {
       const r = await rig(kind);
       const storage = await r.open();
       await fc.assert(
@@ -57,7 +57,7 @@ for (const kind of KINDS) {
       );
     });
 
-    test.skip("`commit` stores every `value` and resolves `true` when each `expect` matches", async () => {
+    test("`commit` stores every `value` and resolves `true` when each `expect` matches", async () => {
       const r = await rig(kind);
       const storage = await r.open();
       await fc.assert(
@@ -79,7 +79,7 @@ for (const kind of KINDS) {
       );
     });
 
-    test.skip("with one `expect` stale `commit` stores nothing and resolves `false`", async () => {
+    test("with one `expect` stale `commit` stores nothing and resolves `false`", async () => {
       const r = await rig(kind);
       const storage = await r.open();
       await fc.assert(
@@ -94,7 +94,7 @@ for (const kind of KINDS) {
       );
     });
 
-    test.skip("a write without `value` is checked and not stored", async () => {
+    test("a write without `value` is checked and not stored", async () => {
       const r = await rig(kind);
       const storage = await r.open();
       await storage.set("cond.a", "1");
@@ -116,7 +116,7 @@ for (const kind of KINDS) {
       expect(await storage.get("cond.absent")).toBeNull();
     });
 
-    test.skip("a `commit` naming one key twice throws E1606", async () => {
+    test("a `commit` naming one key twice throws E1606", async () => {
       const r = await rig(kind);
       const storage = await r.open();
       await storage.set("dup.a", "1");
@@ -129,7 +129,7 @@ for (const kind of KINDS) {
       expect(await storage.get("dup.a")).toBe("1");
     });
 
-    test.skip("a `read` never returns a value from between two writes of one `commit`", async () => {
+    test("a `read` never returns a value from between two writes of one `commit`", async () => {
       const r = await rig(kind);
       const writer = await r.open();
       const reader = await r.open();
@@ -162,7 +162,7 @@ for (const kind of KINDS) {
       );
     });
 
-    test.skip("`createCtx({ mode: 'real', drivers: { storage } })` returns the driver as `ctx.storage`", async () => {
+    test("`createCtx({ mode: 'real', drivers: { storage } })` returns the driver as `ctx.storage`", async () => {
       const r = await rig(kind);
       const storage = await r.open();
       const ctx = createCtx({ mode: "real", drivers: { storage } });

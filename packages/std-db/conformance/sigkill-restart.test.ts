@@ -10,7 +10,7 @@ import { expect, test } from "vitest";
 
 const word = fc.stringMatching(/^[a-z]{1,8}$/);
 
-test.skip("A process killed with SIGKILL after an action's response restarts on the same database and serves the same stored snapshot byte for byte; its next commit's head is one higher.", async () => {
+test("A process killed with SIGKILL after an action's response restarts on the same database and serves the same stored snapshot byte for byte; its next commit's head is one higher.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.array(word, { minLength: 1, maxLength: 3 }), word, async (before, next) => {
       const dir = tempDir();

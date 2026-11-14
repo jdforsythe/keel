@@ -60,7 +60,7 @@ afterEach(async () => {
 
 for (const kind of KINDS) {
   describe(`${kind} driver`, () => {
-    test.skip("For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`.", async () => {
+    test("For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`.", async () => {
       await fc.assert(
         fc.asyncProperty(sequenceArb, sequenceArb, async (seqA, seqB) => {
           const rig = await makeRig(kind);

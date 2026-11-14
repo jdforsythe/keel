@@ -13,7 +13,7 @@ import { SEED, closeStorage, removeDir, tempDir } from "./fixtures.ts";
 
 const marker = fc.stringMatching(/^[a-f0-9]{24}$/).map((hex) => `marker-${hex}`);
 
-test.skip("After a value is overwritten, its entry folded and the driver closed, the SQLite file's bytes do not hold it.", async () => {
+test("After a value is overwritten, its entry folded and the driver closed, the SQLite file's bytes do not hold it.", async () => {
   await fc.assert(
     fc.asyncProperty(marker, marker, async (oldValue, newValue) => {
       fc.pre(oldValue !== newValue);

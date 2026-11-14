@@ -26,7 +26,7 @@ const project = (importLine: string, path: string): Files => [
 ];
 const word = fc.stringMatching(/^[a-z]{3,10}$/);
 
-test.skip("An app file importing `@keel/std-db/sqlite` is E2151; the generated entry is not.", () => {
+test("An app file importing `@keel/std-db/sqlite` is E2151; the generated entry is not.", () => {
   fc.assert(
     fc.property(word, (name) => {
       const path = `modules/orders/${name}.server.ts`;
@@ -37,7 +37,7 @@ test.skip("An app file importing `@keel/std-db/sqlite` is E2151; the generated e
   );
 });
 
-test.skip("E2151 fires on an app file importing `@keel/std-db`, `@keel/std-db/sqlite`, `@keel/std-db/postgres` or `@keel/std-db/tools`, and has no fix.", () => {
+test("E2151 fires on an app file importing `@keel/std-db`, `@keel/std-db/sqlite`, `@keel/std-db/postgres` or `@keel/std-db/tools`, and has no fix.", () => {
   const specs = ["@keel/std-db", "@keel/std-db/sqlite", "@keel/std-db/postgres", "@keel/std-db/tools"];
   fc.assert(
     fc.property(fc.constantFrom(...specs), word, (spec, name) => {
