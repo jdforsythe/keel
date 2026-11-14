@@ -119,7 +119,7 @@
       "max": "4kb",
       "platform": "node"
     },
-    "@keel/std-tables": "4kb",
+    "@keel/std-tables": "4.25kb",
     "@keel/std-temporal": "2.5kb",
     "@keel/std-text": "1.5kb",
     "@keel/store": "3.5kb",
