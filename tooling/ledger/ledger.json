@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 14,
   "rungs": {
-    "example": 840,
+    "example": 845,
     "probabilistic": 263,
     "exhaustive": 15,
     "proven": 42,
@@ -39,7 +39,7 @@
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 80.34,
+        "score": 82.97,
         "threshold": 70
       },
       "scaffold": {
@@ -9111,7 +9111,7 @@
       "pkg": "std-tables",
       "name": "TableSearch",
       "file": "packages/std-tables/src/TableSearch.component.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "std-tables",
@@ -9872,6 +9872,18 @@
       "rung": "example"
     },
     {
+      "item": "k.component#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#16",
+      "rung": "example"
+    },
+    {
       "item": "k.ctx#1",
       "rung": "probabilistic"
     },
@@ -10498,6 +10510,10 @@
     {
       "item": "k.router#12",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.router#13",
+      "rung": "example"
     },
     {
       "item": "k.runtime#1",
