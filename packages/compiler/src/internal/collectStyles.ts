@@ -34,6 +34,8 @@ const STYLE_PROPS: readonly string[] = [
   "justify",
   "wrap",
 ];
+/** Stdlib packages whose components take part styles (`styles={{ <part>: ... }}`, k.aria). */
+const PART_STYLED: readonly string[] = ["@keel/std-headless", "@keel/std-tables"];
 const STATES: readonly State[] = [
   "selected",
   "checked",
@@ -149,7 +151,7 @@ function classList(leaves: readonly Leaf[]): string[] {
 
 /**
  * Style props on `@keel/ui` base elements and `Part` (k.ui, k.aria), and the `styles={{ <part>: { ... } }}` of a
- * component imported from a `@keel/std-*` package (part styles, k.aria): every literal token per
+ * component imported from `@keel/std-headless` or `@keel/std-tables` (part styles, k.aria): every literal token per
  * (prop, breakpoint, state) becomes a usage, including literal leaves of dynamic `?:`/`&&` values so their
  * classes exist in the CSS. A base element without spreads whose class is absent or literal gets its fully
  * static style attributes rewritten into one `class` (the names ui would compute at runtime); dynamic ones stay.
@@ -159,11 +161,11 @@ export function collectStyles(a: Analysis): { usages: StyleUsage[]; rewrites: Ma
   const std = new Set<string>();
   for (const i of a.imports) {
     const src = i.source.value;
-    if (i.importKind === "type" || (src !== "@keel/ui/aria" && !src.startsWith("@keel/std-"))) continue;
+    if (i.importKind === "type" || (src !== "@keel/ui/aria" && !PART_STYLED.includes(src))) continue;
     for (const s of i.specifiers) {
       if (s.type !== "ImportSpecifier" || s.importKind === "type") continue;
       const imported = s.imported.type === "Identifier" ? s.imported.name : s.imported.value;
-      if (src.startsWith("@keel/std-")) std.add(s.local.name);
+      if (src !== "@keel/ui/aria") std.add(s.local.name);
       else if (imported === "Part") base.add(s.local.name);
     }
   }
@@ -237,7 +239,7 @@ function element(el: JSXElement, base: ReadonlySet<string>, out: Leaf[], rewrite
   rewrites.set(el.start, { drop, className: [...classList(fixedLeaves), ...extra].join(" ") });
 }
 
-/** Part styles: each part's style object in the `styles` of a `@keel/std-*` component (never rewritten). */
+/** Part styles: each part's style object in the `styles` of a `PART_STYLED` component (never rewritten). */
 function parts(el: JSXElement, std: ReadonlySet<string>, out: Leaf[]): void {
   const n = el.openingElement.name;
   if (n.type !== "JSXIdentifier" || !std.has(n.name)) return;

@@ -25,6 +25,13 @@ describe("part styles", () => {
     expect(u).toEqual([{ props: { m: "1" }, state: "expanded" }, { props: { p: "2" } }, { props: { p: "3" } }]);
   });
 
+  test("`styles` on a component of a look-alike `@keel/std-` package is not collected", () => {
+    const { usages: u } = usages(
+      `import { Tabs } from '@keel/std-evil'\nexport default function C() { return <Tabs styles={{ tab: { p: '2' } }} /> }\n`,
+    );
+    expect(u).toEqual([]);
+  });
+
   test("`styles` on a component not from a `@keel/std-*` package is not collected", () => {
     const { usages: u } = usages(
       `import { Tabs } from './Tabs.tsx'\nexport default function C() { return <Tabs styles={{ tab: { p: '2' } }} /> }\n`,

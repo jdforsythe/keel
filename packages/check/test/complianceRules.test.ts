@@ -137,7 +137,7 @@ it("E1111 reads anyOf members, spreads, namespace imports, re-exports and a cons
   expect(ran(table("", "s.object({ q: s.string() })"))).toEqual([]);
 });
 
-it("E1111: a search schema built by a call to a `@keel/std-*` function is the package's, also through a namespace", () => {
+it("E1111: a search schema from std-tables' audited `tableSearch` is the package's, also through a namespace", () => {
   const routes = (head: string, search: string): Files => [
     {
       path: "src/catalog.ts",
@@ -156,6 +156,14 @@ it("E1111: a search schema built by a call to a `@keel/std-*` function is the pa
   );
   expect(codes(routes("import { tableSearch } from './local.ts'\n", "tableSearch(catalog)"), "E1111")).toHaveLength(1);
   expect(codes(routes("import { other } from '@keel/schema'\n", "other(catalog)"), "E1111")).toHaveLength(1);
+  // Only audited exports: another std-tables function that embeds the app's schema, and a look-alike package, are read.
+  expect(codes(routes("import { tablePage } from '@keel/std-tables'\n", "tablePage(catalog)"), "E1111")).toHaveLength(
+    1,
+  );
+  expect(codes(routes("import { tableSearch } from '@keel/std-evil'\n", "tableSearch(catalog)"), "E1111")).toHaveLength(
+    1,
+  );
+  expect(codes(routes("import * as t from '@keel/std-tables'\n", "t.tablePage(catalog)"), "E1111")).toHaveLength(1);
 });
 
 it("E1571 reads a const in a template, concatenation, new URL's base, protocol-relative URLs, { net } and a ctx alias", () => {
