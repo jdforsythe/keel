@@ -52,7 +52,7 @@ export type PartProps =
       "button",
       Kids &
         Off & {
-          readonly controls: V<string>;
+          readonly controls?: V<string>;
           readonly hasPopup?: V<"menu" | "listbox" | "dialog">;
           readonly expanded?: V<boolean>;
         }
