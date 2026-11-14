@@ -57,7 +57,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.openapi | OpenAPI import | conformance-covered | OpenAPI 3 to endpoints and clients |
 | k.module | Module manifest | conformance-covered | public surface; cross-module access checked |
 | k.a11y | Accessibility | conformance-covered | props, contrast, focus order, claims |
-| k.aria | Widget parts | proposed | Part: roles, focus, dialog, part styles |
+| k.aria | Widget parts | conformance-covered | Part: roles, focus, dialog, styles |
 | k.security | Headers and CSP | conformance-covered | headers, nonce CSP, Trusted Types, cookie |
 | k.privacy | Secrets and personal data | conformance-covered | `s.secret`, `.pii(class)`, redacting sinks |
 | k.evidence | Evidence bundle | conformance-covered | `keel evidence`: a signed bundle |

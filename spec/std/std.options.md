@@ -1,5 +1,5 @@
 # std.options: Listbox, combobox, menu and tabs
-status: proposed
+status: conformance-covered
 
 **Shared.** Part of `@keel/std-headless` (std.headless: ids, text, values, charts, styling). Each widget here keeps an `optionsChart` instance; `count` is the length of its list, sent as `items` before the next event when the list's length changed. `Option<K> = { key: K; text: string; disabled?: boolean }`, `K` a string. A disabled option or item can be highlighted and is never chosen or selected. The slot `option?: (o: Option<K>, s: { active(): boolean; selected(): boolean }) => JSX` renders an option's content (default: `o.text`). Typeahead: a printable key without `mod` adds to a buffer that empties 500 ms after the last key (`ctx.clock`, a signal of the widget, never in the chart) and sends `jump` to the next option, after the active one, whose `text` starts with the buffer (case-insensitive, `toLocaleLowerCase`). An option is highlighted through `activeDescendant`, so DOM focus stays on the list or the input.
 

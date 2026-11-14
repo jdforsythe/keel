@@ -1,7 +1,7 @@
 # k.aria: Widget parts
-status: proposed
+status: conformance-covered
 
-**Part.** `@keel/ui/aria` exports `Part`, the one element stdlib widgets are built from. It is a base element in every k.ui sense: built through the runtime's `element` in document order, so it resumes in place; it takes `id` (required), `role`, `lang`, `hidden`, the style props and a `children` thunk; it is bound (`data-k`) when it has an event prop, a `focus` or `open`, or a signal or computed. Only kernel and stdlib code imports `@keel/ui/aria`; a file outside `packages/`, `node_modules/`, `.keel/` and `unsafe/`, tests included, that imports or re-exports it is E1822.
+**Part.** `@keel/ui/aria` exports `Part`, the element stdlib widgets are built from. A base element in every k.ui sense: built through the runtime's `element` in document order, so it resumes in place; takes `id` (required), `role`, `lang`, `hidden`, the style props and a `children` thunk; it is bound (`data-k`) when it has an event prop, a `focus` or `open`, or a signal or computed. Only kernel and stdlib code imports `@keel/ui/aria`; a file outside `packages/`, `node_modules/`, `.keel/` and `unsafe/`, tests included, that imports or re-exports it is E1822.
 
 **Roles.** `role` fixes the tag and the ARIA props `Part` accepts (its props type is a union discriminated by `role`; a prop another role takes is a type error). The `role` attribute is written only where it differs from the tag's implicit role.
 

@@ -1,4 +1,4 @@
-// Spec: std.headless, Conformance "under `explore`'s closed form `openChart` and `toastChart` are `complete` and `coverage` is empty; `explore` of `optionsChart` from `initial` with counts 0, 1 and 3, `at` and `to` -1, 0, 2 and 5, every `by`, `wrap` and `back`, at depth 6, finds no state breaking its invariant."
+// Spec: std.headless, Conformance "`optionsChart`, `openChart` and `toastChart` hold the transitions in the table; under `explore`'s closed form `openChart` and `toastChart` are `complete` and `coverage` is empty; `explore` of `optionsChart` from `initial` with counts 0, 1 and 3, `at` and `to` -1, 0, 2 and 5, every `by`, `wrap` and `back`, at depth 6, finds no state breaking its invariant."
 // Seed: 1337.
 // Assumptions: `coverage` comes from `@keel/std-statecharts`; "empty" is `unreached` and `dead` both `[]`; `from: optionsChart.initial` is the start;
 // the `payloads` key of an event is its transaction name `<id>.<event>`; the invariant (`active` is -1 or below `count`, and -1 in `closed`) is read from the explored states.

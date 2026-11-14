@@ -37,6 +37,6 @@ S7 adds std.headless, std.options and std.tables.
 | std.multi | Multi-user sessions | conformance-covered | std-sessions: groups of users recorded and replayed under simulation, E2007-E2008 |
 | std.statecharts | State charts | conformance-covered | check rule registry: flat charts compiled to a store and transactions, E2751-E2755 |
 | std.monitor | Production tallies | conformance-covered | std-sessions: server transaction counts as `monitored` evidence, E2009-E2010 |
-| std.headless | Headless widgets | proposed | Dialog, Disclosure, Toaster, three charts, E2801 |
-| std.options | Listbox, combobox, menu and tabs | proposed | Listbox, Combobox, Menu, Tabs on `optionsChart` |
-| std.tables | Data tables | proposed | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
+| std.headless | Headless widgets | conformance-covered | Dialog, Disclosure, Toaster, three charts, E2801 |
+| std.options | Listbox, combobox, menu and tabs | conformance-covered | Listbox, Combobox, Menu, Tabs on `optionsChart` |
+| std.tables | Data tables | conformance-covered | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
