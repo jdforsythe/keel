@@ -11,6 +11,10 @@
     "./tools": {
       "types": "./src/tools/index.ts",
       "default": "./src/tools/index.ts"
+    },
+    "./tools/internal": {
+      "types": "./src/tools/internal/index.ts",
+      "default": "./src/tools/internal/index.ts"
     }
   },
   "files": ["dist"],

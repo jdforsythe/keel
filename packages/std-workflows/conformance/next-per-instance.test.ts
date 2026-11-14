@@ -9,7 +9,7 @@ import { FINAL, type Row, dataArb, evArb, fire, makeFlow, mutate, nextOf, rowsOf
 
 const never = async () => ok({ freed: 0 });
 
-test.skip("For generated instances and events, a workflow event changes only its instance, to `chart.next` of it.", async () => {
+test("For generated instances and events, a workflow event changes only its instance, to `chart.next` of it.", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.array(dataArb, { minLength: 1, maxLength: 4 }),

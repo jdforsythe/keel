@@ -109,7 +109,7 @@ export const runners = ${p.runners ?? "[jobs, flows(jobs, [removal])]"}
 const word = fc.stringMatching(/^[a-z]{3,10}$/);
 
 describe("std.workflows: keel check rules", () => {
-  test.skip("E2351 fires on a `workflow` id not prefixed by its module and not on its clean twin.", () => {
+  test("E2351 fires on a `workflow` id not prefixed by its module and not on its clean twin.", () => {
     expect(found(project(), "E2351")).toEqual([]);
     fc.assert(
       fc.property(word, (name) => {
@@ -120,13 +120,13 @@ describe("std.workflows: keel check rules", () => {
     );
   });
 
-  test.skip("E2351 fires on a `workflow` outside `*.server.ts` and not on its clean twin.", () => {
+  test("E2351 fires on a `workflow` outside `*.server.ts` and not on its clean twin.", () => {
     const files = project({ workflowPath: "modules/api/removal.ts" });
     expect(found(files, "E2351").length).toBe(1);
     expect(found(project(), "E2351").length).toBe(0);
   });
 
-  test.skip("E2351's fix prefixes the id with the module id, and re-checking the patched file reports no E2351.", () => {
+  test("E2351's fix prefixes the id with the module id, and re-checking the patched file reports no E2351.", () => {
     fc.assert(
       fc.property(word, (name) => {
         const files = project({ id: name });
@@ -155,7 +155,7 @@ describe("std.workflows: keel check rules", () => {
     "a wait naming a final state": { waits: "{ gone: { ms: 600_000, event: 'expired' } }" },
     "a wait whose event is not in the state's `on`": { waits: "{ hidden: { ms: 600_000, event: 'begin' } }" },
   };
-  test.skip("E2352 fires on a step or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on`, and not on its clean twin.", () => {
+  test("E2352 fires on a step or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on`, and not on its clean twin.", () => {
     expect(found(project(), "E2352")).toEqual([]);
     fc.assert(
       fc.property(fc.constantFrom(...Object.keys(e2352)), (name) => {
@@ -167,7 +167,7 @@ describe("std.workflows: keel check rules", () => {
     );
   });
 
-  test.skip("`workflow` throws E2352 for the same fixtures and not for the clean twin.", () => {
+  test("`workflow` throws E2352 for the same fixtures and not for the clean twin.", () => {
     const noop = async () => ok({ freed: 0 });
     const c = removalChart();
     const step = (done: "purged" | "expired", failed: "stuck" | "expired") => ({ run: noop, done, failed });
@@ -204,7 +204,7 @@ describe("std.workflows: keel check rules", () => {
         : f,
     ),
   ];
-  test.skip("W2353 fires on a step whose `failed` target is final while another step's `done` lies on a path to it, naming both, and not on its clean twin.", () => {
+  test("W2353 fires on a step whose `failed` target is final while another step's `done` lies on a path to it, naming both, and not on its clean twin.", () => {
     const bad = found(saga("stuck", ""), "W2353");
     expect(bad.length).toBe(1);
     const text = JSON.stringify(bad[0]);
@@ -214,18 +214,18 @@ describe("std.workflows: keel check rules", () => {
     expect(found(clean, "W2353")).toEqual([]);
   });
 
-  test.skip("E2354 fires on a module whose `queue` lacks a workflow's `jobs` and not on its clean twin.", () => {
+  test("E2354 fires on a module whose `queue` lacks a workflow's `jobs` and not on its clean twin.", () => {
     expect(found(project({ queue: "{}" }), "E2354").length).toBe(1);
     expect(found(project(), "E2354").length).toBe(0);
   });
 
-  test.skip("E2354 fires on a module whose `runners` lack a workflow's `flows` and not on its clean twin.", () => {
+  test("E2354 fires on a module whose `runners` lack a workflow's `flows` and not on its clean twin.", () => {
     expect(found(project({ runners: "[jobs]" }), "E2354").length).toBe(1);
     expect(found(project({ runners: "[]" }), "E2354").length).toBeGreaterThanOrEqual(1);
     expect(found(project(), "E2354").length).toBe(0);
   });
 
-  test.skip("E2354's fix adds the `jobs` to the `queue` and the `flows` to `runners`, and re-checking the patched files reports no E2354.", () => {
+  test("E2354's fix adds the `jobs` to the `queue` and the `flows` to `runners`, and re-checking the patched files reports no E2354.", () => {
     for (const bad of [project({ queue: "{}" }), project({ runners: "[jobs]" })]) {
       const d = found(bad, "E2354");
       expect(d.length).toBe(1);

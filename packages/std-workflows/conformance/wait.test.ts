@@ -8,7 +8,7 @@ import { boot, close, hide, makeFlow, pass, readRows, settle, sim, start, undo }
 
 const idle = async () => ok({ freed: 0 });
 
-test.skip("A wait state moves by its event when the sim clock passes `ms`, not before.", async () => {
+test("A wait state moves by its event when the sim clock passes `ms`, not before.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 6 }), async (secs) => {
       const ms = secs * 1000;
@@ -36,7 +36,7 @@ test.skip("A wait state moves by its event when the sim clock passes `ms`, not b
   );
 });
 
-test.skip("an undo sent first leaves the wake job doing nothing.", async () => {
+test("an undo sent first leaves the wake job doing nothing.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 6 }), fc.integer({ min: 0, max: 5 }), async (secs, before) => {
       const ms = secs * 1000;

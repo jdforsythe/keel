@@ -1,6 +1,5 @@
 // Spec: std.jobs, clause "`job` with `attempts: 0` or `timeoutMs: 1.5` throws E2505." (rfc:0092 A10)
 // Spec: std.jobs, rule E2505: `attempts` or `timeoutMs` not a positive integer (`job` throws it).
-// Spec: std.jobs, Restart: "One runner owns a queue's storage: ..." is a statement about deployment; untestable through the public API without a second process.
 // Seed 1337
 import { ok, s } from "@keel/schema";
 import { job } from "@keel/std-jobs";

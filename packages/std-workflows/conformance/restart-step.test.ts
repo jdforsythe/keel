@@ -5,7 +5,7 @@ import { ok } from "@keel/schema";
 import { expect, test } from "vitest";
 import { begin, boot, close, makeFlow, pass, readRows, settle, sim, start } from "./fixtures.ts";
 
-test.skip("After `close()` while `run` is pending, a new `createApp` on the same ctx runs it again with the same `key`, and the instance takes its `done` event once.", async () => {
+test("After `close()` while `run` is pending, a new `createApp` on the same ctx runs it again with the same `key`, and the instance takes its `done` event once.", async () => {
   const ctx = sim();
   const keys: string[] = [];
   const f = makeFlow({

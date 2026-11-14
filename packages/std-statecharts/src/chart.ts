@@ -72,5 +72,5 @@ export function chart<
   };
   // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
   const own = owner() === undefined ? scope(() => undefined, { detached: true }).run(() => compile(id)) : compile(id);
-  return { ...own, states: spec.states, initial: spec.initial, next, [compileKey]: compile };
+  return { ...own, data: spec.data, states: spec.states, initial: spec.initial, next, [compileKey]: compile };
 }

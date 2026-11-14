@@ -18,6 +18,8 @@ export type Chart<
 > = ChartInstance<D, Ev, S> & {
   readonly states: { readonly [K in S]: StateSpec<keyof Ev & string, S, G, A> };
   readonly initial: S;
+  /** The schema of the chart's `data`. */
+  readonly data: Schema<D>;
   /** The `{ state, data }` that `tx` of `event` gives from `state`; a name outside `states` stays as it is. */
   next<K extends keyof Ev, T extends string>(
     state: ChartState<T, D>,

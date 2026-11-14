@@ -20,7 +20,7 @@ function find(v: unknown, depth = 0): Record<string, unknown> | undefined {
   return undefined;
 }
 
-test.skip("`workflows.instances` holds counts and no `data` value.", async () => {
+test("`workflows.instances` holds counts and no `data` value.", async () => {
   await fc.assert(
     fc.asyncProperty(
       word,

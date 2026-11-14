@@ -8,7 +8,7 @@ import { begin, boot, close, makeFlow, pass, readRows, settle, sim, start } from
 
 const fail = (code: string) => err({ code, message: "no", data: {} });
 
-test.skip("A `run` that returns `err` 3 times with `attempts: 3` leaves the instance after its `failed` event with that code.", async () => {
+test("A `run` that returns `err` 3 times with `attempts: 3` leaves the instance after its `failed` event with that code.", async () => {
   const ctx = sim();
   let calls = 0;
   const f = makeFlow({
@@ -32,7 +32,7 @@ test.skip("A `run` that returns `err` 3 times with `attempts: 3` leaves the inst
   await close(app);
 });
 
-test.skip("a `run` that returns `err` fewer than `attempts` times and then `ok` ends in `done`, with one run per attempt", async () => {
+test("a `run` that returns `err` fewer than `attempts` times and then `ok` ends in `done`, with one run per attempt", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 0, max: 2 }), async (errs) => {
       const ctx = sim();
@@ -61,7 +61,7 @@ test.skip("a `run` that returns `err` fewer than `attempts` times and then `ok` 
   );
 });
 
-test.skip("A `run` that never settles ends in its `failed` event with `workflows.attempts`.", async () => {
+test("A `run` that never settles ends in its `failed` event with `workflows.attempts`.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 3 }), async (attempts) => {
       const ctx = sim();

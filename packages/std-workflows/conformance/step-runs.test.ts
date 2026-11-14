@@ -6,7 +6,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type Data, begin, boot, close, makeFlow, readRows, settle, sim, start } from "./fixtures.ts";
 
-test.skip("Under sim, a started instance reaching a step state runs `run` once with `key` `<id>:<flow>:<entered>` and moves by its `done` event with the `ok` value.", async () => {
+test("Under sim, a started instance reaching a step state runs `run` once with `key` `<id>:<flow>:<entered>` and moves by its `done` event with the `ok` value.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.array(fc.integer({ min: 0, max: 3 }), { minLength: 1, maxLength: 4 }), async (ns) => {
       const ctx = sim();

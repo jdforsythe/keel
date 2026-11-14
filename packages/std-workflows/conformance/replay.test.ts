@@ -27,7 +27,7 @@ async function record(datas: Data[], events: [number, Ev][]) {
   return { f, snap };
 }
 
-test.skip("Restoring the store's snapshot and replaying its log from `initial` gives its state.", async () => {
+test("Restoring the store's snapshot and replaying its log from `initial` gives its state.", async () => {
   await fc.assert(
     fc.asyncProperty(program, async ([datas, events]) => {
       const { f, snap } = await record(datas, events);
