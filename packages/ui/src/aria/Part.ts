@@ -171,7 +171,19 @@ export function Part(props: PartProps): Node {
             }
           } else {
             if (el.open) el.close();
-            if (back instanceof HTMLElement && back.isConnected) back.focus();
+            // `returnFocus` names the trigger (a click may leave focus on `body`); gone, the element focused at open,
+            // else `main` (`tabindex="-1"`), as after a navigation (k.head).
+            const doc = el.ownerDocument;
+            const named = read(props.returnFocus);
+            const to = [
+              typeof named === "string" ? doc.getElementById(named) : null,
+              back,
+              doc.querySelector("main"),
+            ].find((x) => x instanceof HTMLElement && x.isConnected && x !== doc.body);
+            if (to instanceof HTMLElement) {
+              if (to.localName === "main" && !to.hasAttribute("tabindex")) to.setAttribute("tabindex", "-1");
+              to.focus();
+            }
             back = null;
           }
         });

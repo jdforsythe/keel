@@ -28,7 +28,13 @@ type Named =
 type Off = { readonly disabled?: V<boolean> };
 type Orient = { readonly orientation?: V<"horizontal" | "vertical"> };
 type Active = { readonly activeDescendant?: V<string> };
-type Dialog = { readonly labelledBy: V<string>; readonly open: V<boolean>; readonly onDismiss?: () => void };
+type Dialog = {
+  readonly labelledBy: V<string>;
+  readonly open: V<boolean>;
+  readonly onDismiss?: () => void;
+  /** The id of the element focus returns to on close (the trigger); gone, the element focused at open, else `main`. */
+  readonly returnFocus?: V<string>;
+};
 type R<Role extends string, P = unknown> = Common & { readonly role: Role } & P;
 
 /** `Part`'s props: a union discriminated by `role`, which fixes the tag and the ARIA props it accepts (k.aria Roles). */
