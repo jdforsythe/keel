@@ -1,4 +1,4 @@
-// Spec: k.aria, Rules "E1822 `@keel/ui/aria` imported by app code (no fix: use a `@keel/std-headless` widget, or a file under `unsafe/` with a justification)."
+// Spec: k.aria, Rules "E1822 `@keel/ui/aria` in app code (no fix: a `@keel/std-headless` widget, or `unsafe/`)."
 // Spec: k.aria, Conformance "E1822 fires on an app file importing `@keel/ui/aria` and not on one under `packages/` or `unsafe/`."
 // Seed: 1337.
 // Scope as E1576 (security-e1576.test.ts): outside `packages/`, `node_modules/` and `.keel/`, tests included; `unsafe/` is also exempt.
