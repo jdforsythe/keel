@@ -7,6 +7,7 @@ import { Box } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
 import type { ToastItem } from "./ToastItem.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
+import { untracked } from "./internal/untracked.ts";
 import { toastChart } from "./toastChart.ts";
 
 const LEAST = 5000;
@@ -43,7 +44,7 @@ export function Toaster(
     );
     return xs;
   };
-  items();
+  untracked(items);
   // An instance's key is a counter, never the item's id: no app value enters a chart's store id or log.
   let made = 0;
   const toast = (item: ToastItem): Node => {

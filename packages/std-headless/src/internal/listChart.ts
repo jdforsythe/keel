@@ -6,6 +6,7 @@ import type { KeyInput } from "@keel/ui/aria";
 import type { Option } from "../Option.ts";
 import { optionsChart } from "../optionsChart.ts";
 import { checkKeys } from "./checkKeys.ts";
+import { untracked } from "./untracked.ts";
 
 const PAUSE = 500;
 
@@ -25,7 +26,8 @@ export function listChart<O extends Option>(id: string, part: string, options: (
     );
     return xs;
   });
-  list.get();
+  // Checks the keys at render (E2801) without subscribing the enclosing render to the app's list.
+  untracked(() => list.get());
   const size = () => Math.min(list.get().length, 10_000);
   const sync = () => {
     if (c.store.get("data").count !== size()) tx(c.events.items, { count: size() });
