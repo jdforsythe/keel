@@ -246,14 +246,14 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       manifest("app"),
       f(
         "modules/app/x.server.ts",
-        "import { reveal } from '@keel/schema'\nimport { tx } from '@keel/store'\nconst copy = {}\nexport function run(p) {\n  tx(copy, { t: reveal(p.k) })\n}\n",
+        "import { reveal } from '@keel/schema'\nimport { tx } from '@keel/store'\nconst copy = {}\nexport function action(p) {\n  tx(copy, { t: reveal(p.k) })\n}\n",
       ),
     ],
     clean: [
       manifest("app"),
       f(
         "modules/app/x.server.ts",
-        "import { reveal } from '@keel/schema'\nimport { tx } from '@keel/store'\nconst copy = {}\nconst hash = (x) => x.length\nexport function run(p) {\n  tx(copy, { t: hash(reveal(p.k)) })\n}\n",
+        "import { reveal } from '@keel/schema'\nimport { tx } from '@keel/store'\nconst copy = {}\nconst hash = (x) => x.length\nexport function action(p) {\n  tx(copy, { t: hash(reveal(p.k)) })\n}\n",
       ),
     ],
   },
