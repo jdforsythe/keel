@@ -70,7 +70,7 @@ const outcome = async (run: () => Promise<unknown>) => {
 };
 
 describe("k.prove: two runs", () => {
-  it.skip(
+  it(
     "two runs over each transaction return byte-equal verdicts and counterexamples",
     async () => {
       const txs = build(family);

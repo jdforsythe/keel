@@ -1,5 +1,5 @@
 // Spike (not shipped API): golden-1's six board obligations as Z3 induction checks, encoded by hand in the SMT-LIB the
-// `prove` translator emits. Run from packages/testing: `node test/spike/board.spike.mjs [runs] [--whole]`.
+// `prove` translator emits. Run from packages/testing: `node spike/board.spike.mjs [runs] [--whole]`.
 // `hideList` and `showList` are the planned transactions (TodoList gains `hidden: s.boolean().optional()`):
 // `state.lists.some((l) => l.id === p.id) ? { ...state, lists: state.lists.map((l) => (l.id === p.id ? { ...l, hidden: true } : l)) } : state`.
 // Encoding: strings and ids one uninterpreted sort `Str`; enums finite datatypes; records datatypes; an optional field an
