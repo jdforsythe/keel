@@ -3,7 +3,7 @@
 // Seed: 1337.
 // ASSUMPTION: the compiled `For` is the `list` op from `@keel/runtime-dom/ops` (as in for-keyed-rows-0090); the slot prop is a plain function
 // `(item, state) => Node` the component calls from its row callback; "what the call rendered" is observed through a text binding's reads.
-import { signal } from "@keel/reactive";
+import { scope, signal as newSignal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { clone, list, template, text } from "@keel/runtime-dom/ops";
@@ -61,10 +61,14 @@ const setup = (initial: readonly Row[]) => {
   };
 };
 
+/** Signals are created in a scope (k.reactive E1203). */
+const owner = scope(() => undefined);
+const signal = <T>(v: T): Signal<T> => owner.run(() => newSignal(v));
+
 const ids = (n: number): Row[] => Array.from({ length: n }, (_, i) => ({ id: `r${i}` }));
 
 describe("k.component: a slot prop called inside a For renders in that row's scope", () => {
-  it.skip("A slot prop a component calls inside a `For` renders in that row's scope: removing the row disposes what the call rendered", async () => {
+  it("A slot prop a component calls inside a `For` renders in that row's scope: removing the row disposes what the call rendered", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 2, max: 8 }), fc.nat(), async (n, pick) => {
         const m = setup(ids(n));
@@ -86,7 +90,7 @@ describe("k.component: a slot prop called inside a For renders in that row's sco
     );
   });
 
-  it.skip("the slot's call is made once per row and its bindings update while the row lives", async () => {
+  it("the slot's call is made once per row and its bindings update while the row lives", async () => {
     const m = setup(ids(3));
     expect(Array.from(m.container.querySelectorAll(".s")).map((e) => e.textContent)).toEqual(["r0:0", "r1:0", "r2:0"]);
     m.tick.set(5);

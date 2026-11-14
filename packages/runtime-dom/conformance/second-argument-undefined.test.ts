@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { SEED } from "./fixtures.ts";
 
 describe("k.component: the second argument is always undefined", () => {
-  it.skip("The runtime calls a component with `undefined` as its second argument", () => {
+  it("The runtime calls a component with `undefined` as its second argument", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 1_000_000 }), (seed) => {
         const ctx = createCtx({ mode: "sim", seed });
