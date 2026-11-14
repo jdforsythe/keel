@@ -125,8 +125,11 @@ export function Part(props: PartProps): Node {
         if (
           e instanceof KeyboardEvent &&
           key({ key: e.key, shift: e.shiftKey, alt: e.altKey, mod: e.ctrlKey || e.metaKey })
-        )
+        ) {
+          // Handled: an ancestor part's `onKey` (a Dialog around a Menu) does not see it.
           e.preventDefault();
+          e.stopPropagation();
+        }
       });
     const click = props.onClick;
     listen(el, "click", click && (() => click()));
