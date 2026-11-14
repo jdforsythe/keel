@@ -106,6 +106,8 @@ test("a storage write that rejects mid-flush settles the pending send, and a lat
     storage: {
       get: (k) => base.storage.get(k),
       set: (k, v) => (++fail === 2 ? Promise.reject(new Error("quota")) : base.storage.set(k, v)),
+      read: (keys) => base.storage.read(keys),
+      commit: (writes) => base.storage.commit(writes),
     },
   };
   const posts: string[] = [];

@@ -45,6 +45,16 @@ async function serve() {
         return next();
       },
       set: (k, v) => base.storage.set(k, v),
+      read: async (keys) => {
+        const next = armed.next;
+        const at = keys.indexOf("keel.store.t.flag");
+        if (next === undefined || at < 0) return base.storage.read(keys);
+        armed.next = undefined;
+        armed.called = true;
+        const [got, rest] = await Promise.all([next(), base.storage.read(keys)]);
+        return rest.map((v, i) => (i === at ? got : v));
+      },
+      commit: (writes) => base.storage.commit(writes),
     },
   };
   const route = channelRoute(room, {

@@ -18,6 +18,17 @@ test("only the entries of this process's saves are counted", async () => {
     storage: {
       get: async (k: string) => map.get(k) ?? null,
       set: async (k: string, v: string) => void map.set(k, v),
+      read: async (keys: readonly string[]) => keys.map((k) => map.get(k) ?? null),
+      commit: async (writes: ReadonlyArray<{ key: string; expect: string | null; value?: string | undefined }>) => {
+        if (new Set(writes.map((w) => w.key)).size !== writes.length)
+          throw Object.assign(new Error("commit names one key twice"), { code: "E1606" });
+        if (writes.some((w) => (map.get(w.key) ?? null) !== w.expect)) return false;
+        for (const w of writes) {
+          if (w.value === undefined) map.delete(w.key);
+          else map.set(w.key, w.value);
+        }
+        return true;
+      },
     },
   };
   const entry = (id: number, name: string) => ({ id, name, payload: null, at: 0 });
