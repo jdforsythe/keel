@@ -5,7 +5,8 @@ import type { Node } from "./internal/Node.ts";
 
 /**
  * Each marked leaf of `schema` once, in declaration order: its dotted path (`*` for an array item or record
- * value) and the class of the nearest mark above it (k.privacy).
+ * value) and the class of the nearest mark above it (k.privacy). A `format` is read through to its base, as
+ * `piiValues` reads it.
  */
 export function piiPaths(schema: Schema<unknown, boolean>): readonly PiiPath[] {
   const out: PiiPath[] = [];
@@ -16,6 +17,9 @@ export function piiPaths(schema: Schema<unknown, boolean>): readonly PiiPath[] {
       case "optional":
       case "nullable":
         walk(node.inner, prefix, cls);
+        return;
+      case "format":
+        walk(node.base, prefix, cls);
         return;
       case "array":
         walk(node.item, [...prefix, "*"], cls);

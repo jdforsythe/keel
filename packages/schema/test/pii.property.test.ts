@@ -86,3 +86,68 @@ test("a marked record's keys are personal data, and so are a marked open object'
   const plain = s.object({ by: s.record(s.number()) });
   expect(piiValues(plain, { by: { "bob@example.com": 3 } })).toEqual([]);
 });
+
+const formatted = <T>(name: string, base: Schema<T>) =>
+  s.format(name, base, { check: () => true, gen: { from: base, map: (v: T) => v } });
+const markable: fc.Arbitrary<Schema<unknown>> = fc.letrec<{ node: Schema<unknown> }>((tie) => ({
+  node: fc.oneof(
+    { depthSize: "small", withCrossShrink: true },
+    leaf,
+    leaf.map((l) => l.pii("contact")),
+    leaf.map((l) => formatted("F", l.pii("contact"))),
+    leaf.map((l) => formatted("G", l).pii("identifier")),
+    tie("node").map((n) => s.array(n)),
+    tie("node").map((n) => s.record(n)),
+    tie("node").map((n) => n.nullable()),
+    tie("node").map((n) => formatted("H", n)),
+    fc.dictionary(fc.stringMatching(/^[a-z]{1,4}$/), tie("node"), { maxKeys: 3 }).map((shape) => s.object(shape)),
+  ),
+})).node;
+
+/** The strings and numbers of `value` under dotted `path` (`*` any array item or record value). */
+const under = (value: unknown, path: readonly string[], out: Set<string>): void => {
+  if (value === null || value === undefined) return;
+  const [head, ...rest] = path;
+  if (head === undefined) {
+    const add = (x: unknown): void => {
+      if (typeof x === "string" && x !== "") out.add(x);
+      else if (typeof x === "number") out.add(String(x));
+      else if (Array.isArray(x)) for (const v of x) add(v);
+      else if (typeof x === "object" && x !== null)
+        for (const [k, v] of Object.entries(x)) {
+          add(k);
+          add(v);
+        }
+    };
+    add(value);
+    return;
+  }
+  if (head === "*") {
+    if (Array.isArray(value)) for (const v of value) under(v, rest, out);
+    else if (typeof value === "object")
+      for (const [k, v] of Object.entries(value)) {
+        if (rest.length === 0) out.add(k);
+        under(v, rest, out);
+      }
+  } else if (typeof value === "object" && !Array.isArray(value)) under(Reflect.get(value, head), rest, out);
+};
+
+test("every value piiValues returns lies under a path piiPaths lists, format nodes included", () => {
+  fc.assert(
+    fc.property(
+      markable.chain((schema) => fc.tuple(fc.constant(schema), gen(schema))),
+      ([schema, value]) => {
+        const encoded = schema.encode(value);
+        const covered = new Set<string>();
+        for (const p of piiPaths(schema)) under(encoded, p.path === "" ? [] : p.path.split("."), covered);
+        for (const v of piiValues(schema, encoded)) expect(covered).toContain(v);
+      },
+    ),
+    opts,
+  );
+});
+
+test("a mark inside a format's base is a path", () => {
+  const schema = s.object({ e: formatted("E", s.string().pii("contact")) });
+  expect(piiPaths(schema)).toEqual([{ path: "e", class: "contact" }]);
+});
