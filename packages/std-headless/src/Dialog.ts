@@ -48,6 +48,7 @@ export function Dialog(
     ...props.styles?.dialog,
     id: `${id}.dialog`,
     labelledBy: `${id}.title`,
+    returnFocus: `${id}.trigger`,
     open: computed(() => c.store.get("state") === "open"),
     onKey: onDialog,
     onDismiss: close,
