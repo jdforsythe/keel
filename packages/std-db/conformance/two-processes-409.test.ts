@@ -22,7 +22,7 @@ import { expect, test } from "vitest";
 
 const word = fc.stringMatching(/^[a-z]{1,8}$/);
 
-test.skip("Two processes on one SQLite file, each serving `createApp` on its driver, with overlapping actions on one store: one saves, the other is 409, and the file holds the first's snapshot.", async () => {
+test("Two processes on one SQLite file, each serving `createApp` on its driver, with overlapping actions on one store: one saves, the other is 409, and the file holds the first's snapshot.", async () => {
   await fc.assert(
     fc.asyncProperty(word, word, fc.boolean(), async (a, b, bFirst) => {
       const dir = tempDir();
