@@ -43,6 +43,12 @@ const NOT_APP =
   /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)vitest(?:\.[\w-]+)?\.config\.[cm]?[jt]s$/;
 const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json", "routes.json", "styles.json"];
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
+/** The shell a `keel build --target` build makes (`KEEL_SHELL`) and its `KEEL_ORIGIN`, else none (k.shell Build). */
+const shellOf = (): { kind: "capacitor" | "tauri"; origin: string } | undefined => {
+  const kind = process.env.KEEL_SHELL;
+  const origin = process.env.KEEL_ORIGIN ?? "";
+  return kind === "capacitor" || kind === "tauri" ? { kind, origin } : undefined;
+};
 const CSS_IMPORT = "virtual:keel.css";
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
 const PG_BANNER =
@@ -350,6 +356,12 @@ export default function (): {
       const out = `dist/${name}`;
       if (top[name]?.adapter === "client") {
         hosting = name;
+        // A shell build (k.shell Build): the web build goes into the shell's `www/`; `.keel/` is the plain build's.
+        const shell = shellOf();
+        if (shell !== undefined) {
+          clientBuild = true;
+          return { build: { outDir: `${out}/${shell.kind}/www`, emptyOutDir: true } };
+        }
         // One client build writes `.keel/`, as the project's own build did: the first by name.
         clientBuild =
           Object.keys(top)
@@ -479,6 +491,7 @@ export default function (): {
         CSS_IMPORT,
         clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
         served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},
+        shellOf(),
       );
     },
     transformIndexHtml() {

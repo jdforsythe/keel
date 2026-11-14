@@ -12,6 +12,11 @@ const SECTIONS = "@keel/compiler/inspect/inspectorSections";
 const BIND_STD = "@keel/compiler/std/bindStd";
 
 const q = (s: string): string => JSON.stringify(s);
+/** The std.shells package and drivers factory of each shell (k.shell Shell ctx). */
+const SHELLS = {
+  capacitor: ["@keel/std-capacitor", "capacitorDrivers"],
+  tauri: ["@keel/std-tauri", "tauriDrivers"],
+} as const;
 
 /**
  * The generated `/@keel/entry.ts` of a `client` deployable (k.server Topology, k.runtime): imports the atomic
@@ -23,14 +28,18 @@ const q = (s: string): string => JSON.stringify(s);
  * the ctx. In a dev build
  * (`import.meta.env.DEV`) it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
- * `effect`, so the reporter is not part of the graph it reports.
+ * `effect`, so the reporter is not part of the graph it reports. With `shell` (a `keel build --target` build, k.shell
+ * Shell ctx) the ctx is `createCtx({ mode: 'shell', drivers })`, the drivers of that shell's std.shells package for
+ * the build's `origin` (`KEEL_ORIGIN`).
  */
 export function entryCode(
   routesFiles: readonly string[],
   cssId: string,
   std: StdData = {},
   deployables: Readonly<Record<string, readonly string[]>> = {},
+  shell?: { readonly kind: keyof typeof SHELLS; readonly origin: string },
 ): string {
+  const native = shell === undefined ? undefined : SHELLS[shell.kind];
   const bind = Object.keys(std).length > 0;
   const peers = Object.keys(deployables).length > 0;
   const imports = routesFiles.map((f, i) => `import { routes as __keelRoutes${i} } from ${q(f)};`);
@@ -46,8 +55,11 @@ export function entryCode(
     `import { stores } from ${q(STORE)};`,
     `import { inspectorSections } from ${q(SECTIONS)};`,
     ...(bind ? [`import { bindStd } from ${q(BIND_STD)};`] : []),
+    ...(native === undefined ? [] : [`import { ${native[1]} as __keelDrivers } from ${q(native[0])};`]),
     ...imports,
-    `const ctx = createCtx({ mode: "real" });`,
+    native === undefined
+      ? `const ctx = createCtx({ mode: "real" });`
+      : `const ctx = createCtx({ mode: "shell", drivers: __keelDrivers({ origin: new URL(${q(shell?.origin ?? "")}) }) });`,
     ...(bind ? [`bindStd(ctx, ${JSON.stringify(std)});`] : []),
     ...(peers
       ? [
