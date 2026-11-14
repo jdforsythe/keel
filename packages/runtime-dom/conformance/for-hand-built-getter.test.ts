@@ -2,7 +2,6 @@
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMPTION: `For({ each, key, children })` with `children: (item) => Node` called per row; `item` is the row's item value, not an accessor.
-// The call goes through Reflect.apply because `each` is typed as an array until the getter form is implemented.
 import { scope, signal as newSignal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { For, mount } from "@keel/runtime-dom";
@@ -23,24 +22,24 @@ const open = (initial: readonly Todo[]) => {
   document.body.appendChild(host);
   const dispose = mount(() => {
     const ul = document.createElement("ul");
-    const list: unknown = Reflect.apply(For, undefined, [
-      {
-        each: () => rows.get(),
-        key: "id",
-        children: (item: Todo): Node => {
-          built.set(item.id, (built.get(item.id) ?? 0) + 1);
-          const li = document.createElement("li");
-          const label = document.createElement("label");
-          label.append(`${item.id} `);
-          const input = document.createElement("input");
-          label.append(input);
-          const span = document.createElement("span");
-          span.textContent = item.label;
-          li.append(label, span);
-          return li;
-        },
+    const list: unknown = For({
+      get each() {
+        return rows.get();
       },
-    ]);
+      key: "id",
+      children: (item: Todo): Node => {
+        built.set(item.id, (built.get(item.id) ?? 0) + 1);
+        const li = document.createElement("li");
+        const label = document.createElement("label");
+        label.append(`${item.id} `);
+        const input = document.createElement("input");
+        label.append(input);
+        const span = document.createElement("span");
+        span.textContent = item.label;
+        li.append(label, span);
+        return li;
+      },
+    });
     if (!(list instanceof Node)) throw new Error("fixture: For did not return a node");
     ul.append(list);
     return ul;
@@ -59,7 +58,7 @@ const open = (initial: readonly Todo[]) => {
 const ids = (n: number): string[] => Array.from({ length: n }, (_, i) => `k${i}`);
 const todos = (keys: readonly string[], tag: string): Todo[] => keys.map((id) => ({ id, label: `${tag}:${id}` }));
 
-describe.skip("k.component: For called as a function renders a kept key's row anew for a new item object", () => {
+describe("k.component: For called as a function renders a kept key's row anew for a new item object", () => {
   it("Called as a function with `each` a getter, `For` renders a kept key's row anew for a new item object", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 2, max: 8 }), fc.nat(), async (n, pick) => {
