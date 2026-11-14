@@ -6,8 +6,9 @@
 import { execFile, spawn } from "node:child_process";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { cp, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -41,6 +42,8 @@ const cookie = `${token}.${createHmac("sha256", secret).update(token).digest("ba
 const reader = createHash("sha256").update(cookie).digest("base64url");
 
 const copy = await mkdtemp(join(root, "apps", ".golden-1-monitor-"));
+// The api stores its state in SQLite: a file in a temporary folder outside the repo, removed after.
+const data = await mkdtemp(join(tmpdir(), "keel-smoke-monitor-"));
 let server;
 try {
   await cp(app, copy, { recursive: true, filter: (src) => !SKIP.has(basename(src)) });
@@ -56,13 +59,17 @@ try {
 
   server = spawn(
     "node",
-    [
-      "--experimental-webstorage",
-      `--localstorage-file=${join(copy, ".api.storage")}`,
-      "--disable-warning=ExperimentalWarning",
-      join(copy, "dist", "api", "server.mjs"),
-    ],
-    { cwd: copy, env: { ...process.env, PORT: String(port), KEEL_SECRET: secret, KEEL_ORIGIN: origin } },
+    ["--disable-warning=ExperimentalWarning", join(copy, "dist", "api", "server.mjs")],
+    {
+      cwd: copy,
+      env: {
+        ...process.env,
+        PORT: String(port),
+        KEEL_SECRET: secret,
+        KEEL_ORIGIN: origin,
+        KEEL_DATABASE_URL: pathToFileURL(join(data, "keel.sqlite")).href,
+      },
+    },
   );
   const serverLog = [];
   server.stdout.on("data", (d) => serverLog.push(...String(d).trim().split("\n")));
@@ -192,6 +199,7 @@ try {
     if (server.exitCode === null) server.kill("SIGKILL");
   }
   await rm(copy, { recursive: true, force: true });
+  await rm(data, { recursive: true, force: true });
 }
 for (const l of lines) console.log(l);
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
