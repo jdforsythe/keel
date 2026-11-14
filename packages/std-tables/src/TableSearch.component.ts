@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { computed, owner } from "@keel/reactive";
+import { effect, owner, signal } from "@keel/reactive";
 import type { Href } from "@keel/router";
 import { findRouter } from "@keel/router/internal";
 import { Input } from "@keel/ui";
@@ -32,14 +32,18 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
   // `Q_MAX` stays); any other `q` (back, forward, a link) replaces it and becomes the new baseline.
   let q = props.search.q ?? "";
   let sent = q;
-  const shown = computed(() => {
-    const at = props.search.q ?? "";
-    if (at !== sent) {
-      sent = at;
-      q = at;
-    }
-    return q;
-  });
+  const shown = signal(q);
+  effect(
+    () => {
+      const at = props.search.q ?? "";
+      if (at !== sent) {
+        sent = at;
+        q = at;
+      }
+      shown.set(q);
+    },
+    { writes: [shown] },
+  );
   const timer =
     router === null || clock === undefined
       ? undefined
@@ -60,6 +64,7 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
     value: shown,
     onInput: (value) => {
       q = value;
+      shown.set(value);
       timer?.push();
     },
   });

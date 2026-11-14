@@ -112,3 +112,51 @@ test("text typed while a search loads stays in the input and is sent next", asyn
   router.dispose();
   host.remove();
 });
+
+// Known limit: a link built from the route's search before the input's navigation committed (a sort or pager link
+// activated during a slow search load) re-applies the old `q`; the last navigation wins and the input shows it.
+test.fails("a link activated while a search loads keeps the typed text (known limit)", async () => {
+  const held: (() => void)[] = [];
+  const routes = manifest({
+    "st.find": {
+      path: "/st",
+      search: Search,
+      loader: loader({ output: s.object({}), search: Search }, async ({ search }) => {
+        if (search.q !== undefined) await new Promise<void>((r) => held.push(r));
+        return ok({});
+      }),
+      component: (props) =>
+        TableSearch({
+          id: "find",
+          label: "Search",
+          get search() {
+            return queryOf(props.search);
+          },
+          href: hrefOf,
+        }),
+    },
+  });
+  const ctx = createCtx({ mode: "sim", seed: 1337 });
+  const router = createRouter(routes, { ctx, history: memory("/st") });
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const off = mount(router.App, host);
+  await settle();
+  const input = document.getElementById("find.input");
+  if (!(input instanceof HTMLInputElement)) throw new Error("no input");
+  input.value = "pie";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  ctx.clock.advance(300);
+  await settle();
+  // A sort link minted from the old search (no `q`) is activated while the "pie" load is held.
+  await router.navigate(hrefOf({}));
+  held.shift()?.();
+  await settle();
+  try {
+    expect(input.value).toBe("pie");
+  } finally {
+    off();
+    router.dispose();
+    host.remove();
+  }
+});

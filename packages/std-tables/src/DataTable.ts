@@ -248,15 +248,17 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     children: () => computed(() => text().pageOf(view.get().page, view.get().pages)),
   });
   // The pager link (`next`, `previous`) that has focus, until focus moves on; when a new page removes it, `status`
-  // takes focus.
+  // takes focus, once.
   let was = "";
   effect(() => {
     const v = view.get();
-    if ((was === "next" && v.page >= v.pages) || (was === "previous" && v.page <= 1))
+    if ((was === "next" && v.page >= v.pages) || (was === "previous" && v.page <= 1)) {
+      was = "";
       queueMicrotask(() => {
         const lost = document.activeElement === null || document.activeElement === document.body;
         if (lost && status instanceof HTMLElement && status.isConnected) status.focus();
       });
+    }
   });
   const pager = Part({
     ...styles.pager,
@@ -300,9 +302,12 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
       const to = e.target instanceof Element ? e.target.id : "";
       if (to === `${id}.next` || to === `${id}.previous`) was = to.slice(id.length + 1);
     });
-    // Focus moving elsewhere forgets the link; a link removed with the page has no next target and is kept.
+    // Focus leaving the link forgets it, unless the page change is removing the link itself (the handoff's case).
     pager.addEventListener("focusout", (e) => {
-      if (e instanceof FocusEvent && e.relatedTarget !== null) was = "";
+      const from = e.target;
+      queueMicrotask(() => {
+        if (from instanceof Element && from.isConnected) was = "";
+      });
     });
   }
   return Part({ id, role: "generic", children: () => [table, pager] });
