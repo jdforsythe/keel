@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "unsafe": 13,
+  "unsafe": 14,
   "rungs": {
-    "example": 773,
-    "probabilistic": 249,
-    "exhaustive": 13,
-    "proven": 36,
+    "example": 838,
+    "probabilistic": 263,
+    "exhaustive": 15,
+    "proven": 42,
     "monitored": 4
   },
   "mutation": {
     "packages": {
       "check": {
-        "score": 75.99,
+        "score": 75.16,
         "threshold": 70
       },
       "cli": {
@@ -19,7 +19,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 79.16,
+        "score": 78.36,
         "threshold": 70
       },
       "ctx": {
@@ -35,7 +35,7 @@
         "threshold": 80
       },
       "router": {
-        "score": 83.14,
+        "score": 82.94,
         "threshold": 80
       },
       "runtime-dom": {
@@ -63,11 +63,11 @@
         "threshold": 80
       },
       "testing": {
-        "score": 92.87,
+        "score": 91.99,
         "threshold": 70
       },
       "ui": {
-        "score": 76.81,
+        "score": 79.44,
         "threshold": 70
       }
     },
@@ -7765,6 +7765,30 @@
     },
     {
       "pkg": "golden-2",
+      "name": "CatalogParams",
+      "file": "golden-2:kitchen/CatalogParams.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "CatalogResult",
+      "file": "golden-2:kitchen/CatalogResult.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "CatalogRow",
+      "file": "golden-2:kitchen/CatalogRow.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "CatalogSearch",
+      "file": "golden-2:kitchen/CatalogSearch.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "NewRecipe",
       "file": "golden-2:kitchen/NewRecipe.schema.ts",
       "rung": "example"
@@ -7807,6 +7831,18 @@
     },
     {
       "pkg": "golden-2",
+      "name": "catalogColumns",
+      "file": "golden-2:kitchen/catalogColumns.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "loadCatalog",
+      "file": "golden-2:kitchen/loadCatalog.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "loadRecipes",
       "file": "golden-2:kitchen/loadRecipes.server.ts",
       "rung": "example"
@@ -7840,6 +7876,18 @@
       "name": "BoxShell",
       "file": "golden-2:recipes/BoxShell.tsx",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "CatalogData",
+      "file": "golden-2:recipes/CatalogData.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "CatalogPage",
+      "file": "golden-2:recipes/CatalogPage.tsx",
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -7933,9 +7981,45 @@
     },
     {
       "pkg": "golden-2",
+      "name": "ShoppingList",
+      "file": "golden-2:recipes/ShoppingList.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "TextData",
       "file": "golden-2:recipes/TextData.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ToastRef",
+      "file": "golden-2:recipes/ToastRef.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ToastText",
+      "file": "golden-2:recipes/ToastText.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Toasts",
+      "file": "golden-2:recipes/Toasts.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "addToList",
+      "file": "golden-2:recipes/addToList.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "clearList",
+      "file": "golden-2:recipes/clearList.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -7948,6 +8032,18 @@
       "name": "createRecipe",
       "file": "golden-2:recipes/createRecipe.server.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "currencyOptions",
+      "file": "golden-2:recipes/currencyOptions.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "dismissToast",
+      "file": "golden-2:recipes/dismissToast.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -7981,6 +8077,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "loadCatalog",
+      "file": "golden-2:recipes/loadCatalog.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "loadIndex",
       "file": "golden-2:recipes/loadIndex.server.ts",
       "rung": "example"
@@ -8001,6 +8103,30 @@
       "pkg": "golden-2",
       "name": "loadShell",
       "file": "golden-2:recipes/loadShell.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "raiseToast",
+      "file": "golden-2:recipes/raiseToast.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "servedLocales",
+      "file": "golden-2:recipes/servedLocales.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "shoppingList",
+      "file": "golden-2:recipes/shoppingList.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "toasts",
+      "file": "golden-2:recipes/toasts.ts",
       "rung": "example"
     },
     {
@@ -8401,6 +8527,12 @@
     },
     {
       "pkg": "router",
+      "name": "navigate",
+      "file": "packages/router/src/navigate.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "router",
       "name": "routesArtifact",
       "file": "packages/router/src/routesArtifact.ts",
       "rung": "example"
@@ -8584,6 +8716,66 @@
       "name": "geo",
       "file": "packages/std-geo/src/geo.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "Combobox",
+      "file": "packages/std-headless/src/Combobox.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "Dialog",
+      "file": "packages/std-headless/src/Dialog.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "Disclosure",
+      "file": "packages/std-headless/src/Disclosure.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "Listbox",
+      "file": "packages/std-headless/src/Listbox.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "Menu",
+      "file": "packages/std-headless/src/Menu.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "Tabs",
+      "file": "packages/std-headless/src/Tabs.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "Toaster",
+      "file": "packages/std-headless/src/Toaster.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "openChart",
+      "file": "packages/std-headless/src/openChart.ts",
+      "rung": "proven"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "optionsChart",
+      "file": "packages/std-headless/src/optionsChart.ts",
+      "rung": "exhaustive"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "toastChart",
+      "file": "packages/std-headless/src/toastChart.ts",
+      "rung": "proven"
     },
     {
       "pkg": "std-health",
@@ -8902,6 +9094,48 @@
       "name": "coverage",
       "file": "packages/std-statecharts/src/coverage.ts",
       "rung": "proven"
+    },
+    {
+      "pkg": "std-statecharts",
+      "name": "instance",
+      "file": "packages/std-statecharts/src/instance.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-tables",
+      "name": "DataTable",
+      "file": "packages/std-tables/src/DataTable.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-tables",
+      "name": "TableSearch",
+      "file": "packages/std-tables/src/TableSearch.component.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-tables",
+      "name": "applyQuery",
+      "file": "packages/std-tables/src/applyQuery.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-tables",
+      "name": "columns",
+      "file": "packages/std-tables/src/columns.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-tables",
+      "name": "tablePage",
+      "file": "packages/std-tables/src/tablePage.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-tables",
+      "name": "tableSearch",
+      "file": "packages/std-tables/src/tableSearch.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-temporal",
@@ -9294,6 +9528,46 @@
       "rung": "example"
     },
     {
+      "item": "k.aria#1",
+      "rung": "proven"
+    },
+    {
+      "item": "k.aria#2",
+      "rung": "proven"
+    },
+    {
+      "item": "k.aria#3",
+      "rung": "proven"
+    },
+    {
+      "item": "k.aria#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.aria#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.aria#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.aria#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.aria#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.aria#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.aria#10",
+      "rung": "example"
+    },
+    {
       "item": "k.check#1",
       "rung": "example"
     },
@@ -9590,6 +9864,14 @@
       "rung": "example"
     },
     {
+      "item": "k.component#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.component#13",
+      "rung": "example"
+    },
+    {
       "item": "k.ctx#1",
       "rung": "probabilistic"
     },
@@ -9839,6 +10121,18 @@
     },
     {
       "item": "k.forms#16",
+      "rung": "example"
+    },
+    {
+      "item": "k.guards#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.guards#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.guards#3",
       "rung": "example"
     },
     {
@@ -10187,34 +10481,22 @@
     },
     {
       "item": "k.router#8",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "item": "k.router#9",
-      "rung": "proven"
+      "rung": "probabilistic"
     },
     {
       "item": "k.router#10",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "k.router#11",
       "rung": "proven"
     },
     {
+      "item": "k.router#11",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.router#12",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "k.router#13",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "k.router#14",
-      "rung": "example"
-    },
-    {
-      "item": "k.router#15",
       "rung": "probabilistic"
     },
     {
@@ -10738,6 +11020,10 @@
       "rung": "example"
     },
     {
+      "item": "k.testing#13",
+      "rung": "example"
+    },
+    {
       "item": "k.topology#1",
       "rung": "example"
     },
@@ -10943,6 +11229,34 @@
     },
     {
       "item": "std.geo#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.headless#1",
+      "rung": "proven"
+    },
+    {
+      "item": "std.headless#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.headless#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.headless#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.headless#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.headless#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.headless#7",
       "rung": "example"
     },
     {
@@ -11238,6 +11552,34 @@
       "rung": "example"
     },
     {
+      "item": "std.options#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.options#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.options#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.options#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.options#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.options#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.options#7",
+      "rung": "example"
+    },
+    {
       "item": "std.report#1",
       "rung": "probabilistic"
     },
@@ -11376,6 +11718,46 @@
     {
       "item": "std.statecharts#8",
       "rung": "probabilistic"
+    },
+    {
+      "item": "std.statecharts#9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tables#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tables#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tables#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tables#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.tables#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.tables#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.tables#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.tables#8",
+      "rung": "example"
+    },
+    {
+      "item": "std.tables#9",
+      "rung": "example"
     },
     {
       "item": "std.temporal#1",
@@ -11801,6 +12183,86 @@
     },
     {
       "item": "a11y:todos.shell#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:recipes.catalog#4.1.2",
       "rung": "none"
     },
     {
