@@ -49,7 +49,7 @@ describe("std.tables: tableSearch", () => {
     expect(throwsCode(() => search(Row, { key: "id", show: ["name"], search: ["name"] }))).toBe("E2852");
   });
 
-  test.skip("E2852 a filter column with a reserved name, or a `.pii()` `search` or `filter` column", () => {
+  test("E2852 a filter column with a reserved name, or a `.pii()` `search` or `filter` column", () => {
     // a filter column named sort, dir, page or q, of either filterable kind
     fc.assert(
       fc.property(

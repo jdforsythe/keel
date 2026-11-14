@@ -41,7 +41,7 @@ const build = (schema: Schema<unknown, boolean>, list: List, extra: Record<strin
 };
 
 describe("std.tables: columns kinds", () => {
-  test.skip("`columns` derives each kind from the schema and throws E2851 for a `value` column in `sort` without `compare`, a `number` in `search` and an unknown field", () => {
+  test("`columns` derives each kind from the schema and throws E2851 for a `value` column in `sort` without `compare`, a `number` in `search` and an unknown field", () => {
     fc.assert(
       fc.property(fc.constantFrom(...FIELDS), fc.constantFrom(...LISTS), (field, list) => {
         const code = throwsCode(() => build(field.schema, list));
@@ -59,7 +59,7 @@ describe("std.tables: columns kinds", () => {
     expect(throwsCode(() => build(number.schema, "sort"))).toBeUndefined();
   });
 
-  test.skip("E2851 a `columns` entry naming no field or a field of the wrong kind", () => {
+  test("E2851 a `columns` entry naming no field or a field of the wrong kind", () => {
     fc.assert(
       fc.property(
         fc.stringMatching(/^[a-z]{3,8}$/).map((name) => `x_${name}`),

@@ -65,7 +65,7 @@ const expected = (rows: readonly Row[], q: Query): Row[] => {
 };
 
 describe("std.tables: applyQuery", () => {
-  test.skip("For generated rows and searches, `applyQuery` is deterministic, `total` counts the filtered rows, its pages concatenate to the filtered sorted list, and each page has at most `pageSize` rows", () => {
+  test("For generated rows and searches, `applyQuery` is deterministic, `total` counts the filtered rows, its pages concatenate to the filtered sorted list, and each page has at most `pageSize` rows", () => {
     fc.assert(
       fc.property(rowsArb, searchArb, sizeArb, (rows, search, pageSize) => {
         const run = (page: number | undefined) =>
@@ -100,7 +100,7 @@ describe("std.tables: applyQuery", () => {
   const apply = (rows: ReturnType<typeof rowsOf>, pageSize: number) =>
     applyQuery(tagged, rows, {}, { pageSize, locale: LOCALE });
 
-  test.skip("E2853 `pageSize` outside 1 to 500, or a key repeated or not id-safe", () => {
+  test("E2853 `pageSize` outside 1 to 500, or a key repeated or not id-safe", () => {
     // pageSize outside 1 to 500 throws; inside it does not
     fc.assert(
       fc.property(fc.oneof(fc.integer({ min: -1000, max: 0 }), fc.integer({ min: 501, max: 5000 })), (pageSize) => {
