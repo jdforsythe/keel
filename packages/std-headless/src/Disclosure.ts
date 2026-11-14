@@ -14,7 +14,7 @@ export function Disclosure(
   props: {
     readonly id: string;
     readonly summary: () => Child;
-    readonly children: Children;
+    readonly children: Child | Children;
     readonly styles?: { readonly button?: PartStyle; readonly panel?: PartStyle };
   },
   _slots?: undefined,
@@ -39,7 +39,10 @@ export function Disclosure(
         id: `${id}.panel`,
         role: "generic",
         hidden: computed(() => !open.get()),
-        children: props.children,
+        children: () => {
+          const body = props.children;
+          return typeof body === "function" ? body() : body;
+        },
       }),
     ],
   });

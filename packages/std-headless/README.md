@@ -6,13 +6,19 @@ Headless widgets built on `Part`: keyboard, focus and ARIA follow the WAI-ARIA A
 
 ## Contract
 
+- **Usage.** In a component, write each widget as a JSX tag:
+  ```tsx
+  <Combobox id="diet" label={msg.diet} text={() => typed.get()} onInput={(v) => typed.set(v)}
+    options={() => diets.filter((d) => d.text.includes(typed.get()))} onChange={(k) => pick(k)} />
+  ```
+  The compiler lowers a tag to a component call that receives the component's `ctx` (the clock behind typeahead and toast timers) and renders its node in place. A call written inside a JSX expression, `{Combobox({ ... })}`, is compiled as a text binding: it renders nothing and gets no `ctx`. The plain call `Widget(props, undefined, ctx)` is for code without JSX, such as a test harness component passed to `render` from `@keel/testing`, or another `.ts` component file that forwards its own `ctx`.
 - **Public API** (`.`, client-safe, no CSS):
   - `Listbox({ id, label | labelledBy, options, mode, selected, onChange, orientation?, option?, styles? }, undefined, ctx?)`: parts `list`, `option.<key>`.
   - `Combobox({ id, label | labelledBy, text, onInput, options, onChange, option?, empty?, styles? }, undefined, ctx?)`: parts `input`, `list`, `option.<key>`, `empty` (a `status`).
   - `Menu({ id, trigger, items, onSelect, item?, styles? }, undefined, ctx?)`: parts `trigger`, `menu`, `item.<key>`; an item with `checked` is a `menuitemcheckbox`.
   - `Tabs({ id, label | labelledBy, tabs, selected, onChange, orientation?, tab?, panel, styles? }, undefined, ctx?)`: parts `list`, `tab.<key>`, `panel.<key>`.
   - `Dialog({ id, title, level?, trigger, content, alert?, styles? })`: parts `trigger`, `dialog` (`alertdialog` with `alert`), `title`, `description`.
-  - `Disclosure({ id, summary, children, styles? })`: parts `button`, `panel`.
+  - `Disclosure({ id, summary, children, styles? })`: parts `button`, `panel`; `children` are its JSX children.
   - `Toaster({ id, items, onDismiss, dismiss, duration?, styles? }, undefined, ctx?)`: parts `status`, `alert`, `toast.<item>`, `dismiss.<item>`. A `status` item expires `duration` ms (at least 5,000) after it shows, on `ctx.clock`; focus on its dismiss button holds it and leaving starts the full duration again.
   - Charts `optionsChart` (`headless.options`), `openChart` (`headless.open`), `toastChart` (`headless.toast`); types `Option`, `ToastItem`.
   - Each part's id is `<id>.<part>`. Every string a person sees or hears is a prop or a slot's output. Values reach a widget through functions and leave through callbacks.
