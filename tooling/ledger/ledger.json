@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 14,
   "rungs": {
-    "example": 838,
+    "example": 840,
     "probabilistic": 263,
     "exhaustive": 15,
     "proven": 42,
@@ -9105,7 +9105,7 @@
       "pkg": "std-tables",
       "name": "DataTable",
       "file": "packages/std-tables/src/DataTable.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "std-tables",
