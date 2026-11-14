@@ -8,7 +8,6 @@ import { Part, type PartStyle } from "@keel/ui/aria";
 import type { ToastItem } from "./ToastItem.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
 import { toastKey } from "./internal/toastKey.ts";
-import { untracked } from "./internal/untracked.ts";
 import { toastChart } from "./toastChart.ts";
 
 const LEAST = 5000;
@@ -45,7 +44,7 @@ export function Toaster(
     );
     return xs;
   };
-  untracked(items);
+  items();
   // An instance's key is the lowest slot no live toast holds, never the item's id: no app value enters a chart's
   // store id or log, and the key stays short however many toasts have shown.
   const live = new Set<number>();

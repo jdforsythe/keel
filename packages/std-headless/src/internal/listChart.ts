@@ -7,7 +7,6 @@ import type { Option } from "../Option.ts";
 import { optionsChart } from "../optionsChart.ts";
 import type { ListState } from "./ListState.ts";
 import { checkKeys } from "./checkKeys.ts";
-import { untracked } from "./untracked.ts";
 
 const PAUSE = 500;
 
@@ -32,11 +31,11 @@ export function listChart<O extends Option>(
     );
     return xs;
   });
-  // Checks the keys at render (E2801) without subscribing the enclosing render to the app's list.
-  untracked(() => list.get());
+  // Checks the keys at render (E2801).
+  list.get();
   const size = () => Math.min(list.get().length, 10_000);
   // The keys the chart's indexes refer to: the list as of the chart's last event. A widget signal, never in the chart.
-  const known = signal<readonly string[]>(untracked(() => list.get().map((o) => o.key)));
+  const known = signal<readonly string[]>(list.get().map((o) => o.key));
   /** The current index of the option the chart's `active` names in `known`, or -1 when its key is gone. */
   const remap = (at: number): number => {
     const key = known.get()[at];
