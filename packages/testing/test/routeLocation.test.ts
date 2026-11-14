@@ -62,4 +62,18 @@ describe("renderRoute url and location()", () => {
     expect(t.location()).toEqual({ entries: 2, scrollY: 0 });
     t.dispose();
   });
+
+  it("a url that is not a path of the named page is E1501", async () => {
+    for (const url of ["/other", "https://evil.example/loc", "javascript://x/loc", "//evil.example/loc", "loc"])
+      await expect(renderRoute("loc.list", { routes, url, ctx: ctx() })).rejects.toMatchObject({ code: "E1501" });
+  });
+
+  it("each harness starts and ends with scroll at the top", async () => {
+    window.scrollTo(0, 400);
+    const t = await renderRoute("loc.list", { routes, ctx: ctx() });
+    expect(t.location().scrollY).toBe(0);
+    window.scrollTo(0, 300);
+    t.dispose();
+    expect(window.scrollY).toBe(0);
+  });
 });
