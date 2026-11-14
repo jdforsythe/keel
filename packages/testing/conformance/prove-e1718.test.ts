@@ -55,7 +55,8 @@ describe("k.prove: E1718", () => {
         inc = transaction(st, "noz3.inc", s.object({}), (state) => ({ n: state.n + 1 }));
       });
       if (inc === undefined) throw new Error("fixture: scope did not run");
-      const e = await rejection(() => prove([inc]));
+      const t = inc;
+      const e = await rejection(() => prove([t]));
       expect(codeOf(e)).toBe("E1718");
       expect(messageOf(e)).toContain("z3-solver");
     },
