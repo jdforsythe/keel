@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "A guard redirect revisiting a location, or a ninth, is E1508 (server: 500 `keel.unexpected`); no redirect nests `next`." Seed 1337.
+// Spec: k.guards, clause "A guard redirect revisiting a location, or a ninth, is E1508 (server: 500 `keel.unexpected`); no redirect nests `next`." Seed 1337.
 // ASSUMPTIONS: the client shows the E1508 failure through the errorElement nearest the denying guard (at or above its level) as { code: "keel.unexpected", message containing "E1508" },
 // or through the default error alert whose text contains "E1508". The ninth-hop cap is covered by the server file (no client-only API to count hops).
 import { createCtx } from "@keel/ctx";
@@ -48,7 +48,7 @@ const loopDefs = (withError: boolean) => ({
   "app.login": { path: "/login", search: Next, component: page("login"), layout: "app.shell" },
 });
 
-describe("k.router E1508 client", () => {
+describe("k.guards E1508 client", () => {
   it("a navigation whose guard redirects into a route under the same denying guard renders an errorElement with code keel.unexpected and an E1508 message instead of looping", async () => {
     const r = await run(loopDefs(true), "/", "app.login");
     const text = r.host.querySelector('[data-error="1"]')?.textContent ?? "";

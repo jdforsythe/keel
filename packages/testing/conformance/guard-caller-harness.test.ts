@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "A guard's `caller` is the hash `createApp` gives loaders (`''` with no signed cookie) and under `renderRoute` its `caller` option (default `''`)." (rfc:0070)
+// Spec: k.guards, clause "A guard's `caller` is the hash `createApp` gives loaders (`''` with no signed cookie) and under `renderRoute` its `caller` option (default `''`)." (rfc:0070)
 // The renderRoute half; packages/server/conformance/guard-caller.test.ts covers createApp. Seed 1337.
 import { guard, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";

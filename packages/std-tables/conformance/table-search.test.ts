@@ -26,7 +26,7 @@ const search = (Row: unknown, spec: unknown): unknown =>
   Reflect.apply(tableSearch, undefined, [Reflect.apply(columns, undefined, [Row, spec])]);
 
 describe("std.tables: tableSearch", () => {
-  test.skip("`tableSearch` parses `{}` and drops a `sort` outside `sort` columns (k.router); E2852 fires for a filter named `page` and a `.pii()` search column", async () => {
+  test("`tableSearch` parses `{}` and drops a `sort` outside `sort` columns (k.router); E2852 fires for a filter named `page` and a `.pii()` search column", async () => {
     const parsed = Search.parse({});
     expect(parsed.ok).toBe(true);
     if (parsed.ok) expect(parsed.value).toEqual({});
@@ -34,7 +34,11 @@ describe("std.tables: tableSearch", () => {
     // `favorite` and `currency` are shown or filter columns, not `sort` columns: the route drops the key and keeps the rest.
     await fc.assert(
       fc.asyncProperty(fc.constantFrom("favorite", "currency", "id", "bogus", "PRICE", ""), async (sort) => {
-        const h = await renderRoute("tbl.server", { routes, params: {}, search: { sort, dir: "desc" }, ctx: simCtx() });
+        const h = await renderRoute("tbl.server", {
+          routes,
+          url: `/catalog?sort=${encodeURIComponent(sort)}&dir=desc`,
+          ctx: simCtx(),
+        });
         expect(h.route()).toEqual({ id: "tbl.server", params: {}, search: { dir: "desc" }, pending: false });
         h.dispose();
       }),

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, Conformance "After a push to another route scroll is 0, after a search-only push it is unchanged; back and forward restore each entry's position, also for two entries with one URL." (scroll is saved per router-minted history key) Seed 1337.
+// Spec: k.router, clause "After a push or replace to another route scroll is 0, after a search-only one it is unchanged; back and forward restore each entry's position, also for two entries with one URL." (scroll is saved per router-minted history key) Seed 1337.
 // Relies on happy-dom window.scrollTo updating window.scrollY.
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -21,6 +21,28 @@ describe("k.router scroll and focus", () => {
       fc.asyncProperty(fc.integer({ min: 1, max: 5000 }), fc.integer({ min: 0, max: 1000 }), async (y, page) => {
         window.scrollTo(0, y);
         await app.router.navigate(routes.href("orders.list", {}, { page }));
+        await settle();
+        expect(now(app.router)).toMatchObject({ id: "orders.list", search: { page } });
+        expect(window.scrollY).toBe(y);
+      }),
+      { seed: SEED, numRuns: 25 },
+    );
+    app.stop();
+  });
+  it("after a replace to another route the scroll position is 0", async () => {
+    const app = await start("/", { render: true });
+    window.scrollTo(0, 300);
+    await app.router.navigate(routes.href("orders.list"), { replace: true });
+    await settle();
+    expect(window.scrollY).toBe(0);
+    app.stop();
+  });
+  it("after a search-only replace the scroll position is unchanged", async () => {
+    const app = await start("/orders", { render: true });
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 5000 }), fc.integer({ min: 0, max: 1000 }), async (y, page) => {
+        window.scrollTo(0, y);
+        await app.router.navigate(routes.href("orders.list", {}, { page }), { replace: true });
         await settle();
         expect(now(app.router)).toMatchObject({ id: "orders.list", search: { page } });
         expect(window.scrollY).toBe(y);

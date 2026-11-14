@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "A guard returning `err` redirects to its `redirect` route with `next` and the matched route's same-name params (one missing: E1508); no loader or route component runs." (rfc:0079) Seed 1337.
+// Spec: k.guards, clause "A guard returning `err` redirects to its `redirect` route with `next` and the matched route's same-name params (one missing: E1508); no loader or route component runs." (rfc:0079) Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { createRouter, guard, manifest } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
@@ -20,7 +20,7 @@ import {
   total,
 } from "./fixtures.ts";
 
-describe("k.router guards", () => {
+describe("k.guards", () => {
   beforeEach(resetObservations);
   it("a guard returning err redirects to its redirect route with next; no loader runs and the route component never renders", async () => {
     const app = await start("/", { render: true });

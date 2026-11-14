@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "A guard redirect revisiting a location, or a ninth, is E1508 (server: 500 `keel.unexpected`); no redirect nests `next`." Seed 1337.
+// Spec: k.guards, clause "A guard redirect revisiting a location, or a ninth, is E1508 (server: 500 `keel.unexpected`); no redirect nests `next`." Seed 1337.
 // ASSUMPTIONS: route ids are `app.<name>`; a guard redirect target is a route id; the dev `diag` record is a JSON line
 // with kind "diag" that mentions the code E1508; a static manifest() E1508 (self-redirect under own guard) is also accepted in the property.
 import { createCtx } from "@keel/ctx";
@@ -47,7 +47,7 @@ function chain(n: number): Def {
   return d;
 }
 
-describe("k.router E1508 server", () => {
+describe("k.guards E1508 server", () => {
   it("a layout guard whose redirect target sits under it is 500 keel.unexpected, not 302 /login?next=%2Flogin, with no stack in production and a diag E1508 in dev", async () => {
     const defs: Def = {
       "app.shell": { component: shell, guard: deny("app.login") },

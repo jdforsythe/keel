@@ -1,4 +1,4 @@
-// Spec: k.router, clause "A guard's `caller` is the hash `createApp` gives loaders (`''` with no signed cookie) and under `renderRoute` its `caller` option (default `''`)." (rfc:0070)
+// Spec: k.guards, clause "A guard's `caller` is the hash `createApp` gives loaders (`''` with no signed cookie) and under `renderRoute` its `caller` option (default `''`)." (rfc:0070)
 // This file covers the createApp half; packages/testing/conformance/guard-caller-harness.test.ts covers renderRoute.
 // Seed 1337. Runs under plain Node: happy-dom strips cookie headers. Only runtime (JSON) requests are used over http.
 // @vitest-environment node
