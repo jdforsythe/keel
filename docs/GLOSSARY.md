@@ -18,6 +18,7 @@ Canonical names. Changing one requires an RFC.
 - **spec status**: proposed -> implemented -> conformance-covered -> frozen.
 - **extension point**: schema type registry, check rule registry, capability registry, module manifest, inspector hooks (`inspector({ id, schema, read })`: a named, schema-typed section of the inspect document), output formatter registry.
 - **unsafe**: the only named path around a guarantee; requires a justification string; counted in the ledger.
+- **part**: `Part` from `@keel/ui/aria`, the element stdlib widgets build on; a base element whose `role` fixes its tag and ARIA props.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 
-verified: e0d6c6ef452d307d4290952005188b8353866c82
+verified: b22fdf1c7acce90ee81f02ef3a0241ee12e0b6e4

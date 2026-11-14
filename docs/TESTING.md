@@ -18,6 +18,8 @@
 
 **Evals.** `evals/` holds agent tasks with pass criteria. Metrics: converged ledger-green rate, iterations to green, tokens to green, unsafe count. Run weekly across >= 2 models; results committed to `evals/results/`.
 
+**Harness.** `@keel/testing` addresses elements by id. `find(id).state` and `a11y()` report `active` (the option `aria-activedescendant` names), `sort` and `checked` (`'mixed'` included). `fire` takes `keydown` with `key`, `shift`, `alt` and `mod`. `renderRoute(id, { url })` opens a page from a path and query; `location()` returns the history's length and `scrollY`. A widget's a11y claim holds only when every WCAG-mapped rule ran: an axe "needs review" result counts as not run, and the claim stays `none`.
+
 **Determinism.** All kernel tests run under a seeded clock and PRNG via `ctx`. A test reading wall time fails lint.
 
 verified: af2c43d5b519dc6575540d7574c85ed40ab2d71a
