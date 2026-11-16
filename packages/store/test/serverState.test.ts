@@ -95,6 +95,35 @@ describe("serverState", () => {
     await expect(rq.stores(() => store(Count, { n: 0 }))).rejects.toThrow(/explicit id/);
     rq.end();
   });
+
+  it("refuses a second factory opening a store id another factory opened in the request, and never saves ok over it", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    const other = () => ({ ...factory(), extra: store(Count, { n: 0 }, { id: "ss.extra" }) });
+    const rq = serverState(ctx).request();
+    const a = await counterOf(rq.stores(factory));
+    await expect(rq.stores(other)).rejects.toThrow("store ss.count: id already in use by a live store");
+    tx(a.inc, {});
+    await expect(rq.save()).rejects.toThrow(/already in use/);
+    rq.end();
+    expect(await stored(ctx)).toBeNull();
+    // The refusal is per request: the next request opens the second factory.
+    const next = serverState(ctx).request();
+    const b = await counterOf(next.stores(other));
+    tx(b.inc, {});
+    expect(await next.save()).toBeNull();
+    next.end();
+    expect(await stored(ctx)).toEqual({ n: 1 });
+  });
+
+  it("refuses the second of two factories sharing an id opened at once", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    const twin = () => factory();
+    const rq = serverState(ctx).request();
+    const [a, b] = await Promise.allSettled([rq.stores(factory), rq.stores(twin)]);
+    expect(a.status).toBe("fulfilled");
+    expect(b.status === "rejected" ? String(b.reason) : b.status).toMatch(/ss\.count: id already in use/);
+    rq.end();
+  });
 });
 
 describe("openStores", () => {
@@ -107,5 +136,19 @@ describe("openStores", () => {
     expect(states).toEqual([{ n: 4 }]);
     expect(await saveStores(ctx, held)).toBeNull();
     held.scope.dispose();
+  });
+
+  it("takes a store id back once the factory that opened it is dropped from held", async () => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    const twin = () => factory();
+    const rq: StateRequest = { scope: scope(() => undefined), held: new Map() };
+    await openStores(ctx, rq, factory);
+    await expect(openStores(ctx, rq, twin)).rejects.toThrow(/already in use/);
+    rq.held.clear();
+    const b = await counterOf(openStores(ctx, rq, twin));
+    tx(b.inc, {});
+    expect(await saveStores(ctx, rq)).toBeNull();
+    expect(await stored(ctx)).toEqual({ n: 1 });
+    rq.scope.dispose();
   });
 });

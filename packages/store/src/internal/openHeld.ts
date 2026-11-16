@@ -4,7 +4,9 @@ import type { Schema } from "@keel/schema";
 import { isolate } from "../isolate.ts";
 import { stores } from "../stores.ts";
 import { copyOf } from "./copyOf.ts";
+import { requestIds } from "./requestIds.ts";
 import { savedOf } from "./savedOf.ts";
+import type { Factory } from "./types/Factory.ts";
 import type { Held } from "./types/Held.ts";
 import type { StateRequest } from "./types/StateRequest.ts";
 
@@ -14,7 +16,8 @@ const DEFAULT_ID = /^store\.\d+$/;
  * Run `factory` once with `ctx` in a child scope of the request scope with its own registry and restore each store it
  * created from one `ctx.storage.read` of their keys `keel.store.<id>` (k.persist Server saves), so the request reads
  * every store as of one cut. A value equal to the copy's (`copyOf`) reuses its parse. `seen` gets each restored
- * store's schema and state. A store with a default id (`store.<n>`) throws: its key would change every request.
+ * store's schema and state. A store with a default id (`store.<n>`) throws: its key would change every request; so does
+ * one whose id another factory still held by this request opened (k.store: one id, one live store per request scope).
  */
 async function restoreAll<S>(
   ctx: Ctx,
@@ -29,6 +32,13 @@ async function restoreAll<S>(
   const list = [...sc.run(stores).values()];
   for (const st of list)
     if (DEFAULT_ID.test(st.id)) throw new Error(`store ${st.id}: a stores factory's stores need an explicit id`);
+  const ids = requestIds.get(rq.scope) ?? new Map<string, Factory>();
+  requestIds.set(rq.scope, ids);
+  for (const st of list) {
+    const by = ids.get(st.id);
+    if (by !== undefined && rq.held.has(by)) throw new Error(`store ${st.id}: id already in use by a live store`);
+  }
+  for (const st of list) ids.set(st.id, factory);
   const keys = list.map((store) => `keel.store.${store.id}`);
   const raws = await ctx.storage.read(keys);
   const opened = list.map((store, i) => {
