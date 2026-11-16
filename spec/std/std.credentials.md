@@ -13,7 +13,7 @@ const r = await credentials(ctx).verify(input.password, user?.password)  // Resu
 - Both take the `Secret<string>` (k.privacy), so app code writes no `reveal`. The input is its text, NFKC-normalized, as UTF-8.
 - `hash` resolves the stored form; an input that is empty, over 1,024 bytes or not well-formed Unicode is `credentials.length` (data `{ min: 1, max: 1024 }`).
 - `verify` is `ok` only when the secret matches `stored` (`timingSafeEqual`). `rehash` is true when `stored` is below the ctx's cost: a lower `ln`, a salt under 16 bytes or a key under 32; the caller then stores a new `hash`. No match, or an input `hash` refuses, is `credentials.mismatch`. `stored` `undefined` (no such account) derives one key and is `credentials.mismatch`. An unreadable `stored` is `credentials.malformed`, data `{ reason }`: `format` (not `Hashed`), `parameters` (an id or parameters not read) or `sim` (a sim form outside sim).
-- Each error is one constant per code, `reason` and `limit`: none holds a part of the secret or of `stored`, and nothing throws.
+- Each error is one constant per code, `reason` and `limit`: none holds a part of the secret or of `stored`, and no call throws. `credentials(ctx)` throws E1158 (k.module) for a ctx bound, before this package loaded, to a std config that fails its schema.
 - `Hashed` (`credentials.Hashed`) is a format type over `s.string()`: `$id$params$salt$key`, `$v=<n>` allowed after the id, at most 256 characters. It checks the shape only, so a later version's string restores. It generates sim-form strings.
 
 **Cost.** `std: { '@keel/std-credentials': { ln } }` in a module's manifest: `ln`, log2 of scrypt's N, an integer 17 to 20, default 17; any other value or key is E1158 (k.module). A ctx's cost is the highest `ln` any module sets. `r` is 8 and `p` is 1. A derivation holds 128 MiB at 17 and twice as much per step.
@@ -25,7 +25,7 @@ const r = await credentials(ctx).verify(input.password, user?.password)  // Resu
 - **shell.** As real.
 - **sim.** The form is `$scrypt-sim$ln=<ln>,r=8,p=1$<salt>$<key>`: `ln` is the ctx's, as a label; the key is derived synchronously at N = 2^4, and the salt comes from the capability seed and a call count. It reads both forms. A real or shell ctx refuses it, so a string with a seeded salt verifies only under sim.
 
-**Rules.** E2201 `@keel/std-credentials/server` imported, statically or by `import()`, outside a `*.server.ts` file, tests and type-only imports aside (no fix) · E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix).
+**Rules.** E2201 `@keel/std-credentials/server` imported, statically or by `import()`, outside a `*.server.ts` file, tests and type-only imports aside (no fix) · E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix). Each rule reads the file's own `import`, `export ... from` and `import()` declarations: a `require`, and a helper file that re-exports the entry, are not followed.
 
 **Conformance.**
 - Under real and sim, for generated secrets, `verify` of a secret and its `hash` is `ok`, `rehash` false; of another secret, `credentials.mismatch`.

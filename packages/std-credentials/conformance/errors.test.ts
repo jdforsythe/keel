@@ -1,4 +1,4 @@
-// Spec: std.credentials, API "Each error is one constant per code, `reason` and `limit`: none holds a part of the secret or of `stored`, and nothing throws."
+// Spec: std.credentials, API "Each error is one constant per code, `reason` and `limit`: none holds a part of the secret or of `stored`, and no call throws."
 // Spec: std.credentials, Conformance "Every `err` above deep-equals the one of its code and `reason` for another secret and `stored`."
 // Seed: 1337.
 // Assumption: the generated secrets are 12 to 30 lowercase letters and digits with a `s-` prefix and the stored strings carry a distinct salt, so a substring check on the JSON of an error is unambiguous.
@@ -110,7 +110,7 @@ test("Every `err` above deep-equals the one of its code and `reason` for another
   );
 }, 120_000);
 
-test("Each error is one constant per code, `reason` and `limit`: none holds a part of the secret or of `stored`, and nothing throws.", async () => {
+test("Each error is one constant per code, `reason` and `limit`: none holds a part of the secret or of `stored`, and no call throws.", async () => {
   const ctx = simCtx();
   const stored1 = hashedOf(await hashText(ctx, "s-abc-123-secret"));
   const calls: Promise<unknown>[] = [
