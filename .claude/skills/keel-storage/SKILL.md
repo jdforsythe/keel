@@ -13,7 +13,7 @@ Spec: `pnpm spec k.persist`, `std.db`, `std.workflows`, `k.shell`, `k.prove`.
 
 **Workflow:** add `@keel/std-workflows`, `@keel/std-jobs`, `@keel/std-statecharts`; `workflow('api.removal', { chart, steps: { purging: { run, done, failed } }, waits })` in `removal.server.ts` (id prefixed by module: E2351; state names: E2352; W2353 a step never undone). `jobs.server.ts`: `queue({ ...removal.jobs })`; `runners.server.ts`: `[jobs, flows(jobs, [removal])]` (else E2354). Start it with `tx(s.removal.start, { id, data })` in an action whose `stores` hold `removal.stores`. A step runs at least once; use `key`.
 
-**Proofs:** `test('invariants', () => prove([addTodo(b), toggleTodo(b)]))`, needs dev `z3-solver` (E1718; without it the ledger says `example`). E1715 outside the fragment (use `explore`); E1716 counterexample; E1717 raise `rlimit`.
+**Proofs:** `test('invariants', () => prove([addTodo(b), toggleTodo(b)]))`, needs dev `z3-solver` (E1718; without it the ledger says `example`). E1715 outside the fragment (use `explore`); E1716 counterexample (an integer written with no `max` and guard leaves the safe range: bound it, `n < 9 ? n + 1 : n`; an optional written as `o: p.o` may be `undefined`: guard it); E1717 raise `rlimit`.
 
 **Shells:** `shells: { tauri: { id: 'dev.acme.app', name } }` on a `client` deployable (E1573). `KEEL_ORIGIN=https://... keel build --target tauri` or `--target capacitor --platform android|ios` (E1574 origin, E1575 missing toolchain, E1052 flags).
 
