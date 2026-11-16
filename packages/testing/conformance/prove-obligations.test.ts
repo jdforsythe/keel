@@ -36,17 +36,29 @@ const rejection = async (run: () => Promise<unknown>): Promise<unknown> => {
   }
 };
 
+/** A function whose source is `body`: these reads go past what the types allow, so the type checker refuses them as written. */
+const compiled = <F>(body: string, check: (f: unknown) => f is F): F => {
+  const f: unknown = new Function("state", "p", body);
+  if (!check(f)) throw new Error("fixture: not a function");
+  return f;
+};
+type Top = { items: boolean[]; top: boolean };
+const isTop = (f: unknown): f is (state: Top, p: { i: number }) => Top => typeof f === "function";
+type Look = { items: { id: string; done: boolean }[]; flag: boolean };
+const isLook = (f: unknown): f is (state: Look, p: { id: string }) => Look => typeof f === "function";
+
 const indexRead = (id: string, bound: number) => {
   const st = store(
     s.object({ items: s.array(s.boolean()), top: s.boolean() }),
     { items: [], top: false },
     { id: `${id}.ix` },
   );
-  const read = transaction(st, `${id}.read`, s.object({ i: s.int({ min: 0, max: bound }) }), (state, p) => ({
-    ...state,
-    // @ts-expect-error the index read is typed `boolean | undefined`; reading past the array is the case under test
-    top: state.items[p.i],
-  }));
+  const read = transaction(
+    st,
+    `${id}.read`,
+    s.object({ i: s.int({ min: 0, max: bound }) }),
+    compiled("return { ...state, top: state.items[p.i] };", isTop),
+  );
   return { read };
 };
 
@@ -56,9 +68,11 @@ const guardedIndexRead = (id: string) => {
     { items: [], top: false },
     { id: `${id}.gix` },
   );
-  const read = transaction(st, `${id}.read`, s.object({ i: s.int({ min: 0 }) }), (state, p) =>
-    // @ts-expect-error the index read is typed `boolean | undefined`; reading past the array is the case under test
-    p.i < state.items.length ? { ...state, top: state.items[p.i] } : state,
+  const read = transaction(
+    st,
+    `${id}.read`,
+    s.object({ i: s.int({ min: 0 }) }),
+    compiled("return p.i < state.items.length ? { ...state, top: state.items[p.i] } : state;", isTop),
   );
   return { read };
 };
@@ -115,11 +129,12 @@ const optionField = (id: string) => {
     { items: [], flag: false },
     { id: `${id}.opt` },
   );
-  const look = transaction(st, `${id}.look`, s.object({ id: s.string() }), (v, p) => ({
-    ...v,
-    // @ts-expect-error the read through an absent option is the case under test; the type system forbids it outside this line
-    flag: v.items.find((x) => x.id === p.id).done,
-  }));
+  const look = transaction(
+    st,
+    `${id}.look`,
+    s.object({ id: s.string() }),
+    compiled("return { ...state, flag: state.items.find((x) => x.id === p.id).done };", isLook),
+  );
   return { look };
 };
 
