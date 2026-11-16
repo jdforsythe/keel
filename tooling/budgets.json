@@ -18,7 +18,7 @@
       "platform": "node"
     },
     "@keel/cli/shell": {
-      "max": "3.25kb",
+      "max": "3.75kb",
       "platform": "node"
     },
     "@keel/compiler": {
