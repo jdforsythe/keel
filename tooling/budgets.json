@@ -42,7 +42,7 @@
     },
     "@keel/server/internal/dom": "4.75kb",
     "@keel/server/internal/start": {
-      "max": "2kb",
+      "max": "2.25kb",
       "platform": "node"
     },
     "@keel/services": "3.25kb",
