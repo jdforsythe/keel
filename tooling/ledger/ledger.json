@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 939,
-    "probabilistic": 296,
+    "example": 943,
+    "probabilistic": 299,
     "exhaustive": 15,
     "proven": 51,
     "monitored": 4
@@ -11,11 +11,11 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 73.81,
+        "score": 74.06,
         "threshold": 70
       },
       "cli": {
-        "score": 82.74,
+        "score": 83.93,
         "threshold": 70
       },
       "compiler": {
@@ -9649,7 +9649,7 @@
       "pkg": "std-credentials",
       "name": "CredentialsConfig",
       "file": "packages/std-credentials/src/CredentialsConfig.ts",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-credentials",
@@ -11370,6 +11370,10 @@
       "rung": "example"
     },
     {
+      "item": "k.persist#12",
+      "rung": "example"
+    },
+    {
       "item": "k.prefix#1",
       "rung": "example"
     },
@@ -12371,11 +12375,11 @@
     },
     {
       "item": "std.credentials#3",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.credentials#4",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.credentials#5",
@@ -12411,6 +12415,14 @@
     },
     {
       "item": "std.credentials#13",
+      "rung": "example"
+    },
+    {
+      "item": "std.credentials#14",
+      "rung": "example"
+    },
+    {
+      "item": "std.credentials#15",
       "rung": "example"
     },
     {
