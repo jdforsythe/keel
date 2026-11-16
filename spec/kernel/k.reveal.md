@@ -1,5 +1,5 @@
 # k.reveal: Revealed values
-status: proposed
+status: conformance-covered
 
 **Purpose.** What `reveal` returns is plain data (k.privacy Secrets). E1112 reads one file by syntax and reports a revealed value that reaches a log, storage, a file, store state or a throw through bindings, literals, operators, members, methods, and the standard conversions and encodings; a call to anything else ends it.
 

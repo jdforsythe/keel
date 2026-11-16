@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 17,
   "rungs": {
-    "example": 909,
-    "probabilistic": 277,
+    "example": 913,
+    "probabilistic": 280,
     "exhaustive": 15,
     "proven": 51,
     "monitored": 4
@@ -11,7 +11,7 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 73.87,
+        "score": 73.81,
         "threshold": 70
       },
       "cli": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 83.63,
+        "score": 82.65,
         "threshold": 70
       },
       "services": {
@@ -11525,6 +11525,18 @@
     },
     {
       "item": "k.reactive#19",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.reveal#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.reveal#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.reveal#3",
       "rung": "probabilistic"
     },
     {

@@ -63,8 +63,8 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.a11y | Accessibility | conformance-covered | contrast, focus order, claims |
 | k.aria | Widget parts | conformance-covered | Part: roles, focus, dialog, styles |
 | k.security | Headers and CSP | conformance-covered | headers, nonce CSP, cookie |
-| k.privacy | Secrets and personal data | conformance-covered | `s.secret`, `.pii(class)`, redacting sinks |
-| k.reveal | Revealed values | proposed | E1112 |
+| k.privacy | Secrets and personal data | conformance-covered | `s.secret`, `.pii(class)`, sinks |
+| k.reveal | Revealed values | conformance-covered | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | a signed bundle |
 
 ## Stdlib

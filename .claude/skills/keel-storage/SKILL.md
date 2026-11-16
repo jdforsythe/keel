@@ -17,4 +17,4 @@ Spec: `pnpm spec k.persist`, `std.db`, `std.workflows`, `k.shell`, `k.prove`.
 
 **Shells:** `shells: { tauri: { id: 'dev.acme.app', name } }` on a `client` deployable (E1573). `KEEL_ORIGIN=https://... keel build --target tauri` or `--target capacitor --platform android|ios` (E1574 origin, E1575 missing toolchain, E1052 flags).
 
-**Secrets:** a `reveal`ed value reaching `tx`, `store`, `storage` or `console` is E1112: store a salted hash.
+**Secrets:** a `reveal`ed value reaching `tx`, `store`, `storage`, a log, a file or a `throw` is E1112: store a salted hash.
