@@ -1,5 +1,6 @@
 // Spec: k.prove, Conformance "A transaction calling an imported helper rejects E1715 naming the call."
 // Spec: k.prove, Rules "E1715 a function outside the fragment, naming the construct and its offset in the function's source, or a schema without a sort (Sorts), naming its path; there is no claim, and `explore` remains."
+// Spec: k.prove, Rules "The message is `<tx>: <construct> at offset <n> is outside the fragment; explore remains` (`<store> invariant <i>` in place of `<tx>` for an invariant), or `<tx>: no sort for <kind> at state.<path>; explore remains` (`payload.<path>` in a payload)."
 // Seed: 1337.
 import { isDeepStrictEqual } from "node:util";
 import { scope } from "@keel/reactive";
@@ -138,6 +139,74 @@ describe("k.prove: E1715", () => {
       const e = await rejection(() => prove([noSortState]));
       expect(codeOf(e)).toBe("E1715");
       expect(messageOf(e)).toContain("choice");
+    },
+    LONG,
+  );
+});
+
+const escapeRe = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const firstLine = (e: unknown): string => messageOf(e).split("\n")[0] ?? "";
+
+const shapes = (id: string) => {
+  const none = s.object({});
+  const st = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.count` });
+  invariant(st, (state) => state.n >= 0);
+  const callFn = (state: { n: number }) => ({ n: isDeepStrictEqual(state.n, 0) ? 1 : state.n });
+  const call = transaction(st, `${id}.call`, none, callFn);
+  const nested = transaction(st, `${id}.nested`, s.object({ outer: s.object({ extra: s.json() }) }), (state) => ({ n: state.n }));
+  const bad = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.bad` });
+  invariant(bad, (state) => isDeepStrictEqual(state.n, state.n));
+  const viaInvariant = transaction(bad, `${id}.viaInvariant`, none, (state) => ({ n: state.n }));
+  return { id, call, callSource: callFn.toString(), nested, viaInvariant };
+};
+
+describe("k.prove: E1715 message shapes", () => {
+  it(
+    "a function outside the fragment rejects E1715 with the message <tx>: <construct> at offset <n> is outside the fragment; explore remains",
+    async () => {
+      const f = build(shapes);
+      const e = await rejection(() => prove([f.call]));
+      expect(codeOf(e)).toBe("E1715");
+      const m = new RegExp(`^${escapeRe(`${f.id}.call`)}: (.+) at offset (\\d+) is outside the fragment; explore remains$`).exec(firstLine(e));
+      expect(m).not.toBeNull();
+      expect(Number(m?.[2])).toBeLessThanOrEqual(f.callSource.length);
+      expect(m?.[1]).toContain("isDeepStrictEqual");
+    },
+    LONG,
+  );
+
+  it(
+    "an invariant outside the fragment rejects E1715 with <store> invariant <i> in place of <tx>",
+    async () => {
+      const f = build(shapes);
+      const e = await rejection(() => prove([f.viaInvariant]));
+      expect(codeOf(e)).toBe("E1715");
+      expect(firstLine(e)).toMatch(
+        new RegExp(`^${escapeRe(`${f.id}.bad`)} invariant \\d+: (.+) at offset (\\d+) is outside the fragment; explore remains$`),
+      );
+    },
+    LONG,
+  );
+
+  it(
+    "a schema without a sort in the state rejects E1715 with <tx>: no sort for <kind> at state.<path>; explore remains",
+    async () => {
+      const f = build(fixture);
+      const e = await rejection(() => prove([f.noSortState]));
+      expect(codeOf(e)).toBe("E1715");
+      expect(firstLine(e)).toMatch(/^[^\s:]+\.noSortState: no sort for .+ at state\.choice; explore remains$/);
+    },
+    LONG,
+  );
+
+  it(
+    "a schema without a sort in a payload rejects E1715 with payload.<path>, nested paths joined by dots",
+    async () => {
+      const f = build(shapes);
+      const e = await rejection(() => prove([f.nested]));
+      expect(codeOf(e)).toBe("E1715");
+      expect(firstLine(e)).toBe(`${f.id}.nested: no sort for ${firstLine(e).split(" no sort for ")[1]?.split(" at ")[0] ?? ""} at payload.outer.extra; explore remains`);
+      expect(firstLine(e)).toMatch(/^[^\s:]+\.nested: no sort for .+ at payload\.outer\.extra; explore remains$/);
     },
     LONG,
   );

@@ -1,4 +1,5 @@
 // Spec: k.prove, Conformance "A store `{ n: s.int({ min: 0 }) }` with invariant `n >= 0`, `inc` (`n + 1`) and `dec` (`n > 0 ? n - 1 : n`) proves; with `dec` as `n - 1` it rejects E1716 with state `{ n: 0 }`."
+// Spec: k.prove, Sorts "`s.int` as integers within its bounds, state and payload values also within ±(2^53 − 1)"
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -108,6 +109,58 @@ describe("k.prove: counter", () => {
         }),
         { seed: SEED, numRuns: 4 },
       );
+    },
+    LONG,
+  );
+});
+
+const MAX = 9007199254740991;
+const bounded = (id: string) => {
+  const none = s.object({ n: s.int() });
+  const up = store(s.object({ n: s.int() }), { n: 0 }, { id: `${id}.up` });
+  invariant(up, (state) => state.n <= 9007199254740991);
+  const upSet = transaction(up, `${id}.upSet`, none, (_state, p) => ({ n: p.n }));
+  const upTight = store(s.object({ n: s.int() }), { n: 0 }, { id: `${id}.upTight` });
+  invariant(upTight, (state) => state.n <= 9007199254740990);
+  const upTightSet = transaction(upTight, `${id}.upTightSet`, none, (_state, p) => ({ n: p.n }));
+  const down = store(s.object({ n: s.int() }), { n: 0 }, { id: `${id}.down` });
+  invariant(down, (state) => state.n >= -9007199254740991);
+  const downSet = transaction(down, `${id}.downSet`, none, (_state, p) => ({ n: p.n }));
+  const downTight = store(s.object({ n: s.int() }), { n: 0 }, { id: `${id}.downTight` });
+  invariant(downTight, (state) => state.n >= -9007199254740990);
+  const downTightSet = transaction(downTight, `${id}.downTightSet`, none, (_state, p) => ({ n: p.n }));
+  const st = store(s.object({ n: s.int() }), { n: 0 }, { id: `${id}.state` });
+  invariant(st, (state) => state.n <= 9007199254740992);
+  const jump = transaction(st, `${id}.jump`, s.object({}), (state) => ({ n: state.n === 9007199254740992 ? 18014398509481984 : state.n }));
+  return { upSet, upTightSet, downSet, downTightSet, jump };
+};
+
+describe("k.prove: int sort bound", () => {
+  it(
+    "payload values of s.int are within ±(2^53 − 1): the bound proves and one inside it rejects with the extreme value",
+    async () => {
+      const f = build(bounded);
+      // seed 1337
+      await fc.assert(
+        fc.asyncProperty(fc.boolean(), async (positive) => {
+          const [ok, tight] = positive ? [f.upSet, f.upTightSet] : [f.downSet, f.downTightSet];
+          expect(await rejection(() => prove([ok]))).toBeUndefined();
+          const e = await rejection(() => prove([tight]));
+          expect(codeOf(e)).toBe("E1716");
+          const ns = valuesAt(jsonLine(e), "n");
+          expect(ns).toContain(positive ? MAX : -MAX);
+        }),
+        { seed: SEED, numRuns: 2 },
+      );
+    },
+    LONG,
+  );
+
+  it(
+    "state values of s.int are also within ±(2^53 − 1): a state at 2^53 is not considered",
+    async () => {
+      const { jump } = build(bounded);
+      expect(await rejection(() => prove([jump]))).toBeUndefined();
     },
     LONG,
   );

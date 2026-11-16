@@ -1,4 +1,5 @@
 // Spec: k.prove, Rules "E1716 a counterexample: the state (or `initial`) and the payload, as JSON on the next line. The state may be unreachable; then the invariant is true but not inductive: strengthen it, or `explore`."
+// Spec: k.prove, Rules "The JSON is `{"transaction","state","payload"}` (`{"state"}` for `initial`); a string is the model's literal, else `a`, `b`, ... in order of first appearance."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -69,6 +70,75 @@ describe("k.prove: E1716", () => {
       expect(bys).toHaveLength(1);
       // the counterexample really breaks the invariant: n - by < 0
       expect((ns[0] ?? 0) - (bys[0] ?? 0)).toBeLessThan(0);
+    },
+    LONG,
+  );
+});
+
+const strings = (value: unknown): string[] => {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(strings);
+  if (!isRecord(value)) return [];
+  return Object.values(value).flatMap(strings);
+};
+
+const named = (id: string) => {
+  const st = store(s.object({ tag: s.string() }), { tag: "ok" }, { id: `${id}.tag` });
+  invariant(st, (state) => state.tag === "ok");
+  const set = transaction(st, `${id}.set`, s.object({ tag: s.string() }), (_state, p) => ({ tag: p.tag }));
+  const pair = store(s.object({ x: s.string(), y: s.string() }), { x: "", y: "" }, { id: `${id}.pair` });
+  invariant(pair, (state) => state.x === state.y);
+  const swap = transaction(pair, `${id}.swap`, s.object({ x: s.string(), y: s.string() }), (_state, p) => ({ x: p.x, y: p.y }));
+  const broken = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.broken` });
+  invariant(broken, (state) => state.n >= 1);
+  const inc = transaction(broken, `${id}.inc`, s.object({}), (state) => ({ n: state.n + 1 }));
+  return { id, set, swap, inc };
+};
+
+describe("k.prove: E1716 JSON shape", () => {
+  it(
+    "the counterexample JSON is {\"transaction\",\"state\",\"payload\"} with the transaction's name",
+    async () => {
+      const { id, set } = build(named);
+      const e = await rejection(() => prove([set]));
+      expect(codeOf(e)).toBe("E1716");
+      const json = jsonLine(e);
+      expect(isRecord(json)).toBe(true);
+      expect(isRecord(json) ? Object.keys(json).sort() : []).toEqual(["payload", "state", "transaction"]);
+      expect(isRecord(json) ? json.transaction : undefined).toBe(`${id}.set`);
+    },
+    LONG,
+  );
+
+  it(
+    "for initial the counterexample JSON is {\"state\"} alone",
+    async () => {
+      const { inc } = build(named);
+      const e = await rejection(() => prove([inc]));
+      expect(codeOf(e)).toBe("E1716");
+      const json = jsonLine(e);
+      expect(isRecord(json) ? Object.keys(json) : []).toEqual(["state"]);
+    },
+    LONG,
+  );
+
+  it(
+    "a string in the counterexample is the model's literal, else a, b, ... in order of first appearance",
+    async () => {
+      const { set, swap } = build(named);
+      const lit = await rejection(() => prove([set]));
+      expect(codeOf(lit)).toBe("E1716");
+      const j = jsonLine(lit);
+      expect(isRecord(j) && isRecord(j.state) ? j.state.tag : undefined).toBe("ok");
+      expect(isRecord(j) && isRecord(j.payload) ? j.payload.tag : undefined).toBe("a");
+
+      const e = await rejection(() => prove([swap]));
+      expect(codeOf(e)).toBe("E1716");
+      const json = jsonLine(e);
+      const body = isRecord(json) ? [strings(json.state), strings(json.payload)].flat() : [];
+      const firstSeen = body.filter((v, i) => body.indexOf(v) === i);
+      expect(firstSeen.length).toBeGreaterThanOrEqual(2);
+      expect(firstSeen).toEqual(["a", "b", "c", "d"].slice(0, firstSeen.length));
     },
     LONG,
   );
