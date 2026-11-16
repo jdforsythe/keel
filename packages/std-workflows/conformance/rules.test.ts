@@ -1,4 +1,5 @@
-// Spec: std.workflows, Conformance "E2351, E2352, W2353 and E2354 each fire on a fixture and not on its clean twin; `workflow` throws E2352."
+// Spec: std.workflows, Conformance "E2351, E2352, W2353, E2354 and E2355 each fire on a fixture and not on its clean twin; `workflow` throws E2352 and E2355."
+// Spec: std.workflows, Rules "E2355 a chart event named `start`, `attempt` or `forget`, a name its transactions take (no fix; `workflow` throws)"
 // Spec: std.workflows, rule E2351: a `workflow` outside `*.server.ts`, or an id not prefixed by its module (fix prefixes it).
 // Spec: std.workflows, rule E2352: a step or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on` (no fix; `workflow` throws it).
 // Spec: std.workflows, Rules "W2353 a step's `failed` event leads to a final state while another step's `done` event leads to a state from which that step is reachable, so its effect is never undone (names both)"
@@ -12,7 +13,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { check } from "@keel/check";
-import { ok } from "@keel/schema";
+import { ok, s } from "@keel/schema";
+import { chart } from "@keel/std-statecharts";
 import { workflow } from "@keel/std-workflows";
 import "@keel/std-workflows/tools";
 import fc from "fast-check";
@@ -234,5 +236,58 @@ describe("std.workflows: keel check rules", () => {
       const patched = applyFix(bad, fix ?? "");
       expect(found(patched, "E2354")).toEqual([]);
     }
+  });
+
+  // E2355: the chart's first event is renamed; it leads to the real state `purging`, so no other E235x finding is involved.
+  const withEvent = (name: string): Files =>
+    project({ chartStates: STATES.replace("begin:", `${name}:`) }).map((f) =>
+      f.path === "modules/api/removalChart.ts"
+        ? { ...f, source: chartSrc(STATES.replace("begin:", `${name}:`), EVENTS.replace("begin:", `${name}:`)) }
+        : f,
+    );
+  const reserved = ["start", "attempt", "forget"] as const;
+  const emptyEvent = s.object({});
+  const chartWith = (name: string) =>
+    chart(nextId("e2355Chart"), {
+      data: s.object({}),
+      start: {},
+      events: { [name]: emptyEvent, fin: emptyEvent },
+      initial: "queued",
+      states: { queued: { on: { [name]: "purging" } }, purging: { on: { fin: "done" } }, done: { final: true } },
+    });
+  const stepOver = { run: async () => ok({}), done: "fin", failed: "fin" };
+
+  test.each(reserved)("E2355 fires once on the workflow's file for a chart event named `%s`, with no fix.", (name) => {
+    const d = found(withEvent(name), "E2355");
+    expect(d.length).toBe(1);
+    expect(d[0]?.fix).toBeUndefined();
+    expect(JSON.stringify(d[0])).toContain("modules/api/removal.server.ts");
+  });
+
+  test("E2355 does not fire on the clean twin with the event renamed `begin`.", () => {
+    expect(found(withEvent("begin"), "E2355")).toEqual([]);
+    expect(found(project(), "E2355")).toEqual([]);
+  });
+
+  test.each(reserved)("`workflow` throws E2355 for a chart event named `%s`.", (name) => {
+    expect(() => workflow(nextId("r"), { chart: chartWith(name), steps: { purging: stepOver } })).toThrow(/^E2355/);
+  });
+
+  test("`workflow` does not throw E2355 for the renamed twin.", () => {
+    expect(() => workflow(nextId("ok"), { chart: chartWith("begin"), steps: { purging: stepOver } })).not.toThrow();
+  });
+
+  test("E2355 does not fire, in `check` or `workflow`, for a generated event name that is not reserved or already used.", () => {
+    const used = new Set([...reserved, "begin", "hide", "purged", "stuck", "expired", "undo", "fin"]);
+    fc.assert(
+      fc.property(
+        word.filter((n) => !used.has(n)),
+        (name) => {
+          expect(found(withEvent(name), "E2355")).toEqual([]);
+          expect(() => workflow(nextId("p"), { chart: chartWith(name), steps: { purging: stepOver } })).not.toThrow();
+        },
+      ),
+      { seed: 1337, numRuns: 30 },
+    );
   });
 });

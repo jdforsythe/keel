@@ -20,7 +20,8 @@ import { wakeJob } from "./internal/wakeJob.ts";
 /**
  * Declare a workflow (std.workflows) in a `*.server.ts` file: the chart run per instance in the one store `id`, its
  * step and wait states, and their std.jobs jobs `<id>.<state>`, `<id>.wake` and `<id>.forget`. Throws E2352 for a step
- * or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on`.
+ * or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on`, and
+ * E2355 for a chart event named `start`, `attempt` or `forget`, the names of the workflow's own transactions.
  */
 export function workflow<
   D,
@@ -55,6 +56,9 @@ export function workflow<
       waits.set(state, wait);
     }
   if (first === undefined) throw new Error(`E2352 workflow ${id}: the chart has no states`);
+  for (const e of Object.keys(chart.events))
+    if (e === "start" || e === "attempt" || e === "forget")
+      throw new Error(`E2355 workflow ${id}: chart event ${e} takes the name of a workflow transaction; rename it`);
   const events = new Map<string, Schema<unknown>>();
   for (const [e, t] of Object.entries(chart.events)) events.set(e, t.schema);
   const open = compileStores(

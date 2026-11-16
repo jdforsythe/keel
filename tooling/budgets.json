@@ -141,7 +141,7 @@
       "platform": "node"
     },
     "@keel/std-workflows/tools": {
-      "max": "3kb",
+      "max": "3.25kb",
       "platform": "node"
     },
     "@keel/std-capacitor": "1.25kb",

@@ -1,7 +1,7 @@
 # std.workflows: Workflows
 status: proposed
 
-**Extension points.** Module manifest (k.module): `@keel/std-workflows` is stdlib module `workflows`; a module with workflows lists it, `@keel/std-jobs` and `@keel/std-statecharts` in `deps`, `clock`, `random` and `storage` in `capabilities`, and is placed in a `node` deployable. Inspector hooks: section `workflows.instances`. Check rule registry: `@keel/std-workflows/tools` registers E2351-E2354.
+**Extension points.** Module manifest (k.module): `@keel/std-workflows` is stdlib module `workflows`; a module with workflows lists it, `@keel/std-jobs` and `@keel/std-statecharts` in `deps`, `clock`, `random` and `storage` in `capabilities`, and is placed in a `node` deployable. Inspector hooks: section `workflows.instances`. Check rule registry: `@keel/std-workflows/tools` registers E2351-E2355.
 
 **API** (`*.server.ts`).
 ```ts
@@ -18,7 +18,7 @@ tx(s.removal.events.undo, { id, payload: {} })
 ```
 `workflow(id, { chart, steps?, waits?, keepMs = 86_400_000, limit = 1000, attempts = 3, timeoutMs = 60_000 })`. A step names a state, its `run`, the chart events for its `done` and `failed` (payload `{ code }`) and optional `attempts` and `timeoutMs`; a wait names a state, `ms` and an event with payload `{}`.
 
-**Store.** `removal.stores(ctx)` creates the store `id`, state `{ instances: { [Id<'Flow'>]: { state, data, entered, attempt } } }`, and its transactions: `start` `{ id, data }` (an existing id: unchanged; past `limit` instances not final: `store.invariant`), one per chart event `{ id, payload }` (the instance moves by `chart.next`; a taken target with a `to`, its own state too, raises `entered` by one and `attempt` resets to 0; an unknown or final instance: unchanged), `attempt` `{ id, entered }` and `forget` `{ id }` (removes a final instance). Transactions are named `<id>.start`, `<id>.<event>`, `<id>.attempt` and `<id>.forget`, so a chart event named `start`, `attempt` or `forget` makes `stores(ctx)` throw (a taken name, k.store). Each changes one instance, so an invariant of the chart's `{ state, data }` that a closed-form `explore` of the chart proves holds for every instance. Every instance lives in this one store, so one `stores` factory and one `commit` hold any number.
+**Store.** `removal.stores(ctx)` creates the store `id`, state `{ instances: { [Id<'Flow'>]: { state, data, entered, attempt } } }`, and its transactions: `start` `{ id, data }` (an existing id: unchanged; past `limit` instances not final: `store.invariant`), one per chart event `{ id, payload }` (the instance moves by `chart.next`; a taken target with a `to`, its own state too, raises `entered` by one and `attempt` resets to 0; an unknown or final instance: unchanged), `attempt` `{ id, entered }` and `forget` `{ id }` (removes a final instance). Transactions are named `<id>.start`, `<id>.<event>`, `<id>.attempt` and `<id>.forget`. Each changes one instance, so an invariant of the chart's `{ state, data }` that a closed-form `explore` of the chart proves holds for every instance. Every instance lives in this one store, so one `stores` factory and one `commit` hold any number.
 
 **Run.** `flows(queue, workflows)` is a `Runner` (k.topology). At start, after each `save` of a workflow store (k.sync) and every 60,000 ms of `ctx.clock`, it reads each store and enqueues, with std.jobs keys `<id>:<flow>:<entered>` so a repeat enqueues nothing: for an instance in a step state, `<id>.<state>`; in a wait state, `<id>.wake` after `ms`; in a final state, `<id>.forget` after `keepMs`. Job inputs are `{ id, entered }`, never `data`. A step job, through `commitStores` (k.persist): stops if the instance has moved; commits `attempt`; past `attempts`, commits `failed` `{ code: 'workflows.attempts' }`; else calls `run` with `signal` and `key`, then commits `done` with its `ok` value, or on the last attempt `failed` with the `err` code; a `done` payload its event refuses commits `failed` with that code. A wake job commits its event if the instance is still there. A wait lasts at least `ms`, counted from when the runner sees the instance.
 
@@ -26,7 +26,7 @@ tx(s.removal.events.undo, { id, payload: {} })
 
 **Inspect.** `workflows.instances`: per workflow id, `{ [state]: count }` for the states holding an instance; no `data`.
 
-**Rules.** E2351 a `workflow` outside `*.server.ts`, or an id not prefixed by its module (fix prefixes it) · E2352 a step or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on` (no fix; `workflow` throws it) · W2353 a step's `failed` event leads to a final state while another step's `done` event leads to a state from which that step is reachable, so its effect is never undone (names both) · E2354 a module whose `queue` lacks a workflow's `jobs` or whose `runners` lack its `flows` (fix adds them); a module with no `jobs.server.ts` or `runners.server.ts` is reported on the workflow's file, without a fix.
+**Rules.** E2351 a `workflow` outside `*.server.ts`, or an id not prefixed by its module (fix prefixes it) · E2352 a step or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on` (no fix; `workflow` throws it) · E2355 a chart event named `start`, `attempt` or `forget`, a name its transactions take (no fix; `workflow` throws) · W2353 a step's `failed` event leads to a final state while another step's `done` event leads to a state from which that step is reachable, so its effect is never undone (names both) · E2354 a module whose `queue` lacks a workflow's `jobs` or whose `runners` lack its `flows` (fix adds them); a module with no `jobs.server.ts` or `runners.server.ts` is reported on the workflow's file, without a fix.
 
 **Conformance.**
 - For generated instances and events, a workflow event changes only its instance, to `chart.next` of it.
@@ -36,4 +36,4 @@ tx(s.removal.events.undo, { id, payload: {} })
 - After `close()` while `run` is pending, a new `createApp` on the same ctx runs it again with the same `key`, and the instance takes its `done` event once.
 - Restoring the store's snapshot and replaying its log from `initial` gives its state.
 - `workflows.instances` holds counts and no `data` value.
-- E2351, E2352, W2353 and E2354 each fire on a fixture and not on its clean twin; `workflow` throws E2352.
+- E2351, E2352, W2353, E2354 and E2355 each fire on a fixture and not on its clean twin; `workflow` throws E2352 and E2355.

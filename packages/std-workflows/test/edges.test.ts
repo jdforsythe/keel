@@ -26,30 +26,24 @@ const named = (name: string) =>
     states: { idle: { on: { go: "done", [name]: "done" } }, done: { final: true } },
   });
 
-/** What opening the stores of a workflow over `named(name)` throws, or "" when it opens. */
-async function opened(name: string): Promise<string> {
-  const wf = workflow(nextId("reserved"), { chart: named(name) });
-  try {
-    await commitStores(sim(), wf.stores, () => ok(null));
-    return "";
-  } catch (e) {
-    return e instanceof Error ? e.message : String(e);
-  }
-}
+const RESERVED = ["start", "attempt", "forget"] as const;
 
-test.fails("A chart event named start, attempt or forget is refused with a diagnostic code", async () => {
-  // no code covers this case yet: the store throws its own uncoded taken-name error
-  await fc.assert(
-    fc.asyncProperty(fc.constantFrom("start", "attempt", "forget"), async (name) => {
-      expect(await opened(name)).toMatch(/^E\d{4} /);
+test("A chart event named start, attempt or forget is refused with a diagnostic code", () => {
+  fc.assert(
+    fc.property(fc.constantFrom(...RESERVED), (name) => {
+      const id = nextId("reserved");
+      expect(() => workflow(id, { chart: named(name) })).toThrow(
+        `E2355 workflow ${id}: chart event ${name} takes the name of a workflow transaction; rename it`,
+      );
     }),
     { seed: 1337, numRuns: 3 },
   );
 });
 
-test("A chart event named start, attempt or forget makes stores(ctx) throw a taken name", async () => {
-  for (const name of ["start", "attempt", "forget"]) expect(await opened(name)).toMatch(/taken/);
-  expect(await opened("other")).toBe("");
+test("A chart whose events take no transaction name opens its stores", async () => {
+  const wf = workflow(nextId("renamed"), { chart: named("begin") });
+  const r = await commitStores(sim(), wf.stores, (S) => ok(Object.keys(S.events).sort()));
+  expect(r).toEqual({ ok: true, value: ["begin", "go"] });
 });
 
 const wfHead = `import { workflow } from "@keel/std-workflows"\nimport { removalChart } from "./c.ts"\nimport { purgeList } from "./purgeList.server.ts"\n`;
@@ -136,6 +130,58 @@ test("E2352 and W2353 read a chart file that is in the project but not handed ov
       expect(alone(rule, flow, { path: "modules/api/other.ts", source: chartAt.source })).toEqual([]);
     }),
     { seed: 1337, numRuns: 8 },
+  );
+});
+
+/** A workflow file over a chart file whose event `name` sits beside `go`. */
+const reservedFiles = (name: string) => {
+  const c = {
+    path: "modules/api/c.ts",
+    source: `import { chart } from "@keel/std-statecharts"
+import { s } from "@keel/schema"
+export const removalChart = chart('api.removalChart', {
+  data: s.object({}), start: {},
+  events: { go: s.object({}), ${name}: s.object({}) },
+  initial: 'idle',
+  states: { idle: { on: { go: 'done', ${name}: 'done' } }, done: { final: true } },
+})
+`,
+  };
+  const w = {
+    path: "modules/api/removal.server.ts",
+    source: `import { workflow } from "@keel/std-workflows"\nimport { removalChart } from "./c.ts"\nexport const removal = workflow('api.removal', { chart: removalChart })\n`,
+  };
+  return { c, w };
+};
+const e2355 = (checked: readonly { path: string; source: string }[], project?: { path: string; source: string }[]) =>
+  check(checked, project === undefined ? { types: false } : { types: false, project })
+    .diagnostics.filter((d) => d.code === "E2355")
+    .map((d) => ({ path: d.path, line: d.line, col: d.col, message: d.message }));
+
+test("E2355 reports each reserved chart event at the workflow's `chart`, and nothing for a renamed twin", () => {
+  for (const name of RESERVED) {
+    const { c, w } = reservedFiles(name);
+    const d = e2355([w, c]);
+    expect(d).toHaveLength(1);
+    expect(d[0]).toMatchObject({
+      path: w.path,
+      line: 3,
+      col: (w.source.split("\n")[2]?.indexOf("removalChart }") ?? 0) + 1,
+    });
+    expect(d[0]?.message).toContain(`'${name}'`);
+    const twin = reservedFiles("begin");
+    expect(e2355([twin.w, twin.c])).toEqual([]);
+  }
+});
+
+test("E2355 reads a chart file that is in the project but not among the checked files", () => {
+  fc.assert(
+    fc.property(fc.constantFrom(...RESERVED), (name) => {
+      const { c, w } = reservedFiles(name);
+      expect(e2355([w], [w, c])).toEqual(e2355([w, c]));
+      expect(e2355([w], [w, c])).toHaveLength(1);
+    }),
+    { seed: 1337, numRuns: 3 },
   );
 });
 
