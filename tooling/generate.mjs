@@ -73,7 +73,8 @@ function deployTree(dir) {
     const p = path.join(root, dir, rel);
     if (fs.existsSync(p)) tree.set(rel, fs.readFileSync(p, "utf8"));
   };
-  for (const rel of ["topology.ts", "turbo.json", ".github/workflows/ci.yml", "deploy/compose.yaml"]) add(rel);
+  for (const rel of ["topology.ts", "package.json", "turbo.json", ".github/workflows/ci.yml", "deploy/compose.yaml"])
+    add(rel);
   const deploy = path.join(root, dir, "deploy");
   if (fs.existsSync(deploy)) for (const name of fs.readdirSync(deploy).sort()) add(`deploy/${name}/Dockerfile`);
   return tree;
@@ -132,7 +133,11 @@ await run("generate", () => {
     else if (content === null) fs.rmSync(p, { force: true });
     else {
       fs.mkdirSync(path.dirname(p), { recursive: true });
+      // `keel build` leaves shell files read-only (k.shell); the mode is kept across the rewrite.
+      const mode = current === null ? null : fs.statSync(p).mode;
+      if (mode !== null) fs.chmodSync(p, mode | 0o200);
       fs.writeFileSync(p, content);
+      if (mode !== null) fs.chmodSync(p, mode);
     }
   }
   const apps = readJson("deploy.source.json").apps.length;
