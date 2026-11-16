@@ -30,7 +30,7 @@ import { drain, send } from "@keel/std-offline";
 import { coverage } from "@keel/std-statecharts";
 import { tx as commit, isolate } from "@keel/store";
 import { SimRun, explore, simulate } from "@keel/testing";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 // @keel/std-sessions is no dependency of golden-1: the group API is read from the workspace package.
 import { type SessionGroup, openGroup, replayGroup } from "../../../packages/std-sessions/src/group/index.ts";
 import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
@@ -65,9 +65,23 @@ const B = topology({
 type Routes = Manifest<Readonly<Record<string, RouteDef>>>;
 const both: Routes = manifest({ ...apiRoutes.routes, ...digestRoutes.routes });
 
+/** The temp folders this file made and has not yet removed. */
+const made: string[] = [];
+/** A fresh temp folder named `prefix`-something, removed by `cleanTemp`. */
+function tempDir(prefix: string): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  made.push(dir);
+  return dir;
+}
+/** Remove every folder `tempDir` made, whether the test passed, failed or threw; entries it did not make stay. */
+function cleanTemp(): void {
+  for (const dir of made.splice(0)) fs.rmSync(dir, { recursive: true, force: true });
+}
+afterEach(cleanTemp);
+
 /** `routes.json` of the app's node routes, as forwarding reads it from `artifacts`. */
 function artifacts(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "golden-1-split-"));
+  const dir = tempDir("golden-1-split-");
   fs.writeFileSync(path.join(dir, "routes.json"), JSON.stringify({ data: routesArtifact(both), hash: "" }));
   return dir;
 }
@@ -435,7 +449,7 @@ async function race(twin: boolean) {
 
 /** The group as a file in a fresh temp dir, at `.keel/sessions/golden-1-race.group.json`. */
 function written(group: SessionGroup): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "golden-1-race-"));
+  const dir = tempDir("golden-1-race-");
   const file = path.join(dir, GROUP_FILE);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(group));
@@ -707,4 +721,19 @@ describe("golden-1 on shared storage", () => {
     expect(names(flows).filter((n) => n === "api.removal.purged")).toHaveLength(1);
     for (const app of apps) await app.close();
   }, 120_000);
+});
+
+describe("golden-1 temp folders", () => {
+  it("leaves no golden-1-race-* or golden-1-split-* entry behind once the cleanup runs", () => {
+    const ours = (name: string): boolean => name.startsWith("golden-1-race-") || name.startsWith("golden-1-split-");
+    const before = new Set(fs.readdirSync(os.tmpdir()).filter(ours));
+    const split = artifacts();
+    const race = tempDir("golden-1-race-");
+    expect(fs.existsSync(split)).toBe(true);
+    expect(fs.existsSync(race)).toBe(true);
+    cleanTemp();
+    expect(fs.existsSync(split)).toBe(false);
+    expect(fs.existsSync(race)).toBe(false);
+    expect(new Set(fs.readdirSync(os.tmpdir()).filter(ours))).toEqual(before);
+  });
 });
