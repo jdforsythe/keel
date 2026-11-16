@@ -1,6 +1,6 @@
 // Spec: std.workflows, Conformance "For generated instances and events, a workflow event changes only its instance, to `chart.next` of it."
 // Seed: 1337.
-// Assumption: a started instance's `entered` and `attempt` start at values the spec does not fix, so only their change is asserted: `entered` rises by one exactly when the state name changes, and `attempt` is 0 then and unchanged otherwise.
+// Assumption: a started instance's `entered` and `attempt` start at values the spec does not fix, so only their change is asserted: this chart has no target leading back to its own state, so `entered` rises by one exactly when the state name changes, and `attempt` is 0 then and unchanged otherwise.
 // Assumption: `chart.next` of a final state is its argument, so a final instance equals its `next`.
 import { ok } from "@keel/schema";
 import fc from "fast-check";
