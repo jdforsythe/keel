@@ -74,9 +74,14 @@ export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> 
   const artifacts = failed
     ? 0
     : ARTIFACTS.length + 1 + (topology === undefined ? 0 : deployArtifactCount(project, deploy));
-  const done = (all: readonly OutRecord[]): OutRecord[] => [
+  // One trailer, after every step has settled; a step that exits non-zero without a diagnostic still counts one error.
+  const done = (all: readonly OutRecord[], code = 0): OutRecord[] => [
     ...all,
-    summary("build", all, { files: files.length, artifacts, errors: all.filter(isError).length }),
+    summary("build", all, {
+      files: files.length,
+      artifacts,
+      errors: Math.max(all.filter(isError).length, code === 0 ? 0 : 1),
+    }),
   ];
   if (failed || io.build === undefined) return { records: done(diags), writes };
   // The disk half reads what the engine wrote, so the writes land first (`Io.build`).
@@ -84,7 +89,12 @@ export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> 
   const post = await io.build(io.cwd);
   const plan = pre.plan;
   if (plan === undefined || post.code !== 0 || post.diagnostics.some(isError) || host === undefined)
-    return { records: done([...diags, ...post.diagnostics]), writes: [], stderr: post.stderr, code: post.code };
+    return {
+      records: done([...diags, ...post.diagnostics], post.code),
+      writes: [],
+      stderr: post.stderr,
+      code: post.code,
+    };
   const sh = host.build(io.cwd, plan);
   const all = [...diags, ...post.diagnostics, ...sh.diagnostics];
   const records =
@@ -97,6 +107,6 @@ export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> 
             {},
           ),
         ]
-      : done(all);
+      : done(all, sh.code);
   return { records, writes: [], stderr: post.stderr + sh.stderr, code: Math.max(post.code, sh.code) };
 }

@@ -24,8 +24,9 @@ if (dev !== undefined) {
   }
 } else {
   const r = await run(argv, hostIo(serving));
-  if (r.stdout !== "") process.stdout.write(r.stdout);
+  // stderr first: the trailer in stdout is the last thing a terminal shows.
   if (r.stderr !== "") process.stderr.write(r.stderr);
+  if (r.stdout !== "") process.stdout.write(r.stdout);
   process.exitCode = r.code;
   if (serving) process.exit();
 }

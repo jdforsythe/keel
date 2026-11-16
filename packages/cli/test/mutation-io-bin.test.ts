@@ -284,7 +284,7 @@ describe("keel binary", () => {
     const r = await keel(d, ["build"]);
     expect(r.code).toBe(1);
     expect(r.stderr).toBe("bad2\nbad3\nbad4\nbad5\nbad6\n");
-    expect(r.stdout).toBe("ok build 0 files, 5 artifacts, 0 errors\n");
+    expect(r.stdout).toBe("fail build 0 files, 5 artifacts, 1 errors\n");
   }, 30_000);
 
   it("a failing engine build never starts vite and keeps its own exit code", async () => {
