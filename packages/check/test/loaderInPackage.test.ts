@@ -18,8 +18,8 @@ describe("E1551 scope", () => {
     ]);
   });
 
-  // The spec's E1551 entry names no scope, so kernel and stdlib sources under the root's packages/ are flagged as app code.
-  test.fails("kernel and stdlib sources under packages/ are not E1551", () => {
+  // Files under the root's packages/ are kernel and stdlib code, which E1551 does not read.
+  test("kernel and stdlib sources under packages/ are not E1551", () => {
     expect(
       e1551([
         f("packages/std-workflows/src/internal/stepJob.ts", RUNNER),

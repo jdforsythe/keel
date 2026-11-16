@@ -18,7 +18,7 @@ Real: the platform's `localStorage` (on Node, the file `--localstorage-file` nam
 
 **Older snapshots.** A stored snapshot outlives the code that wrote it. `restore` of a snapshot whose state parses but whose log names a transaction the store no longer declares, or holds a payload its schema refuses, keeps `state` and `head`, takes `state` as `initial`, and keeps no entry. A state the schema refuses stays `restore`'s `err`. Before a deploy, k.compat reports both (E1563, W1564).
 
-**Rules.** E1605 `drivers` on a `sim` ctx (throws) · E1606 one key twice in a `commit` (throws) · E1551 (k.server) also covers `commitStores` outside `*.server.ts`.
+**Rules.** E1605 `drivers` on a `sim` ctx (throws) · E1606 one key twice in a `commit` (throws) · E1551 (k.server) also covers `commitStores` outside `*.server.ts`, and reads app files only: no test, tool config (`*.config.*`), or file under `unsafe/`, `.keel/`, `node_modules/` or the root's `packages/` (kernel and stdlib code).
 
 **Conformance.**
 - `read(keys)` returns each key's value in the order asked, `null` for an absent key.
@@ -32,3 +32,4 @@ Real: the platform's `localStorage` (on Node, the file `--localstorage-file` nam
 - `commitStores` reports one `save` event per changed store and none when nothing changed.
 - `restore` of a snapshot whose log names an undeclared transaction returns `ok`, keeps `state` and `head()`, and leaves `log()` empty and `snapshot().initial` equal to `state`.
 - A second ctx on `f` reads a value set through `createCtx({ mode: 'real', drivers: { storage: fileStorage(f) } })`.
+- A `commitStores` call and a `loader` call in `packages/p/src/run.ts` are no E1551; the same file at `modules/a/run.ts` is two.
