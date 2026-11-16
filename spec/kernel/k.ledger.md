@@ -5,7 +5,7 @@ status: conformance-covered
 - `example`: a passing test references the item.
 - `probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed.
 - `exhaustive`: a passing `explore` (k.model) given `from`, `payloads` or `depth`; evidence lists `depth` when it is a literal.
-- `proven`: a passing type-level test (its body asserts with `expectTypeOf` or `assertType`, which the package's `check` type-checks), a passing closed-form `explore` (k.model), which passes only when the store's whole space closed, or a passing `prove` (k.prove; evidence lists the Z3 version); nothing else may claim it.
+- `proven`: a passing type-level test (its body calls `expectTypeOf` or `assertType`, type-checked by the package's `check`), a passing closed-form `explore` (k.model), passing only when the store's whole space closed, or a passing `prove` its body awaits or returns (k.prove; evidence: Z3 version); nothing else claims it.
 - `monitored`: production only, read from an app's `.keel/monitored.json`; never emitted by the kernel. No evidence: `none`.
 
 **Evidence from tests.** A test references an item when its body, or a helper it calls in its own file or a relative import, names it. Property runs are `properties`, `simulate` (k.sim) and fast-check's `assert` and `check`, with `runs` and `seed` read from literal options or imported constants (`properties` and `simulate` default to 100 and 1337); an unresolved value leaves the run `example`. An `explore` call is closed-form when its options object is absent or names none of `from`, `payloads` and `depth`; options the ledger cannot read count as given.

@@ -16,10 +16,12 @@ test('board invariants are inductive', () => prove([addList(b), addTodo(b), togg
 **Fragment.** Each transaction and invariant function is read from its source (`fn.toString()`, parsed with oxc) and translated whole:
 - Parameters, `const`, `return`, `if`/`else`, `?:`, `&&`, `||`, `!`, `===`, `!==`, `<`, `<=`, `>`, `>=`, `+` and `-`, `*` by a numeric literal, literals.
 - Objects: literals, spread, property reads; `s.record` maps read as `m[k]` and written as `{ ...m, [k]: v }`.
-- Arrays: literals with spread, `.length`, index reads, and `.map`, `.some`, `.every`, `.find` with an arrow of the fragment; `new Set(a.map(f))` read only by `.has(x)` and by `.size === a.length` (the values of `f` over `a` are distinct).
+- Arrays: literals with spread, `.length`, index reads (`undefined` past the length; `m[k]` likewise for a missing key), and `.map`, `.some`, `.every`, `.find` with an arrow of the fragment; `new Set(a.map(f))` read only by `.has(x)` and by `.size === a.length` (the values of `f` over `a` are distinct).
 Anything else is E1715: calls to other functions, identifiers other than parameters and bindings, loops, reassignment.
 
-**Sorts** come from the schemas: booleans; literals and enums as finite sorts; `s.int` as integers within its bounds, state and payload values also within ±(2^53 − 1); a non-integer `s.number` compared and copied only; strings and ids compared for equality (string lengths unchecked); objects as records of their declared fields; `optional` and `nullable` as an option; arrays as a length and an index map; records as a key set and a map; `.pii` marks change no sort. A union, format type, `s.json()` or `s.secret` has none.
+**Sorts** come from the schemas: booleans; literals and enums as finite sorts; `s.int` as integers within its bounds, state and payload values also within ±(2^53 − 1); a non-integer `s.number` compared and copied only; strings and ids compared for equality (string lengths unchecked); objects as records of their declared fields; `optional` and `nullable` as an option; arrays as a length and an index map; records as a key set and a map; `.pii` marks change no sort. A union, format type, `s.json()` or `s.secret` has none. A post-state integer is checked against its `min` and `max` only: one without a bound may reach 2^53, past the safe range, and its transaction is still `proven`.
+
+**Obligations.** The goal also holds what each function needs to run as written: an option it reads through is present, each `+`, `-` and `*` result is within ±2^53, a map key it reads is present or no `Object.prototype` name, a key it writes is not `__proto__`, `constructor` or `prototype`; a string under a length rule takes only a value of that rule, else E1715.
 
 **Solver.** Z3 through `z3-solver` (MIT), loaded on first use, single-threaded, `smt.random_seed` 0. A verdict holds for the installed Z3 version, which the evidence records.
 
