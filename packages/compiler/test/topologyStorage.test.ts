@@ -32,10 +32,12 @@ describe("storage and shells in topology.ts", () => {
 });
 
 describe("serverEntryCode storage", () => {
-  it("imports the named std.db driver and passes it as open; 'file' imports none", () => {
+  it("passes open, which imports the named std.db driver only when called; 'file' imports none", () => {
     // The specifier is generated text, not an import of this file: it is assembled so the layering lint reads it so.
     const driver = ["@keel", "std-db", "sqlite"].join("/");
-    expect(serverEntryCode(root, "web", [], "sqlite")).toContain(`const { sqlite: open } = await import("${driver}");`);
+    const sqlite = serverEntryCode(root, "web", [], "sqlite");
+    expect(sqlite).toContain(`const open = (url) => import("${driver}").then((m) => m.sqlite(url));`);
+    expect(sqlite).not.toMatch(/await import\("@keel\/std-db/);
     expect(serverEntryCode(root, "web", [], "postgres")).toMatch(/runners: \{ {2}\}, open, dir:/);
     for (const code of [serverEntryCode(root, "web", []), serverEntryCode(root, "web", [], "file")]) {
       expect(code).not.toContain("std-db");

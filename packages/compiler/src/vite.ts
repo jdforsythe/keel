@@ -53,6 +53,12 @@ const CSS_IMPORT = "virtual:keel.css";
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
 const PG_BANNER =
   "import { createRequire as keelCreateRequire } from 'node:module'; const require = keelCreateRequire(import.meta.url);";
+/**
+ * `node:sqlite` in a build: read when the driver first runs, not linked at load, so `server.mjs` starts on a Node
+ * without it and `start` reports the version (k.deploy Rules E1560).
+ */
+const SQLITE = "\0keel:sqlite";
+const SQLITE_CODE = 'export const { DatabaseSync } = process.getBuiltinModule("node:sqlite");';
 const CSS_ID = "/__keel.css";
 /** Files whose change can alter the CSS or `routes.json` beyond one module's own usages. */
 const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
@@ -461,6 +467,7 @@ export default function (): {
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
       if (id === DEV_ENTRY) return `\0${DEV_ENTRY}`;
+      if (id === "node:sqlite" && command === "build") return SQLITE;
       return null;
     },
     async load(id) {
@@ -476,6 +483,7 @@ export default function (): {
           routesFiles(q.d).map((f) => ({ path: f, source: fs.readFileSync(path.resolve(root, f), "utf8") })),
         );
       if (id === `\0${DEV_ENTRY}`) return devEntryCode(root, topology ?? {});
+      if (id === SQLITE) return SQLITE_CODE;
       const node = deployable();
       if (id === `\0${SERVER_ENTRY}` && node !== undefined)
         return serverEntryCode(root, node.name, node.modules, topology?.[node.name]?.storage);

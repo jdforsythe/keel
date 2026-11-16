@@ -10,9 +10,10 @@ const START = JSON.stringify("@keel/server/internal/start");
  * The generated production entry of `node` deployable `name` (k.deploy Build), a virtual module never written as a
  * source file: it installs the server DOM (`@keel/server/internal/dom`, before any component module builds its templates), then
  * imports `topology.ts`, each of `modules`' routes (an app module's `routes.ts` under `root`, a stdlib module's
- * package `./routes` export: `stdRoutes`) and `runners.server.ts` that exist, and, for `storage` `'sqlite'` or
- * `'postgres'` (k.deploy Storage), the `@keel/std-db` driver named, and calls `start` (`@keel/server/internal/start`)
- * with them, the driver as `open` and its own folder.
+ * package `./routes` export: `stdRoutes`) and `runners.server.ts` that exist, and calls `start`
+ * (`@keel/server/internal/start`) with them and its own folder; for `storage` `'sqlite'` or `'postgres'` (k.deploy
+ * Storage), `open` imports the `@keel/std-db` driver named when `start` first calls it, so `start` checks the Node
+ * version before the driver loads.
  */
 export function serverEntryCode(
   root: string,
@@ -43,7 +44,9 @@ export function serverEntryCode(
   });
   const open = storage === "file" ? "" : ", open";
   if (open !== "")
-    lines.push(`const { ${storage}: open } = await import(${JSON.stringify(`@keel/std-db/${storage}`)});`);
+    lines.push(
+      `const open = (url) => import(${JSON.stringify(`@keel/std-db/${storage}`)}).then((m) => m.${storage}(url));`,
+    );
   lines.push(
     `await start({ topology, deployable: ${JSON.stringify(name)}, routes: [${routes.join(", ")}], runners: { ${runners.join(", ")} }${open}, dir: import.meta.dirname });`,
   );

@@ -18,7 +18,7 @@ status: conformance-covered
 - Shell files: k.shell.
 `DeployEnv` values are set where the image runs, in no generated file.
 
-**Rules.** E1560 `DeployEnv` fails, or a port will not bind, at startup · E1555 production `assets` missing or entry-less (k.server) · E1572 a deployable's `storage` or `shells` needs a package the app's `dependencies` lack (fix adds it).
+**Rules.** E1560 `DeployEnv` fails, a port will not bind, or `'sqlite'` runs on a Node older than 22.13, at startup · E1555 production `assets` missing or entry-less (k.server) · E1572 a deployable's `storage` or `shells` needs a package the app's `dependencies` lack (fix adds it).
 
 **Conformance.**
 - `node dist/<name>/server.mjs` of a `keel build` fixture answers its routes on `PORT`; with `KEEL_SECRET` unset or short it exits 1 and prints one E1560 line naming `KEEL_SECRET` and no value.
