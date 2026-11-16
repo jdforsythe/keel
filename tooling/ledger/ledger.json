@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 943,
+    "example": 947,
     "probabilistic": 299,
     "exhaustive": 15,
     "proven": 51,
@@ -11564,6 +11564,22 @@
     {
       "item": "k.reveal#3",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.reveal#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.reveal#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.reveal#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.reveal#7",
+      "rung": "example"
     },
     {
       "item": "k.router#1",
