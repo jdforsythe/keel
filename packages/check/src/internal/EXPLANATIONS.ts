@@ -168,7 +168,7 @@ const ROWS: readonly Row[] = [
     "E1112",
     "a value reveal returns reaching a log, storage, a file, store state or a throw",
     "Each keeps it as written, encoded or not. Followed through same-file locals; another call, a parameter or an import ends it.",
-    "pass the Secret itself, or store a derived value: a salted scrypt hash checked with timingSafeEqual",
+    "pass the Secret itself, or store what credentials(ctx).hash returns (@keel/std-credentials)",
     "k.reveal",
   ],
   [
