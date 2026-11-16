@@ -28,7 +28,8 @@ const privateIn = (n: BinaryExpression | PrivateInExpression): n is PrivateInExp
 const sel = (s: string, a: string, i: string): string => `(select (${s}.a ${a}) ${i})`;
 const range = (i: string, n: string): string => `(<= 0 ${i}) (< ${i} ${n})`;
 const ARRAY_METHODS = ["map", "some", "every", "find"];
-
+/** An object, array or map, or an option of one: `===` compares references, which the terms do not hold. */
+const isRef = (t: Ty): boolean => t.k === "obj" || t.k === "arr" || t.k === "rec" || (t.k === "opt" && isRef(t.v));
 /** The name a call's callee is known by: `f`, `Math.max`; a bundler's import namespace is left out. */
 const calleeName = (e: Expression): string => {
   if (e.type === "Identifier") return e.name;
@@ -45,10 +46,16 @@ const calleeName = (e: Expression): string => {
 /**
  * Translate functions of the fragment (k.prove Fragment) into SMT terms over `sorts`. `base` is the offset of the
  * function in the parsed text, so E1715 offsets count in the function's own source. `axioms` collects what a `.find`
- * declares and asserts; `fresh` numbers bound names across the translators of one obligation.
+ * declares and asserts; `fresh` numbers bound names across the translators of one obligation; `need` collects what
+ * the functions require to run as their terms say (an option present, an index in range, an exact integer, a key the
+ * schema allows), each under the branch conditions and bound indices where it arises: the goal holds them too.
  */
-export function translator(sorts: Sorts, base: number, axioms: string[], fresh: { n: number }) {
-  const bound: [string, string][] = [];
+export function translator(sorts: Sorts, base: number, axioms: string[], fresh: { n: number }, need: string[]) {
+  /** The indices bound around the code at hand, each an `Int`. */
+  const bound: string[] = [];
+  const all = (body: string): string =>
+    bound.length === 0 ? body : `(forall (${bound.map((v) => `(${v} Int)`).join("")}) ${body})`;
+  const path: string[] = [];
   const out = (node: Span, construct = node.type): never => {
     throw new Outside(construct, node.start - base);
   };
@@ -58,15 +65,29 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
   const lenOf = (a: Val): string => a.n ?? `(${smt(a.t)}.n ${a.e})`;
   const real = (v: Val): string => (v.t.k === "int" ? `(to_real ${v.e})` : v.e);
   const isNum = (v: Val): boolean => v.t.k === "int" || v.t.k === "real";
-  /** The value inside an option: a read past a guard (`x === undefined ? ... : x.f`); unconstrained when absent. */
-  const some = (v: Val): Val => (v.t.k === "opt" ? some(val(v.t.v, `(${v.t.s}.v ${v.e})`)) : v);
-  const under = <R>(i: string, f: () => R): R => {
-    bound.push([i, "Int"]);
+  /** `c` must hold wherever the code at hand runs: under the enclosing branch conditions, for every bound index. */
+  const oblige = (c: string): number => need.push(all(`(=> (and true ${path.join(" ")}) ${c})`));
+  /** `f` under the condition `c`, and for each index `i` when given. */
+  const scoped = <R>(f: () => R, c: string, i?: string): R => {
+    path.push(c);
+    if (i !== undefined) bound.push(i);
     try {
       return f();
     } finally {
-      bound.pop();
+      path.pop();
+      if (i !== undefined) bound.pop();
     }
+  };
+  /** `e` of `t` when `c` holds, else `undefined`. */
+  const maybe = (c: string, t: Ty, e: string): Val => {
+    const o = smt(sorts.opt(t, false));
+    return val(sorts.opt(t, false), `(ite ${c} (${o}.some ${e}) ${o}.none)`);
+  };
+  /** The value inside an option, which must be present (`x === undefined ? ... : x.f`). */
+  const some = (v: Val): Val => {
+    if (v.t.k !== "opt") return v;
+    oblige(`((_ is ${v.t.s}.some) ${v.e})`);
+    return some(val(v.t.v, `(${v.t.s}.v ${v.e})`));
   };
 
   const coerce = (v: V, t: Ty, node: Span): string => {
@@ -75,8 +96,13 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
       if (t.k !== "opt") return out(node, "undefined or null");
       return t.nul === v.nul ? `${t.s}.none` : `(${t.s}.some ${coerce(v, t.v, node)})`;
     }
-    if (smt(v.t) === smt(t)) return v.e;
+    // A container's sort names the length rules inside it (`sortTable`); a string needs the rule of where it goes.
+    if (smt(v.t) === smt(t))
+      return t.k !== "str" || t.ok === undefined || (v.t.k === "str" && v.t.ok === t.ok)
+        ? v.e
+        : out(node, "a string rule");
     if (t.k === "opt") return `(${t.s}.some ${coerce(v, t.v, node)})`;
+    if (v.t.k === "opt") return coerce(some(v), t, node);
     return t.k === "real" && v.t.k === "int" ? `(to_real ${v.e})` : out(node, `a ${v.t.k} for a ${t.k}`);
   };
 
@@ -88,23 +114,26 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
       if (a.t.nul === b.nul) return `((_ is ${a.t.s}.none) ${a.e})`;
       return `(and ((_ is ${a.t.s}.some) ${a.e}) ${eq(val(a.t.v, `(${a.t.s}.v ${a.e})`), b, node)})`;
     }
-    if ([a.t.k, b.t.k].some((k) => k === "obj" || k === "arr" || k === "rec")) return out(node, "=== on objects");
+    if (isRef(a.t) || isRef(b.t)) return out(node, "=== on objects");
     if (smt(a.t) === smt(b.t)) return `(= ${a.e} ${b.e})`;
-    if (a.t.k === "opt") return `(= ${a.e} ${coerce(b, a.t, node)})`;
-    if (b.t.k === "opt") return `(= ${coerce(a, b.t, node)} ${b.e})`;
+    if (a.t.k === "opt") return `(and ((_ is ${a.t.s}.some) ${a.e}) ${eq(val(a.t.v, `(${a.t.s}.v ${a.e})`), b, node)})`;
+    if (b.t.k === "opt") return eq(b, a, node);
     return isNum(a) && isNum(b) ? `(= ${real(a)} ${real(b)})` : out(node);
   };
 
   const typed = (node: Expression, env: Env, k: "bool" | "num"): Val => {
-    const v = must(expr(node, env), node);
+    const v = some(must(expr(node, env), node));
     return (k === "bool" ? v.t.k === "bool" : isNum(v)) ? v : out(node);
   };
   const bool = (node: Expression, env: Env): string => typed(node, env, "bool").e;
 
-  /** `c ? a : b` with both sides in `exp`, or in the type of the side that has one. */
-  const join = (c: string, a: V, b: V, exp: Ty | undefined, node: Span): V => {
+  /** `c ? a : b` with both sides in `exp`, or in the type of the side that has one; each under its condition. */
+  const join = (c: string, fa: () => V, fb: () => V, exp: Ty | undefined, node: Span): V => {
+    const n = `(not ${c})`;
+    const a = scoped(fa, c);
+    const b = scoped(fb, n);
     const t = exp ?? (a.v === "val" ? a.t : b.v === "val" ? b.t : out(node));
-    return val(t, `(ite ${c} ${coerce(a, t, node)} ${coerce(b, t, node)})`);
+    return val(t, `(ite ${c} ${scoped(() => coerce(a, t, node), c)} ${scoped(() => coerce(b, t, node), n)})`);
   };
 
   /** A function of the fragment applied to `args`: its body as a term, in `exp` when given. */
@@ -118,9 +147,11 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
     return f.body.type === "BlockStatement" ? block(f.body.body, inner, exp) : expr(f.body, inner, exp);
   };
 
-  const block = (stmts: readonly (Directive | Statement)[], env: Env, exp: Ty | undefined): V => {
+  /** One block's statements in `env`; `k` continues after the block, in the enclosing scope. */
+  const block = (stmts: readonly (Directive | Statement)[], env: Env, exp: Ty | undefined, k = (): V => NIL): V => {
     const [st, ...rest] = stmts;
-    if (st === undefined) return NIL;
+    if (st === undefined) return k();
+    const next = (): V => block(rest, env, exp, k);
     switch (st.type) {
       case "ReturnStatement":
         return st.argument === null ? NIL : expr(st.argument, env, exp);
@@ -128,21 +159,22 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
         if (st.kind !== "const") return out(st, `a ${st.kind} binding`);
         const next = new Map(env);
         for (const d of st.declarations) {
-          if (d.id.type !== "Identifier" || d.init === null) return out(d);
+          // A name bound already would be shadowed, and read before its declaration (in TDZ) here.
+          if (d.id.type !== "Identifier" || d.init === null || next.has(d.id.name)) return out(d);
           next.set(d.id.name, expr(d.init, next));
         }
-        return block(rest, next, exp);
+        return block(rest, next, exp, k);
       }
       case "IfStatement": {
         const list = (s: Statement | null): readonly Statement[] =>
           s === null ? [] : s.type === "BlockStatement" ? s.body : [s];
-        const a = block([...list(st.consequent), ...rest], env, exp);
-        return join(bool(st.test, env), a, block([...list(st.alternate), ...rest], env, exp), exp, st);
+        const arm = (s: Statement | null) => (): V => block(list(s), env, exp, next);
+        return join(bool(st.test, env), arm(st.consequent), arm(st.alternate), exp, st);
       }
       case "BlockStatement":
-        return block([...st.body, ...rest], env, exp);
+        return block(st.body, env, exp, next);
       case "ExpressionStatement":
-        return "directive" in st && typeof st.directive === "string" ? block(rest, env, exp) : out(st.expression);
+        return "directive" in st && typeof st.directive === "string" ? next() : out(st.expression);
       default:
         return out(st);
     }
@@ -176,32 +208,40 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
     const item = r.t.v;
     const S = r.t.s;
     const len = lenOf(r);
-    const body = (i: string, want?: Ty): V => under(i, () => apply(arg, [val(item, sel(S, r.e, i))], env, want));
-    const test = (i: string): string => {
-      const v = must(body(i), arg);
-      return v.t.k === "bool" ? v.e : out(arg);
-    };
+    /** The callback at index `i`, run under `0 <= i < length`. */
+    const body = <R>(i: string, f: (v: V) => R, want?: Ty): R =>
+      scoped(() => f(apply(arg, [val(item, sel(S, r.e, i))], env, want)), `(and ${range(i, len)})`, i);
+    const test = (i: string): string =>
+      body(i, (b) => {
+        const v = must(b, arg);
+        return v.t.k === "bool" ? v.e : out(arg);
+      });
     const i = name("i");
     if (method === "some") return val(BOOL, `(exists ((${i} Int)) (and ${range(i, len)} ${test(i)}))`);
     if (method === "every") return val(BOOL, `(forall ((${i} Int)) (=> (and ${range(i, len)}) ${test(i)}))`);
     if (method === "map") {
       const want = exp?.k === "arr" ? exp.v : exp?.k === "opt" && exp.v.k === "arr" ? exp.v.v : undefined;
-      const b = body(i, want);
-      const t = want ?? must(b, arg).t;
-      const a = sorts.coll("arr", t);
-      return val(a, `(${smt(a)} ${len} (lambda ((${i} Int)) ${coerce(b, t, arg)}))`, len);
+      const m = body(
+        i,
+        (b) => {
+          const t = want ?? must(b, arg).t;
+          return { t, e: coerce(b, t, arg) };
+        },
+        want,
+      );
+      const a = sorts.coll("arr", m.t);
+      return val(a, `(${smt(a)} ${len} (lambda ((${i} Int)) ${m.e}))`, len);
     }
     // find: the first index where the callback holds, a function of the enclosing bound indices
     const k = name("F");
-    const app = bound.length === 0 ? k : `(${k} ${bound.map(([v]) => v).join(" ")})`;
+    const app = bound.length === 0 ? k : `(${k} ${bound.join(" ")})`;
     const j = name("i");
-    const ex = `(exists ((${i} Int)) (and ${range(i, len)} ${test(i)}))`;
-    const ax = `(=> ${ex} (and ${range(app, len)} ${test(app)} (forall ((${j} Int)) (=> (and ${range(j, app)}) (not ${test(j)})))))`;
-    axioms.push(
-      `(declare-fun ${k} (${bound.map(([, s]) => s).join(" ")}) Int)(assert ${bound.length === 0 ? ax : `(forall (${bound.map(([v, s]) => `(${v} ${s})`).join("")}) ${ax})`})`,
-    );
-    const o = sorts.opt(item, false);
-    return val(o, `(ite ${ex} (${smt(o)}.some ${sel(S, r.e, app)}) ${smt(o)}.none)`);
+    const t = test(i);
+    const at = (x: string): string => `(let ((${i} ${x})) ${t})`;
+    const ex = `(exists ((${i} Int)) (and ${range(i, len)} ${t}))`;
+    const ax = `(=> ${ex} (and ${range(app, len)} ${at(app)} (forall ((${j} Int)) (=> (and ${range(j, app)}) (not ${at(j)})))))`;
+    axioms.push(`(declare-fun ${k} (${bound.map(() => "Int").join(" ")}) Int)(assert ${all(ax)})`);
+    return maybe(ex, item, sel(S, r.e, app));
   };
 
   const binary = (node: BinaryExpression | PrivateInExpression, env: Env): V => {
@@ -237,7 +277,10 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
       (op === "*" && !lit(left) && !lit(right))
     )
       return out(node, `${op} here`);
-    return val(INT, `(${op} ${a.e} ${b.e})`);
+    // JavaScript holds an integer exactly within ±2^53, so every `+`, `-` and `*` result must stay there.
+    const r = `(${op} ${a.e} ${b.e})`;
+    oblige(`(<= (- 9007199254740992) ${r} 9007199254740992)`);
+    return val(INT, r);
   };
 
   const object = (node: ObjectExpression, env: Env, exp: Ty | undefined): V => {
@@ -267,9 +310,12 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
           ? coerce(expr(key, env), { k: "str" }, p)
           : sorts.lit(plain ?? out(p));
       const r = name("r");
+      // An own key the schema refuses (`__proto__`, `constructor`, `prototype`) breaks the map.
+      oblige(`(distinct ${k} ${["__proto__", "constructor", "prototype"].map(sorts.lit).join(" ")})`);
       acc = `(let ((${r} ${acc})) (${S} (store (${S}.n ${r}) ${k} true) (store (${S}.a ${r}) ${k} ${coerce(expr(p.value, env, t.v), t.v, p)})))`;
     }
     if (t.k !== "obj") return val(t, acc);
+    for (const k of vals.keys()) if (!t.f.some(([f]) => f === k)) out(node, `.${k}`);
     const fields = t.f.map(([k, ft]) =>
       coerce(vals.get(k) ?? (ft.k === "opt" && !ft.nul ? NIL : out(node, `no ${k}`)), ft, node),
     );
@@ -293,11 +339,16 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
         if (node.optional || node.property.type === "PrivateIdentifier") return out(node);
         const o = some(must(expr(node.object, env), node.object));
         if (node.computed) {
+          // Undefined past the length, or for a key the map lacks; a key Object.prototype holds is no value.
           if (o.t.k !== "arr" && o.t.k !== "rec") return out(node);
-          return val(
-            o.t.v,
-            sel(o.t.s, o.e, coerce(expr(node.property, env), o.t.k === "arr" ? INT : { k: "str" }, node)),
-          );
+          const arr = o.t.k === "arr";
+          const k = coerce(expr(node.property, env), arr ? INT : { k: "str" }, node);
+          const has = arr ? `(and ${range(k, lenOf(o))})` : `(select (${o.t.s}.n ${o.e}) ${k})`;
+          if (!arr)
+            oblige(
+              `(or ${has} (distinct ${k} ${Object.getOwnPropertyNames(Object.prototype).map(sorts.lit).join(" ")}))`,
+            );
+          return maybe(has, o.t.v, sel(o.t.s, o.e, k));
         }
         const prop = node.property.name;
         if (prop === "length" && o.t.k === "arr") return val(INT, lenOf(o));
@@ -321,10 +372,19 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
         return arr.t.k === "arr" ? { v: "set", a: arr } : out(a);
       }
       case "ConditionalExpression":
-        return join(bool(node.test, env), expr(node.consequent, env, exp), expr(node.alternate, env, exp), exp, node);
-      case "LogicalExpression":
+        return join(
+          bool(node.test, env),
+          () => expr(node.consequent, env, exp),
+          () => expr(node.alternate, env, exp),
+          exp,
+          node,
+        );
+      case "LogicalExpression": {
         if (node.operator === "??") return out(node);
-        return val(BOOL, `(${node.operator === "&&" ? "and" : "or"} ${bool(node.left, env)} ${bool(node.right, env)})`);
+        const and = node.operator === "&&";
+        const l = bool(node.left, env);
+        return val(BOOL, `(${and ? "and" : "or"} ${l} ${scoped(() => bool(node.right, env), and ? l : `(not ${l})`)})`);
+      }
       case "UnaryExpression": {
         if (node.operator === "!") return val(BOOL, `(not ${bool(node.argument, env)})`);
         const a = node.operator === "-" ? typed(node.argument, env, "num") : out(node);

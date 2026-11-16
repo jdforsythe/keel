@@ -51,12 +51,14 @@ async function step<T>(tools: Tools, t: Transaction<T, unknown>, rlimit: number)
   if (src === undefined) throw modelError("E1710", `prove: ${t.name} is not a transaction`, { name: t.name });
   const sorts = sortTable();
   const axioms: string[] = [];
+  /** What the functions need to run as the terms say: an option present, an index in range, an exact integer. */
+  const need: string[] = [];
   const fresh = { n: 0 };
   const S = fragment(t.name, () => sorts.ofNode(st.schema.node, "state"));
   const P = fragment(t.name, () => sorts.ofNode(t.schema.node, "payload"));
   const fn = fragment(t.name, () => parsed(tools, src.fn));
   const post = fragment(t.name, () => {
-    const tr = translator(sorts, 1, axioms, fresh);
+    const tr = translator(sorts, 1, axioms, fresh, need);
     const args = [
       { v: "val", t: S, e: "s" },
       { v: "val", t: P, e: "p" },
@@ -70,14 +72,14 @@ async function step<T>(tools: Tools, t: Transaction<T, unknown>, rlimit: number)
   const holds = (x: string): string[] =>
     invariants.map(({ label, node }) =>
       fragment(label, () => {
-        const tr = translator(sorts, 1, axioms, fresh);
+        const tr = translator(sorts, 1, axioms, fresh, need);
         const v = tr.must(tr.apply(node, [{ v: "val", t: S, e: x }], new Map(), undefined), node);
         return v.t.k === "bool" ? v.e : tr.coerce(v, { k: "bool" }, node);
       }),
     );
   const before = [sorts.wf(S, "s", true), sorts.wf(P, "p", true), ...holds("s")];
   const early = axioms.length;
-  const goal = sorts.and([sorts.wf(S, "post", false), ...holds("post")]);
+  const goal = sorts.and([sorts.wf(S, "post", false), ...holds("post"), ...need]);
   const text = `(set-option :smt.random_seed 0)(set-option :rlimit ${rlimit})${sorts.prelude()}(declare-const s ${sorts.smt(S)})(declare-const p ${sorts.smt(P)})${axioms.slice(0, early).join("")}(define-fun post () ${sorts.smt(S)} ${post})${axioms.slice(early).join("")}${before.map((h) => `(assert ${h})`).join("")}(assert (not ${goal}))`;
   const lengths = [...sorts.lengths(S, "s"), ...sorts.lengths(P, "p")];
   for (const bound of [...(lengths.length === 0 ? [] : BOUNDS), undefined]) {

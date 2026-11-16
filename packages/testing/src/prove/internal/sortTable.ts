@@ -34,6 +34,8 @@ export function sortTable() {
         return t.s;
     }
   };
+  /** A sort's name in a datatype key: a string under a length rule is its own, so a container keeps the rule. */
+  const id = (t: Ty): string => (t.k === "str" && t.ok !== undefined ? `Str ${t.ok}` : smt(t));
   const make = (key: string, decl: (s: string) => string): string => {
     const hit = named.get(key);
     if (hit !== undefined) return hit;
@@ -51,7 +53,7 @@ export function sortTable() {
     return name;
   };
   const obj = (f: readonly (readonly [string, Ty])[]): Ty => {
-    const key = `o(${f.map(([k, t]) => `${JSON.stringify(k)}:${smt(t)}`).join(",")})`;
+    const key = `o(${f.map(([k, t]) => `${JSON.stringify(k)}:${id(t)}`).join(",")})`;
     const s = make(
       key,
       (s) => `(declare-datatypes ((${s} 0)) (((${s}${f.map(([, t], i) => ` (${s}.${i} ${smt(t)})`).join("")}))))`,
@@ -60,7 +62,7 @@ export function sortTable() {
   };
   const opt = (v: Ty, nul: boolean): Ty => {
     const s = make(
-      `${nul ? "n" : "u"}(${smt(v)})`,
+      `${nul ? "n" : "u"}(${id(v)})`,
       (s) => `(declare-datatypes ((${s} 0)) (((${s}.none) (${s}.some (${s}.v ${smt(v)})))))`,
     );
     return { k: "opt", s, v, nul };
@@ -68,7 +70,7 @@ export function sortTable() {
   const coll = (k: "arr" | "rec", v: Ty): Ty => {
     const [dom, len] = k === "arr" ? ["Int", "Int"] : ["Str", "(Array Str Bool)"];
     const s = make(
-      `${k}(${smt(v)})`,
+      `${k}(${id(v)})`,
       (s) =>
         `(declare-datatypes ((${s} 0)) (((${s} (${s}.n ${len}) (${s}.a (Array ${dom} ${smt(v)}))))))(declare-const ${s}.d ${smt(v)})`,
     );
@@ -77,8 +79,9 @@ export function sortTable() {
   const ofNode = (node: Node, path: string): Ty => {
     switch (node.kind) {
       case "string":
+        return node.min > 0 || node.max !== undefined ? { k: "str", ok: `${node.min} ${node.max}` } : { k: "str" };
       case "id":
-        return { k: "str" };
+        return { k: "str", ok: "id" };
       case "enum":
         for (const v of node.values) lit(v);
         return { k: "str", one: node.values };

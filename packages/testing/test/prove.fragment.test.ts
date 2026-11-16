@@ -68,9 +68,10 @@ describe("prove: fragment", () => {
       const t = inScope((id) => {
         const st = store(s.object({ counts: s.record(s.int({ min: 0 })) }), { counts: {} }, { id });
         invariant(st, () => true);
-        return transaction(st, `${id}.set`, s.object({ k: s.string(), v: s.int({ min: 0 }) }), (state, p) => ({
-          counts: { ...state.counts, [p.k]: p.v },
-        }));
+        return transaction(st, `${id}.set`, s.object({ k: s.enum(["a", "b"]), v: s.int({ min: 0 }) }), (state, p) => {
+          const c = state.counts[p.k];
+          return c === undefined ? { counts: { ...state.counts, [p.k]: p.v } } : state;
+        });
       });
       expect(await outcome([t])).toBe("proven");
     },
@@ -100,10 +101,10 @@ describe("prove: fragment", () => {
     "a non-integer s.number is compared and copied; * by a literal on integers",
     async () => {
       const t = inScope((id) => {
-        const st = store(s.object({ x: s.number({ min: 0 }), n: s.int({ min: 0 }) }), { x: 0, n: 0 }, { id });
+        const st = store(s.object({ x: s.number({ min: 0 }), n: s.int({ min: 0, max: 99 }) }), { x: 0, n: 0 }, { id });
         invariant(st, (state) => state.x >= 0 && state.n >= 0);
         return transaction(st, `${id}.put`, s.object({ x: s.number() }), (state, p) =>
-          p.x >= 0 ? { x: p.x, n: state.n * 2 } : state,
+          p.x >= 0 ? { x: p.x, n: state.n < 50 ? state.n * 2 : state.n } : state,
         );
       });
       expect(await outcome([t])).toBe("proven");
