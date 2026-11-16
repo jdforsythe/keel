@@ -78,10 +78,18 @@ function response(r: SurfaceRoute, e: SurfaceEndpoint, withErrors: boolean): Fou
   return null;
 }
 
-/** `schema` with the field at `path` no longer required (the E1562 fix, applied to the JSON Schema). */
+/**
+ * `schema` with the field at `path` no longer required (the E1562 fix, applied to the JSON Schema): `[]` steps into
+ * array items, `*` into record values, and a union (nullable, optional) is loosened in each member.
+ */
 function loosen(schema: unknown, path: readonly string[]): unknown {
   const [k, ...rest] = path;
-  if (!isRecord(schema) || k === undefined || !isRecord(schema.properties)) return schema;
+  if (!isRecord(schema) || k === undefined) return schema;
+  if (Array.isArray(schema.anyOf)) return { ...schema, anyOf: schema.anyOf.map((m) => loosen(m, path)) };
+  if (k === "[]") return { ...schema, items: loosen(schema.items, rest) };
+  if (k === "*" && !isRecord(schema.properties))
+    return { ...schema, additionalProperties: loosen(schema.additionalProperties, rest) };
+  if (!isRecord(schema.properties)) return schema;
   if (rest.length > 0)
     return { ...schema, properties: { ...schema.properties, [k]: loosen(schema.properties[k], rest) } };
   return { ...schema, required: Array.isArray(schema.required) ? schema.required.filter((x) => x !== k) : [] };

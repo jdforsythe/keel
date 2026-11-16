@@ -95,10 +95,12 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   for (const dir of dirs) {
     const group = code.filter((f) => dirs.find((d) => f.path.startsWith(d)) === dir);
     if (group.length === 0) continue;
-    const manifest = group.some((f) => f.path === `${dir}topology.ts`)
-      ? undefined
-      : all.find((f) => f.path === `${dir}topology.ts`);
-    const project = Object.freeze(manifest === undefined ? group : [...group, manifest]);
+    // Every code file of the project, its `topology.ts` included: a checked file's text first, then `opts.project`'s.
+    const members = new Map<string, SourceFile>();
+    for (const f of all)
+      if (isCodePath(f.path) && !members.has(f.path) && dirs.find((d) => f.path.startsWith(d)) === dir)
+        members.set(f.path, f);
+    const project = Object.freeze([...members.values()]);
     for (const f of group) projectOf.set(f.path, project);
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
@@ -107,12 +109,12 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
-      out.push(...topologyDiags(dir, topology, top));
     }
-    // E1572, E1573: the caller's topology, else the static read of `topology.ts`, beside the project's `package.json`.
+    // E1552, E1566, E1572, E1573: the caller's topology, else the static read of `topology.ts`, beside the project's
+    // `package.json`.
     const needs = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
     const pkg = all.find((f) => f.path === `${dir}package.json`)?.source;
-    if (needs !== undefined) out.push(...topologyNeeds(dir, needs, top ?? "", pkg));
+    if (needs !== undefined) out.push(...topologyDiags(dir, needs, top), ...topologyNeeds(dir, needs, top ?? "", pkg));
     for (const d of compiled.diagnostics) {
       const path = d.path === "" ? d.path : `${dir}${d.path}`;
       out.push({ kind: "diag", ...d, path });
