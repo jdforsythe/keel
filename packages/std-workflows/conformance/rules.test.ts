@@ -1,8 +1,8 @@
 // Spec: std.workflows, Conformance "E2351, E2352, W2353 and E2354 each fire on a fixture and not on its clean twin; `workflow` throws E2352."
 // Spec: std.workflows, rule E2351: a `workflow` outside `*.server.ts`, or an id not prefixed by its module (fix prefixes it).
 // Spec: std.workflows, rule E2352: a step or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on` (no fix; `workflow` throws it).
-// Spec: std.workflows, rule W2353: a step's `failed` target is final while another step's `done` lies on a path to it, so its effect is never undone (names both).
-// Spec: std.workflows, rule E2354: a module whose `queue` lacks a workflow's `jobs` or whose `runners` lack its `flows` (fix adds them).
+// Spec: std.workflows, Rules "W2353 a step's `failed` event leads to a final state while another step's `done` event leads to a state from which that step is reachable, so its effect is never undone (names both)"
+// Spec: std.workflows, Rules "E2354 a module whose `queue` lacks a workflow's `jobs` or whose `runners` lack its `flows` (fix adds them); a module with no `jobs.server.ts` or `runners.server.ts` is reported on the workflow's file, without a fix."
 // Seed: 1337.
 // Assumption: as for std.jobs E2501, `check()` imports nothing, so the rules register by importing `@keel/std-workflows/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`; the workflow file is `modules/api/removal.server.ts`, the chart file `modules/api/removalChart.ts`.
