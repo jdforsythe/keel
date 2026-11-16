@@ -699,6 +699,6 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0619 std-workflows: E2351 and E2501 apply to test files, so a test cannot declare a twin workflow · std-workflows · check
 - [ ] 0620 golden-1: the board channel misses saves that touch only `api.removal`; the acceptance test's `artifacts()` leaves `golden-1-race-*` and `golden-1-split-*` folders in the temp directory · golden-1 · evals
 - [ ] 0621 store: no public replay function, so the restart smoke checks "log replayed from initial equals stored state" structurally only · store · tooling
-- [ ] 0622 std-jobs: a lease end is a wall-clock time and each runner reads its own clock; skew can run a job twice (at-least-once covers it); say so in std.jobs · spec
+- [x] 0622 std-jobs: a lease end is a wall-clock time and each runner reads its own clock; skew can run a job twice (at-least-once covers it); say so in std.jobs · spec
 - [ ] 0623 check: root `keel check` over the packages flags std-workflows' five `commitStores` calls and std-channels' loaders (E1551 reads package sources as app code) · check
 - [ ] 0624 check: E1563 for an optional field made required carries no fix (the design says the fix restores the optional) · check · spec
