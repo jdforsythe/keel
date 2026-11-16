@@ -144,8 +144,8 @@
       "max": "3kb",
       "platform": "node"
     },
-    "@keel/std-capacitor": "1kb",
-    "@keel/std-tauri": "1kb",
+    "@keel/std-capacitor": "1.25kb",
+    "@keel/std-tauri": "1.25kb",
     "@keel/std-temporal": "2.5kb",
     "@keel/std-text": "1.5kb",
     "@keel/store": "3.5kb",

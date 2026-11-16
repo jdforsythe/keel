@@ -11,7 +11,7 @@ const drivers = tauriDrivers({ origin: new URL('https://golden-1.example') })   
 Each returns `{ storage, net }` keeping k.persist's and k.shell's contracts:
 - `@keel/std-capacitor` (Capacitor 8): `storage` on `@capacitor/preferences`; `net` on `CapacitorHttp` from `@capacitor/core`, whose cookies the native cookie store keeps (`CapacitorCookies`). The global `fetch` stays unpatched.
 - `@keel/std-tauri` (Tauri 2, desktop): `storage` on `@tauri-apps/plugin-store`, file `keel.json` in the app's data directory, saved before a write resolves; `net` on `@tauri-apps/plugin-http`'s `fetch`, which the generated capability allows for `origin` only.
-- `commit` is atomic because the package runs its storage calls one at a time, and one page owns the store.
+- `commit` is atomic: storage calls run one at a time (one page owns the store), each write is one native write (Capacitor keeps every key in one Preferences entry), and a failed write leaves the driver reading what the store holds.
 - `net.fetch` maps a request on the page's origin to `origin` and returns a standard `Response`; a failure rejects with a `TypeError`, which k.services reports as `api.network`.
 
 **Conformance** (Capacitor's web implementations and Tauri's `mockIPC` under jsdom).
