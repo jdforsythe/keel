@@ -48,7 +48,8 @@ const calleeName = (e: Expression): string => {
  * function in the parsed text, so E1715 offsets count in the function's own source. `axioms` collects what a `.find`
  * declares and asserts; `fresh` numbers bound names across the translators of one obligation; `need` collects what
  * the functions require to run as their terms say (an option present, an index in range, an exact integer, a key the
- * schema allows), each under the branch conditions and bound indices where it arises: the goal holds them too.
+ * schema allows, no `undefined` under a key), each under the branch conditions and bound indices where it arises: the
+ * goal holds them too.
  */
 export function translator(sorts: Sorts, base: number, axioms: string[], fresh: { n: number }, need: string[]) {
   /** The indices bound around the code at hand, each an `Int`. */
@@ -78,10 +79,10 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
       if (i !== undefined) bound.pop();
     }
   };
-  /** `e` of `t` when `c` holds, else `undefined`. */
+  /** `e` of `t` when `c` holds, else `undefined`; a `t` that holds `undefined` already takes no second layer. */
   const maybe = (c: string, t: Ty, e: string): Val => {
-    const o = smt(sorts.opt(t, false));
-    return val(sorts.opt(t, false), `(ite ${c} (${o}.some ${e}) ${o}.none)`);
+    const o = t.k === "opt" && !t.nul ? t : sorts.opt(t, false);
+    return val(o, `(ite ${c} ${o === t ? e : `(${smt(o)}.some ${e})`} ${smt(o)}.none)`);
   };
   /** The value inside an option, which must be present (`x === undefined ? ... : x.f`). */
   const some = (v: Val): Val => {
@@ -116,7 +117,9 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
     }
     if (isRef(a.t) || isRef(b.t)) return out(node, "=== on objects");
     if (smt(a.t) === smt(b.t)) return `(= ${a.e} ${b.e})`;
-    if (a.t.k === "opt") return `(and ((_ is ${a.t.s}.some) ${a.e}) ${eq(val(a.t.v, `(${a.t.s}.v ${a.e})`), b, node)})`;
+    // An absent option equals what is absent the same way (both `undefined`, or both `null`), whatever the sorts.
+    if (a.t.k === "opt")
+      return `(ite ((_ is ${a.t.s}.none) ${a.e}) ${eq(b, { v: "nil", nul: a.t.nul }, node)} ${eq(val(a.t.v, `(${a.t.s}.v ${a.e})`), b, node)})`;
     if (b.t.k === "opt") return eq(b, a, node);
     return isNum(a) && isNum(b) ? `(= ${real(a)} ${real(b)})` : out(node);
   };
@@ -294,7 +297,23 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
         const src = must(expr(p.argument, env, t), p);
         if (t.k === "rec" && i === 0) acc = coerce(src, t, p);
         else if (src.t.k === "obj" && t.k === "obj")
-          for (const [n, [k, ft]] of src.t.f.entries()) vals.set(k, val(ft, `(${src.t.s}.${n} ${src.e})`));
+          for (const [n, [k, ft]] of src.t.f.entries()) {
+            const v = val(ft, `(${src.t.s}.${n} ${src.e})`);
+            const prev = vals.get(k);
+            // A spread copies the keys its object holds: an absent optional leaves the value written before it.
+            vals.set(
+              k,
+              prev === undefined || ft.k !== "opt" || ft.nul
+                ? v
+                : join(
+                    `((_ is ${ft.s}.none) ${v.e})`,
+                    () => prev,
+                    () => v,
+                    undefined,
+                    p,
+                  ),
+            );
+          }
         else return out(p);
         continue;
       }
@@ -302,7 +321,11 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
       const key = p.key;
       const plain = key.type === "Identifier" ? key.name : key.type === "Literal" ? String(key.value) : undefined;
       if (t.k === "obj") {
-        vals.set(plain ?? out(p), expr(p.value, env, t.f.find(([k]) => k === plain)?.[1]));
+        const k = plain ?? out(p);
+        const v = expr(p.value, env, t.f.find(([f]) => f === k)?.[1]);
+        // A key written holds a value: `undefined` under it is refused by every schema, an optional field's too.
+        if (v.v === "nil" ? !v.nul : v.v === "val" && v.t.k === "opt" && !v.t.nul) oblige(`(not ${eq(v, NIL, p)})`);
+        vals.set(k, v);
         continue;
       }
       const k =
@@ -369,7 +392,8 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
         )
           return out(node, `new ${calleeName(node.callee)}`);
         const arr = must(expr(a, env), a);
-        return arr.t.k === "arr" ? { v: "set", a: arr } : out(a);
+        // A Set holds objects by reference, which the terms do not hold.
+        return arr.t.k !== "arr" ? out(a) : isRef(arr.t.v) ? out(a, "a Set of objects") : { v: "set", a: arr };
       }
       case "ConditionalExpression":
         return join(

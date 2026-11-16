@@ -102,14 +102,21 @@ export function sortTable() {
           ...(node.max === undefined ? {} : { max: node.max }),
         };
       case "object":
-        return obj(Object.entries(node.fields).map(([k, n]) => [k, ofNode(n, `${path}.${k}`)]));
+        return obj(
+          Object.entries(node.fields).map(([k, n]) => {
+            const t = ofNode(n, `${path}.${k}`);
+            return [k, n.kind === "optional" ? opt(t, false) : t];
+          }),
+        );
       case "array":
         return coll("arr", ofNode(node.item, `${path}[]`));
       case "record":
         return coll("rec", ofNode(node.value, `${path}[]`));
+      // Only a field may be absent: anywhere else `optional` allows what its inner schema allows.
       case "optional":
+        return ofNode(node.inner, path);
       case "nullable":
-        return opt(ofNode(node.inner, path), node.kind === "nullable");
+        return opt(ofNode(node.inner, path), true);
       default:
         throw new Outside(`no sort for ${node.kind} at ${path}`, undefined);
     }
