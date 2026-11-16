@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "unsafe": 17,
+  "unsafe": 18,
   "rungs": {
-    "example": 913,
+    "example": 914,
     "probabilistic": 280,
     "exhaustive": 15,
     "proven": 51,
@@ -63,7 +63,7 @@
         "threshold": 80
       },
       "testing": {
-        "score": 82.06,
+        "score": 82.42,
         "threshold": 70
       },
       "ui": {
@@ -11433,11 +11433,11 @@
     },
     {
       "item": "k.prove#4",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.prove#5",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "item": "k.prove#6",
@@ -11449,6 +11449,10 @@
     },
     {
       "item": "k.prove#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.prove#9",
       "rung": "example"
     },
     {
