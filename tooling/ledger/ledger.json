@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 17,
   "rungs": {
-    "example": 900,
-    "probabilistic": 272,
+    "example": 909,
+    "probabilistic": 277,
     "exhaustive": 15,
     "proven": 51,
     "monitored": 4
@@ -7299,7 +7299,7 @@
       "pkg": "golden-1",
       "name": "FlowParams",
       "file": "golden-1:api/FlowParams.schema.ts",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -7323,19 +7323,19 @@
       "pkg": "golden-1",
       "name": "Removal",
       "file": "golden-1:api/Removal.schema.ts",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
       "name": "RemovalData",
       "file": "golden-1:api/RemovalData.schema.ts",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
       "name": "StepFailure",
       "file": "golden-1:api/StepFailure.schema.ts",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -7431,7 +7431,7 @@
       "pkg": "golden-1",
       "name": "jobs",
       "file": "golden-1:api/jobs.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
@@ -7461,7 +7461,7 @@
       "pkg": "golden-1",
       "name": "postRemove",
       "file": "golden-1:api/postRemove.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
@@ -7485,25 +7485,25 @@
       "pkg": "golden-1",
       "name": "postUndoRemoval",
       "file": "golden-1:api/postUndoRemoval.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
       "name": "purge",
       "file": "golden-1:api/purge.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
       "name": "purgeList",
       "file": "golden-1:api/purgeList.ts",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
       "name": "removal",
       "file": "golden-1:api/removal.server.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",

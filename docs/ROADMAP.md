@@ -18,10 +18,10 @@ Gates, not dates. A gate passes when its criteria are green in CI.
 | S8 Reach (built; root gates green 2026-11-15, native builds not verified) | db, workflows, Capacitor, Tauri, verification | Golden app 1 survives SIGKILL on std-db with a byte-equal stored row; a workflow resumes mid-step; Tauri and Android artifacts built in CI with a session replayed in the shell; Z3 proofs recorded as proven |
 | P1 Go public | the kernel `frozen` flip; SVG system diagrams (kernel, stdlib, apps, the compile and check pipeline, resume) on brand; human explanations of what happens and why; agent documentation (skills, spec retrieval, ledger) checked by an eval; public site; launch checklist | A newcomer explains Keel's parts from the diagrams alone; an agent builds a golden app from the public docs; external a11y and security review of the site |
 
-**S8 state.** Built: `@keel/std-db` (SQLite, Postgres), `@keel/std-workflows`, `@keel/std-capacitor`, `@keel/std-tauri`, `@keel/testing/prove`, `read` and `commit` on `ctx.storage`, `commitStores`, `keel build --target`, E1112. The root `pnpm check`, `pnpm test` and `pnpm build` are green and the ledger holds 57 `proven` items. Not verified:
+**S8 state.** Built: `@keel/std-db` (SQLite, Postgres), `@keel/std-workflows`, `@keel/std-capacitor`, `@keel/std-tauri`, `@keel/testing/prove`, `read` and `commit` on `ctx.storage`, `commitStores`, `keel build --target`, E1112. The root `pnpm check`, `pnpm test` and `pnpm build` are green and the ledger holds 51 `proven` items. The `golden-1-api` eval converges: golden-1 on SQLite keeps a byte-equal stored row across a SIGKILL, six board transactions are proven, and the planted proof and stored-data twins fail as planted. Not verified:
 - Native shell builds. `keel build --target tauri` needs Rust 1.95 and the Tauri CLI; `--target capacitor` needs the Android SDK and JDK 21, or Xcode 26. None has run, so no Tauri, Android or iOS artifact exists and no session has replayed in a shell.
 - Postgres under concurrency. The two-connection checks (advisory locks, read committed visibility, connection loss, TLS) ran on PGlite only; a real Postgres 17 service has not run them.
 - The CI shell jobs, which need a pushed branch.
-The S8 exit criterion stays open until those three run.
+The S8 exit criterion stays open until those three run: the storage, workflow and proof parts are met, the shell part is not.
 
 verified: 106d1bbea78f2fa5c25ef86dd0b375661b7135b3
