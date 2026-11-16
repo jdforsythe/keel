@@ -1,13 +1,13 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: this file <= 1,200 tokens; each section <= 1,500. Retrieve with `pnpm spec <id>`.
+status key: proposed | implemented | conformance-covered | frozen. Budget: this file <= 1,200 tokens; a section <= 1,500.
 
 ## Code ranges
 Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --for <code>` finds the owner.
 | block | owner | block | owner |
 | --- | --- | --- | --- |
 | E100x | k.compiler | E105x | k.cli, k.evidence |
-| E110x | k.schema, k.privacy | E115x | k.module |
+| E110x | k.schema, k.privacy, k.reveal | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component | E145x | k.errors |
@@ -50,8 +50,8 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.server | Thin server | conformance-covered | loaders, actions, server state |
 | k.sync | Heads and concurrent writes | conformance-covered | heads, write bases, reject or rebase |
 | k.persist | Storage and durable state | proposed | atomic storage, drivers |
-| k.topology | Deployables | implemented | placement, routes, runners, peers, `keel dev` |
-| k.deploy | Production entry and deploy files | conformance-covered | `server.mjs`, `storage`, deploy files |
+| k.topology | Deployables | implemented | placement, routes, runners, peers |
+| k.deploy | Production entry and deploy files | conformance-covered | `server.mjs`, `storage` |
 | k.shell | Native shells | proposed | Capacitor and Tauri apps |
 | k.compat | Surface compatibility | conformance-covered | surface, `accepts`, `--base` |
 | k.api | API routes | conformance-covered | `api: true` entries: JSON, no view |
@@ -64,6 +64,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.aria | Widget parts | conformance-covered | Part: roles, focus, dialog, styles |
 | k.security | Headers and CSP | conformance-covered | headers, nonce CSP, cookie |
 | k.privacy | Secrets and personal data | conformance-covered | `s.secret`, `.pii(class)`, redacting sinks |
+| k.reveal | Revealed values | proposed | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | a signed bundle |
 
 ## Stdlib

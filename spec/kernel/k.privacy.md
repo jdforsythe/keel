@@ -10,12 +10,12 @@ status: conformance-covered
 **Sinks.**
 - Sessions (std.sessions): marked values in payloads, state and error `data` become generated values at capture; error messages drop each.
 - Inputs: a control bound (k.forms `field`) to a marked path carries `data-k-pii="<class>"`, and the ctx observer reports its `input` values and one-character `keydown` keys as `x` repeated, as for a password field (k.ctx).
-- Server log (k.server): before a `diag` record is written, each of `piiValues` of the request's decoded action input, its loaders' outputs and its factories' store states is replaced by `[pii]` in the message and in each of its `frames`.
+- Server log (k.server): before a `diag` record is written, each of `piiValues` of the request's decoded action input, its loaders' outputs and its factories' store states is replaced by `[pii]` in the message and in each of its `frames`. The revealed value of each `Secret` in the decoded action input is replaced by `[secret]` the same way.
 - URLs: a marked node in a route's `params` or `search` schema is E1111, since a path or query reaches browser history and proxy logs Keel cannot redact.
 - Evidence bundle (k.evidence): holds no app value.
 In dev, `/__keel/inspect` serves store values unredacted to the developer; it is not a sink.
 
-**Rules.** E1105 `reveal` imported in an app file other than `*.server.ts`, test files included · E1111 a `.pii()` node in a route `params` or `search` schema (fix: none). It also reports a route table, entry, `params` or `search` it cannot read statically (a factory call, a computed key); a route table or schema a package exports is the package's, and so is the schema an export on the checker's closed audited list returns, each one refusing a marked column when called (`tableSearch` from `@keel/std-tables`). · E1112 a value `reveal` returns reaching an argument of `tx` or `store` (`@keel/store`), `set` or `commit` on a `storage`, a `console` method or an `Error` constructor, in app code (no fix). It is followed by lexical scope through same-file bindings (each value given), members, spreads, literals, templates, operators, `await`, `String()`, `JSON.stringify()` and methods called on it; any other call, a parameter and an import end it (a hash passes; a helper is not read).
+**Rules.** E1105 `reveal` imported in an app file other than `*.server.ts`, test files included · E1111 a `.pii()` node in a route `params` or `search` schema (fix: none). It also reports a route table, entry, `params` or `search` it cannot read statically (a factory call, a computed key); a route table or schema a package exports is the package's, and so is the schema an export on the checker's closed audited list returns, each one refusing a marked column when called (`tableSearch` from `@keel/std-tables`). · E1112 a revealed value reaching a log, storage, a file, store state or a throw (k.reveal).
 
 **Conformance.**
 - For every generated secret: it parses; `encode`, `String` and `util.inspect` give the marker, `JSON.stringify` the marker's JSON, `structuredClone` an empty object; parsing a raw value yields a secret revealing it; the marker fails with rule `secret-missing`.
@@ -27,4 +27,4 @@ In dev, `/__keel/inspect` serves store values unredacted to the developer; it is
 - Under a sim ctx, an `input` fired on an `Input` bound to a marked field reaches `observe` as `x` repeated, and the element has `data-k-pii`.
 - A marked field in a route's `params` or `search` schema is E1111; in an action `input` it is not.
 - An action throwing an `Error` whose stack names a file path holding a marked input value logs that frame with `[pii]` in place of the value.
-- In a `*.server.ts` file, `tx(t, { v: reveal(p.k) })`, the same through a `const` or in `meta`, `ctx.storage.set(k, reveal(p.k))`, `console.log(reveal(p.k))` and `new Error('x' + reveal(p.k))` are each one E1112; `tx(t, { v: hash(reveal(p.k)) })`, `reveal(p.k) === h` and a call of a local named `reveal` are none.
+- An action throwing the revealed value of a `Secret` input, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production.
