@@ -39,3 +39,18 @@ describe("topology.ts in check(files) without a caller topology", () => {
     expect(codes(files)).toEqual([]);
   });
 });
+
+describe("a workspace with an unreadable topology.ts in a subfolder", () => {
+  it.fails(
+    "is one E1552 at <name>/topology.ts, the folder its own project (a folder holding a topology.ts is not a project root unless it reads statically)",
+    () => {
+      const root = f("topology.ts", `${HEAD}export default topology({ web: { modules: ['a'], adapter: 'static' } })\n`);
+      const app = f(
+        "apps/web/topology.ts",
+        `${HEAD}const t = { web: { modules: ['a'], adapter: 'static' } }\nexport default topology(t)\n`,
+      );
+      const result = check([root, MODULE, app, f("apps/web/main.ts", "export const x = 1\n")], { types: false });
+      expect(result.diagnostics.filter((d) => d.code === "E1552").map((d) => d.path)).toEqual(["apps/web/topology.ts"]);
+    },
+  );
+});
