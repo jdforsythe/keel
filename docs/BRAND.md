@@ -36,4 +36,4 @@ The sentence-level rules live in `docs/VOICE.md` (first person, reader as the he
 - `@keel/ui` tokens: the scaffold `project` template emits `tokens.ts` with this palette, these fonts, radius 0, and the hairline divider, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/inspector`, `apps/sessions`.
 - Fonts are self-hosted (`@keel/ui/fonts`), never fetched from a third party at runtime (THREAT-MODEL CSP).
 
-verified: dd49b69c281fc02a9b4fef44a764e8844e8cb3e9
+verified: 335b406eb85bf0273e30de60ea2008bf5b318b2b
