@@ -37,13 +37,13 @@ const rejection = async (run: () => Promise<unknown>): Promise<unknown> => {
 
 const fixture = (id: string) => {
   const none = s.object({});
-  const a = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.a` });
+  const a = store(s.object({ n: s.int({ min: 0, max: 9 }) }), { n: 0 }, { id: `${id}.a` });
   invariant(a, (state) => state.n >= 0);
-  const inc = transaction(a, `${id}.inc`, none, (state) => ({ n: state.n + 1 }));
+  const inc = transaction(a, `${id}.inc`, none, (state) => ({ n: state.n < 9 ? state.n + 1 : state.n }));
   const dec = transaction(a, `${id}.dec`, none, (state) => ({ n: state.n > 0 ? state.n - 1 : state.n }));
-  const b = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.b` });
+  const b = store(s.object({ n: s.int({ min: 0, max: 9 }) }), { n: 0 }, { id: `${id}.b` });
   invariant(b, (state) => state.n >= 0);
-  const other = transaction(b, `${id}.other`, none, (state) => ({ n: state.n + 1 }));
+  const other = transaction(b, `${id}.other`, none, (state) => ({ n: state.n < 9 ? state.n + 1 : state.n }));
   return { id, inc, dec, other };
 };
 

@@ -50,10 +50,10 @@ const valuesAt = (value: unknown, key: string): unknown[] => {
 };
 
 const counter = (id: string) => {
-  const st = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.count` });
+  const st = store(s.object({ n: s.int({ min: 0, max: 9 }) }), { n: 0 }, { id: `${id}.count` });
   invariant(st, (state) => state.n >= 0);
   const none = s.object({});
-  const inc = transaction(st, `${id}.inc`, none, (state) => ({ n: state.n + 1 }));
+  const inc = transaction(st, `${id}.inc`, none, (state) => ({ n: state.n < 9 ? state.n + 1 : state.n }));
   const dec = transaction(st, `${id}.dec`, none, (state) => ({ n: state.n > 0 ? state.n - 1 : state.n }));
   return { inc, dec };
 };

@@ -1,10 +1,12 @@
 // Spec: k.prove, Rules "E1716 a counterexample: the state (or `initial`) and the payload, as JSON on the next line. The state may be unreachable; then the invariant is true but not inductive: strengthen it, or `explore`."
 // Spec: k.prove, Rules "The JSON is `{"transaction","state","payload"}` (`{"state"}` for `initial`); a string is the model's literal, else `a`, `b`, ... in order of first appearance."
+// Spec: k.prove, Rules "When only an integer range breaks (Sorts, Obligations), the first line is `<tx> leaves the safe integer range from this state; bound the schema or guard it`."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { invariant, store, transaction } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 const SEED = 1337;
@@ -142,6 +144,65 @@ describe("k.prove: E1716 JSON shape", () => {
       const firstSeen = body.filter((v, i) => body.indexOf(v) === i);
       expect(firstSeen.length).toBeGreaterThanOrEqual(2);
       expect(firstSeen).toEqual(["a", "b", "c", "d"].slice(0, firstSeen.length));
+    },
+    LONG,
+  );
+});
+
+const line = (tx: string) => `${tx} leaves the safe integer range from this state; bound the schema or guard it`;
+const firstLine = (e: unknown): string => messageOf(e).split("\n")[0] ?? "";
+
+const ranges = (id: string) => {
+  const none = s.object({});
+  const a = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.sinc` });
+  const inc = transaction(a, `${id}.inc`, none, (state) => ({ n: state.n + 1 }));
+  const b = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.sdbl` });
+  const dbl = transaction(b, `${id}.dbl`, none, (state) => ({ n: state.n * 2 }));
+  const c = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.sadd` });
+  const add = transaction(c, `${id}.add`, s.object({ by: s.int({ min: 0 }) }), (state, p) => ({ n: state.n + p.by }));
+  const d = store(s.object({ n: s.int({ min: 0, max: 9 }), m: s.int() }), { n: 0, m: 0 }, { id: `${id}.sboth` });
+  invariant(d, (state) => state.n <= 5);
+  const both = transaction(d, `${id}.both`, none, (state) => ({
+    n: state.n < 9 ? state.n + 1 : state.n,
+    m: state.m + 1,
+  }));
+  return { id, inc, dbl, add, both };
+};
+
+describe("k.prove: E1716 safe-range line", () => {
+  it(
+    "when only an integer range breaks the first line is the safe-range line, for n + 1, n * 2 and n + p.by, and data equals the JSON line",
+    async () => {
+      const f = build(ranges);
+      const cases = [
+        { t: f.inc, name: `${f.id}.inc` },
+        { t: f.dbl, name: `${f.id}.dbl` },
+        { t: f.add, name: `${f.id}.add` },
+      ];
+      // seed 1337
+      await fc.assert(
+        fc.asyncProperty(fc.integer({ min: 0, max: 2 }), async (i) => {
+          const c = cases[i];
+          if (c === undefined) throw new Error("fixture: no case");
+          const e = await rejection(() => prove([c.t]));
+          expect(codeOf(e)).toBe("E1716");
+          expect(firstLine(e)).toBe(line(c.name));
+          expect(isRecord(e) ? e.data : undefined).toEqual(jsonLine(e));
+        }),
+        { seed: SEED, numRuns: 3 },
+      );
+    },
+    LONG,
+  );
+
+  it(
+    "a transaction that breaks an invariant and an integer range reports under the schema-or-invariant line, with the state's n at 5",
+    async () => {
+      const f = build(ranges);
+      const e = await rejection(() => prove([f.both]));
+      expect(codeOf(e)).toBe("E1716");
+      expect(firstLine(e)).not.toBe(line(`${f.id}.both`));
+      expect(valuesAt(jsonLine(e), "n")).toContain(5);
     },
     LONG,
   );

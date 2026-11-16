@@ -61,6 +61,12 @@ const family = (id: string) => {
   ];
 };
 
+const unbounded = (id: string) => {
+  const st = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.count` });
+  invariant(st, (state) => state.n >= 0);
+  return transaction(st, `${id}.inc`, s.object({}), (state) => ({ n: state.n + 1 }));
+};
+
 const outcome = async (run: () => Promise<unknown>) => {
   try {
     return { result: JSON.stringify(await run()) };
@@ -88,6 +94,21 @@ describe("k.prove: two runs", () => {
         }),
         { seed: SEED, numRuns: 4 },
       );
+    },
+    LONG,
+  );
+});
+
+describe("k.prove: two runs of the safe-range counterexample", () => {
+  it(
+    "two runs over the unbounded inc return byte-equal counterexamples",
+    async () => {
+      const inc = build(unbounded);
+      const first = await outcome(() => prove([inc]));
+      const second = await outcome(() => prove([inc]));
+      expect(first).toHaveProperty("code", "E1716");
+      expect(second).toEqual(first);
+      expect(JSON.stringify(second)).toBe(JSON.stringify(first));
     },
     LONG,
   );
