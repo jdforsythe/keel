@@ -1,6 +1,8 @@
 import { type ResolvedGlobals, unwrapExpression } from "@keel/compiler/internal";
 import {
   type Argument,
+  type AssignmentTargetMaybeDefault,
+  type AssignmentTargetRest,
   type BindingPattern,
   type BindingRestElement,
   type BlockStatement,
@@ -11,7 +13,9 @@ import {
 import type { Given } from "./Given.ts";
 
 /** Methods that put their arguments into the receiver. */
-const ADDS: ReadonlySet<string> = new Set(["push", "unshift", "set", "add", "append"]);
+const ADDS: ReadonlySet<string> = new Set(["push", "unshift", "splice", "fill", "set", "add", "append"]);
+/** A pattern of a declaration or of an assignment, or a part of one. */
+type Target = BindingPattern | BindingRestElement | AssignmentTargetMaybeDefault | AssignmentTargetRest;
 
 function add<T>(to: Map<string, T[]>, name: string, x: T): void {
   const list = to.get(name);
@@ -21,10 +25,10 @@ function add<T>(to: Map<string, T[]>, name: string, x: T): void {
 
 /**
  * The values the locals of `program` are given, read by E1112. `live(name, use)` is what the local `name` read at
- * offset `use` may hold: its initializers, assignments, `for...of` heads, member writes (`o.k = v`, under the first
- * key of the chain), and the arguments of `push`, `unshift`, `set`, `add` or `append` on it and of `Object.assign`
- * to it. A `name = value` statement in a block around the read, ending before it, hides every earlier value but
- * the member writes and mutations. `under(key, name, use)` is whether an object pattern binds that local from the
+ * offset `use` may hold: its initializers, assignments (a pattern alike), `for...of` heads, member writes (`o.k = v`,
+ * under the first key of the chain), and the arguments of `push`, `unshift`, `splice`, `fill`, `set`, `add` or
+ * `append` on it and of `Object.assign` to it. A statement assigning the name, alone or in a pattern, in a block
+ * around the read and ending before it, hides every earlier value but the member writes and mutations. `under(key, name, use)` is whether an object pattern binds that local from the
  * property `key`.
  */
 export function givenAt(
@@ -38,8 +42,9 @@ export function givenAt(
   const kills = new Map<string, { at: number; end: number; to: number }[]>();
   const keyed = new Map<string, { at: number; key: string }[]>();
   /** Gives each name `p` binds the value `v`, under `key`: the first object key on the way to the name. */
-  const bind = (p: BindingPattern | BindingRestElement, v: Expression, key: string | null | undefined): void => {
+  const bind = (p: Target, v: Expression, key: string | null | undefined): void => {
     if (p.type === "Identifier") add(values, p.name, { at: p.start, v, key, field: undefined, kept: false });
+    else if (p.type === "MemberExpression") put(p, v);
     else if (p.type === "ObjectPattern")
       for (const x of p.properties) {
         if (x.type === "RestElement") bind(x.argument, v, key ?? null);
@@ -47,8 +52,22 @@ export function givenAt(
       }
     else if (p.type === "ArrayPattern") {
       for (const x of p.elements) if (x !== null) bind(x, v, key ?? null);
-    } else bind(p.type === "RestElement" ? p.argument : p.left, v, key ?? null);
+    } else if (p.type === "RestElement") bind(p.argument, v, key ?? null);
+    else if (p.type === "AssignmentPattern") bind(p.left, v, key ?? null);
   };
+  /** The names a pattern assigns. */
+  const names = (p: Target): { name: string; start: number }[] =>
+    p.type === "Identifier"
+      ? [p]
+      : p.type === "ObjectPattern"
+        ? p.properties.flatMap((x) => names(x.type === "RestElement" ? x.argument : x.value))
+        : p.type === "ArrayPattern"
+          ? p.elements.flatMap((x) => (x === null ? [] : names(x)))
+          : p.type === "RestElement"
+            ? names(p.argument)
+            : p.type === "AssignmentPattern"
+              ? names(p.left)
+              : [];
   /** Puts `v` into the local the member chain `to` starts at: the local itself, or the first field of the chain. */
   const put = (to: Expression, v: Argument, field?: string | null): void => {
     const x = unwrapExpression(to);
@@ -64,9 +83,9 @@ export function givenAt(
   };
   const block = (n: Program | BlockStatement): void => {
     for (const st of n.body) {
-      const x = st.type === "ExpressionStatement" ? st.expression : null;
-      if (x?.type === "AssignmentExpression" && x.operator === "=" && x.left.type === "Identifier")
-        add(kills, x.left.name, { at: x.left.start, end: st.end, to: n.end });
+      const x = st.type === "ExpressionStatement" ? unwrapExpression(st.expression) : null;
+      if (x?.type === "AssignmentExpression" && x.operator === "=")
+        for (const id of names(x.left)) add(kills, id.name, { at: id.start, end: st.end, to: n.end });
     }
   };
   new Visitor({
@@ -77,6 +96,7 @@ export function givenAt(
     },
     ForOfStatement: (n) => {
       if (n.left.type === "VariableDeclaration") for (const d of n.left.declarations) bind(d.id, n.right, null);
+      else bind(n.left, n.right, null);
     },
     ObjectPattern: (p) => {
       for (const x of p.properties) {
@@ -86,8 +106,7 @@ export function givenAt(
       }
     },
     AssignmentExpression: (n) => {
-      if (n.left.type === "Identifier") bind(n.left, n.right, undefined);
-      else if (n.left.type === "MemberExpression") put(n.left, n.right);
+      bind(n.left, n.right, undefined);
     },
     CallExpression: (n) => {
       const c = n.callee;

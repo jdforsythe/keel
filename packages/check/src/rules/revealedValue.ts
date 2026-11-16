@@ -17,15 +17,21 @@ const TESTS: ReadonlySet<string> = new Set([
 ]);
 /** Calls whose result holds an argument: conversions, copies and encodings that can be reversed. */
 const KEEPS: ReadonlySet<string> = new Set([
-  ...["String", "String.raw", "JSON.stringify", "structuredClone", "Array.from", "Object.assign", "Object.values"],
-  ...["Object.entries", "btoa", "encodeURI", "encodeURIComponent", "Buffer.from"],
+  ...["String", "String.raw", "JSON.stringify", "structuredClone", "Array.from", "Array.of", "Object.assign"],
+  ...["Object.values", "Object.entries", "Object.fromEntries", "Map", "Set", "btoa", "encodeURI"],
+  ...["encodeURIComponent", "Buffer.from"],
 ]);
+/** `KEEPS` entries that carry when constructed. */
+const NEWS = /^(String|Map|Set)$/;
 /** Members that are a count, not the value. */
 const COUNTS: ReadonlySet<string> = new Set(["length", "size"]);
 /** Methods whose result is a test or a position. */
 const ASKS: ReadonlySet<string> = new Set(["includes", "startsWith", "endsWith", "indexOf", "has"]);
 /** Methods whose result holds an argument as well as the receiver. */
-const JOINS: ReadonlySet<string> = new Set(["concat", "replace", "replaceAll", "padStart", "padEnd"]);
+const JOINS: ReadonlySet<string> = new Set([
+  ...["concat", "replace", "replaceAll", "padStart", "padEnd"],
+  ...["fill", "set", "add"],
+]);
 /** Global paths that write an argument out. */
 const WRITES: ReadonlySet<string> = new Set(["process.stdout.write", "process.stderr.write", "Promise.reject"]);
 const FS = /^(node:)?fs(\/promises)?$/;
@@ -46,8 +52,10 @@ const named = (m: MemberExpression): string | null => {
  * member of the module), of a global whose name ends in `Error`, called or constructed; and the value thrown.
  * A value carries one when it is the call; a local a live given value carries (`givenAt`); a spread, literal,
  * template, operator other than a test, `?:` or `await` of one; the right side of `&&`; a member of one other than
- * `length` and `size` (of an object literal or a local, the named field only); a method called on one other than
- * the tests in `ASKS`; a `JOINS` method given one; or a `KEEPS` call of one. Any other call, a parameter and an
+ * `length` and `size` (of an object literal or a local, the named field only; a destructured name at its field);
+ * a method called on one other than the tests in `ASKS`; a `JOINS` method given one; or a `KEEPS` call of one, or
+ * a `new` of `String`, `Map` or `Set`. A sink's `.call`, `.apply` or `.bind`, or `Reflect.apply` of it, passes it
+ * each argument after the `this` value. Any other call, a parameter and an
  * import end it. One finding per sink, at the first carrying argument; no fix (what to derive is the author's
  * choice).
  */
@@ -129,8 +137,13 @@ export const revealedValue: RuleDef = {
       const reads = (name: string | null): boolean => key === undefined || name === null || name === key;
       switch (e.type) {
         case "Identifier":
+          // A destructured name read at a member: its field, then that member of it.
           return live(e.name, e.start).some((x) =>
-            x.field === undefined ? once(x.v, x.key ?? key, d) : reads(x.field) && next(x.v),
+            x.field !== undefined
+              ? reads(x.field) && next(x.v)
+              : typeof x.key === "string" && key !== undefined
+                ? !COUNTS.has(key) && once(x.v, x.key, d)
+                : once(x.v, x.key ?? key, d),
           );
         case "ObjectExpression":
           return e.properties.some((p) =>
@@ -150,7 +163,7 @@ export const revealedValue: RuleDef = {
           const c = e.callee;
           if (e.type === "CallExpression" && isReveal(c, 0)) return true;
           const path = g.resolve(c)?.join(".");
-          if (path !== undefined && KEEPS.has(path) && (path === "String" || e.type === "CallExpression"))
+          if (path !== undefined && KEEPS.has(path) && (NEWS.test(path) || e.type === "CallExpression"))
             return e.arguments.some(next);
           if (e.type === "NewExpression" || c.type !== "MemberExpression") return false;
           const m = (c.computed ? g.constString(c.property) : c.property.name) ?? "";
@@ -226,8 +239,17 @@ export const revealedValue: RuleDef = {
     };
     const out: Finding[] = [];
     const call = (n: { readonly callee: Expression; readonly arguments: readonly Argument[] }): void => {
-      const sink = sinkOf(n.callee, 0);
-      const arg = sink === null ? undefined : n.arguments.find((a) => carries(a, undefined, 0));
+      const c = unwrap(n.callee);
+      const m = c.type === "MemberExpression" ? named(c) : null;
+      const [f, , list] = n.arguments;
+      // A sink's `.call`, `.apply` or `.bind`, or `Reflect.apply` of it: the arguments after the `this` value.
+      const [sink, args] =
+        f !== undefined && f.type !== "SpreadElement" && g.resolve(c)?.join(".") === "Reflect.apply"
+          ? [sinkOf(f, 0), list === undefined ? [] : [list]]
+          : c.type === "MemberExpression" && (m === "call" || m === "apply" || m === "bind")
+            ? [sinkOf(c.object, 0), n.arguments.slice(1, m === "apply" ? 2 : undefined)]
+            : [sinkOf(c, 0), n.arguments];
+      const arg = sink === null ? undefined : args.find((a) => carries(a, undefined, 0));
       if (sink !== null && arg !== undefined) out.push(findingAt(file, arg.start, { sink }));
     };
     new Visitor({
