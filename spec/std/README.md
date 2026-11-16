@@ -45,5 +45,5 @@ S8 adds std.db, std.workflows, std.shells, std.credentials and std.tokens.
 | std.db | SQLite and Postgres storage | proposed | storage drivers (k.persist) and check rule registry: E2151-E2153 |
 | std.workflows | Workflows | proposed | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2354 |
 | std.shells | Shell drivers | proposed | storage and net drivers for Capacitor and Tauri shells |
-| std.credentials | Credential hashes | proposed | capability, schema type and check rule registries, std config: `Hashed`, `hash`, `verify`, `ln`, E2201-E2202 |
-| std.tokens | Tokens | proposed | `@keel/std-credentials`: `mint` with a ttl, `check`, `Digested` |
+| std.credentials | Credential hashes | conformance-covered | capability, schema type and check rule registries, std config: `Hashed`, `hash`, `verify`, `ln`, E2201-E2202 |
+| std.tokens | Tokens | conformance-covered | `@keel/std-credentials`: `mint` with a ttl, `check`, `Digested` |

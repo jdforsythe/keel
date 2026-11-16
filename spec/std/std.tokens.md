@@ -1,5 +1,5 @@
 # std.tokens: Tokens
-status: proposed
+status: conformance-covered
 
 **Purpose.** A fast hash for secrets the package mints: API tokens, reset and invite tokens. It is sound because every stored digest comes from `mint`, which draws 256 random bits; a password takes std.credentials. Both are `@keel/std-credentials`.
 

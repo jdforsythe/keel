@@ -1,5 +1,5 @@
 # std.credentials: Credential hashes
-status: proposed
+status: conformance-covered
 
 **Extension points.** Capability registry (k.ctx): `credentials`. Schema type registry: `credentials.Hashed`. Std config (k.module): `{ ln }`. Check rule registry: `@keel/std-credentials/tools` (E2201, E2202). A module that uses the package lists it in `deps`. Tokens: std.tokens.
 
