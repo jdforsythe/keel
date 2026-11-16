@@ -131,7 +131,9 @@ const bounded = (id: string) => {
   const downTightSet = transaction(downTight, `${id}.downTightSet`, none, (_state, p) => ({ n: p.n }));
   const st = store(s.object({ n: s.int() }), { n: 0 }, { id: `${id}.state` });
   invariant(st, (state) => state.n <= 9007199254740992);
-  const jump = transaction(st, `${id}.jump`, s.object({}), (state) => ({ n: state.n === 9007199254740992 ? 18014398509481984 : state.n }));
+  const jump = transaction(st, `${id}.jump`, s.object({}), (state) => ({
+    n: state.n === 9007199254740992 ? 18014398509481984 : state.n,
+  }));
   return { upSet, upTightSet, downSet, downTightSet, jump };
 };
 

@@ -153,7 +153,9 @@ const shapes = (id: string) => {
   invariant(st, (state) => state.n >= 0);
   const callFn = (state: { n: number }) => ({ n: isDeepStrictEqual(state.n, 0) ? 1 : state.n });
   const call = transaction(st, `${id}.call`, none, callFn);
-  const nested = transaction(st, `${id}.nested`, s.object({ outer: s.object({ extra: s.json() }) }), (state) => ({ n: state.n }));
+  const nested = transaction(st, `${id}.nested`, s.object({ outer: s.object({ extra: s.json() }) }), (state) => ({
+    n: state.n,
+  }));
   const bad = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.bad` });
   invariant(bad, (state) => isDeepStrictEqual(state.n, state.n));
   const viaInvariant = transaction(bad, `${id}.viaInvariant`, none, (state) => ({ n: state.n }));
@@ -167,7 +169,9 @@ describe("k.prove: E1715 message shapes", () => {
       const f = build(shapes);
       const e = await rejection(() => prove([f.call]));
       expect(codeOf(e)).toBe("E1715");
-      const m = new RegExp(`^${escapeRe(`${f.id}.call`)}: (.+) at offset (\\d+) is outside the fragment; explore remains$`).exec(firstLine(e));
+      const m = new RegExp(
+        `^${escapeRe(`${f.id}.call`)}: (.+) at offset (\\d+) is outside the fragment; explore remains$`,
+      ).exec(firstLine(e));
       expect(m).not.toBeNull();
       expect(Number(m?.[2])).toBeLessThanOrEqual(f.callSource.length);
       expect(m?.[1]).toContain("isDeepStrictEqual");
@@ -182,7 +186,9 @@ describe("k.prove: E1715 message shapes", () => {
       const e = await rejection(() => prove([f.viaInvariant]));
       expect(codeOf(e)).toBe("E1715");
       expect(firstLine(e)).toMatch(
-        new RegExp(`^${escapeRe(`${f.id}.bad`)} invariant \\d+: (.+) at offset (\\d+) is outside the fragment; explore remains$`),
+        new RegExp(
+          `^${escapeRe(`${f.id}.bad`)} invariant \\d+: (.+) at offset (\\d+) is outside the fragment; explore remains$`,
+        ),
       );
     },
     LONG,
@@ -205,7 +211,9 @@ describe("k.prove: E1715 message shapes", () => {
       const f = build(shapes);
       const e = await rejection(() => prove([f.nested]));
       expect(codeOf(e)).toBe("E1715");
-      expect(firstLine(e)).toBe(`${f.id}.nested: no sort for ${firstLine(e).split(" no sort for ")[1]?.split(" at ")[0] ?? ""} at payload.outer.extra; explore remains`);
+      expect(firstLine(e)).toBe(
+        `${f.id}.nested: no sort for ${firstLine(e).split(" no sort for ")[1]?.split(" at ")[0] ?? ""} at payload.outer.extra; explore remains`,
+      );
       expect(firstLine(e)).toMatch(/^[^\s:]+\.nested: no sort for .+ at payload\.outer\.extra; explore remains$/);
     },
     LONG,

@@ -88,7 +88,10 @@ const named = (id: string) => {
   const set = transaction(st, `${id}.set`, s.object({ tag: s.string() }), (_state, p) => ({ tag: p.tag }));
   const pair = store(s.object({ x: s.string(), y: s.string() }), { x: "", y: "" }, { id: `${id}.pair` });
   invariant(pair, (state) => state.x === state.y);
-  const swap = transaction(pair, `${id}.swap`, s.object({ x: s.string(), y: s.string() }), (_state, p) => ({ x: p.x, y: p.y }));
+  const swap = transaction(pair, `${id}.swap`, s.object({ x: s.string(), y: s.string() }), (_state, p) => ({
+    x: p.x,
+    y: p.y,
+  }));
   const broken = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: `${id}.broken` });
   invariant(broken, (state) => state.n >= 1);
   const inc = transaction(broken, `${id}.inc`, s.object({}), (state) => ({ n: state.n + 1 }));
@@ -97,7 +100,7 @@ const named = (id: string) => {
 
 describe("k.prove: E1716 JSON shape", () => {
   it(
-    "the counterexample JSON is {\"transaction\",\"state\",\"payload\"} with the transaction's name",
+    'the counterexample JSON is {"transaction","state","payload"} with the transaction\'s name',
     async () => {
       const { id, set } = build(named);
       const e = await rejection(() => prove([set]));
@@ -111,7 +114,7 @@ describe("k.prove: E1716 JSON shape", () => {
   );
 
   it(
-    "for initial the counterexample JSON is {\"state\"} alone",
+    'for initial the counterexample JSON is {"state"} alone',
     async () => {
       const { inc } = build(named);
       const e = await rejection(() => prove([inc]));
