@@ -34,9 +34,9 @@ import { moduleOf } from "./internal/moduleOf.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { peerOf } from "./internal/peerOf.ts";
 import { peerPaths } from "./internal/peerPaths.ts";
+import { redacted } from "./internal/redacted.ts";
 import { reportSource } from "./internal/reportSource.ts";
 import { reqLine } from "./internal/reqLine.ts";
-import { scrubbed } from "./internal/scrubbed.ts";
 import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import { withCors } from "./internal/withCors.ts";
@@ -194,6 +194,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
         allowed: api !== undefined,
         held: new Map(),
         pii: new Set<string>(),
+        secrets: new Set<string>(),
       };
       isolate(rq.scope);
       const r = await attempt(() => handle(sv, raw, rq, c));
@@ -201,8 +202,8 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       if (!r.ok) return r;
       const diags = r.value.diags.map((d) => ({
         ...d,
-        message: scrubbed(d.message, rq.pii),
-        ...(d.frames === undefined ? {} : { frames: d.frames.map((f) => scrubbed(f, rq.pii)) }),
+        message: redacted(d.message, rq),
+        ...(d.frames === undefined ? {} : { frames: d.frames.map((f) => redacted(f, rq)) }),
       }));
       return { ok: true as const, value: { ...r.value, diags } };
     };

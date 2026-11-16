@@ -1,6 +1,7 @@
 import type { Match } from "@keel/router/internal";
 import { fieldsError, routeActions } from "@keel/router/internal";
 import { attempt, err, ok } from "@keel/schema";
+import { secretValues } from "@keel/schema/internal";
 import { saveStores } from "@keel/store/internal";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
@@ -31,7 +32,8 @@ import { valuesOf } from "./valuesOf.ts";
  * the `Result` as JSON with the status of its code. A document `keel.fields` re-renders the page at 422
  * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
  * A throw is `keel.unexpected` plus a `keel.unexpected` diag; neither holds a `.pii()` value of the decoded input or of
- * the stores it opened (`notePii`, `scrubbed`; k.privacy Server log).
+ * the stores it opened, nor the revealed value of a `Secret` in the decoded input (`notePii`, `secretValues`,
+ * `redacted`; k.privacy Server log).
  */
 export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<Handled> {
   const { id, def, chain } = m.route;
@@ -66,6 +68,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const { sv, rq } = r;
   const encoded = attempt(() => action.input.encode(decoded.value));
   notePii(rq.pii, action.input, encoded.ok ? encoded.value : decoded.value);
+  for (const v of secretValues(decoded.value)) rq.secrets.add(v);
   const { result: ran, frames } = await caught(async () => {
     const stores = action.stores === undefined ? undefined : await openFactory(sv.ctx, rq, action.stores);
     const at = { params: m.params, url: r.url, caller: rq.caller.id, stores };
@@ -80,7 +83,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
     for (const h of held.ok ? held.value : [])
       for (const o of h.opened) notePii(rq.pii, o.store.schema, o.store.snapshot().state);
   }
-  const clean = ran.ok ? null : scrubbedCause(ran.error, rq.pii);
+  const clean = ran.ok ? null : scrubbedCause(ran.error, rq);
   const thrown =
     clean === null ? [] : [{ code: "keel.unexpected", message: `action ${id} threw: ${clean.data.cause}`, frames }];
   const result = clean === null ? (ran.ok ? ran.value : ran) : err(clean);

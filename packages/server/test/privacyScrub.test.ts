@@ -1,14 +1,17 @@
 // @vitest-environment node
 // k.privacy Server log beyond its conformance: a throwing action's dev JSON error, its diag, and a throwing loader's diag
-// hold no `.pii()` value of the input, a store state the action changed or another loader's output. Seed 1337.
+// hold no `.pii()` value of the input, a store state the action changed or another loader's output, and no revealed
+// value of a `Secret` in the input. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
-import { ok, s } from "@keel/schema";
+import { type Infer, attempt, ok, reveal, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
+import { redacted } from "../src/internal/redacted.ts";
 import { scrubbed } from "../src/internal/scrubbed.ts";
+import { scrubbedCause } from "../src/internal/scrubbedCause.ts";
 
 const Notes = s.object({ items: s.array(s.string().pii("content")) });
 const Text = s.object({ text: s.string() });
@@ -146,5 +149,159 @@ describe("scrubbed", () => {
       }),
       { seed: 1337, numRuns: 200 },
     );
+  });
+});
+
+describe("scrubbed with the [secret] mark", () => {
+  const key = 'k"1\n+/z';
+  const one = (m: string, v: string) => scrubbed(m, new Set([v]), "[secret]");
+  it("replaces a value as is and in its URL-encoded, JSON-escaped, case-folded and base64 forms", () => {
+    expect(one("bad tok-7f3a9c.", "tok-7f3a9c")).toBe("bad [secret].");
+    expect(one(`bad ${encodeURIComponent(key)}`, key)).toBe("bad [secret]");
+    expect(one(`bad ${JSON.stringify({ key })}`, key)).toBe('bad {"key":"[secret]"}');
+    expect(one("hi TOK-7F3A9C", "tok-7f3a9c")).toBe("hi [secret]");
+    expect(one(`token ${btoa("tok-7f3a9c")}`, "tok-7f3a9c")).toBe("token [secret]");
+  });
+
+  it("replaces a value under 3 characters only as a whole token", () => {
+    expect(one("pin 7 of 17 at 07:07, v7", "7")).toBe("pin [secret] of 17 at 07:07, v7");
+    expect(one("ok: a token, a.", "a")).toBe("ok: [secret] token, [secret].");
+  });
+
+  it("leaves the message as it is when the set is empty", () => {
+    expect(scrubbed("nothing to hide", new Set(), "[secret]")).toBe("nothing to hide");
+  });
+
+  it("property: no form of a secret survives, and other text stays", () => {
+    fc.assert(
+      fc.property(fc.stringMatching(/^[a-z]{3,12}[-_ ][a-z0-9]{1,8}$/), fc.integer({ min: 0, max: 4 }), (v, form) => {
+        const shown = [v, encodeURIComponent(v), v.toUpperCase(), JSON.stringify(v).slice(1, -1), btoa(v)][form] ?? v;
+        expect(one(`x 123 ${shown} 456`, v)).toBe("x 123 [secret] 456");
+      }),
+      { seed: 1337, numRuns: 200 },
+    );
+  });
+});
+
+describe("redacted", () => {
+  const rq = { pii: new Set(["ada@example.test"]), secrets: new Set(["tok-7f3a9c", "ada@example.test"]) };
+  it("marks a pii value and a secret in one message, each with its own mark", () => {
+    expect(redacted("mail ada@example.test with tok-7f3a9c failed", rq)).toBe("mail [pii] with [secret] failed");
+  });
+
+  it("runs the [pii] pass first: a value in both sets reads [pii]", () => {
+    expect(redacted("ADA@EXAMPLE.TEST", rq)).toBe("[pii]");
+  });
+
+  it("with no secret noted, writes what the [pii] pass writes", () => {
+    expect(redacted("mail ada@example.test with tok-7f3a9c", { pii: rq.pii, secrets: new Set() })).toBe(
+      "mail [pii] with tok-7f3a9c",
+    );
+  });
+});
+
+describe("scrubbedCause", () => {
+  const thrown = (message: string) => {
+    const r = attempt((): null => {
+      throw new Error(message);
+    });
+    if (r.ok) throw new Error("the fixture did not throw");
+    return r.error;
+  };
+  it("drops secrets and pii values from the cause and the message", () => {
+    const rq = { pii: new Set(["ada lovelace"]), secrets: new Set(["tok-7f3a9c"]) };
+    const clean = scrubbedCause(thrown("ada lovelace sent tok-7f3a9c"), rq);
+    expect(clean).toEqual({
+      code: "keel.unexpected",
+      message: "Error: [pii] sent [secret]",
+      data: { cause: "Error: [pii] sent [secret]" },
+    });
+  });
+
+  it("clips the message again from the scrubbed cause, so no clipped half of a secret is left", () => {
+    const secret = "s3cr3t-value-0123456789";
+    const e = thrown(`${"x".repeat(72)} ${secret} tail`);
+    expect(e.message.endsWith(" s3cr3t-v…")).toBe(true);
+    const clean = scrubbedCause(e, { pii: new Set(), secrets: new Set([secret]) });
+    expect(clean.data.cause).toBe(`Error: ${"x".repeat(72)} [secret] tail`);
+    expect(clean.message).toBe(`Error: ${"x".repeat(72)} [secret]…`);
+    expect(clean.message.length).toBe(89);
+  });
+});
+
+describe("secret scrub over a request", () => {
+  const TOKEN = "tok-7f3a9c";
+  const input = s.object({
+    email: s.string().pii("contact"),
+    creds: s.object({ key: s.secret(s.string()), pins: s.array(s.secret(s.int())) }),
+  });
+  const sent = { email: "ada@example.test", creds: { key: TOKEN, pins: [48213, 7] } };
+  type Sent = Infer<typeof input>;
+  async function run(mode: "dev" | "production", fail: (v: Sent) => unknown, accept: string) {
+    const lines: string[] = [];
+    const routes = manifest({
+      "app.a": {
+        path: "/a",
+        loader: loader({ output: s.object({}) }, async () => {
+          await Promise.resolve();
+          throw new Error(`loader saw ${TOKEN}`);
+        }),
+        component: () => document.createElement("main"),
+      },
+    });
+    routes.actions({
+      "app.a": {
+        POST: action({ input }, (v) => {
+          throw fail(v);
+        }),
+      },
+    });
+    const app = await createApp({
+      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+      routes,
+      ctx: createCtx({ mode: "sim", seed: 1337 }),
+      mode,
+      log: { format: "compact", write: (l) => lines.push(l) },
+    });
+    const res = await app.fetch(
+      new Request("http://localhost/a", {
+        method: "POST",
+        body: JSON.stringify(sent),
+        headers: { "content-type": "application/json", accept },
+      }),
+    );
+    return { status: res.status, body: await res.text(), diags: lines.filter((l) => l.startsWith("keel.unexpected ")) };
+  }
+
+  it("a pii value and a secret in one thrown message each take their mark, in the log and the dev response", async () => {
+    const out = await run("dev", (v) => new Error(`mail ${v.email} key ${reveal(v.creds.key)}`), "application/json");
+    expect(out.status).toBe(500);
+    expect(out.diags).toEqual(["keel.unexpected action app.a threw: Error: mail [pii] key [secret]"]);
+    expect(out.body).toContain("mail [pii] key [secret]");
+    expect(out.body).not.toContain(TOKEN);
+  });
+
+  it("a thrown object holding the secret logs its JSON with the mark", async () => {
+    const out = await run("production", (v) => ({ token: reveal(v.creds.key) }), "application/json");
+    expect(out.diags).toEqual(['keel.unexpected action app.a threw: {"token":"[secret]"}']);
+    expect(out.body).not.toContain(TOKEN);
+  });
+
+  it("a number secret in an array is marked; a one-digit one only as a whole token", async () => {
+    const out = await run(
+      "production",
+      (v) => new Error(`pins ${v.creds.pins.map((p) => reveal(p)).join(" ")} of 17 tried`),
+      "application/json",
+    );
+    expect(out.diags).toEqual(["keel.unexpected action app.a threw: Error: pins [secret] [secret] of 17 tried"]);
+  });
+
+  it("a loader's diag of the same request takes the same pass, as does the rendered page", async () => {
+    const out = await run("dev", (v) => reveal(v.creds.key), "text/html");
+    expect(out.diags).toEqual([
+      "keel.unexpected action app.a threw: [secret]",
+      "keel.unexpected loader app.a threw: Error: loader saw [secret]",
+    ]);
+    expect(out.body).not.toContain(TOKEN);
   });
 });

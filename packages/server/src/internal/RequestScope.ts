@@ -7,7 +7,8 @@ import type { Caller } from "./Caller.ts";
  * is who sent it (`callerOf`); `allowed`, whether its `Origin` is an allowed origin and its route an API route
  * (k.hosting); `held` is this request's instance of each `stores` factory opened so far (`openStores` from `@keel/store/internal`, whose `StateRequest` this satisfies); `pii` the
  * `.pii()` values of its decoded action input, its loaders' outputs and its factories' store states, which its `diag`
- * records and its `keel.unexpected` messages never hold (k.privacy Server log, `scrubbed`).
+ * records and its `keel.unexpected` messages never hold (k.privacy Server log, `scrubbed`); `secrets` the revealed
+ * value of each `Secret` in its decoded action input, which they never hold either (`redacted`).
  */
 export type RequestScope = {
   readonly scope: Scope;
@@ -15,4 +16,5 @@ export type RequestScope = {
   readonly allowed: boolean;
   readonly held: Map<Factory, Promise<Held>>;
   readonly pii: Set<string>;
+  readonly secrets: Set<string>;
 };
