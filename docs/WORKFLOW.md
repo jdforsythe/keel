@@ -34,4 +34,6 @@
 
 Brief every subagent with: the files it owns, the files other agents own concurrently, the spec section, the verification command, and what to report back (trailer lines, files touched, unfinished items). Independent subagents run in parallel in one turn. Subagent definitions in `.claude/agents/` carry a `model:` so the tier is the default, not a choice.
 
+**Processes.** The machine is shared. A brief tells its agent to run one test file at a time, to run a whole package suite at most twice, to bound every command, and to leave no process behind. The orchestrator runs `pnpm orphans` before and after a batch and after any root run that stopped early: it lists this worktree's processes whose parent is gone (O0001), and `pnpm orphans --kill` ends them. A mutation run is watched and stopped with `pnpm mutate:status` and `pnpm mutate:stop` only.
+
 verified: 730deaada22d646b710368b4bbabfc368956b87f
