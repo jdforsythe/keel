@@ -1,10 +1,11 @@
 // Spec: k.shell, Conformance "The `www` entry a shell build writes creates its ctx with `mode: 'shell'` and the package's drivers; the plain `client` entry is unchanged."
 // Seed: 1337.
-// UNTESTABLE without a native toolchain, as far as the public surface shows: the `www` entry exists only after `keel build --target tauri`, whose toolchain
-// step (E1575) runs first and whose last step runs `tauri build`; the compiler exports no entry generator for a shell. This body runs that build and reads
-// `dist/web/tauri/www/`; it needs Rust 1.95 and `KEEL_ORIGIN`. "The package's drivers" is read as `drivers` passed to `createCtx` beside `mode: 'shell'`.
+// The test builds a fixture whose `node_modules/.bin/tauri` and `PATH` tools (`cargo`, `rustc`, `npx`) are fakes that exit 0 without compiling, then reads
+// the `www` entry the build writes. "The package's drivers" is read as `drivers` passed to `createCtx` beside `mode: 'shell'`.
 import { spawnSync } from "node:child_process";
 import {
+  chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -15,18 +16,18 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
-const SLOW = 600_000;
+const SLOW = 180_000;
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 
 const manifestSrc = (id: string): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
 const tree: Record<string, string> = {
-  "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: { "@keel/std-tauri": "workspace:*" } })}\n`,
+  "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: { "@keel/std-tauri": "workspace:*" }, devDependencies: { "@tauri-apps/cli": "2.0.0" } })}\n`,
   "vite.config.ts":
     'import keel from "@keel/compiler/vite";\nimport { defineConfig } from "vite";\nexport default defineConfig({ plugins: [keel()] });\n',
   "tsconfig.json": JSON.stringify({
@@ -42,8 +43,19 @@ const tree: Record<string, string> = {
 };
 
 let dir = "";
+let scratch = "";
+let fakeBin = "";
+let realNpx = "";
+
+function exe(path: string, body: string): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `#!/bin/sh\n${body}`);
+  chmodSync(path, 0o755);
+}
+
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "keel-shell-entry-"));
+  scratch = mkdtempSync(join(tmpdir(), "keel-shell-tools-"));
   for (const [p, c] of Object.entries(tree)) {
     mkdirSync(dirname(join(dir, p)), { recursive: true });
     writeFileSync(join(dir, p), c);
@@ -55,22 +67,57 @@ beforeAll(() => {
   for (const name of ["vitest", "vite", "typescript", "fast-check"]) {
     symlinkSync(join(REPO, "node_modules", name), join(dir, "node_modules", name));
   }
+  mkdirSync(join(dir, "node_modules", "@tauri-apps", "cli"), { recursive: true });
+  writeFileSync(
+    join(dir, "node_modules", "@tauri-apps", "cli", "package.json"),
+    '{ "name": "@tauri-apps/cli", "version": "1.0.0" }\n',
+  );
+  mkdirSync(join(dir, "node_modules", ".bin"), { recursive: true });
+  symlinkSync(join(REPO, "node_modules", "vite", "bin", "vite.js"), join(dir, "node_modules", ".bin", "vite"));
+  exe(join(dir, "node_modules", ".bin", "tauri"), "exit 0\n");
+  for (const d of (process.env.PATH ?? "").split(delimiter)) {
+    if (d !== "" && existsSync(join(d, "npx"))) {
+      realNpx = join(d, "npx");
+      break;
+    }
+  }
+  fakeBin = join(scratch, "bin");
+  exe(join(fakeBin, "cargo"), 'echo "cargo 1.99.0 (fake 2030-01-01)"\n');
+  exe(join(fakeBin, "rustc"), 'echo "rustc 1.99.0 (fake 2030-01-01)"\n');
+  exe(join(fakeBin, "pkg-config"), "exit 0\n");
+  exe(
+    join(fakeBin, "npx"),
+    `for a in "$@"; do
+  case "$a" in
+    vite) exec "${realNpx}" "$@" ;;
+    tauri) exit 0 ;;
+  esac
+done
+exec "${realNpx}" "$@"
+`,
+  );
 }, SLOW);
-afterAll(() => rmSync(dir, { recursive: true, force: true }));
+afterAll(() => {
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(scratch, { recursive: true, force: true });
+});
 
 function build(args: string[]): number | null {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (v === undefined || k.startsWith("VITEST") || k.startsWith("KEEL_") || k === "NODE_OPTIONS" || k === "TEST")
-      continue;
+    if (v === undefined || k.startsWith("VITEST") || k.startsWith("KEEL_")) continue;
+    if (k === "NODE_OPTIONS" || k === "TEST" || k === "PATH") continue;
     env[k] = v;
   }
-  env["KEEL_ORIGIN"] = "https://app.example";
+  Object.assign(env, {
+    PATH: [fakeBin, dirname(process.execPath), "/usr/bin", "/bin"].join(delimiter),
+    KEEL_ORIGIN: "https://app.example",
+  });
   return spawnSync(process.execPath, [BIN, "build", ...args, "--format=json"], {
     cwd: dir,
     encoding: "utf8",
     env,
-    timeout: 540_000,
+    timeout: 150_000,
   }).status;
 }
 
@@ -91,7 +138,7 @@ const SHELL_CTX = /mode\s*:\s*["'`]shell["'`]/;
 const joined = (m: Map<string, string>): string => [...m.values()].join("\n");
 
 describe("k.shell: the shell entry", () => {
-  test.skip(
+  test(
     "The `www` entry a shell build writes creates its ctx with `mode: 'shell'` and the package's drivers; the plain `client` entry is unchanged.",
     () => {
       expect(build([])).toBe(0);
