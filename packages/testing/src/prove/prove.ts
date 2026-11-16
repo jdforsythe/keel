@@ -149,8 +149,8 @@ export async function prove<T>(
   const rlimit = options.rlimit ?? RLIMIT;
   if (st === undefined || transactions.some((t) => t.store !== st) || new Set(names).size !== names.length)
     throw modelError("E1710", "prove: give one or more transactions of one store, each once", { names });
-  if (!Number.isSafeInteger(rlimit) || rlimit < 1)
-    throw modelError("E1710", `prove: rlimit ${rlimit} is not a positive integer`, { rlimit });
+  if (!Number.isSafeInteger(rlimit) || rlimit < 1 || rlimit > 0xffffffff)
+    throw modelError("E1710", `prove: rlimit ${rlimit} is not an integer from 1 to 4294967295`, { rlimit });
   const initial = st.snapshot().initial;
   if (!st.check(initial).ok) {
     const data = { state: initial };

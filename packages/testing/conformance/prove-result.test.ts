@@ -1,5 +1,5 @@
 // Spec: k.prove, API "`prove(transactions, { rlimit? })` takes transactions of one store, each once. It resolves `{ proven, z3 }` (the names proven; the Z3 version as `major.minor.build`, `5.3.3`)"
-// Spec: k.prove, API "An empty or mixed list, a repeated transaction, or an `rlimit` that is not a positive integer rejects E1710 (k.model)."
+// Spec: k.prove, API "An empty or mixed list, a repeated transaction, or an `rlimit` that is not an integer from 1 to 2^32 - 1 rejects E1710 (k.model)."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -89,11 +89,11 @@ describe("k.prove: result", () => {
   );
 
   it(
-    "an rlimit that is not a positive integer rejects E1710",
+    "an rlimit that is not an integer from 1 to 2^32 - 1 rejects E1710",
     async () => {
       const f = build(fixture);
       const bad = fc.oneof(
-        fc.constantFrom(0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY),
+        fc.constantFrom(0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 32, 2 ** 53 - 1),
         fc.integer({ max: 0 }),
         fc.double({ noInteger: true, noNaN: true, min: 0.001, max: 1e6 }),
       );
@@ -104,6 +104,22 @@ describe("k.prove: result", () => {
         }),
         { seed: SEED, numRuns: 8 },
       );
+      for (const rlimit of [2 ** 32, 2 ** 53 - 1]) {
+        expect(codeOf(await rejection(() => prove([f.inc], { rlimit })))).toBe("E1710");
+      }
+    },
+    LONG,
+  );
+
+  it(
+    "an rlimit of 2^32 - 1 is accepted",
+    async () => {
+      const f = build(fixture);
+      const base: unknown = await prove([f.inc]);
+      const r: unknown = await prove([f.inc], { rlimit: 2 ** 32 - 1 });
+      const names = (v: unknown): unknown => (isRecord(v) && Array.isArray(v.proven) ? [...v.proven].sort() : v);
+      expect(names(r)).toEqual([`${f.id}.inc`]);
+      expect(names(r)).toEqual(names(base));
     },
     LONG,
   );

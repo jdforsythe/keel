@@ -341,7 +341,7 @@ describe("prove: messages and data", () => {
       for (const rlimit of [0, 1.5, -1]) {
         const bad = await refusal(() => prove([t], { rlimit }));
         expect(bad.code).toBe("E1710");
-        expect(bad.message).toContain(`prove: rlimit ${rlimit} is not a positive integer`);
+        expect(bad.message).toContain(`prove: rlimit ${rlimit} is not an integer from 1 to 4294967295`);
         expect(bad.data).toMatchObject({ rlimit });
       }
     },
