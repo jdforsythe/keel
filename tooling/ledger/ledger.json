@@ -1,29 +1,29 @@
 {
   "version": 1,
-  "unsafe": 14,
+  "unsafe": 17,
   "rungs": {
-    "example": 849,
-    "probabilistic": 263,
+    "example": 897,
+    "probabilistic": 272,
     "exhaustive": 15,
-    "proven": 42,
+    "proven": 57,
     "monitored": 4
   },
   "mutation": {
     "packages": {
       "check": {
-        "score": 75.16,
+        "score": 75.22,
         "threshold": 70
       },
       "cli": {
-        "score": 78.17,
+        "score": 82.74,
         "threshold": 70
       },
       "compiler": {
-        "score": 78.19,
+        "score": 77.9,
         "threshold": 70
       },
       "ctx": {
-        "score": 75.78,
+        "score": 77.52,
         "threshold": 70
       },
       "forms": {
@@ -43,7 +43,7 @@
         "threshold": 70
       },
       "scaffold": {
-        "score": 78.85,
+        "score": 78.09,
         "threshold": 70
       },
       "schema": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 82.45,
+        "score": 82,
         "threshold": 70
       },
       "services": {
@@ -59,7 +59,7 @@
         "threshold": 70
       },
       "store": {
-        "score": 91.36,
+        "score": 89.41,
         "threshold": 80
       },
       "testing": {
@@ -7297,6 +7297,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "FlowParams",
+      "file": "golden-1:api/FlowParams.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
       "name": "ListDraft",
       "file": "golden-1:api/ListDraft.schema.ts",
       "rung": "example"
@@ -7312,6 +7318,24 @@
       "name": "ListWrite",
       "file": "golden-1:api/ListWrite.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "Removal",
+      "file": "golden-1:api/Removal.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "RemovalData",
+      "file": "golden-1:api/RemovalData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "StepFailure",
+      "file": "golden-1:api/StepFailure.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-1",
@@ -7359,19 +7383,19 @@
       "pkg": "golden-1",
       "name": "addList",
       "file": "golden-1:api/addList.ts",
-      "rung": "exhaustive"
+      "rung": "proven"
     },
     {
       "pkg": "golden-1",
       "name": "addTodo",
       "file": "golden-1:api/addTodo.ts",
-      "rung": "exhaustive"
+      "rung": "proven"
     },
     {
       "pkg": "golden-1",
       "name": "board",
       "file": "golden-1:api/board.ts",
-      "rung": "exhaustive"
+      "rung": "proven"
     },
     {
       "pkg": "golden-1",
@@ -7395,7 +7419,19 @@
       "pkg": "golden-1",
       "name": "editTodo",
       "file": "golden-1:api/editTodo.ts",
-      "rung": "exhaustive"
+      "rung": "proven"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "hideList",
+      "file": "golden-1:api/hideList.ts",
+      "rung": "proven"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "jobs",
+      "file": "golden-1:api/jobs.server.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-1",
@@ -7423,6 +7459,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "postRemove",
+      "file": "golden-1:api/postRemove.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
       "name": "postTodo",
       "file": "golden-1:api/postTodo.server.ts",
       "rung": "example"
@@ -7441,15 +7483,63 @@
     },
     {
       "pkg": "golden-1",
+      "name": "postUndoRemoval",
+      "file": "golden-1:api/postUndoRemoval.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "purge",
+      "file": "golden-1:api/purge.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "purgeList",
+      "file": "golden-1:api/purgeList.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "removal",
+      "file": "golden-1:api/removal.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "removalChart",
+      "file": "golden-1:api/removalChart.ts",
+      "rung": "proven"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "removalStores",
+      "file": "golden-1:api/removalStores.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "restore",
+      "file": "golden-1:api/restore.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "runners",
       "file": "golden-1:api/runners.server.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-1",
+      "name": "showList",
+      "file": "golden-1:api/showList.ts",
+      "rung": "proven"
+    },
+    {
+      "pkg": "golden-1",
       "name": "toggleTodo",
       "file": "golden-1:api/toggleTodo.ts",
-      "rung": "exhaustive"
+      "rung": "proven"
     },
     {
       "pkg": "golden-1",
@@ -8545,6 +8635,12 @@
     },
     {
       "pkg": "scaffold",
+      "name": "crateName",
+      "file": "packages/scaffold/src/crateName.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "scaffold",
       "name": "deployDrift",
       "file": "packages/scaffold/src/deployDrift.ts",
       "rung": "example"
@@ -8560,6 +8656,12 @@
       "name": "scaffold",
       "file": "packages/scaffold/src/scaffold.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "scaffold",
+      "name": "shellDeployables",
+      "file": "packages/scaffold/src/shellDeployables.ts",
+      "rung": "none"
     },
     {
       "pkg": "schema",
@@ -8650,6 +8752,12 @@
       "name": "idBrandCase",
       "file": "packages/std-brands/src/idBrandCase.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "std-capacitor",
+      "name": "capacitorDrivers",
+      "file": "packages/std-capacitor/src/capacitorDrivers.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-channels",
@@ -9138,6 +9246,12 @@
       "rung": "probabilistic"
     },
     {
+      "pkg": "std-tauri",
+      "name": "tauriDrivers",
+      "file": "packages/std-tauri/src/tauriDrivers.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "std-temporal",
       "name": "DateStyle",
       "file": "packages/std-temporal/src/DateStyle.ts",
@@ -9327,6 +9441,24 @@
       "pkg": "std-timings",
       "name": "timingsOf",
       "file": "packages/std-timings/src/timingsOf.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-workflows",
+      "name": "WorkflowsInstances",
+      "file": "packages/std-workflows/src/WorkflowsInstances.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-workflows",
+      "name": "flows",
+      "file": "packages/std-workflows/src/flows.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-workflows",
+      "name": "workflow",
+      "file": "packages/std-workflows/src/workflow.ts",
       "rung": "example"
     },
     {
@@ -9740,6 +9872,10 @@
       "rung": "example"
     },
     {
+      "item": "k.compat#12",
+      "rung": "example"
+    },
+    {
       "item": "k.compiler#1",
       "rung": "example"
     },
@@ -9952,10 +10088,6 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.ctx#18",
-      "rung": "example"
-    },
-    {
       "item": "k.deploy#1",
       "rung": "example"
     },
@@ -9977,6 +10109,18 @@
     },
     {
       "item": "k.deploy#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#9",
       "rung": "example"
     },
     {
@@ -10240,6 +10384,10 @@
       "rung": "example"
     },
     {
+      "item": "k.ledger#11",
+      "rung": "example"
+    },
+    {
       "item": "k.model#1",
       "rung": "exhaustive"
     },
@@ -10328,6 +10476,50 @@
       "rung": "proven"
     },
     {
+      "item": "k.persist#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.persist#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.persist#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.persist#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.persist#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.persist#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.persist#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.persist#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.persist#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.persist#10",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.persist#11",
+      "rung": "example"
+    },
+    {
       "item": "k.prefix#1",
       "rung": "example"
     },
@@ -10389,6 +10581,42 @@
     },
     {
       "item": "k.privacy#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.privacy#10",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.prove#1",
+      "rung": "proven"
+    },
+    {
+      "item": "k.prove#2",
+      "rung": "proven"
+    },
+    {
+      "item": "k.prove#3",
+      "rung": "proven"
+    },
+    {
+      "item": "k.prove#4",
+      "rung": "proven"
+    },
+    {
+      "item": "k.prove#5",
+      "rung": "proven"
+    },
+    {
+      "item": "k.prove#6",
+      "rung": "proven"
+    },
+    {
+      "item": "k.prove#7",
+      "rung": "proven"
+    },
+    {
+      "item": "k.prove#8",
       "rung": "example"
     },
     {
@@ -10828,6 +11056,30 @@
       "rung": "example"
     },
     {
+      "item": "k.shell#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#6",
+      "rung": "none"
+    },
+    {
       "item": "k.sim#1",
       "rung": "probabilistic"
     },
@@ -11244,6 +11496,38 @@
       "rung": "example"
     },
     {
+      "item": "std.db#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.db#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.db#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.db#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.db#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.db#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.db#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.db#8",
+      "rung": "example"
+    },
+    {
       "item": "std.geo#1",
       "rung": "example"
     },
@@ -11389,6 +11673,10 @@
     },
     {
       "item": "std.jobs#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.jobs#11",
       "rung": "example"
     },
     {
@@ -11756,6 +12044,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "std.statecharts#10",
+      "rung": "probabilistic"
+    },
+    {
       "item": "std.tables#1",
       "rung": "probabilistic"
     },
@@ -11893,6 +12185,38 @@
     },
     {
       "item": "std.timings#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.workflows#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.workflows#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.workflows#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.workflows#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.workflows#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.workflows#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.workflows#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.workflows#8",
       "rung": "example"
     }
   ],
