@@ -20,8 +20,8 @@ const EXTS = ["", ".ts", ".tsx", ".mts", ".js", "/index.ts"];
  * and `seed` resolved through constants (imported ones too); unresolved values are omitted, so an unseeded or
  * unknown-run property stays `example` (k.ledger). A body that asserts types (`expectTypeOf`, `assertType`) or
  * runs a closed-form `explore` is `proven`; one running another `explore` is `exhaustive`, with its literal `depth`.
- * One calling `prove` (`@keel/testing/prove`) is `proven` with `z3`, the installed Z3 version, when `z3` is given (no
- * Z3, no passing `prove`). Bodies with none of these and no property run are `example`.
+ * One whose own statements await or return a `prove` call (`@keel/testing/prove`; `testFacts`), so a failing proof
+ * fails it, is `proven` with `z3`, the installed Z3 version, when `z3` is given (no Z3, no passing `prove`). Bodies with none of these and no property run are `example`.
  */
 export function testEvidence(
   files: readonly SourceFile[],

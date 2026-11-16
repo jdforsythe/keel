@@ -289,7 +289,6 @@ export function testFacts(path: string, source: string): FileFacts {
     const props: PropRun[] = [];
     const explores: { closed: boolean; depth: NumRef }[] = [];
     let typed = false;
-    let proves = false;
     const visit = (n: ts.Node): void => {
       if (ts.isTypeNode(n) || ts.isImportDeclaration(n)) return;
       if (ts.isIfStatement(n) && isBool(n.expression)) {
@@ -312,7 +311,6 @@ export function testFacts(path: string, source: string): FileFacts {
         const x = exploreRun(n);
         if (x !== undefined) explores.push(x);
         if (TYPE_ASSERTS.has(nameOf(n.expression))) typed = true;
-        if (isProve(n.expression)) proves = true;
       }
       if (ts.isIdentifier(n)) {
         const p = n.parent;
@@ -354,9 +352,38 @@ export function testFacts(path: string, source: string): FileFacts {
       props: props.map((p) => ({ runs: local(p.runs), seed: local(p.seed) })),
       explores: explores.map((x) => ({ closed: x.closed, depth: local(x.depth) })),
       typed,
-      proves,
+      proves: false,
     };
   };
+
+  /** An `await prove(...)`, or a bare `prove(...)` where the body returns it (`ret`). */
+  const settles = (n: ts.Node | undefined, ret: boolean): boolean => {
+    if (n === undefined) return false;
+    const awaited = ts.isAwaitExpression(n);
+    const c = awaited ? n.expression : n;
+    return (awaited || ret) && ts.isCallExpression(c) && isProve(c.expression);
+  };
+  /**
+   * A passing `prove` (k.ledger): a test function whose own statements, before any `return` or `throw`, await or return
+   * a `prove(...)` call, so the proof's rejection fails the test. One inside `expect(...)`, a `try`, a branch, a loop, a
+   * callback or a helper, or handled by `.catch` or `.then`, does not count.
+   */
+  const proves = (fns: readonly ts.Expression[]): boolean =>
+    fns.some((f) => {
+      if (!ts.isArrowFunction(f) && !ts.isFunctionExpression(f)) return false;
+      if (!ts.isBlock(f.body)) return settles(f.body, true);
+      for (const st of f.body.statements) {
+        if (ts.isReturnStatement(st)) return settles(st.expression, true);
+        if (ts.isThrowStatement(st)) return false;
+        const e = ts.isExpressionStatement(st)
+          ? st.expression
+          : ts.isVariableStatement(st)
+            ? st.declarationList.declarations[0]?.initializer
+            : undefined;
+        if (settles(e, false)) return true;
+      }
+      return false;
+    });
 
   const helpers = new Map<string, Use>();
   for (const st of sf.statements) {
@@ -390,7 +417,7 @@ export function testFacts(path: string, source: string): FileFacts {
     if (!skip && body) {
       const use = useOf(c.args);
       const named = c.args.filter((a) => ts.isIdentifier(a)).map((a) => a.text);
-      tests.push({ ...use, calls: new Set([...use.calls, ...named]) });
+      tests.push({ ...use, proves: proves(c.args), calls: new Set([...use.calls, ...named]) });
     }
   };
   walk(sf, false);

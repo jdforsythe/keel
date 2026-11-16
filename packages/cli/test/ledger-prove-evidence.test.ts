@@ -1,5 +1,6 @@
-// Ledger evidence from `prove` (k.ledger, k.prove): a passing call of `@keel/testing/prove`'s `prove` is `proven` and
-// names the Z3 version; without an installed Z3, a call expected to reject, or a local `prove`, it is `example`.
+// Ledger evidence from `prove` (k.ledger, k.prove): a passing call of `@keel/testing/prove`'s `prove`, one the test
+// body awaits or returns so its rejection fails the test, is `proven` and names the Z3 version; without an installed
+// Z3, a call expected to reject, one whose rejection is handled or not awaited, or a local `prove`, it is `example`.
 import { describe, expect, it } from "vitest";
 import { buildLedger } from "../src/internal/buildLedger.ts";
 import { testEvidence } from "../src/internal/testEvidence.ts";
@@ -32,6 +33,55 @@ describe("testEvidence: prove", () => {
         evidence(src, z3).map((e) => e.kind),
         src,
       ).toEqual(["example"]);
+  });
+
+  it("a prove the body awaits or returns, at its top level, decides the test: proven", () => {
+    const bodies = [
+      "async () => { await prove([t]); }",
+      "() => { return prove([t]); }",
+      "() => prove([t])",
+      "async () => await prove([t])",
+      "async () => { const r = await prove([t]); expect(r.proven).toEqual(['t']); }",
+      "async () => { const x = 1; expect(x).toBe(1); await prove([t]); }",
+      "async function () { await prove([t]); }",
+    ];
+    for (const body of bodies)
+      expect(
+        evidence(`${KP}it("a", ${body});`, "5.3.3").map((e) => e.kind),
+        body,
+      ).toEqual(["proven"]);
+  });
+
+  it("a prove whose rejection is handled, not awaited, or inside a branch, callback, try or helper: example", () => {
+    const bodies = [
+      "() => { prove([t]); }",
+      "async () => { void prove([t]); }",
+      "async () => { await prove([t]).catch(() => undefined); }",
+      "async () => { await prove([t]).then(() => null, (e) => e); }",
+      "async () => { await prove([t]).finally(() => undefined); }",
+      "async () => { try { await prove([t]); } catch {} }",
+      "async () => { try { await prove([t]); } finally {} }",
+      "async () => { await expect(prove([t])).rejects.toThrow('E1716'); }",
+      "async () => { await expect(prove([t])).resolves.toBeDefined(); }",
+      "async () => { await expect(prove([t]).catch((e) => e)).resolves.toBeDefined(); }",
+      "async () => { await Promise.allSettled([prove([t])]); }",
+      "async () => { await Promise.all([prove([t])]); }",
+      "async () => { if (ok) await prove([t]); }",
+      "async () => { if (ok) { await prove([t]); } }",
+      "async () => { ok ? await prove([t]) : undefined; }",
+      "async () => { for (const x of xs) await prove([x]); }",
+      "async () => { expect(await rejection(() => prove([t]))).toBeUndefined(); }",
+      "async () => { await run(async () => { await prove([t]); }); }",
+      "async () => { return; await prove([t]); }",
+      "async () => { const p = prove([t]); expect(p).toBeDefined(); }",
+    ];
+    for (const body of bodies)
+      expect(
+        evidence(`${KP}it("a", ${body});`, "5.3.3").map((e) => e.kind),
+        body,
+      ).toEqual(["example"]);
+    const helper = `${KP}const check = async () => { await prove([t]); };\nit("a", async () => { await check(); });`;
+    expect(evidence(helper, "5.3.3").map((e) => e.kind)).toEqual(["example"]);
   });
 
   it("buildLedger names the installed z3-solver's version", () => {
