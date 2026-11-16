@@ -146,6 +146,15 @@
     },
     "@keel/std-capacitor": "1.25kb",
     "@keel/std-tauri": "1.25kb",
+    "@keel/std-credentials": "1kb",
+    "@keel/std-credentials/server": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-credentials/tools": {
+      "max": "1.25kb",
+      "platform": "node"
+    },
     "@keel/std-temporal": "2.5kb",
     "@keel/std-text": "1.5kb",
     "@keel/store": "3.5kb",

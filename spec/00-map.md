@@ -22,6 +22,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | E260x | std.channels | E265x | std.offline |
 | E270x | std.conflicts | E275x | std.statecharts |
 | E280x | std.headless | E285x | std.tables |
+| E220x | std.credentials | | |
 
 ## Kernel
 | id | section | status | one line |
@@ -41,8 +42,8 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.errors | Results and boundaries | conformance-covered | Result if expected, boundary if not |
 | k.check | Checker and diagnostics | conformance-covered | codes, fixes, budgets, rules |
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces |
-| k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
-| k.testing | Harness and properties | conformance-covered | given, do, expect; properties |
+| k.scaffold | Scaffold and codemods | conformance-covered | structural edits |
+| k.testing | Harness and properties | conformance-covered | given, do, expect |
 | k.model | Exploring a store's transactions | conformance-covered | reachable states, invariants |
 | k.prove | Proving invariants | proposed | Z3 induction proofs |
 | k.sim | Schedules and simulation | conformance-covered | delays, faults, offline; simulate |
@@ -68,4 +69,4 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.evidence | Evidence bundle | conformance-covered | a signed bundle |
 
 ## Stdlib
-Sections and statuses: `spec/std/README.md`.
+Sections: `spec/std/README.md`.
