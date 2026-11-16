@@ -67,3 +67,4 @@ Ideas that come up outside the current plans. An idea is built at once only when
 - Sigstore or another third-party signer, and a CSP report service. RFC 0083 D3.
 - Redaction of copied or derived personal data. RFC 0083 and RFC 0073 Known limits; backlog 0257.
 - A secret per deployable, so one leak does not forge callers everywhere. Backlog 0353.
+- Envelope encryption under a key read from the environment, for a credential the app must present later (an OAuth refresh token, a pasted API key); today such a value is written only from a file under `unsafe/`.
