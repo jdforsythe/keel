@@ -3,10 +3,13 @@
 // one watchdog thread per process (watchdog-thread.mjs) and writes a heartbeat into shared memory at each phase:
 // collecting a file, its hooks, each test. The thread kills the process when a phase runs past
 // `allowed * 2 + grace` (grace 30 s), or when the worker's parent is gone. Real clocks are used on purpose: this
-// is the one place in the test setup that must bound wall-clock time.
+// is the one place in the test setup that must bound wall-clock time. A worker also kills its own descendants on
+// every way it can end (exit, SIGTERM, SIGINT, SIGHUP; a parent that vanishes closes the worker's channel, which
+// ends it through exit), so a child a test started never outlives the worker.
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Worker } from "node:worker_threads";
+import { isMainThread, Worker } from "node:worker_threads";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, inject } from "vitest";
 
 declare module "vitest" {
@@ -74,6 +77,56 @@ function heartbeat(): Beat {
   worker.unref();
   Reflect.set(process, KEY, beat);
   return beat;
+}
+
+/** Every process below `root`, from one `ps` listing; empty when `ps` is unavailable. */
+function descendants(root: number): number[] {
+  let listing = "";
+  try {
+    listing = execFileSync("ps", ["-A", "-o", "pid=,ppid="], { encoding: "utf8", timeout: 5000 });
+  } catch {
+    return [];
+  }
+  const children = new Map<number, number[]>();
+  for (const line of listing.split("\n")) {
+    const [pid, parent] = line.trim().split(/\s+/).map(Number);
+    if (pid === undefined || parent === undefined || !Number.isInteger(pid) || !Number.isInteger(parent)) continue;
+    children.set(parent, [...(children.get(parent) ?? []), pid]);
+  }
+  const out: number[] = [];
+  const queue = [root];
+  for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
+    for (const c of children.get(next) ?? []) {
+      out.push(c);
+      queue.push(c);
+    }
+  }
+  return out;
+}
+
+/** Kills what this process started. A process with no live child process skips the `ps` listing. */
+function killDescendants(): void {
+  if (!process.getActiveResourcesInfo().includes("ProcessWrap")) return;
+  for (const pid of descendants(process.pid)) {
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch {}
+  }
+}
+
+/** A signal ends the worker as it would without the handler, after its descendants are gone. */
+function endOn(signal: NodeJS.Signals): void {
+  const handler = (): void => {
+    killDescendants();
+    process.off(signal, handler);
+    if (process.listenerCount(signal) === 0) process.kill(process.pid, signal);
+  };
+  process.on(signal, handler);
+}
+
+if (isMainThread && Reflect.get(process, KEY) === undefined) {
+  process.on("exit", killDescendants);
+  for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"] as const) endOn(signal);
 }
 
 const beat = heartbeat();

@@ -92,4 +92,47 @@ describe("watchdog", () => {
       fs.rmSync(dir, { recursive: true, force: true });
     }
   }, 30_000);
+
+  describe("a worker's child process", () => {
+    const alive = (pid: number): boolean => {
+      try {
+        process.kill(pid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const ways = [
+      { how: "vitest gets SIGTERM", end: (pid: number) => process.kill(pid, "SIGTERM") },
+      { how: "vitest gets SIGINT", end: (pid: number) => process.kill(pid, "SIGINT") },
+      { how: "vitest gets SIGHUP", end: (pid: number) => process.kill(pid, "SIGHUP") },
+      { how: "vitest gets SIGKILL", end: (pid: number) => process.kill(pid, "SIGKILL") },
+      { how: "the whole process group gets SIGTERM", end: (pid: number) => process.kill(-pid, "SIGTERM") },
+    ];
+    for (const { how, end } of ways) {
+      it(`does not outlive the worker when ${how}`, async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-watchdog-"));
+        const ready = path.join(dir, "ready");
+        const child = run("child.fixture.ts", { KEEL_WATCHDOG_READY: ready });
+        let pids: number[] = [];
+        try {
+          expect(await within(20_000, () => fs.existsSync(ready) && fs.readFileSync(ready, "utf8").includes(" "))).toBe(
+            true,
+          );
+          pids = fs.readFileSync(ready, "utf8").split(" ").map(Number);
+          expect(pids.every(alive)).toBe(true);
+          if (child.pid !== undefined) end(child.pid);
+          expect(await within(8000, () => !pids.some(alive))).toBe(true);
+        } finally {
+          for (const pid of pids) {
+            try {
+              process.kill(pid, "SIGKILL");
+            } catch {}
+          }
+          killGroup(child.pid);
+          fs.rmSync(dir, { recursive: true, force: true });
+        }
+      }, 40_000);
+    }
+  });
 });

@@ -723,7 +723,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0643 apps: one golden app or eval task with accounts, sign-in and an API token, the first user of `@keel/std-credentials` · apps · evals
 - [ ] 0644 std-credentials: `credentials(ctx)` throws E1158 from `stdConfig` on a ctx bound to an invalid std config outside `createApp`; std.credentials says nothing throws. Decide: a sentence in the spec, or a Result · std-credentials · spec
 - [ ] 0645 testing: `prove` with `rlimit` at or above 2^32 rejects with a plain Error and no code (recorded at the close of 2026-11-16; not run again since) · testing
-- [ ] 0646 tooling: a root `pnpm test` that turbo stops at the first failing task leaves a cli test child running: `keel dev --port <n> --format=json` with PPID 1 (seen 2026-11-16, started 16:47:53, killed by hand). The test that starts `keel dev` must end it when its worker is killed, or the runner must sweep its group · cli · tooling
+- [x] 0646 tooling: a root `pnpm test` that turbo stops at the first failing task leaves a cli test child running: `keel dev --port <n> --format=json` with PPID 1 (seen 2026-11-16, started 16:47:53, killed by hand). The test that starts `keel dev` must end it when its worker is killed, or the runner must sweep its group · cli · tooling
 - [x] 0647 apps: `apps/inspector` `test/components.test.ts` "InspectorPage > holds its properties" timed out at 5,000 ms in two root `pnpm test` runs (it takes 1.8 s alone); the test has a 20,000 ms timeout · apps
 
 ## Red team 2026-11-16 (rfc:0103 std-credentials; findings and probes in tasks/0338-s8-reach/proposed/red-team-0103.md)
