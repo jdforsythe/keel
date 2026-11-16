@@ -15,9 +15,9 @@ Password hashes and tokens for `node` deployables: `credentials(ctx)` hashes and
     - `check<R extends { digest: Digested }>(token: Secret<string>, find: (id: string) => R | undefined): Result<R, credentials.mismatch | credentials.expired | credentials.malformed>`
   - `@keel/std-credentials/tools`: `serverImport` (E2201), `nodeDeployable` (E2202).
 - **Invariants:**
-  - Stored password: `$scrypt$ln=<ln>,r=8,p=1$<salt>$<key>`, a 16-byte salt from `randomBytes` and a 32-byte key, base64 without padding. The input is the secret's text, NFKC-normalized, as UTF-8, 1 to 1,024 bytes.
-  - `verify` reads id `scrypt` with `ln` 14 to 20, `r` 8, `p` 1 to 5, a salt of 8 to 64 bytes and a key of 16 to 64; anything else is `credentials.malformed`. `rehash` is true for a lower `ln`, a salt under 16 bytes or a key under 32. Keys compare with `timingSafeEqual`; input bytes and keys are zeroed after use.
-  - Cost: the highest `ln` any module sets in `std: { '@keel/std-credentials': { ln } }`, 17 when none does. Per ctx:
+  - Stored password: `$scrypt$ln=<ln>,r=8,p=1$<salt>$<key>`, a 16-byte salt from `randomBytes` and a 32-byte key, base64 without padding. The input is the secret's text, NFKC-normalized, as UTF-8, 1 to 1,024 bytes; text with a lone surrogate is not well-formed Unicode and is refused like an input out of range (`credentials.length` from `hash`, `credentials.mismatch` from `verify`).
+  - `verify` reads id `scrypt` with `ln` 14 to 20, `r` 8, `p` 1 to 5, a salt of 8 to 64 bytes and a key of 16 to 64; anything else is `credentials.malformed`. `rehash` is true for a lower `ln`, a salt under 16 bytes or a key under 32. Keys compare with `timingSafeEqual`; input bytes and keys are zeroed after use. A salt or key text that is not the canonical base64 of its bytes never matches. `stored` `undefined` or `null` derives one key and is `credentials.mismatch`.
+  - Cost: the highest `ln` any module sets in `std: { '@keel/std-credentials': { ln } }`, 17 when none does, read at each `credentials(ctx)` call. Per ctx:
 
     | `ln` | Memory per derivation | Run at once | Waiting |
     | --- | --- | --- | --- |
@@ -27,10 +27,11 @@ Password hashes and tokens for `node` deployables: `credentials(ctx)` hashes and
     | 20 | 1 GiB | 1 | 2 |
 
     A call past the waiting bound is `keel.busy` with that `limit`.
-  - Token: `keel_<id>_<secret>`, 16 and 64 lowercase hex characters from `randomBytes`. Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` for `ttl: null`, the SHA-256 of the token's text. `ttl` is an integer from 60,000 to 31,536,000,000 or `null`.
-  - `check` hashes the presented token, compares it with the row's digest in constant time, then reads `ctx.clock`: a token is valid while `now < expiresAt` and `credentials.expired` from `now >= expiresAt`, an answer only the real token gets.
+  - Token: `keel_<id>_<secret>`, 16 and 64 lowercase hex characters from `randomBytes`. Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` for `ttl: null`, the SHA-256 of the token's text; a digest text that is not the canonical base64 of 32 bytes is `credentials.malformed` `parameters`. `expiresAt` is the clock's whole milliseconds plus `ttl`. `ttl` is an integer from 60,000 to 31,536,000,000 or `null`.
+  - `check` hashes the presented token, compares it with the row's digest in constant time, then reads `ctx.clock`; a `find` that returns `undefined`, `null` or a non-object is `credentials.mismatch`, and a throw from `find` passes through: a token is valid while `now < expiresAt` and `credentials.expired` from `now >= expiresAt`, an answer only the real token gets.
   - Sim forms: `$scrypt-sim$` (derived at N = 2^4, `ln` as a label), `keelsim_` and `$sha256-sim$`, with bytes from the capability seed and a call count. Sim reads both forms; real and shell answer `credentials.malformed` `sim` for a sim hash or digest and `credentials.mismatch` for a sim token.
-  - Each error is one frozen value per code, `reason` and `limit`, and holds no part of a secret, a token or a stored string. No method throws.
+  - Each error is one frozen value per code, `reason` and `limit`, and holds no part of a secret, a token or a stored string. No method throws, a throw from `find` aside; `mint` answers `credentials.ttl` for a missing or non-object argument.
+  - Rules: E2201 and E2202 read static imports, re-exports and `import()` of `@keel/std-credentials/server`; type-only imports and re-exports pass. E2201 lets through `*.test.*` and `*.spec.*` files, a top-level test directory and a test directory inside a module.
 - **Dependencies:** `@keel/check`, `@keel/compiler`, `@keel/ctx`, `@keel/schema`; `scrypt`, `scryptSync`, `randomBytes`, `createHash` and `timingSafeEqual` of `node:crypto`.
 - **Rungs:** conformance (example and property, real and sim), properties for the stored-form reader, the queue, the cost, `verify`, `mint`, `check` and the generators.
 

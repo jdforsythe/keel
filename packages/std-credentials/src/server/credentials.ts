@@ -11,18 +11,23 @@ type Maker = { make(ln: number, now: () => number): Hasher };
 const access = register<Maker>("credentials", {
   real: () => ({ make: (ln, now) => hasherOf(ln, realEngine(ln), now) }),
   shell: () => ({ make: (ln, now) => hasherOf(ln, realEngine(ln), now) }),
-  sim: ({ seed }) => ({ make: (ln, now) => hasherOf(ln, simEngine(seed), now) }),
+  sim: ({ seed }) => {
+    const engine = simEngine(seed);
+    return { make: (ln, now) => hasherOf(ln, engine, now) };
+  },
 });
-const made = new WeakMap<Ctx, Hasher>();
+const made = new WeakMap<Ctx, { readonly ln: number; readonly hasher: Hasher }>();
 
 /**
- * The `credentials` capability accessor: one `Hasher` per ctx, built on first use at the ctx's cost (the highest
- * `ln` any module's `std` config sets, 17 when none does) and reading `ctx.clock`.
+ * The `credentials` capability accessor: a `Hasher` per ctx at the ctx's cost (the highest `ln` any module's `std`
+ * config sets, 17 when none does), read at each access, reading `ctx.clock`. A changed cost builds a new `Hasher`;
+ * under sim it keeps the ctx's call count.
  */
 export function credentials(ctx: Ctx): Hasher {
+  const ln = costOf(ctx);
   const known = made.get(ctx);
-  if (known !== undefined) return known;
-  const hasher = access(ctx).make(costOf(ctx), () => ctx.clock.now());
-  made.set(ctx, hasher);
+  if (known !== undefined && known.ln === ln) return known.hasher;
+  const hasher = access(ctx).make(ln, () => ctx.clock.now());
+  made.set(ctx, { ln, hasher });
   return hasher;
 }

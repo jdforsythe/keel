@@ -3,7 +3,9 @@ import { lineCol } from "./internal/lineCol.ts";
 import { serverImports } from "./internal/serverImports.ts";
 
 const SERVER_FILE = /\.server\.[cm]?[jt]s$/;
-const TEST_PATH = /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$/;
+/** A `*.test.*` or `*.spec.*` file, a top-level test directory, or a test directory inside a module (not its id). */
+const TEST_PATH =
+  /\.(?:test|spec)\.[cm]?[jt]sx?$|^(?:test|tests|__tests__)\/|(?:^|\/)modules\/[^/]+\/(?:[^/]+\/)*(?:test|tests|__tests__)\//;
 
 /** E2201 (std.credentials, k.check registry): `@keel/std-credentials/server` imported outside a `*.server.ts` file, tests aside. No fix. */
 export const serverImport: RuleDef = defineRule({

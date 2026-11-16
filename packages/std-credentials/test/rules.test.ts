@@ -75,3 +75,19 @@ test("explain rows exist and are under 120 tokens", () => {
     expect(Math.ceil(text.length / 4)).toBeLessThan(120);
   }
 });
+
+test("E2201 and E2202 count a dynamic import() of the entry", () => {
+  const source = 'export const f = () => import("@keel/std-credentials/server")\n';
+  expect(found("modules/a/x.ts", source, "node", "E2201")).toHaveLength(1);
+  expect(found("modules/a/x.server.ts", source, "node", "E2201")).toHaveLength(0);
+  expect(found("modules/a/x.server.ts", source, "client", "E2202")).toHaveLength(1);
+  const other = 'export const f = () => import("@keel/std-credentials")\n';
+  expect(found("modules/a/x.ts", other, "node", "E2201")).toHaveLength(0);
+});
+
+test("a module whose id is test is not a test path; a test directory inside a module is", () => {
+  const source = 'import { credentials } from "@keel/std-credentials/server"\nexport const c = credentials\n';
+  expect(found("modules/test/x.ts", source, "node", "E2201")).toHaveLength(1);
+  expect(found("modules/a/test/x.ts", source, "node", "E2201")).toHaveLength(0);
+  expect(found("test/x.ts", source, "node", "E2201")).toHaveLength(0);
+});

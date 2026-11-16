@@ -46,7 +46,7 @@ export function hasherOf(ln: number, engine: Engine, now: () => number): Hasher 
     },
     verify: async (secret, stored) => {
       const input = inputOf(secret);
-      if (stored === undefined) {
+      if (stored === undefined || stored === null) {
         if (input === null) return MISMATCH;
         const key = await engine.derive(input, Buffer.alloc(SALT), KEY, { id, ln, r: 8, p: 1 });
         input.fill(0);
@@ -72,13 +72,20 @@ export function hasherOf(ln: number, engine: Engine, now: () => number): Hasher 
       if (!(same && was.exact)) return MISMATCH;
       return ok({ rehash: was.ln < ln || was.salt.length < SALT || was.key.length < KEY });
     },
-    mint: ({ ttl }) => {
-      if (ttl !== null && !(Number.isInteger(ttl) && ttl >= TTL_MIN && ttl <= TTL_MAX)) return TTL;
+    mint: (options) => {
+      const ttl: unknown = typeof options === "object" && options !== null ? options.ttl : undefined;
+      const life =
+        ttl === null
+          ? null
+          : typeof ttl === "number" && Number.isInteger(ttl) && ttl >= TTL_MIN && ttl <= TTL_MAX
+            ? ttl
+            : undefined;
+      if (life === undefined) return TTL;
       const tokenId = engine.bytes(8).toString("hex");
       const secretBytes = engine.bytes(32);
       const text = `${engine.sim ? "keelsim" : "keel"}_${tokenId}_${secretBytes.toString("hex")}`;
       secretBytes.fill(0);
-      const expiresAt = ttl === null ? null : now() + ttl;
+      const expiresAt = life === null ? null : Math.floor(now()) + life;
       const exp = expiresAt === null ? "" : `exp=${expiresAt}$`;
       const token = SecretText.parse(text);
       const digest = Digested.parse(`$${engine.sim ? "sha256-sim" : "sha256"}$${exp}${b64(sha256(text))}`);
@@ -91,7 +98,7 @@ export function hasherOf(ln: number, engine: Engine, now: () => number): Hasher 
       if (m === null || (m[1] === "keelsim" && !engine.sim)) return MISMATCH;
       const row = find(m[2] ?? "");
       const got = sha256(text);
-      if (row === undefined) return MISMATCH;
+      if (typeof row !== "object" || row === null) return MISMATCH;
       const want = readDigested(row.digest);
       if (want === "format" || want === "parameters") return malformed(want);
       if (want.sim && !engine.sim) return malformed("sim");

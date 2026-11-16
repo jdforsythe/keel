@@ -93,3 +93,11 @@ test("the clock is read only after a match", () => {
   expect(c.check(m.token, find)).toEqual({ ok: true, value: row });
   expect(reads).toBe(1);
 });
+
+test("a find that returns null or a non-object is credentials.mismatch", () => {
+  const { c, m } = minted(() => 0, null);
+  for (const answer of [null, 0, "row", true]) {
+    const raw: unknown = Reflect.apply(c.check, c, [m.token, () => answer]);
+    expect(raw).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
+  }
+});

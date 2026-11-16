@@ -5,6 +5,7 @@ import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";
 import { type Secret, s } from "@keel/schema";
 import { Hashed } from "@keel/std-credentials";
+import { credentials } from "@keel/std-credentials/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { costOf } from "../src/server/internal/costOf.ts";
@@ -59,4 +60,22 @@ test("`rehash` is true exactly when the stored ln, salt or key is below the ctx'
     ),
     { seed: SEED, numRuns: 150 },
   );
+});
+
+test("a ctx used before its std config is bound answers at the bound cost, keeping the sim call count", async () => {
+  const salt = (h: string): string | undefined => h.split("$")[4];
+  const early = createCtx({ mode: "sim", seed: SEED });
+  const first = await credentials(early).hash(secretOf("abc"));
+  bindStd(early, { [PKG]: { accounts: { ln: 19 } } });
+  const second = await credentials(early).hash(secretOf("abc"));
+  const bound = createCtx({ mode: "sim", seed: SEED });
+  bindStd(bound, { [PKG]: { accounts: { ln: 19 } } });
+  const b1 = await credentials(bound).hash(secretOf("abc"));
+  const b2 = await credentials(bound).hash(secretOf("abc"));
+  if (!first.ok || !second.ok || !b1.ok || !b2.ok) throw new Error("hash failed");
+  expect(first.value).toMatch(/^\$scrypt-sim\$ln=17,/);
+  expect(second.value).toMatch(/^\$scrypt-sim\$ln=19,/);
+  expect(salt(second.value)).not.toBe(salt(first.value));
+  expect(salt(first.value)).toBe(salt(b1.value));
+  expect(second.value).toBe(b2.value);
 });

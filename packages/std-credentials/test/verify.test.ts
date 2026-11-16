@@ -6,6 +6,9 @@ import { Hashed } from "@keel/std-credentials";
 import { credentials } from "@keel/std-credentials/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
+import type { Engine } from "../src/server/internal/Engine.ts";
+import { hasherOf } from "../src/server/internal/hasherOf.ts";
+import { simEngine } from "../src/server/internal/simEngine.ts";
 
 const SEED = 1337;
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -57,4 +60,38 @@ test("U+212B and U+00C5 are one password", async () => {
   const h = await c.hash(secretOf("passÅword"));
   if (!h.ok) throw new Error("hash failed");
   expect((await c.verify(secretOf("passÅword"), h.value)).ok).toBe(true);
+});
+
+test("a secret with a lone surrogate is credentials.length from hash and credentials.mismatch from verify", async () => {
+  const c = credentials(createCtx({ mode: "sim", seed: SEED }));
+  const colliding = ["pass\uD800word", "pass\uDBFFword", "pass\uFFFDword"];
+  for (const v of colliding.slice(0, 2)) {
+    expect(await c.hash(secretOf(v))).toMatchObject({ ok: false, error: { code: "credentials.length" } });
+  }
+  const h = await c.hash(secretOf("pass\uFFFDword"));
+  if (!h.ok) throw new Error("hash failed");
+  for (const v of colliding.slice(0, 2)) {
+    expect(await c.verify(secretOf(v), h.value)).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
+  }
+  expect((await c.verify(secretOf("pass\uD83D\uDE00word"), h.value)).ok).toBe(false);
+  expect((await c.hash(secretOf("pass\uD83D\uDE00word"))).ok).toBe(true);
+});
+
+test("verify with stored null derives once and is credentials.mismatch, as undefined is", async () => {
+  const base = simEngine(SEED);
+  let derived = 0;
+  const counting: Engine = {
+    sim: base.sim,
+    bytes: (n) => base.bytes(n),
+    derive: (input, salt, length, params) => {
+      derived++;
+      return base.derive(input, salt, length, params);
+    },
+  };
+  const c = hasherOf(17, counting, () => 0);
+  const raw: unknown = await Reflect.apply(c.verify, c, [secretOf("a password"), null]);
+  expect(raw).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
+  expect(derived).toBe(1);
+  expect(await c.verify(secretOf("a password"), undefined)).toBe(raw);
+  expect(derived).toBe(2);
 });

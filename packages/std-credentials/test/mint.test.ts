@@ -1,5 +1,7 @@
 // Seed 1337. `mint`'s `ttl` at and around both bounds and off the integers; the digest's `exp` equals `expiresAt`.
+import { createCtx } from "@keel/ctx";
 import { reveal } from "@keel/schema";
+import { credentials } from "@keel/std-credentials/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { hasherOf } from "../src/server/internal/hasherOf.ts";
@@ -46,4 +48,21 @@ test("the digest's exp equals expiresAt; ttl null writes none", () => {
   const r = at(0).mint({ ttl: null });
   expect(r.ok && r.value.expiresAt).toBeNull();
   expect(r.ok && r.value.digest).toMatch(/^\$sha256-sim\$[A-Za-z0-9+/]{43}$/);
+});
+
+test("mint with no argument or a non-object is credentials.ttl", () => {
+  const c = at(0);
+  for (const args of [[], [null], [3600000], ["soon"], [{}]]) {
+    const raw: unknown = Reflect.apply(c.mint, c, args);
+    expect(raw).toMatchObject(TTL);
+  }
+});
+
+test("a fractional sim clock still mints with an integer expiresAt", () => {
+  const ctx = createCtx({ mode: "sim", seed: SEED });
+  ctx.clock.advance(0.5);
+  const r = credentials(ctx).mint({ ttl: 60000 });
+  if (!r.ok) throw new Error("mint failed");
+  expect(r.value.expiresAt).toBe(60000);
+  expect(r.value.digest).toMatch(/^\$sha256-sim\$exp=60000\$/);
 });
