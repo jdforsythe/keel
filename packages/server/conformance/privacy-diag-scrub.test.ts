@@ -1,12 +1,13 @@
 // @vitest-environment happy-dom
 // Spec: k.privacy, Conformance "An action throwing an `Error` whose message holds a marked input value logs a `diag` record holding `[pii]` and not the value, in dev and production."
+// Spec: k.privacy, Sinks "The revealed value of each `Secret` in the decoded action input is replaced by `[secret]` the same way." Conformance "An action throwing the revealed value of a `Secret` input, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production."
 // Seed: 1337.
-// Skipped until the diag scrub exists. Input schemas are generated objects of string fields (some nested), some nodes marked
+// Input schemas are generated objects of string fields (some nested), some nodes marked
 // `.pii(class)`; the action throws an Error whose message holds every input value. Marked values are lowercase letters,
 // unmarked ones digits, so no unmarked text can hide or mimic a marked value.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
-import { type ObjectSchema, type Schema, s } from "@keel/schema";
+import { type ObjectSchema, type Schema, reveal, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -101,5 +102,48 @@ describe("k.privacy server log", () => {
         { seed: SEED, numRuns: 100 },
       );
     }, 120_000);
+  }
+
+  const TOKEN = "tok-7f3a9c";
+  const forms = [TOKEN, btoa(TOKEN), encodeURIComponent(TOKEN)];
+  const throwers = {
+    "the revealed value": (v: string) => v,
+    "an Error whose message holds the revealed value": (v: string) => new Error(`bad ${v}`),
+  } as const;
+  for (const mode of ["dev", "production"] as const) {
+    for (const [how, make] of Object.entries(throwers)) {
+      it(`an action throwing ${how} of a Secret input logs a diag record holding [secret] and not the value, nor its base64 or encodeURIComponent form, in ${mode}`, async () => {
+        const save = action({ input: s.object({ k: s.secret(s.string()) }) }, (input) =>
+          Promise.reject(make(reveal(input.k))),
+        );
+        const routes = manifest({
+          "orders.show": {
+            path: "/orders/:kind",
+            params: Params,
+            component: () => document.createElement("main"),
+          },
+        });
+        routes.actions({ "orders.show": { POST: save } });
+        const lines: string[] = [];
+        const app = await createApp({
+          topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
+          routes,
+          ctx: createCtx({ mode: "sim", seed: SEED }),
+          mode,
+          log: { format: "json", write: (l: string) => void lines.push(l) },
+        });
+        await app.fetch(post("/orders/open", { k: TOKEN }, { accept: "application/json" }));
+        const diags = lines.filter((l) => {
+          const rec: unknown = JSON.parse(l);
+          return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
+        });
+        expect(diags.length).toBeGreaterThan(0);
+        for (const line of diags) {
+          expect(line).toContain("[secret]");
+          for (const form of forms) expect(line).not.toContain(form);
+        }
+        for (const line of lines) for (const form of forms) expect(line).not.toContain(form);
+      });
+    }
   }
 });
