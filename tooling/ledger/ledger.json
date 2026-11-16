@@ -2,10 +2,10 @@
   "version": 1,
   "unsafe": 17,
   "rungs": {
-    "example": 897,
+    "example": 900,
     "probabilistic": 272,
     "exhaustive": 15,
-    "proven": 57,
+    "proven": 51,
     "monitored": 4
   },
   "mutation": {
@@ -10589,15 +10589,15 @@
     },
     {
       "item": "k.prove#1",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.prove#2",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.prove#3",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.prove#4",
@@ -10605,15 +10605,15 @@
     },
     {
       "item": "k.prove#5",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.prove#6",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.prove#7",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.prove#8",
