@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 947,
+    "example": 948,
     "probabilistic": 299,
     "exhaustive": 15,
     "proven": 51,
@@ -11963,7 +11963,7 @@
     },
     {
       "item": "k.shell#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.sim#1",
