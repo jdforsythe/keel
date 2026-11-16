@@ -1551,6 +1551,9 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
     devDependencies:
       '@keel/testing':
         specifier: workspace:*

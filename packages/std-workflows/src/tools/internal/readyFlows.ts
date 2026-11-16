@@ -1,26 +1,25 @@
-import type { RuleInput } from "@keel/check";
+import type { RuleInput, SourceFile } from "@keel/check";
+import { parseSync } from "oxc-parser";
 import type { Ast } from "./Ast.ts";
 import type { Ready } from "./Ready.ts";
 import { chartShape } from "./chartShape.ts";
 import { flowsIn } from "./flowsIn.ts";
 
-const seen = new WeakMap<object, Map<string, Ast>>();
+const parsed = new WeakMap<SourceFile, Ast>();
 
 /**
- * The flows of the project whose workflow file and chart file have both been checked, the later of them being
- * `file`: so each flow is read once per run, whichever file comes first, through the ASTs `keel check` hands rules.
+ * The flows of `file` whose chart was read: from `file` itself when it declares the chart, else from the chart file
+ * among `project`, the project's code files, whether or not that file is itself checked. The language follows the
+ * chart file's extension.
  */
 export function readyFlows({ file, ast, project }: RuleInput): Ready[] {
-  const files = seen.get(project) ?? new Map<string, Ast>();
-  seen.set(project, files.set(file.path, ast));
   const out: Ready[] = [];
-  for (const [path, a] of files)
-    for (const flow of flowsIn(path, a)) {
-      const c = files.get(flow.chart.path);
-      if ((path !== file.path && flow.chart.path !== file.path) || c === undefined) continue;
-      const shape = chartShape(c, flow.chart);
-      const source = project.find((f) => f.path === path)?.source;
-      if (shape !== undefined && source !== undefined) out.push({ flow, shape, source });
-    }
+  for (const flow of flowsIn(file.path, ast)) {
+    const at = flow.chart.path;
+    const f = project.find((p) => p.path === at);
+    const c = at === file.path ? ast : f && (parsed.get(f) ?? parsed.set(f, parseSync(at, f.source).program).get(f));
+    const shape = c && chartShape(c, flow.chart);
+    if (shape) out.push({ flow, shape, source: file.source });
+  }
   return out;
 }
