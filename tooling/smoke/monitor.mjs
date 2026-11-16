@@ -57,20 +57,16 @@ try {
   step("build", build.ok, build.stdout.split("\n").at(-1));
   if (!build.ok) throw new Error("build failed");
 
-  server = spawn(
-    "node",
-    ["--disable-warning=ExperimentalWarning", join(copy, "dist", "api", "server.mjs")],
-    {
-      cwd: copy,
-      env: {
-        ...process.env,
-        PORT: String(port),
-        KEEL_SECRET: secret,
-        KEEL_ORIGIN: origin,
-        KEEL_DATABASE_URL: pathToFileURL(join(data, "keel.sqlite")).href,
-      },
+  server = spawn("node", ["--disable-warning=ExperimentalWarning", join(copy, "dist", "api", "server.mjs")], {
+    cwd: copy,
+    env: {
+      ...process.env,
+      PORT: String(port),
+      KEEL_SECRET: secret,
+      KEEL_ORIGIN: origin,
+      KEEL_DATABASE_URL: pathToFileURL(join(data, "keel.sqlite")).href,
     },
-  );
+  });
   const serverLog = [];
   server.stdout.on("data", (d) => serverLog.push(...String(d).trim().split("\n")));
   server.stderr.on("data", (d) => serverLog.push(...String(d).trim().split("\n")));

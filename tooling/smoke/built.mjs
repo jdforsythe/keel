@@ -28,7 +28,9 @@ export function recorder() {
     },
     finish(name) {
       for (const l of lines) console.log(l);
-      console.log(`${failed === 0 ? "ok" : "fail"} ${name} ${lines.length} steps, ${failed} failed (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+      console.log(
+        `${failed === 0 ? "ok" : "fail"} ${name} ${lines.length} steps, ${failed} failed (${((Date.now() - t0) / 1000).toFixed(1)}s)`,
+      );
       process.exitCode = failed === 0 ? 0 : 1;
     },
   };
@@ -70,11 +72,15 @@ export function buildIn(dir) {
 
 /** Start the built api of `dir` on `file` (an absolute path) at `port`; `stop()` kills it. Its output is kept in `log`. */
 export function serve(dir, file, port) {
-  const child = spawn(process.execPath, ["--disable-warning=ExperimentalWarning", join(dir, "dist", "api", "server.mjs")], {
-    cwd: dir,
-    env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, KEEL_DATABASE_URL: pathToFileURL(file).href },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const child = spawn(
+    process.execPath,
+    ["--disable-warning=ExperimentalWarning", join(dir, "dist", "api", "server.mjs")],
+    {
+      cwd: dir,
+      env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, KEEL_DATABASE_URL: pathToFileURL(file).href },
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
   const log = [];
   for (const out of [child.stdout, child.stderr]) out.on("data", (d) => log.push(...String(d).trim().split("\n")));
   const exited = new Promise((resolve) => child.once("exit", resolve));

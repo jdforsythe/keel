@@ -6,7 +6,23 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { BOARD_KEY, REMOVAL_KEY, buildIn, copyApp, field, freePort, get, post, ready, recorder, row, serve, stop, view, wait } from "./built.mjs";
+import {
+  BOARD_KEY,
+  REMOVAL_KEY,
+  buildIn,
+  copyApp,
+  field,
+  freePort,
+  get,
+  post,
+  ready,
+  recorder,
+  row,
+  serve,
+  stop,
+  view,
+  wait,
+} from "./built.mjs";
 
 const { step, finish } = recorder();
 const tmp = await mkdtemp(join(tmpdir(), "keel-smoke-workflow-"));
@@ -33,7 +49,10 @@ try {
   // The copy's `restore` waits 2,000 ms on the clock, and its step times out at 3,000 ms.
   const restoreFile = join(dir, "modules", "api", "restore.server.ts");
   const src = await readFile(restoreFile, "utf8");
-  const slow = src.replace("if (id === undefined) return ok({});", "if (id === undefined) return ok({});\n  await ctx.clock.after(2000);");
+  const slow = src.replace(
+    "if (id === undefined) return ok({});",
+    "if (id === undefined) return ok({});\n  await ctx.clock.after(2000);",
+  );
   const removalFile = join(dir, "modules", "api", "removal.server.ts");
   const rsrc = await readFile(removalFile, "utf8");
   const limited = rsrc.replace("restoring: { run: restore,", "restoring: { run: restore, timeoutMs: 3000,");
@@ -60,7 +79,10 @@ try {
   step("remove", (await post(base, `/api/lists/${listId}/remove`)) === 200);
   const flow = String(field(view((await get(base, "/api/lists")).body), "removals", "0", "flow"));
   step("undo", (await post(base, `/api/removals/${flow}/undo`)) === 200);
-  const running = await until(() => removals(file).rows.some((r) => r.state === "restoring" && r.attempt === 1), 10_000);
+  const running = await until(
+    () => removals(file).rows.some((r) => r.state === "restoring" && r.attempt === 1),
+    10_000,
+  );
   step("step running", running);
   // The step is mid-wait (2,000 ms): the process dies inside it.
   first.child.kill("SIGKILL");
@@ -71,14 +93,20 @@ try {
 
   second = serve(dir, file, port);
   step("restart", await ready(base));
-  const kept = await until(() => removals(file).rows.every((r) => r.state === "kept") && removals(file).rows.length === 1, 10_000);
+  const kept = await until(
+    () => removals(file).rows.every((r) => r.state === "kept") && removals(file).rows.length === 1,
+    10_000,
+  );
   step("kept within 10s", kept);
   const end = removals(file);
   const runs = end.names.filter((n) => n === "api.removal.attempt").length;
   step("step ran twice", runs === 2, `attempts ${runs}`);
   step("restored once", end.names.filter((n) => n === "api.removal.restored").length === 1);
   const shown = field(view((await get(base, "/api/lists")).body), "lists");
-  step("list visible once", Array.isArray(shown) && shown.filter((l) => l.id === listId && l.hidden !== true).length === 1);
+  step(
+    "list visible once",
+    Array.isArray(shown) && shown.filter((l) => l.id === listId && l.hidden !== true).length === 1,
+  );
 
   // The stored board's log folded from `initial` ends at the stored state: ids rise by one and the list is not hidden.
   const board = JSON.parse(row(file, BOARD_KEY) ?? "{}");

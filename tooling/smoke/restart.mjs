@@ -33,9 +33,17 @@ try {
   statuses.push(await post(base, `/api/todos/${todo}/toggle`, { write: write() }));
   const head = Number(field(await board(), "head"));
   statuses.push(
-    await post(base, `/api/todos/${todo}`, { title: "Oat milk", priority: "high", write: { key: `a${++keys}`, base: head } }),
+    await post(base, `/api/todos/${todo}`, {
+      title: "Oat milk",
+      priority: "high",
+      write: { key: `a${++keys}`, base: head },
+    }),
   );
-  step("writes", statuses.every((s) => s === 200), statuses.join(" "));
+  step(
+    "writes",
+    statuses.every((s) => s === 200),
+    statuses.join(" "),
+  );
 
   const before = row(file, BOARD_KEY);
   const shown = JSON.stringify(await board());
@@ -56,7 +64,11 @@ try {
   const next = await post(base, `/api/todos/${todo}/toggle`, { write: { key: "b1", base: 0 } });
   const saved = JSON.parse(row(file, BOARD_KEY) ?? "{}");
   const added = ids(saved).filter((i) => !was.includes(i));
-  step("next entry", next === 200 && added.length === 1 && added[0] === Number(snap.head) + 1, `head ${snap.head} -> ${saved.head}`);
+  step(
+    "next entry",
+    next === 200 && added.length === 1 && added[0] === Number(snap.head) + 1,
+    `head ${snap.head} -> ${saved.head}`,
+  );
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
 } finally {
