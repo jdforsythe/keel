@@ -1,5 +1,5 @@
 import { globalRefs, unwrapExpression as unwrap } from "@keel/compiler/internal";
-import { type Argument, type Expression, Visitor } from "oxc-parser";
+import { type Argument, type Expression, type MemberExpression, Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { givenAt } from "../internal/givenAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
@@ -30,6 +30,12 @@ const JOINS: ReadonlySet<string> = new Set(["concat", "replace", "replaceAll", "
 const WRITES: ReadonlySet<string> = new Set(["process.stdout.write", "process.stderr.write", "Promise.reject"]);
 const FS = /^(node:)?fs(\/promises)?$/;
 const FS_WRITE = /^(writeFile|appendFile|write)(Sync)?$/;
+/** The name a member reads: `o.a`, or `o['a']` with a string key; else `null`. */
+const named = (m: MemberExpression): string | null => {
+  if (m.property.type === "PrivateIdentifier") return null;
+  if (!m.computed) return m.property.name;
+  return m.property.type === "Literal" && typeof m.property.value === "string" ? m.property.value : null;
+};
 
 /**
  * E1112 (k.reveal): in app code, a value `reveal` returns (`@keel/schema`, any alias, `<namespace>.reveal`, or a
@@ -55,6 +61,7 @@ export const revealedValue: RuleDef = {
     const reveals = new Set<string>();
     const spaces = new Set<string>();
     const fs = new Set<string>();
+    const stores = new Set<string>();
     const sinks = new Map<string, string>();
     for (const st of ast.body) {
       if (st.type !== "ImportDeclaration") continue;
@@ -72,6 +79,7 @@ export const revealedValue: RuleDef = {
           else if (sp.type === "ImportNamespaceSpecifier") spaces.add(local);
         } else if (from === "@keel/store") {
           if (name === "tx" || name === "store") sinks.set(local, name);
+          else if (sp.type === "ImportNamespaceSpecifier") stores.add(local);
         } else if (FS.test(from)) {
           if (FS_WRITE.test(name)) sinks.set(local, name);
           else if (name === "default" || name === "promises") fs.add(local);
@@ -177,7 +185,7 @@ export const revealedValue: RuleDef = {
     };
     const isStorage = (object: Expression, d: number): boolean => {
       const o = unwrap(object);
-      if (o.type === "MemberExpression") return !o.computed && o.property.name === "storage";
+      if (o.type === "MemberExpression") return named(o) === "storage";
       if (o.type !== "Identifier" || d > MAX_DEPTH) return false;
       if (under("storage", o.name, o.start)) return true;
       const given = live(o.name, o.start).filter((x) => !x.kept);
@@ -194,13 +202,14 @@ export const revealedValue: RuleDef = {
           ? sinkOf(b.object, d + 1)
           : null;
       }
-      if (c.type === "MemberExpression" && !c.computed) {
-        const m = c.property.name;
+      const m = c.type === "MemberExpression" ? named(c) : null;
+      if (c.type === "MemberExpression" && m !== null) {
         if ((m === "set" || m === "commit") && isStorage(c.object, 0)) return `storage.${m}`;
         const o = unwrap(c.object);
-        const ns =
-          o.type === "MemberExpression" && !o.computed && o.property.name === "promises" ? unwrap(o.object) : o;
-        if (FS_WRITE.test(m) && ns.type === "Identifier" && fs.has(ns.name) && imported(ns.name, ns.start)) return m;
+        const ns = o.type === "MemberExpression" && named(o) === "promises" ? unwrap(o.object) : o;
+        const from = ns.type === "Identifier" && imported(ns.name, ns.start) ? ns.name : null;
+        if (from !== null && FS_WRITE.test(m) && fs.has(from)) return m;
+        if (from !== null && o === ns && (m === "tx" || m === "store") && stores.has(from)) return m;
       }
       const p = g.resolve(c) ?? [];
       const path = p.join(".");

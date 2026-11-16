@@ -171,7 +171,14 @@ describe("E1112 sinks", () => {
       "fs['writeFileSync']('f', reveal(p.k))",
       "const g = (fs) => fs.writeFileSync('f', reveal(p.k))",
     ];
-    expect(hits(body, head)).toEqual(["7 writeFileSync", "8 appendFile", "9 writeFile", "10 write", "11 writeSync"]);
+    expect(hits(body, head)).toEqual([
+      "7 writeFileSync",
+      "8 appendFile",
+      "9 writeFile",
+      "10 write",
+      "11 writeSync",
+      "17 writeFileSync",
+    ]);
   });
 
   it("reports the value thrown at the value, and a thrown Error once, at the constructor's argument", () => {
@@ -668,6 +675,37 @@ const END: Wrap[] = [
   (e) => `(${e}).includes('a')`,
   (e) => `(${e} && h)`,
 ];
+
+describe("E1112 sinks read through a namespace or a string key", () => {
+  it("reports tx and store as members of a namespace import of @keel/store", () => {
+    const head = "import { reveal } from '@keel/schema'\nimport * as ks from '@keel/store'\n";
+    expect(hits(["ks.tx(t, { v: reveal(p.k) })", "ks.store(S, { v: reveal(p.k) })"], head)).toEqual([
+      "4 tx",
+      "5 store",
+    ]);
+    expect(hits(["ks.transaction(t, { v: reveal(p.k) })"], head)).toEqual([]);
+  });
+
+  it("reports no member named tx of a local that is not that import", () => {
+    expect(hits(["const ks = { tx: (a, b) => b }", "ks.tx(t, { v: reveal(p.k) })"])).toEqual([]);
+    const shadowed = "import { reveal } from '@keel/schema'\nimport * as ks from '@keel/store'\n";
+    expect(hits(["const run = (ks) => ks.tx(t, { v: reveal(p.k) })"], shadowed)).toEqual([]);
+  });
+
+  it("reads a string key as the member it names", () => {
+    expect(
+      hits([
+        "ctx.storage['set']('a', reveal(p.k))",
+        "ctx['storage'].commit(reveal(p.k))",
+        "ctx.storage[m]('a', reveal(p.k))",
+      ]),
+    ).toEqual(["4 storage.set", "5 storage.commit"]);
+    const head = "import { reveal } from '@keel/schema'\nimport fs from 'node:fs'\n";
+    expect(hits(["fs['promises'].writeFile('f', reveal(p.k))", "fs['writeFileSync']('f', reveal(p.k))"], head)).toEqual(
+      ["4 writeFile", "5 writeFileSync"],
+    );
+  });
+});
 
 describe("E1112 property", () => {
   it("reports one finding exactly when no ending link sits on the path from reveal to the sink", () => {
