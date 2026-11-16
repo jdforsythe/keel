@@ -223,9 +223,13 @@ function mutate(args) {
   }
   fs.mkdirSync(".stryker-tmp", { recursive: true });
   fs.rmSync(PROGRESS, { force: true });
-  // A run that was interrupted leaves its sandbox copy behind; no run of this package is live.
-  for (const d of fs.readdirSync(".stryker-tmp"))
-    if (d.startsWith("sandbox-")) fs.rmSync(path.join(".stryker-tmp", d), { recursive: true, force: true });
+  // A run that was interrupted leaves its sandbox copy behind, here or under the repository root; this run holds the
+  // machine-wide lock, so no sandbox is in use.
+  for (const home of [".stryker-tmp", path.join(root, ".stryker-tmp")]) {
+    if (!fs.existsSync(home)) continue;
+    for (const d of fs.readdirSync(home))
+      if (d.startsWith("sandbox-")) fs.rmSync(path.join(home, d), { recursive: true, force: true });
+  }
 
   const bin =
     process.env.KEEL_MUTATE_BIN || path.join(root, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");

@@ -7,6 +7,16 @@ export const REPORTER = path.join(import.meta.dirname, "stryker-reporter.mjs");
 /** Vitest config for a package that has none of its own for mutation runs. */
 export const VITEST = path.join(import.meta.dirname, "vitest.mutate.config.ts");
 
+/**
+ * Options for a package whose tests reach `spec/`, `tooling/` or a sibling package by a path relative to the test file:
+ * the sandbox copy goes under the repository root's `.stryker-tmp`, two levels below the root as the package is, so
+ * those paths end where they do from the package. Spread after `strykerConfig(...)`.
+ */
+export const ROOT_SANDBOX = {
+  tempDirName: path.join(import.meta.dirname, "..", ".stryker-tmp"),
+  ignorePatterns: [".stryker-tmp"],
+};
+
 /** Test runner processes per run, from `KEEL_MUTATE_CONCURRENCY`; unset leaves Stryker's own choice (one fewer than the cores). */
 const CONCURRENCY = Number.parseInt(process.env.KEEL_MUTATE_CONCURRENCY ?? "", 10) || 0;
 

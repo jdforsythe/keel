@@ -1,5 +1,6 @@
 // k.a11y Claims: a claim is `example` only when `keel check` reports none of the criterion's static codes. Seed 1337.
-import { fileURLToPath } from "node:url";
+import path from "node:path";
+import { repoRoot } from "@keel/tooling/repo-root";
 import { describe, expect, it } from "vitest";
 import type { A11yCriteriaMap } from "../src/internal/A11yCriteriaMap.ts";
 import { a11yClaims } from "../src/internal/a11yClaims.ts";
@@ -50,7 +51,7 @@ describe("a11y claims and static findings", () => {
       source: `import { Image } from "@keel/ui";\nexport function Page() {\n  return <Image src="/a.png" />;\n}\n`,
     };
     // A root whose node_modules resolves `@keel/ui`, so the type pass sees the required props.
-    const root = fileURLToPath(new URL("../../testing/", import.meta.url));
+    const root = path.join(repoRoot(import.meta.dirname), "packages", "testing");
     const found = a11yFindings(root, [...files, page]);
     expect(found).toContainEqual({ code: "E1802", path: "app/modules/m/Page.tsx" });
     expect(a11yFindings(root, [page])).toEqual([]);

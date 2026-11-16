@@ -1,11 +1,8 @@
-// Vitest config used only by `pnpm mutate`. Stryker runs tests from a sandbox copy of the package
-// (.stryker-tmp/sandbox-*), where repo-relative paths such as packages/cli/src/bin.ts, spec/ and apps/ do not exist.
-// Excluded here (still run by `pnpm test`):
-// - artifact-forged-e1005, artifact-routes-literals, artifact-tamper-e1005, check-budget-injected10,
-//   mcp-input-schema-equals-json-schema, test-sim-ctx, and the cli cases in ledger-diff-e1706-cli, ledger-diff-e1707-cli,
-//   ledger-rung-promotion-cli, module-std-deps-loaded, module-std-tools-loaded, workspace-same-diagnostics: spawn
-//   `keel` (packages/cli/src/bin.ts) over a project by a repo-relative path, or scan packages/ and apps/.
-// - conformance/spec-and-explain.test.ts: reads spec/kernel/k.cli.md.
+// Vitest config used only by `pnpm mutate`. Stryker runs tests from a sandbox copy of the package under the repository
+// root's `.stryker-tmp` (stryker.config.mjs), so a test reaches `spec/`, `tooling/` and `packages/` as it does from the
+// package. A test that reaches a sibling package finds the root with `repoRoot` (`@keel/tooling/repo-root`).
+// Excluded here (still run by `pnpm test`): the tests that spawn `keel` from `packages/cli/src/bin.ts` or scan
+// `packages/` and `apps/`. They run the package's own source, not the sandbox copy, so they can kill no mutant.
 import { QuickFirst } from "@keel/tooling/quick-first";
 import { defineConfig, mergeConfig } from "vitest/config";
 import base from "./vitest.config.ts";
@@ -26,7 +23,6 @@ export default mergeConfig(
         "conformance/mcp-input-schema-equals-json-schema.test.ts",
         "conformance/module-std-deps-loaded.test.ts",
         "conformance/module-std-tools-loaded.test.ts",
-        "conformance/spec-and-explain.test.ts",
         "conformance/test-sim-ctx.test.ts",
         "conformance/workspace-same-diagnostics.test.ts",
         "**/node_modules/**",
