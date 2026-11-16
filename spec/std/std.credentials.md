@@ -11,21 +11,21 @@ const h = await credentials(ctx).hash(input.password)                    // Resu
 const r = await credentials(ctx).verify(input.password, user?.password)  // Result<{ rehash: boolean }, E>
 ```
 - Both take the `Secret<string>` (k.privacy), so app code writes no `reveal`. The input is its text, NFKC-normalized, as UTF-8.
-- `hash` resolves the stored form; an input that is empty or over 1,024 bytes is `credentials.length` (data `{ min: 1, max: 1024 }`).
+- `hash` resolves the stored form; an input that is empty, over 1,024 bytes or not well-formed Unicode is `credentials.length` (data `{ min: 1, max: 1024 }`).
 - `verify` is `ok` only when the secret matches `stored` (`timingSafeEqual`). `rehash` is true when `stored` is below the ctx's cost: a lower `ln`, a salt under 16 bytes or a key under 32; the caller then stores a new `hash`. No match, or an input `hash` refuses, is `credentials.mismatch`. `stored` `undefined` (no such account) derives one key and is `credentials.mismatch`. An unreadable `stored` is `credentials.malformed`, data `{ reason }`: `format` (not `Hashed`), `parameters` (an id or parameters not read) or `sim` (a sim form outside sim).
 - Each error is one constant per code, `reason` and `limit`: none holds a part of the secret or of `stored`, and nothing throws.
 - `Hashed` (`credentials.Hashed`) is a format type over `s.string()`: `$id$params$salt$key`, `$v=<n>` allowed after the id, at most 256 characters. It checks the shape only, so a later version's string restores. It generates sim-form strings.
 
 **Cost.** `std: { '@keel/std-credentials': { ln } }` in a module's manifest: `ln`, log2 of scrypt's N, an integer 17 to 20, default 17; any other value or key is E1158 (k.module). A ctx's cost is the highest `ln` any module sets. `r` is 8 and `p` is 1. A derivation holds 128 MiB at 17 and twice as much per step.
 
-**Stored form.** `$scrypt$ln=<ln>,r=8,p=1$<salt>$<key>`: `scrypt` (`node:crypto`) with N = 2^`ln`, a 16-byte salt and a 32-byte key in base64 without padding. `verify` reads `scrypt` with `ln` 14 to 20, `r` 8, `p` 1 to 5, a salt of 8 to 64 bytes and a key of 16 to 64.
+**Stored form.** `$scrypt$ln=<ln>,r=8,p=1$<salt>$<key>`: `scrypt` (`node:crypto`) with N = 2^`ln`, a 16-byte salt and a 32-byte key in base64 without padding. `verify` reads `scrypt` with `ln` 14 to 20, `r` 8, `p` 1 to 5, a salt of 8 to 64 bytes and a key of 16 to 64. A salt or key text that is not the canonical encoding of its bytes never matches.
 
 **Modes.**
 - **real.** The salt is `randomBytes(16)` of `node:crypto`, never `ctx.random`. A derivation runs off the event loop. Per ctx, 2 run at once at `ln` 17 or 18 and 1 above; 16, 8, 4 or 2 wait in call order (`ln` 17 to 20), and a call past that is `keel.busy` (data `{ limit }`, that count).
 - **shell.** As real.
 - **sim.** The form is `$scrypt-sim$ln=<ln>,r=8,p=1$<salt>$<key>`: `ln` is the ctx's, as a label; the key is derived synchronously at N = 2^4, and the salt comes from the capability seed and a call count. It reads both forms. A real or shell ctx refuses it, so a string with a seeded salt verifies only under sim.
 
-**Rules.** E2201 `@keel/std-credentials/server` imported outside a `*.server.ts` file, tests aside (no fix) · E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix).
+**Rules.** E2201 `@keel/std-credentials/server` imported, statically or by `import()`, outside a `*.server.ts` file, tests and type-only imports aside (no fix) · E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix).
 
 **Conformance.**
 - Under real and sim, for generated secrets, `verify` of a secret and its `hash` is `ok`, `rehash` false; of another secret, `credentials.mismatch`.
@@ -41,3 +41,5 @@ const r = await credentials(ctx).verify(input.password, user?.password)  // Resu
 - Under real at `ln` 17, of 19 `verify` calls started at once, 18 are `ok` and one is `keel.busy` with `limit` 16.
 - A `*.server.ts` action passing the value of `credentials(ctx).hash(input.password)` to `tx` has no E1112 or E1105.
 - E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `credentials`.
+- A secret with a lone surrogate is `credentials.length` from `hash` and `credentials.mismatch` from `verify`.
+- `import('@keel/std-credentials/server')` outside a `*.server.ts` file is E2201; `import type` from it is not.

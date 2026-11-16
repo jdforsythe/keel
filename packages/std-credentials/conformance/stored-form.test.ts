@@ -1,5 +1,6 @@
 // Spec: std.credentials, Stored form "`$scrypt$ln=<ln>,r=8,p=1$<salt>$<key>`: `scrypt` (`node:crypto`) with N = 2^`ln`, a 16-byte salt and a 32-byte key in base64 without padding."
 // Spec: std.credentials, Stored form "`verify` reads `scrypt` with `ln` 14 to 20, `r` 8, `p` 1 to 5, a salt of 8 to 64 bytes and a key of 16 to 64."
+// Spec: std.credentials, Stored form "A salt or key text that is not the canonical encoding of its bytes never matches."
 // Spec: std.credentials, Conformance "Under real, a `hash` with one salt or key character changed is `credentials.mismatch`; `ln=30` and id `argon2id` are `credentials.malformed` `parameters`, and `hunter2` is `format`."
 // Spec: std.credentials, Conformance "`$scrypt$ln=14,r=8,p=1$` with a salt and that secret's `scryptSync` key verifies, `rehash` true."
 // Spec: std.credentials, Modes "**shell.** As real."
@@ -7,13 +8,24 @@
 // Seed: 1337.
 // Assumption: a string of the `Hashed` shape whose `ln`, `r`, `p`, salt or key size is outside the ranges `verify` reads is `credentials.malformed` `parameters` (the spec lists them as the parameters read).
 // Assumption: the `hunter2` stored string reaches `verify` through `rawVerify`, since the types refuse it.
-// Assumption: base64 characters at the last salt and key position carry padding bits only, so the characters changed are not the last.
 import { randomBytes, scryptSync } from "node:crypto";
 import { Hashed } from "@keel/std-credentials";
 import { credentials } from "@keel/std-credentials/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { SEED, b64, errorOf, hashedOf, isOk, rawVerify, realCtx, rehashOf, secretOf, shellCtx } from "./fixtures.ts";
+import {
+  SEED,
+  b64,
+  errorOf,
+  hashedOf,
+  isOk,
+  rawVerify,
+  realCtx,
+  rehashOf,
+  secretOf,
+  shellCtx,
+  simCtx,
+} from "./fixtures.ts";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const PASSWORD = "correct horse battery staple";
@@ -55,8 +67,8 @@ test("Under real, a `hash` with one salt or key character changed is `credential
   await fc.assert(
     fc.asyncProperty(
       fc.boolean(),
-      fc.integer({ min: 0, max: 20 }),
-      fc.integer({ min: 0, max: 41 }),
+      fc.integer({ min: 0, max: 21 }),
+      fc.integer({ min: 0, max: 42 }),
       fc.integer({ min: 0, max: 63 }),
       async (inSalt, saltIdx, keyIdx, pick) => {
         const at = inSalt ? saltAt + saltIdx : keyAt + keyIdx;
@@ -190,3 +202,48 @@ test("`Hashed` (`credentials.Hashed`) is a format type over `s.string()`: `$id$p
   expect(Hashed.parse(`${head}${"A".repeat(257 - head.length)}`).ok).toBe(false);
   expect(Hashed.parse("hunter2").ok).toBe(false);
 }, 120_000);
+
+test("A salt or key text that is not the canonical encoding of its bytes never matches. (real, last character)", async () => {
+  const h = await stored();
+  const { salt, key } = parts(h);
+  const saltAt = h.indexOf(salt) + salt.length - 1;
+  const keyAt = h.lastIndexOf(key) + key.length - 1;
+  // The last character carries unused bits (4 in the salt, 2 in the key); the next letter shares the used bits and decodes to the same bytes.
+  const targets: [number, string][] = [
+    [saltAt, salt],
+    [keyAt, key],
+  ];
+  for (const [at, text] of targets) {
+    const alt = ALPHABET[ALPHABET.indexOf(h.charAt(at)) + 1] ?? "B";
+    const altText = text.slice(0, -1) + alt;
+    expect(Buffer.from(altText, "base64").equals(Buffer.from(text, "base64"))).toBe(true);
+    const changed = swap(h, at, alt);
+    const r = await credentials(real).verify(secretOf(PASSWORD), hashedOf(changed));
+    expect(errorOf(r).code, `position ${at}`).toBe("credentials.mismatch");
+  }
+}, 120_000);
+
+test("Under sim, every single-character change to the salt or key text is `credentials.mismatch`.", async () => {
+  const ctx = simCtx();
+  const h = await credentials(ctx).hash(secretOf(PASSWORD));
+  if (!h.ok) throw new Error("hash refused a secret");
+  const text = h.value;
+  const { salt, key } = parts(text);
+  const saltAt = text.indexOf(salt);
+  const keyAt = text.lastIndexOf(key);
+  await fc.assert(
+    fc.asyncProperty(
+      fc.boolean(),
+      fc.integer({ min: 0, max: salt.length - 1 }),
+      fc.integer({ min: 0, max: key.length - 1 }),
+      fc.integer({ min: 0, max: 63 }),
+      async (inSalt, saltIdx, keyIdx, pick) => {
+        const at = inSalt ? saltAt + saltIdx : keyAt + keyIdx;
+        const changed = swap(text, at, differentChar(text.charAt(at), pick));
+        const r = await credentials(ctx).verify(secretOf(PASSWORD), hashedOf(changed));
+        expect(errorOf(r).code).toBe("credentials.mismatch");
+      },
+    ),
+    { seed: SEED, numRuns: 200 },
+  );
+});

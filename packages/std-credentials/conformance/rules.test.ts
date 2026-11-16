@@ -1,6 +1,7 @@
-// Spec: std.credentials, Rules "E2201 `@keel/std-credentials/server` imported outside a `*.server.ts` file, tests aside (no fix)"
+// Spec: std.credentials, Rules "E2201 `@keel/std-credentials/server` imported, statically or by `import()`, outside a `*.server.ts` file, tests and type-only imports aside (no fix)"
 // Spec: std.credentials, Rules "E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix)."
 // Spec: std.credentials, Conformance "E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `credentials`."
+// Spec: std.credentials, Conformance "`import('@keel/std-credentials/server')` outside a `*.server.ts` file is E2201; `import type` from it is not."
 // Spec: std.credentials, Conformance "A `*.server.ts` action passing the value of `credentials(ctx).hash(input.password)` to `tx` has no E1112 or E1105."
 // Seed: 1337.
 // Assumption: as for std.db E2151, `check()` imports nothing, so the rules register by importing `@keel/std-credentials/tools`.
@@ -30,7 +31,7 @@ const project = (path: string, source: string, adapter = "node", name = "web"): 
 const found = (files: Files, code: string) => check(files, { types: false }).diagnostics.filter((d) => d.code === code);
 const word = fc.stringMatching(/^[a-z]{3,10}$/);
 
-test("E2201 `@keel/std-credentials/server` imported outside a `*.server.ts` file, tests aside (no fix)", () => {
+test("E2201 `@keel/std-credentials/server` imported, statically or by `import()`, outside a `*.server.ts` file, tests and type-only imports aside (no fix)", () => {
   fc.assert(
     fc.property(word, (name) => {
       const bad = found(project(`modules/a/${name}.ts`, IMPORT), "E2201");
@@ -86,4 +87,20 @@ test("A `*.server.ts` action passing the value of `credentials(ctx).hash(input.p
   expect(found(files, "E1112")).toHaveLength(0);
   expect(found(files, "E1105")).toHaveLength(0);
   expect(found(files, "E2201")).toHaveLength(0);
+});
+
+test("`import('@keel/std-credentials/server')` outside a `*.server.ts` file is E2201; `import type` from it is not.", () => {
+  const dynamic = `export const f = () => import("@keel/std-credentials/server")\n`;
+  const bad = found(project("modules/a/x.ts", dynamic), "E2201");
+  expect(bad).toHaveLength(1);
+  expect(bad[0]?.fix).toBeUndefined();
+  expect(found(project("modules/a/x.server.ts", dynamic), "E2201")).toHaveLength(0);
+  const typeOnly = [
+    `import type { Hasher } from "@keel/std-credentials/server"\nexport const n = 1\n`,
+    `export type { Hasher } from "@keel/std-credentials/server"\n`,
+  ];
+  for (const source of typeOnly) {
+    expect(found(project("modules/a/x.ts", source), "E2201"), source).toHaveLength(0);
+    expect(found(project("modules/a/x.ts", source, "client"), "E2202"), source).toHaveLength(0);
+  }
 });

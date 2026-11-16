@@ -1,7 +1,7 @@
 // Spec: std.tokens, API "`check(token, find)` reads the id from the presented `Secret<string>`, calls `find(id)` once for the row (an object with `digest: Digested`), compares in constant time (`timingSafeEqual`), then reads `ctx.clock.now()`, and returns `ok(row)`."
 // Spec: std.tokens, API "A presented value that is not in the token form (`find` is not called), a `find` that returns `undefined`, and a digest that does not match are `credentials.mismatch`."
 // Spec: std.tokens, API "An unreadable `digest` is `credentials.malformed`, with std.credentials' reasons."
-// Spec: std.tokens, API "Both are synchronous and neither throws. Each error is one constant per code and `reason`."
+// Spec: std.tokens, API "Both are synchronous and neither throws, a throw from `find` aside. Each error is one constant per code and `reason`."
 // Spec: std.tokens, API "`Digested` (`credentials.Digested`) is a format type over `s.string()`: `$id$digest` or `$id$params$digest`, at most 128 characters."
 // Spec: std.tokens, Conformance "`check` of a minted token, with `find` returning a row holding its `digest`, is `ok` with that row, and `find` was called once with its `id`."
 // Spec: std.tokens, Conformance "Under real, `check` is `credentials.mismatch` for: a token with one `secret` character changed; one token's `id` with another's `secret`; `hunter2` (`find` not called); `find` returning `undefined`."
@@ -133,7 +133,7 @@ test("An unreadable `digest` is `credentials.malformed`, with std.credentials' r
   expect(errorOf(r).data).toEqual({ reason: "format" });
 });
 
-test("Both are synchronous and neither throws. Each error is one constant per code and `reason`.", () => {
+test("Both are synchronous and neither throws, a throw from `find` aside. Each error is one constant per code and `reason`.", () => {
   const ctx = realCtx();
   const a = minted(ctx);
   const b = minted(ctx);
@@ -161,4 +161,20 @@ test("`Digested` (`credentials.Digested`) is a format type over `s.string()`: `$
   const head = "$sha256$";
   expect(Digested.parse(head + "A".repeat(128 - head.length)).ok).toBe(true);
   expect(Digested.parse(head + "A".repeat(129 - head.length)).ok).toBe(false);
+});
+
+test("Both are synchronous and neither throws, a throw from `find` aside. (a throw from `find` is thrown)", () => {
+  const ctx = realCtx();
+  const { text } = minted(ctx);
+  const boom = new Error("db");
+  const run = () =>
+    credentials(ctx).check(secretOf(text), () => {
+      throw boom;
+    });
+  expect(run).toThrow(boom);
+  try {
+    run();
+  } catch (e) {
+    expect(e).toBe(boom);
+  }
 });
