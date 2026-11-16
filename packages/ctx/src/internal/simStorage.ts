@@ -30,7 +30,7 @@ export function simStorage(steps: readonly ("ok" | "fail")[] = []): KeyValueStor
     commit: async (writes) => {
       noRepeat(writes);
       await step();
-      return applyCommit(get, (k, v) => data.set(k, v), writes);
+      return applyCommit(get, (k, v) => (v === null ? data.delete(k) : data.set(k, v)), writes);
     },
   };
 }

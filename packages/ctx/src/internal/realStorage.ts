@@ -21,7 +21,7 @@ export function realStorage(): KeyValueStorage {
       const s = store();
       return applyCommit(
         (k) => s.getItem(k),
-        (k, v) => s.setItem(k, v),
+        (k, v) => (v === null ? s.removeItem(k) : s.setItem(k, v)),
         writes,
       );
     },

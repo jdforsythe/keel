@@ -65,7 +65,7 @@ export function fileStorage(file: string): KeyValueStorage {
       const next = new Map(map);
       const ok = applyCommit(
         (k) => map.get(k) ?? null,
-        (k, v) => next.set(k, v),
+        (k, v) => (v === null ? next.delete(k) : next.set(k, v)),
         writes,
       );
       if (ok && writes.some((w) => w.value !== undefined)) save(next);
