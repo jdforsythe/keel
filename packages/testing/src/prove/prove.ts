@@ -17,6 +17,9 @@ const RLIMIT = 10_000_000;
 /** The array lengths a counterexample is searched within before the unbounded check. */
 const BOUNDS = [0, 1, 2, 3];
 
+/** The last call's Z3 work: Z3 runs one evaluation at a time, so each call starts when the one before has settled. */
+let turn: Promise<unknown> = Promise.resolve();
+
 /** The function a source text holds, parsed as an expression; an offset counts in that text. */
 const parsed = (tools: Tools, f: object): ArrowFunctionExpression | FunctionNode => {
   const r = tools.parse("prove.js", `(${String(f)})`);
@@ -135,6 +138,7 @@ async function step<T>(tools: Tools, t: Transaction<T, unknown>, rlimit: number)
  * state that parses and satisfies the invariants, with every payload that parses, to such a state. Resolves with the
  * transactions proven and the Z3 version. Rejects E1715 (outside the fragment, or a schema without a sort), E1716 (a
  * counterexample as JSON on the second line), E1717 (no verdict within `rlimit`), E1718 (`z3-solver` not installed).
+ * Calls take turns: the Z3 work of one starts when the call before it has settled.
  */
 export async function prove<T>(
   transactions: readonly Transaction<T, unknown>[],
@@ -152,7 +156,12 @@ export async function prove<T>(
     const data = { state: initial };
     throw proveError("E1716", `${st.id}: initial breaks the schema or an invariant\n${JSON.stringify(data)}`, data);
   }
-  const tools = await loadTools();
-  for (const t of transactions) await step(tools, t, rlimit);
-  return { proven: names, z3: tools.version };
+  const work = async (): Promise<Proof> => {
+    const tools = await loadTools();
+    for (const t of transactions) await step(tools, t, rlimit);
+    return { proven: names, z3: tools.version };
+  };
+  const run = turn.then(work, work);
+  turn = run;
+  return run;
 }

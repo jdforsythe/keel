@@ -1,3 +1,4 @@
+import { evalOnHeap } from "../../../unsafe/evalOnHeap.ts";
 import type { Tools } from "./Tools.ts";
 import { proveError } from "./proveError.ts";
 
@@ -15,7 +16,7 @@ export function loadTools(): Promise<Tools> {
       );
     });
     const { parseSync } = await import("oxc-parser");
-    const { Z3 } = await z3.init();
+    const { Z3, em } = await z3.init();
     const v = Z3.get_version();
     return {
       parse: parseSync,
@@ -24,7 +25,7 @@ export function loadTools(): Promise<Tools> {
         const config = Z3.mk_config();
         const c = Z3.mk_context(config);
         Z3.del_config(config);
-        return { run: (text: string) => Z3.eval_smtlib2_string(c, text), close: () => Z3.del_context(c) };
+        return { run: (text: string) => evalOnHeap(em, c, text), close: () => Z3.del_context(c) };
       },
     };
   })();
