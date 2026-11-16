@@ -51,13 +51,16 @@ const TRUE = ["return true;"];
 
 describe("prove: arithmetic, comparison and negation", () => {
   it(
-    "a sum inside a callback is held for every item: within 2^53 proves, one past it is E1716",
+    "a sum inside a callback is held for every item: within the safe range proves, one past it is E1716",
     async () => {
       const Xs = s.object({ xs: s.array(s.int()) });
-      const within = one(Xs, { xs: [] }, TRUE, none, "return { xs: state.xs.map((x) => (x > 0 ? x : 0) + 1) };");
-      expect(await code(within)).toBe("proven");
-      const past = one(Xs, { xs: [] }, TRUE, none, "return { xs: state.xs.map((x) => (x > 0 ? x : 0) + 2) };");
-      expect(await outcome(past)).toMatchObject({ code: "E1716", data: { state: { xs: [Number.MAX_SAFE_INTEGER] } } });
+      const xs = (item: string) => one(Xs, { xs: [] }, TRUE, none, `return { xs: state.xs.map((x) => ${item}) };`);
+      const edge = { code: "E1716", data: { state: { xs: [Number.MAX_SAFE_INTEGER] } } };
+      expect(await code(xs("(x > 0 && x < 100 ? x : 0) + 1"))).toBe("proven");
+      expect(await outcome(xs("(x > 0 ? x : 0) + 1"))).toMatchObject(edge);
+      // A sum that is compared and not written may reach 2^53, which is exact, and no further.
+      expect(await code(xs("(x > 0 ? x : 0) + 1 > 5 ? 0 : x"))).toBe("proven");
+      expect(await outcome(xs("(x > 0 ? x : 0) + 2 > 5 ? 0 : x"))).toMatchObject(edge);
     },
     LONG,
   );

@@ -47,11 +47,18 @@ const calleeName = (e: Expression): string => {
  * Translate functions of the fragment (k.prove Fragment) into SMT terms over `sorts`. `base` is the offset of the
  * function in the parsed text, so E1715 offsets count in the function's own source. `axioms` collects what a `.find`
  * declares and asserts; `fresh` numbers bound names across the translators of one obligation; `need` collects what
- * the functions require to run as their terms say (an option present, an index in range, an exact integer, a key the
- * schema allows, no `undefined` under a key), each under the branch conditions and bound indices where it arises: the
- * goal holds them too.
+ * the functions require to run as their terms say (an option present, an index in range, a key the schema allows, no
+ * `undefined` under a key) and `exact` the range that keeps each `+`, `-` and `*` result an exact integer, each under
+ * the branch conditions and bound indices where it arises: the goal holds them too.
  */
-export function translator(sorts: Sorts, base: number, axioms: string[], fresh: { n: number }, need: string[]) {
+export function translator(
+  sorts: Sorts,
+  base: number,
+  axioms: string[],
+  fresh: { n: number },
+  need: string[],
+  exact: string[],
+) {
   /** The indices bound around the code at hand, each an `Int`. */
   const bound: string[] = [];
   const all = (body: string): string =>
@@ -67,7 +74,7 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
   const real = (v: Val): string => (v.t.k === "int" ? `(to_real ${v.e})` : v.e);
   const isNum = (v: Val): boolean => v.t.k === "int" || v.t.k === "real";
   /** `c` must hold wherever the code at hand runs: under the enclosing branch conditions, for every bound index. */
-  const oblige = (c: string): number => need.push(all(`(=> (and true ${path.join(" ")}) ${c})`));
+  const oblige = (c: string, to = need): number => to.push(all(`(=> (and true ${path.join(" ")}) ${c})`));
   /** `f` under the condition `c`, and for each index `i` when given. */
   const scoped = <R>(f: () => R, c: string, i?: string): R => {
     path.push(c);
@@ -282,7 +289,7 @@ export function translator(sorts: Sorts, base: number, axioms: string[], fresh: 
       return out(node, `${op} here`);
     // JavaScript holds an integer exactly within ±2^53, so every `+`, `-` and `*` result must stay there.
     const r = `(${op} ${a.e} ${b.e})`;
-    oblige(`(<= (- 9007199254740992) ${r} 9007199254740992)`);
+    oblige(`(<= (- 9007199254740992) ${r} 9007199254740992)`, exact);
     return val(INT, r);
   };
 

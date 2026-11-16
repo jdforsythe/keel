@@ -4,7 +4,6 @@ import type { ArrowFunctionExpression, Function as FunctionNode } from "oxc-pars
 import { modelError } from "../internal/modelError.ts";
 import { Outside } from "./internal/Outside.ts";
 import type { Tools } from "./internal/Tools.ts";
-import type { Ty } from "./internal/Ty.ts";
 import { loadTools } from "./internal/loadTools.ts";
 import { proveError } from "./internal/proveError.ts";
 import { readModel } from "./internal/readModel.ts";
@@ -44,21 +43,26 @@ const fragment = <R>(label: string, run: () => R): R => {
   }
 };
 
-/** The induction step of one transaction: unsat for every state and payload, else E1716 or E1717. */
+/**
+ * The induction step of one transaction: unsat for every state and payload, else E1716 or E1717. The post-state parses
+ * as the pre-state is assumed to, each integer within ±(2^53 − 1).
+ */
 async function step<T>(tools: Tools, t: Transaction<T, unknown>, rlimit: number): Promise<void> {
   const st = t.store;
   const src = sourcesOf(t);
   if (src === undefined) throw modelError("E1710", `prove: ${t.name} is not a transaction`, { name: t.name });
   const sorts = sortTable();
   const axioms: string[] = [];
-  /** What the functions need to run as the terms say: an option present, an index in range, an exact integer. */
+  /** What the functions need to run as the terms say: an option present, an index in range, a key the schema allows. */
   const need: string[] = [];
+  /** What keeps integers exact: each `+`, `-` and `*` result within ±2^53. */
+  const exact: string[] = [];
   const fresh = { n: 0 };
   const S = fragment(t.name, () => sorts.ofNode(st.schema.node, "state"));
   const P = fragment(t.name, () => sorts.ofNode(t.schema.node, "payload"));
   const fn = fragment(t.name, () => parsed(tools, src.fn));
   const post = fragment(t.name, () => {
-    const tr = translator(sorts, 1, axioms, fresh, need);
+    const tr = translator(sorts, 1, axioms, fresh, need, exact);
     const args = [
       { v: "val", t: S, e: "s" },
       { v: "val", t: P, e: "p" },
@@ -72,39 +76,56 @@ async function step<T>(tools: Tools, t: Transaction<T, unknown>, rlimit: number)
   const holds = (x: string): string[] =>
     invariants.map(({ label, node }) =>
       fragment(label, () => {
-        const tr = translator(sorts, 1, axioms, fresh, need);
+        const tr = translator(sorts, 1, axioms, fresh, need, exact);
         const v = tr.must(tr.apply(node, [{ v: "val", t: S, e: x }], new Map(), undefined), node);
         return v.t.k === "bool" ? v.e : tr.coerce(v, { k: "bool" }, node);
       }),
     );
-  const before = [sorts.wf(S, "s", true), sorts.wf(P, "p", true), ...holds("s")];
+  const before = [sorts.wf(S, "s", 2), sorts.wf(P, "p", 2), ...holds("s")];
   const early = axioms.length;
-  const goal = sorts.and([sorts.wf(S, "post", false), ...holds("post"), ...need]);
-  const text = `(set-option :smt.random_seed 0)(set-option :rlimit ${rlimit})${sorts.prelude()}(declare-const s ${sorts.smt(S)})(declare-const p ${sorts.smt(P)})${axioms.slice(0, early).join("")}(define-fun post () ${sorts.smt(S)} ${post})${axioms.slice(early).join("")}${before.map((h) => `(assert ${h})`).join("")}(assert (not ${goal}))`;
+  /** The goal without the integer ranges: what a counterexample breaks unless it breaks those alone. */
+  const rest = sorts.and([sorts.wf(S, "post", 0), ...holds("post"), ...need]);
+  const goal = sorts.and([rest, sorts.wf(S, "post", 1), ...exact]);
+  const text = `(set-option :smt.random_seed 0)(set-option :rlimit ${rlimit})${sorts.prelude()}(declare-const s ${sorts.smt(S)})(declare-const p ${sorts.smt(P)})${axioms.slice(0, early).join("")}(define-fun post () ${sorts.smt(S)} ${post})${axioms.slice(early).join("")}${before.map((h) => `(assert ${h})`).join("")}`;
   const lengths = [...sorts.lengths(S, "s"), ...sorts.lengths(P, "p")];
-  for (const bound of [...(lengths.length === 0 ? [] : BOUNDS), undefined]) {
+  /** One check that `g` can break, arrays within `bound`: the verdict, or the counterexample of a `sat` model. */
+  const ask = async (bound: number | undefined, g: string) => {
     const solver = tools.open();
     try {
       const within = bound === undefined ? "" : lengths.map((l) => `(assert (<= ${l} ${bound}))`).join("");
-      const out = (await solver.run(`${text}${within}(check-sat)`)).trim();
+      const out = (await solver.run(`${text}(assert (not ${g}))${within}(check-sat)`)).trim();
       if (out.includes("(error")) throw new Error(`prove ${t.name}: Z3 refused the translation: ${out.split("\n")[0]}`);
-      if (out === "sat") {
-        const terms: (readonly [Ty, string])[] = [
+      if (out !== "sat") return out;
+      const [state, payload] = await readModel(
+        solver,
+        [
           [S, "s"],
           [P, "p"],
-        ];
-        const [state, payload] = await readModel(solver, terms, sorts.lits);
-        const data = { transaction: t.name, state, payload };
-        throw proveError(
-          "E1716",
-          `${t.name} breaks the schema or an invariant from this state; it may be unreachable\n${JSON.stringify(data)}`,
-          data,
-        );
-      }
-      if (out === "unsat" && bound === undefined) return;
+        ],
+        sorts.lits,
+      );
+      return { transaction: t.name, state, payload };
     } finally {
       solver.close();
     }
+  };
+  for (const bound of [...(lengths.length === 0 ? [] : BOUNDS), undefined]) {
+    const found = await ask(bound, goal);
+    if (typeof found !== "string") {
+      // A counterexample of `rest` comes first; with none within this bound, only an integer left its range.
+      const other = goal === rest ? found : await ask(bound, rest);
+      const data = typeof other === "string" ? found : other;
+      throw proveError(
+        "E1716",
+        `${t.name} ${
+          other === "unsat"
+            ? "leaves the safe integer range from this state; bound the schema or guard it"
+            : "breaks the schema or an invariant from this state; it may be unreachable"
+        }\n${JSON.stringify(data)}`,
+        data,
+      );
+    }
+    if (found === "unsat" && bound === undefined) return;
   }
   throw proveError("E1717", `${t.name}: no verdict within rlimit ${rlimit}`, { transaction: t.name, rlimit });
 }

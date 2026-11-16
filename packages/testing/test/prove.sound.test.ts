@@ -1,7 +1,8 @@
 // `prove` never passes where the transaction, run, breaks the schema, throws or reads past what the terms hold
 // (k.prove): an index past the length and a key a map lacks are undefined, a key Object.prototype holds is no value,
 // integers stay exact, strings keep their length rules, a block's bindings stay in the block, `undefined` under a key
-// is no value, a spread copies the keys its object holds, absent options are equal, and objects compare by reference.
+// is no value, a spread copies the keys its object holds, absent options are equal, objects compare by reference, and
+// an integer `s.int` refuses is a counterexample the store throws from.
 import { scope } from "@keel/reactive";
 import { type Schema, s } from "@keel/schema";
 import { type Transaction, invariant, store, transaction, tx } from "@keel/store";
@@ -589,6 +590,127 @@ describe("prove: objects compare by reference", () => {
       expect(await verdict(on("state.rows.indexOf(state.rows[0]) === 0"))).toBe("E1715 call to state.rows.indexOf");
       expect(await verdict(on("new Map(state.rows.map((r) => [r, 1])).size === 0"))).toBe("E1715 new Map");
       expect(await verdict(on("state.rows[0] === state.rows[0]"))).toBe("E1715 === on objects");
+    },
+    LONG,
+  );
+});
+
+describe("prove: an integer the store refuses is a counterexample", () => {
+  const MAX = Number.MAX_SAFE_INTEGER;
+  const up = s.int({ min: 0 });
+  /**
+   * The state of the counterexample of `fn` (`proven` when it has none), and what the store does from that state with
+   * the counterexample's payload: `ok`, an error code, or `refused` when it throws on a state that does not parse.
+   */
+  const both = async <T extends object, P>(
+    schema: Schema<T>,
+    initial: T,
+    pay: Schema<P>,
+    fn: (state: T, p: P) => T,
+  ): Promise<readonly [unknown, string]> => {
+    const got = await verdict(one(schema, initial, () => true, pay, fn));
+    if (!got.startsWith("E1716 ")) return [got, ""];
+    const data: unknown = JSON.parse(got.slice("E1716 ".length));
+    const state = schema.parse(Reflect.get(Object(data), "state"));
+    const payload = pay.parse(Reflect.get(Object(data), "payload"));
+    if (!state.ok || !payload.ok) throw new Error("fixture: the counterexample does not parse");
+    return [state.value, from(schema, state.value, pay, fn, payload.value)];
+  };
+  /** What the store does with `payload` from `state`. */
+  const from = <T extends object, P>(
+    schema: Schema<T>,
+    state: T,
+    pay: Schema<P>,
+    fn: (state: T, p: P) => T,
+    payload: P,
+  ): string => {
+    const t = one(schema, state, () => true, pay, fn);
+    try {
+      const r = tx(t, payload);
+      return r.ok ? "ok" : r.error.code;
+    } catch (e) {
+      return e instanceof Error && e.message.startsWith(`transaction ${t.name} returned invalid state: int at `)
+        ? "refused"
+        : String(e);
+    }
+  };
+
+  it(
+    "a sum written past the safe range rejects at the edge, where the store throws: a field, both ways",
+    async () => {
+      const N = s.object({ n: up });
+      expect(await both(N, { n: 0 }, none, (v) => ({ n: v.n + 1 }))).toStrictEqual([{ n: MAX }, "refused"]);
+      const Down = s.object({ n: s.int({ max: 0 }) });
+      expect(await both(Down, { n: 0 }, none, (v) => ({ n: v.n - 1 }))).toStrictEqual([{ n: -MAX }, "refused"]);
+      const Any = s.object({ n: s.int() });
+      expect(await both(Any, { n: 0 }, none, () => ({ n: 9007199254740992 }))).toStrictEqual([{ n: 0 }, "refused"]);
+    },
+    LONG,
+  );
+
+  it(
+    "an optional and a nullable field, an item, a field of an item and a map value reject at the edge too",
+    async () => {
+      const Opt = s.object({ n: up.optional() });
+      expect(await both(Opt, {}, none, (v) => (v.n === undefined ? { n: 0 } : { n: v.n + 1 }))).toStrictEqual([
+        { n: MAX },
+        "refused",
+      ]);
+      const Nul = s.object({ n: up.nullable() });
+      expect(await both(Nul, { n: null }, none, (v) => (v.n === null ? v : { n: v.n + 1 }))).toStrictEqual([
+        { n: MAX },
+        "refused",
+      ]);
+      const Items = s.object({ a: s.array(up) });
+      expect(await both(Items, { a: [] }, none, (v) => ({ a: v.a.map((x) => x + 1) }))).toStrictEqual([
+        { a: [MAX] },
+        "refused",
+      ]);
+      const Rows = s.object({ a: s.array(s.object({ n: up })) });
+      expect(await both(Rows, { a: [] }, none, (v) => ({ a: v.a.map((x) => ({ n: x.n + 1 })) }))).toStrictEqual([
+        { a: [{ n: MAX }] },
+        "refused",
+      ]);
+      // A map prints as `{}`, so the store runs from the state the counterexample stands for.
+      const Counts = s.object({ c: s.record(up) });
+      const key = s.object({ k: s.enum(["a", "b"]) });
+      const bump = (v: { c: Record<string, number> }, p: { k: "a" | "b" }) => {
+        const cur = v.c[p.k];
+        return cur === undefined ? v : { c: { ...v.c, [p.k]: cur + 1 } };
+      };
+      expect(await code(one(Counts, { c: {} }, () => true, key, bump))).toBe("E1716");
+      expect(from(Counts, { c: { a: MAX } }, key, bump, { k: "a" })).toBe("refused");
+    },
+    LONG,
+  );
+
+  it(
+    "a product and a sum with the payload reject where the store throws",
+    async () => {
+      const N = s.object({ n: up });
+      expect(await both(N, { n: 0 }, none, (v) => ({ n: v.n * 2 }))).toStrictEqual([
+        { n: 4503599627370497 },
+        "refused",
+      ]);
+      const [state, ran] = await both(N, { n: 0 }, s.object({ by: up }), (v, p) => ({ n: v.n + p.by }));
+      expect(state).not.toBe("proven");
+      expect(ran).toBe("refused");
+    },
+    LONG,
+  );
+
+  it(
+    "a guarded write proves and the store takes it at the edge; a sum into a number field does too",
+    async () => {
+      const N = s.object({ n: up });
+      const guarded = (v: { n: number }) => ({ n: v.n < 9007199254740991 ? v.n + 1 : v.n });
+      expect(await both(N, { n: 0 }, none, guarded)).toStrictEqual(["proven", ""]);
+      expect(from(N, { n: MAX }, none, guarded, {})).toBe("ok");
+      expect(from(N, { n: MAX - 1 }, none, guarded, {})).toBe("ok");
+      const Real = s.object({ n: s.int(), r: s.number() });
+      const sum = (v: { n: number; r: number }) => ({ ...v, r: v.n + 1 });
+      expect(await both(Real, { n: 0, r: 0 }, none, sum)).toStrictEqual(["proven", ""]);
+      expect(from(Real, { n: MAX, r: 0 }, none, sum, {})).toBe("ok");
     },
     LONG,
   );

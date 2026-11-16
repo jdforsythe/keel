@@ -140,7 +140,7 @@ describe("prove: golden-1's board", () => {
           lists: [{ id: "a", name: "b", hidden: false }],
           todos: [{ id: "c", listId: "a", title: "d", priority: "high", done: false }],
         },
-        payload: { id: "c", listId: "a", title: "e", priority: "normal" },
+        payload: { id: "c", listId: "a", title: "e", priority: "low" },
       });
     },
     LONG,

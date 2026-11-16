@@ -4,7 +4,7 @@ import type { Ty } from "./Ty.ts";
 import { num } from "./num.ts";
 
 type Node = Schema<unknown>["node"];
-/** The integer range every `s.int` value and result is assumed within (k.prove Sorts). */
+/** The safe integer range: every `s.int` of the state, the payload and the post-state is within it (k.prove Sorts). */
 const SAFE = "9007199254740991";
 const and = (xs: readonly string[]): string => {
   const ys = xs.filter((x) => x !== "true");
@@ -121,8 +121,11 @@ export function sortTable() {
         throw new Outside(`no sort for ${node.kind} at ${path}`, undefined);
     }
   };
-  /** That `e` parses with `t`: bounds (and ±(2^53 − 1) for an integer when `safe`), enum values, each item. */
-  const wf = (t: Ty, e: string, safe: boolean): string => {
+  /**
+   * That `e` parses with `t`: bounds, enum values, each item. From `level` 1 an integer is within ±(2^53 − 1); at 2 an
+   * array holds at most 2^32 − 1 items, as every array the engine hands over does.
+   */
+  const wf = (t: Ty, e: string, level: 0 | 1 | 2): string => {
     switch (t.k) {
       case "bool":
         return t.one === undefined ? "true" : t.one ? e : `(not ${e})`;
@@ -131,23 +134,23 @@ export function sortTable() {
         return and([
           t.min === undefined ? "true" : `(<= ${num(t.min)} ${e})`,
           t.max === undefined ? "true" : `(<= ${e} ${num(t.max)})`,
-          safe && t.k === "int" ? `(<= (- ${SAFE}) ${e} ${SAFE})` : "true",
+          level > 0 && t.k === "int" ? `(<= (- ${SAFE}) ${e} ${SAFE})` : "true",
         ]);
       case "str":
         return t.one === undefined ? "true" : `(or false ${t.one.map((v) => `(= ${e} ${lit(v)})`).join(" ")})`;
       case "obj":
-        return and(t.f.map(([, ft], i) => wf(ft, `(${t.s}.${i} ${e})`, safe)));
+        return and(t.f.map(([, ft], i) => wf(ft, `(${t.s}.${i} ${e})`, level)));
       case "opt": {
-        const inner = wf(t.v, `(${t.s}.v ${e})`, safe);
+        const inner = wf(t.v, `(${t.s}.v ${e})`, level);
         return inner === "true" ? "true" : `(or ((_ is ${t.s}.none) ${e}) ${inner})`;
       }
       default: {
         const i = `w${fresh++}`;
-        const item = wf(t.v, `(select (${t.s}.a ${e}) ${i})`, safe);
+        const item = wf(t.v, `(select (${t.s}.a ${e}) ${i})`, level);
         if (t.k === "rec")
           return item === "true" ? "true" : `(forall ((${i} Str)) (=> (select (${t.s}.n ${e}) ${i}) ${item}))`;
         const range = `(forall ((${i} Int)) (=> (and (<= 0 ${i}) (< ${i} (${t.s}.n ${e}))) ${item}))`;
-        return and([`(<= 0 (${t.s}.n ${e}))`, item === "true" ? "true" : range]);
+        return and([`(<= 0 (${t.s}.n ${e})${level > 1 ? " 4294967295" : ""})`, item === "true" ? "true" : range]);
       }
     }
   };
