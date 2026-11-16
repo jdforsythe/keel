@@ -826,3 +826,17 @@ The user has answered the accessor, the error `Result`, the cost setting, tokens
 5. Argon2id. Recommendation: scrypt now; add id `argon2id` when the supported Node floor has `crypto.argon2`, with `rehash` moving each account, and no native dependency. The orchestrator may accept it: it changes nothing built here.
 6. A stored hash or digest reaching the browser. Recommendation: a backlog line for E2203, a `Hashed` or `Digested` node in a loader `output` schema, built when the checker's schema reader (E1111's) is exported to tools. The orchestrator may accept it under default 6.
 7. Kernel text naming a stdlib package: k.privacy and the E1112 explain row would name `@keel/std-credentials`. k.deploy already names `@keel/std-db`. Recommendation: accept; the kernel imports nothing. The orchestrator may accept it under default 2.
+
+## Amendment (2026-11-16, after the review and the red-team pass)
+The build is as the Proposal describes except where this section says otherwise. The spec files hold the text; this lists what changed and why.
+
+- The shape types cap the whole string, 256 characters for `Hashed` and 128 for `Digested`, as the spec sentences say. The per-part caps in the Lane 3 regexes are gone; `verify` and `check` hold the byte bounds.
+- A salt or key text that is not the canonical encoding of its bytes never matches, and such a digest is `credentials.malformed` `parameters`. Without it a change to the last character's unused bits still verified, against Conformance bullet 3.
+- An input that is not well-formed Unicode is refused like an empty one. UTF-8 encoding turns every lone surrogate into U+FFFD, so three different secrets verified against one hash (red-team 2).
+- `verify` treats `stored` `null` as `undefined`; `check` treats a `find` result that is `null` or not an object as no row; `mint` with no options answers `credentials.ttl`. Each is past the types and each threw or answered at once (red-team 3, 4). A throw from `find` passes through, and std.tokens says so.
+- `expiresAt` is the whole millisecond of `ctx.clock.now()` plus `ttl`, so a fractional sim clock writes an integer `exp` (red-team 6).
+- The cost is read at each `credentials(ctx)` call, not fixed at the first, so a ctx used before `createApp` binds the std config moves to the configured `ln` (red-team 5).
+- E2201 and E2202 count a dynamic `import()` of the server entry and pass a type-only import or re-export, as the kernel's server-import rule does. A module whose id is `test` is not a test path (red-team 7).
+- `verify(secret, undefined)` on a full queue answers `keel.busy`, and `verify` reads `stored` before the input length.
+- THREAT-MODEL: the queue bound is per ctx, and the timing claim covers accounts stored at the app's cost only. An account at a lower `ln` answers faster than an unknown account until its next sign-in (red-team 1, medium; backlog 0648 holds a padding design for the user to weigh).
+- Not fixed, filed: a `createRequire` load and a server helper outside `modules/` (0649), a topology the checker cannot read (0650).
