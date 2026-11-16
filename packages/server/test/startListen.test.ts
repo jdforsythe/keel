@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { start } from "../src/internal/start.ts";
+import type { StartOptions } from "../src/types/StartOptions.ts";
 
 const options = {
   topology: { web: { modules: [], adapter: "node" } },
@@ -37,6 +38,7 @@ const stubExit = (): void => {
 };
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
   Reflect.set(process, "exit", realExit);
 });
 
@@ -52,7 +54,7 @@ describe("start output", () => {
         return true;
       });
       stubExit();
-      const once = vi.spyOn(process, "once");
+      const once = vi.spyOn(process, "on");
       await start({ ...options, dir: built() });
       await vi.waitFor(() => expect(out.some((l) => l.startsWith("ok listening on port "))).toBe(true));
       write.mockRestore();
@@ -131,7 +133,7 @@ describe("start output", () => {
       if (this instanceof Server && a[0] === "error") seen.push(this);
       return onOf.apply(this, a);
     });
-    const sig = vi.spyOn(process, "once");
+    const sig = vi.spyOn(process, "on");
     await start({ ...options, dir: built() });
     await vi.waitFor(() => expect(out.some((l) => l.startsWith("ok listening on port "))).toBe(true));
     const stop = sig.mock.calls.find((c) => c[0] === "SIGTERM")?.[1];
@@ -146,5 +148,66 @@ describe("start output", () => {
     if (typeof stop === "function") stop();
     await vi.waitFor(() => expect(exits).toEqual([0]));
     expect(out.some((l) => l.includes("fails to bind"))).toBe(false);
+  });
+
+  const fake = (close: () => Promise<void>): NonNullable<StartOptions["open"]> => {
+    const data = new Map<string, string>();
+    return async () => ({
+      get: async (k) => data.get(k) ?? null,
+      set: async (k, v) => {
+        data.set(k, v);
+      },
+      read: async (ks) => ks.map((k) => data.get(k) ?? null),
+      commit: async () => true,
+      close,
+    });
+  };
+  const run = async (close: () => Promise<void>): Promise<{ out: string[]; stop: () => void }> => {
+    vi.stubEnv("PORT", "0");
+    vi.stubEnv("KEEL_SECRET", SECRET);
+    vi.stubEnv("KEEL_ORIGIN", "https://app.example");
+    vi.stubEnv("KEEL_DATABASE_URL", "postgres://user:pw@db.example/secret");
+    const out: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((t) => {
+      out.push(String(t));
+      return true;
+    });
+    stubExit();
+    const sig = vi.spyOn(process, "on");
+    await start({ ...options, dir: built(), open: fake(close) });
+    await vi.waitFor(() => expect(out.some((l) => l.startsWith("ok listening"))).toBe(true));
+    const stop = sig.mock.calls.find((c) => c[0] === "SIGINT")?.[1];
+    sig.mockRestore();
+    if (typeof stop !== "function") throw new Error("no stop handler");
+    out.length = 0;
+    return { out, stop };
+  };
+
+  it("a rejecting storage close still exits 1, prints nothing, and a second signal does not shut down again", async () => {
+    let closes = 0;
+    const { out, stop } = await run(() => {
+      closes += 1;
+      return Promise.reject(new Error("postgres://user:pw@db.example/secret"));
+    });
+    stop();
+    stop();
+    await vi.waitFor(() => expect(exits).toEqual([1]));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(exits).toEqual([1]);
+    expect(closes).toBe(1);
+    expect(out).toEqual([]);
+  });
+
+  it("closing both exits 0, and a second signal during shutdown starts nothing", async () => {
+    let closes = 0;
+    const { stop } = await run(async () => {
+      closes += 1;
+    });
+    stop();
+    stop();
+    await vi.waitFor(() => expect(exits).toEqual([0]));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(exits).toEqual([0]);
+    expect(closes).toBe(1);
   });
 });

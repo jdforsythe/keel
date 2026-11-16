@@ -19,7 +19,8 @@ const line = (text: string): void => {
  * Then serves `createApp` (production, real `ctx`, the merged routes, runners, peers by `KEEL_PEER_<NAME>`, `origin`
  * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, its storage the driver `open` opened on
  * `KEEL_DATABASE_URL` when given (k.deploy Storage; a std.db E2152 or E2153 prints that diag and exits 1), and on
- * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0.
+ * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0, or 1 when either rejects (nothing is printed);
+ * a second signal during shutdown does nothing.
  */
 export async function start(o: StartOptions): Promise<void> {
   const peers = Object.keys(o.topology).filter((n) => n !== o.deployable && o.topology[n]?.adapter === "node");
@@ -91,13 +92,24 @@ export async function start(o: StartOptions): Promise<void> {
     );
     process.exit(1);
   });
+  let stopping = false;
+  const closed = (f: () => Promise<unknown> | undefined): Promise<boolean> =>
+    Promise.resolve()
+      .then(f)
+      .then(
+        () => true,
+        () => false,
+      );
   const stop = (): void => {
+    if (stopping) return;
+    stopping = true;
     server.close();
-    void app
-      .close()
-      .then(() => opened?.close?.())
-      .then(() => process.exit(0));
+    void (async () => {
+      const app_ = await closed(() => app.close());
+      const store = await closed(() => opened?.close?.());
+      process.exit(app_ && store ? 0 : 1);
+    })();
   };
-  process.once("SIGTERM", stop);
-  process.once("SIGINT", stop);
+  process.on("SIGTERM", stop);
+  process.on("SIGINT", stop);
 }
