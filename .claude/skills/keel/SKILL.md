@@ -23,4 +23,4 @@ description: "Build a Keel app: schemas, stores, components, routes, guards, tok
 
 **Output:** fix by code (`keel explain <code>`); no `--verbose`.
 
-**More skills:** keel-forms, keel-text (messages, formats, `title`), keel-testing, keel-correctness (`properties`, `explore`, `chart`), keel-compliance (`.pii`, policy), keel-api, keel-server (`stores`), keel-deploy, keel-realtime, keel-writes, keel-widgets.
+**More skills:** keel-forms, keel-text (messages, `title`), keel-testing, keel-correctness (`properties`, `explore`, `chart`), keel-compliance (`.pii`, policy), keel-api, keel-server (`stores`), keel-deploy, keel-realtime, keel-writes, keel-widgets, keel-storage.

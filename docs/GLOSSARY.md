@@ -19,6 +19,9 @@ Canonical names. Changing one requires an RFC.
 - **extension point**: schema type registry, check rule registry, capability registry, module manifest, inspector hooks (`inspector({ id, schema, read })`: a named, schema-typed section of the inspect document), output formatter registry.
 - **unsafe**: the only named path around a guarantee; requires a justification string; counted in the ledger.
 - **part**: `Part` from `@keel/ui/aria`, the element stdlib widgets build on; a base element whose `role` fixes its tag and ARIA props.
+- **driver**: an object passed as `createCtx({ drivers })` that supplies `storage` or `net` on a `real` or `shell` ctx and keeps that capability's contract.
+- **shell**: a native package of a `client` deployable, `capacitor` (Android, iOS) or `tauri` (desktop), declared in `topology.ts` as `shells`.
+- **workflow**: `workflow(id, spec)` from `@keel/std-workflows`: a state chart run per instance in one server store, its steps run as jobs.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 
-verified: b22fdf1c7acce90ee81f02ef3a0241ee12e0b6e4
+verified: 106d1bbea78f2fa5c25ef86dd0b375661b7135b3

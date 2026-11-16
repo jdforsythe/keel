@@ -40,6 +40,8 @@ The policy has no option, so no app can widen it. Where the browser has Trusted 
 
 **What the author owes.** Mark every field that holds a person's data, in every schema that carries it: the stored record, the form's draft and any route data. A value copied into an unmarked field, or derived from a marked one (`email.toUpperCase()`), is not redacted. A path no route declares (a 404) is logged as requested. Data with no schema, such as a raw element value, goes in the module's std.sessions `redact` entries. A canary test makes the coverage concrete: fill every path `piiPaths` lists with generated values, drive the app, and search the log lines (`createApp({ log: { write } })`), the recorded session and the sim `session` capability's `taken()` for them.
 
+**Data at rest.** A store persists as its snapshot, so a `.pii` value sits in `ctx.storage` as the store holds it: in `.keel-dev/` files, in the SQLite file or Postgres database `@keel/std-db` opens (`storage: 'sqlite'` or `'postgres'`, `KEEL_DATABASE_URL`), or in a shell's native store. Keel does not encrypt it; encryption at rest is the database's or the disk's, so turn it on there. The driver prints no stored value, and `KEEL_DATABASE_URL` is never printed. A `Secret` never reaches storage, but what `reveal` returns is plain data. E1112 reports a revealed value reaching `tx`, `store`, a `storage` write, `console` or an `Error` in the same file, and it follows nothing through a helper, an import or an encoding call. Store a salted `scrypt` hash of a credential and check it with `timingSafeEqual`. A value removed from state leaves the database once its last log entry folds past `logLimit`.
+
 ## The evidence bundle
 
 **Make it.** Generate an Ed25519 key once (`openssl genpkey -algorithm ed25519 -out evidence.key`), keep it out of the repository, and publish its `keyId` where auditors can find it. In CI, after `pnpm audit --json > audit.json`:
@@ -56,4 +58,4 @@ The command runs `test`, `check` and `ledger`, makes no network request, and wri
 
 Keel's checks stop where a person's judgment starts. Before a release, the app goes to an accessibility firm for WCAG 2.2 AA with a desktop and a mobile screen reader, starting from the criteria `a11y.json` leaves to a person, and to a pen-test firm for OWASP ASVS level 2. Both receive the verified bundle and its `keyId`, `docs/THREAT-MODEL.md`, an https deployment and one browser profile per role. The pen test covers access control, CSRF (the write proof), XSS (escaping, the policy, Trusted Types), headers and the caller cookie, personal data in logs, sessions and `/sessions/list`, and the documented caps on bodies, the report window and the session ingest. A finding on a criterion the ledger claimed at `example` also adds the rule or test that would have caught it.
 
-verified: a1ff3da7348c4c50f0c90113694d500ec6ec2b0b
+verified: 106d1bbea78f2fa5c25ef86dd0b375661b7135b3
