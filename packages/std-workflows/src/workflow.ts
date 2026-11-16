@@ -1,7 +1,8 @@
 import type { Schema } from "@keel/schema";
 import type { Job } from "@keel/std-jobs";
+import type { StateSpec } from "@keel/std-statecharts";
 import { asEvents } from "../unsafe/asEvents.ts";
-import { looseNext } from "../unsafe/looseNext.ts";
+import { looseChart } from "../unsafe/looseChart.ts";
 import type { StepSpec } from "./StepSpec.ts";
 import type { WaitSpec } from "./WaitSpec.ts";
 import type { Workflow } from "./Workflow.type.ts";
@@ -9,6 +10,7 @@ import type { WorkflowSpec } from "./WorkflowSpec.ts";
 import type { FlowInput } from "./internal/FlowInput.ts";
 import type { Model } from "./internal/Model.ts";
 import { compileStores } from "./internal/compileStores.ts";
+import { entryOf } from "./internal/entryOf.ts";
 import { forgetJob } from "./internal/forgetJob.ts";
 import { planKey } from "./internal/planKey.ts";
 import { scanOf } from "./internal/scanOf.ts";
@@ -28,7 +30,7 @@ export function workflow<
   A extends string,
 >(id: string, spec: WorkflowSpec<D, Ev, S, G, A>): Workflow<D, Ev, S> {
   const { chart } = spec;
-  const states: Readonly<Record<string, { readonly on?: object; readonly final?: boolean }>> = chart.states;
+  const states: Readonly<Record<string, StateSpec<string, string, string, string> | undefined>> = chart.states;
   const names = Object.keys(states).filter((n): n is S => n in states);
   const [first, ...rest] = names;
   const finals = new Set<string>(names.filter((n) => states[n]?.final === true));
@@ -61,7 +63,10 @@ export function workflow<
     chart.data,
     chart.initial,
     events,
-    looseNext<D>(chart.next),
+    (() => {
+      const c = looseChart<D>(chart);
+      return entryOf<D>(states, c.next, c.enabled);
+    })(),
     finals,
     spec.limit ?? 1000,
   );

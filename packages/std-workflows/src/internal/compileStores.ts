@@ -4,12 +4,16 @@ import type { Instance } from "../Instance.ts";
 import type { Instances } from "../Instances.ts";
 import type { LooseStores } from "./LooseStores.ts";
 
-type Next<D> = (from: { state: string; data: D }, event: string, payload: unknown) => { state: string; data: D };
+type Next<D> = (
+  from: { state: string; data: D },
+  event: string,
+  payload: unknown,
+) => { state: string; data: D; enters: boolean };
 
 /**
  * The workflow store `id` and its transactions (std.workflows Store), compiled again on every call. `start` adds an
  * instance at `initial` unless its id exists; an event moves an instance that is neither unknown nor final by `next`,
- * raising `entered` and zeroing `attempt` when the state's name changes; `attempt` counts a run of the current entry;
+ * raising `entered` and zeroing `attempt` when it enters a state, its own included; `attempt` counts a run of the current entry;
  * `forget` removes a final instance. More than `limit` instances not final fail `store.invariant`.
  */
 export function compileStores<S extends string, D>(
@@ -44,12 +48,12 @@ export function compileStores<S extends string, D>(
         if (r === undefined || finals.has(r.state)) return cur;
         const to = next(r, event, p.payload);
         const state = names.find((n) => n === to.state) ?? r.state;
-        const moved = state !== r.state;
+        const enters = to.enters || state !== r.state;
         return one(cur, p.id, {
           state,
           data: to.data,
-          entered: r.entered + (moved ? 1 : 0),
-          attempt: moved ? 0 : r.attempt,
+          entered: r.entered + (enters ? 1 : 0),
+          attempt: enters ? 0 : r.attempt,
         });
       });
     return {
