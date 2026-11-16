@@ -1,20 +1,22 @@
 # RFC 0103: std-credentials (hash and verify a `Secret`, mint and check a token; stored forms whose parameters can rise)
 
-Status: proposed; revised 2026-11-16 for the user's answers (accessor and error Result approved; cost configurable upward from the 2^17 floor; API tokens in the first version). The user approves the revised shape before any build. For backlog 0615. Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0126 records it.
+Status: accepted (user, 2026-11-16: the accessor, the error Result, the cost setting, the token API with built-in expiry; build now, the kernel RFC for action output and `bearer` follows). For backlog 0615. Each decision cites the WORKFLOW RFC default it applies; what is still open is under Questions with a recommendation. ADR-0126 records it.
 
 ## Decisions
+The user approved D2, D3, D7's shape with expiry built in, and D9's build order on 2026-11-16. The others apply the defaults cited; what is still open is under Questions.
+
 - D1: a new stdlib package, `@keel/std-credentials`, with two spec sections, std.credentials (passwords) and std.tokens, and three entries. `.` exports the schemas `Hashed`, `Digested` and `CredentialsConfig` and is client-safe, since `*.schema.ts` files are shared. `./server` exports the accessor `credentials` and is Node only. `./tools` registers two check rules. A module that uses the package lists it in `deps`. The package calls `reveal` once, inside `./server` (defaults 4, 5).
-- D2 (approved): the API is a capability accessor, `credentials(ctx)`. `hash(secret)` and `verify(secret, stored)` take the `Secret<string>` and are async. `hash` resolves a `Hashed`. `verify` resolves `ok({ rehash })` only when the secret matches; a wrong secret is `err` `credentials.mismatch`, and nothing throws. `stored` may be `undefined` for an unknown account, which costs one derivation and answers `credentials.mismatch` (defaults 2, 4).
-- D3: `scrypt` from `node:crypto`. The cost is N = 2^`ln` with r = 8 and p = 1, and `ln` is 17 by default and at the least. An app raises it, never lowers it, in one place: `std: { '@keel/std-credentials': { ln } }` in a module manifest, an integer 17 to 20. A value under 17 or over 20 is the kernel's E1158 at `keel check`, `keel build` and startup. The stored form names its parameters, `$scrypt$ln=17,r=8,p=1$<salt>$<key>`, and `verify` answers `rehash: true` for a string below the configured cost (defaults 3, 4; Questions 2).
-- D4: salts and tokens come through the capability, and the real and seeded sources never mix. Under a real ctx every random byte is `randomBytes` of `node:crypto`; `ctx.random` is not used. Under a sim ctx the bytes come from the capability seed, every string and token is marked (`$scrypt-sim$`, `keelsim_`, `$sha256-sim$`), and a real ctx refuses them (defaults 1, 4, 6; Questions 7).
-- D5: one derivation at `ln` 17 takes about 170 ms and 128 MiB, and each step up doubles both. The real implementation runs derivations on the thread pool, bounded per ctx by the configured `ln`: 2 at once at 17 and 18, 1 at 19 and 20, with 16, 8, 4 or 2 waiting in call order. A call past that resolves the kernel's `keel.busy`, a 503 from an action (default 3).
+- D2 (approved): the API is a capability accessor, `credentials(ctx)`. `hash(secret)` and `verify(secret, stored)` take the `Secret<string>` and are async. `hash` resolves a `Hashed`. `verify` resolves `ok({ rehash })` only when the secret matches; a wrong secret is `err` `credentials.mismatch`, and nothing throws. `stored` may be `undefined` for an unknown account, which costs one derivation and answers `credentials.mismatch`.
+- D3 (approved): `scrypt` from `node:crypto`. The cost is N = 2^`ln` with r = 8 and p = 1, and `ln` is 17 by default and at the least. An app raises it, never lowers it, in one place: `std: { '@keel/std-credentials': { ln } }` in a module manifest, an integer 17 to 20. A ctx uses the highest `ln` any module sets. A value under 17 or over 20 is the kernel's E1158 at `keel check`, `keel build` and startup. The stored form names its parameters, `$scrypt$ln=17,r=8,p=1$<salt>$<key>`, and `verify` answers `rehash: true` for a string below the app's cost.
+- D4: salts and tokens come through the capability, and the real and seeded sources never mix. Under a real ctx every random byte is `randomBytes` of `node:crypto`; `ctx.random` is not used. Under a sim ctx the bytes come from the capability seed, every string and token is marked (`$scrypt-sim$`, `keelsim_`, `$sha256-sim$`), and a real ctx refuses them (defaults 1, 4, 6; Questions 3).
+- D5: one derivation at `ln` 17 takes about 170 ms and 128 MiB, and each step up doubles both. The real implementation runs derivations on the thread pool, bounded per ctx by the configured `ln`: 2 at once at 17 and 18, 1 at 19 and 20, with 16, 8, 4 or 2 waiting in call order. A call past that resolves the kernel's `keel.busy`, a 503 from an action (default 3; approved with D3).
 - D6: it runs in a `node` deployable only. E2201 reports the server entry imported outside a `*.server.ts` file, and E2202 reports it in a module a `client` or `static` deployable serves, which is also where a shell's code lives (defaults 5, 6).
-- D7: tokens are in. `credentials(ctx).mint()` gives a new token as a `Secret<string>`, its non-secret `id`, and a `Digested` to store. `credentials(ctx).check(token, find)` looks the row up by the id inside the presented token and compares in constant time. The hash is SHA-256 with no key, sound because every stored digest comes from `mint`, which draws 256 random bits. A password cannot take this path: `mint` takes no input (defaults 2, 4; Questions 3 to 6).
-- D8: the hand-written form leaves the docs. k.privacy, the E1112 explain row, two skills and the threat model name `credentials(ctx)` where they name `scrypt` and `timingSafeEqual` today (default 2).
-- D9: two kernel gaps limit how a token travels, and this RFC does not paper over them. A write returns `Href | null`, so the response that creates an API token cannot carry it; and no request header reaches server code, so a token is presented in an action's input, not in `Authorization`. Both are for a kernel RFC (default 1; Questions 1).
+- D7 (approved, with expiry built in): `credentials(ctx).mint({ ttl })` gives a new token as a `Secret<string>`, its non-secret `id`, a `Digested` to store, and `expiresAt`. `ttl` is required: milliseconds, or `null` for a token that does not expire. The expiry is written inside the `Digested` string, so the app stores nothing else for it and cannot forget to check it. `credentials(ctx).check(token, find)` looks the row up by the id inside the presented token, compares in constant time, then reads `ctx.clock`: a matching token at or past its expiry is `err` `credentials.expired`, distinct from `credentials.mismatch`. The hash is SHA-256 with no key, sound because every stored digest comes from `mint`, which draws 256 random bits (defaults 2, 4; Questions 1, 2).
+- D8: the hand-written form leaves the docs. k.privacy, the E1112 explain row, two skills, the threat model and COMPLIANCE name `credentials(ctx)` where they name `scrypt` and `timingSafeEqual` today (default 2; Questions 7).
+- D9 (approved): build now. A token made by a write leaves through a `service` call and is presented as an action's input. Two kernel gaps stand behind that: a write returns `Href | null`, and no request header reaches server code. A kernel RFC for an API action that returns data and a `bearer` secret follows as its own RFC (default 1).
 - Budget: three new entries, `@keel/std-credentials` 1kb, `@keel/std-credentials/server` 3kb and `@keel/std-credentials/tools` 1.25kb.
 
-New codes: E2201, E2202 (std.credentials, block E220x). New KeelError codes: `credentials.length`, `credentials.mismatch`, `credentials.malformed`.
+New codes: E2201, E2202 (std.credentials, block E220x). New KeelError codes: `credentials.length`, `credentials.mismatch`, `credentials.malformed`, `credentials.ttl`, `credentials.expired`.
 
 ## Problem
 Measured on `jdforsythe/test-impl` at `dfff457f` and re-measured at `f8e926d2`, Node 24.19.0, darwin, a shared machine.
@@ -89,6 +91,7 @@ import type { Ctx } from '@keel/ctx'
 import type { KeelError, Result, Secret } from '@keel/schema'
 type Busy = KeelError<'keel.busy', { readonly limit: number }>
 type Mismatch = KeelError<'credentials.mismatch', Record<string, never>>
+type Expired = KeelError<'credentials.expired', Record<string, never>>
 type Malformed = KeelError<'credentials.malformed', { readonly reason: 'format' | 'parameters' | 'sim' }>
 export const credentials: (ctx: Ctx) => Hasher
 export interface Hasher {
@@ -98,9 +101,11 @@ export interface Hasher {
   verify(secret: Secret<string>, stored: Hashed | undefined): Promise<Result<{ readonly rehash: boolean },
     Mismatch | Malformed | Busy>>
   // tokens (std.tokens)
-  mint(): { readonly token: Secret<string>; readonly id: string; readonly digest: Digested }
+  mint(options: { readonly ttl: number | null }): Result<
+    { readonly token: Secret<string>; readonly id: string; readonly digest: Digested; readonly expiresAt: number | null },
+    KeelError<'credentials.ttl', { readonly min: 60000; readonly max: 31536000000 }>>
   check<R extends { readonly digest: Digested }>(token: Secret<string>, find: (id: string) => R | undefined):
-    Result<R, Mismatch | Malformed>
+    Result<R, Mismatch | Expired | Malformed>
 }
 
 // @keel/std-credentials/tools
@@ -111,7 +116,7 @@ export const nodeDeployable: RuleDef // E2202
 
 **`Hashed`.** A format type over `s.string()` (k.schema Format types), registered as `credentials.Hashed`. A store's state schema names it for the field that holds a password's hash: `password: Hashed`. It accepts `$id$params$salt$key`, with `$v=<n>` allowed after the id, at most 256 characters. It checks the shape and nothing else, so a string a later version wrote still restores after a rollback. Its generator gives well-shaped sim-form strings that match no secret. `encode` is the string's, `doc()` is `credentials.Hashed`, and JSON Schema adds `format: credentials.Hashed`.
 
-**`Digested`.** The same kind of type for a token's digest, registered as `credentials.Digested`: `$id$digest`, at most 128 characters, shape only, sim-form strings from its generator. A token row is any object with `digest: Digested`.
+**`Digested`.** The same kind of type for a token's digest, registered as `credentials.Digested`: `$id$digest` or `$id$params$digest`, at most 128 characters, shape only, sim-form strings from its generator. A token row is any object with `digest: Digested`; the expiry is inside that string, so the row needs no other field for `check`.
 
 **`CredentialsConfig`.** The schema of the package's `std` entry, registered under `@keel/std-credentials`. One key, `ln`. An app does not import it; the manifest's `std` literal is checked against it.
 
@@ -134,21 +139,30 @@ export const nodeDeployable: RuleDef // E2202
 | `credentials.malformed` | `{ reason: 'sim' }` | `stored` is the sim form and the ctx is real or shell |
 | `keel.busy` | `{ limit }` | the ctx's queue is full |
 
-**`mint()`.** Synchronous, no input, no error. Returns:
+**`mint({ ttl })`.** Synchronous. `ttl` is required: how long the token is good for, in milliseconds, an integer from 60,000 (one minute) to 31,536,000,000 (365 days), or `null` for a token that does not expire. It resolves `ok` with:
 - `token`: the new token as a `Secret<string>`. It prints as `[secret]` everywhere, and its text is read with `reveal` in the `*.server.ts` file that sends it.
 - `id`: the token's non-secret part, 16 lowercase hex characters. The app stores it as the row's key, and may show or log it.
-- `digest`: the `Digested` to store.
-
-**`check(token, find)`.** Synchronous. It reads the id from the presented `Secret<string>`, calls `find(id)` once to get the row, compares the token's SHA-256 with the row's `digest` in constant time, and returns `ok(row)`, the object `find` returned, typed as the app's row. Errors:
+- `digest`: the `Digested` to store. The expiry is inside it.
+- `expiresAt`: `ctx.clock.now()` plus `ttl`, in milliseconds, or `null`. For showing and for clean-up jobs; `check` does not read it.
 
 | Code | Data | When |
 | --- | --- | --- |
-| `credentials.mismatch` | `{}` | the presented value is not in the token form (`find` is not called); or `find` returns `undefined`; or the digest does not match; or it is a sim token and the ctx is real or shell |
-| `credentials.malformed` | `{ reason: 'format' }` | the row's `digest` is not a `Digested` string |
-| `credentials.malformed` | `{ reason: 'parameters' }` | the row's `digest` has an id this version does not read |
-| `credentials.malformed` | `{ reason: 'sim' }` | the row's `digest` is the sim form and the ctx is real or shell |
+| `credentials.ttl` | `{ min: 60000, max: 31536000000 }` | `ttl` is not `null` and not an integer in that range |
 
-**Every error.** Each is one constant value per code, `reason` and `limit`. `message` is the code, plus `: <reason>` for `credentials.malformed`, and a fixed sentence for `keel.busy`. None holds any part of a secret, a token or a stored string. No method throws or rejects: a derivation Node refuses to run resolves `keel.busy`. An action that returns one of them as is answers 400, and 503 for `keel.busy` (k.server Status). E1453 already reports a `verify` or `check` whose result is dropped.
+**`check(token, find)`.** Synchronous. It reads the id from the presented `Secret<string>`, calls `find(id)` once to get the row, compares the token's SHA-256 with the row's `digest` in constant time, then compares `ctx.clock.now()` with the expiry inside the digest, and returns `ok(row)`, the object `find` returned, typed as the app's row. The row type needs `digest: Digested` and nothing else. Errors, in the order they are decided:
+
+| Code | Data | When |
+| --- | --- | --- |
+| `credentials.mismatch` | `{}` | the presented value is not in the token form (`find` is not called); or it is a sim token and the ctx is real or shell; or `find` returns `undefined` |
+| `credentials.malformed` | `{ reason: 'format' }` | the row's `digest` is not a `Digested` string |
+| `credentials.malformed` | `{ reason: 'parameters' }` | the row's `digest` has an id or a parameter this version does not read |
+| `credentials.malformed` | `{ reason: 'sim' }` | the row's `digest` is the sim form and the ctx is real or shell |
+| `credentials.mismatch` | `{}` | the digest does not match |
+| `credentials.expired` | `{}` | the digest matches and `ctx.clock.now() >= expiresAt` |
+
+`credentials.expired` is answered only to the real token (D7).
+
+**Every error.** Each is one constant value per code, `reason` and `limit`. `message` is the code, plus `: <reason>` for `credentials.malformed`, and a fixed sentence for `keel.busy`. None holds any part of a secret, a token or a stored string. No method throws or rejects: a derivation Node refuses to run resolves `keel.busy`. An action that returns one of them as is answers 400, and 503 for `keel.busy` (k.server Status). E1453 already reports a `verify`, `mint` or `check` whose result is dropped.
 
 **The cost setting.** One line in a module manifest, read the same way by every `credentials(ctx)` call:
 
@@ -184,15 +198,16 @@ export const postSignIn = action({ input: SignIn, stores: accountStores }, async
 
 The sign-in file has no branch for an unknown email: `user?.password` is `undefined`, `verify` spends one derivation and answers `credentials.mismatch`, the same answer in about the same time as a wrong password. Lines 5 to 7 of `postSignIn` are the whole rehash path, and they also move an account up when the app raises `ln`.
 
-**Example 2: an API token.** Created by a signed-in user, then presented by a script on a later request. Token rows are `{ id: s.string(), digest: Digested, userId: s.id('User') }`. `Report` is `s.object({ token: s.secret(s.string({ max: 128 })), text: s.string({ max: 2000 }) })`. `mail` is a `service` over a mail provider.
+**Example 2: an API token.** Created by a signed-in user, good for 90 days, then presented by a script on a later request. Token rows are `{ id: s.string(), digest: Digested, userId: s.id('User') }`. `Report` is `s.object({ token: s.secret(s.string({ max: 128 })), text: s.string({ max: 2000 }) })`. `mail` is a `service` over a mail provider.
 
 ```ts
 // modules/accounts/postToken.server.ts
 export const postToken = action({ input: TokenRequest, stores: accountStores }, async (input, { caller, stores }, ctx) => {
-  const minted = credentials(ctx).mint();
-  const r = tx(stores.addToken, { id: minted.id, digest: minted.digest, caller });
+  const minted = credentials(ctx).mint({ ttl: 90 * 86_400_000 });
+  if (!minted.ok) return err(minted.error);
+  const r = tx(stores.addToken, { id: minted.value.id, digest: minted.value.digest, caller });
   if (!r.ok) return err(r.error);
-  const sent = await mail.send({ body: { to: input.email, text: reveal(minted.token) } }, ctx);
+  const sent = await mail.send({ body: { to: input.email, text: reveal(minted.value.token) } }, ctx);
   return sent.ok ? ok(null) : err(sent.error);
 });
 // modules/accounts/postReport.server.ts
@@ -204,13 +219,16 @@ export const postReport = action({ input: Report, stores: accountStores }, (inpu
 });
 ```
 
-Line 5 of `postToken` is the one place the token leaves, and here it leaves through a mail service because that is what the kernel allows today: an action cannot return data (Problem). When it can, that line becomes the action's own answer, `return ok({ token: reveal(minted.token) })`, and nothing else in either file changes. A failed send returns `err`, which saves nothing, so no row is kept for a token nobody received. `postReport` takes the token in its input, since no header reaches an action.
+- The expiry appears once, as `ttl` in `postToken`. It is inside `minted.value.digest`, so `addToken` stores no field for it and `postReport` has no line that checks it. On day 91 `check` answers `credentials.expired`, and `postReport` returns it: a 400 whose code tells the script's owner to mint a new token.
+- Line 6 of `postToken` is the one place the token leaves, and it leaves through a mail service because that is what the kernel allows today: an action cannot return data (D9). When it can, that line becomes the action's own answer, `return ok({ token: reveal(minted.value.token) })`, and nothing else in either file changes.
+- A failed send returns `err`, which saves nothing, so no row is kept for a token nobody received.
+- `postReport` takes the token in its input, since no header reaches an action.
 
 All four files typecheck under `@keel/compiler/tsconfig.strict.json` against the prototype, and `check` reports nothing on them.
 
 ### D1. Name and entries
 `@keel/std-credentials`, the name RFC 0100 Questions 1 proposed. Three entries, because three kinds of code import it:
-- A `*.schema.ts` file names `Hashed` or `Digested`, and schema files are shared with client code, so `.` imports nothing from Node. It also holds `CredentialsConfig`, since `keel check` and `createApp` both import the root to find the registered schema. It is 633 B.
+- A `*.schema.ts` file names `Hashed` or `Digested`, and schema files are shared with client code, so `.` imports nothing from Node. It also holds `CredentialsConfig`, since `keel check` and `createApp` both import the root to find the registered schema. It is 634 B.
 - A `*.server.ts` file calls `credentials(ctx)`. `./server` imports `node:crypto`, as `@keel/std-channels/server` is the Node half of that package.
 - `keel check` loads `./tools`.
 
@@ -219,8 +237,8 @@ A module that uses the package lists `@keel/std-credentials` in its manifest's `
 **Why E1112 and E1105 stay silent on the documented use.** E1112 starts at a call of `reveal` and reports the value at a closed list of sinks: `tx`, `store`, a `ctx.storage` write, `console`, `process.stdout` and `process.stderr`, the `node:fs` writes, an `Error`, `Promise.reject` and a `throw` (k.reveal).
 - Passwords. The app file has no `reveal`: it passes `input.password`, the `Secret`, as is. The string `hash` resolves is the result of a call the rule does not know, which ends any flow.
 - A presented token. `check(input.token, find)` takes the `Secret` too.
-- A minted token. The app writes `reveal(minted.token)` once, in a `*.server.ts` file, which E1105 allows. The rule follows that value. In a `service` or `ctx.net.fetch` argument it enters a call that is no sink; in a returned value it meets no sink either, since RFC 0100 D4 keeps responses off the list on purpose. So the documented line is silent. `minted.id` and `minted.digest` are members of a call the rule does not know and carry nothing.
-- The mistakes are caught. In the prototype, `tx(t, { token: reveal(minted.token) })` and `console.log(reveal(minted.token))` are each one E1112.
+- A minted token. The app writes `reveal(minted.value.token)` once, in a `*.server.ts` file, which E1105 allows. The rule follows that value. In a `service` or `ctx.net.fetch` argument it enters a call that is no sink; in a returned value it meets no sink either, since RFC 0100 D4 keeps responses off the list on purpose. So the documented line is silent. `minted.value.id` and `minted.value.digest` are members of a call the rule does not know and carry nothing.
+- The mistakes are caught. In the prototype, `tx(t, { token: reveal(minted.value.token) })` and `console.log(reveal(minted.value.token))` are each one E1112.
 
 k.reveal needs no new line. The one `reveal` in the package is in `src/server/internal/textOf.ts`; a password's text is normalized into a byte buffer, given to `scrypt` and zeroed, and a token's text goes to SHA-256. The lane adds a test that gives the package's own server files to `check` under an app path and expects no E1112.
 
@@ -309,28 +327,47 @@ Rules this RFC does not add:
 - A `verify` or `check` result ignored. E1453 reports a dropped `Result`, and a mismatch is `err`, so a result that is read cannot be misread.
 - A cost under the floor. E1158 reports it (D3).
 - A `Hashed` or `Digested` field marked `.pii`. The mark only adds redaction, so there is nothing to report.
-- A `Hashed` or `Digested` field in a loader `output`. It would need to read a schema across files (Questions 9).
+- A `Hashed` or `Digested` field in a loader `output`. It would need to read a schema across files (Questions 6).
 
 ### D7. Tokens
-**What a fast hash needs.** A fast hash is sound only for a secret nobody can guess, and nothing in a `Secret<string>` says how it was made. So the fast path has no door for outside secrets: `mint()` takes no input and makes the token itself, and a stored digest exists only because `mint` returned it. A password can be handed to `check`, where it is not in the token form and answers `credentials.mismatch`; it can never be handed to anything that stores a fast hash of it.
+**What a fast hash needs.** A fast hash is sound only for a secret nobody can guess, and nothing in a `Secret<string>` says how it was made. So the fast path has no door for outside secrets: `mint` takes no secret and makes the token itself, and a stored digest exists only because `mint` returned it. A password can be handed to `check`, where it is not in the token form and answers `credentials.mismatch`; it can never be handed to anything that stores a fast hash of it.
 
 **Algorithm.** SHA-256 over the token's whole text, with no key.
 - The secret part is 256 random bits. Nobody searches that space, with a fast hash or a slow one, so a salt and a work factor add nothing.
 - HMAC-SHA-256 needs a key, and Keel has no path for one. `KEEL_SECRET` is held by `createApp` for the caller cookie; using it would mean every API token dies when the cookie key rotates, and no accessor gives it to a package anyway (Problem). A key from the environment is RFC 0100 Questions 2, still open.
-- What a key would add is narrow: someone who can write the database could no longer plant the digest of a token they chose. That person can already replace a password hash, so the two halves of the package stand at the same line.
-- The digest names its algorithm, `$sha256$`, so `$hmac-sha256$` can be added the way a new scrypt cost is.
+- What a key would add is narrow: someone who can write the database could no longer plant the digest of a token they chose, or push an expiry out. That person can already replace a password hash, so the two halves of the package stand at the same line.
+- The digest names its algorithm, `$sha256$`, so `$hmac-sha256$` can be added the way a new scrypt cost is (Questions 2).
 
 **Token form.** `keel_<id>_<secret>`: `id` is 16 lowercase hex characters (64 random bits) and `secret` is 64 (256 bits); 86 characters. Hex and underscores only, so a double click selects all of it, it needs no escaping in a header, a form field or JSON, and a secret scanner can match the fixed prefix.
 
 **Lookup.** The `id` is in the token and is not secret. `check` reads it and hands it to `find`, and the app looks its row up by key: no scan, and no digest used as a search key. The digest covers the whole text, id included, so the id of one token with the secret of another does not match. A `find` that returns `undefined` still hashes the presented token before answering.
 
-**Digest form.** `$sha256$<digest>`: 32 bytes in base64 without padding, 51 characters. `Digested` checks the shape only, like `Hashed`.
-
 **`check` returns the row.** The caller needs the row's owner, not a boolean, and `find` already fetched it. Returning it means no second lookup and no `undefined` to narrow away.
 
-**Expiry.** Out. The package holds no clock and no row. An app that wants a reset token to last an hour stores `expiresAt` from `ctx.clock.now()` beside the digest and compares it in the action (Questions 5).
+**Expiry: the `ttl` option.** `mint(options: { readonly ttl: number | null })`.
+- **The type is milliseconds, a number.** The kernel's own durations are milliseconds as numbers: `ctx.clock.after(ms)`, a service's `timeout`, std.jobs' `timeoutMs`, and `ctx.clock.now()` itself. std.temporal has a `Duration`, a branded ISO 8601 string for values an app stores and shows; a literal is not assignable to it without a parse, and using it would make this package depend on `@keel/std-temporal` and `@keel/std-i18n` for one option. An app that holds a `Duration` converts it; one that wants to show `expiresAt` passes it to `instantOf`.
+- **Bounds.** An integer from 60,000 (one minute) to 31,536,000,000 (365 days). Anything else is `err` `credentials.ttl` with data `{ min: 60000, max: 31536000000 }`, as `hash` answers `credentials.length`. It is an `err` and not a throw because a lifetime can come from a form ("expires in N days"). The floor also catches the common unit slip: `ttl: 3600`, an hour written in seconds, is refused.
+- **Required.** `mint()` and `mint({})` are type errors. A reset token that never expires is the bug this option exists to prevent, and an option with a default would let it happen by omission.
+- **`ttl: null` is a token that does not expire.** It is a decision someone wrote down and a reviewer can search for. Its digest holds no expiry and `check` never answers `credentials.expired` for it. A long-lived API token is the case for it; revoking is deleting the row.
 
-**Revoking.** The app deletes the row. `find` then returns `undefined`.
+**Where the expiry lives: inside the digest string.** The two candidates were a field `mint` returns for the app to store beside `id` and `digest`, and an expiry written into the `Digested` string.
+- With a separate field, three things can go wrong in app code: the row schema leaves the field out, the transaction that stores the row drops it, or `find` returns a row without it and `check` has nothing to compare. Each compiles, and each gives a token that never expires.
+- With the expiry in the string, the app stores the one value it already had to store, and `check` reads the expiry from the value it already had to read. `find`'s row type stays `{ digest: Digested }` and nothing more. There is no code path where a token was given a lifetime and `check` does not apply it.
+- So the digest is `$sha256$exp=<ms>$<digest>`, where `<ms>` is the expiry in `ctx.clock` milliseconds as a decimal integer, and `$sha256$<digest>` when there is none: 69 and 51 characters. The expiry is not under the hash, since without a key that would protect nothing (see Algorithm).
+- `mint` also returns `expiresAt: number | null`, the same instant. `check` never reads it. It is there for what the app does with a lifetime besides checking it: show "expires on" in a list, or store it in the row so a job can delete expired rows.
+
+**Which clock.** `ctx.clock.now()`, read by `mint` to compute the expiry and by `check` to compare. No `Date` (E1601 would refuse it in app code, and the package holds itself to the same rule). Under a real ctx that is the host's wall clock in Unix milliseconds. Under a sim ctx the clock starts at 0 and moves only by `advance`, so a test moves time to one millisecond before the expiry and one after, and a replay sees the same answers.
+
+**The boundary.** A token is valid while `now < expiresAt` and expired when `now >= expiresAt`. At exactly the expiry instant it is expired. A token minted at clock `t` with `ttl` is accepted for `ttl` milliseconds, from `t` to `t + ttl - 1`.
+
+**The error, and what it tells a caller.** `credentials.expired`, data `{}`, one constant. `check` compares the digest first and reads the clock second, so:
+- `credentials.expired` is only ever the answer to the real token. A wrong secret against an expired row is `credentials.mismatch`, as it is against a live row. Nobody learns that an id exists, or that a row has expired, by guessing.
+- What the answer does tell is that the token presented was once good. The only party that can learn that is one that holds the token.
+- What the app should answer publicly: for an API token, pass `credentials.expired` through. The caller is a script whose owner needs to know to mint a new token, and a 400 that says so saves a support request. For a reset or invite link shown to whoever opens it, the app may answer both codes with one page ("this link is no longer valid"); the distinction then stays in the server's own handling. The package gives the two codes so the app can choose; it does not choose for it.
+
+**A token minted before this option existed** does not exist: the option ships with the first version. A digest with no `exp` is one that `mint({ ttl: null })` wrote.
+
+**Revoking.** The app deletes the row, and `find` then returns `undefined`. There is no revocation list and no way to shorten a lifetime in place other than replacing the stored digest.
 
 ### D8. One documented way
 With the package in place, the hand-written form is a second way to do the same thing. Each place that names it changes (Spec diff, Migration).
@@ -340,7 +377,7 @@ The package's half of an API token is complete: mint, store a digest, check. Two
 - A write's answer cannot hold the new token. Example 2 sends it through a `service` call. That is the right path for a reset or invite token and a detour for an API token shown on a settings page.
 - A request header never reaches server code. Example 2 takes the token as an `s.secret` input field of a POST. A token in a URL would land in history and proxy logs, so a GET route has no good way to take one.
 
-This RFC changes neither. Default 1 says a stdlib need that shows a kernel gap is met by a kernel change, and both are new kernel API shapes for the user (Questions 1). The package's API does not change when they land: the token leaves by `reveal(minted.token)` wherever the kernel lets a value leave, and arrives as a `Secret<string>` wherever the kernel hands one over.
+This RFC changes neither. Default 1 says a stdlib need that shows a kernel gap is met by a kernel change, and both are new kernel API shapes; the user has approved that RFC as the next one. The package's API does not change when they land: the token leaves by `reveal(minted.value.token)` wherever the kernel lets a value leave, and arrives as a `Secret<string>` wherever the kernel hands one over.
 
 ### Prototype
 In the session scratchpad, `rfc0103/proto/`: the three entries (`Hashed`, `Digested`, `CredentialsConfig`, the real and sim implementations behind `register`, two rules) and the example app above. Run on Node 24.19.0 against the repo's `@keel/schema`, `@keel/ctx`, `@keel/store`, `@keel/router`, `@keel/services`, `@keel/compiler` and `@keel/check`.
@@ -366,16 +403,24 @@ In the session scratchpad, `rfc0103/proto/`: the three entries (`Hashed`, `Diges
 | U+212B in the secret, U+00C5 at `verify` | `ok` |
 | 19 `verify` calls at once, `ln` 17 | 18 `ok`, 1 `keel.busy` `{ limit: 16 }` |
 | 6 `verify` calls at once, `ln` 19 | 5 `ok`, 1 `keel.busy` `{ limit: 4 }` |
-| `mint()`, real | an 86-character token of the form, its id part equal to `id`; a 51-character digest; 0.2 ms |
+| `mint({ ttl: null })`, real | an 86-character token of the form, its id part equal to `id`; a 51-character digest; `expiresAt` `null`; 0.2 ms |
+| `mint({ ttl: 60000 })`, real | a 69-character digest `$sha256$exp=<13 digits>$...`; `expiresAt` 60,000 past `ctx.clock.now()` |
+| `ttl` 59,999; 31,536,000,001; 60,000.5; `NaN`; `Infinity` | `credentials.ttl` each, data `{ min: 60000, max: 31536000000 }` |
+| `ttl` 60,000; 31,536,000,000 | `ok` |
 | `String`, `JSON.stringify`, `inspect` of the minted token | `[secret]`; the text appears in none |
 | `check` of the token with its row | `ok` with the row; `find` called once with the id; 0.1 ms |
 | A changed secret; another token's id; an unknown id | `credentials.mismatch` each |
+| Sim, minted at clock 0 with `ttl` 3,600,000: at 0; after `advance(3599999)` | `ok`; `ok` |
+| After one more millisecond (`now` equals `expiresAt`); after `advance(1000000)` | `credentials.expired`; `credentials.expired` |
+| Another token presented against the expired row | `credentials.mismatch` |
+| A `ttl: null` token after `advance(1e12)` | `ok` |
+| Real: a digest with its `exp` set to 1; with `exp=soon` | `credentials.expired`; `credentials.malformed` `parameters` |
 | `hunter2` as the token | `credentials.mismatch`; `find` not called |
 | A row whose digest is `$md5$...` | `credentials.malformed` `parameters` |
 | Sim `mint`, two ctxs with one seed | equal `keelsim_` tokens and `$sha256-sim$` digests |
 | A sim token under real; a sim digest under real | `credentials.mismatch`; `credentials.malformed` `sim` |
-| `tx(t, { token: reveal(minted.token) })`; `console.log(reveal(minted.token))` | one E1112 each |
-| `tx(t, { id: minted.id, digest: minted.digest })`; `reveal(minted.token)` in a `service` body; in a returned object | no E1112 |
+| `tx(t, { token: reveal(minted.value.token) })`; `console.log(reveal(minted.value.token))` | one E1112 each |
+| `tx(t, { id: minted.value.id, digest: minted.value.digest })`; `reveal(minted.value.token)` in a `service` body; in a returned object | no E1112 |
 | `reveal(` in the package | 1 |
 
 ## Alternatives
@@ -395,21 +440,27 @@ In the session scratchpad, `rfc0103/proto/`: the three entries (`Hashed`, `Diges
 - A kernel `ctx.random.bytes(n)`. Rejected for this RFC: `id` is "the one way to mint an id or token" (k.ctx), and a registered capability already gives the package its own source.
 - The system generator in every mode. Rejected: a sim run would store different bytes each time, and k.sim says every capability is deterministic by seed.
 - One password form in every mode, at full cost. Rejected: a seeded salt would be valid in production, and each test sign-in would cost 170 ms and 128 MiB.
-- Argon2id. Rejected for now: `crypto.argon2` is not in Node 22, and a native dependency is a larger change than this package. `$argon2id$v=19$...` already fits `Hashed` (Questions 8).
+- Argon2id. Rejected for now: `crypto.argon2` is not in Node 22, and a native dependency is a larger change than this package. `$argon2id$v=19$...` already fits `Hashed` (Questions 5).
 - bcrypt or PBKDF2. Rejected: bcrypt is not in `node:crypto`, and OWASP lists PBKDF2 for FIPS needs only.
 - No bound on concurrency, or an unbounded queue. Rejected: 8 calls at once took 594 MiB and every pool thread, and an unbounded queue only moves the wait to the client.
-- Tokens: `digest(secret)` for any secret. Rejected: one autocomplete away from a password. `mint` has no input.
+- Tokens: `digest(secret)` for any secret. Rejected: one autocomplete away from a password. `mint` takes no secret.
 - Tokens: `scrypt` for them too. Rejected: 170 ms on every API request.
 - Tokens: HMAC-SHA-256 keyed with `KEEL_SECRET`. Rejected (D7).
 - Tokens: the digest as the lookup key, with no id part. Rejected: the app would search by a value derived from the secret and compare with `===`, and it would have no handle to show or revoke a token by.
-- Tokens: `tokenId(token)` and `check(token, digest)` as two calls. Rejected: the caller would fetch the row, narrow `undefined` away, and then read the row a second time for its owner; `find` does all three in one place (Questions 3).
+- Tokens: `tokenId(token)` and `check(token, digest)` as two calls. Rejected: the caller would fetch the row, narrow `undefined` away, and then read the row a second time for its owner; `find` does all three in one place.
 - Tokens: `ctx.random.id` as the token. Rejected: no digest, no sim mark, 122 bits.
 - Tokens: `mint` returning a plain string. Rejected: nothing would print it as `[secret]`, and E1112 would have no `reveal` to start from when it reaches `tx` or a log.
-- Tokens: an expiry inside the digest string. Rejected: `check` would need a clock, and the app's row is where a time belongs.
-- One spec section for both halves. Rejected: 2,205 tokens against a limit of 1,500.
+- Tokens: no expiry in the package, the app storing and comparing `expiresAt` itself. Reversed on the user's answer: expiry is built in.
+- Tokens: the expiry as a field `mint` returns for the app to store beside the digest. Rejected: a row schema, a transaction or a `find` that leaves it out compiles and gives a token that never expires (D7).
+- Tokens: `ttl` as a std.temporal `Duration`. Rejected: a literal needs a parse, the kernel's own durations are milliseconds, and the package would gain two dependencies (D7).
+- Tokens: `ttl` optional. Rejected: a reset token with no expiry would be written by leaving a key out.
+- Tokens: an out-of-range `ttl` throws. Rejected: a lifetime can come from a form, and an invalid input is an `err` (k.errors).
+- Tokens: one code for an expired and a wrong token. Rejected: the user chose a distinct `credentials.expired`, and it is answered only to the real token (D7).
+- Tokens: expired when `now > expiresAt`. Rejected: a `ttl` of n would then be good for n + 1 milliseconds.
+- One spec section for both halves. Rejected: 2,497 tokens against a limit of 1,500.
 
 ## Spec diff
-Token counts are ceil(chars/4) of the whole file after the change, measured on scratch copies of `spec/` at `f8e926d2`.
+Token counts are ceil(chars/4) of the whole file after the change, measured on scratch copies of `spec/` at `d9a4635a`.
 
 ### std.credentials (new, 1,290)
 The file `spec/std/std.credentials.md`, in full:
@@ -460,7 +511,7 @@ const r = await credentials(ctx).verify(input.password, user?.password)  // Resu
 - E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `credentials`.
 ````
 
-### std.tokens (new, 916)
+### std.tokens (new, 1,208)
 The file `spec/std/std.tokens.md`, in full:
 
 ````md
@@ -473,38 +524,42 @@ status: proposed
 ```ts
 import { Digested } from '@keel/std-credentials'               // *.schema.ts: { id: s.string(), digest: Digested }
 import { credentials } from '@keel/std-credentials/server'  // *.server.ts
-const { token, id, digest } = credentials(ctx).mint()        // Secret<string>, string, Digested
+const m = credentials(ctx).mint({ ttl: 3_600_000 })          // Result<{ token, id, digest, expiresAt }, E>
 const found = credentials(ctx).check(input.token, (id) => rows.find((t) => t.id === id))  // Result<Row, E>
 ```
-- `mint()` returns a new token as a `Secret<string>`, its `id` (the token's non-secret part, the row's lookup key) and the `digest` to store.
+- `mint({ ttl })`: `ttl` is required, milliseconds as an integer from 60,000 to 31,536,000,000 (365 days), or `null` for a token that does not expire; any other value is `credentials.ttl` (data `{ min: 60000, max: 31536000000 }`). It returns the new `token` as a `Secret<string>`, its `id` (the token's non-secret part, the row's lookup key), the `digest` to store, and `expiresAt`, `ctx.clock.now()` plus `ttl`, or `null`.
+- The expiry is in `digest`, so the app stores no other field for `check` to read.
 - The token leaves once: the `*.server.ts` file that sends it calls `reveal(token)`. That value in `tx`, storage, a log or a throw is E1112 (k.reveal).
-- `check(token, find)` reads the id from the presented `Secret<string>`, calls `find(id)` once for the row (an object with `digest: Digested`), compares in constant time (`timingSafeEqual`) and returns `ok(row)`. A presented value that is not in the token form (`find` is not called), a `find` that returns `undefined`, and a digest that does not match are `credentials.mismatch`. An unreadable `digest` is `credentials.malformed`, with std.credentials' reasons.
-- Both are synchronous and neither throws. Errors are std.credentials' constants.
-- `Digested` (`credentials.Digested`) is a format type over `s.string()`: `$id$digest`, at most 128 characters. It checks the shape only and generates sim-form strings.
+- `check(token, find)` reads the id from the presented `Secret<string>`, calls `find(id)` once for the row (an object with `digest: Digested`), compares in constant time (`timingSafeEqual`), then reads `ctx.clock.now()`, and returns `ok(row)`. A presented value that is not in the token form (`find` is not called), a `find` that returns `undefined`, and a digest that does not match are `credentials.mismatch`. A matching token whose digest has an expiry at or before now is `credentials.expired`. An unreadable `digest` is `credentials.malformed`, with std.credentials' reasons.
+- Both are synchronous and neither throws. Each error is one constant per code and `reason`.
+- `Digested` (`credentials.Digested`) is a format type over `s.string()`: `$id$digest` or `$id$params$digest`, at most 128 characters. It checks the shape only and generates sim-form strings.
 
-**Forms.** Token: `keel_<id>_<secret>`, `id` 16 and `secret` 64 lowercase hex characters (64 and 256 random bits), 86 characters. Digest: `$sha256$<digest>`, the SHA-256 of the token's text in base64 without padding, 51 characters. There is no key and no expiry: the app stores what else the row needs.
+**Forms.** Token: `keel_<id>_<secret>`, `id` 16 and `secret` 64 lowercase hex characters (64 and 256 random bits), 86 characters. Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` with no expiry: `<ms>` is `expiresAt` in decimal, `<digest>` the SHA-256 of the token's text in base64 without padding. There is no key.
 
-**Modes.** Real and shell draw `id` and `secret` from `randomBytes` of `node:crypto`. Sim draws them from the capability seed and a call count and writes `keelsim_<id>_<secret>` and `$sha256-sim$<digest>`; it reads both forms. A real or shell ctx answers `credentials.mismatch` for a sim token and `credentials.malformed` `sim` for a sim digest.
+**Modes.** Real and shell draw `id` and `secret` from `randomBytes` of `node:crypto`. Sim draws them from the capability seed and a call count and writes `keelsim_<id>_<secret>` and `$sha256-sim$...`; it reads both forms. A real or shell ctx answers `credentials.mismatch` for a sim token and `credentials.malformed` `sim` for a sim digest.
 
 **Rules.** E2201 and E2202 (std.credentials).
 
 **Conformance.**
-- Under real, `mint()` gives a token of the token form whose id part is `id`, and a `digest` of the digest form that parses with `Digested`; two mints share no `id`, `secret` or `digest`.
+- Under real, `mint({ ttl: null })` gives a token of the token form whose id part is `id`, `expiresAt` `null`, and a `digest` `$sha256$<digest>` that parses with `Digested`; two mints share no `id`, `secret` or `digest`.
+- `mint({ ttl })` for `ttl` 60,000 and 31,536,000,000 is `ok` with `expiresAt` `ctx.clock.now()` plus `ttl` and `exp=<expiresAt>` in `digest`; 59,999, 31,536,000,001, 60,000.5 and `NaN` are `credentials.ttl`.
 - `String`, `JSON.stringify` and `util.inspect` of a minted `token` give `[secret]`.
 - `check` of a minted token, with `find` returning a row holding its `digest`, is `ok` with that row, and `find` was called once with its `id`.
 - Under real, `check` is `credentials.mismatch` for: a token with one `secret` character changed; one token's `id` with another's `secret`; `hunter2` (`find` not called); `find` returning `undefined`.
-- A row whose `digest` is `$md5$` plus 43 characters is `credentials.malformed` `parameters`.
+- Under sim, a token minted at clock 0 with `ttl` 3,600,000 is `ok` after `advance(3599999)`, `credentials.expired` after one more millisecond and after any later `advance`; a `ttl: null` token is `ok` after `advance(1e12)`.
+- Another token presented against an expired row is `credentials.mismatch`, never `credentials.expired`.
+- A row whose `digest` is `$md5$` plus 43 characters, or has `exp=soon`, is `credentials.malformed` `parameters`.
 - Under sim, ctxs with one seed mint equal tokens and digests call by call, and two seeds do not; under real and shell, a sim token is `credentials.mismatch`, and a row with a sim digest or any generated `Digested` is `credentials.malformed` `sim`.
-- In a `*.server.ts` file, `tx(t, { token: reveal(minted.token) })` and `console.log(reveal(minted.token))` are each one E1112; `tx(t, { id: minted.id, digest: minted.digest })`, `reveal(minted.token)` in a `service` call's `body`, and `check(input.token, find)` are none.
+- In a `*.server.ts` file, with `m` a `mint` result, `tx(t, { token: reveal(m.value.token) })` and `console.log(reveal(m.value.token))` are each one E1112; `tx(t, { id: m.value.id, digest: m.value.digest })`, `reveal(m.value.token)` in a `service` call's `body`, and `check(input.token, find)` are none.
 ````
 
-Both halves in one section measure 2,205 tokens, so they are two. std.sessions, std.multi and std.monitor are three sections of one package in the same way.
+Both halves in one section measure 2,497 tokens, so they are two. std.sessions, std.multi and std.monitor are three sections of one package in the same way.
 
 ### spec/std/README.md
 The wave line "S8 adds std.db, std.workflows and std.shells." becomes "S8 adds std.db, std.workflows, std.shells, std.credentials and std.tokens." Two rows after std.shells:
 
 > | std.credentials | Credential hashes | proposed | capability, schema type and check rule registries, std config: `Hashed`, `hash`, `verify`, `ln`, E2201-E2202 |
-> | std.tokens | Tokens | proposed | `@keel/std-credentials`: `mint`, `check`, `Digested` |
+> | std.tokens | Tokens | proposed | `@keel/std-credentials`: `mint` with a ttl, `check`, `Digested` |
 
 ### spec/00-map.md (1,200 to 1,198)
 Code ranges gains a last row, 32 chars with its line break (4,799 to 4,831, 1,208 tokens):
@@ -526,60 +581,178 @@ After: 4,792 chars, 1,198 tokens. std.tokens owns no code, so the row names std.
 No conformance header quotes the old sentence.
 
 ### Unchanged
-k.ctx (1,434): no new method on `random`, and `register` is used as specified. k.reveal (709): no new sink, carrier or exception (D1). k.module: `std` config and E1158 are used as they stand. k.errors and k.server: `keel.busy` and its 503 are used as they stand, and an action still returns `Href | null` (D9). std.db: its On disk paragraph already says a derived value is stored as written.
+k.ctx (1,434): no new method on `random`; `register` and `ctx.clock.now()` are used as specified. k.reveal (709): no new sink, carrier or exception (D1). k.module: `std` config and E1158 are used as they stand. k.errors and k.server: `keel.busy` and its 503 are used as they stand, and an action still returns `Href | null` (D9). std.db: its On disk paragraph already says a derived value is stored as written.
 
 ## Conformance diff
-Written by the `conformance-writer` from std.credentials and std.tokens, without the implementation. This RFC allows these files under `packages/std-credentials/conformance/**`; no existing conformance file changes.
+Written by the `conformance-writer` from `spec/std/std.credentials.md` and `spec/std/std.tokens.md`, without reading `packages/std-credentials/src`. This RFC allows the files below under `packages/std-credentials/conformance/**`; no existing conformance file changes. Each file starts with one `// Spec: <section>, <paragraph> "<sentence>"` line per sentence it tests, quoted whole, then `// Seed: 1337.`, as `packages/std-db/conformance/e2151.test.ts` does. "C n" below is the n-th bullet of that section's Conformance paragraph. Shared helpers go in `conformance/fixtures.ts`: `secretOf(text)` (parse with `s.secret(s.string())`), `SEED`, and a `std.json` builder.
 
-| File | Section, clauses | Notes |
+**std.credentials**
+
+| File | Quotes | Cases |
 | --- | --- | --- |
-| `round-trip.test.ts` | std.credentials 1, 2, 7, 9 | Property, seed 1337: 100 runs under sim, 5 under real. |
-| `stored-form.test.ts` | std.credentials 3, 4 | The `ln=14` string is built in the test with `scryptSync`, which pins the derivation and the encoding from outside. RFC 7914's second vector anchors `scryptSync` itself. |
-| `cost.test.ts` | std.credentials 5 | A `createApp` over a `std.json` fixture, as `packages/server/conformance/module-std-config-client.test.ts` builds one; `check()` for the two E1158 cases. Two real derivations at `ln` 18, 256 MiB each. |
-| `sim.test.ts` | std.credentials 6 | Seeds generated; `Hashed`'s generator through `gen`. |
-| `length.test.ts` | std.credentials 8 | Multi-byte secrets, so the cap is in bytes. |
-| `errors.test.ts` | std.credentials 10 | For each code and reason, two different secrets and stored strings give deep-equal errors. |
-| `busy.test.ts` | std.credentials 11 | One real ctx, 19 calls; about 1.5 s. |
-| `rules.test.ts` | std.credentials 12, 13 | `check()` with `@keel/std-credentials/tools` imported, as std.db's `e2151.test.ts` does. |
-| `mint.test.ts` | std.tokens 1, 2 | 100 mints under real; pairwise distinct. |
-| `token-check.test.ts` | std.tokens 3, 4, 5 | `find` is a spy. |
-| `token-sim.test.ts` | std.tokens 6 | Seeds generated; `Digested`'s generator through `gen`. |
-| `token-e1112.test.ts` | std.tokens 7 | `check()` over one-file fixtures. |
+| `conformance/round-trip.test.ts` | C 1, C 2, C 7, C 9 | Property, 100 runs under sim and 5 under real: `verify(x, hash(x))` is `ok` with `rehash` false, and `verify(y, hash(x))` is `credentials.mismatch` for `y` not equal to `x`. A real `hash` matches `^\$scrypt\$ln=17,r=8,p=1\$[A-Za-z0-9+/]{22}\$[A-Za-z0-9+/]{43}$` and parses with `Hashed`; two of one secret differ. `verify(x, undefined)` is `credentials.mismatch`. U+212B and U+00C5. |
+| `conformance/stored-form.test.ts` | Stored form (both sentences), C 3, C 4 | One salt character and one key character replaced: `credentials.mismatch`. `ln=30`: `parameters`. Id `argon2id`: `parameters`. `hunter2` passed as `stored`: `format`. None throws or rejects. A `$scrypt$ln=14,r=8,p=1$` string built in the test from `scryptSync(bytes, salt, 32, { N: 2 ** 14, r: 8, p: 1 })`: `ok`, `rehash` true. `scryptSync('password', 'NaCl', 64, { N: 1024, r: 8, p: 16 })` begins `fdbabe1c9d347200` (RFC 7914), which anchors the function the test builds with. |
+| `conformance/cost.test.ts` | Cost (all four sentences), the `rehash` sentence of API, C 5 | A `createApp({ ctx, std })` over a `std.json` fixture with `{ '@keel/std-credentials': { accounts: { ln: 18 } } }`, built as `packages/server/conformance/module-std-config-client.test.ts` builds one. Real and sim: `hash` writes `ln=18`; an `ln=17` string verifies with `rehash` true. Under `ln: 17`, an `ln=18` string verifies with `rehash` false. Two modules setting 17 and 19: `hash` writes `ln=19` (sim only). `check()` over a manifest with `ln: 16` and with `ln: 21`: one E1158 each, its message naming `ln`. Real derivations at `ln` 18: three, one at a time. |
+| `conformance/sim.test.ts` | Modes sim (all), C 6 | For generated seeds: two ctxs with one seed give equal `hash` strings for the first three calls; two different seeds do not. A sim `hash` starts `$scrypt-sim$ln=17,`. Under real and under shell, a sim `hash` and 50 values of `Hashed`'s generator are each `credentials.malformed` with `reason` `sim`. A sim ctx verifies a real `hash`. |
+| `conformance/length.test.ts` | the `hash` sentence of API, C 8 | Empty: `credentials.length` with data `{ min: 1, max: 1024 }` from `hash`, `credentials.mismatch` from `verify`. 1,025 bytes of ASCII, and 342 three-byte characters (1,026 bytes): the same. 1,024 bytes: hashes. |
+| `conformance/errors.test.ts` | the "Each error is one constant" sentence, C 10 | For each of `credentials.length`, `credentials.mismatch`, and `credentials.malformed` with each `reason`: the errors from two different secrets and two different stored strings are deep-equal, and their JSON holds neither secret. |
+| `conformance/busy.test.ts` | Modes real (the queue sentence), C 11 | One real ctx, 19 `verify` calls started in one tick: 18 `ok`, one `keel.busy` with data `{ limit: 16 }`. About 1.5 s; peak 256 MiB. |
+| `conformance/rules.test.ts` | Rules (both), C 12, C 13 | `check()` with `@keel/std-credentials/tools` imported. E2201: `modules/a/x.ts` importing `@keel/std-credentials/server` is one; `modules/a/x.server.ts` and `modules/a/x.test.ts` are none. E2202: the server file in a module of a `client` deployable and of a `static` one is one each, with data `{ deployable, adapter }`; in a `node` one, none. A `*.server.ts` action that passes `hashed.value` to `tx`: no E1112 and no E1105. `capabilities()` lists `credentials` once `./server` is imported. |
 
-Headers quote each clause in full, as in `packages/std-db/conformance/`. The real-ctx password cases run 30 to 40 derivations at `ln` 17 and two at 18, about 8 s in all, in one worker.
+**std.tokens**
+
+| File | Quotes | Cases |
+| --- | --- | --- |
+| `conformance/mint.test.ts` | the `mint` sentences of API, Forms (all), C 1, C 2, C 3 | Real, `ttl: null`: the token (read with `reveal` in the test) matches `^keel_[0-9a-f]{16}_[0-9a-f]{64}$`, its middle part equals `id`, `expiresAt` is `null`, `digest` matches `^\$sha256\$[A-Za-z0-9+/]{43}$` and parses with `Digested`. 100 mints: no two share an `id`, a secret part or a `digest`. `ttl` 60,000 and 31,536,000,000 under sim at clock 0: `expiresAt` equals `ttl` and `digest` holds `exp=<ttl>`. `ttl` 59,999, 31,536,000,001, 60,000.5, `NaN` and `Infinity`: `credentials.ttl` with data `{ min: 60000, max: 31536000000 }`. `String`, `JSON.stringify` and `util.inspect` of `token`: `[secret]` (JSON: `"[secret]"`). |
+| `conformance/token-check.test.ts` | the `check` sentences of API, C 4, C 5, C 8 | `find` is a spy over an array of rows. The minted token: `ok`, the value is the same object `find` returned, and `find` was called once with `id`. One secret character changed: `credentials.mismatch`. Token A's id with token B's secret: `credentials.mismatch`. `hunter2`: `credentials.mismatch` and `find` not called. `find` returning `undefined`: `credentials.mismatch`. A row with digest `$md5$` plus 43 characters: `credentials.malformed` `parameters`. A row whose digest has `exp=soon`: `credentials.malformed` `parameters`. A row whose digest is `hunter2`: `format`. |
+| `conformance/token-expiry.test.ts` | the "A matching token whose digest has an expiry" sentence, the "The expiry is in `digest`" sentence, C 6, C 7 | One sim ctx, clock 0, `ttl` 3,600,000. Not yet expired: `ok` at 0 and after `advance(3599999)`. Exactly at the boundary: `credentials.expired` after `advance(1)`, with `ctx.clock.now()` equal to `expiresAt`. Expired: `credentials.expired` after `advance(1000000)`. A `ttl: null` token after `advance(1e12)`: `ok`. Property over generated `ttl` and generated `advance` steps: `check` is `ok` exactly while `now < expiresAt`. A second token presented against the expired row: `credentials.mismatch`. Real: a minted digest with its `exp` replaced by `exp=1` is `credentials.expired`. The row given to `find` holds `digest` and no other field. |
+| `conformance/token-sim.test.ts` | Modes (all), C 9 | For generated seeds: two ctxs with one seed mint equal tokens and digests for the first three calls; two seeds do not. A sim token starts `keelsim_` and its digest `$sha256-sim$`. Under real and shell: a sim token against its own row is `credentials.mismatch`; a real token against a row with a sim digest, and against 50 values of `Digested`'s generator, is `credentials.malformed` `sim`. |
+| `conformance/token-e1112.test.ts` | the "The token leaves once" sentences, C 10 | `check()` over one-file fixtures at `modules/app/x.server.ts`: the two E1112 cases, each one finding on its line; the three clean cases, none; no E1105 in any. |
+
+The real-ctx cases run about 45 derivations at `ln` 17 and three at 18, about 10 s in all. `vitest.config.ts` keeps one worker for this package (`poolOptions: { forks: { singleFork: true } }`), so no two files derive at once.
 
 No existing test goes red between the spec commit and the package lane: the suites that read every Rules code read `spec/kernel/*.md`, and E2201 and E2202 live in `spec/std/`.
 
-**Property tests** in `packages/std-credentials/test/`, written by the lane:
-- For generated parameters inside the read ranges and generated salt and key bytes, the stored text parses back to the same parts; any text `Hashed` refuses is `format`.
-- For a sim `hash` with any one character replaced, `verify` is never `ok`.
-- For generated strings and their NFC, NFD and NFKD forms, `verify` against one `hash` is `ok`.
-- For generated sets of module configs, the ctx's `ln` is the highest set, and 17 for none; `rehash` is true exactly when the stored `ln` is below it, the salt is under 16 bytes or the key under 32.
-- The queue, over a stubbed derivation, generated arrival orders and each `ln`: never more than its run bound running, results in call order, `keel.busy` exactly when its waiting bound is full.
-- For a sim token with any one character replaced, and for any generated string, `check` against the minted row is never `ok`.
-- Every value of `Hashed`'s and `Digested`'s generators parses.
-- The package's server sources, given to `check` under an app path, have no E1112; `reveal(` appears once.
+**Unit and property tests** in `packages/std-credentials/test/`, written by the package lane (seed 1337):
+- `readHashed.test.ts`: for generated parameters inside the read ranges and generated salt and key bytes, the stored text parses back to the same parts; any text `Hashed` refuses is `format`; each bound, one below and one above.
+- `verify.test.ts`: for a sim `hash` with any one character replaced, `verify` is never `ok`; for generated strings and their NFC, NFD and NFKD forms, `verify` against one `hash` is `ok`.
+- `costOf.test.ts`: for generated sets of module configs, the ctx's `ln` is the highest set, and 17 for none; `rehash` is true exactly when the stored `ln` is below it, the salt is under 16 bytes or the key under 32.
+- `gate.test.ts`: the queue over a stubbed derivation, generated arrival orders and each `ln`: never more than its run bound running, results in call order, `keel.busy` exactly when its waiting bound is full, and a slot freed by a failed derivation.
+- `check.test.ts`: for a sim token with any one character replaced, and for any generated string, `check` against the minted row is never `ok`; for generated `ttl` and clock values, `expired` exactly when `now >= expiresAt`; the clock is read only after a match (a spy clock is not called on a mismatch).
+- `mint.test.ts`: `ttl` at and around both bounds; non-integers; the digest's `exp` equals `expiresAt`.
+- `generators.test.ts`: every value of `Hashed`'s and `Digested`'s generators parses.
+- `selfCheck.test.ts`: the package's `src/server/**` sources, given to `check` under an app path, have no E1112; `reveal(` appears once in `src/`.
+- `rules.test.ts`: each rule's findings on aliased, namespace and re-export forms of the import; `explain` rows exist and are under 120 tokens.
 
 ## Lanes and build order
-1. Orchestrator, one commit: the spec diff, `tooling/budgets.json` (three entries), `tooling/deps.json` (`std-credentials` after `std-tauri`).
-2. `conformance-writer`: the conformance diff, in the `rfc:0103` PR.
-3. Package lane, one agent, `packages/std-credentials` only: `src/Hashed.ts`, `src/Digested.ts`, `src/CredentialsConfig.ts`, `src/server/` (the accessor, `Hasher`, the real and sim implementations, the stored-form reader, the queue, the token form, `textOf`), `src/tools/`, `test/`, `README.md` with the date the OWASP guidance was re-checked, a changeset. Dependencies: `@keel/ctx`, `@keel/schema`, `@keel/compiler` (`stdConfig`, `parseTopology`) and `@keel/check` for `./tools`. The exported accessor wraps `register`'s, since a factory gets the seed and the cost comes from `stdConfig(ctx, ...)` on first use. Expected `unsafe` count: 0, since `Hashed.parse`, `Digested.parse` and `s.secret(s.string()).parse` apply the brands.
-4. Check text lane, `packages/check/src/internal/EXPLANATIONS.ts` only: the E1112 row's fix sentence becomes "pass the Secret itself, or store what credentials(ctx).hash returns (@keel/std-credentials)". Disjoint from lane 3; no behavior changes.
-5. Orchestrator: the threat-model, skill and ledger lines below, `docs/ARCHITECTURE.md`'s storage paragraph gains the package name, backlog 0615 closed, the Questions filed.
+Written for agents who have read only this RFC. Lane 1 goes first and alone. Lanes 2, 3 and 4 then run in parallel: their paths are disjoint. Lane 5 follows them. The kernel RFC of D9 is not a dependency of any lane. Machine rules for every lane: one test file at a time (`pnpm --filter @keel/std-credentials exec vitest run <file> --reporter=dot`), every command bounded, no watch mode, no process left running.
 
-Nothing in S8 depends on this package, and it depends on nothing unbuilt, so lanes 2 to 4 can run beside any other work. The kernel RFC of Questions 1 is not a dependency.
+### Lane 1. Orchestrator: spec and the package skeleton (one commit)
+Spec, each with the text given under Spec diff:
+- Create `spec/std/std.credentials.md` and `spec/std/std.tokens.md`.
+- `spec/std/README.md`: the wave line and the two rows.
+- `spec/00-map.md`: the code-range row `| E220x | std.credentials | | |` and the three trims.
+- `spec/kernel/k.privacy.md`: the one sentence.
 
-**Threat model.** In **Secrets**, the last sentence, "An author who means to store a secret can always do so, and the documented form is a salted hash (k.privacy).", becomes:
+Workspace wiring, as the S8 skeleton commit did for `packages/std-db`:
+- `tooling/deps.json`: `"std-credentials"` appended to `order`, after `"std-tauri"`. The package imports `schema`, `ctx`, `compiler` and `check`, all earlier.
+- `tooling/budgets.json`, under `size`: `"@keel/std-credentials": "1kb"`, `"@keel/std-credentials/server": { "max": "3kb", "platform": "node" }`, `"@keel/std-credentials/tools": { "max": "1.25kb", "platform": "node" }`.
+- `packages/std-credentials/`, a skeleton that resolves and typechecks:
+  - `package.json`:
+    ```json
+    {
+      "name": "@keel/std-credentials",
+      "version": "0.0.0",
+      "private": false,
+      "type": "module",
+      "exports": {
+        ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
+        "./server": { "types": "./src/server/index.ts", "default": "./src/server/index.ts" },
+        "./tools": { "types": "./src/tools/index.ts", "default": "./src/tools/index.ts" }
+      },
+      "engines": { "node": ">=22" },
+      "files": ["dist"],
+      "scripts": {
+        "check": "tsc --noEmit && biome check src test unsafe",
+        "test": "vitest run",
+        "build": "tsc -p tsconfig.build.json"
+      },
+      "dependencies": {
+        "@keel/check": "workspace:*",
+        "@keel/compiler": "workspace:*",
+        "@keel/ctx": "workspace:*",
+        "@keel/schema": "workspace:*"
+      },
+      "devDependencies": {
+        "@keel/router": "workspace:*",
+        "@keel/server": "workspace:*",
+        "@keel/services": "workspace:*",
+        "@keel/store": "workspace:*",
+        "@keel/testing": "workspace:*",
+        "@keel/tooling": "workspace:*",
+        "@types/node": "^22",
+        "fast-check": "^3"
+      }
+    }
+    ```
+  - `tsconfig.json`, `tsconfig.build.json` and `vitest.config.ts`: copies of `packages/std-db`'s. `vitest.config.ts` adds `fileParallelism: false`, so no two files derive at once.
+  - `src/index.ts`, `src/server/index.ts`, `src/tools/index.ts`: each one comment line, `// re-exports only: ...`, and no export yet.
+  - `README.md`: the header line (`**Spec:** std.credentials, std.tokens · **Status:** proposed · **verified:** (none)`) and one sentence.
+  - `unsafe/.gitkeep`, `test/.gitkeep`, `conformance/.gitkeep`.
+- `pnpm install` once, for the lockfile. No root `tsconfig` reference is needed; packages are found through `pnpm-workspace.yaml`.
 
-> An author who means to store a secret can always do so, and the documented form is `credentials(ctx)` (std.credentials, std.tokens).
+### Lane 2. `conformance-writer`: the suites (the `rfc:0103` PR)
+Owns `packages/std-credentials/conformance/**` and nothing else. Writes `fixtures.ts` and the thirteen test files of the Conformance diff, from the two spec files. Does not read `packages/std-credentials/src`. The suites are red until lane 3 lands; the writer checks that each file parses and that each `// Spec:` line quotes its sentence exactly. Reports: files written, any sentence it could not test as written.
 
-A new bullet after **Durable storage**:
+### Lane 3. Package lane: one agent, `packages/std-credentials` except `conformance/`
+One export per file; the filename is the export. No `any`, no casts, no non-null assertions; expected `unsafe` count 0, since `Hashed.parse`, `Digested.parse` and `s.secret(s.string()).parse` apply the brands. Comments and the README say what the code does and name no RFC.
 
-> - **Credentials** (std.credentials, std.tokens). `credentials(ctx).hash` takes a `Secret` and gives a salted `scrypt` string that names its parameters, at N = 2^17, r = 8, p = 1 or a higher N the app's `std` config sets; a lower one is E1158. `verify` compares in constant time and says when to rehash. `mint` gives a token with 256 random bits as a `Secret` and its SHA-256 digest to store; `check` finds the row by the token's id and compares in constant time. No stored digest comes from a secret the package did not mint. Real salts and tokens come from the system generator. A sim ctx's are seeded and marked, and a real ctx refuses them. An unknown account costs one derivation, so timing does not list accounts. A process runs 2 derivations at once and answers 503 past its waiting bound: a sign-in flood can deny sign-in, and rate limiting is the operator's. Not covered: a token's way out of a write and in by a header, which the kernel does not carry; a key in either hash; a credential the app must present later, which needs encryption; expiry, password rules and lockout; a `Hashed` or `Digested` field an app returns from a loader.
+`src/` (the `.` entry, client-safe: no `node:` import, no `Buffer`):
+- `index.ts`: re-exports `CredentialsConfig`, `Digested`, `Hashed`.
+- `Hashed.ts`: `s.format('credentials.Hashed', s.string(), { check: isHashed, gen })`, the type, and `s.register('credentials.Hashed', Hashed)`.
+- `Digested.ts`: the same for `credentials.Digested`.
+- `CredentialsConfig.ts`: `s.object({ ln: s.int({ min: 17, max: 20 }).optional() }, { closed: true })`, the type, and `s.register('@keel/std-credentials', CredentialsConfig)`. `keel check`, `keel build` and `createApp` find the schema through this registration.
+- `internal/isHashed.ts`: at most 256 characters and `^\$[a-z0-9-]{1,32}(\$v=\d{1,4})?\$[a-z0-9=,]{1,64}\$[A-Za-z0-9+/]{1,128}\$[A-Za-z0-9+/]{1,128}$`.
+- `internal/isDigested.ts`: at most 128 characters and `^\$[a-z0-9-]{1,32}(\$[a-z0-9=,]{1,64})?\$[A-Za-z0-9+/]{22,86}$`.
+- `internal/simText.ts`: a pure function from a string to base64 characters, for the two generators. `Hashed` generates `$scrypt-sim$ln=17,r=8,p=1$<22>$<43>`; `Digested` generates `$sha256-sim$<43>`.
 
-**Skills.** `keel-compliance`, the Secrets sentence "store a salted `scrypt` hash" becomes "store what `credentials(ctx).hash(secret)` gives (`@keel/std-credentials/server`, in `deps`; field type `Hashed`; `verify(secret, user?.password)`, mismatch is `err`, rehash when `rehash`; cost `std: { ln }` 17 to 20; tokens: `mint()` gives `{ token, id, digest }`, store `id` and `digest: Digested`, send `reveal(token)` once, `check(token, find)`; E2201, E2202)". `keel-storage`, "store a salted hash" becomes "store `credentials(ctx).hash(secret)` or a minted token's `digest` (keel-compliance)".
+`src/server/` (the `./server` entry, Node only):
+- `index.ts`: re-exports `credentials` and type `Hasher`.
+- `Hasher.ts`: the interface, exactly as under API.
+- `credentials.ts`: `register('credentials', { real, shell, sim })` once, and the exported accessor. A factory receives the seed only, so the accessor wraps `register`'s: on first use per ctx (a `WeakMap`) it reads the cost with `costOf(ctx)`, takes the clock as `() => ctx.clock.now()`, and builds the `Hasher`. `shell` is the real implementation.
+- `internal/costOf.ts`: `Math.max(17, ...)` over `stdConfig(ctx, '@keel/std-credentials', CredentialsConfig)` (`@keel/compiler/std/stdConfig`); `{}` gives 17.
+- `internal/textOf.ts`: the one `reveal` of the package.
+- `internal/inputOf.ts`: `textOf`, NFKC, UTF-8 bytes; `null` when empty or over 1,024 bytes.
+- `internal/readHashed.ts`: a stored string to `{ id, ln, r, p, salt, key }`, or `'format'`, or `'parameters'` (the read ranges of std.credentials Stored form).
+- `internal/readDigested.ts`: a stored digest to `{ sim, expiresAt, digest }`, or `'format'`, or `'parameters'` (an id other than `sha256` and `sha256-sim`, a parameter other than `exp=<1 to 16 digits>`, a digest that is not 32 bytes).
+- `internal/gate.ts`: the queue for one ctx: `run(fn)` resolves `fn`'s result, or `null` when the waiting bound is full; bounds from `ln` (2, 2, 1, 1 running; `16 >> (ln - 17)` waiting); first in, first out; a slot is handed to the next waiter when a derivation ends, whether or not it failed.
+- `internal/realEngine.ts`: `randomBytes`; `scrypt` (async) through the gate with `maxmem` of `128 * N * r` plus 1 MiB; an error from `scrypt` becomes the `keel.busy` answer.
+- `internal/simEngine.ts`: bytes are the leading bytes of SHA-256 over `<seed>:<call count>`; `scryptSync`, at N = 2^4 for a sim-form string whatever its label, and at the stored parameters for a real-form string.
+- `internal/hasherOf.ts`: `(ln, engine, now) => Hasher`: the four methods, in the order of checks the API tables give. `verify` with `stored` `undefined` derives over a zero salt at the ctx's cost. `check` hashes the presented token before it looks at what `find` returned, compares with `timingSafeEqual`, and reads `now()` only after a match. Input bytes and derived keys are zeroed with `fill(0)`.
+- `internal/` error constants, one file each: `LENGTH`, `MISMATCH`, `EXPIRED`, `TTL`, `malformed(reason)`, `busy(limit)`. Each returns the same frozen `err` value on every call.
 
-**Ledger.** One item per conformance clause, `std.credentials#1` to `#13` and `std.tokens#1` to `#7`, each at the rung its test gives: `probabilistic` for the generated-secret and generated-seed clauses (std.credentials 1 and 6, std.tokens 6), `example` for the rest. No claim about scrypt's or SHA-256's strength, or about OWASP's guidance, enters the ledger; it reports what the tests show (PRINCIPLES 11). Written on a quiet tree after lane 3.
+`src/tools/` (the `./tools` entry, loaded by `keel check` because the app module's `deps` names the package):
+- `index.ts`: re-exports `nodeDeployable` and `serverImport`. Importing it registers both through `defineRule` from `@keel/check`.
+- `serverImport.ts`: E2201, `see: 'std.credentials'`, message and explain text from D6's table. Reports each `ImportDeclaration`, `ExportAllDeclaration` and `ExportNamedDeclaration` whose source is `@keel/std-credentials/server`, in a file that is neither `*.server.[cm]?[jt]s` nor a test path.
+- `nodeDeployable.ts`: E2202, the same statements, in a file under `modules/<id>/` whose project `topology.ts` (read with `parseTopology` from `@keel/compiler`, as `packages/std-jobs/src/tools/runnersLackJobs.ts` reads it) places `<id>` in a deployable whose adapter is not `node`; data `{ deployable, adapter }`.
+- `internal/serverImports.ts`, `internal/lineCol.ts`: the shared walk and position.
+
+`test/`: the files listed under Conformance diff, Unit and property tests.
+
+`README.md`, in the shape of `packages/std-geo/README.md`: Spec and Status line; Contract (public API with the signatures under API; invariants: the stored forms, the read ranges, the bounds table, the sim marks, the boundary rule; dependencies; rungs); Extension points (capability registry, schema type registry, std config, check rule registry); `Unsafe: count: 0`; and one line "Guidance checked: <date>" after re-reading the OWASP Password Storage Cheat Sheet's scrypt row. If that row no longer says N = 2^17, r = 8, p = 1 as the minimum, the lane stops and reports before it builds.
+
+`.changeset/std-credentials.md`: `"@keel/std-credentials": minor` and one paragraph: the three entries, the four methods, the two stored forms, the `ln` setting, E2201 and E2202.
+
+Verification, in this order: `pnpm --filter @keel/std-credentials check`; each `test/` file alone; each `conformance/` file alone once lane 2 has landed; `pnpm --filter @keel/std-credentials build`; `node tooling/budgets.mjs` for the three entries. A budget breach is reported to the orchestrator, not re-based by the lane. Reports: files touched, the measured bytes, the `unsafe` count, anything in the spec the implementation could not meet as written.
+
+### Lane 4. Check text lane: one agent, one file
+`packages/check/src/internal/EXPLANATIONS.ts`, the E1112 row: its fix sentence "pass the Secret itself, or store a derived value: a salted scrypt hash checked with timingSafeEqual" becomes "pass the Secret itself, or store what credentials(ctx).hash returns (@keel/std-credentials)". No behavior changes, and the bundle is 8 characters smaller. Verification: `packages/check/conformance/explain.test.ts` alone.
+
+### Lane 5. Orchestrator, after lanes 2 to 4
+- Spec status: both sections to `implemented`, then `conformance-covered` when every suite is green; the README rows follow.
+- `docs/THREAT-MODEL.md`, **Secrets**, the last sentence, "An author who means to store a secret can always do so, and the documented form is a salted hash (k.privacy).", becomes:
+
+  > An author who means to store a secret can always do so, and the documented form is `credentials(ctx)` (std.credentials, std.tokens).
+
+  And a new bullet after **Durable storage**:
+
+  > - **Credentials** (std.credentials, std.tokens). `credentials(ctx).hash` takes a `Secret` and gives a salted `scrypt` string that names its parameters, at N = 2^17, r = 8, p = 1 or a higher N the app's `std` config sets; a lower one is E1158. `verify` compares in constant time and says when to rehash. `mint` gives a token with 256 random bits as a `Secret` and its SHA-256 digest to store, with the expiry inside the digest; `check` finds the row by the token's id, compares in constant time, and refuses a token at or past its expiry on `ctx.clock`. `credentials.expired` is answered only to the real token. No stored digest comes from a secret the package did not mint. Real salts and tokens come from the system generator. A sim ctx's are seeded and marked, and a real ctx refuses them. An unknown account costs one derivation, so timing does not list accounts. A process runs 2 derivations at once and answers 503 past its waiting bound: a sign-in flood can deny sign-in, and rate limiting is the operator's. Not covered: a token's way out of a write and in by a header, which the kernel does not carry; a key in either hash, so someone who can write the database can plant a digest or move an expiry; revocation other than deleting the row; clocks that disagree between servers; a credential the app must present later, which needs encryption; password rules and lockout; a `Hashed` or `Digested` field an app returns from a loader.
+- `docs/COMPLIANCE.md`, a paragraph after **Data at rest** in Personal data:
+
+  > **Credentials.** A password is stored as what `credentials(ctx).hash` returns, in a field of type `Hashed`: a salted `scrypt` hash at N = 2^17 or the higher cost the app sets, never the password. A token is stored as the `Digested` that `credentials(ctx).mint` returns, with its expiry inside; the token itself is sent once and kept nowhere. Both are in `@keel/std-credentials`. What the author owes: parse every password and presented token as `s.secret`, give every reset and invite token a `ttl`, and keep `Hashed` and `Digested` fields out of loader outputs.
+- Skills. `keel-compliance`, the Secrets sentence "store a salted `scrypt` hash" becomes "store what `credentials(ctx).hash(secret)` gives (`@keel/std-credentials/server`, in `deps`; field type `Hashed`; `verify(secret, user?.password)`, mismatch is `err`, rehash when `rehash`; cost `std: { ln }` 17 to 20; tokens: `mint({ ttl })` (ms, or `null`) gives `{ token, id, digest, expiresAt }`, store `id` and `digest: Digested`, send `reveal(token)` once, `check(token, find)` answers `credentials.expired` past the ttl; E2201, E2202)". Its description line gains E2201 and E2202. `keel-storage`, "store a salted hash" becomes "store `credentials(ctx).hash(secret)` or a minted token's `digest` (keel-compliance)". `keel-architecture`, the package map gains `@keel/std-credentials` (server-side: passwords and tokens).
+- `docs/ARCHITECTURE.md`, the storage paragraph gains one clause naming the package.
+- Ledger: `pnpm ledger` on a quiet tree. One item per conformance clause, `std.credentials#1` to `#13` and `std.tokens#1` to `#10`, each at the rung its test gives: `probabilistic` for the generated-secret, generated-seed and generated-clock clauses (std.credentials 1 and 6, std.tokens 6 and 9), `example` for the rest. No claim about scrypt's or SHA-256's strength, or about OWASP's guidance, enters the ledger; it reports what the tests show (PRINCIPLES 11).
+- `tasks/BACKLOG.md`: close 0615, and file:
+  - kernel: an RFC for an API route's action that declares `output` and returns data, and for `bearer: Secret<string> | undefined` beside `caller` with `authorization` among the allowed request headers (D9); when it lands, the token example sends in the action's answer and reads `bearer`.
+  - std-credentials: E2203, a `Hashed` or `Digested` node in a loader `output` schema, when the checker's schema reader is exported to tools (Questions 6).
+  - std-credentials: id `argon2id` when the supported Node floor has `crypto.argon2` (Questions 5).
+  - std-credentials: `$hmac-sha256$` digests when Keel has a path for an app key (RFC 0100 Questions 2).
+  - std-credentials: a sim plan that answers `keel.busy`, so an app can test its 503 path.
+  - server: the `[secret]` log scrub covers a request's minted tokens as well as its secret input.
+  - apps: one golden app or eval task with accounts, sign-in and an API token, as the first user of the package.
+  - `tasks/FUTURE.md`: an app-chosen token prefix as a second `std` key; `r` and `p` settable.
+- `docs/HANDOFF.md` and the task's `PLAN.md`: the decisions under Questions that the orchestrator accepted, for the user to confirm or reverse.
 
 ## Migration
 - Apps, modules, evals and scaffold templates: nothing changes. None holds a credential today.
@@ -591,7 +764,7 @@ A new bullet after **Durable storage**:
 | Section | Before | After |
 | --- | --- | --- |
 | std.credentials | none | 1,290 |
-| std.tokens | none | 916 |
+| std.tokens | none | 1,208 |
 | k.privacy | 1,361 | 1,374 |
 | `spec/00-map.md` | 1,200 | 1,198 |
 
@@ -602,11 +775,11 @@ Measured with `tooling/budgets.mjs`' bundle settings (esbuild, minified ESM, `pa
 
 | Entry | Platform | Prototype | Limit proposed |
 | --- | --- | --- | --- |
-| `@keel/std-credentials` | browser | 633 B | 1kb (1,024) |
-| `@keel/std-credentials/server` | node | 2,233 B | 3kb (3,072) |
+| `@keel/std-credentials` | browser | 634 B | 1kb (1,024) |
+| `@keel/std-credentials/server` | node | 2,428 B | 3kb (3,072) |
 | `@keel/std-credentials/tools` | node | 900 B | 1.25kb (1,280) |
 
-The prototype's server half is two files; the lane's one-export-per-file layout adds to it, which is what the 839 B of room is for. `@keel/check` is unchanged in size: the explain sentence is 8 characters shorter.
+The prototype's server half is two files; the lane's one-export-per-file layout adds to it, which is what the 644 B of room is for. `@keel/check` is unchanged in size: the explain sentence is 8 characters shorter.
 
 ## Risks
 - Memory. At the default, two derivations hold 256 MiB on top of the process, and there is no lower setting. A host with less than 512 MiB cannot run sign-ins.
@@ -620,6 +793,8 @@ The prototype's server half is two files; the lane's one-export-per-file layout 
 - NFKC folds compatibility forms, so two passwords that differ only in such forms are one password.
 - Timing. The unknown-account answer costs one derivation at the ctx's cost. An account whose stored string is cheaper answers faster until it rehashes.
 - A token id is 64 random bits. Two tokens of one app share an id with a chance of about 3 in 10^8 at a million tokens; an app's `addToken` transaction refuses a taken id, as Example 2's does.
+- A `ttl: null` token is good until someone deletes its row. The option is explicit so a review can find each one.
+- The floor of one minute and the ceiling of 365 days are fixed. An app that wants a two-year token mints with `null` and keeps its own date.
 - A token sent by mail sits in a mailbox. That is the delivery the kernel allows today for a token made by a write (D9).
 - `UV_THREADPOOL_SIZE` below 3 leaves one thread or none for file reads while two derivations run.
 - The times are this machine's. A slower host waits longer at the same bounds.
@@ -628,24 +803,26 @@ The prototype's server half is two files; the lane's one-export-per-file layout 
 - A write cannot return a new token, and a request header cannot bring one in (D9). Until the kernel carries both, a token leaves through a `service` call and arrives in an action's input.
 - A credential the app must present later, such as an OAuth refresh token or a third-party API key a user pastes in, cannot be hashed. It needs encryption under an app key, and Keel has no path for an app key from the environment (RFC 0100 Questions 2). This package does nothing for that case.
 - No server-side key is mixed into either hash, for the same reason.
-- Tokens have no expiry, scope or last-used time; those are fields of the app's row. Revoking is deleting the row.
+- Tokens have no scope and no last-used time; those are fields of the app's row.
+- There is no revocation list. Revoking is deleting the row, and until then a token is good to its expiry. A lifetime cannot be shortened in place.
+- Expiry is read on the clock of the server that checks. Two servers whose clocks differ by a second disagree about a token for that second around its expiry, and a host clock set back extends every live token by as much. Keeping clocks in step is the operator's.
+- Nothing is keyed, so someone who can write the database can move the `exp` in a stored digest, as they can replace the digest itself.
 - The server's `[secret]` log scrub covers a request's own secret input (k.privacy). A minted token is not in that set, so a helper in another file that throws it is logged as written; E1112 covers the same file only.
 - The token prefix is fixed at `keel_`.
 - Password rules are the schema's `min` and `max`. There is no breached-password check, no lockout and no rate limit.
-- A `Hashed` or `Digested` field in a loader `output` or a request-scope store reaches the browser, and no rule reports it (Questions 9).
+- A `Hashed` or `Digested` field in a loader `output` or a request-scope store reaches the browser, and no rule reports it (Questions 6).
 - A password the app parses as `s.string` is a type error at `hash`, which is the intended push toward `s.secret`. The form-level warning is still RFC 0100 Questions 4.
 - The string `reveal` returns inside the package lives until the collector frees it; only the byte buffers are zeroed.
 - A sim ctx never answers `keel.busy`, so an app's handling of it has no test path yet.
 - Stored hashes in another algorithm (bcrypt, PBKDF2, Argon2) are not read.
 
 ## Questions
-1. The kernel paths for a token (D9). A write returns `Href | null`, and no header reaches server code. Recommendation: one kernel RFC with two parts, an API route's action may declare `output` and return data, and a guard, loader and action get `bearer: Secret<string> | undefined` beside `caller`, with `authorization` added to the allowed request headers. Both are new kernel API shapes, so they are the user's. This package ships without them; Example 2 changes by one line when they land.
-2. The cost setting's details. A `std` entry `{ ln }` in a module manifest; an integer 17 to 20; only `ln`; the highest any module sets; a value outside the range is E1158; the queue bounds follow `ln` (2, 2, 1, 1 running and 16, 8, 4, 2 waiting). Recommendation: accept. The parts most open to another answer are the upper limit of 20 and "highest wins" against an error when two modules differ.
-3. `check(token, find)`. A callback that receives the token's id and returns the row, with `ok(row)` as the answer. Recommendation: accept. The two-call form is in Alternatives.
-4. SHA-256 with no key. Recommendation: accept, and add `$hmac-sha256$` when Keel has a path for an app key (RFC 0100 Questions 2). `KEEL_SECRET` is not that path.
-5. Expiry. Recommendation: out. The app stores `expiresAt` from `ctx.clock.now()` beside the digest. If apps repeat that field, a later version can add `mint({ ttlMs })` and a time in the digest string.
-6. The token's text. `keel_`, a 16-hex id and a 64-hex secret, 86 characters, with no app-chosen prefix. Recommendation: accept; an app prefix can be a second `std` key when an app asks for one.
-7. Salts, tokens and the sim forms, a security decision the first round left unanswered. Real bytes from `node:crypto` `randomBytes`, never from `ctx.random`; sim bytes from the seed, in marked forms a real ctx refuses, with a sim hash derived at N = 2^4 under an `ln` label. Recommendation: accept. The price is two forms and app tests that do not run the production cost.
-8. Argon2id. Recommendation: scrypt now; add id `argon2id` when the supported Node floor has `crypto.argon2`, with `rehash` moving each account. No native dependency.
-9. A stored hash or digest reaching the browser. Recommendation: a backlog line for E2203, a `Hashed` or `Digested` node in a loader `output` schema, built when the checker's schema reader (E1111's) is exported to tools.
-10. Kernel text naming a stdlib package: k.privacy and the E1112 explain row would name `@keel/std-credentials`. k.deploy already names `@keel/std-db`. Recommendation: accept; the kernel imports nothing.
+The user has answered the accessor, the error `Result`, the cost setting, tokens with built-in expiry, and the build order; those are Decisions. What is left is below. None blocks the build: each lane builds the recommendation, and the orchestrator records the ones it accepts in `PLAN.md` and `docs/HANDOFF.md` for the user to confirm or reverse.
+
+1. The details of `ttl`, designed here after the user chose built-in expiry: a number of milliseconds; required, with `null` for no expiry; an integer from 60,000 to 31,536,000,000; `credentials.ttl` as an `err` outside that; the expiry inside the `Digested` string as `exp=<ms>`; expired when `now >= expiresAt`; `mint` also returning `expiresAt`. Recommendation: accept. This is an API shape, so it is the user's to confirm. Reversing "required" to "optional" later is not a breaking change; reversing where the expiry lives would change the stored form.
+2. SHA-256 with no key. Recommendation: accept, and add `$hmac-sha256$` when Keel has a path for an app key (RFC 0100 Questions 2). The user's, since it is a security choice; adding a keyed form later changes no stored digest.
+3. Salts, tokens and the sim forms. Real bytes from `node:crypto` `randomBytes`, never from `ctx.random`; sim bytes from the seed, in marked forms a real ctx refuses, with a sim hash derived at N = 2^4 under an `ln` label. Recommendation: accept. The orchestrator may accept it under defaults 4 and 6: it is the stricter of the two options, and the other one makes a seeded salt valid in production.
+4. The token's text: `keel_`, a 16-hex id and a 64-hex secret, with no app-chosen prefix. Recommendation: accept; an app prefix can be a second `std` key later. The orchestrator may accept it under default 2.
+5. Argon2id. Recommendation: scrypt now; add id `argon2id` when the supported Node floor has `crypto.argon2`, with `rehash` moving each account, and no native dependency. The orchestrator may accept it: it changes nothing built here.
+6. A stored hash or digest reaching the browser. Recommendation: a backlog line for E2203, a `Hashed` or `Digested` node in a loader `output` schema, built when the checker's schema reader (E1111's) is exported to tools. The orchestrator may accept it under default 6.
+7. Kernel text naming a stdlib package: k.privacy and the E1112 explain row would name `@keel/std-credentials`. k.deploy already names `@keel/std-db`. Recommendation: accept; the kernel imports nothing. The orchestrator may accept it under default 2.
