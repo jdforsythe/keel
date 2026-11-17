@@ -14,12 +14,14 @@ const base64 = (s: string): string =>
 
 /**
  * The written forms of `v`: as is, `encodeURIComponent` (none for an ill-formed value, one with a lone surrogate),
- * `JSON.stringify` escaping, base64 with and without its padding, and base64url without it.
+ * `JSON.stringify` escaping, padded base64, and, for a value of at least 8 bytes as UTF-8 (an unpadded form of at
+ * least 11 characters, too long to stand in ordinary text by chance), base64 without its padding and base64url.
  */
 const formsOf = (v: string): string[] => {
   const padded = base64(v);
   const b = padded.replace(/=+$/, "");
-  const forms = [v, JSON.stringify(v).slice(1, -1), padded, b, b.replace(/\+/g, "-").replace(/\//g, "_")];
+  const forms = [v, JSON.stringify(v).slice(1, -1), padded];
+  if (b.length >= 11) forms.push(b, b.replace(/\+/g, "-").replace(/\//g, "_"));
   return UNPAIRED.test(v) ? forms : [...forms, encodeURIComponent(v)];
 };
 

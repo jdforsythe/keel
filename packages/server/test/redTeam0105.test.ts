@@ -346,9 +346,49 @@ describe("a long value is found by a scan linear in the text and the value", () 
 describe("base64 copies with or without padding, in both alphabets", () => {
   const one = (m: string, v: string) => scrubbed(m, [[new Set([v]), "[secret]"]]);
   it("marks an unpadded, a padded and a base64url copy of a secret encoded on its own", () => {
-    expect(one("m aHVudGVyMg", "hunter2")).toBe("m [secret]");
+    expect(one("m aHVudGVyMjI", "hunter22")).toBe("m [secret]");
+    expect(one("m aHVudGVyMjI=", "hunter22")).toBe("m [secret]");
     expect(one("m aHVudGVyMg==", "hunter2")).toBe("m [secret]");
     expect(one(`m ${btoa("??>?hunter").replace(/=+$/, "").replace(/\+/g, "-")}`, "??>?hunter")).toBe("m [secret]");
     expect(one(`m ${btoa("??>?hunter")}`, "??>?hunter")).toBe("m [secret]");
+  });
+});
+
+describe("an unpadded base64 form only for a value of at least 8 bytes", () => {
+  const one = (m: string, v: string) => scrubbed(m, [[new Set([v]), "[secret]"]]);
+  it("a 2-character secret leaves ordinary words alone and is marked as a token and as padded base64", () => {
+    expect(one("node code mode", "81")).toBe("node code mode");
+    expect(one("node_modules", "81")).toBe("node_modules");
+    expect(one("pin 81 sent", "81")).toBe("pin [secret] sent");
+    expect(one(`b64 ${btoa("81")} end`, "81")).toBe("b64 [secret] end");
+  });
+
+  it("a 7-byte secret gets no unpadded form and an 8-byte one does", () => {
+    expect(one(`m ${btoa("seven77").replace(/=+$/, "")} end`, "seven77")).toBe(
+      `m ${btoa("seven77").replace(/=+$/, "")} end`,
+    );
+    expect(one(`m ${btoa("eight888").replace(/=+$/, "")} end`, "eight888")).toBe("m [secret] end");
+  });
+
+  it("property: for a 1 to 7 byte secret, only its raw form and padded base64 change the text", () => {
+    const word = fc.stringMatching(/^[a-z]{1,9}$/);
+    fc.assert(
+      fc.property(
+        fc.stringMatching(/^[ -~]{1,7}$/),
+        fc.array(word, { minLength: 1, maxLength: 12 }),
+        fc.integer({ min: 0, max: 2 }),
+        (secret, words, put) => {
+          const shown = [secret, btoa(secret), ""][put] ?? "";
+          const message = `${words.join(" ")} ${shown}`;
+          const out = scrubbed(message, [[new Set([secret]), "[secret]"]]);
+          const forms = [secret, JSON.stringify(secret).slice(1, -1), btoa(secret), encodeURIComponent(secret)];
+          const low = message.toLowerCase();
+          // Its raw, JSON and URL forms are what it had before base64 lost its padding; none standing means no change.
+          if (!forms.some((f) => low.includes(f.toLowerCase()))) expect(out).toBe(message);
+          else expect(out.split("[secret]").some((p) => p.includes(secret) && secret.length >= 3)).toBe(false);
+        },
+      ),
+      { seed: 1337, numRuns: 300 },
+    );
   });
 });
