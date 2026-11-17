@@ -17,14 +17,7 @@ export const SEED = 1337;
 export const ORIGIN = "https://app.example.com";
 export const TODOS = ["t1", "t2", "t3"] as const;
 
-export interface SimSchedule {
-  net: never[];
-  storage: ("ok" | "fail")[];
-  offline: never[];
-  plans: Record<string, never[]>;
-}
-export const simCtx = (seed = SEED, schedule?: SimSchedule): SimCtx =>
-  schedule === undefined ? createCtx({ mode: "sim", seed }) : createCtx({ mode: "sim", seed, schedule });
+export const simCtx = (seed = SEED): SimCtx => createCtx({ mode: "sim", seed });
 
 export const settle = async (): Promise<void> => {
   for (let i = 0; i < 400; i++) await Promise.resolve();
