@@ -16,18 +16,9 @@ function rules(
 }
 
 // Independent oracle for the `line` predicate.
-const BIDI = new RegExp(
-  "[" +
-    String.fromCharCode(0x202a) +
-    "-" +
-    String.fromCharCode(0x202e, 0x2066) +
-    "-" +
-    String.fromCharCode(0x2069) +
-    "]",
-  "u",
-);
+const BIDI = /\p{Bidi_Control}/u;
 const CONTROL = new RegExp("[\\p{Cc}" + String.fromCharCode(0x2028, 0x2029) + "]", "u");
-const BLANK = /^\p{White_Space}+$/u;
+const BLANK = { test: (v: string): boolean => !/[^\p{White_Space}\p{Default_Ignorable_Code_Point}]/u.test(v) };
 function lineOk(v: string, min: number, max: number, allowLf: boolean): boolean {
   const text = allowLf ? v.replaceAll("\n", "") : v;
   const n = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(v)].length;
@@ -44,11 +35,12 @@ test("`line({ max: 3 })` accepts three `👨‍👩‍👧` (24 code units) and 
   }
 });
 
-test("`line({ max: 3 })` rejects every string with a control character, U+2028, U+2029 or a bidi embedding, override or isolate, each with rule `format` (property).", () => {
+test("`line({ max: 3 })` rejects every string with a control character, U+2028, U+2029 or a `Bidi_Control` character, each with rule `format` (property).", () => {
   const forbidden = fc.oneof(
     fc.integer({ min: 0, max: 0x1f }),
     fc.integer({ min: 0x7f, max: 0x9f }),
     fc.constantFrom(0x2028, 0x2029),
+    fc.constantFrom(0x061c, 0x200e, 0x200f),
     fc.integer({ min: 0x202a, max: 0x202e }),
     fc.integer({ min: 0x2066, max: 0x2069 }),
   );
