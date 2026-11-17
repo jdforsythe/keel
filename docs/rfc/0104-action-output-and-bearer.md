@@ -1,6 +1,6 @@
 # RFC 0104: Action output and bearer (an API route's action answers data by its `output` schema; an API route's handlers get the `Authorization: Bearer` token as a `Secret`)
 
-Status: accepted (user, 2026-11-16: Questions 1 to 5 as recommended, so D1, D5, D6, D7 and D8 stand as written; the orchestrator accepts Questions 6 to 9 under the defaults each cites). The kernel RFC that RFC 0103 D9 named. ADR-0127 records it.
+Status: accepted and built (user, 2026-11-16: Questions 1 to 5 as recommended, so D1, D5, D6, D7 and D8 stand as written; the orchestrator accepts Questions 6 to 9 under the defaults each cites). The kernel RFC that RFC 0103 D9 named. ADR-0127 records it.
 
 ## Decisions
 D1, D5, D6, D7 and D8 are the user's: each is a new API shape, a security choice, or needs a golden app migration. The others apply the WORKFLOW RFC default they cite. Every recommended form is written into the Proposal; the other form and its cost are under Questions.
