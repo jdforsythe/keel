@@ -116,7 +116,7 @@ export async function ctxWithCost<C extends Ctx>(ctx: C, modules: Readonly<Recor
     const entries: Record<string, { api: true; path: string }> = {};
     for (const id of ids) entries[`${id}.noop`] = { api: true, path: `/api/${id}` };
     const routes = manifest(entries);
-    const noop = action({ input: s.object({}) }, async () => ok(null));
+    const noop = action({ input: s.object({}), output: s.object({}) }, async () => ok({}));
     const handlers: Record<string, { POST: typeof noop }> = {};
     for (const id of ids) handlers[`${id}.noop`] = { POST: noop };
     routes.actions(handlers);

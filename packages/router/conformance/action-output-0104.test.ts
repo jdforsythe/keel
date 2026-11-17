@@ -8,14 +8,72 @@
 // Spec: k.guards, Guards "`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route)."
 // Seed: 1337.
 // The `endpoints` case of the RFC list (`@keel/services` takes no E1113) lives in packages/services/conformance/bearer-0104.test.ts: this package does not depend on `@keel/services`.
-// Compile failures are asserted with `@ts-expect-error` on a one-line statement; the run-time throw is reached through the same line, over a table the
-// types refuse (the statement still runs), and again over a widened record.
+// Compile failures are asserted by type-checking in-memory modules (never written to disk) with packages/router/tsconfig.json: a control module
+// that binds and reads everything correctly has no error, and each bad module, one line away from the control, has at least one.
+// The run-time throw is reached over a widened record the types do not see.
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { action, loader, manifest } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const SEED = 1337; // seed 1337
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const PROBE = path.join(HERE, "__output_probe__.ts");
+
+/** Error diagnostics (import-resolution errors aside) of one in-memory module. */
+const typeErrors = (source: string): readonly string[] => {
+  const configPath = path.join(HERE, "../tsconfig.json");
+  const read = ts.readConfigFile(configPath, (f) => ts.sys.readFile(f));
+  const parsed = ts.parseJsonConfigFileContent(read.config, ts.sys, path.dirname(configPath));
+  const options: ts.CompilerOptions = { ...parsed.options, noEmit: true };
+  const host = ts.createCompilerHost(options);
+  const getSourceFile = host.getSourceFile.bind(host);
+  const fileExists = host.fileExists.bind(host);
+  const readFile = host.readFile.bind(host);
+  const isProbe = (name: string): boolean => path.resolve(name) === PROBE;
+  host.getSourceFile = (name, languageVersion, onError, shouldCreate) =>
+    isProbe(name)
+      ? ts.createSourceFile(name, source, languageVersion, true)
+      : getSourceFile(name, languageVersion, onError, shouldCreate);
+  host.fileExists = (name) => isProbe(name) || fileExists(name);
+  host.readFile = (name) => (isProbe(name) ? source : readFile(name));
+  const program = ts.createProgram([PROBE], options, host);
+  const sf = program.getSourceFile(PROBE);
+  if (sf === undefined) throw new Error("probe source file was not created");
+  return ts
+    .getPreEmitDiagnostics(program, sf)
+    .filter((d) => d.category === ts.DiagnosticCategory.Error && d.code !== 2307)
+    .map((d) => ts.flattenDiagnosticMessageText(d.messageText, " "));
+};
+
+const PROBE_HEAD = `import { action, manifest } from "@keel/router";
+import { ok, s } from "@keel/schema";
+const Nothing = s.object({});
+const N = s.object({ n: s.int() });
+const page = (): Node => document.createElement("div");
+const pageAct = action({ input: Nothing }, async () => ok(null));
+const apiAct = action({ input: Nothing, output: N }, async () => ok({ n: 1 }));
+const routes = manifest({ "api.x": { api: true, path: "/x" }, "app.p": { path: "/p", component: page } });
+`;
+const CONTROL = `${PROBE_HEAD}routes.actions({ "api.x": { POST: apiAct }, "app.p": { POST: pageAct } });
+export const right = action({ input: Nothing, output: N }, async () => ok({ n: 2 }));
+export const apiReads = action({ input: Nothing, output: Nothing }, async (_input, { bearer }) =>
+  bearer === undefined ? ok({}) : ok({}),
+);
+export const pageGoes = action({ input: Nothing }, async () => ok(routes.href("app.p")));
+`;
+const BAD = {
+  apiWithoutOutput: CONTROL.replace('"api.x": { POST: apiAct }', '"api.x": { POST: pageAct }'),
+  pageWithOutput: CONTROL.replace('"app.p": { POST: pageAct }', '"app.p": { POST: apiAct }'),
+  wrongOutputValue: CONTROL.replace("async () => ok({ n: 2 })", 'async () => ok("/x")'),
+  pageReadsBearer: `${CONTROL}export const pageReads = action({ input: Nothing }, async (_input, { bearer }) =>
+  bearer === undefined ? ok(null) : ok(null),
+);
+`,
+} as const;
 const Nothing = s.object({});
 const N = s.object({ n: s.int() });
 const page = (): Node => document.createElement("div");
@@ -54,11 +112,9 @@ const bind = (id: string, verb: string, entry: unknown): unknown => {
 
 describe("k.api E1512", () => {
   it("An API route's action without `output`, and a page's with one, do not compile, and `routes.actions` throws E1512.", () => {
-    const routes = table();
-    // @ts-expect-error E1512: an action without `output` bound to an API route
-    expect(codeOf(() => routes.actions({ "api.x": { POST: pageAct } }))).toBe("E1512");
-    // @ts-expect-error E1512: an action with `output` bound to a page
-    expect(codeOf(() => table().actions({ "app.p": { POST: apiAct } }))).toBe("E1512");
+    expect(typeErrors(CONTROL)).toEqual([]);
+    expect(typeErrors(BAD.apiWithoutOutput).length).toBeGreaterThan(0);
+    expect(typeErrors(BAD.pageWithOutput).length).toBeGreaterThan(0);
     expect(codeOf(() => table().actions({ "api.x": { POST: apiAct }, "app.p": { POST: pageAct } }))).toBeNull();
     fc.assert(
       fc.property(fc.constantFrom(...VERBS), (verb) => {
@@ -69,20 +125,15 @@ describe("k.api E1512", () => {
       }),
       { seed: SEED, numRuns: 20 },
     );
-  });
+  }, 120_000);
 
   it("An API route's action declares `output`, a schema, and a page's action does not (E1512): `action({ input, output, params?, stores? }, fn)`, whose `fn` returns `Result<T, KeelError>` for `output`'s type `T`.", () => {
-    // @ts-expect-error an output action returning `ok('/x')` for `output: s.object({ n: s.int() })`
-    const wrong = action({ input: Nothing, output: N }, async () => ok("/x"));
-    expect(wrong.kind).toBe("keel.action");
+    expect(typeErrors(CONTROL)).toEqual([]);
+    expect(typeErrors(BAD.wrongOutputValue).length).toBeGreaterThan(0);
     const right = action({ input: Nothing, output: N }, async () => ok({ n: 2 }));
     expect(right.output.parse({ n: 2 }).ok).toBe(true);
-    // @ts-expect-error a page action reads no `bearer`
-    const reads = action({ input: Nothing }, async (_input, { bearer }) =>
-      bearer === undefined ? ok(null) : ok(null),
-    );
-    expect(reads.kind).toBe("keel.action");
-  });
+    expect(typeErrors(BAD.pageReadsBearer).length).toBeGreaterThan(0);
+  }, 120_000);
 
   it("E1512 an action without `output` on an API route, or with one on a page; a type error, and `routes.actions` throws it; no fix", () => {
     for (const verb of VERBS) {
@@ -164,13 +215,12 @@ describe("k.privacy E1113", () => {
 
 describe("k.guards bearer", () => {
   it("`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route).", () => {
-    // @ts-expect-error a page action's argument has no `bearer`
-    const pageReads = action({ input: Nothing }, async (_input, at) => (at.bearer === undefined ? ok(null) : ok(null)));
-    expect(pageReads.kind).toBe("keel.action");
+    expect(typeErrors(CONTROL)).toEqual([]);
+    expect(typeErrors(BAD.pageReadsBearer).length).toBeGreaterThan(0);
     const apiReads = action({ input: Nothing, output: Nothing }, async (_input, at) => {
       expect(at.bearer === undefined || typeof at.bearer === "object").toBe(true);
       return ok({});
     });
     expect(apiReads.output.parse({}).ok).toBe(true);
-  });
+  }, 120_000);
 });

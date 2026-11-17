@@ -12,9 +12,11 @@ const MANIFEST = f(
   "import { module } from '@keel/compiler'\nexport default module({ id: 'accounts', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n",
 );
 
+// The checked text names the package as a string; this file imports none of it.
+const CREDENTIALS_IMPORT = ["import { credentials } from", '"@keel/std-credentials/server";'].join(" ");
 const POST_TOKEN = `import { action } from "@keel/router";
 import { err, ok, reveal } from "@keel/schema";
-import { credentials } from "@keel/std-credentials/server";
+${CREDENTIALS_IMPORT}
 import { tx } from "@keel/store";
 import { NewToken } from "./NewToken.schema.ts";
 import { Nothing } from "./Nothing.schema.ts";

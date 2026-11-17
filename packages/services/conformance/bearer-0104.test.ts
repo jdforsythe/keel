@@ -140,9 +140,8 @@ describe("k.services bearer", () => {
       fc.asyncProperty(tokenArb, async (token) => {
         const r = rig(BASE, stream);
         const it: unknown = await call(api, "watch", { bearer: secret(token) }, r.ctx);
-        if (typeof it !== "object" || it === null || !(Symbol.asyncIterator in it))
-          throw new Error("not async iterable");
-        for await (const _ of it as AsyncIterable<unknown>) void _;
+        if (!isAsyncIterable(it)) throw new Error("not async iterable");
+        for await (const _ of it) void _;
         expect(r.sent).toEqual([{ authorization: `Bearer ${token}`, method: "GET" }]);
       }),
       { seed: SEED, numRuns: 10 },
