@@ -169,7 +169,7 @@ describe("hostile thrown values", () => {
           const { status, all, body, lines } = await serve(site, kind, t, mode);
           expect(status).toBeGreaterThanOrEqual(site === "live" ? 200 : 500);
           expect(all).not.toContain(t);
-          if (site !== "component") expect(body).not.toContain(t);
+          expect(body).not.toContain(t);
           if (site !== "component") expect(lines.join("\n")).toContain('"keel.unexpected"');
         },
       ),

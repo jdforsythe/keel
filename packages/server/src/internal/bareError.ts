@@ -9,6 +9,7 @@ import { documentResponse } from "./documentResponse.ts";
 import { jsonResponse } from "./jsonResponse.ts";
 import { publicError } from "./publicError.ts";
 import { renderChain } from "./renderChain.ts";
+import { scrubbedError } from "./scrubbedError.ts";
 
 /**
  * Respond with a failure found before any loader ran (404, guard error): runtime requests get the `err`
@@ -22,7 +23,7 @@ export function bareError(
   params: Rec,
   failure: Failure,
 ): Handled {
-  const publicize = (e: Failure["error"]) => publicError(e, r.sv.mode);
+  const publicize = (e: Failure["error"]) => publicError(scrubbedError(e, r.rq), r.sv.mode);
   if (r.runtime) return { response: jsonResponse(status, err(publicize(failure.error))), route, diags: [] };
   const rendered = renderChain({
     chain,

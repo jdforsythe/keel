@@ -16,6 +16,7 @@ import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { publicError } from "./publicError.ts";
 import { renderChain } from "./renderChain.ts";
 import { runLoaders } from "./runLoaders.ts";
+import { scrubbedError } from "./scrubbedError.ts";
 import { statusOf } from "./statusOf.ts";
 import { withoutPasswords } from "./withoutPasswords.ts";
 
@@ -36,7 +37,7 @@ export async function page(
   submission: Submission | null,
 ): Promise<Handled> {
   const { chain, def, id } = m.route;
-  const publicize = (e: KeelError<string, unknown>) => publicError(e, r.sv.mode);
+  const publicize = (e: KeelError<string, unknown>) => publicError(scrubbedError(e, r.rq), r.sv.mode);
   const outcomes = await runLoaders(r, chain, { params: m.params, search: m.search, url: r.url });
   const diags = outcomes.flatMap((o) => (o.diag === null ? [] : [o.diag]));
   const failedAt = outcomes.findIndex((o) => !o.result.ok);
@@ -94,12 +95,16 @@ export async function page(
       search: {},
       data: [],
       props: () => ({}),
-      failure: { level: -1, bare: true, error: rendered.error },
+      failure: { level: -1, bare: true, error: scrubbedError(rendered.error, r.rq) },
       prepend: "",
       ctx: r.sv.ctx,
       publicize,
     });
-    return { response: documentResponse(r, 500, fallback, base, rendered.error.message), route: id, diags };
+    return {
+      response: documentResponse(r, 500, fallback, base, scrubbedError(rendered.error, r.rq).message),
+      route: id,
+      diags,
+    };
   }
   // Only the route's own component renders the password inputs that name the keys to drop; at an errorElement the
   // submission is left out whole.

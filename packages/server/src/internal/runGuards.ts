@@ -69,7 +69,7 @@ async function step(
       return {
         kind: "fail",
         at: i,
-        error: unexpected(`guard redirect to "${id}" failed: ${to.error.message}`),
+        error: unexpected(`guard redirect to "${id}" failed: ${scrubbedCause(to.error, rq).message}`),
       };
     return { kind: "redirect", at: i, location: withNext(to.value, guardNext(table, url)) };
   }

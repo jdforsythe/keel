@@ -36,7 +36,8 @@ async function runOne(
   }
   const json = attempted(() => l.output.encode(checked.value));
   if (json.ok) notePii(rq.pii, l.output, json.value);
-  return { result: json.ok ? ok({ value: checked.value, json: json.value }) : json, diag: null };
+  const result = json.ok ? ok({ value: checked.value, json: json.value }) : err(scrubbedCause(json.error, rq));
+  return { result, diag: null };
 }
 
 /**
@@ -44,7 +45,7 @@ async function runOne(
  * in chain order; levels without a loader give `ok(undefined)`. Each runs in the request scope with `url` (the absolute
  * request URL), the request's `caller` and `bearer` (k.api Bearer), and its instance of its `stores` factory (`openFactory`). A throw becomes
  * `keel.unexpected` with a `keel.unexpected` diag carrying its app `frames` (`caught`), both without the request's `.pii()` values and revealed secrets (`scrubbedCause`; its `lead`, `loader <id> threw: `, is what `scrubbedDiag` keeps past a scrub cap); each
- * output's `.pii()` values join the request's (`notePii`); data
+ * output's `.pii()` values join the request's (`notePii`), and an encode that throws is a scrubbed `keel.unexpected`; data
  * failing `output` is `keel.unexpected` with an E1554 diag.
  */
 export function runLoaders(

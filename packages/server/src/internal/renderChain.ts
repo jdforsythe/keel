@@ -60,8 +60,9 @@ export function renderChain(input: ChainInput): Rendered {
     if (lvl.def.errorElement === undefined) return componentAt(i, lvl);
     const r = attempted(() => componentAt(i, lvl));
     if (r.ok) return r.value;
-    caught ??= r.error;
-    return errorAt(i, r.error);
+    const e = input.publicize(r.error);
+    caught ??= e;
+    return errorAt(i, e);
   };
 
   const html =

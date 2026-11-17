@@ -23,7 +23,7 @@ const HEARTBEAT_MS = 15_000;
  * The event stream of a live loader (k.server Request flow), after its guards passed, with the request's `caller` and
  * `bearer` (k.api Bearer): its `stores` factory opens
  * once and nothing saves; each yield is one `data:` line, its `Result` JSON (`ok` encoded by `output`, `err` as it may
- * leave the server); a `:` line goes out per 15 s of `ctx.clock`. It ends when `fn` returns or its `signal` aborts:
+ * leave the server, an `output` encode that throws its `keel.unexpected` scrubbed by `scrubbedCause`); a `:` line goes out per 15 s of `ctx.clock`. It ends when `fn` returns or its `signal` aborts:
  * on request abort or `close()` (both also cancel the stream, so a stalled write ends), or when the reader cancels.
  * The factory opens in the stream's own isolated scope, not the request's (disposed when `handle` returns), and that
  * scope is disposed when the stream ends. A throw of `fn` ends it with one `data:` line, its `keel.unexpected` `err`, and a
@@ -74,7 +74,9 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
           const json = res.ok
             ? attempted(() => ok(live.output.encode(res.value)))
             : ok(err(publicError(res.error, sv.mode)));
-          await stream.writeSSE({ data: JSON.stringify(json.ok ? json.value : err(publicError(json.error, sv.mode))) });
+          await stream.writeSSE({
+            data: JSON.stringify(json.ok ? json.value : err(publicError(scrubbedCause(json.error, rq), sv.mode))),
+          });
         }
       }, sv.frames);
       // A throw is one scrubbed `keel.unexpected` diag in the log and a last `data:` line holding its `err`.
