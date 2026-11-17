@@ -2,10 +2,10 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1052,
-    "probabilistic": 313,
+    "example": 1061,
+    "probabilistic": 316,
     "exhaustive": 15,
-    "proven": 52,
+    "proven": 55,
     "monitored": 4
   },
   "mutation": {
@@ -19,7 +19,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 79.14,
+        "score": 79.01,
         "threshold": 70
       },
       "ctx": {
@@ -35,7 +35,7 @@
         "threshold": 80
       },
       "router": {
-        "score": 83.71,
+        "score": 85.47,
         "threshold": 80
       },
       "runtime-dom": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 82.88,
+        "score": 81.63,
         "threshold": 70
       },
       "services": {
@@ -6785,14 +6785,6 @@
         "score": 100
       },
       {
-        "file": "packages/server/src/internal/publicError.ts",
-        "sha": "d2d6886f266f38953489e207840cb2003ce4a57ed257924693cfe774bbf00447",
-        "killed": 12,
-        "survived": 0,
-        "noCoverage": 0,
-        "score": 100
-      },
-      {
         "file": "packages/server/src/internal/readCapped.ts",
         "sha": "5a02838563684d54a9412a86656bd3e62d1fceb6bde3da531a40195075ca9880",
         "killed": 24,
@@ -10387,19 +10379,19 @@
       "pkg": "std-offline",
       "name": "outbox",
       "file": "packages/std-offline/src/outbox.ts",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "pkg": "std-offline",
       "name": "resolve",
       "file": "packages/std-offline/src/resolve.ts",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "pkg": "std-offline",
       "name": "send",
       "file": "packages/std-offline/src/send.ts",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "pkg": "std-report",
@@ -11493,7 +11485,7 @@
     },
     {
       "item": "k.deploy#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.deploy#7",
@@ -11705,7 +11697,7 @@
     },
     {
       "item": "k.head#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.head#8",
@@ -11953,7 +11945,7 @@
     },
     {
       "item": "k.privacy#3",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "k.privacy#4",
@@ -11969,7 +11961,7 @@
     },
     {
       "item": "k.privacy#7",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.privacy#8",
@@ -12145,7 +12137,7 @@
     },
     {
       "item": "k.router#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.router#7",
@@ -12301,15 +12293,15 @@
     },
     {
       "item": "k.schema#7",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.schema#8",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.schema#9",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.schema#10",
@@ -12449,7 +12441,7 @@
     },
     {
       "item": "k.server#16",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.services#1",
@@ -13381,6 +13373,14 @@
     },
     {
       "item": "std.offline#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.offline#11",
+      "rung": "example"
+    },
+    {
+      "item": "std.offline#12",
       "rung": "example"
     },
     {
