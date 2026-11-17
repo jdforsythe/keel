@@ -359,6 +359,7 @@ describe("mutationClaims", () => {
     const { mutation, fresh } = mutationClaims(
       [
         file("packages/a/src/a.ts", "changed"),
+        file("packages/a/src/b.ts", "kept"),
         file("packages/a/reports/mutation/mutation.json", report([{ status: "Killed" }])),
       ],
       committed,

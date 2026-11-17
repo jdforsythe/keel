@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { type ChildProcess, execFile, spawn } from "node:child_process";
-import { cp, mkdtemp, rm, symlink } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -62,7 +62,20 @@ beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), "golden-1-sqlite-"));
   built = join(dir, "app");
   await cp(app, built, { recursive: true, filter: (src) => src === app || !SKIP.has(basename(src)) });
-  await symlink(join(app, "node_modules"), join(built, "node_modules"), "dir");
+  // The copy's packages are links to the app's. A tool launcher finds its package relative to its own path, which a
+  // linked directory would change, so each launcher in the copy calls the app's launcher by its real path.
+  const modules = join(app, "node_modules");
+  await mkdir(join(built, "node_modules", ".bin"), { recursive: true });
+  for (const name of await readdir(modules))
+    if (name !== ".bin") await symlink(join(modules, name), join(built, "node_modules", name));
+  for (const name of await readdir(join(modules, ".bin")).catch(() => []))
+    await writeFile(
+      join(built, "node_modules", ".bin", name),
+      `#!/bin/sh\nexec "${join(modules, ".bin", name)}" "$@"\n`,
+      {
+        mode: 0o755,
+      },
+    );
   const keel = join(app, "node_modules", ".bin", "keel");
   const out = await new Promise<string>((resolve, reject) =>
     execFile(keel, ["build"], { cwd: built, env: { ...process.env, KEEL_AGENT: "1" } }, (e, stdout) =>

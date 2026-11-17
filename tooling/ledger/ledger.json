@@ -15,7 +15,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 79.56,
+        "score": 79.57,
         "threshold": 70
       },
       "compiler": {
@@ -1727,14 +1727,6 @@
         "survived": 25,
         "noCoverage": 2,
         "score": 78.57
-      },
-      {
-        "file": "packages/cli/src/internal/mutationScores.ts",
-        "sha": "fa54333a48bef615a2c2986e495b5b56fc14af4773f918739641d62280df5188",
-        "killed": 36,
-        "survived": 5,
-        "noCoverage": 0,
-        "score": 87.8
       },
       {
         "file": "packages/cli/src/internal/normClause.ts",
@@ -6513,14 +6505,6 @@
         "score": 100
       },
       {
-        "file": "packages/server/src/internal/folded.ts",
-        "sha": "7bb393f24284e25b5550171f8de75d239e6cadd8a56e17024f51c40f734be8d0",
-        "killed": 14,
-        "survived": 10,
-        "noCoverage": 0,
-        "score": 58.33
-      },
-      {
         "file": "packages/server/src/internal/forward.ts",
         "sha": "5b89682f7d471576f12dd47e51214ef72bf881b3b2cef54f58cd641f727f7932",
         "killed": 50,
@@ -6559,14 +6543,6 @@
         "survived": 1,
         "noCoverage": 0,
         "score": 95.83
-      },
-      {
-        "file": "packages/server/src/internal/inOrder.ts",
-        "sha": "22f8a6342adcf6db0335d51f6fd626cc89df754b18d4f9a2c31e29fe2e4ce3ab",
-        "killed": 8,
-        "survived": 0,
-        "noCoverage": 0,
-        "score": 100
       },
       {
         "file": "packages/server/src/internal/inRequest.ts",
@@ -6665,14 +6641,6 @@
         "score": 50
       },
       {
-        "file": "packages/server/src/internal/matcherOf.ts",
-        "sha": "db14bf3e58236a6c14a90118bac5400f1d8b33eb80345f99d0d1857d59f318a7",
-        "killed": 90,
-        "survived": 39,
-        "noCoverage": 0,
-        "score": 69.77
-      },
-      {
         "file": "packages/server/src/internal/moduleOf.ts",
         "sha": "310cde6e5e55ce416159265655c028c8634b91db107c573459e52f8c7b65a65a",
         "killed": 3,
@@ -6743,14 +6711,6 @@
         "survived": 1,
         "noCoverage": 0,
         "score": 50
-      },
-      {
-        "file": "packages/server/src/internal/openStores.ts",
-        "sha": "c3b3867415d1530fad5bc273d09211110a2bc4a9c75fb9247e543d00c3c310ba",
-        "killed": 33,
-        "survived": 4,
-        "noCoverage": 0,
-        "score": 89.19
       },
       {
         "file": "packages/server/src/internal/outputRefused.ts",
@@ -6905,22 +6865,6 @@
         "score": 94.64
       },
       {
-        "file": "packages/server/src/internal/saveStores.ts",
-        "sha": "ded07e4e56622c1479ac523e3be533ed22a39ea8bda448845bd294354716b49f",
-        "killed": 34,
-        "survived": 4,
-        "noCoverage": 0,
-        "score": 89.47
-      },
-      {
-        "file": "packages/server/src/internal/savedOf.ts",
-        "sha": "dae1226abec27e6d936658dc9550338abe7bcb82312300adfbbb34e6f0d41757",
-        "killed": 4,
-        "survived": 1,
-        "noCoverage": 0,
-        "score": 80
-      },
-      {
         "file": "packages/server/src/internal/scrubbed.ts",
         "sha": "6eb6fdc92b5f27ae4fa1c8680c38c2d8ea57959f44210733ff5e8aa0bb2b3b29",
         "killed": 110,
@@ -7071,14 +7015,6 @@
         "survived": 1,
         "noCoverage": 0,
         "score": 91.67
-      },
-      {
-        "file": "packages/server/src/start.ts",
-        "sha": "79b13d6faee1f2e5861a627e23ce25e1e51726cfeff771981f17de233ef82abd",
-        "killed": 42,
-        "survived": 19,
-        "noCoverage": 26,
-        "score": 48.28
       },
       {
         "file": "packages/server/src/topology.ts",
@@ -7623,14 +7559,6 @@
         "survived": 3,
         "noCoverage": 0,
         "score": 85
-      },
-      {
-        "file": "packages/testing/src/internal/assertAccessible.ts",
-        "sha": "bcc791db8ac96cc310588c2e2e5c4e3df95c40a3777382b34a3e05cc5723f693",
-        "killed": 16,
-        "survived": 2,
-        "noCoverage": 0,
-        "score": 88.89
       },
       {
         "file": "packages/testing/src/internal/assertArtifacts.ts",

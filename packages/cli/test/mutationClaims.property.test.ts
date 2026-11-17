@@ -51,4 +51,28 @@ describe("mutationClaims", () => {
       FC,
     );
   });
+
+  it("a committed claim whose file left the tree is dropped; one whose file changed stays, stale", () => {
+    const sha = "0".repeat(64);
+    const claim = (file: string) => ({ file, sha, killed: 1, survived: 0, noCoverage: 0, score: 100 });
+    const { mutation, fresh } = mutationClaims([{ path: "packages/p/src/kept.ts", source: "changed" }], {
+      packages: { p: { score: 100, threshold: 70 } },
+      claims: [claim("packages/p/src/gone.ts"), claim("packages/p/src/kept.ts")],
+    });
+    expect(mutation.claims.map((c) => c.file)).toEqual(["packages/p/src/kept.ts"]);
+    expect([...fresh]).toEqual([]);
+    expect(mutation.packages.p).toEqual({ threshold: 70 });
+  });
+
+  it("a report entry for a file that left the tree gives no claim", () => {
+    const json = JSON.stringify({
+      thresholds: { break: 70 },
+      files: { "src/gone.ts": { source: "x", mutants: [{ id: "0", status: "Killed" }] } },
+    });
+    const { mutation } = mutationClaims(
+      [{ path: "packages/p/reports/mutation/mutation.json", source: json }],
+      undefined,
+    );
+    expect(mutation.claims).toEqual([]);
+  });
 });
