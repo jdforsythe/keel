@@ -10,7 +10,8 @@ import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
 import { Box, Button, Text } from "@keel/ui";
 import { describe, expect, test } from "vitest";
-import { Session, record, replay } from "../src/index.ts";
+import { Session, record } from "../src/index.ts";
+import { replay } from "../src/replay.ts";
 import { minimize } from "../src/minimize.ts";
 
 const ZERO = { n: 0 };

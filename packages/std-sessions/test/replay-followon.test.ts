@@ -10,7 +10,8 @@ import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
 import { Box, Button, Text } from "@keel/ui";
 import { describe, expect, test } from "vitest";
-import { record, replay } from "../src/index.ts";
+import { record } from "../src/index.ts";
+import { replay } from "../src/replay.ts";
 
 function build() {
   const count = store(s.object({ n: s.int() }), { n: 0 }, { id: "follow.count" });

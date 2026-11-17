@@ -99,9 +99,6 @@ importers:
       '@keel/std-channels':
         specifier: workspace:*
         version: link:../../packages/std-channels
-      '@keel/std-conflicts':
-        specifier: workspace:*
-        version: link:../../packages/std-conflicts
       '@keel/std-db':
         specifier: workspace:*
         version: link:../../packages/std-db
@@ -132,9 +129,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store
-      '@keel/testing':
-        specifier: workspace:*
-        version: link:../../packages/testing
       '@keel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -160,6 +154,12 @@ importers:
       '@keel/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@keel/std-conflicts':
+        specifier: workspace:*
+        version: link:../../packages/std-conflicts
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
@@ -1304,9 +1304,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
-      '@keel/testing':
-        specifier: workspace:*
-        version: link:../testing
       '@keel/ui':
         specifier: workspace:*
         version: link:../ui
@@ -1332,6 +1329,9 @@ importers:
       '@keel/server':
         specifier: workspace:*
         version: link:../server
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

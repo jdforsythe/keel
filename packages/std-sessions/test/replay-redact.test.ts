@@ -3,7 +3,8 @@
 // fingerprint of the buggy fixture's error depends on neither the `redact` entries' effect on replay nor what was
 // typed. Seed 1337
 import { bindStd } from "@keel/compiler/std/bindStd";
-import { record, replay } from "@keel/std-sessions";
+import { record } from "@keel/std-sessions";
+import { replay } from "@keel/std-sessions/replay";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, test } from "vitest";
 import { BUGGY_EMPTY, buggyCart, buggyRoutes, simCtx } from "../conformance/fixtures.ts";

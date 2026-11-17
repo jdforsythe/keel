@@ -10,7 +10,8 @@ import { renderRoute } from "@keel/testing";
 import { Box, Button, Input } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { Session, record, replay, session } from "../src/index.ts";
+import { Session, record, session } from "../src/index.ts";
+import { replay } from "../src/replay.ts";
 import { redactionOf } from "../src/internal/redactionOf.ts";
 import { redactSession } from "../src/redactSession.ts";
 

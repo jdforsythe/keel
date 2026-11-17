@@ -79,7 +79,6 @@
     "@keel/router": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
-    "@keel/testing": "workspace:*",
     "@keel/ui": "workspace:*",
     "happy-dom": "^21",
     "oxc-parser": "^0.157.0",
@@ -87,9 +86,18 @@
     "vite": "^8.3.6",
     "vitest": "^4.1.12"
   },
+  "peerDependencies": {
+    "@keel/testing": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@keel/testing": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@keel/runtime-dom": "workspace:*",
     "@keel/server": "workspace:*",
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3"

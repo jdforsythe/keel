@@ -4,7 +4,8 @@
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { cartRoutes, play } from "../conformance/fixtures.ts";
-import { Session, replay } from "../src/index.ts";
+import { Session } from "../src/index.ts";
+import { replay } from "../src/replay.ts";
 import { redactSession } from "../src/redactSession.ts";
 
 test("no recorded string outside `expose` survives; exposed ones do; the result parses and reproduces", async () => {
