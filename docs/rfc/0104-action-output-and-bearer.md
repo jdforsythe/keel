@@ -1,6 +1,6 @@
 # RFC 0104: Action output and bearer (an API route's action answers data by its `output` schema; an API route's handlers get the `Authorization: Bearer` token as a `Secret`)
 
-Status: draft. The kernel RFC that RFC 0103 D9 named and the user approved as the next one. It adds hand-written API shapes and a migration for golden apps 1 and 2, so the user decides D1, D5, D6, D7 and D8 before anything is built (Questions 1 to 5). ADR-0127 records it.
+Status: accepted (user, 2026-11-16: Questions 1 to 5 as recommended, so D1, D5, D6, D7 and D8 stand as written; the orchestrator accepts Questions 6 to 9 under the defaults each cites). The kernel RFC that RFC 0103 D9 named. ADR-0127 records it.
 
 ## Decisions
 D1, D5, D6, D7 and D8 are the user's: each is a new API shape, a security choice, or needs a golden app migration. The others apply the WORKFLOW RFC default they cite. Every recommended form is written into the Proposal; the other form and its cost are under Questions.
@@ -764,7 +764,7 @@ Estimated; lane 8 measures with `tooling/budgets.mjs` on a quiet tree. A breach 
 - The token form is token68 up to 4,096 characters; a credential outside it (with spaces, or longer) cannot be a bearer.
 
 ## Questions
-1 to 5 are the user's: each is a new API shape, a security choice, or the golden app migration. The orchestrator may accept 6 to 9 under the defaults cited and records them in `PLAN.md` and `docs/HANDOFF.md` for the user to confirm or reverse. The build waits for 1 to 5.
+Answered: the user accepted 1 to 5 as recommended on 2026-11-16, and the orchestrator accepted 6 to 9 under the defaults cited (recorded in `PLAN.md` and `docs/HANDOFF.md` for the user to confirm or reverse). The questions stand below as they were asked.
 
 1. **`output` required on every API action (D1).** Recommendation: required, with `ok({})` for an empty answer, and `Href | null` for pages only. The other form makes `output` optional, keeps `Href | null` JSON on API routes without one, and needs no migration; its cost is two answer shapes on one route kind and a script reading an href as data, against default 2. A third form adds `s.null()` to the schema library so empty writes keep `ok(null)` and the wire stays `null`; its cost is a k.schema change to avoid a mechanical migration. The user's: API shape and golden app migration.
 2. **`bearer` on API routes only (D5).** Recommendation: API routes only, `undefined` on a page's guard and loader, absent from a page action's type. The other form reads it on every route; its cost is that page loaders become a token-readable data API beside API routes, and a credential header is parsed on every document request. The user's: security and API shape.

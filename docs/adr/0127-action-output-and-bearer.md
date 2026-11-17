@@ -1,6 +1,6 @@
 # ADR-0127: An API route's action answers data by its `output` schema; an API route's handlers get the `Authorization: Bearer` token as a `Secret` (RFC 0104)
 
-**Status:** proposed. The user decides D1, D5, D6, D7 and D8 (RFC 0104 Questions 1 to 5) before the build; the orchestrator may accept Questions 6 to 9 under the RFC defaults cited.
+**Status:** accepted (user, 2026-11-16: D1, D5, D6, D7 and D8 as written, RFC 0104 Questions 1 to 5 as recommended; the orchestrator accepted Questions 6 to 9 under the RFC defaults cited).
 
 **Context.** RFC 0103 built `@keel/std-credentials`: `mint` gives a token as a `Secret<string>` and `check` checks a presented one. Two kernel paths around it were missing. An action returns `Result<Href | null, KeelError>`, so the write that mints a token cannot answer with it; RFC 0103's example sends it through a mail service. No request header reaches a guard, loader or action, so a token arrives in a POST body, and a GET has no place for one but the URL. On an API route, `Href | null` was already a string a script read as data, since an API route never redirects, and `.keel/surface.json` recorded every action's answer as that. The server's preflight allowed `accept, content-type, x-keel`; its log scrub covered a request's `.pii()` values and the secrets in its decoded input; a loader's JSON answer carried no `Cache-Control`.
 

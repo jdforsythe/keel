@@ -827,6 +827,9 @@ The user has answered the accessor, the error `Result`, the cost setting, tokens
 6. A stored hash or digest reaching the browser. Recommendation: a backlog line for E2203, a `Hashed` or `Digested` node in a loader `output` schema, built when the checker's schema reader (E1111's) is exported to tools. The orchestrator may accept it under default 6.
 7. Kernel text naming a stdlib package: k.privacy and the E1112 explain row would name `@keel/std-credentials`. k.deploy already names `@keel/std-db`. Recommendation: accept; the kernel imports nothing. The orchestrator may accept it under default 2.
 
+## Answers (user, 2026-11-16)
+Questions 1 and 2 are accepted as recommended: the `ttl` details as designed, and SHA-256 with no key. The timing window for an account stored at a lower `ln` stands as THREAT-MODEL states it; the padding design is not built.
+
 ## Amendment (2026-11-16, after the review and the red-team pass)
 The build is as the Proposal describes except where this section says otherwise. The spec files hold the text; this lists what changed and why.
 
