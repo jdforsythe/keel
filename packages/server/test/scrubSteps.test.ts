@@ -216,25 +216,28 @@ describe("the cases the scan broke on", () => {
 });
 
 describe("the cap bounds the work", () => {
-  const users = (n: number): Set<string> => new Set(Array.from({ length: n }, (_, i) => `user${i}@example.com`));
+  // Values of 400 characters: about 2,100 pass the cap with their base64 forms, and 9,000 make at most about 8,400,000
+  // characters of forms where nothing stops at the cap.
+  const users = (n: number): Set<string> =>
+    new Set(Array.from({ length: n }, (_, i) => `user${String(i).padStart(6, "0")}${"x".repeat(390)}`));
   const sets = (pii: ReadonlySet<string>): [ReadonlySet<string>, string][] => [
     [new Set<string>(), "[secret]"],
     [pii, "[pii]"],
   ];
 
-  it("forming stops at the cap, so 1,000,000 values cost what 300,000 do", () => {
+  it("forming stops at the cap, so 9,000 values of 400 characters cost what 3,000 do", () => {
     const few = counter();
     const many = counter();
-    expect(scrubbed("login failed for user7@example.com", sets(users(300_000)), few)).toBe("[pii]");
-    expect(scrubbed("login failed for user7@example.com", sets(users(1_000_000)), many)).toBe("[pii]");
+    expect(scrubbed("login failed for user7@example.com", sets(users(3_000)), few)).toBe("[pii]");
+    expect(scrubbed("login failed for user7@example.com", sets(users(9_000)), many)).toBe("[pii]");
     expect(many.build).toBe(few.build);
     expect(many.forms).toBe(few.forms);
     expect(many.forms).toBeGreaterThan(2_000_000);
-    expect(many.forms).toBeLessThanOrEqual(2_000_000 + 200);
+    expect(many.forms).toBeLessThanOrEqual(2_000_000 + 2_000);
   });
 
   it("a later text on the same sets, grown or not, adds no build and no forms", () => {
-    const pii = users(1_000_000);
+    const pii = users(3_000);
     const passes = sets(pii);
     scrubbed("first", passes);
     const later = counter();
@@ -248,7 +251,7 @@ describe("the cap bounds the work", () => {
     expect(
       scrubbed("refused true", [
         [new Set([""]), "[secret]"],
-        [users(1_000_000), "[pii]"],
+        [users(3_000), "[pii]"],
       ]),
     ).toBe("[secret]");
   });
