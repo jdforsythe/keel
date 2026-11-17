@@ -10,7 +10,8 @@ import type { Caller } from "./Caller.ts";
  * (k.hosting); `held` is this request's instance of each `stores` factory opened so far (`openStores` from `@keel/store/internal`, whose `StateRequest` this satisfies); `pii` the
  * `.pii()` values of its decoded action input, its loaders' outputs and its factories' store states, which its `diag`
  * records and its `keel.unexpected` messages never hold (k.privacy Server log, `scrubbed`); `secrets` the revealed
- * value of each `Secret` in its decoded action input and of `bearer`, which they never hold either (`redacted`).
+ * value of each `Secret` made while the request runs (`noteRequestSecrets`), its input and `bearer` among them, which
+ * they never hold either (`redacted`); an event stream keeps the same set, so a secret its loader makes later is in it.
  */
 export type RequestScope = {
   readonly scope: Scope;

@@ -88,7 +88,7 @@ const writes: fc.Arbitrary<Call> = fc.record({
 });
 
 describe("dev log stream", () => {
-  it("one req record per request, nothing else but E1554 diags; in json mode every line parses", async () => {
+  it("one req record per request, nothing else but E1554 and guard-throw diags; in json mode every line parses", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(fc.oneof(calls, writes), { minLength: 1, maxLength: 8 }), async (cs) => {
         const lines: string[] = [];
@@ -99,7 +99,8 @@ describe("dev log stream", () => {
         const kind = (r: unknown): unknown => (typeof r === "object" && r !== null && "kind" in r ? r.kind : null);
         const reqs = records.filter((r) => kind(r) === "req");
         const diags = records.filter((r) => kind(r) === "diag");
-        const bad = cs.filter((c) => c.path === "/bad" && c.method !== "OPTIONS").length;
+        // E1554 for `/bad`'s loader, and a `keel.unexpected` diag for `/broken`'s throwing guard (k.server Log).
+        const bad = cs.filter((c) => (c.path === "/bad" || c.path === "/broken") && c.method !== "OPTIONS").length;
         expect(reqs.length).toBe(cs.length);
         expect(diags.length).toBe(bad);
         expect(records.length).toBe(cs.length + bad);

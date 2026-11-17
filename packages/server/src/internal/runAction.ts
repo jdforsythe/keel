@@ -1,7 +1,6 @@
 import type { Match } from "@keel/router/internal";
 import { fieldsError, routeActions } from "@keel/router/internal";
 import { attempt, err, ok } from "@keel/schema";
-import { secretValues } from "@keel/schema/internal";
 import { saveStores } from "@keel/store/internal";
 import type { Diag } from "./Diag.ts";
 import type { Handled } from "./Handled.ts";
@@ -37,7 +36,7 @@ import { valuesOf } from "./valuesOf.ts";
  * then the stores are saved, then it answers 200 `{ ok: true, value: <encoded> }`; a conflict sends no value. A document `keel.fields` re-renders the page at 422
  * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
  * A throw is `keel.unexpected` plus a `keel.unexpected` diag; neither holds a `.pii()` value of the decoded input or of
- * the stores it opened, nor the revealed value of a `Secret` in the decoded input (`notePii`, `secretValues`,
+ * the stores it opened, nor the revealed value of a `Secret` in the decoded input (`notePii`, `noteRequestSecrets`,
  * `redacted`; k.privacy Server log).
  */
 export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<Handled> {
@@ -73,7 +72,6 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const { sv, rq } = r;
   const encoded = attempt(() => action.input.encode(decoded.value));
   notePii(rq.pii, action.input, encoded.ok ? encoded.value : decoded.value);
-  for (const v of secretValues(decoded.value)) rq.secrets.add(v);
   let refused: Diag | null = null;
   const { result: ran, frames } = await caught(async () => {
     const stores = action.stores === undefined ? undefined : await openFactory(sv.ctx, rq, action.stores);
