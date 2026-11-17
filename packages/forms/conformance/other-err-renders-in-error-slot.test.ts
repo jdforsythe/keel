@@ -19,7 +19,9 @@ test("any other err renders in the error slot and leaves values intact", async (
           h.handler.current = () => err({ code, message, data: null });
           await h.submit();
           const slot = h.root.querySelector('[data-slot="error"]');
-          expect(slot?.textContent).toContain(message);
+          // Outside dev, a keel.unexpected err shows its public form; every other code shows its message.
+          if (code === "keel.unexpected") expect(slot?.textContent).toContain("unexpected");
+          else expect(slot?.textContent).toContain(message);
           expect(h.f.values()).toEqual(before);
           expect(h.f.errors()).toEqual({});
         } finally {
