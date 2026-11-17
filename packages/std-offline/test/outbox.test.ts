@@ -97,8 +97,10 @@ test("send takes no bearer: a secret in the input is refused before the outbox s
   const { o, sc } = declare();
   const t = s.secret(s.string()).parse("abc");
   if (!t.ok) throw new Error("fixture: a string parses as a secret");
-  // @ts-expect-error `bearer` is not part of a queued write's input
-  await expect(send(ctx, o, ORIGIN, "add", { body: { t: "a" }, bearer: t.value }, { base: 0 })).rejects.toThrow();
+  // The input type of `send` has no `bearer`, so the call goes through `Reflect.apply` with an untyped input.
+  const input: unknown = { body: { t: "a" }, bearer: t.value };
+  const sent: unknown = Reflect.apply(send, undefined, [ctx, o, ORIGIN, "add", input, { base: 0 }]);
+  await expect(Promise.resolve(sent)).rejects.toThrow();
   expect(o.get("entries")).toHaveLength(0);
   sc.dispose();
 });
