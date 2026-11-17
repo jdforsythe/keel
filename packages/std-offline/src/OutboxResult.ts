@@ -4,7 +4,7 @@ import type { ApiError } from "@keel/services";
 /**
  * What `send` resolves (std.offline): `sent` with the endpoint's output, `queued` (offline, or the network failed),
  * `conflict` with the head that refused the write, or `failed` with its `ApiError`, `offline.full`, or
- * `offline.storage` (a write to `ctx.storage` rejected while flushing).
+ * `offline.storage` (a write to `ctx.storage` rejected).
  */
 export type OutboxResult<O> =
   | { readonly state: "sent"; readonly value: O }

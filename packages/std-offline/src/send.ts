@@ -1,4 +1,5 @@
 import type { Ctx } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import type { Client, EndpointMap } from "@keel/services";
 import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
@@ -23,7 +24,8 @@ type Output<D extends EndpointMap, K extends keyof D> = Awaited<ReturnType<Clien
  * loaded (`drain`): the entry's `body.write` is
  * `{ key: ctx.random.id('Write'), base }`; the outbox is written to `ctx.storage` `keel.outbox.<id>` first. Resolves
  * `sent`, `queued` (offline, or the network failed), `conflict` or `failed`; a full outbox resolves `failed` with
- * `offline.full` and adds nothing. Throws when `input` is not JSON (a schema-typed input always is).
+ * `offline.full` and adds nothing; a write to `ctx.storage` that rejects leaves the entry `failed` in memory, posts nothing
+ * and resolves `failed` with `offline.storage`. Throws when `input` is not JSON (a schema-typed input always is).
  */
 export async function send<const D extends EndpointMap, K extends keyof D & string>(
   ctx: Ctx,
@@ -44,6 +46,11 @@ export async function send<const D extends EndpointMap, K extends keyof D & stri
   }
   const added = tx(c.add, entry);
   if (!added.ok) throw new Error(added.error.message);
-  await persist(ctx, c);
+  const stored = await attempt(() => persist(ctx, c));
+  if (!stored.ok) {
+    const error = { code: "offline.storage" as const, message: stored.error.message, data: {} };
+    tx(c.settle, { key, state: "failed", error });
+    return { state: "failed", error };
+  }
   return ctx.net.online() ? asResult<Output<D, K>>(await flush(ctx, c, key)) : { state: "queued" };
 }
