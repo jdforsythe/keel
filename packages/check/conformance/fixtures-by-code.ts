@@ -1,7 +1,8 @@
 // Not a test file. One triggering fixture and one clean counterpart per kernel E code `check()` reports
 // (`reportedCodes()`, RFC 0065), E1756 aside (a registered rule that throws). Public API only.
-import { fileURLToPath } from "node:url";
+import path from "node:path";
 import type { check } from "@keel/check";
+import { repoRoot } from "@keel/tooling/repo-root";
 import type { Files } from "./support.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
@@ -50,7 +51,7 @@ const use = (id: string, from: string, name: string): Files[number] =>
 const NO_TYPES: Options = { types: false };
 const IMPORT = "import { serverState } from '@keel/store/internal'\nexport const x = serverState\n";
 /** A root where `@keel/router` resolves, for fixtures whose rule reads real types (E1510). */
-const ROUTER_ROOT = fileURLToPath(new URL("../../router/", import.meta.url));
+const ROUTER_ROOT = path.join(repoRoot(import.meta.dirname), "packages", "router", path.sep);
 const apiRoutes = (entries: string): Files[number] =>
   f(
     "modules/a/routes.ts",
