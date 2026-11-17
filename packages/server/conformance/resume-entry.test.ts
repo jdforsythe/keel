@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.runtime, clause "A `createApp` document with an island loads a module script whose URL answers 200 JavaScript that calls `resume`." (RFC 0046)
-// Spec: k.runtime Islands: the generated resume entry imports `components` from `/@keel/islands.ts` and calls `resume(document.body, components, { ctx, stores })`.
+// Spec: k.runtime Islands: the generated resume entry imports `components` from `/@keel/islands.ts` and calls `resume(document.body, components, { ctx, stores, mode })`.
 // Spec: k.server Topology: `node` serves the resume entry.
 // Seed: 1337 (fc.assert seed below). Real compiled TSX (compile + evaluate), in-process createApp, no listening server.
 import { compile } from "@keel/compiler";

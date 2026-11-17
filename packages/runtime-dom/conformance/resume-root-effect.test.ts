@@ -74,7 +74,7 @@ async function expectFallbackAndLiveB(s: ReturnType<typeof setup>, at = "") {
   const pre = document.querySelector("pre[data-k-error]");
   if (pre === null) throw new Error("expected root fallback");
   expect(pre.getAttribute("data-k-error")).toBe(at);
-  expect(pre.textContent).toBe("fx1");
+  expect(pre.textContent).toBe("keel.unexpected");
   expect(document.querySelector('[data-k-island="A"]')).toBeNull();
 
   const count = document.querySelector("#b\\.count");
