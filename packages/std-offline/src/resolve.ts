@@ -1,5 +1,4 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
 import type { EndpointMap } from "@keel/services";
 import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
@@ -7,6 +6,7 @@ import type { Outbox } from "./Outbox.type.ts";
 import type { OutboxResult } from "./OutboxResult.ts";
 import type { Resolution } from "./Resolution.schema.ts";
 import type { Outputs } from "./internal/Outputs.ts";
+import { admit } from "./internal/admit.ts";
 import { configOf } from "./internal/configOf.ts";
 import { flush } from "./internal/flush.ts";
 import { load } from "./internal/load.ts";
@@ -14,7 +14,8 @@ import { persist } from "./internal/persist.ts";
 
 /**
  * Answer a refused entry (std.offline Resolve), once the stored outbox has loaded. `'mine'` queues a `conflict` entry
- * again, last, with `base` set to its `head`, writes the outbox to `ctx.storage`, flushes, and resolves that entry's
+ * again, last, with `base` set to its `head`, writes the outbox to `ctx.storage` (a running flush does not take the entry
+ * until that write settles), flushes, and resolves that entry's
  * `OutboxResult` as `send` does: `queued` when offline or when the flush stops before it, `failed` with
  * `offline.storage` (the entry failed in memory, nothing posted) when the storage write rejects. `'theirs'` removes a
  * `conflict` or `failed` entry, writes the outbox and resolves true. Each logs `<id>.resolve` `{ key, resolution }`.
@@ -53,11 +54,7 @@ export async function resolve<const D extends EndpointMap>(
     await persist(ctx, c);
     return true;
   }
-  const stored = await attempt(() => persist(ctx, c));
-  if (!stored.ok) {
-    const error = { code: "offline.storage" as const, message: stored.error.message, data: {} };
-    tx(c.settle, { key, state: "failed", error });
-    return { state: "failed", error };
-  }
+  const error = await admit(ctx, c, key);
+  if (error) return { state: "failed", error };
   return ctx.net.online() ? asResult<Outputs<D>>(await flush(ctx, c, key)) : { state: "queued" };
 }

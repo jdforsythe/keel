@@ -6,13 +6,15 @@ import type { Config } from "./Config.ts";
 import { field } from "./field.ts";
 import { outcomeOf } from "./outcomeOf.ts";
 import { persist } from "./persist.ts";
+import { storageError } from "./storageError.ts";
 
 const obj = (x: unknown): object => (typeof x === "object" && x !== null ? x : {});
 
 /**
  * Sends the outbox's `queued` entries in order, one request at a time (std.offline Flush), unless its flush is already
  * running, through a `base` service at the entry's origin whose answers `outcomeOf` reads. A network failure keeps the
- * entry queued, stops, and retries 1 s later doubling to 60 s on `ctx.clock` while online. An entry naming no endpoint
+ * entry queued, stops, and retries 1 s later doubling to 60 s on `ctx.clock` while online. A queued entry whose own
+ * storage write (`send`, a `'mine'` `resolve`) has not settled is waited for in its place. An entry naming no endpoint
  * of the api is `failed` (`api.input`); a storage write that rejects fails the entry in hand (`offline.storage`) and
  * ends the flush. Resolves the settlement of entry `key`, or `queued` when the flush stops before it.
  */
@@ -40,6 +42,12 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
     for (;;) {
       const e = c.store.get("entries").find((x) => x.state === "queued");
       if (!c.live || !ctx.net.online() || e === undefined) break;
+      // An entry whose own write to `ctx.storage` has not settled: wait for it, then look again (it may be `failed`).
+      const writing = c.writes.get(e.key);
+      if (writing !== undefined) {
+        await writing;
+        continue;
+      }
       key = e.key;
       await put(e.key, "sending", {});
       const at = Object.hasOwn(c.api, e.endpoint) ? c.api[e.endpoint] : undefined;
@@ -75,9 +83,9 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
         done(e.key, out);
       }
     }
-  } catch (x) {
+  } catch {
     // A storage write that rejected: the entry in hand is failed in memory, and the flush is released.
-    const error = { code: "offline.storage" as const, message: String(x), data: {} };
+    const error = storageError(c);
     tx(c.settle, { key, state: "failed", error });
     done(key, { state: "failed", error });
   }

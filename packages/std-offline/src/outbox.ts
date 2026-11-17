@@ -75,6 +75,7 @@ export function outbox<const D extends EndpointMap>(
       timer: new AbortController(),
       waits: new Map(),
       again: undefined,
+      writes: new Map(),
     };
     return c;
   };

@@ -39,4 +39,6 @@ export interface Config {
   timer: AbortController;
   readonly waits: Map<string, (r: OutboxResult<unknown>) => void>;
   again: string | undefined;
+  /** The entries whose own write to `ctx.storage` (`send`, a `'mine'` `resolve`) has not settled, and that write. */
+  readonly writes: Map<string, Promise<unknown>>;
 }
