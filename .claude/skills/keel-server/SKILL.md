@@ -17,6 +17,8 @@ export const postTodo = action({ input: TodoDraft, params: ListParams, stores: b
 ```
 Undo one caller's writes: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. `caller` is a hash of the signed cookie (`""` before the first write).
 
+An API route's action declares `output` and returns `ok(value)` of its type, and its guards, loaders and actions get `bearer` beside `caller` (keel-api).
+
 **Where:** `loader`/`action` only in `*.server.ts` (E1551). A loader or action naming `stores`, or a live loader, in a module a `client` or `static` deployable serves is E1558; place that module in a `node` deployable. Server code never writes module-level stores.
 
 **Background work:** `export const runners = [...]` (`{ run(ctx, signal) }`) in `modules/<id>/runners.server.ts`; a rejected `run` runs again 1,000 ms later.

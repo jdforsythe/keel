@@ -39,6 +39,23 @@ Password hashes and tokens for `node` deployables: `credentials(ctx)` hashes and
 
 Guidance checked: 2026-11-16, OWASP Password Storage Cheat Sheet, scrypt: N = 2^17, r = 8, p = 1 at the least.
 
+## Tokens in an API route
+
+A minted token leaves as `reveal(token)` into an `s.string()` field of an API action's `output`, once, in a `*.server.ts` file. A presented token arrives as the handler's `bearer`:
+
+```ts
+// in an action with output: s.object({ token: s.string() })
+const minted = credentials(ctx).mint({ ttl: null })
+if (!minted.ok) return err(minted.error)
+// ... store minted.value.id and minted.value.digest ...
+return ok({ token: reveal(minted.value.token) })
+
+// in a handler that checks a presented token
+if (bearer === undefined) return err(denied)
+const found = credentials(ctx).check(bearer, (id) => rows.find((r) => r.id === id))
+if (!found.ok) return err(found.error)
+```
+
 ## Extension points
 
 Uses the **capability registry** (k.ctx `register('credentials', { real, shell, sim })`), the **schema type registry** (`credentials.Hashed`, `credentials.Digested`), **std config** (k.module: `CredentialsConfig` registered under `@keel/std-credentials`) and the **check rule registry** (k.check: E2201 and E2202 from `./tools`).
