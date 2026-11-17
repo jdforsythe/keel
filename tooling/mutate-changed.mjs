@@ -1,5 +1,5 @@
 // Mutation run for the work at hand: only packages with changed files, and inside a package only its changed
-// `src` files when nothing else in it changed (prose aside). Range: `--base <ref>...HEAD` (default origin/main, or HEAD~50 without it).
+// `src` files when nothing else in it changed (prose aside). Range: `--base <ref>...HEAD` (default origin/master, or HEAD~50 without it).
 // Stryker is incremental (shared cache, tooling/mutate-cache.ts), so unchanged mutants are reused either way.
 // A change to the shared mutation tooling runs every package whole. Usage: node tooling/mutate-changed.mjs [--base <ref>] [--list]
 // A stop (`pnpm mutate:stop`, Ctrl-C, SIGTERM) ends the whole sequence: the live package's run stops and no further
@@ -66,7 +66,7 @@ export function stopRequested(file, since) {
 if (process.argv[1] === new URL(import.meta.url).pathname) {
   const argv = process.argv.slice(2);
   const at = argv.indexOf("--base");
-  const base = at >= 0 ? argv[at + 1] : has("origin/main") ? "origin/main" : "HEAD~50";
+  const base = at >= 0 ? argv[at + 1] : has("origin/master") ? "origin/master" : "HEAD~50";
   await run("mutate-changed", async () => {
     const all = fs
       .readdirSync(path.join(root, "packages"))
