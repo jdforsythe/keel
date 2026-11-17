@@ -102,7 +102,7 @@ const longOr = (t: fc.Arbitrary<string>) =>
     { weight: 1, arbitrary: fc.tuple(t, fc.integer({ min: 100, max: 1_500 })).map(([v, n]) => v.repeat(n)) },
   );
 
-describe("finding 1: no secret or pii value makes the scrub throw", () => {
+describe("no secret or pii value makes the scrub throw", () => {
   it("an ill-formed value is still marked as written and in its JSON form, and gives no URL form", () => {
     const v = "ab\ud800cd";
     const one = (m: string) => scrubbed(m, [[new Set([v]), "[secret]"]]);
@@ -216,7 +216,7 @@ describe("finding 1: no secret or pii value makes the scrub throw", () => {
   });
 });
 
-describe("finding 2: a secret holding an object or an array marks each string and number in it", () => {
+describe("a secret holding an object or an array marks each string and number in it", () => {
   it("an action's object and array secrets are marked in its diag", async () => {
     const Cfg = s.secret(s.object({ id: s.string(), key: s.string(), n: s.number() }));
     const Keys = s.secret(s.array(s.string()));
@@ -237,7 +237,7 @@ describe("finding 2: a secret holding an object or an array marks each string an
   });
 });
 
-describe("finding 4: overlapping values leave no part of a secret", () => {
+describe("overlapping values leave no part of a secret", () => {
   const rq = (secrets: string[], pii: string[] = []) => ({ secrets: new Set(secrets), pii: new Set(pii) });
   it("a secret that holds a pii value is marked whole", () => {
     expect(redacted("k abcd-XYZW-9876", rq(["abcd-XYZW-9876"], ["XYZW"]))).toBe("k [secret]");
@@ -271,7 +271,7 @@ describe("finding 4: overlapping values leave no part of a secret", () => {
   });
 });
 
-describe("finding 5: the matchers are kept for a set while it has not grown", () => {
+describe("the matchers are kept for a set while it has not grown", () => {
   it("gives the same matchers for the same values and builds new ones when the set grows", () => {
     const set = new Set(["tok-1111", "tok-2222"]);
     const first = matcherOf(set);
@@ -286,7 +286,7 @@ describe("finding 5: the matchers are kept for a set while it has not grown", ()
   });
 });
 
-describe("finding 7: each createApp puts the server's listener back", () => {
+describe("each createApp puts the server's listener back", () => {
   it("a stray onSecret and its off before a later createApp leave that app's scrub on", async () => {
     await actionApp(Nothing, async () => {
       throw new Error("unused");
@@ -307,7 +307,7 @@ describe("finding 7: each createApp puts the server's listener back", () => {
 
 describe("a long value is found by a scan linear in the text and the value", () => {
   // A clock is not read in tests (S0006): each case checks that every value is held for the linear scan rather than
-  // as an expression, and runs the adversarial shape, where a scan per start took 6 to 33 s.
+  // as an expression, and runs the adversarial shape, which a scan restarted at every position would not finish in the test's time.
   const scanned = (message: string, secrets: readonly string[]): { out: string; linear: boolean } => {
     const set = new Set(secrets);
     const held = new Set(matcherOf(set).long.map((l) => l.form));
