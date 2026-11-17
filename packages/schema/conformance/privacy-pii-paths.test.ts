@@ -1,4 +1,4 @@
-// Spec: k.privacy, Conformance "`piiPaths` lists each marked leaf once with its class, an array item as `*`, and every leaf under a marked object."
+// Spec: k.schema, Conformance "`piiPaths` lists each marked leaf once with its class, an array item as `*`, and every leaf under a marked object."
 // Seed: 1337.
 // Skipped until `piiPaths` exists. Path text is compared dotted: the spec does not say whether `path` is a string or segments.
 import { piiPaths, s } from "@keel/schema";

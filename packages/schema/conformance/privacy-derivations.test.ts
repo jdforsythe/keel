@@ -1,4 +1,4 @@
-// Spec: k.privacy, Conformance "For every generated schema with marked nodes, `parse`, `encode`, `decodeStrings` and `gen` give what the unmarked schema gives."
+// Spec: k.schema, Conformance "For every generated schema with marked nodes, `parse`, `encode`, `decodeStrings` and `gen` give what the unmarked schema gives."
 // Seed: 1337.
 // Skipped until `.pii(class)` exists.
 import { type StringInput, s } from "@keel/schema";

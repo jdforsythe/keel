@@ -1,4 +1,4 @@
-// Spec: k.server, Conformance "A loader throwing in `modules/a/a.server.ts` logs a `diag` whose `frames` start at that file: at most 5, none under `packages/`, `node_modules/` or outside the folder holding `artifacts`; none without `artifacts`."
+// Spec: k.deploy, Conformance "A loader throwing in `modules/a/a.server.ts` logs a `diag` whose `frames` start at that file: at most 5, none under `packages/`, `node_modules/` or outside the folder holding `artifacts`; none without `artifacts`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMED shape (k.server Log: "as `<path>:<line>:<col>` relative to the folder holding `artifacts`"): `frames` is an array of strings in json mode,
