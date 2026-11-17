@@ -11,9 +11,9 @@ import { Box, Button, Input } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { Session, record, session } from "../src/index.ts";
-import { replay } from "../src/replay.ts";
 import { redactionOf } from "../src/internal/redactionOf.ts";
 import { redactSession } from "../src/redactSession.ts";
+import { replay } from "../src/replay.ts";
 
 const typed: { value: string } = { value: "" };
 const routes = manifest({

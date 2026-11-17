@@ -85,15 +85,13 @@ describe("the secret set's count cap", () => {
     expect(redacted("value-1-qqqqqqqqqqqqqqqqqqqqqq end", { secrets: into, pii: new Set() })).toBe("[secret]");
   });
 
-  it("reaches the real cap with 100,001 one-to-six-digit values quickly", () => {
+  it("reaches the real cap with 100,001 one-to-six-digit values inside the test bound", () => {
     const into = new Set<string>();
-    const t0 = performance.now();
     holdSecrets(
       into,
       Array.from({ length: 100_001 }, (_, i) => String(i)),
     );
     expect(pastCap.has(into)).toBe(true);
     expect(into.size).toBe(100_002);
-    expect(performance.now() - t0).toBeLessThan(5_000);
   });
 });

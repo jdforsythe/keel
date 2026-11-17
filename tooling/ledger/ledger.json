@@ -3,7 +3,7 @@
   "unsafe": 18,
   "rungs": {
     "example": 1052,
-    "probabilistic": 312,
+    "probabilistic": 313,
     "exhaustive": 15,
     "proven": 52,
     "monitored": 4
@@ -11,7 +11,7 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 75.03,
+        "score": 75.07,
         "threshold": 70
       },
       "cli": {
@@ -47,11 +47,11 @@
         "threshold": 70
       },
       "schema": {
-        "score": 91.06,
+        "score": 92.62,
         "threshold": 80
       },
       "server": {
-        "score": 82.98,
+        "score": 81.91,
         "threshold": 70
       },
       "services": {
@@ -11957,15 +11957,15 @@
     },
     {
       "item": "k.privacy#7",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "k.privacy#8",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.privacy#9",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.privacy#10",

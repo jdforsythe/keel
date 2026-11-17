@@ -11,8 +11,8 @@ import { Box, Button } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { Session, record } from "../src/index.ts";
-import { replay } from "../src/replay.ts";
 import { isInput } from "../src/internal/isInput.ts";
+import { replay } from "../src/replay.ts";
 import { toTest } from "../src/toTest.ts";
 
 function build() {

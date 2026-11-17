@@ -11,8 +11,8 @@ import { renderRoute } from "@keel/testing";
 import { Box, Button, Text } from "@keel/ui";
 import { describe, expect, test } from "vitest";
 import { Session, record } from "../src/index.ts";
-import { replay } from "../src/replay.ts";
 import { minimize } from "../src/minimize.ts";
+import { replay } from "../src/replay.ts";
 
 const ZERO = { n: 0 };
 
