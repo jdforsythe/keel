@@ -214,3 +214,59 @@ describe("the cases the scan broke on", () => {
     expect(one("abcd-1234-9876", ["abcd-1234-9876"], ["1234"])).toBe("[secret]");
   });
 });
+
+describe("the cap bounds the work", () => {
+  const users = (n: number): Set<string> => new Set(Array.from({ length: n }, (_, i) => `user${i}@example.com`));
+  const sets = (pii: ReadonlySet<string>): [ReadonlySet<string>, string][] => [
+    [new Set<string>(), "[secret]"],
+    [pii, "[pii]"],
+  ];
+
+  it("forming stops at the cap, so 1,000,000 values cost what 300,000 do", () => {
+    const few = counter();
+    const many = counter();
+    expect(scrubbed("login failed for user7@example.com", sets(users(300_000)), few)).toBe("[pii]");
+    expect(scrubbed("login failed for user7@example.com", sets(users(1_000_000)), many)).toBe("[pii]");
+    expect(many.build).toBe(few.build);
+    expect(many.forms).toBe(few.forms);
+    expect(many.forms).toBeGreaterThan(2_000_000);
+    expect(many.forms).toBeLessThanOrEqual(2_000_000 + 200);
+  });
+
+  it("a later text on the same sets, grown or not, adds no build and no forms", () => {
+    const pii = users(1_000_000);
+    const passes = sets(pii);
+    scrubbed("first", passes);
+    const later = counter();
+    expect(scrubbed("frame /app/x.ts:1:1", passes, later)).toBe("[pii]");
+    pii.add("one-more@example.com");
+    expect(scrubbed("frame /app/x.ts:2:1", passes, later)).toBe("[pii]");
+    expect(later).toEqual(counter());
+  });
+
+  it("past the cap a request that made a secret holding no string or number is marked `[secret]`", () => {
+    expect(
+      scrubbed("refused true", [
+        [new Set([""]), "[secret]"],
+        [users(1_000_000), "[pii]"],
+      ]),
+    ).toBe("[secret]");
+  });
+});
+
+describe("a form of 1 or 2 units splits no surrogate pair", () => {
+  it("is not marked on either half of a pair, and is as a whole lone surrogate", () => {
+    expect(one("say 😀 ok", ["\ud83d"])).toBe("say 😀 ok");
+    expect(one("say a😀 ok", ["a\ud83d"])).toBe("say a😀 ok");
+    expect(one("say 😀 ok", ["\ude00"])).toBe("say 😀 ok");
+    expect(one("say \ud83d ok", ["\ud83d"])).toBe("say [secret] ok");
+  });
+});
+
+describe("a padded base64 copy goes with its padding", () => {
+  it("even when a longer form ends at the same unit", () => {
+    const w = "hunter2!xy";
+    expect(one("m aHVudGVyMiF4eQ== x", [w])).toBe("m [secret] x");
+    expect(one("m QaHVudGVyMiF4eQ== x", [w, "QaHVudGVyMiF4eQ"])).toBe("m [secret] x");
+  });
+});

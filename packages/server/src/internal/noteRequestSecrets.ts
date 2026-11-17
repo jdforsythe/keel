@@ -1,10 +1,16 @@
 import { type SecretListener, onSecret, secretValues } from "@keel/schema/internal";
 import { requestSecrets } from "./requestSecrets.ts";
 
-/** Adds the revealed strings and numbers of `made` (`secretValues`) to the set of the request running, if any. */
+/**
+ * Adds the revealed strings and numbers of `made` (`secretValues`) to the set of the request running, if any, and the
+ * empty string, which matches nothing: the set then holds a value whenever the request made a secret, a boolean one too,
+ * so past the scrub's cap its texts are marked `[secret]` (`scrubbed`).
+ */
 const note: SecretListener = (made) => {
   const into = requestSecrets.getStore();
-  if (into !== undefined) for (const v of secretValues(made)) into.add(v);
+  if (into === undefined) return;
+  into.add("");
+  for (const v of secretValues(made)) into.add(v);
 };
 
 /**

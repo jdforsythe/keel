@@ -10,9 +10,14 @@ const word = (t: string, i: number): boolean =>
 const back = (t: string, at: number): number =>
   (t.charCodeAt(at - 1) & 0xfc00) === 0xdc00 && (t.charCodeAt(at - 2) & 0xfc00) === 0xd800 ? at - 2 : at - 1;
 
+/** Whether `at` or `end` falls between the two halves of a surrogate pair of `t`. */
+const split = (t: string, at: number, end: number): boolean =>
+  [at, end].some((k) => (t.charCodeAt(k - 1) & 0xfc00) === 0xd800 && (t.charCodeAt(k) & 0xfc00) === 0xdc00);
+
 /**
  * `message` with each value of each pass replaced by that pass's mark (k.privacy Server log), in each written form
- * `automatonOf` holds, case-folded, a form under 3 code units only as a whole token. The text is read once: at each
+ * `automatonOf` holds, case-folded, a form under 3 code units only as a whole token
+ * that splits no surrogate pair. The text is read once: at each
  * code unit the automaton's longest valid match ending there joins the run of matches it overlaps, and each run is
  * replaced as a whole, so the whole of each marked copy is replaced. The run's mark is that of its longest match; of
  * two as long, the earlier pass's. Past the automaton's cap the message is one mark, the first pass's that holds a
@@ -47,7 +52,8 @@ export function scrubbed(
     for (let t = out[s] ?? -1; t >= 0; t = out[fail[t] ?? 0] ?? -1) {
       steps++;
       let at = i + 1 - (depth[t] ?? 0);
-      if (i + 1 - at < 3 && (word(message, back(message, at)) || word(message, i + 1))) continue;
+      if (i + 1 - at < 3 && (word(message, back(message, at)) || word(message, i + 1) || split(message, at, i + 1)))
+        continue;
       const tm = term[t] ?? 0;
       let end = i + 1;
       for (let p = tm & 3; p > 0 && message.charCodeAt(end) === 61; p--) end++;

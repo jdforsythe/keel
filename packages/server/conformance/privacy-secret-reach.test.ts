@@ -374,4 +374,53 @@ describe("k.privacy secret reach", () => {
       for (const line of t.lines) expect(line).not.toContain("@@@@");
     });
   }
+
+  const throwNotes = (notes: readonly string[]): never => {
+    const thrown = new Error(`refused ${String(notes[0])}`);
+    thrown.stack = `Error: ${thrown.message}\n    at save (${process.cwd()}/modules/app/save.server.ts:10:4)\n    at next (${process.cwd()}/modules/app/other.ts:3:1)`;
+    throw thrown;
+  };
+  const withFlagAction = action(
+    { input: s.object({ flag: s.secret(s.boolean()), notes: s.array(s.string().pii("contact")) }) },
+    async (input) => {
+      await Promise.resolve();
+      return throwNotes(input.notes);
+    },
+  );
+  const notesOnlyAction = action({ input: s.object({ notes: s.array(s.string().pii("contact")) }) }, async (input) => {
+    await Promise.resolve();
+    return throwNotes(input.notes);
+  });
+  const sendNotes = (body: Record<string, unknown>): Request =>
+    new Request("http://localhost/a", {
+      method: "POST",
+      headers: { ...json, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+  for (const mode of modes) {
+    it(`Past 2,000,000 characters of personal-data values' written forms, with a secret that adds no value, the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the values, in ${mode}.`, async () => {
+      const t = await boot(mode, { act: withFlagAction, artifacts });
+      await (await t.app.fetch(sendNotes({ flag: true, notes: manyKeys(2000) }))).text();
+      const diags = diagsOf(t.lines);
+      expect(diags).toHaveLength(1);
+      for (const line of diags) {
+        expect(fieldOf(line, "message")).toBe("[secret]");
+        expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+      }
+      for (const line of t.lines) expect(line).not.toContain("@@@@");
+    }, 60_000);
+
+    it(`Past 2,000,000 characters of personal-data values' written forms, with no secret in the request, the \`diag\` message and each frame are one mark \`[pii]\` and no line holds the values, in ${mode}.`, async () => {
+      const t = await boot(mode, { act: notesOnlyAction, artifacts });
+      await (await t.app.fetch(sendNotes({ notes: manyKeys(2000) }))).text();
+      const diags = diagsOf(t.lines);
+      expect(diags).toHaveLength(1);
+      for (const line of diags) {
+        expect(fieldOf(line, "message")).toBe("[pii]");
+        expect(framesOf(line)).toEqual(["[pii]", "[pii]"]);
+      }
+      for (const line of t.lines) expect(line).not.toContain("@@@@");
+    }, 60_000);
+  }
 });
