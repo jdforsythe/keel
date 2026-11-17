@@ -1,8 +1,7 @@
 // @vitest-environment node
 // Spec: k.api, Bearer "An API route's guard, loader and action get `bearer: Secret<string> | undefined` beside `caller`, from the `authorization` header; a page's action has none, and a page's guard and loader get `undefined`."
-// Spec: k.api, Bearer "The header's value, less leading and trailing whitespace, is the scheme `Bearer` in any letter case, one or more spaces, then 1 to 4,096 characters of `A-Z a-z 0-9 - . _ ~ + /` and any trailing `=`."
+// Spec: k.api, Bearer "The header's value, less leading and trailing spaces and tabs, is the scheme `Bearer` in any letter case, one or more spaces, then 1 to 4,096 characters of `A-Z a-z 0-9 - . _ ~ + /` and any trailing `=`."
 // Spec: k.api, Bearer "Anything else is `undefined`: no header, another scheme, an empty or longer token, a space inside it, or two headers (joined by `, `); it is no error and is not logged."
-// Spec: k.api, Bearer "The header's value, less leading and trailing whitespace"
 // Spec: k.api, Calling "a guard `redirect` naming one is E1508 at the first read of the table"
 // Spec: k.api, Conformance "A denying guard with a `redirect` answers 403 `keel.denied` and no `Location`."
 // Spec: k.server, Log "`diag` per diagnostic or uncaught throw (personal data dropped, k.privacy"
@@ -16,8 +15,6 @@
 // Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production"
 // Spec: k.hosting, Allowed origins "`OPTIONS` with `access-control-request-method`: 204 with `access-control-allow-origin` (that origin), `access-control-allow-methods` (the route's methods), `access-control-allow-headers: accept, authorization, content-type, x-keel`, `access-control-allow-credentials: true`, `access-control-max-age: 600` and `vary: origin`; no guard, loader or action runs."
 // Seed: 1337.
-// UNTESTABLE as written: which characters "whitespace" names is not stated, so a no-break space, vertical tab or form feed before or after the value is not asserted; U+FEFF cannot be sent (a header value is a ByteString).
-// The tests assert that a space or tab around the value is stripped, and that those characters inside it or in place of the separating spaces give `undefined`.
 // A guard `redirect` cannot name an API route (E1508), so a redirect hop to a second API route is asserted as the spec says: the table refuses it, and no second guard sees a bearer.
 // The parse table is the bearer grammar of k.api: scheme `bearer` in any case, one or more spaces, token68 of 1 to 4,096 characters, then `=*`.
 // `Headers.get` joins two headers with `, ` and trims each value, so a value ending in a space reads as the trimmed one.
@@ -239,7 +236,7 @@ describe("k.api bearer", () => {
     expect(revealed("live.loader")).toBe("abc");
   });
 
-  it("The header's value, less leading and trailing whitespace, is the scheme `Bearer` in any letter case, one or more spaces, then 1 to 4,096 characters of `A-Z a-z 0-9 - . _ ~ + /` and any trailing `=`.", async () => {
+  it("The header's value, less leading and trailing spaces and tabs, is the scheme `Bearer` in any letter case, one or more spaces, then 1 to 4,096 characters of `A-Z a-z 0-9 - . _ ~ + /` and any trailing `=`.", async () => {
     const app = await boot("production");
     await fc.assert(
       fc.asyncProperty(
@@ -416,7 +413,7 @@ describe("k.api bearer", () => {
     });
   }
 
-  it("The header's value, less leading and trailing whitespace, is the scheme `Bearer`: a space or tab around the value is stripped, and a no-break space, vertical tab or form feed inside it or in place of the separating space gives `undefined`.", async () => {
+  it("The header's value, less leading and trailing spaces and tabs, is the scheme `Bearer`: a space or tab around the value is stripped, and a no-break space, vertical tab or form feed before or after the token, inside it or in place of the separating space gives `undefined`.", async () => {
     const app = await boot("production");
     const edge = fc.string({ unit: fc.constantFrom(" ", "\t"), maxLength: 4 });
     await fc.assert(
@@ -431,7 +428,7 @@ describe("k.api bearer", () => {
     const odd = ["\u00a0", "\u000b", "\u000c"] as const;
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(...odd), tokenArb(1, 10), tokenArb(1, 10), async (ws, a, b) => {
-        for (const auth of [`Bearer ${a}${ws}${b}`, `Bearer${ws}${a}`]) {
+        for (const auth of [`Bearer ${a}${ws}${b}`, `Bearer${ws}${a}`, `${ws}Bearer ${a}`, `Bearer ${a}${ws}`]) {
           reset();
           await drain(await app.fetch(request("GET", "/api/who", auth)));
           await drain(await app.fetch(request("POST", "/api/who", auth)));
