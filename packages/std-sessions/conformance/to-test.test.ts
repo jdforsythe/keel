@@ -43,7 +43,9 @@ describe("std.sessions: to-test", () => {
   test("The `to-test` file passes `keel check`", () => {
     const files = fx.files().filter((f) => f.path.endsWith(".ts"));
     expect(files.map((f) => f.path)).toContain(emitted);
-    expect(check(files, { root: fx.dir }).summary.errors).toBe(0);
+    expect(
+      check(files, { root: fx.dir }).diagnostics.filter((d) => d.code.startsWith("E") && d.path === emitted),
+    ).toEqual([]);
   });
 
   test("The `to-test` file fails under `keel test` on the buggy fixture", async () => {

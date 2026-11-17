@@ -5,7 +5,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { run } from "@keel/cli";
-import { Session, replay } from "@keel/std-sessions";
+import { Session } from "@keel/std-sessions";
+import { replay } from "@keel/std-sessions/replay";
 import { minimize } from "@keel/std-sessions/minimize";
 import { afterAll, describe, expect, test } from "vitest";
 import { applyTo, buggyRoutes, buggySession, diskFixture, sessionFile } from "./fixtures.ts";

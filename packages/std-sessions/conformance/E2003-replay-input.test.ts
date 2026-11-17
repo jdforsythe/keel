@@ -2,7 +2,7 @@
 // Spec: std.sessions, clause "E2001-E2005 each fire on a fixture, not on its clean twin." (E2003)
 // Seed 1337
 import { run } from "@keel/cli";
-import { replay } from "@keel/std-sessions";
+import { replay } from "@keel/std-sessions/replay";
 import "@keel/std-sessions/tools";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";

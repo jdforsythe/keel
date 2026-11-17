@@ -4,7 +4,8 @@
 // Assumptions: `ctx.net.setOnline(b)` is the sim switch (k.sync); `replay`'s `observed` is the array of events it
 // observed during replay (std.sessions: "others are observations"), so a re-recorded `net` event appears in it.
 import { createCtx } from "@keel/ctx";
-import { record, replay } from "@keel/std-sessions";
+import { record } from "@keel/std-sessions";
+import { replay } from "@keel/std-sessions/replay";
 import { openGroup, replayGroup } from "@keel/std-sessions/group";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";

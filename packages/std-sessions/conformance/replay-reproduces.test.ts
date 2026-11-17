@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: std.sessions, clause "Replaying an unmodified session reproduces every store's final state and its fingerprint."
 // Seed 1337
-import { replay } from "@keel/std-sessions";
+import { replay } from "@keel/std-sessions/replay";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { SEED, cartRoutes, play, stepArb } from "./fixtures.ts";
