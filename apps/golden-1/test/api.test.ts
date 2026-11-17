@@ -116,7 +116,7 @@ describe("loaders and actions", () => {
     expect(await postList.run({ name: "Work", write: write("w1", 0) }, { params: {}, url: URL_, ...a }, sim())).toEqual(
       {
         ok: true,
-        value: null,
+        value: {},
       },
     );
     const listId = st.board.get("lists")[0]?.id ?? "";
@@ -247,10 +247,10 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
       },
     });
   });
-  it("every write endpoint commits and answers ok(null); undo reverts the caller's last one only", async () => {
+  it("every write endpoint commits and answers ok({}); undo reverts the caller's last one only", async () => {
     const app = await apiApp();
     const created = await app.fetch(post("/api/lists", { name: "Work", write: { key: "w1", base: 0 } }));
-    expect([created.status, await created.json()]).toEqual([200, { ok: true, value: null }]);
+    expect([created.status, await created.json()]).toEqual([200, { ok: true, value: {} }]);
     // The first write sets the caller cookie (the cookie is the undo scope); this client sends it back, as a browser would.
     const cookie = created.headers.get("set-cookie")?.split(";")[0] ?? "";
     expect(cookie).toMatch(/^keel-caller=/);

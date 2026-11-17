@@ -369,7 +369,7 @@ describe("postRemove", () => {
     const st = inScope(() => removalStores(ctx));
     expect(st.board.restore({ state: both, log: [], initial: both }).ok).toBe(true);
     const r = await postRemove.run({}, { ...at(ListParams, { listId: "l1" }), stores: st }, ctx);
-    expect(r).toEqual({ ok: true, value: null });
+    expect(r).toEqual({ ok: true, value: {} });
     expect(st.board.get("lists")).toEqual([{ ...home, hidden: true }, work]);
     expect(st.board.get("todos")).toEqual(both.todos);
     const rows = Object.values(st.removal.store.get("instances"));
@@ -401,7 +401,7 @@ describe("postUndoRemoval", () => {
   it("an undo while hidden moves the removal to restoring, and the list is shown again", async () => {
     const ctx = await seeded();
     const flow = await removeOn(ctx, "l1");
-    expect(await undoOn(ctx, flow)).toEqual({ ok: true, value: null });
+    expect(await undoOn(ctx, flow)).toEqual({ ok: true, value: {} });
     expect((await storedFlows(ctx)).rows[flow]?.state).toBe("restoring");
     await runFor(ctx, ctx.clock, 10_000);
     expect((await storedFlows(ctx)).rows[flow]?.state).toBe("kept");

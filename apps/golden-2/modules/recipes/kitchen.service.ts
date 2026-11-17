@@ -4,11 +4,12 @@ import { Box } from "../kitchen/Box.schema.ts";
 import { CatalogParams } from "../kitchen/CatalogParams.schema.ts";
 import { CatalogResult } from "../kitchen/CatalogResult.schema.ts";
 import { CatalogSearch } from "../kitchen/CatalogSearch.schema.ts";
+import { Nothing } from "../kitchen/Nothing.schema.ts";
 import { RecipeDraft } from "../kitchen/RecipeDraft.schema.ts";
 import { RecipeRef } from "../kitchen/RecipeRef.schema.ts";
 import { ErrorReply } from "./ErrorReply.schema.ts";
 
-/** The `kitchen` routes `recipes` calls: `box` answers the `kitchen.recipes` loader's value, `catalog` one page of `kitchen.catalog`, each action its href or none. */
+/** The `kitchen` routes `recipes` calls: `box` answers the `kitchen.recipes` loader's value, `catalog` one page of `kitchen.catalog`, each action an empty object. */
 export const kitchen = endpoints({
   box: { method: "GET", path: "/api/recipes", output: Box },
   catalog: {
@@ -22,14 +23,14 @@ export const kitchen = endpoints({
     method: "POST",
     path: "/api/recipes",
     body: RecipeDraft,
-    output: s.string().nullable(),
+    output: Nothing,
     errors: { 422: ErrorReply },
   },
   favorite: {
     method: "POST",
     path: "/api/recipes/:recipeId/favorite",
     params: RecipeRef,
-    output: s.string().nullable(),
+    output: Nothing,
     errors: { 404: ErrorReply },
   },
 });

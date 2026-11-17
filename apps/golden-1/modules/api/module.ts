@@ -26,6 +26,7 @@ export default module({
       "ToggleWrite",
       "boardChannel",
       "Removal",
+      "Nothing",
     ],
     routes: [
       "api.lists",

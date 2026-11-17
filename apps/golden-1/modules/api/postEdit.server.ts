@@ -1,6 +1,7 @@
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
+import { Nothing } from "./Nothing.schema.ts";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { TodoWrite } from "./TodoWrite.schema.ts";
 import { boardStores } from "./boardStores.ts";
@@ -11,7 +12,7 @@ import { boardStores } from "./boardStores.ts";
  * board's head is `keel.conflict` (409, `api.editTodo` refuses concurrent writes).
  */
 export const postEdit = action(
-  { input: TodoWrite, params: TodoIdParams, stores: boardStores },
+  { input: TodoWrite, params: TodoIdParams, output: Nothing, stores: boardStores },
   (input, { params, caller, stores }) => {
     const { todoId } = params;
     const todos = stores.board.get("todos");
@@ -21,6 +22,6 @@ export const postEdit = action(
     if (todos.some((t) => t.listId === todo.listId && t.id !== todoId && t.title === draft.title))
       return err({ code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } });
     const r = tx(stores.editTodo, { ...draft, id: todoId }, { meta: { caller }, ...write });
-    return r.ok ? ok(null) : err(r.error);
+    return r.ok ? ok({}) : err(r.error);
   },
 );

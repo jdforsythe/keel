@@ -83,16 +83,16 @@ describe("schemas", () => {
     expect(TodoDraft.parse({ title: "", priority: "high" }).ok).toBe(false);
     expect(Suggestion.parse({ title: "Eggs" }).ok).toBe(true);
   });
-  it("the todos endpoints answer the route values: the board, and an href or none", () => {
+  it("the todos endpoints answer the route values: the board, and an empty object", () => {
     const value = { lists: [L], todos: [], canUndo: true, head: 3 };
     expect(todos.lists.output.parse(value).ok).toBe(true);
     expect(todos.lists.output.parse({ id: "api.lists", results: { "api.lists": { ok: true, value } } }).ok).toBe(false);
-    expect(todos.undo.output.parse(null).ok).toBe(true);
-    expect(todos.undo.output.parse({ ok: true, value: null }).ok).toBe(false);
+    expect(todos.undo.output.parse({}).ok).toBe(true);
+    expect(todos.undo.output.parse(null).ok).toBe(false);
   });
   it("the board writes decode the whole answer: { ok: true, value }, and a 422's keel.fields", () => {
-    expect(WriteAnswer.parse({ ok: true, value: null }).ok).toBe(true);
-    expect(WriteAnswer.parse({ ok: true, value: "/lists/l1" }).ok).toBe(true);
+    expect(WriteAnswer.parse({ ok: true, value: {} }).ok).toBe(true);
+    expect(WriteAnswer.parse({ ok: true, value: "/lists/l1" }).ok).toBe(false);
     expect(WriteAnswer.parse(null).ok).toBe(false);
     expect(boardWrites.editTodo.output).toBe(WriteAnswer);
     const fields = { code: "keel.fields", message: "m", data: { title: "taken" } };
@@ -129,10 +129,10 @@ describe("todos service", () => {
     const seen: string[] = [];
     ctx.net.route(UNDO, async (req) => {
       seen.push(`${req.method} ${req.headers.get("accept")}`);
-      return new Response(JSON.stringify({ ok: true, value: null }));
+      return new Response(JSON.stringify({ ok: true, value: {} }));
     });
     const r = await todosApi.undo({}, ctx);
-    expect(r).toEqual({ ok: true, value: null });
+    expect(r).toEqual({ ok: true, value: {} });
     expect(seen).toEqual(["POST application/json"]);
   });
 });

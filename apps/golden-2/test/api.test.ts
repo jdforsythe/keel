@@ -71,7 +71,7 @@ describe("kitchen endpoints", () => {
     });
 
     const added = await fetchJson(app, asJson("POST", "/api/recipes", draft("Soup", 30, 1800, "JPY")));
-    expect(added).toEqual({ status: 200, body: { ok: true, value: null } });
+    expect(added).toEqual({ status: 200, body: { ok: true, value: {} } });
 
     const listed = await fetchJson(app, asJson("GET", "/api/recipes"));
     const body = JSON.stringify(listed.body);
@@ -98,7 +98,7 @@ describe("kitchen endpoints", () => {
     expect(noPrice.status).toBe(422);
 
     const toggled = await fetchJson(app, asJson("POST", `/api/recipes/${id}/favorite`, {}));
-    expect(toggled).toEqual({ status: 200, body: { ok: true, value: null } });
+    expect(toggled).toEqual({ status: 200, body: { ok: true, value: {} } });
     expect(JSON.stringify((await fetchJson(app, asJson("GET", "/api/recipes"))).body)).toContain('"favorite":true');
 
     const missing = createCtx({ mode: "sim", seed: 99 }).random.id("Recipe");

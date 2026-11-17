@@ -1,4 +1,4 @@
-import type { Action, Loader } from "@keel/router";
+import type { ApiAction, Loader } from "@keel/router";
 import type { ChannelEvent } from "../ChannelEvent.ts";
 
 /**
@@ -10,5 +10,5 @@ export interface ChannelRoute<M, S> {
   readonly id: string;
   readonly path: string;
   readonly loader: Loader<ChannelEvent<M>, unknown, unknown, S>;
-  readonly actions: { readonly POST: Action<unknown, unknown, S> };
+  readonly actions: { readonly POST: ApiAction<unknown, unknown, unknown, S> };
 }

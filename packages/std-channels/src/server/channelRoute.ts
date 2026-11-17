@@ -26,7 +26,7 @@ const closed = (reason: "denied" | "full") => ok({ kind: "closed", reason } as c
  * store `stores` creates (with `member` re-checked against the stores as saved: false, or a failed re-read, ends it
  * with `closed` `denied`) and `message` per publish to the same channel and params, delivered after any pending
  * re-check. `POST { message }` is an action: `member` false is 403,
- * else every open member stream of the instance gets the message and it answers `ok(null)`. Params that fail the
+ * else every open member stream of the instance gets the message and it answers `ok({})`. Params that fail the
  * channel's schema are `keel.notFound`. Events name no caller and hold no store state.
  */
 export function channelRoute<P, M, S>(
@@ -99,14 +99,17 @@ export function channelRoute<P, M, S>(
   const message = channel.message;
   const POST =
     message === undefined
-      ? action({ input: s.object({}), stores }, () => err(denied))
-      : action({ input: s.object({ message }), stores }, (input, { url, caller, stores }, ctx) => {
-          const p = paramsOf(channel.params, url);
-          if (!p.ok) return err(notFound);
-          if (!allowed(member, { caller, params: p.value.value, stores })) return err(denied);
-          const key = instance(p.value.key);
-          for (const sk of hubOf(ctx).sinks) if (sk.key === key) sk.post(input.message);
-          return ok(null);
-        });
+      ? action({ input: s.object({}), output: s.object({}), stores }, () => err(denied))
+      : action(
+          { input: s.object({ message }), output: s.object({}), stores },
+          (input, { url, caller, stores }, ctx) => {
+            const p = paramsOf(channel.params, url);
+            if (!p.ok) return err(notFound);
+            if (!allowed(member, { caller, params: p.value.value, stores })) return err(denied);
+            const key = instance(p.value.key);
+            for (const sk of hubOf(ctx).sinks) if (sk.key === key) sk.post(input.message);
+            return ok({});
+          },
+        );
   return Object.freeze({ id, path: channel.path, loader: live, actions: Object.freeze({ POST }) });
 }

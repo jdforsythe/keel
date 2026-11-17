@@ -24,13 +24,13 @@ const refusal = { code: "keel.fields", message: "Fix the fields", data: { name: 
 
 describe("formAnswer", () => {
   it("answers ok(null) for a sent write", async () => {
-    const ctx = ctxAnswering(200, { ok: true, value: null });
+    const ctx = ctxAnswering(200, { ok: true, value: {} });
     const r = await sendList(ctx);
     expect(r.state).toBe("sent");
     expect(await formAnswer(ctx, "createList", r)).toEqual({ ok: true, value: null });
   });
   it("answers ok(null) for a queued write and leaves it in the outbox", async () => {
-    const ctx = ctxAnswering(200, { ok: true, value: null });
+    const ctx = ctxAnswering(200, { ok: true, value: {} });
     ctx.net.setOnline(false);
     const r = await sendList(ctx);
     expect(r.state).toBe("queued");

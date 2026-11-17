@@ -168,7 +168,7 @@ describe("digest jobs and actions on an unbound ctx", () => {
   it("refresh enqueues one digest.recount in the digest queue", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     const args = { params: {}, url: `${ORIGIN}/digest/refresh`, caller: "", stores: undefined };
-    expect(await refresh.run({}, args, ctx)).toEqual({ ok: true, value: null });
+    expect(await refresh.run({}, args, ctx)).toEqual({ ok: true, value: {} });
     const queue: unknown = JSON.parse((await ctx.storage.get("std.jobs.digest")) ?? "{}");
     expect(queue).toMatchObject({ q: [{ job: "digest.recount", input: {} }] });
   });
