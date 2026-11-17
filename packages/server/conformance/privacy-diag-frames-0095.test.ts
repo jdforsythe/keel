@@ -1,4 +1,4 @@
-// Spec: k.privacy, Conformance "An action throwing an `Error` whose stack names a file path holding a marked input value logs that frame with `[pii]` in place of the value."
+// Spec: k.privacy, Conformance "An action throwing an `Error` whose message or a stack frame's file path holds a marked input value logs a `diag` record with `[pii]` in its place, in dev and production."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMED shape (k.server Log): `frames` is an array of strings in json mode. The stack is generated: an app frame whose

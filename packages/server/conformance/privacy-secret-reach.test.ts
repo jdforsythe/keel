@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 // @vitest-environment happy-dom
-// Spec: k.privacy, Sinks "So is the revealed value of each `Secret` made while the request runs (`bearer` too), by `[secret]`: each string or number in it, not a boolean."
+// Spec: k.privacy, Sinks "Each string, number and key but a declared field name (not a boolean) in a `Secret` made while the request runs (`bearer` too) becomes `[secret]`."
 // Spec: k.server, Log "`diag` per diagnostic or uncaught throw"
-// Spec: k.privacy, Sinks "One made at startup or in a runner is not."
-// Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await`; a boolean secret logs as is; of two overlapping requests each marks only its own."
-// Spec: k.privacy, Sinks "Past 2,000,000 characters of these values' written forms, the message and each frame are one mark, `[secret]` if the request made a secret."
+// Spec: k.privacy, Sinks "A runner's `run` is scoped alike; startup is not."
+// Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await`, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
+// Spec: k.privacy, Sinks "Past 2,000,000 characters of these values' written forms or 100,000 secret values, a message after its prefix (`loader <id> threw: `), each frame and the path are one mark, `[secret]` if the scope made a secret."
+// Spec: k.privacy, Conformance "A secret route param is `[secret]` in the `req` path. Past 100,000 secret values a loader's throw logs `loader <id> threw: [secret]`."
 // Seed: 1337.
 // A `Secret` is made with `made(s.secret(s.string()).parse(text))` inside the handler, after an `await`: the scope that marks it follows the call chain of the request.
 // The two-request case orders the requests on the sim clock (`ctx.clock.advance`), with no timers.
@@ -17,7 +18,7 @@ import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { SEED, createApp, get, post } from "./fixtures.ts";
 import { made, mintLater } from "./privacy-secret-reach-helper.ts";
-import { createAppLoose, flush } from "./topology-fixtures.ts";
+import { createAppLoose, flush, liveLoader, readChunks } from "./topology-fixtures.ts";
 
 const Nothing = s.object({});
 const view = (): Node => document.createElement("main");
@@ -30,6 +31,11 @@ const forms = (v: string): string[] => [v, btoa(v), encodeURIComponent(v)];
 const kind = (line: string): unknown => {
   const rec: unknown = JSON.parse(line);
   return typeof rec === "object" && rec !== null ? Reflect.get(rec, "kind") : undefined;
+};
+const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
+const fieldOf = (line: string, name: string): unknown => {
+  const rec: unknown = JSON.parse(line);
+  return typeof rec === "object" && rec !== null ? Reflect.get(rec, name) : undefined;
 };
 const diagsOf = (lines: readonly string[]): string[] => lines.filter((l) => kind(l) === "diag");
 
@@ -55,6 +61,7 @@ async function boot(mode: "dev" | "production", parts: Parts, ctx = createCtx({ 
   return { app, lines, ctx };
 }
 const json = { accept: "application/json" };
+const sse = { accept: "text/event-stream" };
 
 // Frames are relative to the folder holding `artifacts`: a scratch folder in the working directory.
 let artifacts = "";
@@ -302,7 +309,7 @@ describe("k.privacy secret reach", () => {
     expect(diagsOf(t.lines).some((l) => l.includes("startup startup-8e2b4d"))).toBe(true);
   });
 
-  it("One made in a runner is not marked: a runner that parses a `Secret` and rejects with its revealed value logs the `runner rejected` line holding it as written.", async () => {
+  it("One made in a runner is marked: a runner that parses a `Secret` and rejects with its revealed value logs the `runner rejected, rerun in 1000 ms: ` line holding `runner [secret]` and no line holds the value.", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
     const lines: string[] = [];
     const routes = manifest({ "app.a": { path: "/a", component: view } });
@@ -322,7 +329,35 @@ describe("k.privacy secret reach", () => {
     await flush();
     const diags = diagsOf(lines);
     expect(diags.length).toBeGreaterThan(0);
-    expect(diags.some((l) => l.includes("runner runner-5d3c1f"))).toBe(true);
+    expect(diags.some((l) => l.includes("runner rejected, rerun in 1000 ms: ") && l.includes("runner [secret]"))).toBe(
+      true,
+    );
+    for (const line of lines) for (const form of forms("runner-5d3c1f")) expect(line).not.toContain(form);
+    await app.close?.();
+  });
+
+  it("A runner whose `run` makes 100,001 distinct secret values and rejects logs `runner rejected, rerun in 1000 ms: [secret]`.", async () => {
+    const ctx = createCtx({ mode: "sim", seed: SEED });
+    const lines: string[] = [];
+    const routes = manifest({ "app.a": { path: "/a", component: view } });
+    const run = async (): Promise<void> => {
+      await Promise.resolve();
+      made(s.secret(s.array(s.int())).parse(range(100_001)));
+      throw new Error("refused 7");
+    };
+    const app = await createAppLoose({
+      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+      routes,
+      ctx,
+      mode: "dev",
+      log: { format: "json", write: (l: string) => void lines.push(l) },
+      runners: { app: [{ run }] },
+    });
+    await flush();
+    const diags = diagsOf(lines);
+    expect(diags.length).toBeGreaterThan(0);
+    expect(fieldOf(diags[0] ?? "{}", "message")).toBe("runner rejected, rerun in 1000 ms: [secret]");
+    for (const line of lines) expect(line).not.toContain("refused 7");
     await app.close?.();
   });
 
@@ -339,10 +374,6 @@ describe("k.privacy secret reach", () => {
       headers: { ...json, "content-type": "application/json" },
       body: JSON.stringify({ keys: manyKeys(n) }),
     });
-  const fieldOf = (line: string, name: string): unknown => {
-    const rec: unknown = JSON.parse(line);
-    return typeof rec === "object" && rec !== null ? Reflect.get(rec, name) : undefined;
-  };
   const framesOf = (line: string): unknown[] => {
     const found = fieldOf(line, "frames");
     return Array.isArray(found) ? found : [];
@@ -355,7 +386,7 @@ describe("k.privacy secret reach", () => {
       const diags = diagsOf(t.lines);
       expect(diags).toHaveLength(1);
       for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("[secret]");
+        expect(fieldOf(line, "message")).toBe("action app.a threw: [secret]");
         expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
       }
       for (const line of t.lines) expect(line).not.toContain("@@@@");
@@ -405,7 +436,7 @@ describe("k.privacy secret reach", () => {
       const diags = diagsOf(t.lines);
       expect(diags).toHaveLength(1);
       for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("[secret]");
+        expect(fieldOf(line, "message")).toBe("action app.a threw: [secret]");
         expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
       }
       for (const line of t.lines) expect(line).not.toContain("@@@@");
@@ -417,10 +448,125 @@ describe("k.privacy secret reach", () => {
       const diags = diagsOf(t.lines);
       expect(diags).toHaveLength(1);
       for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("[pii]");
+        expect(fieldOf(line, "message")).toBe("action app.a threw: [pii]");
         expect(framesOf(line)).toEqual(["[pii]", "[pii]"]);
       }
       for (const line of t.lines) expect(line).not.toContain("@@@@");
+    }, 60_000);
+  }
+
+  const bodyOf = (body: unknown): Request =>
+    new Request("http://localhost/a", {
+      method: "POST",
+      headers: { ...json, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+  for (const mode of modes) {
+    it(`A record key in a \`Secret\` is marked: an action parsing \`s.secret(s.record(s.string()))\` with key \`acct-7f3a9c\` thrown as \`Error("got " + key)\` logs \`got [secret]\`, in ${mode}.`, async () => {
+      const act = action({ input: Nothing }, async () => {
+        await Promise.resolve();
+        const r = made(s.secret(s.record(s.string())).parse({ "acct-7f3a9c": "x" }));
+        throw new Error(`got ${String(Object.keys(reveal(r))[0])}`);
+      });
+      const t = await boot(mode, { act });
+      await (await t.app.fetch(bodyOf({}))).text();
+      expect(diagsOf(t.lines).some((l) => l.includes("got [secret]"))).toBe(true);
+      for (const line of t.lines) for (const form of forms("acct-7f3a9c")) expect(line).not.toContain(form);
+    });
+
+    it(`A \`json\` key in a \`Secret\` is marked: an action parsing \`s.secret(s.json())\` with key \`jk-41b2c3\` thrown as \`Error("got " + key)\` logs \`got [secret]\`, in ${mode}.`, async () => {
+      const act = action({ input: Nothing }, async () => {
+        await Promise.resolve();
+        const value = reveal(made(s.secret(s.json()).parse({ "jk-41b2c3": 1 })));
+        throw new Error(`got ${typeof value === "object" && value !== null ? Object.keys(value).join(",") : "none"}`);
+      });
+      const t = await boot(mode, { act });
+      await (await t.app.fetch(bodyOf({}))).text();
+      expect(diagsOf(t.lines).some((l) => l.includes("got [secret]"))).toBe(true);
+      for (const line of t.lines) for (const form of forms("jk-41b2c3")) expect(line).not.toContain(form);
+    });
+  }
+
+  const stackOf = (message: string): Error => {
+    const thrown = new Error(message);
+    thrown.stack = `Error: ${message}\n    at save (${process.cwd()}/modules/app/save.server.ts:10:4)\n    at next (${process.cwd()}/modules/app/other.ts:3:1)`;
+    return thrown;
+  };
+  const countedLoader = (n: number) =>
+    loader({ output: Nothing }, async () => {
+      await Promise.resolve();
+      made(s.secret(s.array(s.int())).parse(range(n)));
+      throw stackOf("refused 7");
+    });
+  const countedLive = (n: number) =>
+    liveLoader(Nothing, async function* () {
+      await Promise.resolve();
+      made(s.secret(s.array(s.int())).parse(range(n)));
+      yield await Promise.resolve(ok({}));
+      throw stackOf("refused 7");
+    });
+
+  for (const mode of modes) {
+    it(`Past 100,000 secret values a loader's throw on a document GET logs one \`diag\` \`loader app.a threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the response body holds `[secret]` and not `refused 7`" : ""}.`, async () => {
+      const t = await boot(mode, { loader: countedLoader(100_001), artifacts });
+      const body = await (await t.app.fetch(get("/a"))).text();
+      const diags = diagsOf(t.lines);
+      expect(diags).toHaveLength(1);
+      for (const line of diags) {
+        expect(fieldOf(line, "message")).toBe("loader app.a threw: [secret]");
+        expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+      }
+      for (const line of t.lines) expect(line).not.toContain("refused 7");
+      if (mode === "dev") {
+        expect(body).toContain("[secret]");
+        expect(body).not.toContain("refused 7");
+      }
+    }, 60_000);
+
+    it(`At 100,000 secret values a loader's throw on a document GET logs a message starting \`loader app.a threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
+      const t = await boot(mode, { loader: countedLoader(100_000), artifacts });
+      await (await t.app.fetch(get("/a"))).text();
+      const diags = diagsOf(t.lines);
+      expect(diags).toHaveLength(1);
+      for (const line of diags) {
+        expect(String(fieldOf(line, "message")).startsWith("loader app.a threw: ")).toBe(true);
+        expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
+      }
+    }, 60_000);
+
+    it(`Past 100,000 secret values a live loader's throw on an event-stream GET logs one \`diag\` \`loader app.a threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the last `data:` line holds `[secret]` and not `refused 7`" : ""}.`, async () => {
+      const t = await boot(mode, { loader: countedLive(100_001), artifacts });
+      const text = (await readChunks(await t.app.fetch(new Request("http://localhost/a", { headers: sse })), 16)).join(
+        "",
+      );
+      const diags = diagsOf(t.lines);
+      expect(diags).toHaveLength(1);
+      for (const line of diags) {
+        expect(fieldOf(line, "message")).toBe("loader app.a threw: [secret]");
+        expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+      }
+      for (const line of t.lines) expect(line).not.toContain("refused 7");
+      if (mode === "dev") {
+        const last =
+          text
+            .split("\n")
+            .filter((l) => l.startsWith("data:"))
+            .pop() ?? "";
+        expect(last).toContain("[secret]");
+        expect(last).not.toContain("refused 7");
+      }
+    }, 60_000);
+
+    it(`At 100,000 secret values a live loader's throw on an event-stream GET logs a message starting \`loader app.a threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
+      const t = await boot(mode, { loader: countedLive(100_000), artifacts });
+      await readChunks(await t.app.fetch(new Request("http://localhost/a", { headers: sse })), 16);
+      const diags = diagsOf(t.lines);
+      expect(diags).toHaveLength(1);
+      for (const line of diags) {
+        expect(String(fieldOf(line, "message")).startsWith("loader app.a threw: ")).toBe(true);
+        expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
+      }
     }, 60_000);
   }
 });

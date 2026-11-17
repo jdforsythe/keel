@@ -1,4 +1,4 @@
-// Spec: k.privacy, Rules "E1111 a `.pii()` node in a route `params` or `search` schema (fix: none)." Conformance "A marked field in a route's `params` or `search` schema is E1111; in an action `input` it is not."
+// Spec: k.privacy, Rules "E1111 a `.pii()` or `s.secret` node in a route `params` or `search` schema (fix: none), or a route table, entry, `params` or `search` it cannot read statically (a factory call, a computed key)" Conformance "A marked or `s.secret` field in a route's `params` or `search` schema is E1111; in an action `input` it is not."
 // Seed: 1337.
 // Skipped until E1111 exists. E1111 has no fix; the no-fix list in fix-diffs.test.ts records it.
 import { check } from "@keel/check";
@@ -97,5 +97,55 @@ describe("k.privacy E1111", () => {
       }),
       { seed: SEED, numRuns: 30 },
     );
+  });
+
+  const SECRET = "s.secret(s.string())";
+  const secretLeaves = [SECRET, `${SECRET}.optional()`] as const;
+
+  it("E1111 fires on an `s.secret` field in a route's `params` or `search` schema, plain or `.optional()`, with part `params` or `search`, and not on the plain twin", () => {
+    for (const leaf of secretLeaves) {
+      const inParams = e1111([routes(S, PARAMS(leaf), SEARCH(PLAIN))]);
+      expect(inParams).toHaveLength(1);
+      expect(inParams[0]?.fix).toBeUndefined();
+      expect(inParams[0]?.see).toBe("k.privacy");
+      expect(inParams[0]?.message).toBe("personal data or a secret in route params; a URL reaches history and logs");
+      const inSearch = e1111([routes(S, PARAMS(PLAIN), SEARCH(leaf))]);
+      expect(inSearch).toHaveLength(1);
+      expect(inSearch[0]?.fix).toBeUndefined();
+      expect(inSearch[0]?.message).toBe("personal data or a secret in route search; a URL reaches history and logs");
+    }
+    expect(e1111([routes(S, PARAMS(PLAIN), SEARCH(PLAIN))])).toHaveLength(0);
+  });
+
+  it("E1111 fires on an `s.secret` field reached through a const, an import from a `*.schema.ts` file and a namespace import of `@keel/schema`", () => {
+    const viaConst = routes(S, "Id", SEARCH(PLAIN)).source.replace(
+      "const Page",
+      `const Id = s.object({ id: ${SECRET} })\nconst Page`,
+    );
+    expect(e1111([f("modules/app/routes.ts", viaConst)])).toHaveLength(1);
+    const schemaFile = (leaf: string) =>
+      f("modules/app/Params.schema.ts", `${S}export const Params = s.object({ id: ${leaf} })\n`);
+    const table = routes(`import { Params } from './Params.schema.ts'\n`, "Params", SEARCH(PLAIN));
+    expect(e1111([schemaFile(SECRET), table])).toHaveLength(1);
+    expect(e1111([schemaFile(PLAIN), table])).toHaveLength(0);
+    const ns = `import * as ns from '@keel/schema'\n`;
+    expect(e1111([routes(ns, "ns.s.object({ id: ns.s.secret(ns.s.string()) })", SEARCH(PLAIN))])).toHaveLength(1);
+    expect(e1111([routes(ns, "ns.s.object({ id: ns.s.string() })", SEARCH(PLAIN))])).toHaveLength(0);
+  });
+
+  it("E1111 does not fire on an `s.secret` field in an action `input`", () => {
+    const Edit = f("modules/app/Edit.schema.ts", `${S}export const Edit = s.object({ token: ${SECRET} })\n`);
+    const save = f(
+      "modules/app/save.server.ts",
+      `import { action } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { Edit } from './Edit.schema.ts'\n` +
+        `export const save = action({ input: Edit }, () => Promise.resolve(ok(null)))\n`,
+    );
+    const table = f(
+      "modules/app/routes.ts",
+      `import { manifest } from '@keel/router'\nimport { save } from './save.server.ts'\nconst Page = () => null\n` +
+        `export const routes = manifest({ 'app.show': { path: '/show', component: Page } })\n` +
+        `routes.actions({ 'app.show': { POST: save } })\n`,
+    );
+    expect(e1111([Edit, save, table])).toHaveLength(0);
   });
 });
