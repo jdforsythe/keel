@@ -314,8 +314,20 @@ describe("k.api bearer", () => {
 
     reset();
     const cross = await app.fetch(
-      request("POST", "/api/who", "Bearer abc", { origin: "https://evil.test", "sec-fetch-site": "cross-site" }),
+      new Request("http://localhost/api/who", {
+        method: "POST",
+        body: "{}",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          origin: "https://evil.test",
+          "sec-fetch-site": "cross-site",
+          authorization: "Bearer abc",
+        },
+      }),
     );
+    const crossBody: unknown = await cross.json();
+    expect(field(field(crossBody, "error"), "code")).toBe("keel.denied");
     expect(cross.status).toBe(403);
     expect(bearers.size).toBe(0);
   });
