@@ -8,9 +8,9 @@ status: conformance-covered
 const status = live(ctx, origin, boardChannel, {}, { read: (ctx) => readBoard(origin, ctx), hydrate })
 ```
 `live(ctx, origin, channel, params, { read, hydrate })` runs inside a scope (a component or `scope(fn)`; outside one it throws E1203) and returns `status`, a signal read: `'connecting' | 'live' | 'offline' | 'denied'`. It subscribes to the channel and runs `read(ctx)` (`Promise<Result<P, E>>`, a loader or k.services call) after each `reset` and each `saved` event; an `ok` value commits `tx(hydrate, value)`. `hydrate` is a transaction on a client store with payload `P`, listed in the calling component's `uses` (E1301). `message` events are not its concern.
-- One read at a time: events that arrive during a read cause exactly one more read after it, and a read never commits after a read started later.
+- One read at a time: a read is pending until it settles or 30 s pass on `ctx.clock`, whichever is first. Events that arrive while one is pending cause exactly one more read after it, and a read never commits after its 30 s or after a read started later.
 - `status()` is `live` while the stream is open and the latest read since its `reset` succeeded; `connecting` while the stream opens or a read is pending or failed; `offline` while `ctx.net.online()` is false; `denied` once the channel denies.
-- A failed read commits nothing and runs again 1 s later, doubling to 30 s on `ctx.clock`, or at the next event, whichever is first.
+- A failed read, or one not settled within 30 s, commits nothing and runs again 1 s later, doubling to 30 s on `ctx.clock`, or at the next event, whichever is first.
 - Disposing the scope closes the stream and drops the result of a read in flight.
 
 A live view is a client store kept current by its hydrating transaction. Values never travel on the push, so each caller holds what its own `read` returns, and each hydration is a logged transaction that a session records and a replay re-derives. The head a write names as its `base` (k.sync) is data the app's `read` returns like any other field.
@@ -26,3 +26,4 @@ A live view is a client store kept current by its hydrating transaction. Values 
 - With callers A and B subscribed to one sim server, a write by A is in B's hydrated store after B's next read, with no input from B.
 - Disposing the scope closes the stream, and a read in flight then commits nothing.
 - Under one seed, two runs of one script of saves give byte-equal logs on the hydrated store.
+- Under sim, after a committed read, a `saved` event starts a read that never settles; once `ctx.clock` passes 30 s from its start, `status()` is `connecting`, and 1 s later a second read runs; when that one settles `ok`, it commits and `status()` is `live`.
