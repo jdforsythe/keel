@@ -64,3 +64,19 @@ test("formatMoney is injective per locale for near amounts: a one-minor-unit ste
     { seed: SEED, numRuns: 200 },
   );
 });
+
+test("formatMoney throws exactly when the amount is not a Money amount", () => {
+  fc.assert(
+    fc.property(
+      fc.oneof(fc.double(), fc.integer({ min: -2e15, max: 2e15 })),
+      fc.constantFrom(...(["EUR", "GBP", "JPY", "USD"] as const)),
+      (amount, currency) => {
+        const valid = Number.isSafeInteger(amount) && Math.abs(amount) <= 1e15;
+        const run = () => formatMoney({ amount, currency }, "en-US");
+        if (valid) expect(run).not.toThrow();
+        else expect(run).toThrow(/no decimal form/);
+      },
+    ),
+    { seed: SEED, numRuns: 200 },
+  );
+});

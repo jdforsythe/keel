@@ -28,6 +28,8 @@ function decimal(amount: number, e: number): string {
  * `en-US` and `12,50 €` in `de-DE`. Reads no host locale.
  */
 export function formatMoney(m: Money, locale: Locale): string {
+  if (!Number.isSafeInteger(m.amount) || Math.abs(m.amount) > 1e15)
+    throw new Error(`money amount ${m.amount} has no decimal form`);
   const d = decimal(m.amount, EXPONENT[m.currency]);
   if (!isDecimal(d)) throw new Error(`money amount ${m.amount} has no decimal form`);
   return new Intl.NumberFormat(locale, { style: "currency", currency: m.currency }).format(d);
