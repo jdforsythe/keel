@@ -148,7 +148,8 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       }),
     );
   const served = selectDeployable(opts.topology, table, modules, opts.deployable);
-  const marks = secretSegments(served);
+  // Every route of the table, not only the served ones: a path this server forwards to a peer is marked too.
+  const marks = secretSegments(table);
   const name = opts.deployable ?? Object.keys(opts.topology)[0] ?? "";
   const hosted = Object.values(opts.topology).some((d) => d.adapter === "client" && d.host === name);
   const built = mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets, hosted) : undefined;
