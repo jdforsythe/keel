@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 956,
-    "probabilistic": 298,
+    "example": 980,
+    "probabilistic": 303,
     "exhaustive": 15,
     "proven": 51,
     "monitored": 4
@@ -8155,7 +8155,7 @@
       "pkg": "golden-1",
       "name": "Nothing",
       "file": "golden-1:api/Nothing.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "golden-1",
@@ -8683,6 +8683,174 @@
       "pkg": "golden-1",
       "name": "view",
       "file": "golden-1:todos/view.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ApiToken",
+      "file": "golden-2:accounts/ApiToken.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ApiTokens",
+      "file": "golden-2:accounts/ApiTokens.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Credentials",
+      "file": "golden-2:accounts/Credentials.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ErrorReply",
+      "file": "golden-2:accounts/ErrorReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Me",
+      "file": "golden-2:accounts/Me.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "MintedToken",
+      "file": "golden-2:accounts/MintedToken.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "PasswordChange",
+      "file": "golden-2:accounts/PasswordChange.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Session",
+      "file": "golden-2:accounts/Session.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Sessions",
+      "file": "golden-2:accounts/Sessions.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "SignedIn",
+      "file": "golden-2:accounts/SignedIn.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "SigninPage",
+      "file": "golden-2:accounts/SigninPage.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "SignupPage",
+      "file": "golden-2:accounts/SignupPage.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "TokenRequest",
+      "file": "golden-2:accounts/TokenRequest.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "User",
+      "file": "golden-2:accounts/User.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "Users",
+      "file": "golden-2:accounts/Users.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "accountStores",
+      "file": "golden-2:accounts/accountStores.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "accounts",
+      "file": "golden-2:accounts/accounts.service.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "accountsApi",
+      "file": "golden-2:accounts/accountsApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "addToken",
+      "file": "golden-2:accounts/addToken.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "addUser",
+      "file": "golden-2:accounts/addUser.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "loadAccount",
+      "file": "golden-2:accounts/loadAccount.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "loadMe",
+      "file": "golden-2:accounts/loadMe.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "postToken",
+      "file": "golden-2:accounts/postToken.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "setPassword",
+      "file": "golden-2:accounts/setPassword.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "signIn",
+      "file": "golden-2:accounts/signIn.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "submitSignIn",
+      "file": "golden-2:accounts/submitSignIn.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "submitSignUp",
+      "file": "golden-2:accounts/submitSignUp.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "wrongCredentials",
+      "file": "golden-2:accounts/wrongCredentials.ts",
       "rung": "example"
     },
     {

@@ -1,6 +1,7 @@
-// The three write bodies the board's outbox sends: a name or todo fields plus the write's `key` and `base`.
+// The three write bodies the board's outbox sends (a name or todo fields plus the write's `key` and `base`), and `Nothing`, the answer of a write with nothing to say.
 import { describe, expect, it } from "vitest";
 import { ListWrite } from "../modules/api/ListWrite.schema.ts";
+import { Nothing } from "../modules/api/Nothing.schema.ts";
 import { TodoWrite } from "../modules/api/TodoWrite.schema.ts";
 import { ToggleWrite } from "../modules/api/ToggleWrite.schema.ts";
 
@@ -48,5 +49,14 @@ describe("ToggleWrite", () => {
     expect(ToggleWrite.parse({}).ok).toBe(false);
     expect(ToggleWrite.parse({ write: { key: "", base: 0 } }).ok).toBe(false);
     expect(ToggleWrite.parse({ write: { key: "w1", base: "0" } }).ok).toBe(false);
+  });
+});
+
+describe("Nothing", () => {
+  it("accepts an empty object, the answer of a write with nothing to say", () => {
+    expect(Nothing.parse({})).toEqual({ ok: true, value: {} });
+  });
+  it("refuses a non-object", () => {
+    for (const v of [null, "{}", 0, []]) expect(Nothing.parse(v).ok).toBe(false);
   });
 });

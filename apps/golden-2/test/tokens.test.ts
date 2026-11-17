@@ -3,7 +3,20 @@ import { type SimCtx, createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
 import { describe, expect, it } from "vitest";
+import { Credentials } from "../modules/accounts/Credentials.schema.ts";
+import { ErrorReply } from "../modules/accounts/ErrorReply.schema.ts";
+import { Me } from "../modules/accounts/Me.schema.ts";
+import { MintedToken } from "../modules/accounts/MintedToken.schema.ts";
+import { SignedIn } from "../modules/accounts/SignedIn.schema.ts";
+import { TokenRequest } from "../modules/accounts/TokenRequest.schema.ts";
+import { accounts } from "../modules/accounts/accounts.service.ts";
 import { accountsApi } from "../modules/accounts/accountsApi.ts";
+import { loadAccount } from "../modules/accounts/loadAccount.server.ts";
+import { loadMe } from "../modules/accounts/loadMe.server.ts";
+import { postToken } from "../modules/accounts/postToken.server.ts";
+import { routes as accountRoutes } from "../modules/accounts/routes.ts";
+import { submitSignIn } from "../modules/accounts/submitSignIn.server.ts";
+import { submitSignUp } from "../modules/accounts/submitSignUp.server.ts";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
 import { apiCtx } from "./simApi.ts";
@@ -120,6 +133,8 @@ describe("API tokens", () => {
       data: { status: 403, body: { code: "keel.denied", message: "No token" } },
     });
     const refused = await accountsApi.mint({ body: {} }, client);
+    const body = refused.ok ? null : refused.error.code === "api.status" ? refused.error.data.body : null;
+    expect(ErrorReply.parse(body).ok).toBe(true);
     expect(refused.ok ? null : refused.error).toMatchObject({
       code: "api.status",
       data: { status: 403, body: { code: "keel.denied" } },
@@ -138,5 +153,33 @@ describe("API tokens", () => {
     const log = lines.join("\n");
     expect(log).not.toContain(PASSWORD);
     expect(log).not.toContain("a wrong password");
+  });
+});
+
+describe("accounts wiring", () => {
+  it("serves the pages with loadAccount and /api/me with loadMe", () => {
+    expect(accountRoutes.routes["accounts.signin"].loader).toBe(loadAccount);
+    expect(accountRoutes.routes["accounts.signup"].loader).toBe(loadAccount);
+    expect(accountRoutes.routes["accounts.me"].loader).toBe(loadMe);
+    expect(loadMe.output).toBe(Me);
+    expect(loadAccount.output).toBe(SignedIn);
+  });
+
+  it("gives the API action an output and the page actions none, all taking Credentials or TokenRequest", () => {
+    expect(postToken.input).toBe(TokenRequest);
+    expect(postToken.output).toBe(MintedToken);
+    expect(submitSignIn.input).toBe(Credentials);
+    expect(submitSignUp.input).toBe(Credentials);
+    expect(submitSignIn.output).toBeUndefined();
+    expect(submitSignUp.output).toBeUndefined();
+  });
+
+  it("the accounts endpoints name the two API routes' paths and answers", () => {
+    expect([accounts.mint.method, accounts.mint.path, accounts.mint.output]).toEqual([
+      "POST",
+      "/api/tokens",
+      MintedToken,
+    ]);
+    expect([accounts.me.method, accounts.me.path, accounts.me.output]).toEqual(["GET", "/api/me", Me]);
   });
 });

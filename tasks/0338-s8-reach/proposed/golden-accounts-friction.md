@@ -96,3 +96,18 @@ Ordered by cost, highest first.
 - **Wrong:** it always writes a GET loader and a test that GETs. There is no flag for an action-only route. The test goes to `test/accounts.tokens.route.test.ts` with a one-module topology, which does not match the app's tests.
 - **Unstuck:** deleted the loader and the four scaffolded tests, and wrote `test/accounts.test.ts` and `test/tokens.test.ts`.
 - **Smallest fix:** `--action POST` on `scaffold route --api`, writing an action with `output: s.object({})` and a POST test.
+
+## 16. Tests must name an item for the ledger to credit it
+- **Trying:** get every `accounts` export to `example` or better. My first tests covered all of them through routes, the factory and the service, yet 26 of the 28 items sat at `none`.
+- **Read:** keel-testing (nothing on the ledger), keel-correctness (one sentence, "Every export is named in a test", under Properties), k.ledger ("a test references an item when its body, or a helper it calls in its own file or a relative import, names it").
+- **Missing:**
+  - keel-testing and the `keel` skill never say that coverage through `routes`, a store factory or a service client credits nothing.
+  - `properties(fresh().addUser)` (a factory's member) credits only the factory, not `addUser.ts`.
+  - Calling the imported factory a second time on the same store throws (the transaction name is taken).
+  - The working form is the one in `kitchen`'s `api.test.ts`: import `addUser`, then `const { addUser } = fresh(); await properties(addUser)`. The import is shadowed and never used, and the ledger credits it by name.
+  - `keel ledger` run in the app prints only the a11y items, not the exports, so the app author cannot see the gap. Only the root `pnpm ledger` and `tooling/ledger/ledger.json` show it.
+- **Unstuck:** compared `kitchen`'s credited items with `api.test.ts`. Then I named each schema in a parse test (valid and invalid), each page in a `render` test, and each server file and the endpoints in a wiring test (`routes.routes[id].loader`, `action.input` and `output`, `accounts.me.path`). The transactions use the shadowing form above.
+- **Smallest fix:**
+  - A keel-testing line: "the ledger credits an export only when a test names its identifier; route, factory or service coverage does not count; for a factory's transaction, destructure it under its export's name".
+  - `keel ledger` in an app should list its own export items.
+  - A `keel check` warning for an app export at `none` would have flagged my first version.
