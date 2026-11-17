@@ -1,5 +1,5 @@
 # k.persist: Storage and durable state
-status: proposed
+status: conformance-covered
 
 **Storage.** `ctx.storage` holds string values by string key, as given (secrets: k.privacy); each operation returns a promise:
 - `get(key)`: the value, `null` when absent. `set(key, value)` stores it.

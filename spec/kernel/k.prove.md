@@ -1,5 +1,5 @@
 # k.prove: Proving invariants
-status: proposed
+status: conformance-covered
 
 **Purpose.** `explore` (k.model) proves a store's invariants by enumerating its states, so it needs a finite space. `prove` proves them for every state and payload the schemas allow, finite or not, by induction with an SMT solver, for functions written in the fragment below.
 

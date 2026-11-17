@@ -1,6 +1,6 @@
 # Freeze review (G3)
 
-Each section's clauses are the bullets under its **Conformance** paragraph. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the table is not a clause-by-clause audit. `conformance-covered` requires 0 partial, todo, none. One conformance test is skipped: `std-i18n/conformance/e2301.test.ts`.
+Each section's clauses are the bullets under its **Conformance** paragraph. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.topology, k.hosting, k.shell, std.db, std.shells and std.workflows were audited clause by clause; the others were not. `conformance-covered` requires 0 partial, todo, none. One conformance test is skipped: `std-i18n/conformance/e2301.test.ts`.
 
 ## 1. Per section
 
@@ -20,7 +20,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.head | 7 | **conformance-covered** | none |
 | k.forms | 16 | **conformance-covered** | none |
 | k.server | 16 | **conformance-covered** | none |
-| k.topology | 9 | implemented | not audited clause by clause |
+| k.topology | 9 | **conformance-covered** | none |
 | k.compat | 13 | **conformance-covered** | none |
 | k.api | 14 | **conformance-covered** | none |
 | k.services | 12 | **conformance-covered** | none |
@@ -34,7 +34,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.ledger | 11 | **conformance-covered** | none |
 | k.sync | 10 | **conformance-covered** | none |
 | k.deploy | 9 | **conformance-covered** | none |
-| k.hosting | 6 | implemented | not audited clause by clause |
+| k.hosting | 6 | implemented | clause 2: the client entry's fetch URL and `credentials: 'include'` are not observed by a test |
 | k.openapi | 1 | **conformance-covered** | none |
 | k.a11y | 9 | **conformance-covered** | none |
 | k.security | 13 | **conformance-covered** | none |
@@ -42,15 +42,15 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.evidence | 10 | **conformance-covered** | none |
 | k.aria | 10 | **conformance-covered** | none |
 | k.guards | 3 | **conformance-covered** | none |
-| k.persist | 12 | proposed | not audited clause by clause |
-| k.prove | 9 | proposed | not audited clause by clause |
+| k.persist | 12 | **conformance-covered** | none |
+| k.prove | 9 | **conformance-covered** | none |
 | k.reveal | 8 | **conformance-covered** | none |
-| k.shell | 6 | proposed | not audited clause by clause |
+| k.shell | 6 | proposed | clause 6: the test for "the package's drivers" matches the word `drivers` only |
 | std.brands | 6 | **conformance-covered** | none |
 | std.channels | 10 | **conformance-covered** | none |
 | std.conflicts | 8 | **conformance-covered** | none |
 | std.credentials | 15 | **conformance-covered** | none |
-| std.db | 8 | proposed | not audited clause by clause |
+| std.db | 8 | proposed | clause 1: the Postgres path runs on PGlite only; no job sets `KEEL_TEST_POSTGRES_URL` |
 | std.geo | 5 | **conformance-covered** | none |
 | std.headless | 7 | **conformance-covered** | none |
 | std.health | 7 | **conformance-covered** | none |
@@ -66,15 +66,15 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.report | 6 | **conformance-covered** | none |
 | std.schedules | 8 | **conformance-covered** | none |
 | std.sessions | 13 | **conformance-covered** | none |
-| std.shells | 6 | proposed | not audited clause by clause |
+| std.shells | 6 | **conformance-covered** | none |
 | std.statecharts | 10 | **conformance-covered** | none |
 | std.tables | 9 | **conformance-covered** | none |
 | std.temporal | 10 | **conformance-covered** | none |
 | std.text | 9 | **conformance-covered** | none |
 | std.timings | 7 | **conformance-covered** | none |
 | std.tokens | 10 | **conformance-covered** | none |
-| std.workflows | 8 | proposed | not audited clause by clause |
-| **total** | **708** | 60 of 68 covered | |
+| std.workflows | 8 | proposed | none; every clause is covered, and the status line waits for room in the section (1,499 of 1,500 tokens) |
+| **total** | **708** | 64 of 68 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -121,6 +121,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. k.topology and k.hosting are `implemented`; k.persist, k.prove, k.shell, std.db, std.shells and std.workflows are `proposed`; the other 60 are `conformance-covered`.
+No section is `frozen`. k.hosting is `implemented`; k.shell, std.db and std.workflows are `proposed`; the other 64 are `conformance-covered`.
 
-verified: a920a063ddb8a4b0b966f28da26ddaf4d1b0d2b1
+verified: c2c8a5a18bcbcaedaeadceee3cd52d62a10ca3fe

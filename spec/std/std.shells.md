@@ -1,5 +1,5 @@
 # std.shells: Shell drivers
-status: proposed
+status: conformance-covered
 
 **Extension points.** Drivers (k.persist): `@keel/std-capacitor` and `@keel/std-tauri` supply the `storage` and `net` a shell build's generated entry passes to `createCtx({ mode: 'shell', drivers })` (k.shell). App code never imports them.
 

@@ -45,13 +45,13 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits |
 | k.testing | Harness and properties | conformance-covered | given, do, expect |
 | k.model | Exploring a store's transactions | conformance-covered | reachable states, invariants |
-| k.prove | Proving invariants | proposed | Z3 induction proofs |
+| k.prove | Proving invariants | conformance-covered | Z3 proofs |
 | k.sim | Schedules and simulation | conformance-covered | delays, faults, offline; simulate |
 | k.ledger | Ledger and evidence | conformance-covered | rungs, producers, mutation claims |
 | k.server | Thin server | conformance-covered | loaders, actions, server state |
 | k.sync | Heads and concurrent writes | conformance-covered | heads, write bases, reject or rebase |
-| k.persist | Storage and durable state | proposed | atomic storage, drivers |
-| k.topology | Deployables | implemented | placement, routes, runners, peers |
+| k.persist | Storage and durable state | conformance-covered | storage, drivers |
+| k.topology | Deployables | conformance-covered | placement, runners, peers |
 | k.deploy | Production entry and deploy files | conformance-covered | `server.mjs`, `storage` |
 | k.shell | Native shells | proposed | Capacitor and Tauri apps |
 | k.compat | Surface compatibility | conformance-covered | surface, `accepts`, `--base` |
