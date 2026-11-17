@@ -22,7 +22,7 @@ const BLANK = { test: (v: string): boolean => !/[^\p{White_Space}\p{Default_Igno
 function lineOk(v: string, min: number, max: number, allowLf: boolean): boolean {
   const text = allowLf ? v.replaceAll("\n", "") : v;
   const n = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(v)].length;
-  return v.normalize("NFC") === v && !BLANK.test(v) && !BIDI.test(text) && !CONTROL.test(text) && n >= min && n <= max;
+  return v.normalize("NFC") === v && (v === "" || !BLANK.test(v)) && !BIDI.test(text) && !CONTROL.test(text) && n >= min && n <= max;
 }
 
 test("`line({ max: 3 })` accepts three `👨‍👩‍👧` (24 code units) and rejects four; it rejects `''`, `'a\\nb'`, `'a‮b'`, `'a\\u0007'` and `'é'` (not NFC), each with rule `format`.", () => {
