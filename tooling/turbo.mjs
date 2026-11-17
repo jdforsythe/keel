@@ -1,6 +1,7 @@
 // Wraps `turbo run <task>` so success is one trailer line and failure is only the failing packages' logs.
 // Usage: node tooling/turbo.mjs <task> [turbo args...]
 import { spawnSync } from "node:child_process";
+import os from "node:os";
 import { busyDiag, heldBy, acquire, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
 
@@ -26,8 +27,10 @@ const NOISE = [
 ];
 
 // Each vitest run fills every core by itself, so test tasks run four at a time: more would starve the
-// type-check heavy tests past their timeout without finishing sooner.
-const limit = task === "test" && !extra.some((a) => a.startsWith("--concurrency")) ? ["--concurrency=4"] : [];
+// type-check heavy tests past their timeout without finishing sooner. On a machine with four cores or fewer (a CI
+// runner) they run one at a time, for the same reason.
+const atOnce = os.availableParallelism() <= 4 ? 1 : 4;
+const limit = task === "test" && !extra.some((a) => a.startsWith("--concurrency")) ? [`--concurrency=${atOnce}`] : [];
 // Mutation runs one package at a time (each Stryker run fills the cores) and one run per machine.
 const one = task === "mutate" && !extra.some((a) => a.startsWith("--concurrency")) ? ["--concurrency=1"] : [];
 
