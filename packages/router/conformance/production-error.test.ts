@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.router, clause "A thrown page or loader gives an `errorElement`, and the default alert, message `unexpected` and data `{}`; with `mode: 'dev'`, its message." Seed 1337 (no random input: the cases are enumerated).
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
-import { createRouter, loader, manifest } from "@keel/router";
+import { Form, action, createRouter, loader, manifest } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
@@ -69,6 +69,48 @@ async function run(throws: Throws, withErrorElement: boolean, mode: Mode) {
   };
 }
 
+async function runAction(mode: Mode) {
+  const seen: Shown[] = [];
+  const save = action({ input: Empty }, async () => {
+    throw new Error(SECRET);
+  });
+  const Page = (): Node =>
+    Form({
+      method: "POST",
+      action: routes.href("app.form"),
+      error: (e: Shown) => {
+        seen.push({ code: e.code, message: e.message, data: e.data });
+        const d = document.createElement("div");
+        d.setAttribute("data-slot", "error");
+        d.append(e.message);
+        return d;
+      },
+      children: [document.createElement("button")],
+    });
+  const routes = manifest({ "app.form": { path: "/", component: Page } });
+  routes.actions({ "app.form": { POST: save } });
+  const ctx = createCtx({ mode: "sim", seed: SEED });
+  const history = memoryHistory("/");
+  const router = createRouter(routes, { ctx, history, ...(mode === undefined ? {} : { mode }) });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const unmount = mount(router.App, host, { ctx });
+  await settle();
+  const fe = host.querySelector("form");
+  if (fe === null) throw new Error("no form element");
+  fe.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  await settle();
+  return {
+    host,
+    seen,
+    stop: () => {
+      unmount();
+      router.dispose();
+      host.remove();
+    },
+  };
+}
+
 const THROWS: readonly Throws[] = ["page", "loader"];
 
 describe("k.router production error text", () => {
@@ -117,4 +159,24 @@ describe("k.router production error text", () => {
       });
     }
   }
+
+  for (const mode of [undefined, "production"] as const) {
+    it(`an action that throws gives a Form error { code: "keel.unexpected", message: "unexpected", data: {} } with no thrown text rendered when mode is ${mode ?? "unset"}`, async () => {
+      const r = await runAction(mode);
+      expect(r.seen).toEqual([{ code: "keel.unexpected", message: "unexpected", data: {} }]);
+      expect(r.host.querySelector('[data-slot="error"]')?.textContent).toBe("unexpected");
+      expect(r.host.textContent ?? "").not.toContain(SECRET);
+      expect(r.host.innerHTML).not.toContain(SECRET);
+      r.stop();
+    });
+  }
+
+  it('with mode "dev" an action that throws gives a Form error code keel.unexpected and its message', async () => {
+    const r = await runAction("dev");
+    expect(r.seen).toHaveLength(1);
+    expect(r.seen[0]?.code).toBe("keel.unexpected");
+    expect(r.seen[0]?.message).toContain(SECRET);
+    expect(r.host.querySelector('[data-slot="error"]')?.textContent ?? "").toContain(SECRET);
+    r.stop();
+  });
 });
