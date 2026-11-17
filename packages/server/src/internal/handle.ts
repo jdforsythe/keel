@@ -97,7 +97,7 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
     return { response: new Response(null, { status: 405, headers: { allow: allowOf(def) } }), route, diags: [] };
   const stream = method === "GET" && accept.includes("text/event-stream");
   if (stream && live?.live === undefined) return { response: new Response(null, { status: 406 }), route, diags: [] };
-  const g = await runGuards(m.route.chain, r.here, m.params, sv.routes, sv.table, sv.ctx, rq.caller.id);
+  const g = await runGuards(m.route.chain, r.here, m.params, sv.routes, sv.table, sv.ctx, rq.caller.id, rq.bearer);
   if (g.kind === "redirect")
     return {
       response: stream || api ? denied("guard denied") : redirectResponse(write ? 303 : 302, g.location),

@@ -35,9 +35,9 @@ const routes = () => {
   });
   m.actions({
     "a.lists": {
-      POST: action({ input: s.object({}) }, async () => {
+      POST: action({ input: s.object({}), output: s.object({}) }, async () => {
         ran++;
-        return ok(null);
+        return ok({});
       }),
     },
   });

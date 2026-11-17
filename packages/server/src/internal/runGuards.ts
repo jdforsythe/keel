@@ -3,7 +3,7 @@ import type { Manifest, RouteDef } from "@keel/router";
 import { carriedParams, guardLoop, guardNext, matchUrl, runGuard, withNext } from "@keel/router/internal";
 import type { Level, Located } from "@keel/router/internal";
 import { needsBare } from "@keel/router/internal";
-import { type KeelError, attempt } from "@keel/schema";
+import { type KeelError, type Secret, attempt } from "@keel/schema";
 import type { Diag } from "./Diag.ts";
 import type { GuardOutcome } from "./GuardOutcome.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
@@ -29,11 +29,12 @@ async function step(
   table: readonly Located[],
   ctx: Ctx,
   caller: string,
+  bearer?: Secret<string>,
 ): Promise<Step> {
   for (const [i, lvl] of chain.entries()) {
     const g = lvl.def.guard;
     if (g === undefined) continue;
-    const r = await runGuard(g, url, ctx, caller);
+    const r = await runGuard(g, url, ctx, caller, bearer);
     if (r.ok) continue;
     if (r.error.code !== "keel.denied") return { kind: "fail", at: i, error: r.error };
     const id = g.redirect;
@@ -81,7 +82,8 @@ async function nextHop(
  * Before answering a redirect, the target's guards run here, hop by hop (the browser would follow): a location
  * visited twice or a ninth redirect is E1508, a `keel.unexpected` failure at the denying level with a diag.
  * On an API route a denial is a `redirect` with location `""`, resolved nowhere (k.api).
- * Every guard gets the request's `caller` id (`""` anonymous).
+ * Every guard gets the request's `caller` id (`""` anonymous) and its `bearer` (`undefined` off an API route, k.api
+ * Bearer); a redirect hop's guards run without one, as the browser following it sends none.
  */
 export async function runGuards(
   chain: readonly Level[],
@@ -91,12 +93,13 @@ export async function runGuards(
   table: readonly Located[],
   ctx: Ctx,
   caller: string,
+  bearer?: Secret<string>,
 ): Promise<GuardOutcome> {
   const fail = (i: number, error: KeelError<string, unknown>, diags: readonly Diag[] = []): GuardOutcome => {
     const level = nearestErrorElement(chain, i);
     return { kind: "fail", failure: { level, bare: needsBare(chain, level), error }, diags };
   };
-  const first = await step(chain, url, params, routes, table, ctx, caller);
+  const first = await step(chain, url, params, routes, table, ctx, caller, bearer);
   if (first.kind === "pass") return first;
   if (first.kind === "fail") return fail(first.at, first.error, first.diags);
   const visited = [url];

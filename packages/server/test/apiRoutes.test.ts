@@ -14,7 +14,8 @@ const BASE = "http://localhost";
 const Denied = s.error("keel.denied", s.object({}));
 const page = (): Node => document.createElement("main");
 const read = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 3 }));
-const write = action({ input: s.object({ note: s.string({ min: 2 }) }) }, async () => ok(null));
+const write = action({ input: s.object({ note: s.string({ min: 2 }) }), output: s.object({}) }, async () => ok({}));
+const pageWrite = action({ input: s.object({ note: s.string({ min: 2 }) }) }, async () => ok(null));
 const denyTo = guard({ redirect: "ops.login" }, async () => err(Denied.make({})));
 const denyApi = guard({}, async () => err(Denied.make({})));
 const ctx = () => createCtx({ mode: "sim", seed: SEED });
@@ -84,7 +85,7 @@ describe("API routes", () => {
     const res = await app.fetch(req("POST", "/api/w", { body: form({ note: "hello" }) }));
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
-    expect(await res.json()).toEqual({ ok: true, value: null });
+    expect(await res.json()).toEqual({ ok: true, value: {} });
     const bad = await app.fetch(req("POST", "/api/w", { body: form({ note: "x" }) }));
     expect(bad.status).toBe(422);
     expect(bad.headers.get("content-type") ?? "").toContain("application/json");
@@ -146,7 +147,7 @@ describe("API routes", () => {
         const def = api ? { api: true as const, ...entry } : { ...entry, component: page };
         const routes = manifest({ "ops.x": def });
         // The verb set is drawn at run time, so the attach goes through the untyped call `routes.actions` makes.
-        const byVerb = Object.fromEntries(methods.map((m) => [m, write]));
+        const byVerb = Object.fromEntries(methods.map((m) => [m, api ? write : pageWrite]));
         if (methods.length > 0) Reflect.apply(routes.actions, undefined, [{ "ops.x": byVerb }]);
         const reads = api && !withLoader ? [] : ["GET", "HEAD"];
         expect(allowOf(def)).toBe([...reads, ...methods].join(", "));
@@ -160,7 +161,7 @@ describe("API routes", () => {
       "api.n": { api: true, path: "/api/n", loader: read },
       "ops.home": { path: "/", component: page },
     });
-    routes.actions({ "ops.home": { POST: write } });
+    routes.actions({ "ops.home": { POST: pageWrite } });
     const res = await (await boot(routes)).fetch(req("OPTIONS", "/"));
     expect(res.status).toBe(405);
     expect(res.headers.get("allow")).toBe("GET, HEAD, POST");

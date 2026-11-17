@@ -15,7 +15,8 @@ import { publicError } from "./publicError.ts";
 const HEARTBEAT_MS = 15_000;
 
 /**
- * The event stream of a live loader (k.server Request flow), after its guards passed: its `stores` factory opens
+ * The event stream of a live loader (k.server Request flow), after its guards passed, with the request's `caller` and
+ * `bearer` (k.api Bearer): its `stores` factory opens
  * once and nothing saves; each yield is one `data:` line, its `Result` JSON (`ok` encoded by `output`, `err` as it may
  * leave the server); a `:` line goes out per 15 s of `ctx.clock`. It ends when `fn` returns or its `signal` aborts:
  * on request abort or `close()` (both also cancel the stream, so a stalled write ends), or when the reader cancels.
@@ -49,7 +50,7 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
       })();
       const stores = live.stores === undefined ? undefined : await openFactory(sv.ctx, rq, live.stores);
       const args = { params: m.params, search: m.search, url: r.url, caller: rq.caller.id, stores, signal: ac.signal };
-      it = live.live?.(args, sv.ctx)[Symbol.asyncIterator]();
+      it = live.live?.(rq.bearer === undefined ? args : { ...args, bearer: rq.bearer }, sv.ctx)[Symbol.asyncIterator]();
       while (it !== undefined) {
         const next = await Promise.race([it.next(), ended]);
         if (next === undefined || next.done === true) break;

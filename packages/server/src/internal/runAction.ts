@@ -3,6 +3,7 @@ import { fieldsError, routeActions } from "@keel/router/internal";
 import { attempt, err, ok } from "@keel/schema";
 import { secretValues } from "@keel/schema/internal";
 import { saveStores } from "@keel/store/internal";
+import type { Diag } from "./Diag.ts";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import { allowOf } from "./allowOf.ts";
@@ -13,6 +14,7 @@ import { jsonResponse } from "./jsonResponse.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { notePii } from "./notePii.ts";
 import { openFactory } from "./openFactory.ts";
+import { outputRefused } from "./outputRefused.ts";
 import { page } from "./page.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
 import { publicError } from "./publicError.ts";
@@ -29,7 +31,10 @@ import { valuesOf } from "./valuesOf.ts";
  * client) is parsed with it instead, an empty one as `{}` (either fail: `keel.fields`, 422, action not called);
  * the action runs with `caller` and its `stores` instance (`openFactory`); its `ok` saves the changed stores (`saveStores`,
  * else `keel.conflict`); `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
- * the `Result` as JSON with the status of its code. A document `keel.fields` re-renders the page at 422
+ * the `Result` as JSON with the status of its code. An action with `output` (an API route's, k.api Output) also gets
+ * the request's `bearer`; its `ok` value is parsed by `output` before any store is saved (fail: an E1554 diag naming
+ * the first refused path and 500 `keel.unexpected`, nothing saved), its encoding's `.pii()` values join the request's,
+ * then the stores are saved, then it answers 200 `{ ok: true, value: <encoded> }`; a conflict sends no value. A document `keel.fields` re-renders the page at 422
  * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
  * A throw is `keel.unexpected` plus a `keel.unexpected` diag; neither holds a `.pii()` value of the decoded input or of
  * the stores it opened, nor the revealed value of a `Secret` in the decoded input (`notePii`, `secretValues`,
@@ -69,13 +74,31 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const encoded = attempt(() => action.input.encode(decoded.value));
   notePii(rq.pii, action.input, encoded.ok ? encoded.value : decoded.value);
   for (const v of secretValues(decoded.value)) rq.secrets.add(v);
+  let refused: Diag | null = null;
   const { result: ran, frames } = await caught(async () => {
     const stores = action.stores === undefined ? undefined : await openFactory(sv.ctx, rq, action.stores);
     const at = { params: m.params, url: r.url, caller: rq.caller.id, stores };
-    const out = await inRequest(rq, () => action.run(decoded.value, at, sv.ctx));
+    const out =
+      action.output === undefined
+        ? await inRequest(rq, () => action.run(decoded.value, at, sv.ctx))
+        : await inRequest(rq, () =>
+            action.run(decoded.value, rq.bearer === undefined ? at : { ...at, bearer: rq.bearer }, sv.ctx),
+          );
     if (!out.ok) return out;
+    let value = out.value;
+    if (action.output !== undefined) {
+      // Parsed before any save: a refused value saves nothing and is never sent.
+      const checked = action.output.parse(out.value);
+      if (!checked.ok) {
+        const no = outputRefused("action", id, checked.error);
+        refused = no.diag;
+        return err(no.error);
+      }
+      value = action.output.encode(checked.value);
+      notePii(rq.pii, action.output, value);
+    }
     const clash = await saveStores(sv.ctx, rq);
-    return clash === null ? out : err(clash);
+    return clash === null ? ok(value) : err(clash);
   }, sv.frames);
   // A throw: the stores as the action left them hold `.pii()` values too; its message, cause and diag drop them all.
   if (!ran.ok) {
@@ -84,13 +107,15 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
       for (const o of h.opened) notePii(rq.pii, o.store.schema, o.store.snapshot().state);
   }
   const clean = ran.ok ? null : scrubbedCause(ran.error, rq);
-  const thrown =
+  const thrown: Diag[] =
     clean === null ? [] : [{ code: "keel.unexpected", message: `action ${id} threw: ${clean.data.cause}`, frames }];
+  if (refused !== null) thrown.push(refused);
   const result = clean === null ? (ran.ok ? ran.value : ran) : err(clean);
   if (!result.ok) rq.held.clear();
   if (result.ok) {
     if (r.runtime) return { response: jsonResponse(200, ok(result.value)), route: id, diags: thrown };
-    return { response: redirectResponse(303, result.value ?? r.url), route: id, diags: thrown };
+    const to = result.value;
+    return { response: redirectResponse(303, typeof to === "string" ? to : r.url), route: id, diags: thrown };
   }
   const e = result.error;
   if (r.runtime)

@@ -5,7 +5,7 @@ import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
 import { compileRoutes, compileTable, matchUrl } from "@keel/router/internal";
-import { attempt } from "@keel/schema";
+import { attempt, reveal } from "@keel/schema";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { CSP_PATH } from "./internal/CSP_PATH.ts";
@@ -14,6 +14,7 @@ import { DEFAULT_MAX_STREAMS } from "./internal/DEFAULT_MAX_STREAMS.ts";
 import type { Served } from "./internal/Served.ts";
 import { allowOf } from "./internal/allowOf.ts";
 import { appFrames } from "./internal/appFrames.ts";
+import { bearerOf } from "./internal/bearerOf.ts";
 import { bindModules } from "./internal/bindModules.ts";
 import { callerOf } from "./internal/callerOf.ts";
 import { callerSigner } from "./internal/callerSigner.ts";
@@ -85,7 +86,9 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * `x-keel-forwarded` (k.topology Calls and peers; `forward`), and logs its `req` record like a served one. `origin`
  * replaces the request's origin in `url`, the same-site check and `Secure`; with it, no W1557. An `allow` entry that is
  * not an http(s) origin rejects with E1560 naming its index, never its value; with any entry, every API-route response
- * carries `vary: origin` (k.hosting Allowed origins). An event-stream GET past `maxStreams` (default 1,000) open streams
+ * carries `vary: origin` (k.hosting Allowed origins). An API route's guards, loaders and actions get the request's
+ * `bearer` (`bearerOf`, k.api Bearer), whose revealed text no `diag` holds; its response to a request carrying
+ * `authorization` is `cache-control: no-store`. An event-stream GET past `maxStreams` (default 1,000) open streams
  * gets 503 `keel.busy` (`data: { limit }`) and runs no loader; a stream frees its place when it ends. A `maxStreams` that is
  * not an integer of at least 1 rejects with E1560.
  * Every response carries the k.security headers (`secured`); every document its own nonce policy (report-only in dev),
@@ -177,24 +180,28 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const path = new URL(raw.url).pathname;
     const inspecting = sv.mode === "dev" && path === INSPECT_PATH;
     const peer = inspecting || raw.headers.has("x-keel-forwarded") ? undefined : peerOf(forwards, path);
-    const at = peer === undefined || matchUrl(served, path).route !== null ? undefined : peers[peer];
+    const matched = inspecting ? null : matchUrl(served, path).route;
+    const at = peer === undefined || matched !== null ? undefined : peers[peer];
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     // An allowed origin (k.hosting): granted on API routes only, by exact match of its serialized origin.
     const from = raw.headers.get("origin") ?? "";
     const known = sv.allow.has(from);
-    const hit = sv.allow.size > 0 && !inspecting ? matchUrl(served, path).route : null;
+    const hit = sv.allow.size > 0 ? matched : null;
     const api = hit?.def.api === true && known ? hit.def : undefined;
     const cross = known && raw.headers.get("sec-fetch-site") === "cross-site" && !warned.has(from);
     if (cross) warned.add(from);
     // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
     const routed = async () => {
+      // Only an API route reads `authorization` (k.api Bearer); the token is a `Secret` and the header is not kept.
+      const bearer = matched?.def.api === true ? bearerOf(raw) : undefined;
       const rq = {
         scope: scope(() => undefined),
         caller: callerOf(raw, sv.ctx, sv.keys, sv.secure, sv.origin),
+        bearer,
         allowed: api !== undefined,
         held: new Map(),
         pii: new Set<string>(),
-        secrets: new Set<string>(),
+        secrets: new Set<string>(bearer === undefined ? [] : [reveal(bearer)]),
       };
       isolate(rq.scope);
       const r = await attempt(() => handle(sv, raw, rq, c));
@@ -230,6 +237,9 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       raw,
       sv,
     );
+    // A response a token may have unlocked is per-token data: nothing keeps it (k.api Bearer).
+    if (matched?.def.api === true && raw.headers.has("authorization"))
+      response.headers.set("cache-control", "no-store");
     if (log !== undefined) {
       if (cross)
         log.write(
