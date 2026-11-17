@@ -6,8 +6,8 @@ import { Secret } from "../src/Secret.ts";
 import { gen } from "../src/gen.ts";
 import { type Schema, piiValues, s } from "../src/index.ts";
 import type { Node } from "../src/internal/Node.ts";
-import { secretValues } from "../src/internal/index.ts";
 import { isRecord } from "../src/internal/isRecord.ts";
+import { secretValues } from "../src/internal/secretValues.ts";
 
 const opts = { seed: 1337, numRuns: 100 };
 const json: Node = { kind: "json" };

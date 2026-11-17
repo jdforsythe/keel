@@ -4,7 +4,7 @@ import { expect, test } from "vitest";
 import { Secret } from "../src/Secret.ts";
 import { s } from "../src/index.ts";
 import type { Node } from "../src/internal/Node.ts";
-import { secretValues } from "../src/internal/index.ts";
+import { secretValues } from "../src/internal/secretValues.ts";
 
 const parsed = (schema: { parse(x: unknown): { ok: true; value: unknown } | { ok: false } }, x: unknown): unknown => {
   const r = schema.parse(x);

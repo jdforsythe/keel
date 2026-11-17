@@ -106,6 +106,11 @@ describe("endLine", () => {
     expect(end.exit).toBe(130);
     expect(end.line.startsWith("stopped ")).toBe(true);
   });
+  it("exits 130 with stopped when a stop file was seen between chunks", () => {
+    const end = endLine({ exit: 0, signalled: false, stopped: true, left });
+    expect(end.exit).toBe(130);
+    expect(end.line.startsWith("stopped ")).toBe(true);
+  });
   it("reports fail for another non-zero exit, and stopped for a runner's 130", () => {
     expect(endLine({ exit: 1, signalled: false, left }).line.startsWith("fail ")).toBe(true);
     expect(endLine({ exit: 130, signalled: false, left }).line.startsWith("stopped ")).toBe(true);

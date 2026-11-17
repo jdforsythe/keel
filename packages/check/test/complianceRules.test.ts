@@ -265,6 +265,13 @@ it("E1111 counts `secret` only on the @keel/schema namespace, not on any object 
   const marked = ["personal data or a secret in route search"];
   const schema = "import { s } from '@keel/schema'\n";
   expect(ran(`${schema}const cfg = { secret: (x) => x }\n`, "s.object({ q: cfg.secret() })")).toEqual([]);
+  expect(ran(`${schema}const kit = { s }\n`, "s.object({ q: kit.s.secret(s.string()) })")).toEqual(marked);
+  expect(ran(`${schema}const kit = { s: other }\n`, "s.object({ q: kit.s.secret(s.string()) })")).toEqual([
+    "route search not readable statically",
+  ]);
+  expect(ran(`${schema}const kit = { inner: { secret: () => 1 } }\n`, "s.object({ q: kit.inner.secret() })")).toEqual(
+    [],
+  );
   const unread = ["route search not readable statically"];
   expect(ran(`${schema}import { cfg } from 'elsewhere'\n`, "s.object({ q: cfg.secret() })")).toEqual(unread);
   expect(ran(schema, "s.object({ q: other.secret(s.string()) })")).toEqual(unread);

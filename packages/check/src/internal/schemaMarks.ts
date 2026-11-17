@@ -1,4 +1,4 @@
-import type { Argument, Expression } from "oxc-parser";
+import type { Argument, Expression, ObjectExpression, PropertyKey } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { followValue } from "./followValue.ts";
 import { parseFile } from "./parseFile.ts";
@@ -32,6 +32,25 @@ function audited(callee: Expression, file: SourceFile): boolean {
 
 type Ns = "yes" | "no" | "unknown";
 
+/** The name a non-computed property key spells. */
+function propertyName(key: PropertyKey): string | undefined {
+  if (key.type === "Identifier") return key.name;
+  return key.type === "Literal" && typeof key.value === "string" ? key.value : undefined;
+}
+
+/** The object literal `e` is, directly or through a top-level `const` of `file`; undefined for anything else. */
+function objectLiteral(e: Expression, file: SourceFile): ObjectExpression | undefined {
+  if (e.type === "ObjectExpression") return e;
+  if (e.type !== "Identifier") return undefined;
+  for (const st of parseFile(file).program.body) {
+    const d = st.type === "ExportNamedDeclaration" ? st.declaration : st;
+    if (d?.type !== "VariableDeclaration" || d.kind !== "const") continue;
+    for (const v of d.declarations)
+      if (v.id.type === "Identifier" && v.id.name === e.name && v.init?.type === "ObjectExpression") return v.init;
+  }
+  return undefined;
+}
+
 /**
  * Whether `e` in `file` is the `@keel/schema` namespace the `secret` factory hangs off: the `s` import, a namespace
  * import of the package, `ns.s` of that namespace, or a const or project import that leads to one. `no` for a binding
@@ -50,6 +69,14 @@ function schemaNamespace(e: Expression, file: SourceFile, project: readonly Sour
         if (st.type === "ImportDeclaration" && st.importKind !== "type" && st.source.value === "@keel/schema")
           for (const sp of st.specifiers)
             if (sp.type === "ImportNamespaceSpecifier" && sp.local.name === e.object.name) return "yes";
+    }
+    const literal = objectLiteral(e.object, file);
+    if (literal !== undefined) {
+      // A member of a local object literal is that property's value; a spread or a missing key cannot be followed.
+      for (const p of literal.properties)
+        if (p.type === "Property" && !p.computed && p.kind === "init" && propertyName(p.key) === e.property.name)
+          return schemaNamespace(p.value, file, project, hops + 1);
+      return "unknown";
     }
     return schemaNamespace(e.object, file, project, hops + 1) === "no" ? "no" : "unknown";
   }

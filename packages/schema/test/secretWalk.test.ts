@@ -4,7 +4,8 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { Secret } from "../src/Secret.ts";
 import type { Node } from "../src/internal/Node.ts";
-import { secretValues, secretWalk } from "../src/internal/index.ts";
+import { secretWalk } from "../src/internal/index.ts";
+import { secretValues } from "../src/internal/secretValues.ts";
 
 const json: Node = { kind: "json" };
 

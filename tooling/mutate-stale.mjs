@@ -70,6 +70,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     let child;
     let signalled = false;
     let timedOut = false;
+    let stopped = false;
     // A signal reaches the runner once (it owns the one SIGINT to its Stryker group) and ends the sequence with exit 130.
     for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"])
       process.on(sig, () => {
@@ -79,7 +80,11 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     let exit = 0;
     let done = 0;
     for (const c of chunks) {
-      if (signalled || timedOut || Date.now() >= limit || stopRequested(stops, t0)) break;
+      if (signalled || timedOut || Date.now() >= limit) break;
+      if (stopRequested(stops, t0)) {
+        stopped = true;
+        break;
+      }
       const started = Date.now();
       // The capped test runners: a value already set in the environment wins.
       const env = {
@@ -114,7 +119,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
       exit ||= status;
     }
     const left = chunks.slice(done);
-    const end = endLine({ exit, signalled, left });
+    const end = endLine({ exit, signalled, stopped, left });
     if (end.exit !== 0) console.log(end.line);
     return { diags: [], counts: { chunks: chunks.length, left: left.length }, exit: end.exit, line: end.line };
   });

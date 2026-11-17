@@ -329,7 +329,7 @@ export function testFacts(path: string, source: string): FileFacts {
         const rel = own?.from.startsWith(".") === true ? own : undefined;
         if (ts.isPropertyAccessExpression(p) && p.name === n) {
           const base = p.expression;
-          const ns = ts.isIdentifier(base) ? imports.get(base.text) : undefined;
+          const ns = ts.isIdentifier(base) ? importOf(base) : undefined;
           if (ns?.name === "*" && ns.from.startsWith(".")) pins.add(`${ns.from}\n${n.text}`);
           else if (ns?.name === "*" || isCallee(p)) names.add(n.text);
         } else if (

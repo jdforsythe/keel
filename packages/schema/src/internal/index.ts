@@ -3,7 +3,6 @@
 // `Secret` a request makes), and @keel/std-sessions reads to fake a format value without fast-check.
 export { sampleFormat } from "./sampleFormat.ts";
 export { secretPathOf } from "./secretPathOf.ts";
-export { secretValues } from "./secretValues.ts";
 export { secretWalk } from "./secretWalk.ts";
 export { blankAbsent } from "./blankAbsent.ts";
 export { onSecret } from "./onSecret.ts";

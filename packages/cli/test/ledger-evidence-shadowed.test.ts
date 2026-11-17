@@ -2,6 +2,7 @@
 // rung; the same call on the import earns it.
 import { describe, expect, it } from "vitest";
 import { testEvidence } from "../src/internal/testEvidence.ts";
+import { testFacts } from "../src/internal/testFacts.ts";
 
 const T = "packages/a/test/t.test.ts";
 const kinds = (source: string) => testEvidence([{ path: T, source }], new Set(), "5.3.3").map((r) => r.ev.kind);
@@ -94,5 +95,23 @@ describe("testEvidence: shadowing by class, enum and namespace names", () => {
     expect(kinds(`${KT}it("x", () => { const C = class explore { m() { explore(a); } }; });`)).toEqual(["example"]);
     expect(kinds(`${KT}it("x", () => { enum explore { A } explore; });`)).toEqual(["example"]);
     expect(kinds(`${KT}it("x", () => { namespace explore { export const a = 1; } explore.a; });`)).toEqual(["example"]);
+  });
+});
+
+describe("testEvidence: a shadowed namespace base", () => {
+  const NS = 'import * as local from "@keel/testing";\n';
+  it("the unshadowed namespace call keeps its rung", () => {
+    expect(kinds(`${NS}it("x", () => { local.explore(app, {}); });`)).toEqual(["proven"]);
+  });
+  it("a local of the namespace's name earns only an example", () => {
+    expect(kinds(`${NS}it("x", () => { const local = mine(); local.explore(app, {}); });`)).toEqual(["example"]);
+    expect(kinds(`${NS}it("x", () => { ((local: unknown) => { local.explore(app, {}); })(0); });`)).toEqual([
+      "example",
+    ]);
+  });
+  it("a member read off a local of the namespace's name adds no referenced name", () => {
+    const names = (src: string) => testFacts(T, src).tests.flatMap((t) => [...t.names]);
+    expect(names(`${NS}it("x", () => { use(local.value); });`)).toContain("value");
+    expect(names(`${NS}it("x", () => { const local = mine(); use(local.value); });`)).not.toContain("value");
   });
 });
