@@ -82,7 +82,9 @@ describe("generated entries bind std (rfc:0069)", () => {
   it("the resume entry binds #k-state's std to its ctx before resuming with that ctx", () => {
     const lines = RESUME_ENTRY.split("\n");
     const bind = lines.indexOf('bindClientStd(ctx, document.getElementById("k-state")?.textContent);');
-    const run = lines.indexOf("resume(document.body, components, { ctx, stores: Object.fromEntries(stores()) });");
+    const run = lines.indexOf(
+      "resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode });",
+    );
     expect(lines).toContain('import { bindClientStd } from "@keel/compiler/std/bindClientStd";');
     expect(bind).toBeGreaterThan(lines.indexOf('const ctx = createCtx({ mode: "real" });'));
     expect(run).toBeGreaterThan(bind);

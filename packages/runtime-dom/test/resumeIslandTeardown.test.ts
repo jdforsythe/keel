@@ -54,7 +54,7 @@ describe("resumed island teardown", () => {
     const tracker = trackListeners();
     const base = tracker.live();
     const ctx = createCtx({ mode: "sim", seed: 1 });
-    const { warnings } = resume(document.body, { T }, { ctx });
+    const { warnings } = resume(document.body, { T }, { ctx, mode: "dev" });
     expect(warnings).toEqual([]);
     expect(tracker.live()).toBeGreaterThan(base);
     click(need("#t\\.boom"));
@@ -73,7 +73,7 @@ describe("resumed island teardown", () => {
     const tracker = trackListeners();
     const base = tracker.live();
     const ctx = createCtx({ mode: "sim", seed: 1 });
-    const { warnings } = resume(document.body, { T }, { ctx });
+    const { warnings } = resume(document.body, { T }, { ctx, mode: "dev" });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/^E1253 \[data-k-island="T"\] /);
     expect(document.querySelector("section")).toBeNull();

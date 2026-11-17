@@ -130,15 +130,25 @@ describe("Boundary catches app-level effect and computed throws", () => {
 });
 
 describe("mount installs a default root Boundary", () => {
-  it("a render throw shows the message in <pre data-k-error>", () => {
-    const host = document.createElement("div");
-    const dispose = mount(() => {
-      throw new Error("app broke");
-    }, host);
-    const pre = host.querySelector("pre[data-k-error]");
-    expect(pre?.textContent).toBe("app broke");
-    dispose();
-    expect(host.childNodes.length).toBe(0);
+  it("a render throw shows keel.unexpected in <pre data-k-error>, and the message with mode dev", () => {
+    for (const [mode, text] of [
+      [undefined, "keel.unexpected"],
+      ["production", "keel.unexpected"],
+      ["dev", "app broke"],
+    ] as const) {
+      const host = document.createElement("div");
+      const dispose = mount(
+        () => {
+          throw new Error("app broke");
+        },
+        host,
+        mode === undefined ? {} : { mode },
+      );
+      const pre = host.querySelector("pre[data-k-error]");
+      expect(pre?.textContent).toBe(text);
+      dispose();
+      expect(host.childNodes.length).toBe(0);
+    }
   });
 
   it("handler and app-effect throws outside any Boundary reach the root one", () => {
@@ -146,16 +156,20 @@ describe("mount installs a default root Boundary", () => {
     const T = template('<div id="app"><button id="go">go</button></div>');
     for (const how of ["handler", "effect"]) {
       const host = document.createElement("div");
-      const dispose = mount(() => {
-        const r = clone(T);
-        on("go", "click", () => {
-          throw new Error("handler broke");
-        });
-        effect(() => {
-          if (s.get() === 1) throw new Error("effect broke");
-        });
-        return r;
-      }, host);
+      const dispose = mount(
+        () => {
+          const r = clone(T);
+          on("go", "click", () => {
+            throw new Error("handler broke");
+          });
+          effect(() => {
+            if (s.get() === 1) throw new Error("effect broke");
+          });
+          return r;
+        },
+        host,
+        { mode: "dev" },
+      );
       if (how === "handler") {
         const go = host.querySelector("#go");
         if (go === null) throw new Error("no #go");

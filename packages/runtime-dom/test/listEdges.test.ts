@@ -127,7 +127,7 @@ describe("list: errors", () => {
         return ul;
       },
       host,
-      { onError: (e) => seen.push(e) },
+      { onError: (e) => seen.push(e), mode: "dev" },
     );
     expect(host.querySelectorAll("li")).toHaveLength(1);
     bad.set(true);

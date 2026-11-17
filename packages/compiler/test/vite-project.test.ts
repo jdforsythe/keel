@@ -114,7 +114,7 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(entry).toContain('from "/modules/todos/routes.ts"');
     expect(entry).toContain('createCtx({ mode: "real" })');
     expect(entry).toContain("createRouter(__keelRoutes0, { ctx, history: browserHistory() })");
-    expect(entry).toContain("mount(router.App, el, { ctx })");
+    expect(entry).toContain("mount(router.App, el, { ctx, mode })");
     expect(parseSync("entry.js", entry, { sourceType: "module" }).errors).toEqual([]);
   });
 

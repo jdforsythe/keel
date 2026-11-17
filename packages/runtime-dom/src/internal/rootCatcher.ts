@@ -10,10 +10,14 @@ import { toUnexpected } from "./toUnexpected.ts";
 /**
  * The default root Boundary of a resumed island (k.errors), the same one `mount` puts around its tree: the first
  * throw under it becomes `keel.unexpected` with `data.at`, is reported to the ctx, and `settle` swaps the island for
- * the root fallback. Until `arm()` (the island's claim succeeded) a throw passes through as if there were no
+ * the root fallback (its text by `mode`). Until `arm()` (the island's claim succeeded) a throw passes through as if there were no
  * Boundary, so a claim that throws is a mismatch, not an error.
  */
-export function rootCatcher(ctx: Ctx | undefined, settle: (fallback: Node) => void): Catcher & { arm(): void } {
+export function rootCatcher(
+  ctx: Ctx | undefined,
+  mode: "dev" | "production" | undefined,
+  settle: (fallback: Node) => void,
+): Catcher & { arm(): void } {
   const made: Signal<{ readonly error: UnexpectedError | null }>[] = [];
   // Its own detached scope: the island outlives whatever scope `resume` runs in, and the state goes once it fails.
   const home = scope(() => void made.push(signal<{ readonly error: UnexpectedError | null }>({ error: null })), {
@@ -33,7 +37,7 @@ export function rootCatcher(ctx: Ctx | undefined, settle: (fallback: Node) => vo
       if (failed !== null) return;
       failed = toUnexpected(error, at);
       report(ctx, { kind: "error", error: failed });
-      settle(rootFallback(failed));
+      settle(rootFallback(failed, mode));
       state.set({ error: failed });
       home.dispose();
     },

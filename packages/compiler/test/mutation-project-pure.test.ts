@@ -101,7 +101,8 @@ describe("entryCode (mutation)", () => {
   const rest = [
     'const el = document.getElementById("app");',
     'if (el === null) throw new Error("keel: index.html has no #app element");',
-    "mount(router.App, el, { ctx });",
+    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
+    "mount(router.App, el, { ctx, mode });",
     "if (import.meta.env.DEV) {",
     '  let last = "";',
     "  const report = () => {",

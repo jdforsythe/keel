@@ -13,7 +13,8 @@ eventQueue.install();
  * Resume server-rendered islands under `root` (generated entry only, ADR-0006): restore `options.stores`
  * from `#k-state`, report its served `route` to `options.ctx`'s observers as a `nav`, then its failed loader's `error`
  * (`code` and `data.at` only), pass `options.ctx` (k.ctx) to every island root, then for each outermost `[data-k-island]` attach its bindings and delegated handlers to the
- * existing nodes without re-rendering, and replay events queued before resume. Returns dev warnings
+ * existing nodes without re-rendering, and replay events queued before resume. Each island has the root Boundary
+ * `mount` gives its tree; its fallback shows the message only with `options.mode` `"dev"`. Returns dev warnings
  * (E1253: that island was re-rendered on the client).
  */
 export function resume(
@@ -52,7 +53,14 @@ export function resume(
       continue;
     }
     try {
-      const w = resumeIsland(el, id, component, islandProps(component, state.islands[id], id, warnings), options.ctx);
+      const w = resumeIsland(
+        el,
+        id,
+        component,
+        islandProps(component, state.islands[id], id, warnings),
+        options.ctx,
+        options.mode,
+      );
       if (w !== null) warnings.push(w);
     } catch (error) {
       thrown ??= { error };

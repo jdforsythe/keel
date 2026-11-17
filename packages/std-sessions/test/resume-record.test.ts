@@ -54,7 +54,7 @@ describe("resumed island recording", () => {
   test("a handler that throws in a resumed island is recorded and uploaded once", async () => {
     await serve();
     const ctx = createCtx({ mode: "sim", seed: 1337 });
-    expect(resume(document.body, { "shop.page": Shop }, { ctx }).warnings).toEqual([]);
+    expect(resume(document.body, { "shop.page": Shop }, { ctx, mode: "dev" }).warnings).toEqual([]);
     const button = document.getElementById("shop.boom");
     if (button === null) throw new Error("fixture: no server button");
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
