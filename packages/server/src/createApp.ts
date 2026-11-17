@@ -58,7 +58,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * Each request follows the k.server Request flow and writes one `req` record (after any `diag`) to `log`.
  * Each request runs in its own isolated scope (k.store `isolate`): stores created in it register in its own registry,
  * appear in `#k-state` and are disposed after the response. It also runs in its own `requestSecrets` set: each `Secret`
- * made while it runs (its input, `bearer`, a parse after an `await`) joins it (`noteRequestSecrets`), and its `diag`
+ * made or revealed while it runs (its input, `bearer`, a parse after an `await`) joins it (`noteRequestSecrets`), and its `diag`
  * records and its `req` path hold `[secret]` in each one's place, as each of its `.pii()` values is `[pii]` there;
  * each runner's `run` enters its own set (`keepRunning`) and its rejection's record is scrubbed with it. Past a scrub
  * cap a `diag` keeps the server's own prefix (`loader <id> threw: `) and is one mark after it (`scrubbedDiag`). `mode` defaults to `production`.
@@ -212,7 +212,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const cross = known && raw.headers.get("sec-fetch-site") === "cross-site" && !warned.has(from);
     if (cross) warned.add(from);
     // Inspect is answered before any request scope exists, so its graph is the app's alone.
-    // Each request runs in its own `requestSecrets` set: every `Secret` made while it runs joins it (k.privacy). The
+    // Each request runs in its own `requestSecrets` set: every `Secret` made or revealed while it runs joins it (k.privacy). The
     // sets outlive `routed` so the `req` path is scrubbed with them too.
     const secrets = new Set<string>();
     const pii = new Set<string>();
