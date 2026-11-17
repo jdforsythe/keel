@@ -1,4 +1,5 @@
 import { ariaImport } from "../rules/ariaImport.ts";
+import { blankLabel } from "../rules/blankLabel.ts";
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
@@ -39,8 +40,8 @@ import type { RuleDef } from "../types/RuleDef.ts";
 
 /**
  * Kernel per-file rules, registered before any stdlib rule. Codes produced elsewhere in the pipeline:
- * compiler (E1001-E1005, E1401-E1405, E1501), types (E1751, E1453, mapped E1802/E1501/E1001), project
- * passes (E1454, E1508, E1753, E1755; k.module E1151-E1158), runner (E1756), rendered check (E1802).
+ * compiler (E1001-E1005, E1401-E1405, E1501), types (E1751, E1453, mapped E1802 for a missing prop, E1501, E1001), project
+ * passes (E1454, E1508, E1753, E1755; k.module E1151-E1158), runner (E1756), rendered check (E1802); the blankLabel rule reports E1802 for a blank literal label.
  */
 export const KERNEL_RULES: readonly RuleDef[] = [
   schemaInSchemaFile,
@@ -80,4 +81,5 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   foreignUrlFetch,
   reversedFocusOrder,
   ariaImport,
+  blankLabel,
 ];
