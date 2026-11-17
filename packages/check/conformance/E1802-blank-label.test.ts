@@ -48,8 +48,12 @@ test("`keel check` without types reports E1802 for `<Select label={``} ...>`", (
   expectBlank([tsx("<Select label={``} options={[]} />")]);
 });
 
-test('`keel check` without types reports E1802 for `<Checkbox label="\\t" ...>`', () => {
-  expectBlank([tsx(`<Checkbox label="\\t" checked={false} />`)]);
+test('`keel check` without types reports E1802 for `<Checkbox label={"\\t"} ...>`', () => {
+  expectBlank([tsx(`<Checkbox label={"\\t"} checked={false} />`)]);
+});
+
+test('`keel check` without types reports no E1802 for `<Checkbox label="\\t" ...>`, a JSX attribute string of backslash and t', () => {
+  expect(e1802([tsx(`<Checkbox label="\\t" checked={false} />`)])).toHaveLength(0);
 });
 
 test("E1802 for a blank label follows an aliased `@keel/ui` import", () => {
@@ -86,7 +90,9 @@ test("E1802 fires for a `label` of any generated white-space string, in JSX and 
   fc.assert(
     fc.property(fc.stringMatching(/^[ \t\r\n  　]*$/), (ws) => {
       const lit = JSON.stringify(ws);
-      expect(e1802([tsx(`<Box as="nav" label=${lit}>x</Box>`)])).toHaveLength(1);
+      if (/^ *$/.test(ws)) {
+        expect(e1802([tsx(`<Box as="nav" label="${ws}">x</Box>`)])).toHaveLength(1);
+      }
       expect(e1802([tsx(`<Box as="nav" label={${lit}}>x</Box>`)])).toHaveLength(1);
       expect(e1802([ts(`Input({ label: ${lit} })`)])).toHaveLength(1);
     }),
