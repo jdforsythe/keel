@@ -8,7 +8,8 @@ import type { Scope } from "./types/Scope.ts";
 
 /**
  * Run `fn` inside a new ownership scope. Primitives created during `fn` (and inside their
- * computations) belong to it. If `fn` throws, the scope is disposed and the error rethrown.
+ * computations) belong to it. If `fn` throws, the scope is disposed and that error rethrown (not one a dispose hook
+ * throws).
  * `onError` receives, after the commit, errors thrown by effects and computeds owned by this scope or
  * its descendants (unless a nearer scope declares one); the throwing effect does not run again.
  * `run(fn)` re-enters the scope later (see `Scope.run`). A `detached` scope is a root: no owner disposes it or lends
@@ -31,21 +32,31 @@ export function scope(
       if (n.gone) f();
       else n.hooks = [...(n.hooks ?? []), f];
     },
-    run(f) {
+    run<T>(f: () => T): T {
       if (n.gone) throw fail("E1206", "run on a disposed scope");
       const prev = { owner: rt.owner, reaction: rt.reaction };
       rt.owner = n;
       // Untracked, not unchecked: a disposed copy of the running computation. `track` ignores gone
       // reactions, so reads subscribe nothing; writes are still checked against its `writes` (E1201).
       rt.reaction = prev.reaction && { ...prev.reaction, gone: true };
+      let out: { readonly value: T } | { readonly error: unknown };
       try {
-        return f();
-      } finally {
-        rt.owner = prev.owner;
-        rt.reaction = prev.reaction;
-        // Disposed from inside `f`: free what the rest of `f` created.
-        if (n.gone) disposeOwned(n);
+        out = { value: f() };
+      } catch (error) {
+        out = { error };
       }
+      rt.owner = prev.owner;
+      rt.reaction = prev.reaction;
+      // Disposed from inside `f`: free what the rest of `f` created. An error of `f` wins over a hook's.
+      if (n.gone) {
+        try {
+          disposeOwned(n);
+        } catch (error) {
+          if ("value" in out) throw error;
+        }
+      }
+      if ("error" in out) throw out.error;
+      return out.value;
     },
   };
   n.handle = handle;
@@ -56,7 +67,10 @@ export function scope(
   try {
     fn();
   } catch (err) {
-    dispose(n);
+    // The error of `fn` wins over one a dispose hook throws.
+    try {
+      dispose(n);
+    } catch {}
     throw err;
   } finally {
     rt.owner = outer.owner;

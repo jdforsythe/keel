@@ -8,7 +8,8 @@ import { unlink } from "./unlink.ts";
 /**
  * Bring `n` up to date: verify Check sources in order, rerun only if one actually changed. A throw while doing so (a
  * dispose hook of what a run created) does not stop the update: `n` reruns, so no node stays Check or Dirty where a
- * later write would not reach it, and the first such error is rethrown after the run.
+ * later write would not reach it. The first error (from a source, a dispose hook, or the run itself) is rethrown after
+ * the run.
  */
 export function refresh(n: Node): void {
   if (n.gone || n.failed) return;
@@ -46,16 +47,21 @@ export function refresh(n: Node): void {
   try {
     changed = fn();
     ok = true;
-  } finally {
-    rt.reaction = prevReaction;
-    rt.owner = prevOwner;
-    // A failed effect waits for its next change; any other node whose run threw stays Dirty (a computed keeps its
-    // own error and never throws here).
-    n.state = ok || isEffect(n) ? State.Clean : State.Dirty;
-    // Disposed while running: free what the rest of the run created.
-    if (n.gone) {
+  } catch (error) {
+    pending ??= { error };
+  }
+  rt.reaction = prevReaction;
+  rt.owner = prevOwner;
+  // A failed effect waits for its next change; any other node whose run threw stays Dirty (a computed keeps its own
+  // error and never throws here).
+  n.state = ok || isEffect(n) ? State.Clean : State.Dirty;
+  // Disposed while running: free what the rest of the run created.
+  if (n.gone) {
+    unlink(n);
+    try {
       disposeOwned(n);
-      unlink(n);
+    } catch (error) {
+      pending ??= { error };
     }
   }
   if (changed) for (const o of n.observers) if (o.state === State.Check) o.state = State.Dirty;
