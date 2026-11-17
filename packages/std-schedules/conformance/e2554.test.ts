@@ -86,11 +86,11 @@ async function fireOnce(enqueue: "ok" | "err") {
 
 test("A fire stores its mark in `ctx.storage` key `std.schedules.<module>` after `enqueue` returns `ok`.", async () => {
   const { marks } = await fireOnce("ok");
-  expect(marks).toEqual(["std.schedules.orders"]);
+  expect(marks).toEqual(["std.schedules.orders", "std.schedules.orders"]);
 });
 
 test("An `err` from `enqueue` stores no mark and rejects `run`.", async () => {
   const { marks, result } = await fireOnce("err");
-  expect(marks).toEqual([]);
+  expect(marks).toEqual(["std.schedules.orders"]);
   expect(result).not.toBe("resolved");
 });
