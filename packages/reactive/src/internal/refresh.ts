@@ -5,20 +5,36 @@ import { isEffect } from "./isEffect.ts";
 import { rt } from "./rt.ts";
 import { unlink } from "./unlink.ts";
 
-/** Bring `n` up to date: verify Check sources in order, rerun only if one actually changed. */
+/**
+ * Bring `n` up to date: verify Check sources in order, rerun only if one actually changed. A throw while doing so (a
+ * dispose hook of what a run created) does not stop the update: `n` reruns, so no node stays Check or Dirty where a
+ * later write would not reach it, and the first such error is rethrown after the run.
+ */
 export function refresh(n: Node): void {
   if (n.gone || n.failed) return;
+  let pending: { readonly error: unknown } | null = null;
   // Sources in read order; stop at the first one whose change made `n` Dirty. Effects are never pulled.
   for (let i = 0; n.state === State.Check && i < n.sources.length; i++) {
     const s = n.sources[i];
-    if (s && !isEffect(s)) refresh(s);
+    if (s && !isEffect(s)) {
+      try {
+        refresh(s);
+      } catch (error) {
+        pending = { error };
+        n.state = State.Dirty;
+      }
+    }
   }
   const fn = n.fn;
   if (n.state !== State.Dirty || fn === undefined) {
     if (n.state === State.Check) n.state = State.Clean;
     return;
   }
-  disposeOwned(n);
+  try {
+    disposeOwned(n);
+  } catch (error) {
+    pending ??= { error };
+  }
   unlink(n);
   const prevReaction = rt.reaction;
   const prevOwner = rt.owner;
@@ -43,4 +59,5 @@ export function refresh(n: Node): void {
     }
   }
   if (changed) for (const o of n.observers) if (o.state === State.Check) o.state = State.Dirty;
+  if (pending) throw pending.error;
 }

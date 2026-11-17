@@ -17,7 +17,7 @@ export interface Node {
   gone: boolean;
   /** Scope nodes only: the public handle. */
   handle?: Scope;
-  /** Scope nodes only: callbacks run on dispose. */
+  /** Callbacks run on dispose: a scope's `onDispose` hooks; a computed drops its value and error. */
   hooks?: (() => void)[] | undefined;
   /** Scope nodes only: receives errors thrown by effects/computeds it owns. */
   onError?: ((error: unknown) => void) | undefined;
