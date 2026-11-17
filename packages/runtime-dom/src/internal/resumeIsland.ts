@@ -113,7 +113,10 @@ export function resumeIsland(
   const n = client.node;
   if (n !== null) {
     const host = n instanceof Element ? n : el.parentElement;
-    const nodes = n instanceof DocumentFragment ? [...n.childNodes] : n instanceof Element ? [n] : [];
+    // The root fallback replaces what the island rendered: an empty fragment leaves a marker in its place.
+    if (n instanceof DocumentFragment && n.firstChild === null) n.append(doc.createComment(""));
+    const nodes: ChildNode[] =
+      n instanceof DocumentFragment ? [...n.childNodes] : n instanceof Element || n instanceof CharacterData ? [n] : [];
     el.replaceWith(n);
     if (nodes.length > 0) live.nodes = nodes;
     if (host !== null) fresh.attach(host);
