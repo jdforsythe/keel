@@ -1,9 +1,10 @@
 import { type Match, pageHead } from "@keel/router/internal";
-import { type JsonValue, type KeelError, attempt, err, ok } from "@keel/schema";
+import { type JsonValue, type KeelError, err, ok } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { Submission } from "./Submission.ts";
+import { attempted } from "./attempted.ts";
 import { devMessageOf } from "./devMessageOf.ts";
 import { documentResponse } from "./documentResponse.ts";
 import { encodeOr } from "./encodeOr.ts";
@@ -63,7 +64,7 @@ export async function page(
     const o = outcomes[i]?.result;
     return { params, search, data: o?.ok === true ? o.value.json : null };
   };
-  const rendered = attempt(() =>
+  const rendered = attempted(() =>
     inRequest(r.rq, () =>
       renderChain({
         chain,

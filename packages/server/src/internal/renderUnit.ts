@@ -1,5 +1,5 @@
 import { mount } from "@keel/runtime-dom";
-import { attempt } from "@keel/schema";
+import { attempted } from "./attempted.ts";
 
 /**
  * Run one route component as a render unit (k.runtime): compiled ops (`text`, `on`, `cond`, ...) need a mount
@@ -14,7 +14,7 @@ export function renderUnit(fn: () => unknown): unknown {
   const out: { value: unknown; error: { e: unknown } | null } = { value: undefined, error: null };
   mount(
     () => {
-      const r = attempt(fn);
+      const r = attempted(fn);
       if (r.ok) out.value = r.value;
       else out.error = { e: r.error };
       return host.ownerDocument.createComment("");

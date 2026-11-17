@@ -1,13 +1,13 @@
-import { attempt } from "@keel/schema";
 import { securityHeaders } from "../csp/securityHeaders.ts";
 import { OTHER_POLICY } from "./OTHER_POLICY.ts";
 import type { Served } from "./Served.ts";
+import { attempted } from "./attempted.ts";
 import { httpsOf } from "./httpsOf.ts";
 import { policyHeader } from "./policyHeader.ts";
 
 /** Set the headers on `h`; false when they are immutable (a fetched peer response's). */
 const stamp = (h: Headers, sv: Served, raw: Request): boolean =>
-  attempt(() => {
+  attempted(() => {
     for (const [k, v] of Object.entries(securityHeaders({ https: httpsOf(raw, sv.secure, sv.origin) }))) h.set(k, v);
     if (!h.has("content-security-policy") && !h.has("content-security-policy-report-only"))
       h.set(policyHeader(sv.mode), OTHER_POLICY);

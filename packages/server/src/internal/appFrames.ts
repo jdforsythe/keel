@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { SourceMap } from "node:module";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { attempt } from "@keel/schema";
+import { attempted } from "./attempted.ts";
 
 const MAX = 5;
 /** Largest `server.mjs.map` read (bytes). */
@@ -14,7 +14,7 @@ const BARE = /^at (.+):(\d+):(\d+)$/;
 const fileOf = (at: string): string | undefined => {
   const bare = at.replace(/[?#].*$/s, "");
   if (!bare.startsWith("file:")) return bare;
-  const file = attempt(() => fileURLToPath(bare));
+  const file = attempted(() => fileURLToPath(bare));
   return file.ok ? file.value : undefined;
 };
 
@@ -50,7 +50,7 @@ export function appFrames(
   const source = (line: number, col: number): string | undefined => {
     if (map === undefined) {
       const file = `${bundle}.map`;
-      const read = attempt(() => {
+      const read = attempted(() => {
         if (statSync(file).size > MAX_MAP) throw new Error("over 32 MB");
         return new SourceMap(JSON.parse(readFileSync(file, "utf8")));
       });

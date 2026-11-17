@@ -1,6 +1,6 @@
 import type { Topology } from "@keel/compiler";
-import { attempt } from "@keel/schema";
 import type { PeerPath } from "./PeerPath.ts";
+import { attempted } from "./attempted.ts";
 
 /**
  * The paths `peers` serve (k.topology Calls and peers): each route of `<artifacts>/routes.json` (`{ data }`, data by
@@ -16,7 +16,7 @@ export async function peerPaths(
   const fs = await import("node:fs/promises");
   const path = await import("node:path");
   const text = await fs.readFile(path.join(artifacts, "routes.json"), "utf8").catch(() => "");
-  const parsed = attempt((): unknown => JSON.parse(text));
+  const parsed = attempted((): unknown => JSON.parse(text));
   const doc: unknown = parsed.ok ? parsed.value : undefined;
   const data: unknown = typeof doc === "object" && doc !== null ? Reflect.get(doc, "data") : undefined;
   if (typeof data !== "object" || data === null) return [];

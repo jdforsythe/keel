@@ -1,11 +1,12 @@
 import { carriedParams, guardLoop, guardNext, matchUrl, withNext } from "@keel/router/internal";
 import type { Level } from "@keel/router/internal";
 import { needsBare } from "@keel/router/internal";
-import { type KeelError, type Secret, attempt } from "@keel/schema";
+import type { KeelError, Secret } from "@keel/schema";
 import type { Diag } from "./Diag.ts";
 import type { GuardOutcome } from "./GuardOutcome.ts";
 import type { RequestScope } from "./RequestScope.ts";
 import type { Served } from "./Served.ts";
+import { attempted } from "./attempted.ts";
 import { caught } from "./caught.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { scrubbedCause } from "./scrubbedCause.ts";
@@ -63,7 +64,7 @@ async function step(
         error: unexpected(carried.error),
         diags: [{ code: "E1508", message: carried.error.slice(6, 95) }],
       };
-    const to = attempt(() => routes.href(id, carried.value));
+    const to = attempted(() => routes.href(id, carried.value));
     if (!to.ok)
       return {
         kind: "fail",

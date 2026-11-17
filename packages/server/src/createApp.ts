@@ -5,7 +5,6 @@ import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
 import { compileRoutes, compileTable, matchUrl } from "@keel/router/internal";
-import { attempt } from "@keel/schema";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { CSP_PATH } from "./internal/CSP_PATH.ts";
@@ -14,6 +13,7 @@ import { DEFAULT_MAX_STREAMS } from "./internal/DEFAULT_MAX_STREAMS.ts";
 import type { Served } from "./internal/Served.ts";
 import { allowOf } from "./internal/allowOf.ts";
 import { appFrames } from "./internal/appFrames.ts";
+import { attempted } from "./internal/attempted.ts";
 import { bearerOf } from "./internal/bearerOf.ts";
 import { bindModules } from "./internal/bindModules.ts";
 import { callerOf } from "./internal/callerOf.ts";
@@ -44,6 +44,7 @@ import { scrubbedCause } from "./internal/scrubbedCause.ts";
 import { scrubbedDiag } from "./internal/scrubbedDiag.ts";
 import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
+import { unexpected } from "./internal/unexpected.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
 import type { ServerApp } from "./types/ServerApp.ts";
@@ -184,6 +185,14 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
   const warned = new Set<string>();
   const hono = new Hono();
+  // The last resort: a throw past every guard of the handler (the app's `log.write`, say) is a bare 500 and one fixed
+  // `diag`; nothing of the thrown value is read, so none of it reaches a response, the log or stderr. Hono's own
+  // handler prints an `Error` to stderr and rethrows anything else, so it is replaced and `fetch` never rejects.
+  const lastResort = (): Response => {
+    attempted(() => log?.write(diagLine(log.format, { code: "keel.unexpected", message: "request handler threw" })));
+    return crashed(sv.mode, unexpected("request handler threw")).response;
+  };
+  hono.onError(lastResort);
   hono.all("*", async (c) => {
     const raw = c.req.raw;
     const t0 = sv.ctx.clock.now();
@@ -218,7 +227,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
           secrets,
         };
         isolate(rq.scope);
-        const r = await attempt(() => handle(sv, raw, rq, c));
+        const r = await attempted(() => handle(sv, raw, rq, c));
         rq.scope.dispose();
         if (!r.ok) return r;
         const diags = r.value.diags.map((d) => scrubbedDiag(d, rq));
@@ -229,12 +238,12 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const ran = pre
       ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
       : path === CSP_PATH
-        ? await attempt(() => cspReport(raw, sv, log, reportSource(raw, c.env)))
+        ? await attempted(() => cspReport(raw, sv, log, reportSource(raw, c.env)))
         : at !== undefined
-          ? await attempt(() => forward(raw, at, sv))
+          ? await attempted(() => forward(raw, at, sv))
           : gate === undefined || (gate.ok && raw.method !== "GET")
             ? await routed()
-            : await attempt(() =>
+            : await attempted(() =>
                 (gate.ok
                   ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
                   : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
@@ -274,7 +283,10 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     log?.write(diagLine(log.format, scrubbedDiag(d, { secrets, pii: new Set() })));
   };
   const app: ServerApp = {
-    fetch: async (req) => hono.fetch(req),
+    fetch: async (req) => {
+      const r = await attempted(() => hono.fetch(req));
+      return r.ok ? r.value : lastResort();
+    },
     close: async () => {
       sv.lifecycle.abort();
       unbind();

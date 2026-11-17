@@ -1,13 +1,14 @@
 import { scope } from "@keel/reactive";
 import type { Loader } from "@keel/router";
 import type { Match } from "@keel/router/internal";
-import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
+import { type KeelError, type Result, err, ok } from "@keel/schema";
 import { isolate } from "@keel/store";
 import type { Context } from "hono";
-import { streamSSE } from "hono/streaming";
+import { type SSEStreamingApi, streamSSE } from "hono/streaming";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { RequestScope } from "./RequestScope.ts";
+import { attempted } from "./attempted.ts";
 import { busy } from "./busy.ts";
 import { caught } from "./caught.ts";
 import { diagLine } from "./diagLine.ts";
@@ -38,7 +39,7 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
   const stop = (): void => ac.abort();
   const ended = new Promise<undefined>((resolve) => ac.signal.addEventListener("abort", () => resolve(undefined)));
   sv.streams.open++;
-  const response = streamSSE(c, async (stream) => {
+  const run = async (stream: SSEStreamingApi): Promise<void> => {
     const halt = (): void => {
       stop();
       stream.abort();
@@ -51,7 +52,7 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
       stream.onAbort(stop);
       if (raw.signal.aborted) halt();
       beat = (async () => {
-        while ((await attempt(() => sv.ctx.clock.after(HEARTBEAT_MS, ac.signal))).ok) await stream.write(":\n\n");
+        while ((await attempted(() => sv.ctx.clock.after(HEARTBEAT_MS, ac.signal))).ok) await stream.write(":\n\n");
       })();
       const ran = await caught(async () => {
         const stores = live.stores === undefined ? undefined : await openFactory(sv.ctx, rq, live.stores);
@@ -71,7 +72,7 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
           if (next === undefined || next.done === true) break;
           const res = next.value;
           const json = res.ok
-            ? attempt(() => ok(live.output.encode(res.value)))
+            ? attempted(() => ok(live.output.encode(res.value)))
             : ok(err(publicError(res.error, sv.mode)));
           await stream.writeSSE({ data: JSON.stringify(json.ok ? json.value : err(publicError(json.error, sv.mode))) });
         }
@@ -82,17 +83,21 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
         const lead = `loader ${m.route.id} threw: `;
         const d = { code: "keel.unexpected", lead, message: lead + clean.data.cause, frames: ran.frames };
         sv.log?.write(diagLine(sv.log.format, scrubbedDiag(d, rq)));
-        await attempt(() => stream.writeSSE({ data: JSON.stringify(err(publicError(clean, sv.mode))) }));
+        await attempted(() => stream.writeSSE({ data: JSON.stringify(err(publicError(clean, sv.mode))) }));
       }
     } finally {
       sv.streams.open--;
       stop();
       raw.signal.removeEventListener("abort", halt);
       sv.lifecycle.signal.removeEventListener("abort", halt);
-      void it?.return?.().catch(() => undefined);
+      void attempted(() => it?.return?.());
       await beat;
       rq.scope.dispose();
     }
+  };
+  // `run` never throws: Hono's stream would write a thrown value's message to the stream or print it to stderr.
+  const response = streamSSE(c, async (stream) => {
+    await attempted(() => run(stream));
   });
   response.headers.set("cache-control", "no-store");
   return { response, route: m.route.id, diags: [] };

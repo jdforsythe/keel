@@ -1,11 +1,12 @@
 import type { Match } from "@keel/router/internal";
 import { fieldsError, routeActions } from "@keel/router/internal";
-import { attempt, err, ok } from "@keel/schema";
+import { err, ok } from "@keel/schema";
 import { saveStores } from "@keel/store/internal";
 import type { Diag } from "./Diag.ts";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import { allowOf } from "./allowOf.ts";
+import { attempted } from "./attempted.ts";
 import { caught } from "./caught.ts";
 import { inRequest } from "./inRequest.ts";
 import { isVerb } from "./isVerb.ts";
@@ -48,8 +49,8 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const typed = new Response(bytes, { headers: { "content-type": r.raw.headers.get("content-type") ?? "" } });
   // A JSON body (a `@keel/services` client, k.services Encoding) carries no `_method`; an empty one is `{}`.
   const body = async (): Promise<unknown> => (bytes.length ? typed.json() : {});
-  const sent = json ? await attempt(body) : null;
-  const read = json ? null : await attempt(() => typed.formData());
+  const sent = json ? await attempted(body) : null;
+  const read = json ? null : await attempted(() => typed.formData());
   const form = read?.ok === true ? read.value : new FormData();
   const override = r.method === "POST" ? form.get("_method") : null;
   const verb = typeof override === "string" ? override.toUpperCase() : r.method;
@@ -70,7 +71,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   // The action gets this request's instance of its `stores` factory; its `ok` saves the changed stores (or is
   // `keel.conflict`), anything else drops the instances unsaved so a re-render reads storage (k.server Server state).
   const { sv, rq } = r;
-  const encoded = attempt(() => action.input.encode(decoded.value));
+  const encoded = attempted(() => action.input.encode(decoded.value));
   notePii(rq.pii, action.input, encoded.ok ? encoded.value : decoded.value);
   let refused: Diag | null = null;
   const { result: ran, frames } = await caught(async () => {
@@ -100,7 +101,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   }, sv.frames);
   // A throw: the stores as the action left them hold `.pii()` values too; its message, cause and diag drop them all.
   if (!ran.ok) {
-    const held = await attempt(() => Promise.all(rq.held.values()));
+    const held = await attempted(() => Promise.all(rq.held.values()));
     for (const h of held.ok ? held.value : [])
       for (const o of h.opened) notePii(rq.pii, o.store.schema, o.store.snapshot().state);
   }

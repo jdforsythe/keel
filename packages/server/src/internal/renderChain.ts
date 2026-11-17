@@ -1,7 +1,8 @@
 import type { Level } from "@keel/router/internal";
-import { type JsonValue, type KeelError, attempt } from "@keel/schema";
+import type { JsonValue, KeelError } from "@keel/schema";
 import type { ChainInput } from "./ChainInput.ts";
 import type { Rendered } from "./Rendered.ts";
+import { attempted } from "./attempted.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 import { htmlToNode } from "./htmlToNode.ts";
 import { islandIn } from "./islandIn.ts";
@@ -57,7 +58,7 @@ export function renderChain(input: ChainInput): Rendered {
     if (lvl === undefined) return "";
     if (failure !== null && failure.level === i) return errorAt(i, failure.error);
     if (lvl.def.errorElement === undefined) return componentAt(i, lvl);
-    const r = attempt(() => componentAt(i, lvl));
+    const r = attempted(() => componentAt(i, lvl));
     if (r.ok) return r.value;
     caught ??= r.error;
     return errorAt(i, r.error);

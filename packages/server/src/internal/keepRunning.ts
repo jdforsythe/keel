@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
 import type { Runner } from "../types/Runner.ts";
+import { attempted } from "./attempted.ts";
 import { caught } from "./caught.ts";
 import { requestSecrets } from "./requestSecrets.ts";
 
@@ -29,7 +29,7 @@ export async function keepRunning(
     );
     if (ran.ok || signal.aborted) return;
     failed(ran.error.data.cause, frames, secrets);
-    const waited = await attempt(() => ctx.clock.after(RESTART_MS, signal));
+    const waited = await attempted(() => ctx.clock.after(RESTART_MS, signal));
     if (!waited.ok) return;
   }
 }

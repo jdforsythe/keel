@@ -1,7 +1,8 @@
-import { attempt, err } from "@keel/schema";
+import { err } from "@keel/schema";
 import type { Handled } from "./Handled.ts";
 import type { Peer } from "./Peer.ts";
 import type { Served } from "./Served.ts";
+import { attempted } from "./attempted.ts";
 import { jsonResponse } from "./jsonResponse.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
 import { readCapped } from "./readCapped.ts";
@@ -22,7 +23,7 @@ export async function forward(raw: Request, peer: Peer, sv: Served): Promise<Han
   const body = raw.method === "GET" || raw.method === "HEAD" ? new Uint8Array(0) : await readCapped(raw, sv.maxBody);
   if (body === null) return { response: payloadTooLarge(sv.maxBody), route: undefined, diags: [] };
   const byUrl = typeof peer === "string" || peer instanceof URL;
-  const sent = await attempt(() => {
+  const sent = await attempted(() => {
     const at = byUrl ? `${new URL(peer).origin}${url.pathname}${url.search}` : url;
     const req = new Request(at, {
       method: raw.method,

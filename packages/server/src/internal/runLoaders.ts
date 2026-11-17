@@ -1,9 +1,10 @@
 import type { Loader } from "@keel/router";
 import type { Level } from "@keel/router/internal";
-import { attempt, err, ok } from "@keel/schema";
+import { err, ok } from "@keel/schema";
 import type { LoaderOutcome } from "./LoaderOutcome.ts";
 import type { Rec } from "./Rec.ts";
 import type { Req } from "./Req.ts";
+import { attempted } from "./attempted.ts";
 import { caught } from "./caught.ts";
 import { notePii } from "./notePii.ts";
 import { openFactory } from "./openFactory.ts";
@@ -33,7 +34,7 @@ async function runOne(
     const refused = outputRefused("loader", id, l.output, checked.error);
     return { result: err(refused.error), diag: refused.diag };
   }
-  const json = attempt(() => l.output.encode(checked.value));
+  const json = attempted(() => l.output.encode(checked.value));
   if (json.ok) notePii(rq.pii, l.output, json.value);
   return { result: json.ok ? ok({ value: checked.value, json: json.value }) : json, diag: null };
 }
