@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "`tx` with a `key` that a kept entry holds returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale."
+// Spec: k.sync Conformance, bullet 6 "`tx` with a `key` that `keys` holds for its transaction returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale." and bullet 11 "a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `logLimit` later commits with a `key` have passed it."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -31,7 +31,7 @@ const keyArb = fc.stringMatching(/^[a-z0-9-]{1,64}$/);
 const modeArb = fc.constantFrom<"reject" | "rebase">("reject", "rebase");
 
 describe("k.sync: key", () => {
-  it("`tx` with a `key` that a kept entry holds returns `ok`, commits nothing and leaves `head()` unchanged", () => {
+  it("`tx` with a `key` that `keys` holds for its transaction returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale", () => {
     fc.assert(
       fc.property(
         modeArb,
@@ -104,18 +104,21 @@ describe("k.sync: key", () => {
     expect(k.bag.head()).toBe(3);
   });
 
-  it("a `key` held only by an entry that `undo` removed, or that folded out of the kept log, commits again", () => {
+  it("a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `logLimit` later commits with a `key` have passed it", () => {
     const k = make("reject");
     tx(k.push, { v: 1 }, { key: "u" });
     expect(k.bag.undo()).toBe(true);
     expect(tx(k.push, { v: 2 }, { key: "u" }).ok).toBe(true);
-    expect(k.bag.get("items")).toEqual([2]);
+    expect(k.bag.get("items")).toEqual([]);
     const f = make("reject", 1);
     tx(f.push, { v: 1 }, { key: "f" });
     tx(f.push, { v: 2 });
     expect(f.bag.log().length).toBe(1);
     expect(tx(f.push, { v: 3 }, { key: "f" }).ok).toBe(true);
-    expect(f.bag.get("items")).toEqual([1, 2, 3]);
+    expect(f.bag.get("items")).toEqual([1, 2]);
+    expect(tx(f.push, { v: 4 }, { key: "g" }).ok).toBe(true);
+    expect(tx(f.push, { v: 5 }, { key: "f" }).ok).toBe(true);
+    expect(f.bag.get("items")).toEqual([1, 2, 4, 5]);
   });
 
   it("a `base` or `key` of the wrong type is `schema.invalid` and commits nothing", () => {
