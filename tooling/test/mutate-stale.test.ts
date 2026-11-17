@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { chunkPlan, leftLine, listLine, positive, staleFiles } from "../mutate-stale-plan.mjs";
+import { chunkPlan, endLine, leftLine, listLine, positive, staleFiles } from "../mutate-stale-plan.mjs";
 
 const shas = new Map([
   ["packages/a/src/x.ts", "1"],
@@ -90,5 +90,24 @@ describe("positive", () => {
   it("takes a positive integer, else the fallback", () => {
     expect(positive("5", 3)).toBe(5);
     for (const bad of [undefined, "0", "-1", "x", "1.5"]) expect(positive(bad, 3)).toBe(3);
+  });
+});
+
+describe("endLine", () => {
+  const left = [{ pkg: "a", files: ["src/x.ts"] }];
+  it("ends ok on a clean run", () => {
+    expect(endLine({ exit: 0, signalled: false, left })).toEqual({
+      exit: 0,
+      line: "ok mutate-stale 1 file left in 1 package; run again to resume",
+    });
+  });
+  it("exits 130 and does not read ok after a signal", () => {
+    const end = endLine({ exit: 0, signalled: true, left });
+    expect(end.exit).toBe(130);
+    expect(end.line.startsWith("stopped ")).toBe(true);
+  });
+  it("reports fail for another non-zero exit, and stopped for a runner's 130", () => {
+    expect(endLine({ exit: 1, signalled: false, left }).line.startsWith("fail ")).toBe(true);
+    expect(endLine({ exit: 130, signalled: false, left }).line.startsWith("stopped ")).toBe(true);
   });
 });

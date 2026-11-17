@@ -238,5 +238,42 @@ it("E1111 reports an s.secret node under wrappers and nesting, in params and sea
   expect(ran("params: s.object({ a: s.object({ t: s.secret(s.string()) }) })")).toEqual(hit("params"));
   expect(ran("search: s.object({ t: s.array(s.secret(s.string())) })")).toEqual(hit("search"));
   expect(ran("params: s.object({ t: s.string() })")).toEqual([]);
-  expect(ran("act: action({ input: s.object({ t: s.secret(s.string()) }) }, () => null)")).toEqual([]);
+  const withAction: Files = [
+    {
+      path: "src/save.ts",
+      source: `import { action } from '@keel/router'\n${S}export const save = action({ input: s.object({ t: s.secret(s.string()) }) }, () => null)\n`,
+    },
+    {
+      path: "src/routes.ts",
+      source: `import { manifest } from '@keel/router'\nimport { save } from './save.ts'\nconst Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b', component: Page } })\nroutes.actions({ 'a.b': { POST: save } })\n`,
+    },
+  ];
+  expect(codes(withAction, "E1111")).toEqual([]);
+});
+
+it("E1111 counts `secret` only on the @keel/schema namespace, not on any object with that member", () => {
+  const ran = (head: string, search: string): string[] =>
+    codes(
+      [
+        {
+          path: "src/routes.ts",
+          source: `import { manifest } from '@keel/router'\n${head}const Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b', search: ${search}, component: Page } })\n`,
+        },
+      ],
+      "E1111",
+    ).map((d) => d.message.split(";")[0] ?? "");
+  const marked = ["personal data or a secret in route search"];
+  const schema = "import { s } from '@keel/schema'\n";
+  expect(ran(`${schema}const cfg = { secret: (x) => x }\n`, "s.object({ q: cfg.secret() })")).toEqual([]);
+  const unread = ["route search not readable statically"];
+  expect(ran(`${schema}import { cfg } from 'elsewhere'\n`, "s.object({ q: cfg.secret() })")).toEqual(unread);
+  expect(ran(schema, "s.object({ q: other.secret(s.string()) })")).toEqual(unread);
+  expect(ran(schema, "s.object({ q: s.secret(s.string()) })")).toEqual(marked);
+  expect(ran("import * as k from '@keel/schema'\n", "k.s.object({ q: k.s.secret(k.s.string()) })")).toEqual(marked);
+  expect(ran("import * as k from '@keel/schema'\n", "k.secret(k.s.string())")).toEqual(marked);
+  expect(ran("import { s as t } from '@keel/schema'\n", "t.secret(t.string())")).toEqual(marked);
+  expect(ran(`${schema}const t = s\n`, "t.secret(s.string())")).toEqual(marked);
+  expect(ran(`${schema}declare function make(): { secret(): unknown }\n`, "make().secret()")).toEqual([
+    "route search not readable statically",
+  ]);
 });

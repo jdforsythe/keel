@@ -63,3 +63,10 @@ export function positive(text, fallback) {
   const n = Number(text);
   return Number.isInteger(n) && n > 0 ? n : fallback;
 }
+
+/** How a run ends: exit 130 and `stopped` after a signal, `fail` for another non-zero exit, `ok` otherwise. */
+export function endLine({ exit, signalled, left }) {
+  const code = signalled ? 130 : exit;
+  const word = code === 0 ? "ok" : code === 130 ? "stopped" : "fail";
+  return { exit: code, line: `${word} mutate-stale ${leftLine(left)}; run again to resume` };
+}

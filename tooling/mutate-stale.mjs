@@ -11,7 +11,7 @@ import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
 import { stopRequested } from "./mutate-changed.mjs";
 import { stopFile } from "./mutate.mjs";
-import { chunkPlan, leftLine, listLine, MUTATED, positive, staleFiles } from "./mutate-stale-plan.mjs";
+import { chunkPlan, endLine, listLine, MUTATED, positive, staleFiles } from "./mutate-stale-plan.mjs";
 import { acquire, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
 
@@ -70,7 +70,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     let child;
     let signalled = false;
     let timedOut = false;
-    // A signal reaches the runner once (it owns the one SIGINT to its Stryker group) and ends the sequence.
+    // A signal reaches the runner once (it owns the one SIGINT to its Stryker group) and ends the sequence with exit 130.
     for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"])
       process.on(sig, () => {
         signalled = true;
@@ -79,7 +79,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     let exit = 0;
     let done = 0;
     for (const c of chunks) {
-      if (signalled || timedOut || Date.now() >= limit) break;
+      if (signalled || timedOut || Date.now() >= limit || stopRequested(stops, t0)) break;
       const started = Date.now();
       // The capped test runners: a value already set in the environment wins.
       const env = {
@@ -108,14 +108,14 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
         `${c.pkg} ${c.files.length} files (${((Date.now() - started) / 1000).toFixed(0)}s): ${text || `exit ${status}`}`,
       );
       // A chunk stopped on the bound or by `mutate:stop` saved its results but is not finished: it stays in what is left.
+      if (status === 130 && !timedOut) exit ||= status;
       if (status === 130 || timedOut) break;
       done++;
       exit ||= status;
-      if (stopRequested(stops, t0)) break;
     }
     const left = chunks.slice(done);
-    const line = `${exit === 0 ? "ok" : "fail"} mutate-stale ${leftLine(left)}; run again to resume`;
-    if (exit !== 0) console.log(line);
-    return { diags: [], counts: { chunks: chunks.length, left: left.length }, exit, line };
+    const end = endLine({ exit, signalled, left });
+    if (end.exit !== 0) console.log(end.line);
+    return { diags: [], counts: { chunks: chunks.length, left: left.length }, exit: end.exit, line: end.line };
   });
 }
