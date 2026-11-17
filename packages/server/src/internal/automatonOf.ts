@@ -1,7 +1,5 @@
-/** Past this many characters of distinct folded forms no automaton is built, and each text is one mark. */
-const CAP = 2_000_000;
-const UTF8 = new TextEncoder();
-const UNPAIRED = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+import { SCRUB_CAP } from "./SCRUB_CAP.ts";
+import { formsOf } from "./formsOf.ts";
 
 /** The matcher of every written form of every set: an Aho-Corasick automaton over the folded forms, in typed arrays. */
 interface Automaton {
@@ -57,28 +55,11 @@ const folded = (s: string, fold: Uint16Array): string => {
 };
 
 /**
- * Adds the written forms of `v` to `into`, folded, each to its lowest set index and padding count: as is,
- * `JSON.stringify` escaping, `encodeURIComponent` (none for a value with a lone surrogate), and base64 of its UTF-8
- * bytes. Under 8 bytes that is the padded form only; from 8 bytes (11 or more characters, too long to stand in ordinary
- * text by chance) the unpadded standard and base64url forms, which take in the padding that follows them. Returns the
- * characters of the forms that were not in `into` yet.
+ * Adds the written forms of `v` (`formsOf`) to `into`, folded, each to its lowest set index and padding count. Returns
+ * the characters of the forms that were not in `into` yet.
  */
 const formsInto = (v: string, at: number, into: Map<string, number>, fold: Uint16Array): number => {
-  const bytes = UTF8.encode(v);
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  const padded = btoa(binary);
-  const forms: [string, number][] = [
-    [v, 0],
-    [JSON.stringify(v).slice(1, -1), 0],
-  ];
-  if (!UNPAIRED.test(v)) forms.push([encodeURIComponent(v), 0]);
-  if (bytes.length < 8) forms.push([padded, 0]);
-  else {
-    const pad = (3 - (bytes.length % 3)) % 3;
-    const b = padded.slice(0, padded.length - pad);
-    forms.push([b, pad], [b.replace(/\+/g, "-").replace(/\//g, "_"), pad]);
-  }
+  const forms = formsOf(v);
   let added = 0;
   for (const [form, pad] of forms) {
     if (form === "") continue;
@@ -90,7 +71,7 @@ const formsInto = (v: string, at: number, into: Map<string, number>, fold: Uint1
   return added;
 };
 
-const build = (sets: readonly ReadonlySet<string>[], count: Count | undefined): Automaton | "over" => {
+const build = (sets: readonly ReadonlySet<string>[], count: Count | undefined, cap: number): Automaton | "over" => {
   const fold = foldTable();
   const forms = new Map<string, number>();
   // The distinct forms' length only grows, so forming stops the moment it passes the cap.
@@ -100,7 +81,7 @@ const build = (sets: readonly ReadonlySet<string>[], count: Count | undefined): 
     for (const v of values) {
       formed++;
       m += formsInto(v, at, forms, fold);
-      if (m > CAP) return false;
+      if (m > cap) return false;
     }
     return true;
   });
@@ -108,7 +89,8 @@ const build = (sets: readonly ReadonlySet<string>[], count: Count | undefined): 
     count.forms += m;
     count.build += formed;
   }
-  if (m > CAP) return "over";
+  // Over: the forms are dropped here, so the result holds nothing of the values.
+  if (m > cap) return "over";
   // The trie in preorder: the sorted forms, each sharing its common prefix with the one before.
   const label = new Uint16Array(m + 1);
   const parent = new Int32Array(m + 1);
@@ -196,26 +178,34 @@ const cache = new WeakMap<
   {
     readonly sets: readonly ReadonlySet<string>[];
     readonly sizes: readonly number[];
+    readonly cap: number;
     readonly built: Automaton | "over";
   }
 >();
 
 /**
- * The automaton over every written form of the values of `sets` (`formsInto`), folded (`foldTable`), or `"over"` when
- * those forms, each counted once, pass 2,000,000 characters. A request's sets only grow, so it is kept for the same
- * sets while their sizes are unchanged, and `"over"` is kept for them however they grow. `count`, for tests, adds the
- * build's steps (one per value formed, then the trie's and the links') and the forms' characters.
+ * The automaton over every written form of the values of `sets` (`formsOf`), folded (`foldTable`), or `"over"` when
+ * those forms, each counted once, pass `cap` characters (2,000,000, `SCRUB_CAP`). The sets are formed in order, so
+ * when the first set alone is over, any list that starts with it is over too. A request's sets only grow, so the result
+ * is kept per first set for the same sets and cap while their sizes are unchanged, and `"over"` is kept for them however
+ * they grow; an `"over"` entry holds the sets and their sizes only. `count`, for tests, adds the build's steps (one per
+ * value formed, then the trie's and the links') and the forms' characters.
  */
-export function automatonOf(sets: readonly ReadonlySet<string>[], count?: Count): Automaton | "over" {
+export function automatonOf(
+  sets: readonly ReadonlySet<string>[],
+  count?: Count,
+  cap: number = SCRUB_CAP,
+): Automaton | "over" {
   const key = sets[0];
   const had = key === undefined ? undefined : cache.get(key);
   if (
     had !== undefined &&
+    had.cap === cap &&
     had.sets.length === sets.length &&
     sets.every((set, i) => set === had.sets[i] && (had.built === "over" || set.size === had.sizes[i]))
   )
     return had.built;
-  const built = build(sets, count);
-  if (key !== undefined) cache.set(key, { sets, sizes: sets.map((set) => set.size), built });
+  const built = build(sets, count, cap);
+  if (key !== undefined) cache.set(key, { sets, sizes: sets.map((set) => set.size), cap, built });
   return built;
 }
