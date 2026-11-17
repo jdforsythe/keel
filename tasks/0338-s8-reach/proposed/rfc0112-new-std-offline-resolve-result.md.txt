@@ -1,0 +1,5 @@
+---
+"@keel/std-offline": minor
+---
+
+`resolve(ctx, outbox, key, 'mine')` resolves the re-sent entry's `OutboxResult` once it settles, or `false` when no entry was re-sent; `'theirs'` still resolves a `boolean`.

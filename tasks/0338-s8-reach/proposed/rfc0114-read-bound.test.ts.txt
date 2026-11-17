@@ -1,0 +1,51 @@
+// Spec: std.live, clause "Under sim, after a committed read, a `saved` event starts a read that never settles; once `ctx.clock` passes 30 s from its start, `status()` is `connecting`, and 1 s later a second read runs; when that one settles `ok`, it commits and `status()` is `live`."
+// Seed 1337
+// Assumption: a read is tagged by its call index through `head`; "commits nothing" is read off the hydrated store's log.
+import { ok } from "@keel/schema";
+import fc from "fast-check";
+import { expect, test } from "vitest";
+import { controlled, createServer, mount, settle, simCtx, tagsOf, tick } from "./fixtures.ts";
+
+test("Under sim, after a committed read, a `saved` event starts a read that never settles; once `ctx.clock` passes 30 s from its start, `status()` is `connecting`, and 1 s later a second read runs; when that one settles `ok`, it commits and `status()` is `live`.", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 0, max: 5000 }), async (lead) => {
+      const ctx = simCtx();
+      const server = createServer();
+      server.attach(ctx);
+      const c = controlled();
+      const m = mount(ctx, c.read);
+      await settle();
+      expect(c.calls()).toBe(1);
+      c.resolve(0, ok({ head: 0, items: [] }));
+      await settle();
+      expect(m.status()).toBe("live");
+      expect(tagsOf(m.view)).toEqual([0]);
+      await tick(ctx, lead);
+
+      server.save("a");
+      await settle();
+      expect(c.calls()).toBe(2);
+      await tick(ctx, 29_999);
+      expect(c.calls()).toBe(2);
+      await tick(ctx, 1);
+      expect(m.status()).toBe("connecting");
+      expect(c.calls()).toBe(2);
+      await tick(ctx, 999);
+      expect(c.calls()).toBe(2);
+      await tick(ctx, 1);
+      expect(c.calls()).toBe(3);
+
+      c.resolve(2, ok({ head: 2, items: [] }));
+      await settle();
+      expect(m.status()).toBe("live");
+      expect(tagsOf(m.view)).toEqual([0, 2]);
+
+      c.resolve(1, ok({ head: 1, items: [] }));
+      await settle();
+      expect(tagsOf(m.view)).toEqual([0, 2]);
+      expect(m.status()).toBe("live");
+      m.dispose();
+    }),
+    { seed: 1337, numRuns: 10 },
+  );
+});

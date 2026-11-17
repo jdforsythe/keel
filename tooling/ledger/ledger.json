@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1053,
-    "probabilistic": 314,
+    "example": 1057,
+    "probabilistic": 316,
     "exhaustive": 15,
     "proven": 52,
     "monitored": 4
@@ -19,7 +19,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 79.14,
+        "score": 78.98,
         "threshold": 70
       },
       "ctx": {
@@ -39,7 +39,7 @@
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 77.6,
+        "score": 77.97,
         "threshold": 70
       },
       "scaffold": {
@@ -59,7 +59,7 @@
         "threshold": 70
       },
       "store": {
-        "score": 92.61,
+        "score": 91.13,
         "threshold": 80
       },
       "testing": {
@@ -10980,6 +10980,10 @@
       "rung": "example"
     },
     {
+      "item": "k.a11y#10",
+      "rung": "example"
+    },
+    {
       "item": "k.api#1",
       "rung": "proven"
     },
@@ -12684,6 +12688,14 @@
       "rung": "example"
     },
     {
+      "item": "k.sync#11",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.sync#12",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.testing#1",
       "rung": "example"
     },
@@ -13445,6 +13457,10 @@
     },
     {
       "item": "std.schedules#8",
+      "rung": "example"
+    },
+    {
+      "item": "std.schedules#9",
       "rung": "example"
     },
     {
