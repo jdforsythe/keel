@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.topology Conformance. Seed 1337 (fc.assert below). No wall time; the peer answers through a sim net route.
+// Spec: k.topology, clause "`x` answers a path of `b` with `y`'s status, headers and body, or 502 `keel.unreachable` with `y` down; one carrying `x-keel-forwarded` is not forwarded."
+// Seed: 1337. No wall time; the peer answers through a sim net route.
 // Fixture: deployable `x` serves module `a`, deployable `y` serves module `b`; `x` names `y` in `peers` by URL
 // `http://y.test`, and `routes.json` in `artifacts` tells `x` which paths `y` serves.
 import fc from "fast-check";

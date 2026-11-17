@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 980,
-    "probabilistic": 303,
+    "example": 984,
+    "probabilistic": 308,
     "exhaustive": 15,
     "proven": 51,
     "monitored": 4
@@ -12401,7 +12401,7 @@
     },
     {
       "item": "k.topology#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.topology#3",
@@ -13158,6 +13158,30 @@
     {
       "item": "std.sessions#13",
       "rung": "probabilistic"
+    },
+    {
+      "item": "std.shells#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.shells#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.shells#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.shells#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.shells#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.shells#6",
+      "rung": "example"
     },
     {
       "item": "std.statecharts#1",

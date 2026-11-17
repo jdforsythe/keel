@@ -20,7 +20,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.head | 7 | **conformance-covered** | none |
 | k.forms | 16 | **conformance-covered** | none |
 | k.server | 16 | **conformance-covered** | none |
-| k.topology | 9 | implemented | clause 2: the ledger finds no test that names it (E1707) |
+| k.topology | 9 | **conformance-covered** | none |
 | k.compat | 13 | **conformance-covered** | none |
 | k.api | 14 | **conformance-covered** | none |
 | k.services | 12 | **conformance-covered** | none |
@@ -66,15 +66,15 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.report | 6 | **conformance-covered** | none |
 | std.schedules | 8 | **conformance-covered** | none |
 | std.sessions | 13 | **conformance-covered** | none |
-| std.shells | 6 | proposed | the ledger reads no Conformance clause in the section (E1707); its tests quote clauses as "Same clause as", not `// Spec:` |
+| std.shells | 6 | **conformance-covered** | none |
 | std.statecharts | 10 | **conformance-covered** | none |
 | std.tables | 9 | **conformance-covered** | none |
 | std.temporal | 10 | **conformance-covered** | none |
 | std.text | 9 | **conformance-covered** | none |
 | std.timings | 7 | **conformance-covered** | none |
 | std.tokens | 10 | **conformance-covered** | none |
-| std.workflows | 8 | proposed | none; every clause is covered, and the status line waits for room in the section (1,499 of 1,500 tokens) |
-| **total** | **708** | 62 of 68 covered | |
+| std.workflows | 8 | **conformance-covered** | none |
+| **total** | **708** | 65 of 68 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -121,6 +121,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. k.hosting and k.topology are `implemented`; k.shell, std.db, std.shells and std.workflows are `proposed`; the other 62 are `conformance-covered`.
+No section is `frozen`. k.hosting is `implemented`; k.shell and std.db are `proposed`; the other 65 are `conformance-covered`.
 
 verified: c2c8a5a18bcbcaedaeadceee3cd52d62a10ca3fe
