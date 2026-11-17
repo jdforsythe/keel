@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.privacy, Sinks "Server log (k.server): in a `diag` record's message and `frames` and the `req` record's path, each of `piiValues` of the request's decoded action input, its loaders' outputs and its factories' store states becomes `[pii]`. Each string, number and key but a declared field name (not a boolean) in a `Secret` made while the request runs (`bearer` too) becomes `[secret]`."
+// Spec: k.privacy, Sinks "Server log (k.server): in a `diag` record's message and `frames` and the `req` record's path, each of `piiValues` of the request's decoded action input, its loaders' and actions' outputs and its factories' store states becomes `[pii]`. Each string, number and key but a declared field name (not a boolean) in a `Secret` made or revealed while the request runs (`bearer` too) becomes `[secret]`."
 // Spec: k.privacy, Conformance "A secret route param is `[secret]` in the `req` path. Past 100,000 secret values a loader's throw logs `loader <id> threw: [secret]`." (the first sentence; the second is in privacy-secret-reach.test.ts)
 // Seed: 1337.
 // The route table is a server test file, outside `keel check`, so a secret `params` field (E1111) is served. Each case runs in dev and production, in compact and json log formats.

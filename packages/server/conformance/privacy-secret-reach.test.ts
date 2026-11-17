@@ -1,18 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 // @vitest-environment happy-dom
-// Spec: k.privacy, Sinks "Each string, number and key but a declared field name (not a boolean) in a `Secret` made while the request runs (`bearer` too) becomes `[secret]`."
+// Spec: k.privacy, Sinks "Each string, number and key but a declared field name (not a boolean) in a `Secret` made or revealed while the request runs (`bearer` too) becomes `[secret]`."
 // Spec: k.server, Log "`diag` per diagnostic or uncaught throw"
-// Spec: k.privacy, Sinks "A runner's `run` is scoped alike; startup is not."
-// Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await`, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
-// Spec: k.privacy, Sinks "Past 2,000,000 characters of these values' written forms or 100,000 secret values, a message after its prefix (`loader <id> threw: `), each frame and the path are one mark, `[secret]` if the scope made a secret."
+// Spec: k.privacy, Sinks "A runner's `run` is scoped alike."
+// Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await` or made earlier and revealed in it, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
+// Spec: k.privacy, Sinks "Past 2,000,000 characters of these values' written forms or 100,000 secret values, a message after its prefix (`loader <id> threw: `), each frame and the path are one mark, `[secret]` if it holds a secret."
 // Spec: k.privacy, Conformance "A secret route param is `[secret]` in the `req` path. Past 100,000 secret values a loader's throw logs `loader <id> threw: [secret]`."
 // Seed: 1337.
 // A `Secret` is made with `made(s.secret(s.string()).parse(text))` inside the handler, after an `await`: the scope that marks it follows the call chain of the request.
 // The two-request case orders the requests on the sim clock (`ctx.clock.advance`), with no timers.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
-import { ok, reveal, s } from "@keel/schema";
+import { ok, reveal, s, type Secret } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -23,6 +23,11 @@ import { createAppLoose, flush, liveLoader, readChunks } from "./topology-fixtur
 const Nothing = s.object({});
 const view = (): Node => document.createElement("main");
 const STARTUP = made(s.secret(s.string()).parse("startup-8e2b4d"));
+const MOD_LOADER = made(s.secret(s.string()).parse("modload-2a6f1d"));
+const MOD_ACTION = made(s.secret(s.string()).parse("modact-5b8e3c"));
+const MOD_RUNNER = made(s.secret(s.string()).parse("modrun-9d4a7e"));
+const MOD_OVERLAP = made(s.secret(s.string()).parse("overlap-6e1b9f"));
+const formats = ["json", "compact"] as const;
 const KEY = "api-key-91c2e7d40b";
 const TOKEN = "keelsim_0a1b2c3d4e5f6071_9f8e7d6c5b4a39281706f5e4d3c2b1a0";
 const modes = ["dev", "production"] as const;
@@ -43,6 +48,7 @@ interface Parts {
   readonly loader?: ReturnType<typeof loader>;
   readonly act?: ReturnType<typeof action>;
   readonly artifacts?: string;
+  readonly format?: "json" | "compact";
 }
 async function boot(mode: "dev" | "production", parts: Parts, ctx = createCtx({ mode: "sim", seed: SEED })) {
   const routes = manifest({
@@ -56,7 +62,7 @@ async function boot(mode: "dev" | "production", parts: Parts, ctx = createCtx({ 
     ctx,
     mode,
     ...(parts.artifacts ? { artifacts: parts.artifacts } : {}),
-    log: { format: "json", write: (l: string) => void lines.push(l) },
+    log: { format: parts.format ?? "json", write: (l: string) => void lines.push(l) },
   });
   return { app, lines, ctx };
 }
@@ -299,15 +305,147 @@ describe("k.privacy secret reach", () => {
     );
   }, 60_000);
 
-  it("One made at startup is not marked: a `Secret` parsed at module scope and thrown revealed by an action is logged as written.", async () => {
+  it("One made at startup is marked when revealed: a `Secret` parsed at module scope and thrown revealed by an action logs `startup [secret]` and no line holds the value.", async () => {
     const act = action({ input: Nothing }, async () => {
       await Promise.resolve();
       throw new Error(`startup ${reveal(STARTUP)}`);
     });
     const t = await boot("production", { act });
     await (await t.app.fetch(post("/a", {}, json))).text();
-    expect(diagsOf(t.lines).some((l) => l.includes("startup startup-8e2b4d"))).toBe(true);
+    expect(diagsOf(t.lines).some((l) => l.includes("startup [secret]"))).toBe(true);
+    for (const line of t.lines) for (const form of forms("startup-8e2b4d")) expect(line).not.toContain(form);
   });
+
+  const marked = (lines: readonly string[], text: string): boolean => lines.some((l) => l.includes(text));
+  const noneHold = (lines: readonly string[], value: string): void => {
+    for (const line of lines) for (const form of forms(value)) expect(line).not.toContain(form);
+  };
+
+  for (const mode of modes) {
+    for (const format of formats) {
+      it(`A loader throwing the revealed value of a \`Secret\` made in an earlier request and kept by the module logs \`[secret]\` and no line holds the value, in ${mode}, ${format}.`, async () => {
+        let cached: Secret<string> | undefined;
+        const load = loader({ output: Nothing }, async () => {
+          await Promise.resolve();
+          if (cached === undefined) {
+            cached = made(s.secret(s.string()).parse("cache-7c1e9a"));
+            return ok({});
+          }
+          throw new Error(`cache ${reveal(cached)}`);
+        });
+        const t = await boot(mode, { loader: load, format });
+        await (await t.app.fetch(get("/a"))).text();
+        expect(t.lines.some((l) => l.includes("cache "))).toBe(false);
+        await (await t.app.fetch(get("/a"))).text();
+        expect(marked(t.lines, "cache [secret]")).toBe(true);
+        noneHold(t.lines, "cache-7c1e9a");
+      });
+
+      it(`A loader that reveals a module-scope \`Secret\` and throws it logs \`[secret]\` and no line holds the value, in ${mode}, ${format}.`, async () => {
+        const load = loader({ output: Nothing }, async () => {
+          await Promise.resolve();
+          throw new Error(`modload ${reveal(MOD_LOADER)}`);
+        });
+        const t = await boot(mode, { loader: load, format });
+        await (await t.app.fetch(get("/a"))).text();
+        expect(marked(t.lines, "modload [secret]")).toBe(true);
+        noneHold(t.lines, "modload-2a6f1d");
+      });
+
+      it(`An action that reveals a module-scope \`Secret\` and throws it logs \`[secret]\` and no line holds the value, in ${mode}, ${format}.`, async () => {
+        const act = action({ input: Nothing }, async () => {
+          await Promise.resolve();
+          throw new Error(`modact ${reveal(MOD_ACTION)}`);
+        });
+        const t = await boot(mode, { act, format });
+        await (await t.app.fetch(post("/a", {}, json))).text();
+        expect(marked(t.lines, "modact [secret]")).toBe(true);
+        noneHold(t.lines, "modact-5b8e3c");
+      });
+    }
+
+    it(`A value revealed in an earlier request, kept by the module as a plain string and thrown in a later request without a \`reveal\` there, logs as is, in ${mode}.`, async () => {
+      let kept: string | undefined;
+      const load = loader({ output: Nothing }, async () => {
+        await Promise.resolve();
+        if (kept === undefined) {
+          kept = reveal(made(s.secret(s.string()).parse("limit-4d9b2e")));
+          return ok({});
+        }
+        throw new Error(`limit ${kept}`);
+      });
+      const t = await boot(mode, { loader: load });
+      await (await t.app.fetch(get("/a"))).text();
+      await (await t.app.fetch(get("/a"))).text();
+      expect(diagsOf(t.lines).some((l) => l.includes("limit limit-4d9b2e"))).toBe(true);
+    });
+  }
+
+  it("A runner's `run` that reveals a module-scope `Secret` and rejects with it logs the `runner rejected, rerun in 1000 ms: ` line holding `modrun [secret]` and no line holds the value.", async () => {
+    const ctx = createCtx({ mode: "sim", seed: SEED });
+    const lines: string[] = [];
+    const routes = manifest({ "app.a": { path: "/a", component: view } });
+    const run = async (): Promise<void> => {
+      await Promise.resolve();
+      throw new Error(`modrun ${reveal(MOD_RUNNER)}`);
+    };
+    const app = await createAppLoose({
+      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+      routes,
+      ctx,
+      mode: "dev",
+      log: { format: "json", write: (l: string) => void lines.push(l) },
+      runners: { app: [{ run }] },
+    });
+    await flush();
+    const diags = diagsOf(lines);
+    expect(diags.some((l) => l.includes("runner rejected, rerun in 1000 ms: ") && l.includes("modrun [secret]"))).toBe(
+      true,
+    );
+    noneHold(lines, "modrun-9d4a7e");
+    await app.close?.();
+  });
+
+  it("Of overlapping requests that reveal the same module `Secret`, each marks it; a third that never reveals it and throws the value as a literal string logs it as is.", async () => {
+    const ctx = createCtx({ mode: "sim", seed: SEED });
+    const timing = new Map([
+      ["alpha", { first: 10, second: 40, reveals: true }],
+      ["bravo", { first: 20, second: 10, reveals: true }],
+      ["charlie", { first: 15, second: 30, reveals: false }],
+    ]);
+    const act = action({ input: s.object({ who: s.string() }) }, async (input) => {
+      const mine = timing.get(input.who);
+      if (mine === undefined) return ok(null);
+      await ctx.clock.after(mine.first);
+      const shown = mine.reveals ? reveal(MOD_OVERLAP) : "overlap-6e1b9f";
+      await ctx.clock.after(mine.second);
+      throw new Error(`${input.who}: ${shown}`);
+    });
+    const routes = manifest({ "app.a": { path: "/a", component: view } });
+    routes.actions({ "app.a": { POST: act } });
+    const lines: string[] = [];
+    const app = await createAppLoose({
+      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+      routes,
+      ctx,
+      mode: "production",
+      log: { format: "json", write: (l: string) => void lines.push(l) },
+    });
+    const all = Promise.all(["alpha", "bravo", "charlie"].map((who) => app.fetch(post("/a", { who }, json))));
+    await flush();
+    for (let i = 0; i < 6; i++) {
+      ctx.clock.advance(10);
+      await flush();
+    }
+    for (const res of await all) await res.text();
+    const diags = diagsOf(lines);
+    expect(diags.some((l) => l.includes("alpha: [secret]"))).toBe(true);
+    expect(diags.some((l) => l.includes("bravo: [secret]"))).toBe(true);
+    expect(diags.some((l) => l.includes("charlie: overlap-6e1b9f"))).toBe(true);
+    for (const l of diags) {
+      if (l.includes("alpha:") || l.includes("bravo:")) expect(l).not.toContain("overlap-6e1b9f");
+    }
+  }, 60_000);
 
   it("One made in a runner is marked: a runner that parses a `Secret` and rejects with its revealed value logs the `runner rejected, rerun in 1000 ms: ` line holding `runner [secret]` and no line holds the value.", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
