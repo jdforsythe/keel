@@ -1,8 +1,9 @@
 // Throwing computeds in any DAG (chains, diamonds, several readers). fast-check seed 1337.
 // A computed throws for some of its values; a node reading a throwing node throws the same error. After each commit:
-// every computed ran at most once and only if a source of it changed; each reader ran exactly once when its node's
-// outcome changed (a new value, a throw, a value after a throw, also the value from before the throw) and not
-// otherwise; each reader saw the model's outcome.
+// every computed ran at most once, only if a source of it changed, and exactly once when a reader reaches it; each
+// reader ran exactly once when its node's outcome changed (a new value, a throw, a value after a throw, also the value
+// from before the throw) and not otherwise; each reader saw the model's outcome. A retry follows only the sources the
+// throwing run read.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { batch, computed, effect, scope, signal } from "../src/index.ts";
@@ -142,13 +143,23 @@ describe("throwing computeds", () => {
             };
             if (writes.length > 1) batch(apply);
             else apply();
+            // Nodes a reader reaches now: what the readers read, and what those read, as of this commit.
+            const reached = new Set<number>();
+            const visit = (i: number): void => {
+              if (reached.has(i)) return;
+              reached.add(i);
+              for (const d of reads[i] ?? []) visit(d);
+            };
+            for (const r of readers) visit(r);
             specs.forEach((_, i) => {
-              // At most once; and only after a source change since its last run (a node nothing observes catches up
-              // lazily on its next read; a first read evaluates it).
+              // Only after a source change since its last run (a node nothing observes catches up lazily on its next
+              // read; a first read evaluates it); exactly once when a reader reaches it, else at most once.
               const ran = (runs[i] ?? 0) - (runsBefore[i] ?? 0);
               const fresh = (runsBefore[i] ?? 0) === 0;
               if (reran[SOURCES + i] === true) stale[i] = true;
-              expect(ran).toBeLessThanOrEqual(fresh || stale[i] === true ? 1 : 0);
+              const due = fresh || stale[i] === true;
+              if (due && reached.has(SOURCES + i)) expect(ran).toBe(1);
+              else expect(ran).toBeLessThanOrEqual(due ? 1 : 0);
               if (ran > 0) stale[i] = false;
             });
             readers.forEach((r, k) => {
@@ -158,6 +169,63 @@ describe("throwing computeds", () => {
             prev = next;
           }
         });
+        sc.dispose();
+      }),
+      { seed: SEED, numRuns: 300 },
+    );
+  });
+  it("a retry follows only the sources the throwing run read; one that threw before reading any keeps its error", () => {
+    // `gate` odd throws before `x` is read; even reads `x`. `none` throws before reading anything.
+    const writeArb = fc.array(fc.tuple(fc.boolean(), fc.integer({ min: 0, max: 3 })), { maxLength: 30 });
+    fc.assert(
+      fc.property(writeArb, (writes) => {
+        let runs = 0;
+        let noneRuns = 0;
+        const seen: string[] = [];
+        let write: (toGate: boolean, v: number) => void = () => {};
+        const sc = scope(() => {
+          const gate = signal(0);
+          const x = signal(0);
+          write = (toGate, v) => (toGate ? gate.set(v) : x.set(v));
+          const c = computed(() => {
+            runs++;
+            const g = gate.get();
+            if (g % 2 === 1) throw new Error(`gate ${g}`);
+            return g + x.get();
+          });
+          const none = computed((): number => {
+            noneRuns++;
+            throw new Error("none");
+          });
+          effect(() => {
+            try {
+              seen.push(`v${c.get()}`);
+            } catch (e) {
+              seen.push(e instanceof Error ? e.message : "other");
+            }
+            try {
+              none.get();
+            } catch {
+              // Read for its run count only.
+            }
+          });
+        });
+        let g = 0;
+        let xv = 0;
+        let expectedRuns = 1;
+        for (const [toGate, v] of writes) {
+          // Read by the last run: `gate` always, `x` only when that run did not throw first.
+          const readX = g % 2 === 0;
+          const changed = toGate ? v !== g : v !== xv && readX;
+          if (toGate) g = v;
+          else xv = v;
+          if (changed) expectedRuns++;
+          write(toGate, v);
+          expect(runs).toBe(expectedRuns);
+          expect(seen.at(-1)).toBe(g % 2 === 1 ? `gate ${g}` : `v${g + xv}`);
+        }
+        expect(noneRuns).toBe(1);
+        expect(seen.length).toBeGreaterThan(0);
         sc.dispose();
       }),
       { seed: SEED, numRuns: 300 },
