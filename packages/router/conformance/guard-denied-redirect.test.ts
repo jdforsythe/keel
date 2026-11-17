@@ -96,7 +96,11 @@ describe("k.guards", () => {
         guard: guard({ redirect: "w.login" }, async () => err(Denied.make({}))),
       },
     });
-    const router = createRouter(r, { ctx: createCtx({ mode: "sim", seed: SEED }), history: memoryHistory("/"), mode: "dev" });
+    const router = createRouter(r, {
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+      history: memoryHistory("/"),
+      mode: "dev",
+    });
     const host = document.createElement("div");
     document.body.append(host);
     const off = mount(router.App, host);
