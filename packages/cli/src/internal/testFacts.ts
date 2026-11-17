@@ -188,8 +188,12 @@ export function testFacts(path: string, source: string): FileFacts {
     return out;
   };
 
+  /** The import an identifier reference stands for; none when a local of the same name shadows it. */
+  const importOf = (id: ts.Identifier): { from: string; name: string } | undefined =>
+    shadowed(id) ? undefined : imports.get(id.text);
+
   const fromFastCheck = (e: ts.Expression, names: readonly string[]): boolean => {
-    const imp = ts.isIdentifier(e) ? imports.get(e.text) : undefined;
+    const imp = ts.isIdentifier(e) ? importOf(e) : undefined;
     return imp?.from === FAST_CHECK && names.includes(imp.name);
   };
 
@@ -212,7 +216,8 @@ export function testFacts(path: string, source: string): FileFacts {
   visitGlobal(sf);
 
   /** The imported name an identifier callee stands for, else its own text; "" for any other callee. */
-  const nameOf = (ce: ts.Expression): string => (ts.isIdentifier(ce) ? (imports.get(ce.text)?.name ?? ce.text) : "");
+  const nameOf = (ce: ts.Expression): string =>
+    ts.isIdentifier(ce) && !shadowed(ce) ? (imports.get(ce.text)?.name ?? ce.text) : "";
   /**
    * The `@keel/testing` export a callee is (`explore`, `ns.explore`), else "": a local of the same name is not it.
    * Inside `packages/testing` a relative import of its own sources counts as the package.
@@ -221,11 +226,11 @@ export function testFacts(path: string, source: string): FileFacts {
     const own = (from: string): boolean =>
       from === KEEL_TESTING || (from.startsWith(".") && path.startsWith("packages/testing/"));
     if (ts.isIdentifier(ce)) {
-      const imp = imports.get(ce.text);
+      const imp = importOf(ce);
       return imp !== undefined && own(imp.from) ? imp.name : "";
     }
     if (ts.isPropertyAccessExpression(ce) && ts.isIdentifier(ce.expression)) {
-      const imp = imports.get(ce.expression.text);
+      const imp = importOf(ce.expression);
       return imp?.name === "*" && own(imp.from) ? ce.name.text : "";
     }
     return "";
@@ -237,11 +242,11 @@ export function testFacts(path: string, source: string): FileFacts {
       f === `${KEEL_TESTING}/prove` ||
       (f.startsWith(".") && f.includes("prove") && path.startsWith("packages/testing/"));
     if (ts.isIdentifier(ce)) {
-      const imp = imports.get(ce.text);
+      const imp = importOf(ce);
       return imp?.name === "prove" && from(imp.from);
     }
     if (!ts.isPropertyAccessExpression(ce) || !ts.isIdentifier(ce.expression) || ce.name.text !== "prove") return false;
-    const imp = imports.get(ce.expression.text);
+    const imp = importOf(ce.expression);
     return imp?.name === "*" && from(imp.from);
   };
 
@@ -270,7 +275,7 @@ export function testFacts(path: string, source: string): FileFacts {
     const runs = fc ? global.runs : DEFAULT_RUNS;
     const seed = fc ? global.seed : PROPERTIES_SEED;
     const arg = c.arguments.some(ts.isSpreadElement) ? c.arguments[0] : c.arguments[1];
-    const imported = arg !== undefined && ts.isIdentifier(arg) && !objects.has(arg.text) && imports.has(arg.text);
+    const imported = arg !== undefined && ts.isIdentifier(arg) && !objects.has(arg.text) && importOf(arg) !== undefined;
     if (imported) {
       const fallback = (v: NumRef): number | undefined => (typeof v === "number" ? v : undefined);
       return {

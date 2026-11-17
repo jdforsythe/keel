@@ -25,8 +25,12 @@ const hoisted = (n: ts.Node, out: Set<string>): void => {
 const statementNames = (statements: readonly ts.Statement[], out: Set<string>): void => {
   for (const st of statements) {
     if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) bindingNames(d.name, out);
-    else if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && st.name !== undefined)
+    else if (
+      (ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st) || ts.isEnumDeclaration(st)) &&
+      st.name !== undefined
+    )
       out.add(st.name.text);
+    else if (ts.isModuleDeclaration(st) && ts.isIdentifier(st.name)) out.add(st.name.text);
   }
 };
 
@@ -37,7 +41,8 @@ const declared = (n: ts.Node): Set<string> => {
     for (const p of n.parameters) bindingNames(p.name, out);
     if (ts.isFunctionExpression(n) && n.name !== undefined) out.add(n.name.text);
     if (n.body !== undefined) hoisted(n.body, out);
-  } else if (ts.isBlock(n) || ts.isModuleBlock(n)) statementNames(n.statements, out);
+  } else if (ts.isClassExpression(n) && n.name !== undefined) out.add(n.name.text);
+  else if (ts.isBlock(n) || ts.isModuleBlock(n)) statementNames(n.statements, out);
   else if (ts.isCaseBlock(n)) for (const c of n.clauses) statementNames(c.statements, out);
   else if (
     (ts.isForStatement(n) || ts.isForInStatement(n) || ts.isForOfStatement(n)) &&
@@ -50,7 +55,7 @@ const declared = (n: ts.Node): Set<string> => {
 };
 
 /**
- * Whether the reference `id` resolves to a local declaration (a parameter, `var`, `let`, `const`, function, class, loop
+ * Whether the reference `id` resolves to a local declaration (a parameter, `var`, `let`, `const`, function, class including a class expression's own name, enum, namespace, loop
  * or catch variable of an enclosing scope below the file) instead of a binding of the file's top level, such as an
  * import. Scopes are read from the syntax only.
  */
