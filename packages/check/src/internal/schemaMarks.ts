@@ -35,7 +35,7 @@ const worst = (a: Verdict, b: Verdict): Verdict =>
   a === "marked" || b === "marked" ? "marked" : a === "unknown" || b === "unknown" ? "unknown" : "clean";
 
 /**
- * Whether the schema expression `expr` holds a `.pii(...)` mark (k.privacy E1111), read through consts, imports,
+ * Whether the schema expression `expr` holds a `.pii(...)` mark or an `s.secret(...)` node (k.privacy E1111), read through consts, imports,
  * re-exports, namespace members, spreads, array and object arguments and schema method chains. `unknown` when a
  * part cannot be read statically: a call whose callee is not a member (a factory), or a binding it cannot follow.
  * A schema returned by a `SEARCH_FACTORIES` export (`tableSearch(columns)`, also through a namespace import) is that
@@ -62,7 +62,7 @@ export function schemaMarks(
       const c = e.callee;
       if (c.type !== "Super" && audited(c, at.file)) return "clean";
       if (c.type !== "MemberExpression" || c.computed) return "unknown";
-      if (c.property.name === "pii") return "marked";
+      if (c.property.name === "pii" || c.property.name === "secret") return "marked";
       // `s.object(...)` reads `s` from a package; `X.optional()` reads `X`.
       return e.arguments.map(sub).reduce(worst, sub(c.object));
     }

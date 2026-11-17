@@ -57,7 +57,7 @@ function propsOf(
 }
 
 /**
- * E1111 (k.privacy): a `.pii()` node in the `params` or `search` schema of a `manifest(...)` entry, read through
+ * E1111 (k.privacy): a `.pii()` or `s.secret` node in the `params` or `search` schema of a `manifest(...)` entry, read through
  * consts, imports, re-exports, namespace members, spreads and schema arguments: a path or query reaches browser
  * history and proxy logs Keel cannot redact. A table, entry or schema it cannot read statically (a factory call, a
  * computed key) is reported too, since nothing shows it unmarked. No fix.
@@ -67,7 +67,7 @@ export const piiInRouteUrl: RuleDef = {
   message: (f) =>
     str(f.data, "why") === "unread"
       ? `route ${str(f.data, "part")} not readable statically; cannot show it holds no .pii()`
-      : `personal data in route ${str(f.data, "part")}; a URL reaches history and logs`,
+      : `personal data or a secret in route ${str(f.data, "part")}; a URL reaches history and logs`,
   explain: "A path or query reaches browser history and proxy logs, which no redaction reaches.",
   see: "k.privacy",
   check: ({ file, ast, project }) => {

@@ -159,9 +159,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1111",
-    "a .pii() node, or a schema it cannot read, in a route params or search",
+    "a .pii() or s.secret node, or a schema it cannot read, in a route params or search",
     "A path or query reaches browser history and proxy logs, which no redaction reaches.",
-    "params: s.object({ email }) -> pass the value in an action input",
+    "params: s.object({ token: s.secret(...) }) -> carry it after # in the link; the page posts it as an action input",
     "k.privacy",
   ],
   [

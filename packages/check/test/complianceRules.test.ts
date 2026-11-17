@@ -117,7 +117,7 @@ it("E1111 reads anyOf members, spreads, namespace imports, re-exports and a cons
     },
   ];
   const ran = (files: Files) => codes(files, "E1111").map((d) => d.message.split(";")[0]);
-  const marked = "personal data in route search";
+  const marked = "personal data or a secret in route search";
   expect(
     ran(table("import { Email } from './U.schema.ts'\n", "s.object({ q: s.union([s.string(), Email]) })")),
   ).toEqual([marked]);
@@ -214,8 +214,29 @@ it("E1111: a package's route table spread into an app manifest is the package's,
       .filter((d) => d.path === "src/routes.ts")
       .map((d) => d.message.split(";")[0]);
   expect(ran("monitorRoutes.routes", "import { monitorRoutes } from '@keel/std-sessions/monitor'\n")).toEqual([]);
-  expect(ran("other.routes", "import { other } from './other.ts'\n")).toEqual(["personal data in route params"]);
+  expect(ran("other.routes", "import { other } from './other.ts'\n")).toEqual([
+    "personal data or a secret in route params",
+  ]);
   expect(ran("make().routes", "declare function make(): { routes: object }\n")).toEqual([
     "route table not readable statically",
   ]);
+});
+
+it("E1111 reports an s.secret node under wrappers and nesting, in params and search, and not in an action input", () => {
+  const S = "import { s } from '@keel/schema'\n";
+  const route = (def: string): Files => [
+    {
+      path: "src/routes.ts",
+      source: `import { manifest, action } from '@keel/router'\n${S}const Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b/:t', ${def}, component: Page } })\n`,
+    },
+  ];
+  const ran = (def: string) => codes(route(def), "E1111").map((d) => d.message);
+  const hit = (part: string) => [`personal data or a secret in route ${part}; a URL reaches history and logs`];
+  expect(ran("params: s.object({ t: s.secret(s.string()).nullable() })")).toEqual(hit("params"));
+  expect(ran("search: s.object({ t: s.secret(s.string()).optional().nullable() })")).toEqual(hit("search"));
+  expect(ran("params: s.secret(s.object({ t: s.string() }))")).toEqual(hit("params"));
+  expect(ran("params: s.object({ a: s.object({ t: s.secret(s.string()) }) })")).toEqual(hit("params"));
+  expect(ran("search: s.object({ t: s.array(s.secret(s.string())) })")).toEqual(hit("search"));
+  expect(ran("params: s.object({ t: s.string() })")).toEqual([]);
+  expect(ran("act: action({ input: s.object({ t: s.secret(s.string()) }) }, () => null)")).toEqual([]);
 });
