@@ -24,4 +24,4 @@ Canonical names. Changing one requires an RFC.
 - **workflow**: `workflow(id, spec)` from `@keel/std-workflows`: a state chart run per instance in one server store, its steps run as jobs.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 
-verified: 106d1bbea78f2fa5c25ef86dd0b375661b7135b3
+verified: 35cf34605be699fa862dc4324630dc189f7f99fb
