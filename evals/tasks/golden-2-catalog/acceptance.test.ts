@@ -1,6 +1,6 @@
 // Hidden acceptance suite for evals/tasks/golden-2-catalog (TASK.md "Acceptance" 3 and 4). pass.ts copies it to
 // apps/golden-2/test/__acceptance.test.ts, runs it with the app's vitest config, and deletes it. It reaches the app only
-// through what TASK.md pins: the default `topology`, `routes` of modules kitchen and recipes, route ids, element ids
+// through what TASK.md pins: the default `topology`, `routes` of modules kitchen and recipes (and of each module the topology places in `api`), route ids, element ids
 // and the copy table. Every `renderRoute` and `fire` here also runs the harness's render checks (axe-core, token
 // contrast, a11y.json), so a violation in any widget state fails the test that reached it. With `KEEL_TWIN=header`
 // (the planted twin, whose title header text is `''`) only the twin test runs, and it must see E1703.
@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { A11yEntry } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
+import { manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
 import { renderRoute } from "@keel/testing";
@@ -90,11 +91,24 @@ const COPY = {
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 const RecipeId = s.id("Recipe");
 
+const hasRoutes = (v: unknown): v is typeof kitchen => isRecord(v) && isRecord(v.routes);
+
+/** The `api` deployable's route table: `routes` of every module the app's topology places in it. */
+async function apiRoutes() {
+  let table = { ...kitchen.routes };
+  for (const name of topology.api?.modules ?? []) {
+    if (name === "kitchen") continue;
+    const mod: unknown = await import(`../modules/${name}/routes.ts`);
+    if (isRecord(mod) && hasRoutes(mod.routes)) table = { ...mod.routes.routes, ...table };
+  }
+  return manifest(table);
+}
+
 /** A fresh api deployable seeded with the fixture, a client sim ctx routed to it, and each title's id. */
 async function setup(seed = 1) {
   const serverCtx = createCtx({ mode: "sim", seed: 7 });
   serverCtx.clock.advance(NOW);
-  const api = await createApp({ topology, routes: kitchen, ctx: serverCtx, deployable: "api" });
+  const api = await createApp({ topology, routes: await apiRoutes(), ctx: serverCtx, deployable: "api" });
   const call = (method: string, path: string, body?: unknown): Promise<Response> =>
     api.fetch(
       new Request(new URL(path, BASE).href, {

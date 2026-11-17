@@ -1,11 +1,13 @@
 // S0008: a commit that modifies, renames or deletes packages/*/conformance/** must carry a valid rfc:NNNN in ITS OWN message (docs/RFC.md).
 // Valid = docs/rfc/NNNN-*.md exists at that commit, or rfc:0000 while every spec section of the package is `proposed`. Pure additions are allowed (suites are written before implementation).
 // Usage: node tooling/conformance-guard.mjs --msg-file=<file>   (git commit-msg hook: checks the staged diff)
-//        node tooling/conformance-guard.mjs [--range a..b]       (CI: every non-merge commit in origin/main..HEAD, else last 50)
+//        node tooling/conformance-guard.mjs [--range a..b]       (CI: every non-merge commit since START, else last 50)
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import { parseArgs, run } from "./output.ts";
 
+/** The commit the rule is checked from; a clone without it (a shallow one) checks the last 50 commits. */
+const START = "be41543a";
 const CONF = /^packages\/([^/]+)\/conformance\//;
 const git = (...a) =>
   execFileSync("git", a, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 1 << 26 });
@@ -71,7 +73,7 @@ if (import.meta.main ?? process.argv[1] === new URL(import.meta.url).pathname) {
       return { diags, counts: { commits: 1 } };
     }
     const range = args.values.get("range");
-    const base = tryGit("rev-parse", "--verify", "-q", "origin/main") ? "origin/main..HEAD" : undefined;
+    const base = tryGit("rev-parse", "--verify", "-q", `${START}^{commit}`) ? `${START}..HEAD` : undefined;
     const revs = (
       range
         ? git("rev-list", "--no-merges", range)

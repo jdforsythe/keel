@@ -1,8 +1,9 @@
 // Hidden acceptance suite for evals/tasks/golden-2 (TASK.md "Acceptance" 6). pass.ts copies it to
 // apps/golden-2/test/__acceptance.test.ts, runs it with the app's vitest config, and deletes it. It reaches the app only
-// through what TASK.md pins: the default `topology`, `routes` of modules kitchen and recipes, route ids and element ids.
+// through what TASK.md pins: the default `topology`, `routes` of modules kitchen and recipes (and of each module the topology places in `api`), route ids and element ids.
 // The strings are RFC 0079's eval table; `␣` there is U+00A0 (`NBSP` here).
 import { createCtx } from "@keel/ctx";
+import { manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import { createApp, topology as testTopology } from "@keel/server";
 import { formatMoney } from "@keel/std-money";
@@ -96,11 +97,24 @@ const RecipeId = s.id("Recipe");
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 
+const hasRoutes = (v: unknown): v is typeof kitchen => isRecord(v) && isRecord(v.routes);
+
+/** The `api` deployable's route table: `routes` of every module the app's topology places in it. */
+async function apiRoutes() {
+  let table = { ...kitchen.routes };
+  for (const name of topology.api?.modules ?? []) {
+    if (name === "kitchen") continue;
+    const mod: unknown = await import(`../modules/${name}/routes.ts`);
+    if (isRecord(mod) && hasRoutes(mod.routes)) table = { ...mod.routes.routes, ...table };
+  }
+  return manifest(table);
+}
+
 /** A fresh api deployable over its own sim ctx at `NOW`, a client sim ctx routed to it, and the requests it sent. */
 async function setup(seed = 1) {
   const serverCtx = createCtx({ mode: "sim", seed: 7 });
   serverCtx.clock.advance(NOW);
-  const api = await createApp({ topology, routes: kitchen, ctx: serverCtx, deployable: "api" });
+  const api = await createApp({ topology, routes: await apiRoutes(), ctx: serverCtx, deployable: "api" });
   const call = (method: string, path: string, body?: unknown): Promise<Response> =>
     api.fetch(
       new Request(new URL(path, BASE).href, {
