@@ -743,9 +743,9 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0659 spec: k.persist, k.prove, k.shell, std.db, std.workflows and std.shells are still `status: proposed`, and k.topology and k.hosting `implemented`, though each has conformance files that quote it and green suites; advance the ones whose suites cover every clause (`docs/freeze-review.md` lists them) · spec
 
 ## Red team 2026-11-16 (rfc:0104; findings and probes in tasks/0338-s8-reach/proposed/red-team-0104.md)
-- [ ] 0660 server (medium): a live loader on an API route that throws prints the error raw through `console.error` (Hono `streamSSE` with no `onError`), a revealed bearer included, and writes no diag · server
-- [ ] 0661 server: the E1554 diag for a refused `output` names a record key (`... at alice@example.com`), which is data · server
-- [ ] 0662 server: a guard's throw is not scrubbed, so the dev 500 body echoes a revealed bearer; a guard throw writes no diag · server · spec
+- [x] 0660 server (medium): a live loader on an API route that throws prints the error raw through `console.error` (Hono `streamSSE` with no `onError`), a revealed bearer included, and writes no diag · server
+- [x] 0661 server: the E1554 diag for a refused `output` names a record key (`... at alice@example.com`), which is data · server
+- [x] 0662 server: a guard's throw is not scrubbed, so the dev 500 body echoes a revealed bearer; a guard throw writes no diag · server · spec
 - [ ] 0663 server: any bearer a client sends, checked or not, joins the scrub set, so `authorization: Bearer ion` blanks `ion` inside words of that request's own diags and dev error bodies; nothing leaks, incident logs read worse. THREAT-MODEL states it. A minimum length for a bearer's scrub is one answer; the user chose no length rule for secrets in general (RFC 0105) · server · spec
 - [x] 0664 docs: THREAT-MODEL said every response to a request with `authorization` is `no-store`; k.api promises it for API routes, and an unmatched path answers 404 without it. The bullet now says an API route's response · docs
-- [ ] 0665 server: `bearerOf` trims with JS `trim()`, so a no-break space, vertical tab or form feed around the value is accepted; HTTP whitespace is space and tab only · server
+- [x] 0665 server: `bearerOf` trims with JS `trim()`, so a no-break space, vertical tab or form feed around the value is accepted; HTTP whitespace is space and tab only · server

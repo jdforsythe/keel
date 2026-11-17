@@ -169,6 +169,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     frames: appFrames(opts.artifacts, (message) =>
       log?.write(diagLine(log.format, { code: "keel.unexpected", message })),
     ),
+    ...(log === undefined ? {} : { log }),
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));

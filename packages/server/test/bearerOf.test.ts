@@ -1,5 +1,6 @@
 // Examples and a property (k.api Bearer): the parse table of the `authorization` header, and that any header value
-// gives a `Secret` exactly when it matches the bearer grammar, never a throw. Seed 1337.
+// gives a `Secret` exactly when, less spaces and tabs at either end, it matches the bearer grammar, never a throw.
+// Seed 1337.
 import { reveal } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -24,6 +25,7 @@ const TABLE: readonly (readonly [readonly string[], string | undefined])[] = [
   [["bearer abc"], "abc"],
   [["BEARER   abc"], "abc"],
   [["  Bearer abc  "], "abc"],
+  [["\t Bearer abc \t"], "abc"],
   [["Bearer abc=="], "abc=="],
   [[`Bearer keel_${hex(16)}_${hex(64)}`], `keel_${hex(16)}_${hex(64)}`],
   [[`Bearer ${"a".repeat(4096)}`], "a".repeat(4096)],
@@ -41,10 +43,20 @@ const TABLE: readonly (readonly [readonly string[], string | undefined])[] = [
   [["Bearerabc"], undefined],
   [["Bearer a", "Bearer b"], undefined],
 ];
+// A header value is bytes: U+FEFF cannot be one, and its UTF-8 bytes on the wire read as latin1 `\u00ef\u00bb\u00bf`.
+const NOT_OWS = ["\u00a0", "\u000b", "\u000c", "\u00ef\u00bb\u00bf"];
 
 describe("bearerOf", () => {
   it("reads the parse table: one Bearer token68 of 1 to 4,096 characters, any case, else undefined", () => {
     for (const [values, want] of TABLE) expect(shown(values), JSON.stringify(values)).toBe(want);
+  });
+
+  it("strips only spaces and tabs around the value: a no-break space, VT, FF or BOM before or after it is undefined", () => {
+    for (const c of NOT_OWS) {
+      expect(shown([`${c}Bearer abc`]), JSON.stringify(c)).toBeUndefined();
+      expect(shown([`Bearer abc${c}`]), JSON.stringify(c)).toBeUndefined();
+      expect(shown([` ${c}Bearer abc\t`]), JSON.stringify(c)).toBeUndefined();
+    }
   });
 
   it("gives a Secret whose String and JSON forms are the marker", () => {
@@ -54,7 +66,7 @@ describe("bearerOf", () => {
   });
 
   it("never throws, and reveals the grammar's token exactly when the trimmed value matches it", () => {
-    const chars = fc.constantFrom(..."aZ09-._~+/= ,\tBearer".split(""));
+    const chars = fc.constantFrom(..."aZ09-._~+/= ,\tBearer\u00a0\u000b\u000c\u00ef".split(""));
     const value = fc.oneof(
       fc.string({ maxLength: 40 }),
       fc
@@ -71,7 +83,7 @@ describe("bearerOf", () => {
           return;
         }
         const read = req.headers.get("authorization") ?? "";
-        const want = GRAMMAR.exec(read.trim())?.[1];
+        const want = GRAMMAR.exec(read.replace(/^[ \t]*/, "").replace(/[ \t]*$/, ""))?.[1];
         expect(shown([v])).toBe(want);
       }),
       { seed: SEED, numRuns: 500 },

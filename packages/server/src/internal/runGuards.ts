@@ -1,15 +1,16 @@
-import type { Ctx } from "@keel/ctx";
-import type { Manifest, RouteDef } from "@keel/router";
-import { carriedParams, guardLoop, guardNext, matchUrl, runGuard, withNext } from "@keel/router/internal";
-import type { Level, Located } from "@keel/router/internal";
+import { carriedParams, guardLoop, guardNext, matchUrl, withNext } from "@keel/router/internal";
+import type { Level } from "@keel/router/internal";
 import { needsBare } from "@keel/router/internal";
 import { type KeelError, type Secret, attempt } from "@keel/schema";
 import type { Diag } from "./Diag.ts";
 import type { GuardOutcome } from "./GuardOutcome.ts";
+import type { RequestScope } from "./RequestScope.ts";
+import type { Served } from "./Served.ts";
+import { caught } from "./caught.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
+import { scrubbedCause } from "./scrubbedCause.ts";
 import { unexpected } from "./unexpected.ts";
 
-type Routes = Manifest<Readonly<Record<string, RouteDef>>>;
 type Step =
   | { readonly kind: "pass" }
   | {
@@ -20,21 +21,34 @@ type Step =
     }
   | { readonly kind: "redirect"; readonly at: number; readonly location: string };
 
-/** The guards of `chain` for `url`, outermost first, up to the first that does not pass. */
+/**
+ * The guards of `chain` for `url`, outermost first, up to the first that does not pass. A throw is `keel.unexpected`
+ * without the request's `.pii()` values and revealed secrets (`scrubbedCause`) plus a `keel.unexpected` diag with its
+ * app `frames`.
+ */
 async function step(
   chain: readonly Level[],
   url: string,
   params: Readonly<Record<string, unknown>>,
-  routes: Routes,
-  table: readonly Located[],
-  ctx: Ctx,
-  caller: string,
+  sv: Served,
+  rq: RequestScope,
   bearer?: Secret<string>,
 ): Promise<Step> {
+  const { routes, table } = sv;
+  const caller = rq.caller.id;
   for (const [i, lvl] of chain.entries()) {
     const g = lvl.def.guard;
     if (g === undefined) continue;
-    const r = await runGuard(g, url, ctx, caller, bearer);
+    const ran = await caught(
+      () => g.run(bearer === undefined ? { url, caller } : { url, caller, bearer }, sv.ctx),
+      sv.frames,
+    );
+    if (!ran.result.ok) {
+      const clean = scrubbedCause(ran.result.error, rq);
+      const message = `guard ${lvl.id} threw: ${clean.data.cause}`;
+      return { kind: "fail", at: i, error: clean, diags: [{ code: "keel.unexpected", message, frames: ran.frames }] };
+    }
+    const r = ran.result.value;
     if (r.ok) continue;
     if (r.error.code !== "keel.denied") return { kind: "fail", at: i, error: r.error };
     const id = g.redirect;
@@ -61,16 +75,10 @@ async function step(
 }
 
 /** Where the browser goes next after requesting `url`: its guards' redirect location, or `null` when none redirects. */
-async function nextHop(
-  url: string,
-  routes: Routes,
-  table: readonly Located[],
-  ctx: Ctx,
-  caller: string,
-): Promise<string | null> {
-  const m = matchUrl(table, url);
+async function nextHop(url: string, sv: Served, rq: RequestScope): Promise<string | null> {
+  const m = matchUrl(sv.table, url);
   if (m.kind !== "route") return null;
-  const s = await step(m.route.chain, m.url, m.params, routes, table, ctx, caller);
+  const s = await step(m.route.chain, m.url, m.params, sv, rq);
   return s.kind === "redirect" ? s.location : null;
 }
 
@@ -80,7 +88,8 @@ async function nextHop(
  * is a guard's redirect route: never nested, `guardNext`); any other `err`, a throw fails at that level. A route's
  * `guard` is the guard value; its `redirect` resolves in the deployable's manifest `routes`.
  * Before answering a redirect, the target's guards run here, hop by hop (the browser would follow): a location
- * visited twice or a ninth redirect is E1508, a `keel.unexpected` failure at the denying level with a diag.
+ * visited twice or a ninth redirect is E1508, a `keel.unexpected` failure at the denying level with a diag; a guard's
+ * throw fails at its level, scrubbed, with a `keel.unexpected` diag (k.server Log).
  * On an API route a denial is a `redirect` with location `""`, resolved nowhere (k.api).
  * Every guard gets the request's `caller` id (`""` anonymous) and its `bearer` (`undefined` off an API route, k.api
  * Bearer); a redirect hop's guards run without one, as the browser following it sends none.
@@ -89,17 +98,14 @@ export async function runGuards(
   chain: readonly Level[],
   url: string,
   params: Readonly<Record<string, unknown>>,
-  routes: Routes,
-  table: readonly Located[],
-  ctx: Ctx,
-  caller: string,
-  bearer?: Secret<string>,
+  sv: Served,
+  rq: RequestScope,
 ): Promise<GuardOutcome> {
   const fail = (i: number, error: KeelError<string, unknown>, diags: readonly Diag[] = []): GuardOutcome => {
     const level = nearestErrorElement(chain, i);
     return { kind: "fail", failure: { level, bare: needsBare(chain, level), error }, diags };
   };
-  const first = await step(chain, url, params, routes, table, ctx, caller, bearer);
+  const first = await step(chain, url, params, sv, rq, rq.bearer);
   if (first.kind === "pass") return first;
   if (first.kind === "fail") return fail(first.at, first.error, first.diags);
   const visited = [url];
@@ -109,7 +115,7 @@ export async function runGuards(
     if (loop !== null)
       return fail(first.at, unexpected(`E1508 ${loop}`), [{ code: "E1508", message: loop.slice(0, 89) }]);
     visited.push(to);
-    to = await nextHop(to, routes, table, ctx, caller);
+    to = await nextHop(to, sv, rq);
   }
   return { kind: "redirect", location: first.location };
 }

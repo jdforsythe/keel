@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
 import type { Located } from "@keel/router/internal";
+import type { LogSink } from "../types/LogSink.ts";
 import type { BuiltClient } from "./BuiltClient.ts";
 import type { CallerKeys } from "./CallerKeys.ts";
 import type { Mode } from "./Mode.ts";
@@ -17,7 +18,8 @@ import type { ReportWindow } from "./ReportWindow.ts";
  * entry of `createApp({ deployable })`'s islands (none given: `/@keel/entry.ts`, every `node` module's).
  * `lifecycle` aborts on `close()`, ending runners and open event streams. `maxStreams` caps the open event streams
  * (`createApp({ maxStreams })`) and `streams.open` counts them (`liveStream`). `reports` is the CSP report window
- * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`).
+ * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`). `log` is
+ * `createApp({ log })`, for records written after the response has started (an event stream's).
  */
 export type Served = {
   readonly table: readonly Located[];
@@ -38,4 +40,5 @@ export type Served = {
   readonly streams: { open: number };
   readonly reports: ReportWindow;
   readonly frames: (thrown: unknown) => readonly string[];
+  readonly log?: LogSink;
 };

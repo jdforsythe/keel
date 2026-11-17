@@ -9,8 +9,12 @@ import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { RequestScope } from "./RequestScope.ts";
 import { busy } from "./busy.ts";
+import { caught } from "./caught.ts";
+import { diagLine } from "./diagLine.ts";
 import { openFactory } from "./openFactory.ts";
 import { publicError } from "./publicError.ts";
+import { redacted } from "./redacted.ts";
+import { scrubbedCause } from "./scrubbedCause.ts";
 
 const HEARTBEAT_MS = 15_000;
 
@@ -21,7 +25,8 @@ const HEARTBEAT_MS = 15_000;
  * leave the server); a `:` line goes out per 15 s of `ctx.clock`. It ends when `fn` returns or its `signal` aborts:
  * on request abort or `close()` (both also cancel the stream, so a stalled write ends), or when the reader cancels.
  * The factory opens in the stream's own isolated scope, not the request's (disposed when `handle` returns), and that
- * scope is disposed when the stream ends. Written with Hono's `streamSSE`; `cache-control: no-store`. With
+ * scope is disposed when the stream ends. A throw of `fn` ends it with one `data:` line, its `keel.unexpected` `err`, and a
+ * `keel.unexpected` diag written to `log`, both without the request's `.pii()` values and revealed secrets (`redacted`). Written with Hono's `streamSSE`; `cache-control: no-store`. With
  * `maxStreams` streams open it is 503 `keel.busy` and opens nothing; a stream holds its place until it ends.
  */
 export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<unknown>, c: Context): Handled {
@@ -48,17 +53,36 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
       beat = (async () => {
         while ((await attempt(() => sv.ctx.clock.after(HEARTBEAT_MS, ac.signal))).ok) await stream.write(":\n\n");
       })();
-      const stores = live.stores === undefined ? undefined : await openFactory(sv.ctx, rq, live.stores);
-      const args = { params: m.params, search: m.search, url: r.url, caller: rq.caller.id, stores, signal: ac.signal };
-      it = live.live?.(rq.bearer === undefined ? args : { ...args, bearer: rq.bearer }, sv.ctx)[Symbol.asyncIterator]();
-      while (it !== undefined) {
-        const next = await Promise.race([it.next(), ended]);
-        if (next === undefined || next.done === true) break;
-        const res = next.value;
-        const json = res.ok
-          ? attempt(() => ok(live.output.encode(res.value)))
-          : ok(err(publicError(res.error, sv.mode)));
-        await stream.writeSSE({ data: JSON.stringify(json.ok ? json.value : err(publicError(json.error, sv.mode))) });
+      const ran = await caught(async () => {
+        const stores = live.stores === undefined ? undefined : await openFactory(sv.ctx, rq, live.stores);
+        const args = {
+          params: m.params,
+          search: m.search,
+          url: r.url,
+          caller: rq.caller.id,
+          stores,
+          signal: ac.signal,
+        };
+        it = live
+          .live?.(rq.bearer === undefined ? args : { ...args, bearer: rq.bearer }, sv.ctx)
+          [Symbol.asyncIterator]();
+        while (it !== undefined) {
+          const next = await Promise.race([it.next(), ended]);
+          if (next === undefined || next.done === true) break;
+          const res = next.value;
+          const json = res.ok
+            ? attempt(() => ok(live.output.encode(res.value)))
+            : ok(err(publicError(res.error, sv.mode)));
+          await stream.writeSSE({ data: JSON.stringify(json.ok ? json.value : err(publicError(json.error, sv.mode))) });
+        }
+      }, sv.frames);
+      // A throw is one scrubbed `keel.unexpected` diag in the log and a last `data:` line holding its `err`.
+      if (!ran.result.ok) {
+        const clean = scrubbedCause(ran.result.error, rq);
+        const message = `loader ${m.route.id} threw: ${clean.data.cause}`;
+        const frames = ran.frames.map((f) => redacted(f, rq));
+        sv.log?.write(diagLine(sv.log.format, { code: "keel.unexpected", message, frames }));
+        await attempt(() => stream.writeSSE({ data: JSON.stringify(err(publicError(clean, sv.mode))) }));
       }
     } finally {
       sv.streams.open--;

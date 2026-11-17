@@ -32,7 +32,7 @@ async function runOne(
   if (!ran.value.ok) return { result: ran.value, diag: null };
   const checked = l.output.parse(ran.value.value);
   if (!checked.ok) {
-    const refused = outputRefused("loader", id, checked.error);
+    const refused = outputRefused("loader", id, l.output, checked.error);
     return { result: err(refused.error), diag: refused.diag };
   }
   const json = attempt(() => l.output.encode(checked.value));

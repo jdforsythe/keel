@@ -90,7 +90,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
       // Parsed before any save: a refused value saves nothing and is never sent.
       const checked = action.output.parse(out.value);
       if (!checked.ok) {
-        const no = outputRefused("action", id, checked.error);
+        const no = outputRefused("action", id, action.output, checked.error);
         refused = no.diag;
         return err(no.error);
       }
