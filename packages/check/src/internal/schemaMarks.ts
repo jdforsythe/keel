@@ -119,7 +119,8 @@ const worst = (a: Verdict, b: Verdict): Verdict =>
 /**
  * Whether the schema expression `expr` holds a `.pii(...)` mark or a `secret(...)` call on the `@keel/schema` namespace (k.privacy E1111), read through consts, imports,
  * re-exports, namespace members, spreads, array and object arguments and schema method chains. `unknown` when a
- * part cannot be read statically: a call whose callee is not a member (a factory), or a binding it cannot follow.
+ * part cannot be read statically: a call whose callee is not a member (a factory), a binding it cannot follow, or an
+ * object literal's getter, setter or method.
  * A schema returned by a `SEARCH_FACTORIES` export (`tableSearch(columns)`, also through a namespace import) is that
  * package's, as its route table is: `clean` here, guarded by the package's own rule.
  */
@@ -154,7 +155,12 @@ export function schemaMarks(
       return e.arguments.map(sub).reduce(worst, sub(c.object));
     }
     case "ObjectExpression":
-      return e.properties.map((p) => (p.type === "Property" ? sub(p.value) : sub(p))).reduce(worst, "clean");
+      // A getter, setter or method runs code to give its field, so its schema cannot be read statically.
+      return e.properties
+        .map(
+          (p): Verdict => (p.type !== "Property" ? sub(p) : p.kind !== "init" || p.method ? "unknown" : sub(p.value)),
+        )
+        .reduce(worst, "clean");
     case "ArrayExpression":
       return e.elements.map((x) => (x === null ? "clean" : sub(x))).reduce(worst, "clean");
     case "ConditionalExpression":

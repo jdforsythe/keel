@@ -284,3 +284,23 @@ it("E1111 counts `secret` only on the @keel/schema namespace, not on any object 
     "route search not readable statically",
   ]);
 });
+
+it("E1111 reads a getter, setter or method in a schema's object literal as unreadable", () => {
+  const ran = (params: string): string[] =>
+    codes(
+      [
+        {
+          path: "src/routes.ts",
+          source: `import { manifest } from '@keel/router'\nimport { s } from '@keel/schema'\nconst Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b/:token', params: ${params}, component: Page } })\n`,
+        },
+      ],
+      "E1111",
+    ).map((d) => d.message.split(";")[0] ?? "");
+  const unread = ["route params not readable statically"];
+  expect(ran("s.object({ get token() { return s.secret(s.string()) } })")).toEqual(unread);
+  expect(ran("s.object({ get token() { return s.string() } })")).toEqual(unread);
+  expect(ran("s.object({ set token(v) {}, token: s.string() })")).toEqual(unread);
+  expect(ran("s.object({ token() { return s.secret(s.string()) } })")).toEqual(unread);
+  expect(ran("s.object({ token: s.string() })")).toEqual([]);
+  expect(ran("s.object({ ['token']: s.string() })")).toEqual([]);
+});
