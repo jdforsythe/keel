@@ -18,7 +18,7 @@ const SEED = 1337; // seed 1337
 const page = (): Node => document.createElement("div");
 const Out = s.object({ n: s.int() });
 const read = loader({ output: Out }, async () => ok({ n: 1 }));
-const write = action({ input: s.object({ note: s.string() }) }, async () => ok(null));
+const write = action({ input: s.object({ note: s.string() }), output: s.object({}) }, async () => ok({}));
 
 const codeOf = (fn: () => unknown): unknown => {
   try {

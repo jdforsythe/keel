@@ -186,27 +186,33 @@ export async function serve(o: ServeOptions = {}): Promise<Harness> {
       return o.member === undefined ? stores.members.get("ids").includes(caller) : o.member(caller);
     },
   });
-  const joinAction = action({ input: Nothing, stores: factory }, async (_i, { caller, stores }) => {
-    tx(stores.join, { id: caller });
-    return ok(null);
-  });
-  const leave = action({ input: Nothing, stores: factory }, async (_i, { caller, stores }) => {
+  const joinAction = action(
+    { input: Nothing, output: s.object({}), stores: factory },
+    async (_i, { caller, stores }) => {
+      tx(stores.join, { id: caller });
+      return ok({});
+    },
+  );
+  const leave = action({ input: Nothing, output: s.object({}), stores: factory }, async (_i, { caller, stores }) => {
     tx(stores.leave, { id: caller });
-    return ok(null);
+    return ok({});
   });
-  const bump = action({ input: Nothing, stores: factory }, async (_i, { stores }) => {
+  const bump = action({ input: Nothing, output: s.object({}), stores: factory }, async (_i, { stores }) => {
     tx(stores.bump, {});
-    return ok(null);
+    return ok({});
   });
-  const note = action({ input: s.object({ text: s.string() }), stores: factory }, async ({ text }, { stores }) => {
-    tx(stores.note, { text });
-    return ok(null);
-  });
-  const other = action({ input: Nothing, stores: otherFactory }, async (_i, { stores }) => {
+  const note = action(
+    { input: s.object({ text: s.string() }), output: s.object({}), stores: factory },
+    async ({ text }, { stores }) => {
+      tx(stores.note, { text });
+      return ok({});
+    },
+  );
+  const other = action({ input: Nothing, output: s.object({}), stores: otherFactory }, async (_i, { stores }) => {
     tx(stores.bump, {});
-    return ok(null);
+    return ok({});
   });
-  const noop = action({ input: Nothing }, async () => ok(null));
+  const noop = action({ input: Nothing, output: s.object({}) }, async () => ok({}));
   const routes = manifest({
     "chan.room": { api: true, path: route.path, loader: route.loader },
     "chan.join": { api: true, path: "/api/join" },

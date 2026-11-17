@@ -56,6 +56,12 @@ const apiRoutes = (entries: string): Files[number] =>
     "modules/a/routes.ts",
     `import { manifest } from '@keel/router'\ndeclare const Page: () => Node\nexport const routes = manifest({ ${entries} })\n`,
   );
+/** E1512: a manifest whose API route's POST is bound to a declared action of type `kind` (a page action, or an API action with `output`). */
+const apiActions = (kind: string, entries: string): Files[number] =>
+  f(
+    "modules/a/routes.ts",
+    `import { manifest } from '@keel/router'\nimport type { Action, ApiAction } from '@keel/router'\ndeclare const Page: () => Node\ndeclare const post: ${kind}\nexport const routes = manifest({ ${entries} })\nroutes.actions({ 'a.list': { POST: post } })\n`,
+  );
 /** A union prop for E1402 (k.component: one `Case` per variant). */
 const MATCH = `${SCHEMA}import { Match, Case } from '@keel/runtime-dom'\nexport const Props = s.object({ shape: s.union('kind', [s.object({ kind: s.literal('circle') }), s.object({ kind: s.literal('square') })]) })\n`;
 /** Color tokens for E1804: `mid` on `white` is about 3:1, `ink` on `white` passes 4.5:1 in both schemes. */
@@ -519,6 +525,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     opts: { root: ROUTER_ROOT },
     bad: [apiRoutes("'a.list': { api: true, path: '/api/list', component: Page }")],
     clean: [apiRoutes("'a.list': { api: true, path: '/api/list' }, 'a.home': { path: '/', component: Page }")],
+  },
+  E1512: {
+    opts: { root: ROUTER_ROOT },
+    bad: [
+      apiActions(
+        "Action<unknown>",
+        "'a.list': { api: true, path: '/api/list' }, 'a.home': { path: '/', component: Page }",
+      ),
+    ],
+    clean: [
+      apiActions(
+        "ApiAction<unknown, unknown>",
+        "'a.list': { api: true, path: '/api/list' }, 'a.home': { path: '/', component: Page }",
+      ),
+    ],
   },
   E1511: {
     badOpts: { ...NO_TYPES, topology: { web: { modules: ["a"], adapter: "client" } } },

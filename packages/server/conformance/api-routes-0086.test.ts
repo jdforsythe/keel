@@ -20,7 +20,7 @@ const Out = s.object({ n: s.int() });
 const Denied = s.error("keel.denied", s.object({}));
 const page = (): Node => document.createElement("main");
 const read = loader({ output: Out }, async () => ok({ n: 7 }));
-const write = action({ input: s.object({ note: s.string() }) }, async () => ok(null));
+const write = action({ input: s.object({ note: s.string() }), output: s.object({}) }, async () => ok({}));
 const deny = guard({ redirect: "ops.login" }, async () => err(Denied.make({})));
 const topo = topology({ web: { modules: ["api", "ops"], adapter: "node" } });
 const boot = (routes: Parameters<typeof createApp>[0]["routes"]) =>

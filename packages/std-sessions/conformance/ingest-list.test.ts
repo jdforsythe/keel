@@ -103,7 +103,7 @@ describe("std.sessions: ingest", () => {
         const { app, ctx } = await boot();
         const first = await send(app, make("s-1", code));
         expect(first.status).toBe(200);
-        expect(await first.json()).toEqual({ ok: true, value: null });
+        expect(await first.json()).toEqual({ ok: true, value: {} });
         const caller = callerValue(first);
         allow(ctx, caller);
         const archive = await archiveOf(await list(app, caller));

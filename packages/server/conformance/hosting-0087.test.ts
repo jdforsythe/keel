@@ -188,9 +188,9 @@ const read = loader({ output: Out }, async () => {
   count.loader++;
   return ok({ n: 7 });
 });
-const write2 = action({ input: s.object({ note: s.string() }) }, async () => {
+const write2 = action({ input: s.object({ note: s.string() }), output: s.object({}) }, async () => {
   count.action++;
-  return ok(null);
+  return ok({});
 });
 const page = (): Node => document.createElement("main");
 const topo = topology({ web: { modules: ["api", "ops"], adapter: "node" } });
@@ -278,7 +278,12 @@ describe("k.hosting", () => {
         const methods = tokens(res.headers.get("access-control-allow-methods"));
         expect(methods).toEqual(expect.arrayContaining(["get", "post"]));
         expect(methods).not.toContain("delete");
-        expect(tokens(res.headers.get("access-control-allow-headers"))).toEqual(["accept", "content-type", "x-keel"]);
+        expect(tokens(res.headers.get("access-control-allow-headers"))).toEqual([
+          "accept",
+          "authorization",
+          "content-type",
+          "x-keel",
+        ]);
         expect(res.headers.get("access-control-allow-credentials")).toBe("true");
         expect(res.headers.get("access-control-max-age")).toBe("600");
         expect(tokens(res.headers.get("vary"))).toContain("origin");

@@ -28,7 +28,7 @@ test(`${CLAUSE} (a member's POST reaches the same params, the publisher's stream
         const res = await h.post(roomChannel.path, { message: { text: t } }, { cookie: a, search: "?room=a" });
         expect(res.status).toBe(200);
         const body: unknown = await res.json();
-        expect(body).toMatchObject({ ok: true, value: null });
+        expect(body).toMatchObject({ ok: true, value: {} });
         const want = { kind: "message", message: { text: t } };
         await waitFor(() => [sa, sa2].every((st) => st.events.some((e) => JSON.stringify(e) === JSON.stringify(want))));
         await settle();
