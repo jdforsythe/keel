@@ -22,7 +22,7 @@ import { to } from "./to.ts";
 const SEED = 1337;
 const view = (): Node => document.createElement("div");
 const read = loader({ output: s.object({}) }, async () => ok({}));
-const write = action({ input: s.object({}) }, async () => ok(null));
+const write = action({ input: s.object({}), output: s.object({}) }, async () => ok({}));
 const Denied = s.error("keel.denied", s.object({}));
 const bare = guard({}, async () => err(Denied.make({})));
 const toLogin = guard({ redirect: "t.login" }, async () => err(Denied.make({})));

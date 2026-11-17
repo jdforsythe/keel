@@ -270,7 +270,8 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   const actionAt = (href: Href, method: Verb) => {
     const m = matchUrl(table, href);
     const act = m.kind === "route" ? routeActions.get(m.route.def)?.[method] : undefined;
-    return m.kind === "route" && act !== undefined ? { act, params: m.params } : null;
+    // The client router posts to pages only, whose actions declare no `output` (k.api).
+    return m.kind === "route" && act !== undefined && act.output === undefined ? { act, params: m.params } : null;
   };
   const navigate = (to: Href, o?: { readonly replace?: boolean }): Promise<void> =>
     go(to, o?.replace === true ? "replace" : "push", []);

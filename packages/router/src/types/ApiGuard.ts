@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import type { KeelError, Result } from "@keel/schema";
+import type { KeelError, Result, Secret } from "@keel/schema";
 
 /**
  * A guard declared with `guard({}, fn)`, without `redirect`: it fits API routes only (k.api), whose denial answers
@@ -11,10 +11,11 @@ export interface ApiGuard {
   readonly redirect?: string;
   /**
    * `caller`: the request's caller id (k.server; `""` anonymous; the router's `caller` option in a browser or harness).
-   * Optional for direct callers (a test calling `run({ url })`); the guard's function then gets `""`.
+   * `bearer`: the request's `Authorization: Bearer` token on an API route (k.api Bearer). Both are optional for direct
+   * callers (a test calling `run({ url })`); the guard's function then gets `""` and `undefined`.
    */
   run(
-    req: { readonly url: string; readonly caller?: string },
+    req: { readonly url: string; readonly caller?: string; readonly bearer?: Secret<string> },
     ctx: Ctx,
   ): Promise<Result<null, KeelError<"keel.denied", unknown>>>;
 }

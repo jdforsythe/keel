@@ -28,7 +28,7 @@
     "@keel/ctx": "3.75kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "10.25kb",
+    "@keel/router": "10.75kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
     "@keel/scaffold": {

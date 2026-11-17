@@ -2,7 +2,7 @@
 // own values (k.server API, RFC 0027); an undeclared schema leaves `unknown`, and a route fitting the loader's types
 // (RouteFit) with another schema value still throws E1507 at `manifest`.
 import { createCtx } from "@keel/ctx";
-import { type Id, ok, s } from "@keel/schema";
+import { type Id, type Secret, ok, s } from "@keel/schema";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { action } from "../src/action.ts";
 import { loader } from "../src/loader.ts";
@@ -40,6 +40,7 @@ describe("loader and action params/search", () => {
       readonly search: { filter?: "all" | "done" | undefined };
       readonly url: string;
       readonly caller: string;
+      readonly bearer?: Secret<string>;
       readonly stores: undefined;
     }>();
     expectTypeOf(save.run).parameter(1).toEqualTypeOf<{
@@ -53,6 +54,7 @@ describe("loader and action params/search", () => {
       readonly search: unknown;
       readonly url: string;
       readonly caller: string;
+      readonly bearer?: Secret<string>;
       readonly stores: undefined;
     }>();
   });
