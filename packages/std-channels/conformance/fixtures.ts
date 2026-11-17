@@ -146,6 +146,7 @@ export interface ServeOptions {
   /** Replaces the default membership (the caller is in `chan.members`). */
   readonly member?: (caller: string) => boolean;
   readonly perCaller?: number;
+  readonly perAnonymous?: number;
 }
 
 export interface Harness {
@@ -233,12 +234,16 @@ export async function serve(o: ServeOptions = {}): Promise<Harness> {
   });
   const dir = mkdtempSync(join(tmpdir(), "keel-channels-"));
   let std: string | undefined;
-  if (o.perCaller !== undefined) {
+  if (o.perCaller !== undefined || o.perAnonymous !== undefined) {
+    const given = [
+      ...(o.perCaller === undefined ? [] : [`perCaller: ${o.perCaller}`]),
+      ...(o.perAnonymous === undefined ? [] : [`perAnonymous: ${o.perAnonymous}`]),
+    ].join(", ");
     std = join(dir, "std.json");
     const { data, hash } = stdArtifact([
       {
         path: "modules/chan/module.ts",
-        source: `import { module } from "@keel/compiler"\nexport default module({ id: "chan", deps: ["@keel/std-channels"], capabilities: ["clock", "net", "observe"], std: { "@keel/std-channels": { perCaller: ${o.perCaller} } } })\n`,
+        source: `import { module } from "@keel/compiler"\nexport default module({ id: "chan", deps: ["@keel/std-channels"], capabilities: ["clock", "net", "observe"], std: { "@keel/std-channels": { ${given} } } })\n`,
       },
     ]);
     writeFileSync(std, JSON.stringify({ data, hash }));
