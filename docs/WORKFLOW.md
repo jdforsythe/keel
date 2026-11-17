@@ -34,6 +34,12 @@
 
 Brief every subagent with: the files it owns, the files other agents own concurrently, the spec section, the verification command, and what to report back (trailer lines, files touched, unfinished items). Independent subagents run in parallel in one turn. Subagent definitions in `.claude/agents/` carry a `model:` so the tier is the default, not a choice.
 
+**The orchestrator.** The session the operator runs `/resume` in is the director of the work: it understands the goals and moves the project to its end, done right, securely, with clean code and sound process. It keeps for itself the decisions, the briefs, the review of every lane's result, the merges, the gates and the handoff records (`PLAN.md`, `docs/HANDOFF.md`), so no work or progress is lost. Everything else runs concurrently in subagents at the tier above. A subagent's claim is checked before it is relayed or merged: the lane's tests and gates are run, and security work gets a reviewer pass and a red-team pass. A lane that must not disturb a build, an eval or a mutation run on the main tree works in its own git worktree and commits there; the orchestrator cherry-picks. A batch of many lines may go to one opus sub-orchestrator in a worktree that runs its own subagents.
+
+**What the orchestrator decides.** It approves public API shapes, RFCs under the defaults and size budget re-bases with the reason, and records each in `PLAN.md` for the operator to confirm or reverse. It brings to the operator: a security choice that does not follow plainly from the goals (fail closed, least surprise, enforce in the kernel), spending, and a mutation run. External reviews, the CI repair and full testing on devices belong to the pre-public readiness plan, not to stage work.
+
+**Mutation on a shared machine.** A mutation run needs the operator's word. The light form, `pnpm mutate:stale`, runs only the files whose claim is stale, in chunks, with three test runners and a time bound, and is the one to ask for; the whole-package form takes the machine.
+
 **Processes.** The machine is shared. A brief tells its agent to run one test file at a time, to run a whole package suite at most twice, to bound every command, and to leave no process behind. The orchestrator runs `pnpm orphans` before and after a batch and after any root run that stopped early: it lists this worktree's processes whose parent is gone (O0001), and `pnpm orphans --kill` ends them. A mutation run is watched and stopped with `pnpm mutate:status` and `pnpm mutate:stop` only.
 
-verified: 730deaada22d646b710368b4bbabfc368956b87f
+verified: cd2e17ba8c75cdc17de010316ab5cc2e0ace7fda
