@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 957,
-    "probabilistic": 299,
+    "example": 956,
+    "probabilistic": 298,
     "exhaustive": 15,
     "proven": 51,
     "monitored": 4
@@ -47,7 +47,7 @@
         "threshold": 70
       },
       "schema": {
-        "score": 90.86,
+        "score": 90.75,
         "threshold": 80
       },
       "server": {
@@ -11465,14 +11465,10 @@
     },
     {
       "item": "k.privacy#10",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "k.privacy#11",
       "rung": "example"
     },
     {
-      "item": "k.privacy#12",
+      "item": "k.privacy#11",
       "rung": "example"
     },
     {
