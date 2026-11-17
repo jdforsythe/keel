@@ -34,7 +34,8 @@
       "**/.keel/**",
       "packages/*/reports/**",
       "tooling/reports/**",
-      "**/.stryker-tmp/**"
+      "**/.stryker-tmp/**",
+      "**/.turbo/**"
     ]
   }
 }
