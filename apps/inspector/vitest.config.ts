@@ -6,5 +6,7 @@ export default keelConfig({
   test: {
     include: ["test/**/*.test.{ts,tsx}"],
     environment: "happy-dom",
+    // The component properties render whole views many times; on a slow machine one takes more than the 5 s default.
+    testTimeout: 20_000,
   },
 });

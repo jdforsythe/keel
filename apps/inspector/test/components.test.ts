@@ -180,10 +180,9 @@ describe("InspectorPage", () => {
     ]);
     t.dispose();
   });
-  // The whole page takes about 2 s alone and several times that beside the other packages' suites.
   it("holds its properties", async () => {
     await properties(InspectorPage);
-  }, 20_000);
+  });
 });
 
 describe("InspectError", () => {
