@@ -1,6 +1,6 @@
 # RFC 0106: `prove` refuses a call in a worker thread (E1721)
 
-Status: accepted and built; accepted by the orchestrator under WORKFLOW RFC defaults 6 and 7 (2026-11-17), for the user to confirm or reverse. For backlog 0699. ADR-0129 records it.
+Status: accepted and built (user, 2026-11-17). For backlog 0699. ADR-0129 records it.
 
 ## Decisions
 - D1: `prove` called where `isMainThread` of `node:worker_threads` is `false` rejects E1721 before any other check and before Z3 loads. The message is `prove runs on the main thread; this call is in a worker thread` (default 6: a guard is possible, so the kernel refuses instead of the docs warning).

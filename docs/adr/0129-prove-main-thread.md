@@ -1,6 +1,6 @@
 # ADR-0129: `prove` refuses a call in a worker thread with E1721 (RFC 0106)
 
-**Status:** accepted by the orchestrator under WORKFLOW RFC defaults 6 and 7 (2026-11-17); the user confirms or reverses.
+**Status:** accepted (user, 2026-11-17).
 
 **Context.** `z3-solver` is an Emscripten pthreads build: an evaluation runs on a solver thread while the caller keeps making Z3 calls. When the caller is itself a worker thread and meets the solver thread in the allocator, Emscripten's futex wait asserts it is on the main thread; the process aborts or the wait never ends. A plain proof in a worker usually resolves; `prove.overlap.test.ts`, which forces the meeting, hangs under vitest's threads pool and passes in a forked process. There is no coded line when it happens, and E1717 does not fire.
 
