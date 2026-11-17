@@ -2,8 +2,8 @@
 status: conformance-covered
 
 **API.** Apps import only `topology` and `commitStores` (k.persist) from `@keel/server`; `loader`/`action` (`@keel/router`) run over HTTP.
-- `loader({ output, params?, search?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, stores }` and `ctx`; returns `Promise<Result<T, KeelError>>` encoded with `output`.
-- `action({ input, params?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, stores }` and `ctx`; returns `Result<Href | null, KeelError>`; routes bind it by method (`routes.actions`, k.router).
+- `loader({ output, params?, search?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, bearer, stores }` and `ctx`; returns `Promise<Result<T, KeelError>>` encoded with `output`.
+- `action({ input, output?, params?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, stores }` and `ctx`; returns `Result<Href | null, KeelError>` (with `output`: k.api); routes bind it by method (`routes.actions`, k.router).
 - `params`/`search` are `Infer` of the declared schemas (else `unknown`), the route's own (E1507); `fn` is never annotated.
 - A loader whose `fn` is an async generator is live (E1558): a document or JSON GET takes its first yield, an event-stream GET all; args add `signal`.
 
@@ -18,11 +18,11 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 
 **Document.** Each route level is a candidate island root by route id. Head, `<html lang>`, the `keel.notFound` alert: k.head. Headers, policy, caller cookie, `/__keel/csp`: k.security.
 
-**Build.** `assets`: k.deploy; runners, peers, `keel dev`, the document entry without `assets`: k.topology.
+**Build.** k.deploy, k.topology.
 
 **Log.** Stdout log (OUTPUT.md), a record per event: `req`, `diag` per diagnostic or uncaught throw (personal data dropped, k.privacy; a throw's `frames`: its first 5 stack positions in app code (E1576's), as `<path>:<line>:<col>` relative to the folder holding `artifacts`, an `<artifacts>/server.mjs` position through its map (k.deploy); no `artifacts`: none), `csp` (k.security), `reload`; `createApp({ log: { format: 'compact' | 'json', write } })` gets each line.
 
-**Rules.** E1551 `loader`/`action` outside `*.server.ts` · E1554 loader data fails its output schema (dev diag; production 500) · E1558 (k.topology).
+**Rules.** E1551 `loader`/`action` outside `*.server.ts` · E1554 loader or action data fails its output schema (dev diag; production 500) · E1558 (k.topology).
 
 **Conformance.**
 - A GET with params that fail the params schema returns 404 and calls no loader.

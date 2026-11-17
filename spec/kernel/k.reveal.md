@@ -13,7 +13,7 @@ status: conformance-covered
 - a method called on one other than `includes`, `startsWith`, `endsWith`, `indexOf` and `has`; `concat`, `replace`, `replaceAll`, `padStart`, `padEnd`, `fill`, `set` or `add` given one;
 - `String`, `new String`, `String.raw`, `JSON.stringify`, `structuredClone`, `Array.from`, `Array.of`, `Object.assign`, `Object.values`, `Object.entries`, `Object.fromEntries`, `new Map`, `new Set`, `btoa`, `encodeURI`, `encodeURIComponent` or `Buffer.from` of one.
 
-Any other call, a parameter and an import end it (a hash passes; a helper is not read). A callback's parameter and a field of `this` hold nothing.
+Any other call, a parameter and an import end it (a hash passes; a helper is not read). A `return` is not a sink: an API action's `output` is where a revealed value leaves on purpose (k.api). A callback's parameter and a field of `this` hold nothing.
 
 **Rules.** E1112 a value `reveal` returns reaching a sink, in app code (no fix): one finding per sink, at the first carrying argument.
 
@@ -25,3 +25,4 @@ Any other call, a parameter and an import end it (a hash passes; a helper is not
 - `new Map([['k', reveal(p.k)]])`, `new Set([reveal(p.k)])`, `Object.fromEntries([['k', reveal(p.k)]])`, `Array.of(reveal(p.k))` and `new Map().set('k', reveal(p.k))` in `tx` are each one E1112; `.size` and `.has('k')` of each are none.
 - `console.log.call(console, reveal(p.k))`, `console.log.apply(console, [reveal(p.k)])`, `console.log.bind(console, reveal(p.k))` and `Reflect.apply(console.log, console, [reveal(p.k)])` are each one E1112; `console.log.call(reveal(p.k))` and `hash.call(null, reveal(p.k))` are none.
 - `console.log(a.length)` after `const { a } = { a: reveal(p.k) }`, `[reveal(p.k)].forEach((x) => console.log(x))`, and `this.x = reveal(p.k)` then `console.log(this.x)` are none.
+- `return ok({ token: reveal(p.k) })` in an action is none.

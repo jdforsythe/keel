@@ -5,7 +5,7 @@ status: conformance-covered
 ```ts
 export const auth = guard({ redirect: 'app.login' }, async ({ url, caller }, ctx) => ok(null))
 ```
-`caller` is k.server's `caller` (`''` if none or client-only). A guard returns `Result<null, KeelError<'keel.denied'>>`. Every guard in the chain runs, outermost first, before any loader; on `err` the request redirects to `redirect`, with the matched route's same-name params and search `{ next: url }` (`url`'s own `next` if `url` is a `redirect` route; never nested).
+`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route). A guard returns `Result<null, KeelError<'keel.denied'>>`. Every guard in the chain runs, outermost first, before any loader; on `err` the request redirects to `redirect`, with the matched route's same-name params and search `{ next: url }` (`url`'s own `next` if `url` is a `redirect` route; never nested).
 
 **Rules.** E1508 a guard's literal `redirect` route is under that guard, or (runtime) a guard redirect loop or a missing `redirect` param.
 
