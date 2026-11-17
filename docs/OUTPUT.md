@@ -15,7 +15,7 @@ E1042 src/cart/add.tsx:14:7 write to state not owned by this component
 Fields: `code` (stable, E/W/I prefix, never renumbered) · `path:line:col` · `message` under 90 chars · optional `fix` as a unified diff hunk · optional `see` (spec section id). The code is the key to `keel explain E1042` and `keel spec --for E1042`.
 
 **Compact rules**
-- Passing tests, successful builds, clean files are silent. One trailer line: `ok 412 tests, 0 failed, 3 skipped (1.8s)`.
+- Passing tests, successful builds, clean files are silent. One trailer line: `ok 412 tests, 0 failed, 3 skipped (1.8s)` from a `pnpm` script; `keel` commands print the same line without the timing. A failed run ends on one `fail <name>` trailer (`fail build`) and prints no `ok` line.
 - Group by code, cap at 5 per code, then `... +17 more E1042 (keel check --code E1042)`.
 - Stack traces: app frames only, max 5, relative paths.
 - Test failures: compact diff of serialized state, never two dumps.
@@ -38,8 +38,10 @@ Fields: `code` (stable, E/W/I prefix, never renumbered) · `path:line:col` · `m
 
 `conflicts.race` (std.conflicts): `{ kind, code, path, store, entry, against, reason }`, `code` E2701 (a race) or W2702 (an unchecked entry), `path` the file the analysis read; compact `E2701 <file>:1:1 race api.editTodo #6 over api.editTodo #4, api.addTodo #5 on api.board`, or `W2702 <file>:1:1 unchecked api.editTodo #6 on api.board (folded)`.
 
-**Budgets, enforced in CI** (`tooling/budgets.json`): `keel check` (the real checker, compact) on a copy of golden app 1 with 10 injected errors <= 600 tokens; `keel explain` <= 300, `keel spec --for` <= 400, MCP `tools/list` <= 1,500 tokens; `keel test` with 3 failures <= 400 tokens; `keel spec <section>` <= 1,500 tokens; spec map <= 1,200 tokens. Package size (`size` entries, every package; `platform: "node"` for node-only ones): the package's own code bundled from `src/index.ts` by esbuild, minified, dependencies external, gzipped.
+**Budgets, enforced in CI** (`tooling/budgets.json`): `keel check` (the real checker, compact) on a copy of golden app 1 with 10 injected errors <= 600 tokens; `keel explain` <= 300, `keel spec --for` <= 400, MCP `tools/list` <= 1,650 tokens; `keel test` with 3 failures <= 400 tokens; `keel spec <section>` <= 1,500 tokens; spec map <= 1,200 tokens. Package size (`size` entries, every package; `platform: "node"` for node-only ones): the package's own code bundled from `src/index.ts` by esbuild, minified, dependencies external, gzipped.
+
+**Tooling codes.** Each `pnpm` script owns a code prefix: `B` budgets, `D` docs-freshness, `E` spec, turbo, handoff and mutate plumbing, `F` format-check, `M` mutate, `O` orphans, `S` structure-lint, conformance-guard and generate, `V` voice-lint (V0003); `W` and `I` codes are advisory and never fail the run.
 
 **Internal rule.** Keel's own scripts, runners, and hooks obey this contract from task 0001.
 
-verified: ba2e93d07753bee6dc64c62cabd402f1b798b6df
+verified: c182f5aa03455668536e03fa5582755933602725
