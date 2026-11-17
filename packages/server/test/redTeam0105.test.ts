@@ -304,3 +304,51 @@ describe("finding 7: each createApp puts the server's listener back", () => {
     for (const l of t.lines) expect(l).not.toContain("slot-secret-456");
   });
 });
+
+describe("a long value is found by a scan linear in the text and the value", () => {
+  // A clock is not read in tests (S0006): each case checks that every value is held for the linear scan rather than
+  // as an expression, and runs the adversarial shape, where a scan per start took 6 to 33 s.
+  const scanned = (message: string, secrets: readonly string[]): { out: string; linear: boolean } => {
+    const set = new Set(secrets);
+    const held = new Set(matcherOf(set).long.map((l) => l.form));
+    return { out: scrubbed(message, [[set, "[secret]"]]), linear: secrets.every((v) => held.has(v.toLowerCase())) };
+  };
+
+  it("text of 400,000 of one character against a 400,001-character secret that differs in its last character", () => {
+    const { out, linear } = scanned(`m ${"a".repeat(400_000)}`, [`${"a".repeat(400_000)}b`]);
+    expect(out).toBe(`m ${"a".repeat(400_000)}`);
+    expect(linear).toBe(true);
+  });
+
+  it("a periodic secret of 400,000 characters against its own text less its last character", () => {
+    const { out, linear } = scanned("ab".repeat(200_000).slice(0, -1), ["ab".repeat(200_000)]);
+    expect(out).toBe("ab".repeat(200_000).slice(0, -1));
+    expect(linear).toBe(true);
+  });
+
+  it("50 secrets sharing a 20,000-character prefix, against a text that repeats the prefix", () => {
+    const prefix = "k".repeat(20_000);
+    const secrets = Array.from({ length: 50 }, (_, i) => `${prefix}-${i}-tail`);
+    const { out, linear } = scanned(`${prefix.repeat(10)} ${secrets[7] ?? ""} end`, secrets);
+    expect(out).toBe(`${prefix.repeat(10)} [secret] end`);
+    expect(linear).toBe(true);
+  });
+
+  it("a long secret is still marked whole, twice and in another case, with a short secret as its prefix", () => {
+    const long = `${"x".repeat(997)}ABCDEFG${"y".repeat(1_500)}`;
+    const out = scrubbed(`a ${long} b ${long.toLowerCase()} c`, [[new Set([long, "xxxx"]), "[secret]"]]);
+    expect(out).toBe("a [secret] b [secret] c");
+    const near = scrubbed(`a ${long.slice(0, 1_250)}Q${long.slice(1_251)} b`, [[new Set([long]), "[secret]"]]);
+    expect(near).toBe(`a ${long.slice(0, 1_250)}Q${long.slice(1_251)} b`);
+  });
+});
+
+describe("base64 copies with or without padding, in both alphabets", () => {
+  const one = (m: string, v: string) => scrubbed(m, [[new Set([v]), "[secret]"]]);
+  it("marks an unpadded, a padded and a base64url copy of a secret encoded on its own", () => {
+    expect(one("m aHVudGVyMg", "hunter2")).toBe("m [secret]");
+    expect(one("m aHVudGVyMg==", "hunter2")).toBe("m [secret]");
+    expect(one(`m ${btoa("??>?hunter").replace(/=+$/, "").replace(/\+/g, "-")}`, "??>?hunter")).toBe("m [secret]");
+    expect(one(`m ${btoa("??>?hunter")}`, "??>?hunter")).toBe("m [secret]");
+  });
+});

@@ -1,49 +1,47 @@
-import type { Probe } from "./Probe.ts";
+import { folded } from "./folded.ts";
 
 /** Below this length a value is replaced only where it stands as a whole token. */
 const SHORT = 3;
-/** The longest piece of a value one expression holds; a longer value is matched piece by piece. */
-const PIECE = 1_000;
+/** The longest form an expression holds; a longer one is found by a linear scan (`scrubbed`). */
+const LONG = 1_000;
 /** The most pattern text one expression holds, well under what the engine compiles. */
 const BATCH = 16_000;
 const UNPAIRED = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
 const EDGE = /^[\uDC00-\uDFFF]|[\uD800-\uDBFF]$/;
-const high = (c: number): boolean => c >= 0xd800 && c <= 0xdbff;
 const literal = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const base64 = (s: string): string =>
   btoa(Array.from(new TextEncoder().encode(s), (b) => String.fromCharCode(b)).join(""));
 
-/** The written forms of `v`; an ill-formed value (a lone surrogate) has no `encodeURIComponent` form. */
+/**
+ * The written forms of `v`: as is, `encodeURIComponent` (none for an ill-formed value, one with a lone surrogate),
+ * `JSON.stringify` escaping, base64 with and without its padding, and base64url without it.
+ */
 const formsOf = (v: string): string[] => {
-  const json = JSON.stringify(v).slice(1, -1);
-  return UNPAIRED.test(v) ? [v, json, base64(v)] : [v, encodeURIComponent(v), json, base64(v)];
+  const padded = base64(v);
+  const b = padded.replace(/=+$/, "");
+  const forms = [v, JSON.stringify(v).slice(1, -1), padded, b, b.replace(/\+/g, "-").replace(/\//g, "_")];
+  return UNPAIRED.test(v) ? forms : [...forms, encodeURIComponent(v)];
 };
 
-/** `f` cut into pieces of at most `PIECE` code units, never inside a surrogate pair. */
-const pieces = (f: string): string[] => {
-  const out: string[] = [];
-  for (let at = 0; at < f.length; ) {
-    let end = Math.min(at + PIECE, f.length);
-    if (end < f.length && high(f.charCodeAt(end - 1))) end--;
-    out.push(f.slice(at, end));
-    at = end;
+/** The KMP failure table of `p`: at each index, the length of the longest proper prefix that also ends there. */
+const table = (p: string): Int32Array => {
+  const fail = new Int32Array(p.length);
+  for (let i = 1, k = 0; i < p.length; i++) {
+    while (k > 0 && p.charCodeAt(i) !== p.charCodeAt(k)) k = fail[k - 1] ?? 0;
+    if (p.charCodeAt(i) === p.charCodeAt(k)) k++;
+    fail[i] = k;
   }
-  return out;
-};
-
-const chained = (f: string, flags: string): Probe => {
-  const [first = "", ...rest] = pieces(f).map(literal);
-  return { head: new RegExp(first, `g${flags}`), tail: rest.map((p) => new RegExp(p, `y${flags}`)) };
+  return fail;
 };
 
 /** A short form stands only as a whole token: no letter, digit or `_` right before or after it. */
 const BEFORE = "(?<![\\p{L}\\p{N}_])(?:";
 const AFTER = ")(?![\\p{L}\\p{N}_])";
 
-const batched = (alts: readonly string[], flags: string, into: Probe[], whole: boolean): void => {
+const batched = (alts: readonly string[], flags: string, into: RegExp[], whole: boolean): void => {
   const close = (batch: readonly string[]): void => {
     const body = whole ? `${BEFORE}${batch.join("|")}${AFTER}` : batch.join("|");
-    into.push({ head: new RegExp(body, `g${flags}`), tail: [] });
+    into.push(new RegExp(body, `g${flags}`));
   };
   let batch: string[] = [];
   let size = 0;
@@ -59,49 +57,55 @@ const batched = (alts: readonly string[], flags: string, into: Probe[], whole: b
   if (batch.length > 0) close(batch);
 };
 
-const build = (values: ReadonlySet<string>): Probe[] => {
+/** What a set is matched with: expressions for forms up to 1,000 code units, folded forms with tables for longer. */
+type Matcher = {
+  readonly batches: readonly RegExp[];
+  readonly long: readonly { readonly form: string; readonly fail: Int32Array }[];
+};
+
+const build = (values: ReadonlySet<string>): Matcher => {
   const forms = new Set<string>();
   for (const v of values) for (const f of formsOf(v)) if (f !== "") forms.add(f);
   const sorted = [...forms].sort((a, b) => b.length - a.length);
-  const probes: Probe[] = [];
+  const batches: RegExp[] = [];
+  const long = new Map<string, Int32Array>();
   const short: string[] = [];
   const code: string[] = [];
   const units: string[] = [];
   for (const f of sorted) {
-    // A form that starts with a low surrogate or ends with a high one can sit in the text as half of a pair, which a
-    // code point match never sees: it is matched by code unit too.
-    const edge = f.length >= SHORT && EDGE.test(f);
-    if (f.length > PIECE) {
-      probes.push(chained(f, "iu"));
-      if (edge) probes.push(chained(f, "i"));
+    if (f.length > LONG) {
+      const form = folded(f);
+      if (!long.has(form)) long.set(form, table(form));
       continue;
     }
     (f.length < SHORT ? short : code).push(literal(f));
-    if (edge) units.push(literal(f));
+    // A form that starts with a low surrogate or ends with a high one can sit in the text as half of a pair, which a
+    // code point match never sees: it is matched by code unit too.
+    if (f.length >= SHORT && EDGE.test(f)) units.push(literal(f));
   }
-  batched(short, "iu", probes, true);
-  batched(code, "iu", probes, false);
-  batched(units, "i", probes, false);
-  return probes;
+  batched(short, "iu", batches, true);
+  batched(code, "iu", batches, false);
+  batched(units, "i", batches, false);
+  return { batches, long: [...long].map(([form, fail]) => ({ form, fail })) };
 };
 
-const built = new WeakMap<ReadonlySet<string>, { readonly seen: ReadonlySet<string>; readonly probes: Probe[] }>();
+const built = new WeakMap<ReadonlySet<string>, { readonly seen: ReadonlySet<string>; readonly matcher: Matcher }>();
 
 /**
- * The matchers of each written form of `values` (k.privacy Server log): as is, its `encodeURIComponent` form, its
- * `JSON.stringify` escaping and its whole-value UTF-8 base64, case-insensitive, a form under 3 characters only as a
- * whole token. Forms are batched into expressions of at most 16,000 pattern characters, and a form over 1,000 code
- * units is matched in pieces, so no value makes an expression the engine refuses. The matchers are kept for `values`
- * and built again only when it holds a value they were not built from.
+ * The matchers of each written form of `values` (k.privacy Server log, `formsOf`), case-insensitive, a form under 3
+ * characters only as a whole token. Forms up to 1,000 code units are batched into expressions of at most 16,000
+ * pattern characters, so no value makes an expression the engine refuses; a longer form is kept case-folded
+ * (`folded`) with its KMP table, for a scan linear in the text and the form. The matchers are kept for `values` and
+ * built again only when it holds a value they were not built from.
  */
-export function matcherOf(values: ReadonlySet<string>): readonly Probe[] {
+export function matcherOf(values: ReadonlySet<string>): Matcher {
   const had = built.get(values);
   if (had !== undefined && had.seen.size === values.size) {
     let same = true;
     for (const v of values) if (!had.seen.has(v)) same = false;
-    if (same) return had.probes;
+    if (same) return had.matcher;
   }
-  const probes = build(values);
-  built.set(values, { seen: new Set(values), probes });
-  return probes;
+  const matcher = build(values);
+  built.set(values, { seen: new Set(values), matcher });
+  return matcher;
 }
