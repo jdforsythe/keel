@@ -68,7 +68,8 @@ function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; ar
 
 /**
  * Binary only: the disk half of `keel build --target` after the web build (k.shell Build 3-4), per deployable of
- * `plan`: the shell entry's Vite build (`KEEL_DEPLOYABLE`, `KEEL_SHELL`, `KEEL_ORIGIN`), which the Vite plugin writes to
+ * `plan`: the shell entry's Vite build (`KEEL_DEPLOYABLE`, `KEEL_SHELL`, `KEEL_ORIGIN`, and `NODE_ENV=production` whatever
+ * the shell or a project `.env` sets, k.deploy Build), which the Vite plugin writes to
  * `dist/<name>/<shell>/www/`; the shell files of `deploy/<name>/<shell>/` beside it (with Cargo's `Cargo.lock` when
  * committed, and the app's `icons/icon.png` when it has one); for Tauri `capabilities/http.json` allowing `KEEL_ORIGIN`
  * and, when the app has no `icons/icon.png`, `defaultIcon`; for Capacitor the deployable's `csp.txt` policy as a meta
@@ -85,7 +86,11 @@ export function shellBuild(cwd: string, plan: ShellPlan): Done {
   for (const name of plan.deployables) {
     const rel = `dist/${name}/${plan.target}`;
     const at = join(cwd, rel);
-    const vite = run({ ...toolCommand(cwd, "vite", "vite", ["build"]), cwd }, { ...env, KEEL_DEPLOYABLE: name }, cwd);
+    const vite = run(
+      { ...toolCommand(cwd, "vite", "vite", ["build"]), cwd },
+      { ...env, KEEL_DEPLOYABLE: name, NODE_ENV: "production" },
+      cwd,
+    );
     if (vite !== undefined) return { ...done, code: 1, stderr: vite };
     const index = join(at, "www", "index.html");
     if (!existsSync(index)) {

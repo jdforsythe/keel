@@ -97,15 +97,12 @@ describe("entryCode (mutation)", () => {
     'import { stores } from "@keel/store";',
     'import { inspectorSections } from "@keel/compiler/inspect/inspectorSections";',
   ];
-  const tail = [
-    'const ctx = createCtx({ mode: "real" });',
-    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
-  ];
+  const tail = ['const ctx = createCtx({ mode: "real" });', 'const mode = "production";'];
   const rest = [
     'const el = document.getElementById("app");',
     'if (el === null) throw new Error("keel: index.html has no #app element");',
     "mount(router.App, el, { ctx, mode });",
-    "if (import.meta.env.DEV) {",
+    'if (mode === "dev") {',
     '  let last = "";',
     "  const report = () => {",
     "    const live = {};",
@@ -148,6 +145,15 @@ describe("entryCode (mutation)", () => {
         ...rest,
       ].join("\n"),
     );
+  });
+
+  it("writes the mode it is given as a literal, production by default", () => {
+    const dev = entryCode(["/modules/a/routes.ts"], "virtual:css", {}, {}, undefined, "dev");
+    expect(dev.split("\n")).toContain('const mode = "dev";');
+    expect(dev.replace('const mode = "dev";', 'const mode = "production";')).toBe(
+      entryCode(["/modules/a/routes.ts"], "virtual:css"),
+    );
+    expect(dev).not.toContain("import.meta.env");
   });
 
   it("falls back to an empty manifest table for no routes files", () => {

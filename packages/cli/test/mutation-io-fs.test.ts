@@ -383,6 +383,19 @@ describe("viteRun", () => {
     expect(readFileSync(join(d, "env.txt"), "utf8")).toBe(`api\n${process.env.KEEL_DEPLOYABLE ?? "unset"}\n`);
   });
 
+  it("build runs Vite with NODE_ENV=production whatever the shell sets, with or without a deployable", () => {
+    const d = tmp();
+    fakeVite(d, 'echo "${NODE_ENV-unset}" >> env.txt');
+    vi.stubEnv("NODE_ENV", "staging");
+    try {
+      expect(viteRun(d)).toEqual({ code: 0, tail: "", notes: [] });
+      expect(viteRun(d, "api")).toEqual({ code: 0, tail: "", notes: [] });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(readFileSync(join(d, "env.txt"), "utf8")).toBe("production\nproduction\n");
+  });
+
   it("build failure returns the last five lines of stderr, trimmed, with a trailing newline", () => {
     const d = tmp();
     fakeVite(d, 'echo out-ignored\nfor i in 1 2 3 4 5 6 7; do echo "err$i" >&2; done\necho >&2\nexit 2');

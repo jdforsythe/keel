@@ -5,7 +5,6 @@ import { CLIENT_MANIFEST } from "./entry/CLIENT_MANIFEST.ts";
 import { DEV_ENTRY } from "./entry/DEV_ENTRY.ts";
 import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
-import { RESUME_ENTRY } from "./entry/RESUME_ENTRY.ts";
 import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
 import { resumeEntry } from "./entry/resumeEntry.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
@@ -491,7 +490,8 @@ export default function (): {
       const d = deployable(q.d);
       if (d === undefined)
         throw new Error(`keel: ${ENTRY_PATH} needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one`);
-      if (!d.client) return q.d === undefined ? RESUME_ENTRY : resumeEntry(q.d);
+      const mode = command === "serve" ? "dev" : "production";
+      if (!d.client) return resumeEntry(q.d, mode);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       return entryCode(
@@ -500,6 +500,7 @@ export default function (): {
         clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
         served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},
         shellOf(),
+        mode,
       );
     },
     transformIndexHtml() {

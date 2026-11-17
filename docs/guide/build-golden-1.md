@@ -268,7 +268,7 @@ Follow `http://localhost:5173/lists/l1` in `keel dev`:
 
 1. Vite serves `index.html`. Its script asks for `/@keel/entry.ts`.
 2. The plugin picks the deployable to serve: the one `KEEL_DEPLOYABLE` names, else the first `client` deployable by name. Here that is `web`, whose modules are `["todos"]`.
-3. It generates the mount entry. For golden-1 it is, minus a dev-only block that reports live state to `/__keel/inspect`:
+3. It generates the mount entry. For golden-1 under `keel dev` it is, minus a dev-only block that reports live state to `/__keel/inspect`:
 
    ```ts
    import "virtual:keel.css";
@@ -277,14 +277,14 @@ Follow `http://localhost:5173/lists/l1` in `keel dev`:
    import { mount } from "@keel/runtime-dom";
    import { routes as __keelRoutes0 } from "/modules/todos/routes.ts";
    const ctx = createCtx({ mode: "real" });
-   const mode = import.meta.env?.DEV === true ? "dev" : "production";
+   const mode = "dev";
    const router = createRouter(__keelRoutes0, { ctx, history: browserHistory(), mode });
    const el = document.getElementById("app");
    if (el === null) throw new Error("keel: index.html has no #app element");
    mount(router.App, el, { ctx, mode });
    ```
 
-   With several modules in the deployable it merges their manifests into one table. When a module's `module.ts` sets `std` config for a client-readable stdlib package, the entry also binds it to `ctx`.
+   `keel build` writes `const mode = "production";` instead and drops the reporting block. With several modules in the deployable it merges their manifests into one table. When a module's `module.ts` sets `std` config for a client-readable stdlib package, the entry also binds it to `ctx`.
 4. `virtual:keel.css` loads: the atomic classes for every style prop your components use, built from `tokens.ts`.
 5. The router matches `/lists/l1` against the manifest in `modules/todos/routes.ts`: route `todos.list`, path `/lists/:listId`. It parses the params with `ListParams` (a failure is a 404 rendered by the route's `errorElement`) and the search with `ListSearch` (failing keys are dropped).
 6. It runs the chain's guards, outermost first (none here), then its loaders. `loadList` runs in the browser with the real `ctx`. It calls `GET /api/lists` through a typed client.

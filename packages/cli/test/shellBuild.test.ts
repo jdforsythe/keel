@@ -33,7 +33,7 @@ const PLAN: ShellPlan = {
 const NPX = `#!/bin/sh
 echo "$@" >> "$(dirname "$0")/calls.txt"
 case "$2" in
-  vite) mkdir -p dist/web/$KEEL_SHELL/www && echo '<html><head></head></html>' > dist/web/$KEEL_SHELL/www/index.html ;;
+  vite) echo "\${NODE_ENV-unset}" > vite-env.txt; mkdir -p dist/web/$KEEL_SHELL/www && echo '<html><head></head></html>' > dist/web/$KEEL_SHELL/www/index.html ;;
   tauri) echo "$@" > args.txt; exec sh "$(dirname "$0")/tauri.sh" ;;
   cap)
     test -f package.json || { echo "[error] The Capacitor CLI needs to run at the root of an npm package." >&2; exit 1; }
@@ -101,6 +101,13 @@ describe.skipIf(process.platform === "win32")("shellBuild", () => {
     expect(readFileSync(join(root, "dist/web/tauri/capabilities/http.json"), "utf8")).toContain(
       "https://app.example.com/*",
     );
+  });
+
+  test("the shell entry's Vite build runs with NODE_ENV=production whatever the shell sets", () => {
+    const root = project(PASSING);
+    vi.stubEnv("NODE_ENV", "development");
+    expect(shellBuild(root, PLAN).code).toBe(0);
+    expect(readFileSync(join(root, "vite-env.txt"), "utf8")).toBe("production\n");
   });
 
   test("the app's own icon is the one built with and is left as it is; a committed Cargo.lock is kept", () => {

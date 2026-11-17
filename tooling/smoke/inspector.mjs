@@ -1,4 +1,4 @@
-// Inspector smoke: golden-1 (dev build, `vite preview --port 4180`) reports its live graph and
+// Inspector smoke: golden-1 (`keel dev --port 4180`) reports its live graph and
 // stores to /__keel/inspect; the inspector (`vite preview --port 4182`) renders them. See README.md for the servers.
 import { chromium } from "@playwright/test";
 

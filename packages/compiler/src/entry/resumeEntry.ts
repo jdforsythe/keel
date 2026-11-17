@@ -4,15 +4,15 @@ import { ISLANDS_PATH } from "./ISLANDS_PATH.ts";
  * The generated resume entry of a server-rendered (`node` or `static`) deployable (k.runtime): imports the island
  * components by route id from `/@keel/islands.ts` (with `deployable`, `/@keel/islands.ts?d=<deployable>`, that
  * deployable's islands; k.server Build) and calls `resume` on the body with a real ctx, the registered stores, so
- * `#k-state` snapshots restore, and `mode`: `"dev"` when `import.meta.env?.DEV` is `true` (a Vite dev build), else
- * `"production"` (a bundle, or the text served unbundled, where there is no `import.meta.env`). Before resuming it binds the `std` of `#k-state` to the ctx (`bindClientStd`, k.module
+ * `#k-state` snapshots restore, and `mode`, a string literal: `"dev"` only when Vite serves, else `"production"` (a build,
+ * or the text a node `createApp` serves unbundled); the entry reads no `import.meta.env`. Before resuming it binds the `std` of `#k-state` to the ctx (`bindClientStd`, k.module
  * Std config); imports are hoisted, so every std schema has registered first. `resume` then reports the served route
  * of `#k-state` as the ctx's first `nav`, and inputs made before it as `fire` events, so a recorder started in an
  * island sees the page's route and every input.
  * App-independent, so a node `createApp` serves the same text the Vite plugin does; Vite resolves its imports (dev
  * server, `vite build`). Kernel specifiers are app code that runs in the browser; the compiler itself never imports them.
  */
-export function resumeEntry(deployable?: string): string {
+export function resumeEntry(deployable?: string, mode: "dev" | "production" = "production"): string {
   const islands = deployable === undefined ? ISLANDS_PATH : `${ISLANDS_PATH}?d=${encodeURIComponent(deployable)}`;
   return [
     'import { bindClientStd } from "@keel/compiler/std/bindClientStd";',
@@ -22,7 +22,7 @@ export function resumeEntry(deployable?: string): string {
     `import { components } from ${JSON.stringify(islands)};`,
     'const ctx = createCtx({ mode: "real" });',
     'bindClientStd(ctx, document.getElementById("k-state")?.textContent);',
-    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
+    `const mode = ${JSON.stringify(mode)};`,
     "resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode });",
     "",
   ].join("\n");

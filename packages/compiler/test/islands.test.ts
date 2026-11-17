@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { ENTRY_PATH } from "../src/entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "../src/entry/ISLANDS_PATH.ts";
 import { RESUME_ENTRY } from "../src/entry/RESUME_ENTRY.ts";
+import { resumeEntry } from "../src/entry/resumeEntry.ts";
 import { islandsCode } from "../src/internal/islandsCode.ts";
 
 // RFC 0046: the resume entry of a server-rendered deployable and its island component map.
@@ -128,7 +129,7 @@ describe("vite plugin: resume entry (RFC 0046)", () => {
     p.configResolved({ root });
     expect(p.resolveId(ENTRY_PATH)).toBe(ENTRY_PATH);
     expect(p.resolveId(ISLANDS_PATH)).toBe(ISLANDS_PATH);
-    expect(await p.load(ENTRY_PATH)).toBe(RESUME_ENTRY);
+    expect(await p.load(ENTRY_PATH)).toBe(resumeEntry(undefined, "dev"));
     expect(await p.load(ISLANDS_PATH)).toBe(
       'import __keelIsland0 from "/modules/a/Page.tsx";\nexport const components = { "a.page": __keelIsland0 };\n',
     );
@@ -138,7 +139,9 @@ describe("vite plugin: resume entry (RFC 0046)", () => {
     expect(RESUME_ENTRY).toContain(`import { components } from "${ISLANDS_PATH}";`);
     expect(RESUME_ENTRY).toContain('import { resume } from "@keel/runtime-dom/ops";');
     expect(RESUME_ENTRY).toContain('const ctx = createCtx({ mode: "real" });');
-    expect(RESUME_ENTRY).toContain('const mode = import.meta.env?.DEV === true ? "dev" : "production";');
+    expect(RESUME_ENTRY).toContain('const mode = "production";');
+    expect(resumeEntry(undefined, "dev")).toContain('const mode = "dev";');
+    expect(RESUME_ENTRY).not.toContain("import.meta.env");
     expect(RESUME_ENTRY).toContain(
       "resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode });",
     );

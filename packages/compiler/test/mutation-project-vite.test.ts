@@ -6,6 +6,7 @@ import path from "node:path";
 import keel from "@keel/compiler/vite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RESUME_ENTRY } from "../src/entry/RESUME_ENTRY.ts";
+import { resumeEntry } from "../src/entry/resumeEntry.ts";
 import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { entryCode } from "../src/internal/entryCode.ts";
 import { hashOf } from "../src/internal/hashOf.ts";
@@ -384,6 +385,8 @@ describe("vite: project inputs", () => {
           web: ["b", "a", "missing"],
           api: ["x"],
         },
+        undefined,
+        "dev",
       ),
     );
   });
@@ -397,11 +400,15 @@ describe("vite: project inputs", () => {
     const p = keel();
     p.configResolved({ root });
     const all = { zeta: ["z"], api: ["a"], mid: ["m"] };
-    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all));
+    expect(await p.load("/@keel/entry.ts")).toBe(
+      entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev"),
+    );
     process.env.KEEL_DEPLOYABLE = "zeta";
-    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all));
+    expect(await p.load("/@keel/entry.ts")).toBe(
+      entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev"),
+    );
     process.env.KEEL_DEPLOYABLE = "api";
-    expect(await p.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
+    expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
     process.env.KEEL_DEPLOYABLE = "nope";
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(
       "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one",
@@ -416,7 +423,10 @@ describe("vite: project inputs", () => {
     write("topology.ts", `export default { api: { modules: ["a"], adapter: "node" } };\n`);
     const q = keel();
     q.configResolved({ root });
-    expect(await q.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
+    expect(await q.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
+    const b = keel();
+    b.configResolved({ root, command: "build" });
+    expect(await b.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
   });
 
   it("throws topology problems when building and warns when serving", { timeout: 30000 }, async () => {

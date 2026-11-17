@@ -25,12 +25,12 @@ const SHELLS = {
  * (k.module Std config, rfc:0069), binds `service({ module })` for every module of `deployables` (deployable -> its modules) to
  * the origin its deployable's `keel-peer` tag in the document names, else the document's origin (k.hosting Peers),
  * starts the router on the browser history, and mounts its `App` into `#app` with
- * the ctx and `mode`: `"dev"` when `import.meta.env?.DEV` is `true`, else `"production"` (k.runtime). In a dev build
- * (`import.meta.env.DEV`) it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
+ * the ctx and `mode`, a string literal: `"dev"` only when Vite serves, `"production"` for a build (k.runtime, k.deploy); the
+ * entry reads no `import.meta.env`. Under `"dev"` it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports. With `shell` (a `keel build --target` build, k.shell
  * Shell ctx) the ctx is `createCtx({ mode: 'shell', drivers })`, the drivers of that shell's std.shells package for
- * the build's `origin` (`KEEL_ORIGIN`).
+ * the build's `origin` (`KEEL_ORIGIN`). Under `"production"` the reporter is dead code a build drops.
  */
 export function entryCode(
   routesFiles: readonly string[],
@@ -38,6 +38,7 @@ export function entryCode(
   std: StdData = {},
   deployables: Readonly<Record<string, readonly string[]>> = {},
   shell?: { readonly kind: keyof typeof SHELLS; readonly origin: string },
+  mode: "dev" | "production" = "production",
 ): string {
   const native = shell === undefined ? undefined : SHELLS[shell.kind];
   const bind = Object.keys(std).length > 0;
@@ -70,12 +71,12 @@ export function entryCode(
           `__keelTable.set(ctx, new Map(Object.entries(${JSON.stringify(deployables)}).flatMap(([d, ms]) => ms.map((m) => [m, __keelTags.get(d) ?? location.origin]))));`,
         ]
       : []),
-    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
+    `const mode = ${q(mode)};`,
     `const router = createRouter(${table}, { ctx, history: browserHistory(), mode });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,
     "mount(router.App, el, { ctx, mode });",
-    "if (import.meta.env.DEV) {",
+    'if (mode === "dev") {',
     '  let last = "";',
     "  const report = () => {",
     "    const live = {};",
