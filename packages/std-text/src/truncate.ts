@@ -7,11 +7,15 @@ import { segmenter } from "./segmenter.ts";
 export function truncate(s: string, max: number): string {
   if (!Number.isInteger(max) || max < 1)
     throw new RangeError(`truncate: max must be an integer of at least 1, got ${max}`);
-  const parts = Array.from(segmenter.segment(s), (x) => x.segment);
-  return parts.length <= max
-    ? s
-    : `${parts
+  // Segmenting stops at max + 1 graphemes: the rest of a longer string is never read.
+  const parts: string[] = [];
+  for (const x of segmenter.segment(s)) {
+    if (parts.length === max)
+      return `${parts
         .slice(0, max - 1)
         .join("")
         .trimEnd()}…`;
+    parts.push(x.segment);
+  }
+  return s;
 }

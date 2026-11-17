@@ -1,4 +1,4 @@
-import { graphemes } from "./graphemes.ts";
+import { segmenter } from "./segmenter.ts";
 
 // Unicode Cc, U+2028, U+2029, bidi embeddings and overrides (U+202A to U+202E), isolates (U+2066 to U+2069).
 const BLANK = /^\p{White_Space}+$/u;
@@ -18,7 +18,9 @@ export function textCheck(min: number, max: number, newline: boolean): (v: strin
   const forbidden = newline ? PARA : LINE;
   return (v) => {
     if (v.normalize("NFC") !== v || forbidden.test(v) || BLANK.test(v)) return false;
-    const n = graphemes(v);
-    return n >= min && n <= max;
+    // Counting stops at max + 1: a longer value is rejected without segmenting the rest.
+    let n = 0;
+    for (const _ of segmenter.segment(v)) if (++n > max) return false;
+    return n >= min;
   };
 }
