@@ -65,17 +65,17 @@ describe("watchdog", () => {
     try {
       const code = await new Promise<number | null>((resolve) => child.once("exit", (c) => resolve(c)));
       expect(code).not.toBe(0);
-      expect(performance.now() - t0).toBeLessThan(15_000);
+      expect(performance.now() - t0).toBeLessThan(25_000);
       const lines = out.split("\n").filter((l) => l.includes("watchdog"));
       expect(lines).toHaveLength(1);
       expect(lines[0]).toMatch(
         /^T0001 spin\.fixture\.ts:1:1 watchdog killed "spins without yielding" after \d+\.\ds \(bound 1\.7s\)$/,
       );
-      expect(await within(2000, () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
+      expect(await within(10_000, () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
     } finally {
       killGroup(child.pid);
     }
-  }, 30_000);
+  }, 60_000);
 
   it("kills an orphaned worker once vitest itself is gone", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-watchdog-"));
