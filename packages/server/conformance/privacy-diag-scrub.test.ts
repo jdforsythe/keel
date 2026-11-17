@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.privacy, Conformance "An action throwing an `Error` whose message holds a marked input value logs a `diag` record holding `[pii]` and not the value, in dev and production."
-// Spec: k.privacy, Sinks "The revealed value of each `Secret` in the decoded action input is replaced by `[secret]` the same way." Conformance "An action throwing the revealed value of a `Secret` input, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production."
+// Spec: k.privacy, Sinks "So is the revealed value of each `Secret` made while the request runs (`bearer` too), by `[secret]`: a string or a number, not a boolean." Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production"
 // Seed: 1337.
 // Input schemas are generated objects of string fields (some nested), some nodes marked
 // `.pii(class)`; the action throws an Error whose message holds every input value. Marked values are lowercase letters,
@@ -112,7 +112,7 @@ describe("k.privacy server log", () => {
   } as const;
   for (const mode of ["dev", "production"] as const) {
     for (const [how, make] of Object.entries(throwers)) {
-      it(`an action throwing ${how} of a Secret input logs a diag record holding [secret] and not the value, nor its base64 or encodeURIComponent form, in ${mode}`, async () => {
+      it(`An action throwing the revealed value of a \`Secret\` input or \`bearer\`, as a string or in an \`Error\` message, logs a \`diag\` record holding \`[secret]\` and not the value, in ${mode}: it throws ${how}, and no line holds its base64 or encodeURIComponent form`, async () => {
         const save = action({ input: s.object({ k: s.secret(s.string()) }) }, (input) =>
           Promise.reject(make(reveal(input.k))),
         );

@@ -2,16 +2,23 @@
 // Spec: k.api, Bearer "An API route's guard, loader and action get `bearer: Secret<string> | undefined` beside `caller`, from the `authorization` header; a page's action has none, and a page's guard and loader get `undefined`."
 // Spec: k.api, Bearer "The header's value, less leading and trailing whitespace, is the scheme `Bearer` in any letter case, one or more spaces, then 1 to 4,096 characters of `A-Z a-z 0-9 - . _ ~ + /` and any trailing `=`."
 // Spec: k.api, Bearer "Anything else is `undefined`: no header, another scheme, an empty or longer token, a space inside it, or two headers (joined by `, `); it is no error and is not logged."
+// Spec: k.api, Bearer "The header's value, less leading and trailing whitespace"
+// Spec: k.api, Calling "a guard `redirect` naming one is E1508 at the first read of the table"
+// Spec: k.api, Conformance "A denying guard with a `redirect` answers 403 `keel.denied` and no `Location`."
+// Spec: k.server, Log "`diag` per diagnostic or uncaught throw (personal data dropped, k.privacy"
 // Spec: k.api, Bearer "The token is a `Secret` before app code runs (k.privacy)."
 // Spec: k.api, Bearer "`bearer` and `caller` are independent: neither reads the other's header, and the same-site check of a write is unchanged."
 // Spec: k.api, Bearer "A response to a request carrying `authorization` is `Cache-Control: no-store`."
 // Spec: k.api, Conformance "With `authorization` `Bearer abc`, `bearer abc` or `BEARER  abc=`, an API route's guard, loader and action get a `bearer` revealing `abc` (`abc=`); with `Basic abc`, `Bearer`, `Bearer a b`, a 4,097-character token or two headers, `undefined`; on a page, `undefined`."
 // Spec: k.api, Conformance "A GET to an API route with `authorization` answers `cache-control: no-store`."
-// Spec: k.guards, Guards "`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route)."
-// Spec: k.privacy, Sinks "An action's `output` counts as a loader's, and `bearer` (k.api) as a `Secret` input."
-// Spec: k.privacy, Conformance "An API action throwing the revealed `bearer` logs `[secret]` in its place."
+// Spec: k.guards, Guards "`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
+// Spec: k.privacy, Sinks "So is the revealed value of each `Secret` made while the request runs (`bearer` too), by `[secret]`: a string or a number, not a boolean."
+// Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production"
 // Spec: k.hosting, Allowed origins "`OPTIONS` with `access-control-request-method`: 204 with `access-control-allow-origin` (that origin), `access-control-allow-methods` (the route's methods), `access-control-allow-headers: accept, authorization, content-type, x-keel`, `access-control-allow-credentials: true`, `access-control-max-age: 600` and `vary: origin`; no guard, loader or action runs."
 // Seed: 1337.
+// UNTESTABLE as written: which characters "whitespace" names is not stated, so a no-break space, vertical tab or form feed before or after the value is not asserted; U+FEFF cannot be sent (a header value is a ByteString).
+// The tests assert that a space or tab around the value is stripped, and that those characters inside it or in place of the separating spaces give `undefined`.
+// A guard `redirect` cannot name an API route (E1508), so a redirect hop to a second API route is asserted as the spec says: the table refuses it, and no second guard sees a bearer.
 // The parse table is the bearer grammar of k.api: scheme `bearer` in any case, one or more spaces, token68 of 1 to 4,096 characters, then `=*`.
 // `Headers.get` joins two headers with `, ` and trims each value, so a value ending in a space reads as the trimmed one.
 import { createHash } from "node:crypto";
@@ -21,7 +28,7 @@ import { err, ok, reveal, s } from "@keel/schema";
 import type { Secret } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { SEED, createAppLoose, liveLoader, readChunks } from "./topology-fixtures.ts";
 
 const SECRET = "conformance-secret-bearer-0123456789abcdef0123456789abcdef";
@@ -81,6 +88,22 @@ const live = liveLoader(Nothing, async function* (args: { bearer: Secret<string>
   seen("live.loader", args.bearer, "");
   yield ok({});
 });
+const liveBoom = liveLoader(Nothing, async function* (args: { bearer: Secret<string> | undefined }) {
+  if (args.bearer !== undefined) throw new Error(`live ${reveal(args.bearer)}`);
+  yield ok({});
+});
+const guardBoom = guard({}, async ({ bearer }) => {
+  if (bearer !== undefined) throw new Error(`guard ${reveal(bearer)}`);
+  return ok(null);
+});
+const hopGuard = guard({ redirect: "hop.second" }, async ({ bearer }) => {
+  seen("hop.first", bearer, "");
+  return err(Denied.make({}));
+});
+const secondGuard = guard({}, async ({ bearer }) => {
+  seen("hop.second", bearer, "");
+  return ok(null);
+});
 const pageGuard = guard({ redirect: "app.login" }, async ({ bearer, caller }) => {
   seen("page.guard", bearer, caller);
   return ok(null);
@@ -98,6 +121,8 @@ async function boot(mode: "dev" | "production", lines?: string[]) {
     "api.boom": { api: true, path: "/api/boom" },
     "api.live": { api: true, path: "/api/live", loader: live },
     "api.denied": { api: true, path: "/api/denied", guard: apiDeny, loader: denyRead },
+    "api.liveboom": { api: true, path: "/api/liveboom", loader: liveBoom },
+    "api.guardboom": { api: true, path: "/api/guardboom", guard: guardBoom, loader: apiLoad },
     "app.page": { path: "/page", guard: pageGuard, loader: pageLoad, component: view },
     "app.login": { path: "/login", component: view },
   });
@@ -363,7 +388,7 @@ describe("k.api bearer", () => {
     }
   });
 
-  it("`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route).", async () => {
+  it("`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none).", async () => {
     const app = await boot("production");
     reset();
     await drain(await app.fetch(request("GET", "/page", "Bearer abc")));
@@ -376,7 +401,7 @@ describe("k.api bearer", () => {
   });
 
   for (const mode of ["dev", "production"] as const) {
-    it(`An API action throwing the revealed \`bearer\` logs \`[secret]\` in its place, in ${mode}: no log line holds the token in any form \`scrubbed\` matches. An action's \`output\` counts as a loader's, and \`bearer\` (k.api) as a \`Secret\` input.`, async () => {
+    it(`An action throwing the revealed value of a \`Secret\` input or \`bearer\`, as a string or in an \`Error\` message, logs a \`diag\` record holding \`[secret]\` and not the value, in ${mode}: an API action throwing the revealed \`bearer\`, no line holding the token in any form \`scrubbed\` matches.`, async () => {
       const token = "ab+c/d-e.f_g~h==";
       const tokenForms = [token, encodeURIComponent(token), JSON.stringify(token).slice(1, -1), btoa(token)];
       const lines: string[] = [];
@@ -390,6 +415,104 @@ describe("k.api bearer", () => {
       for (const line of lines) for (const form of tokenForms) expect(line).not.toContain(form);
     });
   }
+
+  it("The header's value, less leading and trailing whitespace, is the scheme `Bearer`: a space or tab around the value is stripped, and a no-break space, vertical tab or form feed inside it or in place of the separating space gives `undefined`.", async () => {
+    const app = await boot("production");
+    const edge = fc.string({ unit: fc.constantFrom(" ", "\t"), maxLength: 4 });
+    await fc.assert(
+      fc.asyncProperty(edge, edge, tokenArb(1, 30), async (lead, trail, token) => {
+        reset();
+        await drain(await app.fetch(request("GET", "/api/who", `${lead}Bearer ${token}${trail}`)));
+        await drain(await app.fetch(request("POST", "/api/who", `${lead}Bearer ${token}${trail}`)));
+        for (const where of ["api.guard", "api.loader", "api.action"]) expect(revealed(where)).toBe(token);
+      }),
+      { seed: SEED, numRuns: 25 },
+    );
+    const odd = ["\u00a0", "\u000b", "\u000c"] as const;
+    await fc.assert(
+      fc.asyncProperty(fc.constantFrom(...odd), tokenArb(1, 10), tokenArb(1, 10), async (ws, a, b) => {
+        for (const auth of [`Bearer ${a}${ws}${b}`, `Bearer${ws}${a}`]) {
+          reset();
+          await drain(await app.fetch(request("GET", "/api/who", auth)));
+          await drain(await app.fetch(request("POST", "/api/who", auth)));
+          for (const where of ["api.guard", "api.loader", "api.action"]) {
+            expect(bearers.has(where)).toBe(true);
+            expect(revealed(where), `${where} for ${JSON.stringify(auth)}`).toBeUndefined();
+          }
+        }
+      }),
+      { seed: SEED, numRuns: 25 },
+    );
+  });
+
+  it("An uncaught throw of a live loader on an API route, whose message holds the revealed `bearer`, logs no line holding the token in any form, and writes nothing to `console.error`.", async () => {
+    const token = "ab+c/d-e.f_g~h==";
+    const tokenForms = [token, encodeURIComponent(token), JSON.stringify(token).slice(1, -1), btoa(token)];
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      for (const mode of ["dev", "production"] as const) {
+        const lines: string[] = [];
+        const app = await boot(mode, lines);
+        for (const accept of ["application/json", "text/event-stream"]) {
+          const res = await app.fetch(request("GET", "/api/liveboom", `Bearer ${token}`, { accept }));
+          const body = await res.text();
+          if (mode === "production") for (const form of tokenForms) expect(body).not.toContain(form);
+        }
+        for (const line of lines) for (const form of tokenForms) expect(line, `${mode}: ${line}`).not.toContain(form);
+        expect(lines.some((l) => l.includes("[secret]"))).toBe(true);
+      }
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("An uncaught throw of a guard on an API route, whose message holds the revealed `bearer`, leaves the dev response body without the token.", async () => {
+    await fc.assert(
+      fc.asyncProperty(tokenArb(8, 40), async (token) => {
+        const lines: string[] = [];
+        const app = await boot("dev", lines);
+        for (const method of ["GET", "POST"] as const) {
+          const res = await app.fetch(request(method, "/api/guardboom", `Bearer ${token}`));
+          const body = await res.text();
+          for (const form of [token, encodeURIComponent(token), btoa(token)]) expect(body).not.toContain(form);
+        }
+        for (const line of lines)
+          for (const form of [token, encodeURIComponent(token), btoa(token)]) expect(line).not.toContain(form);
+      }),
+      { seed: SEED, numRuns: 15 },
+    );
+  });
+
+  it("`bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none): an API guard's `redirect` naming a second API route is E1508, and the second route's guard sees no bearer.", async () => {
+    reset();
+    const attempt = async (): Promise<void> => {
+      const routes = manifest({
+        "hop.first": { api: true, path: "/api/hop-first", guard: hopGuard, loader: apiLoad },
+        "hop.second": { api: true, path: "/api/hop-second", guard: secondGuard, loader: apiLoad },
+      });
+      const app = await createAppLoose({
+        topology: topology({ web: { modules: ["hop"], adapter: "node" } }),
+        routes,
+        ctx: createCtx({ mode: "sim", seed: SEED }),
+        mode: "production",
+        secret: SECRET,
+      });
+      const res = await app.fetch(request("GET", "/api/hop-first", "Bearer abc"));
+      expect(res.status).toBe(403);
+      expect(res.headers.get("location")).toBeNull();
+      await drain(res);
+    };
+    let thrown: unknown;
+    try {
+      await attempt();
+    } catch (e) {
+      thrown = e;
+    }
+    expect(String(thrown)).toContain("E1508");
+    expect(bearers.get("hop.second")).toBeUndefined();
+    expect(bearers.has("hop.second")).toBe(false);
+  });
 
   it("`OPTIONS` with `access-control-request-method`: 204 with `access-control-allow-origin` (that origin), `access-control-allow-methods` (the route's methods), `access-control-allow-headers: accept, authorization, content-type, x-keel`, `access-control-allow-credentials: true`, `access-control-max-age: 600` and `vary: origin`; no guard, loader or action runs.", async () => {
     const app = await boot("production");

@@ -5,7 +5,7 @@
 // Spec: k.privacy, Secrets "A `loader` or `action` `output` holds no `s.secret` (E1113); a secret leaves as `reveal(secret)` in an `s.string()` field (k.api)."
 // Spec: k.privacy, Rules "E1113 an `s.secret` node in a `loader` or `action` `output`, thrown at declaration (fix: none)."
 // Spec: k.privacy, Conformance "An `action` or `loader` whose `output` has an `s.secret` field throws E1113; with `s.string()`, none."
-// Spec: k.guards, Guards "`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route)."
+// Spec: k.guards, Guards "`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
 // Seed: 1337.
 // The `endpoints` case of the RFC list (`@keel/services` takes no E1113) lives in packages/services/conformance/bearer-0104.test.ts: this package does not depend on `@keel/services`.
 // Compile failures are asserted by type-checking in-memory modules (never written to disk) with packages/router/tsconfig.json: a control module
@@ -214,7 +214,7 @@ describe("k.privacy E1113", () => {
 });
 
 describe("k.guards bearer", () => {
-  it("`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route).", () => {
+  it("`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none).", () => {
     expect(typeErrors(CONTROL)).toEqual([]);
     expect(typeErrors(BAD.pageReadsBearer).length).toBeGreaterThan(0);
     const apiReads = action({ input: Nothing, output: Nothing }, async (_input, at) => {

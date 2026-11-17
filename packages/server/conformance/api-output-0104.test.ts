@@ -8,6 +8,7 @@
 // Spec: k.server, API "`action({ input, output?, params?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, stores }` and `ctx`; returns `Result<Href | null, KeelError>` (with `output`: k.api); routes bind it by method (`routes.actions`, k.router)."
 // Spec: k.server, Rules "E1554 loader or action data fails its output schema (dev diag; production 500)"
 // Seed: 1337.
+// UNTESTABLE as written: that an E1554 diag "names the path, never the value" (no spec sentence says so); the record case asserts the part the spec fixes: 500, an E1554 diag in dev, and no diag holding the key.
 // UNTESTABLE as written: an action's `output` value reaching `[pii]` in a `diag` of a later throw in the same request: an API route has no layout, so no
 // loader of the request runs after an action's answer. The test checks the nearest reachable case: the pii value is answered as written and a diag of the request never holds it.
 import { createCtx } from "@keel/ctx";
@@ -24,6 +25,7 @@ const N = s.object({ n: s.int() });
 const Add = s.object({ n: s.int() });
 const Nothing = s.object({});
 const Boom = s.error("conf.boom", s.object({ why: s.string() }));
+const Scores = s.record(s.int());
 const Contact = s.object({ contact: s.string().pii("contact"), n: s.int() });
 const KEY = "keel.store.out.s";
 
@@ -86,15 +88,18 @@ async function setup(mode: "dev" | "production" = "production") {
   const contactBad = action({ input: Add, output: Contact }, async ({ n }) =>
     ok({ contact: `p${n}@example.test`, n: n + 0.5 }),
   );
+  const scores = action({ input: Add, output: Scores }, async () => ok({ "alice@example.com": 0.5 }));
   const pageAct = action({ input: Add }, async () => ok(null));
   const routes = manifest({
     "api.notes": { api: true, path: "/api/notes", loader: read },
     "api.contact": { api: true, path: "/api/contact" },
+    "api.scores": { api: true, path: "/api/scores" },
     "app.page": { path: "/page", component: view },
   });
   routes.actions({
     "api.notes": { POST: good, PUT: bad, PATCH: slow, DELETE: fail },
     "api.contact": { POST: contact, PUT: contactBad },
+    "api.scores": { POST: scores },
     "app.page": { POST: pageAct },
   });
   const app = await createApp({
@@ -286,5 +291,16 @@ describe("k.api output", () => {
       }),
       { seed: SEED, numRuns: 10 },
     );
+  });
+
+  it('E1554 loader or action data fails its output schema (dev diag; production 500): an `output: s.record(s.int())` action returning `ok({ "alice@example.com": 0.5 })` answers 500 and no diag holds the key.', async () => {
+    for (const mode of ["dev", "production"] as const) {
+      const t = await setup(mode);
+      const res = await t.json("POST", "/api/scores", { n: 1 });
+      expect(res.status).toBe(500);
+      expect(await res.text()).not.toContain("alice@example.com");
+      if (mode === "dev") expect(t.diags().filter((d) => JSON.stringify(d).includes("E1554"))).toHaveLength(1);
+      for (const line of t.lines) expect(line).not.toContain("alice@example.com");
+    }
   });
 });
