@@ -1,13 +1,15 @@
-// Spec: k.runtime API, clause "`mount(Component, el, { ctx?, onError?, mode? })` ... Both take `mode` (k.errors): `'dev'` in a dev build, else `'production'`."
+// Spec: k.runtime API, clause "Both take `mode` (k.errors): `'dev'` only under `keel dev`, else `'production'` (k.deploy)."
 // Spec: k.runtime Islands: the generated resume entry calls `resume(document.body, components, { ctx, stores, mode })`.
 // Spec: k.router Client: `createRouter(routes, { ctx, history, mode? })` takes `mount`'s `mode`.
-// Seed: 1337 (no random input: the `import.meta.env.DEV` values are enumerated).
-// The entries are read as the Vite dev server serves `/@keel/entry.ts` for a fixture app; the `mode` expression is evaluated with `import.meta.env` bound to a stand-in.
+// Spec: k.deploy Build: "`keel build` runs Vite with `NODE_ENV=production`, whatever the shell or `.env` sets: the entries' `mode` is `'production'`."
+// Seed: 1337 (no random input: the entries and `import.meta.env` stand-ins are enumerated).
+// The served entries are read as the Vite dev server serves `/@keel/entry.ts` for a fixture app; the built entries are read as the plugin's `load` hands them to a Vite build; `resumeEntry()` is called unbundled.
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createServer } from "vite";
+import { resumeEntry } from "@keel/compiler/internal/entry/resumeEntry";
+import { build, createServer } from "vite";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 const SLOW = 180_000;
@@ -71,20 +73,53 @@ async function entryText(dir: string): Promise<string> {
   }
 }
 
-/** Evaluate the `mode` binding of an entry with `import.meta.env` replaced by `env`. */
-function modeWith(code: string, env: unknown): unknown {
+/** The entry text the plugin's `load` returns to a Vite `build` (the bundler's input, before any dead-code removal). */
+async function builtEntryText(dir: string): Promise<string> {
+  const saved = process.env.KEEL_DEPLOYABLE;
+  process.env.KEEL_DEPLOYABLE = "web";
+  let seen = "";
+  try {
+    await build({
+      root: dir,
+      configFile: join(dir, "vite.config.ts"),
+      logLevel: "silent",
+      plugins: [
+        {
+          name: "capture-entry",
+          enforce: "post",
+          transform(code: string, id: string) {
+            if (id.includes("@keel/entry")) seen = code;
+            return null;
+          },
+        },
+      ],
+      build: { minify: false },
+    });
+  } finally {
+    if (saved === undefined) Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
+    else process.env.KEEL_DEPLOYABLE = saved;
+  }
+  if (seen === "") throw new Error("no entry loaded by the build");
+  return seen;
+}
+
+/** The right-hand side of the entry's `mode` binding. */
+function modeBinding(code: string): string {
   const m = /(?:const|let|var)\s+mode\s*=\s*([^;\n]+)/.exec(code);
   if (m === null || m[1] === undefined) throw new Error("entry has no `mode` binding");
-  const expr = m[1].replace(/import\.meta\.env/g, "__env");
-  return new Function("__env", `return (${expr});`)(env);
+  return m[1].trim();
 }
 
 let client = "";
 let resume = "";
+let builtClient = "";
+let builtResume = "";
 
 beforeAll(async () => {
   client = await entryText(fixture("client"));
   resume = await entryText(fixture("node"));
+  builtClient = await builtEntryText(fixture("client"));
+  builtResume = await builtEntryText(fixture("node"));
 }, SLOW);
 afterAll(() => {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
@@ -103,23 +138,29 @@ describe("k.runtime: the generated entries pass mode", () => {
     expect(resume).toMatch(/\bresume\s*\(\s*document\.body\s*,\s*components\s*,\s*\{[^}]*\bmode\b[^}]*\}/);
   });
 
-  test('evaluated with `import.meta.env.DEV` true the client entry\'s mode is "dev"', () => {
-    expect(modeWith(client, { DEV: true })).toBe("dev");
+  test('the served client entry holds `const mode = "dev"` and reads no `import.meta.env`', () => {
+    expect(modeBinding(client)).toBe('"dev"');
+    expect(client).not.toContain("import.meta.env");
   });
 
-  test('evaluated with `import.meta.env.DEV` not true the client entry\'s mode is "production"', () => {
-    for (const env of [{ DEV: false }, {}, { DEV: "true" }, undefined]) {
-      expect(modeWith(client, env)).toBe("production");
-    }
+  test('the served resume entry holds `const mode = "dev"` and reads no `import.meta.env`', () => {
+    expect(modeBinding(resume)).toBe('"dev"');
+    expect(resume).not.toContain("import.meta.env");
   });
 
-  test('evaluated with `import.meta.env.DEV` true the resume entry\'s mode is "dev"', () => {
-    expect(modeWith(resume, { DEV: true })).toBe("dev");
+  test('the client entry under a Vite `build` holds `const mode = "production"` and reads no `import.meta.env`', () => {
+    expect(modeBinding(builtClient)).toBe('"production"');
+    expect(builtClient).not.toContain("import.meta.env");
   });
 
-  test('evaluated with `import.meta.env.DEV` not true, or with no `import.meta.env`, the resume entry\'s mode is "production"', () => {
-    for (const env of [{ DEV: false }, {}, { DEV: "true" }, undefined]) {
-      expect(modeWith(resume, env)).toBe("production");
-    }
+  test('the resume entry under a Vite `build` holds `const mode = "production"` and reads no `import.meta.env`', () => {
+    expect(modeBinding(builtResume)).toBe('"production"');
+    expect(builtResume).not.toContain("import.meta.env");
+  });
+
+  test('the unbundled `resumeEntry()` text holds `const mode = "production"` and reads no `import.meta.env`', () => {
+    const text = resumeEntry();
+    expect(modeBinding(text)).toBe('"production"');
+    expect(text).not.toContain("import.meta.env");
   });
 });
