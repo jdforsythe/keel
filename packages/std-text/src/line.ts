@@ -2,7 +2,7 @@ import type { Format, Schema } from "@keel/schema";
 import { textFormat } from "./textFormat.ts";
 
 /**
- * Text a person writes on one line (std.text): NFC, no control character, U+2028, U+2029 or bidi control, and `min`
+ * Text a person writes on one line (std.text): NFC, no control character, U+2028, U+2029 or `Bidi_Control` character, a visible character, and `min`
  * (default 1) to `max` graphemes. Named `line(<min>..<max>)`. Throws unless `0 <= min <= max` and `1 <= max <= 10000`
  * are integers.
  */
