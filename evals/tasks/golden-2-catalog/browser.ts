@@ -8,7 +8,7 @@
 // when all of that holds, else one short reason.
 import { type ChildProcess, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { access, mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -79,7 +79,8 @@ async function watch(page: Page, found: string[]): Promise<void> {
 
 /** axe-core's `color-contrast` on the page as it is now; one entry per violated rule. */
 async function contrastOf(page: Page, axe: string, step: string): Promise<string[]> {
-  await page.addScriptTag({ path: axe });
+  // Evaluated over the debugging protocol: a script element built from a string would break Trusted Types.
+  await page.evaluate(await readFile(axe, "utf8"));
   const rules = await page.evaluate(async () => {
     const engine: unknown = Reflect.get(globalThis, "axe");
     const run: unknown = typeof engine === "object" && engine !== null ? Reflect.get(engine, "run") : undefined;

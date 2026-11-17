@@ -6,7 +6,7 @@
 // `browserPass` resolves to undefined when all of that holds, else one short reason.
 import { type ChildProcess, execFile, spawn } from "node:child_process";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
-import { access, mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -102,7 +102,8 @@ async function contrast(browser: Browser, organizer: string, axe: string): Promi
   const mark = await page.locator('[id^="shifts.roster.mark."]').first().getAttribute("href");
   for (const path of [...PAGES, ...(mark === null ? [] : [mark])]) {
     await page.goto(new URL(path, ORIGIN).href, { waitUntil: "load" });
-    await page.addScriptTag({ path: axe });
+    // Evaluated over the debugging protocol: a script element built from a string would break Trusted Types.
+    await page.evaluate(await readFile(axe, "utf8"));
     const rules = await page.evaluate(async () => {
       const engine: unknown = Reflect.get(globalThis, "axe");
       const run: unknown = typeof engine === "object" && engine !== null ? Reflect.get(engine, "run") : undefined;
