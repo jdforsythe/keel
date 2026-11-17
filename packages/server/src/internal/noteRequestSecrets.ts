@@ -3,10 +3,10 @@ import { holdSecrets } from "./holdSecrets.ts";
 import { requestSecrets } from "./requestSecrets.ts";
 
 /**
- * Adds the revealed strings and numbers of `made` (`secretValues`) to the set of the request running, if any, and the
- * empty string, which matches nothing: the set then holds a value whenever the request made a secret, a boolean one too,
- * so past the scrub's cap its texts are marked `[secret]` (`scrubbed`). Once the set is over that cap it takes no more
- * values (`holdSecrets`).
+ * Adds the revealed strings, numbers and data keys of `made` (`secretValues`) to the set of the request or runner `run`
+ * running, if any, and the empty string, which matches nothing: the set then holds a value whenever the scope made a
+ * secret, a boolean one too, so past a scrub cap its texts are marked `[secret]` (`scrubbed`). Once the set is past
+ * a cap (100,000 values or 2,000,000 characters of forms) it takes no more values (`holdSecrets`).
  */
 const note: SecretListener = (made) => {
   const into = requestSecrets.getStore();
@@ -15,9 +15,9 @@ const note: SecretListener = (made) => {
 };
 
 /**
- * Makes the server's listener the one `onSecret` calls, so each `Secret` made while a request runs adds its revealed
- * strings and numbers to that request's set (`requestSecrets`) until the set is over the scrub's cap; a `Secret` made
- * outside a request adds nothing. Each `createApp` calls it, so an app created after another listener took the slot, or
+ * Makes the server's listener the one `onSecret` calls, so each `Secret` made while a request or a runner's `run` runs
+ * adds its revealed strings, numbers and data keys to that scope's set (`requestSecrets`) until the set is past a cap; a
+ * `Secret` made outside both, at startup, adds nothing. Each `createApp` calls it, so an app created after another listener took the slot, or
  * after the slot was cleared, has the server's listener again.
  */
 export function noteRequestSecrets(): void {

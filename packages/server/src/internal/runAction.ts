@@ -37,7 +37,7 @@ import { valuesOf } from "./valuesOf.ts";
  * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
  * A throw is `keel.unexpected` plus a `keel.unexpected` diag; neither holds a `.pii()` value of the decoded input or of
  * the stores it opened, nor the revealed value of a `Secret` in the decoded input (`notePii`, `noteRequestSecrets`,
- * `redacted`; k.privacy Server log).
+ * `scrubbedCause`; k.privacy Server log); its `lead`, `action <id> threw: `, is what `scrubbedDiag` keeps past a scrub cap.
  */
 export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<Handled> {
   const { id, def, chain } = m.route;
@@ -105,8 +105,9 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
       for (const o of h.opened) notePii(rq.pii, o.store.schema, o.store.snapshot().state);
   }
   const clean = ran.ok ? null : scrubbedCause(ran.error, rq);
+  const lead = `action ${id} threw: `;
   const thrown: Diag[] =
-    clean === null ? [] : [{ code: "keel.unexpected", message: `action ${id} threw: ${clean.data.cause}`, frames }];
+    clean === null ? [] : [{ code: "keel.unexpected", lead, message: lead + clean.data.cause, frames }];
   if (refused !== null) thrown.push(refused);
   const result = clean === null ? (ran.ok ? ran.value : ran) : err(clean);
   if (!result.ok) rq.held.clear();

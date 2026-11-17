@@ -40,6 +40,7 @@ import { redacted } from "./internal/redacted.ts";
 import { reportSource } from "./internal/reportSource.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { requestSecrets } from "./internal/requestSecrets.ts";
+import { scrubbedDiag } from "./internal/scrubbedDiag.ts";
 import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import { withCors } from "./internal/withCors.ts";
@@ -55,7 +56,9 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * Each request runs in its own isolated scope (k.store `isolate`): stores created in it register in its own registry,
  * appear in `#k-state` and are disposed after the response. It also runs in its own `requestSecrets` set: each `Secret`
  * made while it runs (its input, `bearer`, a parse after an `await`) joins it (`noteRequestSecrets`), and its `diag`
- * records hold `[secret]` in each one's place; runners start outside any request's set. `mode` defaults to `production` (RFC 0022).
+ * records and its `req` path hold `[secret]` in each one's place, as each of its `.pii()` values is `[pii]` there;
+ * each runner's `run` enters its own set (`keepRunning`) and its rejection's record is scrubbed with it. Past a scrub
+ * cap a `diag` keeps the server's own prefix (`loader <id> threw: `) and is one mark after it (`scrubbedDiag`). `mode` defaults to `production` (RFC 0022).
  * With no DOM global (plain Node) it installs the DOM-free server tree (`installServerDom`) so components that build
  * DOM render documents. A JSON or FormData action body over `maxBodyBytes` (default 1 MiB) gets 413 `keel.payloadTooLarge`.
  * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.cli Inspect) before the route table and before
@@ -197,10 +200,12 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const cross = known && raw.headers.get("sec-fetch-site") === "cross-site" && !warned.has(from);
     if (cross) warned.add(from);
     // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
-    // Each request runs in its own `requestSecrets` set: every `Secret` made while it runs joins it (k.privacy).
-    const routed = () => {
-      const secrets = new Set<string>();
-      return requestSecrets.run(secrets, async () => {
+    // Each request runs in its own `requestSecrets` set: every `Secret` made while it runs joins it (k.privacy). The
+    // sets outlive `routed` so the `req` path is scrubbed with them too.
+    const secrets = new Set<string>();
+    const pii = new Set<string>();
+    const routed = () =>
+      requestSecrets.run(secrets, async () => {
         // Only an API route reads `authorization` (k.api Bearer); the token is a `Secret` and the header is not kept.
         const rq = {
           scope: scope(() => undefined),
@@ -208,21 +213,16 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
           bearer: matched?.def.api === true ? bearerOf(raw) : undefined,
           allowed: api !== undefined,
           held: new Map(),
-          pii: new Set<string>(),
+          pii,
           secrets,
         };
         isolate(rq.scope);
         const r = await attempt(() => handle(sv, raw, rq, c));
         rq.scope.dispose();
         if (!r.ok) return r;
-        const diags = r.value.diags.map((d) => ({
-          ...d,
-          message: redacted(d.message, rq),
-          ...(d.frames === undefined ? {} : { frames: d.frames.map((f) => redacted(f, rq)) }),
-        }));
+        const diags = r.value.diags.map((d) => scrubbedDiag(d, rq));
         return { ok: true as const, value: { ...r.value, diags } };
       });
-    };
     // A preflight from an allowed origin to an API route: no guard, loader or action runs.
     const pre = api !== undefined && raw.method === "OPTIONS" && raw.headers.has("access-control-request-method");
     const ran = pre
@@ -259,18 +259,18 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
         );
       for (const d of h.diags) log.write(diagLine(log.format, d));
       const ms = Math.max(0, Math.round(sv.ctx.clock.now() - t0));
-      log.write(reqLine(log.format, { method: raw.method, path, route: h.route, status: response.status, ms }));
+      // The path as the log may hold it: a request that never ran has empty sets and keeps it as it came.
+      const shown = redacted(path, { secrets, pii });
+      log.write(reqLine(log.format, { method: raw.method, path: shown, route: h.route, status: response.status, ms }));
     }
     return response;
   });
-  const failed = (message: string, frames: readonly string[]) =>
-    log?.write(
-      diagLine(log.format, {
-        code: "keel.unexpected",
-        message: `runner rejected, rerun in 1000 ms: ${message}`,
-        frames,
-      }),
-    );
+  // A runner's record is scrubbed with the set of the `run` that rejected (`keepRunning`); a runner has no pii set.
+  const failed = (message: string, frames: readonly string[], secrets: Set<string>) => {
+    const lead = "runner rejected, rerun in 1000 ms: ";
+    const d = { code: "keel.unexpected", lead, message: lead + message, frames };
+    log?.write(diagLine(log.format, scrubbedDiag(d, { secrets, pii: new Set() })));
+  };
   const app: ServerApp = {
     fetch: async (req) => hono.fetch(req),
     close: async () => {
@@ -281,11 +281,9 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
   };
   const unbind = bindModules(sv.ctx, opts.topology, sv.name, app, peers);
   const own = opts.topology[sv.name]?.modules ?? [];
-  // Runners start outside any request's secrets, even when this app is made inside another app's request.
-  const running = requestSecrets.exit(() =>
-    Promise.resolve().then(() =>
-      own.flatMap((m) => runners[m] ?? []).map((r) => keepRunning(r, sv.ctx, sv.lifecycle.signal, failed, sv.frames)),
-    ),
+  // Each runner's `run` enters its own scrub scope (`keepRunning`), even when this app is made inside a request.
+  const running = Promise.resolve().then(() =>
+    own.flatMap((m) => runners[m] ?? []).map((r) => keepRunning(r, sv.ctx, sv.lifecycle.signal, failed, sv.frames)),
   );
   return app;
 }

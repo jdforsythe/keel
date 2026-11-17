@@ -1,5 +1,6 @@
 import { SCRUB_CAP } from "./SCRUB_CAP.ts";
 import { formsOf } from "./formsOf.ts";
+import { pastCap } from "./pastCap.ts";
 
 /** The matcher of every written form of every set: an Aho-Corasick automaton over the folded forms, in typed arrays. */
 interface Automaton {
@@ -185,7 +186,8 @@ const cache = new WeakMap<
 
 /**
  * The automaton over every written form of the values of `sets` (`formsOf`), folded (`foldTable`), or `"over"` when
- * those forms, each counted once, pass `cap` characters (2,000,000, `SCRUB_CAP`). The sets are formed in order, so
+ * those forms, each counted once, pass `cap` characters (2,000,000, `SCRUB_CAP`) or any of `sets` is past a cap
+ * (`pastCap`), which is read before the cache and before building. The sets are formed in order, so
  * when the first set alone is over, any list that starts with it is over too. A request's sets only grow, so the result
  * is kept per first set for the same sets and cap while their sizes are unchanged, and `"over"` is kept for them however
  * they grow; an `"over"` entry holds the sets and their sizes only. `count`, for tests, adds the build's steps (one per
@@ -196,6 +198,7 @@ export function automatonOf(
   count?: Count,
   cap: number = SCRUB_CAP,
 ): Automaton | "over" {
+  if (sets.some((set) => pastCap.has(set))) return "over";
   const key = sets[0];
   const had = key === undefined ? undefined : cache.get(key);
   if (

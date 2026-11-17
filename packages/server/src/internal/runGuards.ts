@@ -24,7 +24,7 @@ type Step =
 /**
  * The guards of `chain` for `url`, outermost first, up to the first that does not pass. A throw is `keel.unexpected`
  * without the request's `.pii()` values and revealed secrets (`scrubbedCause`) plus a `keel.unexpected` diag with its
- * app `frames`.
+ * app `frames` and its `lead`, `guard <id> threw: `, which `scrubbedDiag` keeps past a scrub cap.
  */
 async function step(
   chain: readonly Level[],
@@ -45,8 +45,9 @@ async function step(
     );
     if (!ran.result.ok) {
       const clean = scrubbedCause(ran.result.error, rq);
-      const message = `guard ${lvl.id} threw: ${clean.data.cause}`;
-      return { kind: "fail", at: i, error: clean, diags: [{ code: "keel.unexpected", message, frames: ran.frames }] };
+      const lead = `guard ${lvl.id} threw: `;
+      const diag = { code: "keel.unexpected", lead, message: lead + clean.data.cause, frames: ran.frames };
+      return { kind: "fail", at: i, error: clean, diags: [diag] };
     }
     const r = ran.result.value;
     if (r.ok) continue;
