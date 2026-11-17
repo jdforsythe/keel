@@ -8,7 +8,7 @@ type Rec = Readonly<Record<string, unknown>>;
 
 const CALLER = /^modules\/([^/]+)\//;
 const VERBS = ["DELETE", "PATCH", "POST", "PUT"] as const;
-/** An action's answer (k.compat Surface): the `ok` value of its `Result`, `Href | null`. */
+/** The answer of an action with no `output` (k.compat Surface): the `ok` value of its `Result`, `Href | null`. */
 const ACTION_ANSWER: JsonSchema = { anyOf: [{ type: "string" }, { type: "null" }] };
 
 /** The JSON Schema of a schema value (`{ node }`), or `null` when `x` is none. */
@@ -74,7 +74,7 @@ function storesOf(e: Evaluated, defs: readonly Rec[]): Record<string, JsonSchema
 /**
  * The data of `.keel/surface.json` (k.compat Surface): for each path route its `module` (the id's first segment),
  * `path`, declaring `file`, `params`, `search`, GET answer (its loader's `output`; none without a loader) and, per
- * action method, `input` and answer (`Href | null`); for each `service({ module })` call in an app module its `file`,
+ * action method, `input` and answer (the JSON Schema of its `output`, or `Href | null` without one); for each `service({ module })` call in an app module its `file`,
  * calling module, `module` and endpoints (method, path, `params`, `query`, `body`, `output`, `errors`); `stores`,
  * each store a loader's or action's `stores` factory creates (one run on a sim ctx) by id, its state schema and each
  * transaction's payload schema; and
@@ -91,7 +91,7 @@ export function surfaceOf(e: Evaluated): JsonSchema {
         const actions = Object.fromEntries(
           VERBS.flatMap((v) => {
             const a = isRecord(bound) ? bound[v] : undefined;
-            return isRecord(a) ? [[v, { input: schemaOf(a.input), answer: ACTION_ANSWER }]] : [];
+            return isRecord(a) ? [[v, { input: schemaOf(a.input), answer: schemaOf(a.output) ?? ACTION_ANSWER }]] : [];
           }),
         );
         const route = { module: id.split(".")[0] ?? id, path: def.path, file, params: schemaOf(def.params) };

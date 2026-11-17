@@ -89,7 +89,7 @@ describe("surfaceOf", () => {
     expect(d.services).toHaveLength(1);
   });
 
-  it("records an API route (no component, no layout) with its GET answer and actions", () => {
+  it("records an API route (no component, no layout) with its GET answer and an action's output as its answer", () => {
     const routes = manifest({
       "y.feed": {
         api: true,
@@ -97,7 +97,9 @@ describe("surfaceOf", () => {
         loader: loader({ output: Item }, async () => ok({ id: "i", title: "t" })),
       },
     });
-    routes.actions({ "y.feed": { POST: action({ input: Note }, async () => ok(null)) } });
+    routes.actions({
+      "y.feed": { POST: action({ input: Note, output: Item }, async () => ok({ id: "i", title: "t" })) },
+    });
     const bound = new Map<object, unknown>(Object.values(routes.routes).map((d) => [d, routeActions.get(d)]));
     const d = surfaceOf({
       manifests: [{ file: "modules/y/routes.ts", routes }],
@@ -110,7 +112,7 @@ describe("surfaceOf", () => {
       "y.feed": {
         module: "y",
         path: "/y/feed",
-        actions: { POST: { input: { required: ["text"] }, answer: { anyOf: [{ type: "string" }, { type: "null" }] } } },
+        actions: { POST: { input: { required: ["text"] }, answer: { type: "object", required: ["id", "title"] } } },
         get: { type: "object", required: ["id", "title"] },
       },
     });
