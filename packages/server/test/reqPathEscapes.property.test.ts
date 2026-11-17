@@ -8,20 +8,25 @@ import { manifest } from "@keel/router";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { createApp, topology } from "../src/index.ts";
+import { type AppOptions, createApp, topology } from "../src/index.ts";
 
 const SEED = 1337;
 const view = (): Node => document.createElement("main");
 
-async function reqPath(url: string): Promise<{ path: unknown; lines: string[] }> {
+const ROUTES = manifest({
+  "app.reset": { path: "/reset/:token", params: s.object({ token: s.secret(s.string()) }), component: view },
+  "app.code": { path: "/code/:n/x", params: s.object({ n: s.secret(s.int()) }), component: view },
+  "app.plain": { path: "/plain/:slug", params: s.object({ slug: s.string() }), component: view },
+});
+
+async function reqPath(
+  url: string,
+  routes: AppOptions["routes"] = ROUTES,
+): Promise<{ path: unknown; lines: string[] }> {
   const lines: string[] = [];
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
-      "app.reset": { path: "/reset/:token", params: s.object({ token: s.secret(s.string()) }), component: view },
-      "app.code": { path: "/code/:n/x", params: s.object({ n: s.secret(s.int()) }), component: view },
-      "app.plain": { path: "/plain/:slug", params: s.object({ slug: s.string() }), component: view },
-    }),
+    routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: "dev",
     log: { format: "json", write: (l) => void lines.push(l) },
@@ -85,7 +90,85 @@ describe("a secret route param in the req path", () => {
 
   it("leaves a plain param and a path no secret route matches as they came", async () => {
     expect((await reqPath("/plain/tok%2D9a8b")).path).toBe("/plain/tok%2D9a8b");
-    expect((await reqPath("/reset/a/b")).path).toBe("/reset/a/b");
     expect((await reqPath("/elsewhere/tok-9a8b")).path).toBe("/elsewhere/tok-9a8b");
   });
+});
+
+/** A static segment as a mistyped link may carry it: each letter's case flipped or not and spelt raw or escaped. */
+const perturbed = (word: string, flips: readonly number[], hows: readonly number[]): string =>
+  [...word].map((c, i) => spelt((flips[i] ?? 0) === 1 ? c.toUpperCase() : c, hows[i] ?? 0)).join("");
+
+describe("a secret route param in the req path of a mistyped link", () => {
+  it("is [secret] under a tail, empty segments, a prefix, case flips, escapes, a trailing dot or a bad escape", async () => {
+    const word = fc.stringMatching(/^[a-z]{4,8}$/);
+    const bits = fc.array(fc.integer({ min: 0, max: 1 }), { minLength: 8, maxLength: 8 });
+    const hows = fc.array(fc.integer({ min: 0, max: 2 }), { minLength: 16, maxLength: 16 });
+    const lead = fc.array(fc.record({ word, flips: bits, hows, dot: fc.boolean(), bad: fc.boolean() }), {
+      minLength: 1,
+      maxLength: 3,
+    });
+    const how = fc.record({
+      prefix: fc.option(word, { nil: undefined }),
+      tail: fc.array(word, { maxLength: 3 }),
+      empties: fc.array(fc.boolean(), { minLength: 10, maxLength: 10 }),
+    });
+    await fc.assert(
+      fc.asyncProperty(
+        lead,
+        fc.array(word, { maxLength: 2 }),
+        fc.stringMatching(/^tok-[a-f0-9]{12}$/),
+        hows,
+        how,
+        async (statics, after, token, spell, h) => {
+          const route = `/${statics.map((x) => x.word).join("/")}/:token${after.map((w) => `/${w}`).join("")}`;
+          const routes = manifest({
+            "app.r": { path: route, params: s.object({ token: s.secret(s.string()) }), component: view },
+            "app.plain": { path: "/plain/:slug", params: s.object({ slug: s.string() }), component: view },
+          });
+          const sent = [...token].map((c, i) => spelt(c, spell[i] ?? 0)).join("");
+          const parts = [
+            ...(h.prefix === undefined ? [] : [h.prefix]),
+            ...statics.map((x) => `${perturbed(x.word, x.flips, x.hows)}${x.dot ? "." : ""}${x.bad ? "%zz" : ""}`),
+            sent,
+            ...after,
+            ...h.tail,
+          ];
+          const url = `/${parts.map((p, i) => (h.empties[i] === true ? `/${p}` : p)).join("/")}`;
+          const { path, lines } = await reqPath(url, routes);
+          expect(typeof path).toBe("string");
+          for (const l of lines) {
+            expect(l.toLowerCase()).not.toContain(token);
+            expect(l.toLowerCase()).not.toContain(sent.toLowerCase());
+            expect(l).not.toContain(token.slice(4));
+          }
+        },
+      ),
+      { seed: SEED, numRuns: 60 },
+    );
+  });
+
+  const typed: readonly (readonly [string, string])[] = [
+    ["/reset/tok-9a8b7c6d5e4f/extra", "/reset/[secret]/[secret]"],
+    ["//reset/tok-9a8b7c6d5e4f", "//reset/[secret]"],
+    ["/reset//tok-9a8b7c6d5e4f", "/reset//[secret]"],
+    ["/Reset/tok-9a8b7c6d5e4f", "/Reset/[secret]"],
+    ["/RESET/tok-9a8b7c6d5e4f", "/RESET/[secret]"],
+    ["/res%zzet/tok-9a8b7c6d5e4f", "/res%zzet/[secret]"],
+    ["/r%65set/tok-9a8b7c6d5e4f", "/r%65set/[secret]"],
+    ["/r%2565set/tok-9a8b7c6d5e4f", "/r%2565set/[secret]"],
+    ["/reset./tok-9a8b7c6d5e4f", "/reset./[secret]"],
+    ["/reset;x=1/tok-9a8b7c6d5e4f", "/reset;x=1/[secret]"],
+    ["/en/reset/tok-9a8b7c6d5e4f", "/en/reset/[secret]"],
+    ["/rest/tok-9a8b7c6d5e4f", "/rest/[secret]"],
+    ["/rseet/tok-9a8b7c6d5e4f", "/rseet/[secret]"],
+    ["/reset/tok-9a8b/7c6d5e4f", "/reset/[secret]/[secret]"],
+    ["/code/9081726354/x/more", "/code/[secret]/x/[secret]"],
+    ["/code/9081726354/y", "/code/[secret]/[secret]"],
+  ];
+  for (const [sent, want] of typed)
+    it(`is [secret] in ${sent}`, async () => {
+      const { path, lines } = await reqPath(sent);
+      expect(path).toBe(want);
+      for (const l of lines) expect(l).not.toContain("9a8b");
+    });
 });
