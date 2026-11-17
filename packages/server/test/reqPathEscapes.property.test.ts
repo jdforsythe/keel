@@ -81,11 +81,11 @@ describe("a secret route param in the req path", () => {
       for (const l of lines) expect(l).not.toContain("9a8b");
     });
 
-  it("is [secret] with a trailing slash, and in a later segment of a longer route whether or not it parses", async () => {
+  it("is [secret] with a trailing slash, and a longer path is cut at the secret whether or not it parses", async () => {
     expect((await reqPath("/reset/tok-9a8b7c6d5e4f/")).path).toBe("/reset/[secret]/");
-    expect((await reqPath("/code/9081726354/x")).path).toBe("/code/[secret]/x");
-    expect((await reqPath("/code/not-a-number-9a8b/x")).path).toBe("/code/[secret]/x");
-    expect((await reqPath("/code/%39081726354/x")).path).toBe("/code/[secret]/x");
+    expect((await reqPath("/code/9081726354/x")).path).toBe("/code/[secret]");
+    expect((await reqPath("/code/not-a-number-9a8b/x")).path).toBe("/code/[secret]");
+    expect((await reqPath("/code/%39081726354/x")).path).toBe("/code/[secret]");
   });
 
   it("leaves a plain param and a path no secret route matches as they came", async () => {
@@ -152,15 +152,15 @@ describe("a secret route param in the req path of a mistyped link", () => {
   });
 
   const typed: readonly (readonly [string, string])[] = [
-    ["/reset/tok-9a8b7c6d5e4f/extra", "/reset/[secret]/extra"],
+    ["/reset/tok-9a8b7c6d5e4f/extra", "/reset/[secret]"],
     ["//reset/tok-9a8b7c6d5e4f", "//reset/[secret]"],
     ["/reset//tok-9a8b7c6d5e4f", "/reset//[secret]"],
     ["/Reset/tok-9a8b7c6d5e4f", "/Reset/[secret]"],
     ["/RESET/tok-9a8b7c6d5e4f", "/RESET/[secret]"],
     ["/res%zzet/tok-9a8b7c6d5e4f", "/res%zzet/[secret]"],
     ["/r%65set/tok-9a8b7c6d5e4f", "/r%65set/[secret]"],
-    ["/code/9081726354/x/more", "/code/[secret]/x/more"],
-    ["/code/9081726354/y", "/code/[secret]/y"],
+    ["/code/9081726354/x/more", "/code/[secret]"],
+    ["/code/9081726354/y", "/code/[secret]"],
   ];
   for (const [sent, want] of typed)
     it(`is [secret] in ${sent}`, async () => {

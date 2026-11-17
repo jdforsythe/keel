@@ -191,7 +191,7 @@ describe("forward", () => {
       ok: false,
       error: { code: "keel.unreachable", message: "peer unreachable", data: {} },
     });
-    expect(lines).toEqual(["keel.unreachable peer unreachable: TypeError: fetch failed", "GET /b/save 502 0ms"]);
+    expect(lines).toEqual(["keel.unreachable peer unreachable: TypeError", "GET /b/save 502 0ms"]);
   });
 
   it("writes one req line per forwarded request", async () => {
