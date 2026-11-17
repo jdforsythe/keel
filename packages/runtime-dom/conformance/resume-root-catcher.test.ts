@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.errors, clause "After `resume`, an island whose handler throws reports one `keel.unexpected` with that element's id as `data.at` to an observer and renders the root fallback in place of the island; the page's other islands keep handling events; under `mount` the same throw reports the same error."
+// Spec: k.errors, clause "After `resume`, an island whose handler throws reports one `keel.unexpected` with that element's id as `data.at` to an observer and renders the root fallback, holding only `keel.unexpected`, in place of the island; the page's other islands keep handling events; under `mount` the same throw reports the same error."
 // Seed 1337
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { signal } from "@keel/reactive";
@@ -79,7 +79,7 @@ describe("k.errors: after resume, an island whose handler throws reports one kee
     expect(err.message).toBe("boom");
     expect(err.data).toMatchObject({ at: "a.boom" });
     const pre = document.querySelector('pre[data-k-error="a.boom"]');
-    expect(pre?.textContent).toBe("boom");
+    expect(pre?.textContent).toBe("keel.unexpected");
     expect(document.querySelector('[data-k-island="A"]')).toBeNull();
     expect(document.querySelector("#a\\.boom")).toBeNull();
 
@@ -138,7 +138,7 @@ describe("k.errors: after resume, an island whose handler throws reports one kee
     await flush();
     expect(errors(events)).toHaveLength(1);
     expect(first(events).data).toMatchObject({ at: "d.only" });
-    expect(document.querySelector('pre[data-k-error="d.only"]')?.textContent).toBe("boom");
+    expect(document.querySelector('pre[data-k-error="d.only"]')?.textContent).toBe("keel.unexpected");
     document.body.innerHTML = "";
   });
 });
