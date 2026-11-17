@@ -1,6 +1,6 @@
 k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.topology k.hosting k.services k.forms k.ui k.testing k.module k.scaffold k.check k.sync std.jobs std.schedules std.channels std.live std.offline std.multi std.conflicts k.model k.sim std.statecharts std.monitor
 
-Key lines only (current spec, RFCs through 0082). Full text: `pnpm spec <id>`.
+Key lines only (current spec, RFCs through 0104). Full text: `pnpm spec <id>`.
 
 k.schema
 - import { s, ok, err, attempt, type Result } from '@keel/schema'
@@ -39,7 +39,9 @@ k.runtime
 - import { If, For, Match, Case } from '@keel/runtime-dom'; mount is the generated entry only; no document/window in app code (E1252)
 
 k.router
-- API route (no component): { 'api.lists': { api: true, path: '/api/lists', loader: loadBoard } } plus routes.actions({ 'api.lists': { POST: postList } }); keeps params, search, loader, guard; refuses component, errorElement, title, layout (E1510); needs a loader or an action; the server answers it with JSON whatever accept says (GET with a loader: { id, results }; GET without one: 405 with allow; a write: the action Result as JSON, never 303; a guard denial: 403 keel.denied); routes.href, Link and navigate take page ids only
+- API route (no component): { 'api.lists': { api: true, path: '/api/lists', loader: loadBoard } } plus routes.actions({ 'api.lists': { POST: postList } }); keeps params, search, loader, guard; refuses component, errorElement, title, layout (E1510); needs a loader or an action; the server answers it with JSON whatever accept says (GET with a loader: { id, results }; GET without one: 405 with allow; a write: the action Result as JSON (its output), never 303; a guard denial: 403 keel.denied); routes.href, Link and navigate take page ids only
+- API action: action({ input, output, params?, stores? }, fn) -> Result<T, KeelError> for output's type; output parses the ok value before any store saves (fail: E1554, nothing saved); answered 200 { ok: true, value } with Cache-Control: no-store; a write with nothing to say: output: s.object({}) and ok({}); a page's action declares no output and keeps ok(href) / ok(null); the wrong kind is E1512; output holds no s.secret (E1113: send reveal(secret) in an s.string field, reveal only in *.server.ts)
+- bearer: an API route's guard, loader and action get bearer: Secret<string> | undefined beside caller, from `Authorization: Bearer <token>` (scheme in any case, 1 to 4096 characters of A-Za-z0-9-._~+/ and trailing =); no header, another scheme, an empty or longer token or two headers is undefined (no error); a page's guard and loader get undefined, a page's action has none; independent of caller; a response to a request carrying authorization is no-store
 - guard({}, fn) (no redirect) guards API routes only; on a page or layout it is a type error and manifest() throws E1508
 - import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
 - routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } }); then routes.actions({ 'todos.edit': { POST: updateTodo } }) (a statement; actions are never in an entry: E1505); an action returning ok(routes.href(...)) imports routes.ts, which imports it: import routes.ts (never the *.server.ts) first in tests
@@ -53,8 +55,8 @@ k.router
 - E1502 duplicate path, E1503 :param without params field, E1504 required search field, E1505 undeclared verb, E1506 unknown layout, E1507 params/search typed by hand
 
 k.server
-- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, stores }, ctx) -> Promise<Result<T, KeelError>>
-- action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`
+- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, bearer, stores }, ctx) -> Promise<Result<T, KeelError>>
+- page action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`; an API route's action also takes output (API action)
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
 - stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)
@@ -62,15 +64,15 @@ k.server
 - live loader: loader({ output }, async function* ({ signal }, ctx) { yield ok(v) }); document/JSON GET takes the first yield; accept: text/event-stream gets each yield as a `data:` line (its Result JSON)
 - writes pass the same-site check: send accept: application/json with x-keel: 1 (a services client does)
 - JSON body (content-type application/json) decodes with the action input schema, an empty body as {}; fail: 422 keel.fields naming each bad or missing field, action not called
-- runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; action -> { ok: true, value: null | href } or { ok: false, error: { code, message, data } }
+- runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; page action -> { ok: true, value: null | href }; API action -> { ok: true, value: <output> } or { ok: false, error: { code, message, data } }
 - status: keel.notFound 404, keel.denied 403, keel.fields 422, keel.conflict 409, other err 400
 - a route may be action-only (an API route: `api: true`, no component; its loader or action is all it has)
 
 k.services
 - import { endpoints, service } from '@keel/services'; endpoints in a *.service.ts file, body/output schemas in *.schema.ts
-- export const todos = endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardView }, editTodo: { method: 'POST', path: '/api/todos/:todoId', params: TodoIdParams, body: TodoDraft, output: s.string().nullable(), errors: { 422: FieldsReply } } })
-- service({ module: 'api', schema }): the topology resolves the origin (a browser: the peer's or the page's); the endpoints must agree with the module's public.routes (E1152, E1157, E1561: errors must accept any error answer of the route); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
-- a module service reads the route's Result: output is the loader's value (GET) or the action's Href | null; errors[status] decodes the KeelError { code, message, data }
+- export const todos = endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardView }, editTodo: { method: 'POST', path: '/api/todos/:todoId', params: TodoIdParams, body: TodoDraft, output: s.object({}), errors: { 422: FieldsReply } } })
+- service({ module: 'api', schema }): the topology resolves the origin (a browser: the peer's or the page's); the endpoints must agree with the module's public.routes (E1152, E1157, E1561: errors must accept any error answer of the route); await api.add({ params?, body?, bearer? }, ctx) -> Result<Output, ApiError>; never throws
+- a module service reads the route's Result: output is the loader's value (GET) or the action's output (an API route's; E1561 when it refuses the answer); errors[status] decodes the KeelError { code, message, data }
 - ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
 - pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body ?? r.error)
 - in an unbound sim ctx a service({ module: 'api' }) call goes to http://api.keel.invalid plus the path; route that host with ctx.net.route
@@ -85,7 +87,7 @@ k.topology
 - peers: a request for a path a peer serves (routes.json in artifacts) is forwarded; deploy/<name>/Dockerfile and deploy/compose.yaml are generated (E1005)
 
 k.hosting
-- k.hosting: `host: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<host>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes; E1565 bad peer value, E1566 bad host
+- k.hosting: `host: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<host>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes (the preflight allows accept, authorization, content-type, x-keel); E1565 bad peer value, E1566 bad host
 
 std.jobs
 - export const recount = job({ input: RecountInput }, async (input, ctx, signal) => ok(null))  // recount.server.ts; at least once, so idempotent
@@ -180,7 +182,7 @@ std.statecharts
 - import { chart, coverage } from '@keel/std-statecharts' (module deps list '@keel/std-statecharts'); in a client-safe file named for the export: export const editorChart = chart('todos.editor', { data, start, events, guards, actions, initial, states })
 - events: { name: payloadSchema }; a state is { on?: { event: target }, final? }; target: 'stateName' | { to?, guard?, do? } | [targets tried in order]; guards (d, payload) => boolean, actions (d, payload) => data, both pure; an action keeps data inside its schema
 - compiles to store id with state { state, data } and one transaction <id>.<event> per event: tx(editorChart.events.save, {}); no applicable target leaves the state unchanged
-- chart.enabled({ state, data }, event, payload): true when that event's tx would change the state name or apply a do; chart.store.get('state'), chart.store.get('data')
+- chart.enabled({ state, data }, event, payload): true when that event's tx would change the state name or apply a do; chart.taken({ state, data }, event, payload): the target taken or undefined; chart.store.get('state'), chart.store.get('data')
 - coverage(chart, explore(Object.values(chart.events))) -> { unreached, dead }; keel check E2751 unknown state name, E2752 unreachable state, E2753 non-final state with no exit (fix: final: true), E2754 bad final/event/guard/action name, E2755 non-literal declaration
 
 std.monitor
@@ -200,10 +202,10 @@ k.deploy
 std.workflows
 - import { workflow, flows } from '@keel/std-workflows' (module deps add '@keel/std-workflows', '@keel/std-jobs', '@keel/std-statecharts'): export const removal = workflow('api.removal', { chart: removalChart, steps: { purging: { run: purge, done: 'purged', failed: 'purgeFailed' } }, waits: { hidden: { ms: 600_000, event: 'expired' } } }) in removal.server.ts
 - a step run(data, ctx, { signal, key }) returns Promise<Result>; its ok value is the done event's payload; err on the last attempt (default 3) sends failed { code }; past its attempts failed { code: 'workflows.attempts' }
-- jobs.server.ts: export const jobs = queue({ ...removal.jobs }); runners.server.ts: export const runners = [jobs, flows(jobs, [removal])]; E2351 workflow outside *.server.ts, E2354 queue or runners missing them
+- jobs.server.ts: export const jobs = queue({ ...removal.jobs }); runners.server.ts: export const runners = [jobs, flows(jobs, [removal])]; E2351 workflow outside *.server.ts, E2355 a chart event named start, attempt or forget; E2354 queue or runners missing them
 - removal.stores(ctx) -> { store, start, events, attempt, forget }; in an action's stores factory: tx(S.removal.start, { id: ctx.random.id('Flow'), data: { list } }), tx(S.removal.events.undo, { id, payload: {} }); store state { instances: { [id]: { state, data, entered, attempt } } }
 
 k.prove
 - import { prove } from '@keel/testing/prove' (Node; z3-solver in devDependencies, else E1718): await prove([addList(b), addTodo(b), ...]) -> { proven, z3 }: every invariant holds for every state and payload the schemas allow, by induction; the ledger's proven rung
 - fragment: params, const, return, if/else, ?:, && || !, === !== < <= > >=, + -, literals, object spread and reads, array spread, .length, .map/.some/.every/.find, new Set(a.map(f)) read by .has and .size; anything else (.filter, calls, loops) is E1715
-- E1716 a counterexample (state and payload JSON on the next line); E1717 no verdict within rlimit
+- E1716 a counterexample (state and payload JSON on the next line); E1717 no verdict within rlimit; rlimit is an integer from 1 to 2^32 - 1, else E1710

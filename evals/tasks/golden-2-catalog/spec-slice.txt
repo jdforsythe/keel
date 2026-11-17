@@ -31,6 +31,7 @@ k.aria
 k.router
 - navigate(href, { replace? }) from '@keel/router' navigates the router rendering the caller; a push or replace that changes only the search keeps scroll
 - routes.href(id, params?, search?) is the only way to an Href
+- API route (`api: true`, no component, a loader or an action): the server answers JSON; an API action declares `output` and returns ok(value) (a write with nothing to say: output: s.object({}), ok({})); a page's action declares none (ok(href) / ok(null)); the wrong kind is E1512; output holds no s.secret (E1113); its guard, loader and action get bearer: Secret<string> | undefined from Authorization: Bearer
 
 k.testing
 - renderRoute(id, { routes, params, search?, ctx }) or renderRoute(id, { routes, url, ctx }); location() -> { entries, scrollY }

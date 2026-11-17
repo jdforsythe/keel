@@ -1,6 +1,6 @@
 k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.prefix k.head k.server k.services k.forms k.ui k.testing k.module k.scaffold k.hosting k.check std.i18n std.money std.temporal std.text std.messages
 
-Key lines only (current spec, RFCs through 0079). Full text: `pnpm spec <id>`.
+Key lines only (current spec, RFCs through 0104). Full text: `pnpm spec <id>`.
 
 k.schema
 - import { s, ok, err, attempt, type Result } from '@keel/schema'
@@ -41,7 +41,9 @@ k.runtime
 - import { If, For, Match, Case } from '@keel/runtime-dom'; mount is the generated entry only; no document/window in app code (E1252)
 
 k.router
-- API route (no component): { 'api.lists': { api: true, path: '/api/lists', loader: loadBoard } } plus routes.actions({ 'api.lists': { POST: postList } }); keeps params, search, loader, guard; refuses component, errorElement, title, layout (E1510); needs a loader or an action; the server answers it with JSON whatever accept says (GET with a loader: { id, results }; GET without one: 405 with allow; a write: the action Result as JSON, never 303; a guard denial: 403 keel.denied); routes.href, Link and navigate take page ids only
+- API route (no component): { 'api.lists': { api: true, path: '/api/lists', loader: loadBoard } } plus routes.actions({ 'api.lists': { POST: postList } }); keeps params, search, loader, guard; refuses component, errorElement, title, layout (E1510); needs a loader or an action; the server answers it with JSON whatever accept says (GET with a loader: { id, results }; GET without one: 405 with allow; a write: the action Result as JSON (its output), never 303; a guard denial: 403 keel.denied); routes.href, Link and navigate take page ids only
+- API action: action({ input, output, params?, stores? }, fn) -> Result<T, KeelError> for output's type; output parses the ok value before any store saves (fail: E1554, nothing saved); answered 200 { ok: true, value } with Cache-Control: no-store; a write with nothing to say: output: s.object({}) and ok({}); a page's action declares no output and keeps ok(href) / ok(null); the wrong kind is E1512; output holds no s.secret (E1113: send reveal(secret) in an s.string field, reveal only in *.server.ts)
+- bearer: an API route's guard, loader and action get bearer: Secret<string> | undefined beside caller, from `Authorization: Bearer <token>` (scheme in any case, 1 to 4096 characters of A-Za-z0-9-._~+/ and trailing =); no header, another scheme, an empty or longer token or two headers is undefined (no error); a page's guard and loader get undefined, a page's action has none; independent of caller; a response to a request carrying authorization is no-store
 - guard({}, fn) (no redirect) guards API routes only; on a page or layout it is a type error and manifest() throws E1508
 - import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
 - routes.ts: export const routes = manifest({ 'recipes.shell': { component: BoxShell, loader: loadShell }, 'recipes.show': { path: '/:locale/recipes/:recipeId', params: RecipeParams, loader: loadRecipe, component: RecipePage, layout: 'recipes.shell', errorElement: RecipeError, guard: cook, title: (p: Infer<typeof RecipePageProps>) => formatMessage(p.data.text.showTitle, { title: p.data.recipe.title }, p.params.locale) } }); then routes.actions({ 'recipes.show': { POST: favoriteRecipe } }) (a statement; actions are never in an entry: E1505); an action returning ok(routes.href(...)) imports routes.ts, which imports it: import routes.ts (never the *.server.ts) first in tests
@@ -63,23 +65,23 @@ k.head
 - <title> is the route's title (fallback: the deployable name, or index.html's title in a client deployable); <html lang> is the prefix param's value; the client router sets document.title and documentElement.lang after each navigation
 
 k.server
-- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, stores }, ctx) -> Promise<Result<T, KeelError>>
-- action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`
+- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, bearer, stores }, ctx) -> Promise<Result<T, KeelError>>
+- page action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`; an API route's action also takes output (API action)
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
 - stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['recipes'], adapter: 'client', host: 'api' }, api: { modules: ['kitchen'], adapter: 'node' } }); a module is in one deployable (E1552)
 - createApp({ topology, routes, ctx, deployable: 'api' }) from '@keel/server' -> Promise<{ fetch(req) }>
 - writes pass the same-site check: send accept: application/json with x-keel: 1 (a services client does)
 - JSON body (content-type application/json) decodes with the action input schema, an empty body as {}; fail: 422 keel.fields naming each bad or missing field, action not called
-- runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; action -> { ok: true, value: null | href } or { ok: false, error: { code, message, data } }
+- runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; page action -> { ok: true, value: null | href }; API action -> { ok: true, value: <output> } or { ok: false, error: { code, message, data } }
 - status: keel.notFound 404, keel.denied 403, keel.fields 422, keel.conflict 409, other err 400
 - a route may be action-only (an API route: `api: true`, no component; its loader or action is all it has)
 
 k.services
 - import { endpoints, service } from '@keel/services'; endpoints in a *.service.ts file, body/output schemas in *.schema.ts
-- export const kitchen = endpoints({ box: { method: 'GET', path: '/api/recipes', output: Box }, add: { method: 'POST', path: '/api/recipes', body: RecipeDraft, output: s.string().nullable(), errors: { 422: ErrorReply } }, favorite: { method: 'POST', path: '/api/recipes/:recipeId/favorite', params: RecipeRef, output: s.string().nullable(), errors: { 404: ErrorReply } } })
-- service({ module: 'kitchen', schema }): the topology resolves the origin; the endpoints must agree with the module's public.routes (E1152, E1157, E1561); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
-- a module service reads the route's Result: output is the loader's value (GET) or the action's Href | null; errors[status] decodes the KeelError { code, message, data }
+- export const kitchen = endpoints({ box: { method: 'GET', path: '/api/recipes', output: Box }, add: { method: 'POST', path: '/api/recipes', body: RecipeDraft, output: s.object({}), errors: { 422: ErrorReply } }, favorite: { method: 'POST', path: '/api/recipes/:recipeId/favorite', params: RecipeRef, output: s.object({}), errors: { 404: ErrorReply } } })
+- service({ module: 'kitchen', schema }): the topology resolves the origin; the endpoints must agree with the module's public.routes (E1152, E1157, E1561); await api.add({ params?, body?, bearer? }, ctx) -> Result<Output, ApiError>; never throws
+- a module service reads the route's Result: output is the loader's value (GET) or the action's output (an API route's; E1561 when it refuses the answer); errors[status] decodes the KeelError { code, message, data }
 - ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
 - pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body ?? r.error)
 - ctx.net.fetch in app code is E1651; E1652 :param without params field; E1653 body on GET
@@ -121,7 +123,7 @@ k.check
 - a module's deps naming '@keel/std-i18n' or '@keel/std-messages' run their rules (E2301, E2401-E2406)
 
 k.hosting
-- k.hosting: `host: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<host>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes; E1565 bad peer value, E1566 bad host
+- k.hosting: `host: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<host>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes (the preflight allows accept, authorization, content-type, x-keel); E1565 bad peer value, E1566 bad host
 
 std.i18n
 - import { formatNumber, plural, localeName, type Locale } from '@keel/std-i18n'; Locale is an s.enum of 11 tags (de-DE, en-US, ja-JP, ...)
