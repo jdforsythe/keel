@@ -10,7 +10,7 @@ description: "Build a Keel app: schemas, stores, components, routes, guards, tok
 **Files** (one export each, name = export):
 - `*.schema.ts`: `s.object(...)`; `type T = s.infer<typeof T>`; validate with `T.parse(x)` (no `decode`).
 - Store file: `store(...)`, pure `transaction(...)`, `invariant(store, fn)` beside it; ids prefixed by module (`todos.board`).
-- `Foo.tsx`: default `(props, slots?, ctx?)`, `export const Props = s.object(...)`, `export const uses = [tx]` if it calls `tx`; never destructure props. `<If when>`, `<For each key="id">`, `<Match on>`, never `&&`. Layout: `{props.children?.()}`.
+- `Foo.tsx`: default `(props, slots?, ctx?)`, `export const Props = s.object(...)`, `export const uses = [tx]` if it calls `tx`; never destructure props. `<If when>{() => <X/>}</If>` (children are a function), `<For each key="id">`, `<Match on>`, never `&&`. Layout: `{props.children?.()}`.
 - `*.server.ts`: `loader({ output, params?, search?, stores? }, fn)`, `action({ input, params?, stores? }, fn)`; schemas are the route's own; never annotate `fn`.
 - `*.guard.ts`: `export const auth = guard({ redirect: 'app.login' }, fn)`; route holds the value (`guard: auth`).
 - `routes.ts`: `export const routes = manifest({...})`, then `routes.actions({ 'todos.list': { POST: createTodo } })` (never `actions` in an entry: E1505). Links only via `routes.href(id, params?, search?)` (own module's). Action redirect: `return ok(routes.href(...))`.

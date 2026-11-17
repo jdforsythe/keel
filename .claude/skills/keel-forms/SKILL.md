@@ -16,6 +16,7 @@ const f = form(OrderEdit, { initial: order })   // in a component scope (else E1
 </Form>
 ```
 - `Form` is from `@keel/router`; `action` is the target route's `Href` (`routes.href(id, params)`) whose action is bound by `routes.actions({ [id]: { POST } })`. Slot: `error` (no `loading`).
+- A password `s.secret` field: `<Input field={...} type="password" autocomplete="current-password" />` (sign-in) or `"new-password"` (sign-up).
 - `f.field(path)`: typed dotted path (array indexes ok). Handle: `values()`, `errors()`, `pending()` (the one pending state), `reset()`. A `Field` has `name, id, errorId, value(), error(), touched(), set(v), blur(), bind(el)`.
 - Base inputs given `field` call `bind` (name, id, value, `aria-invalid`, `aria-describedby`); for a plain `input` call `field.bind(el)` (returns unbind).
 - Validation is from the schema only: on blur, then each input once an error shows; all on submit. Invalid submit sends nothing and focuses the first invalid field.

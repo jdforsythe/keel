@@ -23,6 +23,7 @@ await r.navigate(routes.href('todos.show', { id }))
 - Labelled inputs: find the id from `r.a11y()` by label, then `fire(id, { type: 'input', value })`.
 - `fire` resolves after effects, resources and actions go quiet (no timers, else `keel.unexpected`).
 - Harness ctx is always sim (`KEEL_SEED`, default 1337). Use `createCtx({ mode: 'sim', seed })`; advance time with `ctx.clock.advance(ms)`; fake the network with `ctx.net.route(new URL('/api/*', location.href).href, req => new Response(...))`.
+- A server log line: `createApp({ log: { format: 'json', write } })` (k.server Log). A saved store: `await ctx.storage.get('keel.store.<id>')` is JSON whose `state` is the store's value.
 - Between tests: `const base = store.snapshot()` and `store.restore(base)` in `afterEach`.
 
 **A11y:** a passing `renderRoute` per page (axe-core, token contrast) makes its `a11y:` claims; E1703/E1804/E1821 fail it. `t.focusOrder()`: ids in tab order.

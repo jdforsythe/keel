@@ -7,7 +7,7 @@ description: "Keel correctness tools and ledger rungs: properties, explore, simu
 
 Spec: `pnpm spec k.testing`, `k.model`, `k.sim`, `k.ledger`, `std.statecharts`.
 
-**Properties:** `await properties(Comp | transaction, { runs: 100, seed })`. Components: no throw, a11y matches, no axe violations, deterministic. Transactions: output parses, every `invariant(store, fn)` holds, `undo` restores. Replay with `KEEL_SEED=<n>`; a failure is E1704 (seed, run, shrunk case). Every export is named in a test.
+**Properties:** `await properties(Comp | transaction, { runs: 100, seed })`. Components: no throw, a11y matches, no axe violations, deterministic. Transactions: output parses, every `invariant(store, fn)` holds, `undo` restores. Replay with `KEEL_SEED=<n>`; a failure is E1704 (seed, run, shrunk case). Every export is named in a test: the ledger credits an item when a passing test's body, or a helper it calls in its own file or a relative import, names it.
 
 **Reachable states and faults:** `explore([tx1, tx2], { from, payloads, depth })` visits every state a store reaches and checks its invariants (E1708 with a replayable snapshot; E1709 `maxStates` reached; E1710 a transaction with no finite domain: give `payloads`); with no options and every transaction named it is the closed form, `proven`. `await simulate(async ({ ctx, run }) => { ... await run() ... }, { runs: 100, seed })` runs a scenario under generated schedules of delays, drops, 503s and offline windows.
 

@@ -15,7 +15,7 @@ export const postTodo = action({ input: TodoDraft, params: ListParams, stores: b
   return r.ok ? ok(null) : err(r.error)
 })
 ```
-Undo one caller's writes: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. `caller` is a hash of the signed cookie (`""` before the first write).
+Undo one caller's writes: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. `caller` is a hash of the signed cookie (`""` with no cookie on a read; a write with none gets a fresh caller, set as a cookie on the response).
 
 An API route's action declares `output` and returns `ok(value)` of its type, and its guards, loaders and actions get `bearer` beside `caller` (keel-api).
 

@@ -51,9 +51,9 @@ if (!minted.ok) return err(minted.error)
 return ok({ token: reveal(minted.value.token) })
 
 // in a handler that checks a presented token
-if (bearer === undefined) return err(denied)
+if (bearer === undefined) return err({ code: 'keel.denied', message: 'No token', data: null })
 const found = credentials(ctx).check(bearer, (id) => rows.find((r) => r.id === id))
-if (!found.ok) return err(found.error)
+if (!found.ok) return err({ code: 'keel.denied', message: 'Unknown token', data: null })
 ```
 
 ## Extension points
