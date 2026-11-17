@@ -11,7 +11,7 @@ Several callers write one server store (k.server Server state), so a client's co
 
 A write that is not concurrent keeps no `base`, so an entry holding `base` is a rebased write. Without `base`, `tx` is as k.store says.
 
-**Write key.** `key` (1 to 64 characters) names one write across retries. When an entry in the kept log holds that `key`, `tx` commits nothing and returns `ok` with the current state; `key` is checked before `base`. The entry keeps `key`. `base` and `key` are entry fields, not `meta`, so `snapshot()` keeps them. A `base` or `key` of the wrong type is `schema.invalid`.
+**Write key.** `key` (1 to 64 characters) names one write across retries. The store keeps `keys`, the `{ name, key }` of its last `logLimit` commits made with a `key` (k.store), oldest first; `undo`, `undoWhere` and folding past `logLimit` or a secret leave it as it is. When `keys` holds the transaction's name with that `key`, `tx` commits nothing and returns `ok` with the current state; the same `key` on another transaction commits as usual. `key` is checked before `base`. The entry keeps `key`. `base` and `key` are entry fields, not `meta`, so `snapshot()` keeps them. `snapshot()` holds `keys`; `restore` sets it (a snapshot without it: its log entries' keys), keeping the latest `logLimit`. A `base`, `key` or `keys` of the wrong type is `schema.invalid`.
 
 **Saves.** After an action's save (k.server), each store it saved is reported to `observe` on the server ctx as `{ kind: 'save', store, head, from }`, in save order; `from` is the store's head before the save. A refused or `err` action reports none. The read-set rule is unchanged: a store the action only read and another request saved since is 409, whatever its transactions declare.
 
@@ -27,8 +27,10 @@ A write that is not concurrent keeps no `base`, so an entry holding `base` is a 
 - A transaction declared without `concurrent` exposes `concurrent` `'reject'`.
 - Under `'reject'`, `tx` with a `base` other than `head()` returns `err` `keel.conflict` with data `{ store, transaction, base, head }` and changes nothing; with `base` equal to `head()` it commits an entry without `base`.
 - Under `'rebase'`, `tx` with a `base` other than `head()` commits on the current state and the entry holds that `base`; an invariant failure is `store.invariant` and commits nothing.
-- `tx` with a `key` that a kept entry holds returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale.
+- `tx` with a `key` that `keys` holds for its transaction returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale.
 - An entry's `base` and `key` survive `snapshot()`, a JSON round trip and `restore`.
 - An action that saves two stores reports two `save` events to an observer of the server ctx, after both are stored, each with its store's new head; a 409 or `err` action reports none.
 - Under sim, after `setOnline(false)`, `online()` is false, `fetch` rejects with a `TypeError`, an open sim response body errors, and an observer gets one `{ kind: 'net', online: false }`; `setOnline(true)` reverses each.
 - Under real with no global `navigator`, `online()` is true.
+- The same `key` on another transaction commits; a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `logLimit` later commits with a `key` have passed it.
+- `keys` survives `snapshot()`, a JSON round trip and `restore`; a snapshot without `keys` restores its log entries' keys.
