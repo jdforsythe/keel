@@ -15,6 +15,8 @@ const failed = (status: number) => err(PutFailed.make({ status }));
 
 function real(): SessionSink {
   const own = createCtx({ mode: "real" });
+  // Only `random` is used: the window listeners its net added go at once.
+  own.dispose();
   return {
     async put(url, session) {
       try {
@@ -43,6 +45,8 @@ function real(): SessionSink {
 
 function shell(): SessionSink {
   const own = createCtx({ mode: "real" });
+  // Only `random` is used: the window listeners its net added go at once.
+  own.dispose();
   return { put: async () => ok(null), taken: () => [], id: () => own.random.id("Session") };
 }
 

@@ -54,7 +54,7 @@ export function fakeStorage() {
 /** An app whose `POST /count` increments `test.count` by one, over `storage`. */
 export function counterApp(storage: Ctx["storage"]) {
   const base = createCtx({ mode: "sim", seed: 1337 });
-  const ctx: Ctx = { clock: base.clock, random: base.random, net: base.net, storage };
+  const ctx: Ctx = { clock: base.clock, random: base.random, net: base.net, storage, dispose: base.dispose };
   const counter = () => {
     const count = store(Count, { n: 0 }, { id: "test.count" });
     const inc = transaction(count, "test.inc", s.object({}), (st) => ({ n: st.n + 1 }));

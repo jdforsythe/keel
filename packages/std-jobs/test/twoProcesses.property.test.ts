@@ -24,7 +24,7 @@ const process2 = (ctx: Ctx, delay: () => number): Ctx => {
     },
     commit: (writes) => shared.commit(writes),
   };
-  return { clock: ctx.clock, random: ctx.random, net: ctx.net, storage };
+  return { clock: ctx.clock, random: ctx.random, net: ctx.net, storage, dispose: ctx.dispose };
 };
 
 test("Two processes over one storage run each of five due jobs once", async () => {

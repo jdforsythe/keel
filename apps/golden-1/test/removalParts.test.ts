@@ -82,7 +82,7 @@ function refusing(ctx: SimCtx, refuse: (writes: readonly StorageWrite[]) => bool
     read: (keys) => s.read(keys),
     commit: async (writes) => (refuse(writes) ? false : s.commit(writes)),
   };
-  return { clock: ctx.clock, random: ctx.random, net: ctx.net, storage };
+  return { clock: ctx.clock, random: ctx.random, net: ctx.net, storage, dispose: ctx.dispose };
 }
 
 /** Microtask turns for runners and jobs to settle; no timers. */
