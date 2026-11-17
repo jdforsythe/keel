@@ -2,7 +2,7 @@
 status: conformance-covered
 
 **API.** App code uses only `mount` and the intrinsics `If`, `For`, `Match`, `Case`, `Boundary` from `@keel/runtime-dom`.
-`mount(Component, el, { ctx?, onError?, mode? })` (generated entry only; the root takes no props) renders a client-only tree into `el`, passing `ctx` as the root component's third argument, and returns `dispose`. `onError` also gets each error the default root Boundary renders. Server-rendered apps never call it; their entry calls `resume` (`@keel/runtime-dom/ops`), which passes `ctx` to every island root. Both take `mode` (k.errors): `'dev'` in a dev build, else `'production'`.
+`mount(Component, el, { ctx?, onError?, mode? })` (generated entry only; the root takes no props) renders a client-only tree into `el`, passing `ctx` as the root component's third argument, and returns `dispose`. `onError` also gets each error the default root Boundary renders. Server-rendered apps' entries call `resume` (`@keel/runtime-dom/ops`), which passes `ctx` to every island root. Both take `mode` (k.errors): `'dev'` only under `keel dev`, else `'production'` (k.deploy).
 
 **Ops.** Compiler-only (k.compiler): `template(html)`, `clone(t)`, `text(node, fn)`, `attr(el, name, fn)`, `prop(el, name, fn)`, `on(target, type, handler)` (`target`: element id or `Element`), `cond`, `list`, `match`, `boundary`, `slot`; `element(tag, fill)` (also k.ui). Each binding is an `effect` in the owning component's scope that writes exactly one DOM location; disposing the scope removes it. `attr` with `null` or `false` removes the attribute; `true` sets it empty. `attr` and `prop` apply the URL policy (k.compiler); `attr` binds nothing for an `on*` name, a `<base>` `href` or a `<meta>` `http-equiv`.
 
