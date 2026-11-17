@@ -883,8 +883,8 @@ const ROWS: readonly Row[] = [
   ["E1801", "raw value where a token is required", "", 'p="12px" -> p="3" (nearest token)', "k.ui"],
   [
     "E1802",
-    "missing a11y-required prop",
-    "Heading level, Image alt, label on inputs, Link and Button text.",
+    "missing or blank a11y-required prop",
+    "Heading level, Image alt, label on inputs, Link and Button text; a blank literal label names nothing.",
     '<Input /> -> <Input label="Email" />',
     "k.ui",
   ],
