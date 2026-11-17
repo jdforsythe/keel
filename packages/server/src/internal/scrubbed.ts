@@ -1,8 +1,8 @@
 import { automatonOf } from "./automatonOf.ts";
 
-const WORD = /[\p{L}\p{N}_]/u;
+const WORD = /[\p{L}\p{N}\p{M}_]/u;
 
-/** Whether the code point starting at `i` of `t` is a letter, digit or `_`. */
+/** Whether the code point starting at `i` of `t` is a letter, digit, combining mark or `_`. */
 const word = (t: string, i: number): boolean =>
   i >= 0 && i < t.length && WORD.test(String.fromCodePoint(t.codePointAt(i) ?? 0));
 

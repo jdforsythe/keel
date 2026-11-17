@@ -204,6 +204,12 @@ describe("the cases the scan broke on", () => {
   it("a 2-character secret is marked only as a whole token", () => {
     expect(one("node code mode", ["81"])).toBe("node code mode");
     expect(one("pin 81 sent", ["81"])).toBe("pin [secret] sent");
+    // A combining mark belongs to the word before it: the same word, precomposed or not, keeps the two letters.
+    expect(one("e\u0301ab x", ["ab"])).toBe("e\u0301ab x");
+    expect(one("\u00e9ab x", ["ab"])).toBe("\u00e9ab x");
+    expect(one("ab\u0301 x", ["ab"])).toBe("ab\u0301 x");
+    // The short value's longer encoded copies are replaced wherever they stand.
+    expect(one("caf%C3%A9 and caf\u00e9", ["\u00e9"])).toBe("caf[secret] and caf\u00e9");
   });
 
   it("two secrets that overlap without one holding the other are marked as one run", () => {
