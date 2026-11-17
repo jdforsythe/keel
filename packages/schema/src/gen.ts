@@ -41,7 +41,7 @@ function arbitrary(node: Node): fc.Arbitrary<unknown> {
     case "optional":
       return arbitrary(node.inner);
     case "secret":
-      return arbitrary(node.inner).map((v) => Secret.of(v));
+      return arbitrary(node.inner).map((v) => Secret.of(v, node.inner));
     case "format": {
       const impl = formats.get(node);
       if (impl === undefined) return arbitrary(node.base);

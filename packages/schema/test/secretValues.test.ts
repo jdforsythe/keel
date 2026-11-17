@@ -3,6 +3,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { Secret } from "../src/Secret.ts";
 import { s } from "../src/index.ts";
+import type { Node } from "../src/internal/Node.ts";
 import { secretValues } from "../src/internal/index.ts";
 
 const parsed = (schema: { parse(x: unknown): { ok: true; value: unknown } | { ok: false } }, x: unknown): unknown => {
@@ -11,6 +12,7 @@ const parsed = (schema: { parse(x: unknown): { ok: true; value: unknown } | { ok
   return r.value;
 };
 const text = s.secret(s.string());
+const json: Node = { kind: "json" };
 
 test("reads a root secret, and secrets in nested objects and arrays in the order they stand", () => {
   expect(secretValues(parsed(text, "root-value"))).toEqual(["root-value"]);
@@ -62,15 +64,15 @@ test("a secret holding an object or an array gives each string and number in it,
   expect(secretValues(parsed(s.secret(s.array(s.string())), ["k1", "", "k2"]))).toEqual(["k1", "k2"]);
 });
 
-test("a secret holding a value that holds itself is read once", () => {
+test("a json secret holding a value that holds itself is read once, keys included", () => {
   const loop: { k: string; self?: unknown } = { k: "inside" };
   loop.self = loop;
-  expect(secretValues(Secret.of(loop))).toEqual(["inside"]);
+  expect(secretValues(Secret.of(loop, json))).toEqual(["k", "inside", "self"]);
 });
 
 test("a huge secret is read up to 1,000,000 values and the read ends", () => {
   const many = Array.from({ length: 1_100_000 }, (_, i) => `v${i}`);
-  const got = secretValues(Secret.of(many));
+  const got = secretValues(Secret.of(many, json));
   expect(got.length).toBe(999_999);
   expect(got[0]).toBe("v0");
 });
@@ -78,7 +80,7 @@ test("a huge secret is read up to 1,000,000 values and the read ends", () => {
 test("a deeply nested secret does not overflow the stack", () => {
   let deep: unknown = "bottom";
   for (let i = 0; i < 200_000; i++) deep = [deep];
-  expect(secretValues(Secret.of(deep))).toEqual(["bottom"]);
+  expect(secretValues(Secret.of(deep, json))).toEqual(["bottom"]);
 });
 
 test("a value that holds itself is read once", () => {

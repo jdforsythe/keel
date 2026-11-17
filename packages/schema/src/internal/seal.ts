@@ -11,7 +11,7 @@ import { variantOf } from "./variantOf.ts";
 export function seal(node: Node, x: unknown): unknown {
   switch (node.kind) {
     case "secret":
-      return Secret.is(x) || x === Secret.marker ? x : Secret.of(seal(node.inner, x));
+      return Secret.is(x) || x === Secret.marker ? x : Secret.of(seal(node.inner, x), node.inner);
     case "optional":
     case "nullable":
       return x === null ? x : seal(node.inner, x);

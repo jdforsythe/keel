@@ -19,7 +19,7 @@ const revealed = (x: unknown): unknown => (Secret.is(x) ? reveal(x) : "not a sec
 
 describe("Secret", () => {
   it("prints only the marker through every conversion", () => {
-    const v = Secret.of("hunter2");
+    const v = Secret.of("hunter2", str);
     expect(Secret.marker).toBe("[secret]");
     expect([String(v), `${v}`, `${v.toString()}`, v.toJSON(), inspect(v), inspect({ v })]).toEqual([
       "[secret]",
@@ -36,9 +36,17 @@ describe("Secret", () => {
     expect(reveal(v)).toBe("hunter2");
   });
   it("is() accepts only real secrets", () => {
-    for (const x of [null, undefined, "[secret]", 1, {}, { toJSON: () => "[secret]" }, structuredClone(Secret.of(1))])
+    for (const x of [
+      null,
+      undefined,
+      "[secret]",
+      1,
+      {},
+      { toJSON: () => "[secret]" },
+      structuredClone(Secret.of(1, str)),
+    ])
       expect(Secret.is(x)).toBe(false);
-    expect(Secret.is(Secret.of(null))).toBe(true);
+    expect(Secret.is(Secret.of(null, str))).toBe(true);
   });
 });
 
@@ -70,7 +78,7 @@ describe("hasSecret", () => {
 
 describe("seal", () => {
   it("wraps raw values, keeps secrets, the marker and null", () => {
-    const kept = Secret.of("a");
+    const kept = Secret.of("a", str);
     expect(seal(secretNode, kept)).toBe(kept);
     expect(seal(secretNode, "[secret]")).toBe("[secret]");
     expect(revealed(seal(secretNode, "a"))).toBe("a");
@@ -110,7 +118,7 @@ describe("s.secret", () => {
     const r = Pw.parse("pw");
     expect(r.ok && reveal(r.value)).toBe("pw");
     expect(Pw.parse("").ok).toBe(false);
-    const bad = Pw.parse(Secret.of(""));
+    const bad = Pw.parse(Secret.of("", str));
     expect(!bad.ok && bad.error.data.issues).toEqual([{ path: [], rule: "required" }]);
     const wrong = Pw.parse(5);
     expect(!wrong.ok && wrong.error.data.issues).toEqual([{ path: [], rule: "type" }]);
@@ -128,9 +136,9 @@ describe("s.secret", () => {
   });
   it("encode gives the marker for raw and sealed values; toJson never reads the value", () => {
     expect(Pw.encode("raw")).toBe("[secret]");
-    expect(Pw.encode(Secret.of("sealed"))).toBe("[secret]");
-    expect(toJson(secretNode, Secret.of("x"))).toBe("[secret]");
-    expect(() => Pw.encode(Secret.of(""))).toThrow();
+    expect(Pw.encode(Secret.of("sealed", str))).toBe("[secret]");
+    expect(toJson(secretNode, Secret.of("x", str))).toBe("[secret]");
+    expect(() => Pw.encode(Secret.of("", str))).toThrow();
   });
   it("decodeStrings reads the inner type, including inside records of secrets", () => {
     const F = s.object({

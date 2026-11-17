@@ -118,7 +118,7 @@ describe("member unions (anyOf)", () => {
 
   it("encodes through the first accepting member", () => {
     expect(Mixed.encode(3)).toBe(3);
-    expect(Mixed.encode(Secret.of("pw"))).toBe("[secret]");
+    expect(Mixed.encode(Secret.of("pw", { kind: "string", min: 0, max: undefined }))).toBe("[secret]");
     expect(Mixed.encode({ a: false, extra: 1 })).toEqual({ a: false });
     expect(toJson(s.union([s.object({ a: s.int() }), s.object({ b: s.int() })]).node, { a: 1, b: 2 })).toEqual({
       a: 1,
