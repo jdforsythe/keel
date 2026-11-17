@@ -72,3 +72,4 @@ Ideas that come up outside the current plans. An idea is built at once only when
 - `Number.MAX_SAFE_INTEGER` and `Number.MIN_SAFE_INTEGER` in `prove`'s fragment, so a guard can name the edge instead of a schema `max`.
 - An app-chosen token prefix as a second `std` key of `@keel/std-credentials`; today every token starts `keel_`.
 - `r` and `p` settable in the `@keel/std-credentials` cost; today only `ln` is.
+- `prove` from any thread: Z3 in a child process that `prove` starts, so a runner on worker threads can prove; today a worker call is refused (E1721). Costs a process start and a serialised query per call.

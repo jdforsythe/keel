@@ -12,6 +12,7 @@ test('board invariants are inductive', () => prove([addList(b), addTodo(b), togg
 - E1716 a counterexample: the state (or `initial`) and the payload, as JSON on the next line. The state may be unreachable; then the invariant is true but not inductive: strengthen it, or `explore`. The JSON is `{"transaction","state","payload"}` (`{"state"}` for `initial`); a string is the model's literal, else `a`, `b`, ... in order of first appearance. When only an integer range breaks (Sorts, Obligations), the first line is `<tx> leaves the safe integer range from this state; bound the schema or guard it`.
 - E1717 no verdict within `rlimit` (default 10,000,000 Z3 resource units, a count rather than time, so a verdict repeats).
 - E1718 the optional peer dependency `z3-solver` is not installed (fix adds it to `devDependencies`).
+- E1721 `prove` called in a worker thread, where Z3 can abort or hang (fix: vitest `pool: "forks"`).
 
 **Fragment.** Each transaction and invariant function is read from its source (`fn.toString()`, parsed with oxc) and translated whole:
 - Parameters, `const`, `return`, `if`/`else`, `?:`, `&&`, `||`, `!`, `===`, `!==`, `<`, `<=`, `>`, `>=`, `+` and `-`, `*` by a numeric literal, literals. Options both `undefined`, or both `null`, are `===` whatever their sorts.
@@ -35,3 +36,4 @@ Anything else is E1715: calls to other functions, identifiers other than paramet
 - Two runs give byte-equal verdicts and counterexamples.
 - `rlimit: 1` rejects E1717 where the default proves.
 - Without `z3-solver`, `prove` rejects E1718.
+- In a worker thread, `prove` rejects E1721.

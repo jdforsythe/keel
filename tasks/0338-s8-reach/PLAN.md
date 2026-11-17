@@ -12,6 +12,7 @@
 5. [ ] Exit proof eval.
 
 ## Decisions
+- D27, 0699 AND RFC 0106 (2026-11-17, day; for the user to confirm or reverse): `prove` in a worker thread rejects E1721 before any other check and before Z3 loads; no option to allow it. Accepted by the orchestrator under WORKFLOW RFC defaults 6 and 7; ADR-0129. Reproduced first: `prove.overlap.test.ts` under `vitest run --pool=threads` hung past a 150 s bound (killed, orphans 0); `prove.board.test.ts` passed twice under threads in 1 s, so a worker proof usually resolves and sometimes hangs. k.prove 1,451 to 1,485 tokens. Z3 in a child process is in `tasks/FUTURE.md`. The user is on battery from about midday: no root gate or long run without need; single bounded files only.
 - D1 (user, 2026-11-10): design RFCs for later stages run ahead; implementation runs in stage order.
 
 - D2 (user, 2026-11-11): API shapes accepted as a set (k.persist `read`/`commit` on ctx.storage and `createCtx({ drivers })`; saves as one commit; std-db SQLite via node:sqlite and Postgres via pg with stored-schema checks through `check --base`; std-workflows as a chart run per instance over std-jobs; std-capacitor and std-tauri shells with generated read-only files via `keel build --target`; k.prove Z3 induction proofs recorded as `proven`, starting with a spike).
