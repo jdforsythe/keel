@@ -19,11 +19,18 @@ function literalText(node: Expression | null | undefined): string | null {
 
 const blank = (text: string | null): boolean => text !== null && /^\s*$/.test(text);
 
+/** A JSX attribute string with its numeric and `&nbsp;` character references decoded. */
+const decode = (text: string): string =>
+  text.replace(/&(?:#(x[\da-f]+|\d+)|nbsp);/gi, (all, n: string | undefined) => {
+    const code = n === undefined ? 160 : Number(n[0] === "x" || n[0] === "X" ? `0${n}` : n);
+    return code > 0x10ffff ? all : String.fromCodePoint(code);
+  });
+
 /** The value of a `label` JSX attribute as a literal text, else null. */
 function attributeText(a: JSXAttribute): string | null {
   const v = a.value;
   if (v === null || v === undefined) return null;
-  if (v.type === "Literal") return typeof v.value === "string" ? v.value : null;
+  if (v.type === "Literal") return typeof v.value === "string" ? decode(v.value) : null;
   if (v.type === "JSXExpressionContainer" && v.expression.type !== "JSXEmptyExpression") {
     return literalText(v.expression);
   }
@@ -33,7 +40,7 @@ function attributeText(a: JSXAttribute): string | null {
 /**
  * E1802 (k.a11y): a blank literal `label` (`""` or white space; a string, a template without substitutions, in a
  * JSX attribute or in the object passed to a call) on `Box`, `Input`, `TextArea`, `Select` or `Checkbox` from
- * `@keel/ui`, aliases followed. A computed `label` is unchecked. No fix: the name is the author's.
+ * `@keel/ui`, aliases and a namespace import followed. A computed `label` is unchecked. No fix: the name is the author's.
  */
 export const blankLabel: RuleDef = {
   code: "E1802",
@@ -47,12 +54,23 @@ export const blankLabel: RuleDef = {
     if (!isAppPath(file.path)) return [];
     const locals = new Map<string, string>();
     for (const name of ELEMENTS) for (const local of localNames(ast, name, "@keel/ui")) locals.set(local, name);
-    if (locals.size === 0) return [];
+    const spaces = new Set<string>();
+    for (const st of ast.body)
+      if (st.type === "ImportDeclaration" && st.source.value === "@keel/ui")
+        for (const sp of st.specifiers) if (sp.type === "ImportNamespaceSpecifier") spaces.add(sp.local.name);
+    if (locals.size === 0 && spaces.size === 0) return [];
+    const member = (o: string, p: string): string | undefined =>
+      spaces.has(o) && ELEMENTS.includes(p) ? p : undefined;
     const out: Finding[] = [];
     new Visitor({
       JSXOpeningElement: (o) => {
-        if (o.name.type !== "JSXIdentifier") return;
-        const name = locals.get(o.name.name);
+        const n = o.name;
+        const name =
+          n.type === "JSXIdentifier"
+            ? locals.get(n.name)
+            : n.type === "JSXMemberExpression" && n.object.type === "JSXIdentifier"
+              ? member(n.object.name, n.property.name)
+              : undefined;
         if (name === undefined) return;
         for (const a of o.attributes) {
           if (a.type !== "JSXAttribute" || a.name.type !== "JSXIdentifier" || a.name.name !== "label") continue;
@@ -60,8 +78,16 @@ export const blankLabel: RuleDef = {
         }
       },
       CallExpression: (n) => {
-        if (n.callee.type !== "Identifier") return;
-        const name = locals.get(n.callee.name);
+        const c = n.callee;
+        const name =
+          c.type === "Identifier"
+            ? locals.get(c.name)
+            : c.type === "MemberExpression" &&
+                !c.computed &&
+                c.object.type === "Identifier" &&
+                c.property.type === "Identifier"
+              ? member(c.object.name, c.property.name)
+              : undefined;
         const arg = n.arguments[0];
         if (name === undefined || arg === undefined || arg.type !== "ObjectExpression") return;
         for (const p of arg.properties) {

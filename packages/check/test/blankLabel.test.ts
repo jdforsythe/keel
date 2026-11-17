@@ -49,3 +49,16 @@ describe("E1802 blank label", () => {
     );
   });
 });
+
+describe("E1802 namespace import and character references", () => {
+  const NS = "import * as ui from '@keel/ui'\n";
+  it("follows a namespace import in JSX and in a call", () => {
+    const src = `${NS}export const A = () => <ui.Box as="nav" label="">x</ui.Box>\nexport const b = ui.Input({ label: ' ' })\nexport const c = () => <ui.Box as="nav" label="ok" />\n`;
+    expect(out([f("modules/a/A.tsx", src)])).toHaveLength(2);
+  });
+
+  it("reads a label of only white space character references as blank", () => {
+    const src = `${UI}export const A = () => <Box as="nav" label="&#32;" />\nexport const B = () => <Box as="nav" label="&#x20;&nbsp;" />\nexport const C = () => <Box as="nav" label="&#65;" />\nexport const D = () => <Box as="nav" label="&amp;" />\n`;
+    expect(out([f("modules/a/A.tsx", src)])).toHaveLength(2);
+  });
+});
