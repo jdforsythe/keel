@@ -1,3 +1,4 @@
+import { isMainThread } from "node:worker_threads";
 import type { Transaction } from "@keel/store";
 import { sourcesOf } from "@keel/store/internal";
 import type { ArrowFunctionExpression, Function as FunctionNode } from "oxc-parser";
@@ -137,13 +138,15 @@ async function step<T>(tools: Tools, t: Transaction<T, unknown>, rlimit: number)
  * Prove a store's invariants by induction with Z3 (k.prove): `initial` passes `check`, and each transaction maps every
  * state that parses and satisfies the invariants, with every payload that parses, to such a state. Resolves with the
  * transactions proven and the Z3 version. Rejects E1715 (outside the fragment, or a schema without a sort), E1716 (a
- * counterexample as JSON on the second line), E1717 (no verdict within `rlimit`), E1718 (`z3-solver` not installed).
+ * counterexample as JSON on the second line), E1717 (no verdict within `rlimit`), E1718 (`z3-solver` not installed),
+ * E1721 (called in a worker thread, before any other check).
  * Calls take turns: the Z3 work of one starts when the call before it has settled.
  */
 export async function prove<T>(
   transactions: readonly Transaction<T, unknown>[],
   options: ProveOptions = {},
 ): Promise<Proof> {
+  if (!isMainThread) throw proveError("E1721", "prove runs on the main thread; this call is in a worker thread", {});
   const st = transactions[0]?.store;
   const names = transactions.map((t) => t.name);
   const rlimit = options.rlimit ?? RLIMIT;

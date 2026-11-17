@@ -1,12 +1,12 @@
 # RFC 0106: `prove` refuses a call in a worker thread (E1721)
 
-Status: accepted by the orchestrator under WORKFLOW RFC defaults 6 and 7 (2026-11-17), for the user to confirm or reverse. For backlog 0699. ADR-0129 records it.
+Status: accepted and built; accepted by the orchestrator under WORKFLOW RFC defaults 6 and 7 (2026-11-17), for the user to confirm or reverse. For backlog 0699. ADR-0129 records it.
 
 ## Decisions
 - D1: `prove` called where `isMainThread` of `node:worker_threads` is `false` rejects E1721 before any other check and before Z3 loads. The message is `prove runs on the main thread; this call is in a worker thread` (default 6: a guard is possible, so the kernel refuses instead of the docs warning).
 - D2: one new code, E1721, in k.prove's rule list and in the explanations catalog, with the fix `test: { pool: "forks" }`. No new API and no option to switch the refusal off: a second way to call `prove` that can hang is no way (default 2).
-- D3: k.prove gains one rule bullet and one conformance bullet, 1,451 to about 1,490 tokens of 1,500.
-- D4: `@keel/check` holds the catalog row and has 62 B of room; it is re-based by one 0.25kb step if the row takes it over (default 7).
+- D3: k.prove gains one rule bullet and one conformance bullet, 1,451 to 1,485 tokens of 1,500.
+- D4: `@keel/testing/prove` measures 8,255 B gzip with the guard against 8kb (8,192); re-based one step to 8.25kb (8,448), 193 B of room. `@keel/check` holds the catalog row inside its 53.5kb (default 7).
 
 ## Problem
 Measured on `jdforsythe/test-impl` at `77a9112d`, Node 24.19.0, `z3-solver` 5.3.3.
@@ -43,13 +43,13 @@ k.prove Conformance, last bullet:
 ```
 
 ## Conformance diff
-New `packages/testing/conformance/prove-e1721.test.ts`: a `node:worker_threads` worker calls `prove` with transactions that prove on the main thread, and the call rejects with code E1721; the same call on the main thread resolves. No existing conformance file changes.
+New `packages/testing/conformance/prove-e1721.test.ts` with its worker file `prove-e1721.worker.ts`: a `node:worker_threads` worker calls `prove` with transactions that prove on the main thread, and the call rejects with code E1721; the same call on the main thread resolves. No existing conformance file changes.
 
 ## Migration
 An app or runner that calls `prove` in a worker thread now gets E1721 on every run instead of a pass on most. Set the runner to processes: vitest `test: { pool: "forks" }` (its default). No golden app changes: each runs its proofs under forks.
 
 ## Token impact
-k.prove 1,451 to about 1,490 of 1,500. No other section changes. The map is unchanged.
+k.prove 1,451 to 1,485 of 1,500. No other section changes. The map is unchanged.
 
 ## Known limits
 The guard reads the thread, not the runtime: a main thread of a runtime other than Node is outside k.prove's API line and outside this check.

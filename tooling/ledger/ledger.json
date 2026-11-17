@@ -2,10 +2,10 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1052,
+    "example": 1053,
     "probabilistic": 308,
     "exhaustive": 15,
-    "proven": 51,
+    "proven": 52,
     "monitored": 4
   },
   "mutation": {
@@ -63,7 +63,7 @@
         "threshold": 80
       },
       "testing": {
-        "score": 86.63,
+        "score": 86.31,
         "threshold": 70
       },
       "ui": {
@@ -12066,6 +12066,10 @@
     {
       "item": "k.prove#9",
       "rung": "example"
+    },
+    {
+      "item": "k.prove#10",
+      "rung": "proven"
     },
     {
       "item": "k.reactive#1",

@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { explain } from "../src/explain.ts";
 
-test.each(["E1715", "E1716", "E1717", "E1718"])("%s has an explanation within the token bound", (code) => {
+test.each(["E1715", "E1716", "E1717", "E1718", "E1721"])("%s has an explanation within the token bound", (code) => {
   const text = explain(code);
   expect(text).toContain(code);
   expect(text).not.toContain("not a known code");

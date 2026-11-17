@@ -1,4 +1,4 @@
-/** A k.prove failure: an `Error` with `code` (E1715 to E1718) and `data`. */
+/** A k.prove failure: an `Error` with `code` (E1715 to E1718, E1721) and `data`. */
 export function proveError<D>(
   code: string,
   message: string,

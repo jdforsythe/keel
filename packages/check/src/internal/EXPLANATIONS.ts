@@ -818,6 +818,13 @@ const ROWS: readonly Row[] = [
     "k.testing",
   ],
   [
+    "E1721",
+    "prove: called in a worker thread",
+    "Z3 can abort or hang when its caller is a worker; run the test in a process.",
+    'test: { pool: "forks" }',
+    "k.prove",
+  ],
+  [
     "E1751",
     "TS type error with no Keel rule code (message starts with the TS code)",
     "",
