@@ -328,13 +328,14 @@ export const probeLinks = manifest({
   "link.ghost": { path: "/nowhere", component: page("link.ghost") },
 });
 const codeOfThrown = (e: unknown): unknown => (typeof e === "object" && e !== null && "code" in e ? e.code : "no-code");
-/** The `code` of what rendering the Form inside the router threw (thrown out of mount, or shown by the router's error boundary), or null when it rendered. */
+/** The `code` of what rendering the Form inside the router threw (thrown out of mount, or shown by the router's error boundary, which shows the message in `mode: "dev"`), or null when it rendered. */
 export async function probeForm(method: unknown, href: Href): Promise<unknown> {
   probeKnob.method = method;
   probeKnob.action = href;
   const router = createRouter(probeRoutes, {
     ctx: createCtx({ mode: "sim", seed: SEED }),
     history: memoryHistory("/probe"),
+    mode: "dev",
   });
   const host = document.createElement("div");
   document.body.append(host);

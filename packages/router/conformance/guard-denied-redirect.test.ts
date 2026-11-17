@@ -84,7 +84,7 @@ describe("k.guards", () => {
     router.dispose();
     host.remove();
   });
-  it("a guard redirect to a route with a param the matched route lacks is E1508 (shown as in guard-redirect-loop-e1508.test.ts: an alert whose text contains E1508)", async () => {
+  it("a guard redirect to a route with a param the matched route lacks is E1508 (shown as in guard-redirect-loop-e1508.test.ts: with mode dev, an alert whose text contains E1508)", async () => {
     const Id = s.object({ id: s.string({ min: 1, max: 8 }) });
     const Denied = s.error("keel.denied", s.object({}));
     const page = (): Node => document.createElement("section");
@@ -96,7 +96,7 @@ describe("k.guards", () => {
         guard: guard({ redirect: "w.login" }, async () => err(Denied.make({}))),
       },
     });
-    const router = createRouter(r, { ctx: createCtx({ mode: "sim", seed: SEED }), history: memoryHistory("/") });
+    const router = createRouter(r, { ctx: createCtx({ mode: "sim", seed: SEED }), history: memoryHistory("/"), mode: "dev" });
     const host = document.createElement("div");
     document.body.append(host);
     const off = mount(router.App, host);
