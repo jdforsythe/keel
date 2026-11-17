@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 984,
+    "example": 1052,
     "probabilistic": 308,
     "exhaustive": 15,
     "proven": 51,
@@ -15,7 +15,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 67.66,
+        "score": 79.56,
         "threshold": 70
       },
       "compiler": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 82.64,
+        "score": 83.49,
         "threshold": 70
       },
       "services": {
@@ -1179,42 +1179,42 @@
       {
         "file": "packages/cli/src/internal/a11yClaims.ts",
         "sha": "b84027617729a3b799cecbb19ca5ceef0cc4a3d9ea6fa4576f6a3773b26577e3",
-        "killed": 47,
-        "survived": 28,
+        "killed": 53,
+        "survived": 22,
         "noCoverage": 3,
-        "score": 60.26
+        "score": 67.95
       },
       {
         "file": "packages/cli/src/internal/a11yFindings.ts",
         "sha": "ea199544028f34b4e602767cb01dd3d9e41706000177a2be53e2b1d1e6d0f6dd",
-        "killed": 22,
+        "killed": 23,
         "survived": 16,
-        "noCoverage": 3,
-        "score": 53.66
+        "noCoverage": 2,
+        "score": 56.1
       },
       {
         "file": "packages/cli/src/internal/a11yReport.ts",
         "sha": "7ba183f07aba43a5bd05d9c476665129d195aa068a17af7c1d6ee05716ba7b36",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 58,
-        "score": 0
+        "killed": 41,
+        "survived": 15,
+        "noCoverage": 2,
+        "score": 70.69
       },
       {
         "file": "packages/cli/src/internal/a11yRuleMap.ts",
         "sha": "90cc488e150cc59b899e0ac9d34c22c68c2c97fb2190f39afcd624da7e1783f9",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 40,
-        "score": 0
+        "killed": 34,
+        "survived": 3,
+        "noCoverage": 3,
+        "score": 85
       },
       {
         "file": "packages/cli/src/internal/a11yRuns.ts",
         "sha": "dbbfd6fe2a9bfb8d7e859fc64af1f8ef9bb27fb1b80e93e9a4abac30c95b7f48",
-        "killed": 19,
-        "survived": 13,
-        "noCoverage": 15,
-        "score": 40.43
+        "killed": 24,
+        "survived": 9,
+        "noCoverage": 14,
+        "score": 51.06
       },
       {
         "file": "packages/cli/src/internal/applyWrites.ts",
@@ -1227,18 +1227,18 @@
       {
         "file": "packages/cli/src/internal/auditAdvisories.ts",
         "sha": "2bb32adff0678306302015606f5906c770255bbb5492d1b60a54c4746280739f",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 50,
-        "score": 0
+        "killed": 41,
+        "survived": 3,
+        "noCoverage": 6,
+        "score": 82
       },
       {
         "file": "packages/cli/src/internal/baseInput.ts",
         "sha": "4f8687c3264f0521d4df147c4949b60b0515cb1ef979d5e4becb13de9a580a7d",
-        "killed": 29,
-        "survived": 6,
+        "killed": 30,
+        "survived": 5,
         "noCoverage": 0,
-        "score": 82.86
+        "score": 85.71
       },
       {
         "file": "packages/cli/src/internal/buildCommand.ts",
@@ -1259,26 +1259,26 @@
       {
         "file": "packages/cli/src/internal/bundleLine.ts",
         "sha": "df483fa1e727abb030cd8f400212085fe45e3f7f988e619d96fe297dd9544aa7",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 5,
-        "score": 0
+        "killed": 4,
+        "survived": 1,
+        "noCoverage": 0,
+        "score": 80
       },
       {
         "file": "packages/cli/src/internal/bundleVerify.ts",
         "sha": "b2bf43dc0e96e14d3a49665b3705eac968901a4cca3d1bf2ab0f0d749243dfff",
-        "killed": 113,
-        "survived": 49,
-        "noCoverage": 22,
-        "score": 61.41
+        "killed": 162,
+        "survived": 18,
+        "noCoverage": 4,
+        "score": 88.04
       },
       {
         "file": "packages/cli/src/internal/bundleWrite.ts",
         "sha": "34f3685df7c2b7596c693b5faf43d2b698a8b525742498a2589c60f464cce494",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 181,
-        "score": 0
+        "killed": 121,
+        "survived": 41,
+        "noCoverage": 19,
+        "score": 66.85
       },
       {
         "file": "packages/cli/src/internal/canonicalJson.ts",
@@ -1347,10 +1347,10 @@
       {
         "file": "packages/cli/src/internal/cspText.ts",
         "sha": "58351fa58113b09b6137d48465d6e9bd8827b0a576ba2f53938c502db6c85a4e",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 13,
-        "score": 0
+        "killed": 10,
+        "survived": 3,
+        "noCoverage": 0,
+        "score": 76.92
       },
       {
         "file": "packages/cli/src/internal/defaultMode.ts",
@@ -1387,10 +1387,10 @@
       {
         "file": "packages/cli/src/internal/depsReport.ts",
         "sha": "ff7cf8ef647ed677efd56be25d3f529be6cc84faa886cdece7cceaa07a0169b3",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 162,
-        "score": 0
+        "killed": 102,
+        "survived": 39,
+        "noCoverage": 21,
+        "score": 62.96
       },
       {
         "file": "packages/cli/src/internal/devPort.ts",
@@ -1451,10 +1451,10 @@
       {
         "file": "packages/cli/src/internal/evidenceKey.ts",
         "sha": "758aea933f527d8d902311950dc5eb2a32fc0717faa74e16340bbb82056911b5",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 21,
-        "score": 0
+        "killed": 18,
+        "survived": 3,
+        "noCoverage": 0,
+        "score": 85.71
       },
       {
         "file": "packages/cli/src/internal/execute.ts",
@@ -1507,18 +1507,18 @@
       {
         "file": "packages/cli/src/internal/gitSource.ts",
         "sha": "3b665233e8e6e5893c505fce99d8937bc383a4ab522b769e7a50704e998963af",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 52,
-        "score": 0
+        "killed": 45,
+        "survived": 7,
+        "noCoverage": 0,
+        "score": 86.54
       },
       {
         "file": "packages/cli/src/internal/hashOf.ts",
         "sha": "a5f3d643733a30b52fda8183c38596b9e9226714fd954961f517f6a46756fa8d",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 7,
-        "score": 0
+        "killed": 1,
+        "survived": 6,
+        "noCoverage": 0,
+        "score": 14.29
       },
       {
         "file": "packages/cli/src/internal/hostBuild.ts",
@@ -1579,10 +1579,10 @@
       {
         "file": "packages/cli/src/internal/isSchemaNode.ts",
         "sha": "b10afdb9cb222c59f1152164388d5449cb2e428718497704e4d5a8e1dfae861b",
-        "killed": 28,
-        "survived": 20,
-        "noCoverage": 56,
-        "score": 26.92
+        "killed": 104,
+        "survived": 0,
+        "noCoverage": 0,
+        "score": 100
       },
       {
         "file": "packages/cli/src/internal/issueDiags.ts",
@@ -1603,18 +1603,18 @@
       {
         "file": "packages/cli/src/internal/keelModule.ts",
         "sha": "54d2c914e176fceb5a5380827d44d9c92e4eb871488618c435f12b0c391a560a",
-        "killed": 0,
-        "survived": 4,
+        "killed": 4,
+        "survived": 0,
         "noCoverage": 3,
-        "score": 0
+        "score": 57.14
       },
       {
         "file": "packages/cli/src/internal/keelVersions.ts",
         "sha": "88cd5e6dd295a1159593f4a847f4d729d97b71a42dc8473b5c8700a738b759a2",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 22,
-        "score": 0
+        "killed": 12,
+        "survived": 10,
+        "noCoverage": 0,
+        "score": 54.55
       },
       {
         "file": "packages/cli/src/internal/kernelFormatters.ts",
@@ -1635,10 +1635,10 @@
       {
         "file": "packages/cli/src/internal/ledgerCommand.ts",
         "sha": "2e45ab9decf3496e90c50a6be52202394e36aa060beea5156f38b01bfaf4c2c5",
-        "killed": 254,
-        "survived": 80,
-        "noCoverage": 37,
-        "score": 68.46
+        "killed": 342,
+        "survived": 25,
+        "noCoverage": 4,
+        "score": 92.18
       },
       {
         "file": "packages/cli/src/internal/loadStd.ts",
@@ -1787,10 +1787,10 @@
       {
         "file": "packages/cli/src/internal/piiReport.ts",
         "sha": "13dabab8449268481412c4a0ce4b6d43def6e221473ca0d871602290fdb89ccc",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 67,
-        "score": 0
+        "killed": 48,
+        "survived": 11,
+        "noCoverage": 8,
+        "score": 71.64
       },
       {
         "file": "packages/cli/src/internal/portBusy.ts",
@@ -1827,18 +1827,18 @@
       {
         "file": "packages/cli/src/internal/projectFileModule.ts",
         "sha": "8d7b737a2bb7db04e7ca9da059777e0ed64e1819860860024e469b5837322f2e",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 3,
-        "score": 0
+        "killed": 2,
+        "survived": 1,
+        "noCoverage": 0,
+        "score": 66.67
       },
       {
         "file": "packages/cli/src/internal/projectFiles.ts",
         "sha": "7296644bd8cbfc79f43be4e80a4ca465eb7c6987b77aefd8a5498af5502d7446",
-        "killed": 15,
-        "survived": 1,
+        "killed": 12,
+        "survived": 4,
         "noCoverage": 0,
-        "score": 93.75
+        "score": 75
       },
       {
         "file": "packages/cli/src/internal/projectTopology.ts",
@@ -1971,10 +1971,10 @@
       {
         "file": "packages/cli/src/internal/securityReport.ts",
         "sha": "45ebbb8f8495bb4a9735de067e1cd19c2e077f291812df87455e0b24dead792d",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 60,
-        "score": 0
+        "killed": 51,
+        "survived": 9,
+        "noCoverage": 0,
+        "score": 85
       },
       {
         "file": "packages/cli/src/internal/serveStream.ts",
@@ -1995,10 +1995,10 @@
       {
         "file": "packages/cli/src/internal/shellPolicy.ts",
         "sha": "f456e9bd0945174d4d2ab2d017fe83030c0a991b8c1c7601f0911676b3f5f0f6",
-        "killed": 13,
-        "survived": 17,
+        "killed": 1,
+        "survived": 29,
         "noCoverage": 0,
-        "score": 43.33
+        "score": 3.33
       },
       {
         "file": "packages/cli/src/internal/sniffFormat.ts",
@@ -2059,18 +2059,18 @@
       {
         "file": "packages/cli/src/internal/surfaceOf.ts",
         "sha": "f0521e84805d9645502cff4d3ad940efe2e9db688419a0907ae072dad6c909bc",
-        "killed": 86,
-        "survived": 33,
+        "killed": 88,
+        "survived": 31,
         "noCoverage": 3,
-        "score": 70.49
+        "score": 72.13
       },
       {
         "file": "packages/cli/src/internal/surfaceRun.ts",
         "sha": "479e716bcb3304cdd1936d2f36a3492c97da965ee1e7a81cf14d636a8afa0bd2",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 160,
-        "score": 0
+        "killed": 85,
+        "survived": 46,
+        "noCoverage": 29,
+        "score": 53.13
       },
       {
         "file": "packages/cli/src/internal/testCommand.ts",
@@ -2099,10 +2099,10 @@
       {
         "file": "packages/cli/src/internal/titleHeader.ts",
         "sha": "7a066799cce3de0f55af4b38101d35426eea0f8ddd5fcc0f9df2ed611f6b25c2",
-        "killed": 0,
+        "killed": 8,
         "survived": 0,
-        "noCoverage": 8,
-        "score": 0
+        "noCoverage": 0,
+        "score": 100
       },
       {
         "file": "packages/cli/src/internal/toJsonSchema.ts",
@@ -2275,10 +2275,10 @@
       {
         "file": "packages/cli/src/shell/shellPlan.ts",
         "sha": "b2d8096a3aa4e801492a7ca7a2b47e6288b9f44e263bafa11229c542a6e27924",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 76,
-        "score": 0
+        "killed": 70,
+        "survived": 3,
+        "noCoverage": 3,
+        "score": 92.11
       },
       {
         "file": "packages/cli/src/shell/toolError.ts",
@@ -2291,10 +2291,10 @@
       {
         "file": "packages/cli/src/shell/toolchain.ts",
         "sha": "1df631151eaa30f04198ad7753437a675a5f5f50b13683256ae0cd425b0eecd4",
-        "killed": 96,
-        "survived": 36,
+        "killed": 102,
+        "survived": 30,
         "noCoverage": 3,
-        "score": 71.11
+        "score": 75.56
       },
       {
         "file": "packages/cli/src/shell/versionOf.ts",
@@ -14143,15 +14143,15 @@
     },
     {
       "item": "a11y:recipes.catalog#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.3.2",
@@ -14159,43 +14159,43 @@
     },
     {
       "item": "a11y:recipes.catalog#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.4.3",
@@ -14203,35 +14203,35 @@
     },
     {
       "item": "a11y:recipes.catalog#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#4.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.3.2",
@@ -14239,11 +14239,11 @@
     },
     {
       "item": "a11y:recipes.index#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.4.3",
@@ -14251,31 +14251,31 @@
     },
     {
       "item": "a11y:recipes.index#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.4.3",
@@ -14283,19 +14283,19 @@
     },
     {
       "item": "a11y:recipes.index#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#4.1.2",
@@ -14303,15 +14303,15 @@
     },
     {
       "item": "a11y:recipes.new#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.3.2",
@@ -14319,11 +14319,11 @@
     },
     {
       "item": "a11y:recipes.new#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.4.3",
@@ -14331,31 +14331,31 @@
     },
     {
       "item": "a11y:recipes.new#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.4.3",
@@ -14363,19 +14363,19 @@
     },
     {
       "item": "a11y:recipes.new#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#4.1.2",
@@ -14463,15 +14463,15 @@
     },
     {
       "item": "a11y:recipes.show#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.3.2",
@@ -14479,43 +14479,43 @@
     },
     {
       "item": "a11y:recipes.show#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.4.3",
@@ -14523,23 +14523,23 @@
     },
     {
       "item": "a11y:recipes.show#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#4.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:inspector.index#1.1.1",
