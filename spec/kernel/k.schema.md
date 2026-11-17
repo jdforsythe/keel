@@ -11,7 +11,7 @@ Primitives: `string` (`{ min, max }`; with `min` >= 1, `''` or only whitespace f
 
 **Format types.** `s.format(name, base, { check, gen: { from, map } })` narrows `base` by a pure `check(v): boolean` (a throw is false) and brands its type `Format<T, name>`. `parse` runs `base`, then `check`; false fails with rule `format` at that path. `encode` and JSON Schema are `base`'s (JSON Schema adds `format: name`); `decodeStrings` coerces as `base` does and then parses the format, so a value `check` refuses is a `format` issue; `doc()` is `name`; `gen` maps `gen(from)` through `map`, keeping values `parse` accepts. The node is `{ kind: 'format', name, base }`; `check` and `gen` stay in memory, so a serialized node keeps the name.
 
-**Derivations.** `User.parse(x): Result<User, SchemaError>` validates any input, also the JSON `User.encode(v)` gives · `gen(User)` fast-check arbitrary (`import { gen } from '@keel/schema/gen'`) · `User.doc()`.
+**Derivations.** `User.parse(x): Result<User, SchemaError>` validates any input, also the JSON `User.encode(v)` gives · `gen(User)` fast-check arbitrary (`import { gen } from '@keel/schema/gen'`) · `User.doc()`. For `s.secret` (k.privacy), `decodeStrings` reads the inner type, `gen` wraps a generated inner value and `doc()` is `secret<T>`. Pure, for `.pii()` marks: `piiPaths(schema)` lists `{ path, class }` per marked leaf in declaration order, `path` dotted with `*` for an array item or record value, the class its nearest mark's; `piiValues(schema, value)` gives, for a valid encoded value, each non-empty string and number (as `String()`) under a marked path, a marked record's keys and a marked open object's undeclared keys and values.
 
 `decodeStrings(FormData | URLSearchParams | Record<string, string | string[]>)` (object schemas) coerces string input: numbers from numeric strings; booleans from `true|on|1` / `false|off|0`, absent boolean is false; for an optional key `''` is absent, as is only whitespace for a `string` with `min` >= 1; arrays from repeated keys or `key[]`; nested objects by dotted keys; records from the remaining prefixed keys; literal/enum compared as strings. `parse` rejects own `__proto__`, `constructor`, `prototype` keys; `pathToString(path)` gives `users.0.name`.
 
@@ -28,6 +28,9 @@ Primitives: `string` (`{ min, max }`; with `min` >= 1, `''` or only whitespace f
 - Generator produces only valid values.
 - Parse rejects every invalid shape in the fixture set.
 - Branded IDs are not assignable across brands.
+- For every generated schema with marked nodes, `parse`, `encode`, `decodeStrings` and `gen` give what the unmarked schema gives.
+- `piiPaths` lists each marked leaf once with its class, an array item as `*`, and every leaf under a marked object.
+- For every generated value of a fixture schema, `piiValues` returns exactly the non-empty strings and the numbers under marked paths.
 - For every generated valid value of an object schema of primitives, encoding to URLSearchParams then decodeStrings returns an equal value.
 - For number and int with bounds, every generated value is within bounds and parse rejects values outside with rule min or max.
 - Every generated json value round-trips and non-JSON values are rejected with rule type.

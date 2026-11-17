@@ -20,7 +20,7 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 
 **Build.** k.deploy, k.topology.
 
-**Log.** Stdout log (OUTPUT.md), a record per event: `req`, `diag` per diagnostic or uncaught throw (personal data dropped, k.privacy; a throw's `frames`: its first 5 stack positions in app code (E1576's), as `<path>:<line>:<col>` relative to the folder holding `artifacts`, an `<artifacts>/server.mjs` position through its map (k.deploy); no `artifacts`: none), `csp` (k.security), `reload`; `createApp({ log: { format: 'compact' | 'json', write } })` gets each line.
+**Log.** Stdout log (OUTPUT.md), a record per event: `req`, `diag` per diagnostic or uncaught throw (personal data dropped, k.privacy; a throw's `frames`: k.deploy), `csp` (k.security), `reload`; `createApp({ log: { format: 'compact' | 'json', write } })` gets each line. A throw past the handler's guards (a throwing `log.write`) is a bare 500 and one fixed `keel.unexpected` `diag` naming the matched route id, if any; if that write throws, one fixed stderr line, once per process. Neither holds a thrown or request value.
 
 **Rules.** E1551 `loader`/`action` outside `*.server.ts` · E1554 loader or action data fails its output schema (dev diag; production 500) · E1558 (k.topology).
 
@@ -40,4 +40,4 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 - An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a document GET renders `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403.
 - With `maxStreams: 2`, a third open event-stream GET is 503 `keel.busy` and runs no loader; once one closes, the next is served.
 - With a `client` and a `node` deployable in dev, the `node` one's island document scripts `/@keel/entry.ts?d=<name>`, which resumes its islands.
-- A loader throwing in `modules/a/a.server.ts` logs a `diag` whose `frames` start at that file: at most 5, none under `packages/`, `node_modules/` or outside the folder holding `artifacts`; none without `artifacts`.
+- A `log.write` that throws on the `req` record gives a 500 and one `keel.unexpected` `diag` naming the route id; one that always throws gives one fixed stderr line per process.
