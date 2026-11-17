@@ -1,6 +1,7 @@
 // Seed 1337. The internal read @keel/server takes of a decoded action input: each Secret under it, revealed, as text.
 import fc from "fast-check";
 import { expect, test } from "vitest";
+import { Secret } from "../src/Secret.ts";
 import { s } from "../src/index.ts";
 import { secretValues } from "../src/internal/index.ts";
 
@@ -52,9 +53,32 @@ test("leaves out the empty string and a null secret, and keeps the ones beside t
   expect(secretValues(value)).toEqual(["kept"]);
 });
 
-test("a secret holding an object gives no string of its own; a secret inside it is read", () => {
-  const schema = s.secret(s.object({ user: s.string(), pass: text, tags: s.array(s.string()) }));
-  expect(secretValues(parsed(schema, { user: "ada", pass: "inner-value", tags: ["t"] }))).toEqual(["inner-value"]);
+test("a secret holding an object or an array gives each string and number in it, at any depth, and no boolean", () => {
+  const schema = s.secret(
+    s.object({ user: s.string(), pass: text, n: s.number(), on: s.boolean(), tags: s.array(s.array(s.string())) }),
+  );
+  const value = parsed(schema, { user: "ada", pass: "inner-value", n: 7, on: true, tags: [["t1"], ["t2"]] });
+  expect(secretValues(value)).toEqual(["ada", "inner-value", "7", "t1", "t2"]);
+  expect(secretValues(parsed(s.secret(s.array(s.string())), ["k1", "", "k2"]))).toEqual(["k1", "k2"]);
+});
+
+test("a secret holding a value that holds itself is read once", () => {
+  const loop: { k: string; self?: unknown } = { k: "inside" };
+  loop.self = loop;
+  expect(secretValues(Secret.of(loop))).toEqual(["inside"]);
+});
+
+test("a huge secret is read up to 1,000,000 values and the read ends", () => {
+  const many = Array.from({ length: 1_100_000 }, (_, i) => `v${i}`);
+  const got = secretValues(Secret.of(many));
+  expect(got.length).toBe(999_999);
+  expect(got[0]).toBe("v0");
+});
+
+test("a deeply nested secret does not overflow the stack", () => {
+  let deep: unknown = "bottom";
+  for (let i = 0; i < 200_000; i++) deep = [deep];
+  expect(secretValues(Secret.of(deep))).toEqual(["bottom"]);
 });
 
 test("a value that holds itself is read once", () => {

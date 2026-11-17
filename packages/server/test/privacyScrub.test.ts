@@ -126,7 +126,7 @@ describe("marked record keys", () => {
 describe("scrubbed", () => {
   const addr = 'Flat "2"\n1 Main St';
   it("replaces a value's URL-encoded, JSON-escaped, case-folded and base64 forms", () => {
-    const one = (m: string, v: string) => scrubbed(m, new Set([v]));
+    const one = (m: string, v: string) => scrubbed(m, [[new Set([v]), "[pii]"]]);
     expect(one(`bad ${encodeURIComponent("ada@example.test")}`, "ada@example.test")).toBe("bad [pii]");
     expect(one(`bad ${JSON.stringify({ addr })}`, addr)).toBe('bad {"addr":"[pii]"}');
     expect(one("hi ADA LOVELACE and Ada Lovelace", "ada lovelace")).toBe("hi [pii] and [pii]");
@@ -136,15 +136,17 @@ describe("scrubbed", () => {
 
   it("replaces a value under 3 characters only as a whole token", () => {
     const four = new Set(["4"]);
-    expect(scrubbed("store orders.v4 failed at 14:04, qty 4", four)).toBe("store orders.v4 failed at 14:04, qty [pii]");
-    expect(scrubbed("id ab, tab, AB.", new Set(["ab"]))).toBe("id [pii], tab, [pii].");
+    expect(scrubbed("store orders.v4 failed at 14:04, qty 4", [[four, "[pii]"]])).toBe(
+      "store orders.v4 failed at 14:04, qty [pii]",
+    );
+    expect(scrubbed("id ab, tab, AB.", [[new Set(["ab"]), "[pii]"]])).toBe("id [pii], tab, [pii].");
   });
 
   it("property: no form of a marked word survives, and unmarked digits stay", () => {
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z]{3,12}( [a-z]{1,8})?$/), fc.integer({ min: 0, max: 3 }), (v, form) => {
         const shown = [v, encodeURIComponent(v), v.toUpperCase(), JSON.stringify(v).slice(1, -1)][form] ?? v;
-        const out = scrubbed(`x 123 ${shown} 456`, new Set([v]));
+        const out = scrubbed(`x 123 ${shown} 456`, [[new Set([v]), "[pii]"]]);
         expect(out).toBe("x 123 [pii] 456");
       }),
       { seed: 1337, numRuns: 200 },
@@ -154,7 +156,7 @@ describe("scrubbed", () => {
 
 describe("scrubbed with the [secret] mark", () => {
   const key = 'k"1\n+/z';
-  const one = (m: string, v: string) => scrubbed(m, new Set([v]), "[secret]");
+  const one = (m: string, v: string) => scrubbed(m, [[new Set([v]), "[secret]"]]);
   it("replaces a value as is and in its URL-encoded, JSON-escaped, case-folded and base64 forms", () => {
     expect(one("bad tok-7f3a9c.", "tok-7f3a9c")).toBe("bad [secret].");
     expect(one(`bad ${encodeURIComponent(key)}`, key)).toBe("bad [secret]");
@@ -169,7 +171,7 @@ describe("scrubbed with the [secret] mark", () => {
   });
 
   it("leaves the message as it is when the set is empty", () => {
-    expect(scrubbed("nothing to hide", new Set(), "[secret]")).toBe("nothing to hide");
+    expect(scrubbed("nothing to hide", [[new Set(), "[secret]"]])).toBe("nothing to hide");
   });
 
   it("property: no form of a secret survives, and other text stays", () => {
@@ -186,11 +188,12 @@ describe("scrubbed with the [secret] mark", () => {
 describe("redacted", () => {
   const rq = { pii: new Set(["ada@example.test"]), secrets: new Set(["tok-7f3a9c", "ada@example.test"]) };
   it("marks a pii value and a secret in one message, each with its own mark", () => {
-    expect(redacted("mail ada@example.test with tok-7f3a9c failed", rq)).toBe("mail [pii] with [secret] failed");
+    const apart = { pii: rq.pii, secrets: new Set(["tok-7f3a9c"]) };
+    expect(redacted("mail ada@example.test with tok-7f3a9c failed", apart)).toBe("mail [pii] with [secret] failed");
   });
 
-  it("runs the [pii] pass first: a value in both sets reads [pii]", () => {
-    expect(redacted("ADA@EXAMPLE.TEST", rq)).toBe("[pii]");
+  it("a value in both sets reads [secret]", () => {
+    expect(redacted("ADA@EXAMPLE.TEST", rq)).toBe("[secret]");
   });
 
   it("with no secret noted, writes what the [pii] pass writes", () => {
