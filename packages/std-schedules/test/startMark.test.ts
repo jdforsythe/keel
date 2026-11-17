@@ -2,7 +2,7 @@
 import { createCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
 import { job, queue } from "@keel/std-jobs";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { schedule } from "../src/index.ts";
 
 const settle = async () => {
@@ -25,4 +25,27 @@ test("A start without marks writes the start time for every entry", async () => 
   expect(stored === null ? null : JSON.parse(stored)).toEqual({ "orders.a": START, "orders.b": START });
   a.abort();
   await run;
+});
+
+const table = { "orders.a": { cron: "0 3 * * *", zone: "UTC", job: "orders.digest", input: {} } } as const;
+const jobs = () => queue({ "orders.digest": job({ input: s.object({}) }, async () => ok(null)) });
+
+test("An entry that already has a mark causes no start write", async () => {
+  const ctx = createCtx({ mode: "sim", seed: 1337 });
+  await ctx.storage.set("std.schedules.orders", JSON.stringify({ "orders.a": START - 1000 }));
+  ctx.clock.advance(START);
+  const set = vi.spyOn(ctx.storage, "set");
+  const a = new AbortController();
+  const run = schedule(jobs(), table).run(ctx, a.signal);
+  await settle();
+  expect(set).not.toHaveBeenCalled();
+  a.abort();
+  await run;
+});
+
+test("A failing start write rejects run", async () => {
+  const ctx = createCtx({ mode: "sim", seed: 1337 });
+  ctx.clock.advance(START);
+  vi.spyOn(ctx.storage, "set").mockRejectedValue(new Error("disk full"));
+  await expect(schedule(jobs(), table).run(ctx, new AbortController().signal)).rejects.toThrow("disk full");
 });

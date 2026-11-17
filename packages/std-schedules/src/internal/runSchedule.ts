@@ -39,7 +39,7 @@ export async function runSchedule(
   const next = new Map<Planned, number | undefined>();
   for (const p of plan) {
     const mark = marks[p.id];
-    const last = mark === undefined || !had.has(p) ? undefined : seek(p.cron, p.zone, now, -1);
+    const last = had.has(p) ? seek(p.cron, p.zone, now, -1) : undefined;
     if (p.once && mark !== undefined && last !== undefined && last > mark) await fire(p, last);
     next.set(p, seek(p.cron, p.zone, now, 1));
   }
