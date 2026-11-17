@@ -1,6 +1,6 @@
 # RFC 0122: a routed app shows `unexpected` in production, as the server does
 
-Status: draft. For backlog 0735 (red team 4, finding 1, HIGH). Follows RFC 0119.
+Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0735 (red team 4, finding 1, HIGH). Follows RFC 0119.
 
 ## Problem
 RFC 0119 made `mount`'s root fallback hold `keel.unexpected` in production. A routed app never reaches that fallback. The generated client entry calls `mount(router.App, el, { ctx, mode })`, and the router's `App` wraps the page in its own root `boundary` (`packages/router/src/internal/createRouterWith.ts:360-383`), whose fallback is `defaultError(error)`. `defaultError` writes `el.textContent = error.message` for every code but `keel.notFound` (`packages/router/src/internal/defaultError.ts:10`). The same call is the level -1 fallback in `renderView.ts:64`, and `errorAt` (`renderView.ts:9`) hands the raw error to a route's `errorElement`. So a page or client loader that throws shows its message in a production build. Red team 4 ran it with `mount(..., { mode: "production" })`:
