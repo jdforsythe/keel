@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 83.49,
+        "score": 82.78,
         "threshold": 70
       },
       "services": {
@@ -6169,6 +6169,14 @@
         "score": 82.93
       },
       {
+        "file": "packages/server/src/internal/automatonOf.ts",
+        "sha": "436274e2f4648b09a7aee0aa27a724304cbeb42aea1fe615f3e134f40a3f6d61",
+        "killed": 205,
+        "survived": 49,
+        "noCoverage": 1,
+        "score": 80.39
+      },
+      {
         "file": "packages/server/src/internal/bareError.ts",
         "sha": "225f99e0323e25b1b42085055a4718dcf27f5b0f425d28d354c57bc02d304a68",
         "killed": 11,
@@ -6722,11 +6730,11 @@
       },
       {
         "file": "packages/server/src/internal/noteRequestSecrets.ts",
-        "sha": "360c0a0ef04614ba994b5dde06abed1d1ee98334770bbd26bb9aa470299e3c4d",
+        "sha": "a3fc54fc20bc69c4396cab5ab5298a8bfd782938a34f5b937e024dfbc2b0a197",
         "killed": 7,
-        "survived": 0,
+        "survived": 1,
         "noCoverage": 0,
-        "score": 100
+        "score": 87.5
       },
       {
         "file": "packages/server/src/internal/openFactory.ts",
@@ -6914,11 +6922,11 @@
       },
       {
         "file": "packages/server/src/internal/scrubbed.ts",
-        "sha": "ac5ed54b2ca9320655d48d5eabe15ce61e0618acb65fdf3910663507cc461f6e",
-        "killed": 88,
-        "survived": 31,
-        "noCoverage": 1,
-        "score": 73.33
+        "sha": "f22124df5f1c452fb35f895ceedbe6490d198cfee6026e96f0a1931159fbbd42",
+        "killed": 109,
+        "survived": 44,
+        "noCoverage": 4,
+        "score": 69.43
       },
       {
         "file": "packages/server/src/internal/scrubbedCause.ts",
