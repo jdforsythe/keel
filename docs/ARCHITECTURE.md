@@ -8,6 +8,10 @@
 
 **Storage, workflows, shells, proofs.** `ctx.storage` has `get`, `set`, `read(keys)` (one cut) and `commit(writes)` (compare-and-set over several keys). `createCtx({ drivers: { storage?, net? } })` swaps a driver into a `real` or `shell` ctx; on `sim` it is E1605. A server action saves in one `commit`, so processes sharing a driver get 409 `keel.conflict`; `commitStores` (`@keel/server`) is the same path for runners and jobs. A `node` deployable's `storage` in `topology.ts` (`'file'`, `'sqlite'`, `'postgres'`) picks the driver the generated entry opens: `@keel/std-db` (`sqlite`, `postgres`, from `KEEL_DATABASE_URL`), never imported by app code (E2151). `@keel/std-workflows` (`workflow`, `flows`) runs a state chart per instance in one server store, its steps as std-jobs jobs. A `client` deployable's `shells` (`capacitor`, `tauri`) build with `keel build --target`; the generated shell entry passes the drivers of `@keel/std-capacitor` or `@keel/std-tauri` (`capacitorDrivers`, `tauriDrivers`: `storage` and `net`) to `createCtx({ mode: 'shell' })`. `@keel/testing/prove` proves a store's invariants by induction with Z3 (the optional peer `z3-solver`), and `keel ledger` records them as `proven`. `@keel/std-credentials` (`credentials(ctx)`: `hash`, `verify`, `mint`, `check`) hashes passwords and mints tokens in a `node` deployable's server code.
 
+**Production and dev.** One `mode` (`'dev'` or `'production'`, default `production`) decides what a person sees of an unexpected failure: `createApp`, `mount`, `resume` and `createRouter` each take it, and none reads `NODE_ENV`. In `production` a `keel.unexpected` shows as the code `unexpected` with empty data, on the server page, the root fallback, a route's `errorElement` and a `Form`'s `error`; the ctx's observers still get the full error. `publicError` lives in `@keel/router/internal`, and `@keel/server` imports it from there, so the client router and the server write one value (router sits before server in the dependency order). The Vite plugin writes `mode` into the generated client and resume entries as a literal: `keel dev` produces `dev`, and `keel build` always writes the production client whatever `NODE_ENV` or `.env` says. The server's `req` log path marks each secret route param as `[secret]`, using the routes of every deployable, and cuts a longer path at its secret.
+
+**Live and offline.** `@keel/std-channels` carries named channels over a server event stream; `@keel/std-live` keeps a client store current by re-reading through its loader after each push, and gives up a read that has not settled in 30 s and retries. `@keel/std-offline` keeps an outbox of writes made offline, each with its key and base, sent in order on reconnect; `@keel/std-conflicts` finds races among rebased writes. A ctx has `dispose`, which removes what the ctx attached.
+
 **Borrow vs build**
 
 | Concern | Decision | Reason |
@@ -38,4 +42,4 @@
 
 **Generated, read-only:** `turbo.json`, CI workflows, Dockerfiles, compose. Hand edits fail `pnpm check`.
 
-verified: 106d1bbea78f2fa5c25ef86dd0b375661b7135b3
+verified: e23b0f2f0815e2dc76754c22cd494c3ae9cb35ae
