@@ -42,6 +42,7 @@ import { reqLine } from "./internal/reqLine.ts";
 import { requestSecrets } from "./internal/requestSecrets.ts";
 import { scrubbedCause } from "./internal/scrubbedCause.ts";
 import { scrubbedDiag } from "./internal/scrubbedDiag.ts";
+import { secretSegments } from "./internal/secretSegments.ts";
 import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import { unexpected } from "./internal/unexpected.ts";
@@ -147,6 +148,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       }),
     );
   const served = selectDeployable(opts.topology, table, modules, opts.deployable);
+  const marks = secretSegments(served);
   const name = opts.deployable ?? Object.keys(opts.topology)[0] ?? "";
   const hosted = Object.values(opts.topology).some((d) => d.adapter === "client" && d.host === name);
   const built = mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets, hosted) : undefined;
@@ -270,8 +272,9 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
         );
       for (const d of h.diags) log.write(diagLine(log.format, d));
       const ms = Math.max(0, Math.round(sv.ctx.clock.now() - t0));
-      // The path as the log may hold it: a request that never ran has empty sets and keeps it as it came.
-      const shown = redacted(path, { secrets, pii });
+      // The path as the log may hold it: each segment where a served route has a secret param is `[secret]` whatever
+      // its spelling (`secretSegments`), then the request's own values are scrubbed; a request that never ran has empty sets.
+      const shown = redacted(marks(path), { secrets, pii });
       log.write(reqLine(log.format, { method: raw.method, path: shown, route: h.route, status: response.status, ms }));
     }
     return response;
