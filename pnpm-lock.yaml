@@ -205,6 +205,9 @@ importers:
       '@keel/services':
         specifier: workspace:*
         version: link:../../packages/services
+      '@keel/std-credentials':
+        specifier: workspace:*
+        version: link:../../packages/std-credentials
       '@keel/std-headless':
         specifier: workspace:*
         version: link:../../packages/std-headless

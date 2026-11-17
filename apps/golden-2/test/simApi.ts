@@ -1,7 +1,7 @@
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
-import { routes } from "../modules/kitchen/routes.ts";
 import topology from "../topology.ts";
+import { apiRoutes } from "./apiRoutes.ts";
 
 /** 2026-11-10T09:30:00.000Z, the api's sim clock in every test: recipes added now are dated 2026-11-10. */
 export const NOW = 1794303000000;
@@ -14,7 +14,7 @@ export const apiCtx = (seed = 7): SimCtx => {
 };
 
 /** Serve the real `api` deployable over `server`'s sim ctx (its storage is the box's persistence). */
-export const apiApp = (server: SimCtx) => createApp({ topology, routes, ctx: server, deployable: "api" });
+export const apiApp = (server: SimCtx) => createApp({ topology, routes: apiRoutes, ctx: server, deployable: "api" });
 
 /** A JSON request as a services client sends it. */
 export const asJson = (method: string, path: string, body?: unknown): Request =>

@@ -3,13 +3,20 @@
 The recipe box, in `en-US`, `de-DE` and `ja-JP`. `topology.ts` defines two deployables:
 
 - `web` (`client`, `host: 'api'`): the browser app, built to `dist/web/` and copied into `dist/api/`, so `api` serves it.
-- `api` (`node`): the `kitchen` module at `/api/recipes` and `/api/catalog/<locale>`.
+- `api` (`node`): the `kitchen` module at `/api/recipes` and `/api/catalog/<locale>`, and the `accounts` module: its sign-up and sign-in pages and `/api/tokens` and `/api/me`.
 
 ## Pages
 - `/` (`recipes.index`): every recipe, or only favorites.
 - `/recipes/<id>` (`recipes.show`): one recipe and its favorite toggle.
 - `/recipes/new` (`recipes.new`): the new-recipe form.
 - `/catalog` (`recipes.catalog`): a recipe finder (`Combobox`), a currency filter (`Listbox` in a `Disclosure`) and two tabs (`Tabs`). The Recipes tab holds a `DataTable` sorted by title, price, minutes or date, searched by title (`TableSearch`), filtered to favorites, paged five at a time, with a row menu (`Menu`: open, or open in another locale) and row selection; "Add selected to the list" adds the selection to the shopping list and raises a toast. The Shopping list tab holds the list and "Clear the list", which asks first (`Dialog`). The query lives in the URL (`sort`, `dir`, `page`, `q`, `currency`, `favorite`); the `api` deployable applies it (`applyQuery`), so a page holds five rows. The shopping list and the toasts are client stores (`recipes.list`, `recipes.toasts`) that last for the tab; `BoxShell` shows the toasts (`Toaster`).
+
+## Accounts
+The `accounts` module (`@keel/std-credentials`) keeps users, signed-in callers and API tokens as server stores (`accounts.users`, `accounts.sessions`, `accounts.tokens`). English only.
+- `/account/signup` (`accounts.signup`): an email and a password; the store holds the password's hash.
+- `/account/signin` (`accounts.signin`): ties the request's `caller` to the account. An unknown email and a wrong password get one answer.
+- `POST /api/tokens` (`accounts.tokens`): for a signed-in caller, mints a token that lasts 30 days and answers `{ token, id, expiresAt }`, the only time the token text leaves; the store holds its id and digest. A caller with no session is 403 `keel.denied`.
+- `GET /api/me` (`accounts.me`): `Authorization: Bearer <token>` answers `{ email }`; no token, an unknown one and an expired one are 403 `keel.denied`.
 
 ## Locales
 `modules/recipes/AppLocale.schema.ts` lists the served locales. `en-US` URLs carry no prefix (`/`, `/recipes/<id>`); the others do (`/de-DE`, `/ja-JP/recipes/<id>`), and `/en-US/...` redirects to the unprefixed URL. Every string the pages show is in `modules/recipes/RecipesText/<locale>.ts`. To add a locale, add it to `AppLocale` and write one file there.
