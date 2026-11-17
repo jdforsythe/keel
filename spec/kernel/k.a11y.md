@@ -3,7 +3,7 @@ status: conformance-covered
 
 **Target.** WCAG 2.2 Level A and AA. Each criterion is checked statically (`keel check`), at render (`keel test`), or by a person; the ledger and the evidence bundle (k.evidence) say which.
 
-**Required props.** Required a11y props are in the `@keel/ui` types (E1802): `Heading level`; `Image alt` or `decorative`; `label` on `Input`, `TextArea`, `Select`, `Checkbox`, and on `Box as` `nav` or `aside` (`aria-label`; optional on other landmarks); `Link to: Href` with text; `Button` children (text, or an `Image` whose `alt` names it; no `label`). `Input`, `TextArea` and `Select` take `autocomplete: Autofill`, written as the attribute: an HTML autofill field name from the WCAG 2.2 input purposes (`name`, `email`, `tel`, `street-address`, `bday`, ...) or `off`.
+**Required props.** Required a11y props are in the `@keel/ui` types (E1802): `Heading level`; `Image alt` or `decorative`; `label` on `Input`, `TextArea`, `Select`, `Checkbox`, and on `Box as` `nav` or `aside` (`aria-label`; optional on other landmarks); `Link to: Href` with text; `Button` children (text, or an `Image` whose `alt` names it; no `label`). A blank literal `label` (`""` or white space) is E1802 too; a computed one is unchecked. `Input`, `TextArea` and `Select` take `autocomplete: Autofill`, written as the attribute: an HTML autofill field name from the WCAG 2.2 input purposes (`name`, `email`, `tel`, `street-address`, `bday`, ...) or `off`.
 
 **Contrast.** Text needs 4.5:1 against its background, 3:1 when large (`fontSize` >= 24px, or >= 18.66px at `weight` >= 700), per color scheme and breakpoint; text inside `states.disabled` is exempt, and text without a `fontSize` token is normal size. Statically (E1804), the background is the element's `bg`, else its nearest ancestor's `bg` in the same component; with neither, the element is checked at render. At render, colors and sizes come from each element's atomic classes and their tokens (no layout): the background is the nearest painted ancestor's `bg`, else `#FFFFFF`; text without `fg` is `#000000`; only `hidden` and disabled text are exempt. `contrastTable(tokens)` (`@keel/ui`) lists every ordered pair of color tokens per scheme with its ratio, a pair with a non-hex color left out.
 
@@ -13,7 +13,7 @@ status: conformance-covered
 
 **Claims.** `keel test` writes every render check to `reports/a11y.json` (`A11yRun[]`: route or component, rules run, violations, and the test's file, name and outcome). For each route in `routes.json` and each criterion a rule maps to, `keel ledger` emits `{ kind: 'ledger', item: 'a11y:<routeId>#<criterion>', rung, evidence }`: `example` when a passing `renderRoute` test rendered the route, every rule mapped to the criterion ran, none was violated and `keel check` reports none of its static codes; else `none`. The map is axe-core's `wcag` rule tags plus: E1702 4.1.2 · E1802 1.1.1, 1.3.1, 2.4.4, 4.1.2 · E1804 1.4.3 · E1820 1.3.2, 2.4.3 · E1821 1.3.5. Criteria no rule maps to are for a person; the evidence bundle lists them.
 
-**Rules.** E1802 missing a11y-required prop · E1804 text below its contrast threshold (static and render) · E1820 reversed `direction` over focusable elements (fix: reverse the children, plain direction) · E1821 a control bound to a `.pii()` field without `autocomplete` (render).
+**Rules.** E1802 missing or blank a11y-required prop · E1804 text below its contrast threshold (static and render) · E1820 reversed `direction` over focusable elements (fix: reverse the children, plain direction) · E1821 a control bound to a `.pii()` field without `autocomplete` (render).
 
 **Conformance.**
 - A `Text` whose `fg` is 4.4:1 against the `bg` of its nearest ancestor in the same component is E1804; at `fontSize` 18.66px and `weight` 700, or under `states.disabled`, it is not.
@@ -25,3 +25,4 @@ status: conformance-covered
 - `focusOrder()` lists focusable element ids in document order without disabled or hidden ones.
 - After `keel test` with one passing `renderRoute` test of route `r`, `keel ledger` gives `a11y:r#1.4.3` rung `example` and `a11y:r2#1.4.3` rung `none` for an untested route `r2`; a violation of a rule mapped to 1.4.3 on `r` makes it `none`.
 - `contrastTable(tokens)` has one entry per ordered pair of distinct color tokens per scheme, each ratio WCAG's to two decimals.
+- `keel check` without types reports E1802 for `<Box as="nav" label="">` and `Input({ label: " " })`; `label="Main"`, `label={name}` and a `store` option `label: ""` report none.
