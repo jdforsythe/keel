@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.privacy, Sinks "So is the revealed value of each `Secret` made while the request runs (`bearer` too), by `[secret]`: a string or a number, not a boolean."
+// Spec: k.privacy, Sinks "So is the revealed value of each `Secret` made while the request runs (`bearer` too), by `[secret]`: each string or number in it, not a boolean."
+// Spec: k.server, Log "`diag` per diagnostic or uncaught throw"
 // Spec: k.privacy, Sinks "One made at startup or in a runner is not."
 // Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await`; a boolean secret logs as is; of two overlapping requests each marks only its own."
 // Seed: 1337.
@@ -10,7 +11,7 @@ import { action, loader, manifest } from "@keel/router";
 import { ok, reveal, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { SEED, createApp, get, post } from "./fixtures.ts";
 import { made, mintLater } from "./privacy-secret-reach-helper.ts";
 import { createAppLoose, flush } from "./topology-fixtures.ts";
@@ -96,6 +97,105 @@ describe("k.privacy secret reach", () => {
         }),
         { seed: SEED, numRuns: 10 },
       );
+    });
+  }
+
+  for (const mode of modes) {
+    it(`Each string or number in a \`Secret\` is marked (an object value: its string and its number, not its boolean), in ${mode}.`, async () => {
+      const Obj = s.secret(s.object({ key: s.string(), n: s.int(), flag: s.boolean() }));
+      const throwers = {
+        string: (o: { key: string; n: number; flag: boolean }) => `obj key ${o.key} end`,
+        number: (o: { key: string; n: number; flag: boolean }) => `obj n ${String(o.n)} end`,
+        boolean: (o: { key: string; n: number; flag: boolean }) => `obj flag ${String(o.flag)} end`,
+      };
+      for (const [name, text] of Object.entries(throwers)) {
+        const act = action({ input: Nothing }, async () => {
+          await Promise.resolve();
+          const o = reveal(made(Obj.parse({ key: "tok-obj-7f3a", n: 987654, flag: true })));
+          throw new Error(text(o));
+        });
+        const t = await boot(mode, { act });
+        await (await t.app.fetch(post("/a", {}, json))).text();
+        const diags = diagsOf(t.lines);
+        expect(diags.length, name).toBeGreaterThan(0);
+        if (name === "boolean") {
+          expect(diags.some((l) => l.includes("obj flag true end"))).toBe(true);
+        } else {
+          expect(diags.some((l) => l.includes("[secret]"))).toBe(true);
+        }
+        for (const line of t.lines) {
+          if (name === "string") for (const form of forms("tok-obj-7f3a")) expect(line).not.toContain(form);
+          if (name === "number") expect(line).not.toContain("987654");
+        }
+      }
+    });
+
+    it(`Each string in a \`Secret\` holding an array of strings is marked (an element in an Error message), in ${mode}.`, async () => {
+      const Arr = s.secret(s.array(s.string()));
+      const act = action({ input: Nothing }, async () => {
+        await Promise.resolve();
+        const list = reveal(made(Arr.parse(["first-3c9d1a", "second-6b2e8f"])));
+        throw new Error(`list ${list.join(" and ")}`);
+      });
+      const t = await boot(mode, { act });
+      await (await t.app.fetch(post("/a", {}, json))).text();
+      expect(diagsOf(t.lines).some((l) => l.includes("[secret]"))).toBe(true);
+      for (const line of t.lines) {
+        for (const v of ["first-3c9d1a", "second-6b2e8f"])
+          for (const form of forms(v)) expect(line).not.toContain(form);
+      }
+    });
+
+    it(`The scrub never fails on a secret's text: a lone surrogate in a secret input still logs exactly one \`diag\` record and writes nothing to \`console.error\`, in ${mode}.`, async () => {
+      const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        const act = action({ input: s.object({ v: s.secret(s.string()) }) }, async () => {
+          await Promise.resolve();
+          throw new Error("boom");
+        });
+        const t = await boot(mode, { act });
+        const req = new Request("http://localhost/a", {
+          method: "POST",
+          headers: { ...json, "content-type": "application/json" },
+          body: '{"v":"ab\\ud800cd"}',
+        });
+        await (await t.app.fetch(req)).text();
+        expect(diagsOf(t.lines)).toHaveLength(1);
+        expect(spy).not.toHaveBeenCalled();
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it(`A secret is never left in part: with a second secret "1234" made in the request, no line holds a piece of "abcd-1234-9876", in ${mode}.`, async () => {
+      const act = action({ input: Nothing }, async () => {
+        await Promise.resolve();
+        const whole = made(s.secret(s.string()).parse("abcd-1234-9876"));
+        made(s.secret(s.string()).parse("1234"));
+        throw new Error(`whole ${reveal(whole)}`);
+      });
+      const t = await boot(mode, { act });
+      await (await t.app.fetch(post("/a", {}, json))).text();
+      expect(diagsOf(t.lines).some((l) => l.includes("whole [secret]"))).toBe(true);
+      for (const line of t.lines) {
+        expect(line).not.toContain("abcd");
+        expect(line).not.toContain("9876");
+      }
+    });
+
+    it(`A secret is never left in part: with a personal-data input value "1234" inside the secret "abcd-1234-9876", no line holds a piece of the secret, in ${mode}.`, async () => {
+      const act = action({ input: s.object({ code: s.string().pii("contact") }) }, async () => {
+        await Promise.resolve();
+        const whole = made(s.secret(s.string()).parse("abcd-1234-9876"));
+        throw new Error(`whole ${reveal(whole)}`);
+      });
+      const t = await boot(mode, { act });
+      await (await t.app.fetch(post("/a", { code: "1234" }, json))).text();
+      expect(diagsOf(t.lines).length).toBeGreaterThan(0);
+      for (const line of t.lines) {
+        expect(line).not.toContain("abcd");
+        expect(line).not.toContain("9876");
+      }
     });
   }
 
