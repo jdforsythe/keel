@@ -31,6 +31,7 @@ import { inspectResponse } from "./internal/inspectResponse.ts";
 import { keepRunning } from "./internal/keepRunning.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
 import { loadStd } from "./internal/loadStd.ts";
+import { logUnwritable } from "./internal/logUnwritable.ts";
 import { moduleOf } from "./internal/moduleOf.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
@@ -188,14 +189,21 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
   const warned = new Set<string>();
   const hono = new Hono();
+  // The route id each request matched, for the last resort's record.
+  const routeOf = new WeakMap<Request, string>();
   // The last resort: a throw past every guard of the handler (the app's `log.write`, say) is a bare 500 and one fixed
-  // `diag`; nothing of the thrown value is read, so none of it reaches a response, the log or stderr. Hono's own
-  // handler prints an `Error` to stderr and rethrows anything else, so it is replaced and `fetch` never rejects.
-  const lastResort = (): Response => {
-    attempted(() => log?.write(diagLine(log.format, { code: "keel.unexpected", message: "request handler threw" })));
+  // `diag` naming the matched route id when there is one; nothing of the thrown value is read, so none of it reaches a
+  // response, the log or stderr. When that `diag` cannot be written either, `logUnwritable` writes its one fixed line to
+  // stderr. Hono's own handler prints an `Error` to stderr and rethrows anything else, so it is replaced and `fetch`
+  // never rejects.
+  const lastResort = (req: Request): Response => {
+    const id = routeOf.get(req);
+    const message = `request handler threw${id === undefined ? "" : ` in ${id}`}`;
+    const wrote = attempted(() => log?.write(diagLine(log.format, { code: "keel.unexpected", message })));
+    if (!wrote.ok) logUnwritable();
     return crashed(sv.mode, unexpected("request handler threw")).response;
   };
-  hono.onError(lastResort);
+  hono.onError((_thrown, c) => lastResort(c.req.raw));
   hono.all("*", async (c) => {
     const raw = c.req.raw;
     const t0 = sv.ctx.clock.now();
@@ -203,6 +211,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const inspecting = sv.mode === "dev" && path === INSPECT_PATH;
     const peer = inspecting || raw.headers.has("x-keel-forwarded") ? undefined : peerOf(forwards, path);
     const matched = inspecting ? null : matchUrl(served, path).route;
+    if (matched !== null) routeOf.set(raw, matched.id);
     const at = peer === undefined || matched !== null ? undefined : peers[peer];
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     // An allowed origin (k.hosting): granted on API routes only, by exact match of its serialized origin.
@@ -289,7 +298,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
   const app: ServerApp = {
     fetch: async (req) => {
       const r = await attempted(() => hono.fetch(req));
-      return r.ok ? r.value : lastResort();
+      return r.ok ? r.value : lastResort(req);
     },
     close: async () => {
       sv.lifecycle.abort();
