@@ -92,7 +92,7 @@ describe("a client re-render after a mismatch", () => {
       return make();
     };
     const { ctx, errors } = observed();
-    expect(resume(document.body, { T }, { ctx }).warnings).toHaveLength(1);
+    expect(resume(document.body, { T }, { ctx, mode: "dev" }).warnings).toHaveLength(1);
     expect(document.querySelector("section")).toBeNull();
     expect(() => bad.set(true)).not.toThrow();
     expect(errors()).toHaveLength(1);
@@ -133,7 +133,7 @@ describe("a client re-render after a mismatch", () => {
           return f;
         };
         const { ctx, errors } = observed();
-        expect(resume(document.body, { T }, { ctx }).warnings).toHaveLength(1);
+        expect(resume(document.body, { T }, { ctx, mode: "dev" }).warnings).toHaveLength(1);
         bad.set(true);
         expect(errors()).toHaveLength(1);
         const pre = need('pre[data-k-error=""]');

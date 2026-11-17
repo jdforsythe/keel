@@ -15,7 +15,8 @@ import type { MountOptions } from "./types/MountOptions.ts";
  * one that requires props does not type-check; it is called with an empty props object, no slots, and
  * `options.ctx` (k.ctx; the generated entry and the harness pass one). `options.onError`
  * is called with each error the root Boundary catches, in addition to the fallback rendering. The root has a
- * default Boundary (k.errors) whose fallback shows the error in `<pre data-k-error>`. Returns `dispose`:
+ * default Boundary (k.errors) whose fallback is `<pre data-k-error>` holding `keel.unexpected`, or with
+ * `options.mode` `"dev"` the error's message. Returns `dispose`:
  * removes the rendered nodes, every root listener, and every binding and subscription. Idempotent.
  */
 export function mount(
@@ -46,7 +47,7 @@ export function mount(
           anchor,
           () => component({}, undefined, options.ctx),
           (error) => {
-            const fallback = rootFallback(error);
+            const fallback = rootFallback(error, options.mode);
             options.onError?.(error);
             return fallback;
           },

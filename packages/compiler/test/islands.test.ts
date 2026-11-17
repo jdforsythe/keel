@@ -138,7 +138,10 @@ describe("vite plugin: resume entry (RFC 0046)", () => {
     expect(RESUME_ENTRY).toContain(`import { components } from "${ISLANDS_PATH}";`);
     expect(RESUME_ENTRY).toContain('import { resume } from "@keel/runtime-dom/ops";');
     expect(RESUME_ENTRY).toContain('const ctx = createCtx({ mode: "real" });');
-    expect(RESUME_ENTRY).toContain("resume(document.body, components, { ctx, stores: Object.fromEntries(stores()) });");
+    expect(RESUME_ENTRY).toContain('const mode = import.meta.env?.DEV === true ? "dev" : "production";');
+    expect(RESUME_ENTRY).toContain(
+      "resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode });",
+    );
     expect(parseSync("entry.js", RESUME_ENTRY, { sourceType: "module" }).errors).toEqual([]);
   });
 });

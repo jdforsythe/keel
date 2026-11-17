@@ -25,7 +25,7 @@ const SHELLS = {
  * (k.module Std config, rfc:0069), binds `service({ module })` for every module of `deployables` (deployable -> its modules) to
  * the origin its deployable's `keel-peer` tag in the document names, else the document's origin (k.hosting Peers),
  * starts the router on the browser history, and mounts its `App` into `#app` with
- * the ctx. In a dev build
+ * the ctx and `mode`: `"dev"` when `import.meta.env?.DEV` is `true`, else `"production"` (k.runtime). In a dev build
  * (`import.meta.env.DEV`) it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports. With `shell` (a `keel build --target` build, k.shell
@@ -73,7 +73,8 @@ export function entryCode(
     `const router = createRouter(${table}, { ctx, history: browserHistory() });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,
-    "mount(router.App, el, { ctx });",
+    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
+    "mount(router.App, el, { ctx, mode });",
     "if (import.meta.env.DEV) {",
     '  let last = "";',
     "  const report = () => {",

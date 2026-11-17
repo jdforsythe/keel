@@ -175,7 +175,7 @@ describe("match: tags and errors", () => {
         return d;
       },
       host,
-      { onError: (e) => seen.push(e) },
+      { onError: (e) => seen.push(e), mode: "dev" },
     );
     expect(host.textContent).toBe("A");
     boom.set(1);

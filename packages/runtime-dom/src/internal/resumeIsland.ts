@@ -29,6 +29,7 @@ export function resumeIsland(
   component: Island,
   props: Record<string, unknown>,
   ctx: Ctx | undefined,
+  mode?: "dev" | "production",
 ): string | null {
   const doc = el.ownerDocument;
   const focused = doc.activeElement;
@@ -40,7 +41,7 @@ export function resumeIsland(
   // The island's root Boundary (k.errors): a throw after the claim reports to the ctx and swaps the island for the
   // root fallback, as under `mount`. `live` holds the island's nodes the fallback replaces and how to tear it down.
   const live: { nodes: ChildNode[]; teardown: () => void } = { nodes: [el], teardown: () => undefined };
-  const catcher = rootCatcher(ctx, (fallback) => {
+  const catcher = rootCatcher(ctx, mode, (fallback) => {
     live.teardown();
     const [head, ...rest] = live.nodes;
     head?.replaceWith(fallback);

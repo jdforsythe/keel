@@ -73,7 +73,7 @@ describe("resumed islands each have a root Boundary", () => {
           const bad = rootSignal(-1);
           const { ctx, errors } = observed();
           const components = Object.fromEntries(ids.map((id, i) => [id, islandOf(i, bad)]));
-          expect(resume(document.body, components, { ctx }).warnings).toEqual([]);
+          expect(resume(document.body, components, { ctx, mode: "dev" }).warnings).toEqual([]);
 
           if (kind === "handler") expect(() => click(need(`#i${k}\\.boom`))).not.toThrow();
           else expect(() => bad.set(k)).not.toThrow();
@@ -124,7 +124,7 @@ describe("a resumed island whose client re-render throws", () => {
     click(need("#f\\.go"));
     expect(eventQueue.pending()).toBe(before + 1);
     const { ctx, errors } = observed();
-    const { warnings } = resume(document.body, { F }, { ctx });
+    const { warnings } = resume(document.body, { F }, { ctx, mode: "dev" });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/^E1253 /);
     expect(eventQueue.pending()).toBe(before);
@@ -145,7 +145,7 @@ describe("an observer that throws on the error event", () => {
       seen.push(e);
       throw new Error("observer boom");
     });
-    resume(document.body, { I0: islandOf(0, rootSignal(-1)) }, { ctx });
+    resume(document.body, { I0: islandOf(0, rootSignal(-1)) }, { ctx, mode: "dev" });
     expect(() => click(need("#i0\\.boom"))).not.toThrow();
     expect(seen).toHaveLength(1);
     expect(need('pre[data-k-error="i0.boom"]').textContent).toBe("boom 0");
@@ -204,7 +204,7 @@ describe("a client re-render that returns a fragment", () => {
       return f;
     };
     const { ctx, errors } = observed();
-    expect(resume(document.body, { G }, { ctx }).warnings).toHaveLength(1);
+    expect(resume(document.body, { G }, { ctx, mode: "dev" }).warnings).toHaveLength(1);
     expect(document.querySelector("#g\\.a")).not.toBeNull();
     expect(() => bad.set(true)).not.toThrow();
     expect(errors()).toHaveLength(1);
