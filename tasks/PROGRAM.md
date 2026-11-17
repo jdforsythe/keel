@@ -19,6 +19,6 @@ One orchestrator, many agents. A lane is a set of packages no other lane touches
 | S6 Compliance | a11y pack (ui, testing) · CSP (server) · PII redaction (std-sessions, schema) · evidence bundle (cli) | k.ui, k.server | external a11y audit + pen test on golden app 3 |
 | S7 UI modules | std-headless · std-tables | k.ui, k.component | |
 | S8 Reach | std-db · std-workflows · Capacitor · Tauri · verification | k.store, k.ctx, k.server | |
-| P1 Go public | diagrams · human docs · agent docs + eval · launch checklist · docs sweep (0229) | the `frozen` flip | newcomer explains Keel from the diagrams; agent builds a golden app from public docs |
+| P1 Go public | diagrams · human docs · agent docs + eval · launch checklist · docs sweep (0229) · correctness evidence raised (0749) | the `frozen` flip | newcomer explains Keel from the diagrams; agent builds a golden app from public docs |
 
 Lanes within a stage run concurrently; stages run in order unless their lanes are disjoint and the user wants more parallelism (S2 and S3 share no packages and can overlap). Budget per batch: three to five implementation agents plus one kernel agent; more than that has produced stale-dir collisions and hung mutation runs on this machine.
