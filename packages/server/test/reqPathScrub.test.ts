@@ -20,7 +20,7 @@ async function pathOf(url: string): Promise<{ path: unknown; lines: string[] }> 
   const routes = manifest({
     "app.reset": { path: "/reset/:token", params: s.object({ token: s.secret(s.string()) }), component: view },
     "app.both": {
-      path: "/both/:slug/:token",
+      path: "/both/:token/:slug",
       params: s.object({ token: s.secret(s.string()), slug: s.string() }),
       loader: Person,
       component: view,
@@ -53,8 +53,8 @@ describe("the req path scrub", () => {
   });
 
   it("marks a secret and a personal-data value in one path, each with its own mark", async () => {
-    const { path } = await pathOf("/both/ada-lovelace/tok-9a8b7c6d");
-    expect(path).toBe("/both/[pii]/[secret]");
+    const { path } = await pathOf("/both/tok-9a8b7c6d/ada-lovelace");
+    expect(path).toBe("/both/[secret]/[pii]");
   });
 
   it("writes a path no route matches as it came", async () => {

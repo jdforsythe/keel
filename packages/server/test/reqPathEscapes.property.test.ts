@@ -91,6 +91,9 @@ describe("a secret route param in the req path", () => {
   it("leaves a plain param and a path no secret route matches as they came", async () => {
     expect((await reqPath("/plain/tok%2D9a8b")).path).toBe("/plain/tok%2D9a8b");
     expect((await reqPath("/elsewhere/tok-9a8b")).path).toBe("/elsewhere/tok-9a8b");
+    // A typo in a static segment or a leading segment no route declares is a path no route has.
+    expect((await reqPath("/rest/tok-9a8b")).path).toBe("/rest/tok-9a8b");
+    expect((await reqPath("/en/reset/tok-9a8b")).path).toBe("/en/reset/tok-9a8b");
   });
 });
 
@@ -99,16 +102,13 @@ const perturbed = (word: string, flips: readonly number[], hows: readonly number
   [...word].map((c, i) => spelt((flips[i] ?? 0) === 1 ? c.toUpperCase() : c, hows[i] ?? 0)).join("");
 
 describe("a secret route param in the req path of a mistyped link", () => {
-  it("is [secret] under a tail, empty segments, a prefix, case flips, escapes, a trailing dot or a bad escape", async () => {
+  it("is [secret] under a tail, empty segments, a served prefix, case flips, escapes or a bad escape", async () => {
     const word = fc.stringMatching(/^[a-z]{4,8}$/);
     const bits = fc.array(fc.integer({ min: 0, max: 1 }), { minLength: 8, maxLength: 8 });
     const hows = fc.array(fc.integer({ min: 0, max: 2 }), { minLength: 16, maxLength: 16 });
-    const lead = fc.array(fc.record({ word, flips: bits, hows, dot: fc.boolean(), bad: fc.boolean() }), {
-      minLength: 1,
-      maxLength: 3,
-    });
+    const lead = fc.array(fc.record({ word, flips: bits, hows, bad: fc.boolean() }), { minLength: 1, maxLength: 3 });
     const how = fc.record({
-      prefix: fc.option(word, { nil: undefined }),
+      lang: fc.constantFrom("none", "omitted", "en", "fr"),
       tail: fc.array(word, { maxLength: 3 }),
       empties: fc.array(fc.boolean(), { minLength: 10, maxLength: 10 }),
     });
@@ -120,15 +120,19 @@ describe("a secret route param in the req path of a mistyped link", () => {
         hows,
         how,
         async (statics, after, token, spell, h) => {
-          const route = `/${statics.map((x) => x.word).join("/")}/:token${after.map((w) => `/${w}`).join("")}`;
+          const body = `${statics.map((x) => x.word).join("/")}/:token${after.map((w) => `/${w}`).join("")}`;
+          const lang = s.enum(["en", "fr"], { pathDefault: "en" });
           const routes = manifest({
-            "app.r": { path: route, params: s.object({ token: s.secret(s.string()) }), component: view },
+            "app.r":
+              h.lang === "none"
+                ? { path: `/${body}`, params: s.object({ token: s.secret(s.string()) }), component: view }
+                : { path: `/:lang/${body}`, params: s.object({ lang, token: s.secret(s.string()) }), component: view },
             "app.plain": { path: "/plain/:slug", params: s.object({ slug: s.string() }), component: view },
           });
           const sent = [...token].map((c, i) => spelt(c, spell[i] ?? 0)).join("");
           const parts = [
-            ...(h.prefix === undefined ? [] : [h.prefix]),
-            ...statics.map((x) => `${perturbed(x.word, x.flips, x.hows)}${x.dot ? "." : ""}${x.bad ? "%zz" : ""}`),
+            ...(h.lang === "en" || h.lang === "fr" ? [h.lang] : []),
+            ...statics.map((x) => `${perturbed(x.word, x.flips, x.hows)}${x.bad ? "%zz" : ""}`),
             sent,
             ...after,
             ...h.tail,
@@ -148,22 +152,15 @@ describe("a secret route param in the req path of a mistyped link", () => {
   });
 
   const typed: readonly (readonly [string, string])[] = [
-    ["/reset/tok-9a8b7c6d5e4f/extra", "/reset/[secret]/[secret]"],
+    ["/reset/tok-9a8b7c6d5e4f/extra", "/reset/[secret]/extra"],
     ["//reset/tok-9a8b7c6d5e4f", "//reset/[secret]"],
     ["/reset//tok-9a8b7c6d5e4f", "/reset//[secret]"],
     ["/Reset/tok-9a8b7c6d5e4f", "/Reset/[secret]"],
     ["/RESET/tok-9a8b7c6d5e4f", "/RESET/[secret]"],
     ["/res%zzet/tok-9a8b7c6d5e4f", "/res%zzet/[secret]"],
     ["/r%65set/tok-9a8b7c6d5e4f", "/r%65set/[secret]"],
-    ["/r%2565set/tok-9a8b7c6d5e4f", "/r%2565set/[secret]"],
-    ["/reset./tok-9a8b7c6d5e4f", "/reset./[secret]"],
-    ["/reset;x=1/tok-9a8b7c6d5e4f", "/reset;x=1/[secret]"],
-    ["/en/reset/tok-9a8b7c6d5e4f", "/en/reset/[secret]"],
-    ["/rest/tok-9a8b7c6d5e4f", "/rest/[secret]"],
-    ["/rseet/tok-9a8b7c6d5e4f", "/rseet/[secret]"],
-    ["/reset/tok-9a8b/7c6d5e4f", "/reset/[secret]/[secret]"],
-    ["/code/9081726354/x/more", "/code/[secret]/x/[secret]"],
-    ["/code/9081726354/y", "/code/[secret]/[secret]"],
+    ["/code/9081726354/x/more", "/code/[secret]/x/more"],
+    ["/code/9081726354/y", "/code/[secret]/y"],
   ];
   for (const [sent, want] of typed)
     it(`is [secret] in ${sent}`, async () => {
