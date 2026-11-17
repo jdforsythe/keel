@@ -1,8 +1,11 @@
+import fs from "node:fs";
+import path from "node:path";
 // @vitest-environment happy-dom
 // Spec: k.privacy, Sinks "So is the revealed value of each `Secret` made while the request runs (`bearer` too), by `[secret]`: each string or number in it, not a boolean."
 // Spec: k.server, Log "`diag` per diagnostic or uncaught throw"
 // Spec: k.privacy, Sinks "One made at startup or in a runner is not."
 // Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await`; a boolean secret logs as is; of two overlapping requests each marks only its own."
+// Spec: k.privacy, Sinks "Past 2,000,000 characters of these values' written forms, the message and each frame are one mark, `[secret]` if the request made a secret."
 // Seed: 1337.
 // A `Secret` is made with `made(s.secret(s.string()).parse(text))` inside the handler, after an `await`: the scope that marks it follows the call chain of the request.
 // The two-request case orders the requests on the sim clock (`ctx.clock.advance`), with no timers.
@@ -11,7 +14,7 @@ import { action, loader, manifest } from "@keel/router";
 import { ok, reveal, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { SEED, createApp, get, post } from "./fixtures.ts";
 import { made, mintLater } from "./privacy-secret-reach-helper.ts";
 import { createAppLoose, flush } from "./topology-fixtures.ts";
@@ -33,6 +36,7 @@ const diagsOf = (lines: readonly string[]): string[] => lines.filter((l) => kind
 interface Parts {
   readonly loader?: ReturnType<typeof loader>;
   readonly act?: ReturnType<typeof action>;
+  readonly artifacts?: string;
 }
 async function boot(mode: "dev" | "production", parts: Parts, ctx = createCtx({ mode: "sim", seed: SEED })) {
   const routes = manifest({
@@ -45,11 +49,19 @@ async function boot(mode: "dev" | "production", parts: Parts, ctx = createCtx({ 
     routes,
     ctx,
     mode,
+    ...(parts.artifacts ? { artifacts: parts.artifacts } : {}),
     log: { format: "json", write: (l: string) => void lines.push(l) },
   });
   return { app, lines, ctx };
 }
 const json = { accept: "application/json" };
+
+// Frames are relative to the folder holding `artifacts`: a scratch folder in the working directory.
+let artifacts = "";
+beforeAll(() => {
+  artifacts = fs.mkdtempSync(path.join(process.cwd(), ".keel-secret-reach-artifacts-"));
+});
+afterAll(() => fs.rmSync(artifacts, { recursive: true, force: true }));
 
 describe("k.privacy secret reach", () => {
   for (const mode of modes) {
@@ -313,4 +325,53 @@ describe("k.privacy secret reach", () => {
     expect(diags.some((l) => l.includes("runner runner-5d3c1f"))).toBe(true);
     await app.close?.();
   });
+
+  const manyKeys = (n: number): string[] => Array.from({ length: n }, (_, i) => `${"@".repeat(300)}${String(i)}`);
+  const keysAction = action({ input: s.object({ keys: s.secret(s.array(s.string())) }) }, async (input) => {
+    await Promise.resolve();
+    const thrown = new Error(`refused ${String(reveal(input.keys)[0])}`);
+    thrown.stack = `Error: ${thrown.message}\n    at save (${process.cwd()}/modules/app/save.server.ts:10:4)\n    at next (${process.cwd()}/modules/app/other.ts:3:1)`;
+    throw thrown;
+  });
+  const sendKeys = (n: number): Request =>
+    new Request("http://localhost/a", {
+      method: "POST",
+      headers: { ...json, "content-type": "application/json" },
+      body: JSON.stringify({ keys: manyKeys(n) }),
+    });
+  const fieldOf = (line: string, name: string): unknown => {
+    const rec: unknown = JSON.parse(line);
+    return typeof rec === "object" && rec !== null ? Reflect.get(rec, name) : undefined;
+  };
+  const framesOf = (line: string): unknown[] => {
+    const found = fieldOf(line, "frames");
+    return Array.isArray(found) ? found : [];
+  };
+
+  for (const mode of modes) {
+    it(`Past 2,000,000 characters of a secret's written forms, the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the value, in ${mode}.`, async () => {
+      const t = await boot(mode, { act: keysAction, artifacts });
+      await (await t.app.fetch(sendKeys(2000))).text();
+      const diags = diagsOf(t.lines);
+      expect(diags).toHaveLength(1);
+      for (const line of diags) {
+        expect(fieldOf(line, "message")).toBe("[secret]");
+        expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+      }
+      for (const line of t.lines) expect(line).not.toContain("@@@@");
+    }, 60_000);
+
+    it(`Under 2,000,000 characters of a secret's written forms, the \`diag\` message is \`refused [secret]\` and the frames keep their file paths, in ${mode}.`, async () => {
+      const t = await boot(mode, { act: keysAction, artifacts });
+      await (await t.app.fetch(sendKeys(10))).text();
+      const diags = diagsOf(t.lines);
+      expect(diags).toHaveLength(1);
+      for (const line of diags) {
+        expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
+        const frames = framesOf(line);
+        expect(frames).toEqual(["modules/app/save.server.ts:10:4", "modules/app/other.ts:3:1"]);
+      }
+      for (const line of t.lines) expect(line).not.toContain("@@@@");
+    });
+  }
 });

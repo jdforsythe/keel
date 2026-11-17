@@ -262,3 +262,9 @@ Measured with `tooling/budgets.mjs`' bundle settings (esbuild, minified ESM, `pa
 ## Amendment (2026-11-16, at the build)
 - Ordering says a live stream writes no `diag` after its response starts. It writes one when its loader throws, and that `diag` is scrubbed with the request's set: the stream keeps the scope, so a secret the stream makes later is marked on its later lines.
 - The timing was taken after the change only, under the local Node 24: 10,000 sequential `app.fetch` GETs of one API loader route in 144 ms. No built copy from before existed to time, and Node 22 is not installed here.
+
+## Amendment (2026-11-17, the scrub's single pass)
+- One Aho-Corasick automaton over every written form of the secret and pii sets replaces the regex batches, the KMP scan and `folded`. Each text costs a fixed number of steps per character however many values the request has, and the build is once per pair of sets. This closes the quadratic probes (0685) and the fold split (0687).
+- The automaton is capped at 2,000,000 characters of distinct folded forms. Past it no automaton is built, and the message and each frame are one mark, `[secret]` if the request made a secret, else `[pii]`. It fails closed: a cap that left the rest unmarked would let a client fill the set with its own secrets and push a minted token past it.
+- Matching is by letter case in the Basic Multilingual Plane, one code unit at a time, base64 included (a near copy may be over-marked, never missed); letters outside the plane match only as written. A padded base64 copy goes with its `=` padding in either alphabet. Short forms still count only as whole tokens.
+- The Risks entry on a regular expression per record no longer holds. A set that grows through a live stream (0672) still grows; it is bounded per rebuild by the cap.

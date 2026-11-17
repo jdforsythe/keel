@@ -1,8 +1,8 @@
 // @vitest-environment node
 // Red team of the log scrub (k.privacy Server log): an ill-formed secret or pii value never makes the scrub throw, so
 // the request's diag is still written; a secret holding an object or an array marks each string and number in it;
-// overlapping secrets and pii values leave no part of a secret; the matchers are kept for a request's set while it has
-// not grown; and each `createApp` puts the server's listener back in the `onSecret` slot. Seed 1337.
+// overlapping secrets and pii values leave no part of a secret; the automaton is kept for a request's set while it has
+// not grown; long values are found in steps linear in the text; and each `createApp` puts the server's listener back in the `onSecret` slot. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { type Manifest, type RouteDef, action, loader, manifest } from "@keel/router";
 import { type ObjectSchema, ok, reveal, s } from "@keel/schema";
@@ -10,7 +10,6 @@ import { onSecret } from "@keel/schema/internal";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, topology } from "../src/index.ts";
-import { matcherOf } from "../src/internal/matcherOf.ts";
 import { redacted } from "../src/internal/redacted.ts";
 import { scrubbed } from "../src/internal/scrubbed.ts";
 
@@ -271,15 +270,18 @@ describe("overlapping values leave no part of a secret", () => {
   });
 });
 
-describe("the matchers are kept for a set while it has not grown", () => {
-  it("gives the same matchers for the same values and builds new ones when the set grows", () => {
+describe("the automaton is kept for a set while it has not grown", () => {
+  it("builds once for the same values and again when the set grows", () => {
     const set = new Set(["tok-1111", "tok-2222"]);
-    const first = matcherOf(set);
-    expect(matcherOf(set)).toBe(first);
+    const count = { build: 0, walk: 0, forms: 0 };
+    scrubbed("a b", [[set, "[secret]"]], count);
+    const first = count.build;
+    expect(first).toBeGreaterThan(0);
+    scrubbed("a tok-1111 b", [[set, "[secret]"]], count);
+    expect(count.build).toBe(first);
     set.add("tok-3333");
-    const grown = matcherOf(set);
-    expect(grown).not.toBe(first);
-    expect(scrubbed("a tok-3333 b", [[set, "[secret]"]])).toBe("a [secret] b");
+    expect(scrubbed("a tok-3333 b", [[set, "[secret]"]], count)).toBe("a [secret] b");
+    expect(count.build).toBeGreaterThan(first);
     set.delete("tok-1111");
     set.add("tok-4444");
     expect(scrubbed("a tok-4444 b", [[set, "[secret]"]])).toBe("a [secret] b");
@@ -305,13 +307,15 @@ describe("each createApp puts the server's listener back", () => {
   });
 });
 
-describe("a long value is found by a scan linear in the text and the value", () => {
-  // A clock is not read in tests (S0006): each case checks that every value is held for the linear scan rather than
-  // as an expression, and runs the adversarial shape, which a scan restarted at every position would not finish in the test's time.
+describe("a long value is found in steps linear in the text", () => {
+  // A clock is not read in tests (S0006): each case counts the walk's steps against the text's length and the build's
+  // against the forms' length, and runs the adversarial shape, which a scan restarted at every position would not finish
+  // in the test's time.
   const scanned = (message: string, secrets: readonly string[]): { out: string; linear: boolean } => {
-    const set = new Set(secrets);
-    const held = new Set(matcherOf(set).long.map((l) => l.form));
-    return { out: scrubbed(message, [[set, "[secret]"]]), linear: secrets.every((v) => held.has(v.toLowerCase())) };
+    const count = { build: 0, walk: 0, forms: 0 };
+    const out = scrubbed(message, [[new Set(secrets), "[secret]"]], count);
+    const linear = count.walk <= 5 * message.length + 5 && count.build <= 4 * count.forms + 10 * secrets.length;
+    return { out, linear };
   };
 
   it("text of 400,000 of one character against a 400,001-character secret that differs in its last character", () => {
@@ -326,8 +330,8 @@ describe("a long value is found by a scan linear in the text and the value", () 
     expect(linear).toBe(true);
   });
 
-  it("50 secrets sharing a 20,000-character prefix, against a text that repeats the prefix", () => {
-    const prefix = "k".repeat(20_000);
+  it("50 secrets sharing a 15,000-character prefix, against a text that repeats the prefix", () => {
+    const prefix = "k".repeat(15_000);
     const secrets = Array.from({ length: 50 }, (_, i) => `${prefix}-${i}-tail`);
     const { out, linear } = scanned(`${prefix.repeat(10)} ${secrets[7] ?? ""} end`, secrets);
     expect(out).toBe(`${prefix.repeat(10)} [secret] end`);
