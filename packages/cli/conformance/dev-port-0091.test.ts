@@ -1,16 +1,17 @@
 // Spec: k.cli, clause "`keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1." (rfc:0091)
 // Spec: k.cli Commands "`dev [--port N]` ... (default Vite's `server.port` or 5173; in use: E1560, exit 1)"; Rules E1052 "flag value invalid for the input schema".
 // Seed 1337. Spawns the real binary over a temp project with `vite` linked. The wait for the server is a bounded retry of
-// `fetch` (no timers). Ports come from a listener on port 0 that is closed first; a busy port is held by the test's own
-// listener. Only processes the test started are signalled (the child's process group).
+// an `http.get` (no timers in the wait). Ports come from a listener on port 0 that is closed first; a busy port is held by the
+// test's own listener. Only processes the test started are signalled (the child's process group); every child is ended in `afterEach`.
 import { type ChildProcess, spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import http from "node:http";
 import net from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import fc from "fast-check";
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
 import { SEED, keel } from "./fixtures.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -83,19 +84,43 @@ function startDev(args: string[]): Proc {
     buf += d.toString();
   });
   const exited = new Promise<number | null>((res) => child.on("close", (code) => res(code)));
-  return { child, out: () => buf, exited };
+  const proc: Proc = { child, out: () => buf, exited };
+  started.add(proc);
+  return proc;
 }
-function stop(p: Proc): Promise<number | null> {
+const started = new Set<Proc>();
+
+/** Sends `s` to `p`'s process group unless the child has already exited. */
+function signal(p: Proc, s: NodeJS.Signals): void {
   const pid = p.child.pid;
-  if (pid !== undefined && p.child.exitCode === null) {
-    try {
-      process.kill(-pid, "SIGTERM");
-    } catch {
-      // already gone
-    }
+  if (pid === undefined || p.child.exitCode !== null || p.child.signalCode !== null) return;
+  try {
+    process.kill(-pid, s);
+  } catch {
+    // the group is gone
   }
+}
+
+/** Ends `p`'s process group: SIGTERM, then SIGKILL if it has not closed 10 s later; resolves with its exit code. */
+async function stop(p: Proc): Promise<number | null> {
+  started.delete(p);
+  signal(p, "SIGTERM");
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<"late">((r) => {
+    timer = setTimeout(() => r("late"), 10_000);
+  });
+  const first = await Promise.race([p.exited, late]);
+  clearTimeout(timer);
+  if (first === "late") signal(p, "SIGKILL");
   return p.exited;
 }
+
+afterEach(async () => {
+  await Promise.all([...started].map(stop));
+});
+process.once("exit", () => {
+  for (const p of started) signal(p, "SIGKILL");
+});
 
 const freePort = (): Promise<number> =>
   new Promise((resolvePort, reject) => {
@@ -106,6 +131,24 @@ const freePort = (): Promise<number> =>
         typeof addr === "object" && addr !== null ? resolvePort(addr.port) : reject(new Error("no port")),
       );
     });
+  });
+
+type Reply = { readonly status: number; readonly body: string };
+/**
+ * One GET to `localhost:port` over its own connection (no keep-alive): the status and the whole body, or null on any
+ * socket or response error or after 10 s idle. The response is always read to its end, or destroyed.
+ */
+const get = (port: number, path: string, headers: Record<string, string> = {}): Promise<Reply | null> =>
+  new Promise((done) => {
+    const req = http.get({ host: "localhost", port, path, headers, agent: false, timeout: 10_000 }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (c: Buffer) => chunks.push(c));
+      res.on("end", () => done({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }));
+      res.on("error", () => done(null));
+      res.on("aborted", () => done(null));
+    });
+    req.on("timeout", () => req.destroy());
+    req.on("error", () => done(null));
   });
 
 /** Whether something accepts a TCP connection on `port` (a socket's errors arrive as events, never as throws). */
@@ -127,10 +170,7 @@ async function served(p: Proc, port: number): Promise<boolean> {
   });
   for (let i = 0; i < 4000 && !done; i++) {
     if (!(await accepts(port))) continue;
-    const ok = await fetch(`http://localhost:${port}/`).then(
-      () => true,
-      () => false,
-    );
+    const ok = (await get(port, "/")) !== null;
     if (ok) return true;
   }
   return false;
@@ -181,12 +221,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain(String(busy));
         // no move: the next ports are still unserved by this process
-        const next =
-          (await accepts(busy + 1)) &&
-          (await fetch(`http://localhost:${busy + 1}/`).then(
-            () => true,
-            () => false,
-          ));
+        const next = (await accepts(busy + 1)) && (await get(busy + 1, "/")) !== null;
         expect(next).toBe(false);
       } finally {
         await new Promise<void>((r) => holder.close(() => r()));
@@ -227,12 +262,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
         const lines = e1560(p.out());
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain(String(busy));
-        const next =
-          (await accepts(busy + 1)) &&
-          (await fetch(`http://localhost:${busy + 1}/`).then(
-            () => true,
-            () => false,
-          ));
+        const next = (await accepts(busy + 1)) && (await get(busy + 1, "/")) !== null;
         expect(next).toBe(false);
       } finally {
         await stop(p);
