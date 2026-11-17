@@ -15,6 +15,10 @@ export const VITEST = path.join(import.meta.dirname, "vitest.mutate.config.ts");
 export const ROOT_SANDBOX = {
   tempDirName: path.join(import.meta.dirname, "..", ".stryker-tmp"),
   ignorePatterns: [".stryker-tmp"],
+  // Stryker prefixes `../../` to a tsconfig `extends` that leaves the sandbox, as if the sandbox sat two levels below the
+  // package. Here it sits as deep as the package, so the package's own `extends` already resolves: a tsconfig name that
+  // names no file leaves it unrewritten.
+  tsconfigFile: "tsconfig.stryker-keeps-paths.json",
 };
 
 /** Test runner processes per run, from `KEEL_MUTATE_CONCURRENCY`; unset leaves Stryker's own choice (one fewer than the cores). */

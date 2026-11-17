@@ -22,6 +22,9 @@ export default mergeConfig(
         "**/node_modules/**",
       ],
       sequence: { sequencer: QuickFirst },
+      // Instrumentation runs the scrub's string scans many times slower than a plain run. Outside mutation the 5 s
+      // default stays the bound the linear-scan cases of test/redTeam0105.test.ts rely on.
+      testTimeout: 60_000,
     },
   }),
 );

@@ -16,8 +16,9 @@ export default keelConfig({
       "conformance/check-json-byte-identical-binary.test.ts",
     ],
     // Conformance files reach apps/golden-1 and packages/router by a path relative to the file, which does not exist from
-    // the sandbox, and conformance is not edited: E1501 (apps/golden-1), E1510 (`@keel/router` is TS2307 from the sandbox).
-    testNamePattern: /^(?!E1501: a string path passed to a navigate function typed|E1510: its fixture triggers)/,
+    // the sandbox, and conformance is not edited: E1501 (apps/golden-1), E1510 and E1512 (`@keel/router` is TS2307 from
+    // the sandbox).
+    testNamePattern: /^(?!E1501: a string path passed to a navigate function typed|E151[02]: its fixture triggers)/,
     passWithNoTests: true,
     sequence: { sequencer: QuickFirst },
   },
