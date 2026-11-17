@@ -40,6 +40,7 @@ import { redacted } from "./internal/redacted.ts";
 import { reportSource } from "./internal/reportSource.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { requestSecrets } from "./internal/requestSecrets.ts";
+import { scrubbedCause } from "./internal/scrubbedCause.ts";
 import { scrubbedDiag } from "./internal/scrubbedDiag.ts";
 import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
@@ -58,7 +59,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * made while it runs (its input, `bearer`, a parse after an `await`) joins it (`noteRequestSecrets`), and its `diag`
  * records and its `req` path hold `[secret]` in each one's place, as each of its `.pii()` values is `[pii]` there;
  * each runner's `run` enters its own set (`keepRunning`) and its rejection's record is scrubbed with it. Past a scrub
- * cap a `diag` keeps the server's own prefix (`loader <id> threw: `) and is one mark after it (`scrubbedDiag`). `mode` defaults to `production` (RFC 0022).
+ * cap a `diag` keeps the server's own prefix (`loader <id> threw: `) and is one mark after it (`scrubbedDiag`). `mode` defaults to `production`.
  * With no DOM global (plain Node) it installs the DOM-free server tree (`installServerDom`) so components that build
  * DOM render documents. A JSON or FormData action body over `maxBodyBytes` (default 1 MiB) gets 413 `keel.payloadTooLarge`.
  * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.cli Inspect) before the route table and before
@@ -67,25 +68,25 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * method without an allowed `Origin`, get 403 `keel.denied`.
  * Each request has a caller (a caller cookie signed under `secret`, else one minted and set HttpOnly/SameSite=Lax on
  * a write, else `""`; `__Host-keel-caller` and Secure when `secure`, else when the request is https by URL or
- * `x-forwarded-proto`, RFC 0057, 0060) and its own
+ * `x-forwarded-proto`) and its own
  * instance of each `stores` factory its loaders and action name, restored from and saved to `ctx.storage` through the
- * deployable's in-process copy (k.server Server state, RFC 0044).
+ * deployable's in-process copy (k.server Server state).
  * In production, `assets` (the deployable's `keel build` output) is read once here: documents load its built entry and
  * its files are served nosniff, immutable only when the manifest names them hashed, never through a symlink out of
- * `assets/` (RFC 0057); a missing or entry-less manifest rejects with E1555 (k.server Build, RFC 0048).
+ * `assets/`; a missing or entry-less manifest rejects with E1555 (k.server Build).
  * A production `createApp` without `assets` also rejects with E1555 unless `NODE_ENV` (trimmed, any case) is
- * `development` or `test`; unset counts as production (RFC 0052). Without a build its island documents would load
+ * `development` or `test`; unset counts as production. Without a build its island documents would load
  * `/@keel/entry.ts`, whose bare `@keel/*` imports only Vite resolves. Whether a page has islands is known only when it
  * renders, so this holds for every deployable. Dev mode, and tests (vitest sets `NODE_ENV=test`), keep serving it:
  * a document scripts `/@keel/entry.ts?d=<deployable>`, the resume entry of `deployable`'s islands (none given:
  * `/@keel/entry.ts`).
  * A `secret` under 32 bytes (UTF-8) rejects with E1556; under that same production gate, no `secret` writes one W1556
- * `diag` to `log` at startup, since each instance then signs callers with its own random key (RFC 0057, backlog 0159),
- * and no `secure` writes one W1557: https is then the request's URL or `x-forwarded-proto: https` (RFC 0060).
+ * `diag` to `log` at startup, since each instance then signs callers with its own random key,
+ * and no `secure` writes one W1557: https is then the request's URL or `x-forwarded-proto: https`.
  * Every document's head carries the deployable's name as `<title>` and links the build's entry CSS and `/keel-mark.svg`
  * icon (`headHtml`, k.server Document).
  * `std` (a `.keel/std.json`) is read once and bound to `ctx` for `stdConfig`: missing, malformed or hand-edited
- * rejects with E1160, a value failing its package's registered schema with E1158 (k.module Std config, rfc:0066).
+ * rejects with E1160, a value failing its package's registered schema with E1158 (k.module Std config).
  * After startup each `runners` entry of the served deployable's modules runs once on `ctx` (`keepRunning`: a rejection is
  * a `diag` and a rerun 1,000 ms later on `ctx.clock`); `close()` aborts their signal and open event streams and
  * resolves when every `run` has settled. `ctx` is bound for `service({ module })` (`bindModules`). A request whose path
@@ -118,7 +119,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
       "E1555",
       "assets: a production server needs its client build; run `keel build` and pass createApp({ assets: 'dist/<deployable>' })",
     );
-  // RFC 0057 amendment (backlog 0159): a short key makes the caller HMAC guessable, `""` public.
+  // A short key makes the caller HMAC guessable, `""` public.
   if (opts.secret !== undefined && new TextEncoder().encode(opts.secret).length < 32)
     throw codedError(
       "E1556",
@@ -135,7 +136,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
         message: "secret: none given, so callers reset on restart and differ per instance; pass createApp({ secret })",
       }),
     );
-  // RFC 0060 (backlog 0160): unset, a plain-http hop without x-forwarded-proto gets an unprefixed, non-Secure cookie.
+  // Unset, a plain-http hop without x-forwarded-proto gets an unprefixed, non-Secure cookie.
   if (deployed && opts.secure === undefined && origin === undefined)
     log?.write(
       diagLine(log.format, {
@@ -199,7 +200,7 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     const api = hit?.def.api === true && known ? hit.def : undefined;
     const cross = known && raw.headers.get("sec-fetch-site") === "cross-site" && !warned.has(from);
     if (cross) warned.add(from);
-    // Inspect is answered before any request scope exists, so its graph is the app's alone (RFC 0042).
+    // Inspect is answered before any request scope exists, so its graph is the app's alone.
     // Each request runs in its own `requestSecrets` set: every `Secret` made while it runs joins it (k.privacy). The
     // sets outlive `routed` so the `req` path is scrubbed with them too.
     const secrets = new Set<string>();
@@ -239,7 +240,8 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
                   : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
                 ).then((r) => ({ ...r, route: undefined })),
               );
-    const h = ran.ok ? ran.value : crashed(sv.mode, ran.error);
+    // A server bug's thrown text is scrubbed whole before it is clipped for the dev body (`scrubbedCause`).
+    const h = ran.ok ? ran.value : crashed(sv.mode, scrubbedCause(ran.error, { secrets, pii }));
     // Every API-route response varies by origin once any origin is allowed, so a shared cache keeps them apart.
     const response = secured(
       hit?.def.api !== true ? h.response : withCors(h.response, api && from, api && pre ? allowOf(api) : undefined),

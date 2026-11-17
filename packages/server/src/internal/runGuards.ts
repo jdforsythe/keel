@@ -113,8 +113,7 @@ export async function runGuards(
   let to: string | null = first.location || null;
   while (to !== null) {
     const loop = guardLoop(visited, to);
-    if (loop !== null)
-      return fail(first.at, unexpected(`E1508 ${loop}`), [{ code: "E1508", message: loop.slice(0, 89) }]);
+    if (loop !== null) return fail(first.at, unexpected(`E1508 ${loop}`), [{ code: "E1508", message: loop }]);
     visited.push(to);
     to = await nextHop(to, sv, rq);
   }
