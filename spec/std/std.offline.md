@@ -22,7 +22,7 @@ const r = await send(ctx, boardOutbox, origin, 'editTodo', { params: { todoId },
 - 409 without it (the request overlapped another save): sent once more; a second such 409 is `failed`.
 - Any other status: `failed` with its `ApiError`; the next entry goes.
 
-`drain(ctx, outbox)`, inside a scope, loads the stored outbox (`sending` entries become `queued`), flushes, and flushes again on each reconnect until the scope is disposed. A resent entry keeps its key, so a write the server already committed commits nothing again (k.sync).
+`drain(ctx, outbox)`, inside a scope, loads the stored outbox (`sending` entries become `queued`), flushes, and flushes again on each reconnect until the scope is disposed. A resent entry keeps its key, so a write the server already committed commits nothing again while the store keeps that key: its last `logLimit` keyed writes (k.sync).
 
 **Resolve.** `resolve(ctx, outbox, key, resolution)`, `resolution` `'mine'` or `'theirs'`. `'mine'` queues a `conflict` entry again, last, with `base` set to its `head`, so the write applies over what it conflicted with; `'theirs'` removes a `conflict` or `failed` entry. The outbox log records each as `<id>.resolve` `{ key, resolution }`.
 
