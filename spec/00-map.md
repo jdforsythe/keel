@@ -51,7 +51,7 @@ Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --
 | k.server | Thin server | conformance-covered | loaders, actions, server state |
 | k.sync | Heads and concurrent writes | conformance-covered | heads, write bases, reject or rebase |
 | k.persist | Storage and durable state | conformance-covered | storage, drivers |
-| k.topology | Deployables | conformance-covered | placement, runners, peers |
+| k.topology | Deployables | implemented | placement, runners, peers |
 | k.deploy | Production entry and deploy files | conformance-covered | `server.mjs`, `storage` |
 | k.shell | Native shells | proposed | Capacitor and Tauri apps |
 | k.compat | Surface compatibility | conformance-covered | surface, `accepts`, `--base` |
