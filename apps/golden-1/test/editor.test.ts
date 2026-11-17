@@ -105,7 +105,7 @@ describe("the edit page on editorChart", () => {
     r.dispose();
   });
 
-  it("Keep mine sends the refused edit again within the tries; the chart follows when the page opens", async () => {
+  it("Keep mine sends the refused edit again within the tries and returns once the chart has followed the answer", async () => {
     await seedBoard(boardOf(seeded));
     const [a, b] = await simUsers(2);
     if (a === undefined || b === undefined) throw new Error("two users");
@@ -117,7 +117,7 @@ describe("the edit page on editorChart", () => {
     expect(await resolveEdit(a.ctx, key, "mine")).toBe(true);
     await r.settle();
     expect(boardOutbox.get("entries")).toEqual([]);
-    expect(chartNow()).toEqual({ state: "saving", data: { attempts: 2 } });
+    expect(chartNow()).toEqual({ state: "viewing", data: { attempts: 0 } });
     expect((await readBoard()).todos[0]).toMatchObject({ title: "Milk", priority: "high" });
     r.dispose();
     const again = await renderRoute("todos.edit", { routes, params, ctx: a.ctx });

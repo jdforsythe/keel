@@ -9,9 +9,9 @@ import { editorStuck } from "./editorStuck.ts";
 /**
  * Keep mine or Keep theirs on a refused edit (`key` in `boardOutbox`), through `editorChart`: an edit still `saving`
  * learns of the refusal first (`refused`), then `mine` sends it again within the chart's 3 tries and `theirs` drops
- * it. Keep mine does nothing once the edit has used its tries (`editorStuck`); the outbox sends it again in the
- * background, and the chart follows its answer when it is known (`editorFollow`). Resolves true when the outbox
- * applied the choice, as `resolve` does.
+ * it. Keep mine does nothing once the edit has used its tries (`editorStuck`). Keep mine returns once the outbox has
+ * answered the re-send (or holds it queued), and the chart follows that answer (`editorFollow`). Resolves true when
+ * the outbox applied the choice.
  */
 export async function resolveEdit(ctx: Ctx, key: string, resolution: Resolution): Promise<boolean> {
   const refused = tx(editorChart.events.refused, {});
@@ -19,5 +19,5 @@ export async function resolveEdit(ctx: Ctx, key: string, resolution: Resolution)
   const chosen = tx(resolution === "mine" ? editorChart.events.mine : editorChart.events.theirs, {});
   if (!chosen.ok) return false;
   const applied = await resolve(ctx, boardOutbox, key, resolution);
-  return applied && editorFollow().ok;
+  return applied !== false && editorFollow().ok;
 }

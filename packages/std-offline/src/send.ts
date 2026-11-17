@@ -1,23 +1,17 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
-import type { Client, EndpointMap } from "@keel/services";
+import type { EndpointMap } from "@keel/services";
 import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
 import type { Outbox } from "./Outbox.type.ts";
 import type { OutboxResult } from "./OutboxResult.ts";
 import type { SendInput } from "./SendInput.ts";
+import type { Output } from "./internal/Output.ts";
 import { configOf } from "./internal/configOf.ts";
 import { flush } from "./internal/flush.ts";
 import { full } from "./internal/full.ts";
 import { load } from "./internal/load.ts";
 import { persist } from "./internal/persist.ts";
-
-type Output<D extends EndpointMap, K extends keyof D> = Awaited<ReturnType<Client<D>[K]>> extends {
-  readonly ok: true;
-  readonly value: infer O;
-}
-  ? O
-  : never;
 
 /**
  * Queue a write to `endpoint` at `origin` (std.offline Write) and flush, once the outbox stored in `ctx.storage` has
