@@ -120,7 +120,13 @@ export async function openHub(options: {
       const out: { [store: string]: Snapshot<JsonValue> } = {};
       for (const key of keys) {
         const r = wire.snapshot.parse(await read(key));
-        if (r.ok) out[key.slice(PREFIX.length)] = r.value;
+        // A snapshot stored without `keys` takes them from its log entries, as `restore` does.
+        if (r.ok)
+          out[key.slice(PREFIX.length)] = {
+            ...r.value,
+            keys:
+              r.value.keys ?? r.value.log.flatMap((e) => (e.key === undefined ? [] : [{ name: e.name, key: e.key }])),
+          };
       }
       return out;
     },

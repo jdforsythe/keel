@@ -21,6 +21,7 @@ const server: { [store: string]: Snapshot<unknown> } = {
     initial: {},
     head: 7,
     log: [{ id: 7, name: "api.editTodo", payload: {}, at: 7, base: 1 }],
+    keys: [],
   },
 };
 const FILE = ".keel/sessions/g.group.json";

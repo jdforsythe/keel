@@ -81,7 +81,7 @@ describe("@keel/store sync properties", () => {
     );
   });
 
-  it("key idempotence: a write whose key a kept entry holds returns ok and changes nothing, whatever its base", () => {
+  it("key idempotence: a write whose key `keys` holds for its transaction returns ok and changes nothing, whatever its base", () => {
     fc.assert(
       fc.property(
         modeArb,
@@ -91,7 +91,7 @@ describe("@keel/store sync properties", () => {
         (mode, steps, key, base) => {
           const k = make(mode);
           for (const st of steps) step(k, st);
-          const held = k.bag.log().some((e) => e.key === key);
+          const held = k.bag.snapshot().keys.some((p) => p.name === "bag.push" && p.key === key);
           const before = JSON.stringify([k.bag.snapshot({ meta: true }), k.bag.head()]);
           const r = tx(k.push, { v: 1 }, base === undefined ? { key } : { key, base });
           if (held) {
@@ -99,6 +99,36 @@ describe("@keel/store sync properties", () => {
             expect(JSON.stringify([k.bag.snapshot({ meta: true }), k.bag.head()])).toBe(before);
           } else if (r.ok) expect(k.bag.log().at(-1)?.key).toBe(key);
           k.dispose();
+        },
+      ),
+      opts,
+    );
+  });
+
+  it("keys is the model: the latest logLimit keyed commits, oldest first, whatever undo and folding do", () => {
+    fc.assert(
+      fc.property(
+        modeArb,
+        fc.array(stepArb, { maxLength: 40 }),
+        fc.option(fc.nat({ max: 4 }), { nil: undefined }),
+        (mode, steps, limit) => {
+          const k = make(mode, limit);
+          const cap = limit ?? 256;
+          let model: string[] = [];
+          for (const st of steps) {
+            const held = st.kind === "push" && st.key !== undefined && model.includes(st.key);
+            const head = k.bag.head();
+            const changed = step(k, st);
+            if (held) expect(k.bag.head()).toBe(head);
+            if (changed && st.kind === "push" && st.key !== undefined) model = [...model, st.key].slice(-cap);
+            if (cap === 0) model = [];
+            expect(k.bag.snapshot().keys).toEqual(model.map((key) => ({ name: "bag.push", key })));
+          }
+          const dst = make(mode, limit);
+          expect(dst.bag.restore(JSON.parse(JSON.stringify(k.bag.snapshot()))).ok).toBe(true);
+          expect(dst.bag.snapshot().keys).toEqual(k.bag.snapshot().keys);
+          k.dispose();
+          dst.dispose();
         },
       ),
       opts,
