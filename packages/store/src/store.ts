@@ -27,6 +27,7 @@ import { unpersisted } from "./internal/unpersisted.ts";
 import { violated } from "./internal/violated.ts";
 import { withoutMeta } from "./internal/withoutMeta.ts";
 import type { LogEntry } from "./types/LogEntry.ts";
+import type { Snapshot } from "./types/Snapshot.ts";
 import type { Store } from "./types/Store.ts";
 import type { Transaction } from "./types/Transaction.ts";
 
@@ -39,7 +40,8 @@ import type { Transaction } from "./types/Transaction.ts";
  * folds the oldest into that base (RFC 0054), so `undo` reaches only kept entries. A payload may hold `s.secret` values;
  * `snapshot()` folds every entry up to the last such one into `initial`, so no secret is written (rfc:0071). A state
  * schema holding `s.secret` throws E1303 at construction. `head()` counts commits and undos that undo; each entry's `id`
- * is the head its commit produced, and a snapshot carries `head`.
+ * is the head its commit produced, and a snapshot carries `head`. `keys` holds the `{ name, key }` of the latest
+ * `logLimit` commits made with a `key`; a write whose transaction and `key` it holds commits nothing (k.sync).
  */
 export function store<T extends object>(
   schema: Schema<T>,
@@ -61,6 +63,9 @@ export function store<T extends object>(
   const version = signal(0);
   let current = base;
   let rows: Row<T>[] = [];
+  // The `{ name, key }` of the latest `limit` commits made with a `key`, oldest first (k.sync Write key).
+  let keys: Snapshot<T>["keys"] = [];
+  const recent = (list: Snapshot<T>["keys"]): Snapshot<T>["keys"] => list.slice(Math.max(0, list.length - limit));
   let ver = 0;
   // The head: commits and undos that undid; each commit's entry id.
   let seq = 0;
@@ -129,7 +134,8 @@ export function store<T extends object>(
     const key = given("key", keySchema);
     if (!key.ok) return key;
     if (!declared(t)) return err(undeclared.make({ transaction: t.name }, `${t.name} is not in this scope's uses`));
-    if (key.value !== undefined && rows.some((r) => r.entry.key === key.value)) return ok(current);
+    const held = key.value;
+    if (held !== undefined && keys.some((k) => k.name === t.name && k.key === held)) return ok(current);
     const concurrent = seen.value !== undefined && seen.value !== seq;
     if (concurrent && t.concurrent === "reject")
       return err(
@@ -157,6 +163,7 @@ export function store<T extends object>(
       rows.push({ entry: freeze(entry), apply: bound.value.apply });
       const kept = trim(base, rows, limit);
       base = kept.base;
+      if (key.value !== undefined) keys = recent([...keys, freeze({ name: t.name, key: key.value })]);
       commit(next, kept.rows);
       return ok(next);
     });
@@ -208,7 +215,13 @@ export function store<T extends object>(
         rows.slice(0, cut).reduce((st, r) => freeze(r.apply(st)), base),
       );
       if (!initial.ok) throw unpersisted(id, "initial", initial.error);
-      return { state: state.value, log: log.value, initial: initial.value, head: seq };
+      return {
+        state: state.value,
+        log: log.value,
+        initial: initial.value,
+        head: seq,
+        keys: keys.map((k) => ({ ...k })),
+      };
     },
     restore(snap) {
       const codec = logSchema(payloads);
@@ -224,9 +237,15 @@ export function store<T extends object>(
       const parsed = s.object({ state: schema, log: s.array(entry) }).parse(snap);
       if (!parsed.ok) return parsed;
       // A head below the latest entry's id would let the next commit reuse an id: the snapshot is invalid.
-      const latest = parsed.value.log.at(-1)?.id ?? 0;
-      const head = s.object({ head: s.int({ min: latest }).optional() }).parse(snap);
+      const last = parsed.value.log.at(-1)?.id ?? 0;
+      const head = s.object({ head: s.int({ min: last }).optional() }).parse(snap);
       if (!head.ok) return head;
+      // Without `keys`, the log entries' keys, taken before any fold.
+      const pairs = s.object({ keys: s.array(s.object({ name: s.string(), key: keySchema })).optional() }).parse(snap);
+      if (!pairs.ok) return pairs;
+      const restoredKeys =
+        pairs.value.keys ??
+        parsed.value.log.flatMap((e) => (e.key === undefined ? [] : [{ name: e.name, key: e.key }]));
       const state = copy(schema, parsed.value.state);
       if (!state.ok) return state;
       const restored = freeze(state.value);
@@ -246,8 +265,9 @@ export function store<T extends object>(
         kept = trim(freeze(init.value), next, limit);
       }
       for (const r of next ?? []) tick = Math.max(tick, r.entry.at);
-      seq = head.value.head ?? latest;
+      seq = head.value.head ?? last;
       base = kept.base;
+      keys = recent(restoredKeys.map((k) => freeze({ name: k.name, key: k.key })));
       commit(restored, kept.rows);
       return ok(restored);
     },

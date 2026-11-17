@@ -6,7 +6,7 @@ import type { TxOptions } from "./types/TxOptions.ts";
 
 /**
  * Run a transaction: validate `payload`, `meta`, `base` and `key` (`schema.invalid`), check the scope's `uses`
- * (`store.undeclared`); a `key` a kept entry holds returns `ok` with nothing committed; a `base` other than `head()`
+ * (`store.undeclared`); a `key` the store's `keys` holds for `t` returns `ok` with nothing committed; a `base` other than `head()`
  * under `'reject'` is `keel.conflict`; else apply, check invariants (`store.invariant`), then commit and log in one batch.
  * Errors leave state, log and head unchanged; a throwing transaction rethrows with nothing committed.
  * `payload` is typed by the transaction's schema; a value typed `unknown` (wire data, a log entry) is also accepted

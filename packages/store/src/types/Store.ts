@@ -23,10 +23,14 @@ export interface Store<T> {
   head(): number;
   /** Committed entries, oldest first. Reactive. */
   log(): readonly LogEntry[];
-  /** JSON-safe copy of state, log, `initial` and `head`; log entries carry `meta` only with `{ meta: true }` (never for clients). */
+  /**
+   * JSON-safe copy of state, log, `initial`, `head` and `keys`; log entries carry `meta` only with `{ meta: true }`
+   * (never for clients).
+   */
   snapshot(options?: { readonly meta?: boolean }): Snapshot<T>;
   /**
-   * Decode a snapshot and replace state, log and head (without `head`: the latest entry's `id`, else 0);
+   * Decode a snapshot and replace state, log, head (without `head`: the latest entry's `id`, else 0) and `keys`
+   * (without `keys`: its log entries' keys);
    * `schema.invalid` leaves the store unchanged.
    */
   restore(snapshot: unknown): Result<T, SchemaError>;

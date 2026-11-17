@@ -72,5 +72,6 @@ export const wire = {
     ),
     initial: s.json(),
     head: s.number(),
+    keys: s.array(s.object({ name: s.string(), key: s.string() })).optional(),
   }),
 };
