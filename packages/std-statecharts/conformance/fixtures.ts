@@ -1,5 +1,5 @@
 // Shared fixtures for the std.statecharts conformance files (not a test file).
-// Assumption: `store.snapshot()` is `{ state, log, initial, head }` and `store.restore(snapshot)` accepts that shape with `state` and `initial` replaced and an empty log.
+// Assumption: `store.snapshot()` is `{ state, log, initial, head, keys }` and `store.restore(snapshot)` accepts that shape with `state` and `initial` replaced and an empty log.
 import { s } from "@keel/schema";
 import type { Snapshot, Store } from "@keel/store";
 import { chart } from "@keel/std-statecharts";
