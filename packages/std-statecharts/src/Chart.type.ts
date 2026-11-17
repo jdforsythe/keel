@@ -7,7 +7,8 @@ import type { compileKey } from "./internal/compileKey.ts";
 /**
  * A compiled chart (std.statecharts): its store, one transaction per event (`<id>.<event>`), the declared states and
  * `initial`, and `enabled(state, event, payload)`, true when `tx` of that event would change the state's name or apply
- * a `do`, and `next(state, event, payload)`, the `{ state, data }` that transaction gives. `instance(chart, key)` compiles it again as the store `<id>:<key>`.
+ * a `do`, `next(state, event, payload)`, the `{ state, data }` that transaction gives, and `taken(state, event, payload)`,
+ * the target it takes. `instance(chart, key)` compiles it again as the store `<id>:<key>`.
  */
 export type Chart<
   D,
@@ -26,6 +27,15 @@ export type Chart<
     event: K,
     payload: Infer<Ev[K]>,
   ): ChartState<S | T, D>;
+  /**
+   * The target `tx` of `event` takes from `state`: the first of the state's `on[event]` whose guard holds, a bare
+   * state name read as `{ to }`; `undefined` when none holds, the state's `on` lacks the event or `state` names no state.
+   */
+  taken<K extends keyof Ev, T extends string>(
+    state: ChartState<T, D>,
+    event: K,
+    payload: Infer<Ev[K]>,
+  ): { readonly to?: S; readonly guard?: G; readonly do?: A } | undefined;
   /** Compiles the declaration again, in the calling scope, as the store `id` (what `instance` calls). */
   readonly [compileKey]: (id: string) => ChartInstance<D, Ev, S>;
 };

@@ -225,12 +225,11 @@ test("A guarded target with no `to` that the chart takes stays in the entry", as
   expect(await entered(false, false)).toBe(1);
 });
 
-test.fails("A guarded self target the chart takes beside a guarded target with no `to` is an entry", async () => {
-  // the chart reports neither which target it took nor its guards, so the two read alike
+test("A guarded self target the chart takes beside a guarded target with no `to` is an entry", async () => {
   await fc.assert(
-    fc.asyncProperty(fc.boolean(), async (stay) => {
-      expect(await entered(true, stay)).toBe(2);
+    fc.asyncProperty(fc.boolean(), fc.boolean(), async (self, stay) => {
+      expect(await entered(self, stay)).toBe(self ? 2 : 1);
     }),
-    { seed: 1337, numRuns: 2 },
+    { seed: 1337, numRuns: 8 },
   );
 });

@@ -18,7 +18,8 @@ import { targetsOf } from "./internal/targetsOf.ts";
  * `<id>.<event>` per event. A transaction takes the first target of the current state's `on[event]` whose guard holds,
  * applies its `do` to `data` and moves to its `to`; with none the state is unchanged. Throws E2751 (a name naming no
  * state), E2753 (a non-final state with no way out) and E2754 (a final state with `on`, or an event, guard or action
- * name naming no entry). `next(state, event, payload)` is the `{ state, data }` that event's transaction gives.
+ * name naming no entry). `next(state, event, payload)` is the `{ state, data }` that event's transaction gives, and
+ * `taken(state, event, payload)` the target it takes (a bare state name read as `{ to }`) or `undefined`.
  */
 export function chart<
   D,
@@ -40,6 +41,22 @@ export function chart<
     for (const t of targetsOf(declared[cur.state]?.on?.[event]))
       if (t.guard === undefined || guards[t.guard]?.(cur.data, payload) === true) return t;
     return undefined;
+  };
+  const gs: G[] = [];
+  if (spec.guards) for (const g in spec.guards) gs.push(g);
+  const as: A[] = [];
+  if (spec.actions) for (const a in spec.actions) as.push(a);
+  const taken = <T extends string>(cur: ChartState<T, D>, event: PropertyKey, payload: unknown) => {
+    const t = pick(cur, String(event), payload);
+    if (t === undefined) return undefined;
+    const to = names.find((n) => n === t.to);
+    const guard = gs.find((g) => g === t.guard);
+    const act = as.find((a) => a === t.do);
+    return {
+      ...(to === undefined ? {} : { to }),
+      ...(guard === undefined ? {} : { guard }),
+      ...(act === undefined ? {} : { do: act }),
+    };
   };
   const enabled = (state: ChartState<S, D>, event: PropertyKey, payload: unknown) => {
     const t = pick(state, String(event), payload);
@@ -72,5 +89,5 @@ export function chart<
   };
   // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
   const own = owner() === undefined ? scope(() => undefined, { detached: true }).run(() => compile(id)) : compile(id);
-  return { ...own, data: spec.data, states: spec.states, initial: spec.initial, next, [compileKey]: compile };
+  return { ...own, data: spec.data, states: spec.states, initial: spec.initial, next, taken, [compileKey]: compile };
 }

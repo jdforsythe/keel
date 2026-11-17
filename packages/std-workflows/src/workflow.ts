@@ -69,7 +69,7 @@ export function workflow<
     events,
     (() => {
       const c = looseChart<D>(chart);
-      return entryOf<D>(states, c.next, c.enabled);
+      return entryOf<D>(c.next, c.taken);
     })(),
     finals,
     spec.limit ?? 1000,
