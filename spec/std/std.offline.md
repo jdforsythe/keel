@@ -13,7 +13,7 @@ export const boardOutbox = outbox('todos.outbox', BoardApi, { limit: 100 })
 ```ts
 const r = await send(ctx, boardOutbox, origin, 'editTodo', { params: { todoId }, body: { title, priority } }, { base: view.get('head') })
 ```
-`send` adds an entry whose `body.write` is `{ key: ctx.random.id('Write'), base }`, writes the outbox to `ctx.storage` key `keel.outbox.<id>`, and flushes. It resolves `OutboxResult<O>`: `{ state: 'sent', value }`, `{ state: 'queued' }` (offline, or the network failed), `{ state: 'conflict', head }` or `{ state: 'failed', error }`. A full outbox (`limit` entries, or `maxBytes` of encoded entries) resolves `failed` with `offline.full` and adds nothing.
+`send` adds an entry whose `body.write` is `{ key: ctx.random.id('Write'), base }`, writes the outbox to `ctx.storage` key `keel.outbox.<id>`, and flushes. It resolves `OutboxResult<O>`: `{ state: 'sent', value }`, `{ state: 'queued' }` (offline, or the network failed), `{ state: 'conflict', head }` or `{ state: 'failed', error }`, `error` an `ApiError`, `offline.full` or `offline.storage`. A full outbox (`limit` entries, or `maxBytes` of encoded entries) resolves `failed` with `offline.full` and adds nothing. A write to `ctx.storage` that rejects, in `send`, a flush or a `'mine'` `resolve`, leaves the entry `failed` with `offline.storage` in memory, posts nothing more and releases the flush.
 
 **Flush.** Entries are sent in the order added, one request at a time, through the k.services client:
 - 2xx: the entry is removed; `sent`.
@@ -24,7 +24,7 @@ const r = await send(ctx, boardOutbox, origin, 'editTodo', { params: { todoId },
 
 `drain(ctx, outbox)`, inside a scope, loads the stored outbox (`sending` entries become `queued`), flushes, and flushes again on each reconnect until the scope is disposed. A resent entry keeps its key, so a write the server already committed commits nothing again while the store keeps that key: its last `logLimit` keyed writes (k.sync).
 
-**Resolve.** `resolve(ctx, outbox, key, resolution)`, `resolution` `'mine'` or `'theirs'`. `'mine'` queues a `conflict` entry again, last, with `base` set to its `head`, so the write applies over what it conflicted with; `'theirs'` removes a `conflict` or `failed` entry. The outbox log records each as `<id>.resolve` `{ key, resolution }`.
+**Resolve.** `resolve(ctx, outbox, key, resolution)`, `resolution` `'mine'` or `'theirs'`. `'mine'` queues a `conflict` entry again, last, with `base` set to its `head`, so the write applies over what it conflicted with, flushes, and resolves that entry's `OutboxResult` as `send` does. `'theirs'` removes a `conflict` or `failed` entry and resolves `true`. With no such entry, each resolves `false` and changes nothing. The outbox log records each as `<id>.resolve` `{ key, resolution }`.
 
 **Privacy.** Entries stay in the browser's storage and go only to their endpoint; E2651 keeps secrets out of them. A session records the outbox's transactions, and a module's `redact` entries cover their payloads.
 
@@ -41,3 +41,5 @@ const r = await send(ctx, boardOutbox, origin, 'editTodo', { params: { todoId },
 - After a network failure the next post happens 1 s, 2 s, 4 s later on `ctx.clock` (at most 60 s apart), or at once on `{ kind: 'net', online: true }`.
 - `outbox` throws E2651 for an api with a nested `s.secret` in an endpoint body; `keel check` reports E2651 on that fixture and nothing on its clean twin.
 - Under one seed, two runs of one script of sends and connectivity changes give byte-equal outbox and server logs.
+- With a sim schedule `storage: ['ok', 'fail']` (the load's `get`, then `send`'s `set`), `send` resolves `failed` with `offline.storage`, posts nothing and leaves the entry `failed`; with `['ok', 'ok', 'fail']` the flush's `set` fails, the entry is `failed` with `offline.storage`, and the next `send` posts.
+- Online, `resolve(ctx, o, key, 'mine')` resolves `sent` with the endpoint's output once the re-send answers; offline, `queued`; for a key with no `conflict` entry, `false`. `'theirs'` resolves `true` when it removed an entry, else `false`.
