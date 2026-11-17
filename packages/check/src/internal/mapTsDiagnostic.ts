@@ -92,7 +92,8 @@ function isComponentProps(n: ts.Node, path: string): boolean {
  * Map one TS diagnostic to a Keel diagnostic (k.check): a missing a11y prop on a base element is E1802,
  * a missing `For` key is E1001, a string where `Href` is required is E1501 (E1003 when it is a literal
  * `javascript:`/`data:` URL); one at the key or `api: true` of a `manifest({...})` entry is E1510 or E1508 (`manifestEntry`, E1510 with a
- * fix removing an API route's refused members); any other error is E1751 with
+ * fix removing an API route's refused members); one whose text holds a `"E1512 <message>"` type (`ActionsFit` of
+ * `routes.actions`) is E1512 with that message; any other error is E1751 with
  * the message starting `TS<code>`. Returns `null` for errors Keel does not report (implicit `any` on
  * component props) and for non-error categories.
  */
@@ -130,6 +131,8 @@ export function mapTsDiagnostic(
     const moved = edits.map((e) => ({ ...e, start: original(e.start), end: original(e.end) }));
     return { ...base, fix: unifiedDiff(path, file.source, applyEdits(file.source, moved)) };
   }
+  const e1512 = /"E1512 ([^"]+)"/.exec(text)?.[1];
+  if (e1512 !== undefined) return diag("E1512", e1512, "k.api");
   const tag = jsxTagOf(node);
   const missing = /Property '(\w+)' is missing/.exec(text)?.[1];
   const required = tag === null ? undefined : A11Y.get(tag);

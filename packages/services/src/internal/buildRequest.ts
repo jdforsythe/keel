@@ -1,4 +1,4 @@
-import { type Result, attempt, err, ok } from "@keel/schema";
+import { type Result, attempt, err, ok, reveal, s } from "@keel/schema";
 import type { ApiError } from "../ApiError.ts";
 import type { Endpoint } from "../Endpoint.ts";
 import { encodePart } from "./encodePart.ts";
@@ -6,10 +6,14 @@ import { encodeQuery } from "./encodeQuery.ts";
 import { fail } from "./fail.ts";
 import { fillPath } from "./fillPath.ts";
 
+const Bearer = s.secret(s.string());
+
 /**
  * Build the Request for one call: path params URL-encoded, query by its schema, body as JSON, with
- * `accept` (`application/json`; `text/event-stream` for an `events` endpoint) and `x-keel: 1` (the k.server same-site proof for writes, RFC 0022). Invalid input is
- * `api.input`; a Request the platform refuses (bad URL, body on GET) is `api.network`.
+ * `accept` (`application/json`; `text/event-stream` for an `events` endpoint), `x-keel: 1` (the k.server same-site proof for writes) and, with
+ * a `bearer`, `authorization: Bearer <token>`, revealed here and nowhere else. Invalid input is `api.input` and nothing is
+ * built: a `bearer` that is not a secret whose text is a token68 of 1 to 4,096 characters (k.api Bearer) is `format` at
+ * `bearer`. A Request the platform refuses (bad URL, body on GET) is `api.network`.
  */
 export function buildRequest(
   e: Endpoint,
@@ -24,17 +28,24 @@ export function buildRequest(
   if (!query.ok) return query;
   const body = encodePart(e.body, "body", input);
   if (!body.ok) return body;
+  const b: unknown = Reflect.get(Object(input), "bearer");
+  const sb = typeof b === "string" ? undefined : Bearer.parse(b);
+  const token = sb?.ok ? reveal(sb.value) : "";
+  if (b !== undefined && !/^[\w.~+/-]{1,4096}=*$/.test(token))
+    return err(fail.input([{ path: ["bearer"], rule: "format" }]));
   const path = fillPath(e.path, params.value);
   if (!path.ok) return path;
   const qs = query.value === undefined ? "" : encodeQuery(query.value).toString();
   const url = `${base.replace(/\/+$/, "")}${path.value}${qs === "" ? "" : `?${qs}`}`;
   const json = body.value;
+  const headers: Record<string, string> = { accept, "x-keel": "1" };
+  if (b !== undefined) headers.authorization = `Bearer ${token}`;
   const init: RequestInit =
     json === undefined
-      ? { method: e.method, headers: { accept, "x-keel": "1" }, signal }
+      ? { method: e.method, headers, signal }
       : {
           method: e.method,
-          headers: { accept, "x-keel": "1", "content-type": "application/json" },
+          headers: { ...headers, "content-type": "application/json" },
           body: JSON.stringify(json),
           signal,
         };

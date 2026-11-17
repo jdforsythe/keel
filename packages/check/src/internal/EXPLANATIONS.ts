@@ -172,6 +172,13 @@ const ROWS: readonly Row[] = [
     "k.reveal",
   ],
   [
+    "E1113",
+    "an s.secret node in a loader or action output",
+    'A Secret encodes as "[secret]", so the answer would hold the marker.',
+    "reveal it in the *.server.ts file into an s.string() field: ok({ token: reveal(t) })",
+    "k.privacy",
+  ],
+  [
     "E1151",
     "import of a non-public export of another module",
     "",
@@ -462,6 +469,13 @@ const ROWS: readonly Row[] = [
     "API route in a module a client or static deployable serves",
     "Those deployables have no server to answer it.",
     "serve the module from a node deployable, or move the API route to a module one serves",
+    "k.api",
+  ],
+  [
+    "E1512",
+    "an action without output on an API route, or with output on a page",
+    "An API route answers data, ok(value); a page's action answers navigation, ok(href) or ok(null).",
+    "a write with nothing to say: output: s.object({}), return ok({})",
     "k.api",
   ],
   [

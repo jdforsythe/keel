@@ -90,3 +90,15 @@ test("outbox throws E2651 with code and path for a secret in a body", () => {
     );
   }).dispose();
 });
+
+test("send takes no bearer: a secret in the input is refused before the outbox stores anything", async () => {
+  const ctx = sim();
+  ctx.net.setOnline(false);
+  const { o, sc } = declare();
+  const t = s.secret(s.string()).parse("abc");
+  if (!t.ok) throw new Error("fixture: a string parses as a secret");
+  // @ts-expect-error `bearer` is not part of a queued write's input
+  await expect(send(ctx, o, ORIGIN, "add", { body: { t: "a" }, bearer: t.value }, { base: 0 })).rejects.toThrow();
+  expect(o.get("entries")).toHaveLength(0);
+  sc.dispose();
+});
