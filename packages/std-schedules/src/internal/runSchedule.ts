@@ -8,7 +8,8 @@ const Marks = s.record(s.number());
 
 /**
  * A schedule's runner (std.schedules Run, Restart). At start, an entry whose mark is older than its latest fire time
- * enqueues that one (`once`) or none (`skip`); an entry without a mark starts from now. At each fire time `t` it
+ * enqueues that one (`once`) or none (`skip`); an entry without a mark starts from now: before it waits, one write
+ * stores the start time as the mark of every such entry, so a first fire whose `enqueue` errs has passed at the next start. At each fire time `t` it
  * enqueues `job` with key `<id>@<t>` (`t` in epoch ms), then, once `enqueue` returns `ok`, stores `t` as the
  * entry's mark under `std.schedules.<module>`; an `err` stores no mark and rejects. When `signal` aborts it stops waiting and resolves.
  */
@@ -31,10 +32,14 @@ export async function runSchedule(
     await ctx.storage.set(key, JSON.stringify(marks));
   };
   const now = ctx.clock.now();
+  const fresh = plan.filter((p) => marks[p.id] === undefined);
+  const had = new Set(plan.filter((p) => marks[p.id] !== undefined));
+  for (const p of fresh) marks[p.id] = now;
+  if (fresh.length > 0) await ctx.storage.set(key, JSON.stringify(marks));
   const next = new Map<Planned, number | undefined>();
   for (const p of plan) {
     const mark = marks[p.id];
-    const last = mark === undefined ? undefined : seek(p.cron, p.zone, now, -1);
+    const last = mark === undefined || !had.has(p) ? undefined : seek(p.cron, p.zone, now, -1);
     if (p.once && mark !== undefined && last !== undefined && last > mark) await fire(p, last);
     next.set(p, seek(p.cron, p.zone, now, 1));
   }
