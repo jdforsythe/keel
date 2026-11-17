@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "After a push or replace to another route scroll is 0, after a search-only one it is unchanged; back and forward restore each entry's position, also for two entries with one URL." (scroll is saved per router-minted history key) Seed 1337.
+// Spec: k.head, clause "After a push or replace to another route scroll is 0, after a search-only one it is unchanged; back and forward restore each entry's position, also for two entries with one URL." (scroll is saved per router-minted history key) Seed 1337.
 // Relies on happy-dom window.scrollTo updating window.scrollY.
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

@@ -1,5 +1,6 @@
 // Spec: k.runtime API, clause "`mount(Component, el, { ctx?, onError?, mode? })` ... Both take `mode` (k.errors): `'dev'` in a dev build, else `'production'`."
 // Spec: k.runtime Islands: the generated resume entry calls `resume(document.body, components, { ctx, stores, mode })`.
+// Spec: k.router Client: `createRouter(routes, { ctx, history, mode? })` takes `mount`'s `mode`.
 // Seed: 1337 (no random input: the `import.meta.env.DEV` values are enumerated).
 // The entries are read as the Vite dev server serves `/@keel/entry.ts` for a fixture app; the `mode` expression is evaluated with `import.meta.env` bound to a stand-in.
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -92,6 +93,10 @@ afterAll(() => {
 describe("k.runtime: the generated entries pass mode", () => {
   test("the generated client entry passes `mode` to `mount`", () => {
     expect(client).toMatch(/\bmount\s*\(\s*router\.App\s*,[^)]*\{[^}]*\bmode\b[^}]*\}/);
+  });
+
+  test("the generated client entry passes `mode` to `createRouter`", () => {
+    expect(client).toMatch(/\bcreateRouter\s*\([^;]*\{[^}]*\bmode\b[^}]*\}/);
   });
 
   test("the generated resume entry passes `mode` to `resume`", () => {

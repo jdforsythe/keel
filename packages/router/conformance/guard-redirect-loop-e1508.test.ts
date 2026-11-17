@@ -28,10 +28,14 @@ const shell = (p: { children?: () => Node | Node[] | string }) => {
 const errorElement = (p: { error: { code: string; message: string } }) =>
   el("p", `${p.error.code}|${p.error.message}`, { "data-error": "1" });
 
-async function run(defs: Record<string, unknown>, at: string, go: string) {
+async function run(defs: Record<string, unknown>, at: string, go: string, mode?: "dev") {
   const routes = Reflect.apply(manifest, undefined, [defs]);
   const history = memoryHistory(at);
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim", seed: SEED }), history });
+  const router = createRouter(routes, {
+    ctx: createCtx({ mode: "sim", seed: SEED }),
+    history,
+    ...(mode === undefined ? {} : { mode }),
+  });
   const host = document.createElement("div");
   document.body.append(host);
   const unmount = mount(router.App, host);
@@ -50,7 +54,7 @@ const loopDefs = (withError: boolean) => ({
 
 describe("k.guards E1508 client", () => {
   it("a navigation whose guard redirects into a route under the same denying guard renders an errorElement with code keel.unexpected and an E1508 message instead of looping", async () => {
-    const r = await run(loopDefs(true), "/", "app.login");
+    const r = await run(loopDefs(true), "/", "app.login", "dev");
     const text = r.host.querySelector('[data-error="1"]')?.textContent ?? "";
     expect(text).toContain("keel.unexpected|");
     expect(text).toContain("E1508");
@@ -59,8 +63,16 @@ describe("k.guards E1508 client", () => {
   });
 
   it("the same loop with no errorElement shows the default error alert mentioning E1508", async () => {
-    const r = await run(loopDefs(false), "/", "app.login");
+    const r = await run(loopDefs(false), "/", "app.login", "dev");
     expect(r.host.querySelector('[role="alert"]')?.textContent ?? "").toContain("E1508");
+    r.stop();
+  });
+
+  it("the same loop with no errorElement and no mode shows the default error alert reading unexpected", async () => {
+    const r = await run(loopDefs(false), "/", "app.login");
+    const text = r.host.querySelector('[role="alert"]')?.textContent ?? "";
+    expect(text).toBe("unexpected");
+    expect(text).not.toContain("E1508");
     r.stop();
   });
 
