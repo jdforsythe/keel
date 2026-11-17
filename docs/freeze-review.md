@@ -1,6 +1,6 @@
 # Freeze review (G3)
 
-Each Conformance block is split into atomic clauses; each clause maps to a non-todo test body in some `packages/*/conformance/**`. `conformance-covered` requires 0 partial, todo, none. One conformance test is skipped: `std-i18n/conformance/e2301.test.ts`.
+Each section's clauses are the bullets under its **Conformance** paragraph. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the table is not a clause-by-clause audit. `conformance-covered` requires 0 partial, todo, none. One conformance test is skipped: `std-i18n/conformance/e2301.test.ts`.
 
 ## 1. Per section
 
@@ -9,38 +9,72 @@ Each Conformance block is split into atomic clauses; each clause maps to a non-t
 | k.schema | 12 | **conformance-covered** | none |
 | k.reactive | 19 | **conformance-covered** | none |
 | k.store | 23 | **conformance-covered** | none |
-| k.ctx | 18 | **conformance-covered** | none |
+| k.ctx | 17 | **conformance-covered** | none |
 | k.errors | 13 | **conformance-covered** | none |
-| k.compiler | 20 | **conformance-covered** | none (`keel-dir-tamper` runs in `testing/conformance/compiler-keel-dir-tamper.test.ts`) |
-| k.component | 11 | **conformance-covered** | none (`testing/conformance/component-*.test.ts`; the compiler cannot import testing or ui, S0003) |
+| k.compiler | 20 | **conformance-covered** | none |
+| k.component | 16 | **conformance-covered** | none |
 | k.runtime | 13 | **conformance-covered** | none |
-| k.ui | 14 | **conformance-covered** | none (`testing/conformance/ui-*.test.ts`) |
-| k.router | 15 | **conformance-covered** | none (E1501-E1506: `rules-e1501-e1506.test.ts`) |
+| k.ui | 15 | **conformance-covered** | none |
+| k.router | 15 | **conformance-covered** | none |
 | k.prefix | 7 | **conformance-covered** | none |
-| k.head | 6 | **conformance-covered** | none |
+| k.head | 7 | **conformance-covered** | none |
 | k.forms | 16 | **conformance-covered** | none |
 | k.server | 16 | **conformance-covered** | none |
-| k.topology | 8 | implemented | the forwarding test compares status, body and `content-type` only, not all headers; the deploy-files test does not run `keel build` |
-| k.compat | 11 | **conformance-covered** | none |
-| k.api | 10 | **conformance-covered** | none (`router/conformance/api-routes-0086.test.ts`, `server/conformance/api-routes-0086.test.ts`) |
-| k.services | 11 | **conformance-covered** | none |
+| k.topology | 9 | implemented | not audited clause by clause |
+| k.compat | 13 | **conformance-covered** | none |
+| k.api | 14 | **conformance-covered** | none |
+| k.services | 12 | **conformance-covered** | none |
 | k.check | 13 | **conformance-covered** | none |
-| k.cli | 19 | **conformance-covered** | none (`surfaces.test.ts`, `inspect.test.ts`) |
+| k.cli | 19 | **conformance-covered** | none |
 | k.module | 14 | **conformance-covered** | none |
 | k.scaffold | 10 | **conformance-covered** | none |
-| k.testing | 12 | **conformance-covered** | none (`default-sim-seed`, `fire-resource`, `ledger-real-runs`) |
+| k.testing | 13 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 10 | **conformance-covered** | none |
-| k.ledger | 10 | **conformance-covered** | none |
+| k.ledger | 11 | **conformance-covered** | none |
 | k.sync | 10 | **conformance-covered** | none |
-| k.deploy | 5 | **conformance-covered** | none |
-| k.hosting | 6 | implemented | the `service({ module })` call from the client entry to the tagged origin |
+| k.deploy | 9 | **conformance-covered** | none |
+| k.hosting | 6 | implemented | not audited clause by clause |
 | k.openapi | 1 | **conformance-covered** | none |
 | k.a11y | 9 | **conformance-covered** | none |
 | k.security | 13 | **conformance-covered** | none |
-| k.privacy | 9 | **conformance-covered** | none |
+| k.privacy | 12 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
-| **total** | **401** | 32 of 34 covered | |
+| k.aria | 10 | **conformance-covered** | none |
+| k.guards | 3 | **conformance-covered** | none |
+| k.persist | 12 | proposed | not audited clause by clause |
+| k.prove | 9 | proposed | not audited clause by clause |
+| k.reveal | 8 | **conformance-covered** | none |
+| k.shell | 6 | proposed | not audited clause by clause |
+| std.brands | 6 | **conformance-covered** | none |
+| std.channels | 10 | **conformance-covered** | none |
+| std.conflicts | 8 | **conformance-covered** | none |
+| std.credentials | 15 | **conformance-covered** | none |
+| std.db | 8 | proposed | not audited clause by clause |
+| std.geo | 5 | **conformance-covered** | none |
+| std.headless | 7 | **conformance-covered** | none |
+| std.health | 7 | **conformance-covered** | none |
+| std.i18n | 8 | **conformance-covered** | none |
+| std.jobs | 11 | **conformance-covered** | none |
+| std.live | 8 | **conformance-covered** | none |
+| std.messages | 9 | **conformance-covered** | none |
+| std.money | 7 | **conformance-covered** | none |
+| std.monitor | 7 | **conformance-covered** | none |
+| std.multi | 7 | **conformance-covered** | none |
+| std.offline | 10 | **conformance-covered** | none |
+| std.options | 7 | **conformance-covered** | none |
+| std.report | 6 | **conformance-covered** | none |
+| std.schedules | 8 | **conformance-covered** | none |
+| std.sessions | 13 | **conformance-covered** | none |
+| std.shells | 6 | proposed | not audited clause by clause |
+| std.statecharts | 10 | **conformance-covered** | none |
+| std.tables | 9 | **conformance-covered** | none |
+| std.temporal | 10 | **conformance-covered** | none |
+| std.text | 9 | **conformance-covered** | none |
+| std.timings | 7 | **conformance-covered** | none |
+| std.tokens | 10 | **conformance-covered** | none |
+| std.workflows | 8 | proposed | not audited clause by clause |
+| **total** | **708** | 60 of 68 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -83,10 +117,10 @@ Each point has a stdlib user, so the G3 criterion is 6 of 6.
 
 ## Other G3 criteria
 
-Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/results/2026-11-13-golden-1-api-none.json`, `2026-11-12-golden-2-none.json`); `apps/inspector` and `apps/sessions` are not eval-built. Converged runs are recorded on 2026-11-07, 2026-11-10, 2026-11-11, 2026-11-12 and 2026-11-13.
+Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/results/2026-11-16-golden-1-api-none.json`, `2026-11-14-golden-2-none.json`); `apps/inspector` and `apps/sessions` are not eval-built. Converged runs are recorded on 2026-11-06, 2026-11-07, 2026-11-10, 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-14 and 2026-11-16; the golden-2-catalog task has not converged.
 
 ## Status
 
-No section is `frozen`. k.topology and k.hosting are `implemented`.
+No section is `frozen`. k.topology and k.hosting are `implemented`; k.persist, k.prove, k.shell, std.db, std.shells and std.workflows are `proposed`; the other 60 are `conformance-covered`.
 
-verified: 71dcf02ad646880c26e6c512810d5aae547133ee
+verified: a920a063ddb8a4b0b966f28da26ddaf4d1b0d2b1
