@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { tauriHttpCapability } from "@keel/scaffold";
+import { toolCommand } from "../internal/toolCommand.ts";
 import type { ShellPlan } from "../types/ShellPlan.ts";
 import { defaultIcon } from "./defaultIcon.ts";
 import { metaPolicy } from "./metaPolicy.ts";
@@ -21,14 +22,17 @@ function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; ar
   const rel = `dist/${name}/${plan.target}`;
   if (plan.target === "tauri") {
     const mode = plan.release ? "release" : "debug";
-    const args = ["--no-install", "tauri", "build", ...(plan.release ? [] : ["--debug"]), "--no-bundle"];
-    return { steps: [{ cmd: "npx", args, cwd: at }], artifact: `${rel}/target/${mode}/${plan.crate}` };
+    const args = ["build", ...(plan.release ? [] : ["--debug"]), "--no-bundle"];
+    return {
+      steps: [{ ...toolCommand(at, "@tauri-apps/cli", "tauri", args), cwd: at }],
+      artifact: `${rel}/target/${mode}/${plan.crate}`,
+    };
   }
   const platform = plan.platform ?? "android";
   const add: Step[] = existsSync(join(at, platform))
     ? []
-    : [{ cmd: "npx", args: ["--no-install", "cap", "add", platform], cwd: at }];
-  const sync: Step = { cmd: "npx", args: ["--no-install", "cap", "sync", platform], cwd: at };
+    : [{ ...toolCommand(at, "@capacitor/cli", "cap", ["add", platform]), cwd: at }];
+  const sync: Step = { ...toolCommand(at, "@capacitor/cli", "cap", ["sync", platform]), cwd: at };
   if (platform === "android") {
     const task = plan.release ? "assembleRelease" : "assembleDebug";
     const mode = plan.release ? "release/app-release-unsigned.apk" : "debug/app-debug.apk";
@@ -81,11 +85,7 @@ export function shellBuild(cwd: string, plan: ShellPlan): Done {
   for (const name of plan.deployables) {
     const rel = `dist/${name}/${plan.target}`;
     const at = join(cwd, rel);
-    const vite = run(
-      { cmd: "npx", args: ["--no-install", "vite", "build"], cwd },
-      { ...env, KEEL_DEPLOYABLE: name },
-      cwd,
-    );
+    const vite = run({ ...toolCommand(cwd, "vite", "vite", ["build"]), cwd }, { ...env, KEEL_DEPLOYABLE: name }, cwd);
     if (vite !== undefined) return { ...done, code: 1, stderr: vite };
     const index = join(at, "www", "index.html");
     if (!existsSync(index)) {

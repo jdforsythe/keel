@@ -30,6 +30,24 @@ describe("testFacts / testEvidence: references", () => {
     expect(reached(src)).toEqual([["bar", "expect", "foo", "toBeDefined"]]);
   });
 
+  it("an import used by the body is credited; one shadowed by a local of its name, or never used, is not", () => {
+    const used = 'import { addUser } from "x";\nit("t", () => { addUser(1); });';
+    expect(reached(used)).toEqual([["addUser"]]);
+    const shadow = 'import { addUser } from "x";\nit("t", () => { const { addUser } = fresh(); addUser(1); });';
+    expect(reached(shadow)).toEqual([["fresh"]]);
+    const unused = 'import { addUser } from "x";\nit("t", () => { expect(1).toBe(1); });';
+    expect(reached(unused)).toEqual([["expect", "toBe"]]);
+    const param = 'import { f } from "x";\nit("t", () => { [1].map((f) => f(2)); f(3); });';
+    expect(reached(param)).toEqual([["f", "map"].sort()]);
+    const inner = 'import { f } from "x";\nit("t", () => { { const f = g; f(); } for (const f of h) f(); });';
+    expect(reached(inner)).toEqual([[]]);
+  });
+
+  it("an import named only in a type position earns no credit", () => {
+    const src = 'import { User } from "x";\nit("t", () => { const u: User = make(); type V = typeof User; });';
+    expect(reached(src)).toEqual([["make"]]);
+  });
+
   it("a namespace member counts; any call or new by name counts, a plain member read does not", () => {
     const src = [
       'import * as m from "x";',

@@ -5,6 +5,7 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { A11yClaim } from "./A11yClaim.ts";
 import type { A11yCriteriaMap } from "./A11yCriteriaMap.ts";
+import type { Diag } from "./Diag.ts";
 import { LedgerFileSchema } from "./LedgerFileSchema.ts";
 import type { LedgerItem } from "./LedgerItem.ts";
 import type { Outcome } from "./Outcome.ts";
@@ -14,6 +15,7 @@ import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { mutationClaims } from "./mutationClaims.ts";
+import { packageInScope } from "./packageInScope.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { summary } from "./summary.ts";
 
@@ -196,24 +198,37 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
         diags.push(
           makeDiag("E1712", `rung ${rung} is held by no item (committed ${n})`, { path: name, see: "k.ledger" }),
         );
+  let outside = 0;
   for (const [pkg, p] of Object.entries(mutation.packages)) {
+    const mine: Diag[] = [];
     const at = { path: reports[pkg] ?? name, see: "k.ledger" };
     const claimed = mutation.claims.some((c) => c.file.startsWith(`packages/${pkg}/`));
     if (p.score !== undefined && p.score < p.threshold)
-      diags.push(makeDiag("E1713", `mutation ${pkg} ${p.score}% is below its threshold ${p.threshold}%`, at));
+      mine.push(makeDiag("E1713", `mutation ${pkg} ${p.score}% is below its threshold ${p.threshold}%`, at));
     // Claims with none fresh score nothing: no evidence the threshold still holds.
     else if (p.score === undefined && claimed)
-      diags.push(makeDiag("E1713", `mutation ${pkg}: every claim is stale, so no score meets ${p.threshold}%`, at));
+      mine.push(makeDiag("E1713", `mutation ${pkg}: every claim is stale, so no score meets ${p.threshold}%`, at));
     const was = committed?.mutation?.packages[pkg]?.threshold;
     if (was !== undefined && p.threshold < was)
-      diags.push(makeDiag("E1713", `mutation ${pkg} threshold ${p.threshold}% is below the committed ${was}%`, at));
+      mine.push(makeDiag("E1713", `mutation ${pkg} threshold ${p.threshold}% is below the committed ${was}%`, at));
+    if (packageInScope(pkg, scope)) diags.push(...mine);
+    else outside += mine.length;
   }
   const gaps = coverageGaps(files, records, scope);
+  const elsewhere =
+    outside === 0
+      ? []
+      : [
+          makeDiag("I1713", `${outside} mutation ${outside === 1 ? "error" : "errors"} outside the scope`, {
+            see: "k.ledger",
+          }),
+        ];
   const found = [...diags, ...gaps];
   return {
     records: [
       ...notes,
       ...found,
+      ...elsewhere,
       summary("ledger --diff", [...notes, ...found], { ...counts, lowered: diags.length, uncovered: gaps.length }),
     ],
     writes: [],

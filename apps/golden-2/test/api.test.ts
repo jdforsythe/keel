@@ -1,7 +1,7 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
-import { isolate } from "@keel/store";
+import { invariant, isolate, store } from "@keel/store";
 import { properties } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { Box } from "../modules/kitchen/Box.schema.ts";
@@ -33,14 +33,34 @@ const fresh = () => {
   return sc.run(boxStores);
 };
 
+/** A box store with the recipe invariant and no transactions yet, so each test builds the one it drives. */
+const bareBox = () => {
+  const sc = scope(() => undefined);
+  isolate(sc);
+  scopes.push(sc);
+  return sc.run(() => {
+    const box = store(Box, { recipes: [] }, { id: "kitchen.box" });
+    invariant(
+      box,
+      (state) =>
+        new Set(state.recipes.map((r) => r.id)).size === state.recipes.length &&
+        new Set(state.recipes.map((r) => r.title.toLowerCase())).size === state.recipes.length,
+    );
+    return box;
+  });
+};
+
 describe("kitchen transactions", () => {
+  it("the request store's transactions hold the box invariant", async () => {
+    const st = fresh();
+    await properties(st.addRecipe);
+    await properties(st.toggleFavorite);
+  });
   it("addRecipe holds the box invariant under generated states and payloads", async () => {
-    const { addRecipe } = fresh();
-    await properties(addRecipe);
+    await properties(addRecipe(bareBox()));
   });
   it("toggleFavorite holds the box invariant and leaves unknown ids unchanged", async () => {
-    const { toggleFavorite } = fresh();
-    await properties(toggleFavorite);
+    await properties(toggleFavorite(bareBox()));
   });
   it("builds the transactions from the factory", () => {
     const st = fresh();

@@ -11,6 +11,7 @@
     "build": "node tooling/turbo.mjs build",
     "mutate": "node tooling/turbo.mjs mutate",
     "mutate:changed": "node tooling/mutate-changed.mjs",
+    "mutate:stale": "node tooling/mutate-stale.mjs",
     "mutate:status": "node tooling/mutate.mjs --status",
     "mutate:stop": "node tooling/mutate.mjs --stop",
     "orphans": "node tooling/orphans.mjs",

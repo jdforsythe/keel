@@ -2,7 +2,7 @@ import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { credentials } from "@keel/std-credentials/server";
-import { isolate } from "@keel/store";
+import { invariant, isolate, store } from "@keel/store";
 import { properties, render, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { ApiToken } from "../modules/accounts/ApiToken.schema.ts";
@@ -41,22 +41,60 @@ const fresh = () => {
   return sc.run(accountStores);
 };
 
+/** A users store with the accounts invariant and no transactions yet, so each test builds the one it drives. */
+const bareUsers = () => {
+  const sc = scope(() => undefined);
+  isolate(sc);
+  scopes.push(sc);
+  return sc.run(() => {
+    const users = store(Users, { users: [] }, { id: "accounts.users" });
+    invariant(
+      users,
+      (state) =>
+        new Set(state.users.map((u) => u.id)).size === state.users.length &&
+        new Set(state.users.map((u) => u.email.toLowerCase())).size === state.users.length,
+    );
+    return users;
+  });
+};
+
 describe("accounts transactions", () => {
+  it("the request stores' transactions hold their invariants", async () => {
+    const st = fresh();
+    await properties(st.addUser);
+    await properties(st.setPassword);
+    await properties(st.signIn);
+    await properties(st.addToken);
+  });
   it("addUser keeps ids and emails unique", async () => {
-    const { addUser } = fresh();
-    await properties(addUser);
+    const users = bareUsers();
+    await properties(addUser(users));
   });
   it("setPassword keeps the users invariant", async () => {
-    const { setPassword } = fresh();
-    await properties(setPassword);
+    const users = bareUsers();
+    await properties(setPassword(users));
   });
   it("signIn keeps one session per caller", async () => {
-    const { signIn } = fresh();
-    await properties(signIn);
+    const sc = scope(() => undefined);
+    isolate(sc);
+    scopes.push(sc);
+    const sessions = sc.run(() => {
+      const made = store(Sessions, { sessions: [] }, { id: "accounts.sessions" });
+      invariant(made, (state) => new Set(state.sessions.map((x) => x.caller)).size === state.sessions.length);
+      return made;
+    });
+    await properties(signIn(sessions));
   });
   it("addToken keeps token ids unique", async () => {
-    const { addToken } = fresh();
-    await properties(addToken);
+    const sc = scope(() => undefined);
+    isolate(sc);
+    scopes.push(sc);
+    const tokens = sc.run(() => {
+      const made = store(ApiTokens, { tokens: [] }, { id: "accounts.tokens" });
+      invariant(made, (state) => new Set(state.tokens.map((t) => t.id)).size === state.tokens.length);
+      return made;
+    });
+    await properties(addToken(tokens));
   });
 });
 

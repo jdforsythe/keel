@@ -557,6 +557,19 @@ describe("ledgerCommand --diff: mutation (E1713)", () => {
     expect(diags(noReport.records)).toEqual([]);
   });
 
+  test("a scoped diff fails only on errors inside its scope and counts the others in one I1713 line", () => {
+    const low = [...base, srcA, report({ "src/a.ts": ["Killed", "Killed", "Survived"] }, 80)];
+    const outside = call({ diff: true, scope: "golden:" }, low);
+    expect(diags(outside.records).map((d) => [d.code, d.message])).toEqual([
+      ["I1713", "1 mutation error outside the scope"],
+    ]);
+    expect(outside.records.at(-1)).toMatchObject({ kind: "summary", ok: true });
+    const inside = call({ diff: true, scope: "packages/a/" }, low);
+    expect(diags(inside.records).map((d) => d.code)).toEqual(["E1713"]);
+    expect(inside.records.at(-1)).toMatchObject({ kind: "summary", ok: false });
+    expect(diags(call({ diff: true }, low).records).map((d) => d.code)).toEqual(["E1713"]);
+  });
+
   test("a package that was not committed has no threshold to fall below", () => {
     const out = call({ diff: true }, [
       ...base,

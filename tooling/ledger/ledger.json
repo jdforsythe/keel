@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1053,
-    "probabilistic": 308,
+    "example": 1052,
+    "probabilistic": 312,
     "exhaustive": 15,
     "proven": 52,
     "monitored": 4
@@ -15,7 +15,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 79.57,
+        "score": 78.27,
         "threshold": 70
       },
       "compiler": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 82.95,
+        "score": 82.98,
         "threshold": 70
       },
       "services": {
@@ -1722,11 +1722,11 @@
       },
       {
         "file": "packages/cli/src/internal/mutationClaims.ts",
-        "sha": "08ce8371016cb29678e60a4df2834b80877d622a303ff4c92bfe6c8a85b1aca9",
-        "killed": 99,
-        "survived": 25,
+        "sha": "8382b13b746cda3cd7a8040b82d50f950cd9531f4ba855316636887aba956757",
+        "killed": 103,
+        "survived": 26,
         "noCoverage": 2,
-        "score": 78.57
+        "score": 78.63
       },
       {
         "file": "packages/cli/src/internal/normClause.ts",
@@ -6162,11 +6162,11 @@
       },
       {
         "file": "packages/server/src/internal/automatonOf.ts",
-        "sha": "436274e2f4648b09a7aee0aa27a724304cbeb42aea1fe615f3e134f40a3f6d61",
-        "killed": 205,
-        "survived": 49,
+        "sha": "f977f6bd1d85bde747e9731f7e24d6c2ca99054813884dc9cef3f8b56540cca7",
+        "killed": 211,
+        "survived": 48,
         "noCoverage": 1,
-        "score": 80.39
+        "score": 81.15
       },
       {
         "file": "packages/server/src/internal/bareError.ts",
@@ -6505,6 +6505,14 @@
         "score": 100
       },
       {
+        "file": "packages/server/src/internal/formsOf.ts",
+        "sha": "cf288dfd6631621f01ad0a0faed436b8f1cd2337fce14e1d276c3b8b882cc566",
+        "killed": 26,
+        "survived": 1,
+        "noCoverage": 0,
+        "score": 96.3
+      },
+      {
         "file": "packages/server/src/internal/forward.ts",
         "sha": "5b89682f7d471576f12dd47e51214ef72bf881b3b2cef54f58cd641f727f7932",
         "killed": 50,
@@ -6527,6 +6535,14 @@
         "survived": 0,
         "noCoverage": 0,
         "score": 100
+      },
+      {
+        "file": "packages/server/src/internal/holdSecrets.ts",
+        "sha": "841283211ae929283b90c166ff204528eda5e4296b7851e2fdb658ebd3b93469",
+        "killed": 22,
+        "survived": 3,
+        "noCoverage": 0,
+        "score": 88
       },
       {
         "file": "packages/server/src/internal/htmlToNode.ts",
@@ -6698,11 +6714,11 @@
       },
       {
         "file": "packages/server/src/internal/noteRequestSecrets.ts",
-        "sha": "a3fc54fc20bc69c4396cab5ab5298a8bfd782938a34f5b937e024dfbc2b0a197",
+        "sha": "df95ec80cf1488a7c34567b92260176dce9c0732e1d82181a60a325e14c5173e",
         "killed": 7,
-        "survived": 1,
+        "survived": 0,
         "noCoverage": 0,
-        "score": 87.5
+        "score": 100
       },
       {
         "file": "packages/server/src/internal/openFactory.ts",
@@ -9015,7 +9031,7 @@
       "pkg": "golden-2",
       "name": "ApiTokens",
       "file": "golden-2:accounts/ApiTokens.schema.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -9057,7 +9073,7 @@
       "pkg": "golden-2",
       "name": "Sessions",
       "file": "golden-2:accounts/Sessions.schema.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -9093,7 +9109,7 @@
       "pkg": "golden-2",
       "name": "Users",
       "file": "golden-2:accounts/Users.schema.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -9177,7 +9193,7 @@
       "pkg": "golden-2",
       "name": "Box",
       "file": "golden-2:kitchen/Box.schema.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",

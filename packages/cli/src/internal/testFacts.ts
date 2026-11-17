@@ -3,6 +3,7 @@ import type { FileFacts } from "./FileFacts.ts";
 import type { NumRef } from "./NumRef.ts";
 import type { PropRun } from "./PropRun.ts";
 import type { Use } from "./Use.ts";
+import { shadowed } from "./shadowed.ts";
 
 const TESTS = new Set(["it", "test", "xit", "xtest"]);
 const SUITES = new Set(["describe", "suite", "xdescribe"]);
@@ -314,7 +315,11 @@ export function testFacts(path: string, source: string): FileFacts {
       }
       if (ts.isIdentifier(n)) {
         const p = n.parent;
-        const own = imports.get(n.text);
+        const bound = imports.get(n.text);
+        // A local of the import's name is a different binding: the reference reaches nothing exported.
+        const hidden = bound !== undefined && !(ts.isPropertyAccessExpression(p) && p.name === n) && shadowed(n);
+        if (hidden) return;
+        const own = bound;
         // A relative import pins the name to the file it resolves to (`pins`); any other reference is by name.
         const rel = own?.from.startsWith(".") === true ? own : undefined;
         if (ts.isPropertyAccessExpression(p) && p.name === n) {
