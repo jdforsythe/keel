@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 82.78,
+        "score": 82.81,
         "threshold": 70
       },
       "services": {
@@ -6922,11 +6922,11 @@
       },
       {
         "file": "packages/server/src/internal/scrubbed.ts",
-        "sha": "f22124df5f1c452fb35f895ceedbe6490d198cfee6026e96f0a1931159fbbd42",
-        "killed": 109,
-        "survived": 44,
+        "sha": "6eb6fdc92b5f27ae4fa1c8680c38c2d8ea57959f44210733ff5e8aa0bb2b3b29",
+        "killed": 110,
+        "survived": 43,
         "noCoverage": 4,
-        "score": 69.43
+        "score": 70.06
       },
       {
         "file": "packages/server/src/internal/scrubbedCause.ts",
