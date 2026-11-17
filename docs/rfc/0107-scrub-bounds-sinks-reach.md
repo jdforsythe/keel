@@ -170,6 +170,8 @@ In dev, `/__keel/inspect` serves store values unredacted; it is not a sink.
 ```
 
 **Conformance.** Removed: "An action throwing an `Error` whose message holds a marked input value logs a `diag` record holding `[pii]` and not the value, in dev and production." Changed and added, each whole:
+
+The merged personal-data bullet stands sixth in the list, where the removed one stood, so `k.privacy#6` (the log sink) and `k.privacy#7` (the inputs sink) keep their numbers, which k.evidence names.
 ```
 - A marked or `s.secret` field in a route's `params` or `search` schema is E1111; in an action `input` it is not.
 - An action throwing an `Error` whose message or a stack frame's file path holds a marked input value logs a `diag` record with `[pii]` in its place, in dev and production.

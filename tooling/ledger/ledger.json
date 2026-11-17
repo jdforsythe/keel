@@ -11957,11 +11957,11 @@
     },
     {
       "item": "k.privacy#7",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.privacy#8",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "k.privacy#9",
