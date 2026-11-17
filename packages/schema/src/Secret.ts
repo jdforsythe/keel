@@ -1,3 +1,5 @@
+import { listening } from "./internal/listening.ts";
+
 const MARKER = "[secret]";
 const INSPECT = Symbol.for("nodejs.util.inspect.custom");
 
@@ -16,7 +18,9 @@ export class Secret<T> {
   }
 
   static of<T>(value: T): Secret<T> {
-    return new Secret(value);
+    const made = new Secret(value);
+    listening.current?.(made);
+    return made;
   }
 
   static is(x: unknown): x is Secret<unknown> {
