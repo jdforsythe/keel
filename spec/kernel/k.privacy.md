@@ -10,7 +10,7 @@ status: conformance-covered
 **Sinks.**
 - Sessions (std.sessions): marked values in payloads, state and error `data` become generated values at capture; error messages drop each.
 - Inputs: a control bound (k.forms `field`) to a marked path carries `data-k-pii="<class>"`, and the ctx observer reports its `input` values and one-character `keydown` keys as `x` repeated, as for a password field (k.ctx).
-- Server log (k.server): before a `diag` record is written, each of `piiValues` of the request's decoded action input, its loaders' outputs and its factories' store states is replaced by `[pii]` in the message and in each of its `frames`. So is the revealed value of each `Secret` made while the request runs (`bearer` too), by `[secret]`: a string or a number, not a boolean. One made at startup or in a runner is not. An action's `output` counts as a loader's.
+- Server log (k.server): before a `diag` record is written, each of `piiValues` of the request's decoded action input, its loaders' outputs and its factories' store states is replaced by `[pii]` in the message and in each of its `frames`. So is the revealed value of each `Secret` made while the request runs (`bearer` too), by `[secret]`: each string or number in it, not a boolean. One made at startup or in a runner is not. An action's `output` counts as a loader's.
 - URLs: a marked node in a route's `params` or `search` schema is E1111, since a path or query reaches browser history and proxy logs Keel cannot redact.
 - Evidence bundle (k.evidence): holds no app value.
 In dev, `/__keel/inspect` serves store values unredacted to the developer; it is not a sink.
