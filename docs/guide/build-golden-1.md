@@ -277,10 +277,11 @@ Follow `http://localhost:5173/lists/l1` in `keel dev`:
    import { mount } from "@keel/runtime-dom";
    import { routes as __keelRoutes0 } from "/modules/todos/routes.ts";
    const ctx = createCtx({ mode: "real" });
-   const router = createRouter(__keelRoutes0, { ctx, history: browserHistory() });
+   const mode = import.meta.env?.DEV === true ? "dev" : "production";
+   const router = createRouter(__keelRoutes0, { ctx, history: browserHistory(), mode });
    const el = document.getElementById("app");
    if (el === null) throw new Error("keel: index.html has no #app element");
-   mount(router.App, el, { ctx });
+   mount(router.App, el, { ctx, mode });
    ```
 
    With several modules in the deployable it merges their manifests into one table. When a module's `module.ts` sets `std` config for a client-readable stdlib package, the entry also binds it to `ctx`.

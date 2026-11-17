@@ -39,9 +39,9 @@ const Denied = s.error("keel.denied", s.object({}));
 const Boom = s.error("md.boom", s.object({}));
 const deny = (redirect: string) => guard({ redirect }, async () => err(Denied.make({})));
 
-function boot(routes: ReturnType<typeof manifest>, start: string) {
+function boot(routes: ReturnType<typeof manifest>, start: string, mode?: "dev") {
   const history = memoryHistory(start);
-  const router = createRouter(routes, { ctx, history });
+  const router = createRouter(routes, { ctx, history, ...(mode === undefined ? {} : { mode }) });
   const host = document.createElement("div");
   document.body.append(host);
   const unmount = mount(router.App, host);
@@ -334,7 +334,7 @@ describe("guards", () => {
       "gl.a": { path: "/a", guard: glNo, component: () => el("a") },
       "gl.b": { path: "/b", guard: glNo2, component: () => el("b") },
     });
-    const t = boot(rs, "/a");
+    const t = boot(rs, "/a", "dev");
     await settle();
     const alert = t.host.querySelector('[role="alert"]');
     expect(alert?.getAttribute("data-keel-error")).toBe("keel.unexpected");
@@ -357,7 +357,7 @@ describe("guards", () => {
     expect(eight.host.querySelector('[role="alert"]')).toBeNull();
     expect(eight.history.current()).toBe("/r8?next=%2Fr0");
     eight.stop();
-    const nine = boot(chain(9), "/r0");
+    const nine = boot(chain(9), "/r0", "dev");
     await settle();
     expect(nine.host.querySelector('[role="alert"]')?.textContent).toBe("E1508 more than 8 guard redirects from /r0");
     nine.stop();
@@ -365,7 +365,7 @@ describe("guards", () => {
   it("redirect to an unknown route id is a keel.unexpected naming the target", async () => {
     const guNo = deny("gu.nowhere");
     const rs = manifest({ "gu.a": { path: "/a", guard: guNo, component: () => el("a") } });
-    const t = boot(rs, "/a");
+    const t = boot(rs, "/a", "dev");
     await settle();
     const alert = t.host.querySelector('[role="alert"]');
     expect(alert?.getAttribute("data-keel-error")).toBe("keel.unexpected");

@@ -1,5 +1,6 @@
 import type { Match } from "@keel/router/internal";
 import { fieldsError, routeActions } from "@keel/router/internal";
+import { publicError } from "@keel/router/internal";
 import { err, ok } from "@keel/schema";
 import { saveStores } from "@keel/store/internal";
 import type { Diag } from "./Diag.ts";
@@ -17,7 +18,6 @@ import { openFactory } from "./openFactory.ts";
 import { outputRefused } from "./outputRefused.ts";
 import { page } from "./page.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
-import { publicError } from "./publicError.ts";
 import { readCapped } from "./readCapped.ts";
 import { redirectResponse } from "./redirectResponse.ts";
 import { scrubbedCause } from "./scrubbedCause.ts";

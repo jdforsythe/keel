@@ -34,6 +34,7 @@ import { mounted } from "./mounted.ts";
 import { needsBare } from "./needsBare.ts";
 import { notFound } from "./notFound.ts";
 import { pageHead } from "./pageHead.ts";
+import { publicError } from "./publicError.ts";
 import { renderView } from "./renderView.ts";
 import { rooted } from "./rooted.ts";
 import { routeActions } from "./routeActions.ts";
@@ -46,7 +47,7 @@ import { unexpected } from "./unexpected.ts";
 import { withNext } from "./withNext.ts";
 import { writeHead } from "./writeHead.ts";
 
-type Mode = "push" | "replace" | "pop" | "initial" | "stay";
+type Nav = "push" | "replace" | "pop" | "initial" | "stay";
 type Outcome = Result<unknown, KeelError<string, unknown>>;
 type Failure = { readonly level: number; readonly bare: boolean; readonly error: KeelError<string, unknown> };
 
@@ -70,15 +71,23 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * `state` runs loaders and actions naming `stores` (k.server Server state; the harness passes it, `createRouter` never
  * does): each loader run is one `state.request()` and each submit another, an action's `ok` saves (a stale read
  * becomes `keel.conflict`), and the request ends before the router revalidates or navigates. Without `state` such a
- * loader or action is `keel.unexpected`.
+ * loader or action is `keel.unexpected`. Unless `mode` is `dev` (the default is `production`), every error the
+ * default alert, an `errorElement` or a `Form` gets is its `publicError`; observers get the full error.
  */
 export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   routes: Manifest<M>,
-  opts: { readonly ctx: Ctx; readonly history: RouterHistory; readonly caller?: string },
+  opts: {
+    readonly ctx: Ctx;
+    readonly history: RouterHistory;
+    readonly caller?: string;
+    readonly mode?: "dev" | "production";
+  },
   state?: ServerState,
 ): Router<RouteState<M>> {
   const { ctx, history } = opts;
   const caller = opts.caller ?? "";
+  const shownMode = opts.mode === "dev" ? "dev" : "production";
+  const shown = (e: KeelError<string, unknown>): KeelError<string, unknown> => publicError(e, shownMode);
   const own = tables.get(routes) ?? compileRoutes(routes.routes);
   const all = compileTable(own, routes.routes);
   // The client matches no API route (k.api): a link to one is a document request.
@@ -140,7 +149,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     return makeView(m, [], { level: at, bare: needsBare(m.route?.chain ?? [], at), error });
   };
 
-  const commit = (t: number, next: View, at: Place, mode: Mode): void => {
+  const commit = (t: number, next: View, at: Place, mode: Nav): void => {
     if (t !== token || disposed) {
       next.scope.dispose();
       return;
@@ -192,7 +201,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   const proceed = async (
     t: number,
     m: Match & { kind: "route" },
-    mode: Mode,
+    mode: Nav,
     visited: readonly string[],
   ): Promise<void> => {
     for (const [i, lvl] of m.route.chain.entries()) {
@@ -216,7 +225,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     commit(t, loaded(m, results), placeOf(m), mode);
   };
 
-  const go = (url: string, mode: Mode, visited: readonly string[]): Promise<void> => {
+  const go = (url: string, mode: Nav, visited: readonly string[]): Promise<void> => {
     if (disposed) return done;
     const t = ++token;
     const m = matchUrl(table, url);
@@ -308,6 +317,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
         result = ran.ok ? ran.value : ran;
         if (!result.ok) report(ctx, { kind: "error", error: result.error });
       }
+      if (!result.ok) result = err(shown(result.error));
       handle?.setPending(false);
       handle?.onResult(result);
       if (!result.ok) pending.set(false);
@@ -373,13 +383,13 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
               },
               // A page that rendered keeps its row across navigations to its path: only the search or hash differs.
               (v) => (v.error === null ? splitUrl(v.url).path : v),
-              (v) => renderView(v, ctx),
+              (v) => renderView(v, ctx, shown),
             );
             return f;
           },
           (error, reset) => {
             resetRoot = reset;
-            return defaultError(error);
+            return defaultError(shown(error));
           },
         );
       });

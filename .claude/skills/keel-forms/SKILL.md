@@ -20,7 +20,7 @@ const f = form(OrderEdit, { initial: order })   // in a component scope (else E1
 - `f.field(path)`: typed dotted path (array indexes ok). Handle: `values()`, `errors()`, `pending()` (the one pending state), `reset()`. A `Field` has `name, id, errorId, value(), error(), touched(), set(v), blur(), bind(el)`.
 - Base inputs given `field` call `bind` (name, id, value, `aria-invalid`, `aria-describedby`); for a plain `input` call `field.bind(el)` (returns unbind).
 - Validation is from the schema only: on blur, then each input once an error shows; all on submit. Invalid submit sends nothing and focuses the first invalid field.
-- Action result: `ok` resets to `initial`; `err({ code: 'keel.fields', data: { title: 'Taken' } })` sets exactly those field errors (422 on the server); any other `err` shows in the `error` slot, values kept. Pass a client-service 422 body on: `err(r.error.data.body?.error ?? r.error)`.
+- Action result: `ok` resets to `initial`; `err({ code: 'keel.fields', data: { title: 'Taken' } })` sets exactly those field errors (422 on the server); any other `err` shows in the `error` slot, values kept; outside `mode: 'dev'` a `keel.unexpected` arrives there as message `unexpected`. Pass a client-service 422 body on: `err(r.error.data.body?.error ?? r.error)`.
 - A page's `Form` posts to a page action, which declares no `output` and answers `ok(href)` or `ok(null)`; an API route's action is not a form target for navigation.
 - Without JS the server decodes FormData by the action input schema and re-renders.
 - Encoding: `schema.decodeStrings(formData)` coerces numbers, checkbox booleans, `a.b` nested keys, repeated keys; `toFormData(schema, value)` is its inverse (except empty optional strings).

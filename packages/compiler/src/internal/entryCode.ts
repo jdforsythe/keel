@@ -70,10 +70,10 @@ export function entryCode(
           `__keelTable.set(ctx, new Map(Object.entries(${JSON.stringify(deployables)}).flatMap(([d, ms]) => ms.map((m) => [m, __keelTags.get(d) ?? location.origin]))));`,
         ]
       : []),
-    `const router = createRouter(${table}, { ctx, history: browserHistory() });`,
+    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
+    `const router = createRouter(${table}, { ctx, history: browserHistory(), mode });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,
-    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
     "mount(router.App, el, { ctx, mode });",
     "if (import.meta.env.DEV) {",
     '  let last = "";',

@@ -2,6 +2,7 @@
 // Unit and property tests (seed 1337) for the pure internals of the request flow.
 import type { RouteDef } from "@keel/router";
 import { compileRoutes, compileTable, needsBare, routeActions } from "@keel/router/internal";
+import { publicError } from "@keel/router/internal";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -14,7 +15,6 @@ import { escapeHtml } from "../src/internal/escapeHtml.ts";
 import { fieldSummary } from "../src/internal/fieldSummary.ts";
 import { nearestErrorElement } from "../src/internal/nearestErrorElement.ts";
 import { notFound } from "../src/internal/notFound.ts";
-import { publicError } from "../src/internal/publicError.ts";
 import { reqLine } from "../src/internal/reqLine.ts";
 import { seeOf } from "../src/internal/seeOf.ts";
 import { selectDeployable } from "../src/internal/selectDeployable.ts";

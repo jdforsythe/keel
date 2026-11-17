@@ -1,8 +1,8 @@
+import { publicError } from "@keel/router/internal";
 import type { KeelError } from "@keel/schema";
 import type { Handled } from "./Handled.ts";
 import type { Mode } from "./Mode.ts";
 import { escapeHtml } from "./escapeHtml.ts";
-import { publicError } from "./publicError.ts";
 
 /**
  * Last resort when the request flow itself threw (a server bug): status 500

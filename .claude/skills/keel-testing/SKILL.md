@@ -22,6 +22,7 @@ await r.navigate(routes.href('todos.show', { id }))
 - A loader or action naming `stores` runs its factory over the harness ctx's `ctx.storage` (one request per navigation or submit), so a `node` deployable's page is tested like any other; it and `createApp` on one ctx read each other's saves. `state` holds no factory store.
 - Labelled inputs: find the id from `r.a11y()` by label, then `fire(id, { type: 'input', value })`.
 - `fire` resolves after effects, resources and actions go quiet (no timers, else `keel.unexpected`).
+- A rendered route is the production page: a thrown page, loader or action shows `unexpected` in the alert, `errorElement` and `Form` error. Read the thrown text from the ctx's `error` reports (`observe`).
 - Harness ctx is always sim (`KEEL_SEED`, default 1337). Use `createCtx({ mode: 'sim', seed })`; advance time with `ctx.clock.advance(ms)`; fake the network with `ctx.net.route(new URL('/api/*', location.href).href, req => new Response(...))`.
 - A server log line: `createApp({ log: { format: 'json', write } })` (k.server Log). A saved store: `await ctx.storage.get('keel.store.<id>')` is JSON whose `state` is the store's value.
 - Between tests: `const base = store.snapshot()` and `store.restore(base)` in `afterEach`.

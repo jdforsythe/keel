@@ -1,4 +1,5 @@
 import { matchUrl, needsBare } from "@keel/router/internal";
+import { publicError } from "@keel/router/internal";
 import { err } from "@keel/schema";
 import type { Context } from "hono";
 import { cspPolicy } from "../csp/cspPolicy.ts";
@@ -17,7 +18,6 @@ import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { noStore } from "./noStore.ts";
 import { notFound } from "./notFound.ts";
 import { page } from "./page.ts";
-import { publicError } from "./publicError.ts";
 import { redirectResponse } from "./redirectResponse.ts";
 import { runAction } from "./runAction.ts";
 import { runGuards } from "./runGuards.ts";

@@ -97,11 +97,13 @@ describe("entryCode (mutation)", () => {
     'import { stores } from "@keel/store";',
     'import { inspectorSections } from "@keel/compiler/inspect/inspectorSections";',
   ];
-  const tail = ['const ctx = createCtx({ mode: "real" });'];
+  const tail = [
+    'const ctx = createCtx({ mode: "real" });',
+    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
+  ];
   const rest = [
     'const el = document.getElementById("app");',
     'if (el === null) throw new Error("keel: index.html has no #app element");',
-    'const mode = import.meta.env?.DEV === true ? "dev" : "production";',
     "mount(router.App, el, { ctx, mode });",
     "if (import.meta.env.DEV) {",
     '  let last = "";',
@@ -129,7 +131,7 @@ describe("entryCode (mutation)", () => {
         ...head,
         'import { routes as __keelRoutes0 } from "/modules/a/routes.ts";',
         ...tail,
-        "const router = createRouter(__keelRoutes0, { ctx, history: browserHistory() });",
+        "const router = createRouter(__keelRoutes0, { ctx, history: browserHistory(), mode });",
         ...rest,
       ].join("\n"),
     );
@@ -142,7 +144,7 @@ describe("entryCode (mutation)", () => {
         'import { routes as __keelRoutes0 } from "/a.ts";',
         'import { routes as __keelRoutes1 } from "/b.ts";',
         ...tail,
-        "const router = createRouter(manifest({ ...__keelRoutes0.routes, ...__keelRoutes1.routes }), { ctx, history: browserHistory() });",
+        "const router = createRouter(manifest({ ...__keelRoutes0.routes, ...__keelRoutes1.routes }), { ctx, history: browserHistory(), mode });",
         ...rest,
       ].join("\n"),
     );
@@ -150,7 +152,7 @@ describe("entryCode (mutation)", () => {
 
   it("falls back to an empty manifest table for no routes files", () => {
     const code = entryCode([], "virtual:css");
-    expect(code).toContain("const router = createRouter(manifest({  }), { ctx, history: browserHistory() });");
+    expect(code).toContain("const router = createRouter(manifest({  }), { ctx, history: browserHistory(), mode });");
   });
 });
 

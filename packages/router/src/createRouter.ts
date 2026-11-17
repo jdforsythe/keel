@@ -14,10 +14,18 @@ import type { RouterHistory } from "./types/RouterHistory.ts";
  * `caller` (default `""`; the harness supplies one). Each navigation that is not a guard's redirect reports `nav` to
  * the ctx's observers before its guards, and each loader or action `err` reports `error` (k.ctx Observers). A loader
  * or action naming `stores` (server state, k.server) is `keel.unexpected`: it runs on a `node` deployable only.
+ * `mode` is `mount`'s (k.errors), default `production`: unless it is `dev`, a `keel.unexpected` the default alert,
+ * an `errorElement` or a `Form` gets has message `unexpected` and data `{}`, as from the server; observers and
+ * `mount`'s `onError` get the full error.
  */
 export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   routes: Manifest<M>,
-  opts: { readonly ctx: Ctx; readonly history: RouterHistory; readonly caller?: string },
+  opts: {
+    readonly ctx: Ctx;
+    readonly history: RouterHistory;
+    readonly caller?: string;
+    readonly mode?: "dev" | "production";
+  },
 ): Router<RouteState<M>> {
   return createRouterWith(routes, opts);
 }

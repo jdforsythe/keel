@@ -1,4 +1,5 @@
 import type { Level } from "@keel/router/internal";
+import { publicError } from "@keel/router/internal";
 import { err } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
@@ -7,7 +8,6 @@ import type { Req } from "./Req.ts";
 import { devMessageOf } from "./devMessageOf.ts";
 import { documentResponse } from "./documentResponse.ts";
 import { jsonResponse } from "./jsonResponse.ts";
-import { publicError } from "./publicError.ts";
 import { renderChain } from "./renderChain.ts";
 import { scrubbedError } from "./scrubbedError.ts";
 

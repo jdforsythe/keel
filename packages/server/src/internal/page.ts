@@ -1,4 +1,5 @@
 import { type Match, pageHead } from "@keel/router/internal";
+import { publicError } from "@keel/router/internal";
 import { type JsonValue, type KeelError, err, ok } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
@@ -13,7 +14,6 @@ import { inRequest } from "./inRequest.ts";
 import { isAt } from "./isAt.ts";
 import { jsonResponse } from "./jsonResponse.ts";
 import { nearestErrorElement } from "./nearestErrorElement.ts";
-import { publicError } from "./publicError.ts";
 import { renderChain } from "./renderChain.ts";
 import { runLoaders } from "./runLoaders.ts";
 import { scrubbedError } from "./scrubbedError.ts";

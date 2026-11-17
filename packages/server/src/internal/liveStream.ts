@@ -1,6 +1,7 @@
 import { scope } from "@keel/reactive";
 import type { Loader } from "@keel/router";
 import type { Match } from "@keel/router/internal";
+import { publicError } from "@keel/router/internal";
 import { type KeelError, type Result, err, ok } from "@keel/schema";
 import { isolate } from "@keel/store";
 import type { Context } from "hono";
@@ -13,7 +14,6 @@ import { busy } from "./busy.ts";
 import { caught } from "./caught.ts";
 import { diagLine } from "./diagLine.ts";
 import { openFactory } from "./openFactory.ts";
-import { publicError } from "./publicError.ts";
 import { scrubbedCause } from "./scrubbedCause.ts";
 import { scrubbedDiag } from "./scrubbedDiag.ts";
 
