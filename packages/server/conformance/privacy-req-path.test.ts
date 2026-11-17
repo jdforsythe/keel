@@ -18,6 +18,7 @@ const formats = ["compact", "json"] as const;
 const Reset = s.object({ token: s.secret(s.string()) });
 const Code = s.object({ token: s.secret(s.int()) });
 const Plain = s.object({ slug: s.string() });
+const Item = s.object({ id: s.int() });
 const People = loader({ output: s.object({ name: s.string().pii("name") }) }, () =>
   Promise.resolve(ok({ name: "ada-lovelace" })),
 );
@@ -26,6 +27,7 @@ const routes = () =>
   manifest({
     "app.reset": { path: "/reset/:token", params: Reset, component: view },
     "app.code": { path: "/code/:token", params: Code, component: view },
+    "app.item": { path: "/item/:id", params: Item, component: view },
     "app.plain": { path: "/plain/:slug", params: Plain, component: view },
     "app.person": { path: "/people/:slug", params: Plain, loader: People, component: view },
   });
@@ -78,10 +80,20 @@ describe("k.privacy req path", () => {
         );
       });
 
-      it(`A params value that fails its schema is written as it came, ${where}.`, async () => {
+      it(`A secret param whose value fails its inner schema is \`[secret]\` in the \`req\` path and no line holds it, ${where}.`, async () => {
         const { lines, status } = await serve(mode, format, "/code/not-a-number");
         expect(status).toBe(404);
-        expect(reqPath(format, lines)).toBe("/code/not-a-number");
+        expect(reqPath(format, lines)).toBe("/code/[secret]");
+        for (const line of lines) {
+          expect(line).not.toContain("not-a-number");
+          expect(line).not.toContain(btoa("not-a-number"));
+        }
+      });
+
+      it(`A plain param whose value fails its schema is written as it came in the \`req\` path, ${where}.`, async () => {
+        const { lines, status } = await serve(mode, format, "/item/not-a-number");
+        expect(status).toBe(404);
+        expect(reqPath(format, lines)).toBe("/item/not-a-number");
       });
 
       it(`A request with no secret writes its path unchanged, ${where}.`, async () => {
