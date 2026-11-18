@@ -915,3 +915,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0813 std-db: every connect failure is the same E2153, so a test cannot tell the connect timeout from another failure · std-db · std.db
 - [ ] 0814 tooling: `format-check` reads git-ignored build output (a Gradle `build/` directory failed the root check) · tooling
 - [ ] 0815 ci: the hosted 2-core runner stops responding when `@keel/cli`'s tests run as one piece; the cause is not known (tasks/0338-s8-reach/proposed/ci-0701.md) · tooling
+- [ ] 0816 tooling: under `pnpm coverage` the std-sessions conformance case `to-test` hits its 5 s bound (the instrumented `keel check` is slower), so the coverage task fails for that package while its numbers are still written; give the coverage run its own allowance for cases that shell out, or run that file uninstrumented · std-sessions · tooling

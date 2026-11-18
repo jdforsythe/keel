@@ -1,96 +1,240 @@
 {
-  "commit": "2319a0a0bf8fb43f0ae2a25217ae1e9ab2da937d",
+  "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
   "coverage": {
     "packages": {
       "apps/golden-1": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 223,
+          "pct": 84.79,
+          "total": 263
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 327,
+          "pct": 97.03,
+          "total": 337
+        },
+        "lines": {
+          "covered": 413,
+          "pct": 99.04,
+          "total": 417
+        },
+        "measuredAt": "2026-11-18T07:18:38.489Z",
+        "reason": null,
+        "statements": {
+          "covered": 837,
+          "pct": 95.22,
+          "total": 879
+        }
       },
       "apps/golden-2": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 119,
+          "pct": 68.78,
+          "total": 173
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 424,
+          "pct": 97.69,
+          "total": 434
+        },
+        "lines": {
+          "covered": 378,
+          "pct": 98.43,
+          "total": 384
+        },
+        "measuredAt": "2026-11-18T07:18:21.859Z",
+        "reason": null,
+        "statements": {
+          "covered": 1033,
+          "pct": 95.29,
+          "total": 1084
+        }
       },
       "apps/inspector": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 48,
+          "pct": 82.75,
+          "total": 58
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 163,
+          "pct": 100,
+          "total": 163
+        },
+        "lines": {
+          "covered": 109,
+          "pct": 100,
+          "total": 109
+        },
+        "measuredAt": "2026-11-18T07:17:56.579Z",
+        "reason": null,
+        "statements": {
+          "covered": 419,
+          "pct": 98.58,
+          "total": 425
+        }
       },
       "apps/sessions": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 25,
+          "pct": 96.15,
+          "total": 26
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 11,
+          "pct": 100,
+          "total": 11
+        },
+        "lines": {
+          "covered": 17,
+          "pct": 100,
+          "total": 17
+        },
+        "measuredAt": "2026-11-18T07:18:29.453Z",
+        "reason": null,
+        "statements": {
+          "covered": 26,
+          "pct": 100,
+          "total": 26
+        }
       },
       "packages/check": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 4042,
+          "pct": 87.75,
+          "total": 4606
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 682,
+          "pct": 98.27,
+          "total": 694
+        },
+        "lines": {
+          "covered": 3278,
+          "pct": 96.58,
+          "total": 3394
+        },
+        "measuredAt": "2026-11-18T07:17:52.235Z",
+        "reason": null,
+        "statements": {
+          "covered": 4107,
+          "pct": 93.8,
+          "total": 4378
+        }
       },
       "packages/cli": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 2336,
+          "pct": 88.68,
+          "total": 2634
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 597,
+          "pct": 94.01,
+          "total": 635
+        },
+        "lines": {
+          "covered": 2334,
+          "pct": 93.32,
+          "total": 2501
+        },
+        "measuredAt": "2026-11-18T07:18:40.518Z",
+        "reason": null,
+        "statements": {
+          "covered": 2807,
+          "pct": 92.85,
+          "total": 3023
+        }
       },
       "packages/compiler": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 3441,
+          "pct": 87.6,
+          "total": 3928
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 610,
+          "pct": 93.55,
+          "total": 652
+        },
+        "lines": {
+          "covered": 3194,
+          "pct": 94.97,
+          "total": 3363
+        },
+        "measuredAt": "2026-11-18T07:16:10.632Z",
+        "reason": null,
+        "statements": {
+          "covered": 3928,
+          "pct": 92.79,
+          "total": 4233
+        }
       },
       "packages/ctx": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 174,
+          "pct": 92.55,
+          "total": 188
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 106,
+          "pct": 89.83,
+          "total": 118
+        },
+        "lines": {
+          "covered": 325,
+          "pct": 96.15,
+          "total": 338
+        },
+        "measuredAt": "2026-11-18T07:15:53.705Z",
+        "reason": null,
+        "statements": {
+          "covered": 379,
+          "pct": 94.27,
+          "total": 402
+        }
       },
       "packages/forms": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 388,
+          "pct": 96.03,
+          "total": 404
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 90,
+          "pct": 100,
+          "total": 90
+        },
+        "lines": {
+          "covered": 365,
+          "pct": 98.38,
+          "total": 371
+        },
+        "measuredAt": "2026-11-18T07:16:09.417Z",
+        "reason": null,
+        "statements": {
+          "covered": 462,
+          "pct": 97.88,
+          "total": 472
+        }
       },
       "packages/reactive": {
         "branches": {
@@ -98,8 +242,8 @@
           "pct": 92.94,
           "total": 156
         },
-        "commit": "582baa8f0509d33f8c70743f2180033913094dc2",
-        "dirty": true,
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
         "functions": {
           "covered": 50,
           "pct": 100,
@@ -110,7 +254,7 @@
           "pct": 99.62,
           "total": 264
         },
-        "measuredAt": "2026-11-18T04:57:35.142Z",
+        "measuredAt": "2026-11-18T07:15:52.344Z",
         "reason": null,
         "statements": {
           "covered": 317,
@@ -119,284 +263,732 @@
         }
       },
       "packages/router": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 820,
+          "pct": 92.23,
+          "total": 889
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 189,
+          "pct": 97.42,
+          "total": 194
+        },
+        "lines": {
+          "covered": 750,
+          "pct": 97.02,
+          "total": 773
+        },
+        "measuredAt": "2026-11-18T07:16:22.898Z",
+        "reason": null,
+        "statements": {
+          "covered": 923,
+          "pct": 95.94,
+          "total": 962
+        }
       },
       "packages/runtime-dom": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 542,
+          "pct": 87.98,
+          "total": 616
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 171,
+          "pct": 97.71,
+          "total": 175
+        },
+        "lines": {
+          "covered": 751,
+          "pct": 97.78,
+          "total": 768
+        },
+        "measuredAt": "2026-11-18T07:16:00.670Z",
+        "reason": null,
+        "statements": {
+          "covered": 895,
+          "pct": 95.61,
+          "total": 936
+        }
       },
       "packages/scaffold": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 1060,
+          "pct": 85.82,
+          "total": 1235
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 244,
+          "pct": 97.6,
+          "total": 250
+        },
+        "lines": {
+          "covered": 1089,
+          "pct": 97.14,
+          "total": 1121
+        },
+        "measuredAt": "2026-11-18T07:16:56.236Z",
+        "reason": null,
+        "statements": {
+          "covered": 1344,
+          "pct": 93.52,
+          "total": 1437
+        }
       },
       "packages/schema": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 652,
+          "pct": 96.73,
+          "total": 674
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 150,
+          "pct": 99.33,
+          "total": 151
+        },
+        "lines": {
+          "covered": 577,
+          "pct": 98.29,
+          "total": 587
+        },
+        "measuredAt": "2026-11-18T07:15:54.124Z",
+        "reason": null,
+        "statements": {
+          "covered": 715,
+          "pct": 97.94,
+          "total": 730
+        }
       },
       "packages/server": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 1580,
+          "pct": 89.51,
+          "total": 1765
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 439,
+          "pct": 92.61,
+          "total": 474
+        },
+        "lines": {
+          "covered": 1643,
+          "pct": 96.53,
+          "total": 1702
+        },
+        "measuredAt": "2026-11-18T07:17:02.023Z",
+        "reason": null,
+        "statements": {
+          "covered": 1997,
+          "pct": 96.05,
+          "total": 2079
+        }
       },
       "packages/services": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 479,
+          "pct": 93.37,
+          "total": 513
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 113,
+          "pct": 96.58,
+          "total": 117
+        },
+        "lines": {
+          "covered": 424,
+          "pct": 97.69,
+          "total": 434
+        },
+        "measuredAt": "2026-11-18T07:16:40.411Z",
+        "reason": null,
+        "statements": {
+          "covered": 500,
+          "pct": 95.78,
+          "total": 522
+        }
       },
       "packages/std-brands": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 37,
+          "pct": 82.22,
+          "total": 45
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 14,
+          "pct": 100,
+          "total": 14
+        },
+        "lines": {
+          "covered": 42,
+          "pct": 100,
+          "total": 42
+        },
+        "measuredAt": "2026-11-18T07:16:34.444Z",
+        "reason": null,
+        "statements": {
+          "covered": 47,
+          "pct": 94,
+          "total": 50
+        }
       },
       "packages/std-capacitor": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 44,
+          "pct": 89.79,
+          "total": 49
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 39,
+          "pct": 95.12,
+          "total": 41
+        },
+        "lines": {
+          "covered": 78,
+          "pct": 96.29,
+          "total": 81
+        },
+        "measuredAt": "2026-11-18T07:17:09.018Z",
+        "reason": null,
+        "statements": {
+          "covered": 98,
+          "pct": 97.02,
+          "total": 101
+        }
       },
       "packages/std-channels": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 175,
+          "pct": 93.58,
+          "total": 187
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 52,
+          "pct": 100,
+          "total": 52
+        },
+        "lines": {
+          "covered": 227,
+          "pct": 100,
+          "total": 227
+        },
+        "measuredAt": "2026-11-18T07:17:36.611Z",
+        "reason": null,
+        "statements": {
+          "covered": 269,
+          "pct": 97.81,
+          "total": 275
+        }
       },
       "packages/std-conflicts": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 81,
+          "pct": 87.09,
+          "total": 93
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 37,
+          "pct": 94.87,
+          "total": 39
+        },
+        "lines": {
+          "covered": 111,
+          "pct": 97.36,
+          "total": 114
+        },
+        "measuredAt": "2026-11-18T07:19:03.223Z",
+        "reason": null,
+        "statements": {
+          "covered": 128,
+          "pct": 95.52,
+          "total": 134
+        }
       },
       "packages/std-credentials": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 212,
+          "pct": 88.7,
+          "total": 239
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 52,
+          "pct": 100,
+          "total": 52
+        },
+        "lines": {
+          "covered": 234,
+          "pct": 99.57,
+          "total": 235
+        },
+        "measuredAt": "2026-11-18T07:17:46.657Z",
+        "reason": null,
+        "statements": {
+          "covered": 281,
+          "pct": 97.9,
+          "total": 287
+        }
       },
       "packages/std-db": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 82,
+          "pct": 70.08,
+          "total": 117
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 43,
+          "pct": 87.75,
+          "total": 49
+        },
+        "lines": {
+          "covered": 145,
+          "pct": 90.06,
+          "total": 161
+        },
+        "measuredAt": "2026-11-18T07:17:24.134Z",
+        "reason": null,
+        "statements": {
+          "covered": 169,
+          "pct": 87.11,
+          "total": 194
+        }
       },
       "packages/std-geo": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 2,
+          "pct": 25,
+          "total": 8
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 11,
+          "pct": 84.61,
+          "total": 13
+        },
+        "lines": {
+          "covered": 22,
+          "pct": 78.57,
+          "total": 28
+        },
+        "measuredAt": "2026-11-18T07:15:54.769Z",
+        "reason": null,
+        "statements": {
+          "covered": 23,
+          "pct": 79.31,
+          "total": 29
+        }
       },
       "packages/std-headless": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 189,
+          "pct": 87.5,
+          "total": 216
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 156,
+          "pct": 93.41,
+          "total": 167
+        },
+        "lines": {
+          "covered": 323,
+          "pct": 95.56,
+          "total": 338
+        },
+        "measuredAt": "2026-11-18T07:17:06.188Z",
+        "reason": null,
+        "statements": {
+          "covered": 392,
+          "pct": 93.77,
+          "total": 418
+        }
       },
       "packages/std-health": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 0,
+          "pct": 100,
+          "total": 0
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 1,
+          "pct": 50,
+          "total": 2
+        },
+        "lines": {
+          "covered": 3,
+          "pct": 75,
+          "total": 4
+        },
+        "measuredAt": "2026-11-18T07:17:06.513Z",
+        "reason": null,
+        "statements": {
+          "covered": 4,
+          "pct": 80,
+          "total": 5
+        }
       },
       "packages/std-i18n": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 96,
+          "pct": 92.3,
+          "total": 104
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 23,
+          "pct": 100,
+          "total": 23
+        },
+        "lines": {
+          "covered": 73,
+          "pct": 98.64,
+          "total": 74
+        },
+        "measuredAt": "2026-11-18T07:16:28.005Z",
+        "reason": null,
+        "statements": {
+          "covered": 88,
+          "pct": 96.7,
+          "total": 91
+        }
       },
       "packages/std-jobs": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 242,
+          "pct": 88,
+          "total": 275
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 69,
+          "pct": 98.57,
+          "total": 70
+        },
+        "lines": {
+          "covered": 260,
+          "pct": 99.23,
+          "total": 262
+        },
+        "measuredAt": "2026-11-18T07:17:43.115Z",
+        "reason": null,
+        "statements": {
+          "covered": 321,
+          "pct": 95.82,
+          "total": 335
+        }
       },
       "packages/std-live": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 31,
+          "pct": 100,
+          "total": 31
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 9,
+          "pct": 100,
+          "total": 9
+        },
+        "lines": {
+          "covered": 54,
+          "pct": 100,
+          "total": 54
+        },
+        "measuredAt": "2026-11-18T07:17:57.649Z",
+        "reason": null,
+        "statements": {
+          "covered": 65,
+          "pct": 100,
+          "total": 65
+        }
       },
       "packages/std-messages": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 438,
+          "pct": 83.11,
+          "total": 527
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 99,
+          "pct": 100,
+          "total": 99
+        },
+        "lines": {
+          "covered": 401,
+          "pct": 97.8,
+          "total": 410
+        },
+        "measuredAt": "2026-11-18T07:17:11.278Z",
+        "reason": null,
+        "statements": {
+          "covered": 483,
+          "pct": 93.96,
+          "total": 514
+        }
       },
       "packages/std-money": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 13,
+          "pct": 92.85,
+          "total": 14
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 4,
+          "pct": 100,
+          "total": 4
+        },
+        "lines": {
+          "covered": 23,
+          "pct": 100,
+          "total": 23
+        },
+        "measuredAt": "2026-11-18T07:16:56.749Z",
+        "reason": null,
+        "statements": {
+          "covered": 24,
+          "pct": 96,
+          "total": 25
+        }
       },
       "packages/std-offline": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 233,
+          "pct": 92.09,
+          "total": 253
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 84,
+          "pct": 89.36,
+          "total": 94
+        },
+        "lines": {
+          "covered": 261,
+          "pct": 95.95,
+          "total": 272
+        },
+        "measuredAt": "2026-11-18T07:17:04.390Z",
+        "reason": null,
+        "statements": {
+          "covered": 323,
+          "pct": 94.44,
+          "total": 342
+        }
       },
       "packages/std-report": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 11,
+          "pct": 91.66,
+          "total": 12
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 9,
+          "pct": 100,
+          "total": 9
+        },
+        "lines": {
+          "covered": 14,
+          "pct": 100,
+          "total": 14
+        },
+        "measuredAt": "2026-11-18T07:17:54.481Z",
+        "reason": null,
+        "statements": {
+          "covered": 20,
+          "pct": 100,
+          "total": 20
+        }
       },
       "packages/std-schedules": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 119,
+          "pct": 90.83,
+          "total": 131
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 24,
+          "pct": 96,
+          "total": 25
+        },
+        "lines": {
+          "covered": 144,
+          "pct": 98.63,
+          "total": 146
+        },
+        "measuredAt": "2026-11-18T07:18:19.554Z",
+        "reason": null,
+        "statements": {
+          "covered": 175,
+          "pct": 96.68,
+          "total": 181
+        }
       },
       "packages/std-sessions": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 1405,
+          "pct": 72.87,
+          "total": 1928
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 404,
+          "pct": 84.16,
+          "total": 480
+        },
+        "lines": {
+          "covered": 1761,
+          "pct": 84.33,
+          "total": 2088
+        },
+        "measuredAt": "2026-11-18T07:19:18.811Z",
+        "reason": null,
+        "statements": {
+          "covered": 2075,
+          "pct": 81.05,
+          "total": 2560
+        }
       },
       "packages/std-statecharts": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 304,
+          "pct": 89.14,
+          "total": 341
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 65,
+          "pct": 100,
+          "total": 65
+        },
+        "lines": {
+          "covered": 250,
+          "pct": 99.2,
+          "total": 252
+        },
+        "measuredAt": "2026-11-18T07:16:47.360Z",
+        "reason": null,
+        "statements": {
+          "covered": 320,
+          "pct": 96.38,
+          "total": 332
+        }
       },
       "packages/std-tables": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 211,
+          "pct": 85.42,
+          "total": 247
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 114,
+          "pct": 95,
+          "total": 120
+        },
+        "lines": {
+          "covered": 284,
+          "pct": 96.27,
+          "total": 295
+        },
+        "measuredAt": "2026-11-18T07:16:55.644Z",
+        "reason": null,
+        "statements": {
+          "covered": 350,
+          "pct": 96.15,
+          "total": 364
+        }
       },
       "packages/std-tauri": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 64,
+          "pct": 85.33,
+          "total": 75
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 32,
+          "pct": 96.96,
+          "total": 33
+        },
+        "lines": {
+          "covered": 97,
+          "pct": 97.97,
+          "total": 99
+        },
+        "measuredAt": "2026-11-18T07:17:02.767Z",
+        "reason": null,
+        "statements": {
+          "covered": 118,
+          "pct": 95.16,
+          "total": 124
+        }
       },
       "packages/std-temporal": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 67,
+          "pct": 95.71,
+          "total": 70
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 24,
+          "pct": 100,
+          "total": 24
+        },
+        "lines": {
+          "covered": 72,
+          "pct": 100,
+          "total": 72
+        },
+        "measuredAt": "2026-11-18T07:16:50.112Z",
+        "reason": null,
+        "statements": {
+          "covered": 82,
+          "pct": 98.79,
+          "total": 83
+        }
       },
       "packages/std-text": {
         "branches": {
@@ -404,8 +996,8 @@
           "pct": 98,
           "total": 50
         },
-        "commit": "582baa8f0509d33f8c70743f2180033913094dc2",
-        "dirty": true,
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
         "functions": {
           "covered": 16,
           "pct": 100,
@@ -416,7 +1008,7 @@
           "pct": 100,
           "total": 58
         },
-        "measuredAt": "2026-11-18T04:57:20.574Z",
+        "measuredAt": "2026-11-18T07:16:57.676Z",
         "reason": null,
         "statements": {
           "covered": 65,
@@ -425,58 +1017,138 @@
         }
       },
       "packages/std-timings": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 18,
+          "pct": 90,
+          "total": 20
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 6,
+          "pct": 100,
+          "total": 6
+        },
+        "lines": {
+          "covered": 41,
+          "pct": 100,
+          "total": 41
+        },
+        "measuredAt": "2026-11-18T07:17:29.026Z",
+        "reason": null,
+        "statements": {
+          "covered": 46,
+          "pct": 100,
+          "total": 46
+        }
       },
       "packages/std-workflows": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 273,
+          "pct": 85.04,
+          "total": 321
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 101,
+          "pct": 100,
+          "total": 101
+        },
+        "lines": {
+          "covered": 317,
+          "pct": 100,
+          "total": 317
+        },
+        "measuredAt": "2026-11-18T07:18:10.744Z",
+        "reason": null,
+        "statements": {
+          "covered": 383,
+          "pct": 96.23,
+          "total": 398
+        }
       },
       "packages/store": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 235,
+          "pct": 94.37,
+          "total": 249
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 89,
+          "pct": 100,
+          "total": 89
+        },
+        "lines": {
+          "covered": 339,
+          "pct": 100,
+          "total": 339
+        },
+        "measuredAt": "2026-11-18T07:15:55.252Z",
+        "reason": null,
+        "statements": {
+          "covered": 409,
+          "pct": 98.08,
+          "total": 417
+        }
       },
       "packages/testing": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 1387,
+          "pct": 92.71,
+          "total": 1496
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 364,
+          "pct": 99.18,
+          "total": 367
+        },
+        "lines": {
+          "covered": 1419,
+          "pct": 98.81,
+          "total": 1436
+        },
+        "measuredAt": "2026-11-18T07:16:35.728Z",
+        "reason": null,
+        "statements": {
+          "covered": 1733,
+          "pct": 97.85,
+          "total": 1771
+        }
       },
       "packages/ui": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
+        "branches": {
+          "covered": 404,
+          "pct": 89.97,
+          "total": 449
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 170,
+          "pct": 98.83,
+          "total": 172
+        },
+        "lines": {
+          "covered": 511,
+          "pct": 98.45,
+          "total": 519
+        },
+        "measuredAt": "2026-11-18T07:16:14.508Z",
+        "reason": null,
+        "statements": {
+          "covered": 654,
+          "pct": 97.61,
+          "total": 670
+        }
       }
     }
   },
-  "generatedAt": "2026-11-18T06:48:56.208Z",
+  "generatedAt": "2026-11-18T07:19:20.185Z",
   "ledger": {
     "a11y": {
       "byRung": {
