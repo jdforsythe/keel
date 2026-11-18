@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { actionsOf, boardDiff, normalized } from "../smoke/shellReplay.mjs";
+import { actionsOf, boardDiff, normalized, outboxIn } from "../smoke/shellReplay.mjs";
 
 /** The inputs golden-1's shell session records, with the observations between them left out. */
 const events = [
@@ -58,17 +58,28 @@ describe("actionsOf", () => {
       { kind: "unsupported", event: { at: 1, kind: "fire", id: "f", event: { type: "submit" } } },
     ]);
   });
+  it("maps a net input to taking the server away and bringing it back", () => {
+    expect(
+      actionsOf({
+        events: [
+          { at: 1, kind: "net", online: false },
+          { at: 2, kind: "net", online: true },
+        ],
+      }),
+    ).toEqual([
+      { kind: "net", online: false },
+      { kind: "net", online: true },
+    ]);
+  });
   it("presses known keys and marks what no page input makes", () => {
-    const net = { at: 1, kind: "net", online: false };
     const focus = { at: 2, kind: "fire", id: "x", event: { type: "focus" } };
     const chord = { at: 3, kind: "fire", id: "x", event: { type: "keydown", key: "Enter", mod: true } };
     expect(
       actionsOf({
-        events: [{ at: 0, kind: "fire", id: "x", event: { type: "keydown", key: "Enter" } }, net, focus, chord],
+        events: [{ at: 0, kind: "fire", id: "x", event: { type: "keydown", key: "Enter" } }, focus, chord],
       }),
     ).toEqual([
       { kind: "keys", id: "x", keys: "" },
-      { kind: "unsupported", event: net },
       { kind: "unsupported", event: focus },
       { kind: "unsupported", event: chord },
     ]);
@@ -137,5 +148,35 @@ describe("boardDiff", () => {
     const lines = boardDiff(many, {}, 10);
     expect(lines).toHaveLength(11);
     expect(lines.at(-1)).toBe("... +2 more");
+  });
+});
+
+describe("outboxIn", () => {
+  const file = (gen: number, entries: unknown[] | undefined) =>
+    JSON.stringify({
+      keel: {
+        gen,
+        sum: "s",
+        data: JSON.stringify(
+          entries === undefined ? { other: "1" } : { "keel.outbox.todos.outbox": JSON.stringify({ entries }) },
+        ),
+      },
+    });
+  const toggle = { key: "k1", endpoint: "toggleTodo", state: "queued" };
+  const add = { key: "k2", endpoint: "addTodo", state: "sending" };
+  it("reads the entries of the copy of the higher generation", () => {
+    expect(outboxIn([file(3, [toggle]), file(4, [toggle, add])], "todos.outbox")).toEqual([toggle, add]);
+    expect(outboxIn([file(5, [toggle]), file(4, [toggle, add])], "todos.outbox")).toEqual([toggle]);
+  });
+  it("reads the file that parses when the other is missing or cut short", () => {
+    const whole = file(2, [toggle]);
+    expect(outboxIn([undefined, whole], "todos.outbox")).toEqual([toggle]);
+    expect(outboxIn([whole.slice(0, 20), whole], "todos.outbox")).toEqual([toggle]);
+  });
+  it("is empty for a copy without the outbox, and undefined without a copy", () => {
+    expect(outboxIn([file(1, undefined)], "todos.outbox")).toEqual([]);
+    expect(outboxIn([file(1, [])], "todos.outbox")).toEqual([]);
+    expect(outboxIn([undefined, "{"], "todos.outbox")).toBeUndefined();
+    expect(outboxIn([], "todos.outbox")).toBeUndefined();
   });
 });

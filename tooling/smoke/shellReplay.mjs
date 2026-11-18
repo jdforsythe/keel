@@ -1,5 +1,5 @@
 // The pure parts of tooling/smoke/shell.mjs: a recorded session's inputs as shell actions, a stored board with its
-// minted ids normalized, and a compact diff of two boards.
+// minted ids normalized, a compact diff of two boards, and the outbox entries the shell's store files hold.
 
 /** WebDriver key codes for the `keydown` keys a session can hold. */
 const KEYS = {
@@ -22,10 +22,11 @@ const isInput = (e) => e.kind === "fire" || e.kind === "nav" || e.kind === "net"
  * The inputs of `session` (std.sessions: `fire`, `nav` and `net` events) as the actions a person takes in the shell,
  * in recorded order: `{ kind: 'nav', href }` follows a link to `href`; `{ kind: 'click', id }` clicks element `id`
  * (a `click`, and a `change`, which a click on a checkbox makes); `{ kind: 'type', id, value }` clears element `id`
- * and types `value`; `{ kind: 'keys', id, keys }` presses a key in it. A `submit` or `nav` recorded at the same `at`
+ * and types `value`; `{ kind: 'keys', id, keys }` presses a key in it; `{ kind: 'net', online }` takes the server
+ * away or brings it back (a `net` input). A `submit` or `nav` recorded at the same `at`
  * as the `fire` before it is that input's effect (the submit a click on a submit button dispatches, the route an
  * action ends on) and is left out, since the real input makes it again. An input no person can make through the
- * page (`net`, `focus`, `blur`, a `submit` of its own, an unknown key) is `{ kind: 'unsupported', event }`.
+ * page (`focus`, `blur`, a `submit` of its own, an unknown key) is `{ kind: 'unsupported', event }`.
  */
 export function actionsOf(session) {
   const actions = [];
@@ -41,7 +42,7 @@ export function actionsOf(session) {
 
 function actionOf(e) {
   if (e.kind === "nav") return { kind: "nav", href: String(e.href) };
-  if (e.kind !== "fire") return { kind: "unsupported", event: e };
+  if (e.kind === "net") return { kind: "net", online: e.online === true };
   const type = e.event?.type;
   if (type === "click" || type === "change") return { kind: "click", id: String(e.id) };
   if (type === "input") return { kind: "type", id: String(e.id), value: String(e.event.value) };
@@ -115,4 +116,31 @@ export function boardDiff(shell, sim, cap = 10) {
   };
   walk(shell, sim, "");
   return lines.length > cap ? [...lines.slice(0, cap), `... +${lines.length - cap} more`] : lines;
+}
+
+/**
+ * The entries of outbox `id` in the shell's store files (`@keel/std-tauri`: `keel.json` and `keel.b.json`, each
+ * `{ keel: { gen, sum, data } }`, `data` the JSON text of every key), given as the files' texts, `keel.json` first
+ * (undefined for a missing file): from the copy of the higher generation that parses, the first on equal generations. Undefined when
+ * no file holds a copy; `[]` when the copy holds no outbox.
+ */
+export function outboxIn(texts, id) {
+  const copies = [];
+  for (const text of texts) {
+    try {
+      const doc = JSON.parse(String(text)).keel;
+      if (typeof doc?.gen === "number" && typeof doc.data === "string")
+        copies.push({ gen: doc.gen, data: JSON.parse(doc.data) });
+    } catch {}
+  }
+  const copy = copies.reduce((a, b) => (a === undefined || b.gen > a.gen ? b : a), undefined);
+  if (copy === undefined) return undefined;
+  const raw = copy.data?.[`keel.outbox.${id}`];
+  if (typeof raw !== "string") return [];
+  try {
+    const entries = JSON.parse(raw).entries;
+    return Array.isArray(entries) ? entries : [];
+  } catch {
+    return [];
+  }
 }
