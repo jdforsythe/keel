@@ -1,4 +1,4 @@
-# RFC 0134: claim order: content arrives as thunks, an eager element is reported by the check, the server and the console, and every packaged component resumes
+# RFC 0134: claim order: content arrives as thunks, an eager element is reported by the check, the server and the console, resume moves no served node, and every packaged component resumes
 
 Status: draft, for the orchestrator to accept (ADR-0156). The operator confirmed the direction: keep cursor-based claiming, fix the code, make the hazard loud.
 
@@ -12,6 +12,7 @@ At resume each op claims the next server element when it runs (k.runtime Resume 
 3. **The check misses it.** E1808 (`packages/check/src/rules/noEagerChild.ts`, RFC 0069) reports only a base element's `children`. A `Form` call, a std widget, an app component, an element-valued prop, a mapped list, a component call held in a variable, and a binding from another file are all out of its reach (RFC 0069 Known limits).
 4. **Nothing is printed.** `resume` returns its warnings; the generated resume entry (`packages/compiler/src/entry/resumeEntry.ts`) drops them, in dev and production alike. The server renders the fault without a word.
 5. **No packaged component has a resume test.** No file in `packages/std-*/{test,conformance}` resumes a widget or a table; resume coverage is `packages/ui` and `packages/runtime-dom` only.
+6. **Multi-item content moves served nodes** (found by running code after commit 1; read in the code on 2026-11-18). The compiler's `fragmentOf` (`packages/compiler/src/internal/lowerFile.ts`) lowers any children list of two or more items to an IIFE that makes a `DocumentFragment` and `f.append(...)`s each item; `renderFn` (`If`, `For`, `Match`, `Boundary` content), component children and JSX fragments all go through it. At resume each item is the claimed served element, so `append` detaches it into the fragment. Under a component, `@keel/ui` `appendChildren` puts it back (a detach and reattach; the browser smoke counted 8 on one golden-2 page that resumes with no warning). Under an op it is worse: `renderUnit` (`packages/runtime-dom/src/internal/renderUnit.ts`) skips the insert while claiming (`if (hydrate === null) anchor.parentNode?.insertBefore(out, anchor)`), so an `If` branch of two items loses both served nodes with no warning, and a `For` row of two is put back outside its region. A single item or a thunk returning an array does not go through `fragmentOf`. No conformance observes mutations; `removed()` (D6) would catch the loss but not the moves. A move matters in a browser: a detach resets the scroll of scrollable descendants, restarts CSS animations, reloads iframes, pauses media, runs custom elements' disconnected and connected callbacks and aborts IME composition, and queued-event replay walks the target's served ancestors.
 
 Corrections to the brief: the warnings are dropped in every mode, not only production. RFC 0069 did not exempt `Form` by name; its Migration noted the golden apps' `children: [title, submit]` calls were router `Form`, outside a rule scoped to base elements. No hand-called `Form(` with eager children remains under `apps/` in this tree; such calls remain in tests (Migration). std-headless widgets build in document order through thunks; the one hole is `Disclosure.children`. `Match` takes eager `Case` values by design: a `CaseNode` describes a case and is never placed or claimed (`packages/runtime-dom/src/internal/caseNode.ts`), so the rule must not report it.
 
@@ -66,6 +67,11 @@ Each component `@keel/ui`, `@keel/router`, `@keel/std-headless`, `@keel/std-tabl
 ### D6. `@keel/testing`: `removed()`
 `resumeDocument` returns a `render` handle; `find` gives no DOM node, so a test cannot see whether resume removed server elements, and a removal need not raise a warning (an `effect` that hides a served `If` branch at resume). The handle gains `removed()`: the number of elements under the served island roots that were not in the document when `resumeDocument` resolved. Fixed at that moment, so later handlers that remove rows do not change it. The clause lives in k.claim, which owns the requirement; k.testing (1,497 tokens) keeps every bullet.
 
+### D7. Resume moves no served node
+Observable rule (k.claim In place): while `resume` runs, a MutationObserver on the document records under island roots no removed element or region comment and no added element, unless an island mismatches (E1253) or writes state while resuming (an `effect` setting a signal, D6's case). Allowed: served text replaced (`@keel/ui`'s `make` drops claimed text and writes its own), text nodes and empty anchor comments added. Content of two or more items, of a component, `Form`, `Part`, a JSX fragment, and an `If`, `Match` or `Boundary` branch or a `For` row, keeps each served element in place inside its region. A `resumeDocument` handle's `detached()` counts the served elements under island roots removed at any time during resume, whether put back or not, so a move counts as well as a loss; `removed()` stays as specified.
+
+Intended approach (the builder's call; ADR-0156 C7): a runtime op `frag` that, while claiming, records the ordered items instead of appending them (outside a claim it builds the fragment as now). `fragmentOf` emits it; `renderUnit` takes the recorded items as the unit's nodes, already in place, and `@keel/ui` `appendChildren` and `@keel/router` `renderChildren` read them in order, passing over nodes already in place. Estimated cost: about 150 B gzip in `@keel/runtime-dom/ops`, about 20 B each in `@keel/ui` and `@keel/router`. `tooling/budgets.json` has no entry for `@keel/runtime-dom/ops`; the build adds one. Every compiled file with multi-item content changes its output.
+
 ## Alternatives
 - **Widen E1808.** Its Rules entry names base elements; a broader meaning under the same code would change an existing clause (rejected by the brief's rule).
 - **E1809 in E18xx.** E18xx is k.ui, k.a11y and k.aria; the contract is resume's, and k.claim would need to join a second block.
@@ -77,7 +83,7 @@ Each component `@keel/ui`, `@keel/router`, `@keel/std-headless`, `@keel/std-tabl
 - **A throw in `resumeDocument` on any removal.** Breaks tests of pages that legitimately change state at load; a count lets each test decide.
 
 ## Spec diff
-- New `spec/kernel/k.claim.md`, status proposed: intro, Order, Types, Check, Server, Client, Packaged components, Rules (E1257, E1258), seven Conformance bullets. 5,150 characters, 1,288 tokens; `pnpm spec k.claim` prints 1,288.
+- New `spec/kernel/k.claim.md`, status proposed: intro, Order, Types, Check, Server, Client, Packaged components, In place, Rules (E1257, E1258), nine Conformance bullets. 5,979 characters, 1,495 tokens; `pnpm spec k.claim` prints 5,980 characters, 1,495 tokens.
 - `spec/00-map.md`: a row `k.claim | Claim order | proposed | eager elements`; E125x owner `k.runtime, k.resume, k.claim`; one-line cells trimmed (k.schema, k.store, k.check, k.deploy, k.compat, k.hosting, k.aria, k.privacy), no title or status changed. 1,199 to 1,193 tokens.
 - No other section changes; no bullet reordered, renumbered or reworded. No section changes status, so the ledger does not move. k.claim goes to `conformance-covered` with the build, as k.resume did.
 
@@ -138,6 +144,19 @@ Edited (rfc:0134): `packages/check/conformance/fixtures-by-code.ts` gains the E1
 - Each base element with an event prop: its handler runs.
 - `HealthView` as a route component: resumes or is static (no `data-k-island`), no warning.
 
+**In place** (`packages/server/conformance/claim-in-place.test.ts` for served cases, each with a MutationObserver on the document from before `resume` to its return, recording `childList` with `subtree`; and through `resumeDocument` for `detached()`). For each case: no removed element or region comment, no added element, each served element the same object, inside its region (between its op's `<!--[-->` and `<!--]-->` where it has one), a handler on it runs, `detached()` 0:
+- a component with one child, two children, and a thunk returning an array;
+- nested components, each with two children;
+- `Form` (in JSX) with one child and with several;
+- `Part` with several children;
+- an `If` branch, a `For` row, a `Match` case and a `Boundary` body, each with two or more element children (the `For` with three rows);
+- a JSX fragment in a template slot (`<Box>{ok ? <><A /><B /></> : null}</Box>`) and a fragment returned by a component;
+- static text and bound text (`{count}`) beside elements in each of the above: served text may be replaced, elements not;
+- a focused `Input` with a typed value and a caret (`selectionStart` 2 of 5) before resume: after it, the same element is `document.activeElement`, its value and selection unchanged;
+- the exception: an island whose template mismatches records removals in that island only, and `detached()` counts them; a neighbouring island records none;
+- an island whose `effect` hides an `If` branch at resume records that branch's removals and no E1253 (the state-write exception).
+- A scrolled scrollable descendant keeping `scrollTop`: happy-dom does not reset scroll on detach, so it cannot show the fault; it belongs to the browser smoke (`tooling/smoke/resume.mjs`), with a scrolled list inside an island.
+
 **removed()** (`packages/testing/conformance/resume-document-removed.test.ts`):
 - A clean island: 0; after a `fire` that removes a row, still 0.
 - An island whose `effect` sets a signal that hides an `If` branch the server showed: equal to the branch's element count, and no warning.
@@ -152,10 +171,10 @@ Edited (rfc:0134): `packages/check/conformance/fixtures-by-code.ts` gains the E1
 ## Build order
 1. This RFC, ADR-0156 and the spec (commit 1).
 2. `conformance-writer`: the conformance diff (commit 2), red.
-3. Builders (commit 3): `@keel/router` `FormProps` and `ChildInput`; `@keel/std-headless` `Disclosure`; `@keel/std-tables` `DataTable` in document order; `@keel/check` E1258 rule, fixture and `explain` entries for E1257 and E1258 (at most 120 tokens each); `@keel/runtime-dom` the made-before-placed check in server mode and in a client re-render, the E1253 phrase; `@keel/server` the E1257 record once per route; `@keel/compiler` the entry's `console.warn`; `@keel/testing` `removed()`; the Migration; changesets; k.claim to conformance-covered in the section and the map.
+3. Builders (commit 3): `@keel/router` `FormProps` and `ChildInput`; `@keel/std-headless` `Disclosure`; `@keel/std-tables` `DataTable` in document order; `@keel/check` E1258 rule, fixture and `explain` entries for E1257 and E1258 (at most 120 tokens each); `@keel/runtime-dom` the made-before-placed check in server mode and in a client re-render, the E1253 phrase; `@keel/server` the E1257 record once per route; `@keel/compiler` the entry's `console.warn`; `@keel/testing` `removed()` and `detached()`; the `frag` op, `fragmentOf`, `renderUnit`, `appendChildren` and `renderChildren` (D7) and a budget entry for `@keel/runtime-dom/ops`; the browser smoke's scroll case; the Migration; changesets; k.claim to conformance-covered in the section and the map.
 
 ## Token impact
-k.claim 1,288 tokens (new). Map 1,199 to 1,193. No other section changes.
+k.claim 1,495 tokens by file characters and as `pnpm spec k.claim` prints it (new; 1,288 before D7). Map 1,199 to 1,193. No other section changes.
 
 ## Choices
 Each is the author's call for the orchestrator to confirm or reverse.
@@ -165,3 +184,4 @@ Each is the author's call for the orchestrator to confirm or reverse.
 - C4: the entry prints every resume warning in every mode; E1253 names the cause from the client re-render.
 - C5: the packaged-component requirement and `removed()` live in k.claim, a new section, because every owning section is full.
 - C6: E1257 and E1258 in E125x.
+- C7: resume moves no served node; a `frag` op records multi-item content while claiming; `detached()` beside `removed()`; additions limited to text and empty anchors.

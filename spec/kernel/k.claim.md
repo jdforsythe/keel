@@ -15,6 +15,8 @@ Where an element is made, so that resume (k.runtime, k.resume) claims its own se
 
 **Packaged components.** Each component `@keel/ui`, `@keel/router`, `@keel/std-headless`, `@keel/std-tables` and `@keel/std-health` export, served by `createApp` with its props and slots and resumed by `resumeDocument` in a module graph of its own (k.testing), resumes with no warning, no E1257 and no element removed, and its handlers work. A `resumeDocument` handle has `removed()`: the elements under the served island roots not in the document when it resolved.
 
+**In place.** During `resume` a MutationObserver sees under island roots no element or region comment removed and no element added, unless an island mismatches (E1253) or writes state; text may be replaced and empty anchors added. So content of several items (a component's, a fragment's, an op's branch or row) keeps each served element in its region. A `resumeDocument` handle's `detached()` counts those removed, put back or not.
+
 **Rules.** E1257 an element placed by an op that started after it was made, in a served render · E1258 an element made before the component call it is passed to (fix: `() =>`; none for a binding).
 
 **Conformance.**
@@ -25,3 +27,5 @@ Where an element is made, so that resume (k.runtime, k.resume) claims its own se
 - An island that mismatches under the resume entry writes one `console.warn` starting `E1253` with its id in production mode; with an eager child it holds `made before its parent`, with a template mismatch it does not.
 - `DataTable` (client and server sources: sort link, Next, select), each std-headless widget (an option chosen, a menu opened, a tab switched, a dialog opened and closed, a disclosure toggled, a toast dismissed), `TableSearch`, `Form`, base elements and `HealthView` resume in a fresh graph with `removed()` 0, no warning, no E1257, and their handlers work.
 - An island whose `effect` hides at resume an `If` branch the server showed has `removed()` equal to that branch's elements.
+- With one, two and array children of a component, nested components, `Form` with one and several, `Part`, `If`, `For` rows, `Match` and `Boundary` with several, a fragment in a slot and text beside elements: no element removed or added, each in its region, handlers work, `detached()` 0; only a mismatching island removes.
+- A focused `Input` keeps focus, typed value and caret across resume.

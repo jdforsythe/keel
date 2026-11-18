@@ -1,4 +1,4 @@
-# ADR-0156: content arrives as thunks, an eager element is reported by the check, the server and the console, and every packaged component resumes (RFC 0134)
+# ADR-0156: content arrives as thunks, an eager element is reported by the check, the server and the console, resume moves no served node, and every packaged component resumes (RFC 0134)
 
 **Status:** proposed (accepted with the build).
 
@@ -10,9 +10,11 @@
 - C3: E1257: in server mode an element placed by an op that started after it was made; `createApp` logs one `diag` per route, in every mode, and serves the document unchanged.
 - C4: the resume entry writes each `resume` warning to `console.warn` in every mode; an island whose client re-render places an element made before its placing op has `made before its parent` in its E1253 warning.
 - C5: every component of `@keel/ui`, `@keel/router`, `@keel/std-headless`, `@keel/std-tables` and `@keel/std-health` resumes served by `createApp` and restored by `resumeDocument` in a fresh graph, with no warning, no E1257, `removed()` 0 and working handlers; `DataTable` makes its parts in document order.
+- C7: resume moves no served node: under island roots no element or region comment is removed and no element added while `resume` runs, unless an island mismatches or writes state; multi-item content (component, `Form`, `Part`, fragment, op branch or row) keeps each served element in its region; `resumeDocument`'s `detached()` counts removals put back or not. Intended mechanism: a `frag` op that records ordered items while claiming, read by `renderUnit`, ui `appendChildren` and router `renderChildren` (about 150 B gzip in `@keel/runtime-dom/ops`, about 20 B each in ui and router; a budget entry for `@keel/runtime-dom/ops` is added).
 - C6: a new section k.claim holds these clauses, since k.runtime, k.resume, k.ui, k.check, k.router, k.testing, std.tables and std.headless are full; E1257 and E1258 are in E125x.
 
 **Alternatives.**
+- Leave detach-and-reattach and fix only the loss under ops: a move still resets scroll, restarts animations, reloads iframes and aborts composition.
 - Claim by key or id: every element would need a key in the markup (operator's call: keep the cursor).
 - Widen E1808: changes the meaning of its Rules entry.
 - Narrow base elements' `children`: contradicts k.ui Standard slots.
@@ -21,6 +23,7 @@
 
 **Consequences.**
 - Hand-built `Form` calls with nodes, arrays or strings stop compiling and move into thunks.
+- Compiled output of multi-item content changes in every file that has it.
 - Every browser console shows resume mismatches, production included.
 - `@keel/runtime-dom` gains a stamp per made element and a compare per placement, shared by server mode and a client re-render.
 - The static rule does not follow members, destructuring, `let` reassignment, other functions' returns, IIFEs or installed packages, and cannot see a component reading an element-valued getter prop first; E1257 covers each on a served page.
