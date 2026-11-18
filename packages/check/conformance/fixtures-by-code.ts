@@ -749,6 +749,33 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("modules/a/x.ts", IMPORT)],
     clean: [f("packages/std-x/src/a.ts", IMPORT)],
   },
+  E1578: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'node', caller: { days: 0 } } })\n",
+      ),
+      manifest("a"),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'node', caller: { days: 30 } } })\n",
+      ),
+      manifest("a"),
+    ],
+  },
+  E1579: {
+    opts: NO_TYPES,
+    bad: [f("identity.server.ts", "export const identity = async () => ''\n")],
+    clean: [
+      f(
+        "identity.server.ts",
+        "import { identity } from '@keel/server'\nexport default identity({ identify: async () => '' })\n",
+      ),
+    ],
+  },
   E1601: {
     bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],
     clean: [
