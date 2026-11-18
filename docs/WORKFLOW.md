@@ -2,13 +2,21 @@
 
 **Unit of work.** One task from `tasks/BACKLOG.md`, sized to one context window, citing a spec section, with acceptance criteria.
 
-**Loop.** `/next` (claim, worktree, branch, PLAN.md) -> `conformance-writer` writes tests from spec -> implement -> `pnpm check` -> `pnpm test` -> `pnpm build` -> `/review` -> docs, spec status, changeset -> commit -> PR -> merge flips the backlog line.
+**Loop.** `/next` (claim, worktree, branch, PLAN.md) -> `conformance-writer` writes tests from spec -> implement -> the package's own `check` -> `pnpm test` -> `pnpm build` -> `/review` -> docs, spec status, changeset -> commit -> PR -> merge flips the backlog line.
 
 **Batches.** When several tasks run in parallel subagents, the batch ends with the `reviewer` subagent over the batch diff (PRINCIPLES 1-12, VISION promises, Definition of done per RFC) and a `red-team` pass; their findings become backlog lines before the next batch starts, and the push waits for both.
+
+**Conformance.** The `conformance-writer` writes suites from the spec section alone; builders never edit `packages/*/conformance/**`. An RFC unit lands as three commits: RFC and spec, conformance, build (`docs/RFC.md`). A case that looks wrong goes back to a conformance writer, who judges it from the spec; it is not patched by the builder.
 
 **Parallelism.** Lanes work in place on one branch; a task that needs isolation takes a worktree under `.worktrees/`, and `HANDOFF.md` lists any active one. Same-package work is serialized. Agents stage nothing; the orchestrator commits by explicit path (never `git add -A`).
 
 **Context discipline.** Checkpoint `PLAN.md` after each step. Subagents for exploration. `pnpm spec` for retrieval. Never read `.generated/` or build output.
+
+**Gates.** A brief tells its agent to run the package's own `check` (typecheck and lint, conformance included), not only the one test file it touched. The root `pnpm check` does not run the ledger diff; the orchestrator runs `pnpm ledger --diff` with the root gates, because CI's `check` job does.
+
+**CI.** `tooling/ci.source.json` defines the jobs: `check`; six `test-shard` jobs, to one of which every package must belong (`tooling/ci-shards.mjs`); a `test` job that passes only if every shard passed; and `postgres`. Each job has a time limit. Nothing is skipped or retried.
+
+**Reference files.** The orchestrator keeps `tasks/STAGES.md` (each stage's verdict and evidence) and the evidence report current: `pnpm evidence:report` generates `tooling/ledger/evidence.json` and `tasks/COVERAGE.md` from it, and `pnpm coverage` measures line and branch coverage per package.
 
 **Brand.** `docs/BRAND.md` is the one style and voice guide. New apps start from the scaffold `project` template (brand tokens, self-hosted fonts, the mark); READMEs and docs pass `tooling/voice-lint.mjs`; the lockup goes on every public page.
 
@@ -36,10 +44,10 @@ Brief every subagent with: the files it owns, the files other agents own concurr
 
 **The orchestrator.** The session the operator runs `/resume` in is the director of the work: it understands the goals and moves the project to its end, done right, securely, with clean code and sound process. It keeps for itself the decisions, the briefs, the review of every lane's result, the merges, the gates and the handoff records (`PLAN.md`, `docs/HANDOFF.md`), so no work or progress is lost. Everything else runs concurrently in subagents at the tier above. A subagent's claim is checked before it is relayed or merged: the lane's tests and gates are run, and security work gets a reviewer pass and a red-team pass. A lane that must not disturb a build, an eval or a mutation run on the main tree works in its own git worktree and commits there; the orchestrator cherry-picks. A batch of many lines may go to one opus sub-orchestrator in a worktree that runs its own subagents.
 
-**What the orchestrator decides.** It approves public API shapes, RFCs under the defaults and size budget re-bases with the reason, and records each in `PLAN.md` for the operator to confirm or reverse. It brings to the operator: a security choice that does not follow plainly from the goals (fail closed, least surprise, enforce in the kernel), spending, and a mutation run. External reviews, the CI repair and full testing on devices belong to the pre-public readiness plan, not to stage work.
+**What the orchestrator decides.** It decides and records; it does not stop to ask. Each decision goes into the task's `PLAN.md` and `docs/HANDOFF.md` for the operator to confirm or reverse. It approves public API shapes, RFCs under the defaults and size budget re-bases (the measured size and the reason go in the commit). It brings to the operator: a security choice that does not follow plainly from the goals (fail closed, least surprise, enforce in the kernel), spending, and a mutation run. External reviews, the CI repair and full testing on devices belong to the pre-public readiness plan, not to stage work.
 
 **Mutation on a shared machine.** A mutation run needs the operator's word. The light form, `pnpm mutate:stale`, runs only the files whose claim is stale, in chunks, with three test runners and a time bound, and is the one to ask for; the whole-package form takes the machine.
 
-**Processes.** The machine is shared. A brief tells its agent to run one test file at a time, to run a whole package suite at most twice, to bound every command, and to leave no process behind. The orchestrator runs `pnpm orphans` before and after a batch and after any root run that stopped early: it lists this worktree's processes whose parent is gone (O0001), and `pnpm orphans --kill` ends them. A mutation run is watched and stopped with `pnpm mutate:status` and `pnpm mutate:stop` only.
+**Processes.** The machine is shared. A brief tells its agent to run one test file at a time, to run a whole package suite at most twice, to bound every command, and to leave no process behind. The orchestrator runs `pnpm orphans` before and after a batch and after any root run that stopped early: it lists this worktree's processes whose parent is gone (O0001), and `pnpm orphans --kill` ends them. Agents keep scratch files outside the repo. A mutation run is watched and stopped with `pnpm mutate:status` and `pnpm mutate:stop` only.
 
-verified: cd2e17ba8c75cdc17de010316ab5cc2e0ace7fda
+verified: 7f4978b7f8c962693d25fa5ac9d1266412467bf7
