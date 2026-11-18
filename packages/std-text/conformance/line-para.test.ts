@@ -18,12 +18,16 @@ function rules(
 // Independent oracle for the `line` predicate.
 const BIDI = /\p{Bidi_Control}/u;
 const CONTROL = new RegExp("[\\p{Cc}" + String.fromCharCode(0x2028, 0x2029) + "]", "u");
-const BLANK = { test: (v: string): boolean => !/[^\p{White_Space}\p{Default_Ignorable_Code_Point}]/u.test(v) };
+const BLANK = {
+  test: (v: string): boolean => !/[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{M}\u2800]/u.test(v),
+};
+const LONE_SURROGATE = /\p{Cs}/u;
 function lineOk(v: string, min: number, max: number, allowLf: boolean): boolean {
   const text = allowLf ? v.replaceAll("\n", "") : v;
   const n = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(v)].length;
   return (
     v.normalize("NFC") === v &&
+    !LONE_SURROGATE.test(v) &&
     (v === "" || !BLANK.test(v)) &&
     !BIDI.test(text) &&
     !CONTROL.test(text) &&
@@ -82,5 +86,31 @@ test("`para` accepts a string exactly when it is `line`-valid apart from U+000A 
       expect(para({ max: 10 }).parse(v).ok).toBe(lineOk(v, 1, 10, true));
     }),
     { seed: 1337, numRuns: 100 },
+  );
+});
+
+test("`line` agrees with the oracle on strings drawn from invisible, mark, surrogate and plain characters (property).", () => {
+  const palette = fc.constantFrom(
+    "a",
+    " ",
+    "\u{2800}",
+    "\u{FFF9}",
+    "\u{FFFB}",
+    "\u{13430}",
+    "\u{301}",
+    "\u{302}",
+    "\u{200D}",
+    "\u{200B}",
+    "\u{FE0F}",
+    "\uD800",
+    "\uDC00",
+    "\u{2764}",
+  );
+  fc.assert(
+    fc.property(fc.array(palette, { maxLength: 5 }), (cs) => {
+      const v = cs.join("");
+      expect(line({ min: 0, max: 10 }).parse(v).ok).toBe(lineOk(v, 0, 10, false));
+    }),
+    { seed: 1337, numRuns: 200 },
   );
 });
