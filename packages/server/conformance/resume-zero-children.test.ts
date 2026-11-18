@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Layout islands "When the server placed no content (it did not call `children`, or the slot's branch did not render), a call returns nothing."
+// Spec: k.resume, Layout islands "With no server content (no `children` call, or the slot's branch did not render), a call returns nothing."
 // Seed: 1337. Real compiled TSX, real createApp, real resume.
 import { afterEach, describe, expect, it } from "vitest";
 import {

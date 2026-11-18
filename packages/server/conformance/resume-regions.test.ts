@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Regions "every structural op (`If`, `For`, `Match`, `Boundary`) writes its content in a region `<!--[-->` … `<!--]-->` right before its anchor (k.runtime Resume markup), an empty region when it renders nothing; so does every template slot other than a component slot `<!--+-->`: a slot call such as `children()`, or a JSX expression of elements. A `For` region holds its rows in list order, or its `empty` content while it has none. The root Boundary of a level's render writes no region."
+// Spec: k.resume, Regions "every structural op (`If`, `For`, `Match`, `Boundary`) writes its content in a region `<!--[-->` … `<!--]-->` right before its anchor (k.runtime Resume markup), an empty region when it renders nothing; so does every template slot other than a component slot `<!--+-->`: a slot call such as `children()`, or a JSX expression of elements. A `For` region holds its rows in order, or its `empty` content. The root Boundary of a level's render writes no region."
 // Seed: 1337. Real compiled TSX, real createApp; the markers are read from the served document.
 import { afterEach, describe, expect, it } from "vitest";
 import { everyRegionClosesBeforeAnAnchor, install, q, regionTree, serve } from "./resume-app.ts";
@@ -62,7 +62,9 @@ describe("k.resume: the regions a served document carries", () => {
     install(await serve(TWO, "/two"));
     expect(regionTree(q("al.root"))).toEqual([[]]);
     const page = q("ap.root");
-    expect(page.previousSibling?.nodeValue).toBe("[");
+    expect(page.previousSibling?.nodeType).toBe(8);
+    expect(page.previousSibling?.nodeValue).toBe("k");
+    expect(page.previousSibling?.previousSibling?.nodeValue).toBe("[");
     expect(page.nextSibling?.nodeValue).toBe("]");
     expect(page.nextSibling?.nextSibling?.nodeType).toBe(8);
   });

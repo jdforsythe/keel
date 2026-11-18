@@ -51,7 +51,9 @@ describe("k.resume: an island layout around an island page", () => {
     const layout = q("al.root");
     expect(page.parentNode).toBe(layout);
     expect(page.previousSibling?.nodeType).toBe(8);
-    expect(page.previousSibling?.nodeValue).toBe("[");
+    expect(page.previousSibling?.nodeValue).toBe("k");
+    expect(page.previousSibling?.previousSibling?.nodeType).toBe(8);
+    expect(page.previousSibling?.previousSibling?.nodeValue).toBe("[");
     expect(page.nextSibling?.nodeType).toBe(8);
     expect(page.nextSibling?.nodeValue).toBe("]");
     const { warnings } = resumeBody(componentsOf(TWO));
