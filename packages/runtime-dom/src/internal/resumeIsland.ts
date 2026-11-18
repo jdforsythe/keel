@@ -77,8 +77,12 @@ export function resumeIsland(
         { onError: (error) => report(owner, error, rootAt) },
       );
     } catch (error) {
-      // Any throw while claiming is a mismatch: the client re-render below shows a real app error.
-      claim.session.failed ??= error instanceof Mismatch ? error : new Mismatch(`the claim threw ${String(error)}`);
+      // Any throw while claiming is a mismatch: the client re-render below shows a real app error. The thrown text can
+      // carry data, so the warning holds it only in dev, as the root fallback does (k.errors).
+      claim.session.failed ??=
+        error instanceof Mismatch
+          ? error
+          : new Mismatch(mode === "dev" ? `the claim threw ${String(error)}` : "the claim threw");
     }
     if (claim.session.failed === null && rendered.node !== el)
       claim.session.failed = new Mismatch("the component did not render the island root");
