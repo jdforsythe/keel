@@ -1,4 +1,5 @@
 import type { Ctx } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import type { EndpointMap } from "@keel/services";
 import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
@@ -18,7 +19,7 @@ import { persist } from "./internal/persist.ts";
  * until that write settles), flushes, and resolves that entry's
  * `OutboxResult` as `send` does: `queued` when offline or when the flush stops before it, `failed` with
  * `offline.storage` (the entry failed in memory, nothing posted) when the storage write rejects. `'theirs'` removes a
- * `conflict` or `failed` entry, writes the outbox and resolves true. Each logs `<id>.resolve` `{ key, resolution }`.
+ * `conflict` or `failed` entry, writes the outbox (once more when that write rejects) and resolves true. Each logs `<id>.resolve` `{ key, resolution }`.
  * Resolves false, changing nothing, for a key with no such entry.
  */
 export function resolve<const D extends EndpointMap>(
@@ -51,7 +52,7 @@ export async function resolve<const D extends EndpointMap>(
   if (state !== "conflict" && (resolution === "mine" || state !== "failed")) return false;
   tx(c.resolve, { key, resolution });
   if (resolution === "theirs") {
-    await persist(ctx, c);
+    if (!(await attempt(() => persist(ctx, c))).ok) await attempt(() => persist(ctx, c));
     return true;
   }
   const error = await admit(ctx, c, key);

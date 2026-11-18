@@ -1,5 +1,6 @@
 // Model property: random schedules of `send`, `'mine'` `resolve`, connectivity changes (a `drain` flush), a storage
-// whose writes settle one at a time in any order and may reject, and a server that answers one held request at a time.
+// whose writes settle one at a time in any order, may reject or never settle (10 s on `ctx.clock` then count as
+// rejected), the clock passing 10 s, and a server that answers one held request at a time.
 // An entry whose own write rejected is never posted after it, nothing is posted but the entry in hand and never while
 // its post is in flight, no entry is lost, and the flush is always released. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
@@ -25,17 +26,24 @@ type Step =
   | { kind: "send" }
   | { kind: "mine"; pick: number }
   | { kind: "online"; on: boolean }
-  | { kind: "write"; pick: number; fail: boolean }
+  | { kind: "write"; pick: number; how: "ok" | "fail" | "hang" }
+  | { kind: "time" }
   | { kind: "answer"; pick: number; conflict: boolean };
 const stepArb: fc.Arbitrary<Step> = fc.oneof(
   fc.constant<Step>({ kind: "send" }),
   fc.nat(7).map((pick): Step => ({ kind: "mine", pick })),
   fc.boolean().map((on): Step => ({ kind: "online", on })),
-  fc.record({ pick: fc.nat(7), fail: fc.boolean() }).map((w): Step => ({ kind: "write", ...w })),
+  fc
+    .record({ pick: fc.nat(7), how: fc.constantFrom<"ok" | "fail" | "hang">("ok", "fail", "hang") })
+    .map((w): Step => ({ kind: "write", ...w })),
+  fc.constant<Step>({ kind: "time" }),
   fc.record({ pick: fc.nat(7), conflict: fc.boolean() }).map((a): Step => ({ kind: "answer", ...a })),
 );
 
-/** `ctx.storage.set` held until pumped: `pump(i, fail)` settles the `i`-th held write, out of order allowed. */
+/**
+ * `ctx.storage.set` held until pumped: `pump(i, how)` settles the `i`-th held write, out of order allowed, or with
+ * `'hang'` drops it so it never settles.
+ */
 function heldStorage(ctx: SimCtx) {
   const real = ctx.storage.set.bind(ctx.storage);
   const held: { run: (fail: boolean) => Promise<void> }[] = [];
@@ -54,9 +62,9 @@ function heldStorage(ctx: SimCtx) {
       : real(key, value);
   Object.defineProperty(ctx.storage, "set", { value: set, configurable: true, writable: true });
   return {
-    pump: async (i: number, fail: boolean): Promise<void> => {
+    pump: async (i: number, how: "ok" | "fail" | "hang"): Promise<void> => {
       const [w] = held.splice(i % Math.max(held.length, 1), 1);
-      if (w !== undefined) await w.run(fail);
+      if (w !== undefined && how !== "hang") await w.run(how === "fail");
     },
     release: async (): Promise<void> => {
       state.holding = false;
@@ -149,7 +157,8 @@ async function run(script: readonly Step[]) {
         });
       }
     } else if (step.kind === "online") ctx.net.setOnline(step.on);
-    else if (step.kind === "write") await storage.pump(step.pick, step.fail);
+    else if (step.kind === "write") await storage.pump(step.pick, step.how);
+    else if (step.kind === "time") ctx.clock.advance(10_000);
     else server.answer(step.pick, step.conflict);
     await settle();
     const added = o
@@ -171,6 +180,13 @@ async function run(script: readonly Step[]) {
   await settle();
   await storage.release();
   ctx.clock.advance(60_000);
+  await settle();
+  await storage.release();
+  await settle();
+  // A write that never settled released its flush once 10 s passed, posting no more: reconnect to flush the rest.
+  ctx.net.setOnline(false);
+  await settle();
+  ctx.net.setOnline(true);
   await settle();
   await storage.release();
   await settle();

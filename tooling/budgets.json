@@ -79,7 +79,7 @@
       "platform": "node"
     },
     "@keel/std-money": "1kb",
-    "@keel/std-offline": "3kb",
+    "@keel/std-offline": "3.25kb",
     "@keel/std-offline/tools": {
       "max": "3kb",
       "platform": "node"

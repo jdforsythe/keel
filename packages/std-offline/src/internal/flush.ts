@@ -1,4 +1,5 @@
 import type { Ctx } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import { tx } from "@keel/store";
 import type { OutboxResult } from "../OutboxResult.ts";
 import type { Config } from "./Config.ts";
@@ -16,8 +17,10 @@ const obj = (x: unknown): object => (typeof x === "object" && x !== null ? x : {
  * with `offline.owner`. A network failure keeps the
  * entry queued, stops, and retries 1 s later doubling to 60 s on `ctx.clock` while online. A queued entry whose own
  * storage write (`send`, a `'mine'` `resolve`) has not settled is waited for in its place. An entry naming no endpoint
- * of the api is `failed` (`api.input`); a storage write that rejects fails the entry in hand (`offline.storage`) and
- * ends the flush. Resolves the settlement of entry `key`, or `queued` when the flush stops before it.
+ * of the api is `failed` (`api.input`); a storage write that rejects or times out fails the entry in hand
+ * (`offline.storage`), writes the outbox once more and ends the flush. Any other throw ends the flush, leaves the
+ * entries as they are and is rethrown. Resolves the settlement of entry `key`, or `queued` when the flush stops
+ * before it.
  */
 export function flush(ctx: Ctx, c: Config, key = ""): Promise<OutboxResult<unknown>> {
   const done = new Promise<OutboxResult<unknown>>((go) => c.waits.set(key, go));
@@ -29,10 +32,15 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
   if (c.busy) return;
   c.busy = true;
   c.timer.abort();
+  // Set once a storage write rejects: only that throw fails the entry in hand.
+  let lost = false;
   const put = (key: string, state: string, extra: object): Promise<void> => {
     const payload: unknown = { key, state, ...extra };
     tx(c.settle, payload);
-    return persist(ctx, c);
+    return persist(ctx, c).catch((x: unknown) => {
+      lost = true;
+      throw x;
+    });
   };
   const done = (key: string, out: OutboxResult<unknown>): void => {
     c.waits.get(key)?.(out);
@@ -87,13 +95,17 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
         done(e.key, out);
       }
     }
-  } catch {
-    // A storage write that rejected: the entry in hand is failed in memory, and the flush is released.
+  } catch (x) {
+    // Any other throw leaves the entries as they are and is rethrown once the flush is released.
+    if (!lost) throw x;
+    // A storage write that rejected: the entry in hand is failed in memory and written once more (best effort).
     const error = fault(c, "offline.storage");
     tx(c.settle, { key, state: "failed", error });
+    await attempt(() => persist(ctx, c));
     done(key, { state: "failed", error });
+  } finally {
+    c.busy = false;
+    for (const go of c.waits.values()) go({ state: "queued" });
+    c.waits.clear();
   }
-  c.busy = false;
-  for (const go of c.waits.values()) go({ state: "queued" });
-  c.waits.clear();
 }

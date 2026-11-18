@@ -1,5 +1,4 @@
-// Storage and ctx faults around the flush and `resolve`. A `test.fails` case holds behaviour std.offline does not state
-// yet; it passes once the spec states it and the code follows. Seed 1337.
+// Storage and ctx faults around the flush and `resolve` (std.outbox). Seed 1337.
 import { type Ctx, type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -49,7 +48,7 @@ const hanging = (ctx: SimCtx, hang: number): Ctx => {
   };
 };
 
-test.fails("a rejected flush write leaves no `queued` copy of the failed entry in storage (spec silent)", async () => {
+test("a rejected flush write leaves no `queued` copy of the failed entry in storage", async () => {
   // Steps: the load's `get`, `send`'s `set`, then the flush's `sending` `set`, which rejects.
   const ctx = sim(["ok", "ok", "fail"]);
   const { o, sc } = declare();
@@ -59,34 +58,45 @@ test.fails("a rejected flush write leaves no `queued` copy of the failed entry i
   sc.dispose();
 });
 
-test.fails(
-  "a throw in the flush that is not a storage write is not reported as offline.storage (spec silent)",
-  async () => {
-    const base = sim([]);
-    base.net.route(`${ORIGIN}/add`, () => {
-      throw new TypeError("network down");
-    });
-    // The network fails, so the flush schedules a retry on `ctx.clock.after`, which throws here.
-    const ctx: Ctx = {
-      clock: {
-        now: () => base.clock.now(),
-        after: () => {
-          throw new RangeError("clock");
-        },
+test("a throw in the flush that is not a storage write is rethrown, not reported as offline.storage", async () => {
+  const base = sim([]);
+  base.net.route(`${ORIGIN}/add`, () => {
+    throw new TypeError("network down");
+  });
+  // The clock throws: the service call answers `api.network`, then the flush's retry timer throws.
+  const thrown = new RangeError("clock");
+  const ctx: Ctx = {
+    clock: {
+      now: () => base.clock.now(),
+      after: () => {
+        throw thrown;
       },
-      random: base.random,
-      net: base.net,
-      storage: base.storage,
-      dispose: () => base.dispose(),
-    };
-    const { o, sc } = declare();
+    },
+    random: base.random,
+    net: base.net,
+    storage: base.storage,
+    dispose: () => base.dispose(),
+  };
+  const reasons: unknown[] = [];
+  const saved = process.listeners("unhandledRejection");
+  process.removeAllListeners("unhandledRejection");
+  process.on("unhandledRejection", (reason) => reasons.push(reason));
+  const { o, sc } = declare();
+  try {
     const r = await send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: "u1" });
-    expect(r.state === "failed" ? r.error.code : r.state).not.toBe("offline.storage");
+    await settle();
+    await new Promise<void>((done) => setImmediate(done));
+    expect(r).toEqual({ state: "queued" });
+    expect(o.get("entries").map((e) => e.state)).toEqual(["queued"]);
+    expect(reasons).toEqual([thrown]);
+  } finally {
+    process.removeAllListeners("unhandledRejection");
+    for (const listener of saved) process.on("unhandledRejection", listener);
     sc.dispose();
-  },
-);
+  }
+});
 
-test.fails("a storage write that never settles does not hold a later send (spec silent)", async () => {
+test("a storage write that never settles holds a later send only until 10 s pass on ctx.clock", async () => {
   const base = sim([]);
   // Call 0 is the first send's own write.
   const ctx = hanging(base, 0);
@@ -97,20 +107,29 @@ test.fails("a storage write that never settles does not hold a later send (spec 
   void send(ctx, o, "add", { body: { t: "b" } }, { base: 0, owner: "u1" }).then((r) => {
     later = r.state;
   });
+  await settle();
+  base.clock.advance(9_999);
+  await settle();
+  expect(later).toBe("pending");
+  base.clock.advance(1);
   for (let i = 0; i < 5; i++) await settle();
   expect(later).toBe("sent");
+  expect(o.get("entries").map((e) => e.state)).toEqual(["failed"]);
+  expect(await stored(base, o.id)).toMatchObject({ entries: [{ state: "failed" }] });
   sc.dispose();
 });
 
-test.fails("'theirs' resolves true when its storage write rejects (spec silent)", async () => {
-  // Steps: the load's `get`, `send`'s `set` (rejects: the entry is `failed`), then `resolve`'s `set` (rejects).
-  const ctx = sim(["ok", "fail", "fail"]);
+test("'theirs' resolves true when its storage writes reject", async () => {
+  // Steps: the load's `get`, `send`'s `set` and its second write (both reject: the entry is `failed`), then `resolve`'s
+  // two writes (both reject).
+  const ctx = sim(["ok", "fail", "fail", "fail", "fail"]);
   ctx.net.setOnline(false);
   const { o, sc } = declare();
   const r = await send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: "u1" });
   const key = o.get("entries")[0]?.key ?? "";
   expect(r.state).toBe("failed");
   await expect(resolve(ctx, o, key, "theirs")).resolves.toBe(true);
+  expect(o.get("entries")).toEqual([]);
   sc.dispose();
 });
 
