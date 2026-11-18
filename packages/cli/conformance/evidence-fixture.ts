@@ -4,7 +4,7 @@
 // ASSUMED (the spec names no way to pin the clock from outside): the command's sim clock is fixed by `KEEL_SEED` alone.
 import { spawnSync } from "node:child_process";
 import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, sign as signBytes } from "node:crypto";
-import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { cpSync, lstatSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -274,22 +274,28 @@ export const project = (tree: Tree): string => materialize(tree);
 export const scratch = (): string => mkdtempSync(join(tmpdir(), "keel-evidence-out-"));
 export const removeDir = (dir: string): void => rmSync(dir, { recursive: true, force: true });
 
-/** Every file under `dir` (relative posix path -> bytes). A missing `dir` is the empty map. */
+/**
+ * Every regular file under `dir` (relative posix path -> bytes). Symbolic links are not followed and `node_modules`
+ * directories are not entered, so a project's own files are read and nothing it links to. A missing `dir` is the empty map.
+ */
 export function readTree(dir: string): Map<string, Buffer> {
   const out = new Map<string, Buffer>();
   const walk = (d: string, prefix: string): void => {
     for (const name of readdirSync(d).sort()) {
+      if (name === "node_modules") continue;
       const full = join(d, name);
       const rel = prefix === "" ? name : `${prefix}/${name}`;
-      if (statSync(full).isDirectory()) walk(full, rel);
-      else out.set(rel, readFileSync(full));
+      const st = lstatSync(full);
+      if (st.isDirectory()) walk(full, rel);
+      else if (st.isFile()) out.set(rel, readFileSync(full));
     }
   };
   try {
-    walk(dir, "");
+    lstatSync(dir);
   } catch {
     return new Map();
   }
+  walk(dir, "");
   return out;
 }
 

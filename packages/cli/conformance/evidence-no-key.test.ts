@@ -29,10 +29,12 @@ afterAll(() => {
 });
 
 /** The project's own files, less what `check`, `test` and `ledger` may leave (reports, artifacts, caches). */
-const sources = (): string[] =>
-  [...readTree(dir).keys()].filter(
-    (p) => !p.startsWith("node_modules/") && !p.startsWith(".keel/") && !p.startsWith("reports/"),
-  );
+const sources = (): string[] => {
+  const files = [...readTree(dir).keys()].filter((p) => !p.startsWith(".keel/") && !p.startsWith("reports/"));
+  // An empty or partial read would make "the project tree is unchanged" true of nothing.
+  for (const own of Object.keys(fixtureTree())) expect(files, own).toContain(own);
+  return files;
+};
 
 const attempt = (name: string, env: Record<string, string>) => {
   const out = join(base, name);
