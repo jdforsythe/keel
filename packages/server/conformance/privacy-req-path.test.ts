@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 // Spec: k.privacy, Sinks "Server log (k.server): in a `diag` record's message and `frames` and the `req` record's path, each of `piiValues` (k.schema) of the request's decoded action input, its loaders' and actions' outputs and its factories' store states becomes `[pii]`. Each string, number and key but a declared field name (not a boolean) in a `Secret` made or revealed while the request runs (`bearer` too) becomes `[secret]`."
-// Spec: k.privacy, Sinks "`req` path, first: a segment at a secret `params` field of any route of `routes` (any deployable's) is `[secret]` as sent. A route lines up from the first segment, skipping empties (a prefix-param route also without it), to that param: a param fits any segment, a static one the same text once decoded and case-folded, or undecodable. A longer path is cut there: the rest joins that `[secret]`. A path no route lines up with (a static typo, an extra leading segment, a raw `/` in an earlier param, `&` for `?`) is logged as sent. A failed peer forward logs its error's `name` only."
+// Spec: k.privacy, Sinks "`req` path, first: a segment at a secret `params` field of any route of `routes` (any deployable's) is `[secret]` as sent, at a `.pii()` one `[pii]`, `[secret]` if both. A route lines up from the first segment, skipping empties (a prefix-param route also without it), to that param: a param fits any segment, a static one the same text once decoded and case-folded, or undecodable. A longer path is cut there, the rest joining that mark: `/:t` and `/:p/:t` (`t` secret) mark any path whole. A secret param also cuts a path as `[secret]` at a segment holding `%2F` or `%5C` (any case). A path no route lines up with (a static typo, an extra leading segment, a raw `/` in an earlier param, `&` for `?`) is logged as sent."
 // Spec: k.privacy, Conformance "A secret route param is `[secret]` in the `req` path, escaped any way, in `/%52ESET/<v>` and `//reset//<v>/`, with and without a prefix param, and forwarded to a peer; `/reset/ab/<v>` and `/confirm/a/<v>/done` (of `/confirm/:token/done`) log `/reset/[secret]` and `/confirm/[secret]`; `/en/reset/<v>` logs as sent; a failed forward logs no path. Past 100,000 secret values a loader's throw logs `loader <id> threw: [secret]`." (the second sentence's last part is in privacy-secret-reach.test.ts)
+// Spec: k.topology, Calls and peers "(unreachable: 502 `keel.unreachable` and a `diag` `peer unreachable: <name>`, the error's `name` only)"
+// Spec: k.privacy, Conformance "`/reset%2F<v>`, `/RESET%2f<v>`, `/reset%5C<v>` (of `/reset/:token`), `/about` (of `/:t`) and `/en/A` (of `/:p/:t`) log `/[secret]`; `/a%2Fb` with no secret param, as sent."
 // Seed: 1337.
 // The route table is a server test file, outside `keel check`, so a secret `params` field (E1111) is served. Each case runs in dev and production, in compact and json log formats.
 import { createCtx } from "@keel/ctx";
@@ -282,6 +284,49 @@ describe("k.privacy req path: marks by the route table", () => {
         const kept = await serve(mode, format, "/callback?code=tok0123456789ab");
         expect(reqPath(format, kept.lines)).toBe("/callback");
         holdsNone(kept.lines, "tok0123456789ab");
+      });
+    }
+});
+
+describe("k.privacy req path: an encoded separator and an over-mark", () => {
+  const Tok = s.object({ t: s.secret(s.string()) });
+  const Lead = s.object({ p: s.string(), t: s.secret(s.string()) });
+  const Files = s.object({ name: s.string() });
+  const lone = () => manifest({ "app.t": { path: "/:t", params: Tok, component: view } });
+  const led = () => manifest({ "app.pt": { path: "/:p/:t", params: Lead, component: view } });
+  const files = () => manifest({ "app.file": { path: "/files/:name", params: Files, component: view } });
+
+  for (const mode of modes)
+    for (const format of formats) {
+      const where = `in ${mode}, ${format}`;
+
+      it(`\`/reset%2F<v>\`, \`/RESET%2f<v>\` and \`/reset%5C<v>\` (of \`/reset/:token\`) log \`/[secret]\` and no line holds \`<v>\`, ${where}.`, async () => {
+        await fc.assert(
+          fc.asyncProperty(tok, async (token) => {
+            for (const path of [`/reset%2F${token}`, `/RESET%2f${token}`, `/reset%5C${token}`, `/reset%5c${token}`]) {
+              const { lines } = await serve(mode, format, path);
+              expect(reqPath(format, lines)).toBe("/[secret]");
+              holdsNone(lines, token);
+            }
+          }),
+          { seed: SEED, numRuns: 8 },
+        );
+      });
+
+      it(`\`/about\` (of \`/:t\`) and \`/en/A\` (of \`/:p/:t\`) log \`/[secret]\`, ${where}.`, async () => {
+        const one = await serve(mode, format, "/about", lone());
+        expect(reqPath(format, one.lines)).toBe("/[secret]");
+        holdsNone(one.lines, "about");
+        const two = await serve(mode, format, "/en/A", led());
+        expect(reqPath(format, two.lines)).toBe("/[secret]");
+        holdsNone(two.lines, "/en/");
+      });
+
+      it(`\`/a%2Fb\` with no secret param is logged as sent, ${where}.`, async () => {
+        for (const path of ["/a%2Fb", "/files/a%2Fb", "/files/a%5Cb"]) {
+          const { lines } = await serve(mode, format, path, files());
+          expect(reqPath(format, lines)).toBe(path);
+        }
       });
     }
 });

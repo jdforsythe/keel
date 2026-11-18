@@ -2,7 +2,7 @@
 // Spec: k.api, Output "An API route's action declares `output`, a schema, and a page's action does not (E1512): `action({ input, output, params?, stores? }, fn)`, whose `fn` returns `Result<T, KeelError>` for `output`'s type `T`."
 // Spec: k.api, Rules "E1512 an action without `output` on an API route, or with one on a page; a type error, and `routes.actions` throws it; no fix"
 // Spec: k.api, Conformance "An API route's action without `output`, and a page's with one, do not compile, and `routes.actions` throws E1512."
-// Spec: k.privacy, Secrets "A `loader` or `action` `output` holds no `s.secret` (E1113); a secret leaves as `reveal(secret)` in an `s.string()` field (k.api)."
+// Spec: k.api, Output "`output` holds no `s.secret` (E1113, k.privacy): a secret leaves a `loader` or `action` `output` as `reveal(secret)` in an `s.string()` field."
 // Spec: k.privacy, Rules "E1113 an `s.secret` node in a `loader` or `action` `output`, thrown at declaration (fix: none)."
 // Spec: k.privacy, Conformance "An `action` or `loader` whose `output` has an `s.secret` field throws E1113; with `s.string()`, none."
 // Spec: k.guards, Guards "`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
