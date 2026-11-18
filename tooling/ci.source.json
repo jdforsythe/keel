@@ -339,7 +339,7 @@
       "timeout-minutes": 30
     },
     "mutate-pr": {
-      "if": "github.event_name == 'pull_request'",
+      "if": "github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'mutate')",
       "needs": "test",
       "runs-on": "ubuntu-latest",
       "steps": [

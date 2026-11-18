@@ -279,7 +279,7 @@ jobs:
         run: "for f in apps/golden-1/deploy/*/Dockerfile; do n=$(basename \"$(dirname \"$f\")\"); docker build -f \"$f\" -t \"golden-1-$n\" apps/golden-1; done"
     timeout-minutes: 30
   mutate-pr:
-    if: "github.event_name == 'pull_request'"
+    if: "github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'mutate')"
     needs: test
     runs-on: ubuntu-latest
     steps:
