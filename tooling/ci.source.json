@@ -219,6 +219,10 @@
           "run": "xvfb-run -a node --disable-warning=ExperimentalWarning tooling/smoke/shell.mjs --shell tauri --binary .cargo-target/debug/golden-1"
         },
         {
+          "name": "writes queued in the shell while the server is down drain after a SIGKILL and restart, giving the board the sim replay gives",
+          "run": "xvfb-run -a node --disable-warning=ExperimentalWarning tooling/smoke/shell.mjs --shell tauri --session outbox --binary .cargo-target/debug/golden-1"
+        },
+        {
           "uses": "actions/upload-artifact@v4",
           "with": {
             "name": "golden-1-tauri-linux-debug",
