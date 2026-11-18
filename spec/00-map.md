@@ -33,7 +33,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.component | Components | conformance-covered | schema and slot props, If/For/Match |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX to DOM ops, ids, a11y |
 | k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes, resume |
-| k.resume | Served documents and resume | conformance-covered | regions, layout islands |
+| k.resume | Served documents and resume | implemented | regions, layout islands |
 | k.router | Routes | conformance-covered | params, search, loaders, actions |
 | k.guards | Guards | conformance-covered | redirects with `next`, loop limit |
 | k.prefix | Implied path prefix | conformance-covered | a leading enum param URLs omit |
@@ -44,7 +44,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.check | Checker and diagnostics | conformance-covered | codes, fixes, budgets, rules |
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits |
-| k.testing | Harness and properties | conformance-covered | given, do, expect |
+| k.testing | Harness and properties | implemented | given, do, expect |
 | k.model | Exploring a store's transactions | conformance-covered | states, invariants |
 | k.prove | Proving invariants | conformance-covered | Z3 proofs |
 | k.sim | Schedules and simulation | conformance-covered | delays, faults, offline |

@@ -25,3 +25,12 @@
 - Served documents carry a few bytes of comments per op and slot.
 - A layout island whose slot's branch did not render on the server shows nothing when the branch shows on the client.
 - A static child level under a layout island that mismatches before its `children` call, with no island below it, is not held.
+
+**Amendment (review and browser smoke after the build).**
+- D5 stands, accepted at the review's low rating, with its limits: the own `childNodes` is a snapshot taken when the claim starts, and only `childNodes[i]` reads see it (`firstChild`, `nextSibling`, `children` and iteration see the real nodes, regions included); it is deleted on every path, success, mismatch and throw. A guard test pins that compiled output reads a claimed element's children only through `childNodes[i]`, so a compiler change that reads them another way fails there first.
+- D6 is replaced: the server writes `<!--k-->` first in a child level's content, and a layout island that mismatches before its `children` call holds exactly the region that comment opens, nothing of its own output. A static child level is held too, so the last consequence below no longer holds.
+- D7 is replaced: queued events replay once every island has resumed, in the order they fired, each dispatched as a live event through every enclosing island; the `input` sync for controls typed before load stays per island. An event in a re-rendered island's own nodes is dropped.
+- D9: while a request `createApp` serves runs, through every `await`, a `tx` on a module-registry store throws E1256 and changes nothing; the level fails as a throw does, an action answers 500. `renderRoute`, runners and code outside a request are not checked; no static rule yet.
+- D10: a `#k-state` snapshot with no store in `resume`'s `stores` restores the store an island creates with that id while it resumes; one never taken is E1253.
+- D11: `resumeDocument` with `routes` as an import function resumes in a module graph of its own; served-document conformance uses it.
+- D12: golden-1 is client-only; its served-document tests and the browser smoke move to golden-2.

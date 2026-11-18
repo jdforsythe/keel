@@ -1,5 +1,5 @@
 # k.testing: Harness and properties
-status: conformance-covered
+status: implemented
 
 **Harness.** From `@keel/testing`:
 ```ts
@@ -14,6 +14,7 @@ t.dispose()
 - `find(id)` returns `{ id, role, name, text, state }`, never a DOM node. `state(store)` is that store's value; `state()` is every store keyed by store id.
 - `resumeDocument(html, { routes, ctx? })`: a server document's islands resumed, as a `render` handle (a resume warning: E1720).
 - Tests address elements by id only.
+- `resumeDocument(html, { routes: () => import(path) })` resumes in a module graph of its own: each module the import reaches, `@keel/store` too, evaluated anew.
 
 **ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim.
 
@@ -42,3 +43,4 @@ t.dispose()
 - On one ctx, a save through `renderRoute` is read by `createApp`, and a save through `createApp` by the next `renderRoute` navigation.
 - `resumeDocument` of an island document from `createApp` lets `fire` run the island's handlers; an island missing from `routes` is E1720.
 - `find(id).state` has `active: 'c.option.b'` for a combobox whose `aria-activedescendant` is `c.option.b`, `sort: 'ascending'` for a header with that `aria-sort`, and `checked: 'mixed'` for a mixed checkbox.
+- `resumeDocument` with `routes` as an import: a module store written before the request is initial in `state()`; a `fire` leaves the test's instance unchanged.
