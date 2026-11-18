@@ -43,6 +43,18 @@ describe("a store an island creates while it resumes", () => {
     expect(seen).toEqual([7, 7]);
   });
 
+  it("starts from initial when its schema refuses the snapshot, which resume reports E1253", () => {
+    const seen: number[] = [];
+    const C = (): Node => {
+      const counter = store(Count, { n: 0 }, { id: "waiting.refused" });
+      seen.push(counter.get("n"));
+      return clone(T);
+    };
+    const { warnings } = resume(page({ "waiting.refused": { state: { n: "seven" }, log: [] } }), { C });
+    expect(seen).toEqual([0]);
+    expect(warnings).toEqual(['E1253 #k-state has a snapshot for unknown store "waiting.refused"']);
+  });
+
   it("takes the snapshot once when the claim succeeds: no warning", () => {
     const seen: number[] = [];
     const C = (): Node => {

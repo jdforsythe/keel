@@ -353,9 +353,10 @@ export function store<T extends object>(
     registry.delete(id);
     registryPulse.fire();
   });
-  // Created while islands resume, it starts from the `#k-state` snapshot waiting for its id (k.resume Stores).
+  // Created while islands resume, it starts from the `#k-state` snapshot waiting for its id (k.resume Stores). One its
+  // schema refuses stays waiting, so `resume` warns E1253 for it, and the store starts from `initial`.
   const waiting = waitingSnapshot(id);
-  if (waiting !== undefined) self.restore(waiting.snapshot);
+  if (waiting !== undefined && self.restore(waiting.snapshot).ok) waiting.take();
   making = false;
   registryPulse.fire();
   return self;
