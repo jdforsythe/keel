@@ -50,7 +50,7 @@ One `rfc:0136` commit by the `conformance-writer`, files headed `Spec: k.owner` 
 - Before `abort()`, dispatching `offline` gives one `observe` event `{ kind: 'net', online: false }`; after it, none. After the abort `clock.now()`, `random.float()` and `storage.set`/`get` still work.
 
 **No member** (`packages/ctx/conformance/owner-type.test.ts`):
-- `// @ts-expect-error` on `ctx.dispose()` for `Ctx` and for `SimCtx` (`expectTypeOf<Ctx>().not.toHaveProperty('dispose')`).
+- `ctx.dispose()` does not typecheck for `Ctx` and for `SimCtx` (`expectTypeOf<Ctx>().not.toHaveProperty('dispose')`).
 - `'dispose' in createCtx({ mode })` is false for `real`, `shell` and `sim`; `Object.keys` of each is `clock`, `random`, `net`, `storage`.
 - A `Ctx` object literal with exactly `clock`, `random`, `net`, `storage` type-checks.
 
@@ -82,3 +82,6 @@ Each is the author's call for the orchestrator to confirm or reverse.
 - C2: entries and servers pass no signal; `std-sessions` passes an aborted one.
 - C3: k.ctx's `dispose` text changes with the conformance and the build (D3), so commit 1 lowers no rung.
 - C4: a new section, k.owner, because k.ctx is full.
+
+## Amendment (bullet 4 without the directive)
+Bullet 4 of k.owner states the type fact without quoting a compiler directive: a verbatim quote of the directive in a conformance header is read as the directive by the structure lint (S0004), and a header without the quote leaves the bullet uncovered. The bullet now reads: "A call to `dispose` on a `Ctx` or a `SimCtx` does not typecheck, and neither type has a `dispose` member. `'dispose' in ctx` is false for a real, shell and sim ctx."

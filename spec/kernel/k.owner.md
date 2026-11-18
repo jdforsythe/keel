@@ -11,5 +11,5 @@ Only the code that made a ctx ends it. Every island, the router and the root sha
 - Under a stub `window`, a real ctx made with a `signal` adds one `online` and one `offline` listener; aborting the signal removes each once and a second abort removes nothing; made with `AbortSignal.abort()` it adds none. A shell ctx behaves the same.
 - A sim ctx and a real ctx with a `drivers` net, each made with a `signal` aborted or not, add and remove no window listener.
 - Before the abort a dispatched `online` reaches `observe` as one `net` event; after it, none; the ctx's `clock`, `random` and `storage` still work.
-- `Ctx` and `SimCtx` have no `dispose` (type-level: `// @ts-expect-error` on `ctx.dispose()`), and `'dispose' in ctx` is false for a real, shell and sim ctx.
+- A call to `dispose` on a `Ctx` or a `SimCtx` does not typecheck, and neither type has a `dispose` member. `'dispose' in ctx` is false for a real, shell and sim ctx.
 - A served page of two islands resumed with the generated entry under a stub `window`: when one island's component has run with its `ctx`, a dispatched `offline` still reaches `observe` as one `net` event.
