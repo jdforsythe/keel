@@ -33,6 +33,17 @@ const LOCAL_GETTERS: ReadonlySet<string> = new Set([
   "getTimezoneOffset",
 ]);
 
+/** Date methods that render the date as a string in the host time zone. */
+const DATE_STRING: ReadonlySet<string> = new Set(["toString", "toDateString", "toTimeString"]);
+/** String methods that case-map in a locale. */
+const CASE_LOCALE: ReadonlySet<string> = new Set(["toLocaleUpperCase", "toLocaleLowerCase"]);
+/** A date-only ISO string (parsed as UTC) or a string ending in an explicit zone. */
+const DATE_ONLY = /^[+-]?\d{4,6}(-\d{2}(-\d{2})?)?$/;
+const ZONED = /(Z|[+-]\d{2}:?\d{2}|GMT|UTC)$/i;
+
+/** True when `Date.parse` or `new Date` reads the string `s` in the host time zone. */
+const localText = (s: string): boolean => !DATE_ONLY.test(s.trim()) && !ZONED.test(s.trim());
+
 /** The member name of a static or literal-keyed member expression, else null. */
 function memberName(e: Expression): string | null {
   if (e.type !== "MemberExpression") return null;
@@ -40,10 +51,13 @@ function memberName(e: Expression): string | null {
   return e.property.type === "Literal" && typeof e.property.value === "string" ? e.property.value : null;
 }
 
-/** True when argument `i` is given and is not the literal `undefined`. */
+/** True when argument `i` is given and is not `undefined`, `void 0` or `[]` (each means the host locale). */
 const given = (args: readonly Argument[], i: number): boolean => {
   const a = args[i];
-  return a !== undefined && !(a.type === "Identifier" && a.name === "undefined");
+  if (a === undefined) return false;
+  if (a.type === "Identifier") return a.name !== "undefined";
+  if (a.type === "UnaryExpression") return a.operator !== "void";
+  return !(a.type === "ArrayExpression" && a.elements.length === 0);
 };
 
 /** False only when the options argument is missing or an object literal (without spread) lacking `timeZone`. */
@@ -63,8 +77,11 @@ function hasZone(args: readonly Argument[], i: number): boolean {
 /**
  * E1758 (k.check): an ambient locale or time zone read in app code: `navigator.language`/`languages`; an `Intl`
  * constructor without a locale (`Intl.DateTimeFormat` also without `timeZone`); `toLocaleString` or
- * `localeCompare` without a locale; `toLocaleDateString`/`toLocaleTimeString` without a locale or `timeZone`; a
- * local-time getter on a `new Date(...)` expression. Names resolve as for E1601 (`globalRefs`). No fix: the locale
+ * `localeCompare` or `toLocaleUpperCase`/`toLocaleLowerCase` without a locale (`undefined`, `void 0` and `[]` give
+ * none), also through `.call`; `toLocaleDateString`/`toLocaleTimeString` without a locale or `timeZone`; a local-time
+ * getter, `toString`, `toDateString` or `toTimeString` on a date, `String` of one or a template holding one, where a
+ * date is a `new Date(...)` expression or a same-file alias of one; `new Date` of local date parts; `new Date` or
+ * `Date.parse` of a constant date-time string without an offset. Names resolve as for E1601 (`globalRefs`). No fix: the locale
  * or zone is an argument the caller holds.
  */
 export const noAmbientLocale: RuleDef = {
@@ -79,6 +96,10 @@ export const noAmbientLocale: RuleDef = {
     const report = (at: number, what: string, reads: string): void => {
       out.push(findingAt(file, at, { what, reads }));
     };
+    const isDate = (e: Expression): boolean => {
+      const made = g.initOf(e);
+      return made.type === "NewExpression" && g.resolve(made.callee)?.join(".") === "Date";
+    };
     const intl = (at: number, callee: Expression, args: readonly Argument[]): void => {
       const p = g.resolve(callee);
       const ctor = p?.length === 2 && p[0] === "Intl" ? p[1] : undefined;
@@ -87,24 +108,54 @@ export const noAmbientLocale: RuleDef = {
       else if (ctor === "DateTimeFormat" && !hasZone(args, 1))
         report(at, "Intl.DateTimeFormat without timeZone", "zone");
     };
+    /** `new Date(y, m, ...)`, and `new Date(text)` or `Date.parse(text)` of a date-time string without a zone. */
+    const localTime = (at: number, what: string, args: readonly Argument[], parts: boolean): void => {
+      const a = args[0];
+      if (parts && args.length > 1) report(at, `${what} of local date parts`, "zone");
+      else if (args.length === 1 && a !== undefined && a.type !== "SpreadElement") {
+        const text = g.constString(a);
+        if (text !== null && localText(text)) report(at, `${what} of a date-time without an offset`, "zone");
+      }
+    };
+    const method = (at: number, name: string, receiver: Expression | undefined, args: readonly Argument[]): void => {
+      if (name === "toLocaleString" || name === "localeCompare") {
+        if (!given(args, name === "localeCompare" ? 1 : 0)) report(at, `${name} without a locale`, "locale");
+      } else if (CASE_LOCALE.has(name)) {
+        if (!given(args, 0)) report(at, `${name} without a locale`, "locale");
+      } else if (DATE_LOCALE.has(name)) {
+        if (!given(args, 0)) report(at, `${name} without a locale`, "locale");
+        else if (!hasZone(args, 1)) report(at, `${name} without timeZone`, "zone");
+      } else if ((LOCAL_GETTERS.has(name) || DATE_STRING.has(name)) && receiver !== undefined && isDate(receiver))
+        report(at, `Date ${name}`, "zone");
+    };
+    /** Template literals that are a tag's argument: the tag receives the values, not their strings. */
+    const tagged = new Set<number>();
     new Visitor({
-      NewExpression: (n) => intl(n.start, n.callee, n.arguments),
+      NewExpression: (n) => {
+        intl(n.start, n.callee, n.arguments);
+        if (g.resolve(n.callee)?.join(".") === "Date") localTime(n.start, "new Date", n.arguments, true);
+      },
       CallExpression: (n) => {
         intl(n.start, n.callee, n.arguments);
+        const fnPath = g.resolve(n.callee)?.join(".");
+        if (fnPath === "Date.parse") localTime(n.start, "Date.parse", n.arguments, false);
+        const first = n.arguments[0];
+        if (fnPath === "String" && first !== undefined && first.type !== "SpreadElement" && isDate(first))
+          report(n.start, "String of a Date", "zone");
         const c = unwrapExpression(n.callee);
         const name = memberName(c);
         if (name === null || c.type !== "MemberExpression") return;
-        if (name === "toLocaleString" || name === "localeCompare") {
-          if (!given(n.arguments, name === "localeCompare" ? 1 : 0))
-            report(c.start, `${name} without a locale`, "locale");
-        } else if (DATE_LOCALE.has(name)) {
-          if (!given(n.arguments, 0)) report(c.start, `${name} without a locale`, "locale");
-          else if (!hasZone(n.arguments, 1)) report(c.start, `${name} without timeZone`, "zone");
-        } else if (LOCAL_GETTERS.has(name)) {
-          const made = unwrapExpression(c.object);
-          if (made.type === "NewExpression" && g.resolve(made.callee)?.join(".") === "Date")
-            report(c.start, `Date ${name}`, "zone");
-        }
+        const inner = unwrapExpression(c.object);
+        const called = name === "call" ? memberName(inner) : null;
+        if (called !== null && inner.type === "MemberExpression") {
+          const self = n.arguments[0];
+          method(inner.start, called, self?.type === "SpreadElement" ? undefined : self, n.arguments.slice(1));
+        } else method(c.start, name, c.object, n.arguments);
+      },
+      TaggedTemplateExpression: (n) => void tagged.add(n.quasi.start),
+      TemplateLiteral: (n) => {
+        if (tagged.has(n.start)) return;
+        for (const e of n.expressions) if (isDate(e)) report(e.start, "a Date in a template", "zone");
       },
       MemberExpression: (n) => {
         if (g.isAliasInit(n.start, n.end)) return;
