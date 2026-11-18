@@ -15,6 +15,15 @@ test("a value with no visible character is refused and joiners and variation sel
   expect(textCheck(0, 3, false)("")).toBe(true);
 });
 
+test("blank-looking characters, marks alone and a lone surrogate are refused; a visible base keeps them valid", () => {
+  const check = textCheck(1, 3, false);
+  for (const bad of ["\u{2800}", "\u{FFF9}", "\u{FFFB}", "\u{13430}", "\u{301}", "\u{301}\u{302}", "a\uD800"]) {
+    expect(check(bad)).toBe(false);
+    expect(textCheck(1, 3, true)(bad)).toBe(false);
+  }
+  for (const ok of ["\u{2800}a", "q\u{301}", "a\u{200D}"]) expect(check(ok)).toBe(true);
+});
+
 test("every Bidi_Control character is refused in line and para", () => {
   const marks = [0x61c, 0x200e, 0x200f, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069];
   for (const n of marks) {
@@ -33,6 +42,17 @@ test("every generated line and para value parses", () => {
       { seed: SEED, numRuns: 300 },
     );
   }
+});
+
+test("a lone surrogate inserted anywhere in a generated value is refused", () => {
+  const schema = line({ max: 8 });
+  fc.assert(
+    fc.property(gen(schema), fc.nat(), (v, at) => {
+      const i = at % (v.length + 1);
+      expect(schema.parse(`${v.slice(0, i)}\uD800${v.slice(i)}`).ok).toBe(false);
+    }),
+    { seed: SEED, numRuns: 200 },
+  );
 });
 
 test("a bidi control inserted anywhere in a generated value is refused", () => {

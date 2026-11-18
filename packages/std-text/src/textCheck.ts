@@ -1,10 +1,10 @@
 import { segmenter } from "./segmenter.ts";
 
-// Unicode Cc, U+2028, U+2029 and Bidi_Control; para allows U+000A.
-const LINE = /\p{Cc}|[\u2028\u2029\p{Bidi_Control}]/u;
-const PARA = /(?!\n)\p{Cc}|[\u2028\u2029\p{Bidi_Control}]/u;
-// A character a reader sees: outside White_Space and Default_Ignorable_Code_Point.
-const VISIBLE = /[^\p{White_Space}\p{Default_Ignorable_Code_Point}]/u;
+// Unicode Cc, lone surrogates (Cs), U+2028, U+2029 and Bidi_Control; para allows U+000A.
+const LINE = /\p{Cc}|\p{Cs}|[\u2028\u2029\p{Bidi_Control}]/u;
+const PARA = /(?!\n)\p{Cc}|\p{Cs}|[\u2028\u2029\p{Bidi_Control}]/u;
+// A character a reader sees: outside White_Space, Default_Ignorable_Code_Point, Cf, M and U+2800.
+const VISIBLE = /[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{M}\u2800]/u;
 
 /**
  * The `check` of `line` (`newline` false) and `para` (`newline` true) (std.text): NFC, no forbidden character, a visible character unless empty,
