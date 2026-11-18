@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, bullet 11 "The same `key` on another transaction commits; a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `logLimit` later commits with a `key` have passed it." and bullet 12 "`keys` survives `snapshot()`, a JSON round trip and `restore`; a snapshot without `keys` restores its log entries' keys."
+// Spec: k.sync Conformance, bullet 11 "The same `key` on another transaction commits; a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `keyLimit` later commits with a `key` have passed it." and bullet 12 "`keys` survives `snapshot()`, a JSON round trip and `restore`; a snapshot without `keys` restores its log entries' keys."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -17,9 +17,9 @@ function isolated<T>(fn: () => T): T {
   return sc.run(fn);
 }
 
-function make(logLimit?: number) {
+function make(limits: { logLimit?: number; keyLimit?: number } = {}) {
   return isolated(() => {
-    const bag = store(Bag, { items: [] }, { id: "sync.keys", ...(logLimit === undefined ? {} : { logLimit }) });
+    const bag = store(Bag, { items: [] }, { id: "sync.keys", ...limits });
     const push = transaction(bag, "sync.push", Push, (state, { v }) => ({ items: [...state.items, v] }));
     const other = transaction(bag, "sync.other", Push, (state, { v }) => ({ items: [...state.items, v * 10] }));
     const sealedPush = transaction(bag, "sync.sealed", Tokened, (state, { v }) => ({ items: [...state.items, v] }));
@@ -59,10 +59,10 @@ describe("k.sync: keys", () => {
     );
   });
 
-  it("`keys` holds at most `logLimit` pairs, oldest first, from keyed commits only", () => {
+  it("`keys` holds at most `keyLimit` pairs, oldest first, from keyed commits only", () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 5 }), keysArb, (limit, keys) => {
-        const k = make(limit);
+        const k = make({ keyLimit: limit });
         keys.forEach((key, i) => {
           tx(k.push, { v: i }, { key });
           tx(k.push, { v: 100 + i });
@@ -120,11 +120,11 @@ describe("k.sync: keys", () => {
     );
   });
 
-  it("a snapshot without `keys` restores only the latest `logLimit` keys", () => {
+  it("a snapshot without `keys` restores only the latest `keyLimit` keys", () => {
     const src = make();
     for (const key of ["a", "b", "c"]) tx(src.push, { v: 1 }, { key });
     const bare = withoutKeys(src.bag.snapshot());
-    const dst = make(2);
+    const dst = make({ keyLimit: 2 });
     expect(dst.bag.restore(bare).ok).toBe(true);
     expect(keysOf(dst.bag.snapshot())).toEqual([
       { name: "sync.push", key: "b" },

@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, bullet 6 "`tx` with a `key` that `keys` holds for its transaction returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale." and bullet 11 "a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `logLimit` later commits with a `key` have passed it."
+// Spec: k.sync Conformance, bullet 6 "`tx` with a `key` that `keys` holds for its transaction returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale." and bullet 11 "The same `key` on another transaction commits; a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `keyLimit` later commits with a `key` have passed it."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -17,9 +17,9 @@ function isolated<T>(fn: () => T): T {
   return sc.run(fn);
 }
 
-function make(concurrent: "reject" | "rebase", logLimit?: number) {
+function make(concurrent: "reject" | "rebase", limits: { logLimit?: number; keyLimit?: number } = {}) {
   return isolated(() => {
-    const bag = store(Bag, { items: [] }, { id: "sync.bag", ...(logLimit === undefined ? {} : { logLimit }) });
+    const bag = store(Bag, { items: [] }, { id: "sync.bag", ...limits });
     const push = transaction(bag, "sync.push", Push, (state, { v }) => ({ items: [...state.items, v] }), {
       concurrent,
     });
@@ -104,13 +104,13 @@ describe("k.sync: key", () => {
     expect(k.bag.head()).toBe(3);
   });
 
-  it("a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `logLimit` later commits with a `key` have passed it", () => {
+  it("a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `keyLimit` later commits with a `key` have passed it", () => {
     const k = make("reject");
     tx(k.push, { v: 1 }, { key: "u" });
     expect(k.bag.undo()).toBe(true);
     expect(tx(k.push, { v: 2 }, { key: "u" }).ok).toBe(true);
     expect(k.bag.get("items")).toEqual([]);
-    const f = make("reject", 1);
+    const f = make("reject", { logLimit: 1, keyLimit: 1 });
     tx(f.push, { v: 1 }, { key: "f" });
     tx(f.push, { v: 2 });
     expect(f.bag.log().length).toBe(1);
@@ -119,6 +119,12 @@ describe("k.sync: key", () => {
     expect(tx(f.push, { v: 4 }, { key: "g" }).ok).toBe(true);
     expect(tx(f.push, { v: 5 }, { key: "f" }).ok).toBe(true);
     expect(f.bag.get("items")).toEqual([1, 2, 4, 5]);
+    const d = make("reject", { logLimit: 1 });
+    tx(d.push, { v: 1 }, { key: "f" });
+    tx(d.push, { v: 2 });
+    tx(d.push, { v: 3 }, { key: "g" });
+    expect(tx(d.push, { v: 4 }, { key: "f" }).ok).toBe(true);
+    expect(d.bag.get("items")).toEqual([1, 2, 3]);
   });
 
   it("a `base` or `key` of the wrong type is `schema.invalid` and commits nothing", () => {
