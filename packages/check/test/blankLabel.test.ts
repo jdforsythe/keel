@@ -109,9 +109,29 @@ describe("E1802 through parentheses, type assertions and object-literal spreads"
 });
 
 describe("E1802 and invisible characters", () => {
-  // k.a11y names `""` and white space only; zero-width and filler characters are not white space.
-  it.fails("reads a label of only invisible characters as blank (spec silent)", () => {
+  it("reads a label of only invisible characters as blank", () => {
     const src = `${UI}export const A = () => <Input label={"\\u200b"} />\nexport const B = () => <Input label="&#x2800;" />\nexport const C = () => <Input label={"\\u3164"} />\n`;
     expect(out([f("modules/a/A.tsx", src)])).toHaveLength(3);
+  });
+
+  it("reads a lone mark, a format character and a variation selector as blank, and a visible character with them as not", () => {
+    const src = `${UI}export const A = () => <Input label={"\\u0301\\u200e\\ufe0f"} />\nexport const B = () => <Input label={"\\u2764\\ufe0f"} />\nexport const C = () => <Input label="&#8203;x" />\n`;
+    expect(out([f("modules/a/A.tsx", src)])).toEqual([
+      "modules/a/A.tsx 2:31 <Input> label is blank; it must name the control",
+    ]);
+  });
+
+  it("reads any code point mix as blank exactly when std.text's visible test finds none", () => {
+    const VISIBLE = /[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{M}\u2800]/u;
+    const pool = [0x20, 0xa0, 0x200b, 0x200d, 0x2060, 0xfeff, 0x301, 0x2800, 0x3164, 0x61, 0x4e00, 0x1f600, 0xfe0f];
+    fc.assert(
+      fc.property(fc.array(fc.constantFrom(...pool), { minLength: 1, maxLength: 5 }), (cps) => {
+        const text = String.fromCodePoint(...cps);
+        const ref = cps.map((c) => `&#x${c.toString(16)};`).join("");
+        const src = `${UI}export const A = () => <Input label={${JSON.stringify(text)}} />\nexport const B = () => <Input label="${ref}" />\nexport const C = Input({ label: ${JSON.stringify(text)} })\n`;
+        expect(out([f("modules/a/A.tsx", src)])).toHaveLength(VISIBLE.test(text) ? 0 : 3);
+      }),
+      { seed: 1337, numRuns: 100 },
+    );
   });
 });

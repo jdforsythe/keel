@@ -31,7 +31,11 @@ function literalText(expr: Expression | null | undefined): string | null {
   return null;
 }
 
-const blank = (text: string | null): boolean => text !== null && /^\s*$/.test(text);
+/**
+ * True for a text with no visible character: none outside White_Space (`space`), Default_Ignorable_Code_Point (`DI`),
+ * Cf, M and U+2800, as std.text's `line` reads it.
+ */
+const blank = (text: string | null): boolean => text !== null && !/[^\p{space}\p{DI}\p{Cf}\p{M}\u2800]/u.test(text);
 
 /** A JSX attribute string with its numeric and `&nbsp;` character references decoded. */
 const decode = (text: string): string =>
@@ -68,7 +72,7 @@ function objectLabels(node: Expression, at: (start: number) => void): void {
 }
 
 /**
- * E1802 (k.a11y): a blank literal `label` (`""` or white space; a string, a template without substitutions, in a
+ * E1802 (k.a11y): a blank literal `label` (no visible character, `blank`; a string, a template without substitutions, in a
  * JSX attribute, an object-literal spread into one, or the object passed to a call, through parentheses, `as`,
  * `satisfies` and `!`) on `Box`, `Input`, `TextArea`, `Select` or `Checkbox` from
  * `@keel/ui`, aliases and a namespace import followed. A computed `label` is unchecked. No fix: the name is the author's.
@@ -93,6 +97,7 @@ export const blankLabel: RuleDef = {
     const member = (o: string, p: string): string | undefined =>
       spaces.has(o) && ELEMENTS.includes(p) ? p : undefined;
     const out: Finding[] = [];
+    const at = (name: string) => (start: number) => out.push(findingAt(file, start, { name }));
     new Visitor({
       JSXOpeningElement: (o) => {
         const n = o.name;
@@ -104,10 +109,9 @@ export const blankLabel: RuleDef = {
               : undefined;
         if (name === undefined) return;
         for (const a of o.attributes) {
-          if (a.type === "JSXSpreadAttribute")
-            objectLabels(a.argument, (at) => out.push(findingAt(file, at, { name })));
+          if (a.type === "JSXSpreadAttribute") objectLabels(a.argument, at(name));
           if (a.type !== "JSXAttribute" || a.name.type !== "JSXIdentifier" || a.name.name !== "label") continue;
-          if (blank(attributeText(a))) out.push(findingAt(file, a.start, { name }));
+          if (blank(attributeText(a))) at(name)(a.start);
         }
       },
       CallExpression: (n) => {
@@ -123,7 +127,7 @@ export const blankLabel: RuleDef = {
               : undefined;
         const arg = n.arguments[0];
         if (name === undefined || arg === undefined || arg.type === "SpreadElement") return;
-        objectLabels(arg, (at) => out.push(findingAt(file, at, { name })));
+        objectLabels(arg, at(name));
       },
     }).visit(ast);
     return out;
