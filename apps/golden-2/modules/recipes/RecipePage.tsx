@@ -17,34 +17,6 @@ export const Props = s.object({ params: RecipeParams, data: RecipeData });
 export default function RecipePage(props: Infer<typeof Props>) {
   const f = form(Nothing, { id: "recipes.favoriteForm" });
   const sending = computed(() => f.pending());
-  // Router `Form` expects Node children, not the compiler's children thunk (compiler D31).
-  const children = (): Node => {
-    const toggle = (
-      <Button
-        id="recipes.toggleFavorite"
-        type="submit"
-        disabled={sending}
-        font="mono"
-        fontSize="sm"
-        px="4"
-        py="2"
-        my="2"
-        bg="text"
-        fg="card"
-        border="rule"
-        radius="none"
-      >
-        {props.data.text.toggleFavorite}
-      </Button>
-    );
-    return Form({
-      method: "POST",
-      action: routes.href("recipes.show", props.params),
-      form: f,
-      error: (e) => <Text fg="error">{e.message}</Text>,
-      children: [toggle],
-    });
-  };
   return (
     <Box as="section" id="recipes.show" direction="column" gap="4">
       <Heading id="recipes.show.heading" level={1} font="mono" fontSize="xs" weight="regular" fg="textSecondary" m="0">
@@ -79,7 +51,29 @@ export default function RecipePage(props: Infer<typeof Props>) {
           {props.data.recipe.favorite ? props.data.text.favorite : props.data.text.notFavorite}
         </Text>
       </Box>
-      {children()}
+      <Form
+        method="POST"
+        action={routes.href("recipes.show", props.params)}
+        form={f}
+        error={(e) => <Text fg="error">{e.message}</Text>}
+      >
+        <Button
+          id="recipes.toggleFavorite"
+          type="submit"
+          disabled={sending}
+          font="mono"
+          fontSize="sm"
+          px="4"
+          py="2"
+          my="2"
+          bg="text"
+          fg="card"
+          border="rule"
+          radius="none"
+        >
+          {props.data.text.toggleFavorite}
+        </Button>
+      </Form>
     </Box>
   );
 }

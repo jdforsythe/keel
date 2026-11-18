@@ -22,106 +22,92 @@ export default function NewRecipePage(props: Infer<typeof Props>) {
     initial: { price: { currency: "EUR" } },
     issueText: fieldText(props.data.text),
   });
-  // Router `Form` expects Node children, not the compiler's children thunk (compiler D31).
-  const children = (): Node => {
-    const title = (
-      <Input
-        field={f.field("title")}
-        label={props.data.text.titleLabel}
-        font="serif"
-        fontSize="md"
-        px="2"
-        py="2"
-        mx="2"
-        my="1"
-        bg="card"
-        fg="text"
-        border="control"
-        radius="none"
-      />
-    );
-    const minutes = (
-      <Input
-        field={f.field("minutes")}
-        type="number"
-        label={props.data.text.minutesLabel}
-        font="serif"
-        fontSize="md"
-        px="2"
-        py="2"
-        mx="2"
-        my="1"
-        bg="card"
-        fg="text"
-        border="control"
-        radius="none"
-      />
-    );
-    const amount = (
-      <Input
-        field={f.field("price.amount")}
-        type="number"
-        label={props.data.text.amountLabel}
-        font="serif"
-        fontSize="md"
-        px="2"
-        py="2"
-        mx="2"
-        my="1"
-        bg="card"
-        fg="text"
-        border="control"
-        radius="none"
-      />
-    );
-    const currency = (
-      <Select
-        field={f.field("price.currency")}
-        label={props.data.text.currencyLabel}
-        options={currencies}
-        font="serif"
-        fontSize="md"
-        px="2"
-        py="2"
-        mx="2"
-        my="1"
-        bg="card"
-        fg="text"
-        border="control"
-        radius="none"
-      />
-    );
-    const submit = (
-      <Button
-        id="recipes.save"
-        type="submit"
-        font="mono"
-        fontSize="sm"
-        px="4"
-        py="2"
-        my="2"
-        bg="text"
-        fg="card"
-        border="rule"
-        radius="none"
-      >
-        {props.data.text.save}
-      </Button>
-    );
-    return Form({
-      method: "POST",
-      action: routes.href("recipes.new", { locale: props.params.locale }),
-      form: f,
-      error: (e) => <Text fg="error">{e.message}</Text>,
-      children: [title, minutes, amount, currency, submit],
-    });
-  };
   return (
     <Box as="section" id="recipes.new" direction="column" gap="5">
       <Heading id="recipes.new.heading" level={1} fontSize="2xl" weight="semibold" m="0">
         {props.data.text.newHeading}
       </Heading>
-      {children()}
+      <Form
+        method="POST"
+        action={routes.href("recipes.new", { locale: props.params.locale })}
+        form={f}
+        error={(e) => <Text fg="error">{e.message}</Text>}
+      >
+        <Input
+          field={f.field("title")}
+          label={props.data.text.titleLabel}
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Input
+          field={f.field("minutes")}
+          type="number"
+          label={props.data.text.minutesLabel}
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Input
+          field={f.field("price.amount")}
+          type="number"
+          label={props.data.text.amountLabel}
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Select
+          field={f.field("price.currency")}
+          label={props.data.text.currencyLabel}
+          options={currencies}
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Button
+          id="recipes.save"
+          type="submit"
+          font="mono"
+          fontSize="sm"
+          px="4"
+          py="2"
+          my="2"
+          bg="text"
+          fg="card"
+          border="rule"
+          radius="none"
+        >
+          {props.data.text.save}
+        </Button>
+      </Form>
     </Box>
   );
 }
