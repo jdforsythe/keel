@@ -175,7 +175,7 @@ describe("a throw while claiming", () => {
       return root;
     };
     const { ctx, errors } = observed();
-    const { warnings } = resume(document.body, { C }, { ctx });
+    const { warnings } = resume(document.body, { C }, { ctx, mode: "dev" });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/^E1253 .*claim boom/);
     expect(errors()).toHaveLength(0);

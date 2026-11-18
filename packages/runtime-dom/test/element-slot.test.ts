@@ -148,7 +148,7 @@ describe("resume claims element and slot nodes in place (rfc:0064)", () => {
     };
     const h = serve('<div id="w" data-k-island="I"><b>x</b></div>');
     const server = h.firstElementChild;
-    const { warnings } = resume(h, { I: Walk });
+    const { warnings } = resume(h, { I: Walk }, { mode: "dev" });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("E1253");
     expect(warnings[0]).toContain("no anchor at childNodes[1]");
