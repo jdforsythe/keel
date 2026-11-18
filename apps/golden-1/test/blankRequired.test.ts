@@ -94,7 +94,7 @@ describe("blank required text", () => {
   it("the api refuses a whitespace-only list name and todo title and keeps the board", async () => {
     await seedBoard(boardOf(seeded));
     const app = await apiApp();
-    const write = { key: "w1", base: 0 };
+    const write = { key: "w1", base: 0, owner: "" };
     for (const value of BLANKS) {
       expect((await app.fetch(post("/api/lists", { name: value, write }))).status).toBe(422);
       const todo = { title: value, priority: "low", write };

@@ -249,7 +249,7 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
   });
   it("every write endpoint commits and answers ok({}); undo reverts the caller's last one only", async () => {
     const app = await apiApp();
-    const created = await app.fetch(post("/api/lists", { name: "Work", write: { key: "w1", base: 0 } }));
+    const created = await app.fetch(post("/api/lists", { name: "Work", write: { key: "w1", base: 0, owner: "" } }));
     expect([created.status, await created.json()]).toEqual([200, { ok: true, value: {} }]);
     // The first write sets the caller cookie (the cookie is the undo scope); this client sends it back, as a browser would.
     const cookie = created.headers.get("set-cookie")?.split(";")[0] ?? "";
@@ -259,11 +259,13 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
       return app.fetch(req);
     };
     const listId = (await readBoard()).lists[0]?.id ?? "";
-    const add = { title: "Milk", priority: "low", write: { key: "w2", base: 1 } };
+    const add = { title: "Milk", priority: "low", write: { key: "w2", base: 1, owner: "" } };
     expect((await mine(post(`/api/lists/${listId}/todos`, add))).status).toBe(200);
     const todoId = (await readBoard()).todos[0]?.id ?? "";
-    expect((await mine(post(`/api/todos/${todoId}/toggle`, { write: { key: "w3", base: 2 } }))).status).toBe(200);
-    const edit = { title: "Oat milk", priority: "high", write: { key: "w4", base: 3 } };
+    expect((await mine(post(`/api/todos/${todoId}/toggle`, { write: { key: "w3", base: 2, owner: "" } }))).status).toBe(
+      200,
+    );
+    const edit = { title: "Oat milk", priority: "high", write: { key: "w4", base: 3, owner: "" } };
     expect((await mine(post(`/api/todos/${todoId}`, edit))).status).toBe(200);
     const after = await (await mine(get("/api/lists"))).json();
     expect(after.results["api.lists"].value).toMatchObject({
@@ -279,7 +281,7 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
   it("after 50 writes the served document and JSON name no transaction", async () => {
     const app = await apiApp();
     for (let i = 0; i < 50; i++) {
-      const body = { name: `L${i}`, write: { key: `w${i}`, base: i } };
+      const body = { name: `L${i}`, write: { key: `w${i}`, base: i, owner: "" } };
       expect((await app.fetch(post("/api/lists", body))).status).toBe(200);
     }
     expect(await logLength()).toBe(50);
@@ -294,9 +296,9 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
   it("bad bodies are 422 keel.fields; unknown ids are 404; a duplicate title is 422 with the field", async () => {
     await seedBoard(boardOf({ lists: [L], todos: [milk, eggs] }));
     const app = await apiApp();
-    const bad = await app.fetch(post("/api/lists", { name: "", write: { key: "w1", base: 0 } }));
+    const bad = await app.fetch(post("/api/lists", { name: "", write: { key: "w1", base: 0, owner: "" } }));
     expect([bad.status, (await bad.json()).error.code]).toEqual([422, "keel.fields"]);
-    const w = { key: "w1", base: 0 };
+    const w = { key: "w1", base: 0, owner: "" };
     expect((await app.fetch(post("/api/lists/nope/todos", { title: "X", priority: "low", write: w }))).status).toBe(
       404,
     );
@@ -308,6 +310,23 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
       { code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } },
     ]);
     expect((await readBoard()).todos).toEqual([milk, eggs]);
+  });
+  it("a write queued under another owner than the caller's is 400 offline.owner on every write endpoint and saves nothing", async () => {
+    await seedBoard(boardOf({ lists: [L], todos: [milk] }));
+    const app = await apiApp();
+    const w = { key: "w1", base: 0, owner: "x" };
+    const refused = { code: "offline.owner", message: "owner", data: {} };
+    for (const [path, body] of [
+      ["/api/lists", { name: "Work", write: w }],
+      ["/api/lists/l1/todos", { title: "X", priority: "low", write: w }],
+      ["/api/todos/t1/toggle", { write: w }],
+      ["/api/todos/t1", { title: "Oat milk", priority: "high", write: w }],
+    ] as const) {
+      const res = await app.fetch(post(path, body));
+      expect([res.status, await res.json()]).toEqual([400, { ok: false, error: refused }]);
+    }
+    expect(await readBoard()).toMatchObject({ lists: [L], todos: [milk] });
+    expect(await logLength()).toBe(0);
   });
   it("GET /api/suggestions is the api.suggestions Result", async () => {
     const res = await (await apiApp()).fetch(get("/api/suggestions"));

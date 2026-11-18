@@ -29,7 +29,7 @@ describe("api runners", () => {
     open.push(app);
     await settle();
     const headers = { accept: "application/json", "content-type": "application/json", "x-keel": "1", origin: ORIGIN };
-    const write = { key: "11111111-1111-4111-8111-111111111111", base: 0 };
+    const write = { key: "11111111-1111-4111-8111-111111111111", base: 0, owner: "" };
     const res = await app.fetch(
       new Request(`${ORIGIN}/api/lists`, {
         method: "POST",

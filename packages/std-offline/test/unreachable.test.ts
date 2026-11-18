@@ -22,7 +22,7 @@ const unreachable = (): Response =>
     status: 502,
     headers: { "content-type": "application/json" },
   });
-const body = (ctx: SimCtx) => ({ title: "x", write: { key: ctx.random.id("Write"), base: 0 } });
+const body = (ctx: SimCtx) => ({ title: "x", write: { key: ctx.random.id("Write"), base: 0, owner: "" } });
 
 function ctxWith(url: string, up = (): boolean => false): SimCtx {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -34,7 +34,7 @@ test("through a module service a 502 keel.unreachable is api.network, so its ent
   const ctx = ctxWith("http://api.keel.invalid/save");
   const r = await service({ module: "api", schema: Api }).save({ body: body(ctx) }, ctx);
   expect(r.ok ? undefined : r.error.code).toBe("api.network");
-  expect(outcomeOf(r, false)).toEqual({ state: "queued" });
+  expect(outcomeOf(r, false, { state: "conflict", head: 0 })).toEqual({ state: "queued" });
 });
 
 test("an outbox leaves that entry queued, and posts it again once the server answers", async () => {

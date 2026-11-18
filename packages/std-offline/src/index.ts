@@ -9,3 +9,4 @@ export { drain } from "./drain.ts";
 export { outbox } from "./outbox.ts";
 export { resolve } from "./resolve.ts";
 export { send } from "./send.ts";
+export { writeFor } from "./writeFor.ts";

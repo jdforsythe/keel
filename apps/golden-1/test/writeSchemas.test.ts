@@ -1,11 +1,11 @@
-// The three write bodies the board's outbox sends (a name or todo fields plus the write's `key` and `base`), and `Nothing`, the answer of a write with nothing to say.
+// The three write bodies the board's outbox sends (a name or todo fields plus the write's `key`, `base` and `owner`), and `Nothing`, the answer of a write with nothing to say.
 import { describe, expect, it } from "vitest";
 import { ListWrite } from "../modules/api/ListWrite.schema.ts";
 import { Nothing } from "../modules/api/Nothing.schema.ts";
 import { TodoWrite } from "../modules/api/TodoWrite.schema.ts";
 import { ToggleWrite } from "../modules/api/ToggleWrite.schema.ts";
 
-const w = { key: "w1", base: 0 };
+const w = { key: "w1", base: 0, owner: "" };
 
 describe("ListWrite", () => {
   it("accepts a name of 1 to 60 characters with a write", () => {
@@ -18,8 +18,8 @@ describe("ListWrite", () => {
     expect(ListWrite.parse({ name: "", write: w }).ok).toBe(false);
     expect(ListWrite.parse({ name: "x".repeat(61), write: w }).ok).toBe(false);
     expect(ListWrite.parse({ name: "Home" }).ok).toBe(false);
-    expect(ListWrite.parse({ name: "Home", write: { key: "w1", base: -1 } }).ok).toBe(false);
-    expect(ListWrite.parse({ name: "Home", write: { key: "w1", base: 1.5 } }).ok).toBe(false);
+    expect(ListWrite.parse({ name: "Home", write: { key: "w1", base: -1, owner: "" } }).ok).toBe(false);
+    expect(ListWrite.parse({ name: "Home", write: { key: "w1", base: 1.5, owner: "" } }).ok).toBe(false);
   });
 });
 
@@ -42,13 +42,17 @@ describe("TodoWrite", () => {
 
 describe("ToggleWrite", () => {
   it("accepts a write and nothing else is required", () => {
-    const r = ToggleWrite.parse({ write: { key: "w9", base: 7 } });
+    const r = ToggleWrite.parse({ write: { key: "w9", base: 7, owner: "" } });
     expect(r.ok && r.value.write.base === 7).toBe(true);
   });
   it("refuses a body without a write, with an empty key, or with a non-integer base", () => {
     expect(ToggleWrite.parse({}).ok).toBe(false);
-    expect(ToggleWrite.parse({ write: { key: "", base: 0 } }).ok).toBe(false);
-    expect(ToggleWrite.parse({ write: { key: "w1", base: "0" } }).ok).toBe(false);
+    expect(ToggleWrite.parse({ write: { key: "", base: 0, owner: "" } }).ok).toBe(false);
+    expect(ToggleWrite.parse({ write: { key: "w1", base: "0", owner: "" } }).ok).toBe(false);
+  });
+  it("refuses a write without an owner", () => {
+    expect(ToggleWrite.parse({ write: { key: "w1", base: 0 } }).ok).toBe(false);
+    expect(ToggleWrite.parse({ write: { key: "w1", base: 0, owner: 1 } }).ok).toBe(false);
   });
 });
 

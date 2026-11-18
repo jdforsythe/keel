@@ -22,7 +22,7 @@ const Resolve = s.object({ key: s.string(), resolution: Resolution });
 
 /**
  * Declare an outbox (std.offline) over the k.services `endpoints` map of module `module`'s routes, sent through
- * `service({ module, schema: api })` with an undeclared 409 read as JSON: the client store `id` with state `{ entries }`,
+ * `service({ module, schema: api })` with an undeclared 400 or 409 read as JSON: the client store `id` with state `{ entries }`,
  * changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. Inside a scope the store is created now and the outbox
  * stops flushing when that scope is disposed; outside one (a module-level declaration) it is created on first use and
  * lives as long as the module. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it. Throws E2651
@@ -41,7 +41,7 @@ export function outbox<const D extends EndpointMap>(
     }
   }
   const schema: EndpointMap = Object.fromEntries(
-    Object.entries(api).map(([name, e]) => [name, { ...e, errors: { 409: s.json(), ...e.errors } }]),
+    Object.entries(api).map(([name, e]) => [name, { ...e, errors: { 400: s.json(), 409: s.json(), ...e.errors } }]),
   );
   const client = service({ module: opts.module, schema });
   let c: Config | undefined;

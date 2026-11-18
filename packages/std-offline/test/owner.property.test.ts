@@ -1,14 +1,16 @@
 // The owner rule: a drain for owner x posts exactly x's well-formed stored entries, in order, and fails every other
-// entry with `offline.owner`; nothing is ever posted to an origin read from storage. Seed 1337.
+// entry with `offline.owner`; nothing is ever posted to an origin read from storage. A server that refuses a write by
+// owner (`writeFor`) fails that entry alone with `offline.owner`, and it is never posted again. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Write, drain, outbox, resolve, send } from "../src/index.ts";
+import { Write, drain, outbox, resolve, send, writeFor } from "../src/index.ts";
 import { configOf } from "../src/internal/configOf.ts";
 import { field } from "../src/internal/field.ts";
+import { outcomeOf } from "../src/internal/outcomeOf.ts";
 
 const Api = endpoints({
   add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
@@ -213,4 +215,75 @@ test("an owner change at any await of a send's flush: never posted for another o
     }),
     { seed: 1337, numRuns: 60 },
   );
+});
+
+test("a server that refuses a random subset by owner: each refused entry fails alone, the rest commit in order, none is posted again", async () => {
+  await fc.assert(
+    fc.asyncProperty(
+      fc.array(fc.boolean(), { minLength: 1, maxLength: 8 }),
+      fc.boolean(),
+      async (refuseAt, offline) => {
+        const ctx = createCtx({ mode: "sim", seed: 1337 });
+        const posts: { t: string; owner: unknown }[] = [];
+        const applied: string[] = [];
+        ctx.net.route("http://app.keel.invalid/add", async (req) => {
+          const body: unknown = await req.json();
+          const t = String(field(body, "t"));
+          const write = Write.parse(field(body, "write"));
+          posts.push({ t, owner: field(field(body, "write"), "owner") });
+          // The caller's owner when post `i` lands: `b` (another tab signed in) where `refuseAt` says so.
+          const w = write.ok ? writeFor(write.value, refuseAt[Number(t.slice(1))] ? "b" : "a") : undefined;
+          if (w === undefined) return Response.json({ ok: false }, { status: 422 });
+          if (!w.ok) return Response.json({ ok: false, error: w.error }, { status: 400 });
+          applied.push(t);
+          return Response.json({ ok: true, value: {} });
+        });
+        const { o, sc, id } = declare();
+        ctx.net.setOnline(!offline);
+        const outs: unknown[] = [];
+        for (const i of refuseAt.keys())
+          outs.push(await send(ctx, o, "add", { body: { t: `e${i}` } }, { base: 0, owner: "a" }));
+        ctx.net.setOnline(true);
+        const d = scope(() => void drain(ctx, o, { owner: "a" }));
+        await settle();
+        const names = refuseAt.map((_, i) => `e${i}`);
+        expect(posts).toEqual(names.map((t) => ({ t, owner: "a" })));
+        expect(applied).toEqual(names.filter((_, i) => !refuseAt[i]));
+        const refusal = { code: "offline.owner", message: id, data: {} };
+        expect(o.get("entries").map((e) => [e.state, e.error])).toEqual(
+          refuseAt.filter((r) => r).map(() => ["failed", refusal]),
+        );
+        if (!offline)
+          expect(outs).toEqual(
+            refuseAt.map((r) => (r ? { state: "failed", error: refusal } : { state: "sent", value: {} })),
+          );
+        // A later drain on a new ctx over that storage posts nothing.
+        const next = createCtx({ mode: "sim", seed: 1337 });
+        const again: string[] = [];
+        next.net.route("http://app.keel.invalid/add", async (req) => {
+          again.push(String(field(await req.json(), "t")));
+          return Response.json({ ok: true, value: {} });
+        });
+        const other = declare();
+        const raw = await ctx.storage.get(`keel.outbox.${id}`);
+        await next.storage.set(`keel.outbox.${other.id}`, raw ?? "");
+        const d2 = scope(() => void drain(next, other.o, { owner: "a" }));
+        await settle();
+        expect(again).toEqual([]);
+        d2.dispose();
+        other.sc.dispose();
+        d.dispose();
+        sc.dispose();
+      },
+    ),
+    { seed: 1337, numRuns: 40 },
+  );
+});
+
+test("an error body whose code is offline.owner is the refusal whatever its status", () => {
+  const refused = { state: "failed" as const, error: { code: "offline.owner" as const, message: "o", data: {} } };
+  for (const status of [400, 403, 409, 500]) {
+    const error = { code: "api.status" as const, message: "s", data: { status, body: { code: "offline.owner" } } };
+    expect(outcomeOf({ ok: false, error }, false, refused)).toBe(refused);
+  }
 });

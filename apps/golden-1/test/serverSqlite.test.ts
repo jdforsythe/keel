@@ -102,7 +102,7 @@ describe("dist/api/server.mjs on storage 'sqlite'", () => {
       const posted = await call(`${base}/api/lists`, {
         method: "POST",
         headers: json,
-        body: JSON.stringify({ name: "Home", write: { key: "w1", base: 0 } }),
+        body: JSON.stringify({ name: "Home", write: { key: "w1", base: 0, owner: "" } }),
       });
       expect(posted.status).toBe(200);
       const lists = await (await call(`${base}/api/lists`, { headers: { accept: "application/json" } })).json();

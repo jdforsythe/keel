@@ -458,13 +458,13 @@ export const TodoDraft = s.object({
 export type TodoDraft = s.infer<typeof TodoDraft>;
 ```
 
-Write bodies. An outbox sends every board write with a `Write`, from `@keel/std-offline`: a `key` that names the write across retries, so a write the server already took is not applied twice, and a `base`, the head the writer last read. The three bodies add it to the fields of a draft:
+Write bodies. An outbox sends every board write with a `Write`, from `@keel/std-offline`: a `key` that names the write across retries, so a write the server already took is not applied twice, a `base`, the head the writer last read, and an `owner`, the user who queued it. Each action passes the write through `writeFor` with the owner of its caller before it reaches the store, so a write queued under another user is refused 400 `offline.owner` and nothing is saved; golden-1 has no sign-in, so that owner is `""` on both sides. The three bodies add the write to the fields of a draft:
 
 ```ts title="modules/api/ListWrite.schema.ts"
 import { s } from "@keel/schema";
 import { Write } from "@keel/std-offline";
 
-/** Body of `POST /api/lists`: the new list's name and the write's `key` and `base`. */
+/** Body of `POST /api/lists`: the new list's name and the write's `key`, `base` and `owner`. */
 export const ListWrite = s.object({
   name: s.string({ min: 1, max: 60 }),
   write: Write,
@@ -476,7 +476,7 @@ export type ListWrite = s.infer<typeof ListWrite>;
 import { s } from "@keel/schema";
 import { Write } from "@keel/std-offline";
 
-/** Body of `POST /api/lists/:listId/todos` and `POST /api/todos/:todoId`: the todo's fields and the write's `key` and `base`. */
+/** Body of `POST /api/lists/:listId/todos` and `POST /api/todos/:todoId`: the todo's fields and the write's `key`, `base` and `owner`. */
 export const TodoWrite = s.object({
   title: s.string({ min: 1, max: 120 }),
   priority: s.enum(["low", "normal", "high"]),
@@ -489,7 +489,7 @@ export type TodoWrite = s.infer<typeof TodoWrite>;
 import { s } from "@keel/schema";
 import { Write } from "@keel/std-offline";
 
-/** Body of `POST /api/todos/:todoId/toggle`: the write's `key` and `base`. */
+/** Body of `POST /api/todos/:todoId/toggle`: the write's `key`, `base` and `owner`. */
 export const ToggleWrite = s.object({ write: Write });
 export type ToggleWrite = s.infer<typeof ToggleWrite>;
 ```
@@ -708,20 +708,19 @@ export const loadSuggestions = loader({ output: s.array(Suggestion) }, async () 
 ```ts title="modules/api/postList.server.ts"
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
+import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { ListWrite } from "./ListWrite.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
  * `POST /api/lists`: add a list with a ctx-minted id, recorded with this caller (undo, `postUndo`) and the write's key
- * and base.
+ * and base; a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.owner`.
  */
 export const postList = action({ input: ListWrite, stores: boardStores }, (input, { caller, stores }, ctx) => {
-  const r = tx(
-    stores.addList,
-    { id: ctx.random.id("TodoList"), name: input.name },
-    { meta: { caller }, ...input.write },
-  );
+  const w = writeFor(input.write, "");
+  if (!w.ok) return err(w.error);
+  const r = tx(stores.addList, { id: ctx.random.id("TodoList"), name: input.name }, { meta: { caller }, ...w.value });
   return r.ok ? ok(null) : err(r.error);
 });
 ```
@@ -729,6 +728,7 @@ export const postList = action({ input: ListWrite, stores: boardStores }, (input
 ```ts title="modules/api/postTodo.server.ts"
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
+import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { ListParams } from "./ListParams.schema.ts";
 import { TodoWrite } from "./TodoWrite.schema.ts";
@@ -736,7 +736,8 @@ import { boardStores } from "./boardStores.ts";
 
 /**
  * `POST /api/lists/:listId/todos`: add an open todo with a ctx-minted id, with the write's key and base; an unknown
- * list is `keel.notFound`.
+ * list is `keel.notFound`; a write queued under an owner other than `""` (golden-1 has no sign-in) is
+ * `offline.owner`.
  */
 export const postTodo = action(
   { input: TodoWrite, params: ListParams, stores: boardStores },
@@ -745,7 +746,9 @@ export const postTodo = action(
     if (!stores.board.get("lists").some((l) => l.id === listId))
       return err({ code: "keel.notFound", message: `No list ${listId}`, data: { listId } });
     const { write, ...draft } = input;
-    const r = tx(stores.addTodo, { ...draft, id: ctx.random.id("Todo"), listId }, { meta: { caller }, ...write });
+    const w = writeFor(write, "");
+    if (!w.ok) return err(w.error);
+    const r = tx(stores.addTodo, { ...draft, id: ctx.random.id("Todo"), listId }, { meta: { caller }, ...w.value });
     return r.ok ? ok(null) : err(r.error);
   },
 );
@@ -754,19 +757,25 @@ export const postTodo = action(
 ```ts title="modules/api/postToggle.server.ts"
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
+import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { ToggleWrite } from "./ToggleWrite.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
-/** `POST /api/todos/:todoId/toggle`: flip `done`, with the write's key and base; an unknown todo is `keel.notFound`. */
+/**
+ * `POST /api/todos/:todoId/toggle`: flip `done`, with the write's key and base; an unknown todo is `keel.notFound`; a
+ * write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.owner`.
+ */
 export const postToggle = action(
   { input: ToggleWrite, params: TodoIdParams, stores: boardStores },
   (input, { params, caller, stores }) => {
     const { todoId } = params;
     const todo = stores.board.get("todos").find((t) => t.id === todoId);
     if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
-    const r = tx(stores.toggleTodo, { id: todoId }, { meta: { caller }, ...input.write });
+    const w = writeFor(input.write, "");
+    if (!w.ok) return err(w.error);
+    const r = tx(stores.toggleTodo, { id: todoId }, { meta: { caller }, ...w.value });
     return r.ok ? ok(null) : err(r.error);
   },
 );
@@ -775,6 +784,7 @@ export const postToggle = action(
 ```ts title="modules/api/postEdit.server.ts"
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
+import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { TodoIdParams } from "./TodoIdParams.schema.ts";
 import { TodoWrite } from "./TodoWrite.schema.ts";
@@ -783,7 +793,8 @@ import { boardStores } from "./boardStores.ts";
 /**
  * `POST /api/todos/:todoId`: replace title and priority, with the write's key and base. `keel.fields` `{ title }` when
  * another todo in the same list has the title; an unknown todo is `keel.notFound`; a write whose base is not the
- * board's head is `keel.conflict` (409, `api.editTodo` refuses concurrent writes).
+ * board's head is `keel.conflict` (409, `api.editTodo` refuses concurrent writes); a write queued under an owner
+ * other than `""` (golden-1 has no sign-in) is `offline.owner`.
  */
 export const postEdit = action(
   { input: TodoWrite, params: TodoIdParams, stores: boardStores },
@@ -793,9 +804,11 @@ export const postEdit = action(
     const todo = todos.find((t) => t.id === todoId);
     if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
     const { write, ...draft } = input;
+    const w = writeFor(write, "");
+    if (!w.ok) return err(w.error);
     if (todos.some((t) => t.listId === todo.listId && t.id !== todoId && t.title === draft.title))
       return err({ code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } });
-    const r = tx(stores.editTodo, { ...draft, id: todoId }, { meta: { caller }, ...write });
+    const r = tx(stores.editTodo, { ...draft, id: todoId }, { meta: { caller }, ...w.value });
     return r.ok ? ok(null) : err(r.error);
   },
 );
@@ -1062,7 +1075,7 @@ An outbox holds this client's writes in the order sent. `send` posts one when th
 
 The outbox sends through `service({ module: "api" })`, so its endpoints describe what the route's `Result` holds, as every `api` client does. A success is the empty object the action returns. A 409 is a refusal the outbox reads itself: `keel.conflict`, with the board's head. A 422 is the `keel.fields` error.
 
-Each write also carries an owner: the signed-in user's id, so that a write one user queued is never sent under the next user's cookie. golden-1 has no sign-in, so every write's owner is `""`. An app with sign-in passes the user's id to `send` and `drain`, and a stored write of another owner becomes `failed` with `offline.owner`.
+Each write also carries an owner: the signed-in user's id, so that a write one user queued is never sent under the next user's cookie. golden-1 has no sign-in, so every write's owner is `""`. An app with sign-in passes the user's id to `send` and `drain`, and a stored write of another owner becomes `failed` with `offline.owner`; its actions pass `writeFor` the id of the user the caller is signed in as, so the server refuses a write another tab queued under someone else.
 
 ```ts title="modules/todos/WriteAnswer.schema.ts"
 import { s } from "@keel/schema";

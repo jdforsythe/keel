@@ -18,7 +18,7 @@ import { own } from "./internal/own.ts";
  * Queue a write to `endpoint` of the outbox's module (std.offline Write) under `owner`, the signed-in user's id or `""`,
  * and flush, once the outbox stored in `ctx.storage` has loaded (`drain`) and `owner` is the ctx's owner (each entry of
  * another owner not `failed` becomes `failed` with `offline.owner`, std.offline Owner): the entry's `body.write` is
- * `{ key: ctx.random.id('Write'), base }`; the outbox is written to `ctx.storage` `keel.outbox.<id>` first, and a running
+ * `{ key: ctx.random.id('Write'), base, owner }`; the outbox is written to `ctx.storage` `keel.outbox.<id>` first, and a running
  * flush does not take the entry until that write settles. Resolves
  * `sent`, `queued` (offline, or the network failed), `conflict` or `failed`; a full outbox resolves `failed` with
  * `offline.full` and adds nothing, as does an owner that stops being the ctx's while the outbox is written for it

@@ -13,7 +13,9 @@ const obj = (x: unknown): object => (typeof x === "object" && x !== null ? x : {
 /**
  * Sends the outbox's `queued` entries of the ctx's owner in order, one request at a time (std.offline Flush), unless its
  * flush is already running, through the module's service, whose answers `outcomeOf` reads; with no owner given on the
- * ctx it posts nothing. An entry is posted only while, once its `sending` write settles, it is still `sending` and its
+ * ctx it posts nothing. Each post's `body.write` is `{ key, base, owner }` of its entry, and an answer whose error
+ * `code` is `offline.owner` (the action refused the owner, std.outbox-owner) fails that entry alone with `offline.owner`,
+ * never to be posted again. An entry is posted only while, once its `sending` write settles, it is still `sending` and its
  * owner is the ctx's; otherwise, or when its owner stops being the ctx's while it is in flight and it is not `sent`, it
  * is `failed` with `offline.owner`. A network failure keeps the
  * entry queued, stops, and retries 1 s later doubling to 60 s on `ctx.clock` while online. A queued entry whose own
@@ -72,13 +74,14 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
       const mine = (): boolean => c.owners.get(ctx) === e.owner && stateOf(e.key) === "sending";
       const gone = { state: "failed" as const, error: fault(c, "offline.owner") };
       const call = Object.hasOwn(c.api, e.endpoint) ? c.client[e.endpoint] : undefined;
-      const body = { ...obj(field(e.input, "body")), write: { key: e.key, base: e.base } };
+      const body = { ...obj(field(e.input, "body")), write: { key: e.key, base: e.base, owner: e.owner } };
       const got = !mine()
         ? gone
         : call
           ? outcomeOf(
               await call({ params: field(e.input, "params"), query: field(e.input, "query"), body }, ctx),
               c.again === e.key,
+              gone,
             )
           : {
               state: "failed" as const,

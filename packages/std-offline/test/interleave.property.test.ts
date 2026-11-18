@@ -1,18 +1,20 @@
 // Model property: random schedules of `send` under either of two owners, `drain` with either owner, `'mine'`
 // `resolve`, connectivity changes (a `drain` flush), a storage whose writes settle one at a time in any order, may
 // reject, throw synchronously, never settle (10 s on `ctx.clock` then count as rejected) or land after that bound, the
-// clock passing 10 s, and a server that answers one held request at a time.
+// clock passing 10 s, and a server that answers one held request at a time, refusing some by owner (`writeFor` with
+// another owner than the write's, answered 400 `offline.owner`).
 // An entry whose own write rejected is never posted after it, nothing is posted but the entry in hand, never while its
 // post is in flight, never a `failed` one and never one of an owner other than the ctx's at the moment of the post; a
 // call whose post was answered 2xx never resolves `failed`; no entry is lost; the flush is always released; and once
-// everything settles storage holds what memory holds. Seed 1337.
+// everything settles storage holds what memory holds; a refused entry is `failed` with `offline.owner` (its message the
+// outbox id), resolves so and is never posted again. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { type OutboxResult, Write, drain, outbox, resolve, send } from "../src/index.ts";
+import { type OutboxResult, Write, drain, outbox, resolve, send, writeFor } from "../src/index.ts";
 import { configOf } from "../src/internal/configOf.ts";
 
 const ORIGIN = "http://app.keel.invalid";
@@ -28,6 +30,7 @@ const settle = async (): Promise<void> => {
 const field = (x: unknown, k: string): unknown => (typeof x === "object" && x !== null ? Reflect.get(x, k) : undefined);
 
 type How = "ok" | "fail" | "hang" | "late";
+type Answer = "ok" | "conflict" | "refuse";
 type Step =
   | { kind: "send"; who: number }
   | { kind: "owner"; who: number }
@@ -36,7 +39,7 @@ type Step =
   | { kind: "online"; on: boolean }
   | { kind: "write"; pick: number; how: How }
   | { kind: "time" }
-  | { kind: "answer"; pick: number; conflict: boolean };
+  | { kind: "answer"; pick: number; how: Answer };
 const stepArb: fc.Arbitrary<Step> = fc.oneof(
   fc.nat(1).map((who): Step => ({ kind: "send", who })),
   fc.nat(1).map((who): Step => ({ kind: "owner", who })),
@@ -47,7 +50,9 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
     .record({ pick: fc.nat(7), how: fc.constantFrom<How>("ok", "fail", "hang", "late") })
     .map((w): Step => ({ kind: "write", ...w })),
   fc.constant<Step>({ kind: "time" }),
-  fc.record({ pick: fc.nat(7), conflict: fc.boolean() }).map((a): Step => ({ kind: "answer", ...a })),
+  fc
+    .record({ pick: fc.nat(7), how: fc.constantFrom<Answer>("ok", "conflict", "refuse") })
+    .map((a): Step => ({ kind: "answer", ...a })),
 );
 
 /**
@@ -107,28 +112,42 @@ function heldStorage(ctx: SimCtx) {
 
 /**
  * A server that holds each post until `answer` and records each post's key, and as `wrong` each post of a key already
- * in flight, whose entry is not `sending` when it arrives (`stateOf`), or whose entry's owner is not the ctx's then
- * (`mine`).
+ * in flight or already refused, whose entry is not `sending` when it arrives (`stateOf`), or whose entry's owner is not
+ * the ctx's then (`mine`). A `refuse` answer passes the post's `write` through `writeFor` with an owner no entry has.
  */
-function gatedServer(ctx: SimCtx, stateOf: (key: string) => string | undefined, mine: (key: string) => boolean) {
+function gatedServer(
+  ctx: SimCtx,
+  stateOf: (key: string) => string | undefined,
+  mine: (key: string) => boolean,
+  refuseAt: readonly boolean[],
+) {
   const posts: string[] = [];
   const wrong: string[] = [];
   const flying = new Set<string>();
   const applied = new Set<string>();
-  const held: { key: string; go: (conflict: boolean) => void }[] = [];
-  const state = { gated: true };
+  const refused = new Set<string>();
+  const held: { key: string; go: (how: Answer) => void }[] = [];
+  const state = { gated: true, refusing: true };
+  // Once the server stops holding posts, post `i` is refused as `refuseAt` says, until `stopRefusing`.
+  const later = (): Answer => (state.refusing && refuseAt[posts.length % refuseAt.length] ? "refuse" : "ok");
   ctx.net.route(`${ORIGIN}/add`, async (req) => {
-    const key = String(field(field(await req.json(), "write"), "key"));
+    const write = Write.parse(field(await req.json(), "write"));
+    const key = write.ok ? write.value.key : "";
     posts.push(key);
-    if (flying.has(key) || stateOf(key) !== "sending" || !mine(key)) wrong.push(key);
+    if (flying.has(key) || refused.has(key) || stateOf(key) !== "sending" || !mine(key)) wrong.push(key);
     flying.add(key);
-    const conflict = await new Promise<boolean>((go) => {
+    const how = await new Promise<Answer>((go) => {
       if (state.gated) held.push({ key, go });
-      else go(false);
+      else go(later());
     });
     flying.delete(key);
     const headers = { "content-type": "application/json" };
-    if (conflict) {
+    const checked = write.ok ? writeFor(write.value, how === "refuse" ? "nobody" : write.value.owner) : undefined;
+    if (checked !== undefined && !checked.ok) {
+      refused.add(key);
+      return new Response(JSON.stringify({ ok: false, error: checked.error }), { status: 400, headers });
+    }
+    if (how === "conflict") {
       const error = { code: "keel.conflict", message: "x", data: { transaction: "add", head: posts.length } };
       return new Response(JSON.stringify({ ok: false, error }), { status: 409, headers });
     }
@@ -139,13 +158,17 @@ function gatedServer(ctx: SimCtx, stateOf: (key: string) => string | undefined, 
     posts,
     wrong,
     applied,
-    answer: (i: number, conflict: boolean): void => {
+    refused,
+    answer: (i: number, how: Answer): void => {
       const [h] = held.splice(i % Math.max(held.length, 1), 1);
-      h?.go(conflict);
+      h?.go(how);
     },
     open: (): void => {
       state.gated = false;
-      for (const h of held.splice(0)) h.go(false);
+      for (const h of held.splice(0)) h.go(later());
+    },
+    stopRefusing: (): void => {
+      state.refusing = false;
     },
   };
 }
@@ -154,7 +177,7 @@ let n = 0;
 const stored = (raw: string | null): unknown => field(JSON.parse(raw ?? "{}"), "entries");
 const equal = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
 
-async function run(script: readonly Step[]) {
+async function run(script: readonly Step[], refuseAt: readonly boolean[]) {
   const ctx: SimCtx = createCtx({ mode: "sim", seed: 1337 });
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const entryOf = (key: string) => held.o?.get("entries").find((e) => e.key === key);
@@ -162,6 +185,7 @@ async function run(script: readonly Step[]) {
     ctx,
     (key) => entryOf(key)?.state,
     (key) => held.o !== undefined && configOf(held.o).owners.get(ctx) === entryOf(key)?.owner,
+    refuseAt,
   );
   const sc = scope(() => {
     held.o = outbox(`interleave${++n}.outbox`, Api, { module: "app" });
@@ -212,7 +236,7 @@ async function run(script: readonly Step[]) {
     else if (step.kind === "online") ctx.net.setOnline(step.on);
     else if (step.kind === "write") await storage.pump(step.pick, step.how);
     else if (step.kind === "time") ctx.clock.advance(10_000);
-    else server.answer(step.pick, step.conflict);
+    else server.answer(step.pick, step.how);
     await settle();
     keys();
   }
@@ -241,47 +265,65 @@ async function run(script: readonly Step[]) {
   const entries = o.get("entries");
   const posts = [...server.posts];
   // The flush is released: a new send flushes and is sent.
+  server.stopRefusing();
   const last = await send(ctx, o, "add", { body: { n: -1 } }, { base: 0, owner: OWNER });
   await settle();
   const after = equal(stored(await ctx.storage.get(`keel.outbox.${o.id}`)), o.get("entries"));
   for (const d of drains) d.dispose();
   sc.dispose();
-  return { admissions, entries, posts, wrong: server.wrong, applied: server.applied, last, agreed, after };
+  const { wrong, applied, refused } = server;
+  return { id: o.id, admissions, entries, posts, wrong, applied, refused, last, agreed, after };
 }
 
 test("interleaved sends, resolves, flushes and storage writes: never posted after a rejected write, never twice, never lost", async () => {
   await fc.assert(
-    fc.asyncProperty(fc.array(stepArb, { maxLength: 24 }), async (script) => {
-      const r = await run(script);
-      const failed = r.admissions.filter((a) => a.out !== undefined && a.out !== false && a.out.state === "failed");
-      // Every admission answered.
-      for (const a of r.admissions) expect(a.out).not.toBe(undefined);
-      // An admission whose write rejected or whose owner changed: nothing posted for it, and no 2xx answer for its key.
-      for (const a of failed) {
-        expect(["offline.storage", "offline.owner"]).toContain(
-          a.out !== false && a.out?.state === "failed" ? a.out.error.code : "",
+    fc.asyncProperty(
+      fc.array(stepArb, { maxLength: 24 }),
+      fc.array(fc.boolean(), { minLength: 1, maxLength: 8 }),
+      async (script, refuseAt) => {
+        const r = await run(script, refuseAt);
+        // A `send` that added no entry (key "") is checked below.
+        const failed = r.admissions.filter(
+          (a) => a.key !== "" && a.out !== undefined && a.out !== false && a.out.state === "failed",
         );
-        expect(r.posts.filter((k) => k === a.key)).toHaveLength(a.before);
-        expect(r.applied.has(a.key)).toBe(false);
-        expect(r.entries.find((e) => e.key === a.key)?.state).toBe("failed");
-      }
-      // Never posted twice: each post is of an entry the flush holds `sending`, and no key is posted while in flight
-      // (a post whose answer went offline is sent once more, under the same write key).
-      expect(r.wrong).toEqual([]);
-      // None lost: each key is applied (and gone) or still held `conflict` or `failed`.
-      // A `send` whose owner stopped being the ctx's before it added its entry adds none.
-      for (const a of r.admissions.filter((x) => x.key === ""))
-        expect(a.out !== false && a.out?.state === "failed" ? a.out.error.code : "").toBe("offline.owner");
-      for (const key of new Set(r.admissions.map((a) => a.key).filter((k) => k !== ""))) {
-        const e = r.entries.find((x) => x.key === key);
-        if (e === undefined) expect(r.applied.has(key)).toBe(true);
-        else expect(["conflict", "failed"]).toContain(e.state);
-      }
-      expect(r.last.state).toBe("sent");
-      // Once everything settles storage holds what memory holds, unless the write issued last failed.
-      expect(r.agreed).toBe(true);
-      expect(r.after).toBe(true);
-    }),
+        // Every admission answered.
+        for (const a of r.admissions) expect(a.out).not.toBe(undefined);
+        // An admission whose write rejected or whose owner changed: nothing posted for it, and no 2xx answer for its key.
+        // A refused admission: posted once more than before it, then never again.
+        for (const a of failed) {
+          expect(["offline.storage", "offline.owner"]).toContain(
+            a.out !== false && a.out?.state === "failed" ? a.out.error.code : "",
+          );
+          expect(r.posts.filter((k) => k === a.key)).toHaveLength(r.refused.has(a.key) ? a.before + 1 : a.before);
+          expect(r.applied.has(a.key)).toBe(false);
+          expect(r.entries.find((e) => e.key === a.key)?.state).toBe("failed");
+        }
+        // Never posted twice: each post is of an entry the flush holds `sending`, and no key is posted while in flight
+        // (a post whose answer went offline is sent once more, under the same write key).
+        expect(r.wrong).toEqual([]);
+        // None lost: each key is applied (and gone) or still held `conflict` or `failed`.
+        // A `send` whose owner stopped being the ctx's before it added its entry adds none.
+        for (const a of r.admissions.filter((x) => x.key === ""))
+          expect(a.out !== false && a.out?.state === "failed" ? a.out.error.code : "").toBe("offline.owner");
+        for (const key of new Set(r.admissions.map((a) => a.key).filter((k) => k !== ""))) {
+          const e = r.entries.find((x) => x.key === key);
+          if (e === undefined) expect(r.applied.has(key)).toBe(true);
+          else expect(["conflict", "failed"]).toContain(e.state);
+        }
+        // A refused entry is `failed` with `offline.owner`, its message the outbox id, and the last admission of its key
+        // resolves so, or `queued` when its flush stopped before the post.
+        const refusal = { state: "failed", error: { code: "offline.owner", message: r.id, data: {} } };
+        for (const key of r.refused) {
+          expect(r.entries.find((e) => e.key === key)).toMatchObject(refusal);
+          const out = r.admissions.filter((x) => x.key === key).at(-1)?.out;
+          if (out !== false && out?.state !== "queued") expect(out).toEqual(refusal);
+        }
+        expect(r.last.state).toBe("sent");
+        // Once everything settles storage holds what memory holds, unless the write issued last failed.
+        expect(r.agreed).toBe(true);
+        expect(r.after).toBe(true);
+      },
+    ),
     { seed: 1337, numRuns: 300 },
   );
 });
