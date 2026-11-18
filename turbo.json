@@ -24,6 +24,15 @@
         "dist/**"
       ]
     },
+    "coverage": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
+      "cache": false
+    },
     "mutate": {
       "dependsOn": [
         "build"

@@ -6,6 +6,7 @@
   "scripts": {
     "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "keel build",
     "dev": "keel dev",
     "api": "KEEL_DATABASE_URL=file://$PWD/.api.sqlite node --disable-warning=ExperimentalWarning dist/api/server.mjs"

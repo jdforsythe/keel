@@ -7,6 +7,7 @@
     "build": "keel build",
     "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "start": "node --experimental-webstorage --localstorage-file=.sessions.storage --disable-warning=ExperimentalWarning dist/sessions/server.mjs"
   },
   "dependencies": {

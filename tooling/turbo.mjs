@@ -26,18 +26,19 @@ const NOISE = [
   /^\s*(ELIFECYCLE|ERROR)\b/,
 ];
 
-// Each vitest run fills every core by itself, so test tasks run four at a time: more would starve the
+// Each vitest run fills every core by itself, so test and coverage tasks run four at a time: more would starve the
 // type-check heavy tests past their timeout without finishing sooner. On a machine with four cores or fewer (a CI
 // runner) they run one at a time, for the same reason.
 const atOnce = os.availableParallelism() <= 4 ? 1 : 4;
-const limit = task === "test" && !extra.some((a) => a.startsWith("--concurrency")) ? [`--concurrency=${atOnce}`] : [];
+const vitestTask = task === "test" || task === "coverage";
+const limit = vitestTask && !extra.some((a) => a.startsWith("--concurrency")) ? [`--concurrency=${atOnce}`] : [];
 // Mutation runs one package at a time (each Stryker run fills the cores) and one run per machine.
 const one = task === "mutate" && !extra.some((a) => a.startsWith("--concurrency")) ? ["--concurrency=1"] : [];
 
 await run(task ?? "turbo", () => {
   // A test run beside a mutation run is slow and its timeouts may fire: it runs anyway and says so (W0012).
   const warn = [];
-  if (task === "test") {
+  if (vitestTask) {
     const holder = heldBy();
     if (holder !== undefined) warn.push(busyDiag(holder));
   }

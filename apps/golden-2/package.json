@@ -8,6 +8,7 @@
     "dev": "keel dev",
     "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
