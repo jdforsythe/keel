@@ -6,7 +6,6 @@ on:
       - master
   pull_request: {}
   schedule:
-    - cron: "0 3 * * *"
     - cron: "0 4 * * 1"
 concurrency:
   group: "ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}"
@@ -338,33 +337,6 @@ jobs:
           path: .git/keel-mutation
           key: "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
     timeout-minutes: 120
-  mutate:
-    if: "github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - uses: actions/cache/restore@v4
-        with:
-          path: .git/keel-mutation
-          key: "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
-          restore-keys: "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-\nstryker-${{ github.base_ref || 'master' }}-\nstryker-master-"
-      - run: "pnpm mutate --filter=\"./packages/*\""
-      - name: "golden-2 a11y report for the ledger (keel test writes reports/a11y.json)"
-        run: pnpm --filter golden-2 exec keel test
-      - run: pnpm ledger --diff
-      - if: "always()"
-        uses: actions/cache/save@v4
-        with:
-          path: .git/keel-mutation
-          key: "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
   eval:
     if: "github.event_name == 'schedule' && github.event.schedule == '0 4 * * 1'"
     runs-on: ubuntu-latest

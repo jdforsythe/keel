@@ -147,6 +147,7 @@ const outputs = {
   ".github/workflows/ci.yml": workflow("ci.source.json"),
   ".github/workflows/audit.yml": workflow("audit.source.json"),
   ".github/workflows/sessions-nightly.yml": workflow("sessions-nightly.source.json"),
+  ".github/workflows/mutate-nightly.yml": workflow("mutate-nightly.source.json"),
   ...deployOutputs(),
 };
 const check = parseArgs().flags.has("check");

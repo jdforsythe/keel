@@ -1,0 +1,88 @@
+# _generated: edit tooling/mutate-nightly.source.json and run pnpm generate. Do not edit by hand.
+name: mutate-nightly
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+concurrency:
+  group: mutate-nightly
+  cancel-in-progress: false
+env:
+  KEEL_AGENT: "1"
+jobs:
+  mutate:
+    if: "github.ref == 'refs/heads/master'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - check
+          - cli
+          - compiler
+          - ctx
+          - forms
+          - reactive
+          - router
+          - runtime-dom
+          - scaffold
+          - schema
+          - server
+          - services
+          - store
+          - testing
+          - ui
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache/restore@v4
+        with:
+          path: .git/keel-mutation
+          key: "stryker-${{ matrix.package }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          restore-keys: "stryker-${{ matrix.package }}-"
+      - run: "pnpm --filter ./packages/${{ matrix.package }} mutate"
+      - if: "always()"
+        uses: actions/cache/save@v4
+        with:
+          path: .git/keel-mutation
+          key: "stryker-${{ matrix.package }}-${{ github.run_id }}-${{ github.run_attempt }}"
+      - if: "always()"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "mutation-${{ matrix.package }}"
+          path: "packages/${{ matrix.package }}/reports/mutation/mutation.json"
+          if-no-files-found: ignore
+          retention-days: 7
+  ledger:
+    if: "!cancelled() && github.ref == 'refs/heads/master'"
+    needs: mutate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "mutation-*"
+          path: mutation-reports
+      - name: "put each package's report where the ledger reads it"
+        run: "for d in mutation-reports/mutation-*; do pkg=\"${d##*/mutation-}\"; mkdir -p \"packages/$pkg/reports/mutation\"; cp \"$d/mutation.json\" \"packages/$pkg/reports/mutation/\"; done"
+      - name: "golden-2 a11y report for the ledger (keel test writes reports/a11y.json)"
+        run: pnpm --filter golden-2 exec keel test
+      - run: pnpm ledger
+      - run: pnpm ledger --diff
