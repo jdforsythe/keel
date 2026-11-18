@@ -97,10 +97,15 @@ export const eventQueue = {
   /**
    * Replay every queued event once, in the order they fired, each as a live one: told to the observer of its innermost
    * enclosing root, then dispatched from its target through each enclosing root, innermost first, until a handler
-   * calls `stopPropagation`. An event no root encloses is dropped.
+   * calls `stopPropagation`. An event no root encloses is dropped. An event whose island has not resumed (a later
+   * `resume` call holds it) stays queued for that call's replay.
    */
   replay(): void {
-    for (const x of entries.splice(0)) {
+    const ready = entries.filter((x) => resumed.has(x.island));
+    const waiting = entries.filter((x) => !resumed.has(x.island));
+    entries.length = 0;
+    entries.push(...waiting);
+    for (const x of ready) {
       const enclosing: Element[] = [];
       for (let n: Node | null = x.target; n !== null; n = n.parentNode)
         if (n instanceof Element && roots.has(n)) enclosing.push(n);
