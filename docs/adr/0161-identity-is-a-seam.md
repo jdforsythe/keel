@@ -1,6 +1,6 @@
 # ADR-0161: identity is a seam; Keel authenticates no one (RFC 0139)
 
-**Status:** proposed (RFC 0139, for the orchestrator to accept). Answers the choice RFC 0132 posed for the caller cookie ("session" or "persistent") with neither as posed.
+**Status:** accepted (orchestrator under the owner's standing leave, 2026-11-18, on the owner's direction that Keel authenticates no one). Answers the choice RFC 0132 posed for the caller cookie ("session" or "persistent") with neither as posed.
 
 **Context.** The caller cookie is a session-only anonymous token and not a credential. Apps need to know who the user is, and golden-2 builds a sign-in by hand on the caller, so a browser quit or a shell relaunch signs the user out. The operator's direction: Keel is not an authentication library and does not take on that risk; apps plug in established libraries and platforms, and an example app may show how.
 
