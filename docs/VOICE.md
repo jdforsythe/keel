@@ -26,9 +26,9 @@ End a paragraph on its strongest concrete point, not on a sentence that sums it 
 
 ## Banned words
 
-From the brand guide: seamless, powerful, blazing, magic, revolutionary, effortless, simply, just (as an intensifier), leverage, robust, cutting-edge, AI-powered, supercharge.
+Enforced by `tooling/voice-lint.mjs` (V0003): seamless, powerful, blazing, magic, revolutionary, effortless, simply, just (as an intensifier), leverage, robust, cutting-edge, AI-powered, supercharge.
 
-From this guide: crucially, fundamentally, importantly, delve, navigate (as a metaphor), landscape (as a metaphor), game-changer, paradigm, rapidly evolving.
+Also banned: crucially, fundamentally, importantly, delve, navigate (as a metaphor), landscape (as a metaphor), game-changer, paradigm, rapidly evolving.
 
 The only nautical word is Keel.
 
@@ -51,4 +51,4 @@ To: "Keel compiles JSX to DOM operations and keeps every state change in a named
 Rewrite: "It's not the framework that's slow, it's the reasoning."
 To: "The framework is fast enough; the agent's reasoning about invisible rules is what costs tokens."
 
-verified: eda63de295e6510c0b14b25e5067958f4faf12b1
+verified: da7e0ceace2fe8f1fdf236d21b43d2b638955add
