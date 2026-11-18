@@ -417,8 +417,12 @@ describe("viteRun", () => {
   });
 
   it("a vite killed by a signal has no status and counts as code 1", () => {
+    // An installed `vite` runs as Node on its own path, with no shell between, so the signal reaches `spawnSync`
+    // unchanged (a shell launcher, as `npx` uses, would turn it into an exit status of 128 + n on some systems).
     const d = tmp();
-    fakeVite(d, "kill -9 $$");
+    put(d, "vite.config.ts", "export default {}\n");
+    put(d, "node_modules/vite/package.json", JSON.stringify({ name: "vite", bin: { vite: "bin/vite.js" } }));
+    put(d, "node_modules/vite/bin/vite.js", 'process.kill(process.pid, "SIGKILL");\n');
     expect(viteRun(d)).toEqual({ code: 1, tail: "\n", notes: [] });
   });
 });

@@ -37,7 +37,8 @@ const fakeVite = (d: string, body: string): void => {
 /**
  * A project-local `vite` module: `createServer` records its options in `opts.json` and returns a server whose resolved
  * port is the one in `config-port.txt` (when present) or the given one; `listen` and `close` leave `listened` and
- * `closed`. Nothing binds, so the binary exits once `keel dev` returns.
+ * `closed`, and `listen` writes the address `localhost` resolves to at that moment in `localhost.txt` (Vite's default
+ * host is `localhost`). Nothing binds, so the binary exits once `keel dev` returns.
  */
 const fakeViteModule = (d: string): void => {
   put(d, "vite.config.ts", "export default {}\n");
@@ -53,7 +54,11 @@ const fakeViteModule = (d: string): void => {
       '  const port = existsSync("config-port.txt") ? Number(readFileSync("config-port.txt", "utf8")) : opts.server.port;',
       "  return {",
       "    config: { server: { port }, logger: { info: (m) => process.stdout.write(`${m}\\n`) } },",
-      '    async listen() { writeFileSync("listened", ""); },',
+      "    async listen() {",
+      '      const { address } = await (await import("node:dns")).promises.lookup("localhost");',
+      '      writeFileSync("localhost.txt", address);',
+      '      writeFileSync("listened", "");',
+      "    },",
       '    async close() { writeFileSync("closed", ""); },',
       "    printUrls() { process.stdout.write(`  Local: http://localhost:${port}/\\n`); },",
       "    bindCLIShortcuts() {},",
@@ -181,6 +186,15 @@ describe("keel binary", () => {
     expect(r.stdout).toMatch(/^\n {2}VITE v0\.0\.0-fake {2}ready in \d+ ms\n\n/);
     expect(r.stdout).toContain(`  Local: http://localhost:${port}/\n`);
     expect(r.stderr).toBe("");
+  }, 30_000);
+
+  it("dev listens with `localhost` resolving to 127.0.0.1, the loopback every client that resolves `localhost` reaches", async () => {
+    const d = tmp();
+    fakeViteModule(d);
+    const port = await freePort();
+    const r = await keel(d, ["dev", "--port", String(port)]);
+    expect(r.code).toBe(0);
+    expect(readFileSync(join(d, "localhost.txt"), "utf8")).toBe("127.0.0.1");
   }, 30_000);
 
   it("dev without --port passes no port and serves on the one vite resolved from the config", async () => {

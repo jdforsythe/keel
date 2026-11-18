@@ -1,3 +1,4 @@
+import { setDefaultResultOrder } from "node:dns";
 import { operations } from "../operations.ts";
 import type { DevServer } from "./DevServer.ts";
 import { devPort } from "./devPort.ts";
@@ -30,6 +31,10 @@ const STOPS = [
  * probed on every address, and a port that will not bind is one E1560 line (exit 1): the server is closed and never
  * listens, so it cannot move to another port. Otherwise it listens, prints Vite's banner and URLs, and serves until
  * SIGINT or SIGTERM closes it. Undefined when the engine answers instead: flags that do not parse (E1052).
+ *
+ * Name lookups in this process put IPv4 first, so Vite's default host `localhost` binds 127.0.0.1. A client resolving
+ * `localhost` always gets 127.0.0.1, while `::1` is left out on a machine without a non-loopback IPv6 address (address
+ * configuration filtering, as on most CI runners and containers); a server on `::1` alone is unreachable there.
  */
 export async function devStart(argv: readonly string[], cwd: string): Promise<DevOutcome | undefined> {
   const parsed = parseArgv(argv, operations);
@@ -47,6 +52,7 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
     });
     return { code: r.code, stdout: r.stdout, stderr: "", serving: false };
   };
+  setDefaultResultOrder("ipv4first");
   let server: DevServer;
   try {
     server = await viteServer(cwd, input.port);
