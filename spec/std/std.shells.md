@@ -9,10 +9,11 @@ const drivers = capacitorDrivers({ origin: new URL('https://golden-1.example') }
 const drivers = tauriDrivers({ origin: new URL('https://golden-1.example') })       // @keel/std-tauri
 ```
 Each returns `{ storage, net }` keeping k.persist's and k.shell's contracts:
-- `@keel/std-capacitor` (Capacitor 8): `storage` on `@capacitor/preferences`; `net` on `CapacitorHttp` from `@capacitor/core`, whose cookies the native cookie store keeps (`CapacitorCookies`). The global `fetch` stays unpatched.
-- `@keel/std-tauri` (Tauri 2, desktop): `storage` on `@tauri-apps/plugin-store`, file `keel.json` in the app's data directory, saved before a write resolves; `net` on `@tauri-apps/plugin-http`'s `fetch`, which the generated capability allows for `origin` only.
+- `@keel/std-capacitor` (Capacitor 8): `storage` on `@capacitor/preferences`; `net` on the package's native plugin `KeelHttp` (Android `HttpURLConnection`, iOS `URLSession` with the default configuration), whose cookies the native cookie store keeps, the one `CapacitorHttp` uses (`CapacitorCookies`). The global `fetch` stays unpatched.
+- `@keel/std-tauri` (Tauri 2, desktop): `storage` on `@tauri-apps/plugin-store`, files `keel.json` and `keel.b.json` in the app's data directory, each a whole copy `{ gen, sum, data }` (generation, checksum, keys), saved before a write resolves, first to the file the held copy was not read from, then to the other. A load takes the newer whole copy, so a crash inside a save leaves the earlier or the new state. With no whole copy the store is empty only when `keel.json` is missing (a fresh install, or a crash inside the first save); otherwise every call rejects and neither file is overwritten. `net` on `@tauri-apps/plugin-http`'s `fetch`, which the generated capability allows for `origin` only.
 - `commit` is atomic: storage calls run one at a time (one page owns the store), each write is one native write (Capacitor keeps every key in one Preferences entry), and a failed write leaves the driver reading what the store holds.
 - `net.fetch` maps a request on the page's origin to `origin` and returns a standard `Response`; a failure rejects with a `TypeError`, which k.services reports as `api.network`.
+- A `net.fetch` response resolves when its headers arrive and its body yields each chunk as the server sends it, an event stream included; aborting the request cancels the native request.
 
 **Conformance.** Under Capacitor's web implementations and Tauri's `mockIPC` in jsdom:
 - Each package's `storage` passes k.persist's storage clauses.
@@ -21,3 +22,5 @@ Each returns `{ storage, net }` keeping k.persist's and k.shell's contracts:
 - A cookie set by a response from `origin` is sent on the next request to `origin` and on none to another origin.
 - A refused connection rejects with a `TypeError`, and a k.services call over it is `api.network`.
 - Neither package replaces the global `fetch`.
+- With `tauriDrivers`, a save cut at any byte of `keel.json` or `keel.b.json` leaves a new driver reading the earlier or the new value of every key; a copy of a lower generation or a wrong checksum is not read; with no whole copy and `keel.json` present every call rejects and both files keep their bytes.
+- With each package, a response whose body the native side sends in two chunks resolves before the second is sent and its body yields the first; aborting it cancels the native request; no `set-cookie` header reaches the page.
