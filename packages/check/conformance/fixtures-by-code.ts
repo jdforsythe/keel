@@ -21,6 +21,10 @@ const UI = "import { Box, Text, Button } from '@keel/ui'\n";
 const SCHEMA = "import { s } from '@keel/schema'\n";
 const SERVICES = "import { endpoints } from '@keel/services'\n";
 const UNSAFE = "unsafe"; // built so this file's own lint does not read fixture text as a call
+const MOUNT_HEAD = "import { identityMount } from '@keel/router'\n";
+const MOUNT_SERVER =
+  "import { identity } from '@keel/server'\nimport mount from './identity.ts'\nexport default identity({ identify: async () => '', handle: { path: mount.path, fn: () => new Response('') } })\n";
+const MOUNT_USE = "import mount from '../../identity.ts'\nexport const signin = mount.href('/sign-in/email')\n";
 const manifest = (id: string, extra = ""): Files[number] =>
   f(
     `modules/${id}/module.ts`,
@@ -774,6 +778,53 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "identity.server.ts",
         "import { identity } from '@keel/server'\nexport default identity({ identify: async () => '' })\n",
       ),
+    ],
+  },
+  E1580: {
+    opts: NO_TYPES,
+    bad: [
+      f("identity.ts", `${MOUNT_HEAD}const p = '/api/auth'\nexport default identityMount(p)\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+    ],
+    clean: [
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+    ],
+  },
+  E1581: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'static' } })\n",
+      ),
+      manifest("a"),
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+      f("modules/a/signin.ts", MOUNT_USE),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'node' } })\n",
+      ),
+      manifest("a"),
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+      f("modules/a/signin.ts", MOUNT_USE),
+    ],
+  },
+  E1582: {
+    opts: NO_TYPES,
+    bad: [
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+      f("src/signin.ts", "import mount from '../identity.ts'\nexport const signin = mount.href('//x.example')\n"),
+    ],
+    clean: [
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+      f("src/signin.ts", "import mount from '../identity.ts'\nexport const signin = mount.href('/sign-in/email')\n"),
     ],
   },
   E1601: {

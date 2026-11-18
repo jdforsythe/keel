@@ -353,6 +353,9 @@ const NO_FIX = [
   "E1571", // moving the call to a server file spans files
   "E1578", // k.user Rules: Fix none; the caller days or the deployable is the author's choice
   "E1579", // k.user Rules: Fix none; the identity export, the mount path or the route is the author's choice
+  "E1580", // k.mount Rules: Fix none; the mount path and the identity source are the author's
+  "E1581", // k.mount Rules: Fix none; moving the module or hosting the deployable is the author's choice
+  "E1582", // k.mount Rules: Fix none; the subpath is the author's
   "E1576", // the public replacement is the author's
   "E1573", // the shell's adapter and app id are the author's
   "E1561", // choosing between the caller's and the producer's schema is a judgment
