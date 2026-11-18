@@ -1,5 +1,5 @@
 # k.resume: Served documents and resume
-status: implemented
+status: conformance-covered
 
 How a document `createApp` serves (k.server) meets `resume` (k.runtime).
 
