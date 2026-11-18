@@ -57,9 +57,9 @@ describe("E1802 namespace import and character references", () => {
     expect(out([f("modules/a/A.tsx", src)])).toHaveLength(2);
   });
 
-  it("reads a label of only white space character references as blank", () => {
+  it("reads a label of only white space or named character references as blank", () => {
     const src = `${UI}export const A = () => <Box as="nav" label="&#32;" />\nexport const B = () => <Box as="nav" label="&#x20;&nbsp;" />\nexport const C = () => <Box as="nav" label="&#65;" />\nexport const D = () => <Box as="nav" label="&amp;" />\n`;
-    expect(out([f("modules/a/A.tsx", src)])).toHaveLength(2);
+    expect(out([f("modules/a/A.tsx", src)])).toHaveLength(3);
   });
 });
 
@@ -122,8 +122,10 @@ describe("E1802 and invisible characters", () => {
   });
 
   it("reads any code point mix as blank exactly when std.text's visible test finds none", () => {
-    const VISIBLE = /[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{M}\u2800]/u;
-    const pool = [0x20, 0xa0, 0x200b, 0x200d, 0x2060, 0xfeff, 0x301, 0x2800, 0x3164, 0x61, 0x4e00, 0x1f600, 0xfe0f];
+    const VISIBLE = /[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{M}\p{Cc}\u2800]/u;
+    const pool = [
+      0x1, 0x7f, 0x85, 0x20, 0xa0, 0x200b, 0x200d, 0x2060, 0xfeff, 0x301, 0x2800, 0x3164, 0x61, 0x4e00, 0x1f600, 0xfe0f,
+    ];
     fc.assert(
       fc.property(fc.array(fc.constantFrom(...pool), { minLength: 1, maxLength: 5 }), (cps) => {
         const text = String.fromCodePoint(...cps);
@@ -131,6 +133,33 @@ describe("E1802 and invisible characters", () => {
         const src = `${UI}export const A = () => <Input label={${JSON.stringify(text)}} />\nexport const B = () => <Input label="${ref}" />\nexport const C = Input({ label: ${JSON.stringify(text)} })\n`;
         expect(out([f("modules/a/A.tsx", src)])).toHaveLength(VISIBLE.test(text) ? 0 : 3);
       }),
+      { seed: 1337, numRuns: 100 },
+    );
+  });
+});
+
+describe("E1802, named character references and control characters", () => {
+  it("reads a label whose only visible characters sit in named references as blank, and one with a visible character outside as not", () => {
+    const src = `${UI}export const A = () => <Input label="&zwnj;" />\nexport const B = () => <Input label="&copy;" />\nexport const C = () => <Input label="&emsp;&shy;&foo;" />\nexport const D = () => <Input label="&copy;2" />\nexport const E = () => <Input label="&COPY;x" />\n`;
+    expect(out([f("modules/a/A.tsx", src)]).map((l) => l.split(" ")[1])).toEqual(["2:31", "3:31", "4:31"]);
+  });
+
+  it("reads a label of only control characters as blank, in a string, a call and a numeric reference", () => {
+    const src = `${UI}export const A = () => <Input label={"\\u0001"} />\nexport const b = Input({ label: "\\u0001\\u009f" })\nexport const C = () => <Input label="&#0;&#x7f;" />\nexport const D = () => <Input label={"\\u0001a"} />\n`;
+    expect(out([f("modules/a/A.tsx", src)])).toHaveLength(3);
+  });
+
+  it("reads any run of named references as blank, and one ASCII letter outside them as not", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,7}$/), { minLength: 1, maxLength: 4 }),
+        fc.constantFrom("", "a", "Z"),
+        (names, letter) => {
+          const ref = names.map((n) => `&${n};`).join("");
+          const src = `${UI}export const A = () => <Input label="${ref}${letter}" />\n`;
+          expect(out([f("modules/a/A.tsx", src)])).toHaveLength(letter === "" ? 1 : 0);
+        },
+      ),
       { seed: 1337, numRuns: 100 },
     );
   });

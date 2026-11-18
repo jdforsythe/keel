@@ -33,14 +33,16 @@ function literalText(expr: Expression | null | undefined): string | null {
 
 /**
  * True for a text with no visible character: none outside White_Space (`space`), Default_Ignorable_Code_Point (`DI`),
- * Cf, M and U+2800, as std.text's `line` reads it.
+ * Cf, M and U+2800, as std.text's `line` reads it, and Cc.
  */
-const blank = (text: string | null): boolean => text !== null && !/[^\p{space}\p{DI}\p{Cf}\p{M}\u2800]/u.test(text);
+const blank = (text: string | null): boolean =>
+  text !== null && !/[^\p{space}\p{DI}\p{Cf}\p{M}\p{Cc}\u2800]/u.test(text);
 
-/** A JSX attribute string with its numeric and `&nbsp;` character references decoded. */
+/** A JSX attribute string with its numeric character references decoded and each named one (`&copy;`) left out. */
 const decode = (text: string): string =>
-  text.replace(/&(?:#(x[\da-f]+|\d+)|nbsp);/gi, (all, n: string | undefined) => {
-    const code = n === undefined ? 160 : Number(n[0] === "x" || n[0] === "X" ? `0${n}` : n);
+  text.replace(/&(?:#(x[\da-f]+|\d+)|[a-z][\da-z]*);/gi, (all, n: string | undefined) => {
+    if (n === undefined) return "";
+    const code = Number(n[0] === "x" || n[0] === "X" ? `0${n}` : n);
     return code > 0x10ffff ? all : String.fromCodePoint(code);
   });
 
