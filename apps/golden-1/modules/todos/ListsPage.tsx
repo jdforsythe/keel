@@ -33,50 +33,6 @@ export default function ListsPage(_props: Infer<typeof Props>, _slots?: Slots, c
     if (ctx !== undefined) void todosApi.undoRemoval({ params: { flow } }, ctx).then(() => refreshView(ctx));
   };
   const f = form(ListDraft);
-  // Router `Form` expects Node children, not the compiler's children thunk, so it is called directly and
-  // inserted through a `children()` binding (compiler D31).
-  const children = (): Node => {
-    const name = (
-      <Input
-        field={f.field("name")}
-        label="List name"
-        font="serif"
-        fontSize="md"
-        px="2"
-        py="2"
-        mx="2"
-        my="1"
-        bg="card"
-        fg="text"
-        border="control"
-        radius="none"
-      />
-    );
-    const submit = (
-      <Button
-        id="todos.addList"
-        type="submit"
-        font="mono"
-        fontSize="sm"
-        px="4"
-        py="2"
-        my="2"
-        bg="text"
-        fg="card"
-        border="rule"
-        radius="none"
-      >
-        Add list
-      </Button>
-    );
-    return Form({
-      method: "POST",
-      action: routes.href("todos.index"),
-      form: f,
-      error: (e) => <Text fg="error">{e.message}</Text>,
-      children: [name, submit],
-    });
-  };
   return (
     <Box as="section" id="todos.lists" direction="column" gap="5">
       <Heading id="todos.lists.title" level={1} fontSize="2xl" weight="semibold" m="0">
@@ -161,7 +117,42 @@ export default function ListsPage(_props: Infer<typeof Props>, _slots?: Slots, c
           )}
         </For>
       </Box>
-      {children()}
+      <Form
+        method="POST"
+        action={routes.href("todos.index")}
+        form={f}
+        error={(e) => <Text fg="error">{e.message}</Text>}
+      >
+        <Input
+          field={f.field("name")}
+          label="List name"
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Button
+          id="todos.addList"
+          type="submit"
+          font="mono"
+          fontSize="sm"
+          px="4"
+          py="2"
+          my="2"
+          bg="text"
+          fg="card"
+          border="rule"
+          radius="none"
+        >
+          Add list
+        </Button>
+      </Form>
     </Box>
   );
 }

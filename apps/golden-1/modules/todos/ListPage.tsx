@@ -35,61 +35,6 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
           t.listId === props.params.listId &&
           (props.search.filter === "done" ? t.done : props.search.filter === "active" ? !t.done : true),
       );
-  const listId = props.params.listId;
-  // `Form` is a function component returning an element; inserted through a `children()` binding (compiler D31).
-  const children = (): Node =>
-    Form({
-      method: "POST",
-      action: routes.href("todos.list", { listId }),
-      form: f,
-      error: (e) => <Text fg="error">{e.message}</Text>,
-      children: () => [
-        <Input
-          field={f.field("title")}
-          label="Title"
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />,
-        <Select
-          field={f.field("priority")}
-          label="Priority"
-          options={PRIORITIES}
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />,
-        <Button
-          id="todos.addTodo"
-          type="submit"
-          font="mono"
-          fontSize="sm"
-          px="4"
-          py="2"
-          my="2"
-          bg="text"
-          fg="card"
-          border="rule"
-          radius="none"
-        >
-          Add todo
-        </Button>,
-      ],
-    });
   return (
     <Box as="section" id="todos.list" direction="column" gap="5">
       <Heading id="todos.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
@@ -127,7 +72,57 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
           )}
         </For>
       </Box>
-      {children()}
+      <Form
+        method="POST"
+        action={routes.href("todos.list", { listId: props.params.listId })}
+        form={f}
+        error={(e) => <Text fg="error">{e.message}</Text>}
+      >
+        <Input
+          field={f.field("title")}
+          label="Title"
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Select
+          field={f.field("priority")}
+          label="Priority"
+          options={PRIORITIES}
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Button
+          id="todos.addTodo"
+          type="submit"
+          font="mono"
+          fontSize="sm"
+          px="4"
+          py="2"
+          my="2"
+          bg="text"
+          fg="card"
+          border="rule"
+          radius="none"
+        >
+          Add todo
+        </Button>
+      </Form>
       <Suggestions />
     </Box>
   );
