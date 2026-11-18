@@ -1,5 +1,5 @@
 {
-  "commit": "77afbaee9688df67aca11a58934fb22c9e2c11ac",
+  "commit": "830b62b722171385e6fead47e2cbfafffa230287",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T19:34:40.211Z",
+  "generatedAt": "2026-11-18T20:35:44.284Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1164,7 +1164,7 @@
     },
     "clauses": {
       "byRung": {
-        "example": 595,
+        "example": 619,
         "exhaustive": 6,
         "monitored": 0,
         "none": 0,
@@ -1317,7 +1317,7 @@
         },
         "k.defaults": {
           "byRung": {
-            "example": 0,
+            "example": 6,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1325,8 +1325,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 0,
-          "verified": 0
+          "total": 6,
+          "verified": 6
         },
         "k.deploy": {
           "byRung": {
@@ -1434,7 +1434,7 @@
         },
         "k.leave": {
           "byRung": {
-            "example": 0,
+            "example": 10,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1442,8 +1442,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 0,
-          "verified": 0
+          "total": 10,
+          "verified": 10
         },
         "k.ledger": {
           "byRung": {
@@ -1811,7 +1811,7 @@
         },
         "k.user": {
           "byRung": {
-            "example": 0,
+            "example": 8,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1819,8 +1819,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 0,
-          "verified": 0
+          "total": 8,
+          "verified": 8
         },
         "std.brands": {
           "byRung": {
@@ -2226,11 +2226,11 @@
           "verified": 8
         }
       },
-      "total": 802,
-      "verified": 802
+      "total": 826,
+      "verified": 826
     },
     "evidenceByRung": {
-      "example": 1149,
+      "example": 1174,
       "exhaustive": 15,
       "monitored": 4,
       "probabilistic": 334,
@@ -2238,7 +2238,7 @@
     },
     "exports": {
       "byRung": {
-        "example": 221,
+        "example": 222,
         "exhaustive": 1,
         "monitored": 0,
         "none": 30,
@@ -2404,15 +2404,15 @@
         },
         "server": {
           "byRung": {
-            "example": 0,
+            "example": 1,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 2,
             "proven": 0
           },
-          "total": 2,
-          "verified": 2
+          "total": 3,
+          "verified": 3
         },
         "services": {
           "byRung": {
@@ -2763,12 +2763,12 @@
           "verified": 3
         }
       },
-      "total": 416,
-      "verified": 386
+      "total": 417,
+      "verified": 387
     },
-    "items": 1518,
+    "items": 1543,
     "unsafe": 18,
-    "verified": 1256
+    "verified": 1281
   },
   "mutation": {
     "packages": {
@@ -2808,32 +2808,32 @@
         "claims": 134,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 73.43,
+        "score": 74.04,
         "stale": 52,
         "threshold": 70
       },
       "packages/cli": {
         "claims": 146,
         "reason": null,
-        "reportDate": "2026-11-17",
-        "score": 80.13,
-        "stale": 6,
+        "reportDate": "2026-11-18",
+        "score": 79.36,
+        "stale": 0,
         "threshold": 70
       },
       "packages/compiler": {
         "claims": 108,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 77.36,
+        "score": 77.6,
         "stale": 9,
         "threshold": 70
       },
       "packages/ctx": {
         "claims": 30,
         "reason": null,
-        "reportDate": "2026-11-16",
-        "score": 78.34,
-        "stale": 2,
+        "reportDate": "2026-11-18",
+        "score": 80.22,
+        "stale": 0,
         "threshold": 70
       },
       "packages/forms": {
@@ -2855,17 +2855,17 @@
       "packages/router": {
         "claims": 63,
         "reason": null,
-        "reportDate": "2026-11-17",
-        "score": 85.15,
-        "stale": 11,
+        "reportDate": "2026-11-18",
+        "score": 84.52,
+        "stale": 0,
         "threshold": 80
       },
       "packages/runtime-dom": {
         "claims": 69,
         "reason": null,
-        "reportDate": "2026-11-17",
-        "score": 76.97,
-        "stale": 17,
+        "reportDate": "2026-11-18",
+        "score": 75.07,
+        "stale": 0,
         "threshold": 70
       },
       "packages/scaffold": {
@@ -2879,25 +2879,25 @@
       "packages/schema": {
         "claims": 40,
         "reason": null,
-        "reportDate": "2026-11-17",
-        "score": 92.49,
-        "stale": 4,
+        "reportDate": "2026-11-18",
+        "score": 90.59,
+        "stale": 0,
         "threshold": 80
       },
       "packages/server": {
         "claims": 115,
         "reason": null,
-        "reportDate": "2026-11-17",
-        "score": 81.94,
-        "stale": 23,
+        "reportDate": "2026-11-18",
+        "score": 81.85,
+        "stale": 0,
         "threshold": 70
       },
       "packages/services": {
         "claims": 35,
         "reason": null,
-        "reportDate": "2026-11-17",
-        "score": 83.82,
-        "stale": 4,
+        "reportDate": "2026-11-18",
+        "score": 84.01,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-brands": {
@@ -3103,29 +3103,29 @@
       "packages/store": {
         "claims": 27,
         "reason": null,
-        "reportDate": "2026-11-17",
-        "score": 91.13,
-        "stale": 3,
+        "reportDate": "2026-11-18",
+        "score": 92.6,
+        "stale": 0,
         "threshold": 80
       },
       "packages/testing": {
         "claims": 72,
         "reason": null,
-        "reportDate": "2026-11-17",
-        "score": 87.63,
-        "stale": 5,
+        "reportDate": "2026-11-18",
+        "score": 86.16,
+        "stale": 0,
         "threshold": 70
       },
       "packages/ui": {
         "claims": 42,
         "reason": null,
-        "reportDate": "2026-11-16",
-        "score": 75.18,
-        "stale": 3,
+        "reportDate": "2026-11-18",
+        "score": 71.54,
+        "stale": 0,
         "threshold": 70
       }
     },
-    "stale": 139
+    "stale": 61
   },
   "schema": 1,
   "tests": {
