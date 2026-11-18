@@ -148,3 +148,22 @@ test("an open past the serving module's maxStreams gets closed full, whatever it
   expect(again.lines[0]).toEqual({ ok: true, value: { kind: "reset" } });
   for (const st of [...kept, again]) st.close();
 });
+
+test("an open whose caller cookie does not verify counts as cookieless, and a stream that ends gives its place back", async () => {
+  const h = await serve(() => true);
+  const kept: Awaited<ReturnType<typeof h.open>>[] = [];
+  for (let i = 0; i < 64; i++) kept.push(await h.open(`?room=r${i}`));
+  await until(() => kept.every((st) => st.lines.length === 1));
+  const forged = await h.open("?room=x", "keel-caller=forged.0000");
+  await until(() => forged.ended());
+  expect(forged.lines).toEqual([{ ok: true, value: { kind: "closed", reason: "full" } }]);
+  const first = kept[0];
+  first?.close();
+  await until(() => first?.ended() === true);
+  await turn();
+  const again = await h.open("?room=y");
+  await until(() => again.lines.length === 1);
+  expect(again.lines).toEqual([{ ok: true, value: { kind: "reset" } }]);
+  expect(again.ended()).toBe(false);
+  for (const st of [...kept, again]) st.close();
+});

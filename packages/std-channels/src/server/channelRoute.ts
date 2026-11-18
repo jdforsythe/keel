@@ -8,6 +8,7 @@ import type { ChannelRoute } from "./ChannelRoute.type.ts";
 import { ChannelsConfig } from "./ChannelsConfig.ts";
 import type { Member } from "./Member.ts";
 import { allowed } from "./internal/allowed.ts";
+import { full } from "./internal/full.ts";
 import { hubOf } from "./internal/hubOf.ts";
 import { inbox } from "./internal/inbox.ts";
 import { join } from "./internal/join.ts";
@@ -22,7 +23,8 @@ const closed = (reason: "denied" | "full") => ok({ kind: "closed", reason } as c
 /**
  * Serve `channel` (std.channels Serve) from a `*.server.ts` file (else E2601): the API route `{ id, path, loader,
  * actions: { POST } }`. The loader is a live loader: when `member` is false its only event is `closed` `denied`; past
- * the serving module's `perCaller` or `maxStreams` `closed` `full`; else `reset`, then `saved` after each save of a
+ * the serving module's `maxStreams`, or its `perCaller` (a caller with a cookie) or `perAnonymous` (all cookieless
+ * opens together), `closed` `full`; else `reset`, then `saved` after each save of a
  * store `stores` creates (with `member` re-checked against the stores as saved: false, or a failed re-read, ends it
  * with `closed` `denied`) and `message` per publish to the same channel and params, delivered after any pending
  * re-check. `POST { message }` is an action: `member` false is 403,
@@ -52,9 +54,9 @@ export function channelRoute<P, M, S>(
       }
       const hub = hubOf(ctx);
       const cfg = stdConfig(ctx, "@keel/std-channels", ChannelsConfig)[module] ?? {};
-      let mine = 0;
-      for (const sk of hub.sinks) if (sk.caller === caller) mine++;
-      if (hub.sinks.size >= (cfg.maxStreams ?? 1000) || mine >= (cfg.perCaller ?? 8)) {
+      // The count and the join below run in one turn, so no other open lands between them; a stream's place is its
+      // sink in the hub, which `leave` removes (a second removal is a no-op).
+      if (full(hub.sinks, caller, cfg)) {
         yield closed("full");
         return;
       }
