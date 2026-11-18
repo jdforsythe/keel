@@ -17,3 +17,8 @@
 **Consequences.**
 - Apps with invisible-only labels get E1802.
 - `@keel/check` grows about 25 bytes gzip against 55,798 of 55,808; a trim or a budget raise is needed.
+
+**Amendment (red team 7, M3 and L1).**
+- D4: a named character reference in a literal JSX `label` does not count as a visible character, so `label="&zwnj;"` and `label="&copy;"` alone are E1802; numeric references are decoded first, as before.
+- D5: a control character (`Cc`) does not count as visible for E1802.
+- Consequence: no table of named references is shipped; an author who wants `©` in a label writes the character. k.a11y stays at 6,000 characters by prose trims.
