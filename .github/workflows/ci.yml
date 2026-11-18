@@ -125,8 +125,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: "Tauri 2 Linux packages (WebKitGTK 4.1) and Xvfb"
-        run: "sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev xvfb xauth"
+      - name: "Tauri 2 Linux packages (WebKitGTK 4.1), WebKitWebDriver and Xvfb"
+        run: "sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev xvfb xauth webkit2gtk-driver"
       - name: Rust stable
         run: "rustup toolchain install stable --profile minimal --no-self-update && rustup default stable && cargo --version"
       - name: "cargo registry and target for golden-1's shell"
@@ -135,11 +135,19 @@ jobs:
           path: "~/.cargo/registry/index\n~/.cargo/registry/cache\n~/.cargo/git/db\n.cargo-target"
           key: "cargo-tauri-${{ runner.os }}-${{ hashFiles('apps/golden-1/deploy/web/tauri/Cargo.lock', 'apps/golden-1/deploy/web/tauri/Cargo.toml') }}"
           restore-keys: "cargo-tauri-${{ runner.os }}-"
+      - name: "tauri-driver, pinned"
+        id: tauri-driver
+        uses: actions/cache@v4
+        with:
+          path: "~/.cargo/bin/tauri-driver"
+          key: "tauri-driver-2.1.0-${{ runner.os }}-${{ runner.arch }}"
+      - if: "steps.tauri-driver.outputs.cache-hit != 'true'"
+        run: cargo install tauri-driver --version 2.1.0 --locked
       - name: "golden-1's web as a Tauri debug binary"
         working-directory: apps/golden-1
         run: pnpm exec keel build --target tauri
-      - name: the binary loads its entry under Xvfb and reads the board through KEEL_ORIGIN
-        run: xvfb-run -a node tooling/ci-shell.mjs .cargo-target/debug/golden-1
+      - name: a recorded session replayed in the shell over WebDriver gives the server board its sim replay gives
+        run: "xvfb-run -a node --disable-warning=ExperimentalWarning tooling/smoke/shell.mjs --shell tauri --binary .cargo-target/debug/golden-1"
       - uses: actions/upload-artifact@v4
         with:
           name: golden-1-tauri-linux-debug
