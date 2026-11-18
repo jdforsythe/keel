@@ -48,7 +48,8 @@ async function queuedByA(writes: readonly (readonly [string, string])[]) {
   const c = makeClient();
   ctx.net.setOnline(false);
   let base = 0;
-  for (const [todoId, title] of writes) await send(ctx, c.o, "editTodo", edit(todoId, title), { base: base++, owner: "a" });
+  for (const [todoId, title] of writes)
+    await send(ctx, c.o, "editTodo", edit(todoId, title), { base: base++, owner: "a" });
   const keys = entriesOf(c.o).map((e) => e.key);
   c.dispose();
   return { ctx, id: c.id, storageKey: c.storageKey, keys };
