@@ -1,6 +1,7 @@
 import path from "node:path";
 import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
+import { mountDiags } from "@keel/compiler/hosting/mountDiags";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
@@ -79,7 +80,7 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each file plus project passes (E1005
- * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1508, E1511, E1566, E1753, E1755, the k.module pass
+ * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1508, E1511, E1566, E1580-E1582, E1753, E1755, the k.module pass
  * E1151-E1157, and the k.compat pass E1561-E1562 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
@@ -115,6 +116,9 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     const needs = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
     const pkg = all.find((f) => f.path === `${dir}package.json`)?.source;
     if (needs !== undefined) out.push(...topologyDiags(dir, needs, top), ...topologyNeeds(dir, needs, top ?? "", pkg));
+    // E1580-E1582 (k.mount): the project's `identity.ts`, its importers and the topology serving them.
+    for (const d of mountDiags(project.map((f) => ({ path: f.path.slice(dir.length), source: f.source }))))
+      out.push({ kind: "diag", ...d, path: `${dir}${d.path}` });
     for (const d of compiled.diagnostics) {
       const path = d.path === "" ? d.path : `${dir}${d.path}`;
       out.push({ kind: "diag", ...d, path });

@@ -692,7 +692,7 @@ describe("Form", () => {
     expect(() => Form({ method: "DELETE", action: to("/nowhere") })).not.toThrow();
   });
 
-  it("inside a router: E1505 when the route the action matches does not declare the method, or none matches", async () => {
+  it("inside a router: E1505 when the route the action matches does not declare the method; none matching posts natively", async () => {
     const act = action({ input: s.object({}) }, async () => ok(null));
     const msgs: string[] = [];
     const tryForm = (method: "POST" | "DELETE", href: Href): void => {
@@ -721,7 +721,7 @@ describe("Form", () => {
     expect(msgs).toEqual([
       "ok",
       'E1505 <Form method="DELETE" action="/fm/4">: no route of this router declares that action',
-      'E1505 <Form method="POST" action="/nowhere">: no route of this router declares that action',
+      "ok",
     ]);
     t.stop();
   });

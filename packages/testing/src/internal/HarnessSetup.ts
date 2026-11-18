@@ -2,6 +2,7 @@ import type { A11yEntry } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
 import type { Snapshot, Store } from "@keel/store";
 import type { Tokens } from "@keel/ui";
+import type { DocumentNavigation } from "../types/DocumentNavigation.ts";
 import type { CheckSetup } from "./CheckSetup.ts";
 
 /**
@@ -26,4 +27,6 @@ interface Shared {
   readonly teardown?: () => void;
   /** The live stores `state()` and `settle` read (default `stores()`): a fresh module graph's for `resumeDocument`. */
   readonly registry?: () => ReadonlyMap<string, Store<unknown>>;
+  /** Where the document navigations the page starts are recorded (`recordDocuments`) until `dispose`. */
+  readonly documents?: DocumentNavigation[];
 }

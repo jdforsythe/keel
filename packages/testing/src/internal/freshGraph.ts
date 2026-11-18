@@ -7,7 +7,8 @@ import type { RoutesImport } from "../types/RoutesImport.ts";
  */
 export async function freshGraph(load: RoutesImport) {
   (await import("vitest")).vi.resetModules();
-  const { routes } = (await load()).default;
+  const mod = await load();
+  const { routes } = "default" in mod ? mod.default : mod.routes;
   const { resume } = await import("@keel/runtime-dom/ops");
   const { stores } = await import("@keel/store");
   const { scope } = await import("@keel/reactive");

@@ -1,10 +1,12 @@
 import { scope, signal } from "@keel/reactive";
-import { cond, element } from "@keel/runtime-dom/ops";
+import { cond, element, on } from "@keel/runtime-dom/ops";
 import type { KeelError } from "@keel/schema";
 import { codedError } from "./internal/codedError.ts";
 import { findRouter } from "./internal/findRouter.ts";
+import { formHandle } from "./internal/formHandle.ts";
 import { renderChildren } from "./internal/renderChildren.ts";
 import type { FormProps } from "./types/FormProps.ts";
+import type { Href } from "./types/Href.ts";
 
 /** The non-field error the `error` slot shows; pending state lives on the `form` handle only (RFC 0043). */
 type Shown = KeelError<string, unknown> | null;
@@ -16,16 +18,20 @@ function slot(parent: HTMLFormElement, when: () => boolean, render: () => Node):
 }
 
 /**
- * `<Form method action form? error?>` (k.router Form, RFC 0045). Renders `<form method="post">` whose `action` is
- * the given `Href` (`routes.href`), with a hidden `_method` for PUT/PATCH/DELETE, so it posts natively without JS
- * and reads no route table. Rendered inside a router's `App` (found through the owner scope chain), it intercepts
- * submit: validates `form` (if any), submits the FormData to `actions[method]` of the route `action` matches in that
- * router's table, and applies the Result (`ok(href)` navigates, `ok(null)` revalidates). Inside a router, throws
- * E1505 when the matched route does not declare that method.
+ * `<Form method action form? error?>` (k.router Form, k.mount Form). Renders `<form method="post">` whose `action` is
+ * the given `Href`, with a hidden `_method` for PUT/PATCH/DELETE, so it posts natively without JS. Rendered inside a
+ * router's `App` (found through the owner scope chain) whose table matches `action`, it intercepts submit: validates
+ * `form` (if any), submits the FormData to `actions[method]` of that route, and applies the Result (`ok(href)`
+ * navigates, `ok(null)` revalidates); it throws E1505 when that route does not declare the method. Otherwise the
+ * browser posts it: on submit `form` is validated (errors prevent the submit), a chosen file throws E1583 and sends
+ * nothing, else `form.pending()` is true until a `pageshow` from the back-forward cache.
  */
-export function Form(props: FormProps): HTMLFormElement {
+export function Form(
+  props: (FormProps & { readonly method: "POST" }) | FormProps<Href & { readonly __mount?: never }>,
+): HTMLFormElement {
   const core = findRouter();
-  if (core !== null && !core.accepts(props.action, props.method))
+  const routed = core?.accepts(props.action, props.method);
+  if (routed === false)
     throw codedError(
       "E1505",
       `<Form method="${props.method}" action="${props.action}">: no route of this router declares that action`,
@@ -47,7 +53,37 @@ export function Form(props: FormProps): HTMLFormElement {
           ];
     for (const n of [...nodes, ...renderChildren(props.children)]) if (n.parentNode !== f) f.append(n);
   });
-  if (core === null) return el;
+  if (core === null || !routed) {
+    const seam = props.form?.[formHandle];
+    let refused: Event | undefined;
+    const files = (e: Event): void => {
+      for (const c of el.querySelectorAll("input"))
+        if (c.files?.length) {
+          refused = e;
+          e.preventDefault();
+          throw codedError("E1583", `<Form action="${props.action}"> file`);
+        }
+    };
+    const onShow = (e: PageTransitionEvent): void => {
+      if (e.persisted) seam?.setPending(false);
+    };
+    el.addEventListener("submit", files);
+    // Delegated, so a submit queued before resume (k.defaults) is validated at its replay, where a file is refused too.
+    if (seam !== undefined)
+      on(el, "submit", (e) => {
+        if (refused === e) return;
+        if (!seam.validate().ok) return e.preventDefault();
+        files(e);
+        seam.setPending(true);
+        addEventListener("pageshow", onShow);
+      });
+    // A server render has no window; the page listener is added at a submit, which only a browser makes.
+    scope(() => {}).onDispose(() => {
+      el.removeEventListener("submit", files);
+      globalThis.removeEventListener?.("pageshow", onShow);
+    });
+    return el;
+  }
   const status = signal<Shown>(null);
   const { error } = props;
   if (error !== undefined)

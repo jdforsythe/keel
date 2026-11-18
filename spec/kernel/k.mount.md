@@ -1,5 +1,5 @@
 # k.mount: Pages into the identity mount
-status: proposed
+status: conformance-covered
 
 How a page on any deployable sends the browser to the identity source's `handle` (k.user), Keel touching no credential.
 

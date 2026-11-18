@@ -72,7 +72,9 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * does): each loader run is one `state.request()` and each submit another, an action's `ok` saves (a stale read
  * becomes `keel.conflict`), and the request ends before the router revalidates or navigates. Without `state` such a
  * loader or action is `keel.unexpected`. Unless `mode` is `dev` (the default is `production`), every error the
- * default alert, an `errorElement` or a `Form` gets is its `publicError`; observers get the full error.
+ * default alert, an `errorElement` or a `Form` gets is its `publicError`; observers get the full error. A link click,
+ * `navigate` or `ok(href)` to a path no page of the table matches is a document navigation (`leave`, k.mount); an
+ * initial load or a history pop of one renders the 404.
  */
 export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   routes: Manifest<M>,
@@ -82,17 +84,18 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     readonly caller?: string;
     readonly user?: string;
     readonly mode?: "dev" | "production";
+    /** A document navigation (k.mount): `location.assign`, or `location.replace` with `replace`; the harness records it. */
+    readonly leave?: (url: string, replace: boolean) => void;
   },
   state?: ServerState,
 ): Router<RouteState<M>> {
-  const { ctx, history } = opts;
+  const { ctx, history, leave = (u, r) => location[r ? "replace" : "assign"](u) } = opts;
   const who = { caller: opts.caller ?? "", user: opts.user ?? "" };
   const shownMode = opts.mode === "dev" ? "dev" : "production";
   const shown = (e: KeelError<string, unknown>): KeelError<string, unknown> => publicError(e, shownMode);
   const own = tables.get(routes) ?? compileRoutes(routes.routes);
-  const all = compileTable(own, routes.routes);
   // The client matches no API route (k.api): a link to one is a document request.
-  const table = all.filter((r) => !r.def.api);
+  const table = compileTable(own, routes.routes).filter((r) => !r.def.api);
   const root = rooted(() => {
     const view = signal<View | null>(null);
     const place = signal<Place>(MISSING);
@@ -228,8 +231,14 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
 
   const go = (url: string, mode: Nav, visited: readonly string[]): Promise<void> => {
     if (disposed) return done;
-    const t = ++token;
     const m = matchUrl(table, url);
+    // A path no page of the table matches is the server's: a link, `navigate` or `ok` there loads a document.
+    if (m.route === null && (mode === "push" || mode === "replace")) {
+      pending.set(false);
+      leave(url, mode === "replace");
+      return done;
+    }
+    const t = ++token;
     if (m.kind === "notFound") {
       commit(t, failedAt(m, Number.MAX_SAFE_INTEGER, notFound(m.url)), MISSING, mode);
       return done;
@@ -288,7 +297,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   const core: RouterCore = {
     ctx,
     navigate,
-    accepts: (href, method) => actionAt(href, method) !== null,
+    accepts: (href, method) => (matchUrl(table, href).route === null ? null : actionAt(href, method) !== null),
     async submit(req) {
       const handle = req.handle?.[formHandle];
       if (handle !== undefined && !handle.validate().ok) return null;
@@ -361,7 +370,8 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
             const t = a.getAttribute("target");
             if ((t !== null && t !== "" && t !== "_self") || a.hasAttribute("download")) return;
             const u = new URL(a.href, document.baseURI);
-            if (u.origin !== new URL(document.baseURI).origin || matchUrl(all, u.pathname).route?.def.api) return;
+            // A path the table has no page for (an API route, the identity mount) is the browser's to follow.
+            if (u.origin !== new URL(document.baseURI).origin || matchUrl(table, u.pathname).route === null) return;
             e.preventDefault();
             void go(`${u.pathname}${u.search}${u.hash}`, "push", []);
           };

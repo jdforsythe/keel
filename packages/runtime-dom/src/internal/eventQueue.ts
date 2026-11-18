@@ -37,7 +37,10 @@ const offDefault = (c: Element): boolean => {
 
 type Entry = { readonly event: Event; readonly target: Node; readonly island: Element };
 const entries: Entry[] = [];
-const resumed = new WeakSet<Element>();
+/** Islands resumed: one set for every copy of this module in the page (a test's fresh module graph is one), so no
+ * copy queues the events of an island another resumed. */
+let resumed = new WeakSet<Element>();
+const RESUMED = Symbol.for("keel.resumed");
 /** Delegation roots resumed or re-rendered, each with its observer tap. */
 const roots = new WeakMap<Element, ((e: Event) => void) | undefined>();
 let installed = false;
@@ -92,6 +95,9 @@ export const eventQueue = {
   install(): void {
     if (installed || typeof document === "undefined") return;
     installed = true;
+    const shared: unknown = Reflect.get(globalThis, RESUMED);
+    if (shared instanceof WeakSet) resumed = shared;
+    else Reflect.set(globalThis, RESUMED, resumed);
     for (const t of QUEUED) document.addEventListener(t, capture, true);
   },
   /** Events waiting for replay. */

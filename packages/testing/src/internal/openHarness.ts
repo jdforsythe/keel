@@ -17,6 +17,7 @@ import { focusOrder } from "./focusOrder.ts";
 import { moveFocus } from "./moveFocus.ts";
 import { nameOf } from "./nameOf.ts";
 import { nodeOf } from "./nodeOf.ts";
+import { recordDocuments } from "./recordDocuments.ts";
 import { renderChecks } from "./renderChecks.ts";
 import { resolve } from "./resolve.ts";
 import { roleOf } from "./roleOf.ts";
@@ -28,7 +29,8 @@ import { unexpected } from "./unexpected.ts";
 
 /**
  * Mount `view` through runtime-dom (`ctx`, root-Boundary `onError`), or run `start`, inside a scope, in a container
- * on `document.body`, and build the harness. `check()` raises the first root-Boundary catch (`keel.unexpected`),
+ * on `document.body`, and build the harness; with `documents`, the page's document navigations are recorded there
+ * (`recordDocuments`) instead of made. `check()` raises the first root-Boundary catch (`keel.unexpected`),
  * then the render checks (`renderChecks`: E1702 with `a11y`, E1703, E1804 with `tokens`, E1821); `fire` and `settle` run it after settling. `dispose` unmounts, runs
  * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
  */
@@ -37,6 +39,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
   const page = setup.page === true;
   const container = document.createElement("div");
   document.body.appendChild(container);
+  const unrecord = setup.documents === undefined ? undefined : recordDocuments(container, setup.documents);
   let unmount: (() => void) | undefined;
   let owner: Scope | undefined;
   let gone = false;
@@ -47,6 +50,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     unmount?.();
     owner?.dispose();
     teardown?.();
+    unrecord?.();
     container.remove();
     for (const [st, snap] of seeded) st.restore(snap);
   };

@@ -12,6 +12,7 @@ export { testResults } from "./testResults.ts";
 export type { A11yNode } from "./types/A11yNode.ts";
 export type { HarnessArtifacts } from "./types/HarnessArtifacts.ts";
 export type { A11yState } from "./types/A11yState.ts";
+export type { DocumentNavigation } from "./types/DocumentNavigation.ts";
 export type { Evidence } from "./types/Evidence.ts";
 export type { ExploreOptions } from "./types/ExploreOptions.ts";
 export type { Explored } from "./types/Explored.ts";

@@ -9,6 +9,7 @@ import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import { seedStores } from "./internal/seedStores.ts";
 import { settle } from "./internal/settle.ts";
+import type { DocumentNavigation } from "./types/DocumentNavigation.ts";
 import type { RouteHarness } from "./types/RouteHarness.ts";
 import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
 
@@ -21,7 +22,8 @@ import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
  * page is a document: the chain is its `main` landmark unless it renders one, the router writes `<title>` and
  * `<html lang>` (k.head), and a document without a title takes the route id as the server's fallback title. The
  * handle is `render`'s plus `route()`, `navigate(href)` (push, then the same quiescence and checks as `fire`) and
- * `location()` (`{ entries, scrollY }`: the history length and the scroll position);
+ * `location()` (`{ entries, scrollY }`: the history length and the scroll position) and `documents()` (k.mount Testing:
+ * the document navigations the page started, in order, recorded and not made, so the page stays);
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
  * `options.caller` and `options.user` (each default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
@@ -53,10 +55,17 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   let router: Router<RouteState<M>>;
   const history = memoryHistory(url);
+  const documents: DocumentNavigation[] = [];
   try {
     router = createRouterWith(
       options.routes,
-      { ctx, history, caller: options.caller ?? "", user: options.user ?? "" },
+      {
+        ctx,
+        history,
+        caller: options.caller ?? "",
+        user: options.user ?? "",
+        leave: (to) => void documents.push({ method: "GET", url: to, body: null }),
+      },
       serverState(ctx),
     );
   } catch (error) {
@@ -75,6 +84,7 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
     ctx,
     seeded,
     busy,
+    documents,
     page: true,
     target: () => ({ route: String(router.route.get().id), component: null }),
     teardown: () => {
@@ -100,5 +110,6 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
       await harness.settle();
     },
     location: () => ({ entries: history.length(), scrollY: window.scrollY }),
+    documents: () => [...documents],
   };
 }

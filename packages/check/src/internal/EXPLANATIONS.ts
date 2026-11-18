@@ -696,6 +696,22 @@ const ROWS: readonly Row[] = [
     "k.user",
   ],
   [
+    "E1580",
+    "identity.ts not identityMount('<literal>'), or identity.server.ts handle.path not mount.path",
+    "",
+    "handle: { path: '/api/auth' } -> handle: { path: mount.path }",
+    "k.mount",
+  ],
+  [
+    "E1581",
+    "identity.ts imported by a module a static, hostless client or shell deployable serves",
+    "",
+    "adapter: 'client' -> adapter: 'client', host: 'api'",
+    "k.mount",
+  ],
+  ["E1582", "a subpath mount.href refuses", "", "mount.href('/a/../x') -> mount.href('/x')", "k.mount"],
+  ["E1583", "a native Form submit with a file chosen", "", "post files to a route action", "k.mount"],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",

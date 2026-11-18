@@ -9,6 +9,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { action } from "../src/action.ts";
 import { createRouter } from "../src/createRouter.ts";
 import { guard } from "../src/guard.ts";
+import { createRouterWith } from "../src/internal/createRouterWith.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import { matchHref } from "../src/match/matchHref.ts";
@@ -124,13 +125,18 @@ describe("calling an API route", () => {
     expect(art["t.home"] !== undefined && Object.hasOwn(art["t.home"], "api")).toBe(false);
   });
 
-  it("the client router matches no API route: a link to one is not intercepted, navigate renders 404", async () => {
+  it("the client router matches no API route: a link to one is not intercepted, navigate loads a document", async () => {
     const only = manifest({
       "t.api": { api: true, path: "/api/x", loader: read },
       "t.home": { path: "/", component: view },
     });
     const history = memoryHistory("/");
-    const router = createRouter(only, { ctx: createCtx({ mode: "sim", seed: SEED }), history });
+    const left: string[] = [];
+    const router = createRouterWith(only, {
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+      history,
+      leave: (url) => void left.push(url),
+    });
     const host = document.createElement("div");
     document.body.append(host);
     const unmount = mount(router.App, host);
@@ -147,8 +153,9 @@ describe("calling an API route", () => {
     expect(prevented).toBe(false);
     expect(history.entries).toEqual(["/"]);
     await router.navigate(to("/api/x"));
-    expect(router.route.get().id).toBeNull();
-    expect(host.querySelector('[data-keel-error="keel.notFound"]')).not.toBeNull();
+    expect(left).toEqual(["/api/x"]);
+    expect(router.route.get().id).toBe("t.home");
+    expect(history.entries).toEqual(["/"]);
     unmount();
     router.dispose();
     host.remove();

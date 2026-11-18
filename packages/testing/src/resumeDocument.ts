@@ -9,6 +9,7 @@ import { fail } from "./internal/fail.ts";
 import { freshGraph } from "./internal/freshGraph.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
+import type { DocumentNavigation } from "./types/DocumentNavigation.ts";
 import type { ResumeDocumentOptions } from "./types/ResumeDocumentOptions.ts";
 import type { ResumedHarness } from "./types/ResumedHarness.ts";
 
@@ -22,6 +23,7 @@ import type { ResumedHarness } from "./types/ResumedHarness.ts";
  * Resolves with the `render` handle after the first settle and the `render` checks; `dispose` puts every store back.
  * The handle's `removed()` and `detached()` count the served elements under island roots (the roots included) that
  * are out of the document when it resolves, and that a MutationObserver saw taken out until then; both are fixed then.
+ * `documents()` lists the document navigations the page started, recorded and not made (k.mount Testing).
  */
 export async function resumeDocument<M extends Readonly<Record<string, RouteDef>>>(
   html: string,
@@ -48,6 +50,7 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
   const served = new Set<Element>();
   const seen: MutationRecord[] = [];
   const observer = new MutationObserver((records) => void seen.push(...records));
+  const documents: DocumentNavigation[] = [];
   const { harness } = openHarness({
     start: (container) => {
       container.append(...body.childNodes);
@@ -60,6 +63,7 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
     ctx,
     seeded,
     registry: graph.stores,
+    documents,
     teardown: () => islands.dispose(),
     target: () => ({ route: null, component: "resumeDocument" }),
     ...(a11y === undefined ? {} : { a11y }),
@@ -80,5 +84,5 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
     for (const n of r.removedNodes)
       if (n instanceof Element) for (const el of [n, ...n.querySelectorAll("*")]) if (served.has(el)) out.add(el);
   const removed = [...served].filter((el) => !el.isConnected).length;
-  return Object.assign(harness, { removed: () => removed, detached: () => out.size });
+  return Object.assign(harness, { removed: () => removed, detached: () => out.size, documents: () => [...documents] });
 }
