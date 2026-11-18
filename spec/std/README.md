@@ -35,6 +35,7 @@ S8 adds std.db, std.workflows, std.shells, std.credentials and std.tokens.
 | std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, E2601-E2602 |
 | std.live | Live views | conformance-covered | composes std.channels: a client store re-read on every push |
 | std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
+| std.outbox | Outbox storage faults | proposed | `@keel/std-offline`: storage writes that reject or never settle, other throws in a flush |
 | std.conflicts | Races | conformance-covered | formatter registry: order-dependent rebased entries, E2701 |
 | std.multi | Multi-user sessions | conformance-covered | std-sessions: groups of users recorded and replayed under simulation, E2007-E2008 |
 | std.statecharts | State charts | conformance-covered | check rule registry: flat charts compiled to a store and transactions, E2751-E2755 |
