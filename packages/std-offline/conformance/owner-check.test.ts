@@ -106,7 +106,7 @@ test("After that refusal, `drain` with `a` on a new ctx over that storage posts 
       stopFirst();
       first.dispose();
 
-      const next = simCtx();
+      const next = simCtx(7);
       const server = createServer();
       server.attach(next);
       server.takesCallerAs("a");
@@ -180,13 +180,13 @@ test("For generated owners and entries, an entry whose owner differs from the se
         again.attach(next);
         again.takesCallerAs(mine);
         await copyStorage(ctx, next, c.storageKey);
+        c.dispose();
         const c2 = makeClient({ id: c.id });
         const stop = startDrain(next, c2.o, mine);
         await settle();
         expect(again.posts).toHaveLength(0);
         stop();
         c2.dispose();
-        c.dispose();
       },
     ),
     { seed: 1337, numRuns: 20 },
