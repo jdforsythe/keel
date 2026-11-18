@@ -14,7 +14,7 @@
 // unreached or dead state, and the outbox applies each write it let go of once under 100 generated schedules. In the
 // copies pass.ts plants, `KEEL_TWIN` names the change and the check asserts how it fails: `invariant` (`addTodo` drops
 // its duplicate-id test) is E1708 at a shortest path that `restore` and `tx` reproduce; `chart-theirs` (`conflict`
-// loses `theirs`) leaves `conflict` dead; `schedule` (`postToggle` drops `...input.write`) is E1704 shrunk to one
+// loses `theirs`) leaves `conflict` dead; `schedule` (`postToggle` passes no write key or base to its transaction) is E1704 shrunk to one
 // `lost` step, replayed alike and printed byte-equal twice.
 import fs from "node:fs";
 import os from "node:os";
@@ -255,7 +255,7 @@ async function script(l: Layout) {
   const t: unknown[] = [];
   // Each write carries its own key; base 0 is stale after the first, so the rebasing writes record it.
   let keys = 0;
-  const write = () => ({ key: `w${++keys}`, base: 0 });
+  const write = () => ({ key: `w${++keys}`, base: 0, owner: "" });
   const send = async (req: Request) => {
     const res = await l.entry.fetch(req);
     const body: unknown = await res.json();
@@ -696,7 +696,8 @@ describe("golden-1 on shared storage", () => {
   it("two processes editing from one board head: the later save is 409 and the stored board is the earlier", async () => {
     const { ctx, apps } = await twoApps(false);
     const [p, q] = apps;
-    const edit = (title: string) => post("/api/todos/t1", { title, priority: "high", write: { key: title, base: 0 } });
+    const edit = (title: string) =>
+      post("/api/todos/t1", { title, priority: "high", write: { key: title, base: 0, owner: "" } });
     const [a, b] = await Promise.all([p?.fetch(edit("Oat milk")), q?.fetch(edit("Soy milk"))]);
     expect([a?.status, b?.status].sort()).toEqual([200, 409]);
     const saved: unknown = JSON.parse((await ctx.storage.get(BOARD_KEY)) ?? "null");

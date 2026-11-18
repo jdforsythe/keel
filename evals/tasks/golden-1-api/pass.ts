@@ -291,7 +291,7 @@ function objectAfter(src: string, key: string): [number, number] | undefined {
  * - chart-theirs: `conflict` loses its `theirs` target. `keel check` stays clean (`mine` still leads to `saving`) and
  *   `coverage` reports `dead: ['conflict']`.
  * - chart-exits: `conflict` loses every exit. `keel check` reports E2753 with the `final: true` fix.
- * - schedule: `postToggle` drops `...input.write`. `outbox.sim.test.ts` fails, and the hidden suite finds E1704 shrunk
+ * - schedule: `postToggle` drops `...w.value`, the write key and base passed to its transaction. `outbox.sim.test.ts` fails, and the hidden suite finds E1704 shrunk
  *   to one `lost` step, replayed alike and printed byte-equal twice.
  */
 async function correctnessTwins(): Promise<string | undefined> {
@@ -330,7 +330,7 @@ async function correctnessTwins(): Promise<string | undefined> {
   if (!exits) return "chart twin (exits removed)";
   const schedule = await twin(
     `${api}/postToggle.server.ts`,
-    (src) => src.replace(/,\s*\.\.\.input\.write\b/, ""),
+    (src) => src.replace(/,\s*\.\.\.w\.value\b/, ""),
     async (dir) => !(await own(dir, "test/outbox.sim.test.ts")) && (await hidden(dir, "golden-1 twins", "schedule")),
   );
   if (!schedule) return "schedule twin";

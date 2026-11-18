@@ -79,7 +79,7 @@ async function script(base: string, run: string): Promise<void> {
   let keys = 0;
   const post = (path: string, body: unknown) =>
     fetch(`${base}${path}`, { method: "POST", headers, body: JSON.stringify(body) });
-  const write = () => ({ key: `${run}${++keys}`, base: 0 });
+  const write = () => ({ key: `${run}${++keys}`, base: 0, owner: "" });
   await post("/api/lists", { name: "Home", write: write() });
   const lists = await board(base);
   const listId = String(field(lists, "lists", "0", "id"));
@@ -92,7 +92,7 @@ async function script(base: string, run: string): Promise<void> {
   await post(`/api/todos/${todo}`, {
     title: `Oat milk ${keys}`,
     priority: "high",
-    write: { key: `${run}${++keys}`, base: head },
+    write: { key: `${run}${++keys}`, base: head, owner: "" },
   });
 }
 
@@ -211,7 +211,7 @@ export async function restartBuilt(root: string): Promise<string | undefined> {
         await fetch(`${url}/api/todos/${todo}/toggle`, {
           method: "POST",
           headers: { accept: "application/json", "content-type": "application/json", "x-keel": "1" },
-          body: JSON.stringify({ write: { key: "twin1", base: 0 } }),
+          body: JSON.stringify({ write: { key: "twin1", base: 0, owner: "" } }),
         });
         const saved: unknown = JSON.parse((await sqliteRow(file)()) ?? "{}");
         const log = field(saved, "log");
