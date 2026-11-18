@@ -32,7 +32,7 @@ std.text, the `line` bullet, whole new text:
 ```
 Conformance, appended as the last bullet:
 ```
-- `line({ max: 3 })` rejects `'\u200B'`, `'\u3164'`, `'\uFEFF'`, `' \u{E0041}'`, `'a\u200Eb'`, `'a\u200F'` and `'a\u061C'`, each with rule `format`, and accepts `'\u2764\uFE0F'` and `'a\u200Db'`.
+- `line({ max: 3 })` rejects `'\u{200B}'`, `'\u{3164}'`, `'\u{FEFF}'`, `' \u{E0041}'`, `'a\u{200E}b'`, `'a\u{200F}'` and `'a\u{61C}'`, each with rule `format`, and accepts `'\u{2764}\u{FE0F}'` and `'a\u{200D}b'`.
 ```
 Section length 4,170 to 4,408 characters (1,043 to 1,102 tokens).
 

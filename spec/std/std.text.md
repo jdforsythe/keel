@@ -30,4 +30,4 @@ props.data.recipes.toSorted((a, b) => compareText(a.title, b.title, props.params
 - For every generated string `s` and `max` from 1 to 20, `graphemes(truncate(s, max)) <= max`; `truncate(s, max) === s` exactly when `graphemes(s) <= max`; otherwise the result ends with `…` and the graphemes before it begin `s`, none split. `truncate('Crème brûlée', 6)` is `Crème…`.
 - For generated `a`, `b` and every `Locale` `l`, `compareText(a, b, l)` is the sign of `new Intl.Collator(l).compare(a, b)` and equals `-compareText(b, a, l)`; `compareText('ä', 'b', 'de-DE')` is `-1`.
 - With `process.env.TZ` and `process.env.LANG` changed, every export returns equal results for equal arguments.
-- `line({ max: 3 })` rejects `'\u200B'`, `'\u3164'`, `'\uFEFF'`, `' \u{E0041}'`, `'a\u200Eb'`, `'a\u200F'` and `'a\u061C'`, each with rule `format`, and accepts `'\u2764\uFE0F'` and `'a\u200Db'`.
+- `line({ max: 3 })` rejects `'\u{200B}'`, `'\u{3164}'`, `'\u{FEFF}'`, `' \u{E0041}'`, `'a\u{200E}b'`, `'a\u{200F}'` and `'a\u{61C}'`, each with rule `format`, and accepts `'\u{2764}\u{FE0F}'` and `'a\u{200D}b'`.
