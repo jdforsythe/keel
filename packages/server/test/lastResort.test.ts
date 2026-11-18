@@ -70,6 +70,8 @@ describe("the last resort", () => {
     }
     await a.close();
     expect(lines).toEqual([]);
-    expect(stderr).toEqual(["keel.unexpected log write threw, records lost (once per process)\n"]);
+    expect(stderr.map((l): unknown => JSON.parse(l))).toEqual([
+      expect.objectContaining({ code: "keel.unexpected", message: "log write threw, records lost (once per process)" }),
+    ]);
   });
 });
