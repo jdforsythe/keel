@@ -65,8 +65,8 @@ k.head
 - <title> is the route's title (fallback: the deployable name, or index.html's title in a client deployable); <html lang> is the prefix param's value; the client router sets document.title and documentElement.lang after each navigation
 
 k.server
-- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, bearer, stores }, ctx) -> Promise<Result<T, KeelError>>
-- page action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`; an API route's action also takes output (API action)
+- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, user, bearer, stores }, ctx) -> Promise<Result<T, KeelError>>
+- page action({ input, params?, stores? }, fn): fn(input, { params, url, caller, user, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`; an API route's action also takes output (API action)
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
 - stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['recipes'], adapter: 'client', host: 'api' }, api: { modules: ['kitchen'], adapter: 'node' } }); a module is in one deployable (E1552)
