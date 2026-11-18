@@ -95,3 +95,7 @@ Each is the drafter's call; the operator can reverse any of them.
 - C5: `@keel/server` has 53 bytes left and this RFC needs about 78 to 98 (0754 +28, 0753 positional +50 to +70). The budget rises from 23.75kb to 24kb. Budgets are a gate the owner sets: if the raise is refused, the build ships the matched-params form of 0753 (+11), an amendment narrows the `.pii()` sentence to it, and the positional mark goes to the backlog.
 - C6: the over-mark stays and is stated; RFC 0123's `/en/[secret]` is corrected by amendment.
 - C7: five k.privacy prose items move to k.topology, k.reveal, k.api and k.cli, or are dropped as duplicates of k.evidence, k.reveal and the audited-list wording.
+
+## Amendment (red team 7, M4)
+
+`Secret.of` froze and walked a value before its schema check, so `parse` threw on a typed array, a throwing getter or a revoked Proxy, and left a caller's object frozen when it returned an err. The deep freeze now happens after the value passes its schema check: a value that fails to parse is left unfrozen. A value the freeze cannot walk (a typed array, a throwing getter, a revoked Proxy) makes `parse` return the schema's ordinary err rather than throw.

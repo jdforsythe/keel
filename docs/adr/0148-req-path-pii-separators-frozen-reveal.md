@@ -5,7 +5,7 @@
 **Context.** The server walks each `Secret` once per request scope, and `Secret.of` froze the `Secret` but not its value, so a value changed in place after its first reveal escaped the scrub. The `req` path marks covered secret params only: a `.pii()` param was logged as sent, and so was a secret behind an encoded separator (`/reset%2F<v>`), since that segment decodes to text no static segment equals. A route led by a param with a later secret marks every path whole, which the spec did not say.
 
 **Decision.**
-- D1: `Secret.of` freezes its value deep. Where the inner schema keeps the caller's object (`s.json()`), that object is frozen in place.
+- D1: `Secret.of` freezes its value deep, after the value passes its schema check; a value that fails to parse is left unfrozen. Where the inner schema keeps the caller's object (`s.json()`), that object is frozen in place.
 - D2: a segment at a `.pii()` `params` field of any route is `[pii]` as sent, by the secret line-up and cut; a longer path is cut there and the rest joins `[pii]`. `[secret]` wins at a shared segment; the earliest cut wins and its tail takes the cut segment's mark.
 - D3: in a table with a secret param, the path is cut as `[secret]` at its first segment whose raw text holds `%2F` or `%5C` in either case. The check reads the raw segment apart from the line-up; statics are still compared after one decode.
 - D4: `/:t` and `/:p/:t` (`t` secret) mark any path whole, stated in the spec and asserted in conformance.
