@@ -52,7 +52,21 @@ describe("a store an island creates while it resumes", () => {
     };
     const { warnings } = resume(page({ "waiting.refused": { state: { n: "seven" }, log: [] } }), { C });
     expect(seen).toEqual([0]);
-    expect(warnings).toEqual(['E1253 #k-state has a snapshot for unknown store "waiting.refused"']);
+    expect(warnings).toEqual(['E1253 #k-state snapshot for store "waiting.refused" does not restore']);
+  });
+
+  it("a store in `stores` that refuses its snapshot is an E1253 warning", () => {
+    const out: { known?: { get: (k: "n") => number; restore: (snap: unknown) => unknown } } = {};
+    scope(() => {
+      out.known = store(Count, { n: 0 }, { id: "waiting.known" });
+    });
+    const known = out.known;
+    if (known === undefined) throw new Error("fixture: store scope did not run");
+    const C = (): Node => clone(T);
+    const host = page({ "waiting.known": { state: { n: "seven" }, log: [], initial: { n: 7 } } });
+    const { warnings } = resume(host, { C }, { stores: { "waiting.known": known } });
+    expect(known.get("n")).toBe(0);
+    expect(warnings).toEqual(['E1253 #k-state snapshot for store "waiting.known" does not restore']);
   });
 
   it("takes the snapshot once when the claim succeeds: no warning", () => {

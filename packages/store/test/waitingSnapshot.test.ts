@@ -34,6 +34,7 @@ describe("a waiting snapshot", () => {
     const waiting = new Map<string, unknown>([["ws.invalid", { state: { n: "five" }, log: [] }]]);
     Reflect.set(globalThis, WAITING, waiting);
     expect(make("ws.invalid")).toBe(0);
-    expect(waiting.has("ws.invalid")).toBe(true);
+    expect(waiting.get("ws.invalid")).toBe(Symbol.for("keel.refusedSnapshot"));
+    expect(make("ws.invalid")).toBe(0);
   });
 });

@@ -10,6 +10,13 @@ import type { ResumeOptions } from "../types/ResumeOptions.ts";
 
 /** Where the snapshots no store in `stores` took wait while islands resume; `@keel/store` reads it at creation. */
 const WAITING = Symbol.for("keel.waitingSnapshots");
+/** What `@keel/store` leaves in place of a waiting snapshot the store's schema refuses. */
+const REFUSED = Symbol.for("keel.refusedSnapshot");
+
+/** Whether `result`, what a store's `restore` returned, is a refusal (`{ ok: false }`). */
+const refused = (result: unknown): boolean =>
+  typeof result === "object" && result !== null && Reflect.get(result, "ok") === false;
+const unrestored = (id: string): string => `E1253 #k-state snapshot for store "${id}" does not restore`;
 
 // The package's one import-time effect: queue events fired before resume (see README).
 eventQueue.install();
@@ -17,7 +24,7 @@ eventQueue.install();
 /**
  * Resume server-rendered islands under `root` (generated entry only, ADR-0006): restore `options.stores`
  * from `#k-state` (a snapshot with no store there restores the store of its id an island creates while it resumes,
- * else is an E1253 warning), report its served `route` to `options.ctx`'s observers as a `nav`, then its failed loader's `error`
+ * else is an E1253 warning, as is a snapshot the store refuses), report its served `route` to `options.ctx`'s observers as a `nav`, then its failed loader's `error`
  * (`code` and `data.at` only), pass `options.ctx` (k.ctx) to every island root, then for each `[data-k-island]` in
  * document order (an ancestor before its descendants; k.resume) attach its bindings and delegated handlers to the
  * existing nodes without re-rendering; once every island has resumed, replay the events queued before resume in the
@@ -39,7 +46,7 @@ export function resume(
   for (const [id, snapshot] of Object.entries(state.stores)) {
     const store = Object.hasOwn(stores, id) ? stores[id] : undefined;
     if (store === undefined) waiting.set(id, snapshot);
-    else store.restore(snapshot);
+    else if (refused(store.restore(snapshot))) warnings.push(unrestored(id));
   }
   // The served route is the ctx's first navigation (k.ctx Observers, rfc:0071): no router runs on an island page.
   const route = state.route;
@@ -82,7 +89,8 @@ export function resume(
   } finally {
     Reflect.set(globalThis, WAITING, before);
   }
-  for (const id of waiting.keys()) warnings.push(`E1253 #k-state has a snapshot for unknown store "${id}"`);
+  for (const [id, left] of waiting)
+    warnings.push(left === REFUSED ? unrestored(id) : `E1253 #k-state has a snapshot for unknown store "${id}"`);
   eventQueue.replay();
   if (thrown !== null) throw thrown.error;
   return { warnings };
