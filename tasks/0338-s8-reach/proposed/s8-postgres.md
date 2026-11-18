@@ -62,3 +62,27 @@ Connection loss was made from the test with `pg_terminate_backend` over SQL (the
 - TLS in CI: the service container has no certificate and GitHub services cannot pass `-c ssl=on`; the three TLS cases skip there.
 - A pool wait past 10 s: the 11th caller would reject `commit failed (unknown)` after `connectionTimeoutMillis`; not exercised, and the spec names no connect or pool timeout.
 - `restartBuilt` from the committed file: fails on both drivers before Postgres matters (proposal 2).
+
+## Runs on 2026-11-18, head 2c713d05
+
+Server: `postgres:17` image, `PostgreSQL 17.12 (Debian 17.12-1.pgdg13+1) on aarch64-unknown-linux-gnu`, container `keel-s8-pg` on 127.0.0.1:54329, removed afterwards. Host arm64 (Apple silicon), Node 24.19.0. Three runs each.
+
+| Run | Command | Result |
+|---|---|---|
+| `restartBuilt`, SQLite and Postgres branches (committed file, with the owner field) | `KEEL_TEST_POSTGRES_URL=... node <scratch driver calling restartBuilt(root)>` | 3 of 3 `ok` (10.1 s, 9.7 s, 9.8 s); `keel.store.api.board` row present in `keel_kv` afterwards |
+| `tooling/smoke/restart.mjs`, SQLite | `node tooling/smoke/restart.mjs` | 0 of 3: `fail restart 9 steps, 4 failed (2.7s)`; every write 422 |
+| `tooling/smoke/workflow.mjs`, SQLite | `node tooling/smoke/workflow.mjs` | 0 of 3: `fail workflow 15 steps, 8 failed (22.7s)`; add list, remove and undo fail |
+| `restart.mjs` and `workflow.mjs`, Postgres | none | both scripts are SQLite only; no Postgres run exists (0822) |
+
+Cause of the two failures: the smokes' write bodies carry no `owner`, and the std-offline write shape requires it (`write.owner: Required`, 422), the same fault `restartBuilt.ts` had before b0324bc2. Not fixed here; backlog 0822. `restartBuilt`'s Postgres branch is not in CI (0823).
+
+## Runs on 2026-11-18 after the owner field, head 2c713d05 plus the two smoke edits
+
+The two smokes' write bodies gained `owner: ""` (the shape `restartBuilt.ts` took in b0324bc2); no assertion changed. Same host (arm64, Node 24.19.0), SQLite only, five runs each.
+
+| Run | Command | Result |
+|---|---|---|
+| `tooling/smoke/restart.mjs`, SQLite | `node --disable-warning=ExperimentalWarning tooling/smoke/restart.mjs` | 5 of 5 `ok` (13 s, 13 s, 12 s, 13 s, 13 s) |
+| `tooling/smoke/workflow.mjs`, SQLite | `node --disable-warning=ExperimentalWarning tooling/smoke/workflow.mjs` | 5 of 5 `ok` (18 s, 19 s, 19 s, 18 s, 19 s) |
+
+Both now run in the `built-smokes` job of pull-request CI (0822); its first CI run is pending. The failing runs above stay as recorded.

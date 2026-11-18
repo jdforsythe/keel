@@ -78,8 +78,7 @@ Shown, on Linux WebKitGTK under Xvfb in Docker (arm64), with real input:
 Not shown:
 - The Proposal 9 row's second half here; see "The outbox drains after a restart" below.
 - The two-user S4 group itself, and user 1's offline writes, in the shell.
-- x86_64: the proof ran on arm64; the CI runner is x86_64 (the earlier load check passed there).
-- The CI run of the new steps: not pushed by this task.
+- x86_64: the proof ran on arm64; on the hosted x86_64 runner `shell-tauri` printed `ok shell 7 actions, 5 head (22.7s)` (CI run 44287199350 on 7bf1cef9, 2026-11-18).
 - A field's clearing as a person does it: Element Clear empties the field from script, with an untrusted `change`.
 - The artifact upload, macOS, Windows.
 
@@ -126,7 +125,7 @@ Not shown:
 - Writes from before and after a restart in one comparison (the caller changes with each run of the app; see above).
 - A conflict or refusal while draining: both writes rebase.
 - `t2` alone, as the RFC row words it: the session queues two writes (toggle `t2`, add Butter), so the drain's order is shown too.
-- x86_64 and the CI run of the new step: not pushed.
+- x86_64 and the CI run of the outbox step: the CI run is pending.
 - Android (Capacitor) and the other shells.
 
 ## Files

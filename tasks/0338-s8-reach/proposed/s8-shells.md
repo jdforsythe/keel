@@ -111,11 +111,11 @@ Neither half reproduces: the Tauri crate takes plugin-http's default features, w
 
 - **iOS.** The simulator build stalled in Xcode's package download (section 5), so no app was built, installed or started; storage on UserDefaults across a crash and the iOS cookie jar are source readings only.
 - **Tauri on Linux and Windows.** Built and run on macOS (WKWebView) only. Linux needs WebKitGTK 4.1 and its apt packages (no Linux host here), Windows needs WebView2 (no Windows host). `tauri-driver` and the RFC's Tauri replay smoke run on Linux only.
-- **The Tauri replay** (RFC 0085 exit: a recorded session replayed inside the Tauri shell over WebDriver) needs Linux `tauri-driver` under `xvfb-run`; macOS has no WebDriver for WKWebView. Not run.
+- **The Tauri replay** (RFC 0085 exit: a recorded session replayed inside the Tauri shell over WebDriver) needs Linux `tauri-driver` under `xvfb-run`; macOS has no WebDriver for WKWebView. Not run on this Mac; it runs in CI (job `shell-tauri`, hosted x86_64 runner, run 44287199350 on 7bf1cef9 printed `ok shell 7 actions, 5 head (22.7s)`; `proposed/s8-replay.md`). The outbox half's CI run is pending.
 - **A physical device.** Only an Android 16 arm64 emulator. Vendor storage stacks and OEM WebViews are not covered.
 - **Release signing and store upload.** Not Keel's (k.shell), and no signing identity is used here: `--release` was not run.
 - **Power loss.** The kills are SIGKILL, so the page cache survives. plugin-store's `fs::write` does not fsync, so power loss is a wider window than the one shown; not tested.
-- **CI shell jobs** (0609): not run here; they are `.github/` work, which this lane does not touch.
+- **CI shell jobs** (0609): `shell-tauri` and `shell-android` are in CI and passed in run 44287199350 on 7bf1cef9 (2026-11-18; `proposed/ci-shells.md`). Not claimed: the Android emulator replay (0827), a Windows Tauri build (0824).
 
 ## Changes and checks
 
