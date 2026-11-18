@@ -1,0 +1,145 @@
+# RFC 0140: the server boundary: server-only files never reach a browser, a build that breaks it fails, no environment value is built in
+
+Status: draft, for the orchestrator to accept (ADR-0162).
+
+## Problem
+ADR-0006 records that the `.server.ts` boundary is enforced at compile time. A reproduction in a scratch copy (2026-11-18) showed it is not. Each claim below was read in the code on 2026-11-18.
+
+**(a) Pages carry the server.** A `node` deployable's client build has one input, the resume entry (`packages/compiler/src/vite.ts` `config`, `rolldownOptions: { input: { entry: ENTRY_PATH } }`); `islandsCode.ts` imports each route's `component` into it. A page component imports its module's `routes.ts` for `routes.href`; `routes.ts` is a `manifest({...})` naming loader values and guard values plus a side-effecting `routes.actions(...)`. So every loader, action and guard, every `*.server.ts` and `*.guard.ts` file they live in, and everything those import are bundled into `dist/<name>/assets/`. Canary strings in a `.server.ts` loader, a plain `.ts` loader and a `.server.ts` a `client` deployable's loader imports all appeared in emitted assets, with `readFileSync(...)`, `DatabaseSync` and environment key names. No environment value was inlined (Vite leaves `process.env.X` a read); hard-coded constants and all server logic ship.
+
+**(b) Nothing strips it.** `vite.ts` has no stub, import condition or `.server` handling. Its `resolveId` maps `node:sqlite` to `process.getBuiltinModule` whenever `command === "build"`, the client build too, which is why a page failed in a real browser with `process is not defined`. The build succeeds with no warning.
+
+**(c) The check misses it.** E1004 (`ruleServerImport.ts`) looks at each file's own imports; `clientOnly.ts` exempts every file of a module whose deployables are all `client`, the `routes.ts` of a module no `static` deployable lists ("a node server loads the manifest"), and every file outside `modules/`. Pages importing `routes.ts` break that assumption; a page reaching `lib/x.server.ts` through `lib/fmt.ts` is never reported; a `client` module's file importing a `node` module's `load.server.ts` is never reported. E1571 and E1107 share E1004's reach. E1759 (`noNodeGlobal.ts`, k.host) skips `*.server.*` files, which on a `client` deployable run in the browser (k.topology, k.router Execution).
+
+**(d) Check errors do not stop a build.** `keel build` (`packages/cli/src/internal/buildCommand.ts`) runs the compiler's rules (E1004 among them) and its own list (E1159, E1158, E1559, E1579, E1558, E1552, E1565, E1566), never `@keel/check`'s rules: E1551 and E1759 are reported by `keel check` while `keel build` emits the plain loader.
+
+**(e) Exposure in built apps.** golden-2's `api` client entry holds loader bodies, stores and the token engine. The `sessions` app's `Home.ts` imports `@keel/std-sessions/routes`, whose handlers are plain files (`routes/listSessions.ts`, `addSession.ts`, `ingestSession.ts`) and whose guard is `routes/reader.guard.ts`: its bundle ships the list loader and the readers check. golden-1 and inspector: nothing found. No secret value in any bundle.
+
+k.compiler (5,999 characters), k.security (5,998) and k.topology (5,702) have no room, so the contract goes into a new section, `k.boundary`, status proposed.
+
+## Proposal
+
+### D1. Server-only, stated once, decided by placement
+A **server-only file** is a file named `*.server.*` or `*.guard.*`, in the app or a package, unless its module is one only `client` deployables list. A file under `modules/<id>/` is module `<id>`'s, a stdlib package's file is its module's, and a file outside every module (`identity.server.ts`, `lib/x.server.ts`) belongs to none and is server-only. With no `topology.ts` (tests, `renderRoute`) `node`'s rules hold.
+- In a module a `node` or `static` deployable lists: loaders and actions (E1551), and guards (E1009, new), live in server-only files and run only on the server or at build (a `static` deployable's prerender). No byte of a server-only file, nor of what only server-only files import, is in an asset served to a browser.
+- In a module only `client` deployables list nothing is server-only. Its `*.server.*` and `*.guard.*` files hold the loaders, actions and guards the browser runs by design; they are browser files (k.host, so E1759 applies) and ship like any other file. The suffix there names the handler files, nothing more.
+
+The two cases cannot be confused because the meaning is read from `topology.ts`, never from the file: one stdlib module is server-only in an app that puts it on `node` and shipped in one that puts it on `client`. A module placed on a `node` deployable in one app and a `client` one in another has both meanings, each in its app; if its handler files import Node built-ins, the `client` placement fails `keel check` (E1759) and the build (E1007).
+
+Why: k.topology promises that moving a module edits `topology.ts` alone, and E1551 already puts every loader and action in a `*.server.ts` file on every adapter. Guards join through `*.guard.*`, the convention every app, std-sessions and the `keel` skill already use. Alternative rejected: **`.server.ts` on a `client` deployable is an error, or renamed (`*.handler.ts`)**: a module could no longer move between adapters without renaming files, E1551 would need a second suffix, and every `client` app and placeable stdlib module changes for no gain in what reaches the browser (on `client` it reaches it by design). Alternative rejected: **guards must move into `*.server.ts`**: renames every guard file in the apps, std-sessions, evals and skills.
+
+### D2. Browser builds resolve server-only files to stubs
+Every browser build the Vite plugin runs (a `node` deployable's client build, a `client` deployable's, a shell's `www/` build, the project's own build a `static` deployable uses) resolves an import of a server-only file, with no query, to a generated stub module:
+- its exports are the file's export names, read from its source (`export *` followed into the files it names; `export type` dropped), the default too;
+- each export is the same kind of value: a function branded as a stub (`serverOnly(file, name)` from `@keel/router/internal`) that, when called, throws an Error with code E1008 `<name> of <file> runs only on the server`; a property read gives `undefined`;
+- it imports nothing but that one router entry, so the file's code, its imports and its top-level statements are never evaluated in a browser and are not in the graph.
+
+`manifest` and `routes.actions` accept a stub wherever a loader, action or guard goes and skip the checks that read it (E1505 action shape, E1507 schema identity, E1508 guard `redirect`, E1512 `output`): those ran when the build evaluated `routes.ts` in Node (k.compiler Build-time evaluation, E1006). A page that imports its module's `routes.ts` (or a stdlib package's `./routes`) therefore keeps `routes.href`, typed params and search, `Link`, `navigate`, `Form` and `matchHref`, with no change to `routes.ts`. A router that calls a stub (a `client` app handing a `node` module's manifest to `createRouter`) throws E1008 at that call. The `node:sqlite` mapping moves to the server build only.
+
+Why: the stub is decided by the file name the check already uses, needs no second form of `routes.ts`, and keeps the real schemas the client encodes params with. Alternative rejected: **the compiler emits a handler-free routes manifest for the client** (rewrites each user `routes.ts`, including spreads, `...x.routes` and the `routes.actions` statement, and still needs the real schema values: two sources of one manifest, a large parser surface, and a missed shape ships the handler). Alternative rejected: **inert `undefined` exports** (`routes.actions` throws E1505 on an `undefined` action at page load; a mistaken call fails as `x is not a function` with no code or file). Alternative rejected: **an export condition (`"browser"`) in each package**: covers packages only, never app files.
+
+### D3. A build-time assertion that does not trust the stubs
+After bundling, each browser build walks its module graph from every entry, static and dynamic imports and emitted files (`?url`) included, and fails with **E1007** `server code in browser build: <reason>: <entry> -> <a> -> <file>` when it holds:
+- a server-only file, under any query (`?raw`, `?url`, `?inline`): reason `server-only file`;
+- a Node built-in (`node:` or a bare name Node lists as built-in): reason `node built-in`;
+- a file calling `loader`, `action` or `guard` imported from `@keel/router`, unless the build is a `client` deployable's and the file's module is one it lists: reason `handler`.
+
+Each step is a project-relative path or a package specifier. The build writes nothing for that deployable and exits 1; `keel build` reports the record. This is the property; the stubs are how a correct project meets it. A query import is never stubbed, so `import src from './notes.server.ts?raw'` and `?url` are the standing cases of a path around the resolver; a plain file calling `loader` (built by `vite build` alone, where no check runs) and a std package whose handlers are not named `*.server.ts` are the others. No test hook is needed. Alternative rejected: **scan emitted text for server source** (no list of what to look for; a minifier changes it). Alternative rejected: **check only, in `keel check`** (`vite build` with `KEEL_DEPLOYABLE` runs no check, and the check does not follow package imports).
+
+### D4. The check follows the graph
+E1004 keeps its per-file reach and gains the graph (k.boundary Reach). Client-reachable code, with a `topology.ts`:
+- each file under `modules/<id>/` that is not server-only, of a module a `node` or `static` deployable lists (today's set);
+- each file of a module only `client` deployables list, for imports of another module's server-only files (today: never reported);
+- each project file outside `node_modules/` a client entry reaches through value imports, re-exports and literal `import()`, inside `modules/` or not, not through a server-only file. Client entries: each route `component` of a `node` or `static` module (the islands) and every file of a `client` one.
+
+With no `topology.ts`, every file but server-only ones (today's rule, so the existing E1004 conformance stands). A `routes.ts` of any module may import server-only files by value (its imports are stubs in every browser build), which restates today's `routes.ts` exemption on the stub instead of on the assumption that only the server loads it. A specifier with a query names its file (`./x.server.ts?raw` is E1004). Package imports are not followed; E1007 covers package code. An E1004 found through the graph ends `(<entry> -> … -> <file>)`. E1571 and E1107 say "E1004's reachability" and follow with no text change. A `*.guard.*` file joins E1004's targets on `node`.
+
+E1759's browser file becomes "not server-only": a `client` module's `*.server.*` files are browser files, a `node` module's `*.guard.*` files are not. The `routes.ts` exemption from E1759 stays (its bullet is unchanged); k.boundary Limits states that a page-imported `routes.ts` runs in the browser.
+
+E1009 (new): `guard` from `@keel/router` called outside a `*.guard.*` or `*.server.*` file, in app code, as E1551 is for `loader` and `action`; fix: none (a file move).
+
+Alternative rejected: **a new code for graph hits** beside E1004 (two codes for one fault, and E1107 and E1571 would need their own reach).
+
+### D5. A check error stops `keel build`
+Today `keel build` stops on the compiler's errors and its own list and never runs `@keel/check`'s rules. After this RFC `keel build` runs `keel check` over the project first: any error ends the build with exit 1, the check's records and nothing written (no `.keel/`, no `dist/`); warnings do not stop it. `vite build` alone runs no check; the stubs and E1007 still hold there. Alternative rejected: **stop only on boundary codes (E1004, E1551, E1759)**: two meanings of a clean project, and E1105 (`reveal` outside a server file) or E1111 (secret in a URL) would still build.
+
+### D6. No environment value is built in
+No environment value is in a file `keel build` writes (browser assets, `server.mjs` and its map, `index.html`, `csp.txt`), except the origins `KEEL_PEER_<NAME>` (k.hosting, validated by E1565) and, in a shell build, `KEEL_ORIGIN` (k.shell, E1574), which are public by role. In a browser build `import.meta.env` holds only `MODE`, `DEV`, `PROD`, `SSR` and `BASE_URL`; no variable is exposed by prefix (`VITE_*` included: the plugin sets `envPrefix` to a prefix no variable can carry). `process.env.<x>` is never replaced by a value except `NODE_ENV`, which is `"production"` (k.deploy). The plugin's own defines carry literals from the Vite command and that shell origin. Configuration a browser reads comes through the `std` config's `clientStd` part (k.leave, k.module), which a module declares. A `define` the project writes in its own `vite.config` is the project's and is stated as a limit. Today the property is a side effect of Vite's defaults, and `VITE_*` variables are inlined by them. Alternative rejected: **a public prefix (`KEEL_PUBLIC_*`)**: a second configuration path beside `clientStd` (principle 1), and inlining by name is how a secret ships by mistake.
+
+### D7. Limits, stated
+A value in a file that is not server-only ships when a browser file imports it: a secret hard-coded in a schema, a `routes.ts` or a shared helper is public. A `routes.ts` a page imports runs in the browser; only its server-only imports are stubbed, so its own top-level code (a `title` function, a Node-global read the k.host exemption does not report) runs there. A `define` in the project's `vite.config` is the project's.
+
+### D8. The threat model states the boundary
+`docs/THREAT-MODEL.md` "Server and client split" opens with the guarantee and its limit (text under Spec diff), at the build.
+
+## Spec diff
+- New `spec/kernel/k.boundary.md`, status proposed: intro, Server-only, Browser builds, Assertion, Environment, Reach, Build gate, Limits, Rules (E1007, E1008, E1009), eight Conformance bullets. 5,972 characters, 1,493 tokens.
+- `spec/00-map.md`: row `k.boundary` after k.compiler; `k.boundary` added to the E100x owners; one-line cells trimmed (k.compiler, k.place, k.errors, k.check, k.testing, k.leave, k.module, k.privacy); no title or status changed. 4,799 to 4,794 characters (1,200 to 1,199 tokens).
+- No existing bullet changes, so the ledger does not move. Sentences that describe today's code change with the build (commit 3), each within budget:
+  - k.compiler Rules: "E1004 a `*.server.ts` module named by a value import, re-export or literal `import()` in client-reachable code (per deployable listing the file's module; not when all of them declare no server, nor for the `routes.ts` of a module only `node` deployables list; never outside `modules/`)" becomes "E1004 a server-only module (k.boundary) named by a value import, re-export or literal `import()` in client-reachable code (k.boundary Reach)". 5,999 to 5,854 characters. No conformance header quotes it (`git grep` over `packages/*/conformance`).
+  - k.host Node globals: "A browser file is an app file not named `*.server.*` under `modules/<id>/` of a module a deployable lists, except the `routes.ts` of a module no `client` or `static` deployable lists; with no `topology.ts`, any app file not named `*.server.*`." becomes "A browser file is an app file under `modules/<id>/` of a module a deployable lists that is not server-only (k.boundary), except the `routes.ts` of a module no `client` or `static` deployable lists; with no `topology.ts`, any app file that is not server-only." 5,106 to 5,121. Quoted whole in the first header line of `packages/check/conformance/E1759-node-globals.test.ts`, which changes with it.
+  - `docs/THREAT-MODEL.md`: "- **Server and client split.** `.server.ts` cannot reach the client." becomes "- **Server and client split.** On a `node` or `static` deployable no byte of a server-only file (`*.server.*`, `*.guard.*`: loaders, actions, guards) is in a browser asset: browser builds stub those files and fail with E1007 when one, a handler or a Node built-in is still in the graph, and `keel build` stops on any `keel check` error. No environment value is in a built file but the public origins `KEEL_PEER_<NAME>` and a shell's `KEEL_ORIGIN`. On a `client` deployable loaders, actions and guards run in the browser and ship. Limits: a value in a file that is not server-only ships when a browser file imports it, so a secret hard-coded in a schema, a `routes.ts` or a shared helper is public; a `define` in the project's `vite.config` is the project's (k.boundary)." The rest of the bullet is unchanged.
+- An existing bullet read narrowly: k.host's "None: the reads but `require`, `__dirname` and `__filename` in `modules/shop/stock.server.ts` …" follows the bullet before it, "of a `node` deployable". `E1759-node-globals.test.ts` also asserts it for a `client` deployable (`inFile("client", SERVER, stmt)` is 0), the opposite of k.boundary's seventh bullet; the conformance commit drops that `client` line.
+
+## Conformance diff
+One `rfc:0140` commit by the `conformance-writer`, files headed `Spec: k.boundary`. Canaries are distinct 24-character strings (`K_LOADER_…`); "in no asset" means no file under `dist/<name>/` but `server.mjs` and `server.mjs.map` contains it, read as bytes. Builds run `keel build` (or `vite build` with `KEEL_DEPLOYABLE`, as k.deploy's conformance does), one fixture per file, bounded.
+
+**Node** (`packages/compiler/conformance/boundary-node.test.ts`): deployable `api` (`node`), module `a`: `routes.ts` with page `a.show` `/a/:id` (`params` `s.object({ id: s.string() })`, `search` `s.object({ tab: s.string().optional() })`), `loader: load` from `load.server.ts`, `guard: auth` from `auth.guard.ts`, `routes.actions({ 'a.show': { POST: save } })` from `save.server.ts`; `load.server.ts` imports `helper.ts`, which imports `deep.ts`; `side.server.ts` (imported by `load.server.ts`) runs `globalThis.sideRan = 'K_SIDE…'` at top level; `Page.tsx` (an island) imports `routes` and renders `<Link to={routes.href('a.show', { id: 'x' }, { tab: 'b' })}>` and `<Form method="POST" action={routes.href('a.show', { id: 'x' })}>`.
+- `K_LOADER` (loader body), `K_ACTION` (action body), `K_GUARD` (guard body), `K_DEEP` (`deep.ts`), `K_SIDE` (top level) are in no asset; `server.mjs` holds each.
+- `server.mjs` serves `/a/x?tab=b`: the link's `href` is `/a/x?tab=b`, the form's `action` `/a/x`; the built client entry, loaded into a happy-dom window with no `process` global and the served document, resumes with no error and no E1008; a POST to `/a/x` with the write proof answers 303 and the action ran.
+- With the same files on a `static` deployable (no action, E1553) and an `index.html` whose module script imports `Page.tsx`, the project's `vite build` emits none of `K_LOADER`, `K_GUARD`, `K_DEEP`, `K_SIDE`.
+
+**Client hosted by node** (`boundary-client.test.ts`): add `web` (`client`, `host: 'api'`) with module `w`: `routes.ts`, `loadW.server.ts` holding `K_CLIENT`, `pick.guard.ts` holding `K_CGUARD`, and a page importing module `a`'s `routes` for a link to `a.show`.
+- `dist/web/` holds `K_CLIENT` and `K_CGUARD` (they run in the browser) and none of `a`'s five canaries; `dist/api/` (with `web` copied in) holds none of `a`'s five outside `server.mjs`.
+- A `node:fs` import added to `loadW.server.ts` makes `keel check` report E1759 there, and `vite build` with `KEEL_DEPLOYABLE=web` fail with one E1007 whose message ends `-> modules/w/loadW.server.ts -> node:fs`.
+
+**Breach** (`boundary-assertion.test.ts`, the node fixture plus one change each; `vite build` with `KEEL_DEPLOYABLE=api`):
+- `import notes from './notes.server.ts?raw'` in `Page.tsx`: exit 1, one E1007 `server code in browser build: server-only file: ` … `modules/a/Page.tsx -> modules/a/notes.server.ts?raw`, no `dist/api/assets/`; the same with `?url`.
+- `routes.ts` naming `loadPlain` from `loadPlain.ts` (calls `loader`, holds `K_PLAIN`): one E1007 with reason `handler` and the chain through `modules/a/routes.ts`; `keel build` instead stops with E1551 and writes no `dist/` and no `.keel/`.
+- `Page.tsx` importing `util.ts`, which imports `node:path`: one E1007 with reason `node built-in` ending `-> modules/a/util.ts -> node:path`.
+- Negative: the unchanged fixture builds with no E1007.
+
+**Stubs** (`boundary-stubs.test.ts`): a browser build (`vite build`, the plugin, a `client`-less `node` topology) of an entry that imports `{ load, LIMIT }`, `default` and an `export *` name from `./x.server.ts` and exposes them: each is `typeof` `function`; calling each throws an Error with `code` `E1008` whose message names the export and `modules/a/x.server.ts`; `LIMIT.max` is `undefined`; the emitted entry holds none of `x.server.ts`'s canaries. `manifest({ 'a.show': { path, params, loader: <stub>, guard: <stub>, component } })` and `routes.actions({ 'a.show': { POST: <stub> } })` throw nothing, also on an API route (`api: true`, E1512 skipped), and `routes.href` still encodes `params`.
+
+**Environment** (`boundary-env.test.ts`): `keel build` of the node and client fixture with `KEEL_SECRET`, `KEEL_TEST_VALUE` and `VITE_TEST_VALUE` set to three fast-check-generated strings (seed 1337, 32 to 48 URL-safe characters, distinct, none a substring of the fixture), `Page.tsx` reading `import.meta.env.VITE_TEST_VALUE` and `import.meta.env.KEEL_TEST_VALUE`, and `load.server.ts` reading `process.env.KEEL_TEST_VALUE`: no file under `dist/`, `server.mjs` included, holds any of the three values; `Object.keys(import.meta.env)` in the built page is `BASE_URL, DEV, MODE, PROD, SSR` in any order. With `KEEL_PEER_API=https://api.test` the client's `index.html` holds that origin (k.hosting, the exception).
+
+**Check** (`packages/compiler/conformance/boundary-reach.test.ts`, `compile` with a topology; E1759 and E1009 in `packages/check/conformance/boundary-rules.test.ts`):
+- `api` (`node`) lists `a`; `modules/a/routes.ts` names `Page.tsx`; `Page.tsx` imports `../../lib/fmt.ts`, which imports `./keys.server.ts`: one E1004 at `lib/fmt.ts`'s import, message ending `(modules/a/Page.tsx -> lib/fmt.ts -> lib/keys.server.ts)`. `ctx.net.fetch(new Request('https://api.example/x'))` in `lib/fmt.ts` is one E1571.
+- `web` (`client`) lists `w`; `modules/w/View.tsx` importing `../a/load.server.ts` is one E1004; `modules/w/loadW.server.ts` imported by `modules/w/routes.ts` is none.
+- `import s from './x.server.ts?raw'` and `import('./x.server.ts?url')` in `Page.tsx` are each E1004; `import { auth } from './auth.guard.ts'` in `Page.tsx` is E1004.
+- None: `import type { T } from './load.server.ts'` in `Page.tsx`; `Item.schema.ts` imported by `Page.tsx` and `load.server.ts`; `routes.ts` importing `load` from `load.server.ts`; `lib/only.ts` imported only by `load.server.ts` and itself importing `lib/db.server.ts`; `Page.tsx` calling `routes.href`.
+- Property (fast-check, seed 1337, 100 runs): a generated graph of up to 8 files under `modules/a/` and `lib/` (kinds: route component, plain, `*.server.ts`, `routes.ts`) with generated value and type imports, acyclic: E1004 is reported exactly when a route component reaches a server-only file by value imports whose path passes through no server-only file and does not end in an import made by a `routes.ts`, and each report sits at the last plain file's import.
+- E1759: with `web` (`client`) listing `shop`, `process.env.X` and `import fs from 'node:fs'` in `modules/shop/stock.server.ts` are each one E1759; with `api` (`node`) listing `shop`, `process.env.X` in `modules/shop/stock.guard.ts` is none.
+- E1009: `export const auth = guard({ redirect: 'a.home' }, fn)` in `modules/a/auth.ts` is one E1009 with no fix; in `auth.guard.ts` or `auth.server.ts` none; in a test file none.
+
+**Build gate** (`packages/cli/conformance/boundary-build-gate.test.ts`): a fixture whose only diagnostic is an E1759 in `modules/a/Badge.tsx`: `keel build` exits 1 with that record and its summary, and writes no `dist/` and no `.keel/` file; with only a W1005 it builds and exits 0.
+
+## Migration
+- `@keel/compiler`: `vite.ts` (stub resolution in every non-SSR build; the `node:sqlite` mapping in the server build only; the E1007 walk after bundling; `envPrefix` locked and `import.meta.env` limited); `ruleServerImport.ts`, `clientOnly.ts` (Reach: the graph from route components, chain text, `client` modules' imports of other modules' server-only files, query specifiers, `*.guard.*`, every `routes.ts`); the k.compiler and k.host sentences above with the E1759 header.
+- `@keel/router`: `serverOnly` in `internal`; `compileRoutes` and `attachActions` skip stubs (E1505, E1507, E1508, E1512); a stub's call throws E1008.
+- `@keel/check`: `noNodeGlobal.ts` (browser file is "not server-only"); E1009 beside `loaderInServerFile.ts`; E1571 and E1107 through the shared reach; explanations for E1007, E1008, E1009.
+- `@keel/cli`: `buildCommand.ts` runs `runCheck` first and stops on an error; `keel explain` E1007-E1009.
+- Stdlib: std-sessions renames `src/routes/listSessions.ts`, `addSession.ts`, `ingestSession.ts` to `*.server.ts` (`reader.guard.ts` is already a guard file) and any monitor loader its routes name; std-health renames `src/loadHealth.ts` to `loadHealth.server.ts`. Their `./routes` exports then serve both sides: pages import them for `routes.href`, browser builds stub the handlers. std-channels' `channelRoute` and std-offline's `outbox` build endpoints inside functions an app calls from its own server files and are unchanged. E1007 over the apps finds any miss.
+- `apps/sessions`: no change; `Home.ts` keeps `import { routes as sessions } from "@keel/std-sessions/routes"`, and its bundle loses the list loader and the readers check.
+- `apps/golden-2`: no change forced; `api`'s client entry loses loader bodies, stores and the token engine. The library-behind-`identity.server.ts` arrangement of commit 405d78b5 stays valid; with stubs, `loadMe.server.ts` could import the library directly again, which is the app's choice and not part of this unit.
+- `apps/golden-1`, `apps/inspector`: none expected (golden-1's `client` module `todos` has no Node global in its `*.server.ts` files); the build confirms with E1007.
+- Scaffold: `keel scaffold route` already writes a `<name>.server.ts` loader and no guard; templates unchanged.
+- Evals: no call shape changes (tasks name loaders `*.server.ts` and guards `*.guard.ts`; none reads `import.meta.env`).
+- Docs and skills: `docs/THREAT-MODEL.md` (above); `.claude/skills/keel-architecture/SKILL.md` (server-only by placement, stubs, E1007), `keel-server` (handlers in `*.server.ts`, guards in `*.guard.ts`, E1009, a page imports `routes.ts` freely), `keel-deploy` (`keel build` runs the check; E1007; no environment value built in; `VITE_*` not exposed), `keel-compliance` (the boundary's limit: a hard-coded secret in a shared file ships); `keel` (guard file rule, E1009).
+
+## Build order
+1. This RFC, ADR-0162, k.boundary and the map (commit 1).
+2. `conformance-writer`: the conformance diff (commit 2), red; it drops the `client` line of `E1759-node-globals.test.ts` named above.
+3. Builders (commit 3): the Migration; the k.compiler, k.host and threat-model sentences with the E1759 header; changesets (`@keel/compiler`, `@keel/router`, `@keel/check`, `@keel/cli`, `@keel/std-sessions`, `@keel/std-health` minor); k.boundary to `conformance-covered` in the section and the map.
+
+## Token impact
+k.boundary 1,493 (new). Map 1,200 to 1,199. k.compiler 1,500 to 1,464 and k.host 1,277 to 1,281 after the build's sentences.
+
+## Choices
+Each is the author's call for the orchestrator to confirm or reverse.
+- C1: server-only is read from placement: `*.server.*` and `*.guard.*` of a `node` or `static` module, or outside every module; nothing is server-only in a `client` module, whose handler files are browser files (D1).
+- C2: browser builds stub server-only files with branded functions that throw E1008; `manifest` and `routes.actions` accept stubs (D2).
+- C3: E1007 fails a browser build holding a server-only file, a Node built-in or a foreign handler, naming the chain (D3).
+- C4: E1004 adds the graph from route components and `client` modules' cross-module imports; `routes.ts` may import server-only files; E1009 places guards (D4).
+- C5: `keel build` stops on any `keel check` error (D5).
+- C6: no environment value in a built file but public origins; `import.meta.env` holds Vite's five keys only (D6).
