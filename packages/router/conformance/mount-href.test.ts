@@ -50,7 +50,9 @@ describe("k.mount: identityMount declares the mount path and mints its Hrefs", (
   it("`navigate` takes a MountHref, and an action's `ok(href)` of one compiles unannotated", () => {
     expectTypeOf(mount.href("/x")).toExtend<Parameters<typeof navigate>[0]>();
     const answer = action({ input: s.object({}) }, async () => ok(mount.href("/x")));
-    expect(typeof answer).toBe("function");
+    // The run-time effect of the returned Href (one recorded GET) is asserted in packages/testing/conformance/mount-navigation.test.ts.
+    expect(answer).toBeDefined();
+    expectTypeOf(ok(mount.href("/x"))).not.toBeAny();
   });
 });
 

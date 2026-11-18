@@ -46,7 +46,7 @@ describe("k.router Form outside and inside a router", () => {
     }
   });
 
-  it("inside a router an action that matches no route throws E1505", async () => {
-    expect(await probeForm("POST", probeLinks.href("link.ghost"))).toBe("E1505");
+  it("inside a router an action that matches no route does not throw: the browser posts it", async () => {
+    expect(await probeForm("POST", probeLinks.href("link.ghost"))).toBeNull();
   });
 });

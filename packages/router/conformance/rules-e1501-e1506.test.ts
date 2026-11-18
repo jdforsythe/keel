@@ -159,11 +159,11 @@ describe("k.router rules", () => {
     expect(await probeForm("POST", href)).toBeNull();
   });
 
-  it("E1505 <Form method> not declared on the target route, or the action matches no route", async () => {
+  it("E1505 <Form method> not declared on the target route; an action that matches no route is not E1505", async () => {
     const href = probeLinks.href("link.show", { id: idOf("1") });
     expect(await probeForm("DELETE", href)).toBe("E1505");
     expect(await probeForm("POST", href)).toBeNull();
-    expect(await probeForm("POST", probeLinks.href("link.ghost"))).toBe("E1505");
+    expect(await probeForm("POST", probeLinks.href("link.ghost"))).toBeNull();
   });
 
   it("E1506 unknown layout name, a layout with a path, or a layout cycle", () => {

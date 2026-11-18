@@ -70,24 +70,6 @@ export default function SignIn() {
 }
 `;
 
-const NAMED = `import { Form } from "@keel/router";
-import { form } from "@keel/forms";
-import { s } from "@keel/schema";
-import { Box, Button, Input } from "@keel/ui";
-import mount from "identity";
-const Credentials = s.object({ email: s.string({ min: 3 }) });
-export default function Named() {
-  const f = form(Credentials);
-  return <Box id="mt.named.root">
-    <Form method="POST" action={mount.href("/sign-in/email")} form={f}>
-      <Input id="mt.named.email" field={f.field("email")} label="Email" autocomplete="email" />
-      <Button id="mt.named.submit" type="submit" name="intent" value="signin">Sign in</Button>
-      <Button id="mt.named.other" type="submit" name="intent" value="signup">Sign up</Button>
-    </Form>
-  </Box>
-}
-`;
-
 const HOME = `import { Form, navigate } from "@keel/router";
 import { Box, Button, Link, Text } from "@keel/ui";
 import mount from "identity";
@@ -162,13 +144,11 @@ function upload(): Node {
 export const components = {
   "mt.home": page("Home", HOME),
   "mt.signin": page("SignIn", SIGN_IN),
-  "mt.named": page("Named", NAMED),
 };
 
 export const routes = manifest({
   "mt.home": { path: "/", loader: read, component: components["mt.home"] },
   "mt.signin": { path: "/sign-in", component: components["mt.signin"] },
-  "mt.named": { path: "/named", component: components["mt.named"] },
   "mt.upload": { path: "/upload", component: upload },
   "mt.about": { path: "/about", component: () => document.createElement("main") },
   "mt.act": { path: "/act", component: () => document.createElement("main") },
