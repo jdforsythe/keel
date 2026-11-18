@@ -53,3 +53,19 @@ A stored `line` or `para` value that holds a bidi mark, or that shows nothing, n
 
 ## Token impact
 std.text 1,043 to 1,102 tokens (4,170 to 4,408 characters). No other section changes.
+
+## Amendment (red team 6, finding 3 and LOW 9)
+`line` and `para` still accepted values that show nothing: U+2800 (BRAILLE PATTERN BLANK, the common "invisible name"), U+FFF9 to U+FFFB (interlinear annotation), U+13430 (an Egyptian format control) and a value made only of combining marks (`'\u{301}'`). None is `White_Space` or `Default_Ignorable_Code_Point`. They also accepted a lone surrogate (`'a\u{D800}'`), which node:sqlite stores as U+FFFD and a Postgres `jsonb` write refuses, so the stored value is not the one that was checked.
+
+The visible character a non-empty value must hold is now one outside `White_Space`, `Default_Ignorable_Code_Point`, the general categories `Cf` (format) and `M` (marks), and U+2800. `Cf` covers U+FFF9 to U+FFFB and U+13430; `M` refuses a value of marks with no base. The test stays on the whole value, so the accepted cases of bullet 10 still pass: `'\u{2764}\u{FE0F}'` holds U+2764 (`So`) and `'a\u{200D}b'` holds `a`; a ZWJ sequence or a variation selector after a visible character stays valid (`'a\u{200D}'`). A value is also refused when it holds a lone surrogate (`Cs`), with rule `format`. Under the `u` flag `\p{Cs}` matches exactly the unpaired surrogates of a string, so the rule is one more class in the forbidden set, in the words the bullet already uses for `Cc`.
+
+Choices the operator can reverse:
+- A1: private use (`Co`) and unassigned code points (`Cn`, noncharacters included) still count as visible. Fonts and apps give private use characters glyphs, and `Cn` changes with each Unicode release, so refusing them would make `parse` follow the engine's Unicode version.
+- A2: lone surrogates are refused in `line` and `para` only, not in every `s.string`: `s.string` holds machine strings, which k.schema does not restrict.
+
+Spec diff (std.text, 1,108 to 1,185 tokens): in the `line` bullet, "no lone surrogate (`Cs`)," follows "no control character (Unicode `Cc`),", and "a character outside `White_Space` and `Default_Ignorable_Code_Point` unless empty" becomes "a visible character unless empty (one outside `White_Space`, `Default_Ignorable_Code_Point`, the general categories `Cf` and `M`, and U+2800)". Bullet 10 is unchanged. Conformance, appended as bullet 11:
+```
+- `line({ max: 3 })` rejects `'\u{2800}'`, `'\u{FFF9}'`, `'\u{FFFB}'`, `'\u{13430}'`, `'\u{301}'`, `'\u{301}\u{302}'` and `'a\u{D800}'`, each with rule `format`, and accepts `'\u{2800}a'`, `'q\u{301}'` and `'a\u{200D}'`.
+```
+
+Conformance writer: a new `packages/std-text/conformance/blank.test.ts` citing bullet 11, and the oracle in `line-para.test.ts` (its visible-character test and forbidden set) widened the same way, or its properties fail against the new rule. Builder: `packages/std-text/src/textCheck.ts` (`VISIBLE` becomes `/[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{M}⠀]/u`; `\p{Cs}` joins `LINE` and `PARA`), the generator in `textFormat.ts` stops producing refused values, the README, and a changeset (`@keel/std-text` minor: values it accepted are refused).
