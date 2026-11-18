@@ -109,7 +109,12 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * any other response `default-src 'none'; frame-ancestors 'none'`. `POST /__keel/csp` takes policy reports before any
  * write check or route (`cspReport`) and logs `csp` records.
  */
-export async function createApp(opts: AppOptions): Promise<ServerApp> {
+export function createApp(opts: AppOptions): Promise<ServerApp> {
+  // Startup and the runners it starts are not a request, even when the app is made inside one (`serving`).
+  return serving.run(false, () => startApp(opts));
+}
+
+async function startApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
   noteRequestSecrets();
   refuseModuleWrites();
