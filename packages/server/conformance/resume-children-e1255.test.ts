@@ -74,7 +74,8 @@ describe("k.resume: E1255 a layout called children twice while it builds, or whi
   });
 
   it("the failed request is logged as one E1255 diagnostic", async () => {
-    const log = { lines: [] as string[] };
+    const lines: string[] = [];
+    const log = { lines };
     await serve(TWICE, "/twice", { mode: "dev", log });
     expect(log.lines.filter((l) => l.includes("E1255"))).not.toHaveLength(0);
   });
