@@ -100,7 +100,7 @@ describe("@keel/compiler/vite project inputs", () => {
 
     const cssId = p.resolveId("virtual:keel.css");
     expect(cssId).not.toBeNull();
-    const css = (await p.load(cssId ?? "")) ?? "";
+    const css = (await p.load(typeof cssId === "string" ? cssId : "")) ?? "";
     expect(css).toContain(":root{");
     expect(css).toContain("@media (min-width: 768px)");
     const page = p.transform(PAGE, path.join(root, "modules/todos/ListsPage.tsx"))?.code ?? "";

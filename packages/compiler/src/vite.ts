@@ -152,7 +152,7 @@ export default function (): {
   configureServer: (server: DevServer) => void;
   configurePreviewServer: (server: { middlewares: Middlewares }) => void;
   buildStart: (this: { warn?: Warn } | undefined) => Promise<void>;
-  resolveId: (id: string) => string | null;
+  resolveId: (id: string) => string | { id: string; external: true } | null;
   load: (id: string) => Promise<string | null>;
   transformIndexHtml: () => HtmlTag[];
   closeBundle: () => void;
@@ -469,7 +469,7 @@ export default function (): {
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
       if (id === DEV_ENTRY) return `\0${DEV_ENTRY}`;
-      if (id === "node:sqlite" && command === "build") return SQLITE;
+      if (id === "node:sqlite") return command === "build" ? SQLITE : { id, external: true };
       return null;
     },
     async load(id) {

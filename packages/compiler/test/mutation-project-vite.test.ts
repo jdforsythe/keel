@@ -95,6 +95,14 @@ describe("vite: resolveId and load", () => {
     expect(await p.load("/@keel/other.ts")).toBeNull();
   });
 
+  it("leaves node:sqlite to Node outside a build, whatever Node's built-in list says", () => {
+    const p = keel();
+    p.configResolved({ root, command: "serve" });
+    expect(p.resolveId("node:sqlite")).toEqual({ id: "node:sqlite", external: true });
+    p.configResolved({ root, command: "build" });
+    expect(p.resolveId("node:sqlite")).toBe("\0keel:sqlite");
+  });
+
   it("serves empty css when there is no project input", async () => {
     const p = keel();
     p.configResolved({ root });
