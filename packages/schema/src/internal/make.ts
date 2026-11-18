@@ -7,6 +7,7 @@ import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
 import { check } from "./check.ts";
 import { docOf } from "./docOf.ts";
+import { freeze } from "./freeze.ts";
 import { hasSecret } from "./hasSecret.ts";
 import { invalid } from "./invalid.ts";
 import { issueText } from "./issueText.ts";
@@ -24,8 +25,18 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
   };
   const sealing = hasSecret(node);
   const parse = (input: unknown): Result<T, SchemaError> => {
-    const value = sealing ? seal(node, input) : input;
-    return is(value) ? ok(value) : err(invalid(issues));
+    if (!sealing) return is(input) ? ok(input) : err(invalid(issues));
+    // Each sealed value is frozen deep only once the whole value passes, so a failed parse leaves the input as it
+    // was; a value the seal, check or freeze cannot walk (a throwing getter, a revoked Proxy) is an err, never a throw.
+    try {
+      const made: unknown[] = [];
+      const value = seal(node, input, made);
+      if (!is(value)) return err(invalid(issues));
+      for (const v of made) freeze(v);
+      return ok(value);
+    } catch {
+      return err(invalid([{ path: [], rule: "type" }]));
+    }
   };
   return {
     node,
