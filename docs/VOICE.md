@@ -1,6 +1,6 @@
 # Voice guide
 
-Every piece of prose Keel ships follows this: documentation, code comments, commit messages, web copy, README files, skill text, diagnostics, and the words inside the example apps. The brand guide (`docs/BRAND.md`) owns color, type, and layout; this file owns the sentences. The mechanical rules are enforced by `tooling/voice-lint.mjs` (V0003) in `pnpm check`: banned words (every "just", "landscape" and the hedging adverbs included), em dashes, "here's the thing", "the whole story" and "it's not X, it's Y" reversals. The other rules are review judgment.
+Every piece of prose Keel ships follows this: documentation, code comments, commit messages, web copy, README files, skill text, diagnostics, and the words inside the example apps. The brand guide (`docs/BRAND.md`) owns color, type, and layout; this file owns the sentences. The mechanical rules are enforced by `tooling/voice-lint.mjs` (V0003) in `pnpm check`: banned words (every "just", "landscape" and the hedging adverbs included), em dashes (and ` -- `), "here's the thing", "the whole story" and "it's not X, it's Y" reversals. It reads prose only: code spans and fenced code are skipped, as are this file and the brand guide; it covers `docs/`, `spec/`, README files, skill text, the copy and comments of the example apps' modules and the comments of `packages/*/src`. The other rules, "navigate" as a metaphor among them, are review judgment.
 
 ## Stance
 
@@ -51,4 +51,4 @@ To: "Keel compiles JSX to DOM operations and keeps every state change in a named
 Rewrite: "It's not the framework that's slow, it's the reasoning."
 To: "The framework is fast enough; the agent's reasoning about invisible rules is what costs tokens."
 
-verified: c182f5aa03455668536e03fa5582755933602725
+verified: eda63de295e6510c0b14b25e5067958f4faf12b1
