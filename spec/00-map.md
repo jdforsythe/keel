@@ -35,7 +35,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes, resume |
 | k.router | Routes | conformance-covered | typed params and search, loaders, actions |
 | k.guards | Guards | conformance-covered | redirects with `next`, loop limit |
-| k.prefix | Implied path prefix | conformance-covered | a leading enum param the URL omits |
+| k.prefix | Implied path prefix | conformance-covered | a leading enum param URLs omit |
 | k.forms | Forms | conformance-covered | bindings, validation, errors |
 | k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS |
 | k.ctx | Capabilities | conformance-covered | clock, random, net, storage |
@@ -44,13 +44,13 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits |
 | k.testing | Harness and properties | conformance-covered | given, do, expect |
-| k.model | Exploring a store's transactions | conformance-covered | reachable states, invariants |
+| k.model | Exploring a store's transactions | conformance-covered | states, invariants |
 | k.prove | Proving invariants | conformance-covered | Z3 proofs |
 | k.sim | Schedules and simulation | conformance-covered | delays, faults, offline |
 | k.ledger | Ledger and evidence | conformance-covered | rungs, producers, mutation claims |
 | k.server | Thin server | conformance-covered | loaders, actions, server state |
-| k.serverlog | Server log records | proposed | bounds, cut marks |
-| k.sync | Heads and concurrent writes | conformance-covered | heads, write bases, reject or rebase |
+| k.serverlog | Server log records | conformance-covered | bounds, cut marks |
+| k.sync | Heads and concurrent writes | conformance-covered | heads, bases, reject or rebase |
 | k.persist | Storage and durable state | conformance-covered | storage, drivers |
 | k.topology | Deployables | conformance-covered | placement, runners, peers |
 | k.deploy | Production entry and deploy files | conformance-covered | `server.mjs`, `storage` |

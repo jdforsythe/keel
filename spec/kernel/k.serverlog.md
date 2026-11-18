@@ -1,5 +1,5 @@
 # k.serverlog: Server log records
-status: proposed
+status: conformance-covered
 
 **Purpose.** How the server writes each record of its log (k.server Log, docs/OUTPUT.md), so that no request or thrown value makes a record long, splits it across lines or fakes a cut, and no cut shows what the scrub (k.privacy Server log) marked.
 
@@ -19,7 +19,7 @@ status: proposed
 **Conformance.**
 - An action throwing an `Error` whose message is 1,000,000 `a`, and a runner rejecting with it, log in compact and json a `diag` whose message is its first 2,048 characters then `…+<n>`, `n` the characters left out; every json line parses.
 - With a revealed 64-character secret in a thrown message at each offset that puts the 2,048th written character inside it, no logged line holds 8 consecutive characters of the secret, in compact and json.
-- A thrown message holding a line feed, a carriage return, U+001B, U+0085, U+2028 and `…` logs one line per record in compact, with `\u000a`, `\u000d`, `\u001b`, `\u0085`, ` ` and `…` in their places; the parsed json message holds those texts.
+- A thrown message holding a line feed, a carriage return, U+001B, U+0085, U+2028 and U+2026 logs one line per record in compact, with `\u000a`, `\u000d`, `\u001b`, `\u0085`, `\u2028` and `\u2026` in their places; the parsed json message holds those texts.
 - A request for a 5,000-character path logs a `req` path of its first 2,048 characters then `…+2952`, in compact and json.
 - An action that reveals a secret and throws 2,000,001 characters logs `action <id> threw: [secret]`; with no secret or `.pii()` value it logs the first 2,048 characters then `…+<n>`.
-- For a thrown message of 1,000,000 `"`, `€` or U+0001, every logged line is at most 8,192 characters and 12,288 bytes of UTF-8.
+- For a thrown message of 1,000,000 `"`, U+20AC or U+0001, every logged line is at most 8,192 characters and 12,288 bytes of UTF-8.

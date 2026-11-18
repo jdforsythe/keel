@@ -53,7 +53,7 @@ k.server and k.privacy are unchanged; their Log and Sinks text defers to OUTPUT.
 
 ## Conformance diff
 k.serverlog's six bullets are new (the section is new); no existing bullet changes. One `rfc:0130` commit by the `conformance-writer`, citing k.serverlog clauses 1 to 6:
-- `packages/server/conformance/log-record-bounds.test.ts`: in dev and production, compact and json, an action and a runner throwing 1,000,000 `a` log the 2,048-character head and `…+<n>` with the exact `n`; a 5,000-character path logs `…+2952`; a 2,000,001-character throw logs `action <id> threw: [secret]` after a reveal and the cut head without one; for 1,000,000 `"`, `€` or U+0001 every line is at most 8,192 characters and 12,288 bytes (`Buffer.byteLength`), and every json line parses.
+- `packages/server/conformance/log-record-bounds.test.ts`: in dev and production, compact and json, an action and a runner throwing 1,000,000 `a` log the 2,048-character head and `…+<n>` with the exact `n`; a 5,000-character path logs `…+2952`; a 2,000,001-character throw logs `action <id> threw: [secret]` after a reveal and the cut head without one; for 1,000,000 `"`, U+20AC or U+0001 every line is at most 8,192 characters and 12,288 bytes (`Buffer.byteLength`), and every json line parses.
 - `packages/server/conformance/log-record-escape.test.ts`: the six characters of clause 3 each written as its `\u` form, one compact line per record, and the parsed json message holding the six-character texts.
 - `packages/server/conformance/log-record-cut-scrub.property.test.ts`: fast-check over a 64-character secret and every offset that puts the 2,048th written character inside it, with the prefix made of ASCII, `"` and U+0001: no line holds 8 consecutive characters of the secret.
 
