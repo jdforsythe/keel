@@ -17,7 +17,7 @@ export const runners = [jobs, schedules]                             // modules/
 - **Restart.** The mark survives a restart. At start, an entry without a mark starts from now: it stores the start time as its mark before it waits, so a fire whose `enqueue` errs has passed at the next start. If fire times passed since the mark, `'once'` enqueues one job for the latest of them and `'skip'` none. When `signal` aborts, the runner stops waiting.
 - A schedule enqueues only its own module's jobs, so it runs in that module's deployable.
 
-**Rules.** E2551 a `cron` or `zone` literal that does not parse, naming the field (no fix; `schedule` also throws it) · E2552 a `schedule` key not prefixed by its module id, or a `schedule` outside `modules/<id>/schedules.server.ts` (fix prefixes the key) · E2553 a module with `schedules.server.ts` whose `runners` lacks `schedules` (fix adds it) · E2554 a `schedule` entry's `job` or `input` refused (thrown by `schedule`).
+**Rules.** E2551 a `cron` or `zone` literal that does not parse, naming the field (no fix; `schedule` also throws it, and for a `zone` the host's `Intl` lacks) · E2552 a `schedule` key not prefixed by its module id, or a `schedule` outside `modules/<id>/schedules.server.ts` (fix prefixes the key) · E2553 a module with `schedules.server.ts` whose `runners` lacks `schedules` (fix adds it) · E2554 a `schedule` entry's `job` or `input` refused (thrown by `schedule`).
 
 **Conformance.**
 - With `0 3 * * *` in `UTC` and the sim clock at 2026-11-10T02:59Z, one job is enqueued at 03:00Z and the next 24 h later, each with key `<id>@<t>`.

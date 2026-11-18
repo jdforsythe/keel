@@ -59,3 +59,24 @@ None for stored data written on Node: every name V8 reported is on the list. A v
 
 ## Token impact
 std.temporal 1,491 to 1,500 tokens (5,964 to 5,998 characters). No other section changes.
+
+## Amendment (red team 6, finding 4)
+`check` still required that the host's `Intl.DateTimeFormat` accept the name. A browser with tz data older than the pin (Safari before tz 2022g has no `America/Ciudad_Juarez`; ICU before 2025b has no `America/Coyhaique`) refused a value the server stored, so one decode failed the whole loader result, and `gen` could draw a name that host's `parse` refused. That is the cross-host split this RFC set out to remove.
+
+`parse` and `gen` now read the pinned list only and never the host: the "that `Intl.DateTimeFormat` accepts" clause of Proposal and D1 is dropped. The host's tz data matters only where a zone is used. `plainDateOf` and `formatInstant` read the zone through `Intl.DateTimeFormat` and throw `RangeError` for a zone the host lacks; under k.errors that is an unexpected failure, which the nearest Boundary shows as `keel.unexpected`. std.schedules keeps refusing such a zone when the runner is built: `schedule` throws E2551 for a `zone` the server's `Intl` lacks, as it did through `TimeZone.parse`, so a job never fails at its first tick instead.
+
+Choices the operator can reverse:
+- A1: a throw, not a `Result`. Returning `Result<PlainDate, TemporalError>` and `Result<string, TemporalError>` with a new code `temporal.unknownZone` would change two signatures and the meaning of conformance bullets 5 and 8, which compare plain values, for a case that needs a host whose tz data is older than the pin. A fallback to `UTC` was also left out: it shows a time hours off with no sign of it, and `dateStyle` cannot be combined with `timeZoneName` to label it.
+- A2: std.schedules checks the host at `schedule`, on the server, where one deployment has one tz database; the check moves from `TimeZone.parse` into `schedule`.
+
+Spec diff (std.temporal, 1,500 to 1,500 tokens, 5,998 to 5,997 characters). The `TimeZone` bullet, whole new text:
+```
+- `TimeZone` is `UTC` or a Zone or Link name of the pinned IANA tz release, spelled as there, kept as written (`Asia/Kolkata`, `Asia/Calcutta`; not `utc`). `parse` and `gen` (its Zone names) read only that list. `UTC` is exported as a `TimeZone`. `plainDateOf` and `formatInstant` throw `RangeError` for a zone the host's `Intl` lacks.
+```
+Conformance, appended as bullet 12:
+```
+- With `Intl.DateTimeFormat` refusing `Europe/Kyiv`, `TimeZone.parse` accepts it; `plainDateOf` and `formatInstant` throw `RangeError`.
+```
+Trims that pay for it, meaning kept: the extension point's "and equal values are equal strings" (one canonical text per value says it); the example's alignment spaces before three `//` comments; "the package's pinned IANA tz database release" becomes "the pinned IANA tz release"; the `Duration` bullet's "No days, months or years." (its grammar has no such unit); "1970-01-01T00:00:00.000Z" becomes "the Unix epoch"; "`Date.prototype.toISOString`" becomes "`toISOString`"; "would leave years" becomes "leaves years"; the Rules line's "`temporal.outOfRange` is a KeelError code (k.errors)" (the `TemporalError` bullet declares it). std.schedules Rules, E2551: "`schedule` also throws it" gains ", and for a `zone` the host's `Intl` lacks".
+
+Conformance writer: a new `packages/std-temporal/conformance/host-zone.test.ts` citing bullet 12, which replaces `Intl.DateTimeFormat` with a wrapper that throws `RangeError` for `Europe/Kyiv` and restores it after. Builder: `packages/std-temporal/src/TimeZone.ts` drops `intlAccepts` from `check` and from the doc comment; `plainDateOf` and `formatInstant` need no change, since `Intl` already throws; `packages/std-schedules/src/internal/entryError.ts` adds the host check for a non-`UTC` zone; README and changeset (`@keel/std-temporal` patch, `@keel/std-schedules` patch).
