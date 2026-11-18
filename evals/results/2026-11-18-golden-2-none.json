@@ -37,8 +37,8 @@
   },
   "costUsd": 0,
   "unsafeCount": 5,
-  "checkTrailer": "ok budgets 135 measured (4.1s)",
-  "testTrailer": "ok test 80 tasks (204.3s)",
-  "durationMs": 255054,
-  "startedAt": "2026-11-18T03:03:59.812Z"
+  "checkTrailer": " ELIFECYCLE  Command failed with exit code 1.",
+  "testTrailer": "ok test 80 tasks (212.3s)",
+  "durationMs": 262276,
+  "startedAt": "2026-11-18T06:56:45.494Z"
 }

@@ -157,7 +157,7 @@ async function script(base: string): Promise<{ transcript: unknown[]; digest: un
 
   // Each write carries its own key; base 0 is stale after the first, so the rebasing writes record it.
   let keys = 0;
-  const write = () => ({ key: `w${++keys}`, base: 0 });
+  const write = () => ({ key: `w${++keys}`, base: 0, owner: "" });
   await send("POST", "/api/lists", { name: "Home", write: write() });
   const listId = ids(field(await send("GET", "/api/lists"), "results", "api.lists", "value", "lists"), "id")[0] ?? "";
   for (const title of ["Milk", "Eggs", "Tea"])
