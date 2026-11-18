@@ -108,8 +108,26 @@ jobs:
       - name: "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database"
         working-directory: packages/std-db
         run: "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/postgres-server.test.ts; do pnpm exec vitest run \"$f\"; done"
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      shells: "${{ steps.paths.outputs.shells }}"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: "shell jobs run on pushes, and on pull requests that change golden-1, a package or module it builds from, the smoke script, the CI files or the lockfile"
+        id: paths
+        env:
+          EVENT: "${{ github.event_name }}"
+          BASE: "${{ github.event.pull_request.base.sha }}"
+        run: "set -u\nif [ \"$EVENT\" != pull_request ]; then echo \"shells=true\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\nif ! files=$(git diff --name-only \"$BASE...HEAD\"); then echo \"shells=true\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\nif printf '%s\\n' \"$files\" | grep -Eq '^(apps/golden-1/|packages/|modules/|tooling/smoke/|tooling/ci|\\.github/workflows/|pnpm-lock\\.yaml$|package\\.json$)'; then\n  echo \"shells=true\" >> \"$GITHUB_OUTPUT\"\nelse\n  echo \"shells=false\" >> \"$GITHUB_OUTPUT\"\nfi"
   shell-tauri:
-    needs: check
+    needs:
+      - check
+      - changes
+    if: "needs.changes.outputs.shells == 'true'"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -155,7 +173,10 @@ jobs:
           if-no-files-found: error
           retention-days: 7
   shell-android:
-    needs: check
+    needs:
+      - check
+      - changes
+    if: "needs.changes.outputs.shells == 'true'"
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
