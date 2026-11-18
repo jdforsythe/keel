@@ -26,7 +26,12 @@ describe("mountSource and mountDiags", () => {
   it("E1580 for a literal handle.path or none; clean with mount.path; nothing without identity.ts", () => {
     expect(codes(base)).toEqual([]);
     const literal = SERVER.replace("mount.path", "'/api/auth'");
-    expect(codes([{ path: "identity.ts", source: MOUNT }, { path: "identity.server.ts", source: literal }])).toEqual(["E1580"]);
+    expect(
+      codes([
+        { path: "identity.ts", source: MOUNT },
+        { path: "identity.server.ts", source: literal },
+      ]),
+    ).toEqual(["E1580"]);
     expect(codes([{ path: "identity.server.ts", source: literal }])).toEqual([]);
   });
 
@@ -44,7 +49,9 @@ describe("mountSource and mountDiags", () => {
     fc.assert(
       fc.property(fc.stringMatching(/^\/[a-z]{1,4}$/), fc.constantFrom("?", "#", "%", ":", "//", "/.."), (sub, bad) => {
         expect(codes([...base, { path: "modules/a/p.ts", source: USE(`mount.href('${sub}')`) }])).toEqual([]);
-        expect(codes([...base, { path: "modules/a/p.ts", source: USE(`mount.href('${sub}${bad}')`) }])).toEqual(["E1582"]);
+        expect(codes([...base, { path: "modules/a/p.ts", source: USE(`mount.href('${sub}${bad}')`) }])).toEqual([
+          "E1582",
+        ]);
       }),
       { seed: 1337, numRuns: 50 },
     );
