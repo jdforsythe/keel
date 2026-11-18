@@ -127,6 +127,12 @@ export function store<T extends object>(
     return !restricted;
   };
 
+  // A store in the module registry is process-wide: the installed check may refuse any change to it (k.resume Stores,
+  // k.server), before anything is validated or written.
+  const writable = (): void => {
+    if (registry === registries.shared) moduleWrites.check?.(id);
+  };
+
   // Drop the last entry and replay the rest from the base, raising the head; false when the log is empty.
   const drop = (): boolean => {
     if (rows.length === 0) return false;
@@ -144,8 +150,7 @@ export function store<T extends object>(
     bound: Result<Bound<T>, SchemaError>,
     options: unknown,
   ): Result<T, TxError> => {
-    // A store in the module registry is process-wide: the installed check may refuse the write (k.resume Stores).
-    if (registry === registries.shared) moduleWrites.check?.(id);
+    writable();
     if (!bound.ok) return bound;
     // An absent option, or one set to undefined, is not given.
     const given = <V>(name: string, codec: Schema<V>): Result<V | undefined, SchemaError> => {
@@ -249,6 +254,8 @@ export function store<T extends object>(
       };
     },
     restore(snap) {
+      // Starting from a waiting `#k-state` snapshot while the store is made is not a write.
+      if (!making) writable();
       const codec = logSchema(payloads);
       // Each entry's shape first, any name and payload: only those two may fold below.
       const entry = s.object({
@@ -296,8 +303,12 @@ export function store<T extends object>(
       commit(restored, kept.rows);
       return ok(restored);
     },
-    undo: drop,
+    undo() {
+      writable();
+      return drop();
+    },
     undoWhere(pred) {
+      writable();
       const last = rows.at(-1);
       return last !== undefined && pred(last.entry) && drop();
     },
