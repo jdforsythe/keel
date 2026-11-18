@@ -253,6 +253,7 @@ const FIXED: FixedCase[] = [
     ],
     opts: NO_TYPES,
   },
+  { name: "E1107", code: "E1107", ...fixtureOf("E1107") },
   { name: "E1406", code: "E1406", ...fixtureOf("E1406") },
   {
     name: "E1759",
@@ -294,6 +295,7 @@ const FIX = [
   "E1509",
   "E1510",
   "E1005",
+  "E1107",
   "E1151",
   "E1152",
   "E1154",

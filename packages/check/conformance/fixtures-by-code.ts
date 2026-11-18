@@ -218,6 +218,23 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     ],
     clean: [f("modules/app/Count.schema.ts", `${SCHEMA}export const Count = s.int({ min: 0 })\n`)],
   },
+  E1107: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("app"),
+      f(
+        "modules/app/Card.tsx",
+        `${SCHEMA}import { store } from '@keel/store'\nexport const card = store(s.object({ email: s.string().pii('contact') }), { email: '' })\n`,
+      ),
+    ],
+    clean: [
+      manifest("app", ", clientPii: ['contact']"),
+      f(
+        "modules/app/Card.tsx",
+        `${SCHEMA}import { store } from '@keel/store'\nexport const card = store(s.object({ email: s.string().pii('contact') }), { email: '' })\n`,
+      ),
+    ],
+  },
   E1005: {
     bad: [
       f(".keel/ids.json", '{"data":{"C.0":{"col":1}},"hash":"fnv1a:00000000"}\n'),
