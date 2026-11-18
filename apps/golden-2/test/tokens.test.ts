@@ -1,13 +1,10 @@
 // @vitest-environment node
-import { type SimCtx, createCtx } from "@keel/ctx";
-import { s } from "@keel/schema";
-import { createApp } from "@keel/server";
 import { describe, expect, it } from "vitest";
-import { Credentials } from "../modules/accounts/Credentials.schema.ts";
+import mount from "../identity.ts";
+import { BearerToken } from "../modules/accounts/BearerToken.schema.ts";
 import { ErrorReply } from "../modules/accounts/ErrorReply.schema.ts";
 import { Me } from "../modules/accounts/Me.schema.ts";
 import { MintedToken } from "../modules/accounts/MintedToken.schema.ts";
-import { SignedIn } from "../modules/accounts/SignedIn.schema.ts";
 import { TokenRequest } from "../modules/accounts/TokenRequest.schema.ts";
 import { accounts } from "../modules/accounts/accounts.service.ts";
 import { accountsApi } from "../modules/accounts/accountsApi.ts";
@@ -15,144 +12,110 @@ import { loadAccount } from "../modules/accounts/loadAccount.server.ts";
 import { loadMe } from "../modules/accounts/loadMe.server.ts";
 import { postToken } from "../modules/accounts/postToken.server.ts";
 import { routes as accountRoutes } from "../modules/accounts/routes.ts";
-import { submitSignIn } from "../modules/accounts/submitSignIn.server.ts";
-import { submitSignUp } from "../modules/accounts/submitSignUp.server.ts";
-import topology from "../topology.ts";
-import { apiRoutes } from "./apiRoutes.ts";
+import { EMAIL, NAME, PASSWORD, accountsApp, browser } from "./accountsApp.ts";
 import { apiCtx } from "./simApi.ts";
 
-const EMAIL = "ada@example.com";
-const PASSWORD = "correct horse battery";
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
-const Bearer = s.secret(s.string());
 
-/** The real `api` deployable over `server`, keeping every log line it writes (k.server Log). */
-async function served(server: SimCtx) {
-  const lines: string[] = [];
-  const app = await createApp({
-    topology,
-    routes: apiRoutes,
-    ctx: server,
-    deployable: "api",
-    log: { format: "json", write: (line: string) => lines.push(line) },
-  });
-  return { app, lines };
-}
-
-/** A document form POST, as a browser without JS sends it. */
-const formPost = (path: string, fields: Record<string, string>, cookie = ""): Request => {
-  const body = new FormData();
-  for (const [k, v] of Object.entries(fields)) body.set(k, v);
-  const headers = new Headers({ accept: "text/html" });
-  if (cookie !== "") headers.set("cookie", cookie);
-  return new Request(`http://localhost${path}`, { method: "POST", headers, body });
+/** The JSON body of an answer, parsed with `schema`, or null. */
+const body = <T>(text: string, schema: { parse(x: unknown): { ok: true; value: T } | { ok: false } }) => {
+  const parsed = schema.parse(JSON.parse(text));
+  return parsed.ok ? parsed.value : null;
 };
 
-/**
- * Sign up and sign in through the pages; the browser's caller cookie comes back. A client sim ctx then sends every
- * `accounts` service call to the app carrying that cookie, as a browser on the app's origin would.
- */
-async function signedIn(app: { fetch(req: Request): Promise<Response> }, password = PASSWORD) {
-  const up = await app.fetch(formPost("/account/signup", { email: EMAIL, password }));
-  expect(up.status).toBe(303);
-  const inRes = await app.fetch(formPost("/account/signin", { email: EMAIL, password }));
-  expect(inRes.status).toBe(303);
-  const cookie = inRes.headers.get("set-cookie")?.split(";")[0] ?? "";
-  expect(cookie).not.toBe("");
-  const ctx = createCtx({ mode: "sim", seed: 5 });
-  ctx.net.route("http://accounts.keel.invalid/api/*", (req) => {
-    req.headers.set("cookie", cookie);
-    return app.fetch(req);
-  });
-  return ctx;
+/** A browser that signed up and signed in through the pages. */
+async function signedIn(seed: number) {
+  const server = apiCtx(seed);
+  const { app, lines } = await accountsApp(server);
+  const b = browser(app);
+  await b.post(mount.href("/sign-up/email"), { name: NAME, email: EMAIL, password: PASSWORD });
+  await b.post(mount.href("/sign-in/email"), { email: EMAIL, password: PASSWORD });
+  return { server, app, lines, b };
 }
 
-/** A client sim ctx with no cookie: a caller that never signed in. */
-function stranger(app: { fetch(req: Request): Promise<Response> }) {
-  const ctx = createCtx({ mode: "sim", seed: 6 });
-  ctx.net.route("http://accounts.keel.invalid/api/*", (req) => app.fetch(req));
-  return ctx;
-}
-
-const bearerOf = (token: string) => {
-  const b = Bearer.parse(token);
-  if (!b.ok) throw new Error("token does not parse as a secret");
-  return b.value;
+/** The `accounts.me` entry of a GET answer (`{ id, results }`). */
+const entry = (text: string): unknown =>
+  Reflect.get(Object(Reflect.get(Object(JSON.parse(text)), "results")), "accounts.me");
+const meOf = (text: string) => {
+  const parsed = Me.parse(Reflect.get(Object(entry(text)), "value"));
+  return parsed.ok ? parsed.value : null;
 };
+const deniedOf = (text: string) => {
+  const parsed = ErrorReply.parse(Reflect.get(Object(entry(text)), "error"));
+  return parsed.ok ? parsed.value : null;
+};
+
+const Minted = { parse: (x: unknown) => MintedToken.parse(Reflect.get(Object(x), "value")) };
 
 describe("API tokens", () => {
-  it("mints a token for a signed-in caller that /api/me accepts until it expires", async () => {
-    const server = apiCtx(21);
-    const { app, lines } = await served(server);
-    const client = await signedIn(app);
+  it("mints a token for the signed-in user that /api/me accepts, by itself, until it expires", async () => {
+    const { server, app, lines, b } = await signedIn(21);
+    expect(meOf((await b.json("GET", "/api/me")).text)).toEqual({ email: EMAIL });
 
-    const minted = await accountsApi.mint({ body: {} }, client);
-    expect(minted.ok).toBe(true);
-    if (!minted.ok) return;
-    const { token, id, expiresAt } = minted.value;
+    const res = await b.json("POST", "/api/tokens", {}, {});
+    expect(res.status).toBe(200);
+    const minted = body(res.text, Minted);
+    expect(minted).not.toBeNull();
+    if (minted === null) return;
+    const { token, id, expiresAt } = minted;
     expect(token.startsWith(`keelsim_${id}_`)).toBe(true);
     expect(expiresAt).toBe(server.clock.now() + THIRTY_DAYS);
 
-    const me = await accountsApi.me({ bearer: bearerOf(token) }, client);
-    expect(me).toEqual({ ok: true, value: { email: EMAIL } });
+    const bearer = browser(app);
+    const me = await bearer.json("GET", "/api/me", { authorization: `Bearer ${token}` });
+    expect(me.status).toBe(200);
+    expect(meOf(me.text)).toEqual({ email: EMAIL });
 
     const last = token.at(-1) === "0" ? "1" : "0";
-    const tampered = await accountsApi.me({ bearer: bearerOf(`${token.slice(0, -1)}${last}`) }, client);
-    expect(tampered.ok ? null : tampered.error).toMatchObject({
-      code: "api.status",
-      data: { status: 403, body: { code: "keel.denied", message: "Unknown token" } },
-    });
+    const tampered = await bearer.json("GET", "/api/me", { authorization: `Bearer ${token.slice(0, -1)}${last}` });
+    expect(tampered.status).toBe(403);
+    expect(deniedOf(tampered.text)?.code).toBe("keel.denied");
+    expect((await bearer.json("GET", "/api/me", { authorization: `Basic ${token}` })).status).toBe(403);
 
     server.clock.advance(THIRTY_DAYS - 1);
-    expect((await accountsApi.me({ bearer: bearerOf(token) }, client)).ok).toBe(true);
+    expect((await bearer.json("GET", "/api/me", { authorization: `Bearer ${token}` })).status).toBe(200);
     server.clock.advance(2);
-    const expired = await accountsApi.me({ bearer: bearerOf(token) }, client);
-    expect(expired.ok ? null : expired.error).toMatchObject({
-      code: "api.status",
-      data: { status: 403, body: { code: "keel.denied", message: "Token expired" } },
-    });
+    expect((await bearer.json("GET", "/api/me", { authorization: `Bearer ${token}` })).status).toBe(403);
 
     const stored = (await server.storage.get("keel.store.accounts.tokens")) ?? "";
     expect(stored).toContain(id);
     expect(stored).toContain("$sha256-sim$");
     expect(stored).not.toContain(token);
+    expect(stored).not.toContain(EMAIL);
 
     const log = lines.join("\n");
-    expect(lines.length).toBeGreaterThan(0);
-    expect(log).not.toContain(PASSWORD);
-    expect(log).not.toContain(token);
+    for (const canary of [EMAIL, PASSWORD, token]) expect(log).not.toContain(canary);
   });
 
-  it("denies /api/me with no token and minting to a caller that never signed in", async () => {
-    const server = apiCtx(22);
-    const { app } = await served(server);
-    const client = stranger(app);
-    const none = await accountsApi.me({}, client);
-    expect(none.ok ? null : none.error).toMatchObject({
-      code: "api.status",
-      data: { status: 403, body: { code: "keel.denied", message: "No token" } },
+  it("refuses /api/me with neither a session nor a token, and minting when signed out or by a token", async () => {
+    const { app, b } = await signedIn(22);
+    const stranger = browser(app);
+    const none = await stranger.json("GET", "/api/me");
+    expect(none.status).toBe(403);
+    expect(deniedOf(none.text)).toMatchObject({ code: "keel.denied", message: "Sign in first" });
+    const refused = await stranger.json("POST", "/api/tokens", {}, {});
+    expect(refused.status).toBe(403);
+    expect(ErrorReply.parse(Reflect.get(Object(JSON.parse(refused.text)), "error"))).toMatchObject({
+      ok: true,
+      value: { code: "keel.denied" },
     });
-    const refused = await accountsApi.mint({ body: {} }, client);
-    const body = refused.ok ? null : refused.error.code === "api.status" ? refused.error.data.body : null;
-    expect(ErrorReply.parse(body).ok).toBe(true);
-    expect(refused.ok ? null : refused.error).toMatchObject({
-      code: "api.status",
-      data: { status: 403, body: { code: "keel.denied" } },
-    });
+
+    const minted = body((await b.json("POST", "/api/tokens", {}, {})).text, Minted);
+    const byToken = await stranger.json("POST", "/api/tokens", { authorization: `Bearer ${minted?.token ?? ""}` }, {});
+    expect(byToken.status).toBe(403);
   });
 
-  it("logs neither the password nor the attempt's text on a failed sign-in", async () => {
-    const server = apiCtx(23);
-    const { app, lines } = await served(server);
-    await signedIn(app);
-    const wrong = await app.fetch(formPost("/account/signin", { email: EMAIL, password: "a wrong password" }));
-    expect(wrong.status).toBe(400);
-    const html = await wrong.text();
-    expect(html).toContain("Wrong email or password");
-    expect(html).not.toContain("a wrong password");
-    const log = lines.join("\n");
-    expect(log).not.toContain(PASSWORD);
-    expect(log).not.toContain("a wrong password");
+  it("the services client reaches /api/me with a bearer token and is refused without one", async () => {
+    const { app, b } = await signedIn(23);
+    const minted = body((await b.json("POST", "/api/tokens", {}, {})).text, Minted);
+    const ctx = apiCtx(5);
+    ctx.net.route("http://accounts.keel.invalid/api/*", (req) => app.fetch(req));
+    const none = await accountsApi.me({}, ctx);
+    expect(none.ok ? null : none.error).toMatchObject({ code: "api.status", data: { status: 403 } });
+    const bearer = BearerToken.parse(minted?.token);
+    expect(bearer.ok).toBe(true);
+    if (!bearer.ok) return;
+    expect(await accountsApi.me({ bearer: bearer.value }, ctx)).toEqual({ ok: true, value: { email: EMAIL } });
   });
 });
 
@@ -162,16 +125,13 @@ describe("accounts wiring", () => {
     expect(accountRoutes.routes["accounts.signup"].loader).toBe(loadAccount);
     expect(accountRoutes.routes["accounts.me"].loader).toBe(loadMe);
     expect(loadMe.output).toBe(Me);
-    expect(loadAccount.output).toBe(SignedIn);
   });
 
-  it("gives the API action an output and the page actions none, all taking Credentials or TokenRequest", () => {
+  it("gives the API action an output and no page an action: the pages post to the identity mount", () => {
     expect(postToken.input).toBe(TokenRequest);
     expect(postToken.output).toBe(MintedToken);
-    expect(submitSignIn.input).toBe(Credentials);
-    expect(submitSignUp.input).toBe(Credentials);
-    expect(submitSignIn.output).toBeUndefined();
-    expect(submitSignUp.output).toBeUndefined();
+    expect(accountRoutes.href("accounts.signin", { locale: "en-US" })).toBe("/account/signin");
+    expect(mount.path).toBe("/api/auth");
   });
 
   it("the accounts endpoints name the two API routes' paths and answers", () => {
