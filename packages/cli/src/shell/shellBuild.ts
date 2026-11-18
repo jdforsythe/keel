@@ -1,20 +1,42 @@
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { delimiter, dirname, join } from "node:path";
 import { tauriHttpCapability } from "@keel/scaffold";
 import { toolCommand } from "../internal/toolCommand.ts";
 import type { ShellPlan } from "../types/ShellPlan.ts";
+import { androidNetworkSecurity } from "./androidNetworkSecurity.ts";
 import { defaultIcon } from "./defaultIcon.ts";
 import { metaPolicy } from "./metaPolicy.ts";
 import { toolError } from "./toolError.ts";
 
-type Step = { readonly cmd: string; readonly args: readonly string[]; readonly cwd: string };
+type Step = {
+  readonly cmd: string;
+  readonly args: readonly string[];
+  readonly cwd: string;
+  /** Runs before the tool starts. */
+  readonly before?: () => void;
+};
 type Done = { code: number; notes: string[]; stderr: string; artifacts: string[] };
 
 /** Run one tool to its end; undefined when it exits 0, else its error lines (`toolError`; the spawn failure when it never ran). */
 function run(s: Step, env: NodeJS.ProcessEnv, root: string): string | undefined {
   const r = spawnSync(s.cmd, s.args, { cwd: s.cwd, env, encoding: "utf8", stdio: "pipe", maxBuffer: 2 ** 28 });
   return r.status === 0 ? undefined : toolError(`${r.stdout}\n${r.stderr}\n${r.error?.message ?? ""}`, root);
+}
+
+/** Writes `androidNetworkSecurity`'s manifest and config into the Android project at `android` when it has a manifest. */
+function cleartext(android: string, plan: ShellPlan): void {
+  const main = join(android, "app", "src", "main");
+  const manifestFile = join(main, "AndroidManifest.xml");
+  if (!existsSync(manifestFile)) return;
+  const { manifest, config } = androidNetworkSecurity(readFileSync(manifestFile, "utf8"), plan.origin, plan.release);
+  writeFileSync(manifestFile, manifest);
+  const file = join(main, "res", "xml", "keel_network_security.xml");
+  if (config === undefined) rmSync(file, { force: true });
+  else {
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, config);
+  }
 }
 
 /** The tools of one deployable's shell build and the artifact they leave, relative to the project (k.shell Build 4). */
@@ -37,7 +59,16 @@ function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; ar
     const task = plan.release ? "assembleRelease" : "assembleDebug";
     const mode = plan.release ? "release/app-release-unsigned.apk" : "debug/app-debug.apk";
     return {
-      steps: [...add, sync, { cmd: "./gradlew", args: [task], cwd: join(at, "android") }],
+      steps: [
+        ...add,
+        sync,
+        {
+          cmd: "./gradlew",
+          args: [task],
+          cwd: join(at, "android"),
+          before: () => cleartext(join(at, "android"), plan),
+        },
+      ],
       artifact: `${rel}/android/app/build/outputs/apk/${mode}`,
     };
   }
@@ -73,7 +104,8 @@ function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; ar
  * `dist/<name>/<shell>/www/`; the shell files of `deploy/<name>/<shell>/` beside it (with Cargo's `Cargo.lock` when
  * committed, and the app's `icons/icon.png` when it has one); for Tauri `capabilities/http.json` allowing `KEEL_ORIGIN`
  * and, when the app has no `icons/icon.png`, `defaultIcon`; for Capacitor the deployable's `csp.txt` policy as a meta
- * tag in `www/index.html`; then the shell's tools. A Tauri build's new `Cargo.lock` is copied back to
+ * tag in `www/index.html` and, on Android before Gradle, `androidNetworkSecurity`'s cleartext rule; then the shell's
+ * tools. A Tauri build's new `Cargo.lock` is copied back to
  * `deploy/<name>/tauri/`. The tools run with Cargo's `bin` folder first on `PATH`. Stops at the first failing step: its
  * error lines (`toolError`) are `stderr`.
  */
@@ -113,6 +145,7 @@ export function shellBuild(cwd: string, plan: ShellPlan): Done {
     }
     const { steps, artifact } = stepsOf(plan, name, at);
     for (const s of steps) {
+      s.before?.();
       const failed = run(s, env, cwd);
       if (failed !== undefined) return { ...done, code: 1, stderr: failed };
     }

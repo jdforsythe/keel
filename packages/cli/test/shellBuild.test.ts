@@ -216,6 +216,34 @@ describe.skipIf(process.platform === "win32")("shellBuild", () => {
     ]);
   });
 
+  test("an Android build with an http: origin allows cleartext to its host only; https: or release takes it out", () => {
+    const manifest =
+      '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <application\n        android:allowBackup="true">\n    </application>\n</manifest>\n';
+    const root = project(PASSING, {
+      "package.json": '{ "name": "app" }\n',
+      "deploy/web/capacitor/capacitor.config.json": "{}\n",
+      "dist/web/capacitor/android/gradlew": '#!/bin/sh\necho "$@" > task.txt\n',
+      "dist/web/capacitor/android/app/src/main/AndroidManifest.xml": manifest,
+    });
+    chmodSync(join(root, "dist/web/capacitor/android/gradlew"), 0o755);
+    const main = join(root, "dist/web/capacitor/android/app/src/main");
+    const config = join(main, "res/xml/keel_network_security.xml");
+    const plan: ShellPlan = { ...PLAN, target: "capacitor", platform: "android", origin: "http://localhost:4182" };
+    expect(shellBuild(root, plan).code).toBe(0);
+    expect(readFileSync(join(main, "AndroidManifest.xml"), "utf8")).toContain(
+      'android:networkSecurityConfig="@xml/keel_network_security"',
+    );
+    expect(readFileSync(config, "utf8")).toContain('<domain includeSubdomains="false">localhost</domain>');
+    expect(readFileSync(join(root, "dist/web/capacitor/capacitor.config.json"), "utf8")).toBe("{}\n");
+    expect(shellBuild(root, { ...plan, origin: "https://app.example.com" }).code).toBe(0);
+    expect(readFileSync(join(main, "AndroidManifest.xml"), "utf8")).toBe(manifest);
+    expect(existsSync(config)).toBe(false);
+    expect(shellBuild(root, plan).code).toBe(0);
+    expect(shellBuild(root, { ...plan, release: true }).code).toBe(0);
+    expect(readFileSync(join(main, "AndroidManifest.xml"), "utf8")).toBe(manifest);
+    expect(existsSync(config)).toBe(false);
+  });
+
   test("a Vite build that writes no shell page is E1049 and runs no tool", () => {
     const root = project(PASSING, { "bin/npx": "#!/bin/sh\nexit 0\n" });
     const r = shellBuild(root, PLAN);
