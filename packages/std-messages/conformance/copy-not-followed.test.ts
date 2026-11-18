@@ -2,7 +2,7 @@
 // Spec: std.copy, Conformance "None: `id="recipes.list"`, `type="number"`, `href="/a"`, `{props.data.text.title}`, `` {`${a}${b}`} ``, `{'%'}`, `{n + 1}`, `copy.title`, `fmt('Recipes')`, `s.enum(['a'])`, `Set.text({ title: 'Rezepte' })` in a locale file, `let t = 'x'`, a `const` from an installed package, each reporting case in a test file, and in a module whose `deps` do not list `@keel/std-messages`."
 // Seed 1337 (the property below). Each negative is its own fixture: a project tree whose module lists `@keel/std-messages`
 // unless the test says otherwise. The real-code cases read modules of the sample apps at test time.
-import { type Dirent, readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { check } from "@keel/check";
@@ -18,7 +18,7 @@ const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 function realModule(dir: string, id: string): { path: string; source: string }[] {
   const out: { path: string; source: string }[] = [];
   const walk = (rel: string): void => {
-    for (const e of readdirSync(join(ROOT, dir, rel), { withFileTypes: true }) as Dirent[]) {
+    for (const e of readdirSync(join(ROOT, dir, rel), { withFileTypes: true })) {
       const next = rel === "" ? e.name : `${rel}/${e.name}`;
       if (e.isDirectory()) walk(next);
       else if (/\.tsx?$/.test(e.name)) {

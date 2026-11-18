@@ -1,6 +1,6 @@
 // Project trees for the E1759 suites (not a test file). Public API only. Seed 1337 for every property.
 import { execFileSync } from "node:child_process";
-import { type Dirent, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -80,7 +80,7 @@ const SKIP = new Set(["node_modules", "dist", "coverage", "reports", "deploy", "
 export function realApp(app: string): Files {
   const out: Files[number][] = [];
   const walk = (rel: string): void => {
-    for (const e of readdirSync(join(ROOT, app, rel), { withFileTypes: true }) as Dirent[]) {
+    for (const e of readdirSync(join(ROOT, app, rel), { withFileTypes: true })) {
       const next = rel === "" ? e.name : `${rel}/${e.name}`;
       if (e.isDirectory()) {
         if (!SKIP.has(e.name)) walk(next);
