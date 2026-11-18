@@ -114,7 +114,6 @@ function gated(sim: SimCtx) {
         return sim.storage.commit(writes);
       },
     },
-    dispose: sim.dispose,
   };
   return {
     ctx,

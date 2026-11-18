@@ -5,12 +5,13 @@ const read = (): boolean => typeof navigator === "undefined" || navigator.onLine
 
 /**
  * Platform fetch, resolved at call time (k.ctx), and the platform's connectivity: `changed` hears each change the
- * window's `online` and `offline` events bring. `dispose` removes the two listeners, once; a repeat does nothing.
+ * window's `online` and `offline` events bring. The two listeners end when `signal` aborts; with an aborted `signal`
+ * none is added.
  */
-export function realNet(changed: (online: boolean) => void): { readonly net: Net; readonly dispose: () => void } {
+export function realNet(changed: (online: boolean) => void, signal: AbortSignal | undefined): Net {
   const net: Net = { fetch: (req) => fetch(req), online: read };
-  if (typeof window === "undefined" || typeof window.addEventListener !== "function") return { net, dispose: () => {} };
-  const win = window;
+  if (typeof window === "undefined" || typeof window.addEventListener !== "function") return net;
+  if (signal?.aborted === true) return net;
   let last = read();
   const on = (): void => {
     const now = read();
@@ -18,14 +19,8 @@ export function realNet(changed: (online: boolean) => void): { readonly net: Net
     last = now;
     changed(now);
   };
-  win.addEventListener("online", on);
-  win.addEventListener("offline", on);
-  let attached = true;
-  const dispose = (): void => {
-    if (!attached) return;
-    attached = false;
-    win.removeEventListener("online", on);
-    win.removeEventListener("offline", on);
-  };
-  return { net, dispose };
+  const options = signal === undefined ? {} : { signal };
+  window.addEventListener("online", on, options);
+  window.addEventListener("offline", on, options);
+  return net;
 }

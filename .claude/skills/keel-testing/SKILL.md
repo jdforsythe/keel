@@ -23,7 +23,7 @@ await r.navigate(routes.href('todos.show', { id }))
 - Labelled inputs: find the id from `r.a11y()` by label, then `fire(id, { type: 'input', value })`.
 - `fire` resolves after effects, resources and actions go quiet (no timers, else `keel.unexpected`).
 - A rendered route is the production page: a thrown page, loader or action shows `unexpected` in the alert, `errorElement` and `Form` error. Read the thrown text from the ctx's `error` reports (`observe`).
-- Harness ctx is always sim (`KEEL_SEED`, default 1337). Use `createCtx({ mode: 'sim', seed })`; advance time with `ctx.clock.advance(ms)`; a test that creates a `real` ctx under a window calls `ctx.dispose()` when done (it removes the ctx's `online`/`offline` listeners); fake the network with `ctx.net.route(new URL('/api/*', location.href).href, req => new Response(...))`.
+- Harness ctx is always sim (`KEEL_SEED`, default 1337). Use `createCtx({ mode: 'sim', seed })`; advance time with `ctx.clock.advance(ms)`; a test that creates a `real` ctx under a window passes a `signal` and aborts it when done (it removes the ctx's `online`/`offline` listeners); fake the network with `ctx.net.route(new URL('/api/*', location.href).href, req => new Response(...))`.
 - A server log line: `createApp({ log: { format: 'json', write } })` (k.server Log). A saved store: `await ctx.storage.get('keel.store.<id>')` is JSON whose `state` is the store's value.
 - Between tests: `const base = store.snapshot()` and `store.restore(base)` in `afterEach`.
 

@@ -9,9 +9,4 @@ export interface Ctx {
   readonly random: Random;
   readonly net: Net;
   readonly storage: KeyValueStorage;
-  /**
-   * Removes the window `online` and `offline` listeners a real or shell ctx's own net added, once; a repeat call, a
-   * sim ctx and a ctx whose net came from `drivers` do nothing. The ctx stays usable.
-   */
-  dispose(): void;
 }

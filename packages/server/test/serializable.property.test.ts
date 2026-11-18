@@ -84,7 +84,7 @@ describe("overlapping requests are serializable (property)", () => {
               return true;
             }),
         };
-        const ctx: Ctx = { clock: base.clock, random: base.random, net: base.net, storage, dispose: base.dispose };
+        const ctx: Ctx = { clock: base.clock, random: base.random, net: base.net, storage };
         const seen = new Map<string, Partial<Record<Key, string>>>();
         const routes = manifest({
           "app.prop": {

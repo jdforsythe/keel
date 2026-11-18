@@ -1,6 +1,6 @@
 # ADR-0158: a ctx is ended only by the code that made it (RFC 0136)
 
-**Status:** proposed (RFC 0136, for the orchestrator to accept).
+**Status:** accepted (orchestrator under the owner's standing leave, 2026-11-18).
 
 **Context.** `Ctx.dispose()` removes a real or shell ctx's window `online`/`offline` listeners. The page has one ctx, which `resume` hands to every island and the client entry to the router and root, so any component can call `dispose` and end `net` events for the whole page. The ctx is frozen and identity-keyed by the registry, `ctxMeta` and `observe`, so no second object can stand in for it. The only callers are `std-sessions`' sinks, which dispose a ctx they made.
 

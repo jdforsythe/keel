@@ -1,5 +1,5 @@
 # k.owner: Ctx owner
-status: proposed
+status: conformance-covered
 
 Only the code that made a ctx ends it. Every island, the router and the root share the page's ctx (k.runtime), so an ending any holder could call would let one island cut every other island's `net` events.
 

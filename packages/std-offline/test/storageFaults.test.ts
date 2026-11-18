@@ -38,7 +38,6 @@ const hanging = (ctx: SimCtx, hang: number): Ctx => {
     clock: ctx.clock,
     random: ctx.random,
     net: ctx.net,
-    dispose: () => ctx.dispose(),
     storage: {
       get: (k) => st.get(k),
       set: (k, v) => (calls++ === hang ? new Promise<void>(() => {}) : st.set(k, v)),
@@ -75,7 +74,6 @@ test("a throw in the flush that is not a storage write is rethrown, not reported
     random: base.random,
     net: base.net,
     storage: base.storage,
-    dispose: () => base.dispose(),
   };
   const reasons: unknown[] = [];
   const saved = process.listeners("unhandledRejection");

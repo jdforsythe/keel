@@ -5,11 +5,13 @@ import type { Schedule } from "./Schedule.schema.ts";
 /**
  * Options for createCtx. `mode` defaults to sim under KEEL_TEST=1, else real. `seed` (default 0) drives sim.
  * `drivers` (real and shell only, else E1605) replaces the platform `storage` or `net` (for example `fileStorage(path)`
- * from `@keel/ctx/node`). `schedule` (sim only) fixes delays, faults, offline windows and capability plans (k.sim).
+ * from `@keel/ctx/node`). `schedule` (sim only) fixes delays, faults, offline windows and capability plans (k.sim). `signal` ends
+ * the window listeners a real or shell ctx's own net adds; only the ctx's maker holds it.
  */
 export interface CtxOptions {
   readonly mode?: Mode;
   readonly seed?: number | undefined;
   readonly drivers?: Drivers;
   readonly schedule?: Schedule;
+  readonly signal?: AbortSignal;
 }

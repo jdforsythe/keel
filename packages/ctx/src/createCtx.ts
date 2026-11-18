@@ -26,8 +26,8 @@ function seal<C extends Ctx>(ctx: C, mode: Mode, seed: number, given: number | u
  * Create a ctx. Registered capabilities build on first access, so `register` may come before or after. Every capability object is fresh per ctx. `shell` delegates to the real implementations
  * until native adapters exist. Mode defaults to sim under KEEL_TEST=1, else real. `drivers` replaces the platform
  * `storage` or `net` in real and shell modes and throws E1605 on sim (k.persist). `schedule` (sim only, else E1604; it must parse with `Schedule`, else E1604)
- * drives the sim net, storage and offline windows and holds the capability plans (k.sim). `dispose` removes the window
- * listeners a real or shell ctx's own net added; it does nothing on a sim ctx or a `drivers` net.
+ * drives the sim net, storage and offline windows and holds the capability plans (k.sim). `signal` ends the window
+ * listeners a real or shell ctx's own net adds; a sim ctx and a `drivers` net add none. The ctx stays usable after it aborts.
  */
 export function createCtx(opts: CtxOptions & { readonly mode: "sim" }): SimCtx;
 export function createCtx(opts: CtxOptions): Ctx;
@@ -49,16 +49,16 @@ export function createCtx(opts: CtxOptions): Ctx {
     ]);
     const clock = simClock(timers);
     const net = simNet(changed, clock, steps);
-    const sim: SimCtx = { clock, random: simRandom(seed), net, storage: simStorage(storage), dispose: () => {} };
+    const sim: SimCtx = { clock, random: simRandom(seed), net, storage: simStorage(storage) };
     self.ref = new WeakRef(sim);
     // Windows that open at time 0 apply before the ctx is returned.
     clock.advance(0);
     return seal(sim, mode, seed, opts.seed, plans);
   }
   const given = opts.drivers?.net;
-  const own = given === undefined ? realNet(changed) : { net: given, dispose: () => {} };
+  const net = given ?? realNet(changed, opts.signal);
   const storage = opts.drivers?.storage ?? realStorage();
-  const ctx: Ctx = { clock: realClock(), random: realRandom(), net: own.net, storage, dispose: own.dispose };
+  const ctx: Ctx = { clock: realClock(), random: realRandom(), net, storage };
   self.ref = new WeakRef(ctx);
   return seal(ctx, mode, seed, opts.seed, {});
 }

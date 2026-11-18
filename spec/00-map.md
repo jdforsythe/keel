@@ -41,8 +41,8 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.prefix | Implied path prefix | conformance-covered | enum param URLs omit |
 | k.forms | Forms | conformance-covered | bindings, validation |
 | k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS |
-| k.ctx | Capabilities | implemented | clock, random, net, storage |
-| k.owner | Ctx owner | proposed | only its maker ends a ctx |
+| k.ctx | Capabilities | conformance-covered | clock, random, net, storage |
+| k.owner | Ctx owner | conformance-covered | only its maker ends a ctx |
 | k.errors | Results and boundaries | conformance-covered | Result or boundary |
 | k.check | Checker and diagnostics | conformance-covered | codes, fixes, rules |
 | k.host | Host reads | proposed | zone, locale, Node globals |

@@ -14,9 +14,8 @@ const KEEPALIVE_BYTES = 65_536;
 const failed = (status: number) => err(PutFailed.make({ status }));
 
 function real(): SessionSink {
-  const own = createCtx({ mode: "real" });
-  // Only `random` is used: the window listeners its net added go at once.
-  own.dispose();
+  // Only `random` is used: made with an aborted signal, its net adds no window listener.
+  const own = createCtx({ mode: "real", signal: AbortSignal.abort() });
   return {
     async put(url, session) {
       try {
@@ -44,9 +43,8 @@ function real(): SessionSink {
 }
 
 function shell(): SessionSink {
-  const own = createCtx({ mode: "real" });
-  // Only `random` is used: the window listeners its net added go at once.
-  own.dispose();
+  // Only `random` is used: made with an aborted signal, its net adds no window listener.
+  const own = createCtx({ mode: "real", signal: AbortSignal.abort() });
   return { put: async () => ok(null), taken: () => [], id: () => own.random.id("Session") };
 }
 
