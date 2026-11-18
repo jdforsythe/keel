@@ -820,6 +820,25 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("src/x.ts", "export const x = (n: number) => n.toLocaleString()\n")],
     clean: [f("src/x.ts", "export const x = (n: number, l: string) => n.toLocaleString(l)\n")],
   },
+  E1759: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['shop'], adapter: 'node' } })\n",
+      ),
+      manifest("shop"),
+      f("modules/shop/paths.server.ts", "export const paths = __dirname\n"),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['shop'], adapter: 'node' } })\n",
+      ),
+      manifest("shop"),
+      f("modules/shop/paths.server.ts", "export const paths = import.meta.dirname\n"),
+    ],
+  },
   E1802: {
     bad: [f("C.tsx", `${UI}export default function C() { return <Button /> }\n`)],
     clean: [f("C.tsx", `${UI}export default function C() { return <Button>Save</Button> }\n`)],

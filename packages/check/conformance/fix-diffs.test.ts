@@ -10,7 +10,7 @@ import { compile } from "@keel/compiler";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { CODE_FIXTURES } from "./fixtures-by-code.ts";
-import { FIXTURES, SEED, type Files } from "./support.ts";
+import { FIXTURES, type Files, SEED } from "./support.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
 const NO_TYPES: Options = { types: false };
@@ -158,14 +158,14 @@ const FIXED: FixedCase[] = [
   {
     name: "E1452 (try)",
     code: "E1452",
-    files: [f("C.tsx", `export function f() { try { return 1 } catch (e) { return 2 } }\n`)],
+    files: [f("C.tsx", "export function f() { try { return 1 } catch (e) { return 2 } }\n")],
     opts: {},
   },
   { name: "E1507 (annotation removed)", code: "E1507", ...fixtureOf("E1507") },
   {
     name: "E1601",
     code: "E1601",
-    files: [f("C.tsx", `export const stamp = () => Date.now()\n`)],
+    files: [f("C.tsx", "export const stamp = () => Date.now()\n")],
     opts: {},
   },
   {
@@ -254,6 +254,12 @@ const FIXED: FixedCase[] = [
     opts: NO_TYPES,
   },
   {
+    name: "E1759",
+    code: "E1759",
+    files: fixtureOf("E1759").files,
+    opts: NO_TYPES,
+  },
+  {
     name: "E1808",
     code: "E1808",
     files: [f("C.ts", `${UI}export default function C() { return Box({ children: Text({ children: "x" }) }) }\n`)],
@@ -307,6 +313,7 @@ const FIX = [
   "E1806",
   "E1808",
   "E1258",
+  "E1759",
   "E1820",
 ];
 const NO_FIX = [
