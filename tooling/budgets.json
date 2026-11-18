@@ -155,7 +155,7 @@
       "max": "1.25kb",
       "platform": "node"
     },
-    "@keel/std-temporal": "2.5kb",
+    "@keel/std-temporal": "5kb",
     "@keel/std-text": "1.5kb",
     "@keel/store": "3.5kb",
     "@keel/store/internal": {

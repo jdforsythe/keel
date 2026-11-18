@@ -1,16 +1,27 @@
 import { s } from "@keel/schema";
+import { pinnedZones } from "./internal/pinnedZones.ts";
+
+const intlAccepts = (zone: string): boolean => {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 /**
- * `UTC` or an IANA zone name `Intl.DateTimeFormat` accepts and reports back unchanged (std.temporal); registered as
- * `temporal.TimeZone`. `utc` and aliases the runtime renames fail with rule `format`.
+ * `UTC` or a Zone or Link name of the pinned IANA tz release, spelled exactly as there, that `Intl.DateTimeFormat`
+ * accepts (std.temporal); kept as written and registered as `temporal.TimeZone`. `gen` draws from the pinned Zone
+ * names, so one seed gives the same zones on every host.
  */
 export const TimeZone = s.format("temporal.TimeZone", s.string(), {
-  check: (v) => v === "UTC" || new Intl.DateTimeFormat("en-US", { timeZone: v }).resolvedOptions().timeZone === v,
+  check: (v) => v === "UTC" || (pinnedZones().names.has(v) && intlAccepts(v)),
   gen: {
     from: s.int({ min: 0, max: 999 }),
     map: (k) => {
-      const zones = Intl.supportedValuesOf("timeZone");
-      return (k && zones[k % zones.length]) || "UTC";
+      const zones = pinnedZones().gen;
+      return zones[k % zones.length] ?? "UTC";
     },
   },
 });
