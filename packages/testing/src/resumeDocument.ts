@@ -9,8 +9,8 @@ import { fail } from "./internal/fail.ts";
 import { freshGraph } from "./internal/freshGraph.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
-import type { Harness } from "./types/Harness.ts";
 import type { ResumeDocumentOptions } from "./types/ResumeDocumentOptions.ts";
+import type { ResumedHarness } from "./types/ResumedHarness.ts";
 
 /**
  * Resume a server-rendered document for a test (k.testing Harness): its `<body>`, scripts dropped but `#k-state`,
@@ -20,11 +20,13 @@ import type { ResumeDocumentOptions } from "./types/ResumeDocumentOptions.ts";
  * `resume`, components and stores, so the test's own module stores are neither read nor written. A resume
  * warning (an island with no component in `routes`, state that fails its schema) rejects with E1720 naming the first.
  * Resolves with the `render` handle after the first settle and the `render` checks; `dispose` puts every store back.
+ * The handle's `removed()` and `detached()` count the served elements under island roots (the roots included) that
+ * are out of the document when it resolves, and that a MutationObserver saw taken out until then; both are fixed then.
  */
 export async function resumeDocument<M extends Readonly<Record<string, RouteDef>>>(
   html: string,
   options: ResumeDocumentOptions<M>,
-): Promise<Harness> {
+): Promise<ResumedHarness> {
   const given = options.routes;
   const graph = typeof given === "function" ? await freshGraph(given) : { routes: given.routes, resume, stores, scope };
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
@@ -42,9 +44,15 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
   const tokens = options.artifacts?.tokens;
   // The islands' scope in the graph's own reactive engine, which the harness scope does not own.
   const islands: { dispose: () => void } = { dispose: () => undefined };
+  // The served elements under island roots, and a MutationObserver over the container while resume runs.
+  const served = new Set<Element>();
+  const seen: MutationRecord[] = [];
+  const observer = new MutationObserver((records) => void seen.push(...records));
   const { harness } = openHarness({
     start: (container) => {
       container.append(...body.childNodes);
+      for (const el of container.querySelectorAll("[data-k-island], [data-k-island] *")) served.add(el);
+      observer.observe(container, { childList: true, subtree: true });
       islands.dispose = graph.scope(() => {
         warnings.push(...graph.resume(container, components, { ctx, stores: Object.fromEntries(live) }).warnings);
       }).dispose;
@@ -65,5 +73,12 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
     harness.dispose();
     throw error;
   }
-  return harness;
+  seen.push(...observer.takeRecords());
+  observer.disconnect();
+  const out = new Set<Element>();
+  for (const r of seen)
+    for (const n of r.removedNodes)
+      if (n instanceof Element) for (const el of [n, ...n.querySelectorAll("*")]) if (served.has(el)) out.add(el);
+  const removed = [...served].filter((el) => !el.isConnected).length;
+  return Object.assign(harness, { removed: () => removed, detached: () => out.size });
 }

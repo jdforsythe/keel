@@ -550,7 +550,7 @@ export function lowerFile(
         stmts.push(`const ${an} = ${f}.appendChild(document.createComment("")); ${lowerFlow(it.node, an)};`);
       }
     }
-    return `(() => { const ${f} = document.createDocumentFragment(); ${stmts.join(" ")} return ${f}; })()`;
+    return `${ns}.frag((${f}) => { ${stmts.join(" ")} })`;
   }
 
   function lowerComponent(el: JSXElement): string {

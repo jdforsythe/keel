@@ -9,6 +9,7 @@ import { createOwner } from "./createOwner.ts";
 import { createRoot } from "./createRoot.ts";
 import { disposeOwner } from "./disposeOwner.ts";
 import { eventQueue } from "./eventQueue.ts";
+import { made } from "./made.ts";
 import { nodesOf } from "./nodesOf.ts";
 import { replaced } from "./replaced.ts";
 import { report } from "./report.ts";
@@ -112,6 +113,12 @@ export function resumeIsland(
   };
   catcher.arm();
   held.calls = 0;
+  // The client render checks make-before-place: an element made before the op placing it names the cause.
+  const was = made.on;
+  made.on = true;
+  made.from = made.seq;
+  made.eager = false;
+  const cause = (): string => (made.eager ? "; an element was made before its parent" : "");
   try {
     client.scope = scope(
       () => {
@@ -123,11 +130,13 @@ export function resumeIsland(
     // The client render threw: the island's root Boundary shows it in place of the server element, whose queued
     // events are dropped.
     held.calls = -1;
+    made.on = was;
     catcher.fail(error, rootAt);
     eventQueue.resume(el, null);
-    return `E1253 [data-k-island="${id}"] ${failed.message}; re-rendered on the client`;
+    return `E1253 [data-k-island="${id}"] ${failed.message}; re-rendered on the client${cause()}`;
   }
   held.calls = -1;
+  made.on = was;
   const n = client.node;
   if (n !== null) {
     const host = n instanceof Element ? n : el.parentElement;
@@ -146,5 +155,5 @@ export function resumeIsland(
     if (n instanceof Element) eventQueue.resume(n, null);
   }
   eventQueue.resume(el, null);
-  return `E1253 [data-k-island="${id}"] ${failed.message}; re-rendered on the client`;
+  return `E1253 [data-k-island="${id}"] ${failed.message}; re-rendered on the client${cause()}`;
 }

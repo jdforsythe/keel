@@ -11,7 +11,7 @@
 
 ## Extension points
 
-`FormHandle` (`{ [formHandle]: FormSeam }`, `formHandle` from `@keel/router/internal`; seam `setPending`, `validate`, `onResult`): `<Form form>` calls `validate()` (an `err` stops the submit), `setPending(true)`, runs the action from FormData, `setPending(false)`, then `onResult(result)`. `Form` finds its router through the owner scope chain (the `App` scope); outside a router it is a native form. It renders through the runtime's `element`, so at resume the served form, its hidden `_method` input and its children are claimed in place. Implemented by `@keel/forms`. `RouterHistory`: any `{ push, replace, current, onPop }`.
+`FormHandle` (`{ [formHandle]: FormSeam }`, `formHandle` from `@keel/router/internal`; seam `setPending`, `validate`, `onResult`): `<Form form>` calls `validate()` (an `err` stops the submit), `setPending(true)`, runs the action from FormData, `setPending(false)`, then `onResult(result)`. `Form` finds its router through the owner scope chain (the `App` scope); outside a router it is a native form. It renders through the runtime's `element`, so at resume the served form, its hidden `_method` input and its children are claimed in place. `children` is a thunk (`() => Node | readonly Node[] | string`), so the content is made inside the form; JSX children compile to one. Implemented by `@keel/forms`. `RouterHistory`: any `{ push, replace, current, onPop }`.
 
 ## Unsafe
 

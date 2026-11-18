@@ -71,8 +71,11 @@ export function store<T extends object>(
   const start = copy(schema, initial);
   if (!start.ok) throw new Error(`store ${id}: initial state invalid: ${start.error.message}`);
   let base = freeze(start.value);
-  const root = signal(base);
-  const version = signal(0);
+  let root = signal(base);
+  let version = signal(0);
+  // While the store is made, a restore (a `#k-state` snapshot waiting for its id) gives it new signals holding that
+  // state: nothing is written, so a store made inside an effect's run (a `For` row) starts from it too.
+  let making = true;
   let current = base;
   let rows: Row<T>[] = [];
   // The `{ name, key }` of the latest `keyLimit` commits made with a `key`, oldest first (k.sync Write key).
@@ -96,13 +99,21 @@ export function store<T extends object>(
         computed<unknown>(() => Reflect.get(root.get(), key)),
       );
 
-  const commit = (state: T, next: Row<T>[]): void =>
+  const commit = (state: T, next: Row<T>[]): void => {
+    if (making) {
+      current = state;
+      rows = next;
+      root = signal(state);
+      version = signal(++ver);
+      return;
+    }
     batch(() => {
       current = state;
       rows = next;
       root.set(state);
       version.set(++ver);
     });
+  };
 
   // Declarations of the calling scope and its ancestors; none in the chain means unrestricted.
   const declared = (t: Transaction<T, unknown>): boolean => {
@@ -342,9 +353,10 @@ export function store<T extends object>(
     registry.delete(id);
     registryPulse.fire();
   });
-  registryPulse.fire();
   // Created while islands resume, it starts from the `#k-state` snapshot waiting for its id (k.resume Stores).
   const waiting = waitingSnapshot(id);
   if (waiting !== undefined) self.restore(waiting.snapshot);
+  making = false;
+  registryPulse.fire();
   return self;
 }

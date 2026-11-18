@@ -20,7 +20,9 @@ const offset = (v: TablePage<unknown>): number =>
 /**
  * A data table (std.tables DataTable): a native `table` of parts with APG Sortable Table semantics. Sort and pager
  * controls are links to `href(search)`; only the sorted column carries `aria-sort`; rows carry their index in the
- * whole result. When a navigation removes the focused pager link, focus moves to the pager's `status`.
+ * whole result. When a navigation removes the focused pager link, focus moves to the pager's `status`. Each part is
+ * made inside its container's `children` thunk, in document order (head before body, the pager's links and status in
+ * their places), so a served table resumes in place.
  */
 export function DataTable<T extends object, S extends Field<T>, F extends Field<T>, W extends Field<T>>(
   props: DataTableProps<T, S, F, W>,
@@ -120,133 +122,146 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
       const v = view.get();
       return offset(v) + v.rows.findIndex((r) => keyOf(r) === key) + 2;
     });
-    const cells: Node[] = [];
-    if (select) {
-      const name = computed(() => (props.selected === undefined ? "" : props.text.selectRow(row)));
-      cells.push(
+    const actions = props.actions;
+    const cells = (): Node[] => {
+      const out: Node[] = [];
+      if (select) {
+        const name = computed(() => (props.selected === undefined ? "" : props.text.selectRow(row)));
+        out.push(
+          Part({
+            ...styles.cell,
+            id: `${id}.pick.${key}`,
+            role: "cell",
+            children: () =>
+              Part({
+                ...styles.select,
+                id: `${id}.select.${key}`,
+                role: "checkbox",
+                label: name,
+                checked: computed(() => isChosen(key)),
+                onClick: () => toggle([key], !isChosen(key)),
+              }),
+          }),
+        );
+      }
+      for (const col of cols.show)
+        out.push(
+          Part({
+            ...styles.cell,
+            id: `${id}.cell.${key}.${col}`,
+            role: col === cols.rowHeader ? "rowheader" : "cell",
+            children: () => content(row, col),
+          }),
+        );
+      if (actions !== undefined)
+        out.push(Part({ ...styles.cell, id: `${id}.actions.${key}`, role: "cell", children: () => actions(row) }));
+      return out;
+    };
+    return Part({ ...styles.row, id: `${id}.row.${key}`, role: "row", rowIndex: index, children: cells });
+  };
+
+  const heads = (): Node[] => {
+    const out: Node[] = [];
+    if (select)
+      out.push(
         Part({
           ...styles.cell,
-          id: `${id}.pick.${key}`,
+          id: `${id}.pick`,
           role: "cell",
           children: () =>
             Part({
-              ...styles.select,
-              id: `${id}.select.${key}`,
+              ...styles.selectAll,
+              id: `${id}.selectAll`,
               role: "checkbox",
-              label: name,
-              checked: computed(() => isChosen(key)),
-              onClick: () => toggle([key], !isChosen(key)),
+              label: computed(() => (props.selected === undefined ? "" : props.text.selectAll)),
+              checked: pageState,
+              onClick: () => toggle(pageKeys(), pageState.get() !== true),
             }),
         }),
       );
-    }
-    for (const col of cols.show)
-      cells.push(
+    for (const col of cols.show) out.push(headerCell(col));
+    if (props.actions !== undefined)
+      out.push(
         Part({
-          ...styles.cell,
-          id: `${id}.cell.${key}.${col}`,
-          role: col === cols.rowHeader ? "rowheader" : "cell",
-          children: () => content(row, col),
+          ...styles.header,
+          id: `${id}.actions`,
+          role: "columnheader",
+          children: () => computed(() => (props.actions === undefined ? "" : props.text.actions)),
         }),
       );
-    const actions = props.actions;
-    if (actions !== undefined)
-      cells.push(Part({ ...styles.cell, id: `${id}.actions.${key}`, role: "cell", children: () => actions(row) }));
-    return Part({ ...styles.row, id: `${id}.row.${key}`, role: "row", rowIndex: index, children: () => cells });
+    return out;
   };
 
-  const heads: Node[] = [];
-  if (select)
-    heads.push(
-      Part({
-        ...styles.cell,
-        id: `${id}.pick`,
-        role: "cell",
-        children: () =>
-          Part({
-            ...styles.selectAll,
-            id: `${id}.selectAll`,
-            role: "checkbox",
-            label: computed(() => (props.selected === undefined ? "" : props.text.selectAll)),
-            checked: pageState,
-            onClick: () => toggle(pageKeys(), pageState.get() !== true),
-          }),
-      }),
-    );
-  for (const col of cols.show) heads.push(headerCell(col));
-  if (props.actions !== undefined)
-    heads.push(
-      Part({
-        ...styles.header,
-        id: `${id}.actions`,
-        role: "columnheader",
-        children: () => computed(() => (props.actions === undefined ? "" : props.text.actions)),
-      }),
-    );
-
   const empty = props.empty;
-  const body = Part({
-    ...styles.body,
-    id: `${id}.body`,
-    role: "rowgroup",
-    children: () =>
-      For({
-        get each() {
-          return view.get().rows;
-        },
-        key: cols.key,
-        children: rowOf,
-        ...(empty === undefined
-          ? {}
-          : {
-              empty: () =>
-                Part({
-                  id: `${id}.empty`,
-                  role: "row",
-                  children: () =>
-                    Part({
-                      ...styles.cell,
-                      id: `${id}.empty.cell`,
-                      role: "cell",
-                      colSpan: columnCount,
-                      children: empty,
-                    }),
-                }),
-            }),
-      }),
-  });
+  const body = (): Node =>
+    Part({
+      ...styles.body,
+      id: `${id}.body`,
+      role: "rowgroup",
+      children: () =>
+        For({
+          get each() {
+            return view.get().rows;
+          },
+          key: cols.key,
+          children: rowOf,
+          ...(empty === undefined
+            ? {}
+            : {
+                empty: () =>
+                  Part({
+                    id: `${id}.empty`,
+                    role: "row",
+                    children: () =>
+                      Part({
+                        ...styles.cell,
+                        id: `${id}.empty.cell`,
+                        role: "cell",
+                        colSpan: columnCount,
+                        children: empty,
+                      }),
+                  }),
+              }),
+        }),
+    });
   const named =
     props.labelledBy !== undefined
       ? { labelledBy: computed(() => props.labelledBy ?? "") }
       : { label: computed(() => props.label ?? "") };
-  const table = Part({
-    ...styles.table,
-    ...named,
-    id: `${id}.table`,
-    role: "table",
-    rowCount: computed(() => {
-      const v = view.get();
-      return v.rows.length < v.total ? v.total + 1 : undefined;
-    }),
-    children: () => [
-      Part({
-        ...styles.head,
-        id: `${id}.head`,
-        role: "rowgroup",
-        head: true,
-        children: () => Part({ id: `${id}.columns`, role: "row", rowIndex: 1, children: () => heads }),
+  const table = (): Node =>
+    Part({
+      ...styles.table,
+      ...named,
+      id: `${id}.table`,
+      role: "table",
+      rowCount: computed(() => {
+        const v = view.get();
+        return v.rows.length < v.total ? v.total + 1 : undefined;
       }),
-      body,
-    ],
-  });
+      children: () => [
+        Part({
+          ...styles.head,
+          id: `${id}.head`,
+          role: "rowgroup",
+          head: true,
+          children: () => Part({ id: `${id}.columns`, role: "row", rowIndex: 1, children: heads }),
+        }),
+        body(),
+      ],
+    });
 
-  const status = Part({
-    ...styles.status,
-    id: `${id}.status`,
-    role: "status",
-    tabIndex: -1,
-    children: () => computed(() => text().pageOf(view.get().page, view.get().pages)),
-  });
+  // The pager's `status`, once made: focus moves to it when a new page removes the focused pager link.
+  const made: { status: Node | null } = { status: null };
+  const status = (): Node => {
+    made.status = Part({
+      ...styles.status,
+      id: `${id}.status`,
+      role: "status",
+      tabIndex: -1,
+      children: () => computed(() => text().pageOf(view.get().page, view.get().pages)),
+    });
+    return made.status;
+  };
   // The pager link (`next`, `previous`) that has focus, until focus moves on; when a new page removes it, `status`
   // takes focus, once.
   let was = "";
@@ -256,59 +271,63 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
       was = "";
       queueMicrotask(() => {
         const lost = document.activeElement === null || document.activeElement === document.body;
-        if (lost && status instanceof HTMLElement && status.isConnected) status.focus();
+        const s = made.status;
+        if (lost && s instanceof HTMLElement && s.isConnected) s.focus();
       });
     }
   });
-  const pager = Part({
-    ...styles.pager,
-    id: `${id}.pager`,
-    role: "navigation",
-    label: computed(() => text().pager),
-    children: () => [
-      If({
-        get when() {
-          return view.get().page > 1;
-        },
-        children: () =>
-          Link({
-            ...styles.previous,
-            id: `${id}.previous`,
-            get to() {
-              return props.href(at(view.get().page - 1));
-            },
-            children: () => computed(() => text().previous),
-          }),
-      }),
-      status,
-      If({
-        get when() {
-          return view.get().page < view.get().pages;
-        },
-        children: () =>
-          Link({
-            ...styles.next,
-            id: `${id}.next`,
-            get to() {
-              return props.href(at(view.get().page + 1));
-            },
-            children: () => computed(() => text().next),
-          }),
-      }),
-    ],
-  });
-  if (pager instanceof HTMLElement) {
-    pager.addEventListener("focusin", (e) => {
-      const to = e.target instanceof Element ? e.target.id : "";
-      if (to === `${id}.next` || to === `${id}.previous`) was = to.slice(id.length + 1);
+  const pager = (): Node => {
+    const nav = Part({
+      ...styles.pager,
+      id: `${id}.pager`,
+      role: "navigation",
+      label: computed(() => text().pager),
+      children: () => [
+        If({
+          get when() {
+            return view.get().page > 1;
+          },
+          children: () =>
+            Link({
+              ...styles.previous,
+              id: `${id}.previous`,
+              get to() {
+                return props.href(at(view.get().page - 1));
+              },
+              children: () => computed(() => text().previous),
+            }),
+        }),
+        status(),
+        If({
+          get when() {
+            return view.get().page < view.get().pages;
+          },
+          children: () =>
+            Link({
+              ...styles.next,
+              id: `${id}.next`,
+              get to() {
+                return props.href(at(view.get().page + 1));
+              },
+              children: () => computed(() => text().next),
+            }),
+        }),
+      ],
     });
-    // Focus leaving the link forgets it, unless the page change is removing the link itself (the handoff's case).
-    pager.addEventListener("focusout", (e) => {
-      const from = e.target;
-      queueMicrotask(() => {
-        if (from instanceof Element && from.isConnected) was = "";
+    if (nav instanceof HTMLElement) {
+      nav.addEventListener("focusin", (e) => {
+        const to = e.target instanceof Element ? e.target.id : "";
+        if (to === `${id}.next` || to === `${id}.previous`) was = to.slice(id.length + 1);
       });
-    });
-  }
-  return Part({ id, role: "generic", children: () => [table, pager] });
+      // Focus leaving the link forgets it, unless the page change is removing the link itself (the handoff's case).
+      nav.addEventListener("focusout", (e) => {
+        const from = e.target;
+        queueMicrotask(() => {
+          if (from instanceof Element && from.isConnected) was = "";
+        });
+      });
+    }
+    return nav;
+  };
+  return Part({ id, role: "generic", children: () => [table(), pager()] });
 }

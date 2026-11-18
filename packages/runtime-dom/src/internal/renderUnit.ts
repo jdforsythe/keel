@@ -7,7 +7,10 @@ import type { Unit } from "./Unit.ts";
 import { createOwner } from "./createOwner.ts";
 import { disposeOwner } from "./disposeOwner.ts";
 import { heldOf } from "./heldOf.ts";
+import { made } from "./made.ts";
 import { nodesOf } from "./nodesOf.ts";
+import { partsOf } from "./partsOf.ts";
+import { placed } from "./placed.ts";
 import { report } from "./report.ts";
 import { unitOwners } from "./unitOwners.ts";
 import { withCx } from "./withCx.ts";
@@ -23,7 +26,8 @@ import { withCx } from "./withCx.ts";
  * the claim's session. Its nodes are the top-level nodes the render returned, each preceded by what the units of
  * a structural op anchored at it rendered there (owned below this unit, `unitOwners`): those go with it when the
  * unit is moved, re-rendered or disposed. A fragment a resumed island's `children` returned stands for the held
- * content: the unit's nodes are those held nodes, wherever they are.
+ * content: the unit's nodes are those held nodes, wherever they are; one `frag` returned while resuming stands for its
+ * parts, already in place.
  */
 export function renderUnit(
   parent: Owner,
@@ -63,6 +67,7 @@ export function renderUnit(
       const o = createOwner(parent, parent.root, catcher);
       owner = o;
       const box: { out: Node | null } = { out: null };
+      const start = made.seq;
       const onError = (error: unknown): void => report(o, error, at);
       try {
         scope(
@@ -85,7 +90,8 @@ export function renderUnit(
       const out = box.out;
       if (out === null) return;
       const held = heldOf.get(out);
-      const top = out.nodeType === 11 ? [...out.childNodes] : [out];
+      const top = [...(partsOf.get(out) ?? (out.nodeType === 11 ? out.childNodes : [out]))];
+      placed(start, top);
       nodes = held === undefined ? () => top : () => nodesOf(held.nodes ?? []);
       if (held === undefined) for (const n of top) unitOwners.set(n, o);
       if (hydrate === null) anchor.parentNode?.insertBefore(out, anchor);

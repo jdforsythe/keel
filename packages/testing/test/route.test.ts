@@ -41,10 +41,15 @@ const routes = manifest({
       const data: unknown = props.data;
       const count = typeof data === "object" && data !== null ? Reflect.get(data, "count") : undefined;
       root.append(el("p", { id: "rt.count" }, `count ${String(count)}`));
-      const label = el("label", { for: "rt.title" }, "Title");
-      const input = el("input", { id: "rt.title", name: "title" });
-      const submit = el("button", { id: "rt.save", type: "submit" }, "Save");
-      const form = Form({ method: "POST", action: routes.href("rt.list"), children: [label, input, submit] });
+      const form = Form({
+        method: "POST",
+        action: routes.href("rt.list"),
+        children: () => [
+          el("label", { for: "rt.title" }, "Title"),
+          el("input", { id: "rt.title", name: "title" }),
+          el("button", { id: "rt.save", type: "submit" }, "Save"),
+        ],
+      });
       form.setAttribute("id", "rt.form");
       root.append(form);
       return root;

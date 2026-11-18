@@ -3,12 +3,15 @@ import { claimNext } from "../internal/claimNext.ts";
 import { cx } from "../internal/cx.ts";
 import { isTag } from "../internal/isTag.ts";
 import { nextClaimable } from "../internal/nextClaimable.ts";
+import { placed } from "../internal/placed.ts";
+import { stamp } from "../internal/stamp.ts";
 
 /**
  * A `<tag>` element filled by `fill` (base elements, k.ui). While resuming it is the next server element
  * instead, in document order: `fill` runs with that element's child elements and comments as the claim region, so the
  * elements it creates claim them in order and an op claims its server region and anchor, and a server child element
- * left unclaimed is a mismatch (E1253).
+ * left unclaimed is a mismatch (E1253). Not resuming, a child `fill` places that was made before the call is
+ * recorded (`made`).
  */
 export function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -17,7 +20,9 @@ export function element<K extends keyof HTMLElementTagNameMap>(
   const claim = cx.claim;
   if (claim === null) {
     const el = document.createElement(tag);
+    const start = stamp(el);
     fill(el);
+    placed(start, el.childNodes);
     return el;
   }
   const el = claimNext(claim, tag);

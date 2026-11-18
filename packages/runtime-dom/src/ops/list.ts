@@ -47,7 +47,8 @@ export function list<T>(
   let emptyUnit: Unit | null = null;
   // Rows' nodes are the contiguous run before `end`. One forward pass from its first node: a node already in place
   // stays, any other is moved before it, so new rows (rendered before `end`) move into place and do not displace
-  // the rows they precede.
+  // the rows they precede. Rows claimed while resuming are in place already, and an op inside one may not have
+  // rendered yet, so a resuming run places nothing.
   const place = (): void => {
     const p = end.parentNode;
     if (pending > 0 || p === null) return;
@@ -124,13 +125,13 @@ export function list<T>(
                 pending--;
                 if (pending === 0 && h !== null) consumed(h);
               }
-              place();
+              if (h === null) place();
             },
           );
         };
         row.unit = home.run(row$);
       }
-      place();
+      if (h === null) place();
     },
     { writes: writesOf(parent) },
   );

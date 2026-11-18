@@ -45,15 +45,18 @@ it("passes ctx as the third argument to layouts and pages", async () => {
   router.dispose();
 });
 
-const formRoutes = (id: string, kids: "thunk" | "plain" | "array" | "text") => {
+const kid = (): HTMLSpanElement => {
+  const child = document.createElement("span");
+  child.setAttribute("data-x", "kid");
+  return child;
+};
+
+const formRoutes = (id: string, kids: "node" | "array" | "text") => {
   const routes = manifest({
     [id]: {
       path: `/${id}`,
       component: () => {
-        const child = document.createElement("span");
-        child.setAttribute("data-x", "kid");
-        const children =
-          kids === "thunk" ? () => child : kids === "plain" ? child : kids === "array" ? [child] : () => "hi";
+        const children = kids === "node" ? () => kid() : kids === "array" ? () => [kid()] : () => "hi";
         return Form({ method: "POST", action: to(`/${id}`), children });
       },
     },
@@ -62,7 +65,7 @@ const formRoutes = (id: string, kids: "thunk" | "plain" | "array" | "text") => {
   return routes;
 };
 
-it.each(["thunk", "plain", "array", "text"] as const)("Form renders %s children", async (kind) => {
+it.each(["node", "array", "text"] as const)("Form renders a thunk of %s children", async (kind) => {
   const id = `fc.${kind}`;
   const router = createRouter(formRoutes(id, kind), {
     ctx: createCtx({ mode: "sim" }),

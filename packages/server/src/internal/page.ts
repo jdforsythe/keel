@@ -128,5 +128,10 @@ export async function page(
   const failedHead = loaderError !== null || rendered.value.caught !== null;
   const routeProps = { params: m.params, search: m.search, data: own?.ok === true ? own.value.value : undefined };
   const head = pageHead(m.route, m.params, routeProps, failedHead);
+  // E1257 once per route (k.claim Server): the document is served as rendered.
+  if (rendered.value.eager && !r.sv.eager.has(id)) {
+    r.sv.eager.add(id);
+    diags.push({ code: "E1257", message: `${id}: an element was placed after it was made; make it in the thunk` });
+  }
   return { response: documentResponse(r, final, rendered.value, extra, dev, head), route: id, diags };
 }

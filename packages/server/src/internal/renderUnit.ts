@@ -1,5 +1,5 @@
 import { mount } from "@keel/runtime-dom";
-import { serverMode } from "@keel/runtime-dom/internal";
+import { made, serverMode } from "@keel/runtime-dom/internal";
 import { attempted } from "./attempted.ts";
 
 /**
@@ -9,12 +9,16 @@ import { attempted } from "./attempted.ts";
  * and never inserted. Called in the request scope, the mount's scope is a child of it: stores the component
  * creates stay live for `#k-state`, and everything is disposed with the request. Units never nest (the caller
  * renders child levels first). A throw from the component or a binding is rethrown as `keel.unexpected`. The
- * runtime renders in its server mode, writing the regions `resume` claims (k.resume Regions).
+ * runtime renders in its server mode, writing the regions `resume` claims (k.resume Regions), and checks that each
+ * element its ops place was made after the op started: `seen.eager` is set when one was not (E1257, k.claim Server).
  */
-export function renderUnit(fn: () => unknown): unknown {
+export function renderUnit(fn: () => unknown, seen: { eager: boolean } = { eager: false }): unknown {
   const host = document.createElement("div");
   const out: { value: unknown; error: { e: unknown } | null } = { value: undefined, error: null };
   serverMode.on = true;
+  made.on = true;
+  made.from = made.seq;
+  made.eager = false;
   try {
     mount(
       () => {
@@ -32,6 +36,8 @@ export function renderUnit(fn: () => unknown): unknown {
     );
   } finally {
     serverMode.on = false;
+    made.on = false;
+    if (made.eager) seen.eager = true;
   }
   if (out.error !== null) throw out.error.e;
   return out.value;

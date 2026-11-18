@@ -17,10 +17,15 @@ function build() {
   const count = store(s.object({ n: s.int() }), { n: 0 }, { id: "follow.count" });
   const bump = transaction(count, "follow.bump", s.object({}), (st) => ({ n: st.n + 1 }));
   function Home(): Node {
-    const save = Button({ id: "follow.save", type: "submit", children: "Save" });
     return Box({
       id: "follow.page",
-      children: () => [Form({ method: "POST", action: routes.href("follow.home"), children: [save] })],
+      children: () => [
+        Form({
+          method: "POST",
+          action: routes.href("follow.home"),
+          children: () => [Button({ id: "follow.save", type: "submit", children: "Save" })],
+        }),
+      ],
     });
   }
   function Done(): Node {

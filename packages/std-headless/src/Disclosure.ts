@@ -2,19 +2,19 @@ import type { Ctx } from "@keel/ctx";
 import { computed } from "@keel/reactive";
 import { instance } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
-import { Box, type Child, type Children } from "@keel/ui";
+import { Box, type Child } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
 import { openChart } from "./openChart.ts";
 
 /**
  * A button that shows and hides a panel (std.headless, APG Disclosure). Parts `button` and `panel`; a click, Enter or
- * Space toggles it.
+ * Space toggles it. `children` is a thunk, so the panel's content is made inside the panel.
  */
 export function Disclosure(
   props: {
     readonly id: string;
     readonly summary: () => Child;
-    readonly children: Child | Children;
+    readonly children: () => Child;
     readonly styles?: { readonly button?: PartStyle; readonly panel?: PartStyle };
   },
   _slots?: undefined,
@@ -39,10 +39,7 @@ export function Disclosure(
         id: `${id}.panel`,
         role: "generic",
         hidden: computed(() => !open.get()),
-        children: () => {
-          const body = props.children;
-          return typeof body === "function" ? body() : body;
-        },
+        children: () => props.children(),
       }),
     ],
   });

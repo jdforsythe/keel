@@ -14,6 +14,7 @@ import { noDetachedScope } from "../rules/noDetachedScope.ts";
 import { noDomGlobal } from "../rules/noDomGlobal.ts";
 import { noDomQueryInTest } from "../rules/noDomQueryInTest.ts";
 import { noEagerChild } from "../rules/noEagerChild.ts";
+import { noEagerElement } from "../rules/noEagerElement.ts";
 import { noInlineStyle } from "../rules/noInlineStyle.ts";
 import { noInternalEntry } from "../rules/noInternalEntry.ts";
 import { noIntrinsicElement } from "../rules/noIntrinsicElement.ts";
@@ -66,6 +67,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noInlineStyle,
   noIntrinsicElement,
   noEagerChild,
+  noEagerElement,
   lowContrast,
   resourceViaMatch,
   noDetachedScope,

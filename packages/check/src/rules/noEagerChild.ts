@@ -1,5 +1,6 @@
 import { globalRefs, unwrapExpression } from "@keel/compiler/internal";
 import { type Expression, type Program, Visitor } from "oxc-parser";
+import { BASE_ELEMENTS } from "../internal/BASE_ELEMENTS.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { num } from "../internal/num.ts";
@@ -8,19 +9,7 @@ import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
-/** `@keel/ui` base elements (k.ui Base elements). */
-const BASE: ReadonlySet<string> = new Set([
-  "Box",
-  "Text",
-  "Heading",
-  "Button",
-  "Link",
-  "Image",
-  "Input",
-  "TextArea",
-  "Select",
-  "Checkbox",
-]);
+const BASE = BASE_ELEMENTS;
 /** k.runtime control flow that builds its rows or branch at the call (`anchored`), so it is eager like an element. */
 const CONTROL: ReadonlySet<string> = new Set(["For", "If", "Match"]);
 /** The names each source exports that make a node at the call. */

@@ -1,4 +1,4 @@
-import { text } from "@keel/runtime-dom/ops";
+import { parts, text } from "@keel/runtime-dom/ops";
 import type { Child } from "../types/Child.ts";
 import { bound } from "./bound.ts";
 import { isReadable } from "./isReadable.ts";
@@ -30,8 +30,10 @@ export function appendChildren(parent: Element, child: Child | undefined): void 
       put(t);
       text(t, () => String(c.get()));
     } else if (c instanceof Node) {
-      if (c.nodeType === 11) for (const n of [...c.childNodes]) put(n);
-      else put(c);
+      // Content `frag` claimed is in place: its texts and elements are passed over, its ops' regions and anchors
+      // (comments already in `parent`) with them.
+      if (c.nodeType !== 11) put(c);
+      else for (const n of parts(c) ?? [...c.childNodes]) if (n.parentNode !== parent || n.nodeType !== 8) put(n);
     } else for (const x of c) add(x);
   };
   add(child);

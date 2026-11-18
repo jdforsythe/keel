@@ -23,19 +23,21 @@ const defaultError = (e: KeelError<string, unknown>): string =>
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
  * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a bound
  * (`data-k`) element outside nested levels' islands, however it was built (template or base element), is an island: it gets
- * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup).
+ * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup). `eager` is whether a level's
+ * render placed an element made before the op placing it (E1257, k.claim Server).
  */
 export function renderChain(input: ChainInput): Rendered {
   const { chain, failure, ctx } = input;
   const islands: Record<string, JsonValue> = {};
   let caught: KeelError<string, unknown> | null = null;
+  const seen = { eager: false };
 
   const errorAt = (i: number, error: KeelError<string, unknown>): string => {
     const el = chain[i]?.def;
     const shown = input.publicize(error);
     const make = el?.errorElement;
     // A render unit, as for components: a compiled errorElement's bindings need a mount context.
-    return make === undefined ? defaultError(shown) : toHtml(renderUnit(() => make({ error: shown })));
+    return make === undefined ? defaultError(shown) : toHtml(renderUnit(() => make({ error: shown }), seen));
   };
 
   const componentAt = (i: number, lvl: Level): string => {
@@ -54,7 +56,7 @@ export function renderChain(input: ChainInput): Rendered {
     );
     const base = { params: input.params, search: input.search, data: input.data[i] };
     // An API route (k.api) has no component and is never rendered.
-    const out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, undefined, ctx) ?? "");
+    const out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, undefined, ctx) ?? "", seen);
     if (typeof Element !== "undefined" && out instanceof Element && islandIn(out)) {
       out.setAttribute("data-k-island", lvl.id);
       islands[lvl.id] = input.props(i);
@@ -80,5 +82,5 @@ export function renderChain(input: ChainInput): Rendered {
       : failure?.bare === true
         ? errorAt(failure.level, failure.error)
         : levelAt(0);
-  return { html, islands, caught };
+  return { html, islands, caught, eager: seen.eager };
 }

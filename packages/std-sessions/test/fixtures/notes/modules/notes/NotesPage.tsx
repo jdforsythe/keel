@@ -24,14 +24,16 @@ export default function NotesPage(_props: Infer<typeof Props>, _slots?: Slots, c
     await reader?.cancel();
     await tx(setPeek, { peek: first === undefined || first.done ? "" : new TextDecoder().decode(first.value) });
   };
-  const children = (): Node => {
-    const submit = (
-      <Button id="notes.save" type="submit">
-        Save
-      </Button>
-    );
-    return Form({ method: "POST", action: routes.href("notes.home"), children: [submit] });
-  };
+  const children = (): Node =>
+    Form({
+      method: "POST",
+      action: routes.href("notes.home"),
+      children: () => (
+        <Button id="notes.save" type="submit">
+          Save
+        </Button>
+      ),
+    });
   return (
     <Box as="main" id="notes.page" direction="column">
       <Input id="notes.draft" label="Note" onInput={(v) => void tx(setDraft, { draft: v })} />

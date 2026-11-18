@@ -55,11 +55,17 @@ export function Select(
         );
       let shown = props.options;
       appendChildren(el, optionsOf(shown));
-      // A new options array replaces the options; a bound value is applied again, an unbound choice stays.
+      // A new options array replaces the options; a bound value is applied again, an unbound choice stays. The first
+      // run only subscribes: a getter may return a new array for the options made above.
+      let first = true;
       if (isGetter(props, "options"))
         effect(() => {
           const os = props.options;
-          if (os === shown) return;
+          if (first || os === shown) {
+            first = false;
+            shown = os;
+            return;
+          }
           shown = os;
           const keep = isGetter(props, "value") && typeof props.value === "string" ? props.value : el.value;
           el.replaceChildren(...optionsOf(os));

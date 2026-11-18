@@ -1,2 +1,2 @@
-/** Children of a component (RFC 0008): a thunk, or a plain node, string, or array from hand-built calls. */
-export type ChildInput = (() => Node | readonly Node[] | string) | Node | readonly Node[] | string | undefined;
+/** Children of `Form`: a thunk, so the content is made inside the element that holds it. */
+export type ChildInput = (() => Node | readonly Node[] | string) | undefined;

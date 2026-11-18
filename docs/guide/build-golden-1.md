@@ -2664,6 +2664,7 @@ Every line is `CODE path:line:col message`. Errors start with `E`, warnings with
 | E1401 | destructured props | `props.x` |
 | E1403 | `{cond && <X />}`, a ternary of elements, or `.map()` to elements | `<If>`, `<For>`, `<Match>` |
 | E1808 | eager children on a base element | `children: () => …` |
+| E1258 | gave a component an element made before the call, as `children` or another prop | make it inside a thunk: `icon: () => <Icon />` |
 | E1301 | ran a transaction a component's `uses` does not list | add it to `uses` |
 | E1302 | read `ctx` or a global in a transaction | pass the value in the payload |
 | E1451, E1452 | `throw`, or `try`/`catch` | `return err(…)`, `attempt(…)` |

@@ -8,4 +8,6 @@ export type Rendered = {
   readonly html: string;
   readonly islands: Readonly<Record<string, JsonValue>>;
   readonly caught: KeelError<string, unknown> | null;
+  /** A level's render placed an element made before the op placing it (E1257). */
+  readonly eager: boolean;
 };

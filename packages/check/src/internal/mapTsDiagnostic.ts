@@ -113,6 +113,8 @@ export function mapTsDiagnostic(
   const text = ts.flattenDiagnosticMessageText(d.messageText, "\n");
   if (/is not assignable to type '\(\) => Node'/.test(text) && THUNK_CHILDREN.has(enclosingIntrinsic(node) ?? ""))
     return null;
+  // JSX `<Boundary>` without `fallback` compiles with a default one (k.compiler).
+  if (d.code === 2741 && /'fallback'/.test(text) && jsxTagOf(node) === "Boundary") return null;
   const { line, col } = lineCol(file.source, pos);
   const diag = (code: string, message: string, see: string): Diagnostic => ({
     kind: "diag",

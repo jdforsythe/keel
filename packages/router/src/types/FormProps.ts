@@ -13,6 +13,6 @@ export type FormProps = {
   readonly form?: FormHandle;
   /** Rendered for a non-field `err` (any `err` when there is no `form`). */
   readonly error?: (e: KeelError<string, unknown>) => Node;
-  /** Compiled JSX passes a thunk (RFC 0008); hand-built calls may pass a node, string or array. */
-  readonly children?: (() => Node | readonly Node[] | string) | Node | readonly Node[] | string;
+  /** A thunk, so the content is made inside the form; compiled JSX passes one. */
+  readonly children?: () => Node | readonly Node[] | string;
 };

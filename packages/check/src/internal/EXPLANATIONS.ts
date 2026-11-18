@@ -320,6 +320,20 @@ const ROWS: readonly Row[] = [
     "return the rows as loader data, or name the store in the loader's stores factory",
     "k.resume",
   ],
+  [
+    "E1257",
+    "an element placed by an op that started after it was made, in a served render",
+    "createApp logs it once per route and serves the page; in the browser that island re-renders (E1253).",
+    "const b = Button(...); Form({ children: () => [b] }) -> Form({ children: () => [Button(...)] })",
+    "k.claim",
+  ],
+  [
+    "E1258",
+    "an element made before the component call it is passed to",
+    "It claims its parent's server element at resume, so the island re-renders (E1253). E1808 reports base element children.",
+    "Card({ icon: Icon() }) -> Card({ icon: () => Icon() })",
+    "k.claim",
+  ],
   ["E1301", "calling an undeclared transaction", "", "add it to the component's uses: [addItem]", "k.store"],
   [
     "E1302",

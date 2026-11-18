@@ -76,6 +76,7 @@ async function served(ctx: Ctx): Promise<Served> {
     lifecycle: new AbortController(),
     maxStreams: 1000,
     streams: { open: 0 },
+    eager: new Set(),
     reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
     frames: () => [],
   };

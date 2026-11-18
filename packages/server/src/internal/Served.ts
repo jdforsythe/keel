@@ -19,7 +19,8 @@ import type { ReportWindow } from "./ReportWindow.ts";
  * `lifecycle` aborts on `close()`, ending runners and open event streams. `maxStreams` caps the open event streams
  * (`createApp({ maxStreams })`) and `streams.open` counts them (`liveStream`). `reports` is the CSP report window
  * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`). `log` is
- * `createApp({ log })`, for records written after the response has started (an event stream's).
+ * `createApp({ log })`, for records written after the response has started (an event stream's). `eager` holds the
+ * route ids that have logged E1257 (k.claim Server), once each.
  */
 export type Served = {
   readonly table: readonly Located[];
@@ -38,6 +39,7 @@ export type Served = {
   readonly lifecycle: AbortController;
   readonly maxStreams: number;
   readonly streams: { open: number };
+  readonly eager: Set<string>;
   readonly reports: ReportWindow;
   readonly frames: (thrown: unknown) => readonly string[];
   readonly log?: LogSink;

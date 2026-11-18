@@ -678,7 +678,7 @@ describe("Form", () => {
 
   it("outside a router: renders method, the action Href as given, hidden _method for non-POST, children; no lookup", () => {
     const fm = to("/fm/4");
-    const post = Form({ method: "POST", action: fm, children: "hello" });
+    const post = Form({ method: "POST", action: fm, children: () => "hello" });
     expect(post.getAttribute("method")).toBe("post");
     expect(post.getAttribute("action")).toBe("/fm/4");
     expect(post.querySelector("input")).toBeNull();
@@ -726,12 +726,10 @@ describe("Form", () => {
     t.stop();
   });
 
-  it("renderChildren: thunk, node, string, array, undefined", () => {
+  it("renderChildren: a thunk of a node, a string or an array; undefined", () => {
     const n = el("n");
     expect(renderChildren(undefined)).toEqual([]);
-    expect(renderChildren("t").map((x) => x.textContent)).toEqual(["t"]);
-    expect(renderChildren(n)).toEqual([n]);
-    expect(renderChildren([n, n])).toEqual([n, n]);
+    expect(renderChildren(() => [n, n])).toEqual([n, n]);
     expect(renderChildren(() => "z")[0]?.textContent).toBe("z");
     expect(renderChildren(() => n)).toEqual([n]);
   });

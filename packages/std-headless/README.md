@@ -18,7 +18,7 @@ Headless widgets built on `Part`: keyboard, focus and ARIA follow the WAI-ARIA A
   - `Menu({ id, trigger, items, onSelect, item?, styles? }, undefined, ctx?)`: parts `trigger`, `menu`, `item.<key>`; an item with `checked` is a `menuitemcheckbox`; an item's role is read once, when its row is made.
   - `Tabs({ id, label | labelledBy, tabs, selected, onChange, orientation?, tab?, panel, styles? }, undefined, ctx?)`: parts `list`, `tab.<key>`, `panel.<key>`.
   - `Dialog({ id, title, level?, trigger, content, alert?, styles? })`: parts `trigger`, `dialog` (`alertdialog` with `alert`), `title`, `description`; `level` and whether `alert` is given are read once, since they fix the heading's tag and the dialog's role.
-  - `Disclosure({ id, summary, children, styles? })`: parts `button`, `panel`; `children` are its JSX children.
+  - `Disclosure({ id, summary, children, styles? })`: parts `button`, `panel`; `children` is a thunk (`() => Child`); JSX children compile to one.
   - `Toaster({ id, items, onDismiss, dismiss, duration?, styles? }, undefined, ctx?)`: parts `status`, `alert`, `toast.<item>`, `dismiss.<item>`. A `status` item expires `duration` ms (at least 5,000) after it shows, on `ctx.clock`; focus on its dismiss button holds it and leaving starts the full duration again.
   - Charts `optionsChart` (`headless.options`), `openChart` (`headless.open`), `toastChart` (`headless.toast`); types `Option`, `ToastItem`.
   - Each part's id is `<id>.<part>`. Every string a person sees or hears is a prop or a slot's output. Values reach a widget through functions and leave through callbacks.
