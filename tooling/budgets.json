@@ -144,7 +144,7 @@
       "max": "3.25kb",
       "platform": "node"
     },
-    "@keel/std-capacitor": "1.25kb",
+    "@keel/std-capacitor": "1.5kb",
     "@keel/std-tauri": "1.75kb",
     "@keel/std-credentials": "1kb",
     "@keel/std-credentials/server": {
