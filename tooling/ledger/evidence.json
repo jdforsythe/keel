@@ -1,5 +1,5 @@
 {
-  "commit": "941f9424799f0187212cbd4be3c22b418dc17706",
+  "commit": "d5f3a82bf8ade951968bca6479a5bf6536ce3d77",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T22:08:59.909Z",
+  "generatedAt": "2026-11-18T22:48:02.047Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1493,7 +1493,7 @@
             "probabilistic": 0,
             "proven": 1
           },
-          "status": "proposed",
+          "status": "conformance-covered",
           "total": 7,
           "verified": 7
         },
@@ -2243,7 +2243,7 @@
       "verified": 833
     },
     "evidenceByRung": {
-      "example": 1181,
+      "example": 1182,
       "exhaustive": 15,
       "monitored": 4,
       "probabilistic": 335,
@@ -2251,7 +2251,7 @@
     },
     "exports": {
       "byRung": {
-        "example": 222,
+        "example": 223,
         "exhaustive": 1,
         "monitored": 0,
         "none": 30,
@@ -2369,15 +2369,15 @@
         },
         "router": {
           "byRung": {
-            "example": 3,
+            "example": 4,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 2,
             "proven": 4
           },
-          "total": 9,
-          "verified": 9
+          "total": 10,
+          "verified": 10
         },
         "runtime-dom": {
           "byRung": {
@@ -2776,12 +2776,12 @@
           "verified": 3
         }
       },
-      "total": 417,
-      "verified": 387
+      "total": 418,
+      "verified": 388
     },
-    "items": 1550,
+    "items": 1551,
     "unsafe": 18,
-    "verified": 1288
+    "verified": 1289
   },
   "mutation": {
     "packages": {
@@ -2821,8 +2821,8 @@
         "claims": 134,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 74.66,
-        "stale": 0,
+        "score": 74.49,
+        "stale": 1,
         "threshold": 70
       },
       "packages/cli": {
@@ -2869,16 +2869,16 @@
         "claims": 63,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 84.52,
-        "stale": 0,
+        "score": 86.09,
+        "stale": 2,
         "threshold": 80
       },
       "packages/runtime-dom": {
         "claims": 69,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 75.07,
-        "stale": 0,
+        "score": 75.27,
+        "stale": 1,
         "threshold": 70
       },
       "packages/scaffold": {
@@ -3125,8 +3125,8 @@
         "claims": 72,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 86.16,
-        "stale": 0,
+        "score": 87.53,
+        "stale": 3,
         "threshold": 70
       },
       "packages/ui": {
@@ -3138,7 +3138,7 @@
         "threshold": 70
       }
     },
-    "stale": 0
+    "stale": 7
   },
   "schema": 1,
   "tests": {
@@ -3234,12 +3234,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 71,
+        "propertyCalls": 72,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 525,
-        "unitFiles": 57
+        "unitCases": 530,
+        "unitFiles": 58
       },
       "packages/ctx": {
         "conformanceCases": 144,
@@ -3290,12 +3290,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 66,
+        "propertyCalls": 68,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 187,
-        "unitFiles": 30
+        "unitCases": 197,
+        "unitFiles": 32
       },
       "packages/runtime-dom": {
         "conformanceCases": 111,
@@ -3767,12 +3767,12 @@
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 1895,
+      "propertyCalls": 1898,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4318,
-      "unitFiles": 718
+      "unitCases": 4333,
+      "unitFiles": 721
     }
   },
   "tool": {

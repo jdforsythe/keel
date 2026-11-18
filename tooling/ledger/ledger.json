@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1181,
+    "example": 1182,
     "probabilistic": 335,
     "exhaustive": 15,
     "proven": 63,
@@ -11,7 +11,7 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 74.66,
+        "score": 74.49,
         "threshold": 70
       },
       "cli": {
@@ -35,11 +35,11 @@
         "threshold": 80
       },
       "router": {
-        "score": 84.52,
+        "score": 86.09,
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 75.07,
+        "score": 75.27,
         "threshold": 70
       },
       "scaffold": {
@@ -63,7 +63,7 @@
         "threshold": 80
       },
       "testing": {
-        "score": 86.16,
+        "score": 87.53,
         "threshold": 70
       },
       "ui": {
@@ -9936,6 +9936,12 @@
       "name": "guard",
       "file": "packages/router/src/guard.ts",
       "rung": "proven"
+    },
+    {
+      "pkg": "router",
+      "name": "identityMount",
+      "file": "packages/router/src/identityMount.ts",
+      "rung": "example"
     },
     {
       "pkg": "router",
