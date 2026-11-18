@@ -3,14 +3,16 @@
 // so k.sync's base check and write key decide 409 and duplicates exactly as an action would. No wall clock, no random, no timers.
 // Assumption: `ctx.net.route(url, handler)`, `ctx.net.setOnline(b)` and `ctx.clock.advance(ms)` are the sim spellings.
 // Assumption: a 2xx body is `{ ok: true, value }` with the endpoint's `output` as value (k.services module service); a refusal is `{ ok: false, error }` JSON with
-// status 409, and the endpoint declares `errors: { 409: s.json() }` so the client hands the body to the outbox.
+// status 409 (400 for an owner refusal), and the endpoint declares `errors: { 400: s.json(), 409: s.json() }` so the client hands the body to the outbox.
+// The route's action passes the body's `write` through `writeFor(write, owner)`; `server.takesCallerAs(owner)` sets the owner the server takes the
+// caller to be, and by default it is the owner of each write, so every existing case commits. A refusal is answered 400 `{ ok: false, error }` and saves nothing.
 // Assumption: `outbox(...)` returns the client store itself (`log()`, `get('entries')`), and its state is `{ entries }`.
 import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
-import { Write, drain, outbox } from "@keel/std-offline";
+import { Write, drain, outbox, writeFor } from "@keel/std-offline";
 import { store, transaction, tx } from "@keel/store";
 
 export const SEED = 1337;
@@ -44,7 +46,7 @@ export const Api = endpoints({
     params: s.object({ todoId: s.string() }),
     body: s.object({ title: s.string(), write: Write }),
     output: s.object({ head: s.int(), title: s.string() }),
-    errors: { 409: s.json(), 500: s.json() },
+    errors: { 400: s.json(), 409: s.json(), 500: s.json() },
   },
 });
 
@@ -54,6 +56,7 @@ export interface Post {
   readonly title: string;
   readonly key: string;
   readonly base: number;
+  readonly owner: string;
   readonly at: number;
 }
 
@@ -78,6 +81,7 @@ export function createServer() {
   if (st === undefined) throw new Error("server store did not build");
   const posts: Post[] = [];
   const script: Behavior[] = [];
+  const taken: { owner: string | undefined } = { owner: undefined };
   const gate: { on: boolean; waiting: (() => void)[] } = { on: false, waiting: [] };
   const handler =
     (todoId: string, ctx: SimCtx) =>
@@ -87,10 +91,22 @@ export function createServer() {
       const write: unknown = typeof body === "object" && body !== null ? Reflect.get(body, "write") : undefined;
       const key: unknown = typeof write === "object" && write !== null ? Reflect.get(write, "key") : undefined;
       const base: unknown = typeof write === "object" && write !== null ? Reflect.get(write, "base") : undefined;
-      if (typeof title !== "string" || typeof key !== "string" || typeof base !== "number")
+      const owner: unknown = typeof write === "object" && write !== null ? Reflect.get(write, "owner") : undefined;
+      const parsed = Write.parse(write);
+      if (typeof title !== "string" || typeof key !== "string" || typeof base !== "number" || !parsed.ok)
         return json(422, { ok: false });
-      posts.push({ url: req.url, todoId, title, key, base, at: ctx.clock.now() });
+      posts.push({
+        url: req.url,
+        todoId,
+        title,
+        key,
+        base,
+        owner: typeof owner === "string" ? owner : "",
+        at: ctx.clock.now(),
+      });
       if (gate.on) await new Promise<void>((go) => gate.waiting.push(go));
+      const checked = writeFor(parsed.value, taken.owner ?? parsed.value.owner);
+      if (!checked.ok) return json(400, { ok: false, error: checked.error });
       const behavior = script.shift() ?? { kind: "apply" };
       switch (behavior.kind) {
         case "reject":
@@ -112,6 +128,10 @@ export function createServer() {
   return {
     attach(ctx: SimCtx): void {
       for (const todoId of TODOS) ctx.net.route(`${ORIGIN}/todos/${todoId}`, handler(todoId, ctx));
+    },
+    /** The owner the server takes the caller to be; `undefined` takes the owner of each write. */
+    takesCallerAs(owner: string | undefined): void {
+      taken.owner = owner;
     },
     /** Queue behaviors for the next posts. */
     next(...b: Behavior[]): void {
