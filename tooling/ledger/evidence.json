@@ -1,5 +1,5 @@
 {
-  "commit": "5474ed7897f6f9f36cc8088c35aa18489b8ac22b",
+  "commit": "44490bc1b903d3f649e9c7e11618f9ab50ef665b",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T09:33:24.384Z",
+  "generatedAt": "2026-11-18T12:39:04.862Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1509,6 +1509,19 @@
           "status": "conformance-covered",
           "total": 20,
           "verified": 20
+        },
+        "k.resume": {
+          "byRung": {
+            "example": 0,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 0,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "conformance-covered",
+          "total": 0,
+          "verified": 0
         },
         "k.reveal": {
           "byRung": {
@@ -2692,7 +2705,7 @@
         "reason": null,
         "reportDate": "2026-11-17",
         "score": 74.52,
-        "stale": 0,
+        "stale": 2,
         "threshold": 70
       },
       "packages/cli": {
@@ -2740,7 +2753,7 @@
         "reason": null,
         "reportDate": "2026-11-17",
         "score": 85.47,
-        "stale": 3,
+        "stale": 5,
         "threshold": 80
       },
       "packages/runtime-dom": {
@@ -2748,7 +2761,7 @@
         "reason": null,
         "reportDate": "2026-11-17",
         "score": 77.38,
-        "stale": 0,
+        "stale": 10,
         "threshold": 70
       },
       "packages/scaffold": {
@@ -2772,7 +2785,7 @@
         "reason": null,
         "reportDate": "2026-11-17",
         "score": 82.07,
-        "stale": 11,
+        "stale": 13,
         "threshold": 70
       },
       "packages/services": {
@@ -3004,11 +3017,11 @@
         "reason": null,
         "reportDate": "2026-11-16",
         "score": 74.31,
-        "stale": 0,
+        "stale": 2,
         "threshold": 70
       }
     },
-    "stale": 28
+    "stale": 46
   },
   "schema": 1,
   "tests": {
@@ -3017,7 +3030,7 @@
         "conformanceCases": 0,
         "conformanceFiles": 0,
         "exploreFiles": 3,
-        "fails": 1,
+        "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
         "propertyCalls": 14,
@@ -3080,8 +3093,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 329,
-        "unitFiles": 41
+        "unitCases": 343,
+        "unitFiles": 43
       },
       "packages/cli": {
         "conformanceCases": 239,
@@ -3164,8 +3177,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 183,
-        "unitFiles": 28
+        "unitCases": 185,
+        "unitFiles": 29
       },
       "packages/runtime-dom": {
         "conformanceCases": 83,
@@ -3174,12 +3187,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 67,
+        "propertyCalls": 68,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 161,
-        "unitFiles": 31
+        "unitCases": 162,
+        "unitFiles": 32
       },
       "packages/scaffold": {
         "conformanceCases": 90,
@@ -3210,18 +3223,18 @@
         "unitFiles": 18
       },
       "packages/server": {
-        "conformanceCases": 326,
-        "conformanceFiles": 81,
+        "conformanceCases": 377,
+        "conformanceFiles": 93,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 194,
+        "propertyCalls": 197,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 464,
-        "unitFiles": 88
+        "unitCases": 467,
+        "unitFiles": 89
       },
       "packages/services": {
         "conformanceCases": 63,
@@ -3416,8 +3429,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 12,
-        "unitFiles": 3
+        "unitCases": 16,
+        "unitFiles": 4
       },
       "packages/std-money": {
         "conformanceCases": 7,
@@ -3631,18 +3644,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 3181,
-      "conformanceFiles": 847,
+      "conformanceCases": 3232,
+      "conformanceFiles": 859,
       "exploreFiles": 17,
-      "fails": 3,
+      "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 1814,
+      "propertyCalls": 1818,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4247,
-      "unitFiles": 692
+      "unitCases": 4271,
+      "unitFiles": 698
     }
   },
   "tool": {
