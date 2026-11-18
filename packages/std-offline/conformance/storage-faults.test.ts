@@ -117,7 +117,8 @@ test("With a ctx whose `clock.after` throws `RangeError('clock')` and a route an
   const realAfter = ctx.clock.after.bind(ctx.clock);
   const thrown = new RangeError("clock");
   Object.defineProperty(ctx.clock, "after", {
-    value: () => {
+    value: (...args: Parameters<typeof realAfter>) => {
+      if (server.posts.length === 0) return realAfter(...args);
       throw thrown;
     },
     configurable: true,
