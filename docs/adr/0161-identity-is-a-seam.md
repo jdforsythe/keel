@@ -21,3 +21,10 @@
 - Any session library, OIDC client, JWT-verified platform or identity-injecting proxy plugs in through one function and one mount; Keel's guarantees stop at the same-site check, the source of `user`, and the signed module-call assertion.
 - A sign-out reaches an open event stream only when it closes.
 - `@keel/std-credentials`' future is a separate decision (RFC 0139 Open questions).
+
+**Amendment (pages into `handle`, RFC 0139 Amendment, k.mount).** The built seam could not be reached from a page: `Form action`, `Link to`, `navigate` and `ok` take only a `routes.href` `Href`, a client router renders its own 404 for any other path, and an action has no response to carry a cookie on when it runs in the browser.
+- C10: `identity.ts` beside `topology.ts` default-exports `identityMount(path)` (`@keel/router`); `identity.server.ts` gives `handle.path` as its `path`. Its `href(subpath?, search?)` makes a same-origin `Href` under `path` from a closed-charset subpath (E1582); E1580 ties the files.
+- C11: a router keeps client-side only the pages its table matches; any other link, `navigate` or `ok` loads a document.
+- C12: a `Form` no router intercepts validates on the client, then posts natively: urlencoded, the form's own fields, POST only to the mount, no files (E1583). The app's `fn` turns its library's answer into a 303; Keel reads none of it and sets no cookie. D4's rejection of header-setting actions stands: in the browser an action has no response.
+- C13: a module importing `identity.ts` on a deployable whose origin mounts no `handle` (`static`, `client` without `host`, a shell) is E1581. Cookies are per origin, so an app serves one public origin and forwards to peers.
+- Consequences: sign-in pages behave the same on every placement and server-render on `node`; an OAuth flow starts from a link because `form-action 'self'` blocks a form post's redirect to another origin; a server-rendered page's forms now validate on the client too.
