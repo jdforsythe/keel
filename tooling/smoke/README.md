@@ -13,3 +13,7 @@
 # Built crash proofs
 
 `restart.mjs` and `workflow.mjs` build a copy of golden-1 in a temporary folder, serve its `api` on a SQLite file there and SIGKILL it. `restart.mjs` writes a list, two todos, a toggle and an edit, then restarts on the same file: the stored board row is byte-equal, GET answers the same board and the next write's log entry is one higher. `workflow.mjs` plants a two-second wait in the removal workflow's `restore` step, removes and undoes a list, kills the server inside the step and restarts it: the instance ends `kept`, the step ran twice and `api.removal.restored` is logged once. Both are SQLite only, take about 15 and 20 seconds, and run in the `built-smokes` job of pull-request CI.
+
+# Served page resume
+
+`resume.mjs [runs]` builds a copy of golden-1 whose `web` deployable is a `node` server (its `topology.ts` rewritten in the copy), serves `api` on a SQLite file and `web` on free ports, each naming the other as its peer, seeds a list with two todos and loads the list page in headless Chromium `runs` times. Before any script runs it keeps every element the parser made; after resume it checks that both islands are still marked, that no element was removed and every served element and todo row is the one the server sent, that no console warning or error was logged, and that a click on a Done checkbox stores the toggle and shows it.
