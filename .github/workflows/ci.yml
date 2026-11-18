@@ -108,6 +108,79 @@ jobs:
       - name: "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database"
         working-directory: packages/std-db
         run: "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/postgres-server.test.ts; do pnpm exec vitest run \"$f\"; done"
+  shell-tauri:
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      KEEL_ORIGIN: "http://localhost:4182"
+      CARGO_TARGET_DIR: "${{ github.workspace }}/.cargo-target"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: "Tauri 2 Linux packages (WebKitGTK 4.1) and Xvfb"
+        run: "sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev xvfb xauth"
+      - name: Rust stable
+        run: "rustup toolchain install stable --profile minimal --no-self-update && rustup default stable && cargo --version"
+      - name: "cargo registry and target for golden-1's shell"
+        uses: actions/cache@v4
+        with:
+          path: "~/.cargo/registry/index\n~/.cargo/registry/cache\n~/.cargo/git/db\n.cargo-target"
+          key: "cargo-tauri-${{ runner.os }}-${{ hashFiles('apps/golden-1/deploy/web/tauri/Cargo.lock', 'apps/golden-1/deploy/web/tauri/Cargo.toml') }}"
+          restore-keys: "cargo-tauri-${{ runner.os }}-"
+      - name: "golden-1's web as a Tauri debug binary"
+        working-directory: apps/golden-1
+        run: pnpm exec keel build --target tauri
+      - name: the binary loads its entry under Xvfb and reads the board through KEEL_ORIGIN
+        run: xvfb-run -a node tooling/ci-shell.mjs .cargo-target/debug/golden-1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: golden-1-tauri-linux-debug
+          path: .cargo-target/debug/golden-1
+          if-no-files-found: error
+          retention-days: 7
+  shell-android:
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      KEEL_ORIGIN: "http://localhost:4182"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Gradle caches for the Capacitor Android project
+        uses: actions/cache@v4
+        with:
+          path: "~/.gradle/caches\n~/.gradle/wrapper"
+          key: "gradle-capacitor-${{ runner.os }}-${{ hashFiles('apps/golden-1/package.json') }}"
+          restore-keys: "gradle-capacitor-${{ runner.os }}-"
+      - name: "golden-1's web as an Android debug APK (cap add, cap sync, Gradle assembleDebug)"
+        working-directory: apps/golden-1
+        run: pnpm exec keel build --target capacitor --platform android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: golden-1-android-debug
+          path: apps/golden-1/dist/web/capacitor/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
   build:
     needs: test
     runs-on: ubuntu-latest
