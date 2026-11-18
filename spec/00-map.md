@@ -11,7 +11,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component, k.place | E145x | k.errors |
-| E150x | k.router, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.leave |
+| E150x | k.router, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.leave, k.user |
 | E160x | k.ctx, k.sim, k.persist | E165x | k.services |
 | E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
@@ -37,16 +37,16 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.claim | Claim order | conformance-covered | eager elements |
 | k.defaults | Queued default actions | proposed | submit once |
 | k.place | Placed props | conformance-covered | calls are content |
-| k.router | Routes | conformance-covered | params, loaders, actions |
-| k.guards | Guards | conformance-covered | redirects, loop limit |
-| k.prefix | Implied path prefix | conformance-covered | enum param URLs omit |
-| k.forms | Forms | conformance-covered | bindings, validation |
+| k.router | Routes | conformance-covered | params |
+| k.guards | Guards | conformance-covered | redirects |
+| k.prefix | Implied path prefix | conformance-covered | enum params |
+| k.forms | Forms | conformance-covered | validation |
 | k.ui | Tokens and styling | conformance-covered | atomic CSS |
 | k.ctx | Capabilities | conformance-covered | clock, random, net, storage |
 | k.owner | Ctx owner | conformance-covered | its maker ends a ctx |
 | k.errors | Results and boundaries | conformance-covered | Result or boundary |
 | k.check | Checker and diagnostics | conformance-covered | codes, fixes, rules |
-| k.host | Host reads | conformance-covered | zone, locale, Node globals |
+| k.host | Host reads | conformance-covered | zone, locale |
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits |
 | k.testing | Harness and properties | conformance-covered | given, do, expect |
@@ -56,8 +56,9 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.ledger | Ledger and evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loaders, actions |
 | k.leave | What a request leaves | proposed | `#k-state`, E1577 |
+| k.user | Signed-in user and caller lifetime | proposed | sign-in |
 | k.serverlog | Server log records | conformance-covered | bounds |
-| k.sync | Heads and concurrent writes | conformance-covered | heads, reject or rebase |
+| k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Production entry and deploy files | conformance-covered | `server.mjs` |
@@ -65,7 +66,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.compat | Surface compatibility | conformance-covered | `accepts` |
 | k.api | API routes | conformance-covered | JSON, no view |
 | k.hosting | Client hosting | implemented | static artifact, `host` |
-| k.head | Document head | conformance-covered | title, `lang` |
+| k.head | Document head | conformance-covered | title |
 | k.services | Thin services | conformance-covered | typed clients |
 | k.openapi | OpenAPI import | conformance-covered | to typed clients |
 | k.module | Module manifest | conformance-covered | public surface |

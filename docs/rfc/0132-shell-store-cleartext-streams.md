@@ -104,3 +104,6 @@ Each is the orchestrator's call; the operator can reverse any of them.
 - C3: every Capacitor request goes through std-capacitor's own native plugin, so streams arrive and every request can be cancelled, on the cookie store `CapacitorHttp` uses.
 - C4: a raise of `@keel/std-capacitor` to 1.5kb; budgets are the owner's gate.
 - Open: the caller cookie across an app restart (Proposal 4).
+
+## Amendment
+RFC 0139 answers Proposal 4 with neither option as posed: the caller cookie stays session-only by default, a sign-in gets its own durable cookie in `@keel/std-credentials` (held in a native secure slot in the shells), and a `node` deployable may opt in to a caller of 1 to 400 days.
