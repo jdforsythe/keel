@@ -1,6 +1,6 @@
 # ADR-0159: a called prop is placed as content, and a JSX child that would render nothing is reported (RFC 0137)
 
-**Status:** proposed (RFC 0137, for the orchestrator to accept).
+**Status:** accepted (orchestrator under the owner's standing leave, 2026-11-18).
 
 **Context.** The compiler places a JSX child call as content only for `children()` and `slots.<name>()`, by name; `{props.icon()}` with an element thunk compiles to a text binding, and the runtime renders the node as `''` with no report. `{props.icon}` writes the function's source. The compiler has no types, and `tsc` accepts both.
 

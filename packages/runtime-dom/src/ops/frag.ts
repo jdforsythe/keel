@@ -1,17 +1,19 @@
 import { cx } from "../internal/cx.ts";
+import { eachItem } from "../internal/eachItem.ts";
 import { heldOf } from "../internal/heldOf.ts";
 import { nodesOf } from "../internal/nodesOf.ts";
 import { partsOf } from "../internal/partsOf.ts";
 import { stands } from "../internal/stands.ts";
 
 /** What multi-item content appends its items to. */
-type Sink = { append(...items: (Node | string)[]): void; appendChild<T extends Node>(node: T): T };
+type Sink = { append(...items: (Node | string | readonly unknown[])[]): void; appendChild<T extends Node>(node: T): T };
 
 /** Texts `frag` put in place while resuming: a later text of the same content goes after them. */
 const fresh = new WeakSet<Node>();
 
 /**
- * Multi-item content (compiled JSX children, a fragment): `build` appends the items to `f` in order. Outside a claim
+ * Multi-item content (compiled JSX children, a fragment): `build` appends the items to `f` in order; an array item
+ * (a prop call returning several nodes) is its items in order. Outside a claim
  * `f` is the fragment returned. While resuming nothing moves: an element item claimed its server node where it is, a
  * text replaces the server's text at the cursor, and an op's anchor stands for the region it claimed; the empty
  * fragment returned has those nodes as its parts (`partsOf`), in document order.
@@ -19,13 +21,13 @@ const fresh = new WeakSet<Node>();
 export function frag(build: (f: Sink) => void): DocumentFragment {
   const out = document.createDocumentFragment();
   const claim = cx.claim;
-  if (claim === null) {
-    build(out);
-    return out;
-  }
-  const r = claim.region;
+  const r = claim?.region ?? null;
   const items: Node[] = [];
   const put = (x: Node | string): void => {
+    if (claim === null) {
+      out.append(x);
+      return;
+    }
     if (typeof x !== "string") {
       const held = heldOf.get(x);
       const p = partsOf.get(x) ?? (held === undefined ? undefined : nodesOf(held.nodes ?? []));
@@ -51,17 +53,16 @@ export function frag(build: (f: Sink) => void): DocumentFragment {
     fresh.add(n);
   };
   build({
-    append: (...xs) => {
-      for (const x of xs) put(x);
-    },
+    append: (...xs) => eachItem(xs, put),
     appendChild: (x) => {
       put(x);
       return x;
     },
   });
-  partsOf.set(
-    out,
-    items.flatMap((n) => stands.get(n) ?? (n.nodeType === 8 && n.parentNode === null ? [] : [n])),
-  );
+  if (claim !== null)
+    partsOf.set(
+      out,
+      items.flatMap((n) => stands.get(n) ?? (n.nodeType === 8 && n.parentNode === null ? [] : [n])),
+    );
   return out;
 }

@@ -30,7 +30,7 @@ export function renderChain(input: ChainInput): Rendered {
   const { chain, failure, ctx } = input;
   const islands: Record<string, JsonValue> = {};
   let caught: KeelError<string, unknown> | null = null;
-  const seen = { eager: false };
+  const seen = { eager: false, nothing: false };
 
   const errorAt = (i: number, error: KeelError<string, unknown>): string => {
     const el = chain[i]?.def;
@@ -82,5 +82,5 @@ export function renderChain(input: ChainInput): Rendered {
       : failure?.bare === true
         ? errorAt(failure.level, failure.error)
         : levelAt(0);
-  return { html, islands, caught, eager: seen.eager };
+  return { html, islands, caught, eager: seen.eager, nothing: seen.nothing };
 }

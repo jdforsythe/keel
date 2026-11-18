@@ -10,4 +10,6 @@ export type Rendered = {
   readonly caught: KeelError<string, unknown> | null;
   /** A level's render placed an element made before the op placing it (E1257). */
   readonly eager: boolean;
+  /** A level's render had a text binding that renders nothing (E1406). */
+  readonly nothing: boolean;
 };

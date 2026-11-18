@@ -124,7 +124,10 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   }
 
   const typed = opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported);
-  if (typed !== undefined) out.push(...typed.diagnostics);
+  // One diagnostic per fault: where the compiler reports E1403 at an expression, E1406 does not.
+  const e1403 = new Set(out.filter((d) => d.code === "E1403").map((d) => `${d.path}:${d.line}:${d.col}`));
+  if (typed !== undefined)
+    out.push(...typed.diagnostics.filter((d) => d.code !== "E1406" || !e1403.has(`${d.path}:${d.line}:${d.col}`)));
 
   const registered = rules();
   const checked: Checked[] = [];

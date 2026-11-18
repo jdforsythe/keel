@@ -47,7 +47,7 @@ export function resumeIsland(
   const focused = doc.activeElement;
   const queued = eventQueue.pending();
   const offered = new Map(waiting);
-  const root = createRoot(el, ctx);
+  const root = createRoot(el, ctx, mode);
   // `data.at` of a throw at no element of its own (the component's effect, computed or render): the stamp at the
   // island's place, as `mount` uses its element's (k.errors).
   const rootAt = stampOf(el.parentNode);
@@ -112,7 +112,7 @@ export function resumeIsland(
   for (const [key, snapshot] of offered) if (!waiting.has(key)) waiting.set(key, snapshot);
   held.nodes ??= salvage(el);
   for (const n of nodesOf(held.nodes)) n.parentNode?.removeChild(n);
-  const fresh = createRoot(null, ctx);
+  const fresh = createRoot(null, ctx, mode);
   const freshOwner = createOwner(null, fresh, catcher);
   const client: { node: Node | null; scope: Scope | null } = { node: null, scope: null };
   live.teardown = () => {

@@ -16,9 +16,9 @@ const told = new WeakSet<Event>();
  * A delegation root on `el` (or detached until `attach`): at most one listener per event type. With a `ctx`, capture
  * listeners report each input event on an element with an id to its observers before any handler runs (rfc:0070);
  * nothing is built while nothing observes. A field that was ever a password field (type or autocomplete) under
- * this ctx is reported masked from then on, also after a show-password toggle (red-team 0207).
+ * this ctx is reported masked from then on, also after a show-password toggle (red-team 0207). `mode` `"dev"` sets `dev`.
  */
-export function createRoot(el: Element | null, ctx?: Ctx): Root {
+export function createRoot(el: Element | null, ctx?: Ctx, mode?: "dev" | "production"): Root {
   let target = el;
   const types = new Map<string, (e: Event) => void>();
   const tap = (e: Event): void => {
@@ -36,6 +36,7 @@ export function createRoot(el: Element | null, ctx?: Ctx): Root {
   for (const t of taps) target?.addEventListener(t, tap, true);
   return {
     ctx,
+    dev: mode === "dev",
     tell: tap,
     listen(type) {
       if (types.has(type)) return;

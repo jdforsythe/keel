@@ -3,10 +3,8 @@ import type { Topology } from "@keel/compiler";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { clip } from "./clip.ts";
+import { isRecord } from "./compat/isRecord.ts";
 import { lineCol } from "./lineCol.ts";
-
-const isRecord = (v: unknown): v is Readonly<Record<string, unknown>> =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** `text` parsed as JSON; undefined when it is not JSON (E1005 reports that file). */
 function parsed(text: string): unknown {

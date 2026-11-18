@@ -133,5 +133,10 @@ export async function page(
     r.sv.eager.add(id);
     diags.push({ code: "E1257", message: `${id}: an element was placed after it was made; make it in the thunk` });
   }
+  // E1406 once per route in dev (k.place Runtime): a text binding rendered nothing.
+  if (r.sv.mode === "dev" && rendered.value.nothing && !r.sv.nothing.has(id)) {
+    r.sv.nothing.add(id);
+    diags.push({ code: "E1406", message: `${id}: a text binding renders nothing; place the node with {props.x()}` });
+  }
   return { response: documentResponse(r, final, rendered.value, extra, dev, head), route: id, diags };
 }

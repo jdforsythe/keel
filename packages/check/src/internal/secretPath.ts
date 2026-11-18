@@ -2,6 +2,7 @@ import type { Argument, Expression, ObjectProperty } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { SchemaSource } from "./SchemaSource.ts";
 import { importTarget } from "./importTarget.ts";
+import { keyName } from "./keyName.ts";
 import { parseFile } from "./parseFile.ts";
 import { schemaSourceOf } from "./schemaSourceOf.ts";
 
@@ -9,11 +10,7 @@ const MAX_HOPS = 8;
 type Walk = { readonly project: readonly SourceFile[]; readonly seen: Map<string, number> };
 
 /** A static property key's name, or undefined for a computed or non-string key. */
-function keyOf(p: ObjectProperty): string | undefined {
-  if (p.computed) return undefined;
-  if (p.key.type === "Identifier") return p.key.name;
-  return p.key.type === "Literal" && typeof p.key.value === "string" ? p.key.value : undefined;
-}
+const keyOf = (p: ObjectProperty): string | undefined => keyName(p) ?? undefined;
 
 /** Resolves `name` in `src`: a const costs one of the `MAX_HOPS` bindings, an import alias none. */
 function binding(name: string, src: SchemaSource, path: readonly string[], hops: number, w: Walk): string[] | null {

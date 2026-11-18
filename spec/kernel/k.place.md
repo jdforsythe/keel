@@ -1,5 +1,5 @@
 # k.place: Placed props
-status: proposed
+status: implemented
 
 How a component places content a prop gives it, so that no JSX child expression renders nothing in silence: each is placed as content, bound as text, or reported.
 

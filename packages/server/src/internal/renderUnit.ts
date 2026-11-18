@@ -10,12 +10,17 @@ import { attempted } from "./attempted.ts";
  * creates stay live for `#k-state`, and everything is disposed with the request. Units never nest (the caller
  * renders child levels first). A throw from the component or a binding is rethrown as `keel.unexpected`. The
  * runtime renders in its server mode, writing the regions `resume` claims (k.resume Regions), and checks that each
- * element its ops place was made after the op started: `seen.eager` is set when one was not (E1257, k.claim Server).
+ * element its ops place was made after the op started: `seen.eager` is set when one was not (E1257, k.claim Server);
+ * `seen.nothing` is set when a text binding rendered nothing (E1406, k.place).
  */
-export function renderUnit(fn: () => unknown, seen: { eager: boolean } = { eager: false }): unknown {
+export function renderUnit(
+  fn: () => unknown,
+  seen: { eager: boolean; nothing: boolean } = { eager: false, nothing: false },
+): unknown {
   const host = document.createElement("div");
   const out: { value: unknown; error: { e: unknown } | null } = { value: undefined, error: null };
   serverMode.on = true;
+  serverMode.nothing = false;
   made.on = true;
   made.from = made.seq;
   made.eager = false;
@@ -38,6 +43,7 @@ export function renderUnit(fn: () => unknown, seen: { eager: boolean } = { eager
     serverMode.on = false;
     made.on = false;
     if (made.eager) seen.eager = true;
+    if (serverMode.nothing) seen.nothing = true;
   }
   if (out.error !== null) throw out.error.e;
   return out.value;

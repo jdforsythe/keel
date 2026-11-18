@@ -258,7 +258,8 @@ export function lowerFile(
             pushText(escapeHtml(String(e.value)), String(e.value));
         } else if (e.type === "JSXElement" || e.type === "JSXFragment")
           items.push({ kind: "node", code: () => lowerNode(e) });
-        else if (isSlotCall(e)) items.push({ kind: "node", code: () => `(${code(e)}) ?? ""` });
+        else if (isSlotCall(e, propsNameOf(componentAt(a, e.start))))
+          items.push({ kind: "node", code: () => `(${code(e)}) ?? ""` });
         // rfc:0061: elements in an expression are E1403 and bind nothing (never a text binding of a node).
         else if (elementValued(a, c.expression) === null) items.push({ kind: "dyn", expr: c.expression });
       } else if (isHtmlTag(tagNameOf(c.openingElement.name))) {

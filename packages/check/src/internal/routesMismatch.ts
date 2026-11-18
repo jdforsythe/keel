@@ -1,7 +1,5 @@
 import type { RouteLiterals } from "@keel/compiler";
-
-const isRecord = (v: unknown): v is Readonly<Record<string, unknown>> =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
+import { isRecord } from "./compat/isRecord.ts";
 
 const sameList = (a: unknown, b: readonly string[]): boolean =>
   Array.isArray(a) && a.length === b.length && a.every((x, i) => x === b[i]);

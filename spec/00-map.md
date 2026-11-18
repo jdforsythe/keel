@@ -35,14 +35,14 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes |
 | k.resume | Served documents and resume | conformance-covered | regions, layout islands |
 | k.claim | Claim order | conformance-covered | eager elements |
-| k.place | Placed props | proposed | a called prop is content |
+| k.place | Placed props | implemented | prop calls are content |
 | k.router | Routes | conformance-covered | params, loaders, actions |
 | k.guards | Guards | conformance-covered | redirects, loop limit |
 | k.prefix | Implied path prefix | conformance-covered | enum param URLs omit |
 | k.forms | Forms | conformance-covered | bindings, validation |
-| k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS |
+| k.ui | Tokens and styling | conformance-covered | style props, atomic CSS |
 | k.ctx | Capabilities | conformance-covered | clock, random, net, storage |
-| k.owner | Ctx owner | conformance-covered | only its maker ends a ctx |
+| k.owner | Ctx owner | conformance-covered | its maker ends a ctx |
 | k.errors | Results and boundaries | conformance-covered | Result or boundary |
 | k.check | Checker and diagnostics | conformance-covered | codes, fixes, rules |
 | k.host | Host reads | conformance-covered | zone, locale, Node globals |
@@ -53,7 +53,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Schedules and simulation | conformance-covered | delays, faults, offline |
 | k.ledger | Ledger and evidence | conformance-covered | rungs, producers, mutation |
-| k.server | Thin server | conformance-covered | loaders, actions, server state |
+| k.server | Thin server | conformance-covered | loaders, actions, state |
 | k.serverlog | Server log records | conformance-covered | bounds |
 | k.sync | Heads and concurrent writes | conformance-covered | heads, reject or rebase |
 | k.persist | Storage and durable state | conformance-covered | drivers |

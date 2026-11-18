@@ -9,12 +9,9 @@ const FIXTURES: readonly Fixture[] = [
     name: "slots",
     source:
       "export default function T(props, slots) { return <div>{slots.head()}{props.children?.()}{props.body()}{slots.a?.()}{slots.x() ?? 1}{children()}{foo()}{slots[k]()}{props[k]()}{o.slots()}{a.b.slots()}{s.slots.y()}{slots.x() || 1}{(slots.p())}{props.foo?.bar()}</div> }",
-    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<div id=\\"T.0\\"><!----><!----> <!----><!----><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> </div>");\nexport default function T(props, slots) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt0); const __kn1 = __kr0.childNodes[0]; const __kn2 = __kr0.childNodes[1]; const __kn3 = __kr0.childNodes[2]; const __kn4 = __kr0.childNodes[3]; const __kn5 = __kr0.childNodes[4]; const __kn6 = __kr0.childNodes[5]; const __kn7 = __kr0.childNodes[6]; const __kn8 = __kr0.childNodes[8]; const __kn9 = __kr0.childNodes[10]; const __kn10 = __kr0.childNodes[12]; const __kn11 = __kr0.childNodes[14]; const __kn12 = __kr0.childNodes[16]; const __kn13 = __kr0.childNodes[18]; const __kn14 = __kr0.childNodes[19]; const __kn15 = __kr0.childNodes[20]; __k.slot(__kn1, () => (slots.head()) ?? ""); __k.slot(__kn2, () => (props.children?.()) ?? ""); __k.text(__kn3, () => (props.body())); __k.slot(__kn4, () => (slots.a?.()) ?? ""); __k.slot(__kn5, () => (slots.x() ?? 1) ?? ""); __k.slot(__kn6, () => (children()) ?? ""); __k.text(__kn7, () => (foo())); __k.text(__kn8, () => (slots[k]())); __k.text(__kn9, () => (props[k]())); __k.text(__kn10, () => (o.slots())); __k.text(__kn11, () => (a.b.slots())); __k.text(__kn12, () => (s.slots.y())); __k.text(__kn13, () => (slots.x() || 1)); __k.slot(__kn14, () => (slots.p()) ?? ""); __k.text(__kn15, () => (props.foo?.bar())); return __kr0; })()  }); }',
+    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<div id=\\"T.0\\"><!----><!----><!----><!----><!----><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> </div>");\nexport default function T(props, slots) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt0); const __kn1 = __kr0.childNodes[0]; const __kn2 = __kr0.childNodes[1]; const __kn3 = __kr0.childNodes[2]; const __kn4 = __kr0.childNodes[3]; const __kn5 = __kr0.childNodes[4]; const __kn6 = __kr0.childNodes[5]; const __kn7 = __kr0.childNodes[6]; const __kn8 = __kr0.childNodes[8]; const __kn9 = __kr0.childNodes[10]; const __kn10 = __kr0.childNodes[12]; const __kn11 = __kr0.childNodes[14]; const __kn12 = __kr0.childNodes[16]; const __kn13 = __kr0.childNodes[18]; const __kn14 = __kr0.childNodes[19]; const __kn15 = __kr0.childNodes[20]; __k.slot(__kn1, () => (slots.head()) ?? ""); __k.slot(__kn2, () => (props.children?.()) ?? ""); __k.slot(__kn3, () => (props.body()) ?? ""); __k.slot(__kn4, () => (slots.a?.()) ?? ""); __k.slot(__kn5, () => (slots.x() ?? 1) ?? ""); __k.slot(__kn6, () => (children()) ?? ""); __k.text(__kn7, () => (foo())); __k.text(__kn8, () => (slots[k]())); __k.text(__kn9, () => (props[k]())); __k.text(__kn10, () => (o.slots())); __k.text(__kn11, () => (a.b.slots())); __k.text(__kn12, () => (s.slots.y())); __k.text(__kn13, () => (slots.x() || 1)); __k.slot(__kn14, () => (slots.p()) ?? ""); __k.text(__kn15, () => (props.foo?.bar())); return __kr0; })()  }); }',
     deps: {
-      edges: [
-        { from: "T.tsx#props.body", to: "T.0:text:#text" },
-        { from: "T.tsx#props.foo", to: "T.0:text:#text:8" },
-      ],
+      edges: [{ from: "T.tsx#props.foo", to: "T.0:text:#text:7" }],
       nodes: [
         { id: "T.0:text:#text", kind: "binding", name: "text #text", file: "T.tsx" },
         { id: "T.0:text:#text:1", kind: "binding", name: "text #text", file: "T.tsx" },
@@ -24,8 +21,6 @@ const FIXTURES: readonly Fixture[] = [
         { id: "T.0:text:#text:5", kind: "binding", name: "text #text", file: "T.tsx" },
         { id: "T.0:text:#text:6", kind: "binding", name: "text #text", file: "T.tsx" },
         { id: "T.0:text:#text:7", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:8", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.tsx#props.body", kind: "prop", name: "body", file: "T.tsx" },
         { id: "T.tsx#props.foo", kind: "prop", name: "foo", file: "T.tsx" },
       ],
     },

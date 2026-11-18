@@ -1,5 +1,6 @@
 import type { Topology } from "@keel/compiler";
 import type { Diagnostic } from "../types/Diagnostic.ts";
+import { isRecord } from "./compat/isRecord.ts";
 import { lineCol } from "./lineCol.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
@@ -19,8 +20,6 @@ function jsonOf(text: string): unknown {
     return undefined;
   }
 }
-
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** `pkg` (a `package.json` text) with `dep` added to `dependencies` (sorted), at the spec of its first `@keel/` one. */
 function withDependency(pkg: string, value: Record<string, unknown>, dep: string): string {

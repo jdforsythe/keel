@@ -387,6 +387,13 @@ const ROWS: readonly Row[] = [
     "k.component",
   ],
   [
+    "E1406",
+    "a JSX child bound as text whose type holds a node or is a function: it renders nothing",
+    "A prop call alone, {props.x()}, is placed as content; any other expression is text, and a node or function is ''.",
+    "{props.icon} -> {props.icon()}",
+    "k.place",
+  ],
+  [
     "E1404",
     "duplicate element id",
     "Ids address elements in tests and a11y.json.",

@@ -1,4 +1,5 @@
 import type { Expression, ObjectExpression, ObjectProperty, Program } from "oxc-parser";
+import { keyName } from "../keyName.ts";
 import type { Entry } from "./Entry.ts";
 import type { Manifest } from "./Manifest.ts";
 import type { ManifestList } from "./ManifestList.ts";
@@ -6,13 +7,7 @@ import type { StdEntry } from "./StdEntry.ts";
 import { literalJson } from "./literalJson.ts";
 
 /** The static key of an object property (identifier or string literal), or `null` when computed. */
-function keyOf(p: ObjectProperty): string | null {
-  if (p.computed) return null;
-  if (p.key.type === "Identifier") return p.key.name;
-  if (p.key.type !== "Literal") return null;
-  const v = p.key.value;
-  return typeof v === "string" ? v : null;
-}
+const keyOf = keyName;
 
 /** `x as T`, `x satisfies T`, and `(x)` unwrapped. */
 function unwrap(e: Expression): Expression {

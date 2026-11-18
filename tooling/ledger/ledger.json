@@ -11,7 +11,7 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 73.75,
+        "score": 73.43,
         "threshold": 70
       },
       "cli": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 81.99,
+        "score": 81.94,
         "threshold": 70
       },
       "services": {

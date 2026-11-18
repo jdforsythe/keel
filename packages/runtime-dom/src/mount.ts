@@ -24,7 +24,7 @@ export function mount(
   el: Element,
   options: MountOptions = {},
 ): () => void {
-  const root = createRoot(el, options.ctx);
+  const root = createRoot(el, options.ctx, options.mode);
   const owner = createOwner(null, root, null);
   const before = el.lastChild;
   const anchor = el.appendChild(el.ownerDocument.createComment(""));

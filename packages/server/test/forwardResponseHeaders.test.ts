@@ -49,6 +49,7 @@ describe("forwarded response headers", () => {
         maxStreams: 1000,
         streams: { open: 0 },
         eager: new Set(),
+        nothing: new Set(),
         reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
         frames: () => [],
       };
@@ -90,6 +91,7 @@ describe("forwarded HEAD response", () => {
       maxStreams: 1000,
       streams: { open: 0 },
       eager: new Set(),
+      nothing: new Set(),
       reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
       frames: () => [],
     };

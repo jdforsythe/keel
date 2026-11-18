@@ -6,12 +6,15 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import type { Annotated } from "./Annotated.ts";
 import type { Typed } from "./Typed.ts";
 import { annotateProps } from "./annotateProps.ts";
-import { clip } from "./clip.ts";
+import { applyEdits } from "./applyEdits.ts";
 import { dateReads } from "./dateReads.ts";
+import { isAppPath } from "./isAppPath.ts";
 import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
 import { resultDiscards } from "./resultDiscards.ts";
+import { textNodes } from "./textNodes.ts";
 import { tsCompilerOptions } from "./tsCompilerOptions.ts";
+import { unifiedDiff } from "./unifiedDiff.ts";
 
 /** Fallback global JSX typing when `@keel/runtime-dom/jsx-runtime` does not resolve from `root`. */
 const JSX_DTS = `declare namespace JSX {
@@ -54,7 +57,8 @@ const mtimeOf = (fileName: string): number => fs.statSync(fileName, { throwIfNoE
  * added when `@types/node` resolves from `root`. Disk files are cached by path and
  * mtime across calls; results are memoized by input and revalidated against those mtimes. Errors that encode a Keel rule are reported under that
  * code (`mapTsDiagnostic`); the rest are E1751. Mapped codes the compiler already reported in the same file
- * are dropped (`skip`). Also finds discarded `Result` expression statements (E1453) and the date receivers E1758 reads, which need types.
+ * are dropped (`skip`). Also finds discarded `Result` expression statements (E1453), the date receivers E1758 reads and the JSX children
+ * that render nothing (E1406), which need types.
  */
 export function typeCheck(
   files: readonly SourceFile[],
@@ -87,6 +91,10 @@ export function typeCheck(
   const readDisk = host.readFile.bind(host);
   const existsDisk = host.fileExists.bind(host);
   host.fileExists = (fileName) => byName.has(norm(fileName)) || norm(fileName) === jsxName || existsDisk(fileName);
+  // In-memory files may sit in folders that are not on disk; module resolution asks for those folders first.
+  const dirs = new Set([...byName.keys()].flatMap((n) => n.split("/").map((_, i, p) => p.slice(0, i).join("/"))));
+  const dirOnDisk = host.directoryExists?.bind(host);
+  host.directoryExists = (d) => dirs.has(norm(d).replace(/\/$/, "")) || dirOnDisk?.(d) !== false;
   const probe = ts.resolveModuleName(`${JSX_SOURCE}/jsx-runtime`, `${base}/__probe__.tsx`, strict, host);
   const shim = probe.resolvedModule === undefined;
   const options: ts.CompilerOptions = shim ? strict : { ...strict, jsxImportSource: JSX_SOURCE };
@@ -133,21 +141,30 @@ export function typeCheck(
       if (mapped === null || (mapped.code !== "E1751" && own.has(mapped.code))) continue;
       out.push(mapped);
     }
-    for (const at of resultDiscards(sf, checker)) {
+    const push = (code: string, at: number, message: string, see: string, end = -1): void => {
       const pos = view.original(at);
-      if (pos < 0) continue;
-      const { line, col } = lineCol(file.source, pos);
+      const after = end < 0 ? -1 : view.original(end);
+      if (pos < 0) return;
+      const fix =
+        after < 0
+          ? ""
+          : unifiedDiff(file.path, file.source, applyEdits(file.source, [{ start: after, end: after, text: "()" }]));
       out.push({
         kind: "diag",
-        code: "E1453",
+        code,
         path: file.path,
-        line,
-        col,
-        message: clip("Result discarded as a statement; narrow on r.ok", 89),
-        see: "k.errors",
+        ...lineCol(file.source, pos),
+        message,
+        see,
+        ...(fix === "" ? {} : { fix }),
       });
-    }
+    };
+    for (const at of resultDiscards(sf, checker))
+      push("E1453", at, "Result discarded as a statement; narrow on r.ok", "k.errors");
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
+    if (file.path.endsWith("x") && isAppPath(file.path))
+      for (const t of textNodes(sf, checker))
+        push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
   }
   if (memo.size >= MEMO_MAX) {
     const first = memo.keys().next();
