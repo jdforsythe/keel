@@ -1,21 +1,47 @@
-import { type Expression, type Program, Visitor } from "oxc-parser";
+import { type Expression, type JSXChild, type Program, Visitor } from "oxc-parser";
 import type { Hit } from "./Hit.ts";
 import { clip } from "./clip.ts";
 import { stringOf } from "./stringOf.ts";
+import { unwrap } from "./unwrap.ts";
 
 const LETTER = /\p{L}/u;
 const ATTRS = ["label", "alt"];
 
 /**
- * E2406 hits in a component (`component`) or `routes.ts` file: a JSX text child, a string literal `label` or `alt`, or
- * a string literal a route `title` function returns (its expression body or its own `return`s), each with a letter.
+ * The expressions `e` can evaluate to: both branches of a conditional, both sides of `||` and `??`, the right side of
+ * `&&`, and with `thunks` the expression body of an arrow (a reactive JSX child); else `e` itself.
+ */
+function branches(e: Expression, thunks: boolean): Expression[] {
+  const x = unwrap(e);
+  if (x.type === "ConditionalExpression") return [...branches(x.consequent, thunks), ...branches(x.alternate, thunks)];
+  if (x.type === "LogicalExpression")
+    return x.operator === "&&"
+      ? branches(x.right, thunks)
+      : [...branches(x.left, thunks), ...branches(x.right, thunks)];
+  if (thunks && x.type === "ArrowFunctionExpression" && x.body.type !== "BlockStatement")
+    return branches(x.body, thunks);
+  return [x];
+}
+
+/**
+ * E2406 hits in a component (`component`) or `routes.ts` file, each a string literal with a letter: a JSX text child; a
+ * JSX expression child; a `label` or `alt` attribute; a route `title` function's expression body or own `return`s.
+ * An expression counts through its literal branches (`branches`).
  */
 export function copyHits(program: Program, component: boolean): Hit[] {
   const out: Hit[] = [];
-  const literal = (e: Expression): void => {
-    const s = stringOf(e);
-    if (s !== undefined && LETTER.test(s.value))
-      out.push({ at: s.at - 1, msg: `literal copy '${clip(s.value.trim())}'; read it from a message set` });
+  const literal = (e: Expression, thunks = false): void => {
+    for (const b of branches(e, thunks)) {
+      const s = stringOf(b);
+      if (s !== undefined && LETTER.test(s.value))
+        out.push({ at: s.at - 1, msg: `literal copy '${clip(s.value.trim())}'; read it from a message set` });
+    }
+  };
+  const children = (cs: readonly JSXChild[]): void => {
+    if (!component) return;
+    for (const c of cs)
+      if (c.type === "JSXExpressionContainer" && c.expression.type !== "JSXEmptyExpression")
+        literal(c.expression, true);
   };
   const titles = new Set<number>();
   const fns: number[] = [];
@@ -26,6 +52,8 @@ export function copyHits(program: Program, component: boolean): Hit[] {
     fns.pop();
   };
   new Visitor({
+    JSXElement: (n) => children(n.children),
+    JSXFragment: (n) => children(n.children),
     JSXText: (n) => {
       if (!component || !LETTER.test(n.value)) return;
       const at = n.start + n.value.length - n.value.trimStart().length;

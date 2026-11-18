@@ -7,8 +7,9 @@ import { msgOf } from "./internal/msgOf.ts";
 const COMPONENT = /(?:^|\/)[A-Z][A-Za-z0-9]*\.[jt]sx$/;
 
 /**
- * E2406 (std.messages): a JSX text child, a string literal `label` or `alt`, or a string literal a route `title`
- * returns, containing a letter, in a component or `routes.ts` file. No fix: the text belongs in a message set.
+ * E2406 (std.messages): a JSX text child, a string literal JSX expression child, `label` or `alt`, or a string literal a
+ * route `title` returns, containing a letter, in a component or `routes.ts` file; a conditional or logical expression
+ * counts through its literal branches. No fix: the text belongs in a message set.
  */
 export const literalCopy: RuleDef = defineRule({
   code: "E2406",
