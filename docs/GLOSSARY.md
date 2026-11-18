@@ -2,7 +2,7 @@
 
 Canonical names. Changing one requires an RFC.
 
-- **kernel**: the frozen core: schema, reactive, store, runtime-dom, compiler, router, forms, ui, check, scaffold, testing, server (thin), services (thin), cli, ctx.
+- **kernel**: the provisionally frozen core: schema, reactive, store, runtime-dom, compiler, router, forms, ui, check, scaffold, testing, server (thin), services (thin), cli, ctx.
 - **stdlib**: modules built on kernel extension points, versioned separately, frozen individually; packages `@keel/std-<x>`, after the kernel in dependency order (no kernel package imports one).
 - **module**: a vertical slice (schemas, routes, components, handlers) with a manifest declaring its public surface.
 - **deployable**: a composition of modules declared in `topology.ts` that builds to one artifact.
@@ -24,4 +24,4 @@ Canonical names. Changing one requires an RFC.
 - **workflow**: `workflow(id, spec)` from `@keel/std-workflows`: a state chart run per instance in one server store, its steps run as jobs.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 
-verified: 35cf34605be699fa862dc4324630dc189f7f99fb
+verified: 7f8b706a6650972a4398989d17b2a34ccbc21f03

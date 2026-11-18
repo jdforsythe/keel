@@ -6,10 +6,10 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 
 | section | clauses | status | missing tests |
 | --- | --- | --- | --- |
-| k.schema | 12 | **conformance-covered** | none |
-| k.reactive | 19 | **conformance-covered** | none |
+| k.schema | 15 | **conformance-covered** | none |
+| k.reactive | 20 | **conformance-covered** | none |
 | k.store | 23 | **conformance-covered** | none |
-| k.ctx | 17 | **conformance-covered** | none |
+| k.ctx | 18 | **conformance-covered** | none |
 | k.errors | 13 | **conformance-covered** | none |
 | k.compiler | 20 | **conformance-covered** | none |
 | k.component | 16 | **conformance-covered** | none |
@@ -17,7 +17,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.ui | 15 | **conformance-covered** | none |
 | k.router | 15 | **conformance-covered** | none |
 | k.prefix | 7 | **conformance-covered** | none |
-| k.head | 7 | **conformance-covered** | none |
+| k.head | 8 | **conformance-covered** | none |
 | k.forms | 16 | **conformance-covered** | none |
 | k.server | 16 | **conformance-covered** | none |
 | k.topology | 9 | **conformance-covered** | none |
@@ -32,49 +32,50 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 10 | **conformance-covered** | none |
 | k.ledger | 11 | **conformance-covered** | none |
-| k.sync | 10 | **conformance-covered** | none |
-| k.deploy | 9 | **conformance-covered** | none |
+| k.sync | 14 | **conformance-covered** | none |
+| k.deploy | 11 | **conformance-covered** | none |
 | k.hosting | 6 | implemented | clause 2: the client entry's fetch URL and `credentials: 'include'` are not observed by a test |
 | k.openapi | 1 | **conformance-covered** | none |
-| k.a11y | 9 | **conformance-covered** | none |
+| k.a11y | 11 | **conformance-covered** | none |
 | k.security | 13 | **conformance-covered** | none |
-| k.privacy | 12 | **conformance-covered** | none |
+| k.privacy | 10 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
 | k.aria | 10 | **conformance-covered** | none |
 | k.guards | 3 | **conformance-covered** | none |
 | k.persist | 12 | **conformance-covered** | none |
-| k.prove | 9 | **conformance-covered** | none |
-| k.reveal | 8 | **conformance-covered** | none |
+| k.prove | 10 | **conformance-covered** | none |
+| k.reveal | 9 | **conformance-covered** | none |
 | k.shell | 6 | proposed | clause 6: the test for "the package's drivers" matches the word `drivers` only |
 | std.brands | 6 | **conformance-covered** | none |
-| std.channels | 10 | **conformance-covered** | none |
+| std.channels | 11 | **conformance-covered** | none |
 | std.conflicts | 8 | **conformance-covered** | none |
 | std.credentials | 15 | **conformance-covered** | none |
 | std.db | 8 | proposed | clause 1: the Postgres path runs on PGlite only; no job sets `KEEL_TEST_POSTGRES_URL` |
+| std.outbox | 6 | proposed | not audited |
 | std.geo | 5 | **conformance-covered** | none |
 | std.headless | 7 | **conformance-covered** | none |
 | std.health | 7 | **conformance-covered** | none |
 | std.i18n | 8 | **conformance-covered** | none |
 | std.jobs | 11 | **conformance-covered** | none |
-| std.live | 8 | **conformance-covered** | none |
+| std.live | 10 | **conformance-covered** | none |
 | std.messages | 9 | **conformance-covered** | none |
 | std.money | 7 | **conformance-covered** | none |
 | std.monitor | 7 | **conformance-covered** | none |
 | std.multi | 7 | **conformance-covered** | none |
-| std.offline | 10 | **conformance-covered** | none |
+| std.offline | 15 | **conformance-covered** | none |
 | std.options | 7 | **conformance-covered** | none |
 | std.report | 6 | **conformance-covered** | none |
-| std.schedules | 8 | **conformance-covered** | none |
+| std.schedules | 9 | **conformance-covered** | none |
 | std.sessions | 13 | **conformance-covered** | none |
 | std.shells | 6 | **conformance-covered** | none |
 | std.statecharts | 10 | **conformance-covered** | none |
 | std.tables | 9 | **conformance-covered** | none |
-| std.temporal | 10 | **conformance-covered** | none |
-| std.text | 9 | **conformance-covered** | none |
+| std.temporal | 12 | **conformance-covered** | none |
+| std.text | 11 | **conformance-covered** | none |
 | std.timings | 7 | **conformance-covered** | none |
 | std.tokens | 10 | **conformance-covered** | none |
 | std.workflows | 8 | **conformance-covered** | none |
-| **total** | **708** | 65 of 68 covered | |
+| **total** | **741** | 65 of 69 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -117,10 +118,10 @@ Each point has a stdlib user, so the G3 criterion is 6 of 6.
 
 ## Other G3 criteria
 
-Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/results/2026-11-16-golden-1-api-none.json`, `2026-11-14-golden-2-none.json`); `apps/inspector` and `apps/sessions` are not eval-built. Converged runs are recorded on 2026-11-06, 2026-11-07, 2026-11-10, 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-14 and 2026-11-16; the golden-2-catalog task has not converged.
+Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/results/2026-11-18-golden-1-api-none.json`, `2026-11-18-golden-2-none.json`); `apps/inspector` and `apps/sessions` are not eval-built. Converged runs are recorded on 2026-11-06, 2026-11-07, 2026-11-10, 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-14, 2026-11-16, 2026-11-17 and 2026-11-18; `golden-2-catalog` converged on 2026-11-17 and 2026-11-18. `golden-1` and `golden-3` did not converge on 2026-11-17.
 
 ## Status
 
-No section is `frozen`. k.hosting is `implemented`; k.shell and std.db are `proposed`; the other 65 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.hosting is `implemented`; k.shell, std.db and std.outbox are `proposed`; the other 65 are `conformance-covered`.
 
-verified: c2c8a5a18bcbcaedaeadceee3cd52d62a10ca3fe
+verified: 7f8b706a6650972a4398989d17b2a34ccbc21f03
