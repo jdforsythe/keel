@@ -1,5 +1,5 @@
 # k.ctx: Capabilities
-status: conformance-covered
+status: implemented
 
 **API.** `ctx.clock.now()`, `ctx.clock.after(ms, signal?): Promise<void>`, `ctx.random.float()`, `ctx.random.id(brand): Id<B>` (a v4 uuid as `s.id(brand)`; the one way to mint an id or token), `ctx.net.fetch(req)`, `ctx.storage` (k.persist), `ctx.dispose()` (removes only the window `online`/`offline` listeners a real or shell ctx's own net added; a repeat call or a sim ctx does nothing). Registry: `register(name, { real, shell, sim })` with factories `(opts: { seed }) => Impl`; returns the accessor `(ctx) => Impl`, the only access path; a factory's seed derives from the ctx seed and the name; `capabilities()` lists names; re-registering the identical implementations object returns the same accessor; another duplicate is E1602. Sim mode, schedules and plans: k.sim.
 
@@ -25,4 +25,4 @@ status: conformance-covered
 - An `error` reported while nothing observes reaches a later observer right after the current `nav`, at most the first 16 since it; one reported before a later `nav` does not.
 - A replayed `nav` or `error` carries `at`, its report time; a live one has none.
 - `seedOf(ctx)` is the seed given to `createCtx`, and `undefined` when none was given.
-- Under a stub `window`, a real ctx's `dispose()` removes its `online` and `offline` listeners once each; a repeat removes nothing.
+- Under a stub `window`, aborting the `signal` a real ctx was made with removes its `online` and `offline` listeners once each; a second abort removes nothing.

@@ -1,8 +1,10 @@
-// Spec: k.ctx Conformance, "Under a stub `window`, a real ctx's `dispose()` removes its `online` and `offline`
-// listeners once each; a repeat removes nothing." Seed 1337 (no generated inputs).
-// Each test pins the sentence for one mode or driver set named by the API paragraph of k.ctx.
+// Spec: k.ctx, Conformance "Under a stub `window`, aborting the `signal` a real ctx was made with removes its `online` and `offline` listeners once each; a second abort removes nothing."
+// Seed 1337 (no generated inputs). Each test pins the sentence for one mode or driver set named by the API paragraph of k.ctx.
+// A stub `window` records live listeners, whether they end through `removeEventListener` or through the `signal` they
+// were added with (./window-stub.ts).
 import { createCtx } from "@keel/ctx";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { StubWindow, countOf } from "./window-stub.ts";
 
 const SEED = 1337;
 
@@ -11,80 +13,75 @@ afterEach(() => {
 });
 
 function stubWindow(onLine = true) {
-  const addEventListener = vi.fn();
-  const removeEventListener = vi.fn();
-  vi.stubGlobal("window", { addEventListener, removeEventListener });
+  const win = new StubWindow();
+  vi.stubGlobal("window", win);
   vi.stubGlobal("navigator", { onLine });
-  return { addEventListener, removeEventListener };
+  return win;
 }
 
-describe("k.ctx: dispose removes the window listeners", () => {
-  test("under a stub `window`, a real ctx's `dispose()` removes its `online` and `offline` listeners once each", () => {
+describe("k.ctx: aborting the signal removes the window listeners", () => {
+  test("under a stub `window`, aborting the `signal` a real ctx was made with removes its `online` and `offline` listeners once each", () => {
     const win = stubWindow();
-    const ctx = createCtx({ mode: "real", seed: SEED });
-    const added = win.addEventListener.mock.calls.map((c) => [c[0], c[1]]);
-    expect(added.map((c) => c[0]).sort()).toEqual(["offline", "online"]);
-    ctx.dispose();
-    expect(win.removeEventListener).toHaveBeenCalledTimes(2);
-    const removed = win.removeEventListener.mock.calls.map((c) => [c[0], c[1]]);
-    expect(removed.map((c) => c[0]).sort()).toEqual(["offline", "online"]);
-    for (const [type, fn] of removed) {
-      expect(added.some(([t, f]) => t === type && f === fn)).toBe(true);
-    }
+    const ac = new AbortController();
+    createCtx({ mode: "real", seed: SEED, signal: ac.signal });
+    expect(win.added.slice().sort()).toEqual(["offline", "online"]);
+    expect(win.removed).toEqual([]);
+    ac.abort();
+    expect(countOf(win.removed, "online")).toBe(1);
+    expect(countOf(win.removed, "offline")).toBe(1);
+    expect(win.removed).toHaveLength(2);
+    expect(win.total()).toBe(0);
   });
 
-  test("a repeat `dispose()` of a real ctx removes nothing", () => {
+  test("a second abort of the `signal` of a real ctx removes nothing", () => {
     const win = stubWindow();
-    const ctx = createCtx({ mode: "real", seed: SEED });
-    ctx.dispose();
-    const before = win.removeEventListener.mock.calls.length;
-    ctx.dispose();
-    ctx.dispose();
-    expect(win.removeEventListener).toHaveBeenCalledTimes(before);
-    expect(win.addEventListener).toHaveBeenCalledTimes(2);
+    const ac = new AbortController();
+    createCtx({ mode: "real", seed: SEED, signal: ac.signal });
+    ac.abort();
+    const before = win.removed.length;
+    ac.abort();
+    ac.abort("again");
+    expect(win.removed).toHaveLength(before);
+    expect(win.added).toHaveLength(2);
   });
 
-  test("under a stub `window`, a shell ctx's `dispose()` removes its `online` and `offline` listeners once each; a repeat removes nothing", () => {
+  test("under a stub `window`, aborting the `signal` a shell ctx was made with removes its `online` and `offline` listeners once each; a second abort removes nothing", () => {
     const win = stubWindow();
-    const ctx = createCtx({ mode: "shell", seed: SEED });
-    const added = win.addEventListener.mock.calls.map((c) => [c[0], c[1]]);
-    ctx.dispose();
-    expect(win.removeEventListener).toHaveBeenCalledTimes(2);
-    const removed = win.removeEventListener.mock.calls.map((c) => [c[0], c[1]]);
-    expect(removed.map((c) => c[0]).sort()).toEqual(["offline", "online"]);
-    for (const [type, fn] of removed) {
-      expect(added.some(([t, f]) => t === type && f === fn)).toBe(true);
-    }
-    ctx.dispose();
-    expect(win.removeEventListener).toHaveBeenCalledTimes(2);
+    const ac = new AbortController();
+    createCtx({ mode: "shell", seed: SEED, signal: ac.signal });
+    ac.abort();
+    expect(win.removed.slice().sort()).toEqual(["offline", "online"]);
+    ac.abort();
+    expect(win.removed).toHaveLength(2);
   });
 
-  test("a sim ctx's `dispose()` removes no window listener", () => {
+  test("a sim ctx made with a `signal` that aborts removes no window listener", () => {
     const win = stubWindow();
-    const ctx = createCtx({ mode: "sim", seed: SEED });
-    ctx.dispose();
-    ctx.dispose();
-    expect(win.addEventListener).not.toHaveBeenCalled();
-    expect(win.removeEventListener).not.toHaveBeenCalled();
+    const ac = new AbortController();
+    createCtx({ mode: "sim", seed: SEED, signal: ac.signal });
+    ac.abort();
+    expect(win.added).toEqual([]);
+    expect(win.removed).toEqual([]);
   });
 
-  test("a ctx whose net came from `drivers` has a `dispose()` that removes no window listener", () => {
+  test("a ctx whose net came from `drivers` made with a `signal` that aborts removes no window listener", () => {
     const win = stubWindow();
     const net = { fetch: () => Promise.reject(new TypeError("none")), online: () => true };
     for (const mode of ["real", "shell"] as const) {
-      const ctx = createCtx({ mode, seed: SEED, drivers: { net } });
-      ctx.dispose();
-      ctx.dispose();
+      const ac = new AbortController();
+      createCtx({ mode, seed: SEED, drivers: { net }, signal: ac.signal });
+      ac.abort();
     }
-    expect(win.removeEventListener).not.toHaveBeenCalled();
+    expect(win.removed).toEqual([]);
   });
 
-  test("after `dispose()`, `ctx.net.online()` still returns `navigator.onLine`", () => {
+  test("after the abort, `ctx.net.online()` still returns `navigator.onLine`", () => {
     const nav = { onLine: true };
-    vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn() });
+    vi.stubGlobal("window", new StubWindow());
     vi.stubGlobal("navigator", nav);
-    const ctx = createCtx({ mode: "real", seed: SEED });
-    ctx.dispose();
+    const ac = new AbortController();
+    const ctx = createCtx({ mode: "real", seed: SEED, signal: ac.signal });
+    ac.abort();
     for (const onLine of [false, true, false]) {
       nav.onLine = onLine;
       expect(ctx.net.online()).toBe(onLine);
