@@ -15,9 +15,7 @@ afterEach(() => {
 describe("resume rethrowing an island's throw", () => {
   it("leaves the warnings it collected for the entry", () => {
     const host = document.createElement("div");
-    host.innerHTML =
-      '<div data-k-island="Gone"></div><div data-k-island="Bad"><p>x</p></div><div data-k-island="Ok"><p>x</p></div>' +
-      `<script type="application/json" id="k-state">${JSON.stringify({ stores: {}, islands: { Bad: {}, Ok: {} } })}</script>`;
+    host.innerHTML = `<div data-k-island="Gone"></div><div data-k-island="Bad"><p>x</p></div><div data-k-island="Ok"><p>x</p></div><script type="application/json" id="k-state">${JSON.stringify({ stores: {}, islands: { Bad: {}, Ok: {} } })}</script>`;
     let calls = 0;
     // The claim mismatches; the client render returns the island's own host, which cannot replace the server element.
     const Bad = (): Node => {
