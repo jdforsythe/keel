@@ -72,6 +72,7 @@ export function resume(
           held,
           options.ctx,
           options.mode,
+          waiting,
         );
         if (w !== null) warnings.push(w);
       } catch (error) {

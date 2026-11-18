@@ -30,6 +30,8 @@ const FOCUS = ["focus", "blur", "focusin", "focusout"];
  * `held` is the island's child-level content (k.resume): its `children` counts calls while the island builds. A
  * client re-render takes the held content out of the server element first, so its `children` returns those nodes,
  * and its new nodes are what `replaced` gives for the server element.
+ * `waiting` holds the `#k-state` snapshots no store took yet (k.resume Stores): a store the claim creates takes its
+ * snapshot from it, and a claim that mismatches gives back what its stores took, so the re-render's stores start from them.
  */
 export function resumeIsland(
   el: Element,
@@ -39,10 +41,12 @@ export function resumeIsland(
   held: Held,
   ctx: Ctx | undefined,
   mode?: "dev" | "production",
+  waiting: Map<string, unknown> = new Map(),
 ): string | null {
   const doc = el.ownerDocument;
   const focused = doc.activeElement;
   const queued = eventQueue.pending();
+  const offered = new Map(waiting);
   const root = createRoot(el, ctx);
   // `data.at` of a throw at no element of its own (the component's effect, computed or render): the stamp at the
   // island's place, as `mount` uses its element's (k.errors).
@@ -101,6 +105,7 @@ export function resumeIsland(
   disposeOwner(owner);
   rendered.scope?.dispose();
   root.dispose();
+  for (const [key, snapshot] of offered) if (!waiting.has(key)) waiting.set(key, snapshot);
   held.nodes ??= salvage(el);
   for (const n of nodesOf(held.nodes)) n.parentNode?.removeChild(n);
   const fresh = createRoot(null, ctx);
