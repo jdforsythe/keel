@@ -22,4 +22,4 @@
 - App code writing into a revealed object, or into an object it passed to `s.secret(s.json())`, throws a `TypeError`.
 - A path longer than a lined-up pii route loses its tail in the log; the route id still names the page.
 - A table with a secret param over-marks an app path holding an encoded slash; a pii-only table does not cut at one.
-- `@keel/schema` grows 40 bytes; `@keel/server` needs about 78 to 98 against 53 left, so its budget rises to 24kb, the owner's call.
+- `@keel/schema` grows 40 bytes. `@keel/server`'s budget is 24kb, raised under the owner's standing leave: the entry measures 24,365 B, and the pii marks and the separator cut cost 98 B of it.

@@ -12,6 +12,10 @@
 - D5: an `offline.owner` err is `{ code, message: <outbox id>, data: {} }`, as `offline.storage` is.
 - D6: with `'theirs'`, a rejected write still removes the entry in memory and `resolve` resolves `true`.
 - D7: the text lives in a new section, `std.outbox`; std.offline keeps a pointer.
+- D8: when the failed write is the one that records the server's answer (`sent`, `conflict` or `failed`), the call resolves that answer and memory keeps it; the outbox is written once more and the flush ends. A reload of an entry stored `sending` posts it under its own key, which the server store commits at most once within `keyLimit`.
+- D9: a storage write that throws synchronously counts as a rejected write.
+- D10: a write given up at the 10 s bound that settles later is followed by one more write of the outbox as memory then holds it, so a late write does not leave storage older than memory unless that write fails too.
+- D11: after the `sending` write, the flush posts the entry only while it is still `sending` and its owner is the ctx's; otherwise its caller gets the entry's `failed`.
 
 **Alternatives.**
 - The limit stated with no second write: leaves transient faults open.
@@ -21,6 +25,6 @@
 - `false` or `failed` from `'theirs'`: `false` means "no such entry"; `failed` changes the result type.
 
 **Consequences.**
-- `@keel/std-offline` grows about 100 bytes gzip against 3,066 of 3,072: the builder trims or the operator raises the budget.
+- `@keel/std-offline`'s budget is 3.25kb, raised under the owner's standing leave: the entry measures 3,185 B, of which the 10 s bound costs about 54 B, the catch split 40, `'theirs'` 12 and the second write 9.
 - A ctx that throws from a method now shows as an unhandled rejection.
 - A page told `failed` under a storage that rejects every write can still commit the write twice if the user sends it again.
