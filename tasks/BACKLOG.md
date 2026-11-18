@@ -880,7 +880,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0777 red-team, low: std-channels: the bounds read the opener module's config but count every module's sinks; count per module or say so in the spec · std-channels
 - [ ] 0778 red-team, low: std-text: `line` and `para` accept lone surrogates (`"\uD800"`); refuse `!isWellFormed()` · std-text
 - [ ] 0779 red-team, low: std-temporal: `TimeZone.parse` costs about 27 µs per valid name (a new `Intl.DateTimeFormat` each time); cache per name · std-temporal
-- [ ] 0780 review, MAJOR: the fixed `offline.storage` message is asserted by no test; the spec sentence and bullet exist, the conformance case does not yet · std-offline · std.offline
+- [x] 0780 review, MAJOR: the fixed `offline.storage` message is asserted by no test; the spec sentence and bullet exist, the conformance case does not yet · std-offline · std.offline
 - [ ] 0781 review, minor: a storage write that never settles blocks the single flush, and later sends that join it never resolve · std-offline · std.offline
 - [ ] 0782 review, minor: `packages/compiler/src/entry/RESUME_ENTRY.ts` is used by no source file and is a second way to build the production resume entry · compiler
 - [ ] 0783 review, minor: the std.channels sentence that a member refusing `""` holds no cookieless stream has no test of its own · std-channels · std.channels
