@@ -51,3 +51,23 @@ None for callers. A `read` that took longer than 30 s and then succeeded now com
 
 ## Token impact
 std.live 685 to 785 tokens (2,737 to 3,138 characters). No other section changes.
+
+## Amendment (red team 6, finding 1)
+A read given up at its 30 s stays open on the wire: `read` had no signal, so with a hanging backend the bound starts a new read every 31 s while the old ones hold their connections (62 unsettled reads in one sim hour). In a browser that fills the 6 connections HTTP/1.1 allows per origin within minutes, and the user's writes queue behind dead reads.
+
+`read` now receives an `AbortSignal` as a second argument: `read(ctx, signal)`. It is aborted when the read's 30 s pass while it is pending and when the scope is disposed while it is pending. Those are the only cases where a pending read's result is dropped: a read started later supersedes an earlier one only after the earlier one's bound, so no third abort rule is needed. The signal is positional, as in `ctx.clock.after(ms, signal)`; a `read` written `(ctx) => …` still type-checks, so no caller changes. A `read` that ignores the signal stays bounded by the 30 s race. The Alternatives line above that left the signal out is reversed.
+
+Choices the operator can reverse:
+- A1: a positional second parameter, not an options object `read(ctx, { signal })`. Both leave current callers valid; the positional form matches `ctx.clock.after` and k.services forwards it as its `signal` option.
+- A2: a read that settled is never required to see an abort; the builder may abort its controller after settling, which the spec permits.
+
+Spec diff (std.live, 785 to 922 tokens): the API paragraph's `read(ctx)` becomes `read(ctx, signal)` with the clause "`signal` is an `AbortSignal` the read may pass on as the k.services `signal`, and a `read` that takes only `ctx` stays valid"; a new last API bullet:
+```
+- A read's `signal` aborts when its 30 s pass while it is pending and when the scope is disposed while it is pending, so a read whose result can no longer commit is cancelled; a read that ignores `signal` stays bounded.
+```
+Conformance, appended as bullet 10:
+```
+- Under sim, a read that never settles has its `signal` not aborted 29,999 ms after it starts and aborted at 30,000 ms; disposing the scope while another such read is pending aborts its `signal`.
+```
+
+Conformance writer: a new `packages/std-live/conformance/read-signal.test.ts` citing bullet 10, with a `read` that records its signal and never settles. Builder: `packages/std-live/src/live.ts` passes the bound's controller signal (aborted at the bound and in `onDispose`) as `opts.read(ctx, b.signal)`, widens the `read` type to `(ctx: C, signal: AbortSignal) => Promise<Result<P, E>>`, updates the doc comment, the README and the `keel-realtime` skill example if it shows `read`, and adds a changeset (`@keel/std-live` minor).
