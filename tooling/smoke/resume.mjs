@@ -8,7 +8,8 @@
 // an island root while it resumes (text may be replaced and empty anchors added); every served element and island
 // mark still there; focus, typed value, caret and scroll position kept; and one interaction working. Last, on a fresh
 // page, the sign-in form is filled and submitted with Enter while the scripts are still held: the browser sends
-// exactly one POST.
+// exactly one POST. Then, scripts running, a sign-up and a sign-in through the forms: each one POST to the identity
+// mount answered by a 303, and the sign-in page then names the account, with no console warning or error.
 // Usage: node tooling/smoke/resume.mjs [runs] (default 1). Nothing is written inside the repo.
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -18,6 +19,8 @@ import { chromium } from "@playwright/test";
 import { buildIn, copyApp, field, freePort, get, post, recorder, root, stop, wait } from "./built.mjs";
 
 const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
+/** The sign-in library's secret (`BETTER_AUTH_SECRET`), which golden-2's server requires. */
+const AUTH_SECRET = "golden-2-smoke-auth-secret-of-32-characters";
 const golden2 = join(root, "apps", "golden-2");
 
 /** Start the built deployable `name` of `dir` at `port` with web storage in `file` and `peers` as its environment. */
@@ -32,7 +35,7 @@ function serveDeployable(dir, name, port, file, peers) {
     ],
     {
       cwd: dir,
-      env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, ...peers },
+      env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, BETTER_AUTH_SECRET: AUTH_SECRET, ...peers },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -377,6 +380,55 @@ try {
     await wait(1000);
     step(`run ${run} early submit posts once`, posts.length === 1, `${posts.length} POST ${posts.join(" ")}`);
     await early.close();
+
+    // Sign up, then sign in, through the forms: the browser posts each form once to the mount and follows its 303.
+    const account = await browser.newPage();
+    const said = [];
+    account.on("console", (m) => {
+      if (m.type() === "warning" || m.type() === "error") said.push(`${m.type()}: ${m.text()}`);
+    });
+    account.on("pageerror", (e) => said.push(`pageerror: ${String(e).split("\n")[0]}`));
+    const sent = [];
+    account.on("response", (r) => {
+      if (r.request().method() === "POST") sent.push(`${r.status()} ${new URL(r.url()).pathname}`);
+    });
+    const who = `cook${run}@example.com`;
+    await account.goto(`${apiBase}/account/signup`, { waitUntil: "load" });
+    await account.fill('input[name="name"]', "Smoke Cook");
+    await account.fill(email, who);
+    await account.fill('input[name="password"]', "smoke password");
+    await Promise.all([
+      account.waitForURL((u) => u.pathname === "/account/signin", { timeout: 10_000 }).catch(() => undefined),
+      account.click('[id="accounts.signupSubmit"]'),
+    ]);
+    step(
+      `run ${run} sign-up posts once and redirects`,
+      sent.join(" ") === "303 /api/auth/sign-up/email" && new URL(account.url()).pathname === "/account/signin",
+      `${sent.join(" ")} -> ${account.url()}`,
+    );
+    await account.waitForLoadState("load");
+    await account.fill(email, who);
+    await account.fill('input[name="password"]', "smoke password");
+    await Promise.all([
+      account
+        .waitForResponse((r) => r.request().method() === "GET" && new URL(r.url()).pathname === "/account/signin", {
+          timeout: 10_000,
+        })
+        .catch(() => undefined),
+      account.click('[id="accounts.signinSubmit"]'),
+    ]);
+    await account.waitForLoadState("load");
+    const named = await account
+      .locator('[id="accounts.signedIn"]')
+      .textContent({ timeout: 5000 })
+      .catch(() => "");
+    step(
+      `run ${run} sign-in posts once and names the account`,
+      sent.length === 2 && sent[1] === "303 /api/auth/sign-in/email" && (named ?? "").includes(who),
+      `${sent.join(" ")}, "${named}"`,
+    );
+    step(`run ${run} sign-in console`, said.length === 0, said.slice(0, 3).join(" | "));
+    await account.close();
   }
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
