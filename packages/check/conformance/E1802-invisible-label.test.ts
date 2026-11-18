@@ -1,5 +1,7 @@
 // Spec: k.a11y Conformance, bullet 11:
 // "Without types, E1802 also fires for `<Input label={"\u{200B}"} />`, `label="&#x2800;"`, `label={"\u{301}"}` and `Input({ label: "\u{3164}\u{200D}" })`, not for `label={"a\u{200B}"}`."
+// Spec: k.a11y Conformance, bullet 12:
+// "Without types, E1802 fires for `label="&zwnj;"`, `label="&copy;"` and `Input({ label: "\u{1}" })`, not for `label="&copy;2"`."
 // Seed 1337
 // A label is blank when it holds no visible character: every character is White_Space, Default_Ignorable_Code_Point, Cf, M or U+2800.
 import { check } from "@keel/check";
@@ -38,6 +40,22 @@ test('E1802 fires for `Input({ label: "\\u{3164}\\u{200D}" })`', () => {
 
 test('E1802 does not fire for `<Input label={"a\\u{200B}"} />`', () => {
   expect(e1802([tsx(`<Input label={"a\\u{200B}"} />`)])).toHaveLength(0);
+});
+
+test('E1802 fires for `<Input label="&zwnj;" />`', () => {
+  expect(e1802([tsx(`<Input label="&zwnj;" />`)])).toHaveLength(1);
+});
+
+test('E1802 fires for `<Input label="&copy;" />`', () => {
+  expect(e1802([tsx(`<Input label="&copy;" />`)])).toHaveLength(1);
+});
+
+test('E1802 fires for `Input({ label: "\\u{1}" })`', () => {
+  expect(e1802([ts(`Input({ label: "\\u{1}" })`)])).toHaveLength(1);
+});
+
+test('E1802 does not fire for `<Input label="&copy;2" />`', () => {
+  expect(e1802([tsx(`<Input label="&copy;2" />`)])).toHaveLength(0);
 });
 
 /** One character from each class: White_Space, Default_Ignorable_Code_Point, Cf, M, and U+2800. */
