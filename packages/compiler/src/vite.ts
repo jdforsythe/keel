@@ -160,6 +160,8 @@ export default function (): {
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
   let root = process.cwd();
+  /** Whether `configResolved` set `root`; until then no artifact is written. */
+  let resolved = false;
   let command: "build" | "serve" | undefined;
   let server: DevServer | undefined;
   let topology: Topology | undefined;
@@ -288,10 +290,10 @@ export default function (): {
     }
     const { artifacts, duplicates } = mergeArtifacts(parts);
     artifacts["routes.json"] = routes;
-    fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
+    if (resolved) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
-    for (const [name, text] of clientBuild ? [] : texts) {
+    for (const [name, text] of clientBuild || !resolved ? [] : texts) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);
       written.set(name, text);
@@ -438,6 +440,7 @@ export default function (): {
     },
     configResolved(config) {
       root = config.root;
+      resolved = true;
       command = config.command;
       readTopology();
     },
