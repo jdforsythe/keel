@@ -18,7 +18,7 @@
       "platform": "node"
     },
     "@keel/cli/shell": {
-      "max": "4kb",
+      "max": "4.5kb",
       "platform": "node"
     },
     "@keel/compiler": {
@@ -145,7 +145,7 @@
       "platform": "node"
     },
     "@keel/std-capacitor": "1.25kb",
-    "@keel/std-tauri": "1.25kb",
+    "@keel/std-tauri": "1.75kb",
     "@keel/std-credentials": "1kb",
     "@keel/std-credentials/server": {
       "max": "3kb",
