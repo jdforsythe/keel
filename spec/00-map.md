@@ -13,7 +13,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | E140x | k.component | E145x | k.errors |
 | E150x | k.router, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security |
 | E160x | k.ctx, k.sim, k.persist | E165x | k.services |
-| E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check |
+| E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
 | E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
 | E215x | std.db | E230x | std.i18n |
@@ -36,13 +36,14 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.resume | Served documents and resume | conformance-covered | regions, layout islands |
 | k.claim | Claim order | conformance-covered | eager elements |
 | k.router | Routes | conformance-covered | params, search, loaders, actions |
-| k.guards | Guards | conformance-covered | redirects with `next`, loop limit |
+| k.guards | Guards | conformance-covered | redirects, loop limit |
 | k.prefix | Implied path prefix | conformance-covered | a leading enum param URLs omit |
 | k.forms | Forms | conformance-covered | bindings, validation, errors |
 | k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS |
 | k.ctx | Capabilities | conformance-covered | clock, random, net, storage |
 | k.errors | Results and boundaries | conformance-covered | Result or boundary |
 | k.check | Checker and diagnostics | conformance-covered | codes, fixes, rules |
+| k.host | Host reads | proposed | zone, locale, Node globals |
 | k.cli | CLI, MCP, LSP | conformance-covered | one engine |
 | k.scaffold | Scaffold and codemods | conformance-covered | structural edits |
 | k.testing | Harness and properties | conformance-covered | given, do, expect |
@@ -54,19 +55,19 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.serverlog | Server log records | conformance-covered | bounds, cut marks |
 | k.sync | Heads and concurrent writes | conformance-covered | heads, bases, reject or rebase |
 | k.persist | Storage and durable state | conformance-covered | storage, drivers |
-| k.topology | Deployables | conformance-covered | placement, runners, peers |
+| k.topology | Deployables | conformance-covered | placement, peers |
 | k.deploy | Production entry and deploy files | conformance-covered | `server.mjs` |
 | k.shell | Native shells | proposed | Capacitor and Tauri apps |
 | k.compat | Surface compatibility | conformance-covered | `accepts`, `--base` |
 | k.api | API routes | conformance-covered | JSON, no view |
 | k.hosting | Client hosting | implemented | static artifact, `host` |
 | k.head | Document head | conformance-covered | title, `lang`, links |
-| k.services | Thin services | conformance-covered | typed clients, ApiError |
+| k.services | Thin services | conformance-covered | typed clients |
 | k.openapi | OpenAPI import | conformance-covered | OpenAPI 3 to clients |
-| k.module | Module manifest | conformance-covered | public surface, cross-module checks |
+| k.module | Module manifest | conformance-covered | public surface |
 | k.a11y | Accessibility | conformance-covered | contrast, focus order |
 | k.aria | Widget parts | conformance-covered | roles, focus, styles |
-| k.security | Headers and CSP | conformance-covered | nonce CSP, cookie |
+| k.security | Headers and CSP | conformance-covered | nonce CSP |
 | k.privacy | Secrets and personal data | conformance-covered | secrets, sinks |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | a signed bundle |
