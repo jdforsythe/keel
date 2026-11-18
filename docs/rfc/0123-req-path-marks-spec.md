@@ -135,3 +135,6 @@ Each is the drafter's recommendation; the operator can reverse any of them.
 - C5: a forward failure logs the error's `name`, never its message.
 - C6: to fit the budgets, schema derivation text moves from k.privacy to k.schema and the `frames` definition from k.server to k.deploy, unchanged in meaning.
 - C7: backlog 0744 (the stderr line ignores `KEEL_FORMAT=json`) stays out of this RFC; the spec sentence says "one fixed stderr line" and does not fix its format.
+
+## Amendment
+RFC 0126 (ADR-0148) corrects the cost paragraph. A route led by a param before its secret (`/:lang/:token`) also lines up without that lead, which puts the secret at the path's first segment, and the earliest cut wins. So `/en/A` logs `/[secret]`, not `/en/[secret]`, and every path of one or more segments logs as `/[secret]` under `/:token` and `/:lang/:token` alike. The build and k.privacy do this; the over-mark never leaks.

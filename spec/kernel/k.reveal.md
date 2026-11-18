@@ -1,7 +1,7 @@
 # k.reveal: Revealed values
 status: conformance-covered
 
-**Purpose.** What `reveal` returns is plain data (k.privacy Secrets). E1112 reads one file by syntax and reports a revealed value that reaches a log, storage, a file, store state or a throw through bindings, literals, operators, members, methods, and the standard conversions and encodings; a call to anything else ends it.
+**Purpose.** What `reveal` returns (k.privacy Secrets) is plain data, frozen deep when the secret is made, so it cannot change after a reveal; an inner schema that passes its input through (`s.json()`) leaves the caller's object frozen. A store, driver or log keeps it as written. E1112 reads one file by syntax and reports a revealed value that reaches a log, storage, a file, store state or a throw through bindings, literals, operators, members, methods, and the standard conversions and encodings; a call to anything else ends it.
 
 **Sinks.** An argument of: `tx` or `store` (`@keel/store`); `set` or `commit` on `ctx.storage`; a `console` method; `process.stdout.write` or `process.stderr.write`; `writeFile`, `appendFile` or `write` (or `Sync`) from `node:fs` or `node:fs/promises`; a global whose name ends in `Error`, called or constructed; `Promise.reject`. Also the value thrown. A sink counts under any local name or `.bind()`. Its `.call`, `.apply` or `.bind`, or `Reflect.apply` of it, passes it each argument after the `this` value. `ctx.storage` is a `.storage` member, a local destructured or assigned from one, or a parameter named `storage`.
 
@@ -26,3 +26,4 @@ Any other call, a parameter and an import end it (a hash passes; a helper is not
 - `console.log.call(console, reveal(p.k))`, `console.log.apply(console, [reveal(p.k)])`, `console.log.bind(console, reveal(p.k))` and `Reflect.apply(console.log, console, [reveal(p.k)])` are each one E1112; `console.log.call(reveal(p.k))` and `hash.call(null, reveal(p.k))` are none.
 - `console.log(a.length)` after `const { a } = { a: reveal(p.k) }`, `[reveal(p.k)].forEach((x) => console.log(x))`, and `this.x = reveal(p.k)` then `console.log(this.x)` are none.
 - `return ok({ token: reveal(p.k) })` in an action is none.
+- For every generated secret over an object or array, the revealed value and each object and array under it are frozen.
