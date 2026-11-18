@@ -88,7 +88,9 @@ export async function page(
   const error = loaderError === null ? {} : { error: { code: loaderError.code, message: loaderError.code, data: at } };
   const base = { route, ...error };
   if (!rendered.ok) {
-    // A throw outside every route boundary: the root default alert, 500.
+    // A throw outside every route boundary: the root default alert, 500. A thrown kernel code (E1255) is logged.
+    const thrown = scrubbedError(rendered.error, r.rq).message;
+    const coded = /(E\d{4}) (.*)/.exec(thrown);
     const fallback = renderChain({
       chain: [],
       params: {},
@@ -106,11 +108,11 @@ export async function page(
         500,
         fallback,
         base,
-        scrubbedError(rendered.error, r.rq).message,
+        thrown,
         pageHead(m.route, m.params, { params: m.params, search: m.search, data: undefined }, true),
       ),
       route: id,
-      diags,
+      diags: coded === null ? diags : [...diags, { code: coded[1] ?? "", message: coded[2] ?? "" }],
     };
   }
   // Only the route's own component renders the password inputs that name the keys to drop; at an errorElement the

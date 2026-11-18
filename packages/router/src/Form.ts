@@ -1,5 +1,5 @@
 import { scope, signal } from "@keel/reactive";
-import { cond } from "@keel/runtime-dom/ops";
+import { cond, element } from "@keel/runtime-dom/ops";
 import type { KeelError } from "@keel/schema";
 import { codedError } from "./internal/codedError.ts";
 import { findRouter } from "./internal/findRouter.ts";
@@ -30,17 +30,23 @@ export function Form(props: FormProps): HTMLFormElement {
       "E1505",
       `<Form method="${props.method}" action="${props.action}">: no route of this router declares that action`,
     );
-  const el = document.createElement("form");
-  el.setAttribute("method", "post");
-  el.setAttribute("action", props.action);
-  if (props.method !== "POST") {
-    const hidden = document.createElement("input");
-    hidden.setAttribute("type", "hidden");
-    hidden.setAttribute("name", "_method");
-    hidden.setAttribute("value", props.method);
-    el.append(hidden);
-  }
-  el.append(...renderChildren(props.children));
+  // Through the runtime's `element`, so at resume the form, its hidden input and its children claim the server's
+  // nodes, which stay where they are.
+  const el = element("form", (f) => {
+    f.setAttribute("method", "post");
+    f.setAttribute("action", props.action);
+    const nodes =
+      props.method === "POST"
+        ? []
+        : [
+            element("input", (hidden) => {
+              hidden.setAttribute("type", "hidden");
+              hidden.setAttribute("name", "_method");
+              hidden.setAttribute("value", props.method);
+            }),
+          ];
+    for (const n of [...nodes, ...renderChildren(props.children)]) if (n.parentNode !== f) f.append(n);
+  });
   if (core === null) return el;
   const status = signal<Shown>(null);
   const { error } = props;

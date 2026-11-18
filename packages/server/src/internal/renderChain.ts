@@ -1,4 +1,5 @@
 import type { Level } from "@keel/router/internal";
+import { E1255 } from "@keel/runtime-dom/internal";
 import type { JsonValue, KeelError } from "@keel/schema";
 import type { ChainInput } from "./ChainInput.ts";
 import type { Rendered } from "./Rendered.ts";
@@ -18,7 +19,7 @@ const defaultError = (e: KeelError<string, unknown>): string =>
 /**
  * Render a chain to HTML like the router's view (k.router, k.errors): outermost layout first, each layout
  * receiving the next level, rendered before it, as `children` (a thunk whose string form is the child HTML, so string
- * components can interpolate it). A failure renders its level's `errorElement` (layouts above intact unless
+ * components can interpolate it; a second call throws E1255, k.resume). A failure renders its level's `errorElement` (layouts above intact unless
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
  * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a bound
  * (`data-k`) element outside nested levels' islands, however it was built (template or base element), is an island: it gets
@@ -42,7 +43,14 @@ export function renderChain(input: ChainInput): Rendered {
     // The child level renders first, outside this unit, so render units never nest.
     const inner = last ? "" : levelAt(i + 1);
     const childHtml = (): string => inner;
-    const children = Object.assign((): Node => htmlToNode(childHtml()), { toString: childHtml });
+    let calls = 0;
+    const children = Object.assign(
+      (): Node => {
+        if (calls++) throw new Error(E1255);
+        return htmlToNode(inner);
+      },
+      { toString: childHtml },
+    );
     const base = { params: input.params, search: input.search, data: input.data[i] };
     // An API route (k.api) has no component and is never rendered.
     const out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, undefined, ctx) ?? "");

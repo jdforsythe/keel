@@ -13,7 +13,7 @@ export function clone(t: HTMLTemplateElement): Element {
     el = claimNext(cx.claim, tpl.localName);
     const d = sameShape(tpl, el);
     if (d !== null) throw new Mismatch(d);
-    alignTexts(tpl, el);
+    alignTexts(tpl, el, cx.claim.session.shadowed);
   } else {
     const copy = document.importNode(tpl, true);
     if (!(copy instanceof Element)) throw new Error("k.runtime: clone() produced a non-element");

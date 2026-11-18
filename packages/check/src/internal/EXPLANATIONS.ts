@@ -306,6 +306,13 @@ const ROWS: readonly Row[] = [
     "render the same structure on server and client",
     "k.runtime",
   ],
+  [
+    "E1255",
+    "a layout called children twice while it builds, or while its content is in the document",
+    "There is one set of server nodes for the child level; the level fails as a throw does.",
+    "call props.children() once, in one place; toggle it with If",
+    "k.resume",
+  ],
   ["E1301", "calling an undeclared transaction", "", "add it to the component's uses: [addItem]", "k.store"],
   [
     "E1302",

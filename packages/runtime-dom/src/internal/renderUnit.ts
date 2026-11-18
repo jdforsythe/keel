@@ -6,6 +6,8 @@ import type { Owner } from "./Owner.ts";
 import type { Unit } from "./Unit.ts";
 import { createOwner } from "./createOwner.ts";
 import { disposeOwner } from "./disposeOwner.ts";
+import { heldOf } from "./heldOf.ts";
+import { nodesOf } from "./nodesOf.ts";
 import { report } from "./report.ts";
 import { unitOwners } from "./unitOwners.ts";
 import { withCx } from "./withCx.ts";
@@ -20,7 +22,8 @@ import { withCx } from "./withCx.ts";
  * after the commit) from any app-level effect or computed created under it. A hydration mismatch goes to
  * the claim's session. Its nodes are the top-level nodes the render returned, each preceded by what the units of
  * a structural op anchored at it rendered there (owned below this unit, `unitOwners`): those go with it when the
- * unit is moved, re-rendered or disposed.
+ * unit is moved, re-rendered or disposed. A fragment a resumed island's `children` returned stands for the held
+ * content: the unit's nodes are those held nodes, wherever they are.
  */
 export function renderUnit(
   parent: Owner,
@@ -31,7 +34,7 @@ export function renderUnit(
   at: string,
   onRendered?: () => void,
 ): Unit {
-  let nodes: Node[] = [];
+  let nodes = (): Node[] => [];
   let owner: Owner | null = null;
   let first = true;
   const below = (n: Node): boolean => {
@@ -39,7 +42,7 @@ export function renderUnit(
     return false;
   };
   const all = (): Node[] =>
-    nodes.flatMap((n) => {
+    nodes().flatMap((n) => {
       const run = [n];
       for (let p = n.previousSibling; p !== null && below(p); p = p.previousSibling) run.unshift(p);
       return run;
@@ -49,7 +52,7 @@ export function renderUnit(
     if (owner !== null) disposeOwner(owner);
     owner = null;
     for (const n of gone) n.parentNode?.removeChild(n);
-    nodes = [];
+    nodes = () => [];
   };
   const e = effect(
     () => {
@@ -81,8 +84,10 @@ export function renderUnit(
       }
       const out = box.out;
       if (out === null) return;
-      nodes = out.nodeType === 11 ? [...out.childNodes] : [out];
-      for (const n of nodes) unitOwners.set(n, o);
+      const held = heldOf.get(out);
+      const top = out.nodeType === 11 ? [...out.childNodes] : [out];
+      nodes = held === undefined ? () => top : () => nodesOf(held.nodes ?? []);
+      if (held === undefined) for (const n of top) unitOwners.set(n, o);
       if (hydrate === null) anchor.parentNode?.insertBefore(out, anchor);
       onRendered?.();
     },

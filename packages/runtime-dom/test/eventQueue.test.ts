@@ -88,7 +88,7 @@ describe("eventQueue capture", () => {
     expect(eventQueue.pending()).toBe(1);
   });
 
-  it("attributes an event to the outermost island", () => {
+  it("attributes an event to the innermost island, which every island resumes in document order to replay", () => {
     document.body.innerHTML =
       '<div data-k-island="O"><div data-k-island="M"><div data-k-island="I"><button id="b">x</button></div></div></div>';
     fire(need("#b"), "click");
@@ -96,13 +96,12 @@ describe("eventQueue capture", () => {
     const mid = need('[data-k-island="M"]');
     const outer = need('[data-k-island="O"]');
     const seen: string[] = [];
-    eventQueue.resume(inner, inner, (e) => seen.push(e.type));
+    eventQueue.resume(outer, outer, (e) => seen.push(`O:${e.type}`));
+    eventQueue.resume(mid, mid, (e) => seen.push(`M:${e.type}`));
     expect(seen).toEqual([]);
     expect(eventQueue.pending()).toBe(1);
-    eventQueue.resume(mid, mid, (e) => seen.push(e.type));
-    expect(seen).toEqual([]);
-    eventQueue.resume(outer, outer, (e) => seen.push(e.type));
-    expect(seen).toEqual(["click"]);
+    eventQueue.resume(inner, inner, (e) => seen.push(`I:${e.type}`));
+    expect(seen).toEqual(["I:click"]);
     expect(eventQueue.pending()).toBe(0);
   });
 

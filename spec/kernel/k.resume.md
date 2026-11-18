@@ -1,5 +1,5 @@
 # k.resume: Served documents and resume
-status: proposed
+status: conformance-covered
 
 How a document `createApp` serves (k.server) meets `resume` (k.runtime): the regions the server writes, a layout island's `children`, and islands inside islands.
 

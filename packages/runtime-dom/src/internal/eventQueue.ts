@@ -1,6 +1,6 @@
 import { dispatch } from "./dispatch.ts";
 
-/** Bubbling interaction events worth replaying; captured on `document` until their island resumes. */
+/** Bubbling interaction events worth replaying; captured on `document` until their (innermost) island resumes. */
 const QUEUED = [
   "click",
   "dblclick",
@@ -40,22 +40,11 @@ const entries: Entry[] = [];
 const resumed = new WeakSet<Element>();
 let installed = false;
 
-const outermostIsland = (from: Element): Element | null => {
-  let island = from.closest("[data-k-island]");
-  for (
-    let up = island?.parentElement?.closest("[data-k-island]");
-    up;
-    up = up.parentElement?.closest("[data-k-island]")
-  )
-    island = up;
-  return island;
-};
-
 const capture = (e: Event): void => {
   const t = e.target;
   if (!(t instanceof Node)) return;
   const el = t instanceof Element ? t : t.parentElement;
-  const island = el === null ? null : outermostIsland(el);
+  const island = el?.closest("[data-k-island]") ?? null;
   if (island !== null && !resumed.has(island)) entries.push({ event: e, target: t, island });
 };
 
@@ -79,7 +68,7 @@ export const eventQueue = {
   },
   /**
    * Mark `island` resumed and replay what happened before through its delegation root `root` (rfc:0071): first a real
-   * `input` on each control whose value is off its default with no `input` queued (typed before this queue existed),
+   * `input` on each of its own controls (not a nested island's) whose value is off its default with no `input` queued (typed before this queue existed),
    * in document order, then its queued events in order, each passed to `tell` (the observer tap) before dispatch.
    * With `root` null (island fell back to client render, or has no component) its events are dropped.
    */
@@ -90,7 +79,8 @@ export const eventQueue = {
     if (root === null) return;
     const queued = new Set(mine.flatMap((x) => (x.event.type === "input" ? [x.target] : [])));
     for (const c of island.querySelectorAll("input,textarea,select"))
-      if (!queued.has(c) && offDefault(c)) c.dispatchEvent(new Event("input", { bubbles: true }));
+      if (c.closest("[data-k-island]") === island && !queued.has(c) && offDefault(c))
+        c.dispatchEvent(new Event("input", { bubbles: true }));
     for (const x of mine) {
       tell?.(x.event);
       dispatch(root, x.event, x.target);

@@ -1,9 +1,11 @@
 // A `todos.list` document served by the node adapter, resumed with `resumeDocument` as the browser's generated entry
-// resumes it: the island's Done checkbox posts the toggle through the resumed handlers, addressed by id only.
+// resumes it: the layout and page islands resume with no warning (`resumeDocument` rejects with E1720 on any resume
+// warning) and nothing logged, and the island's Done checkbox posts the toggle through the resumed handlers, addressed
+// by id only.
 import { createCtx } from "@keel/ctx";
 import { createApp, topology } from "@keel/server";
 import { resumeDocument } from "@keel/testing";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { routes } from "../modules/todos/routes.ts";
 import { boardOf } from "./at.ts";
 import { apiApp, readBoard, resetApi, seedBoard, simApi } from "./simApi.ts";
@@ -24,14 +26,20 @@ async function webApp() {
 }
 
 describe("golden-1 server document, resumed", () => {
-  // Expected to fail until a layout-wrapped island and `For`/`If` regions resume from server HTML (E1253 today).
-  it.fails("the resumed Done checkbox of /lists/l1 posts the toggle and shows it checked", async () => {
+  it("resumes with no warning; the resumed Done checkbox of /lists/l1 posts the toggle and shows it checked", async () => {
     await seedBoard(seeded);
     const app = await webApp();
     const res = await app.fetch(new Request("http://localhost/lists/l1", { headers: { accept: "text/html" } }));
     expect(res.status).toBe(200);
     const { ctx, sent } = await simApi();
-    const t = await resumeDocument(await res.text(), { routes, ctx });
+    const html = await res.text();
+    expect(html).toContain("<!--[-->");
+    const logged = (["warn", "error"] as const).map((m) => vi.spyOn(console, m));
+    const t = await resumeDocument(html, { routes, ctx });
+    for (const spy of logged) {
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    }
     expect(t.find("todos.toggle.t1")).toMatchObject({
       role: "checkbox",
       name: "Done: Milk",

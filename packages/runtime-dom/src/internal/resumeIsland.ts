@@ -3,13 +3,17 @@ import { scope } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";
 import type { Island } from "../types/Island.ts";
 import type { Claim } from "./Claim.ts";
+import type { Held } from "./Held.ts";
 import { Mismatch } from "./Mismatch.ts";
 import { createOwner } from "./createOwner.ts";
 import { createRoot } from "./createRoot.ts";
 import { disposeOwner } from "./disposeOwner.ts";
 import { eventQueue } from "./eventQueue.ts";
+import { nodesOf } from "./nodesOf.ts";
+import { replaced } from "./replaced.ts";
 import { report } from "./report.ts";
 import { rootCatcher } from "./rootCatcher.ts";
+import { salvage } from "./salvage.ts";
 import { stampOf } from "./stampOf.ts";
 import { withCx } from "./withCx.ts";
 
@@ -22,12 +26,16 @@ const FOCUS = ["focus", "blur", "focusin", "focusout"];
  * ctx's observers. The island has the root Boundary `mount` gives its tree (k.errors): it catches handler, binding
  * and render throws and, through the island scope's `onError`, the island's own `effect` and `computed` throws
  * (`data.at` the stamp at the island's place). It is armed once the claim succeeds, so a throw while claiming is a mismatch.
+ * `held` is the island's child-level content (k.resume): its `children` counts calls while the island builds. A
+ * client re-render takes the held content out of the server element first, so its `children` returns those nodes,
+ * and its new nodes are what `replaced` gives for the server element.
  */
 export function resumeIsland(
   el: Element,
   id: string,
   component: Island,
   props: Record<string, unknown>,
+  held: Held,
   ctx: Ctx | undefined,
   mode?: "dev" | "production",
 ): string | null {
@@ -48,12 +56,13 @@ export function resumeIsland(
     for (const n of rest) n.remove();
   });
   const owner = createOwner(null, root, catcher);
-  const claim: Claim = { island: el, region: null, session: { failed: null } };
+  const claim: Claim = { island: el, region: null, session: { failed: null, shadowed: [] } };
   const rendered: { node: Node | null; scope: Scope | null } = { node: null, scope: null };
-  // A claimed node moved through a fragment loses focus (rfc:0064). The focus events of those moves and of giving
+  // A claimed node moved through a fragment loses focus. The focus events of those moves and of giving
   // the focus back reach no handler, and the queue drops them: the user did not move the focus.
   const hush = (e: Event): void => e.stopImmediatePropagation();
   for (const t of FOCUS) doc.addEventListener(t, hush, true);
+  held.calls = 0;
   try {
     try {
       rendered.scope = scope(
@@ -71,11 +80,14 @@ export function resumeIsland(
     if (focused instanceof HTMLElement && focused !== doc.activeElement && focused.isConnected)
       focused.focus({ preventScroll: true });
   } finally {
+    held.calls = -1;
+    for (const e of claim.session.shadowed) Reflect.deleteProperty(e, "childNodes");
     for (const t of FOCUS) doc.removeEventListener(t, hush, true);
     eventQueue.drop(queued);
   }
   const failed = claim.session.failed;
   if (failed === null) {
+    held.nodes ??= [];
     live.teardown = () => {
       disposeOwner(owner);
       rendered.scope?.dispose();
@@ -88,6 +100,8 @@ export function resumeIsland(
   disposeOwner(owner);
   rendered.scope?.dispose();
   root.dispose();
+  held.nodes ??= salvage(el);
+  for (const n of nodesOf(held.nodes)) n.parentNode?.removeChild(n);
   const fresh = createRoot(null, ctx);
   const freshOwner = createOwner(null, fresh, catcher);
   const client: { node: Node | null; scope: Scope | null } = { node: null, scope: null };
@@ -97,6 +111,7 @@ export function resumeIsland(
     fresh.dispose();
   };
   catcher.arm();
+  held.calls = 0;
   try {
     client.scope = scope(
       () => {
@@ -107,10 +122,12 @@ export function resumeIsland(
   } catch (error) {
     // The client render threw: the island's root Boundary shows it in place of the server element, whose queued
     // events are dropped.
+    held.calls = -1;
     catcher.fail(error, rootAt);
     eventQueue.resume(el, null);
     return `E1253 [data-k-island="${id}"] ${failed.message}; re-rendered on the client`;
   }
+  held.calls = -1;
   const n = client.node;
   if (n !== null) {
     const host = n instanceof Element ? n : el.parentElement;
@@ -119,6 +136,7 @@ export function resumeIsland(
     const nodes: ChildNode[] =
       n instanceof DocumentFragment ? [...n.childNodes] : n instanceof Element || n instanceof CharacterData ? [n] : [];
     el.replaceWith(n);
+    replaced.set(el, nodes);
     if (nodes.length > 0) live.nodes = nodes;
     if (host !== null) fresh.attach(host);
     // The client-rendered root is live: never queue its events.

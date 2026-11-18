@@ -17,7 +17,7 @@
 
 ## Not yet
 
-`mode: "server"` emits the client module (no server HTML renderer with `data-k` and `<!--[-->` regions); E1005 is k.check's; cross-module checks of `module()` manifests are k.check's (0030).
+`mode: "server"` emits the client module: no separate server HTML renderer (`@keel/server` renders the client module with the runtime in its server mode, which writes the `<!--[-->` regions; k.resume); E1005 is k.check's; cross-module checks of `module()` manifests are k.check's (0030).
 
 ## Unsafe
 
