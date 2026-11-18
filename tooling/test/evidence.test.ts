@@ -11,6 +11,8 @@ import {
   coveragePart,
   ledgerPart,
   mutationPart,
+  notChecked,
+  presentInputs,
   stableJson,
   testKind,
   testsPart,
@@ -204,5 +206,34 @@ describe("the report", () => {
     const md = renderMarkdown(at("2026-01-01T00:00:00.000Z"));
     expect(md.split("\n")[0]).toContain("pnpm evidence:report --markdown");
     expect(md).toContain("| total (3 sections) |  | 3 | 2 | 1 | 1 | 1 | 0 | 0 | 0 |");
+  });
+  it("compares coverage and report dates only for units whose measurement files exist", () => {
+    const units = ["packages/a", "packages/b"];
+    const none = presentInputs(root, units);
+    expect(none).toEqual({ coverage: [], mutationReports: [] });
+    expect(notChecked(units, none)).toEqual({ coverage: 2, mutationReports: 2 });
+    const base = at("a");
+    const moved = {
+      ...base,
+      coverage: { packages: { "packages/a": { lines: { pct: 1 } } } },
+      mutation: {
+        ...base.mutation,
+        packages: {
+          ...base.mutation.packages,
+          "packages/a": { ...base.mutation.packages["packages/a"], reportDate: "x" },
+        },
+      },
+    };
+    expect(checkedParts(moved, none)).toBe(checkedParts(base, none));
+    const stale = { ...base, mutation: { ...base.mutation, stale: base.mutation.stale + 1 } };
+    expect(checkedParts(stale, none)).not.toBe(checkedParts(base, none));
+    put("packages/a/coverage/coverage-summary.json", "{}");
+    put("packages/a/reports/mutation/mutation.json", "{}");
+    const some = presentInputs(root, units);
+    expect(some).toEqual({ coverage: ["packages/a"], mutationReports: ["packages/a"] });
+    expect(notChecked(units, some)).toEqual({ coverage: 1, mutationReports: 1 });
+    expect(checkedParts(moved, some)).not.toBe(checkedParts(base, some));
+    fs.rmSync(path.join(root, "packages/a/coverage"), { recursive: true });
+    fs.rmSync(path.join(root, "packages/a/reports"), { recursive: true });
   });
 });

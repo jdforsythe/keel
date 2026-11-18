@@ -62,6 +62,10 @@
           "run": "pnpm ledger --diff"
         },
         {
+          "name": "the committed evidence report matches the ledger and the tests (coverage is compared only where measured)",
+          "run": "pnpm evidence:report --check"
+        },
+        {
           "name": "every test task is in exactly one test-shard",
           "run": "node tooling/ci-shards.mjs --verify"
         },

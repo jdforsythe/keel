@@ -296,9 +296,48 @@ export function stableJson(value) {
   return `${JSON.stringify(sort(value), null, 2)}\n`;
 }
 
-/** The parts `--check` compares: everything but the header (commit, time) and the measured parts (mutation, coverage). */
-export function checkedParts(report) {
-  return stableJson({ ledger: report.ledger, schema: report.schema, tests: report.tests, tool: report.tool });
+/**
+ * The units whose local measurement files exist under `root`: `coverage` has a `coverage/coverage-summary.json` and
+ * `mutationReports` has a `reports/mutation/mutation.json`. Both are written by runs and are not committed.
+ */
+export function presentInputs(root, unitList) {
+  const has = (u, ...rel) => fs.existsSync(path.join(root, u, ...rel));
+  return {
+    coverage: unitList.filter((u) => has(u, "coverage", "coverage-summary.json")),
+    mutationReports: unitList.filter((u) => has(u, "reports", "mutation", "mutation.json")),
+  };
+}
+
+/**
+ * The parts `--check` compares, as text: the ledger, the tests, the schema and tool, and the mutation parts the
+ * committed tree decides (score, threshold, claims, stale claims). The header (commit, time) is left out. A unit's
+ * coverage entry and a unit's mutation report date are compared only when `present` lists the unit, because their
+ * source files come from local runs.
+ */
+export function checkedParts(report, present = { coverage: [], mutationReports: [] }) {
+  const mutation = Object.fromEntries(
+    Object.entries(report.mutation.packages).map(([u, m]) => [
+      u,
+      present.mutationReports.includes(u) ? m : { ...m, reportDate: undefined },
+    ]),
+  );
+  const coverage = Object.fromEntries(present.coverage.map((u) => [u, report.coverage.packages[u]]));
+  return stableJson({
+    coverage,
+    ledger: report.ledger,
+    mutation: { packages: mutation, stale: report.mutation.stale },
+    schema: report.schema,
+    tests: report.tests,
+    tool: report.tool,
+  });
+}
+
+/** What `--check` leaves out for want of local files: units without a coverage summary and without a mutation report. */
+export function notChecked(unitList, present) {
+  return {
+    coverage: unitList.filter((u) => !present.coverage.includes(u)).length,
+    mutationReports: unitList.filter((u) => !present.mutationReports.includes(u)).length,
+  };
 }
 
 /** The whole report: header, ledger, tests, mutation and coverage. `previous` is the committed report, if any. */
