@@ -18,12 +18,17 @@ import { ApiToken } from "../modules/accounts/ApiToken.schema.ts";
 import { ApiTokens } from "../modules/accounts/ApiTokens.schema.ts";
 import { BearerToken } from "../modules/accounts/BearerToken.schema.ts";
 import { Credentials } from "../modules/accounts/Credentials.schema.ts";
+import { Profile } from "../modules/accounts/Profile.schema.ts";
+import { Profiles } from "../modules/accounts/Profiles.schema.ts";
 import { Registration } from "../modules/accounts/Registration.schema.ts";
+import { SignedInUser } from "../modules/accounts/SignedInUser.schema.ts";
 import SigninPage from "../modules/accounts/SigninPage.tsx";
 import SignupPage from "../modules/accounts/SignupPage.tsx";
 import { addToken } from "../modules/accounts/addToken.ts";
 import { authSettings } from "../modules/accounts/authSettings.server.ts";
+import { profileStores } from "../modules/accounts/profileStores.ts";
 import { routes } from "../modules/accounts/routes.ts";
+import { saveProfile } from "../modules/accounts/saveProfile.ts";
 import { tokenStores } from "../modules/accounts/tokenStores.ts";
 import { EMAIL, NAME, PASSWORD, accountsApp } from "./accountsApp.ts";
 import { apiCtx } from "./simApi.ts";
@@ -53,6 +58,15 @@ describe("accounts transactions", () => {
     });
     await properties(addToken(tokens));
   });
+  it("saveProfile keeps one profile per user, the latest email", async () => {
+    await properties(isolated(profileStores).saveProfile);
+    const profiles = isolated(() => {
+      const made = store(Profiles, { profiles: [] }, { id: "accounts.profiles" });
+      invariant(made, (state) => new Set(state.profiles.map((p) => p.userId)).size === state.profiles.length);
+      return made;
+    });
+    await properties(saveProfile(profiles));
+  });
 });
 
 describe("accounts schemas", () => {
@@ -72,6 +86,9 @@ describe("accounts schemas", () => {
     expect(Registration.doc()).toMatch(/email: .*pii\(contact\)/);
     expect(Credentials.doc()).toMatch(/email: .*pii\(contact\)/);
     expect(ApiToken.doc()).toMatch(/userId: .*pii\(identifier\)/);
+    expect(Profile.doc()).toMatch(/userId: .*pii\(identifier\)/);
+    expect(Profile.doc()).toMatch(/email: .*pii\(contact\)/);
+    expect(SignedInUser.doc()).toMatch(/email: .*pii\(contact\)/);
     expect(AccountData.doc()).toMatch(/email\?: .*pii\(contact\)/);
   });
 
@@ -100,6 +117,16 @@ describe("accounts schemas", () => {
     expect(AccountData.parse({ text, email: EMAIL }).ok).toBe(true);
     expect(BearerToken.parse("keelsim_a_b").ok).toBe(true);
     expect(BearerToken.parse("").ok).toBe(false);
+  });
+
+  it("Profile, Profiles and SignedInUser read a user id and an email, and refuse a missing one", () => {
+    const profile = { userId: "9b8CJ0rjFLjoNDXn", email: EMAIL };
+    expect(Profile.parse(profile).ok).toBe(true);
+    expect(Profiles.parse({ profiles: [profile] }).ok).toBe(true);
+    expect(Profile.parse({ ...profile, userId: "" }).ok).toBe(false);
+    expect(Profiles.parse({ profiles: [{ userId: "u" }] }).ok).toBe(false);
+    expect(SignedInUser.parse({ redirect: false, user: { id: "u", email: EMAIL, name: NAME } }).ok).toBe(true);
+    expect(SignedInUser.parse({ user: { id: "u" } }).ok).toBe(false);
   });
 
   it("the three locale files fill every key", async () => {

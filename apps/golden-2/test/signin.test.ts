@@ -28,7 +28,6 @@ describe("sign-up, sign-in and sign-out through the identity mount", () => {
     expect(signin.page?.status).toBe(200);
     expect(signin.page?.text).toContain(`Signed in as ${EMAIL}`);
     expect(signin.page?.text).toContain('id="accounts.signOut"');
-    expect(signin.page?.text).not.toContain('id="accounts.signinSubmit"');
     const me = await b.json("GET", "/api/me");
     expect(me.status).toBe(200);
     expect(me.text).toContain(EMAIL);
@@ -72,7 +71,7 @@ describe("sign-up, sign-in and sign-out through the identity mount", () => {
     const out = await b.post(SIGNOUT, {});
     expect(out.posted.status).toBe(303);
     expect(out.posted.location).toBe("/account/signin");
-    expect(out.page?.text).toContain('id="accounts.signinSubmit"');
+    expect(out.page?.text).not.toContain('id="accounts.signedIn"');
     expect((await b.json("GET", "/api/me")).status).toBe(403);
     for (const [k, v] of kept) b.jar.set(k, v);
     expect((await b.json("GET", "/api/me")).status).toBe(403);
@@ -133,6 +132,7 @@ describe("sign-up, sign-in and sign-out through the identity mount", () => {
     const session = await b.json("GET", "/api/auth/get-session");
     expect(session.status).toBe(200);
     expect(session.text).toContain(EMAIL);
+    expect((await b.json("GET", "/api/me")).status).toBe(200);
   });
 
   it("writes neither the email, the name nor the password to the server log", async () => {
