@@ -1,5 +1,5 @@
 {
-  "commit": "da2771f5a73f4cea64727633b19afd9c3c2aa0c6",
+  "commit": "0d438639aa396842643d1b9f1204eb08b0adb049",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T23:30:51.735Z",
+  "generatedAt": "2026-11-18T23:49:47.391Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1223,6 +1223,19 @@
           "status": "conformance-covered",
           "total": 10,
           "verified": 10
+        },
+        "k.boundary": {
+          "byRung": {
+            "example": 0,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 0,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "proposed",
+          "total": 0,
+          "verified": 0
         },
         "k.check": {
           "byRung": {
@@ -2838,7 +2851,7 @@
         "reason": null,
         "reportDate": "2026-11-18",
         "score": 78.89,
-        "stale": 0,
+        "stale": 1,
         "threshold": 70
       },
       "packages/ctx": {
@@ -2854,7 +2867,7 @@
         "reason": null,
         "reportDate": "2026-11-16",
         "score": 89.44,
-        "stale": 0,
+        "stale": 1,
         "threshold": 70
       },
       "packages/reactive": {
@@ -3138,7 +3151,7 @@
         "threshold": 70
       }
     },
-    "stale": 7
+    "stale": 9
   },
   "schema": 1,
   "tests": {
@@ -3238,7 +3251,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 530,
+        "unitCases": 531,
         "unitFiles": 58
       },
       "packages/ctx": {
@@ -3262,12 +3275,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 34,
+        "propertyCalls": 35,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 105,
-        "unitFiles": 10
+        "unitCases": 108,
+        "unitFiles": 11
       },
       "packages/reactive": {
         "conformanceCases": 93,
@@ -3350,8 +3363,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 475,
-        "unitFiles": 92
+        "unitCases": 478,
+        "unitFiles": 93
       },
       "packages/services": {
         "conformanceCases": 64,
@@ -3767,12 +3780,12 @@
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 1894,
+      "propertyCalls": 1895,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4339,
-      "unitFiles": 722
+      "unitCases": 4346,
+      "unitFiles": 724
     }
   },
   "tool": {
