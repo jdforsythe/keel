@@ -14,7 +14,6 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const resourceViaMatch: RuleDef = {
   code: "E1204",
   message: (f) => `resource ${str(f.data, "name")} read outside Match; render it with <Match on={r.get()}>`,
-  explain: "A resource is loading, error, or ready; Match renders a Case for each state.",
   see: "k.reactive",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

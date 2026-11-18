@@ -106,8 +106,6 @@ function returnsOf(f: FileOf, fn: Fn): Expression[] {
 export const noEagerElement: RuleDef = {
   code: "E1258",
   message: (f) => `${str(f.data, "prop")}: an element made before the call; make it inside a thunk: () => ...`,
-  explain:
-    "An element made before the component call it is passed to claims its parent's server element at resume (E1253), so the island re-renders. Make it inside a thunk.",
   see: "k.claim",
   check: ({ file, ast, artifacts, project }) => {
     if (!isAppPath(file.path)) return [];

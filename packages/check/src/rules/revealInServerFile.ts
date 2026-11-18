@@ -13,7 +13,6 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const revealInServerFile: RuleDef = {
   code: "E1105",
   message: () => "`reveal` in client code; move to a *.server.ts file",
-  explain: "Secrets are revealed only on the server, so client bundles never hold a plaintext secret.",
   see: "k.privacy",
   check: ({ file, ast }) => {
     if (!(isAppPath(file.path) || isTestPath(file.path)) || /\.server\.[cm]?[jt]s$/.test(file.path)) return [];

@@ -57,7 +57,6 @@ const isFunctionPath = (p: readonly string[] | null): boolean =>
 export const noCodeFromString: RuleDef = {
   code: "E1603",
   message: (f) => `${str(f.data, "name")} runs code from a string; pass a function`,
-  explain: "A string evaluated as code can reach any ambient effect past E1601; write the function instead.",
   see: "k.ctx",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path) && !isTestPath(file.path)) return [];

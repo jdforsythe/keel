@@ -74,23 +74,25 @@ function hasZone(args: readonly Argument[], i: number): boolean {
  * `localeCompare` or `toLocaleUpperCase`/`toLocaleLowerCase` without a locale (`undefined`, `void 0` and `[]` give
  * none), also through `.call`; `toLocaleDateString`/`toLocaleTimeString` without a locale or `timeZone`; a local-time
  * getter, `toString`, `toDateString` or `toTimeString` on a date, `String` of one or a template holding one, where a
- * date is a `new Date(...)` expression or a same-file alias of one; `new Date` of local date parts; `new Date` or
+ * date is an expression typed `Date` (the type pass's `dates`), else a `new Date(...)` expression or a `const` bound
+ * to one; `new Date` of local date parts; `new Date` or
  * `Date.parse` of a constant date-time string without an offset. Names resolve as for E1601 (`globalRefs`). No fix: the locale
  * or zone is an argument the caller holds.
  */
 export const noAmbientLocale: RuleDef = {
   code: "E1758",
   message: (f) => `${str(f.data, "what")} reads the host ${str(f.data, "reads")}; pass it as an argument`,
-  explain: "The host's locale and zone differ between server and browser; the locale is route data, the zone app data.",
-  see: "k.check",
-  check: ({ file, ast }) => {
+  see: "k.host",
+  check: ({ file, ast, dates }) => {
     if (!isAppPath(file.path)) return [];
     const g = globalRefs(ast);
     const out: Finding[] = [];
     const report = (at: number, what: string, reads: string): void => {
       out.push(findingAt(file, at, { what, reads }));
     };
+    /** By type with the type pass on; else a `new Date(...)` expression or a `const` bound to one. */
     const isDate = (e: Expression): boolean => {
+      if (dates !== undefined) return dates.has(unwrapExpression(e).start);
       const made = g.initOf(e);
       return made.type === "NewExpression" && g.resolve(made.callee)?.join(".") === "Date";
     };

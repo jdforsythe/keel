@@ -45,8 +45,6 @@ function localName(ast: Program, exported: string, module: string): string | nul
 export const pureTransaction: RuleDef = {
   code: "E1302",
   message: (f) => `transaction ${str(f.data, "tx")} reads ${str(f.data, "name")}; transaction functions are pure`,
-  explain:
-    "A transaction is (state, payload) => state: no ctx, no globals. Do effects before tx() and pass results in.",
   see: "k.store",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

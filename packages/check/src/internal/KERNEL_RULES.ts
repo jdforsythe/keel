@@ -19,6 +19,7 @@ import { noInlineStyle } from "../rules/noInlineStyle.ts";
 import { noInternalEntry } from "../rules/noInternalEntry.ts";
 import { noIntrinsicElement } from "../rules/noIntrinsicElement.ts";
 import { noNetFetchInApp } from "../rules/noNetFetchInApp.ts";
+import { noNodeGlobal } from "../rules/noNodeGlobal.ts";
 import { noRuntimeOpImport } from "../rules/noRuntimeOpImport.ts";
 import { noSecretInState } from "../rules/noSecretInState.ts";
 import { noThrow } from "../rules/noThrow.ts";
@@ -64,6 +65,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   unsafeJustified,
   noUnsafeSyntax,
   noAmbientLocale,
+  noNodeGlobal,
   noInlineStyle,
   noIntrinsicElement,
   noEagerChild,

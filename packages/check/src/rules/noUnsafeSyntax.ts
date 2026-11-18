@@ -23,7 +23,6 @@ const WHAT: Readonly<Record<string, string>> = {
 export const noUnsafeSyntax: RuleDef = {
   code: "E1757",
   message: (f) => `${WHAT[str(f.data, "kind")] ?? "unsafe syntax"} outside unsafe/; use a guard or move it to unsafe/`,
-  explain: "Casts, !, any, and ts suppressions defeat the type system. Narrow with a guard, or isolate in unsafe/.",
   see: "k.check",
   check: ({ file, ast }) => {
     if (!isCodePath(file.path) || /(?:^|\/)(?:unsafe|\.keel|node_modules)\//.test(file.path)) return [];

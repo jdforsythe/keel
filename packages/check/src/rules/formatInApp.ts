@@ -11,7 +11,6 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const formatInApp: RuleDef = {
   code: "E1106",
   message: () => "`s.format` in app code; use a stdlib format type",
-  explain: "Format types are the stdlib's: each brings a generator that the stdlib tests.",
   see: "k.schema",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

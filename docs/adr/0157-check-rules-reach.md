@@ -1,6 +1,6 @@
 # ADR-0157: check rules catch what they name: literal copy in every user-visible place, the whole zone and locale list, and Node-only globals in browser code (RFC 0135)
 
-**Status:** proposed (RFC 0135, for the orchestrator to accept).
+**Status:** accepted (orchestrator under the owner's standing leave, 2026-11-18).
 
 **Context.** E2406 reads only `label` and `alt`, no templates with substitutions, concatenation, `children` props or `const`s, and only PascalCase component files with `export default`. E1758's rule reports more than k.check lists, and misses a date that arrives as a parameter because it is syntactic. No rule reports `process`, `Buffer`, `__dirname`, `require` or Node built-in imports in code the browser runs; they type-check and fail there. std.messages and k.check are full.
 

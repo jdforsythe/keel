@@ -31,7 +31,6 @@ function focusable(kids: readonly JSXChild[]): number {
 export const reversedFocusOrder: RuleDef = {
   code: "E1820",
   message: (f) => `direction "${str(f.data, "dir")}" over focusable elements reverses the focus order`,
-  explain: "Focus follows document order; a reversed direction shows it backwards.",
   see: "k.a11y",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

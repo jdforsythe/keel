@@ -13,7 +13,6 @@ const OPS = /^@keel\/runtime-dom\/ops(?:\/|$)/;
 export const noRuntimeOpImport: RuleDef = {
   code: "E1251",
   message: "app code imports @keel/runtime-dom/ops; use JSX and If/For/Match from @keel/runtime-dom",
-  explain: "Ops are compiler output. App code writes JSX and the intrinsics If, For, Match, Case, Boundary.",
   see: "k.runtime",
   check: ({ file, ast }) =>
     isAppPath(file.path)

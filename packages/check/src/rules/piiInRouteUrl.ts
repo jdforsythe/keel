@@ -68,7 +68,6 @@ export const piiInRouteUrl: RuleDef = {
     str(f.data, "why") === "unread"
       ? `route ${str(f.data, "part")} not readable statically; cannot show it holds no .pii()`
       : `personal data or a secret in route ${str(f.data, "part")}; a URL reaches history and logs`,
-  explain: "A path or query reaches browser history and proxy logs, which no redaction reaches.",
   see: "k.privacy",
   check: ({ file, ast, project }) => {
     const names = localNames(ast, "manifest", "@keel/router");

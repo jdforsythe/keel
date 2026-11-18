@@ -15,7 +15,6 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const bodyOnGetEndpoint: RuleDef = {
   code: "E1653",
   message: (f) => `body on ${str(f.data, "method")} endpoint; use params or query, or POST`,
-  explain: "GET and HEAD requests carry no body; declare the data as params or query, or use a body method.",
   see: "k.services",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

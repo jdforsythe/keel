@@ -82,7 +82,6 @@ export const noAmbientCapability: RuleDef = {
     const use = str(f.data, "use");
     return `${str(f.data, "what")} outside ctx${use === "" ? "; use the ctx capability" : `; use ${use}`}`;
   },
-  explain: "Every effect comes through ctx so sim runs are deterministic: ctx.clock, ctx.random, ctx.net, ctx.storage.",
   see: "k.ctx",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path) && !isTestPath(file.path)) return [];

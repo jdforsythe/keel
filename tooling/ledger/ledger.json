@@ -11,7 +11,7 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 74.16,
+        "score": 73.75,
         "threshold": 70
       },
       "cli": {
@@ -19,7 +19,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 77.45,
+        "score": 77.36,
         "threshold": 70
       },
       "ctx": {
@@ -39,7 +39,7 @@
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 76.81,
+        "score": 76.97,
         "threshold": 70
       },
       "scaffold": {

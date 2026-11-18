@@ -4,8 +4,10 @@ import ts from "typescript";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Annotated } from "./Annotated.ts";
+import type { Typed } from "./Typed.ts";
 import { annotateProps } from "./annotateProps.ts";
 import { clip } from "./clip.ts";
+import { dateReads } from "./dateReads.ts";
 import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
 import { resultDiscards } from "./resultDiscards.ts";
@@ -26,7 +28,7 @@ const JSX_SOURCE = "@keel/runtime-dom";
 const disk = new Map<string, { mtime: number; sf: ts.SourceFile }>();
 const virtual = new Map<string, ts.SourceFile>();
 /** Results by input; valid while every disk file the program read keeps its mtime. */
-const memo = new Map<string, { out: Diagnostic[]; reads: readonly (readonly [string, number])[] }>();
+const memo = new Map<string, { result: Typed; reads: readonly (readonly [string, number])[] }>();
 const MEMO_MAX = 128;
 let previous: ts.Program | undefined;
 
@@ -52,15 +54,15 @@ const mtimeOf = (fileName: string): number => fs.statSync(fileName, { throwIfNoE
  * added when `@types/node` resolves from `root`. Disk files are cached by path and
  * mtime across calls; results are memoized by input and revalidated against those mtimes. Errors that encode a Keel rule are reported under that
  * code (`mapTsDiagnostic`); the rest are E1751. Mapped codes the compiler already reported in the same file
- * are dropped (`skip`). Also finds discarded `Result` expression statements (E1453), which need types.
+ * are dropped (`skip`). Also finds discarded `Result` expression statements (E1453) and the date receivers E1758 reads, which need types.
  */
 export function typeCheck(
   files: readonly SourceFile[],
   root: string,
   skip: ReadonlyMap<string, ReadonlySet<string>>,
-): Diagnostic[] {
+): Typed {
   const code = files.filter((f) => CODE.test(f.path) && !f.path.endsWith(".d.ts"));
-  if (code.length === 0) return [];
+  if (code.length === 0) return { diagnostics: [], dates: new Map() };
   const base = norm(path.resolve(root));
   const nodeTypes = ts.resolveTypeReferenceDirective("node", `${base}/__probe__.ts`, FROM_ROOT, ts.sys)
     .resolvedTypeReferenceDirective?.resolvedFileName;
@@ -71,7 +73,7 @@ export function typeCheck(
     ...[...skip].map(([p, s]) => `${p}:${[...s].join(",")}`),
   ].join("\u0001");
   const hit = memo.get(key);
-  if (hit?.reads.every(([f, m]) => mtimeOf(f) === m) === true) return hit.out;
+  if (hit?.reads.every(([f, m]) => mtimeOf(f) === m) === true) return hit.result;
 
   const byName = new Map<string, SourceFile>();
   const views = new Map<string, Annotated>();
@@ -119,6 +121,7 @@ export function typeCheck(
   const checker = program.getTypeChecker();
 
   const out: Diagnostic[] = [];
+  const dates = new Map<string, ReadonlySet<number>>();
   for (const [fileName, file] of byName) {
     const sf = program.getSourceFile(fileName);
     if (sf === undefined) continue;
@@ -144,11 +147,13 @@ export function typeCheck(
         see: "k.errors",
       });
     }
+    dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
   }
   if (memo.size >= MEMO_MAX) {
     const first = memo.keys().next();
     if (first.done !== true) memo.delete(first.value);
   }
-  memo.set(key, { out, reads: [...reads] });
-  return out;
+  const result = { diagnostics: out, dates };
+  memo.set(key, { result, reads: [...reads] });
+  return result;
 }

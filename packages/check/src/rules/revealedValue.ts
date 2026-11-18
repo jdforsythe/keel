@@ -62,7 +62,6 @@ const named = (m: MemberExpression): string | null => {
 export const revealedValue: RuleDef = {
   code: "E1112",
   message: (f) => `a revealed value reaches ${str(f.data, "sink")}; store a value derived from it`,
-  explain: "Logs, storage and state keep a revealed value as written. Pass the Secret, or store a derived value.",
   see: "k.reveal",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

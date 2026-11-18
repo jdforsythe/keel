@@ -123,7 +123,8 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...opts.artifacts });
   }
 
-  if (opts.types !== false) out.push(...typeCheck(code, opts.root ?? process.cwd(), reported));
+  const typed = opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported);
+  if (typed !== undefined) out.push(...typed.diagnostics);
 
   const registered = rules();
   const checked: Checked[] = [];
@@ -133,7 +134,9 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     checked.push({ file, parsed });
     const artifacts = artifactsOf.get(file.path) ?? { ...opts.artifacts };
     const project = projectOf.get(file.path) ?? [file];
-    out.push(...runRules(registered, { file, ast: parsed.program, artifacts, project }));
+    const dates = typed?.dates.get(file.path) ?? (typed === undefined ? undefined : new Set<number>());
+    const input = { file, ast: parsed.program, artifacts, project };
+    out.push(...runRules(registered, dates === undefined ? input : { ...input, dates }));
   }
   out.push(
     ...duplicateErrorCodes(checked),

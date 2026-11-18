@@ -18,7 +18,6 @@ export const noTryCatch: RuleDef = {
     str(f.data, "kind") === "catch"
       ? ".catch() in app code; use attempt(fn)"
       : "try/catch in app code; use attempt(fn)",
-  explain: "attempt(fn) is the only sanctioned catch: it returns err('keel.unexpected') instead of throwing.",
   see: "k.errors",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

@@ -85,7 +85,6 @@ export const blankLabel: RuleDef = {
     const name = str(f.data, "name");
     return `<${name}> label is blank; it must name the ${name === "Box" ? "landmark" : "control"}`;
   },
-  explain: "A blank label names nothing; give the landmark or control a name.",
   see: "k.a11y",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

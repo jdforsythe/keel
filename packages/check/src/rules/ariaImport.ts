@@ -25,7 +25,6 @@ const reexports = (ast: Program, at: number): boolean =>
 export const ariaImport: RuleDef = {
   code: "E1822",
   message: () => "@keel/ui/aria is for stdlib widgets; use a @keel/std-headless widget",
-  explain: "Widget parts carry ARIA contracts a stdlib widget keeps; app code uses the widget.",
   see: "k.aria",
   check: ({ file, ast }) =>
     isCodePath(file.path) && !LIBRARY.test(file.path)

@@ -33,7 +33,6 @@ function mayDetach(opts: Argument): boolean {
 export const noDetachedScope: RuleDef = {
   code: "E1207",
   message: () => "scope({ detached }) is for kernel and stdlib code; app scopes nest in their owner",
-  explain: "A detached scope has no parent: it escapes uses and the request store registry, and outlives the route.",
   see: "k.reactive",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path) || LIBRARY.test(file.path)) return [];

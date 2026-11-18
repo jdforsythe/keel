@@ -24,7 +24,6 @@ const IN_MODULE = /^((?:.*\/)?)modules\/[^/]+\//;
 export const sameAppBaseService: RuleDef = {
   code: "E1567",
   message: (f) => `service({ base }) calls ${str(f.data, "call")} of app module ${str(f.data, "module")}`,
-  explain: "Call this app's routes with service({ module }).",
   see: "k.compat",
   check: ({ file, ast, project }) => {
     const names = localNames(ast, "service", "@keel/services");

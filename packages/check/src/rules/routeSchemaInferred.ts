@@ -31,7 +31,6 @@ export const routeSchemaInferred: RuleDef = {
     str(f.data, "kind") === "positional"
       ? `positional ${str(f.data, "name")}(schema, fn); use ${DECLARATION.get(str(f.data, "name")) ?? ""}`
       : `${str(f.data, "name")} params/search typed by hand; drop the annotation, they are inferred`,
-  explain: "loader/action fn parameters are inferred from the declared schemas; never annotate them.",
   see: "k.router",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

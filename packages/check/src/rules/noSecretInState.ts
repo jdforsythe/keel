@@ -34,8 +34,6 @@ export const noSecretInState: RuleDef = {
     f.data?.tx === undefined
       ? clip(`store state schema holds s.secret at ${str(f.data, "path")}; state never holds a secret`, 89)
       : clip(`transaction ${str(f.data, "tx")} uses reveal; state never holds a secret`, 89),
-  explain:
-    "State reaches snapshots, #k-state and storage, so it never holds a secret. Keep the value s.secret end to end; reveal it only where it is used, never into a payload or state field.",
   see: "k.store",
   check: ({ file, ast, project }) => {
     if (!isAppPath(file.path)) return [];

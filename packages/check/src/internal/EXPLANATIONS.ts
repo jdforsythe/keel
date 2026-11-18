@@ -906,7 +906,14 @@ const ROWS: readonly Row[] = [
     "ambient locale or time zone in app code (navigator.language, Intl or toLocale* without a locale or timeZone)",
     "Server and browser differ in locale and zone; the locale is route data, the zone app data.",
     "n.toLocaleString() -> formatNumber(n, props.params.locale)",
-    "k.check",
+    "k.host",
+  ],
+  [
+    "E1759",
+    "Node-only global or built-in import in a browser file, or require/__dirname/__filename in an ES module",
+    "@types/node makes process, Buffer and node: imports type-check; the browser has none, and no ES module has require.",
+    "__dirname -> import.meta.dirname (outside a browser file); else move the code to a *.server.ts file",
+    "k.host",
   ],
   ["E1801", "raw value where a token is required", "", 'p="12px" -> p="3" (nearest token)', "k.ui"],
   [

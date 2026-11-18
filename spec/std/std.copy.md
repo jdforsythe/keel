@@ -1,5 +1,5 @@
 # std.copy: Literal copy
-status: proposed
+status: conformance-covered
 
 In a module whose `deps` list `@keel/std-messages`, text a person reads comes from a message set (std.messages). E2406 reports text written as a literal instead: a value with a letter (`\p{L}`), at the literal, with no fix.
 

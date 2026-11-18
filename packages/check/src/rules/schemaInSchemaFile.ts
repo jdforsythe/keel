@@ -42,7 +42,6 @@ function isSchemaChain(e: Expression | null, names: ReadonlySet<string>): boolea
 export const schemaInSchemaFile: RuleDef = {
   code: "E1104",
   message: (f) => `schema ${str(f.data, "name")} declared outside a *.schema.ts file; move it there`,
-  explain: "Schemas live in *.schema.ts files, one per file, so every data shape has one address.",
   see: "k.schema",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path) || /\.schema\.[cm]?[jt]s$/.test(file.path)) return [];

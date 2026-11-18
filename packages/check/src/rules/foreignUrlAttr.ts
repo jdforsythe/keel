@@ -16,7 +16,6 @@ const ABSOLUTE = /^\s*(?:https?:)?\/\//i;
 export const foreignUrlAttr: RuleDef = {
   code: "E1570",
   message: "absolute URL in a resource attribute; the content security policy blocks other origins",
-  explain: "The document's policy loads images, media and form targets from this origin only.",
   see: "k.security",
   check: ({ file, ast, project }) => {
     if (!isAppPath(file.path)) return [];

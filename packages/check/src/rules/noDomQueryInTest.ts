@@ -24,7 +24,6 @@ const isQuery = (name: string): boolean => DOM.has(name) || QUERY.test(name);
 export const noDomQueryInTest: RuleDef = {
   code: "E1701",
   message: (f) => `DOM query ${str(f.data, "name")} in a test; address elements by id with find(id)`,
-  explain: "Tests address elements by stable id only: t.find('cart.total'), t.fire(id, event). No DOM queries.",
   see: "k.testing",
   check: ({ file, ast }) => {
     if (!isTestPath(file.path)) return [];

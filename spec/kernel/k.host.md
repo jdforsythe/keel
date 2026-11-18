@@ -1,5 +1,5 @@
 # k.host: Host reads
-status: proposed
+status: conformance-covered
 
 App code reads no setting of the host it runs on: not the zone or locale (the server and the browser disagree, so a resumed page differs from the served one), and not a Node-only global in code the browser runs (it type-checks and fails there).
 

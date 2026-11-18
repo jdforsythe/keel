@@ -34,7 +34,6 @@ const AMBIENT_MEMBERS: ReadonlySet<string> = new Set([
 export const noDomGlobal: RuleDef = {
   code: "E1252",
   message: (f) => `${str(f.data, "name")} in app code; render with JSX and base elements, effects via ctx`,
-  explain: "Components render through JSX and base elements; only the generated entry touches document.",
   see: "k.runtime",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

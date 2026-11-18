@@ -22,7 +22,6 @@ export const noInternalEntry: RuleDef = {
     str(f.data, "spec").startsWith("#")
       ? `${str(f.data, "spec")} may name a Keel internal entry; use a relative path or package name`
       : `${str(f.data, "spec")} is internal to Keel packages; use a public entry`,
-  explain: "Internal entries are kernel and stdlib seams, such as the server state runner.",
   see: "k.security",
   check: ({ file, ast }) =>
     isCodePath(file.path) && !LIBRARY.test(file.path)

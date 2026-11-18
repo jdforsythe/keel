@@ -66,7 +66,6 @@ export const noIntrinsicElement: RuleDef = {
       ? `<${tag}> in app code; use a @keel/ui base element`
       : `<${tag}> in app code; use <${base}> from @keel/ui`;
   },
-  explain: "App code renders @keel/ui base elements, which carry a11y-required props and token styling.",
   see: "k.ui",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path) || !/\.[jt]sx$/.test(file.path)) return [];

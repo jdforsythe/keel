@@ -8,7 +8,6 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const unsafeJustified: RuleDef = {
   code: "E1754",
   message: "unsafe call needs a justification string as its first argument",
-  explain: "Every unsafe use states why: unsafe('reason', () => ...). Reviews count and audit them.",
   see: "k.check",
   check: ({ file, ast }) => {
     if (!isCodePath(file.path)) return [];

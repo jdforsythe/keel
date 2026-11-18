@@ -53,8 +53,6 @@ function makerImports(ast: Program): {
 export const noEagerChild: RuleDef = {
   code: "E1808",
   message: (f) => `${str(f.data, "base")} children made before it; pass a thunk: children: () => ...`,
-  explain:
-    "A base element's child made before it claims the parent's server node at resume (E1253), so the island re-renders. Pass children as a thunk.",
   see: "k.ui",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

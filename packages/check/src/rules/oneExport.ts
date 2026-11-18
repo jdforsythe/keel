@@ -53,7 +53,6 @@ export const oneExport: RuleDef = {
       : str(f.data, "kind") === "many"
         ? clip(`${str(f.data, "count")} exports in one file (${str(f.data, "names")}); one export per file`, 89)
         : clip(`file ${str(f.data, "stem")} exports ${str(f.data, "name")}; filename must equal its export`, 89),
-  explain: "One export per file and the filename equals the export, so every symbol has one address.",
   see: "k.check",
   check: ({ file, ast }) => {
     const stem = stemOf(file.path);

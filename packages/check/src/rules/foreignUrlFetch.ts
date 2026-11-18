@@ -18,7 +18,6 @@ const ABSOLUTE = /^\s*(?:https?:)?\/\//i;
 export const foreignUrlFetch: RuleDef = {
   code: "E1571",
   message: "absolute URL fetched from client code; the content security policy allows this origin only",
-  explain: "The browser connects only to this origin; reach another through a server route or service.",
   see: "k.security",
   check: ({ file, ast, project }) => {
     if (!isAppPath(file.path) || /\.server\.[cm]?[jt]sx?$/.test(file.path)) return [];

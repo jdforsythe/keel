@@ -16,7 +16,6 @@ const LIBRARY = /^packages\//;
 export const loaderInServerFile: RuleDef = {
   code: "E1551",
   message: (f) => `${str(f.data, "name")} outside a *.server.ts file; move it to <name>.server.ts`,
-  explain: "Loaders and actions live in *.server.ts files so their code and imports stay on the server.",
   see: "k.server",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path) || LIBRARY.test(file.path) || /\.server\.[cm]?[jt]sx?$/.test(file.path)) return [];

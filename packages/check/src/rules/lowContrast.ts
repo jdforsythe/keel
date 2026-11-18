@@ -58,7 +58,6 @@ export const lowContrast: RuleDef = {
   code: "E1804",
   message: (f) =>
     `fg "${str(f.data, "fg")}" on bg "${str(f.data, "bg")}" is ${str(f.data, "ratio")}:1 in ${str(f.data, "scheme")}`,
-  explain: "Text needs 4.5:1 (3:1 when large) against its own or its nearest ancestor's bg, in light and dark.",
   see: "k.a11y",
   check: ({ file, ast, artifacts }) => {
     const tokens = artifacts.tokens;
