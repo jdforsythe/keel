@@ -21,7 +21,8 @@
   "env": {
     "KEEL_AGENT": "1",
     "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
-    "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+    "TURBO_TEAM": "${{ vars.TURBO_TEAM }}",
+    "TURBO_CACHE_DIR": ".turbo/cache"
   },
   "setup": [
     {
@@ -52,16 +53,64 @@
         "$setup",
         {
           "run": "pnpm check"
+        },
+        {
+          "name": "golden-2 a11y report for the ledger (keel test writes reports/a11y.json)",
+          "run": "pnpm --filter golden-2 exec keel test"
+        },
+        {
+          "run": "pnpm ledger --diff"
+        },
+        {
+          "name": "every test task is in exactly one test-shard",
+          "run": "node tooling/ci-shards.mjs --verify"
+        },
+        {
+          "name": "turbo cache for the jobs after this one",
+          "uses": "actions/cache/save@v4",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
+        }
+      ],
+      "timeout-minutes": 30
+    },
+    "test-shard": {
+      "needs": "check",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 35,
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "shard": [1, 2, 3, 4, 5, 6]
+        }
+      },
+      "steps": [
+        "$setup",
+        {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@v4",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "run": "node tooling/ci-shards.mjs ${{ matrix.shard }}"
         }
       ]
     },
     "test": {
-      "needs": "check",
+      "if": "!cancelled() && github.event_name != 'schedule'",
+      "needs": "test-shard",
       "runs-on": "ubuntu-latest",
+      "timeout-minutes": 5,
       "steps": [
-        "$setup",
         {
-          "run": "pnpm test"
+          "name": "every test-shard passed",
+          "run": "test \"${{ needs.test-shard.result }}\" = success"
         }
       ]
     },
@@ -97,9 +146,19 @@
       "steps": [
         "$setup",
         {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@v4",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
           "run": "pnpm build"
         }
-      ]
+      ],
+      "timeout-minutes": 20
     },
     "budgets": {
       "needs": "build",
@@ -107,22 +166,22 @@
       "steps": [
         "$setup",
         {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@v4",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
           "run": "pnpm build"
         },
         {
           "run": "node tooling/budgets.mjs"
         }
-      ]
-    },
-    "ledger": {
-      "needs": "budgets",
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        "$setup",
-        {
-          "run": "pnpm ledger --diff"
-        }
-      ]
+      ],
+      "timeout-minutes": 20
     },
     "golden-1-images": {
       "needs": "build",
@@ -130,13 +189,23 @@
       "steps": [
         "$setup",
         {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@v4",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
           "run": "pnpm build"
         },
         {
           "name": "docker build per node deployable, never pushed",
           "run": "for f in apps/golden-1/deploy/*/Dockerfile; do n=$(basename \"$(dirname \"$f\")\"); docker build -f \"$f\" -t \"golden-1-$n\" apps/golden-1; done"
         }
-      ]
+      ],
+      "timeout-minutes": 30
     },
     "mutate-pr": {
       "if": "github.event_name == 'pull_request'",
@@ -156,6 +225,10 @@
           "run": "node tooling/mutate-changed.mjs"
         },
         {
+          "name": "golden-2 a11y report for the ledger (keel test writes reports/a11y.json)",
+          "run": "pnpm --filter golden-2 exec keel test"
+        },
+        {
           "run": "pnpm ledger --diff"
         },
         {
@@ -166,7 +239,8 @@
             "key": "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
           }
         }
-      ]
+      ],
+      "timeout-minutes": 120
     },
     "mutate": {
       "if": "github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'",
@@ -183,6 +257,10 @@
         },
         {
           "run": "pnpm mutate --filter=\"./packages/*\""
+        },
+        {
+          "name": "golden-2 a11y report for the ledger (keel test writes reports/a11y.json)",
+          "run": "pnpm --filter golden-2 exec keel test"
         },
         {
           "run": "pnpm ledger --diff"
