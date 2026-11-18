@@ -9,7 +9,7 @@ export const boardOutbox = outbox('todos.outbox', BoardApi, { module: 'api', lim
 ```
 `outbox(id, api, { module, limit = 100, maxBytes = 262144 })`, over the k.services `endpoints` of `module`'s routes, creates client store `id` (prefixed, E1155), state `{ entries: OutboxEntry[] }`, changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. `OutboxEntry` is `{ key, endpoint, owner, input, base, at, state, head?, error? }`, `state` `queued`, `sending`, `conflict` or `failed`.
 
-**Write.** An outbox endpoint's `body` holds `write: Write`, `s.object({ key: s.id('Write'), base: s.int({ min: 0 }) })`; its action passes it on: `tx(t, payload, { meta, ...input.write })` (k.sync).
+**Write.** An outbox endpoint's `body` holds `write: Write`, `s.object({ key: s.id('Write'), base: s.int({ min: 0 }), owner: s.string() })`; its action passes it through `writeFor` (std.outbox-owner).
 ```ts
 const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: { title } }, { base: view.get('head'), owner })
 ```
