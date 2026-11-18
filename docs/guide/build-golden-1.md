@@ -1607,7 +1607,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
 }
 ```
 
-`ListsPage` is the index route. `form(ListDraft)` creates a form handle; `f.field("name")` binds an `Input` to it, with validation from the schema on blur and submit. The router's `Form` posts to the route's `POST` action and shows any non-field error in its `error` slot. golden-1 calls `Form` as a function inside a helper named `children` and inserts it with `{children()}`; the compiler inserts a call of a binding named `children` as a node. Writing `<Form method="POST" action={...} form={f} error={...}>...</Form>` in JSX compiles as well.
+`ListsPage` is the index route. `form(ListDraft)` creates a form handle; `f.field("name")` binds an `Input` to it, with validation from the schema on blur and submit. The router's `Form` posts to the route's `POST` action and shows any non-field error in its `error` slot. The page writes `<Form method="POST" action={...} form={f} error={...}>` with the controls as its JSX children; the children stay a thunk, so a served page resumes them in place.
 
 ```tsx title="modules/todos/ListsPage.tsx"
 import { form } from "@keel/forms";
@@ -1626,50 +1626,6 @@ const openCount = (listId: string): number => view.get("todos").filter((t) => t.
 /** Route `todos.index`: every list with its open-todo count, and a Form adding a list. */
 export default function ListsPage(_props: Infer<typeof Props>) {
   const f = form(ListDraft);
-  // Router `Form` expects Node children, not the compiler's children thunk, so it is called directly and
-  // inserted through a `children()` binding (compiler D31).
-  const children = (): Node => {
-    const name = (
-      <Input
-        field={f.field("name")}
-        label="List name"
-        font="serif"
-        fontSize="md"
-        px="2"
-        py="2"
-        mx="2"
-        my="1"
-        bg="card"
-        fg="text"
-        border="control"
-        radius="none"
-      />
-    );
-    const submit = (
-      <Button
-        id="todos.addList"
-        type="submit"
-        font="mono"
-        fontSize="sm"
-        px="4"
-        py="2"
-        my="2"
-        bg="text"
-        fg="card"
-        border="rule"
-        radius="none"
-      >
-        Add list
-      </Button>
-    );
-    return Form({
-      method: "POST",
-      action: routes.href("todos.index"),
-      form: f,
-      error: (e) => <Text fg="error">{e.message}</Text>,
-      children: [name, submit],
-    });
-  };
   return (
     <Box as="section" id="todos.lists" direction="column" gap="5">
       <Heading id="todos.lists.title" level={1} fontSize="2xl" weight="semibold" m="0">
@@ -1705,7 +1661,42 @@ export default function ListsPage(_props: Infer<typeof Props>) {
           )}
         </For>
       </Box>
-      {children()}
+      <Form
+        method="POST"
+        action={routes.href("todos.index")}
+        form={f}
+        error={(e) => <Text fg="error">{e.message}</Text>}
+      >
+        <Input
+          field={f.field("name")}
+          label="List name"
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Button
+          id="todos.addList"
+          type="submit"
+          font="mono"
+          fontSize="sm"
+          px="4"
+          py="2"
+          my="2"
+          bg="text"
+          fg="card"
+          border="rule"
+          radius="none"
+        >
+          Add list
+        </Button>
+      </Form>
     </Box>
   );
 }
@@ -1750,61 +1741,6 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
           t.listId === props.params.listId &&
           (props.search.filter === "done" ? t.done : props.search.filter === "active" ? !t.done : true),
       );
-  const listId = props.params.listId;
-  // `Form` is a function component returning an element; inserted through a `children()` binding (compiler D31).
-  const children = (): Node =>
-    Form({
-      method: "POST",
-      action: routes.href("todos.list", { listId }),
-      form: f,
-      error: (e) => <Text fg="error">{e.message}</Text>,
-      children: () => [
-        <Input
-          field={f.field("title")}
-          label="Title"
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />,
-        <Select
-          field={f.field("priority")}
-          label="Priority"
-          options={PRIORITIES}
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />,
-        <Button
-          id="todos.addTodo"
-          type="submit"
-          font="mono"
-          fontSize="sm"
-          px="4"
-          py="2"
-          my="2"
-          bg="text"
-          fg="card"
-          border="rule"
-          radius="none"
-        >
-          Add todo
-        </Button>,
-      ],
-    });
   return (
     <Box as="section" id="todos.list" direction="column" gap="5">
       <Heading id="todos.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
@@ -1838,7 +1774,57 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
           {(todo) => <TodoRow todo={todo} />}
         </For>
       </Box>
-      {children()}
+      <Form
+        method="POST"
+        action={routes.href("todos.list", { listId: props.params.listId })}
+        form={f}
+        error={(e) => <Text fg="error">{e.message}</Text>}
+      >
+        <Input
+          field={f.field("title")}
+          label="Title"
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Select
+          field={f.field("priority")}
+          label="Priority"
+          options={PRIORITIES}
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Button
+          id="todos.addTodo"
+          type="submit"
+          font="mono"
+          fontSize="sm"
+          px="4"
+          py="2"
+          my="2"
+          bg="text"
+          fg="card"
+          border="rule"
+          radius="none"
+        >
+          Add todo
+        </Button>
+      </Form>
       <Suggestions />
     </Box>
   );
@@ -2009,73 +1995,62 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
     id: "todos.editForm",
     initial: { title: props.data.title, priority: props.data.priority },
   });
-  // Router `Form` expects Node children, not the compiler's children thunk, so it is called directly and
-  // inserted through a `children()` binding (compiler D31).
-  const children = (): Node => {
-    const title = (
-      <Input
-        field={f.field("title")}
-        label="Title"
-        font="serif"
-        fontSize="md"
-        px="2"
-        py="2"
-        mx="2"
-        my="1"
-        bg="card"
-        fg="text"
-        border="control"
-        radius="none"
-      />
-    );
-    const priority = (
-      <Select
-        field={f.field("priority")}
-        label="Priority"
-        options={PRIORITIES}
-        font="serif"
-        fontSize="md"
-        px="2"
-        py="2"
-        mx="2"
-        my="1"
-        bg="card"
-        fg="text"
-        border="control"
-        radius="none"
-      />
-    );
-    const submit = (
-      <Button
-        id="todos.save"
-        type="submit"
-        font="mono"
-        fontSize="sm"
-        px="4"
-        py="2"
-        my="2"
-        bg="text"
-        fg="card"
-        border="rule"
-        radius="none"
-      >
-        Save
-      </Button>
-    );
-    return Form({
-      method: "POST",
-      action: routes.href("todos.edit", props.params),
-      form: f,
-      error: (e) => <Text fg="error">{e.message}</Text>,
-      children: [title, priority, submit],
-    });
-  };
   return (
     <Box as="section" id="todos.edit" direction="column" gap="5">
       <Heading id="todos.edit.title" level={1} fontSize="2xl" weight="semibold" m="0">
         Edit todo
       </Heading>
-      {children()}
+      <Form
+        method="POST"
+        action={routes.href("todos.edit", props.params)}
+        form={f}
+        error={(e) => <Text fg="error">{e.message}</Text>}
+      >
+        <Input
+          field={f.field("title")}
+          label="Title"
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Select
+          field={f.field("priority")}
+          label="Priority"
+          options={PRIORITIES}
+          font="serif"
+          fontSize="md"
+          px="2"
+          py="2"
+          mx="2"
+          my="1"
+          bg="card"
+          fg="text"
+          border="control"
+          radius="none"
+        />
+        <Button
+          id="todos.save"
+          type="submit"
+          font="mono"
+          fontSize="sm"
+          px="4"
+          py="2"
+          my="2"
+          bg="text"
+          fg="card"
+          border="rule"
+          radius="none"
+        >
+          Save
+        </Button>
+      </Form>
     </Box>
   );
 }
