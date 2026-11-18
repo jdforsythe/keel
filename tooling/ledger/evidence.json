@@ -1,5 +1,5 @@
 {
-  "commit": "582baa8f0509d33f8c70743f2180033913094dc2",
+  "commit": "2319a0a0bf8fb43f0ae2a25217ae1e9ab2da937d",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -476,7 +476,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T05:00:21.266Z",
+  "generatedAt": "2026-11-18T06:48:56.208Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -492,11 +492,11 @@
     },
     "clauses": {
       "byRung": {
-        "example": 556,
+        "example": 558,
         "exhaustive": 6,
         "monitored": 0,
         "none": 0,
-        "probabilistic": 169,
+        "probabilistic": 170,
         "proven": 28
       },
       "sections": {
@@ -957,7 +957,7 @@
         },
         "k.shell": {
           "byRung": {
-            "example": 6,
+            "example": 7,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -965,8 +965,8 @@
             "proven": 0
           },
           "status": "proposed",
-          "total": 6,
-          "verified": 6
+          "total": 7,
+          "verified": 7
         },
         "k.sim": {
           "byRung": {
@@ -1334,16 +1334,16 @@
         },
         "std.shells": {
           "byRung": {
-            "example": 1,
+            "example": 2,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 5,
+            "probabilistic": 6,
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 6,
-          "verified": 6
+          "total": 8,
+          "verified": 8
         },
         "std.statecharts": {
           "byRung": {
@@ -1437,14 +1437,14 @@
           "verified": 8
         }
       },
-      "total": 759,
-      "verified": 759
+      "total": 762,
+      "verified": 762
     },
     "evidenceByRung": {
-      "example": 1107,
+      "example": 1110,
       "exhaustive": 15,
       "monitored": 4,
-      "probabilistic": 332,
+      "probabilistic": 333,
       "proven": 57
     },
     "exports": {
@@ -1977,9 +1977,9 @@
       "total": 416,
       "verified": 386
     },
-    "items": 1475,
+    "items": 1478,
     "unsafe": 18,
-    "verified": 1213
+    "verified": 1216
   },
   "mutation": {
     "packages": {
@@ -2412,18 +2412,18 @@
         "unitFiles": 41
       },
       "packages/cli": {
-        "conformanceCases": 236,
-        "conformanceFiles": 71,
+        "conformanceCases": 239,
+        "conformanceFiles": 72,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 103,
+        "propertyCalls": 104,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 676,
-        "unitFiles": 79
+        "unitCases": 684,
+        "unitFiles": 80
       },
       "packages/compiler": {
         "conformanceCases": 127,
@@ -2580,18 +2580,18 @@
         "unitFiles": 1
       },
       "packages/std-capacitor": {
-        "conformanceCases": 17,
-        "conformanceFiles": 6,
+        "conformanceCases": 20,
+        "conformanceFiles": 7,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 20,
+        "propertyCalls": 25,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 9,
-        "unitFiles": 3
+        "unitCases": 15,
+        "unitFiles": 5
       },
       "packages/std-channels": {
         "conformanceCases": 24,
@@ -2846,18 +2846,18 @@
         "unitFiles": 10
       },
       "packages/std-tauri": {
-        "conformanceCases": 18,
-        "conformanceFiles": 6,
+        "conformanceCases": 33,
+        "conformanceFiles": 9,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 21,
+        "propertyCalls": 31,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 8,
-        "unitFiles": 3
+        "unitCases": 19,
+        "unitFiles": 5
       },
       "packages/std-temporal": {
         "conformanceCases": 16,
@@ -2959,18 +2959,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 3160,
-      "conformanceFiles": 842,
+      "conformanceCases": 3181,
+      "conformanceFiles": 847,
       "exploreFiles": 17,
       "fails": 3,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 1798,
+      "propertyCalls": 1814,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4221,
-      "unitFiles": 687
+      "unitCases": 4246,
+      "unitFiles": 692
     }
   },
   "tool": {
