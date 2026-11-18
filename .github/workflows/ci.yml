@@ -34,6 +34,8 @@ jobs:
       - name: "golden-2 a11y report for the ledger (keel test writes reports/a11y.json)"
         run: pnpm --filter golden-2 exec keel test
       - run: pnpm ledger --diff
+      - name: "the committed evidence report matches the ledger and the tests (coverage is compared only where measured)"
+        run: "pnpm evidence:report --check"
       - name: every test task is in exactly one test-shard
         run: node tooling/ci-shards.mjs --verify
       - name: turbo cache for the jobs after this one
