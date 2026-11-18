@@ -12,7 +12,11 @@ import { begin, end, ORIGIN, OTHER, PAGES } from "./fixtures.ts";
 vi.mock("@capacitor/core", async (original) => {
   const actual = await original<typeof import("@capacitor/core")>();
   const fixtures = await import("./fixtures.ts");
-  return { ...actual, CapacitorHttp: fixtures.nativeHttp, CapacitorCookies: fixtures.nativeCookies };
+  return {
+    ...actual,
+    registerPlugin: fixtures.registerPlugin(actual.registerPlugin),
+    CapacitorCookies: fixtures.nativeCookies,
+  };
 });
 // capacitor-mock-end
 

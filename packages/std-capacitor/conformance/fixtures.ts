@@ -1,11 +1,16 @@
 // Shared fixtures for the std.shells conformance files of `@keel/std-capacitor` (not a test file).
 // Assumptions (the spec does not say):
 // - Storage runs on Capacitor's own web `Preferences` over the jsdom-like `localStorage` (no stand-in); a "restart" is a fresh `capacitorDrivers` over the same `localStorage`.
-// - `CapacitorHttp` from `@capacitor/core` is stood in for by `nativeHttp` (installed with `vi.mock` in each test file that uses the network), because
-//   Capacitor's web `CapacitorHttp` calls the global `fetch`, which the last clause forbids. The driver may call `request` or the verb helpers; all reach one handler.
+// - The package's native plugin `KeelHttp` is stood in for by `keelHttp`, which the package reaches through `registerPlugin('KeelHttp')` from `@capacitor/core`
+//   (installed with `vi.mock` in each test file that uses the network; `registerPlugin` of any other name is left as it is). Its call shape follows the plugin's description:
+//   - `request({ id, url, method, headers, data })`: `id` is a string the page chooses, `headers` a record, `data` the body as text and absent for no body;
+//     it resolves when the response headers arrive with `{ status, headers }`, the headers without `set-cookie` (the native cookie store keeps it), and rejects for a failure before the headers.
+//   - The body follows as events delivered to listeners added with `addListener(name, callback)` (which resolves to a handle with `remove()`):
+//     `chunk` `{ id, data }` with `data` base64 of at most 16 KiB, then `end` `{ id }` or `fail` `{ id, message }`.
+//     An event waits until a listener of its name exists, so a listener added after `request` resolves still gets the body.
+//   - `cancel({ id })` disconnects the native request: nothing more is delivered for `id`, and `id` is recorded in `native.cancelled`.
 // - The native side owns the cookie jar (`native.jar`, by origin): it adds `cookie` to a request and keeps a `set-cookie` of a response, as the native HTTP client does.
 // - A page at `<origin>` is a stubbed global `location` with `origin`, `protocol`, `host`, `hostname`, `href`; requests to the page use absolute URLs on it.
-import type { HttpOptions, HttpResponse } from "@capacitor/core";
 import { vi } from "vitest";
 
 export const ORIGIN = new URL("https://golden-1.example");
@@ -23,11 +28,17 @@ export interface Reply {
   readonly status: number;
   readonly headers?: Readonly<Record<string, string>>;
   readonly body?: string;
+  /** The body as chunks the native side sends one by one, each when the iterator yields it; used in place of `body`. */
+  readonly chunks?: AsyncIterable<string>;
 }
 export type Backend = (req: Wire) => Reply;
 
 export interface Native {
   readonly wire: Wire[];
+  /** The `id` of each request, in the order of `wire`. */
+  readonly ids: string[];
+  /** The `id` of each `cancel` call. */
+  readonly cancelled: string[];
   readonly jar: Map<string, Map<string, string>>;
   backend: Backend;
   refuse: boolean;
@@ -38,14 +49,19 @@ const ok: Backend = () => ({ status: 200, body: "ok" });
 
 export const native: Native = {
   wire: [],
+  ids: [],
+  cancelled: [],
   jar: new Map(),
   backend: ok,
   refuse: false,
   reset() {
     this.wire.length = 0;
+    this.ids.length = 0;
+    this.cancelled.length = 0;
     this.jar.clear();
     this.backend = ok;
     this.refuse = false;
+    queue.length = 0;
   },
 };
 
@@ -55,45 +71,72 @@ const lower = (h: Readonly<Record<string, string>> | undefined): Record<string, 
   return out;
 };
 
-const bodyOf = (o: HttpOptions): string | null => {
-  const d: unknown = o.data;
-  if (d === undefined || d === null) return null;
-  if (typeof d === "string") return o.dataType === "file" ? Buffer.from(d, "base64").toString("utf8") : d;
-  return JSON.stringify(d);
-};
+const field = (o: unknown, key: string): unknown =>
+  typeof o === "object" && o !== null ? Reflect.get(o, key) : undefined;
+const text = (v: unknown): string => (typeof v === "string" ? v : "");
 
-const urlOf = (o: HttpOptions): string => {
-  const u = new URL(o.url);
-  for (const [k, v] of Object.entries(o.params ?? {})) {
-    for (const item of Array.isArray(v) ? v : [v]) u.searchParams.append(k, item);
+type EventName = "chunk" | "end" | "fail";
+interface NativeEvent {
+  readonly id: string;
+  readonly name: EventName;
+  readonly payload: Readonly<Record<string, string>>;
+}
+const queue: NativeEvent[] = [];
+const listeners = new Map<string, Set<(payload: unknown) => void>>();
+const gone = new Set<string>();
+
+/** Delivers queued events in order while a listener of the head event's name exists. */
+const flush = (): void => {
+  for (;;) {
+    const head = queue[0];
+    if (head === undefined) return;
+    const mine = listeners.get(head.name);
+    if (mine === undefined || mine.size === 0) return;
+    queue.shift();
+    for (const listener of [...mine]) listener(head.payload);
   }
-  return u.href;
+};
+const emit = (event: NativeEvent): void => {
+  if (gone.has(event.id)) return;
+  queue.push(event);
+  flush();
 };
 
-const dataOf = (o: HttpOptions, reply: Reply): unknown => {
-  const text = reply.body ?? "";
-  const type = o.responseType;
-  if (type === "arraybuffer" || type === "blob") return Buffer.from(text, "utf8").toString("base64");
-  if (type === "text" || type === "document") return text;
-  const ct = lower(reply.headers)["content-type"] ?? "";
-  if (type === "json" || ct.includes("json")) {
-    try {
-      return JSON.parse(text);
-    } catch {
-      return text;
+const CHUNK = 16 * 1024;
+const send = async (id: string, reply: Reply): Promise<void> => {
+  try {
+    const parts: AsyncIterable<string> | Iterable<string> = reply.chunks ?? [reply.body ?? ""];
+    for await (const part of parts) {
+      const bytes = Buffer.from(part, "utf8");
+      for (let at = 0; at < bytes.length; at += CHUNK) {
+        if (gone.has(id)) return;
+        emit({ id, name: "chunk", payload: { id, data: bytes.subarray(at, at + CHUNK).toString("base64") } });
+      }
+      if (gone.has(id)) return;
     }
+    emit({ id, name: "end", payload: { id } });
+  } catch (error) {
+    emit({ id, name: "fail", payload: { id, message: String(error) } });
   }
-  return text;
 };
 
-const request = async (o: HttpOptions): Promise<HttpResponse> => {
-  const url = urlOf(o);
+const request = async (o: unknown): Promise<{ status: number; headers: Record<string, string> }> => {
+  const id = text(field(o, "id"));
+  const url = new URL(text(field(o, "url"))).href;
   const origin = new URL(url).origin;
-  const headers = lower(o.headers);
+  const headers: Record<string, string> = {};
+  for (const [k, v] of Object.entries(Object(field(o, "headers")))) headers[k.toLowerCase()] = text(v);
   const jar = native.jar.get(origin);
   if (jar && jar.size > 0) headers.cookie = [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
-  const wire: Wire = { url, method: (o.method ?? "GET").toUpperCase(), headers, body: bodyOf(o) };
+  const data = field(o, "data");
+  const wire: Wire = {
+    url,
+    method: (text(field(o, "method")) || "GET").toUpperCase(),
+    headers,
+    body: typeof data === "string" ? data : null,
+  };
   native.wire.push(wire);
+  native.ids.push(id);
   if (native.refuse) throw new Error(`Connection refused: ${origin}`);
   const reply = native.backend(wire);
   const cookie = lower(reply.headers)["set-cookie"];
@@ -104,20 +147,45 @@ const request = async (o: HttpOptions): Promise<HttpResponse> => {
     jarOf.set(pair.slice(0, at), pair.slice(at + 1));
     native.jar.set(origin, jarOf);
   }
-  return { status: reply.status, headers: { ...(reply.headers ?? {}) }, url, data: dataOf(o, reply) };
+  gone.delete(id);
+  queueMicrotask(() => {
+    void send(id, reply);
+  });
+  const shown: Record<string, string> = {};
+  for (const [k, v] of Object.entries(reply.headers ?? {})) if (k.toLowerCase() !== "set-cookie") shown[k] = v;
+  return { status: reply.status, headers: shown };
 };
 
-const verb = (method: string) => (o: HttpOptions) => request({ ...o, method });
-
-/** The stand-in for `CapacitorHttp`. */
-export const nativeHttp = {
+/** The stand-in for the package's `KeelHttp` plugin. */
+export const keelHttp = {
   request,
-  get: verb("GET"),
-  post: verb("POST"),
-  put: verb("PUT"),
-  patch: verb("PATCH"),
-  delete: verb("DELETE"),
+  async cancel(o: unknown): Promise<void> {
+    const id = text(field(o, "id"));
+    native.cancelled.push(id);
+    gone.add(id);
+    for (let i = queue.length - 1; i >= 0; i--) if (queue[i]?.id === id) queue.splice(i, 1);
+  },
+  async addListener(name: string, callback: (payload: unknown) => void): Promise<{ remove(): Promise<void> }> {
+    const mine = listeners.get(name) ?? new Set<(payload: unknown) => void>();
+    mine.add(callback);
+    listeners.set(name, mine);
+    queueMicrotask(flush);
+    return {
+      async remove() {
+        mine.delete(callback);
+      },
+    };
+  },
+  async removeAllListeners(): Promise<void> {
+    listeners.clear();
+  },
 };
+
+/** `registerPlugin` of `@capacitor/core` with `KeelHttp` stood in for; `real` is the original. */
+export const registerPlugin =
+  (real: unknown) =>
+  (name: string, implementations?: unknown): unknown =>
+    name === "KeelHttp" ? keelHttp : Reflect.apply(Object(real), undefined, [name, implementations]);
 
 /** The stand-in for `CapacitorCookies`, over the same native jar. */
 export const nativeCookies = {
@@ -171,6 +239,10 @@ export interface World {
   readonly jar: Map<string, Map<string, string>>;
   backend(b: Backend): void;
   refuse(on: boolean): void;
+  /** The `id` of each request, in the order of `wire`. */
+  readonly ids: string[];
+  /** The `id` of each `cancel` call the native plugin got. */
+  readonly cancelled: string[];
   /** An app restart: what the native store keeps survives, the rest is dropped (nothing to drop here: `localStorage` is the store). */
   restart(): void;
   /** Empties the native store between property runs. */
@@ -184,6 +256,8 @@ export function begin(page: string): World {
   return {
     wire: native.wire,
     jar: native.jar,
+    ids: native.ids,
+    cancelled: native.cancelled,
     backend: (b) => {
       native.backend = b;
     },
