@@ -40,14 +40,15 @@ const kept = async (ctx: Sim, key: string) => {
   }));
 };
 
-/** Three writes queued offline by owner `a`; returns the ctx holding the storage and the keys in order. */
+/** Three writes queued offline by owner `a`, with bases 0, 1, 2 so each commits in order; returns the ctx holding the storage and the keys in order. */
 async function queuedByA(writes: readonly (readonly [string, string])[]) {
   const ctx = simCtx();
   const server = createServer();
   server.attach(ctx);
   const c = makeClient();
   ctx.net.setOnline(false);
-  for (const [todoId, title] of writes) await send(ctx, c.o, "editTodo", edit(todoId, title), { base: 0, owner: "a" });
+  let base = 0;
+  for (const [todoId, title] of writes) await send(ctx, c.o, "editTodo", edit(todoId, title), { base: base++, owner: "a" });
   const keys = entriesOf(c.o).map((e) => e.key);
   c.dispose();
   return { ctx, id: c.id, storageKey: c.storageKey, keys };
