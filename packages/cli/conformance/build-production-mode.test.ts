@@ -2,7 +2,8 @@
 // Spec: k.deploy Build, "`keel build` runs Vite with `NODE_ENV=production`, whatever the shell or `.env` sets: the entries' `mode` is `'production'` and `import.meta.env.DEV` is `false`."
 // Seed: 1337 (no random input: the environments are enumerated).
 // The real binary over one temp `client` project with `@keel/*` and `vite` linked, built once per environment into `dist/<name>/assets/*.js`.
-// The bundle must hold the string "production" and never the inspect reporter's endpoint; a successful build prints only the `ok` trailer.
+// The route component holds one string outside any condition and one only inside `if (import.meta.env.DEV)`: a production bundle holds the first, never the second, and never the inspect reporter's endpoint (a dev build holds both).
+// A successful build prints only the `ok` trailer.
 import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -27,7 +28,7 @@ const files = (): Record<string, string> => ({
     "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['c'], adapter: 'client' } })\n",
   "modules/c/module.ts": manifestSrc("c"),
   "modules/c/routes.ts":
-    "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+    "import { manifest } from '@keel/router'\nconst Page = () => {\n  console.log('keel-always-marker-41c9')\n  if (import.meta.env.DEV) console.log('keel-dev-only-marker-7f3a')\n  return null\n}\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
 });
 
 let dir = "";
@@ -56,8 +57,15 @@ function build(nodeEnv: string | undefined): { status: number | null; stdout: st
   return { status: r.status, stdout: r.stdout, bundle };
 }
 
-/** The mode literal as a minifier may quote it. */
-const PRODUCTION = /["'`]production["'`]/;
+const ALWAYS = "keel-always-marker-41c9";
+const DEV_ONLY = "keel-dev-only-marker-7f3a";
+
+/** The bundle is a production bundle: the app code is in it, the dev-only string and the inspect reporter are not. */
+function expectProduction(bundle: string): void {
+  expect(bundle).toContain(ALWAYS);
+  expect(bundle).not.toContain(DEV_ONLY);
+  expect(bundle).not.toContain("/__keel/inspect");
+}
 
 const okOnly = (stdout: string): boolean => {
   const lines = stdout.split("\n").filter((l) => l.length > 0);
@@ -70,8 +78,7 @@ describe("k.deploy Conformance 11: keel build writes the production client", () 
     () => {
       const r = build("staging");
       expect(r.status).toBe(0);
-      expect(r.bundle).toMatch(PRODUCTION);
-      expect(r.bundle).not.toContain("/__keel/inspect");
+      expectProduction(r.bundle);
     },
     SLOW,
   );
@@ -81,8 +88,7 @@ describe("k.deploy Conformance 11: keel build writes the production client", () 
     () => {
       const r = build("test");
       expect(r.status).toBe(0);
-      expect(r.bundle).toMatch(PRODUCTION);
-      expect(r.bundle).not.toContain("/__keel/inspect");
+      expectProduction(r.bundle);
     },
     SLOW,
   );
@@ -94,8 +100,7 @@ describe("k.deploy Conformance 11: keel build writes the production client", () 
       try {
         const r = build(undefined);
         expect(r.status).toBe(0);
-        expect(r.bundle).toMatch(PRODUCTION);
-        expect(r.bundle).not.toContain("/__keel/inspect");
+        expectProduction(r.bundle);
       } finally {
         rmSync(join(dir, ".env"), { force: true });
       }
