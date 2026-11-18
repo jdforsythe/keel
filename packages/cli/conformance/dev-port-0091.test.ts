@@ -1,7 +1,7 @@
 // Spec: k.cli, clause "`keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1." (rfc:0091)
 // Spec: k.cli Commands "`dev [--port N]` ... (default Vite's `server.port` or 5173; in use: E1560, exit 1)"; Rules E1052 "flag value invalid for the input schema".
-// Seed 1337. Spawns the real binary over a temp project with `vite` linked. The wait for the server is a bounded retry of
-// an `http.get` (no timers in the wait). Ports come from a listener on port 0 that is closed first; a busy port is held by the
+// Seed 1337. Spawns the real binary over a temp project with `vite` linked. The wait for the server is a retry, with a fixed pause, of
+// an `http.get`, bounded by a count of pauses. Ports come from a listener on port 0 that is closed first; a busy port is held by the
 // test's own listener. Only processes the test started are signalled (the child's process group); every child is ended in `afterEach`.
 import { type ChildProcess, spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -9,6 +9,7 @@ import http from "node:http";
 import net from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { setTimeout as pause } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import fc from "fast-check";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
@@ -162,13 +163,17 @@ const accepts = (port: number): Promise<boolean> =>
     sock.once("error", () => res(false));
   });
 
-/** Bounded retry until the port accepts a connection and answers any HTTP status, or the process exits. */
+/**
+ * Retry, with a fixed pause between attempts, until the port accepts a connection and answers any HTTP status, or the
+ * process exits. 800 pauses of 50 ms bound the wait at about 40 s however fast a refused connect returns.
+ */
 async function served(p: Proc, port: number): Promise<boolean> {
   let done = false;
   void p.exited.then(() => {
     done = true;
   });
-  for (let i = 0; i < 4000 && !done; i++) {
+  for (let i = 0; i < 800 && !done; i++) {
+    if (i > 0) await pause(50);
     if (!(await accepts(port))) continue;
     const ok = (await get(port, "/")) !== null;
     if (ok) return true;
