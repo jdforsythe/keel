@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// The pre-resume event queue: what it captures, for which island, and what resume replays.
+// The pre-resume event queue: what it captures, for which island, and what replay dispatches once every island resumed.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { eventQueue } from "../src/internal/eventQueue.ts";
 
@@ -51,6 +51,8 @@ describe("eventQueue capture", () => {
     expect(eventQueue.pending()).toBe(QUEUED.length);
     const seen: string[] = [];
     eventQueue.resume(need("[data-k-island]"), need("[data-k-island]"), (e) => seen.push(e.type));
+    expect(seen).toEqual([]);
+    eventQueue.replay();
     expect(seen).toEqual(QUEUED);
     expect(eventQueue.pending()).toBe(0);
   });
@@ -88,7 +90,7 @@ describe("eventQueue capture", () => {
     expect(eventQueue.pending()).toBe(1);
   });
 
-  it("attributes an event to the innermost island, which every island resumes in document order to replay", () => {
+  it("tells an event to the innermost enclosing root, once replay runs after every island resumed", () => {
     document.body.innerHTML =
       '<div data-k-island="O"><div data-k-island="M"><div data-k-island="I"><button id="b">x</button></div></div></div>';
     fire(need("#b"), "click");
@@ -101,6 +103,9 @@ describe("eventQueue capture", () => {
     expect(seen).toEqual([]);
     expect(eventQueue.pending()).toBe(1);
     eventQueue.resume(inner, inner, (e) => seen.push(`I:${e.type}`));
+    expect(seen).toEqual([]);
+    expect(eventQueue.pending()).toBe(1);
+    eventQueue.replay();
     expect(seen).toEqual(["I:click"]);
     expect(eventQueue.pending()).toBe(0);
   });
@@ -114,7 +119,7 @@ describe("eventQueue capture", () => {
 });
 
 describe("eventQueue resume", () => {
-  it("replays only the resuming island's events and keeps the others", () => {
+  it("replays every island's events in the order they fired, after the islands resumed", () => {
     document.body.innerHTML =
       '<div id="a" data-k-island="A"><button id="ba">x</button></div><div id="c" data-k-island="C"><button id="bc">y</button></div>';
     fire(need("#ba"), "click");
@@ -122,30 +127,56 @@ describe("eventQueue resume", () => {
     fire(need("#ba"), "keyup");
     expect(eventQueue.pending()).toBe(3);
     const seen: string[] = [];
-    eventQueue.resume(need("#a"), need("#a"), (e) => seen.push(e.type));
-    expect(seen).toEqual(["click", "keyup"]);
-    expect(eventQueue.pending()).toBe(1);
-    eventQueue.resume(need("#c"), need("#c"), (e) => seen.push(e.type));
-    expect(seen).toEqual(["click", "keyup", "keydown"]);
+    eventQueue.resume(need("#a"), need("#a"), (e) => seen.push(`a:${e.type}`));
+    eventQueue.resume(need("#c"), need("#c"), (e) => seen.push(`c:${e.type}`));
+    expect(seen).toEqual([]);
+    expect(eventQueue.pending()).toBe(3);
+    eventQueue.replay();
+    expect(seen).toEqual(["a:click", "c:keydown", "a:keyup"]);
+    expect(eventQueue.pending()).toBe(0);
   });
 
   it("replays without a tell", () => {
     document.body.innerHTML = '<div data-k-island="A"><button id="b">x</button></div>';
     fire(need("#b"), "click");
     expect(() => eventQueue.resume(need("[data-k-island]"), need("[data-k-island]"))).not.toThrow();
+    expect(() => eventQueue.replay()).not.toThrow();
     expect(eventQueue.pending()).toBe(0);
   });
 
-  it("drops the island's events when there is no root, without calling tell", () => {
+  it("with no root (a re-rendered island) drops its events whose target left the document, firing no input", () => {
     document.body.innerHTML = '<div data-k-island="A"><input id="i" value="s"></div>';
+    const island = need("[data-k-island]");
     const input = need("#i");
     if (!(input instanceof HTMLInputElement)) throw new Error("fixture");
     input.value = "typed";
     fire(input, "click");
     const seen: string[] = [];
-    need("[data-k-island]").addEventListener("input", (e) => seen.push(e.type));
-    eventQueue.resume(need("[data-k-island]"), null, (e) => seen.push(e.type));
+    island.addEventListener("input", (e) => seen.push(e.type));
+    island.replaceWith(document.createElement("div"));
+    eventQueue.resume(island, null, (e) => seen.push(e.type));
     expect(seen).toEqual([]);
+    expect(eventQueue.pending()).toBe(0);
+    eventQueue.replay();
+    expect(seen).toEqual([]);
+  });
+
+  it("with no root keeps an event whose target stays in the document; replay reaches the root enclosing it", () => {
+    document.body.innerHTML = '<div id="o"><div data-k-island="A"><button id="b">x</button></div></div>';
+    fire(need("#b"), "click");
+    eventQueue.resume(need("[data-k-island]"), null);
+    expect(eventQueue.pending()).toBe(1);
+    const seen: string[] = [];
+    eventQueue.root(need("#o"), (e) => seen.push(`o:${e.type}`));
+    eventQueue.replay();
+    expect(seen).toEqual(["o:click"]);
+  });
+
+  it("replay drops an event no resumed root encloses", () => {
+    document.body.innerHTML = '<div data-k-island="A"><button id="b">x</button></div>';
+    fire(need("#b"), "click");
+    eventQueue.resume(need("[data-k-island]"), null);
+    eventQueue.replay();
     expect(eventQueue.pending()).toBe(0);
   });
 

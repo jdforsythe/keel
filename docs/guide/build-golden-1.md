@@ -2563,9 +2563,8 @@ cp ../../apps/golden-1/test/*.test.ts test/
 | `test/api.test.ts` | `properties` on each `api` transaction (invariants, undo, the rebase and reject policies), the `api` HTTP surface, per-caller undo |
 | `test/realtime.test.ts` | two users on one `api`: the board channel, a write made offline and sent on reconnect, a refused edit in the outbox panel with Keep mine and Keep theirs, one seed giving equal logs |
 | `test/blankRequired.test.ts` | a blank list name or todo title shows Required and adds nothing, on the forms and at the `api` |
-| `test/resumeDocument.test.ts` | a `todos.list` document served by the node adapter and resumed, as the browser's generated entry does |
 | `test/digest.test.ts` | the job, the schedule on the sim clock, the event-stream feed, a restart with a job left in the queue |
-| `test/ssrNode.test.ts` | the `todos` pages rendered by a `node` adapter in plain Node, no DOM global |
+| `test/ssrNode.test.ts` | the `api` deployable's GET routes answered as JSON in plain Node, no DOM global; the `todos` pages are client-only |
 | `test/host.test.ts` | the `api` app answers `GET /` and an unmatched page with the client's `index.html` |
 | `test/writeSchemas.test.ts` | the three write-body schemas at their limits: what each accepts and refuses |
 | `test/boardEvents.test.ts` | the board channel's route, and a subscriber's `reset` then `saved` after another caller's write |

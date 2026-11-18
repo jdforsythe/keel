@@ -20,3 +20,4 @@ export type { ServerRequest } from "./types/ServerRequest.ts";
 export type { ServerState } from "./types/ServerState.ts";
 export type { StateRequest } from "./types/StateRequest.ts";
 export type { StoreShape } from "./types/StoreShape.ts";
+export { moduleWrites } from "./moduleWrites.ts";

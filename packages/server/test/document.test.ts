@@ -90,7 +90,9 @@ describe("document", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html.startsWith("<!doctype html>")).toBe(true);
-    expect(html).toContain('<div id="app"><section data-page="home" data-k="app.home" data-k-island="app.home">');
+    expect(html).toContain(
+      '<div id="app"><!--k--><section data-page="home" data-k="app.home" data-k-island="app.home">',
+    );
     expect(html.match(/<script type="module" src="\/@keel\/entry.ts" nonce="[0-9a-f]{64}"><\/script>/g)?.length).toBe(
       1,
     );

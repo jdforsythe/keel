@@ -24,4 +24,6 @@ interface Shared {
   readonly busy?: () => string | null;
   /** Extra teardown run by `dispose` after unmounting (a router's `dispose`). */
   readonly teardown?: () => void;
+  /** The live stores `state()` and `settle` read (default `stores()`): a fresh module graph's for `resumeDocument`. */
+  readonly registry?: () => ReadonlyMap<string, Store<unknown>>;
 }

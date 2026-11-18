@@ -38,6 +38,8 @@ const offDefault = (c: Element): boolean => {
 type Entry = { readonly event: Event; readonly target: Node; readonly island: Element };
 const entries: Entry[] = [];
 const resumed = new WeakSet<Element>();
+/** Delegation roots resumed or re-rendered, each with its observer tap. */
+const roots = new WeakMap<Element, ((e: Event) => void) | undefined>();
 let installed = false;
 
 const capture = (e: Event): void => {
@@ -49,7 +51,7 @@ const capture = (e: Event): void => {
 };
 
 /**
- * Pre-resume event queue (k.runtime: events fired before resume are replayed in order, exactly once).
+ * Pre-resume event queue (k.runtime: events fired before resume are replayed in order, exactly once; k.resume Replay).
  * `install` runs once, at import of the module exporting `resume`: the package's one import-time effect.
  */
 export const eventQueue = {
@@ -58,7 +60,7 @@ export const eventQueue = {
     installed = true;
     for (const t of QUEUED) document.addEventListener(t, capture, true);
   },
-  /** Events waiting for an island to resume. */
+  /** Events waiting for replay. */
   pending(): number {
     return entries.length;
   },
@@ -67,23 +69,45 @@ export const eventQueue = {
     entries.length = Math.min(entries.length, n);
   },
   /**
-   * Mark `island` resumed and replay what happened before through its delegation root `root` (rfc:0071): first a real
-   * `input` on each of its own controls (not a nested island's) whose value is off its default with no `input` queued (typed before this queue existed),
-   * in document order, then its queued events in order, each passed to `tell` (the observer tap) before dispatch.
-   * With `root` null (island fell back to client render, or has no component) its events are dropped.
+   * Mark `island` resumed with its delegation root `root` and observer tap `tell`, then fire a real `input` on each
+   * of its own controls (not a nested island's) whose value is off its default with no `input` queued (typed before
+   * this queue existed), in document order (rfc:0071). Its queued events wait for `replay`. With `root` null (the
+   * island re-rendered on the client, or has no component) its queued events whose target left the document are
+   * dropped.
    */
   resume(island: Element, root: Element | null, tell?: (e: Event) => void): void {
     resumed.add(island);
-    const mine = entries.filter((x) => x.island === island);
-    for (let i = entries.length - 1; i >= 0; i--) if (entries[i]?.island === island) entries.splice(i, 1);
-    if (root === null) return;
-    const queued = new Set(mine.flatMap((x) => (x.event.type === "input" ? [x.target] : [])));
+    if (root === null) {
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const x = entries[i];
+        if (x !== undefined && x.island === island && !x.target.isConnected) entries.splice(i, 1);
+      }
+      return;
+    }
+    roots.set(root, tell);
+    const queued = new Set(entries.flatMap((x) => (x.island === island && x.event.type === "input" ? [x.target] : [])));
     for (const c of island.querySelectorAll("input,textarea,select"))
       if (c.closest("[data-k-island]") === island && !queued.has(c) && offDefault(c))
         c.dispatchEvent(new Event("input", { bubbles: true }));
-    for (const x of mine) {
-      tell?.(x.event);
-      dispatch(root, x.event, x.target);
+  },
+  /** Register the delegation root `root` of a client re-render, so replayed events reach its handlers. */
+  root(root: Element, tell: (e: Event) => void): void {
+    roots.set(root, tell);
+  },
+  /**
+   * Replay every queued event once, in the order they fired, each as a live one: told to the observer of its innermost
+   * enclosing root, then dispatched from its target through each enclosing root, innermost first, until a handler
+   * calls `stopPropagation`. An event no root encloses is dropped.
+   */
+  replay(): void {
+    for (const x of entries.splice(0)) {
+      const enclosing: Element[] = [];
+      for (let n: Node | null = x.target; n !== null; n = n.parentNode)
+        if (n instanceof Element && roots.has(n)) enclosing.push(n);
+      const [inner] = enclosing;
+      if (inner === undefined) continue;
+      roots.get(inner)?.(x.event);
+      for (const r of enclosing) if (dispatch(r, x.event, x.target)) break;
     }
   },
 };

@@ -1,10 +1,12 @@
 import { createCtx } from "@keel/ctx";
+import { scope } from "@keel/reactive";
 import type { RouteDef } from "@keel/router";
 import { resume } from "@keel/runtime-dom/ops";
 import type { Island } from "@keel/runtime-dom/ops";
 import type { Snapshot, Store } from "@keel/store";
 import { stores } from "@keel/store";
 import { fail } from "./internal/fail.ts";
+import { freshGraph } from "./internal/freshGraph.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import type { Harness } from "./types/Harness.ts";
@@ -13,7 +15,9 @@ import type { ResumeDocumentOptions } from "./types/ResumeDocumentOptions.ts";
 /**
  * Resume a server-rendered document for a test (k.testing Harness): its `<body>`, scripts dropped but `#k-state`,
  * goes into the harness container, and `resume` (k.runtime, as the generated entry calls it) attaches each island's
- * component from `options.routes` (by route id) with `options.ctx` (default: a sim ctx) and every live store. A resume
+ * component from `options.routes` (by route id) with `options.ctx` (default: a sim ctx) and every live store. With
+ * `routes` as an import function the document resumes in a module graph of its own (`freshGraph`): that graph's
+ * `resume`, components and stores, so the test's own module stores are neither read nor written. A resume
  * warning (an island with no component in `routes`, state that fails its schema) rejects with E1720 naming the first.
  * Resolves with the `render` handle after the first settle and the `render` checks; `dispose` puts every store back.
  */
@@ -21,26 +25,34 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
   html: string,
   options: ResumeDocumentOptions<M>,
 ): Promise<Harness> {
+  const given = options.routes;
+  const graph = typeof given === "function" ? await freshGraph(given) : { routes: given.routes, resume, stores, scope };
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
-  const live = stores();
+  const live = graph.stores();
   const seeded: (readonly [Store<unknown>, Snapshot<unknown>])[] = [...live.values()].map((st) => [
     st,
     st.snapshot({ meta: true }),
   ]);
   const components: Record<string, Island> = {};
-  for (const [id, def] of Object.entries(options.routes.routes)) if (def.component) components[id] = def.component;
+  for (const [id, def] of Object.entries(graph.routes)) if (def.component) components[id] = def.component;
   const body = new DOMParser().parseFromString(html, "text/html").body;
   for (const s of body.querySelectorAll("script:not(#k-state)")) s.remove();
   const warnings: string[] = [];
   const a11y = options.artifacts?.["a11y.json"];
   const tokens = options.artifacts?.tokens;
+  // The islands' scope in the graph's own reactive engine, which the harness scope does not own.
+  const islands: { dispose: () => void } = { dispose: () => undefined };
   const { harness } = openHarness({
     start: (container) => {
       container.append(...body.childNodes);
-      warnings.push(...resume(container, components, { ctx, stores: Object.fromEntries(live) }).warnings);
+      islands.dispose = graph.scope(() => {
+        warnings.push(...graph.resume(container, components, { ctx, stores: Object.fromEntries(live) }).warnings);
+      }).dispose;
     },
     ctx,
     seeded,
+    registry: graph.stores,
+    teardown: () => islands.dispose(),
     target: () => ({ route: null, component: "resumeDocument" }),
     ...(a11y === undefined ? {} : { a11y }),
     ...(tokens === undefined ? {} : { tokens }),

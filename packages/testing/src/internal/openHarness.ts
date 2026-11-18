@@ -33,7 +33,7 @@ import { unexpected } from "./unexpected.ts";
  * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
  */
 export function openHarness(setup: HarnessSetup): { readonly harness: Harness; check(): void } {
-  const { ctx, seeded, a11y, tokens, busy, teardown, target } = setup;
+  const { ctx, seeded, a11y, tokens, busy, teardown, target, registry } = setup;
   const page = setup.page === true;
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -92,7 +92,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
   function state(): Readonly<Record<string, unknown>>;
   function state<T>(store: Store<T>): T;
   function state<T>(store?: Store<T>): T | Readonly<Record<string, unknown>> {
-    return store === undefined ? storeValues() : store.snapshot().state;
+    return store === undefined ? storeValues(registry?.()) : store.snapshot().state;
   }
 
   const find = (id: string): Found => {
@@ -119,7 +119,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     const win = document.defaultView;
     win?.addEventListener("error", onError);
     try {
-      await settle(container, act, busy);
+      await settle(container, act, busy, registry);
     } finally {
       win?.removeEventListener("error", onError);
     }
@@ -130,7 +130,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
 
   const settleNow = async (): Promise<void> => {
     live();
-    await settle(container, () => undefined, busy);
+    await settle(container, () => undefined, busy, registry);
     if (!gone) check();
   };
 

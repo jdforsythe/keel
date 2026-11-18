@@ -1,3 +1,4 @@
+import type { Store } from "@keel/store";
 import { stores } from "@keel/store";
 import { fail } from "./fail.ts";
 
@@ -29,7 +30,8 @@ const drained = (): Promise<void> =>
 /** Consecutive quiet rounds that count as settled. */
 const QUIET_ROUNDS = 2;
 
-const logSizes = (): string => [...stores()].map(([id, st]) => `${id}:${st.log().length}`).join(",");
+const logSizes = (live: ReadonlyMap<string, Store<unknown>>): string =>
+  [...live].map(([id, st]) => `${id}:${st.log().length}`).join(",");
 
 /**
  * Run `act`, then wait without timers until triggered work is quiescent: rounds of microtask hops; a round that
@@ -39,12 +41,14 @@ const logSizes = (): string => [...stores()].map(([id, st]) => `${id}:${st.log()
  * length, while `busy()` is null (it names a router navigation's route while one is in flight). A round while busy
  * with nothing moving waits one macrotask turn and does not count toward the 50 quiet-bound rounds; more than 50
  * moving rounds, or `MAX_BUSY_TURNS` busy turns, throws `keel.unexpected` "fire did not settle" (with the pending
- * route id). Without `root` only store logs count. Deterministic: no clock, no timers.
+ * route id). Without `root` only store logs count. `registry` lists the live stores (default `stores()`; a fresh module
+ * graph's own for `resumeDocument`). Deterministic: no clock, no timers.
  */
 export async function settle(
   root: Element | undefined,
   act: () => void,
   busy: () => string | null = () => null,
+  registry: () => ReadonlyMap<string, Store<unknown>> = stores,
 ): Promise<void> {
   let mutations = 0;
   const observer =
@@ -58,10 +62,10 @@ export async function settle(
   try {
     act();
     let quiet = 0;
-    let last = logSizes();
+    let last = logSizes(registry());
     const changed = (): boolean => {
       mutations += observer?.takeRecords().length ?? 0;
-      return mutations > 0 || logSizes() !== last;
+      return mutations > 0 || logSizes(registry()) !== last;
     };
     let turns = 0;
     for (let round = 0; round < MAX_ROUNDS; ) {
@@ -72,7 +76,7 @@ export async function settle(
       const moved = changed();
       const pending = busy();
       mutations = 0;
-      last = logSizes();
+      last = logSizes(registry());
       if (pending !== null && !moved) {
         // Waiting on I/O (a module load): one macrotask turn, counted apart from the quiet-bound rounds.
         if (++turns > MAX_BUSY_TURNS)

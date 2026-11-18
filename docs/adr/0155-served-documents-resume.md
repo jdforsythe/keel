@@ -34,3 +34,6 @@
 - D10: a `#k-state` snapshot with no store in `resume`'s `stores` restores the store an island creates with that id while it resumes; one never taken is E1253.
 - D11: `resumeDocument` with `routes` as an import function resumes in a module graph of its own; served-document conformance uses it.
 - D12: golden-1 is client-only; its served-document tests and the browser smoke move to golden-2.
+- D9 mechanism: `@keel/store/internal` has a `moduleWrites.check` slot that every `tx` on a module-registry store calls first; `createApp` installs a check that throws E1256 while an `AsyncLocalStorage` (`serving`) says a request runs. `@keel/store` gains no node dependency and a few bytes.
+- D10 mechanism: `@keel/runtime-dom` does not depend on `@keel/store`, so `resume` puts the snapshots no store in `stores` took in a map under `Symbol.for("keel.waitingSnapshots")` on `globalThis` while islands resume, and `store()` takes the one for its id at creation and restores it.
+- D11 mechanism: `resumeDocument` imports `vitest` when `routes` is a function, calls `vi.resetModules()`, runs the import, and takes `resume`, `stores` and `scope` from the same new graph; the islands run in that graph's own scope, disposed with the handle.

@@ -16,7 +16,9 @@ import { holdsSecret } from "./internal/holdsSecret.ts";
 import { keySchema } from "./internal/keySchema.ts";
 import { logSchema } from "./internal/logSchema.ts";
 import { metaSchema } from "./internal/metaSchema.ts";
+import { moduleWrites } from "./internal/moduleWrites.ts";
 import { persisted } from "./internal/persisted.ts";
+import { registries } from "./internal/registries.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
 import { secretGuard } from "./internal/secretGuard.ts";
@@ -25,6 +27,7 @@ import { trim } from "./internal/trim.ts";
 import { undeclared } from "./internal/undeclared.ts";
 import { unpersisted } from "./internal/unpersisted.ts";
 import { violated } from "./internal/violated.ts";
+import { waitingSnapshot } from "./internal/waitingSnapshot.ts";
 import { withoutMeta } from "./internal/withoutMeta.ts";
 import type { LogEntry } from "./types/LogEntry.ts";
 import type { Snapshot } from "./types/Snapshot.ts";
@@ -42,7 +45,7 @@ import type { Transaction } from "./types/Transaction.ts";
  * schema holding `s.secret` throws E1303 at construction. `head()` counts commits and undos that undo; each entry's `id`
  * is the head its commit produced, and a snapshot carries `head`. `keys` holds the `{ name, key }` of the latest
  * `keyLimit` commits made with a `key` (default 1024, a positive integer); a write whose transaction and `key` it holds
- * commits nothing (k.sync).
+ * commits nothing (k.sync). A store created while `resume` holds a `#k-state` snapshot for its id starts from it.
  */
 export function store<T extends object>(
   schema: Schema<T>,
@@ -130,6 +133,8 @@ export function store<T extends object>(
     bound: Result<Bound<T>, SchemaError>,
     options: unknown,
   ): Result<T, TxError> => {
+    // A store in the module registry is process-wide: the installed check may refuse the write (k.resume Stores).
+    if (registry === registries.shared) moduleWrites.check?.(id);
     if (!bound.ok) return bound;
     // An absent option, or one set to undefined, is not given.
     const given = <V>(name: string, codec: Schema<V>): Result<V | undefined, SchemaError> => {
@@ -338,5 +343,8 @@ export function store<T extends object>(
     registryPulse.fire();
   });
   registryPulse.fire();
+  // Created while islands resume, it starts from the `#k-state` snapshot waiting for its id (k.resume Stores).
+  const waiting = waitingSnapshot(id);
+  if (waiting !== undefined) self.restore(waiting.snapshot);
   return self;
 }

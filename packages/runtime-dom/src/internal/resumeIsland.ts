@@ -22,8 +22,8 @@ const FOCUS = ["focus", "blur", "focusin", "focusout"];
 /**
  * Resume one island: run its component with `clone` claiming the server nodes, so bindings and handlers
  * attach in place. On a structural mismatch (E1253) undo that, re-render it client-side in place of the
- * server element, and return the warning. Queued pre-resume events are replayed once, in order, and reported to the
- * ctx's observers. The island has the root Boundary `mount` gives its tree (k.errors): it catches handler, binding
+ * server element, and return the warning. Queued pre-resume events wait for `resume` to replay them (`eventQueue`);
+ * those in a re-rendered island's own nodes are dropped. The island has the root Boundary `mount` gives its tree (k.errors): it catches handler, binding
  * and render throws and, through the island scope's `onError`, the island's own `effect` and `computed` throws
  * (`data.at` the stamp at the island's place). It is armed once the claim succeeds, so a throw while claiming is a mismatch.
  * `held` is the island's child-level content (k.resume): its `children` counts calls while the island builds. A
@@ -138,7 +138,10 @@ export function resumeIsland(
     el.replaceWith(n);
     replaced.set(el, nodes);
     if (nodes.length > 0) live.nodes = nodes;
-    if (host !== null) fresh.attach(host);
+    if (host !== null) {
+      fresh.attach(host);
+      eventQueue.root(host, fresh.tell);
+    }
     // The client-rendered root is live: never queue its events.
     if (n instanceof Element) eventQueue.resume(n, null);
   }

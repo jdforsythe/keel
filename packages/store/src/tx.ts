@@ -9,6 +9,7 @@ import type { TxOptions } from "./types/TxOptions.ts";
  * (`store.undeclared`); a `key` the store's `keys` holds for `t` returns `ok` with nothing committed; a `base` other than `head()`
  * under `'reject'` is `keel.conflict`; else apply, check invariants (`store.invariant`), then commit and log in one batch.
  * Errors leave state, log and head unchanged; a throwing transaction rethrows with nothing committed.
+ * On a store in the module registry, a check `@keel/server` installs throws E1256 first while it serves a request.
  * `payload` is typed by the transaction's schema; a value typed `unknown` (wire data, a log entry) is also accepted
  * and validated at run time.
  */

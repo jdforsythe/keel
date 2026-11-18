@@ -8,15 +8,20 @@ import { resumeIsland } from "../internal/resumeIsland.ts";
 import type { Island } from "../types/Island.ts";
 import type { ResumeOptions } from "../types/ResumeOptions.ts";
 
+/** Where the snapshots no store in `stores` took wait while islands resume; `@keel/store` reads it at creation. */
+const WAITING = Symbol.for("keel.waitingSnapshots");
+
 // The package's one import-time effect: queue events fired before resume (see README).
 eventQueue.install();
 
 /**
  * Resume server-rendered islands under `root` (generated entry only, ADR-0006): restore `options.stores`
- * from `#k-state`, report its served `route` to `options.ctx`'s observers as a `nav`, then its failed loader's `error`
+ * from `#k-state` (a snapshot with no store there restores the store of its id an island creates while it resumes,
+ * else is an E1253 warning), report its served `route` to `options.ctx`'s observers as a `nav`, then its failed loader's `error`
  * (`code` and `data.at` only), pass `options.ctx` (k.ctx) to every island root, then for each `[data-k-island]` in
  * document order (an ancestor before its descendants; k.resume) attach its bindings and delegated handlers to the
- * existing nodes without re-rendering, and replay events queued before resume. Each island has its own props, root
+ * existing nodes without re-rendering; once every island has resumed, replay the events queued before resume in the
+ * order they fired, each through every enclosing island as a live one (k.resume Replay). Each island has its own props, root
  * Boundary and delegation root, and a `children` that returns the server's content of its child level
  * (`heldChildren`); its claim stops at that content. The root Boundary's fallback shows the message only with
  * `options.mode` `"dev"`. Returns dev warnings (E1253: that island alone was re-rendered on the client).
@@ -29,9 +34,11 @@ export function resume(
   const stores = options.stores ?? {};
   const warnings: string[] = [];
   const state = readState(root, warnings);
+  // A snapshot with no store in `stores` waits for an island to create its store while it resumes (k.resume Stores).
+  const waiting = new Map<string, unknown>();
   for (const [id, snapshot] of Object.entries(state.stores)) {
     const store = Object.hasOwn(stores, id) ? stores[id] : undefined;
-    if (store === undefined) warnings.push(`E1253 #k-state has a snapshot for unknown store "${id}"`);
+    if (store === undefined) waiting.set(id, snapshot);
     else store.restore(snapshot);
   }
   // The served route is the ctx's first navigation (k.ctx Observers, rfc:0071): no router runs on an island page.
@@ -44,30 +51,38 @@ export function resume(
   if (state.error !== null) report(options.ctx, { kind: "error", error: state.error });
   const all = [...(root.matches("[data-k-island]") ? [root] : []), ...root.querySelectorAll("[data-k-island]")];
   let thrown: { error: unknown } | null = null;
-  for (const el of all) {
-    const id = el.getAttribute("data-k-island") ?? "";
-    const component = Object.hasOwn(components, id) ? components[id] : undefined;
-    if (component === undefined) {
-      warnings.push(`E1253 [data-k-island="${id}"] has no compiled component; left static`);
-      eventQueue.resume(el, null);
-      continue;
+  const before: unknown = Reflect.get(globalThis, WAITING);
+  Reflect.set(globalThis, WAITING, waiting);
+  try {
+    for (const el of all) {
+      const id = el.getAttribute("data-k-island") ?? "";
+      const component = Object.hasOwn(components, id) ? components[id] : undefined;
+      if (component === undefined) {
+        warnings.push(`E1253 [data-k-island="${id}"] has no compiled component; left static`);
+        eventQueue.resume(el, null);
+        continue;
+      }
+      const held: Held = { nodes: null, calls: -1 };
+      try {
+        const w = resumeIsland(
+          el,
+          id,
+          component,
+          { ...islandProps(component, state.islands[id], id, warnings), children: heldChildren(held) },
+          held,
+          options.ctx,
+          options.mode,
+        );
+        if (w !== null) warnings.push(w);
+      } catch (error) {
+        thrown ??= { error };
+      }
     }
-    const held: Held = { nodes: null, calls: -1 };
-    try {
-      const w = resumeIsland(
-        el,
-        id,
-        component,
-        { ...islandProps(component, state.islands[id], id, warnings), children: heldChildren(held) },
-        held,
-        options.ctx,
-        options.mode,
-      );
-      if (w !== null) warnings.push(w);
-    } catch (error) {
-      thrown ??= { error };
-    }
+  } finally {
+    Reflect.set(globalThis, WAITING, before);
   }
+  for (const id of waiting.keys()) warnings.push(`E1253 #k-state has a snapshot for unknown store "${id}"`);
+  eventQueue.replay();
   if (thrown !== null) throw thrown.error;
   return { warnings };
 }

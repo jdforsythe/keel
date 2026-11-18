@@ -9,9 +9,10 @@ const reached = new WeakMap<Event, Node>();
  * Delegated dispatch: walk from `target` up to `root` (inclusive) and call each handler registered for
  * `event.type`, innermost first, until a handler calls `stopPropagation` or `stopImmediatePropagation`.
  * When an inner root (a mount or island nested in this root's tree) already dispatched the event, the walk
- * resumes above that inner root, so each element's handler runs at most once per event.
+ * resumes above that inner root, so each element's handler runs at most once per event. Returns whether a handler
+ * stopped propagation.
  */
-export function dispatch(root: Element, event: Event, target: Node): void {
+export function dispatch(root: Element, event: Event, target: Node): boolean {
   let stopped = false;
   const native = Event.prototype;
   Object.defineProperty(event, "stopPropagation", {
@@ -44,4 +45,5 @@ export function dispatch(root: Element, event: Event, target: Node): void {
     Reflect.deleteProperty(event, "stopPropagation");
     Reflect.deleteProperty(event, "stopImmediatePropagation");
   }
+  return stopped;
 }

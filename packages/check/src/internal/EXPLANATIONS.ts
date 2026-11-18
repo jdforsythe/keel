@@ -313,6 +313,13 @@ const ROWS: readonly Row[] = [
     "call props.children() once, in one place; toggle it with If",
     "k.resume",
   ],
+  [
+    "E1256",
+    "a tx on a module store while createApp serves a request",
+    "Module stores are process-wide: a write reaches every later request and never the browser, which resumes with the store at its initial state.",
+    "return the rows as loader data, or name the store in the loader's stores factory",
+    "k.resume",
+  ],
   ["E1301", "calling an undeclared transaction", "", "add it to the component's uses: [addItem]", "k.store"],
   [
     "E1302",

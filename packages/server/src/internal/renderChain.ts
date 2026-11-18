@@ -18,7 +18,7 @@ const defaultError = (e: KeelError<string, unknown>): string =>
 
 /**
  * Render a chain to HTML like the router's view (k.router, k.errors): outermost layout first, each layout
- * receiving the next level, rendered before it, as `children` (a thunk whose string form is the child HTML, so string
+ * receiving the next level, rendered before it and led by a `<!--k-->` comment, as `children` (a thunk whose string form is the child HTML, so string
  * components can interpolate it; a second call throws E1255, k.resume). A failure renders its level's `errorElement` (layouts above intact unless
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
  * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a bound
@@ -40,8 +40,9 @@ export function renderChain(input: ChainInput): Rendered {
 
   const componentAt = (i: number, lvl: Level): string => {
     const last = i === chain.length - 1;
-    // The child level renders first, outside this unit, so render units never nest.
-    const inner = last ? "" : levelAt(i + 1);
+    // The child level renders first, outside this unit, so render units never nest. Its content starts with `<!--k-->`:
+    // a layout island mismatching before its `children` call holds the region that comment opens (k.resume).
+    const inner = last ? "" : `<!--k-->${levelAt(i + 1)}`;
     const childHtml = (): string => inner;
     let calls = 0;
     const children = Object.assign(

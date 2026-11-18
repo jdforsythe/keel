@@ -8,7 +8,7 @@
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { computed, effect, signal } from "@keel/reactive";
-import { manifest } from "@keel/router";
+import { type Manifest, type RouteDef, manifest } from "@keel/router";
 import type { Slots } from "@keel/runtime-dom";
 import { createApp } from "@keel/server";
 import type { Session } from "@keel/std-sessions";
@@ -54,7 +54,7 @@ const fxRoutes = manifest({ "ops.fx": { path: "/fx", component: Fx }, ...session
 
 /** Serve `path` with createApp, resume its island under the page's ctx, click `button`; the uploaded session. */
 async function recordedAfterResume(
-  appRoutes: Parameters<typeof resumeDocument>[1]["routes"],
+  appRoutes: Manifest<Readonly<Record<string, RouteDef>>>,
   path: string,
   button: string,
 ): Promise<Session> {

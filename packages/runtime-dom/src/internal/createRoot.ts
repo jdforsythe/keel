@@ -40,7 +40,7 @@ export function createRoot(el: Element | null, ctx?: Ctx): Root {
     listen(type) {
       if (types.has(type)) return;
       const l = (e: Event): void => {
-        if (target !== null && e.target instanceof Node) dispatch(target, e, e.target);
+        if (target !== null && e.target instanceof Node) void dispatch(target, e, e.target);
       };
       types.set(type, l);
       target?.addEventListener(type, l);

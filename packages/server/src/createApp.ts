@@ -38,6 +38,7 @@ import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
 import { peerOf } from "./internal/peerOf.ts";
 import { peerPaths } from "./internal/peerPaths.ts";
 import { redacted } from "./internal/redacted.ts";
+import { refuseModuleWrites } from "./internal/refuseModuleWrites.ts";
 import { reportSource } from "./internal/reportSource.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { requestSecrets } from "./internal/requestSecrets.ts";
@@ -46,6 +47,7 @@ import { scrubbedDiag } from "./internal/scrubbedDiag.ts";
 import { secretSegments } from "./internal/secretSegments.ts";
 import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
+import { serving } from "./internal/serving.ts";
 import { unexpected } from "./internal/unexpected.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -58,7 +60,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * `static` deployable serves an API route, k.api).
  * Each request follows the k.server Request flow and writes one `req` record (after any `diag`) to `log`.
  * Each request runs in its own isolated scope (k.store `isolate`): stores created in it register in its own registry,
- * appear in `#k-state` and are disposed after the response. It also runs in its own `requestSecrets` set: each `Secret`
+ * appear in `#k-state` and are disposed after the response; while it runs, through every `await`, a `tx` on a module-registry
+ * store throws E1256 (k.resume Stores). It also runs in its own `requestSecrets` set: each `Secret`
  * made or revealed while it runs (its input, `bearer`, a parse after an `await`) joins it (`noteRequestSecrets`), and its `diag`
  * records and its `req` path hold `[secret]` in each one's place, as each of its `.pii()` values is `[pii]` there;
  * each runner's `run` enters its own set (`keepRunning`) and its rejection's record is scrubbed with it. Past a scrub
@@ -109,6 +112,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
 export async function createApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
   noteRequestSecrets();
+  refuseModuleWrites();
   const routes = (opts.routes ?? manifest({})).routes;
   const table = compileTable(compileRoutes(routes), routes);
   const runners = opts.runners ?? {};
@@ -226,25 +230,28 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
     // sets outlive `routed` so the `req` path is scrubbed with them too.
     const secrets = new Set<string>();
     const pii = new Set<string>();
+    // While it runs, through every `await`, a `tx` on a module store throws E1256 (`serving`, `refuseModuleWrites`).
     const routed = () =>
-      requestSecrets.run(secrets, async () => {
-        // Only an API route reads `authorization` (k.api Bearer); the token is a `Secret` and the header is not kept.
-        const rq = {
-          scope: scope(() => undefined),
-          caller: callerOf(raw, sv.ctx, sv.keys, sv.secure, sv.origin),
-          bearer: matched?.def.api === true ? bearerOf(raw) : undefined,
-          allowed: api !== undefined,
-          held: new Map(),
-          pii,
-          secrets,
-        };
-        isolate(rq.scope);
-        const r = await attempted(() => handle(sv, raw, rq, c));
-        rq.scope.dispose();
-        if (!r.ok) return r;
-        const diags = r.value.diags.map((d) => scrubbedDiag(d, rq));
-        return { ok: true as const, value: { ...r.value, diags } };
-      });
+      requestSecrets.run(secrets, () =>
+        serving.run(true, async () => {
+          // Only an API route reads `authorization` (k.api Bearer); the token is a `Secret` and the header is not kept.
+          const rq = {
+            scope: scope(() => undefined),
+            caller: callerOf(raw, sv.ctx, sv.keys, sv.secure, sv.origin),
+            bearer: matched?.def.api === true ? bearerOf(raw) : undefined,
+            allowed: api !== undefined,
+            held: new Map(),
+            pii,
+            secrets,
+          };
+          isolate(rq.scope);
+          const r = await attempted(() => handle(sv, raw, rq, c));
+          rq.scope.dispose();
+          if (!r.ok) return r;
+          const diags = r.value.diags.map((d) => scrubbedDiag(d, rq));
+          return { ok: true as const, value: { ...r.value, diags } };
+        }),
+      );
     // A preflight from an allowed origin to an API route: no guard, loader or action runs.
     const pre = api !== undefined && raw.method === "OPTIONS" && raw.headers.has("access-control-request-method");
     const ran = pre
