@@ -46,10 +46,14 @@
     "z3-solver": "5.3.3"
   },
   "peerDependencies": {
-    "z3-solver": "5.3.3"
+    "z3-solver": "5.3.3",
+    "vitest": "^4.1.12"
   },
   "peerDependenciesMeta": {
     "z3-solver": {
+      "optional": true
+    },
+    "vitest": {
       "optional": true
     }
   }
