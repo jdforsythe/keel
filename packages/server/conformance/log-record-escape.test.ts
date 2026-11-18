@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.serverlog, Conformance "A thrown message holding a line feed, a carriage return, U+001B, U+0085, U+2028 and `…` logs one line per record in compact, with `\u000a`, `\u000d`, `\u001b`, `\u0085`, `\u2028` and `…` in their places; the parsed json message holds those texts." (the section's text holds the characters themselves where this line spells `\u2028` and `…`)
+// Spec: k.serverlog, Conformance "A thrown message holding a line feed, a carriage return, U+001B, U+0085, U+2028 and U+2026 logs one line per record in compact, with `\u000a`, `\u000d`, `\u001b`, `\u0085`, `\u2028` and `\u2026` in their places; the parsed json message holds those texts."
 // Spec: k.serverlog, Parts "Escape. Each control character (U+0000 to U+001F, U+007F to U+009F), U+2028, U+2029 and `…` (U+2026) is written as `\u` and four lowercase hex digits, in compact and json alike; a parsed json value holds those six characters."
 // Seed 1337 (fc.assert below).
 import { createCtx } from "@keel/ctx";
