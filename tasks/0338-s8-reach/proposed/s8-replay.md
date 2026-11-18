@@ -76,16 +76,63 @@ Shown, on Linux WebKitGTK under Xvfb in Docker (arm64), with real input:
 - "gives the server state its sim replay gives": the built api's stored `api.board` row equals `replayGroup`'s `api.board` after normalization (log times dropped; minted ids, write keys and callers numbered by first appearance). State, head, log names, payloads and entry ids are compared as they are.
 
 Not shown:
-- The Proposal 9 row's second half: stopping the API, toggling `t2` so the outbox queues it, restarting the app and the API, and seeing the write drain from the persisted outbox. Not built here; it needs the session to carry a network change the shell can make (or a stopped API) and is its own piece of work.
+- The Proposal 9 row's second half here; see "The outbox drains after a restart" below.
 - The two-user S4 group itself, and user 1's offline writes, in the shell.
 - x86_64: the proof ran on arm64; the CI runner is x86_64 (the earlier load check passed there).
 - The CI run of the new steps: not pushed by this task.
 - A field's clearing as a person does it: Element Clear empties the field from script, with an untrusted `change`.
 - The artifact upload, macOS, Windows.
 
+## The outbox drains after a restart
+
+The Proposal 9 row's second half: "stops the API, toggles `t2` (outbox queues it), quits the app, starts the API and the app, and sees the write drain from the persisted outbox"; the eval line: "the drained write is on the server after the app restart".
+
+**What golden-1 already did.** Every board write already goes through `@keel/std-offline`: `boardOutbox` (`outbox('todos.outbox', boardWrites, { module: 'api' })`) is sent to by `TodoRow` (toggle), `createTodo`, `createList` and `updateTodo`, and `AppShell` calls `drain(ctx, boardOutbox, { owner: "" })` on mount and on each reconnect. The shell build's ctx storage is `@keel/std-tauri`'s two-copy store (k.shell), so the outbox (`keel.outbox.todos.outbox`, `{ entries }`) is persisted in `keel.json`/`keel.b.json`. No app, kernel, std or spec change was needed; the work is the session and the smoke.
+
+**The session.** `apps/golden-1/test/shellOutboxSession.ts` (`shellOutboxSession()`): the same one-user group setup as `shellSession` (seed 11, origin `http://golden-1.test`, Home with Milk and Bread at head 2), then open Home, `setOnline(0, false)`, mark Bread done, type Butter, click Add, `setOnline(0, true)`, each followed by `settle` and 1 ms. Recorded inputs: `nav /lists/l1`, `net false`, `fire change todos.toggle.t2`, `fire input todos.addForm:title Butter`, `fire click todos.addTodo` (and its `submit`, an effect), `net true`. `replayGroup` reproduces it; its board: Bread done, Butter added, log `#3 api.toggleTodo {id: t2}`, `#4 api.addTodo {id: id#1, listId: l1, title: Butter, priority: normal}`, head 4. In the sim both writes queue while offline (`online()` false) and drain on the `net` event.
+
+**The mapping.** `actionsOf` maps a `net` input to `{ kind: 'net', online }` (before, `unsupported`). In the shell (`tooling/smoke/shell.mjs --session outbox`):
+1. Offline: the api process is stopped (SIGTERM to its process group) and the proxy at `KEEL_ORIGIN` closed, then a `fetch` of `KEEL_ORIGIN/api/lists` must be refused (E0014 if it answers). The app keeps running; `navigator.onLine` stays true, so each flush posts, the native client fails with `Connection refused (os error 111)`, the entry stays `queued` (`api.network`) and the outbox retries with backoff.
+2. The two clicks and the typing are real WebDriver input, as in the first half.
+3. Online: the smoke waits until the newer whole copy in the app's store files (`outboxIn`) holds at least one `todos.outbox` entry and the files have not changed for 1.5 s (at most 15 s), then sends SIGKILL to every process whose `/proc/<pid>/exe` is the binary, waits until none is left, ends the WebDriver session, starts the api again (new port, same SQLite file, same secret) and the proxy, and opens a new WebDriver session, which starts the app; the app must read `GET /api/lists` again. No input is given after the restart: the drain is the app's own `drain` on mount, from the loaded store.
+4. The stored board must equal `replayGroup`'s (waits up to 15 s for equality, then 1.5 s still), and the store files' outbox must be empty (E0015 otherwise).
+
+`--drop-store` deletes both store files between the kill and the start: the planted failure. `--drop-store` without `--session outbox`, and an unknown `--session`, are E0014.
+
+**Why the callers match.** The caller cookie lasts one run of the app (std-tauri README), so writes before and after a restart would carry different callers. Here every write reaches the server after the restart, all under the new run's caller, and the sim's writes all carry its one user's caller; both normalize to `caller#1`.
+
+**CI.** One step after the replay in `shell-tauri` (`tooling/ci.source.json`, `ci.yml` regenerated): `xvfb-run -a node --disable-warning=ExperimentalWarning tooling/smoke/shell.mjs --shell tauri --session outbox --binary .cargo-target/debug/golden-1`. About 12 s here; expect under 1 min on the runner.
+
+**Container proof.** Container `keel-shell-outbox`, `ubuntu:24.04` **arm64** (Apple silicon host), `docker run -d --init --cpus 2 --memory 7700m`, repo mounted read-only and copied to `/work`; same apt packages (plus `procps`), Node `v22.23.5`, `cargo 1.100.0`, `pnpm install --frozen-lockfile` (7.6 s), `keel build --target tauri` 64 s, `tauri-driver v2.1.0` 10 s. The smoke files in the container were byte-equal to the committed ones (checked with `diff`).
+
+| Run | Command | Result | Count |
+| --- | --- | --- | --- |
+| outbox | `xvfb-run -a node ... shell.mjs --shell tauri --session outbox --binary .cargo-target/debug/golden-1` | `ok shell 6 actions, 2 queued, 1 killed, 1 restarts, 4 head (11.9s-12.1s)`, exit 0, no process left 2 s later | 10 of 10 |
+| planted | same with `--drop-store` | `E0015 api.board head: shell 2 sim 4`, `keys`, `log.0`, `log.1`, `state.todos.1.done: shell false sim true`, `... +1 more E0015`; `fail shell 6 actions, 2 queued, 1 killed, 1 restarts, 2 head (26.9s-27.1s)`, exit 1 | 3 of 3 detected |
+| replay | the first half, unchanged command | `ok shell 7 actions, 5 head (10.3s-12.0s)` | 4 of 4 |
+| errors | `--session bogus`; `--drop-store` alone | `E0014 --session bogus: the sessions are replay and outbox`; `E0014 --drop-store needs --session outbox (the session that restarts)`, exit 1 | 1 each |
+
+A probe run (a container-only copy printing the proxy's requests and the stored entries at the kill): before the kill the store held `toggleTodo queued base 2 {todoId: t2}` and `addTodo queued base 2 {listId: l1, title: Butter, priority: normal}`, one app pid; the proxy saw no POST before the restart (it was closed; the app's log shows `Connection refused (os error 111)`), and after it `POST /api/todos/t2/toggle` then `POST /api/lists/l1/todos`, each answered 200 by the restarted api, through `tauri-plugin-http/2.9.0`.
+
+`docker rm -f keel-shell-outbox` afterwards.
+
+**What is and is not shown.**
+
+Shown, on Linux WebKitGTK under Xvfb in Docker (arm64): writes made by real input while `KEEL_ORIGIN` refuses connections and the api process is stopped wait in the outbox, reach `@keel/std-tauri`'s store files, survive a SIGKILL of the app, and drain on the next start once the server is back, leaving the server board equal to the sim replay's and the stored outbox empty; with the store files gone nothing drains and the smoke fails.
+
+Not shown:
+- A kill at an arbitrary moment: the smoke kills only after the store files have held the entries still for 1.5 s, so the kill falls between saves, not inside one (std-tauri's own property tests cover cut saves).
+- The app started while the server is still down, with the drain on reconnect: the api starts before the app, as the RFC row orders it. In the shell the reconnect drain would rest on the 1 s to 60 s backoff, since `navigator.onLine` does not change when only the server goes away.
+- Writes from before and after a restart in one comparison (the caller changes with each run of the app; see above).
+- A conflict or refusal while draining: both writes rebase.
+- `t2` alone, as the RFC row words it: the session queues two writes (toggle `t2`, add Butter), so the drain's order is shown too.
+- x86_64 and the CI run of the new step: not pushed.
+- Android (Capacitor) and the other shells.
+
 ## Files
 
 - `tooling/smoke/shell.mjs` (new), `tooling/smoke/shellReplay.mjs` (new), `tooling/smoke/webdriver.mjs` (new), `apps/golden-1/test/shellSession.ts` (new), `tooling/test/shellReplay.test.ts` (new)
+- Outbox half: `apps/golden-1/test/shellOutboxSession.ts` (new); `tooling/smoke/shell.mjs`, `tooling/smoke/shellReplay.mjs` (`net` actions, `outboxIn`), `tooling/test/shellReplay.test.ts`, `tooling/ci.source.json`, `.github/workflows/ci.yml`, `tooling/smoke/README.md`, `docs/TESTING.md`
 - `tooling/ci-shell.mjs` (removed: folded into the smoke)
 - `tooling/ci.source.json`, `.github/workflows/ci.yml` (generated)
 - `tooling/smoke/README.md`, `docs/TESTING.md`
