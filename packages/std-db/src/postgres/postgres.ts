@@ -105,10 +105,16 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
   };
 }
 
-/** A `pg` pool of 10 on `url` whose idle-client errors are dropped: the next query fails and reports it. */
+/**
+ * A `pg` pool of 10 on `url` whose client errors are dropped, idle or checked out: a lost connection fails the query
+ * in flight or the next one, which reports it, and never throws from an event the process cannot catch.
+ */
 function quietPool(url: URL): PgPool {
   const pool = new pg.Pool({ connectionString: url.href, max: 10, connectionTimeoutMillis: 10_000 });
   pool.on("error", () => undefined);
+  pool.on("connect", (client) => {
+    client.on("error", () => undefined);
+  });
   return pool;
 }
 

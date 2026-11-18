@@ -44,6 +44,33 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+  postgres:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: "postgres:17"
+        env:
+          POSTGRES_PASSWORD: keel-ci-throwaway
+        ports:
+          - "5432:5432"
+        options: "--health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 30"
+    env:
+      KEEL_TEST_POSTGRES_URL: "postgres://postgres:keel-ci-throwaway@127.0.0.1:5432/postgres"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database"
+        working-directory: packages/std-db
+        run: "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/postgres-server.test.ts; do pnpm exec vitest run \"$f\"; done"
   build:
     needs: test
     runs-on: ubuntu-latest
