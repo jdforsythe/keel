@@ -1,24 +1,28 @@
 import { manifest } from "@keel/router";
+import { AccountsParams } from "./AccountsParams.schema.ts";
+import { AccountsSearch } from "./AccountsSearch.schema.ts";
 import SigninPage from "./SigninPage.tsx";
 import SignupPage from "./SignupPage.tsx";
 import { loadAccount } from "./loadAccount.server.ts";
 import { loadMe } from "./loadMe.server.ts";
 import { postToken } from "./postToken.server.ts";
-import { submitSignIn } from "./submitSignIn.server.ts";
-import { submitSignUp } from "./submitSignUp.server.ts";
 
 export const routes = manifest({
   "accounts.signup": {
-    path: "/account/signup",
+    path: "/:locale/account/signup",
+    params: AccountsParams,
+    search: AccountsSearch,
     loader: loadAccount,
     component: SignupPage,
-    title: () => "Create an account",
+    title: (p) => p.data.text.signupTitle,
   },
   "accounts.signin": {
-    path: "/account/signin",
+    path: "/:locale/account/signin",
+    params: AccountsParams,
+    search: AccountsSearch,
     loader: loadAccount,
     component: SigninPage,
-    title: () => "Sign in",
+    title: (p) => p.data.text.signinTitle,
   },
   "accounts.tokens": {
     api: true,
@@ -30,8 +34,4 @@ export const routes = manifest({
     loader: loadMe,
   },
 });
-routes.actions({
-  "accounts.signup": { POST: submitSignUp },
-  "accounts.signin": { POST: submitSignIn },
-  "accounts.tokens": { POST: postToken },
-});
+routes.actions({ "accounts.tokens": { POST: postToken } });

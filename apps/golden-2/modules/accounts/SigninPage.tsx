@@ -2,40 +2,73 @@ import { form } from "@keel/forms";
 import { Form } from "@keel/router";
 import { If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
-import { Box, Button, Heading, Input, Text } from "@keel/ui";
+import { formatMessage } from "@keel/std-messages";
+import { Box, Button, Heading, Input, Link, Text } from "@keel/ui";
+import mount from "../../identity.ts";
+import { AccountData } from "./AccountData.schema.ts";
+import { AccountsParams } from "./AccountsParams.schema.ts";
+import { AccountsSearch } from "./AccountsSearch.schema.ts";
 import { Credentials } from "./Credentials.schema.ts";
-import { SignedIn } from "./SignedIn.schema.ts";
 import { routes } from "./routes.ts";
 
-export const Props = s.object({ data: SignedIn });
+export const Props = s.object({ params: AccountsParams, search: AccountsSearch, data: AccountData });
 
-/** Route `accounts.signin`: an email and a password; once signed in, the page names the account. */
+/**
+ * Route `accounts.signin`. Signed out: an email and a password, posted by the browser to the sign-in library once
+ * they validate; a refusal comes back as `?error=` and shows above the form. Signed in: the account's email and a
+ * sign-out form.
+ */
 export default function SigninPage(props: Infer<typeof Props>) {
   const f = form(Credentials, { id: "accounts.signinForm" });
   return (
     <Box as="section" id="accounts.signin" direction="column" gap="4">
       <Heading id="accounts.signin.heading" level={1} fontSize="2xl" weight="semibold" m="0">
-        Sign in
+        {props.data.text.signinHeading}
       </Heading>
-      <If when={props.data.email !== undefined}>
-        {() => <Text id="accounts.signedIn">Signed in as {props.data.email ?? ""}</Text>}
-      </If>
-      <Form
-        method="POST"
-        action={routes.href("accounts.signin")}
-        form={f}
-        error={(e) => (
-          <Text id="accounts.signinError" fg="error">
-            {e.message}
-          </Text>
+      <If
+        when={props.data.email !== undefined}
+        fallback={() => (
+          <Box direction="column" gap="4">
+            <If when={props.search.error !== undefined}>
+              {() => (
+                <Text id="accounts.signinError" fg="error">
+                  {props.search.error === "credentials"
+                    ? props.data.text.errorCredentials
+                    : props.data.text.errorInvalid}
+                </Text>
+              )}
+            </If>
+            <Form method="POST" action={mount.href("/sign-in/email", { locale: props.params.locale })} form={f}>
+              <Input field={f.field("email")} label={props.data.text.emailLabel} autocomplete="email" />
+              <Input
+                field={f.field("password")}
+                type="password"
+                label={props.data.text.passwordLabel}
+                autocomplete="current-password"
+              />
+              <Button id="accounts.signinSubmit" type="submit">
+                {props.data.text.signinSubmit}
+              </Button>
+            </Form>
+            <Link id="accounts.toSignup" to={routes.href("accounts.signup", { locale: props.params.locale })}>
+              {props.data.text.toSignup}
+            </Link>
+          </Box>
         )}
       >
-        <Input field={f.field("email")} label="Email" autocomplete="email" />
-        <Input field={f.field("password")} type="password" label="Password" autocomplete="current-password" />
-        <Button id="accounts.signinSubmit" type="submit">
-          Sign in
-        </Button>
-      </Form>
+        {() => (
+          <Box direction="column" gap="4">
+            <Text id="accounts.signedIn">
+              {formatMessage(props.data.text.signedInAs, { email: props.data.email ?? "" }, props.params.locale)}
+            </Text>
+            <Form method="POST" action={mount.href("/sign-out", { locale: props.params.locale })}>
+              <Button id="accounts.signOut" type="submit">
+                {props.data.text.signOut}
+              </Button>
+            </Form>
+          </Box>
+        )}
+      </If>
     </Box>
   );
 }

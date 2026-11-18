@@ -1,11 +1,17 @@
 import { loader } from "@keel/router";
 import { ok } from "@keel/schema";
-import { SignedIn } from "./SignedIn.schema.ts";
-import { accountStores } from "./accountStores.ts";
+import { AccountData } from "./AccountData.schema.ts";
+import { AccountsParams } from "./AccountsParams.schema.ts";
+import { AccountsText } from "./AccountsText.schema.ts";
+import { accountsApi } from "./accountsApi.ts";
 
-/** The email the caller is signed in as, read from its session; none before a sign-in. */
-export const loadAccount = loader({ output: SignedIn, stores: accountStores }, async ({ caller, stores }) => {
-  const session = stores.sessions.get("sessions").find((x) => x.caller === caller);
-  const user = stores.users.get("users").find((u) => u.id === session?.userId);
-  return ok(user === undefined ? {} : { email: user.email });
+/**
+ * An account page's copy in its locale and the email the request is signed in as, asked of `/api/me` so the page
+ * works wherever it is placed: on a `node` deployable the call carries `user`; in a browser `user` is `''` and the
+ * call carries the browser's own cookie.
+ */
+export const loadAccount = loader({ output: AccountData, params: AccountsParams }, async ({ params, user }, ctx) => {
+  const text = await AccountsText.load(params.locale);
+  const me = await accountsApi.me(user === "" ? {} : { user }, ctx);
+  return ok(me.ok ? { text, email: me.value.email } : { text });
 });

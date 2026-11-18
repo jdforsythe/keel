@@ -1,19 +1,19 @@
 import { loader } from "@keel/router";
-import { err, ok } from "@keel/schema";
-import { credentials } from "@keel/std-credentials/server";
+import { attempt, err, ok } from "@keel/schema";
 import { Me } from "./Me.schema.ts";
-import { accountStores } from "./accountStores.ts";
+import { authOf } from "./authOf.server.ts";
 
-/** GET on `accounts.me`: the bearer token's account. No token, an unknown one and an expired one are `keel.denied`. */
-export const loadMe = loader({ output: Me, stores: accountStores }, async ({ bearer, stores }, ctx) => {
-  if (bearer === undefined) return err({ code: "keel.denied", message: "No token", data: null });
-  const found = credentials(ctx).check(bearer, (id) => stores.tokens.get("tokens").find((t) => t.id === id));
-  if (!found.ok) {
-    const message = found.error.code === "credentials.expired" ? "Token expired" : "Unknown token";
-    return err({ code: "keel.denied", message, data: null });
-  }
-  const user = stores.users.get("users").find((u) => u.id === found.value.userId);
-  return user === undefined
-    ? err({ code: "keel.denied", message: "Unknown token", data: null })
-    : ok({ email: user.email });
+const denied = { code: "keel.denied", message: "Sign in first", data: null };
+
+/**
+ * GET on `accounts.me`: the email of the request's `user`, whether a session cookie or an API token said who it is
+ * (`identity.server.ts`). No user is `keel.denied`; the email is read from the sign-in library's database.
+ */
+export const loadMe = loader({ output: Me }, async ({ user }, ctx) => {
+  if (user === "") return err(denied);
+  const auth = await authOf(ctx);
+  if (!auth.ok) return err(auth.error);
+  const found = await attempt(async () => (await auth.value.$context).internalAdapter.findUserById(user));
+  if (!found.ok) return err(found.error);
+  return found.value === null ? err(denied) : ok({ email: found.value.email });
 });

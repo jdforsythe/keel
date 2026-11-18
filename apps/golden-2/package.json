@@ -30,7 +30,8 @@
     "@keel/std-temporal": "workspace:*",
     "@keel/std-text": "workspace:*",
     "@keel/store": "workspace:*",
-    "@keel/ui": "workspace:*"
+    "@keel/ui": "workspace:*",
+    "better-auth": "1.7.26"
   },
   "devDependencies": {
     "@keel/cli": "workspace:*",
