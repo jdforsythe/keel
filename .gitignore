@@ -11,4 +11,5 @@ packages/*/test/.tmp-*
 packages/*/conformance/.tmp-*
 .fixtures
 .keel/sessions/
+packages/*/.keel/
 .keel-dev/

@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1066,
-    "probabilistic": 320,
+    "example": 1077,
+    "probabilistic": 324,
     "exhaustive": 15,
     "proven": 55,
     "monitored": 4
@@ -9887,7 +9887,7 @@
       "pkg": "reactive",
       "name": "owner",
       "file": "packages/reactive/src/owner.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "reactive",
@@ -12092,6 +12092,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.reactive#20",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.reveal#1",
       "rung": "probabilistic"
     },
@@ -13232,6 +13236,10 @@
       "rung": "example"
     },
     {
+      "item": "std.live#10",
+      "rung": "example"
+    },
+    {
       "item": "std.messages#1",
       "rung": "probabilistic"
     },
@@ -13401,11 +13409,15 @@
     },
     {
       "item": "std.offline#13",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.offline#14",
-      "rung": "none"
+      "rung": "example"
+    },
+    {
+      "item": "std.offline#15",
+      "rung": "example"
     },
     {
       "item": "std.options#1",
@@ -13692,6 +13704,10 @@
       "rung": "example"
     },
     {
+      "item": "std.temporal#12",
+      "rung": "example"
+    },
+    {
       "item": "std.text#1",
       "rung": "example"
     },
@@ -13729,7 +13745,11 @@
     },
     {
       "item": "std.text#10",
-      "rung": "none"
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#11",
+      "rung": "probabilistic"
     },
     {
       "item": "std.timings#1",
