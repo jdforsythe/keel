@@ -7,28 +7,28 @@ status: conformance-covered
 ```ts
 export const boardOutbox = outbox('todos.outbox', BoardApi, { module: 'api', limit: 100 })
 ```
-`outbox(id, api, { module, limit = 100, maxBytes = 262144 })`, over the k.services `endpoints` of module `module`'s routes, creates client store `id` (prefixed, E1155), state `{ entries: OutboxEntry[] }`, changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. `OutboxEntry` is `{ key, endpoint, owner, input, base, at, state, head?, error? }`, `state` `queued`, `sending`, `conflict` or `failed`.
+`outbox(id, api, { module, limit = 100, maxBytes = 262144 })`, over the k.services `endpoints` of `module`'s routes, creates client store `id` (prefixed, E1155), state `{ entries: OutboxEntry[] }`, changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. `OutboxEntry` is `{ key, endpoint, owner, input, base, at, state, head?, error? }`, `state` `queued`, `sending`, `conflict` or `failed`.
 
 **Write.** An outbox endpoint's `body` holds `write: Write`, `s.object({ key: s.id('Write'), base: s.int({ min: 0 }) })`; its action passes it on: `tx(t, payload, { meta, ...input.write })` (k.sync).
 ```ts
 const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: { title } }, { base: view.get('head'), owner })
 ```
-`send` adds an entry with `body.write` `{ key: ctx.random.id('Write'), base }`, stores the outbox at `ctx.storage` `keel.outbox.<id>`, and flushes. It resolves `OutboxResult<O>`: `{ state: 'sent', value }`, `{ state: 'queued' }` (offline or network failure), `{ state: 'conflict', head }` or `{ state: 'failed', error }`, `error` an `ApiError`, `offline.full`, `offline.storage` or `offline.owner`. A full outbox (`limit` entries, `maxBytes` encoded) resolves `failed` with `offline.full`, adding nothing. A rejected `ctx.storage` write in `send`, a flush or `'mine'` leaves the entry `failed` with `offline.storage` in memory and releases the flush, posting nothing more.
+`send` adds an entry with `body.write` `{ key: ctx.random.id('Write'), base }`, stores the outbox at `ctx.storage` `keel.outbox.<id>`, and flushes. It resolves `OutboxResult<O>`: `{ state: 'sent', value }`, `{ state: 'queued' }` (offline or network failure), `{ state: 'conflict', head }` or `{ state: 'failed', error }`, `error` an `ApiError`, `offline.full`, `offline.storage` or `offline.owner`. A full outbox (`limit` entries, `maxBytes` encoded) resolves `failed` with `offline.full`. A rejected `ctx.storage` write in `send`, a flush or `'mine'` leaves the entry `failed` with `offline.storage` in memory and releases the flush, posting no more. Its `message` is the outbox `id`, never the thrown text.
 
 **Owner.** `send` and `drain` require `owner`: the signed-in user's id, else `""`; an entry holds its `send`'s. A flush posts only entries of the owner last given on the ctx. When it changes, and on load, each other owner's entry not `failed` is stored `failed` with `offline.owner`, as is a stored entry with an `origin` or no `owner`. A `failed` entry is never posted.
 
-**Flush.** In order, one request at a time, through `service({ module, schema: api })`, answers read as `service({ module })` reads them (an undeclared 409 as a KeelError):
+**Flush.** In order, one request at a time, through `service({ module, schema: api })`, answers read as `service({ module })` reads them:
 - 2xx: `sent`; the entry is removed.
 - `api.network` or `api.timeout`: it stays `queued`; flushing stops until `{ kind: 'net', online: true }`, the next `send`, or 1 s later doubling to 60 s on `ctx.clock` while `online()`.
 - 409 `keel.conflict` with `data.transaction` (k.sync): `conflict`, keeping `data.head`; the next entry goes.
 - 409 without it: sent once more; a second is `failed`.
 - Any other status: `failed` with its `ApiError`; the next entry goes.
 
-`drain(ctx, outbox, { owner })`, in a scope, loads the stored outbox (`sending` as `queued`) and flushes, again on each reconnect until the scope is disposed. A resent entry keeps its key, so a committed write commits nothing again (k.sync).
+`drain(ctx, outbox, { owner })`, in a scope, loads the stored outbox (`sending` as `queued`) and flushes, again on each reconnect until the scope ends. A resent entry keeps its key, so a committed write is not repeated (k.sync).
 
-**Resolve.** `resolve(ctx, outbox, key, 'mine' | 'theirs')`. `'mine'` queues a `conflict` entry again, last, with `base` its `head`, flushes, and resolves its `OutboxResult` as `send` does. `'theirs'` removes a `conflict` or `failed` entry, resolving `true`. Without one, each resolves `false`, changing nothing. The outbox log records each as `<id>.resolve` `{ key, resolution }`.
+**Resolve.** `resolve(ctx, outbox, key, 'mine' | 'theirs')`. `'mine'` queues a `conflict` entry last, with `base` its `head`, flushes, and resolves as `send` does. `'theirs'` removes a `conflict` or `failed` entry, `true`. Without one, each resolves `false`. The outbox log records each as `<id>.resolve` `{ key, resolution }`.
 
-**Privacy.** Entries stay in browser storage and go only to their endpoint on `module`, for their owner; E2651 keeps secrets out. Sessions record its transactions under the module's `redact`.
+**Privacy.** Entries stay in browser storage and go only to `module`'s endpoint, for their owner; E2651 keeps secrets out. Sessions record its transactions under the module's `redact`.
 
 **Rules.** E2651 an `outbox` whose api has an endpoint body holding an `s.secret`.
 
@@ -47,3 +47,4 @@ const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: {
 - Online, `resolve(ctx, o, key, 'mine')` resolves `sent` with the endpoint's output once the re-send answers; offline, `queued`; for a key with no `conflict` entry, `false`. `'theirs'` resolves `true` when it removed an entry, else `false`.
 - On an unbound sim ctx, `send` posts to `http://<module>.keel.invalid` plus the path; the stored entry has `owner`, no `origin`.
 - Stored entries of owner `a`: `drain` with `a` posts them; with `b`, none, each `failed` with `offline.owner`, as is one with an `origin` or no `owner`; so does `send` with `b` after `a`'s.
+- An `offline.storage` err's `message` is the outbox `id`, whatever was thrown.

@@ -60,6 +60,20 @@ std.offline Conformance, appended as bullets 11 and 12:
 
 std.offline: 4,831 characters after RFC 0111 (4,766 before it) to 5,776.
 
+Added sentence, at the end of the `offline.storage` sentence of the paragraph above:
+
+```
+Its `message` is the outbox `id`, never the thrown text.
+```
+
+Added conformance bullet, at the end of the list:
+
+```
+- An `offline.storage` err's `message` is the outbox `id`, whatever was thrown.
+```
+
+To pay for them, prose words go and no meaning with them: "adding nothing" after the full-outbox `offline.full`, "module" before `module`'s routes, "changing nothing" after `false`, "again" in the `'mine'` requeue, "commits nothing again" becomes "is not repeated", the Resolve `OutboxResult` mention, the undeclared-409 parenthetical of Flush (it follows from reading as `service({ module })` does), "on `module`" in Privacy, "is disposed" becomes "ends", "posting nothing more" becomes "posting no more".
+
 ## Conformance diff
 One `rfc:0112` commit by the `conformance-writer`:
 - New `packages/std-offline/conformance/storage-fail.test.ts`, citing bullet 11: a sim ctx with `schedule: { storage: ['ok', 'fail'] }` (k.sim: the n-th `get` or `set` takes `storage[n]`); `send` resolves `{ state: 'failed', error }` with `error.code` `offline.storage`, the server sees no post, and the entry is `failed`. With `['ok', 'ok', 'fail']` (the load, `send`'s write, the flush's `sending` write) the entry is `failed` with `offline.storage`, and a later `send` is posted.
