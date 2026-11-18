@@ -1,4 +1,4 @@
-import type { Level } from "@keel/router/internal";
+import type { DocHead, Level } from "@keel/router/internal";
 import { publicError } from "@keel/router/internal";
 import { err } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
@@ -22,6 +22,7 @@ export function bareError(
   chain: readonly Level[],
   params: Rec,
   failure: Failure,
+  head: DocHead = { title: null, lang: "en" },
 ): Handled {
   const publicize = (e: Failure["error"]) => publicError(scrubbedError(e, r.rq), r.sv.mode);
   if (r.runtime) return { response: jsonResponse(status, err(publicize(failure.error))), route, diags: [] };
@@ -38,5 +39,5 @@ export function bareError(
   });
   const dev = devMessageOf([failure.error, rendered.caught]);
   const code = rendered.caught === null ? status : 500;
-  return { response: documentResponse(r, code, rendered, {}, dev), route, diags: [] };
+  return { response: documentResponse(r, code, rendered, {}, dev, head), route, diags: [] };
 }

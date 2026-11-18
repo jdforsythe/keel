@@ -1,4 +1,4 @@
-import { matchUrl, needsBare } from "@keel/router/internal";
+import { matchUrl, needsBare, pageHead } from "@keel/router/internal";
 import { publicError } from "@keel/router/internal";
 import { err } from "@keel/schema";
 import type { Context } from "hono";
@@ -112,7 +112,8 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
     return liveStream(r, m, live, c);
   }
   if (g.kind === "fail") {
-    const failed = bareError(r, route, statusOf(g.failure.error.code), m.route.chain, m.params, g.failure);
+    const head = pageHead(m.route, m.params, { params: m.params, search: m.search, data: undefined }, true);
+    const failed = bareError(r, route, statusOf(g.failure.error.code), m.route.chain, m.params, g.failure, head);
     return { ...failed, diags: [...failed.diags, ...g.diags] };
   }
   return write ? issueCaller(r, noStore(await runAction(r, m))) : page(r, m, 200, null, null);

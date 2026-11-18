@@ -101,7 +101,14 @@ export async function page(
       publicize,
     });
     return {
-      response: documentResponse(r, 500, fallback, base, scrubbedError(rendered.error, r.rq).message),
+      response: documentResponse(
+        r,
+        500,
+        fallback,
+        base,
+        scrubbedError(rendered.error, r.rq).message,
+        pageHead(m.route, m.params, { params: m.params, search: m.search, data: undefined }, true),
+      ),
       route: id,
       diags,
     };
