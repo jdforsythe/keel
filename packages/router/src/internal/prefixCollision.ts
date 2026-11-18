@@ -37,8 +37,7 @@ export function prefixCollision(routes: Iterable<Registered>): string | null {
     const fix = `; prepend /:${pre.name} to its path`;
     if (s?.kind === "static" && pre.values.includes(s.text))
       return `${id}: first segment "${s.text}" is a value of :${pre.name}${fix}`;
-    if (s?.kind === "param" && s.name !== pre.name)
-      return `${id}: first segment ":${s.name}" can be read as :${pre.name}${fix}`;
+    if (s?.kind === "param") return `${id}: first segment ":${s.name}" can be read as :${pre.name}${fix}`;
     const twin = elided.get(patternKey(segments));
     if (twin !== undefined) return `${id}: path is ${twin}'s path without its prefix${fix}`;
   }
