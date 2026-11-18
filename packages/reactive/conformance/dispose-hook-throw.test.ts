@@ -380,13 +380,14 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
       hooks: boolean[];
       children: Tree[];
     }
-    const tree: (depth: number) => fc.Arbitrary<Tree> = fc.memo<Tree>((depth): fc.Arbitrary<Tree> =>
-      depth <= 1
-        ? fc.record({ hooks: fc.array(fc.boolean(), { maxLength: 3 }), children: fc.constant([]) })
-        : fc.record({
-            hooks: fc.array(fc.boolean(), { maxLength: 3 }),
-            children: fc.array(tree(depth - 1), { maxLength: 3 }),
-          }),
+    const tree: (depth: number) => fc.Arbitrary<Tree> = fc.memo<Tree>(
+      (depth): fc.Arbitrary<Tree> =>
+        depth <= 1
+          ? fc.record({ hooks: fc.array(fc.boolean(), { maxLength: 3 }), children: fc.constant([]) })
+          : fc.record({
+              hooks: fc.array(fc.boolean(), { maxLength: 3 }),
+              children: fc.array(tree(depth - 1), { maxLength: 3 }),
+            }),
     );
 
     fc.assert(
