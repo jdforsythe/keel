@@ -110,6 +110,31 @@ jobs:
       - name: "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database"
         working-directory: packages/std-db
         run: "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/postgres-server.test.ts; do pnpm exec vitest run \"$f\"; done"
+  built-smokes:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: "turbo cache: the builds the check job ran"
+        uses: actions/cache/restore@v4
+        with:
+          path: .turbo/cache
+          key: "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          restore-keys: "turbo-${{ github.sha }}-${{ github.run_id }}-"
+      - run: pnpm build
+      - name: "built golden-1 on SQLite: the stored board row is byte-equal after SIGKILL and restart"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/restart.mjs"
+      - name: "built golden-1 on SQLite: the removal workflow resumes after a SIGKILL inside a step and ends once"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/workflow.mjs"
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5

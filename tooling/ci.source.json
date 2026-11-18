@@ -144,6 +144,34 @@
         }
       ]
     },
+    "built-smokes": {
+      "needs": "check",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 15,
+      "steps": [
+        "$setup",
+        {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@v4",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "run": "pnpm build"
+        },
+        {
+          "name": "built golden-1 on SQLite: the stored board row is byte-equal after SIGKILL and restart",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/restart.mjs"
+        },
+        {
+          "name": "built golden-1 on SQLite: the removal workflow resumes after a SIGKILL inside a step and ends once",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/workflow.mjs"
+        }
+      ]
+    },
     "changes": {
       "runs-on": "ubuntu-latest",
       "timeout-minutes": 5,

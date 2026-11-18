@@ -23,7 +23,7 @@ try {
   if (!up) throw new Error(`server did not answer: ${first.log.slice(-3).join(" | ")}`);
 
   let keys = 0;
-  const write = (b = 0) => ({ key: `a${++keys}`, base: b });
+  const write = (b = 0) => ({ key: `a${++keys}`, base: b, owner: "" });
   const board = async () => view((await get(base, "/api/lists")).body);
   const statuses = [await post(base, "/api/lists", { name: "Home", write: write() })];
   const listId = String(field(await board(), "lists", "0", "id"));
@@ -36,7 +36,7 @@ try {
     await post(base, `/api/todos/${todo}`, {
       title: "Oat milk",
       priority: "high",
-      write: { key: `a${++keys}`, base: head },
+      write: { key: `a${++keys}`, base: head, owner: "" },
     }),
   );
   step(
@@ -61,7 +61,7 @@ try {
   const snap = JSON.parse(after ?? "{}");
   const ids = (s) => (Array.isArray(s.log) ? s.log.map((e) => Number(e.id)) : []);
   const was = ids(snap);
-  const next = await post(base, `/api/todos/${todo}/toggle`, { write: { key: "b1", base: 0 } });
+  const next = await post(base, `/api/todos/${todo}/toggle`, { write: { key: "b1", base: 0, owner: "" } });
   const saved = JSON.parse(row(file, BOARD_KEY) ?? "{}");
   const added = ids(saved).filter((i) => !was.includes(i));
   step(

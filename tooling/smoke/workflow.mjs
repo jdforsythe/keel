@@ -73,7 +73,7 @@ try {
   if (!up) throw new Error(`server did not answer: ${first.log.slice(-3).join(" | ")}`);
 
   // A list, removed and then undone: `restoring` runs the step.
-  const key = (n) => ({ key: `w${n}`, base: 0 });
+  const key = (n) => ({ key: `w${n}`, base: 0, owner: "" });
   step("add list", (await post(base, "/api/lists", { name: "Home", write: key(1) })) === 200);
   const listId = String(field(view((await get(base, "/api/lists")).body), "lists", "0", "id"));
   step("remove", (await post(base, `/api/lists/${listId}/remove`)) === 200);
