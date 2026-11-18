@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1061,
-    "probabilistic": 316,
+    "example": 1066,
+    "probabilistic": 320,
     "exhaustive": 15,
     "proven": 55,
     "monitored": 4
@@ -19,11 +19,11 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 79.01,
+        "score": 79.26,
         "threshold": 70
       },
       "ctx": {
-        "score": 80.19,
+        "score": 78.34,
         "threshold": 70
       },
       "forms": {
@@ -10373,7 +10373,7 @@
       "pkg": "std-offline",
       "name": "drain",
       "file": "packages/std-offline/src/drain.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-offline",
@@ -11464,6 +11464,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.ctx#18",
+      "rung": "example"
+    },
+    {
       "item": "k.deploy#1",
       "rung": "example"
     },
@@ -11501,6 +11505,10 @@
     },
     {
       "item": "k.deploy#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#11",
       "rung": "example"
     },
     {
@@ -12908,6 +12916,10 @@
       "rung": "example"
     },
     {
+      "item": "std.channels#11",
+      "rung": "example"
+    },
+    {
       "item": "std.conflicts#1",
       "rung": "example"
     },
@@ -13216,6 +13228,10 @@
       "rung": "example"
     },
     {
+      "item": "std.live#9",
+      "rung": "example"
+    },
+    {
       "item": "std.messages#1",
       "rung": "probabilistic"
     },
@@ -13382,6 +13398,14 @@
     {
       "item": "std.offline#12",
       "rung": "example"
+    },
+    {
+      "item": "std.offline#13",
+      "rung": "none"
+    },
+    {
+      "item": "std.offline#14",
+      "rung": "none"
     },
     {
       "item": "std.options#1",
@@ -13664,6 +13688,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "std.temporal#11",
+      "rung": "example"
+    },
+    {
       "item": "std.text#1",
       "rung": "example"
     },
@@ -13698,6 +13726,10 @@
     {
       "item": "std.text#9",
       "rung": "probabilistic"
+    },
+    {
+      "item": "std.text#10",
+      "rung": "none"
     },
     {
       "item": "std.timings#1",
