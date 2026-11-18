@@ -85,7 +85,7 @@ async function runAction(mode: Mode) {
         d.append(e.message);
         return d;
       },
-      children: [document.createElement("button")],
+      children: () => [document.createElement("button")],
     });
   const routes = manifest({ "app.form": { path: "/", component: Page } });
   routes.actions({ "app.form": { POST: save } });

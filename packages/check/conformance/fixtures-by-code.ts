@@ -844,6 +844,31 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("C.ts", `${UI}export default function C() { return Box({ children: () => Text({ children: "x" }) }) }\n`),
     ],
   },
+  E1258: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "modules/app/Card.tsx",
+        `${UI}export function Card(props: { icon?: unknown }) { return <Box>{props.icon}</Box> }\n`,
+      ),
+      f("modules/app/Icon.tsx", `${UI}export function Icon() { return <Box>i</Box> }\n`),
+      f(
+        "modules/app/Page.ts",
+        `import { Card } from './Card.tsx'\nimport { Icon } from './Icon.tsx'\nexport default function Page() { return Card({ icon: Icon() }) }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "modules/app/Card.tsx",
+        `${UI}export function Card(props: { icon?: unknown }) { return <Box>{props.icon}</Box> }\n`,
+      ),
+      f("modules/app/Icon.tsx", `${UI}export function Icon() { return <Box>i</Box> }\n`),
+      f(
+        "modules/app/Page.ts",
+        `import { Card } from './Card.tsx'\nimport { Icon } from './Icon.tsx'\nexport default function Page() { return Card({ icon: () => Icon() }) }\n`,
+      ),
+    ],
+  },
   E1806: {
     opts: NO_TYPES,
     bad: [

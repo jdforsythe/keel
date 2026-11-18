@@ -19,6 +19,10 @@ const CASES: { code: string; source: string }[] = [
     code: "E1808",
     source: `import { Box, Text } from '@keel/ui'\nexport default function C() { return Box({ children: Text({ children: "x" }) }) }\n`,
   },
+  {
+    code: "E1258",
+    source: `import { Box } from '@keel/ui'\nexport function Card(props: { icon?: unknown }) { return <Box>{props.icon}</Box> }\nexport function Icon() { return <Box>i</Box> }\nexport function Page() { return Card({ icon: Icon() }) }\n`,
+  },
   { code: "E1601", source: `export const stamp = () => Date.now()\n` },
   { code: "E1451", source: `export function f() { throw new Error("x") }\n` },
   { code: "E1452", source: `export function f() { try { return 1 } catch (e) { return 2 } }\n` },

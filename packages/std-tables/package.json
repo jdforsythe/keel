@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@keel/compiler": "workspace:*",
+    "@keel/server": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",

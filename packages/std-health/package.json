@@ -35,6 +35,7 @@
     "@keel/check": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
     "@keel/server": "workspace:*",
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3",

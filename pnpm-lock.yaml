@@ -968,6 +968,12 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../server
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -1014,6 +1020,9 @@ importers:
       '@keel/server':
         specifier: workspace:*
         version: link:../server
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
@@ -1400,6 +1409,9 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../server
       '@keel/store':
         specifier: workspace:*
         version: link:../store

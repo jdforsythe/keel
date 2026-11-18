@@ -157,7 +157,7 @@ export function setup(opts: { order?: readonly Field[]; initial?: Record<string,
         d.textContent = e.message;
         return d;
       },
-      children: [...order.map((n) => plainInput(f.field(n))), plainSubmit()],
+      children: () => [...order.map((n) => plainInput(f.field(n))), plainSubmit()],
     });
   };
   const routes = manifest({

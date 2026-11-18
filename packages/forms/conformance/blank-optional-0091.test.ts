@@ -46,7 +46,7 @@ async function submitWith(schema: typeof Min | typeof Plain, n: string): Promise
     });
     const b = document.createElement("button");
     b.type = "submit";
-    return Form({ method: "POST", action: routes.href("notes.edit"), form: f, children: [...inputs, b] });
+    return Form({ method: "POST", action: routes.href("notes.edit"), form: f, children: () => [...inputs, b] });
   };
   const routes = manifest({ "notes.edit": { path: "/notes", component: Page } });
   routes.actions({ "notes.edit": { POST: save } });

@@ -238,6 +238,22 @@ const FIXED: FixedCase[] = [
     opts: {},
   },
   {
+    name: "E1258",
+    code: "E1258",
+    files: [
+      f(
+        "modules/app/Card.tsx",
+        `${UI}export function Card(props: { icon?: unknown }) { return <Box>{props.icon}</Box> }\n`,
+      ),
+      f("modules/app/Icon.tsx", `${UI}export function Icon() { return <Box>i</Box> }\n`),
+      f(
+        "modules/app/Page.ts",
+        `import { Card } from './Card.tsx'\nimport { Icon } from './Icon.tsx'\nexport default function Page() { return Card({ icon: Icon() }) }\n`,
+      ),
+    ],
+    opts: NO_TYPES,
+  },
+  {
     name: "E1808",
     code: "E1808",
     files: [f("C.ts", `${UI}export default function C() { return Box({ children: Text({ children: "x" }) }) }\n`)],
@@ -290,6 +306,7 @@ const FIX = [
   "E1805",
   "E1806",
   "E1808",
+  "E1258",
   "E1820",
 ];
 const NO_FIX = [
