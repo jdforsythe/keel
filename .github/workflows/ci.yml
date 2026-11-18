@@ -113,7 +113,7 @@ jobs:
   built-smokes:
     needs: check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -135,6 +135,10 @@ jobs:
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/restart.mjs"
       - name: "built golden-1 on SQLite: the removal workflow resumes after a SIGKILL inside a step and ends once"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/workflow.mjs"
+      - name: Chromium for the browser smoke
+        run: pnpm exec playwright install --with-deps chromium
+      - name: "served golden-2 pages resume in place in Chromium, three runs"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5

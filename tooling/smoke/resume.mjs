@@ -1,10 +1,12 @@
 // Resume proof for served golden-2 pages in a real browser: build a copy whose `web` deployable is a `node` server
-// holding the `recipes` module, serve its `api` on a web storage file and the web server on free ports, seed two
-// recipes through the api, then in headless Chromium load the index page (the `recipes.shell` layout around an `If`
-// and a `For` of recipe rows) and the show page (the `recipes.show` island), and check that each served page stays in
-// place: no console warning or error, no element removed after the parser finished, every served element still in the
-// document, each recipe row the very element the server sent, every served island still marked; then a click on the
-// show page's favorite toggle posts the action and shows the recipe as a favorite, and the api stores it.
+// holding the `recipes` module, serve its `api` (golden-2's real `api` node deployable) on a web storage file and the
+// web server on free ports, seed two recipes through the api, then in headless Chromium load the recipe index, a
+// recipe's show page, the new-recipe page and the catalog from `web` and the sign-in page from `api`. The page's
+// scripts are held until the test has typed into an input and set its caret (new-recipe, sign-in) or scrolled the
+// page (index, show, catalog; Chrome itself scrolls a page with a focused input back to the top after load); then
+// on each page: no console warning or error; no element removed after the parser finished and no element added under
+// an island root while it resumes (text may be replaced and empty anchors added); every served element and island
+// mark still there; focus, typed value, caret and scroll position kept; and one interaction working.
 // Usage: node tooling/smoke/resume.mjs [runs] (default 1). Nothing is written inside the repo.
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -64,37 +66,138 @@ async function recipes(base) {
   return Array.isArray(list) ? list : [];
 }
 
-/** Before any script runs: at the end of parsing, keep every served element and count every element removed after. */
+/**
+ * Before any script runs: at the end of parsing, keep every served element, then count every element removed and
+ * every element added under an island root.
+ */
 function watch() {
-  const k = { served: [], rows: {}, removed: 0 };
+  const k = { served: [], rows: {}, removed: 0, added: 0, observer: null };
   Reflect.set(window, "__keelSmoke", k);
   document.addEventListener("readystatechange", () => {
     if (document.readyState !== "interactive" || k.served.length > 0) return;
     k.served = [...document.body.querySelectorAll("*")];
     for (const row of document.querySelectorAll('[id^="recipes.item."]')) k.rows[row.id] = row;
-    new MutationObserver((records) => {
-      for (const r of records) for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
-    }).observe(document, { childList: true, subtree: true });
+    k.observer = new MutationObserver((records) => {
+      for (const r of records) {
+        for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
+        const t = r.target;
+        const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null;
+        for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
+      }
+    });
+    k.observer.observe(document, { childList: true, subtree: true });
   });
 }
 
 /** The island ids the served `html` marks, in document order. */
 const islandsIn = (html) => [...html.matchAll(/data-k-island="([^"]*)"/g)].map((m) => m[1]);
 
-/** What resume left of the served page. */
+/** What resume left of the served page; the observer stops here, so later interactions are not counted. */
 const kept = (page) =>
   page.evaluate(() => {
     const k = Reflect.get(window, "__keelSmoke");
+    for (const r of k.observer?.takeRecords() ?? []) {
+      for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
+      const t = r.target;
+      const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null;
+      for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
+    }
+    k.observer?.disconnect();
     const rows = Object.entries(k.rows);
+    const a = document.activeElement;
     return {
       served: k.served.length,
       gone: k.served.filter((el) => !el.isConnected).length,
       removed: k.removed,
+      added: k.added,
       rows: rows.length,
       sameRows: rows.filter(([id, el]) => document.getElementById(id) === el).length,
       islands: [...document.querySelectorAll("[data-k-island]")].map((e) => e.getAttribute("data-k-island")),
+      focus: {
+        id: a?.id ?? "",
+        same: a !== null && k.served.includes(a),
+        value: a instanceof HTMLInputElement ? a.value : "",
+        caret: a instanceof HTMLInputElement ? a.selectionStart : null,
+      },
+      scrollY: window.scrollY,
     };
   });
+
+/** Before resume: focus the input `selector`, type `text` and put the caret after its second character. */
+async function typeBefore(page, selector, text) {
+  await page.focus(selector);
+  await page.keyboard.type(text);
+  await page.evaluate((sel) => document.querySelector(sel)?.setSelectionRange(2, 2), selector);
+  return { text, caret: 2 };
+}
+
+/** Before resume: scroll the page down by up to 200 px; the position, or null when the page does not scroll. */
+const scrollBefore = (page) =>
+  page.evaluate(() => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    if (max <= 0) return null;
+    window.scrollTo(0, Math.min(200, max));
+    return window.scrollY;
+  });
+
+/**
+ * Load `url` with every script held until `before(page)` has run on the parsed document, then let the page resume.
+ * Returns the served HTML, the status, what `before` set up and what resume kept.
+ */
+async function visit(page, url, before) {
+  const open = { release: () => undefined };
+  const gate = new Promise((resolve) => {
+    open.release = resolve;
+  });
+  const hold = async (route) => {
+    await gate;
+    await route.continue();
+  };
+  await page.route("**/*.js", hold);
+  const res = await page.goto(url, { waitUntil: "commit" });
+  await page.waitForFunction(() => document.readyState !== "loading");
+  const html = res === null ? "" : await res.text();
+  const set = await before(page);
+  open.release();
+  await page.waitForLoadState("load");
+  await wait(1000);
+  const state = await kept(page);
+  await page.unroute("**/*.js", hold);
+  return { html, status: res?.status() ?? 0, set, state };
+}
+
+/** The checks every page gets: served, islands marked, nothing removed or added, focus and scroll kept. */
+function checkPage(step, label, v, served) {
+  step(`${label} served`, v.status === 200 && served(v.html), `status ${v.status}`);
+  const islands = islandsIn(v.html).join(" ");
+  step(`${label} islands kept`, v.state.islands.join(" ") === islands, `served [${islands}]`);
+  step(
+    `${label} nothing removed or added`,
+    v.state.gone === 0 && v.state.removed === 0 && v.state.added === 0,
+    `${v.state.removed} removed, ${v.state.added} added under islands, ${v.state.gone} of ${v.state.served} served elements gone`,
+  );
+  if (v.set.typed !== undefined) {
+    const f = v.state.focus;
+    step(
+      `${label} focus kept`,
+      f.same && f.value === v.set.typed.text && f.caret === v.set.typed.caret,
+      `focus ${f.id || "none"} (served ${f.same}), value "${f.value}", caret ${f.caret}`,
+    );
+  }
+  if (typeof v.set.scrollY === "number")
+    step(`${label} scroll kept`, v.state.scrollY === v.set.scrollY, `${v.set.scrollY} -> ${v.state.scrollY}`);
+}
+
+/** The text of the field error under the input `selector` (its `aria-describedby`). */
+const fieldError = (page, selector) =>
+  page.evaluate((sel) => {
+    const input = document.querySelector(sel);
+    const ids = (input?.getAttribute("aria-describedby") ?? "").split(" ").filter((x) => x !== "");
+    return ids
+      .map((id) => document.getElementById(id)?.textContent ?? "")
+      .join(" ")
+      .trim();
+  }, selector);
 
 const runs = Number(process.argv[2] ?? "1");
 const { step, finish } = recorder();
@@ -136,59 +239,35 @@ try {
 
   browser = await chromium.launch();
   for (let run = 1; run <= runs; run++) {
-    const page = await browser.newPage();
+    const page = await browser.newPage({ viewport: { width: 1000, height: 500 } });
     const logged = [];
     page.on("console", (m) => {
       if (m.type() === "warning" || m.type() === "error") logged.push(`${m.type()}: ${m.text()}`);
     });
     page.on("pageerror", (e) => logged.push(`pageerror: ${String(e).split("\n")[0]}`));
     await page.addInitScript(watch);
+    const scroll = async (p) => ({ scrollY: await scrollBefore(p) });
 
-    // The index: the shell layout around the recipe rows.
-    const res = await page.goto(`${webBase}/`, { waitUntil: "load" });
-    const html = res === null ? "" : await res.text();
-    step(
-      `run ${run} index served`,
-      res?.status() === 200 && html.includes('id="recipes.shell"') && html.includes("<!--[-->"),
-      `status ${res?.status() ?? 0}`,
-    );
-    await wait(1000);
-    const index = await kept(page);
-    const indexIslands = islandsIn(html).join(" ");
-    step(`run ${run} index islands kept`, index.islands.join(" ") === indexIslands, `served [${indexIslands}]`);
-    step(
-      `run ${run} index nothing removed`,
-      index.gone === 0 && index.removed === 0,
-      `${index.removed} removed, ${index.gone} of ${index.served} served elements gone`,
-    );
+    // The index: the shell layout around the recipe rows; a row's link opens the recipe.
+    const index = await visit(page, `${webBase}/`, scroll);
+    checkPage(step, `run ${run} index`, index, (h) => h.includes('id="recipes.shell"') && h.includes("<!--[-->"));
     step(
       `run ${run} index rows kept`,
-      index.rows === 2 && index.sameRows === 2,
-      `${index.sameRows} of ${index.rows} rows are the served elements`,
+      index.state.rows === 2 && index.state.sameRows === 2,
+      `${index.state.sameRows} of ${index.state.rows} rows are the served elements`,
     );
+    const href = await page.locator('[id^="recipes.link."]').first().getAttribute("href");
+    await page.locator('[id^="recipes.link."]').first().click();
+    await page.waitForURL((u) => u.pathname === href, { timeout: 5000 }).catch(() => undefined);
+    step(`run ${run} index link`, href !== null && new URL(page.url()).pathname === href, `${href} -> ${page.url()}`);
 
     // The show page: its favorite toggle works after resume.
-    const showRes = await page.goto(`${webBase}/recipes/${encodeURIComponent(soup)}`, { waitUntil: "load" });
-    const showHtml = showRes === null ? "" : await showRes.text();
-    step(
-      `run ${run} show served`,
-      showRes?.status() === 200 &&
-        islandsIn(showHtml).includes("recipes.show") &&
-        showHtml.includes('id="recipes.toggleFavorite"'),
-      `status ${showRes?.status() ?? 0}`,
-    );
-    await wait(1000);
-    const show = await kept(page);
-    const showIslands = islandsIn(showHtml).join(" ");
-    step(
-      `run ${run} show islands kept`,
-      show.islands.join(" ") === showIslands,
-      `served [${showIslands}], marked [${show.islands.join(" ")}]`,
-    );
-    step(
-      `run ${run} show nothing removed`,
-      show.gone === 0 && show.removed === 0,
-      `${show.removed} removed, ${show.gone} of ${show.served} served elements gone`,
+    const show = await visit(page, `${webBase}/recipes/${encodeURIComponent(soup)}`, scroll);
+    checkPage(
+      step,
+      `run ${run} show`,
+      show,
+      (h) => islandsIn(h).includes("recipes.show") && h.includes('id="recipes.toggleFavorite"'),
     );
     const label = () => page.evaluate(() => document.getElementById("recipes.favorite")?.textContent ?? "");
     const wasStored = (await recipes(apiBase)).find((r) => r.id === soup)?.favorite === true;
@@ -202,10 +281,72 @@ try {
     const after = await label();
     const stored = (await recipes(apiBase)).find((r) => r.id === soup)?.favorite === true;
     step(
-      `run ${run} favorite`,
+      `run ${run} show favorite`,
       after !== before && after !== "" && stored === !wasStored,
       `"${before}" -> "${after}", stored ${wasStored} -> ${stored}`,
     );
+
+    // The new-recipe page: text typed into the title before resume stays, focused, with its caret; clearing the
+    // title and leaving it shows the field's error.
+    const title = 'input[name="title"]';
+    const fresh = await visit(page, `${webBase}/recipes/new`, async (p) => ({
+      typed: await typeBefore(p, title, "Soup"),
+    }));
+    checkPage(step, `run ${run} new`, fresh, (h) => h.includes('id="recipes.new"') && h.includes('name="title"'));
+    await page.fill(title, "");
+    await page.locator(title).blur();
+    await page
+      .waitForFunction(
+        (s) => {
+          const ids = (document.querySelector(s)?.getAttribute("aria-describedby") ?? "").split(" ");
+          return ids.some((id) => (document.getElementById(id)?.textContent ?? "").trim() !== "");
+        },
+        title,
+        { timeout: 5000 },
+      )
+      .catch(() => undefined);
+    const titleError = await fieldError(page, title);
+    step(`run ${run} new field error`, titleError !== "", `"${titleError}"`);
+
+    // The catalog: the filters disclosure opens after resume.
+    const catalog = await visit(page, `${webBase}/catalog`, scroll);
+    checkPage(step, `run ${run} catalog`, catalog, (h) => h.includes('id="recipes.catalog"'));
+    const toggle = '[id="recipes.catalogFilters.button"]';
+    const was = await page.locator(toggle).getAttribute("aria-expanded");
+    await page.locator(toggle).click();
+    await page
+      .waitForFunction(
+        (w) => document.getElementById("recipes.catalogFilters.button")?.getAttribute("aria-expanded") !== w,
+        was,
+        {
+          timeout: 5000,
+        },
+      )
+      .catch(() => undefined);
+    const now = await page.locator(toggle).getAttribute("aria-expanded");
+    step(`run ${run} catalog disclosure`, was !== now && now === "true", `${was} -> ${now}`);
+
+    // The sign-in page, served by `api`: the email typed before resume stays; a bad address shows the field's error.
+    const email = 'input[name="email"]';
+    const signin = await visit(page, `${apiBase}/account/signin`, async (p) => ({
+      typed: await typeBefore(p, email, "cook@example.com"),
+    }));
+    checkPage(step, `run ${run} signin`, signin, (h) => h.includes('id="accounts.signin"'));
+    await page.fill(email, "x");
+    await page.locator(email).blur();
+    await page
+      .waitForFunction(
+        (s) => {
+          const ids = (document.querySelector(s)?.getAttribute("aria-describedby") ?? "").split(" ");
+          return ids.some((id) => (document.getElementById(id)?.textContent ?? "").trim() !== "");
+        },
+        email,
+        { timeout: 5000 },
+      )
+      .catch(() => undefined);
+    const emailError = await fieldError(page, email);
+    step(`run ${run} signin field error`, emailError !== "", `"${emailError}"`);
+
     step(`run ${run} console`, logged.length === 0, logged.slice(0, 3).join(" | "));
     await page.close();
   }
