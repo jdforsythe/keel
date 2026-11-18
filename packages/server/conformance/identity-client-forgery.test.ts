@@ -29,7 +29,7 @@ describe("k.user: the client cannot set `user`", () => {
         await r.get(`/who?user=${forged}`, { "x-keel-user": forged, cookie: `user=${forged}; x-keel-user=${forged}` });
         await r.get("/api/who", { "x-keel-user": `${forged}.9999999999999.${forged}` });
         await r.post("/who", { user: forged }, { "x-keel-user": forged, cookie: `user=${forged}` });
-        expect(r.seen.guard).toEqual([real]);
+        expect(r.seen.guard).toEqual([real, real]);
         expect(r.seen.loader).toEqual([real]);
         expect(r.seen.api).toEqual([real]);
         expect(r.seen.action).toEqual([real]);

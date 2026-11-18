@@ -1,4 +1,4 @@
-// Spec: k.services, API "A client method takes `{ params?, query?, body?, signal?, bearer? }` and `ctx`. `bearer`, a `Secret<string>`, is sent as `authorization: Bearer <token>`; a token outside k.api's Bearer form is `api.input` at `bearer`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim."
+// Spec: k.services, API "A client method takes `{ params?, query?, body?, signal?, bearer?, user? }` and `ctx`. `bearer`, a `Secret<string>`, is sent as `authorization: Bearer <token>`; a token outside k.api's Bearer form is `api.input` at `bearer`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim."
 // Spec: k.services, Conformance "With `bearer` a secret of `abc`, the request carries `authorization: Bearer abc`; with `a b`, the call is `api.input` with issue path `bearer` and sends no request."
 // Spec: k.privacy, Rules "E1113 an `s.secret` node in a `loader` or `action` `output`, thrown at declaration (fix: none)."
 // Seed: 1337.
@@ -100,7 +100,7 @@ describe("k.services bearer", () => {
     expect(bad.sent).toHaveLength(0);
   });
 
-  it("A client method takes `{ params?, query?, body?, signal?, bearer? }` and `ctx`. `bearer`, a `Secret<string>`, is sent as `authorization: Bearer <token>`; a token outside k.api's Bearer form is `api.input` at `bearer`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim.", async () => {
+  it("A client method takes `{ params?, query?, body?, signal?, bearer?, user? }` and `ctx`. `bearer`, a `Secret<string>`, is sent as `authorization: Bearer <token>`; a token outside k.api's Bearer form is `api.input` at `bearer`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim.", async () => {
     await fc.assert(
       fc.asyncProperty(tokenArb, fc.integer({ min: 0, max: 3 }), async (token, eqs) => {
         const text = token + "=".repeat(eqs);
@@ -117,6 +117,21 @@ describe("k.services bearer", () => {
         }
       }),
       { seed: SEED, numRuns: 25 },
+    );
+  });
+
+  it("A client method takes `user?` (k.user): on a ctx no `createApp` with a secret bound, `user` is `api.input` at `user` and nothing is sent.", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.string({ minLength: 1, maxLength: 40 }), async (id) => {
+        const r = rig(MODULE, answerOf);
+        const res = await call(moduleClient(), "show", { params: { id: "1" }, user: id }, r.ctx);
+        expect(field(res, "ok")).toBe(false);
+        expect(field(field(res, "error"), "code")).toBe("api.input");
+        const issues = field(field(field(res, "error"), "data"), "issues");
+        expect(pathsOf(issues).some((p) => p[0] === "user")).toBe(true);
+        expect(r.sent).toHaveLength(0);
+      }),
+      { seed: SEED, numRuns: 15 },
     );
   });
 

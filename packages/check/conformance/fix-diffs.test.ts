@@ -351,6 +351,8 @@ const NO_FIX = [
   "E1567", // the module, deps and public.routes edits span files
   "E1570", // where the asset or form target lives is the author's choice
   "E1571", // moving the call to a server file spans files
+  "E1578", // k.user Rules: Fix none; the caller days or the deployable is the author's choice
+  "E1579", // k.user Rules: Fix none; the identity export, the mount path or the route is the author's choice
   "E1576", // the public replacement is the author's
   "E1573", // the shell's adapter and app id are the author's
   "E1561", // choosing between the caller's and the producer's schema is a judgment

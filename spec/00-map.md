@@ -56,7 +56,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.ledger | Ledger and evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loaders, actions |
 | k.leave | What a request leaves | conformance-covered | `#k-state`, E1577 |
-| k.user | Request user and caller lifetime | proposed | `identify` |
+| k.user | Request user and caller lifetime | conformance-covered | `identify` |
 | k.serverlog | Server log records | conformance-covered | bounds |
 | k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |

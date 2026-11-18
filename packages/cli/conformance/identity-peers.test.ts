@@ -50,13 +50,12 @@ async function bed(o: { split: boolean; user?: string | undefined; yAnswer?: str
     seenB.put.push(user);
     return ok(null);
   });
+  const aRoute = () => ({ "a.show": { path: "/a/:n", params: Params, loader: aShow, component: view } });
+  const bRoute = () => ({ "b.show": { path: "/b/:n", params: Params, loader: bGet, component: view } });
   const routesOf = (which: "a" | "b" | "both") => {
-    const defs = {
-      ...(which === "b" ? {} : { "a.show": { path: "/a/:n", params: Params, loader: aShow, component: view } }),
-      ...(which === "a" ? {} : { "b.show": { path: "/b/:n", params: Params, loader: bGet, component: view } }),
-    };
-    const m = manifest(defs);
-    if (which !== "a") m.actions({ "b.show": { POST: bPut } });
+    if (which === "a") return manifest(aRoute());
+    const m = which === "b" ? manifest(bRoute()) : manifest({ ...aRoute(), ...bRoute() });
+    m.actions({ "b.show": { POST: bPut } });
     return m;
   };
   const idOf = (log: Request[], answer: string) =>

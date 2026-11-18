@@ -45,7 +45,8 @@ describe("k.user: the user a request carries", () => {
         const r = await rig({ identify: async () => id });
         await r.get("/who");
         await r.post("/who");
-        expect(r.seen.guard).toEqual([id]);
+        // k.server's request flow runs the guard before the GET's loaders and before the POST's action.
+        expect(r.seen.guard).toEqual([id, id]);
         expect(r.seen.loader).toEqual([id]);
         expect(r.seen.action).toEqual([id]);
         expect(r.identified).toHaveLength(2);
@@ -62,7 +63,7 @@ describe("k.user: the user a request carries", () => {
     const ac = new AbortController();
     await readChunks(await r.stream("/live", ac.signal), 1);
     ac.abort();
-    expect(r.seen.guard).toEqual([""]);
+    expect(r.seen.guard).toEqual(["", ""]);
     expect(r.seen.loader).toEqual([""]);
     expect(r.seen.action).toEqual([""]);
     expect(r.seen.api).toEqual([""]);
@@ -122,7 +123,7 @@ describe("k.user: the user a request carries", () => {
     await r.get("/who");
     expect(r.seen.order).toEqual(["identify", "guard", "loader"]);
     await r.post("/who");
-    expect(r.seen.order.slice(3)).toEqual(["identify", "action"]);
+    expect(r.seen.order.slice(3)).toEqual(["identify", "guard", "action"]);
   });
 
   test("`identify` is never called for the generated entry, `/__keel/*` or a path no route serves", async () => {

@@ -5,7 +5,7 @@
 // Spec: k.api, Output "`output` holds no `s.secret` (E1113, k.privacy): a secret leaves a `loader` or `action` `output` as `reveal(secret)` in an `s.string()` field."
 // Spec: k.privacy, Rules "E1113 an `s.secret` node in a `loader` or `action` `output`, thrown at declaration (fix: none)."
 // Spec: k.privacy, Conformance "An `action` or `loader` whose `output` has an `s.secret` field throws E1113; with `s.string()`, none."
-// Spec: k.guards, Guards "`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
+// Spec: k.guards, Guards "`caller` and `user` are k.server's and k.user's (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
 // Seed: 1337.
 // The `endpoints` case of the RFC list (`@keel/services` takes no E1113) lives in packages/services/conformance/bearer-0104.test.ts: this package does not depend on `@keel/services`.
 // Compile failures are asserted by type-checking in-memory modules (never written to disk) with packages/router/tsconfig.json: a control module
@@ -64,11 +64,21 @@ export const apiReads = action({ input: Nothing, output: Nothing }, async (_inpu
   bearer === undefined ? ok({}) : ok({}),
 );
 export const pageGoes = action({ input: Nothing }, async () => ok(routes.href("app.p")));
+export const readsUser = action({ input: Nothing }, async (_input, { caller, user }) => {
+  const who: string = user;
+  const from: string = caller;
+  return who === from ? ok(null) : ok(null);
+});
 `;
 const BAD = {
   apiWithoutOutput: CONTROL.replace('"api.x": { POST: apiAct }', '"api.x": { POST: pageAct }'),
   pageWithOutput: CONTROL.replace('"app.p": { POST: pageAct }', '"app.p": { POST: apiAct }'),
   wrongOutputValue: CONTROL.replace("async () => ok({ n: 2 })", 'async () => ok("/x")'),
+  userIsNotAString: `${CONTROL}export const userAsNumber = action({ input: Nothing }, async (_input, { user }) => {
+  const n: number = user;
+  return n > 0 ? ok(null) : ok(null);
+});
+`,
   pageReadsBearer: `${CONTROL}export const pageReads = action({ input: Nothing }, async (_input, { bearer }) =>
   bearer === undefined ? ok(null) : ok(null),
 );
@@ -214,9 +224,10 @@ describe("k.privacy E1113", () => {
 });
 
 describe("k.guards bearer", () => {
-  it("`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none).", () => {
+  it("`caller` and `user` are k.server's and k.user's (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none).", () => {
     expect(typeErrors(CONTROL)).toEqual([]);
     expect(typeErrors(BAD.pageReadsBearer).length).toBeGreaterThan(0);
+    expect(typeErrors(BAD.userIsNotAString).length).toBeGreaterThan(0);
     const apiReads = action({ input: Nothing, output: Nothing }, async (_input, at) => {
       expect(at.bearer === undefined || typeof at.bearer === "object").toBe(true);
       return ok({});

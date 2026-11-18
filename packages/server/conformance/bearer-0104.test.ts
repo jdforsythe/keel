@@ -10,7 +10,7 @@
 // Spec: k.api, Bearer "A response to a request carrying `authorization` is `Cache-Control: no-store`."
 // Spec: k.api, Conformance "With `authorization` `Bearer abc`, `bearer abc` or `BEARER  abc=`, an API route's guard, loader and action get a `bearer` revealing `abc` (`abc=`); with `Basic abc`, `Bearer`, `Bearer a b`, a 4,097-character token or two headers, `undefined`; on a page, `undefined`."
 // Spec: k.api, Conformance "A GET to an API route with `authorization` answers `cache-control: no-store`."
-// Spec: k.guards, Guards "`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
+// Spec: k.guards, Guards "`caller` and `user` are k.server's and k.user's (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
 // Spec: k.privacy, Sinks "Each string, number and key but a declared field name (not a boolean) in a `Secret` made or revealed while the request runs (`bearer` too) becomes `[secret]`."
 // Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await` or made earlier and revealed in it, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
 // Spec: k.hosting, Allowed origins "`OPTIONS` with `access-control-request-method`: 204 with `access-control-allow-origin` (that origin), `access-control-allow-methods` (the route's methods), `access-control-allow-headers: accept, authorization, content-type, x-keel`, `access-control-allow-credentials: true`, `access-control-max-age: 600` and `vary: origin`; no guard, loader or action runs."
@@ -38,6 +38,7 @@ const Denied = s.error("keel.denied", s.object({}));
 const bearers = new Map<string, Secret<string> | undefined>();
 const forms = new Map<string, string>();
 const callers = new Map<string, string>();
+const users = new Map<string, string>();
 const seen = (where: string, b: Secret<string> | undefined, caller: string): void => {
   bearers.set(where, b);
   callers.set(where, caller);
@@ -51,10 +52,12 @@ const reset = (): void => {
   bearers.clear();
   forms.clear();
   callers.clear();
+  users.clear();
 };
 
-const apiGuard = guard({}, async ({ bearer, caller }) => {
+const apiGuard = guard({}, async ({ bearer, caller, user }) => {
   seen("api.guard", bearer, caller);
+  users.set("api.guard", user);
   return ok(null);
 });
 const apiLoad = loader({ output: Nothing }, async ({ bearer, caller }) => {
@@ -101,8 +104,9 @@ const secondGuard = guard({}, async ({ bearer }) => {
   seen("hop.second", bearer, "");
   return ok(null);
 });
-const pageGuard = guard({ redirect: "app.login" }, async ({ bearer, caller }) => {
+const pageGuard = guard({ redirect: "app.login" }, async ({ bearer, caller, user }) => {
   seen("page.guard", bearer, caller);
+  users.set("page.guard", user);
   return ok(null);
 });
 const pageLoad = loader({ output: Nothing }, async ({ bearer, caller }) => {
@@ -385,16 +389,18 @@ describe("k.api bearer", () => {
     }
   });
 
-  it("`caller` is k.server's `caller` (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none).", async () => {
+  it("`caller` and `user` are k.server's and k.user's (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none).", async () => {
     const app = await boot("production");
     reset();
     await drain(await app.fetch(request("GET", "/page", "Bearer abc")));
     expect(bearers.get("page.guard")).toBeUndefined();
     expect(callers.get("page.guard")).toBe("");
+    expect(users.get("page.guard")).toBe("");
     reset();
     await drain(await app.fetch(request("GET", "/api/who", "Bearer abc")));
     expect(revealed("api.guard")).toBe("abc");
     expect(callers.get("api.guard")).toBe("");
+    expect(users.get("api.guard")).toBe("");
   });
 
   for (const mode of ["dev", "production"] as const) {
