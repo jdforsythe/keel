@@ -380,7 +380,7 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
       hooks: boolean[];
       children: Tree[];
     }
-    const tree = fc.memo<Tree>((depth) =>
+    const tree: (depth: number) => fc.Arbitrary<Tree> = fc.memo<Tree>((depth): fc.Arbitrary<Tree> =>
       depth <= 1
         ? fc.record({ hooks: fc.array(fc.boolean(), { maxLength: 3 }), children: fc.constant([]) })
         : fc.record({
@@ -395,7 +395,7 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
         const expectedOrder: string[] = [];
         const expectedThrows: string[] = [];
 
-        const plan = (t: Tree, id: string) => {
+        const plan = (t: Tree, id: string): void => {
           t.children.forEach((c, i) => plan(c, `${id}.${i}`));
           t.hooks.forEach((throws, i) => {
             const name = `${id}#${i}`;
