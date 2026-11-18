@@ -167,11 +167,11 @@ const cases = (p: string, text: boolean): readonly Case[] => {
     },
     {
       key: k14,
-      title: `an element-valued prop written as a JSX attribute${how}`,
+      title: `a slot prop thunk placed by the receiving component${how}`,
       source: page(
         k14,
-        `function Frame(props) { return <section id="${k14}.frame">${L}{props.icon}${T}</section> }\n`,
-        `<Frame icon={<button id="${k14}.hit" onClick={hit}>hit</button>} />`,
+        `import { Box } from "@keel/ui";\nfunction Frame(props) { return Box({ id: "${k14}.frame", children: props.icon }) }\n`,
+        `<Frame icon={() => <>${L}<button id="${k14}.hit" onClick={hit}>hit</button>${T}</>} />`,
       ),
       content: [`${k14}.hit`],
     },
