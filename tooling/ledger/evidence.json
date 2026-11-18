@@ -1,5 +1,5 @@
 {
-  "commit": "747745dae2e7d2db537018ce68af09620e84e419",
+  "commit": "61f7ea427541c9f0e71668b996cb47e8f95b79ad",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T15:39:54.422Z",
+  "generatedAt": "2026-11-18T15:48:36.597Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1164,12 +1164,12 @@
     },
     "clauses": {
       "byRung": {
-        "example": 558,
+        "example": 579,
         "exhaustive": 6,
         "monitored": 0,
         "none": 0,
-        "probabilistic": 170,
-        "proven": 28
+        "probabilistic": 171,
+        "proven": 29
       },
       "sections": {
         "README": {
@@ -1239,16 +1239,16 @@
         },
         "k.claim": {
           "byRung": {
-            "example": 0,
+            "example": 8,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 0,
-            "proven": 0
+            "proven": 1
           },
-          "status": "proposed",
-          "total": 0,
-          "verified": 0
+          "status": "conformance-covered",
+          "total": 9,
+          "verified": 9
         },
         "k.cli": {
           "byRung": {
@@ -1525,16 +1525,16 @@
         },
         "k.resume": {
           "byRung": {
-            "example": 0,
+            "example": 12,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 0,
+            "probabilistic": 1,
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 0,
-          "verified": 0
+          "total": 13,
+          "verified": 13
         },
         "k.reveal": {
           "byRung": {
@@ -1707,7 +1707,7 @@
         },
         "k.testing": {
           "byRung": {
-            "example": 12,
+            "example": 13,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1715,8 +1715,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 13,
-          "verified": 13
+          "total": 14,
+          "verified": 14
         },
         "k.topology": {
           "byRung": {
@@ -2135,24 +2135,24 @@
           "verified": 8
         }
       },
-      "total": 762,
-      "verified": 762
+      "total": 785,
+      "verified": 785
     },
     "evidenceByRung": {
-      "example": 1110,
+      "example": 1132,
       "exhaustive": 15,
       "monitored": 4,
-      "probabilistic": 333,
-      "proven": 57
+      "probabilistic": 334,
+      "proven": 60
     },
     "exports": {
       "byRung": {
-        "example": 222,
+        "example": 221,
         "exhaustive": 1,
         "monitored": 0,
         "none": 30,
-        "probabilistic": 134,
-        "proven": 29
+        "probabilistic": 133,
+        "proven": 31
       },
       "packages": {
         "check": {
@@ -2269,8 +2269,8 @@
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 4,
-            "proven": 2
+            "probabilistic": 3,
+            "proven": 3
           },
           "total": 9,
           "verified": 9
@@ -2421,12 +2421,12 @@
         },
         "std-headless": {
           "byRung": {
-            "example": 7,
+            "example": 6,
             "exhaustive": 1,
             "monitored": 0,
             "none": 0,
             "probabilistic": 0,
-            "proven": 2
+            "proven": 3
           },
           "total": 10,
           "verified": 10
@@ -2675,9 +2675,9 @@
       "total": 416,
       "verified": 386
     },
-    "items": 1478,
+    "items": 1501,
     "unsafe": 18,
-    "verified": 1216
+    "verified": 1239
   },
   "mutation": {
     "packages": {
@@ -2717,7 +2717,7 @@
         "claims": 134,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 74.52,
+        "score": 74.25,
         "stale": 4,
         "threshold": 70
       },
@@ -2725,7 +2725,7 @@
         "claims": 146,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 79.59,
+        "score": 80.13,
         "stale": 3,
         "threshold": 70
       },
@@ -2733,7 +2733,7 @@
         "claims": 108,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 79.26,
+        "score": 77.45,
         "stale": 4,
         "threshold": 70
       },
@@ -2765,7 +2765,7 @@
         "claims": 63,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 85.47,
+        "score": 85.15,
         "stale": 6,
         "threshold": 80
       },
@@ -2773,7 +2773,7 @@
         "claims": 69,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 77.38,
+        "score": 76.81,
         "stale": 15,
         "threshold": 70
       },
@@ -2797,7 +2797,7 @@
         "claims": 115,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 82.07,
+        "score": 82.03,
         "stale": 13,
         "threshold": 70
       },
@@ -3021,7 +3021,7 @@
         "claims": 72,
         "reason": null,
         "reportDate": "2026-11-17",
-        "score": 86.64,
+        "score": 87.63,
         "stale": 4,
         "threshold": 70
       },
@@ -3029,7 +3029,7 @@
         "claims": 42,
         "reason": null,
         "reportDate": "2026-11-16",
-        "score": 74.31,
+        "score": 75.18,
         "stale": 3,
         "threshold": 70
       }
