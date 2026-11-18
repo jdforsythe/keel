@@ -4,6 +4,7 @@ import type { Checked } from "../Checked.ts";
 import { endpointRefs } from "../compat/endpointRefs.ts";
 import { samePath } from "../compat/samePath.ts";
 import { isTestPath } from "../isTestPath.ts";
+import { schemaMarks } from "../schemaMarks.ts";
 import { stemOf } from "../stemOf.ts";
 import type { FileFacts } from "./FileFacts.ts";
 import type { Manifest } from "./Manifest.ts";
@@ -11,6 +12,7 @@ import type { ModuleInfo } from "./ModuleInfo.ts";
 import { addEntryFix } from "./addEntryFix.ts";
 import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
+import { joinPath } from "./joinPath.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { prefixFix } from "./prefixFix.ts";
@@ -20,7 +22,50 @@ import { scanFile } from "./scanFile.ts";
 import { short } from "./short.ts";
 import { stdConfig } from "./stdConfig.ts";
 
-type Scanned = { readonly file: SourceFile; readonly module: ModuleInfo; readonly facts: FileFacts };
+type Scanned = {
+  readonly file: SourceFile;
+  readonly module: ModuleInfo;
+  readonly facts: FileFacts;
+  readonly client: boolean;
+};
+
+const SERVER = /\.server\.[cm]?[jt]sx?$/;
+
+/**
+ * E1107 (k.leave Snapshots): a `store(...)` call in a client-reachable file (a `.tsx` or `.jsx` file, or a file one imports
+ * through relative imports, never a `*.server.*` file) whose state schema holds a `.pii(class)` of a class its
+ * module's `clientPii` does not list; once per call, the fix adds the classes to `clientPii`.
+ */
+function clientPii(scanned: readonly Scanned[], files: readonly SourceFile[]): Diagnostic[] {
+  const byPath = new Map(scanned.map((s) => [s.file.path, s]));
+  const todo = scanned.filter((s) => s.client);
+  const reached = new Set(todo);
+  for (let s = todo.pop(); s !== undefined; s = todo.pop()) {
+    const dir = s.file.path.slice(0, Math.max(0, s.file.path.lastIndexOf("/")));
+    for (const imp of s.facts.imports) {
+      const next = imp.value.startsWith(".") ? byPath.get(joinPath(dir, imp.value)) : undefined;
+      if (next === undefined || reached.has(next) || SERVER.test(next.file.path)) continue;
+      reached.add(next);
+      todo.push(next);
+    }
+  }
+  const out: Diagnostic[] = [];
+  for (const { file, module, facts } of reached) {
+    const man = module.manifest;
+    if (man === null) continue;
+    const listed = values(man, "clientPii");
+    for (const arg of facts.stores) {
+      const classes = new Set<string>();
+      schemaMarks(arg, file, files, new Set(), classes);
+      const missing = [...classes].filter((c) => !listed.has(c));
+      if (missing.length === 0) continue;
+      const msg = `store state reaching #k-state holds .pii('${short(missing.join("', '"))}'), not in clientPii`;
+      const fix = addEntryFix(module.file, man.clientPii, missing, { key: "clientPii", at: man.tail });
+      out.push({ ...moduleDiag("E1107", file, arg.start, msg, fix), see: "k.leave" });
+    }
+  }
+  return out;
+}
 type Project = {
   readonly modules: readonly ModuleInfo[];
   readonly byKey: ReadonlyMap<string, ModuleInfo>;
@@ -31,7 +76,7 @@ type Project = {
   readonly files: readonly SourceFile[];
 };
 
-const values = (m: Manifest, k: "deps" | "capabilities" | "exports" | "routes"): Set<string> =>
+const values = (m: Manifest, k: "deps" | "capabilities" | "exports" | "routes" | "clientPii"): Set<string> =>
   new Set(m[k].entries.map((e) => e.value));
 
 /** E1154: `public.exports` naming no file stem of the module, `public.routes` naming no declared route. */
@@ -155,7 +200,8 @@ export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
     const module = moduleOf(file.path, modules);
     if (module === undefined || isTestPath(file.path.slice(module.root.length))) continue;
     const facts = scanFile(parsed.program);
-    scanned.push({ file, module, facts });
+    const client = !SERVER.test(file.path) && /\.[jt]sx$/.test(file.path);
+    scanned.push({ file, module, facts, client });
     stems.set(module, (stems.get(module) ?? new Set()).add(stemOf(file.path)));
     const declared = routes.get(module) ?? new Set();
     routes.set(module, declared);
@@ -166,7 +212,7 @@ export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
     }
   }
   const project: Project = { modules, byKey, routeOwner, paths, files: checked.map((c) => c.file) };
-  const out: Diagnostic[] = [...depsCycles(modules, byKey)];
+  const out: Diagnostic[] = [...depsCycles(modules, byKey), ...clientPii(scanned, project.files)];
   for (const m of modules) {
     out.push(...publicMissing(m, stems.get(m) ?? new Set(), routes.get(m) ?? new Set()));
     out.push(...stdConfig(m));

@@ -12,6 +12,10 @@
       "types": "./src/internal/start.ts",
       "default": "./src/internal/start.ts"
     },
+    "./internal/onUncaught": {
+      "types": "./src/internal/onUncaught.ts",
+      "default": "./src/internal/onUncaught.ts"
+    },
     "./internal/dom": {
       "types": "./src/internal/dom/index.ts",
       "default": "./src/internal/dom/index.ts"

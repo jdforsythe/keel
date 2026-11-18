@@ -8,6 +8,7 @@ import { createApp } from "@keel/server";
 import type { StartOptions } from "../types/StartOptions.ts";
 import { DeployEnv } from "./DeployEnv.ts";
 import { diagLine } from "./diagLine.ts";
+import { onUncaught } from "@keel/server/internal/onUncaught";
 
 const line = (text: string): void => {
   process.stdout.write(`${text}\n`);
@@ -21,7 +22,10 @@ const line = (text: string): void => {
  * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, its storage the driver `open` opened on
  * `KEEL_DATABASE_URL` when given (k.deploy Storage; a std.db E2152 or E2153 prints that diag and exits 1), and on
  * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0, or 1 when either rejects (nothing is printed);
- * a second signal during shutdown does nothing.
+ * a second signal during shutdown does nothing. Every `uncaughtException` and `unhandledRejection` prints one E1577
+ * `diag` with none of the thrown text (`onUncaught`, k.leave Process); the first then stops listening, lets requests in
+ * flight finish for at most 10,000 ms, awaits `close()` and the driver's `close()`, and exits 1; a later one prints its
+ * record only.
  */
 export async function start(o: StartOptions, node = process.versions.node): Promise<void> {
   const peers = Object.keys(o.topology).filter((n) => n !== o.deployable && o.topology[n]?.adapter === "node");
@@ -34,6 +38,39 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
   }
   const json = process.env.KEEL_FORMAT === "json";
   const format = json ? "json" : "compact";
+  // Set as startup reaches them, so a fault at any point drains what exists.
+  const live: {
+    server?: ReturnType<typeof serve>;
+    app?: Awaited<ReturnType<typeof createApp>>;
+    opened?: Awaited<ReturnType<NonNullable<StartOptions["open"]>>>;
+  } = {};
+  let stopping = false;
+  let busy = 0;
+  let idle = (): void => undefined;
+  const closed = (f: () => Promise<unknown> | undefined): Promise<boolean> =>
+    Promise.resolve()
+      .then(f)
+      .then(
+        () => true,
+        () => false,
+      );
+  const stop = (fault: boolean): void => {
+    if (stopping) return;
+    stopping = true;
+    live.server?.close();
+    void (async () => {
+      if (fault)
+        await new Promise<void>((done) => {
+          idle = done;
+          if (busy === 0) done();
+          setTimeout(done, 10_000);
+        });
+      const a = await closed(() => live.app?.close());
+      const st = await closed(() => live.opened?.close?.());
+      process.exit(fault || !a || !st ? 1 : 0);
+    })();
+  };
+  onUncaught({ format, write: line }, o.dir, false, () => stop(true));
   const fail = (message: string, code = "E1560"): never => {
     line(diagLine(format, { code, message }));
     return process.exit(1);
@@ -55,6 +92,7 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
         if (code !== "E2152" && code !== "E2153") throw e;
         return fail(e instanceof Error ? e.message.replace(/^E215[23] /, "") : String(code), code);
       }));
+  if (opened !== undefined) live.opened = opened;
   const std = join(o.dir, "std.json");
   const routes: Record<string, RouteDef> = {};
   for (const m of o.routes) Object.assign(routes, m.routes);
@@ -77,33 +115,23 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
           allow: env.value.KEEL_ALLOW_ORIGINS.split(",").map((o) => o.trim()),
         }),
   });
+  live.app = app;
   const port = env.value.PORT ?? 8080;
-  const server = serve({ fetch: app.fetch, port }, (a) => {
+  const srv = serve({ fetch: app.fetch, port }, (a) => {
     line(json ? JSON.stringify({ kind: "summary", name: "listen", port: a.port }) : `ok listening on port ${a.port}`);
   });
+  live.server = srv;
+  srv.on("request", (_q, res) => {
+    busy++;
+    res.on("close", () => {
+      if (--busy === 0) idle();
+    });
+  });
   // Only an error before the server listens is the bind failure.
-  server.on("error", (e) => {
-    if (server.listening) return;
+  srv.on("error", (e) => {
+    if (srv.listening) return;
     fail(`PORT ${port} fails to bind (${"code" in e ? e.code : "error"}); free it or set another PORT`);
   });
-  let stopping = false;
-  const closed = (f: () => Promise<unknown> | undefined): Promise<boolean> =>
-    Promise.resolve()
-      .then(f)
-      .then(
-        () => true,
-        () => false,
-      );
-  const stop = (): void => {
-    if (stopping) return;
-    stopping = true;
-    server.close();
-    void (async () => {
-      const app_ = await closed(() => app.close());
-      const store = await closed(() => opened?.close?.());
-      process.exit(app_ && store ? 0 : 1);
-    })();
-  };
-  process.on("SIGTERM", stop);
-  process.on("SIGINT", stop);
+  process.on("SIGTERM", () => stop(false));
+  process.on("SIGINT", () => stop(false));
 }

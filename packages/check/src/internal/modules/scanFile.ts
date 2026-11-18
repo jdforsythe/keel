@@ -81,6 +81,7 @@ export function scanFile(program: Program): FileFacts {
   const services: { module: Entry; schema: Expression | null }[] = [];
   const ids: IdFact[] = [];
   const ctx: Entry[] = [];
+  const stores: Argument[] = [];
   // `observe` is a capability (rfc:0071): its import from @keel/ctx (any alias), or `<namespace>.observe`.
   const spaces = new Set<string>();
   for (const st of program.body) {
@@ -121,6 +122,7 @@ export function scanFile(program: Program): FileFacts {
         } else if (store.has(c.name)) {
           const e = storeId(a);
           if (e !== null) ids.push({ ...e, kind: "store id" });
+          if (a[0] !== undefined) stores.push(a[0]);
         } else if (transaction.has(c.name)) {
           const e = literal(a[1]);
           if (e !== null) ids.push({ ...e, kind: "transaction name" });
@@ -153,5 +155,5 @@ export function scanFile(program: Program): FileFacts {
       }
     },
   }).visit(program);
-  return { imports, hrefs, routes, paths, services, ids, ctx };
+  return { imports, hrefs, routes, paths, services, ids, ctx, stores };
 }

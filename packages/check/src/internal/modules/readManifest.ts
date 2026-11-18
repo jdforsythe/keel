@@ -96,6 +96,18 @@ export function readManifest(program: Program): Manifest | null {
   const exports = listOf(pubProps.get("exports"));
   const routes = listOf(pubProps.get("routes"));
   const std = stdOf(props.get("std"));
+  const clientPii = listOf(props.get("clientPii"));
   if (deps === null || capabilities === null || exports === null || routes === null || std === null) return null;
-  return { id: typeof idValue === "string" ? idValue : null, deps, capabilities, exports, routes, std };
+  if (clientPii === null) return null;
+  const tail = obj.properties[obj.properties.length - 1]?.end ?? obj.start + 1;
+  return {
+    id: typeof idValue === "string" ? idValue : null,
+    deps,
+    capabilities,
+    exports,
+    routes,
+    std,
+    clientPii,
+    tail,
+  };
 }

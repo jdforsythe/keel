@@ -1,6 +1,6 @@
 # ADR-0160: what a request leaves (RFC 0138)
 
-**Status:** proposed (RFC 0138, for the orchestrator to accept).
+**Status:** accepted (orchestrator under the owner's standing leave, 2026-11-18).
 
 **Context.** `#k-state` carries a snapshot of every request store, islands or not, so a loader's store of another person's contact data reaches the browser. The pre-resume queue never prevents a default, so a `submit` fired before resume posts natively and then replays to the island's handler. The E1256 mark follows a request's timers after its response, and no Keel server handles an uncaught exception, so any late throw ends the process by Node's default. A refused snapshot's E1253 warning is built but not specified.
 

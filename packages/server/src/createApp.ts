@@ -111,7 +111,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
  */
 export function createApp(opts: AppOptions): Promise<ServerApp> {
   // Startup and the runners it starts are not a request, even when the app is made inside one (`serving`).
-  return serving.run(false, () => startApp(opts));
+  return serving.run(undefined, () => startApp(opts));
 }
 
 async function startApp(opts: AppOptions): Promise<ServerApp> {
@@ -237,10 +237,10 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     // sets outlive `routed` so the `req` path is scrubbed with them too.
     const secrets = new Set<string>();
     const pii = new Set<string>();
-    // While it runs, through every `await`, a `tx` on a module store throws E1256 (`serving`, `refuseModuleWrites`).
+    // While it runs, and in all the work it schedules, a write to a module store throws E1256 (`serving`, `refuseModuleWrites`).
     const routed = () =>
       requestSecrets.run(secrets, () =>
-        serving.run(true, async () => {
+        serving.run({ route: matched?.id ?? "-", pii, secrets }, async () => {
           // Only an API route reads `authorization` (k.api Bearer); the token is a `Secret` and the header is not kept.
           const rq = {
             scope: scope(() => undefined),

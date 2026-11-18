@@ -4,8 +4,9 @@ import { stdRoutes } from "../std/stdRoutes.ts";
 import type { Topology } from "../types/Topology.ts";
 
 /** Specifiers the dev module imports; the app resolves them (the compiler itself never imports them). */
-const [DOM, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
+const [DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
   "@keel/server/internal/dom",
+  "@keel/server/internal/onUncaught",
   "@keel/server",
   "@keel/ctx",
   "@keel/ctx/node",
@@ -14,7 +15,8 @@ const [DOM, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
 ].map((x) => JSON.stringify(x));
 
 /**
- * The `keel dev` server module (k.topology Local topology): after installing the server DOM it creates one dev
+ * The `keel dev` server module (k.topology Local topology): after installing the server DOM and the process's
+ * uncaught-error listeners (`onUncaught` in dev: each records E1577 with the thrown text and serving goes on), it creates one dev
  * `createApp` per `node` deployable of `topology`, each with its own real `ctx` whose storage is the file
  * `.keel-dev/<name>.storage.json`, its modules' routes (an app module's `routes.ts`, a stdlib module's package
  * `./routes` export: `stdRoutes`) and runners, the `.keel/` artifacts and `std.json`, and the
@@ -30,6 +32,8 @@ export function devEntryCode(root: string, topology: Topology): string {
   const lines = [
     `import { installServerDom } from ${DOM};`,
     "installServerDom();",
+    `const log = { format: "compact", write: (l) => process.stdout.write(l + "\\n") };`,
+    `(await import(${UNCAUGHT})).onUncaught(log, ${abs(".keel")}, true, () => undefined);`,
     `const { createApp } = await import(${SERVER});`,
     `const { createCtx } = await import(${CTX});`,
     `const { fileStorage } = await import(${CTX_NODE});`,
@@ -58,7 +62,7 @@ export function devEntryCode(root: string, topology: Topology): string {
       `  const routes = manifest({ ${imports.join(", ")} });`,
       "  const table = compileTable(compileRoutes(routes.routes), routes.routes);",
       `  const others = Object.fromEntries(Object.entries(peers).filter(([n]) => n !== ${JSON.stringify(name)}));`,
-      `  made[${JSON.stringify(name)}] = await createApp({ topology, deployable: ${JSON.stringify(name)}, routes, ctx: createCtx({ mode: "real", drivers: { storage: fileStorage(${abs(`.keel-dev/${name}.storage.json`)}) } }), mode: "dev", runners: { ${run.join(", ")} }, peers: others, artifacts: ${abs(".keel")}${std}, log: { format: "compact", write: (l) => process.stdout.write(l + "\\n") } });`,
+      `  made[${JSON.stringify(name)}] = await createApp({ topology, deployable: ${JSON.stringify(name)}, routes, ctx: createCtx({ mode: "real", drivers: { storage: fileStorage(${abs(`.keel-dev/${name}.storage.json`)}) } }), mode: "dev", runners: { ${run.join(", ")} }, peers: others, artifacts: ${abs(".keel")}${std}, log });`,
       `  apps.push([${JSON.stringify(name)}, made[${JSON.stringify(name)}], (p) => matchUrl(table, p).route !== null]);`,
       "}",
     );

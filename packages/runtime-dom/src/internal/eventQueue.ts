@@ -42,12 +42,46 @@ const resumed = new WeakSet<Element>();
 const roots = new WeakMap<Element, ((e: Event) => void) | undefined>();
 let installed = false;
 
+/**
+ * Queues `e` when its innermost island has not resumed (k.defaults): a `submit` with its default prevented, so it is
+ * sent once, at replay (`sent`); a `click` inside an `a[href]` not starting `#` is left to the browser and not queued.
+ */
 const capture = (e: Event): void => {
   const t = e.target;
   if (!(t instanceof Node)) return;
   const el = t instanceof Element ? t : t.parentElement;
   const island = el?.closest("[data-k-island]") ?? null;
-  if (island !== null && !resumed.has(island)) entries.push({ event: e, target: t, island });
+  if (island === null || resumed.has(island)) return;
+  const href = e.type === "click" ? el?.closest("a[href]")?.getAttribute("href") : undefined;
+  if (href != null && !href.startsWith("#")) return;
+  if (e.type === "submit") e.preventDefault();
+  entries.push({ event: e, target: t, island });
+};
+
+/**
+ * After a queued `submit` replayed with no handler calling `preventDefault()`, submits its form natively once, as the
+ * browser would have: the submitter's `name` and `value` as a hidden field and its `formaction`, `formmethod`,
+ * `formenctype` and `formtarget` on the form for the call, then put back. A form that left the document is not sent.
+ */
+const sent = (e: Event, t: Node, prevented: boolean): void => {
+  if (e.type !== "submit" || prevented || !(t instanceof HTMLFormElement) || !t.isConnected) return;
+  const by = e instanceof SubmitEvent ? e.submitter : null;
+  const undo = ["action", "method", "enctype", "target"].map((a) => {
+    const v = t.getAttribute(a);
+    const set = by?.getAttribute(`form${a}`);
+    if (set != null) t.setAttribute(a, set);
+    return () => (v === null ? t.removeAttribute(a) : t.setAttribute(a, v));
+  });
+  const pair = document.createElement("input");
+  pair.type = "hidden";
+  if ((by instanceof HTMLButtonElement || by instanceof HTMLInputElement) && by.name !== "") {
+    pair.name = by.name;
+    pair.value = by.value;
+    t.append(pair);
+  }
+  HTMLFormElement.prototype.submit.call(t);
+  pair.remove();
+  for (const u of undo) u();
 };
 
 /**
@@ -97,8 +131,9 @@ export const eventQueue = {
   /**
    * Replay every queued event once, in the order they fired, each as a live one: told to the observer of its innermost
    * enclosing root, then dispatched from its target through each enclosing root, innermost first, until a handler
-   * calls `stopPropagation`. An event no root encloses is dropped. An event whose island has not resumed (a later
-   * `resume` call holds it) stays queued for that call's replay.
+   * calls `stopPropagation`. A queued `submit` is then sent natively unless a handler prevented it (`sent`); any other
+   * event no root encloses is dropped. An event whose island has not resumed (a later `resume` call holds it) stays
+   * queued for that call's replay.
    */
   replay(): void {
     const ready = entries.filter((x) => resumed.has(x.island));
@@ -109,10 +144,16 @@ export const eventQueue = {
       const enclosing: Element[] = [];
       for (let n: Node | null = x.target; n !== null; n = n.parentNode)
         if (n instanceof Element && roots.has(n)) enclosing.push(n);
+      let prevented = false;
+      x.event.preventDefault = () => {
+        prevented = true;
+      };
       const [inner] = enclosing;
-      if (inner === undefined) continue;
-      roots.get(inner)?.(x.event);
-      for (const r of enclosing) if (dispatch(r, x.event, x.target)) break;
+      if (inner !== undefined) {
+        roots.get(inner)?.(x.event);
+        for (const r of enclosing) if (dispatch(r, x.event, x.target)) break;
+      }
+      sent(x.event, x.target, prevented);
     }
   },
 };

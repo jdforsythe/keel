@@ -14,7 +14,7 @@ import { snapshotStores } from "./snapshotStores.ts";
 
 /**
  * An HTML document response: the head and `<html lang>` of `head` (k.head: the route's title, else the deployable's
- * name; the prefix param's value, else `en`), the rendered chain plus one `#k-state` with `stores` (snapshots by store id),
+ * name; the prefix param's value, else `en`), the rendered chain plus one `#k-state` with `stores` (snapshots of the stores island levels touched, by id),
  * `islands` (props by component id) and any `extra` entries; `devMessage` shows only in dev. The entry script
  * (`Served.entry`) loads only when an island was rendered; then `std` carries the
  * client-readable part (`clientStdData`: `clientStd` packages, the served deployable's modules) of the `std.json` data
@@ -35,7 +35,7 @@ export function documentResponse(
   const sent = bound === undefined ? {} : clientStdData(bound, new Set(r.sv.table.map((x) => moduleOf(x.id))));
   const std = Object.keys(sent).length > 0 ? sent : undefined;
   const state = {
-    stores: snapshotStores(r),
+    stores: snapshotStores(r, rendered.touched),
     islands: rendered.islands,
     ...extra,
     ...(std === undefined ? {} : { std }),

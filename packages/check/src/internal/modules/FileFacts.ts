@@ -1,4 +1,4 @@
-import type { Expression } from "oxc-parser";
+import type { Argument, Expression } from "oxc-parser";
 import type { Entry } from "./Entry.ts";
 
 /** What the module pass reads from one file: import specifiers, href() route ids, services, declared ids, ctx capabilities. */
@@ -15,6 +15,8 @@ export type FileFacts = {
   readonly services: readonly { readonly module: Entry; readonly schema: Expression | null }[];
   /** Store ids, transaction names, and error codes declared in the file. */
   readonly ids: readonly (Entry & { readonly kind: "store id" | "transaction name" | "error code" })[];
+  /** The state schema argument of each `store(...)` call from `@keel/store`. */
+  readonly stores: readonly Argument[];
   /** `ctx.<cap>` member accesses, `const { cap } = ctx` destructurings and `observe(...)` calls (`observe`), one entry per use. */
   readonly ctx: readonly Entry[];
 };

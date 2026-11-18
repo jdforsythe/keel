@@ -123,14 +123,16 @@ const worst = (a: Verdict, b: Verdict): Verdict =>
  * object literal's getter, setter or method.
  * A schema returned by a `SEARCH_FACTORIES` export (`tableSearch(columns)`, also through a namespace import) is that
  * package's, as its route table is: `clean` here, guarded by the package's own rule.
+ * With `classes`, each literal class a `.pii(class)` names is added to it, the whole schema read (k.leave E1107).
  */
 export function schemaMarks(
   expr: Expression | Argument,
   file: SourceFile,
   project: readonly SourceFile[],
   seen: Set<string> = new Set(),
+  classes?: Set<string>,
 ): Verdict {
-  if (expr.type === "SpreadElement") return schemaMarks(expr.argument, file, project, seen);
+  if (expr.type === "SpreadElement") return schemaMarks(expr.argument, file, project, seen, classes);
   const at = followValue(expr, file, project);
   if (at === "package" || at === "global") return "clean";
   if (at === null) return "unknown";
@@ -139,13 +141,19 @@ export function schemaMarks(
   seen.add(key);
   const e = at.expr;
   const sub = (x: Expression | Argument | null): Verdict =>
-    x === null ? "clean" : schemaMarks(x, at.file, project, seen);
+    x === null ? "clean" : schemaMarks(x, at.file, project, seen, classes);
   switch (e.type) {
     case "CallExpression": {
       const c = e.callee;
       if (c.type !== "Super" && audited(c, at.file)) return "clean";
       if (c.type !== "MemberExpression" || c.computed) return "unknown";
-      if (c.property.name === "pii") return "marked";
+      if (c.property.name === "pii") {
+        const k = e.arguments[0];
+        if (classes === undefined) return "marked";
+        if (k?.type === "Literal" && typeof k.value === "string") classes.add(k.value);
+        sub(c.object);
+        return "marked";
+      }
       if (c.property.name === "secret") {
         const ns = schemaNamespace(c.object, at.file, project);
         if (ns === "yes") return "marked";

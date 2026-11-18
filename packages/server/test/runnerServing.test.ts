@@ -38,7 +38,7 @@ describe("a runner started inside a request", () => {
         await tx(bump, { n: 1 });
       },
     };
-    const done = serving.run(true, () =>
+    const done = serving.run({ route: "t", pii: new Set(), secrets: new Set() }, () =>
       keepRunning(
         runner,
         ctx,
@@ -57,7 +57,7 @@ describe("a runner started inside a request", () => {
   it("writes a module store from an app's runner when the app is made inside a request", async () => {
     const { counter, bump } = fixtureOf();
     const lines: string[] = [];
-    const app = await serving.run(true, () =>
+    const app = await serving.run({ route: "t", pii: new Set(), secrets: new Set() }, () =>
       createApp({
         topology: topology({ web: { modules: ["app"], adapter: "node" } }),
         ctx: createCtx({ mode: "sim", seed: 1337 }),
@@ -84,7 +84,7 @@ describe("a runner started inside a request", () => {
   it("still refuses a write after an await inside the request", async () => {
     refuseModuleWrites();
     const { counter, bump } = fixtureOf();
-    const thrown = await serving.run(true, async () => {
+    const thrown = await serving.run({ route: "t", pii: new Set(), secrets: new Set() }, async () => {
       await Promise.resolve();
       try {
         await tx(bump, { n: 2 });

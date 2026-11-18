@@ -19,7 +19,7 @@ Undo one caller's writes: `stores.board.undoWhere((e) => e.meta?.caller === call
 
 An API route's action declares `output` and returns `ok(value)` of its type, and its guards, loaders and actions get `bearer` beside `caller` (keel-api).
 
-**Where:** `loader`/`action` only in `*.server.ts` (E1551). A loader or action naming `stores`, or a live loader, in a module a `client` or `static` deployable serves is E1558; place that module in a `node` deployable. Server code never writes module-level stores.
+**Where:** `loader`/`action` only in `*.server.ts` (E1551). A loader or action naming `stores`, or a live loader, in a module a `client` or `static` deployable serves is E1558; place that module in a `node` deployable. Server code never writes module-level stores: `tx`, `restore`, `undo`, `undoWhere` there throw E1256 in a request and in work it schedules (timers too).
 
 **Background work:** `export const runners = [...]` (`{ run(ctx, signal) }`) in `modules/<id>/runners.server.ts`; a rejected `run` runs again 1,000 ms later.
 

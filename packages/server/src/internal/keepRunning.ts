@@ -25,7 +25,7 @@ export async function keepRunning(
   while (!signal.aborted) {
     const secrets = new Set<string>();
     const { result: ran, frames } = await caught(
-      () => serving.run(false, () => requestSecrets.run(secrets, () => runner.run(ctx, signal))),
+      () => serving.run(undefined, () => requestSecrets.run(secrets, () => runner.run(ctx, signal))),
       read,
     );
     if (ran.ok || signal.aborted) return;

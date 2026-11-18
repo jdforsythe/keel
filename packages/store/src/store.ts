@@ -23,6 +23,7 @@ import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
 import { secretGuard } from "./internal/secretGuard.ts";
 import { storePayloads } from "./internal/storePayloads.ts";
+import { storeReads } from "./internal/storeReads.ts";
 import { trim } from "./internal/trim.ts";
 import { undeclared } from "./internal/undeclared.ts";
 import { unpersisted } from "./internal/unpersisted.ts";
@@ -133,6 +134,9 @@ export function store<T extends object>(
     if (registry === registries.shared) moduleWrites.check?.(id);
   };
 
+  // Creating and reading a store notes it to the read tap, if one is set (k.leave Snapshots).
+  const read = (): void => storeReads.note?.(id);
+
   // Drop the last entry and replay the rest from the base, raising the head; false when the log is empty.
   const drop = (): boolean => {
     if (rows.length === 0) return false;
@@ -204,12 +208,16 @@ export function store<T extends object>(
     schema,
     payloads,
     get(key) {
+      read();
       const cell = cells.get(key);
       if (cell === undefined) root.get();
       else cell.get();
       return current[key];
     },
-    select: (fn) => computed(() => fn(root.get())),
+    select: (fn) => {
+      read();
+      return computed(() => fn(root.get()));
+    },
     check(state) {
       const parsed = schema.parse(state);
       if (!parsed.ok)
@@ -219,14 +227,17 @@ export function store<T extends object>(
       return ok(parsed.value);
     },
     head() {
+      read();
       version.get();
       return seq;
     },
     log() {
+      read();
       version.get();
       return rows.map((r) => r.entry);
     },
     snapshot(options) {
+      read();
       version.get();
       // No secret leaves the store: every entry up to the last whose payload holds one folds into `initial` (rfc:0071).
       let cut = 0;
@@ -372,6 +383,7 @@ export function store<T extends object>(
     else waiting.refuse();
   }
   making = false;
+  read();
   registryPulse.fire();
   return self;
 }

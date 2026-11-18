@@ -158,6 +158,13 @@ const ROWS: readonly Row[] = [
     "k.schema",
   ],
   [
+    "E1107",
+    "a .pii() class reaching #k-state that the module's clientPii does not list",
+    "",
+    "add the class to clientPii, or make the store in a *.server.ts file",
+    "k.leave",
+  ],
+  [
     "E1111",
     "a .pii() or s.secret node, or a schema it cannot read, in a route params or search",
     "A path or query reaches browser history and proxy logs, which no redaction reaches.",
@@ -315,8 +322,8 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1256",
-    "a tx on a module store while createApp serves a request",
-    "Module stores are process-wide: a write reaches every later request and never the browser, which resumes with the store at its initial state.",
+    "tx, restore, undo or undoWhere on a module store during a request, or in work it scheduled",
+    "Module stores are process-wide. The check follows async context, not data: a callback registered at module load is not checked.",
     "return the rows as loader data, or name the store in the loader's stores factory",
     "k.resume",
   ],
@@ -666,6 +673,13 @@ const ROWS: readonly Row[] = [
     "Internal entries are kernel and stdlib seams, such as the server state runner.",
     "import { report } from '@keel/ctx/internal' -> produce the event through a public API",
     "k.security",
+  ],
+  [
+    "E1577",
+    "an uncaught exception or unhandled rejection in a served process",
+    "Production drains for at most 10 s and exits 1 for a supervisor to restart; dev keeps serving.",
+    "catch the error where it is thrown",
+    "k.leave",
   ],
   [
     "E1601",

@@ -1,5 +1,5 @@
 # k.defaults: Queued default actions
-status: proposed
+status: conformance-covered
 
 What the browser does for an event the pre-resume queue holds (k.runtime, k.resume Replay), so that an action fired before its island resumes happens once.
 

@@ -35,7 +35,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.runtime | DOM runtime and islands | conformance-covered | nodes |
 | k.resume | Served documents, resume | conformance-covered | regions, layout islands |
 | k.claim | Claim order | conformance-covered | eager elements |
-| k.defaults | Queued default actions | proposed | submit once |
+| k.defaults | Queued default actions | conformance-covered | submit once |
 | k.place | Placed props | conformance-covered | calls are content |
 | k.router | Routes | conformance-covered | params |
 | k.guards | Guards | conformance-covered | redirects |

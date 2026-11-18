@@ -1,6 +1,7 @@
 import type { Level } from "@keel/router/internal";
 import { E1255 } from "@keel/runtime-dom/internal";
 import type { JsonValue, KeelError } from "@keel/schema";
+import { storeReads } from "@keel/store/internal";
 import type { ChainInput } from "./ChainInput.ts";
 import type { Rendered } from "./Rendered.ts";
 import { attempted } from "./attempted.ts";
@@ -24,11 +25,13 @@ const defaultError = (e: KeelError<string, unknown>): string =>
  * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a bound
  * (`data-k`) element outside nested levels' islands, however it was built (template or base element), is an island: it gets
  * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup). `eager` is whether a level's
- * render placed an element made before the op placing it (E1257, k.claim Server).
+ * render placed an element made before the op placing it (E1257, k.claim Server). `touched` holds the ids of the stores
+ * island levels' renders created, looked up or read.
  */
 export function renderChain(input: ChainInput): Rendered {
   const { chain, failure, ctx } = input;
   const islands: Record<string, JsonValue> = {};
+  const touched = new Set<string>();
   let caught: KeelError<string, unknown> | null = null;
   const seen = { eager: false, nothing: false };
 
@@ -55,11 +58,20 @@ export function renderChain(input: ChainInput): Rendered {
       { toString: childHtml },
     );
     const base = { params: input.params, search: input.search, data: input.data[i] };
-    // An API route (k.api) has no component and is never rendered.
-    const out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, undefined, ctx) ?? "", seen);
+    // An API route (k.api) has no component and is never rendered. The stores the render creates, looks up or reads
+    // are noted (`storeReads`); an island level's go to `#k-state` (k.leave Snapshots).
+    const used = new Set<string>();
+    storeReads.note = (id) => used.add(id);
+    let out: ReturnType<typeof renderUnit>;
+    try {
+      out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, undefined, ctx) ?? "", seen);
+    } finally {
+      storeReads.note = null;
+    }
     if (typeof Element !== "undefined" && out instanceof Element && islandIn(out)) {
       out.setAttribute("data-k-island", lvl.id);
       islands[lvl.id] = input.props(i);
+      for (const id of used) touched.add(id);
     }
     return `${last ? input.prepend : ""}${toHtml(out)}`;
   };
@@ -82,5 +94,5 @@ export function renderChain(input: ChainInput): Rendered {
       : failure?.bare === true
         ? errorAt(failure.level, failure.error)
         : levelAt(0);
-  return { html, islands, caught, eager: seen.eager, nothing: seen.nothing };
+  return { html, islands, touched, caught, eager: seen.eager, nothing: seen.nothing };
 }
