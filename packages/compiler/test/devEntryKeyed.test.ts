@@ -60,7 +60,7 @@ describe("keyed dev entries in the Vite plugin", () => {
       `import W from "./W.tsx";\nexport const routes = manifest({ "w.page": { path: "/", component: W } });\n`,
     );
     const p = keel();
-    p.configResolved({ root });
+    p.configResolved({ root, command: "serve" });
     const entry = `${ENTRY_PATH}?d=api`;
     const islands = `${ISLANDS_PATH}?d=api`;
     expect(p.resolveId(entry)).toBe(entry);

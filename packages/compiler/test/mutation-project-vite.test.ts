@@ -373,7 +373,7 @@ describe("vite: project inputs", () => {
     write("modules/x/routes.ts", routesTs("x"));
     write("modules/other/routes.ts", routesTs("other"));
     const p = keel();
-    p.configResolved({ root });
+    p.configResolved({ root, command: "serve" });
     await p.buildStart.call(undefined);
     expect(Object.keys(artifact("routes.json").data)).toEqual(["a.index", "b.index"]);
     expect(await p.load("/@keel/entry.ts")).toBe(
@@ -398,7 +398,7 @@ describe("vite: project inputs", () => {
     );
     for (const m of ["z", "a", "m"]) write(`modules/${m}/routes.ts`, routesTs(m));
     const p = keel();
-    p.configResolved({ root });
+    p.configResolved({ root, command: "serve" });
     const all = { zeta: ["z"], api: ["a"], mid: ["m"] };
     expect(await p.load("/@keel/entry.ts")).toBe(
       entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev"),
@@ -422,12 +422,36 @@ describe("vite: project inputs", () => {
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(msg);
     write("topology.ts", `export default { api: { modules: ["a"], adapter: "node" } };\n`);
     const q = keel();
-    q.configResolved({ root });
+    q.configResolved({ root, command: "serve" });
     expect(await q.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
     const b = keel();
     b.configResolved({ root, command: "build" });
     expect(await b.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
   });
+
+  it(
+    "gives the production entries when Vite reports no command; only serve gives dev",
+    { timeout: 30000 },
+    async () => {
+      write(
+        "topology.ts",
+        `export default { web: { modules: ["a"], adapter: "client" }, api: { modules: ["a"], adapter: "node" } };\n`,
+      );
+      write("modules/a/routes.ts", routesTs("a"));
+      const all = { web: ["a"], api: ["a"] };
+      const client = (mode: "dev" | "production") =>
+        entryCode(["/modules/a/routes.ts"], "virtual:keel.css", {}, all, undefined, mode);
+      const none = keel();
+      none.configResolved({ root });
+      expect(await none.load("/@keel/entry.ts")).toBe(client("production"));
+      const serve = keel();
+      serve.configResolved({ root, command: "serve" });
+      expect(await serve.load("/@keel/entry.ts")).toBe(client("dev"));
+      process.env.KEEL_DEPLOYABLE = "api";
+      expect(await none.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "production"));
+      expect(await serve.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
+    },
+  );
 
   it("throws topology problems when building and warns when serving", { timeout: 30000 }, async () => {
     write("topology.ts", `export default { a: 5, b: { modules: [], adapter: 'x' } };\n`);

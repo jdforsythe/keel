@@ -126,7 +126,7 @@ describe("vite plugin: resume entry (RFC 0046)", () => {
     );
     process.env.KEEL_DEPLOYABLE = "api";
     const p = keel();
-    p.configResolved({ root });
+    p.configResolved({ root, command: "serve" });
     expect(p.resolveId(ENTRY_PATH)).toBe(ENTRY_PATH);
     expect(p.resolveId(ISLANDS_PATH)).toBe(ISLANDS_PATH);
     expect(await p.load(ENTRY_PATH)).toBe(resumeEntry(undefined, "dev"));

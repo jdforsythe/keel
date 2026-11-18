@@ -160,7 +160,7 @@ export default function (): {
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
   let root = process.cwd();
-  let command: "build" | "serve" = "serve";
+  let command: "build" | "serve" | undefined;
   let server: DevServer | undefined;
   let topology: Topology | undefined;
   let routes: Record<string, RouteEntry> = {};
@@ -438,7 +438,7 @@ export default function (): {
     },
     configResolved(config) {
       root = config.root;
-      command = config.command ?? "serve";
+      command = config.command;
       readTopology();
     },
     configureServer(s) {
