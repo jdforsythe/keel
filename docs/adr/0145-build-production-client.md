@@ -5,7 +5,7 @@
 **Context.** The generated client and resume entries computed `mode` from `import.meta.env.DEV`, and the client entry ran the inspect reporter under the same flag. Vite sets `DEV` from `NODE_ENV` once it is set, by the shell or by a project `.env`, and `keel build` passed the shell environment to `vite build` unchanged. A build under `NODE_ENV=staging` or `NODE_ENV=test` therefore shipped a dev client: thrown messages on screen and every store snapshot posted to `/__keel/inspect`, beside a server that runs in production.
 
 **Decision.**
-- D1: the Vite plugin writes `mode` into the client and resume entries as a string literal chosen by Vite's command: `"dev"` when Vite serves, `"production"` when it builds. `entryCode` and `resumeEntry` take `mode: 'dev' | 'production'`, default `'production'`; neither entry reads `import.meta.env`, and the reporter is guarded by `mode === "dev"`, so a build drops it.
+- D1: the Vite plugin writes `mode` into the client and resume entries as a string literal chosen by Vite's command: `"dev"` only when the command is exactly `serve`, `"production"` for any other command or none, so an entry fails closed. `entryCode` and `resumeEntry` take `mode: 'dev' | 'production'`, default `'production'`; neither entry reads `import.meta.env`, and the reporter is guarded by `mode === "dev"`, so a build drops it.
 - D2: `keel build` runs every Vite build it starts (`viteRun`, `shellBuild`) with `NODE_ENV=production`. A `.env` `NODE_ENV` has no effect on it; `keel dev` is unchanged.
 - D3: the override is silent. A successful build prints only its trailer.
 - D4: a bare `vite build` also gives production kernel entries. There is no way to build a dev client; the inspector smoke serves golden-1 with `keel dev`.
