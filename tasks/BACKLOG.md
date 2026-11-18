@@ -831,7 +831,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0729 red-team (rfc:0107), low, bounded: the scrub costs about 1.2 s of event-loop time for a 790 KB body of 99,000 secret items whose action throws (350 ms when it returns, 30 ms for the parse alone) · server
 - [ ] 0730 docs: RFC 0108 D2 lists the wrong subpaths: `./action` and `./tools` reach `@keel/testing` through `@keel/cli`; `./group` does not · docs
 - [x] 0731 reactive: a throwing `onDispose` hook stops `disposeOwned`, so the children after it are never disposed · reactive · CLOSED 2026-11-17: every owned node is disposed and every hook runs; the first error in disposal order is rethrown; the k.reactive sentence and a conformance case are still owed (an RFC)
-- [ ] 0732 spec: k.reactive does not say what a throwing `onDispose` hook does; the code disposes everything and rethrows the first error in disposal order, and `scope(fn)`'s own error wins over a hook's. Add the sentence and a conformance case (an RFC) · reactive · spec
+- [x] 0732 spec: k.reactive does not say what a throwing `onDispose` hook does; the code disposes everything and rethrows the first error in disposal order, and `scope(fn)`'s own error wins over a hook's. Add the sentence and a conformance case (an RFC) · reactive · spec
 - [ ] 0733 check: E1111 reads a schema object changed after its literal (`Object.defineProperty(p, ...)`, `p.x = s.secret()`, `Object.assign(p, ...)`) as clean; read a mutated binding as unread · check
 - [x] 0734 std-sessions: `session.ts` creates inner real ctxs that are never disposed, so each leaks a window online/offline listener pair once `Ctx.dispose` exists; fix with RFC 0115 · std-sessions · k.ctx
 
