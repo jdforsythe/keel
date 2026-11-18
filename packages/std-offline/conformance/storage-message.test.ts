@@ -1,5 +1,5 @@
 // Spec: std.offline Conformance: "An `offline.storage` err's `message` is the outbox `id`, whatever was thrown."
-// Spec: std.offline Write paragraph: "A rejected `ctx.storage` write in `send`, a flush or `'mine'` leaves the entry `failed` with `offline.storage` in memory and releases the flush, posting no more. Its `message` is the outbox `id`, never the thrown text."
+// Spec: std.outbox, Errors: "An `offline.storage` or `offline.owner` err is `{ code, message, data: {} }`, its `message` the outbox `id`, never thrown text."
 // Seed 1337
 import type { SimCtx } from "@keel/ctx";
 import { resolve, send } from "@keel/std-offline";
