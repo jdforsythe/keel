@@ -1,6 +1,6 @@
 # Brand and style guide
 
-Monastic Utilitarianism (Rev. 2024.04). Applies to everything Keel ships or publishes: the GitHub README, the framework site, example apps, the inspector, scaffold templates, docs, and diagnostics. Marks: `docs/brand/keel-mark.svg`, `docs/brand/keel-logo-lockup.svg`.
+Monastic Utilitarianism (Rev. 2024.04). Applies to everything Keel ships or publishes: the GitHub README, the framework site, example apps, the inspector, scaffold templates, docs, and diagnostics. Marks: `docs/brand/keel-mark.svg`, `docs/brand/keel-logo-lockup.svg`; the editable source of the mark is `docs/brand/keel-mark.source.svg`.
 
 ## 1. Philosophy
 Keel is a full-stack web framework whose primary author is a coding agent, not a person. The brand rejects software marketing tropes (gradients, glassmorphism, AI illustrations, nautical kitsch) in favor of archival authority, mid-century technical manuals, and printed mathematical texts. Every visual device has structural meaning.
@@ -30,10 +30,10 @@ A high-contrast parchment surface with deep charcoal text. ISO Ochre is reserved
 - Diagnostic block: monospace container with the code (`E1042`), the path (`src/cart/add.tsx:14:7`), one line of message, and the exact unified diff hunk (`-`, `+`). This is the OUTPUT.md diagnostic shape rendered.
 
 ## 5. Voice and vocabulary
-The sentence-level rules live in `docs/VOICE.md` (first person, reader as the hero, concrete nouns and numbers, no em dashes, no reversals, no hedging, the full banned list). Two brand-level rules: claims never exceed what the ledger shows (PRINCIPLES 11), and the only nautical term is *Keel*.
+The sentence-level rules live in `docs/VOICE.md` (first person, reader as the hero, concrete nouns and numbers, no em dashes, no reversals, no hedging, the full banned list). `tooling/voice-lint.mjs` enforces the mechanical rules as V0003 in `pnpm check`. Two brand-level rules: claims never exceed what the ledger shows (PRINCIPLES 11), and the only nautical term is *Keel*.
 
 ## 6. Where it lives in code
-- `@keel/ui` tokens: the scaffold `project` template emits `tokens.ts` with this palette, these fonts, radius 0, and the hairline divider, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/inspector`, `apps/sessions`.
-- Fonts are self-hosted (`@keel/ui/fonts`), never fetched from a third party at runtime (THREAT-MODEL CSP).
+- `brandTokens` from `@keel/ui/brand` (`packages/ui/src/brand/brandTokens.ts`) holds this palette (`surface`, `surfaceLow`, `card`, `text`, `textSecondary`, `accent`, `verified`, `error`, `divider`), the two font stacks, radius `none` (0), the `hairline` size and border, and a light scheme only. The scaffold `project` template emits a `tokens.ts` that exports `brandTokens`, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/inspector`, `apps/sessions`.
+- Fonts are self-hosted (`@keel/ui/fonts`, `packages/ui/fonts/fonts.css` with the two variable woff2 files and their licenses), never fetched from a third party at runtime (THREAT-MODEL CSP).
 
-verified: 335b406eb85bf0273e30de60ea2008bf5b318b2b
+verified: 60c2812b99c0cf99c98c2abd4eac4d6a99b5831a
