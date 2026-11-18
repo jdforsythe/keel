@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { emit, mode } from "../tooling/output.ts";
 import type { Diag, Summary } from "../tooling/output.ts";
+import { verdict } from "./verdict.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -149,6 +150,8 @@ async function runTask(a: Args, task: string, now: Date, t0: number): Promise<bo
   let iterations = 0;
   let converged = false;
   let checkTrailer = "";
+  let checkExit = 0;
+  let testExit = 0;
   let testTrailer = "";
   const maxIter = a.runner === "none" ? 1 : a.maxIter;
 
@@ -166,7 +169,9 @@ async function runTask(a: Args, task: string, now: Date, t0: number): Promise<bo
     checkTrailer = lastLine(check.stdout);
     testTrailer = lastLine(test.stdout);
     const passed: unknown = await Promise.resolve(passFn()).catch(() => false);
-    converged = passed === true;
+    checkExit = check.code;
+    testExit = test.code;
+    converged = verdict({ checkExit, testExit, passed });
     if (!converged && iterations < maxIter) {
       const c = await run("pnpm", ["check"]);
       const t = await run("pnpm", ["test"]);
@@ -190,6 +195,8 @@ async function runTask(a: Args, task: string, now: Date, t0: number): Promise<bo
     unsafeCount,
     checkTrailer,
     testTrailer,
+    checkExit,
+    testExit,
     durationMs,
     startedAt: now.toISOString(),
   });
