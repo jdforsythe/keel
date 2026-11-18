@@ -46,10 +46,10 @@ export const freePort = () =>
     });
   });
 
-/** Copy apps/golden-1 into `dir` (a temporary folder). */
-export async function copyApp(dir) {
-  await cp(app, dir, { recursive: true, filter: (src) => src === app || !SKIP.has(basename(src)) });
-  await symlink(join(app, "node_modules"), join(dir, "node_modules"), "dir");
+/** Copy the app at `from` (apps/golden-1 when left out) into `dir` (a temporary folder). */
+export async function copyApp(dir, from = app) {
+  await cp(from, dir, { recursive: true, filter: (src) => src === from || !SKIP.has(basename(src)) });
+  await symlink(join(from, "node_modules"), join(dir, "node_modules"), "dir");
 }
 
 /** Copy apps/golden-1 into `dir` and build it there; resolves to whether the build passed. */
