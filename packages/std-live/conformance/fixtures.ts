@@ -134,18 +134,25 @@ export function createServer() {
   };
 }
 
-export type Read = (ctx: SimCtx) => Promise<Result<BoardValue, KeelError<string, unknown>>>;
+export type Read = (ctx: SimCtx, signal?: AbortSignal) => Promise<Result<BoardValue, KeelError<string, unknown>>>;
 
 /** A read the test resolves by hand; `calls()` counts its invocations, `at(i)` is the clock reading of call i. */
 export function controlled() {
+  const signals: (AbortSignal | undefined)[] = [];
   const pending: { at: number; done: (r: Result<BoardValue, KeelError<string, unknown>>) => void }[] = [];
-  const read: Read = (c) =>
+  const read: Read = (c, signal) =>
     new Promise((done) => {
+      signals.push(signal);
       pending.push({ at: c.clock.now(), done });
     });
   return {
     read,
     calls: (): number => pending.length,
+    signal(i: number): AbortSignal {
+      const s = signals[i];
+      if (s === undefined) throw new Error(`read ${i} got no signal`);
+      return s;
+    },
     at(i: number): number {
       const p = pending[i];
       if (p === undefined) throw new Error(`no read ${i}`);
