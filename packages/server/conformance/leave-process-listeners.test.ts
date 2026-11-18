@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.leave, Conformance "Under `keel dev` the same throw writes one E1577 holding the thrown text, and a later GET answers 200."
+// Spec: k.leave, Conformance "`createApp` leaves `process.listenerCount('uncaughtException')` and `('unhandledRejection')` as they were."
 // Seed: 1337 (no generated inputs). The process is this test's own: it adds and removes nothing.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";

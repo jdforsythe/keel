@@ -32,7 +32,7 @@ const late = loader({ output: Data }, () => {
   return answer("late");
 });
 const quiet = loader({ output: Data }, () => answer("quiet"));
-const save = action({ input: Save }, ({ input }) => {
+const save = action({ input: Save }, (input) => {
   ${TIMER}(() => { throw new Error("failed for " + input.email); }, 30);
   return Promise.resolve(ok(null));
 });

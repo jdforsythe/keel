@@ -1,7 +1,7 @@
 import { tx } from "@keel/store";
 // @vitest-environment happy-dom
 // Spec: k.resume, Conformance "Served documents resume in a client module graph of their own (k.testing `resumeDocument`): a store created while a level renders restores with no warning; a module store is at its initial state."
-// Spec: k.resume, Stores "A store created in the request goes to `#k-state`; at resume its snapshot restores the store of its id in `stores`, else one an island creates resuming; else E1253."
+// Spec: k.resume, Stores "A store an island level's render touches goes to `#k-state` (k.leave); at resume its snapshot restores the store of its id in `stores`, else one an island creates resuming; else E1253."
 // Seed: 1337 (no generated inputs). The server side is this test's module graph; the client side is the graph `resumeDocument` makes
 // for `routes: () => import(...)`, with its own `@keel/store` and so its own module registry. `resumeDocument` rejects with E1720 on a resume warning.
 import { resumeDocument } from "@keel/testing";

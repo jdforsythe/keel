@@ -28,7 +28,7 @@ const slow = loader({ output: Data }, () => new Promise((resolve) => {
   process.stdout.write("slow-started\\n");
   ${TIMER}(() => resolve(ok({ title: "slow" })), 500);
 }));
-const hang = loader({ output: Data }, () => new Promise(() => undefined));
+const hang = loader({ output: Data }, () => new Promise(() => process.stdout.write("hang-started\\n")));
 const quiet = loader({ output: Data }, () => answer("quiet"));
 if (process.env.LEAVE_MODE === "reject") void Promise.reject(new Error(${JSON.stringify(THROWN)}));
 export const routes = manifest({

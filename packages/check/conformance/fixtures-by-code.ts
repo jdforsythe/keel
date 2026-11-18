@@ -224,14 +224,14 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       manifest("app"),
       f(
         "modules/app/Card.tsx",
-        `${SCHEMA}import { store } from '@keel/store'\nexport const card = store(s.object({ email: s.string().pii('contact') }), { email: '' })\n`,
+        `${SCHEMA}import { store } from '@keel/store'\nexport const Card = store(s.object({ email: s.string().pii('contact') }), { email: '' })\n`,
       ),
     ],
     clean: [
       manifest("app", ", clientPii: ['contact']"),
       f(
         "modules/app/Card.tsx",
-        `${SCHEMA}import { store } from '@keel/store'\nexport const card = store(s.object({ email: s.string().pii('contact') }), { email: '' })\n`,
+        `${SCHEMA}import { store } from '@keel/store'\nexport const Card = store(s.object({ email: s.string().pii('contact') }), { email: '' })\n`,
       ),
     ],
   },

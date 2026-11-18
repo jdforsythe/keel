@@ -3,7 +3,7 @@ import { action, guard, loader, manifest } from "@keel/router";
 import type { RouteProps } from "@keel/router";
 // @vitest-environment happy-dom
 // Spec: k.resume, Conformance "A loader, guard or component writing a module store fails its level with a throw starting `E1256`, the store unchanged; such an action answers 500. Two requests in turn never see each other's request stores."
-// Spec: k.resume, Rules "E1256 `tx` on a module store during a request."
+// Spec: k.resume, Rules "E1256 a write to a module store during a request (k.leave)."
 // Spec: k.resume, Stores "During a request `createApp` serves (guards, loaders, action, renders, across `await`s), `tx` on a module store (k.store Registries) throws E1256, changing nothing: a level fails as a throw does; an action answers 500."
 // Property seed: 1337 (fc.assert seed below). Real createApp over a module store defined in this test graph; the store sits in the module registry.
 import type { KeelError } from "@keel/schema";
@@ -67,6 +67,19 @@ const viaFactory = loader({ output: Data, stores: factory }, ({ stores }) => {
 /** A loader that only reads `board`. */
 const reading = loader({ output: Data }, () => Promise.resolve(ok({ title: board.get("rows") })));
 
+/** A loader that awaits, then calls one guarded operation other than `tx` on `board`. */
+const operations = {
+  restore: () => board.restore(PRISTINE),
+  undo: () => board.undo(),
+  undoWhere: () => board.undoWhere(() => true),
+} as const;
+const operating = (name: keyof typeof operations) =>
+  loader({ output: Data }, async () => {
+    await Promise.resolve();
+    operations[name]();
+    return ok({ title: "t" });
+  });
+
 const guarded = guard({ redirect: "rm.login" }, async () => {
   await Promise.resolve();
   write("leak");
@@ -108,6 +121,9 @@ const routes = manifest({
   "rm.before": { path: "/before", loader: beforeAwait, component: shown },
   "rm.afterEl": { path: "/after-el", loader: afterAwait, component: shown, errorElement },
   "rm.guarded": { path: "/guarded", guard: guarded, component: () => el("main", { "data-page": "1" }, "guarded") },
+  "rm.restore": { path: "/op-restore", loader: operating("restore"), component: shown },
+  "rm.undo": { path: "/op-undo", loader: operating("undo"), component: shown },
+  "rm.undoWhere": { path: "/op-undo-where", loader: operating("undoWhere"), component: shown },
   "rm.render": { path: "/render", component: WritingPage },
   "rm.act": { path: "/act", component: () => el("main", { "data-page": "1" }, "act") },
   "rm.made": { path: "/made", loader: madeHere, component: shown },
@@ -139,7 +155,7 @@ const unchanged = (): void => {
 
 const e1256 = (log: Lines): string[] => log.lines.filter((l) => l.includes("E1256"));
 
-describe("k.resume: E1256 `tx` on a module store during a request", () => {
+describe("k.resume: E1256 a write to a module store during a request", () => {
   it.each(MODES)(
     "a loader that awaits then writes a module store fails its level as a throw does (%s): 500, the store unchanged, an E1256 diag",
     async (mode) => {
@@ -149,6 +165,25 @@ describe("k.resume: E1256 `tx` on a module store during a request", () => {
       expect(doc.text).not.toContain('data-page="1"');
       expect(e1256(log)).not.toHaveLength(0);
       unchanged();
+    },
+  );
+
+  it.each([
+    ["restore", "/op-restore"],
+    ["undo", "/op-undo"],
+    ["undoWhere", "/op-undo-where"],
+  ])(
+    "a loader calling `%s` on a module store fails its level with E1256, state and head as they were",
+    async (_name, path) => {
+      write("seed");
+      const head = board.head();
+      const log: Lines = { lines: [] };
+      const doc = await serveRoutes(routes, MODULES, path, { mode: "production", log });
+      expect(doc.status).toBe(500);
+      expect(doc.text).not.toContain('data-page="1"');
+      expect(e1256(log)).not.toHaveLength(0);
+      expect(board.get("rows")).toBe("seed");
+      expect(board.head()).toBe(head);
     },
   );
 

@@ -94,11 +94,14 @@ describe("k.leave Process: server.mjs handles an uncaught exception or rejection
   );
 
   test(
-    "two throws 10 ms apart write two E1577 records and the process exits 1",
+    "two throws while a request is in flight: the drain is still running at the second, which writes its record and changes nothing else: two E1577 records, exit 1",
     async () => {
       const server = await up();
+      void fetch(`http://127.0.0.1:${server.port}/hang`).catch(() => 0);
+      expect(await server.until(() => server.text().includes("hang-started"))).toBe(true);
       expect(await GET(server, "/twice")).toBe(200);
       expect(await server.until(() => server.e1577().length >= 2)).toBe(true);
+      expect(server.child.exitCode).toBeNull();
       expect(await server.exited).toBe(1);
       const records = server.e1577();
       expect(records).toHaveLength(2);
