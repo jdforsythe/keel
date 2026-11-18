@@ -2,24 +2,24 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1110,
-    "probabilistic": 333,
+    "example": 1132,
+    "probabilistic": 334,
     "exhaustive": 15,
-    "proven": 57,
+    "proven": 60,
     "monitored": 4
   },
   "mutation": {
     "packages": {
       "check": {
-        "score": 74.52,
+        "score": 74.25,
         "threshold": 70
       },
       "cli": {
-        "score": 79.59,
+        "score": 80.13,
         "threshold": 70
       },
       "compiler": {
-        "score": 79.26,
+        "score": 77.45,
         "threshold": 70
       },
       "ctx": {
@@ -35,11 +35,11 @@
         "threshold": 80
       },
       "router": {
-        "score": 85.47,
+        "score": 85.15,
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 77.38,
+        "score": 76.81,
         "threshold": 70
       },
       "scaffold": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 82.07,
+        "score": 82.03,
         "threshold": 70
       },
       "services": {
@@ -63,11 +63,11 @@
         "threshold": 80
       },
       "testing": {
-        "score": 86.64,
+        "score": 87.63,
         "threshold": 70
       },
       "ui": {
-        "score": 74.31,
+        "score": 75.18,
         "threshold": 70
       }
     },
@@ -9911,7 +9911,7 @@
       "pkg": "router",
       "name": "Form",
       "file": "packages/router/src/Form.ts",
-      "rung": "probabilistic"
+      "rung": "proven"
     },
     {
       "pkg": "router",
@@ -10193,7 +10193,7 @@
       "pkg": "std-headless",
       "name": "Disclosure",
       "file": "packages/std-headless/src/Disclosure.ts",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "pkg": "std-headless",
@@ -11135,6 +11135,42 @@
     },
     {
       "item": "k.check#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.claim#1",
+      "rung": "proven"
+    },
+    {
+      "item": "k.claim#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.claim#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.claim#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.claim#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.claim#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.claim#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.claim#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.claim#9",
       "rung": "example"
     },
     {
@@ -12118,6 +12154,58 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.resume#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.resume#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.resume#13",
+      "rung": "example"
+    },
+    {
       "item": "k.reveal#1",
       "rung": "probabilistic"
     },
@@ -12819,6 +12907,10 @@
     },
     {
       "item": "k.testing#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#14",
       "rung": "example"
     },
     {

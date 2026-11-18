@@ -1,5 +1,5 @@
 # k.claim: Claim order
-status: proposed
+status: conformance-covered
 
 Where an element is made, so that resume (k.runtime, k.resume) claims its own server element.
 
