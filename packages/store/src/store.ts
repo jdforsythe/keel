@@ -41,12 +41,18 @@ import type { Transaction } from "./types/Transaction.ts";
  * `snapshot()` folds every entry up to the last such one into `initial`, so no secret is written (rfc:0071). A state
  * schema holding `s.secret` throws E1303 at construction. `head()` counts commits and undos that undo; each entry's `id`
  * is the head its commit produced, and a snapshot carries `head`. `keys` holds the `{ name, key }` of the latest
- * `logLimit` commits made with a `key`; a write whose transaction and `key` it holds commits nothing (k.sync).
+ * `keyLimit` commits made with a `key` (default 1024, a positive integer); a write whose transaction and `key` it holds
+ * commits nothing (k.sync).
  */
 export function store<T extends object>(
   schema: Schema<T>,
   initial: NoInfer<T>,
-  options?: { readonly id?: string; readonly clock?: () => number; readonly logLimit?: number },
+  options?: {
+    readonly id?: string;
+    readonly clock?: () => number;
+    readonly logLimit?: number;
+    readonly keyLimit?: number;
+  },
 ): Store<T> {
   const id = options?.id ?? `store.${++counter.next}`;
   secretGuard(id, schema);
@@ -56,6 +62,9 @@ export function store<T extends object>(
   const limit = options?.logLimit ?? LOG_LIMIT;
   if (!Number.isInteger(limit) || limit < 0)
     throw new Error(`store ${id}: logLimit ${limit} is not a non-negative integer`);
+  const keyLimit = options?.keyLimit ?? 1024;
+  if (!Number.isInteger(keyLimit) || keyLimit < 1)
+    throw new Error(`store ${id}: keyLimit ${keyLimit} is not a positive integer`);
   const start = copy(schema, initial);
   if (!start.ok) throw new Error(`store ${id}: initial state invalid: ${start.error.message}`);
   let base = freeze(start.value);
@@ -63,9 +72,9 @@ export function store<T extends object>(
   const version = signal(0);
   let current = base;
   let rows: Row<T>[] = [];
-  // The `{ name, key }` of the latest `limit` commits made with a `key`, oldest first (k.sync Write key).
+  // The `{ name, key }` of the latest `keyLimit` commits made with a `key`, oldest first (k.sync Write key).
   let keys: Snapshot<T>["keys"] = [];
-  const recent = (list: Snapshot<T>["keys"]): Snapshot<T>["keys"] => list.slice(Math.max(0, list.length - limit));
+  const recent = (list: Snapshot<T>["keys"]): Snapshot<T>["keys"] => list.slice(-keyLimit);
   let ver = 0;
   // The head: commits and undos that undid; each commit's entry id.
   let seq = 0;

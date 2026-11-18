@@ -10,10 +10,14 @@ const Bag = s.object({ items: s.array(s.int()) });
 const Push = s.object({ v: s.int() });
 const CAP = 8;
 
-function make(concurrent: "reject" | "rebase", logLimit?: number) {
+function make(concurrent: "reject" | "rebase", logLimit?: number, keyLimit?: number) {
   const box: { kit?: ReturnType<typeof build> } = {};
   const build = () => {
-    const bag = store(Bag, { items: [] }, logLimit === undefined ? {} : { logLimit });
+    const bag = store(
+      Bag,
+      { items: [] },
+      { ...(logLimit === undefined ? {} : { logLimit }), ...(keyLimit === undefined ? {} : { keyLimit }) },
+    );
     const push = transaction(bag, "bag.push", Push, (st, { v }) => ({ items: [...st.items, v] }), { concurrent });
     invariant(bag, (st) => st.items.length <= CAP);
     return { bag, push };
@@ -105,26 +109,28 @@ describe("@keel/store sync properties", () => {
     );
   });
 
-  it("keys is the model: the latest logLimit keyed commits, oldest first, whatever undo and folding do", () => {
+  it("keys is the model: the latest keyLimit keyed commits, oldest first, whatever logLimit, undo and folding do", () => {
     fc.assert(
       fc.property(
         modeArb,
         fc.array(stepArb, { maxLength: 40 }),
         fc.option(fc.nat({ max: 4 }), { nil: undefined }),
-        (mode, steps, limit) => {
-          const k = make(mode, limit);
-          const cap = limit ?? 256;
+        fc.option(fc.integer({ min: 1, max: 4 }), { nil: undefined }),
+        (mode, steps, limit, keyLimit) => {
+          const k = make(mode, limit, keyLimit);
+          const cap = keyLimit ?? 1024;
           let model: string[] = [];
           for (const st of steps) {
             const held = st.kind === "push" && st.key !== undefined && model.includes(st.key);
             const head = k.bag.head();
-            const changed = step(k, st);
+            step(k, st);
             if (held) expect(k.bag.head()).toBe(head);
-            if (changed && st.kind === "push" && st.key !== undefined) model = [...model, st.key].slice(-cap);
-            if (cap === 0) model = [];
+            // A commit raises the head even when `logLimit` keeps no entry of it.
+            if (st.kind === "push" && st.key !== undefined && k.bag.head() > head)
+              model = [...model, st.key].slice(-cap);
             expect(k.bag.snapshot().keys).toEqual(model.map((key) => ({ name: "bag.push", key })));
           }
-          const dst = make(mode, limit);
+          const dst = make(mode, limit, keyLimit);
           expect(dst.bag.restore(JSON.parse(JSON.stringify(k.bag.snapshot()))).ok).toBe(true);
           expect(dst.bag.snapshot().keys).toEqual(k.bag.snapshot().keys);
           k.dispose();

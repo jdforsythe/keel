@@ -66,12 +66,12 @@ describe("@keel/store write keys", () => {
     k.dispose();
   });
 
-  it("logLimit 0 keeps no keys, so a repeated key commits", () => {
+  it("logLimit 0 still keeps keys, so a repeated key commits nothing", () => {
     const k = make(0);
     tx(k.push, { v: 1 }, { key: "a" });
-    expect(k.bag.snapshot().keys).toEqual([]);
+    expect(k.bag.snapshot().keys).toEqual([{ name: "bag.push", key: "a" }]);
     expect(tx(k.push, { v: 2 }, { key: "a" }).ok).toBe(true);
-    expect(k.bag.get("items")).toEqual([1, 2]);
+    expect(k.bag.get("items")).toEqual([1]);
     k.dispose();
   });
 
