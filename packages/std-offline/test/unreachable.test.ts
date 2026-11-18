@@ -1,5 +1,5 @@
-// A 502 `keel.unreachable` answer is a network failure, as a `module` service reads it (k.services): the entry stays
-// `queued`, whether the answer comes through a `module` service or to the outbox at its origin. Seed 1337.
+// A 502 `keel.unreachable` answer is a network failure, as a `module` service reads it (k.services): the outbox's
+// entry stays `queued`. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -34,19 +34,19 @@ test("through a module service a 502 keel.unreachable is api.network, so its ent
   const ctx = ctxWith("http://api.keel.invalid/save");
   const r = await service({ module: "api", schema: Api }).save({ body: body(ctx) }, ctx);
   expect(r.ok ? undefined : r.error.code).toBe("api.network");
-  expect(outcomeOf(r, false, Api.save)).toEqual({ state: "queued" });
+  expect(outcomeOf(r, false)).toEqual({ state: "queued" });
 });
 
-test("an outbox sending to its origin leaves that entry queued, and posts it again once the server answers", async () => {
+test("an outbox leaves that entry queued, and posts it again once the server answers", async () => {
   let up = false;
-  const ctx = ctxWith("https://app.example.com/save", () => up);
+  const ctx = ctxWith("http://api.keel.invalid/save", () => up);
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox("unreach.outbox", Api);
+    held.o = outbox("unreach.outbox", Api, { module: "api" });
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
-  const r = await send(ctx, o, "https://app.example.com", "save", { body: { title: "x" } }, { base: 0 });
+  const r = await send(ctx, o, "save", { body: { title: "x" } }, { base: 0, owner: "u1" });
   expect(r.state).toBe("queued");
   expect(o.get("entries").map((e) => e.state)).toEqual(["queued"]);
   up = true;

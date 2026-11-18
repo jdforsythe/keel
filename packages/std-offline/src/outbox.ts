@@ -1,7 +1,7 @@
 import { owner, scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { secretPathOf } from "@keel/schema/internal";
-import type { EndpointMap } from "@keel/services";
+import { type EndpointMap, service } from "@keel/services";
 import { store, transaction } from "@keel/store";
 import type { Outbox } from "./Outbox.type.ts";
 import { OutboxEntry } from "./OutboxEntry.schema.ts";
@@ -21,7 +21,8 @@ const Settle = s.object({
 const Resolve = s.object({ key: s.string(), resolution: Resolution });
 
 /**
- * Declare an outbox (std.offline) over a k.services `endpoints` map: the client store `id` with state `{ entries }`,
+ * Declare an outbox (std.offline) over the k.services `endpoints` map of module `module`'s routes, sent through
+ * `service({ module, schema: api })` with an undeclared 409 read as JSON: the client store `id` with state `{ entries }`,
  * changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. Inside a scope the store is created now and the outbox
  * stops flushing when that scope is disposed; outside one (a module-level declaration) it is created on first use and
  * lives as long as the module. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it. Throws E2651
@@ -30,7 +31,7 @@ const Resolve = s.object({ key: s.string(), resolution: Resolution });
 export function outbox<const D extends EndpointMap>(
   id: string,
   api: D,
-  opts: { readonly limit?: number; readonly maxBytes?: number } = {},
+  opts: { readonly module: string; readonly limit?: number; readonly maxBytes?: number },
 ): Outbox<D> {
   for (const [name, e] of Object.entries(api)) {
     const at = e.body === undefined ? null : secretPathOf(e.body.node);
@@ -39,19 +40,17 @@ export function outbox<const D extends EndpointMap>(
       throw Object.assign(new Error(message), { code: "E2651" });
     }
   }
-  const wire = Object.fromEntries(
-    Object.entries(api).map(([name, e]) => {
-      const errors = Object.fromEntries([409, 502, ...Object.keys(e.errors ?? {})].map((k) => [k, s.json()]));
-      return [name, { ...e, output: s.json(), errors }];
-    }),
+  const schema: EndpointMap = Object.fromEntries(
+    Object.entries(api).map(([name, e]) => [name, { ...e, errors: { 409: s.json(), ...e.errors } }]),
   );
+  const client = service({ module: opts.module, schema });
   let c: Config | undefined;
   const make = (): Config => {
     const st = store(OutboxState, { entries: [] }, { id });
     c = {
       id,
       api,
-      wire,
+      client,
       limit: opts.limit ?? 100,
       maxBytes: opts.maxBytes ?? 262_144,
       store: st,
@@ -68,6 +67,7 @@ export function outbox<const D extends EndpointMap>(
         const { head, error, ...plain } = e;
         return { entries: [...entries, { ...plain, base: head, state: "queued" as const }] };
       }),
+      owners: new WeakMap(),
       loads: new WeakMap(),
       live: true,
       busy: false,

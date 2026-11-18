@@ -1,18 +1,19 @@
 import type { Ctx } from "@keel/ctx";
-import { service } from "@keel/services";
 import { tx } from "@keel/store";
 import type { OutboxResult } from "../OutboxResult.ts";
 import type { Config } from "./Config.ts";
+import { fault } from "./fault.ts";
 import { field } from "./field.ts";
 import { outcomeOf } from "./outcomeOf.ts";
 import { persist } from "./persist.ts";
-import { storageError } from "./storageError.ts";
 
 const obj = (x: unknown): object => (typeof x === "object" && x !== null ? x : {});
 
 /**
- * Sends the outbox's `queued` entries in order, one request at a time (std.offline Flush), unless its flush is already
- * running, through a `base` service at the entry's origin whose answers `outcomeOf` reads. A network failure keeps the
+ * Sends the outbox's `queued` entries of the ctx's owner in order, one request at a time (std.offline Flush), unless its
+ * flush is already running, through the module's service, whose answers `outcomeOf` reads; with no owner given on the
+ * ctx it posts nothing. An entry whose owner stops being the ctx's while it is in flight and is not `sent` is `failed`
+ * with `offline.owner`. A network failure keeps the
  * entry queued, stops, and retries 1 s later doubling to 60 s on `ctx.clock` while online. A queued entry whose own
  * storage write (`send`, a `'mine'` `resolve`) has not settled is waited for in its place. An entry naming no endpoint
  * of the api is `failed` (`api.input`); a storage write that rejects fails the entry in hand (`offline.storage`) and
@@ -40,7 +41,8 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
   let key = "";
   try {
     for (;;) {
-      const e = c.store.get("entries").find((x) => x.state === "queued");
+      const who = c.owners.get(ctx);
+      const e = c.store.get("entries").find((x) => x.state === "queued" && x.owner === who);
       if (!c.live || !ctx.net.online() || e === undefined) break;
       // An entry whose own write to `ctx.storage` has not settled: wait for it, then look again (it may be `failed`).
       const writing = c.writes.get(e.key);
@@ -50,20 +52,22 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
       }
       key = e.key;
       await put(e.key, "sending", {});
-      const at = Object.hasOwn(c.api, e.endpoint) ? c.api[e.endpoint] : undefined;
-      const call = at && service({ base: e.origin, schema: c.wire })[e.endpoint];
+      const call = Object.hasOwn(c.api, e.endpoint) ? c.client[e.endpoint] : undefined;
       const body = { ...obj(field(e.input, "body")), write: { key: e.key, base: e.base } };
+      const answer = call
+        ? outcomeOf(
+            await call({ params: field(e.input, "params"), query: field(e.input, "query"), body }, ctx),
+            c.again === e.key,
+          )
+        : {
+            state: "failed" as const,
+            error: { code: "api.input" as const, message: e.endpoint, data: { issues: [] } },
+          };
+      // The owner changed while the request was in flight: the entry is never posted again.
       const out =
-        at && call
-          ? outcomeOf(
-              await call({ params: field(e.input, "params"), query: field(e.input, "query"), body }, ctx),
-              c.again === e.key,
-              at,
-            )
-          : {
-              state: "failed" as const,
-              error: { code: "api.input" as const, message: e.endpoint, data: { issues: [] } },
-            };
+        c.owners.get(ctx) === e.owner || answer?.state === "sent"
+          ? answer
+          : { state: "failed" as const, error: fault(c, "offline.owner") };
       c.again = out ? undefined : e.key;
       if (out?.state === "queued") {
         await put(e.key, "queued", {});
@@ -85,7 +89,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
     }
   } catch {
     // A storage write that rejected: the entry in hand is failed in memory, and the flush is released.
-    const error = storageError(c);
+    const error = fault(c, "offline.storage");
     tx(c.settle, { key, state: "failed", error });
     done(key, { state: "failed", error });
   }

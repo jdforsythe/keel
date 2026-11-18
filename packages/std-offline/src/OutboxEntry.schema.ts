@@ -1,14 +1,14 @@
 import { s } from "@keel/schema";
 
 /**
- * One queued write (std.offline): its `key` and `base`, the `endpoint` name, the `origin` it goes to, the call `input`
+ * One queued write (std.offline): its `key` and `base`, the `endpoint` name, the `owner` that sent it, the call `input`
  * without `body.write`, `at` from `ctx.clock`, and `state`. A `conflict` keeps the refusal's `head`; a `failed` entry
  * keeps its `error`.
  */
 const OutboxEntryShape = s.object({
   key: s.id("Write"),
   endpoint: s.string(),
-  origin: s.string(),
+  owner: s.string(),
   input: s.json(),
   base: s.int({ min: 0 }),
   at: s.number(),

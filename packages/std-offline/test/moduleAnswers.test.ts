@@ -1,5 +1,6 @@
-// An outbox over the endpoints of an app's own module: the server answers as k.server does (`{ ok, value }` and
-// `{ ok: false, error }`), and the outbox reads them as a `module` service reads a route's `Result`. Seed 1337.
+// An outbox over the endpoints of an app's module: the server answers as k.server does (`{ ok, value }` and
+// `{ ok: false, error }`), and the outbox reads them through `service({ module })`, which reads a route's `Result`.
+// Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -7,7 +8,7 @@ import { endpoints } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, outbox, send } from "../src/index.ts";
 
-const ORIGIN = "https://app.example.com";
+const ORIGIN = "http://app.keel.invalid";
 // The natural map for an app's own action: `output` is the action's value, `errors` the err's `error`; no 409 declared.
 const Api = endpoints({
   edit: {
@@ -39,11 +40,11 @@ async function sendOne(answer: string) {
   });
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox(`answers${++n}.outbox`, Api);
+    held.o = outbox(`answers${++n}.outbox`, Api, { module: "app" });
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
-  const r = await send(ctx, o, ORIGIN, "edit", { body: { t: "x" } }, { base: 0 });
+  const r = await send(ctx, o, "edit", { body: { t: "x" } }, { base: 0, owner: "u1" });
   const states = o.get("entries").map((e) => e.state);
   sc.dispose();
   return { r, posts, states };
@@ -77,34 +78,20 @@ test("a declared error status is failed with the err's error decoded by its sche
   });
 });
 
-test("a map whose schemas describe the whole k.server answer gets that answer", async () => {
-  const Whole = endpoints({
-    edit: {
-      method: "POST",
-      path: "/edit",
-      body: s.object({ t: s.string(), write: Write }),
-      output: s.object({ ok: s.literal(true), value: s.object({ head: s.int() }) }),
-      errors: { 422: s.object({ ok: s.literal(false), error: s.json() }) },
-    },
-  });
-  const ctx: SimCtx = createCtx({ mode: "sim", seed: 1337 });
-  let answer = "ok";
-  ctx.net.route(`${ORIGIN}/edit`, () => (answer === "ok" ? answers.ok?.() : answers.fields?.()) ?? json(500, {}));
-  const held: { o?: ReturnType<typeof outbox<typeof Whole>> } = {};
-  const sc = scope(() => {
-    held.o = outbox("whole.outbox", Whole);
-  });
-  const o = held.o;
-  if (o === undefined) throw new Error("no outbox");
-  expect(await send(ctx, o, ORIGIN, "edit", { body: { t: "x" } }, { base: 0 })).toEqual({
-    state: "sent",
-    value: { ok: true, value: { head: 1 } },
-  });
-  answer = "fields";
-  const r = await send(ctx, o, ORIGIN, "edit", { body: { t: "x" } }, { base: 0 });
+test("a 2xx that is not a route `Result` fails with api.decode; the whole body is never read as the output", async () => {
+  answers.bare = () => json(200, { head: 1 });
+  const { r, posts } = await sendOne("bare");
+  expect(r.state === "failed" ? r.error.code : r.state).toBe("api.decode");
+  expect(posts).toHaveLength(1);
+});
+
+test("a 409 without data.transaction is sent once more, then failed with its ApiError", async () => {
+  answers.overlap = () => json(409, { ok: false, error: { code: "keel.conflict", message: "o", data: {} } });
+  const { r, posts, states } = await sendOne("overlap");
+  expect(posts).toHaveLength(2);
   expect(r.state === "failed" ? r.error.data : undefined).toEqual({
-    status: 422,
-    body: { ok: false, error: { code: "keel.fields", message: "f", data: { t: "required" } } },
+    status: 409,
+    body: { code: "keel.conflict", message: "o", data: {} },
   });
-  sc.dispose();
+  expect(states).toEqual(["failed"]);
 });

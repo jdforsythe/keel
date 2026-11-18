@@ -17,7 +17,6 @@ const fixture = boardOf({
     { id: "t2", listId: "l1", title: "Bread", priority: "normal", done: false },
   ],
 });
-const ORIGIN = new URL(location.href).origin;
 const T1 = TodoIdParams.parse({ todoId: "t1" });
 const T2 = TodoIdParams.parse({ todoId: "t2" });
 
@@ -49,17 +48,16 @@ describe("boardOutbox under generated schedules", () => {
         const app = await apiApp();
         ctx.net.route(new URL("/api/*", location.href).href, (req) => app.fetch(req));
         const page = scope(() => undefined);
-        page.run(() => void drain(ctx, boardOutbox));
+        page.run(() => void drain(ctx, boardOutbox, { owner: "" }));
         // The user marks Bread done on the board at head 2, then edits Milk on the board after that write (head 3).
-        const toggled = settled(send(ctx, boardOutbox, ORIGIN, "toggleTodo", { params: t2, body: {} }, { base: 2 }));
+        const toggled = settled(send(ctx, boardOutbox, "toggleTodo", { params: t2, body: {} }, { base: 2, owner: "" }));
         const edited = settled(
           send(
             ctx,
             boardOutbox,
-            ORIGIN,
             "editTodo",
             { params: t1, body: { title: "Oat milk", priority: "high" } },
-            { base: 3 },
+            { base: 3, owner: "" },
           ),
         );
         await run();

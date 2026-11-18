@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import type { Infer, JsonValue } from "@keel/schema";
-import type { EndpointMap } from "@keel/services";
+import type { Client, EndpointMap } from "@keel/services";
 import type { Store, Transaction } from "@keel/store";
 import type { OutboxEntry } from "../OutboxEntry.schema.ts";
 import type { OutboxResult } from "../OutboxResult.ts";
@@ -16,19 +16,21 @@ type Settle = {
 };
 
 /**
- * What `outbox` declared: the store, its three transactions, the endpoints map, the map the flush sends through (every
- * answer read as JSON) and the bounds.
+ * What `outbox` declared: the store, its three transactions, the endpoints map, the client of the module's service the
+ * flush sends through, the bounds, and the owner last given on each ctx.
  */
 export interface Config {
   readonly id: string;
   readonly api: EndpointMap;
-  readonly wire: EndpointMap;
+  readonly client: Client<EndpointMap>;
   readonly limit: number;
   readonly maxBytes: number;
   readonly store: Store<State>;
   readonly add: Transaction<State, OutboxEntry>;
   readonly settle: Transaction<State, Settle>;
   readonly resolve: Transaction<State, { key: string; resolution: Resolution }>;
+  /** The owner last given to `send` or `drain` on each ctx; the flush posts only that owner's entries. */
+  readonly owners: WeakMap<Ctx, string>;
   /** The load of the stored entries, once per ctx. */
   readonly loads: WeakMap<Ctx, Promise<void>>;
   /** False once the scope that declared the outbox is disposed. */

@@ -6,7 +6,6 @@ import { Box, Checkbox, Link, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
 import { idPart } from "./idPart.ts";
-import { pageOrigin } from "./pageOrigin.ts";
 import { routes } from "./routes.ts";
 import { view } from "./view.ts";
 
@@ -19,10 +18,9 @@ export const Props = s.object({ todo: Todo });
  */
 export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const toggle = (): void => {
-    const origin = pageOrigin();
-    if (ctx === undefined || origin === undefined) return;
+    if (ctx === undefined) return;
     const call = { params: { todoId: props.todo.id }, body: {} };
-    void send(ctx, boardOutbox, origin, "toggleTodo", call, { base: view.get("head") });
+    void send(ctx, boardOutbox, "toggleTodo", call, { base: view.get("head"), owner: "" });
   };
   return (
     <Box direction="row" align="center" gap="3" px="3" py="2" bg="card">

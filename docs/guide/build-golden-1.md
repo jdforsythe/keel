@@ -1060,25 +1060,24 @@ export async function refreshView(ctx: Ctx): Promise<Result<BoardView, KeelError
 
 An outbox holds this client's writes in the order sent. `send` posts one when the client is online and queues it when it is not; `drain` sends the waiting ones; `resolve` settles a write the server refused. The outbox keeps its entries in `ctx.storage`, so they survive a reload. Each write carries a fresh `key`, which lets the server drop a retry it already took, and a `base`, the board `head` the client last read.
 
-The outbox calls the `api` deployable by its origin, not through `service({ module })`, so its endpoints decode the whole answer the server sends. A success is `{ ok: true, value }`, where `value` is the href the action returns or none. A 409 is a refusal the outbox reads itself: `keel.conflict`, with the board's head. A 422 is `{ ok: false, error }` with the `keel.fields` error.
+The outbox sends through `service({ module: "api" })`, so its endpoints describe what the route's `Result` holds, as every `api` client does. A success is the empty object the action returns. A 409 is a refusal the outbox reads itself: `keel.conflict`, with the board's head. A 422 is the `keel.fields` error.
+
+Each write also carries an owner: the signed-in user's id, so that a write one user queued is never sent under the next user's cookie. golden-1 has no sign-in, so every write's owner is `""`. An app with sign-in passes the user's id to `send` and `drain`, and a stored write of another owner becomes `failed` with `offline.owner`.
 
 ```ts title="modules/todos/WriteAnswer.schema.ts"
 import { s } from "@keel/schema";
 
-/**
- * A write's answer as the outbox reads it (`boardWrites`): the outbox calls the `api` deployable by its origin, so it
- * decodes the whole k.server answer, `{ ok: true, value }`, where the value is the href the action returns, or none.
- */
-export const WriteAnswer = s.object({ ok: s.literal(true), value: s.string().nullable() });
+/** A write's answer as the outbox reads it (`boardWrites`): the empty object the `api` action returns as its `ok` value. */
+export const WriteAnswer = s.object({});
 export type WriteAnswer = s.infer<typeof WriteAnswer>;
 ```
 
 ```ts title="modules/todos/WriteRefusal.schema.ts"
-import { s } from "@keel/schema";
+import type { s } from "@keel/schema";
 import { FieldsReply } from "./FieldsReply.schema.ts";
 
-/** A refused write's 422 answer as the outbox reads it (`boardWrites`): `{ ok: false, error }`, the error `keel.fields`. */
-export const WriteRefusal = s.object({ ok: s.literal(false), error: FieldsReply });
+/** A refused write's 422 error as the outbox reads it (`boardWrites`): the `api` action's `keel.fields` error. */
+export const WriteRefusal: typeof FieldsReply = FieldsReply;
 export type WriteRefusal = s.infer<typeof WriteRefusal>;
 ```
 
@@ -1141,13 +1140,14 @@ import { boardWrites } from "./boardWrites.service.ts";
 const lifetime = scope(() => undefined);
 
 /**
- * This client's board writes, in the order sent (store `todos.outbox`, kept in `ctx.storage`): each waits here while
- * the client is offline, and a write the board refused stays until the user keeps theirs or the other one.
+ * This client's board writes, in the order sent (store `todos.outbox`, kept in `ctx.storage`), sent to the `api`
+ * module's routes through its service: each waits here while the client is offline, and a write the board refused
+ * stays until the user keeps theirs or the other one. golden-1 has no sign-in, so every write's owner is `""`.
  */
-export const boardOutbox = lifetime.run(() => outbox("todos.outbox", boardWrites));
+export const boardOutbox = lifetime.run(() => outbox("todos.outbox", boardWrites, { module: "api" }));
 ```
 
-`send` and the live stream both need the `api` origin, which is the page's, because `api` hosts `web`. It is undefined off a browser page:
+The live stream needs the `api` origin, which is the page's, because `api` hosts `web`. It is undefined off a browser page:
 
 ```ts title="modules/todos/pageOrigin.ts"
 /** The page's origin, where the `api` deployable answers (`web` is hosted by `api`); undefined off a browser page. */
@@ -1181,7 +1181,7 @@ export async function formAnswer<O>(
   if (entry !== undefined) await resolve(ctx, boardOutbox, entry.key, "theirs");
   const e = r.error;
   const refusal = e.code === "api.status" ? WriteRefusal.parse(e.data.body) : undefined;
-  return err(refusal?.ok === true ? refusal.value.error : e);
+  return err(refusal?.ok === true ? refusal.value : e);
 }
 ```
 
@@ -1236,7 +1236,7 @@ export const loadTodo = loader({ output: Todo, params: TodoParams }, async ({ pa
 
 An action handles a form post. `action({ input, params? }, fn)`: `fn` gets `(input, { params, url, caller, stores }, ctx)`, with `input` already decoded and validated by its schema (a failure is 422 `keel.fields`, and `fn` is not called). `ok(null)` re-runs the chain's loaders once; `ok(href)` navigates there.
 
-The three form actions send through the outbox: `send(ctx, boardOutbox, origin, endpoint, call, { base })`, where `base` is the `head` in `todos.view` and `origin` is the request `url`'s origin. Each ends in `formAnswer`.
+The three form actions send through the outbox: `send(ctx, boardOutbox, endpoint, call, { base, owner: "" })`, where `base` is the `head` in `todos.view`. Each ends in `formAnswer`.
 
 ```ts title="modules/todos/createList.server.ts"
 import { action } from "@keel/router";
@@ -1247,9 +1247,8 @@ import { formAnswer } from "./formAnswer.ts";
 import { view } from "./view.ts";
 
 /** POST on `todos.index`: send `POST /api/lists` through the outbox, based on the board as last read; then revalidate. */
-export const createList = action({ input: ListDraft }, async (input, { url }, ctx) => {
-  const origin = new URL(url).origin;
-  const r = await send(ctx, boardOutbox, origin, "createList", { body: input }, { base: view.get("head") });
+export const createList = action({ input: ListDraft }, async (input, _req, ctx) => {
+  const r = await send(ctx, boardOutbox, "createList", { body: input }, { base: view.get("head"), owner: "" });
   return formAnswer(ctx, "createList", r);
 });
 ```
@@ -1264,9 +1263,8 @@ import { formAnswer } from "./formAnswer.ts";
 import { view } from "./view.ts";
 
 /** POST on `todos.list`: send `POST /api/lists/:listId/todos` through the outbox, based on the board as last read. */
-export const createTodo = action({ input: TodoDraft, params: ListParams }, async (input, { params, url }, ctx) => {
-  const origin = new URL(url).origin;
-  const r = await send(ctx, boardOutbox, origin, "addTodo", { params, body: input }, { base: view.get("head") });
+export const createTodo = action({ input: TodoDraft, params: ListParams }, async (input, { params }, ctx) => {
+  const r = await send(ctx, boardOutbox, "addTodo", { params, body: input }, { base: view.get("head"), owner: "" });
   return formAnswer(ctx, "addTodo", r);
 });
 ```
@@ -1289,10 +1287,9 @@ import { view } from "./view.ts";
  * queued or refused as a conflict (the outbox panel shows it), it goes to the list; the api's 422 `keel.fields`
  * (`{ title }` when another todo in the list has the title) goes to the Form.
  */
-export const updateTodo = action({ input: TodoDraft, params: TodoParams }, async (input, { params, url }, ctx) => {
-  const origin = new URL(url).origin;
+export const updateTodo = action({ input: TodoDraft, params: TodoParams }, async (input, { params }, ctx) => {
   const call = { params: { todoId: params.todoId }, body: input };
-  const r = await send(ctx, boardOutbox, origin, "editTodo", call, { base: view.get("head") });
+  const r = await send(ctx, boardOutbox, "editTodo", call, { base: view.get("head"), owner: "" });
   const answer = await formAnswer(ctx, "editTodo", r);
   return answer.ok ? ok(routes.href("todos.list", { listId: params.listId })) : answer;
 });
@@ -1377,7 +1374,7 @@ export default function AppShell(
     ctx === undefined || origin === undefined
       ? (): LiveStatus => "connecting"
       : live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
-  if (ctx !== undefined && origin !== undefined) void drain(ctx, boardOutbox);
+  if (ctx !== undefined && origin !== undefined) void drain(ctx, boardOutbox, { owner: "" });
   const empty = computed(() => !view.get("canUndo"));
   const undo = (): void => {
     if (ctx !== undefined) void todosApi.undo({}, ctx).then(() => refreshView(ctx));
@@ -1845,7 +1842,6 @@ import { send } from "@keel/std-offline";
 import { Box, Checkbox, Link, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
-import { pageOrigin } from "./pageOrigin.ts";
 import { routes } from "./routes.ts";
 import { view } from "./view.ts";
 
@@ -1857,10 +1853,9 @@ export const Props = s.object({ todo: Todo });
  */
 export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
   const toggle = (): void => {
-    const origin = pageOrigin();
-    if (ctx === undefined || origin === undefined) return;
+    if (ctx === undefined) return;
     const call = { params: { todoId: props.todo.id }, body: {} };
-    void send(ctx, boardOutbox, origin, "toggleTodo", call, { base: view.get("head") });
+    void send(ctx, boardOutbox, "toggleTodo", call, { base: view.get("head"), owner: "" });
   };
   return (
     <Box as="li" id={`todos.row.${props.todo.id}`} direction="row" align="center" gap="3" px="3" py="2" bg="card">

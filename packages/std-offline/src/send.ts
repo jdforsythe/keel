@@ -11,10 +11,12 @@ import { configOf } from "./internal/configOf.ts";
 import { flush } from "./internal/flush.ts";
 import { full } from "./internal/full.ts";
 import { load } from "./internal/load.ts";
+import { own } from "./internal/own.ts";
 
 /**
- * Queue a write to `endpoint` at `origin` (std.offline Write) and flush, once the outbox stored in `ctx.storage` has
- * loaded (`drain`): the entry's `body.write` is
+ * Queue a write to `endpoint` of the outbox's module (std.offline Write) under `owner`, the signed-in user's id or `""`,
+ * and flush, once the outbox stored in `ctx.storage` has loaded (`drain`) and `owner` is the ctx's owner (each entry of
+ * another owner not `failed` becomes `failed` with `offline.owner`, std.offline Owner): the entry's `body.write` is
  * `{ key: ctx.random.id('Write'), base }`; the outbox is written to `ctx.storage` `keel.outbox.<id>` first, and a running
  * flush does not take the entry until that write settles. Resolves
  * `sent`, `queued` (offline, or the network failed), `conflict` or `failed`; a full outbox resolves `failed` with
@@ -24,15 +26,23 @@ import { load } from "./internal/load.ts";
 export async function send<const D extends EndpointMap, K extends keyof D & string>(
   ctx: Ctx,
   o: Outbox<D>,
-  origin: string,
   endpoint: K,
   input: SendInput<D, K>,
-  opts: { readonly base: number },
+  opts: { readonly base: number; readonly owner: string },
 ): Promise<OutboxResult<Output<D, K>>> {
   const c = configOf(o);
   await load(ctx, c);
+  await own(ctx, c, opts.owner);
   const key = ctx.random.id("Write");
-  const entry: unknown = { key, endpoint, origin, input, base: opts.base, at: ctx.clock.now(), state: "queued" };
+  const entry: unknown = {
+    key,
+    endpoint,
+    owner: opts.owner,
+    input,
+    base: opts.base,
+    at: ctx.clock.now(),
+    state: "queued",
+  };
   const entries = o.get("entries");
   if (full(c, [...entries, entry])) {
     const data = { limit: c.limit, maxBytes: c.maxBytes };

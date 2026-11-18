@@ -90,15 +90,15 @@ describe("schemas", () => {
     expect(todos.undo.output.parse({}).ok).toBe(true);
     expect(todos.undo.output.parse(null).ok).toBe(false);
   });
-  it("the board writes decode the whole answer: { ok: true, value }, and a 422's keel.fields", () => {
-    expect(WriteAnswer.parse({ ok: true, value: {} }).ok).toBe(true);
-    expect(WriteAnswer.parse({ ok: true, value: "/lists/l1" }).ok).toBe(false);
+  it("the board writes decode the route values: an empty object, and a 422's keel.fields error", () => {
+    expect(WriteAnswer.parse({}).ok).toBe(true);
+    expect(WriteAnswer.parse("/lists/l1").ok).toBe(false);
     expect(WriteAnswer.parse(null).ok).toBe(false);
     expect(boardWrites.editTodo.output).toBe(WriteAnswer);
     const fields = { code: "keel.fields", message: "m", data: { title: "taken" } };
     expect(FieldsReply.parse(fields).ok).toBe(true);
-    expect(WriteRefusal.parse({ ok: false, error: fields }).ok).toBe(true);
-    expect(WriteRefusal.parse(fields).ok).toBe(false);
+    expect(WriteRefusal.parse(fields).ok).toBe(true);
+    expect(WriteRefusal.parse({ ok: false, error: fields }).ok).toBe(false);
   });
 });
 
@@ -214,7 +214,7 @@ describe("client loaders and actions (through the api deployable)", () => {
     expect(sent).toEqual([]);
     ctx.net.setOnline(true);
     const drained = scope(() => {
-      void drain(ctx, boardOutbox);
+      void drain(ctx, boardOutbox, { owner: "" });
     });
     await settled();
     drained.dispose();

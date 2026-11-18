@@ -150,11 +150,11 @@ std.live
 - one read at a time; status(): 'connecting' | 'live' | 'offline' | 'denied'
 
 std.offline
-- import { outbox, send, drain, resolve, Write } from '@keel/std-offline'; export const boardOutbox = outbox('todos.outbox', endpointsMap) in a client-safe file (store todos.outbox, state { entries }, kept in ctx.storage keel.outbox.<id>)
+- import { outbox, send, drain, resolve, Write } from '@keel/std-offline'; export const boardOutbox = outbox('todos.outbox', endpointsMap, { module: 'api' }) in a client-safe file (store todos.outbox, state { entries }, kept in ctx.storage keel.outbox.<id>)
 - an endpoint an outbox sends to has body s.object({ ..., write: Write }) and declares errors: { 409: s.json() }; its action passes tx(t, payload, { meta, ...input.write }); Write = { key: s.id('Write'), base: s.int({ min: 0 }) }
-- the outbox calls service({ base: origin }): output and errors decode the whole k.server answer ({ ok: true, value } / { ok: false, error })
-- const r = await send(ctx, boardOutbox, origin, 'editTodo', { params, body }, { base: view.get('head') }): r.state 'sent' | 'queued' (offline or network) | 'conflict' (with head) | 'failed' (with error)
-- drain(ctx, boardOutbox) inside a scope: loads the stored outbox and flushes, again on each reconnect; entries go in order, one at a time; resolve(ctx, boardOutbox, key, 'mine' | 'theirs'): mine re-queues a conflict last with base = its head, theirs drops a conflict or failed entry
+- the outbox sends through service({ module, schema }): output decodes the route's ok value and errors[status] its err's error, as service({ module }) reads them
+- const r = await send(ctx, boardOutbox, 'editTodo', { params, body }, { base: view.get('head'), owner }): owner is the signed-in user's id, else ''; r.state 'sent' | 'queued' (offline or network) | 'conflict' (with head) | 'failed' (with error; offline.owner for another owner's entry)
+- drain(ctx, boardOutbox, { owner }) inside a scope: loads the stored outbox, fails every other owner's entry with offline.owner, and flushes the owner's, again on each reconnect; entries go in order, one at a time; resolve(ctx, boardOutbox, key, 'mine' | 'theirs'): mine re-queues a conflict last with base = its head, theirs drops a conflict or failed entry
 - entry: { key, endpoint, origin, input, base, at, state: 'queued' | 'sending' | 'conflict' | 'failed', head?, error? }
 
 std.multi

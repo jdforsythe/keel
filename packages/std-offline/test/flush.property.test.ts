@@ -8,7 +8,8 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, send } from "../src/index.ts";
 
-const ORIGIN = "https://app.example.com";
+const ORIGIN = "http://app.keel.invalid";
+const OWNER = "u1";
 const Api = endpoints({
   add: {
     method: "POST",
@@ -48,18 +49,20 @@ async function run(script: readonly Step[]): Promise<{ added: string[]; applied:
       drops--;
       throw new TypeError("response lost");
     }
-    return new Response(JSON.stringify({ n: applied.length }), { headers: { "content-type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, value: { n: applied.length } }), {
+      headers: { "content-type": "application/json" },
+    });
   });
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox(`prop${++n}.outbox`, Api);
-    if (held.o !== undefined) void drain(ctx, held.o);
+    held.o = outbox(`prop${++n}.outbox`, Api, { module: "app" });
+    if (held.o !== undefined) void drain(ctx, held.o, { owner: OWNER });
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
   let sent = 0;
   for (const step of script) {
-    if ("send" in step) void send(ctx, o, ORIGIN, "add", { body: { n: sent++ } }, { base: 0 });
+    if ("send" in step) void send(ctx, o, "add", { body: { n: sent++ } }, { base: 0, owner: OWNER });
     else if ("online" in step) ctx.net.setOnline(step.online);
     else if ("drop" in step) drops++;
     else ctx.clock.advance(step.advance);

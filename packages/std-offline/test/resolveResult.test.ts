@@ -3,7 +3,7 @@ import type { SimCtx } from "@keel/ctx";
 import fc from "fast-check";
 import { expect, expectTypeOf, test } from "vitest";
 import {
-  ORIGIN,
+  OWNER,
   SEED,
   type SimSchedule,
   createServer,
@@ -22,7 +22,7 @@ async function conflicted(n: number, ctx: SimCtx = simCtx()) {
   const c = makeClient();
   for (let i = 0; i < n; i++) {
     server.other("t1", `other${i}`);
-    await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", `mine${i}`), { base: 0 });
+    await send(ctx, c.o, "editTodo", edit("t1", `mine${i}`), { base: 0, owner: OWNER });
   }
   const keys = entriesOf(c.o)
     .filter((e) => e.state === "conflict")
@@ -41,7 +41,7 @@ test("resolve types: 'mine' is false | OutboxResult of the api's outputs, 'their
   expectTypeOf(theirs).resolves.toEqualTypeOf<boolean>();
   expectTypeOf(either).resolves.toEqualTypeOf<boolean | OutboxResult<Edited>>();
   await Promise.all([mine, theirs, either]);
-  const sent = send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "x"), { base: 0 });
+  const sent = send(ctx, c.o, "editTodo", edit("t1", "x"), { base: 0, owner: OWNER });
   expectTypeOf(sent).resolves.toEqualTypeOf<OutboxResult<Edited>>();
   await sent;
   c.dispose();

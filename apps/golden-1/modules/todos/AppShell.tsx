@@ -43,7 +43,7 @@ export default function AppShell(
     ctx === undefined || origin === undefined
       ? (): LiveStatus => "connecting"
       : live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
-  if (ctx !== undefined && origin !== undefined) void drain(ctx, boardOutbox);
+  if (ctx !== undefined && origin !== undefined) void drain(ctx, boardOutbox, { owner: "" });
   const empty = computed(() => !view.get("canUndo"));
   const undo = (): void => {
     if (ctx !== undefined) void todosApi.undo({}, ctx).then(() => refreshView(ctx));

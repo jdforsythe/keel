@@ -7,7 +7,8 @@ import { endpoints } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, send } from "../src/index.ts";
 
-const ORIGIN = "https://app.example.com";
+const ORIGIN = "http://app.keel.invalid";
+const OWNER = "u1";
 const Api = endpoints({
   add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
@@ -18,7 +19,7 @@ const settle = async (): Promise<void> => {
 const entry = (ctx: Ctx, t: string) => ({
   key: ctx.random.id("Write"),
   endpoint: "add",
-  origin: ORIGIN,
+  owner: OWNER,
   input: { body: { t } },
   base: 0,
   at: 0,
@@ -32,11 +33,11 @@ const titles = async (ctx: Ctx, id: string): Promise<unknown[]> => {
 };
 
 test("an outbox declared outside any scope creates its store on first use, once", async () => {
-  const o = outbox("modlevel.outbox", Api);
+  const o = outbox("modlevel.outbox", Api, { module: "app" });
   const ctx = sim();
   ctx.net.setOnline(false);
   expect(o.get("entries")).toEqual([]);
-  expect((await send(ctx, o, ORIGIN, "add", { body: { t: "a" } }, { base: 0 })).state).toBe("queued");
+  expect((await send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: OWNER })).state).toBe("queued");
   expect(o.get("entries").map((e) => e.state)).toEqual(["queued"]);
   expect(o.log().map((e) => e.name)).toEqual(["modlevel.outbox.add"]);
 });
@@ -46,9 +47,9 @@ test("a send before drain's load keeps the stored entries: storage ends with bot
   ctx.net.setOnline(false);
   await ctx.storage.set("keel.outbox.early.outbox", JSON.stringify({ entries: [entry(ctx, "stored")] }));
   const sc = scope(() => {
-    const o = outbox("early.outbox", Api);
-    void send(ctx, o, ORIGIN, "add", { body: { t: "new" } }, { base: 0 });
-    void drain(ctx, o);
+    const o = outbox("early.outbox", Api, { module: "app" });
+    void send(ctx, o, "add", { body: { t: "new" } }, { base: 0, owner: OWNER });
+    void drain(ctx, o, { owner: OWNER });
   });
   await settle();
   expect(await titles(ctx, "early.outbox")).toEqual(["stored", "new"]);
@@ -62,8 +63,8 @@ test("drain loads at most `limit` stored entries, the first in order", async () 
   await ctx.storage.set("keel.outbox.capped.outbox", JSON.stringify({ entries: stored }));
   const held: { got?: unknown[] } = {};
   const sc = scope(() => {
-    const o = outbox("capped.outbox", Api, { limit: 2 });
-    void drain(ctx, o).then(() => {
+    const o = outbox("capped.outbox", Api, { module: "app", limit: 2 });
+    void drain(ctx, o, { owner: OWNER }).then(() => {
       held.got = o.get("entries").map((e) => e.key);
     });
   });
@@ -77,7 +78,7 @@ test("a stored entry naming an inherited property as its endpoint is failed and 
   const posts: string[] = [];
   ctx.net.route(`${ORIGIN}/add`, async (req) => {
     posts.push(String(Reflect.get(await req.json(), "t")));
-    return new Response("{}", { headers: { "content-type": "application/json" } });
+    return Response.json({ ok: true, value: {} });
   });
   await ctx.storage.set(
     "keel.outbox.wedge.outbox",
@@ -85,13 +86,13 @@ test("a stored entry naming an inherited property as its endpoint is failed and 
   );
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox("wedge.outbox", Api);
-    void drain(ctx, held.o);
+    held.o = outbox("wedge.outbox", Api, { module: "app" });
+    void drain(ctx, held.o, { owner: OWNER });
   });
   await settle();
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
-  const r = await send(ctx, o, ORIGIN, "add", { body: { t: "next" } }, { base: 0 });
+  const r = await send(ctx, o, "add", { body: { t: "next" } }, { base: 0, owner: OWNER });
   expect(r.state).toBe("sent");
   expect(posts).toEqual(["next"]);
   expect(o.get("entries").map((e) => e.state)).toEqual(["failed"]);
@@ -113,19 +114,22 @@ test("a storage write that rejects mid-flush settles the pending send, and a lat
   const posts: string[] = [];
   base.net.route(`${ORIGIN}/add`, async (req) => {
     posts.push(String(Reflect.get(await req.json(), "t")));
-    return new Response("{}", { headers: { "content-type": "application/json" } });
+    return Response.json({ ok: true, value: {} });
   });
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox("quota.outbox", Api);
+    held.o = outbox("quota.outbox", Api, { module: "app" });
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
   const settled: unknown[] = [];
-  void send(ctx, o, ORIGIN, "add", { body: { t: "a" } }, { base: 0 }).then((r) => settled.push(r.state));
+  void send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: OWNER }).then((r) => settled.push(r.state));
   await settle();
   expect(settled).toEqual(["failed"]);
-  expect(await send(ctx, o, ORIGIN, "add", { body: { t: "b" } }, { base: 0 })).toEqual({ state: "sent", value: {} });
+  expect(await send(ctx, o, "add", { body: { t: "b" } }, { base: 0, owner: OWNER })).toEqual({
+    state: "sent",
+    value: {},
+  });
   expect(posts).toEqual(["b"]);
   sc.dispose();
 });

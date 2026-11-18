@@ -22,5 +22,5 @@ export async function formAnswer<O>(
   if (entry !== undefined) await resolve(ctx, boardOutbox, entry.key, "theirs");
   const e = r.error;
   const refusal = e.code === "api.status" ? WriteRefusal.parse(e.data.body) : undefined;
-  return err(refusal?.ok === true ? refusal.value.error : e);
+  return err(refusal?.ok === true ? refusal.value : e);
 }

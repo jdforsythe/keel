@@ -6,7 +6,7 @@ import { endpoints } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, resolve, send } from "../src/index.ts";
 
-const ORIGIN = "https://app.example.com";
+const OWNER = "u1";
 const Api = endpoints({
   add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
@@ -21,7 +21,7 @@ function declare(opts: { maxBytes?: number; id?: string } = {}) {
     held.o = outbox(
       opts.id ?? `unit${++n}.outbox`,
       Api,
-      opts.maxBytes === undefined ? {} : { maxBytes: opts.maxBytes },
+      opts.maxBytes === undefined ? { module: "app" } : { module: "app", maxBytes: opts.maxBytes },
     );
   });
   if (held.o === undefined) throw new Error("no outbox");
@@ -32,8 +32,8 @@ test("send refuses with offline.full when the encoded entries would pass maxByte
   const ctx = sim();
   ctx.net.setOnline(false);
   const { o, sc } = declare({ maxBytes: 400 });
-  expect((await send(ctx, o, ORIGIN, "add", { body: { t: "a" } }, { base: 0 })).state).toBe("queued");
-  const r = await send(ctx, o, ORIGIN, "add", { body: { t: "b".repeat(300) } }, { base: 0 });
+  expect((await send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: OWNER })).state).toBe("queued");
+  const r = await send(ctx, o, "add", { body: { t: "b".repeat(300) } }, { base: 0, owner: OWNER });
   expect(r.state === "failed" ? r.error.code : r.state).toBe("offline.full");
   expect(o.get("entries")).toHaveLength(1);
   sc.dispose();
@@ -43,7 +43,7 @@ test("resolve changes nothing and resolves false for a key with no refused entry
   const ctx = sim();
   ctx.net.setOnline(false);
   const { o, sc } = declare();
-  await send(ctx, o, ORIGIN, "add", { body: { t: "a" } }, { base: 0 });
+  await send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: OWNER });
   const key = o.get("entries")[0]?.key ?? "";
   expect(await resolve(ctx, o, key, "mine")).toBe(false);
   expect(await resolve(ctx, o, key, "theirs")).toBe(false);
@@ -55,14 +55,14 @@ test("resolve changes nothing and resolves false for a key with no refused entry
 test("drain loads a stored sending entry as queued", async () => {
   const ctx = sim();
   ctx.net.setOnline(false);
-  const entry = { key: ctx.random.id("Write"), endpoint: "add", origin: ORIGIN, input: { body: { t: "a" } }, base: 0 };
+  const entry = { key: ctx.random.id("Write"), endpoint: "add", owner: OWNER, input: { body: { t: "a" } }, base: 0 };
   await ctx.storage.set(
     "keel.outbox.load.outbox",
     JSON.stringify({ entries: [{ ...entry, at: 0, state: "sending" }] }),
   );
   const { o, sc } = declare({ id: "load.outbox" });
   scope(() => {
-    void drain(ctx, o);
+    void drain(ctx, o, { owner: OWNER });
   });
   await settle();
   expect(o.get("entries").map((e) => [e.key, e.state])).toEqual([[entry.key, "queued"]]);
@@ -71,7 +71,7 @@ test("drain loads a stored sending entry as queued", async () => {
 
 test("drain outside a scope throws E1203", async () => {
   const { o, sc } = declare();
-  await expect(drain(sim(), o)).rejects.toThrow(/^E1203/);
+  await expect(drain(sim(), o, { owner: OWNER })).rejects.toThrow(/^E1203/);
   sc.dispose();
 });
 
@@ -85,7 +85,7 @@ test("outbox throws E2651 with code and path for a secret in a body", () => {
     },
   });
   scope(() => {
-    expect(() => outbox("sec.outbox", Secret)).toThrow(
+    expect(() => outbox("sec.outbox", Secret, { module: "app" })).toThrow(
       /^E2651 outbox sec\.outbox endpoint add body holds s\.secret at pin/,
     );
   }).dispose();
@@ -99,7 +99,7 @@ test("send takes no bearer: a secret in the input is refused before the outbox s
   if (!t.ok) throw new Error("fixture: a string parses as a secret");
   // The input type of `send` has no `bearer`, so the call goes through `Reflect.apply` with an untyped input.
   const input: unknown = { body: { t: "a" }, bearer: t.value };
-  const sent: unknown = Reflect.apply(send, undefined, [ctx, o, ORIGIN, "add", input, { base: 0 }]);
+  const sent: unknown = Reflect.apply(send, undefined, [ctx, o, "add", input, { base: 0, owner: OWNER }]);
   await expect(Promise.resolve(sent)).rejects.toThrow();
   expect(o.get("entries")).toHaveLength(0);
   sc.dispose();

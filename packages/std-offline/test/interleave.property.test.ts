@@ -10,7 +10,8 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type OutboxResult, Write, drain, outbox, resolve, send } from "../src/index.ts";
 
-const ORIGIN = "https://app.example.com";
+const ORIGIN = "http://app.keel.invalid";
+const OWNER = "u1";
 const Api = endpoints({
   add: { method: "POST", path: "/add", body: s.object({ n: s.int(), write: Write }), output: s.object({ n: s.int() }) },
 });
@@ -91,7 +92,7 @@ function gatedServer(ctx: SimCtx, stateOf: (key: string) => string | undefined) 
       return new Response(JSON.stringify({ ok: false, error }), { status: 409, headers });
     }
     applied.add(key);
-    return new Response(JSON.stringify({ n: posts.length }), { headers });
+    return new Response(JSON.stringify({ ok: true, value: { n: posts.length } }), { headers });
   });
   return {
     posts,
@@ -115,8 +116,8 @@ async function run(script: readonly Step[]) {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const server = gatedServer(ctx, (key) => held.o?.get("entries").find((e) => e.key === key)?.state);
   const sc = scope(() => {
-    held.o = outbox(`interleave${++n}.outbox`, Api);
-    if (held.o !== undefined) void drain(ctx, held.o);
+    held.o = outbox(`interleave${++n}.outbox`, Api, { module: "app" });
+    if (held.o !== undefined) void drain(ctx, held.o, { owner: OWNER });
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
@@ -132,7 +133,7 @@ async function run(script: readonly Step[]) {
       const at = admissions.length;
       // Its key is the next `<id>.add` of the log, read once the step has settled.
       admissions.push({ key: "", before: 0 });
-      void send(ctx, o, ORIGIN, "add", { body: { n: sent++ } }, { base: 0 }).then((out) => {
+      void send(ctx, o, "add", { body: { n: sent++ } }, { base: 0, owner: OWNER }).then((out) => {
         const a = admissions[at];
         if (a) a.out = out;
       });
@@ -176,7 +177,7 @@ async function run(script: readonly Step[]) {
   const entries = o.get("entries");
   const posts = [...server.posts];
   // The flush is released: a new send flushes and is sent.
-  const last = await send(ctx, o, ORIGIN, "add", { body: { n: -1 } }, { base: 0 });
+  const last = await send(ctx, o, "add", { body: { n: -1 } }, { base: 0, owner: OWNER });
   sc.dispose();
   return { admissions, entries, posts, wrong: server.wrong, applied: server.applied, last };
 }

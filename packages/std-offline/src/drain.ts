@@ -5,16 +5,21 @@ import type { Outbox } from "./Outbox.type.ts";
 import { configOf } from "./internal/configOf.ts";
 import { flush } from "./internal/flush.ts";
 import { load } from "./internal/load.ts";
+import { own } from "./internal/own.ts";
 
 /**
  * Inside a scope (E1203 outside one): load the outbox stored in `ctx.storage`, once per ctx (adding, in order, each
- * entry the store lacks, `sending` as `queued`, while the entries stay within `limit` and `maxBytes`), flush, and flush again on each `{ kind: 'net', online: true }` until the scope is disposed.
+ * entry the store lacks, `sending` as `queued`, while the entries stay within `limit` and `maxBytes`), make `owner` the
+ * ctx's owner (each entry of another owner, or stored with an `origin` or no `owner`, is `failed` with `offline.owner`
+ * and never posted), flush that owner's entries, and flush again on each `{ kind: 'net', online: true }` until the scope
+ * is disposed.
  */
-export async function drain(ctx: Ctx, o: Outbox<EndpointMap>): Promise<void> {
+export async function drain(ctx: Ctx, o: Outbox<EndpointMap>, opts: { readonly owner: string }): Promise<void> {
   const sc = owner();
   if (sc === undefined) throw new Error("E1203: drain() outside a scope");
   const c = configOf(o);
   sc.onDispose(observe(ctx, (e) => e.kind === "net" && e.online && void flush(ctx, c)));
   await load(ctx, c);
+  await own(ctx, c, opts.owner);
   void flush(ctx, c);
 }

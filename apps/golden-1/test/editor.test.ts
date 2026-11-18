@@ -32,7 +32,6 @@ afterEach(() => {
 
 const milk = { id: "t1", listId: "l1", title: "Milk", priority: "normal", done: false } as const;
 const seeded = { lists: [{ id: "l1", name: "Home" }], todos: [milk] };
-const ORIGIN = new URL(location.href).origin;
 const T1 = TodoIdParams.parse({ todoId: "t1" });
 const params = { listId: "l1", todoId: "t1" };
 const chartNow = () => ({ state: editorChart.store.get("state"), data: editorChart.store.get("data") });
@@ -46,7 +45,7 @@ const chartAt = (state: "viewing" | "saving" | "conflict" | "gaveUp", attempts: 
 async function otherEdit(ctx: SimCtx) {
   if (!T1.ok) throw new Error(T1.error.message);
   const body = { title: "Oat milk", priority: "normal" as const, write: write("b1", 0) };
-  return service({ base: ORIGIN, schema: boardWrites }).editTodo({ params: T1.value, body }, ctx);
+  return service({ module: "api", schema: boardWrites }).editTodo({ params: T1.value, body }, ctx);
 }
 
 /** Id of the control a form field generated, found by its accessible name. */
@@ -137,7 +136,7 @@ describe("the edit page on editorChart", () => {
     const entry = {
       key: "w1",
       endpoint: "editTodo",
-      origin: ORIGIN,
+      owner: "",
       input: { params: { todoId: "t1" }, body: { title: "Milk", priority: "high" } },
       base: 0,
       at: 0,
@@ -182,7 +181,7 @@ describe("editorFollow", () => {
     const entry = {
       key: "w1",
       endpoint: "editTodo",
-      origin: ORIGIN,
+      owner: "",
       input: { params: { todoId: "t1" }, body: { title: "Milk", priority: "high" } },
       base: 0,
       at: 0,

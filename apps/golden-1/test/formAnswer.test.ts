@@ -7,7 +7,6 @@ import { boardWrites } from "../modules/todos/boardWrites.service.ts";
 import { formAnswer } from "../modules/todos/formAnswer.ts";
 import { write } from "./write.ts";
 
-const ORIGIN = new URL(location.href).origin;
 const queued = boardOutbox.snapshot();
 afterEach(() => {
   expect(boardOutbox.restore(queued).ok).toBe(true);
@@ -19,7 +18,7 @@ function ctxAnswering(status: number, body: unknown): SimCtx {
   ctx.net.route(new URL("/api/*", location.href).href, () => Response.json(body, { status }));
   return ctx;
 }
-const sendList = (ctx: Ctx) => send(ctx, boardOutbox, ORIGIN, "createList", { body: { name: "Work" } }, { base: 0 });
+const sendList = (ctx: Ctx) => send(ctx, boardOutbox, "createList", { body: { name: "Work" } }, { base: 0, owner: "" });
 const refusal = { code: "keel.fields", message: "Fix the fields", data: { name: "Name is taken" } };
 
 describe("formAnswer", () => {
@@ -39,9 +38,8 @@ describe("formAnswer", () => {
   });
   it("answers ok(null) for a conflict and keeps it for the outbox panel", async () => {
     const ctx = ctxAnswering(409, {
-      code: "keel.conflict",
-      message: "stale",
-      data: { transaction: "api.toggleTodo", head: 3 },
+      ok: false,
+      error: { code: "keel.conflict", message: "stale", data: { transaction: "api.toggleTodo", head: 3 } },
     });
     const r = await sendList(ctx);
     expect(r.state).toBe("conflict");
@@ -57,7 +55,7 @@ describe("formAnswer", () => {
     expect(boardOutbox.get("entries")).toEqual([]);
   });
   it("answers any other failure as its own error and still drops the failed write", async () => {
-    const ctx = ctxAnswering(500, { code: "keel.internal", message: "boom", data: null });
+    const ctx = ctxAnswering(500, { ok: false, error: { code: "keel.internal", message: "boom", data: null } });
     const r = await sendList(ctx);
     expect(r.state).toBe("failed");
     const answer = await formAnswer(ctx, "createList", r);
