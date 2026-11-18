@@ -23,7 +23,7 @@ Open backlog counts are unchecked lines in `tasks/BACKLOG.md` matched to a stage
 | S5 Correctness | CLOSED | every rung populated by real machinery | `docs/HANDOFF.md` "S5 CLOSED (2026-11-13" and "S5 EXIT MET"; `evals/results/2026-11-13-golden-1-api-none.json` converged true | 0 / 6 |
 | S6 Compliance | BUILT, EXIT WAITS ON SOMETHING EXTERNAL | external a11y audit and pen test on golden app 3 | `docs/HANDOFF.md` "EXIT PROOF OPEN, all the user's" (2026-11-13) | 0 / 19 |
 | S7 UI modules | BUILT, EXIT WAITS ON SOMETHING EXTERNAL | catalog page passes the a11y pack; an agent builds it | `evals/results/2026-11-18-golden-2-catalog-none.json` converged true; agent build not run | 0 / 7 |
-| S8 Reach | OPEN | SIGKILL survival, workflow resume, shells in CI, proofs | reopened 2026-11-18 by the user (`tasks/0338-s8-reach/PLAN.md` item -10): the eval proof holds (`evals/results/2026-11-18-golden-1-api-none.json` converged true) but the design RFC's clauses for a real Postgres run, native shell builds and the Tauri replay are unmet (0607, 0609, 0610, 0694) |
+| S8 Reach | OPEN | SIGKILL survival, workflow resume, shells in CI, proofs | `tasks/0338-s8-reach/PLAN.md` item -11, 2026-11-18: shown on a real Postgres 17, Tauri on macOS and Capacitor on an Android emulator (builds, a killed write, the cookie, live streams), three evals converged; not shown: a shell built in CI and the Tauri replay (0809), a passing CI run (0815); never run: iOS, Windows Tauri, a device, signing |
 | P1 Go public | NOT STARTED | newcomer explains Keel from the diagrams; agent builds a golden app from public docs | no task directory | 0 / 6 |
 
 ## G0 Factory
