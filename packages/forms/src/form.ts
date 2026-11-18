@@ -196,9 +196,14 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
         el.addEventListener("input", onInput);
         el.addEventListener("blur", blur);
         // A control the user changed before bind (server HTML, then edits before the runtime loaded) keeps that
-        // value: the field takes it, and its markup default stays the server's (rfc:0062, backlog 0180).
+        // value: the field takes it, and its markup default stays the server's. The take is an effect declaring the
+        // field's signals, run untracked in the binding's scope, so it is no undeclared write when `bind` runs inside
+        // another computation (a structural op building its branch at resume): it runs at once, or in the commit
+        // that op's build is part of, before the effects below read the field.
         let first = !edited(el);
-        if (!first) onInput();
+        const home = owner();
+        if (!first && home !== undefined) effect(() => home.run(onInput), { writes: [vals, raw, errs] });
+        else if (!first) onInput();
         const effects = [
           effect(() => {
             sync(el);
