@@ -1,4 +1,4 @@
-// Spec: k.a11y, Required props ("A blank literal `label` (`""` or white space) is E1802 too; a computed one is unchecked") and Conformance bullet 10:
+// Spec: k.a11y, Required props ("A blank literal `label` (no visible character, as std.text `line` defines it) is E1802 too; a computed one is unchecked") and Conformance bullet 10:
 // "`keel check` without types reports E1802 for `<Box as="nav" label="">` and `Input({ label: " " })`; `label="Main"`, `label={name}` and a `store` option `label: ""` report none."
 // Seed 1337
 // E1802 for a blank label has no fix: the name is the author's choice.
