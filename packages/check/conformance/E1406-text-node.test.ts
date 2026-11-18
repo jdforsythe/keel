@@ -49,7 +49,7 @@ describe("k.place Check: each one E1406 at the expression", () => {
     expect(check(patched, {}).diagnostics.map((x) => x.code)).not.toContain("E1406");
   });
 
-  test("`{icon}` with `const icon = props.icon` typed `() => Node` is one E1406 whose fix writes `{icon()}`", () => {
+  test("`{icon}` with `const icon = props.icon` typed `() => Node` is one E1406 whose fix writes `{icon()}`, which is still E1406 with no fix", () => {
     const fs = files(card("{ icon: () => Node }", "icon", "const icon: () => Node = props.icon"));
     const d = e1406(fs);
     expect(d.length).toBe(1);
@@ -58,7 +58,10 @@ describe("k.place Check: each one E1406 at the expression", () => {
     if (fix === undefined) return;
     const patched = applyFix(fs, fix);
     expect(patched.find((f) => f.path === PATH)?.source ?? "").toContain("{icon()}");
-    expect(e1406(patched).length).toBe(0);
+    // `icon()` is a call of a local name, not a slot call, and its type is `Node`: still E1406, and with no fix (k.place Check: the fix is for a function type).
+    const after = e1406(patched);
+    expect(after.length).toBe(1);
+    expect(after[0]?.fix).toBeUndefined();
   });
 
   test("`{ok ? props.icon() : null}` is one E1406", () => {

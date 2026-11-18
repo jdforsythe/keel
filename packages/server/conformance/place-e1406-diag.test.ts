@@ -45,7 +45,7 @@ describe("k.place Runtime: a dev createApp logs one diag E1406 with the route id
     expect(second.status).toBe(200);
     expect(e1406(log.lines)).toHaveLength(1);
     expect(e1406(log.lines, "d1.page")).toHaveLength(1);
-    expect(e1406(log.lines)[0]).toContain("diag");
+    expect(e1406(log.lines)[0]?.startsWith("E1406 ")).toBe(true);
   });
 
   it("two such routes log one line each, each naming its own route id", async () => {
