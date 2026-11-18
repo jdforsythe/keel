@@ -2,10 +2,10 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1088,
-    "probabilistic": 327,
+    "example": 1107,
+    "probabilistic": 332,
     "exhaustive": 15,
-    "proven": 55,
+    "proven": 57,
     "monitored": 4
   },
   "mutation": {
@@ -47,11 +47,11 @@
         "threshold": 70
       },
       "schema": {
-        "score": 90.79,
+        "score": 92.49,
         "threshold": 80
       },
       "server": {
-        "score": 81.63,
+        "score": 82.07,
         "threshold": 70
       },
       "services": {
@@ -10367,7 +10367,7 @@
       "pkg": "std-offline",
       "name": "Write",
       "file": "packages/std-offline/src/Write.schema.ts",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "pkg": "std-offline",
@@ -10391,6 +10391,12 @@
       "pkg": "std-offline",
       "name": "send",
       "file": "packages/std-offline/src/send.ts",
+      "rung": "proven"
+    },
+    {
+      "pkg": "std-offline",
+      "name": "writeFor",
+      "file": "packages/std-offline/src/writeFor.ts",
       "rung": "proven"
     },
     {
@@ -10977,6 +10983,10 @@
     },
     {
       "item": "k.a11y#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#12",
       "rung": "example"
     },
     {
@@ -12472,6 +12482,30 @@
       "rung": "example"
     },
     {
+      "item": "k.serverlog#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#6",
+      "rung": "example"
+    },
+    {
       "item": "k.services#1",
       "rung": "probabilistic"
     },
@@ -13472,6 +13506,18 @@
       "rung": "example"
     },
     {
+      "item": "std.outbox-owner#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.outbox-owner#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.outbox-owner#3",
+      "rung": "probabilistic"
+    },
+    {
       "item": "std.outbox#1",
       "rung": "example"
     },
@@ -13493,6 +13539,38 @@
     },
     {
       "item": "std.outbox#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#8",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#11",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#12",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#13",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#14",
       "rung": "example"
     },
     {
