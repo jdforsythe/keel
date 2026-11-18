@@ -2,7 +2,7 @@
 // Seed 1337
 import { resolve, send } from "@keel/std-offline";
 import { expect, test } from "vitest";
-import { ORIGIN, createServer, edit, entriesOf, makeClient, simCtx } from "./fixtures.ts";
+import { OWNER, createServer, edit, entriesOf, makeClient, simCtx } from "./fixtures.ts";
 
 async function conflicted() {
   const ctx = simCtx();
@@ -10,7 +10,7 @@ async function conflicted() {
   server.attach(ctx);
   server.other("t1", "other");
   const c = makeClient();
-  await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "mine"), { base: 0 });
+  await send(ctx, c.o, "editTodo", edit("t1", "mine"), { base: 0, owner: OWNER });
   const entry = entriesOf(c.o)[0];
   if (entry === undefined || entry.state !== "conflict") throw new Error("no conflict entry");
   return { ctx, server, c, key: entry.key };
@@ -37,7 +37,7 @@ test("For a key with no `conflict` entry, `resolve(..., 'mine')` resolves `false
   const c = makeClient();
   expect(await resolve(ctx, c.o, "nope", "mine")).toBe(false);
   ctx.net.setOnline(false);
-  const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "q"), { base: 0 });
+  const r = await send(ctx, c.o, "editTodo", edit("t1", "q"), { base: 0, owner: OWNER });
   expect(r.state).toBe("queued");
   const entry = entriesOf(c.o)[0];
   expect(await resolve(ctx, c.o, entry?.key ?? "", "mine")).toBe(false);

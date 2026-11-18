@@ -5,7 +5,7 @@ import type { SimCtx } from "@keel/ctx";
 import { resolve, send } from "@keel/std-offline";
 import { expect, test } from "vitest";
 import {
-  ORIGIN,
+  OWNER,
   SEED,
   type SimSchedule,
   createServer,
@@ -23,7 +23,7 @@ test("With a sim schedule `storage: ['ok', 'fail']`, `send` resolves `failed` wi
   const server = createServer();
   server.attach(ctx);
   const c = makeClient();
-  const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "x"), { base: 0 });
+  const r = await send(ctx, c.o, "editTodo", edit("t1", "x"), { base: 0, owner: OWNER });
   await settle();
   expect(r.state).toBe("failed");
   if (r.state === "failed") expect(r.error.code).toBe("offline.storage");
@@ -37,13 +37,13 @@ test("With `['ok', 'ok', 'fail']` the flush's `set` fails, the entry is `failed`
   const server = createServer();
   server.attach(ctx);
   const c = makeClient();
-  const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "x"), { base: 0 });
+  const r = await send(ctx, c.o, "editTodo", edit("t1", "x"), { base: 0, owner: OWNER });
   await settle();
   expect(r.state).toBe("failed");
   if (r.state === "failed") expect(r.error.code).toBe("offline.storage");
   expect(server.posts).toHaveLength(0);
   expect(entriesOf(c.o).map((e) => e.state)).toEqual(["failed"]);
-  await send(ctx, c.o, ORIGIN, "editTodo", edit("t2", "y"), { base: 0 });
+  await send(ctx, c.o, "editTodo", edit("t2", "y"), { base: 0, owner: OWNER });
   await settle();
   expect(server.posts.map((p) => p.title)).toContain("y");
   c.dispose();
@@ -56,7 +56,7 @@ test("A `'mine'` `resolve` whose storage write rejects resolves `failed` with `o
   server.attach(ctx);
   server.other("t1", "other");
   const c = makeClient();
-  await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "mine"), { base: 0 });
+  await send(ctx, c.o, "editTodo", edit("t1", "mine"), { base: 0, owner: OWNER });
   await settle();
   const entry = entriesOf(c.o)[0];
   if (entry === undefined || entry.state !== "conflict") throw new Error("no conflict entry");
@@ -130,7 +130,7 @@ test("A `'mine'` `resolve` whose storage write rejects while a flush is running 
   server.attach(ctx);
   server.other("t1", "other");
   const c = makeClient();
-  await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "mine"), { base: 0 });
+  await send(ctx, c.o, "editTodo", edit("t1", "mine"), { base: 0, owner: OWNER });
   await settle();
   const entry = entriesOf(c.o)[0];
   if (entry === undefined || entry.state !== "conflict") throw new Error("no conflict entry");
@@ -138,7 +138,7 @@ test("A `'mine'` `resolve` whose storage write rejects while a flush is running 
   const st = slowStorage(ctx);
   st.slow(true);
   server.gated(true);
-  void send(ctx, c.o, ORIGIN, "editTodo", edit("t2", "second"), { base: 0 });
+  void send(ctx, c.o, "editTodo", edit("t2", "second"), { base: 0, owner: OWNER });
   await st.pumpUntil(() => server.posts.length > posts);
   expect(server.posts.map((p) => p.title)).toEqual(["mine", "second"]);
   server.gated(false);
@@ -165,13 +165,13 @@ test("A `send` whose storage write rejects while a flush is running posts nothin
   const st = slowStorage(ctx);
   st.slow(true);
   server.gated(true);
-  void send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "first"), { base: 0 });
+  void send(ctx, c.o, "editTodo", edit("t1", "first"), { base: 0, owner: OWNER });
   await st.pumpUntil(() => server.posts.length > 0);
   server.gated(false);
   server.release();
   await settle();
   st.failNext();
-  const pending = send(ctx, c.o, ORIGIN, "editTodo", edit("t2", "second"), { base: 0 });
+  const pending = send(ctx, c.o, "editTodo", edit("t2", "second"), { base: 0, owner: OWNER });
   await st.pumpAll();
   const r = await pending;
   expect(r.state).toBe("failed");

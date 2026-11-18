@@ -4,7 +4,7 @@
 import { send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ORIGIN, TODOS, createServer, edit, entriesOf, makeClient, settle, simCtx, startDrain } from "./fixtures.ts";
+import { OWNER, TODOS, createServer, edit, entriesOf, makeClient, settle, simCtx, startDrain } from "./fixtures.ts";
 
 test("After `setOnline(true)`, queued entries are posted in the order added, one at a time, each with its original key.", async () => {
   await fc.assert(
@@ -23,7 +23,7 @@ test("After `setOnline(true)`, queued entries are posted in the order added, one
         await settle();
         ctx.net.setOnline(false);
         for (const [todoId, title] of writes)
-          await send(ctx, c.o, ORIGIN, "editTodo", edit(todoId, title), { base: 0 });
+          await send(ctx, c.o, "editTodo", edit(todoId, title), { base: 0, owner: OWNER });
         const keys = entriesOf(c.o).map((e) => e.key);
         expect(keys).toHaveLength(writes.length);
         expect(server.posts).toHaveLength(0);

@@ -3,7 +3,7 @@
 import { send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ORIGIN, TODOS, createServer, edit, makeClient, settle, simCtx, startDrain, tick } from "./fixtures.ts";
+import { OWNER, TODOS, createServer, edit, makeClient, settle, simCtx, startDrain, tick } from "./fixtures.ts";
 
 type Step = { send: string; todo: (typeof TODOS)[number] } | { online: boolean } | { advance: number };
 const stepArb: fc.Arbitrary<Step> = fc.oneof(
@@ -22,7 +22,8 @@ async function run(script: readonly Step[]): Promise<string> {
   const stop = startDrain(ctx, c.o);
   await settle();
   for (const step of script) {
-    if ("send" in step) await send(ctx, c.o, ORIGIN, "editTodo", edit(step.todo, step.send), { base: server.head() });
+    if ("send" in step)
+      await send(ctx, c.o, "editTodo", edit(step.todo, step.send), { base: server.head(), owner: OWNER });
     else if ("online" in step) ctx.net.setOnline(step.online);
     else await tick(ctx, step.advance);
     await settle();

@@ -39,7 +39,7 @@ const declare = (secret: boolean, wraps: readonly Wrap[]) => () => {
       output: s.object({}),
     },
   });
-  return outbox(`e2651${++n}.outbox`, api);
+  return outbox(`e2651${++n}.outbox`, api, { module: "todos" });
 };
 
 test("`outbox` throws E2651 for an api with a nested `s.secret` in an endpoint body, and not for its clean twin.", () => {
@@ -68,7 +68,7 @@ export const TodosApi = endpoints({
 `;
 const outboxFile = `import { outbox } from "@keel/std-offline"
 import { TodosApi } from "./TodosApi.schema.ts"
-export const boardOutbox = outbox("todos.outbox", TodosApi, { limit: 100 })
+export const boardOutbox = outbox("todos.outbox", TodosApi, { module: "todos", limit: 100 })
 `;
 const project = (field: string): Files => [
   { path: "modules/todos/module.ts", source: manifest },

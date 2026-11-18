@@ -5,7 +5,7 @@
 import { send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ORIGIN, createServer, edit, entriesOf, makeClient, settle, simCtx, startDrain } from "./fixtures.ts";
+import { OWNER, createServer, edit, entriesOf, makeClient, settle, simCtx, startDrain } from "./fixtures.ts";
 
 test("A 409 with `data.transaction` leaves the entry `conflict` with that `head`, and the next entry is posted.", async () => {
   await fc.assert(
@@ -18,8 +18,8 @@ test("A 409 with `data.transaction` leaves the entry `conflict` with that `head`
       const stop = startDrain(ctx, c.o);
       await settle();
       ctx.net.setOnline(false);
-      await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "stale"), { base: 0 });
-      await send(ctx, c.o, ORIGIN, "editTodo", edit("t2", "fresh"), { base: others });
+      await send(ctx, c.o, "editTodo", edit("t1", "stale"), { base: 0, owner: OWNER });
+      await send(ctx, c.o, "editTodo", edit("t2", "fresh"), { base: others, owner: OWNER });
       ctx.net.setOnline(true);
       await settle();
       expect(server.posts.map((p) => p.title)).toEqual(["stale", "fresh"]);
@@ -41,7 +41,7 @@ test("A `send` refused with a k.sync conflict resolves `{ state: 'conflict', hea
   server.attach(ctx);
   server.other("t1", "other");
   const c = makeClient();
-  const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "stale"), { base: 0 });
+  const r = await send(ctx, c.o, "editTodo", edit("t1", "stale"), { base: 0, owner: OWNER });
   expect(r).toEqual({ state: "conflict", head: 1 });
   c.dispose();
 });
@@ -54,7 +54,7 @@ test("A 409 without `data.transaction` is sent once more, with the same key.", a
       server.attach(ctx);
       server.next({ kind: "overlap" });
       const c = makeClient();
-      const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", title), { base: 0 });
+      const r = await send(ctx, c.o, "editTodo", edit("t1", title), { base: 0, owner: OWNER });
       expect(r.state).toBe("sent");
       expect(server.posts).toHaveLength(2);
       expect(server.posts[1]?.key).toBe(server.posts[0]?.key);
@@ -71,7 +71,7 @@ test("A second 409 without `data.transaction` leaves the entry `failed` (std.off
   server.attach(ctx);
   server.next({ kind: "overlap" }, { kind: "overlap" });
   const c = makeClient();
-  const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "x"), { base: 0 });
+  const r = await send(ctx, c.o, "editTodo", edit("t1", "x"), { base: 0, owner: OWNER });
   expect(r.state).toBe("failed");
   expect(server.posts).toHaveLength(2);
   expect(entriesOf(c.o).map((e) => e.state)).toEqual(["failed"]);

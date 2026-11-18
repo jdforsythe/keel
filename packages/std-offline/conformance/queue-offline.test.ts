@@ -7,7 +7,7 @@ import { drain, send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import {
-  ORIGIN,
+  OWNER,
   TODOS,
   copyStorage,
   createServer,
@@ -33,7 +33,7 @@ test("After `setOnline(false)`, three `send`s resolve `queued`, post nothing, an
         const c = makeClient();
         ctx.net.setOnline(false);
         for (const [todoId, title] of writes) {
-          const r = await send(ctx, c.o, ORIGIN, "editTodo", edit(todoId, title), { base: 0 });
+          const r = await send(ctx, c.o, "editTodo", edit(todoId, title), { base: 0, owner: OWNER });
           expect(r).toEqual({ state: "queued" });
         }
         expect(server.posts).toHaveLength(0);
@@ -49,7 +49,7 @@ test("After `setOnline(false)`, three `send`s resolve `queued`, post nothing, an
         await copyStorage(ctx, next, c.storageKey);
         const c2 = makeClient({ id: c.id });
         scope(() => {
-          void drain(next, c2.o);
+          void drain(next, c2.o, { owner: OWNER });
         });
         await settle();
         expect(entriesOf(c2.o).map((e) => e.key)).toEqual(saved.map((e) => e.key));

@@ -4,7 +4,7 @@
 import { send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ORIGIN, createServer, edit, entriesOf, makeClient, simCtx, stored } from "./fixtures.ts";
+import { OWNER, createServer, edit, entriesOf, makeClient, simCtx, stored } from "./fixtures.ts";
 
 test("`send` to an outbox holding `limit` entries resolves `failed` with `offline.full` and adds nothing.", async () => {
   await fc.assert(
@@ -15,12 +15,12 @@ test("`send` to an outbox holding `limit` entries resolves `failed` with `offlin
       const c = makeClient({ limit });
       ctx.net.setOnline(false);
       for (let i = 0; i < limit; i++) {
-        const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", `w${i}`), { base: 0 });
+        const r = await send(ctx, c.o, "editTodo", edit("t1", `w${i}`), { base: 0, owner: OWNER });
         expect(r).toEqual({ state: "queued" });
       }
       const keys = entriesOf(c.o).map((e) => e.key);
       expect(keys).toHaveLength(limit);
-      const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "one too many"), { base: 0 });
+      const r = await send(ctx, c.o, "editTodo", edit("t1", "one too many"), { base: 0, owner: OWNER });
       expect(r.state).toBe("failed");
       expect(r.state === "failed" ? Reflect.get(Object(r.error), "code") : undefined).toBe("offline.full");
       expect(entriesOf(c.o).map((e) => e.key)).toEqual(keys);

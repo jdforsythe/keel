@@ -5,7 +5,7 @@
 import { resolve, send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ORIGIN, createServer, edit, entriesOf, makeClient, resolveLog, settle, simCtx } from "./fixtures.ts";
+import { OWNER, createServer, edit, entriesOf, makeClient, resolveLog, settle, simCtx } from "./fixtures.ts";
 
 /** An outbox holding one `conflict` entry (head `others`) and, offline, one `queued` entry behind it. */
 async function conflicted(others: number) {
@@ -14,7 +14,7 @@ async function conflicted(others: number) {
   server.attach(ctx);
   for (let i = 0; i < others; i++) server.other("t1", `other${i}`);
   const c = makeClient();
-  await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "mine"), { base: 0 });
+  await send(ctx, c.o, "editTodo", edit("t1", "mine"), { base: 0, owner: OWNER });
   const entry = entriesOf(c.o)[0];
   if (entry === undefined) throw new Error("no conflict entry");
   return { ctx, server, c, key: entry.key };
@@ -26,7 +26,7 @@ test("`resolve(ctx, o, key, 'mine')` queues the entry last with `base` equal to 
       const { ctx, c, key } = await conflicted(others);
       expect(entriesOf(c.o).map((e) => e.state)).toEqual(["conflict"]);
       ctx.net.setOnline(false);
-      await send(ctx, c.o, ORIGIN, "editTodo", edit("t2", "behind"), { base: others });
+      await send(ctx, c.o, "editTodo", edit("t2", "behind"), { base: others, owner: OWNER });
       const before = resolveLog(c.o, c.id).length;
       await resolve(ctx, c.o, key, "mine");
       const after = entriesOf(c.o);
@@ -77,7 +77,7 @@ test("`resolve(ctx, o, key, 'theirs')` removes a `failed` entry too (std.offline
   server.attach(ctx);
   server.next({ kind: "status", status: 500 });
   const c = makeClient();
-  const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "x"), { base: 0 });
+  const r = await send(ctx, c.o, "editTodo", edit("t1", "x"), { base: 0, owner: OWNER });
   expect(r.state).toBe("failed");
   const entry = entriesOf(c.o)[0];
   expect(entry?.state).toBe("failed");

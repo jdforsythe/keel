@@ -4,7 +4,7 @@ import { s } from "@keel/schema";
 import { send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ORIGIN, TODOS, createServer, edit, makeClient, simCtx } from "./fixtures.ts";
+import { OWNER, TODOS, createServer, edit, makeClient, simCtx } from "./fixtures.ts";
 
 test("With `online()` true and an empty outbox, `send` posts once with `body.write` `{ key, base }`, `key` a fresh `Write` id, and resolves `sent` with the endpoint's output.", async () => {
   await fc.assert(
@@ -14,7 +14,7 @@ test("With `online()` true and an empty outbox, `send` posts once with `body.wri
       server.attach(ctx);
       const c = makeClient();
       expect(ctx.net.online()).toBe(true);
-      const r = await send(ctx, c.o, ORIGIN, "editTodo", edit(todoId, title), { base: server.head() });
+      const r = await send(ctx, c.o, "editTodo", edit(todoId, title), { base: server.head(), owner: OWNER });
       expect(server.posts).toHaveLength(1);
       const post = server.posts[0];
       expect(post?.todoId).toBe(todoId);
@@ -24,7 +24,7 @@ test("With `online()` true and an empty outbox, `send` posts once with `body.wri
       // The key is the ctx's next `Write` id, so a twin ctx on the same seed mints it.
       expect(post?.key).toBe(simCtx().random.id("Write"));
       expect(r).toEqual({ state: "sent", value: { head: 1, title } });
-      const again = await send(ctx, c.o, ORIGIN, "editTodo", edit(todoId, title), { base: server.head() });
+      const again = await send(ctx, c.o, "editTodo", edit(todoId, title), { base: server.head(), owner: OWNER });
       expect(again.state).toBe("sent");
       expect(server.posts[1]?.key).not.toBe(post?.key);
       c.dispose();

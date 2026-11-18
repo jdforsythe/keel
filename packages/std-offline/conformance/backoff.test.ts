@@ -4,7 +4,7 @@
 import { send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ORIGIN, createServer, edit, makeClient, settle, simCtx, startDrain, tick } from "./fixtures.ts";
+import { OWNER, createServer, edit, makeClient, settle, simCtx, startDrain, tick } from "./fixtures.ts";
 
 test("After a network failure the next post happens 1 s, 2 s, 4 s later on `ctx.clock` (at most 60 s apart).", async () => {
   await fc.assert(
@@ -14,7 +14,7 @@ test("After a network failure the next post happens 1 s, 2 s, 4 s later on `ctx.
       server.attach(ctx);
       server.next(...Array.from({ length: failures }, () => ({ kind: "reject" as const })));
       const c = makeClient();
-      const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "x"), { base: 0 });
+      const r = await send(ctx, c.o, "editTodo", edit("t1", "x"), { base: 0, owner: OWNER });
       expect(r).toEqual({ state: "queued" });
       expect(server.posts.map((p) => p.at)).toEqual([0]);
       for (let k = 0; k < failures; k++) {
@@ -41,7 +41,7 @@ test("After a network failure the next post happens at once on `{ kind: 'net', o
       server.next({ kind: "reject" });
       const c = makeClient();
       const stop = startDrain(ctx, c.o);
-      await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", "x"), { base: 0 });
+      await send(ctx, c.o, "editTodo", edit("t1", "x"), { base: 0, owner: OWNER });
       expect(server.posts).toHaveLength(1);
       ctx.net.setOnline(false);
       await tick(ctx, away);

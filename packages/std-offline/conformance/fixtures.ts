@@ -2,7 +2,7 @@
 // The server is a set of sim net routes over a real k.store store: a POST applies `tx(edit, payload, { ...write })`,
 // so k.sync's base check and write key decide 409 and duplicates exactly as an action would. No wall clock, no random, no timers.
 // Assumption: `ctx.net.route(url, handler)`, `ctx.net.setOnline(b)` and `ctx.clock.advance(ms)` are the sim spellings.
-// Assumption: a 2xx body is the endpoint's `output` as JSON (k.services); a refusal is `{ ok: false, error }` JSON with
+// Assumption: a 2xx body is `{ ok: true, value }` with the endpoint's `output` as value (k.services module service); a refusal is `{ ok: false, error }` JSON with
 // status 409, and the endpoint declares `errors: { 409: s.json() }` so the client hands the body to the outbox.
 // Assumption: `outbox(...)` returns the client store itself (`log()`, `get('entries')`), and its state is `{ entries }`.
 import { createCtx } from "@keel/ctx";
@@ -14,7 +14,9 @@ import { Write, drain, outbox } from "@keel/std-offline";
 import { store, transaction, tx } from "@keel/store";
 
 export const SEED = 1337;
-export const ORIGIN = "https://app.example.com";
+export const MODULE = "todos";
+export const OWNER = "u1";
+export const ORIGIN = "http://todos.keel.invalid";
 export const TODOS = ["t1", "t2", "t3"] as const;
 
 export interface SimSchedule {
@@ -103,7 +105,7 @@ export function createServer() {
           const r = tx(st.edit, { todoId, title }, { key, base });
           if (!r.ok) return json(409, { ok: false, error: r.error });
           if (behavior.kind === "lose") throw new TypeError("response lost");
-          return json(200, { head: st.store.head(), title });
+          return json(200, { ok: true, value: { head: st.store.head(), title } });
         }
       }
     };
@@ -147,7 +149,8 @@ let serverCounter = 0;
 
 let outboxCounter = 0;
 
-const declare = (id: string, opts: { limit?: number; maxBytes?: number }) => outbox(id, Api, opts);
+const declare = (id: string, opts: { limit?: number; maxBytes?: number }) =>
+  outbox(id, Api, { module: MODULE, ...opts });
 
 /** A client: an outbox declared in its own scope (a store needs an owner). Ids are unique per call so scopes may overlap. */
 export function makeClient(opts: { limit?: number; maxBytes?: number; id?: string } = {}) {
@@ -164,10 +167,10 @@ export function makeClient(opts: { limit?: number; maxBytes?: number; id?: strin
   return { o, id, storageKey: `keel.outbox.${id}`, dispose: () => sc.dispose() };
 }
 
-/** `drain(ctx, o)` inside its own scope; the returned function disposes that scope. */
-export function startDrain(ctx: SimCtx, o: ReturnType<typeof declare>): () => void {
+/** `drain(ctx, o, { owner })` inside its own scope; the returned function disposes that scope. */
+export function startDrain(ctx: SimCtx, o: ReturnType<typeof declare>, owner = OWNER): () => void {
   const sc = scope(() => {
-    void drain(ctx, o);
+    void drain(ctx, o, { owner });
   });
   return () => sc.dispose();
 }

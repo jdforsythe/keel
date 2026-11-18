@@ -3,7 +3,7 @@
 import { send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ORIGIN, createServer, edit, entriesOf, makeClient, simCtx, tick } from "./fixtures.ts";
+import { OWNER, createServer, edit, entriesOf, makeClient, simCtx, tick } from "./fixtures.ts";
 
 test("When the fetch rejects after the server committed, the entry is resent with the same key and the server store holds one entry for that write.", async () => {
   await fc.assert(
@@ -13,7 +13,7 @@ test("When the fetch rejects after the server committed, the entry is resent wit
       server.attach(ctx);
       server.next(...Array.from({ length: lost }, () => ({ kind: "lose" as const })));
       const c = makeClient();
-      const r = await send(ctx, c.o, ORIGIN, "editTodo", edit("t1", title), { base: 0 });
+      const r = await send(ctx, c.o, "editTodo", edit("t1", title), { base: 0, owner: OWNER });
       expect(r).toEqual({ state: "queued" });
       expect(server.entries()).toHaveLength(1);
       let gap = 1000;
