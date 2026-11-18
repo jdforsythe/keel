@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1077,
-    "probabilistic": 324,
+    "example": 1088,
+    "probabilistic": 327,
     "exhaustive": 15,
     "proven": 55,
     "monitored": 4
@@ -47,7 +47,7 @@
         "threshold": 70
       },
       "schema": {
-        "score": 90.91,
+        "score": 90.79,
         "threshold": 80
       },
       "server": {
@@ -10976,6 +10976,10 @@
       "rung": "example"
     },
     {
+      "item": "k.a11y#11",
+      "rung": "example"
+    },
+    {
       "item": "k.api#1",
       "rung": "proven"
     },
@@ -11976,6 +11980,14 @@
       "rung": "example"
     },
     {
+      "item": "k.privacy#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.privacy#10",
+      "rung": "example"
+    },
+    {
       "item": "k.prove#1",
       "rung": "example"
     },
@@ -12126,6 +12138,10 @@
     {
       "item": "k.reveal#8",
       "rung": "example"
+    },
+    {
+      "item": "k.reveal#9",
+      "rung": "probabilistic"
     },
     {
       "item": "k.router#1",
@@ -12705,6 +12721,14 @@
     },
     {
       "item": "k.sync#12",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.sync#13",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.sync#14",
       "rung": "probabilistic"
     },
     {
@@ -13445,6 +13469,30 @@
     },
     {
       "item": "std.options#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.outbox#6",
       "rung": "example"
     },
     {
