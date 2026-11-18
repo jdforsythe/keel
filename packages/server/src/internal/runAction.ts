@@ -29,7 +29,7 @@ import { valuesOf } from "./valuesOf.ts";
  * POST, PUT, PATCH, DELETE (k.server Request flow): the verb is the method, or a POST's `_method` field (k.router
  * Form). A body over `maxBody` bytes is 413 `keel.payloadTooLarge`, action not called. FormData is decoded with the action's input schema; a `content-type: application/json` body (a k.services
  * client) is parsed with it instead, an empty one as `{}` (either fail: `keel.fields`, 422, action not called);
- * the action runs with `caller` and its `stores` instance (`openFactory`); its `ok` saves the changed stores (`saveStores`,
+ * the action runs with `caller`, `user` and its `stores` instance (`openFactory`); its `ok` saves the changed stores (`saveStores`,
  * else `keel.conflict`); `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
  * the `Result` as JSON with the status of its code. An action with `output` (an API route's, k.api Output) also gets
  * the request's `bearer`; its `ok` value is parsed by `output` before any store is saved (fail: an E1554 diag naming
@@ -76,7 +76,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   let refused: Diag | null = null;
   const { result: ran, frames } = await caught(async () => {
     const stores = action.stores === undefined ? undefined : await openFactory(sv.ctx, rq, action.stores);
-    const at = { params: m.params, url: r.url, caller: rq.caller.id, stores };
+    const at = { params: m.params, url: r.url, caller: rq.caller.id, user: rq.user, stores };
     const out =
       action.output === undefined
         ? await inRequest(rq, () => action.run(decoded.value, at, sv.ctx))

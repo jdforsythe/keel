@@ -10,11 +10,15 @@ type Args<P, S, St> = {
   readonly search: S;
   readonly url: string;
   readonly caller: string;
+  readonly user: string;
   readonly bearer: Secret<string> | undefined;
   readonly stores: St;
 };
-/** What `run` and `live` take: `bearer` may be left out by a direct caller, and `fn` then gets `undefined`. */
-type RunArgs<P, S, St> = Omit<Args<P, S, St>, "bearer"> & { readonly bearer?: Secret<string> };
+/** What `run` and `live` take: `user` and `bearer` may be left out by a direct caller; `fn` then gets `""` and `undefined`. */
+type RunArgs<P, S, St> = Omit<Args<P, S, St>, "user" | "bearer"> & {
+  readonly user?: string;
+  readonly bearer?: Secret<string>;
+};
 type Out<T> = Result<T, KeelError<string, unknown>>;
 type Fn<T, P, S, St> = (
   args: Args<P, S, St> & { readonly signal: AbortSignal },
@@ -28,7 +32,7 @@ type Decl<T, P, S, St> = {
 };
 
 /**
- * Declare a route loader (k.server API): `fn` gets `{ params, search, url, caller, bearer, stores }` and `ctx`, and returns a
+ * Declare a route loader (k.server API): `fn` gets `{ params, search, url, caller, user, bearer, stores }` and `ctx`, and returns a
  * Result whose `ok` value is encoded with `output`. `params`/`search` are `Infer` of the declared schemas (`unknown`
  * when omitted), which must be the referencing route's own values (`manifest` throws E1507); `fn` is never annotated.
  * `url` is the absolute request URL. `stores` names a server-state factory whose per-request instance `fn` gets
@@ -50,11 +54,11 @@ export function loader<T, P = unknown, S = unknown, St = undefined>(
     ...(search === undefined ? {} : { search }),
     ...(stores === undefined ? {} : { stores }),
     run: (args: RunArgs<P, S, St>, ctx: Ctx) =>
-      firstYield((signal) => fn({ ...args, bearer: args.bearer, signal }, ctx)),
+      firstYield((signal) => fn({ ...args, user: args.user ?? "", bearer: args.bearer, signal }, ctx)),
     ...(Reflect.get(fn, Symbol.toStringTag) === "AsyncGeneratorFunction"
       ? {
           live: (a: RunArgs<P, S, St> & { readonly signal: AbortSignal }, ctx: Ctx) =>
-            yields(fn({ ...a, bearer: a.bearer }, ctx)),
+            yields(fn({ ...a, user: a.user ?? "", bearer: a.bearer }, ctx)),
         }
       : {}),
   });

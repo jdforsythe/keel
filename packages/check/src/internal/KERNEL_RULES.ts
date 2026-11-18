@@ -5,6 +5,7 @@ import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
 import { foreignUrlFetch } from "../rules/foreignUrlFetch.ts";
 import { formatInApp } from "../rules/formatInApp.ts";
+import { identityFile } from "../rules/identityFile.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
@@ -78,6 +79,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noDomGlobal,
   routeSchemaInferred,
   loaderInServerFile,
+  identityFile,
   slotSignature,
   fieldInForm,
   piiInRouteUrl,

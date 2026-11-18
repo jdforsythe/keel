@@ -22,7 +22,7 @@ const REPORTS: Record<string, string> = {
   "check.ndjson": `${JSON.stringify({ kind: "summary", ok: true, name: "check", counts: { files: 1 } })}\n`,
   "deps.json": json({ bomFormat: "CycloneDX", specVersion: "1.5", components: [], advisories: null }),
   "ledger.ndjson": `${JSON.stringify({ kind: "ledger", item: "k.cli#1", rung: "example", evidence: "example t.ts" })}\n`,
-  "pii.json": json({ v: 1, paths: [], sinks: [], coverage: 1, unread: [] }),
+  "pii.json": json({ v: 1, paths: [], sinks: [], coverage: 1, unread: [], caller: { days: null, class: null } }),
   "security.json": json({ v: 1, deployables: [] }),
 };
 const NAMES = Object.keys(REPORTS);

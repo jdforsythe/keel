@@ -105,6 +105,10 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * `authorization` is `cache-control: no-store`. An event-stream GET past `maxStreams` (default 1,000) open streams
  * gets 503 `keel.busy` (`data: { limit }`) and runs no loader; a stream frees its place when it ends. A `maxStreams` that is
  * not an integer of at least 1 rejects with E1560.
+ * `identity` is the project's identity source (k.user): a request at its `handle.path` or under it goes to `handle.fn`
+ * (`handle`), and every routed one gets the `user` `userOf` answers; a `handle.path` not of lowercase `/` segments, or
+ * with a route at or under it, rejects with E1579. A caller cookie a deployable with `caller: { days }` mints carries
+ * `Max-Age`; `service({ module })` calls made on `ctx` sign their `user` as `x-keel-user` under `secret`.
  * Every response carries the k.security headers (`secured`); every document its own nonce policy (report-only in dev),
  * any other response `default-src 'none'; frame-ancestors 'none'`. `POST /__keel/csp` takes policy reports before any
  * write check or route (`cspReport`) and logs `csp` records.
@@ -139,6 +143,13 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     );
   if (opts.maxStreams !== undefined && !(Number.isInteger(opts.maxStreams) && opts.maxStreams >= 1))
     throw codedError("E1560", "maxStreams: createApp({ maxStreams }) needs an integer of at least 1");
+  // A library's mount and the routes of every deployable must not overlap (k.user Rules).
+  const mountPath = opts.identity?.handle?.path;
+  if (
+    mountPath !== undefined &&
+    (!/^(\/[a-z0-9-]+)+$/.test(mountPath) || table.some((r) => `${r.def.path}/`.startsWith(`${mountPath}/`)))
+  )
+    throw codedError("E1579", "identity handle.path: lowercase / segments with no route at or under it");
   if (opts.std !== undefined) bindStd(opts.ctx, await loadStd(opts.std));
   const log = opts.log;
   if (deployed && opts.secret === undefined)
@@ -195,6 +206,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
       log?.write(diagLine(log.format, { code: "keel.unexpected", message })),
     ),
     ...(log === undefined ? {} : { log }),
+    identity: opts.identity,
+    days: opts.topology[name]?.caller?.days,
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
@@ -244,7 +257,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
           // Only an API route reads `authorization` (k.api Bearer); the token is a `Secret` and the header is not kept.
           const rq = {
             scope: scope(() => undefined),
-            caller: callerOf(raw, sv.ctx, sv.keys, sv.secure, sv.origin),
+            caller: callerOf(raw, sv),
+            user: "",
             bearer: matched?.def.api === true ? bearerOf(raw) : undefined,
             allowed: api !== undefined,
             held: new Map(),
@@ -321,7 +335,9 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
       await Promise.all(await running);
     },
   };
-  const unbind = bindModules(sv.ctx, opts.topology, sv.name, app, peers);
+  const unbind = bindModules(sv.ctx, opts.topology, sv.name, app, peers, (method, url, user) =>
+    sv.keys.assert(method, url, user, sv.ctx.clock.now()),
+  );
   const own = opts.topology[sv.name]?.modules ?? [];
   // Each runner's `run` enters its own scrub scope (`keepRunning`), even when this app is made inside a request.
   const running = Promise.resolve().then(() =>

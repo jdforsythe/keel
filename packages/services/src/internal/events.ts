@@ -25,7 +25,7 @@ export async function* events(
 ): AsyncGenerator<Result<unknown, ApiError>> {
   const controller = new AbortController();
   linkSignal(input, controller);
-  const req = buildRequest(e, target.base, input, controller.signal, "text/event-stream");
+  const req = buildRequest(e, target.base, input, controller.signal, "text/event-stream", target.sign);
   if (!req.ok) {
     yield req;
     return;

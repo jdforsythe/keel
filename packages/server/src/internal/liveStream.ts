@@ -20,8 +20,8 @@ import { scrubbedDiag } from "./scrubbedDiag.ts";
 const HEARTBEAT_MS = 15_000;
 
 /**
- * The event stream of a live loader (k.server Request flow), after its guards passed, with the request's `caller` and
- * `bearer` (k.api Bearer): its `stores` factory opens
+ * The event stream of a live loader (k.server Request flow), after its guards passed, with the request's `caller`, the `user`
+ * it opened with (k.user) and `bearer` (k.api Bearer): its `stores` factory opens
  * once and nothing saves; each yield is one `data:` line, its `Result` JSON (`ok` encoded by `output`, `err` as it may
  * leave the server, an `output` encode that throws its `keel.unexpected` scrubbed by `scrubbedCause`); a `:` line goes out per 15 s of `ctx.clock`. It ends when `fn` returns or its `signal` aborts:
  * on request abort or `close()` (both also cancel the stream, so a stalled write ends), or when the reader cancels.
@@ -61,6 +61,7 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<un
           search: m.search,
           url: r.url,
           caller: rq.caller.id,
+          user: rq.user,
           stores,
           signal: ac.signal,
         };

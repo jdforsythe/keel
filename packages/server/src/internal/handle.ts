@@ -18,19 +18,23 @@ import { nearestErrorElement } from "./nearestErrorElement.ts";
 import { noStore } from "./noStore.ts";
 import { notFound } from "./notFound.ts";
 import { page } from "./page.ts";
+import { payloadTooLarge } from "./payloadTooLarge.ts";
+import { readCapped } from "./readCapped.ts";
 import { redirectResponse } from "./redirectResponse.ts";
 import { runAction } from "./runAction.ts";
 import { runGuards } from "./runGuards.ts";
 import { sameSite } from "./sameSite.ts";
 import { servedEntry } from "./servedEntry.ts";
 import { statusOf } from "./statusOf.ts";
+import { userOf } from "./userOf.ts";
 
 /**
  * One request (k.server Request flow): a write (POST, PUT, PATCH, DELETE) that is not same-site gets 403
- * `keel.denied` before anything runs (CSRF, `sameSite`); a GET or HEAD of `/@keel/entry.ts` gets the resume
+ * `keel.denied` before anything runs (CSRF, `sameSite`); one at the identity source's `handle.path` or under it then goes
+ * to its `fn` with its body (over `maxBodyBytes`: 413) and gets `fn`'s response as given (k.user); a GET or HEAD of `/@keel/entry.ts` gets the resume
  * entry, or a production client build's file (`servedEntry`); then match the path (no pattern: 404; trailing
  * slash or a prefix param's default segment: 308 to the canonical path), parse params (fail: 404 at the nearest errorElement, no guard or loader runs) and search
- * (failing keys dropped), run guards outermost first (deny: 302, or 303 for a write, to the redirect route
+ * (failing keys dropped), ask the request's `user` (`userOf`; its failure fails the guards), run guards outermost first (deny: 302, or 303 for a write, to the redirect route
  * with `next`; a redirect loop or a ninth hop is E1508), then GET/HEAD render the page and the action verbs run the action (a fresh caller token is set as a
  * cookie on its response, `issueCaller`); other methods get 405 (`allowOf`). A GET with `accept: text/event-stream` gets 406 unless
  * the route's loader is live, then 403 `keel.denied` for a guard redirect, else its event stream (`liveStream`).
@@ -45,6 +49,13 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
   const path = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") || "/" : url.pathname;
   if (isVerb(method) && !sameSite(raw, sv.origin, rq.allowed))
     return { response: denied("cross-site write refused"), route: undefined, diags: [] };
+  const mount = sv.identity?.handle;
+  if (mount !== undefined && `${url.pathname}/`.startsWith(`${mount.path}/`)) {
+    const body = raw.body === null ? null : await readCapped(raw, sv.maxBody);
+    const sent = body === null ? raw : new Request(raw.url, { method, headers: raw.headers, body, signal: raw.signal });
+    const response = raw.body !== null && body === null ? payloadTooLarge(sv.maxBody) : await mount.fn(sent, sv.ctx);
+    return { response, route: undefined, diags: [] };
+  }
   const entry = servedEntry(raw, url.pathname, sv.built);
   if (entry !== null) return entry;
   const m = matchUrl(sv.table, `${path}${url.search}`);
@@ -97,7 +108,9 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
     return { response: new Response(null, { status: 405, headers: { allow: allowOf(def) } }), route, diags: [] };
   const stream = method === "GET" && accept.includes("text/event-stream");
   if (stream && live?.live === undefined) return { response: new Response(null, { status: 406 }), route, diags: [] };
-  const g = await runGuards(m.route.chain, r.here, m.params, sv, rq);
+  const who = await userOf(r);
+  if (typeof who === "string") rq.user = who;
+  const g = await runGuards(m.route.chain, r.here, m.params, sv, rq, typeof who === "string" ? undefined : who);
   if (g.kind === "redirect")
     return {
       response: stream || api ? denied("guard denied") : redirectResponse(write ? 303 : 302, g.location),

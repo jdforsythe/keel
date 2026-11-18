@@ -23,7 +23,7 @@ import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
  * handle is `render`'s plus `route()`, `navigate(href)` (push, then the same quiescence and checks as `fire`) and
  * `location()` (`{ entries, scrollY }`: the history length and the scroll position);
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
- * `options.caller` (default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
+ * `options.caller` and `options.user` (each default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
  * `state()` hold no factory store.
  */
@@ -54,7 +54,11 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   let router: Router<RouteState<M>>;
   const history = memoryHistory(url);
   try {
-    router = createRouterWith(options.routes, { ctx, history, caller: options.caller ?? "" }, serverState(ctx));
+    router = createRouterWith(
+      options.routes,
+      { ctx, history, caller: options.caller ?? "", user: options.user ?? "" },
+      serverState(ctx),
+    );
   } catch (error) {
     for (const [st, snap] of seeded) st.restore(snap);
     restoreHead();

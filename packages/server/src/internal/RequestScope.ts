@@ -5,7 +5,7 @@ import type { Caller } from "./Caller.ts";
 
 /**
  * The isolated scope one request runs in (k.store `isolate`): the stores created inside it go in `#k-state`. `caller`
- * is who sent it (`callerOf`); `bearer` its `Authorization: Bearer` token on an API route, else `undefined` (`bearerOf`,
+ * is who sent it (`callerOf`); `user` is who the identity source says made it, `""` until `userOf` answers (k.user); `bearer` its `Authorization: Bearer` token on an API route, else `undefined` (`bearerOf`,
  * k.api Bearer); `allowed`, whether its `Origin` is an allowed origin and its route an API route
  * (k.hosting); `held` is this request's instance of each `stores` factory opened so far (`openStores` from `@keel/store/internal`, whose `StateRequest` this satisfies); `pii` the
  * `.pii()` values of its decoded action input, its loaders' outputs and its factories' store states, which its `diag`
@@ -16,6 +16,7 @@ import type { Caller } from "./Caller.ts";
 export type RequestScope = {
   readonly scope: Scope;
   readonly caller: Caller;
+  user: string;
   readonly bearer: Secret<string> | undefined;
   readonly allowed: boolean;
   readonly held: Map<Factory, Promise<Held>>;

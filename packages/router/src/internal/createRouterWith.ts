@@ -66,7 +66,7 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * nearest errorElement, no loader) and search (failing keys dropped), run every guard outermost first
  * (denied: redirect to the guard's `redirect` with `?next=`), then every loader of the chain concurrently,
  * then commit. The previous page stays rendered and `pending` is true until the commit. Guards, loaders and actions get
- * `caller` (default `""`; the harness supplies one). Each navigation that is not a guard's redirect reports `nav` to
+ * `caller` and `user` (default `""`; the harness supplies them). Each navigation that is not a guard's redirect reports `nav` to
  * the ctx's observers before its guards, and each loader or action `err` reports `error` (k.ctx Observers).
  * `state` runs loaders and actions naming `stores` (k.server Server state; the harness passes it, `createRouter` never
  * does): each loader run is one `state.request()` and each submit another, an action's `ok` saves (a stale read
@@ -80,12 +80,13 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     readonly ctx: Ctx;
     readonly history: RouterHistory;
     readonly caller?: string;
+    readonly user?: string;
     readonly mode?: "dev" | "production";
   },
   state?: ServerState,
 ): Router<RouteState<M>> {
   const { ctx, history } = opts;
-  const caller = opts.caller ?? "";
+  const who = { caller: opts.caller ?? "", user: opts.user ?? "" };
   const shownMode = opts.mode === "dev" ? "dev" : "production";
   const shown = (e: KeelError<string, unknown>): KeelError<string, unknown> => publicError(e, shownMode);
   const own = tables.get(routes) ?? compileRoutes(routes.routes);
@@ -207,7 +208,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     for (const [i, lvl] of m.route.chain.entries()) {
       const g = lvl.def.guard;
       if (g === undefined) continue;
-      const r = await runGuard(g, m.url, ctx, caller);
+      const r = await runGuard(g, m.url, ctx, who);
       if (t !== token) return;
       if (r.ok) continue;
       if (r.error.code !== "keel.denied") return commit(t, failedAt(m, i, r.error), placeOf(m), mode);
@@ -217,7 +218,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     }
     const results = await runLoaders(
       m.route.chain,
-      { params: m.params, search: m.search, url: absoluteUrl(m.url), caller },
+      { params: m.params, search: m.search, url: absoluteUrl(m.url), ...who },
       ctx,
       state,
     );
@@ -263,7 +264,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     pending.set(true);
     const results = await runLoaders(
       v.chain,
-      { params: v.params, search: v.search, url: absoluteUrl(v.url), caller },
+      { params: v.params, search: v.search, url: absoluteUrl(v.url), ...who },
       ctx,
       state,
     );
@@ -309,7 +310,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
         const from = act.stores;
         const ran = await attempt(async () => {
           const stores = from === undefined ? undefined : await rq?.stores(from);
-          const out = await act.run(decoded.value, { params, url, caller, stores }, ctx);
+          const out = await act.run(decoded.value, { params, url, ...who, stores }, ctx);
           const clash = out.ok ? await rq?.save() : null;
           return clash ? err(clash) : out;
         });

@@ -12,7 +12,7 @@ type Outcome = Result<unknown, KeelError<string, unknown>>;
 
 async function runOne(
   l: Loader<unknown>,
-  args: { params: Rec; search: Rec; url: string; caller: string },
+  args: { params: Rec; search: Rec; url: string; caller: string; user: string },
   ctx: Ctx,
   rq: ServerRequest | undefined,
 ): Promise<Outcome> {
@@ -29,7 +29,7 @@ async function runOne(
 
 /**
  * Start every loader of `chain` in chain order, concurrently, and collect their Results (levels without a
- * loader give `ok(undefined)`); each gets the absolute `url` and the router's `caller` (`""` by default: no request). A
+ * loader give `ok(undefined)`); each gets the absolute `url` and the router's `caller` and `user` (`""` by default: no request). A
  * throw becomes `keel.unexpected`; data failing `output` is E1554. With `state` the run is one request: each loader
  * naming `stores` gets the request's instance of its factory, and the request ends once every loader settled; without
  * it such a loader is `keel.unexpected` (server state, k.server). Each `err` is reported to the ctx's observers (k.ctx
@@ -37,7 +37,7 @@ async function runOne(
  */
 export async function runLoaders(
   chain: readonly Level[],
-  args: { params: Rec; search: Rec; url: string; caller: string },
+  args: { params: Rec; search: Rec; url: string; caller: string; user: string },
   ctx: Ctx,
   state?: ServerState,
 ): Promise<Outcome[]> {

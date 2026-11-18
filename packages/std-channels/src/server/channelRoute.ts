@@ -40,14 +40,14 @@ export function channelRoute<P, M, S>(
   const instance = (key: string): string => `${channel.name}\n${key}`;
   const live = loader(
     { output: eventsOf(channel.message), stores },
-    async function* ({ url, caller, stores, signal }, ctx) {
+    async function* ({ url, caller, user, stores, signal }, ctx) {
       const p = paramsOf(channel.params, url);
       if (!p.ok) {
         yield err(notFound);
         return;
       }
       // `member` before the caps: a non-member learns nothing about them; it runs once per open as it does below them.
-      const at = { caller, params: p.value.value, stores };
+      const at = { caller, user, params: p.value.value, stores };
       if (!allowed(member, at)) {
         yield closed("denied");
         return;
@@ -104,10 +104,10 @@ export function channelRoute<P, M, S>(
       ? action({ input: s.object({}), output: s.object({}), stores }, () => err(denied))
       : action(
           { input: s.object({ message }), output: s.object({}), stores },
-          (input, { url, caller, stores }, ctx) => {
+          (input, { url, caller, user, stores }, ctx) => {
             const p = paramsOf(channel.params, url);
             if (!p.ok) return err(notFound);
-            if (!allowed(member, { caller, params: p.value.value, stores })) return err(denied);
+            if (!allowed(member, { caller, user, params: p.value.value, stores })) return err(denied);
             const key = instance(p.value.key);
             for (const sk of hubOf(ctx).sinks) if (sk.key === key) sk.post(input.message);
             return ok({});

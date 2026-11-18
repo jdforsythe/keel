@@ -606,7 +606,7 @@ describe("runLoaders / runGuard", () => {
     id: "l",
     def: { component: view, ...def },
   });
-  const args = { params: {}, search: {}, url: "http://localhost/", caller: "" };
+  const args = { params: {}, search: {}, url: "http://localhost/", caller: "", user: "" };
   it("no loader gives ok(undefined); a loader's value is parsed by its output schema", async () => {
     const out = await runLoaders(
       [lvl({}), lvl({ loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 })) })],
@@ -656,10 +656,10 @@ describe("runLoaders / runGuard", () => {
     const boom = guard({ redirect: "x" }, async () => {
       throw new Error("bang");
     });
-    expect(await runGuard(yes, "/u", ctx, "")).toEqual(ok(null));
-    const denied = await runGuard(no, "/u", ctx, "");
+    expect(await runGuard(yes, "/u", ctx, { caller: "", user: "" })).toEqual(ok(null));
+    const denied = await runGuard(no, "/u", ctx, { caller: "", user: "" });
     expect(denied.ok === false && denied.error.code).toBe("keel.denied");
-    const thrown = await runGuard(boom, "/u", ctx, "");
+    const thrown = await runGuard(boom, "/u", ctx, { caller: "", user: "" });
     expect(thrown.ok === false && thrown.error.code).toBe("keel.unexpected");
   });
   it("runGuard hands the url and the caller to the guard", async () => {
@@ -668,8 +668,8 @@ describe("runLoaders / runGuard", () => {
       seen.push(req.url, req.caller);
       return ok(null);
     });
-    await runGuard(g, "/the/url?x=1", ctx, "");
-    await runGuard(g, "/u", ctx, "c4ll3r");
+    await runGuard(g, "/the/url?x=1", ctx, { caller: "", user: "" });
+    await runGuard(g, "/u", ctx, { caller: "c4ll3r", user: "" });
     expect(seen).toEqual(["/the/url?x=1", "", "/u", "c4ll3r"]);
   });
 });

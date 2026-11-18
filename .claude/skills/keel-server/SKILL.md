@@ -1,13 +1,13 @@
 ---
 name: keel-server
-description: "Keel server state: loader/action stores factories, per-request restore and save over ctx.storage, keel.conflict 409, caller and undoWhere, runners; E1558, E1551"
+description: "Keel server state: loader/action stores factories, per-request restore and save over ctx.storage, keel.conflict 409, caller and undoWhere, user and identity.server.ts, runners; E1558, E1551, E1579"
 ---
 
 # Server state
 
-Spec: `pnpm spec k.server`, `k.topology`. A `node` deployable (e.g. `api`) owns the data.
+Spec: `pnpm spec k.server`, `k.topology`, `k.user`. A `node` deployable owns the data.
 
-**Factory:** `boardStores = () => { const board = store(Board, init, { id: 'api.board' }); invariant(board, fn); return { board, addTodo: addTodo(board) } }`, `addTodo = (board) => transaction(board, 'api.addTodo', schema, fn)`; every store has an explicit `id`. Per request each named factory runs once, restoring its stores from `ctx.storage` `keel.store.<id>`; an action's `ok` saves the changed ones; `err` saves none; when another request saved any of them since, it answers 409 `keel.conflict`.
+**Factory:** `boardStores = () => { const board = store(Board, init, { id: 'api.board' }); return { board, addTodo: addTodo(board) } }`; every store has an explicit `id`. Per request each named factory runs once, restoring its stores from `ctx.storage` `keel.store.<id>`; an action's `ok` saves the changed ones, `err` none; when another request saved any since, 409 `keel.conflict`.
 ```ts
 export const loadBoard = loader({ output: BoardView, stores: boardStores }, async ({ stores }) => ok(...))
 export const postTodo = action({ input: TodoDraft, params: ListParams, stores: boardStores }, (input, { params, caller, stores }, ctx) => {
@@ -15,12 +15,14 @@ export const postTodo = action({ input: TodoDraft, params: ListParams, stores: b
   return r.ok ? ok(null) : err(r.error)
 })
 ```
-Undo one caller's writes: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. `caller` is a hash of the signed cookie (`""` with no cookie on a read; a write with none gets a fresh caller, set as a cookie on the response).
+Undo one caller's writes: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. `caller` hashes an anonymous signed cookie (a write with none gets one) and grants nothing.
 
-An API route's action declares `output` and returns `ok(value)` of its type, and its guards, loaders and actions get `bearer` beside `caller` (keel-api).
+**User:** Keel authenticates no one. `identity.server.ts` beside `topology.ts`: `export default identity({ identify: async ({ request }) => libSession(request)?.id ?? '', handle: { path: '/auth', fn: (req) => lib.handler(req) } })` (`@keel/server`). Guards, loaders and actions get `user` beside `caller` (`''`: no one); `handle` hosts the library's sign-in endpoints and cookies (E1579: a route under its path).
 
-**Where:** `loader`/`action` only in `*.server.ts` (E1551). A loader or action naming `stores`, or a live loader, in a module a `client` or `static` deployable serves is E1558; place that module in a `node` deployable. Server code never writes module-level stores: `tx`, `restore`, `undo`, `undoWhere` there throw E1256 in a request and in work it schedules (timers too).
+An API route's action declares `output`; its handlers also get `bearer` (keel-api).
 
-**Background work:** `export const runners = [...]` (`{ run(ctx, signal) }`) in `modules/<id>/runners.server.ts`; a rejected `run` runs again 1,000 ms later.
+**Where:** `loader`/`action` only in `*.server.ts` (E1551). A loader or action naming `stores`, or a live loader, in a module a `client` or `static` deployable serves is E1558: place it in a `node` one. Server code never writes module-level stores (E1256 in a request and work it schedules).
 
-**Tests:** `renderRoute` runs `stores` factories over the harness ctx's `ctx.storage` as a `node` deployable does, so a page it renders is tested like any other (keel-testing). Concurrent writes and the outbox: keel-writes.
+**Background work:** `export const runners = [...]` (`{ run(ctx, signal) }`) in `modules/<id>/runners.server.ts`; a rejection reruns it 1 s later.
+
+**Tests:** `renderRoute(id, { user })` runs `stores` factories over the harness ctx's `ctx.storage` (keel-testing). Concurrent writes, outbox: keel-writes.

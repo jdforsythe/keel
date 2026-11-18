@@ -40,6 +40,7 @@ describe("loader and action params/search", () => {
       readonly search: { filter?: "all" | "done" | undefined };
       readonly url: string;
       readonly caller: string;
+      readonly user?: string;
       readonly bearer?: Secret<string>;
       readonly stores: undefined;
     }>();
@@ -47,6 +48,7 @@ describe("loader and action params/search", () => {
       readonly params: { todoId: Id<"Todo"> };
       readonly url: string;
       readonly caller: string;
+      readonly user?: string;
       readonly stores: undefined;
     }>();
     expectTypeOf(unread.run).parameter(0).toEqualTypeOf<{
@@ -54,6 +56,7 @@ describe("loader and action params/search", () => {
       readonly search: unknown;
       readonly url: string;
       readonly caller: string;
+      readonly user?: string;
       readonly bearer?: Secret<string>;
       readonly stores: undefined;
     }>();

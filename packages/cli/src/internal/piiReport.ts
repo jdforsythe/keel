@@ -1,4 +1,5 @@
 import type { Infer } from "@keel/schema";
+import { callerDays } from "@keel/compiler/hosting/callerDays";
 import type { PiiReport } from "../evidence/PiiReport.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { PII_SINKS } from "./PII_SINKS.ts";
@@ -21,7 +22,8 @@ const isSchema = (v: unknown): boolean => isRecord(v) && isRecord(v.node) && typ
  * imported once in Node; every schema export is read with `piiPaths` of the project's `@keel/schema`, giving one entry
  * per marked leaf `{ file, export, path, class }`. Each sink carries its clause's rung from `rungOf`; `coverage` is
  * the share of (path, sink) pairs whose clause is `probabilistic` or higher (1 with no path). A file that fails to
- * import is named in `unread`, never skipped silently.
+ * import is named in `unread`, never skipped silently. `caller` is the longest `caller: { days }` a `node` deployable of
+ * `topology.ts` sets (`callerDays`), classed `network` (k.user Caller lifetime), else `{ days: null, class: null }`.
  */
 export async function piiReport(
   cwd: string,
@@ -50,5 +52,10 @@ export async function piiReport(
   const sinks = PII_SINKS.map((s) => ({ ...s, rung: rungOf(s.clause) }));
   const covered = sinks.filter((s) => COVERED.has(s.rung)).length;
   const coverage = paths.length === 0 ? 1 : covered / sinks.length;
-  return { v: 1, paths, sinks, coverage, unread };
+  const top = files.find((f) => f.path === "topology.ts")?.source;
+  const days = (top === undefined ? [] : callerDays(top))
+    .filter(([, adapter, d]) => adapter === "node" && Number.isInteger(d) && d >= 1 && d <= 400)
+    .reduce((most, [, , d]) => Math.max(most, d), 0);
+  const caller: Report["caller"] = days === 0 ? { days: null, class: null } : { days, class: "network" };
+  return { v: 1, paths, sinks, coverage, unread, caller };
 }

@@ -1,6 +1,7 @@
 import { type Result, attempt, err, ok, reveal, s } from "@keel/schema";
 import type { ApiError } from "../ApiError.ts";
 import type { Endpoint } from "../Endpoint.ts";
+import type { Target } from "./Target.ts";
 import { encodePart } from "./encodePart.ts";
 import { encodeQuery } from "./encodeQuery.ts";
 import { fail } from "./fail.ts";
@@ -13,7 +14,8 @@ const Bearer = s.secret(s.string());
  * `accept` (`application/json`; `text/event-stream` for an `events` endpoint), `x-keel: 1` (the k.server same-site proof for writes) and, with
  * a `bearer`, `authorization: Bearer <token>`, revealed here and nowhere else. Invalid input is `api.input` and nothing is
  * built: a `bearer` that is not a secret whose text is a token68 of 1 to 4,096 characters (k.api Bearer) is `format` at
- * `bearer`. A Request the platform refuses (bad URL, body on GET) is `api.network`.
+ * `bearer`. A `user` is sent as `x-keel-user`, signed by the target's `sign` (k.user); a `user` that is not a string, or
+ * one on a target with no `sign` (a ctx no `createApp` bound), is `api.input` at `user`. A Request the platform refuses (bad URL, body on GET) is `api.network`.
  */
 export function buildRequest(
   e: Endpoint,
@@ -21,6 +23,7 @@ export function buildRequest(
   input: unknown,
   signal: AbortSignal,
   accept = "application/json",
+  sign?: Target["sign"],
 ): Result<Request, ApiError<never>> {
   const params = encodePart(e.params, "params", input);
   if (!params.ok) return params;
@@ -37,9 +40,13 @@ export function buildRequest(
   if (!path.ok) return path;
   const qs = query.value === undefined ? "" : encodeQuery(query.value).toString();
   const url = `${base.replace(/\/+$/, "")}${path.value}${qs === "" ? "" : `?${qs}`}`;
+  const user: unknown = Reflect.get(Object(input), "user");
+  const signed = typeof user === "string" ? sign?.(e.method, url, user) : undefined;
+  if (user !== undefined && signed === undefined) return err(fail.input([{ path: ["user"], rule: "type" }]));
   const json = body.value;
   const headers: Record<string, string> = { accept, "x-keel": "1" };
   if (b !== undefined) headers.authorization = `Bearer ${token}`;
+  if (signed !== undefined) headers["x-keel-user"] = signed;
   const init: RequestInit =
     json === undefined
       ? { method: e.method, headers, signal }

@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
 import type { Located } from "@keel/router/internal";
+import type { Identity } from "../types/Identity.ts";
 import type { LogSink } from "../types/LogSink.ts";
 import type { BuiltClient } from "./BuiltClient.ts";
 import type { CallerKeys } from "./CallerKeys.ts";
@@ -21,6 +22,7 @@ import type { ReportWindow } from "./ReportWindow.ts";
  * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`). `log` is
  * `createApp({ log })`, for records written after the response has started (an event stream's). `eager` holds the
  * route ids that have logged E1257 (k.claim Server), once each, and `nothing` those that have logged E1406 (k.place).
+ * `identity` is `createApp({ identity })` (k.user) and `days` the served deployable's `caller: { days }`.
  */
 export type Served = {
   readonly table: readonly Located[];
@@ -44,4 +46,6 @@ export type Served = {
   readonly reports: ReportWindow;
   readonly frames: (thrown: unknown) => readonly string[];
   readonly log?: LogSink;
+  readonly identity?: Identity | undefined;
+  readonly days?: number | undefined;
 };

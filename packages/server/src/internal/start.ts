@@ -5,10 +5,10 @@ import { peerKey } from "@keel/compiler/hosting/peerKey";
 import { createCtx } from "@keel/ctx";
 import { type RouteDef, manifest } from "@keel/router";
 import { createApp } from "@keel/server";
+import { onUncaught } from "@keel/server/internal/onUncaught";
 import type { StartOptions } from "../types/StartOptions.ts";
 import { DeployEnv } from "./DeployEnv.ts";
 import { diagLine } from "./diagLine.ts";
-import { onUncaught } from "@keel/server/internal/onUncaught";
 
 const line = (text: string): void => {
   process.stdout.write(`${text}\n`);
@@ -18,7 +18,7 @@ const line = (text: string): void => {
  * Serve one `node` deployable in production (`@keel/server/internal/start`, k.topology Build; only the generated entry calls
  * it). A `'sqlite'` deployable on a Node older than 22.13 (`node`, the running version by default) prints one E1560 naming
  * both versions and exits 1 before the driver loads. Parses `process.env` with `DeployEnv`: a failure prints one E1560 naming the key, never its value, and exits 1.
- * Then serves `createApp` (production, real `ctx`, the merged routes, runners, peers by `KEEL_PEER_<NAME>`, `origin`
+ * Then serves `createApp` (production, real `ctx`, the merged routes, runners, the identity source, peers by `KEEL_PEER_<NAME>`, `origin`
  * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, its storage the driver `open` opened on
  * `KEEL_DATABASE_URL` when given (k.deploy Storage; a std.db E2152 or E2153 prints that diag and exits 1), and on
  * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0, or 1 when either rejects (nothing is printed);
@@ -102,6 +102,7 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
     routes: manifest(routes),
     ctx: createCtx({ mode: "real", ...(opened === undefined ? {} : { drivers: { storage: opened } }) }),
     runners: o.runners,
+    identity: o.identity,
     peers: Object.fromEntries(peers.map((p) => [p, String(env.value[peerKey(p)])])),
     secret: env.value.KEEL_SECRET,
     assets: o.dir,

@@ -3,7 +3,7 @@ import { s } from "@keel/schema";
 const Shell = s.object({ id: s.string(), name: s.string() });
 
 /**
- * Shape of a topology definition: deployable name -> `{ modules, adapter, host?, storage?, shells? }` (k.topology). Internal: only
+ * Shape of a topology definition: deployable name -> `{ modules, adapter, host?, storage?, shells?, caller? }` (k.topology). Internal: only
  * `topology()` parses with it, adding the checks the shape cannot state (a deployable has modules).
  */
 export const TopologySchema = s.record(
@@ -13,5 +13,6 @@ export const TopologySchema = s.record(
     host: s.string({ min: 1 }).optional(),
     storage: s.enum(["file", "sqlite", "postgres"]).optional(),
     shells: s.object({ capacitor: Shell.optional(), tauri: Shell.optional() }).optional(),
+    caller: s.object({ days: s.int({ min: 1, max: 400 }) }).optional(),
   }),
 );

@@ -682,6 +682,20 @@ const ROWS: readonly Row[] = [
     "k.leave",
   ],
   [
+    "E1578",
+    "caller on a deployable other than node, or days not an integer 1 to 400",
+    "A persistent caller is a long-lived device identifier, classed network personal data.",
+    "caller: { days: 1.5 } -> caller: { days: 30 } on a node deployable",
+    "k.user",
+  ],
+  [
+    "E1579",
+    "identity.server.ts without a default identity(...), or handle.path not lowercase / segments or over a route",
+    "Keel authenticates no one: identify answers user and handle mounts the library's own endpoints.",
+    "handle: { path: '/api' } beside a route /api/x -> handle: { path: '/auth' }",
+    "k.user",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",

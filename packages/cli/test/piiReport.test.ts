@@ -129,7 +129,14 @@ describe("piiReport", () => {
     expect(r.coverage).toBe(1);
     expect(r.sinks.map((s) => s.rung)).toEqual(["none", "none", "none", "none"]);
     const empty = await piiReport(p.dir, [], all("none"));
-    expect(empty).toEqual({ v: 1, paths: [], sinks: r.sinks, coverage: 1, unread: [] });
+    expect(empty).toEqual({
+      v: 1,
+      paths: [],
+      sinks: r.sinks,
+      coverage: 1,
+      unread: [],
+      caller: { days: null, class: null },
+    });
   });
 
   test("property: coverage is the number of covered sinks over four, whatever the rung of each", async () => {

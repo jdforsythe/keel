@@ -19,7 +19,8 @@ const [DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
  * uncaught-error listeners (`onUncaught` in dev: each records E1577 with the thrown text and serving goes on), it creates one dev
  * `createApp` per `node` deployable of `topology`, each with its own real `ctx` whose storage is the file
  * `.keel-dev/<name>.storage.json`, its modules' routes (an app module's `routes.ts`, a stdlib module's package
- * `./routes` export: `stdRoutes`) and runners, the `.keel/` artifacts and `std.json`, and the
+ * `./routes` export: `stdRoutes`) and runners, the `.keel/` artifacts and `std.json`, the project's `identity.server.ts`
+ * (k.user) when it exists, and the
  * others as in-process peers. It exports `apps`, `[name, app, served]` per
  * deployable, `served(path)` telling whether a route of that deployable (an API route included) matches the path.
  */
@@ -46,6 +47,8 @@ export function devEntryCode(root: string, topology: Topology): string {
     "export const apps = [];",
   ];
   const std = has(".keel/std.json") ? `, std: ${abs(".keel/std.json")}` : "";
+  const id = has("identity.server.ts") ? ", identity" : "";
+  if (id !== "") lines.push(`const { default: identity } = await import(${abs("identity.server.ts")});`);
   for (const name of node) {
     const mods = topology[name]?.modules ?? [];
     const files = mods.flatMap((m) => {
@@ -62,7 +65,7 @@ export function devEntryCode(root: string, topology: Topology): string {
       `  const routes = manifest({ ${imports.join(", ")} });`,
       "  const table = compileTable(compileRoutes(routes.routes), routes.routes);",
       `  const others = Object.fromEntries(Object.entries(peers).filter(([n]) => n !== ${JSON.stringify(name)}));`,
-      `  made[${JSON.stringify(name)}] = await createApp({ topology, deployable: ${JSON.stringify(name)}, routes, ctx: createCtx({ mode: "real", drivers: { storage: fileStorage(${abs(`.keel-dev/${name}.storage.json`)}) } }), mode: "dev", runners: { ${run.join(", ")} }, peers: others, artifacts: ${abs(".keel")}${std}, log });`,
+      `  made[${JSON.stringify(name)}] = await createApp({ topology, deployable: ${JSON.stringify(name)}, routes, ctx: createCtx({ mode: "real", drivers: { storage: fileStorage(${abs(`.keel-dev/${name}.storage.json`)}) } }), mode: "dev", runners: { ${run.join(", ")} }, peers: others, artifacts: ${abs(".keel")}${std}${id}, log });`,
       `  apps.push([${JSON.stringify(name)}, made[${JSON.stringify(name)}], (p) => matchUrl(table, p).route !== null]);`,
       "}",
     );

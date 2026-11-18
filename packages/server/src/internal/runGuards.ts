@@ -36,12 +36,12 @@ async function step(
   bearer?: Secret<string>,
 ): Promise<Step> {
   const { routes, table } = sv;
-  const caller = rq.caller.id;
+  const who = { caller: rq.caller.id, user: rq.user };
   for (const [i, lvl] of chain.entries()) {
     const g = lvl.def.guard;
     if (g === undefined) continue;
     const ran = await caught(
-      () => g.run(bearer === undefined ? { url, caller } : { url, caller, bearer }, sv.ctx),
+      () => g.run(bearer === undefined ? { url, ...who } : { url, ...who, bearer }, sv.ctx),
       sv.frames,
     );
     if (!ran.result.ok) {
@@ -93,8 +93,9 @@ async function nextHop(url: string, sv: Served, rq: RequestScope): Promise<strin
  * visited twice or a ninth redirect is E1508, a `keel.unexpected` failure at the denying level with a diag; a guard's
  * throw fails at its level, scrubbed, with a `keel.unexpected` diag (k.server Log).
  * On an API route a denial is a `redirect` with location `""`, resolved nowhere (k.api).
- * Every guard gets the request's `caller` id (`""` anonymous) and its `bearer` (`undefined` off an API route, k.api
- * Bearer); a redirect hop's guards run without one, as the browser following it sends none.
+ * Every guard gets the request's `caller` id (`""` anonymous), its `user` (k.user) and its `bearer` (`undefined` off an API route, k.api
+ * Bearer); a redirect hop's guards run without one, as the browser following it sends none. `refused`, the request's
+ * `userOf` error, fails at the outermost level before any guard runs (k.user).
  */
 export async function runGuards(
   chain: readonly Level[],
@@ -102,11 +103,13 @@ export async function runGuards(
   params: Readonly<Record<string, unknown>>,
   sv: Served,
   rq: RequestScope,
+  refused?: KeelError<string, unknown>,
 ): Promise<GuardOutcome> {
   const fail = (i: number, error: KeelError<string, unknown>, diags: readonly Diag[] = []): GuardOutcome => {
     const level = nearestErrorElement(chain, i);
     return { kind: "fail", failure: { level, bare: needsBare(chain, level), error }, diags };
   };
+  if (refused !== undefined) return fail(0, refused);
   const first = await step(chain, url, params, sv, rq, rq.bearer);
   if (first.kind === "pass") return first;
   if (first.kind === "fail") return fail(first.at, first.error, first.diags);

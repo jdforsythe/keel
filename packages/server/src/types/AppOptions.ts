@@ -1,6 +1,7 @@
 import type { Topology } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
+import type { Identity } from "./Identity.ts";
 import type { LogSink } from "./LogSink.ts";
 import type { Runner } from "./Runner.ts";
 import type { ServerApp } from "./ServerApp.ts";
@@ -33,6 +34,8 @@ import type { ServerApp } from "./ServerApp.ts";
  * http(s) origin rejects with E1560 naming its index. With any entry, every API-route response carries `vary: origin`.
  * `maxStreams`, a positive integer (default 1000), caps the event streams open at once: one more is 503 `keel.busy`
  * with `data: { limit }` and runs no loader; a stream frees its place when it ends for any reason.
+ * `identity` is the project's identity source (k.user): `identify` answers each routed request's `user`, `handle` mounts
+ * a library's endpoints; a `handle.path` not of lowercase `/` segments, or with a route at or under it, rejects with E1579.
  */
 export type AppOptions = {
   readonly topology: Topology;
@@ -53,4 +56,5 @@ export type AppOptions = {
   readonly origin?: string;
   readonly allow?: readonly string[];
   readonly maxStreams?: number;
+  readonly identity?: Identity | undefined;
 };

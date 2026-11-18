@@ -1,11 +1,11 @@
 # std.outbox-owner: Outbox owner check
 status: proposed
 
-How the action behind an outbox endpoint (std.offline) refuses a write queued by another owner than the one its caller is signed in as when the action runs.
+How the action behind an outbox endpoint (std.offline) refuses a write queued by another owner than the request's `user` when the action runs.
 
-**Write.** `Write` is `s.object({ key: s.id('Write'), base: s.int({ min: 0 }), owner: s.string() })`; a flush sends each entry's `owner` in `body.write`. The action passes the write through `writeFor(write, owner)` from `@keel/std-offline`, `owner` being the id its module gives the request's `caller` (k.server): the id its pages give `send` and `drain`, `""` for a caller signed in as no one.
+**Write.** `Write` is `s.object({ key: s.id('Write'), base: s.int({ min: 0 }), owner: s.string() })`; a flush sends each entry's `owner` in `body.write`. The action passes the write through `writeFor(write, owner)` from `@keel/std-offline`, `owner` being the request's `user` (k.user): the id its pages give `send` and `drain`, `""` for no one.
 ```ts
-const w = writeFor(input.write, ownerOf(caller, stores))
+const w = writeFor(input.write, user)
 if (!w.ok) return err(w.error)
 const r = tx(stores.editTodo, payload, { meta: { caller }, ...w.value })
 ```

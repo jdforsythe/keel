@@ -20,7 +20,7 @@ const apiAct = action({ input: s.object({}), output: N }, async (_input, at) => 
   return ok({ n: 1 });
 });
 const pageAct = action({ input: s.object({}) }, async (_input, at) => {
-  expectTypeOf<keyof typeof at>().toEqualTypeOf<"params" | "url" | "caller" | "stores">();
+  expectTypeOf<keyof typeof at>().toEqualTypeOf<"params" | "url" | "caller" | "user" | "stores">();
   return ok(null);
 });
 const nothing = action({ input: s.object({}), output: s.object({}) }, async () => ok({}));
@@ -45,6 +45,7 @@ describe("action overloads", () => {
       readonly params: unknown;
       readonly url: string;
       readonly caller: string;
+      readonly user?: string;
       readonly stores: undefined;
       readonly bearer?: Secret<string>;
     }>();

@@ -6,24 +6,31 @@ import type { ApiAction } from "./types/ApiAction.ts";
 import type { Href } from "./types/Href.ts";
 
 type Out<T> = Result<T, KeelError<string, unknown>>;
-type PageAt<P, St> = { readonly params: P; readonly url: string; readonly caller: string; readonly stores: St };
+type PageAt<P, St> = {
+  readonly params: P;
+  readonly url: string;
+  readonly caller: string;
+  readonly user: string;
+  readonly stores: St;
+};
 type ApiAt<P, St> = PageAt<P, St> & { readonly bearer: Secret<string> | undefined };
+/** What `run` takes: a direct caller may leave out `user` and `bearer`; `fn` then gets `""` and `undefined`. */
+type RunAt<P, St> = Omit<PageAt<P, St>, "user"> & {
+  readonly user?: string;
+  readonly bearer?: Secret<string> | undefined;
+};
 type Built<I, R, P, St> = {
   readonly kind: "keel.action";
   readonly input: ObjectSchema<I>;
   readonly output?: Schema<R>;
   readonly params?: ObjectSchema<P>;
   readonly stores?: (ctx: Ctx) => St;
-  run(
-    input: I,
-    at: PageAt<P, St> & { readonly bearer?: Secret<string> | undefined },
-    ctx: Ctx,
-  ): Out<R> | Promise<Out<R>>;
+  run(input: I, at: RunAt<P, St>, ctx: Ctx): Out<R> | Promise<Out<R>>;
 };
 
 /**
  * Declare a route action (k.server API, k.api Output). `fn` gets the input decoded by `input`, `{ params, url, caller,
- * stores }`, and `ctx`. With `output` it is an API route's action: `fn` returns `ok(value)` of `output`'s type and also
+ * user, stores }`, and `ctx`. With `output` it is an API route's action: `fn` returns `ok(value)` of `output`'s type and also
  * gets `bearer` (k.api Bearer). Without it it is a page's: `ok(href)` navigates there, `ok(null)` revalidates the
  * current chain. `params` is `Infer` of the declared schema (`unknown` when omitted), which must be the referencing
  * route's own value (`manifest` throws E1507); `fn` is never annotated. `url` is the absolute request URL. `stores`
@@ -60,10 +67,6 @@ export function action<I, R, P, St>(
     ...(output === undefined ? {} : { output }),
     ...(params === undefined ? {} : { params }),
     ...(stores === undefined ? {} : { stores }),
-    run:
-      output === undefined
-        ? fn
-        : (i: I, at: PageAt<P, St> & { readonly bearer?: Secret<string> | undefined }, ctx: Ctx) =>
-            fn(i, { ...at, bearer: at.bearer }, ctx),
+    run: (i: I, at: RunAt<P, St>, ctx: Ctx) => fn(i, { ...at, user: at.user ?? "", bearer: at.bearer }, ctx),
   });
 }
