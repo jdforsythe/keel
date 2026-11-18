@@ -29,13 +29,13 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | --- | --- | --- | --- |
 | k.schema | Schemas | conformance-covered | types, validators, codecs |
 | k.reactive | Reactivity | conformance-covered | signals, effects, scopes |
-| k.store | Store and transactions | conformance-covered | transactions, log, undo |
+| k.store | Store, transactions | conformance-covered | transactions, log, undo |
 | k.component | Components | conformance-covered | props, slots, If/For/Match |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX to DOM ops |
 | k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes |
-| k.resume | Served documents and resume | conformance-covered | regions, layout islands |
+| k.resume | Served documents, resume | conformance-covered | regions, layout islands |
 | k.claim | Claim order | conformance-covered | eager elements |
-| k.place | Placed props | implemented | prop calls are content |
+| k.place | Placed props | conformance-covered | calls are content |
 | k.router | Routes | conformance-covered | params, loaders, actions |
 | k.guards | Guards | conformance-covered | redirects, loop limit |
 | k.prefix | Implied path prefix | conformance-covered | enum param URLs omit |
