@@ -1,5 +1,5 @@
 {
-  "commit": "d5f3a82bf8ade951968bca6479a5bf6536ce3d77",
+  "commit": "7b6e57e176c4d05151450dde375bfbeb44a9c5ed",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T22:48:02.047Z",
+  "generatedAt": "2026-11-18T22:59:21.030Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3732,7 +3732,7 @@
         "unitFiles": 23
       },
       "packages/testing": {
-        "conformanceCases": 379,
+        "conformanceCases": 378,
         "conformanceFiles": 83,
         "exploreFiles": 11,
         "fails": 0,
@@ -3761,7 +3761,7 @@
       }
     },
     "totals": {
-      "conformanceCases": 3781,
+      "conformanceCases": 3780,
       "conformanceFiles": 924,
       "exploreFiles": 17,
       "fails": 2,
