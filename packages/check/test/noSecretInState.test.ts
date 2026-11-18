@@ -230,7 +230,7 @@ describe("E1303 (b) reveal in a transaction function", () => {
     expect(out([login("(st, p) => { const k = { reveal: (x) => x }; return { t: k.reveal(p.t) } }", ns)])).toEqual([]);
   });
 
-  it("ignores reveal outside the reducer, other modules, computed and other members", () => {
+  it("ignores reveal outside the reducer, other modules, dynamic keys and other members", () => {
     const outside = f(
       "modules/app/login.server.ts",
       `${head}export const show = (p: { t: never }) => reveal(p.t)\nexport const login = transaction(cart, 'x', Login, (st) => st)\n`,
@@ -238,7 +238,7 @@ describe("E1303 (b) reveal in a transaction function", () => {
     expect(out([outside])).toEqual([]);
     const ns = `import * as k from '@keel/schema'\nimport * as other from 'other'\n${TX}`;
     expect(
-      out([login("(st, p) => ({ ...st, a: other.reveal(p.t), b: k['reveal'], c: k.parse, d: p.reveal })", ns)]),
+      out([login("(st, p) => ({ ...st, a: other.reveal(p.t), b: k[p.key], c: k.parse, d: p.reveal })", ns)]),
     ).toEqual([]);
     const notKeel = `import { reveal } from 'other'\n${TX}`;
     expect(out([login("(st, p) => ({ ...st, a: reveal(p.t) })", notKeel)])).toEqual([]);

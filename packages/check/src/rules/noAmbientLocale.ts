@@ -2,6 +2,7 @@ import { globalRefs, unwrapExpression } from "@keel/compiler/internal";
 import { type Argument, type Expression, Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
+import { memberName } from "../internal/memberName.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -43,13 +44,6 @@ const ZONED = /(Z|[+-]\d{2}:?\d{2}|GMT|UTC)$/i;
 
 /** True when `Date.parse` or `new Date` reads the string `s` in the host time zone. */
 const localText = (s: string): boolean => !DATE_ONLY.test(s.trim()) && !ZONED.test(s.trim());
-
-/** The member name of a static or literal-keyed member expression, else null. */
-function memberName(e: Expression): string | null {
-  if (e.type !== "MemberExpression") return null;
-  if (!e.computed) return e.property.type === "Identifier" ? e.property.name : null;
-  return e.property.type === "Literal" && typeof e.property.value === "string" ? e.property.value : null;
-}
 
 /** True when argument `i` is given and is not `undefined`, `void 0` or `[]` (each means the host locale). */
 const given = (args: readonly Argument[], i: number): boolean => {

@@ -1,22 +1,32 @@
-import { globalRefs, references } from "@keel/compiler/internal";
-import { Visitor } from "oxc-parser";
+import { globalRefs, unwrapExpression } from "@keel/compiler/internal";
+import { type Expression, Visitor } from "oxc-parser";
 import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
+import { importedFunction } from "../internal/importedFunction.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { localNames } from "../internal/modules/localNames.ts";
+import { revealReads } from "../internal/revealReads.ts";
 import { schemaSourceOf } from "../internal/schemaSourceOf.ts";
 import { secretPath } from "../internal/secretPath.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
+const FUNCTIONS: ReadonlySet<string> = new Set([
+  "FunctionDeclaration",
+  "FunctionExpression",
+  "ArrowFunctionExpression",
+]);
+
 /**
  * E1303 (k.store): a secret reaching store state. (a) The first argument of `store(...)` holds `s.secret` at any
  * depth, read through the file's consts and relative imports into `project` files; reported at that argument with
- * the field path. (b) `reveal` from `@keel/schema` (any alias, or `<namespace>.reveal`) referenced inside a
- * `transaction(...)` function, also one that only compares; reported at the reference. `store`, `transaction` and
- * `reveal` count only where they bind the import (a local of the same name shadows it). No fix: removing the field or the call leaves the code
- * ill-typed, and the field may live in another file.
+ * the field path. (b) `reveal` from `@keel/schema` (`revealReads`: an alias, a const alias or destructured name, or
+ * `<namespace>.reveal`/`['reveal']`) read inside a `transaction(...)` function, also one that only compares: an inline
+ * function, a function declaration or const function named as the argument (reported at the read), or a function
+ * imported from a relative file (reported at the argument). `store` and `transaction` count as named imports from
+ * `@keel/store` or members of its namespace import, only where they bind the import (a local of the same name shadows
+ * it). No fix: removing the field or the call leaves the code ill-typed, and the field may live in another file.
  */
 export const noSecretInState: RuleDef = {
   code: "E1303",
@@ -31,52 +41,54 @@ export const noSecretInState: RuleDef = {
     if (!isAppPath(file.path)) return [];
     const stores = localNames(ast, "store", "@keel/store");
     const txs = localNames(ast, "transaction", "@keel/store");
-    if (stores.size === 0 && txs.size === 0) return [];
-    const reveals = localNames(ast, "reveal", "@keel/schema");
     const namespaces = new Set<string>();
     for (const st of ast.body) {
-      if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/schema") continue;
+      if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/store") continue;
       for (const sp of st.specifiers) if (sp.type === "ImportNamespaceSpecifier") namespaces.add(sp.local.name);
     }
+    if (stores.size === 0 && txs.size === 0 && namespaces.size === 0) return [];
     const src = schemaSourceOf(file.path, ast);
     const g = globalRefs(ast);
     // A read is the import when it binds at module scope; a local of the same name shadows it.
     const imported = (name: string, at: number): boolean => g.sameBinding(name, ast.start, at);
+    /** `store`, `transaction` or null: what the callee `c` names. */
+    const factory = (c: Expression): string | null => {
+      if (c.type === "Identifier") {
+        if (!imported(c.name, c.start)) return null;
+        return stores.has(c.name) ? "store" : txs.has(c.name) ? "transaction" : null;
+      }
+      if (c.type !== "MemberExpression" || c.computed || c.object.type !== "Identifier") return null;
+      if (!namespaces.has(c.object.name) || !imported(c.object.name, c.object.start)) return null;
+      return c.property.name === "store" || c.property.name === "transaction" ? c.property.name : null;
+    };
     const out: Finding[] = [];
     const fns: { start: number; end: number; name: string }[] = [];
-    const members: number[] = [];
     new Visitor({
       CallExpression: (n) => {
-        if (n.callee.type !== "Identifier" || !imported(n.callee.name, n.callee.start)) return;
+        const kind = factory(n.callee);
         const first = n.arguments[0];
-        if (stores.has(n.callee.name) && first !== undefined && first.type !== "SpreadElement") {
+        if (kind === "store" && first !== undefined && first.type !== "SpreadElement") {
           const path = secretPath(first, src, project);
           if (path !== null) out.push(findingAt(file, first.start, { path: path === "" ? "(root)" : path }));
         }
-        if (!txs.has(n.callee.name)) return;
-        const fn = n.arguments[n.arguments.length - 1];
+        const last = n.arguments[n.arguments.length - 1];
+        if (kind !== "transaction" || last === undefined || last.type === "SpreadElement") return;
         const label = n.arguments[1];
         const name = label?.type === "Literal" && typeof label.value === "string" ? label.value : "?";
-        if (fn?.type === "ArrowFunctionExpression" || fn?.type === "FunctionExpression")
-          fns.push({ start: fn.start, end: fn.end, name });
-      },
-      MemberExpression: (n) => {
-        if (n.computed || n.object.type !== "Identifier" || !namespaces.has(n.object.name)) return;
-        if (!imported(n.object.name, n.object.start)) return;
-        if (n.property.type === "Identifier" && n.property.name === "reveal") members.push(n.start);
+        const arg = unwrapExpression(last);
+        const fn = arg.type === "Identifier" ? (g.functionOf(arg.name, arg.start) ?? g.initOf(arg)) : arg;
+        if (FUNCTIONS.has(fn.type)) fns.push({ start: fn.start, end: fn.end, name });
+        else if (arg.type === "Identifier" && imported(arg.name, arg.start)) {
+          const far = importedFunction(ast, file.path, arg.name, project);
+          if (far !== null && revealReads(far.program).some((at) => at >= far.start && at < far.end))
+            out.push(findingAt(file, arg.start, { tx: name }));
+        }
       },
     }).visit(ast);
     if (fns.length === 0) return out;
-    const owner = (at: number): string | null => fns.find((f) => at >= f.start && at < f.end)?.name ?? null;
-    const uses = [
-      ...references(ast)
-        .refs.filter((r) => reveals.has(r.name) && imported(r.name, r.start))
-        .map((r) => r.start),
-      ...members,
-    ];
-    for (const at of uses) {
-      const name = owner(at);
-      if (name !== null) out.push(findingAt(file, at, { tx: name }));
+    for (const at of revealReads(ast)) {
+      const owner = fns.find((f) => at >= f.start && at < f.end);
+      if (owner !== undefined) out.push(findingAt(file, at, { tx: owner.name }));
     }
     return out;
   },
