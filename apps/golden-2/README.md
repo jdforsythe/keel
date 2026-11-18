@@ -22,6 +22,8 @@ Handlers read `user`; nothing in the app stores a password or a session.
 - `POST /api/tokens` (`accounts.tokens`): for a user signed in by cookie, mints a token with `@keel/std-credentials` that lasts 30 days and answers `{ token, id, expiresAt }`, the only time the token text leaves; the `accounts.tokens` store holds its id, digest and user. No user, or a request that presents a token, is 403 `keel.denied`.
 - `GET /api/me` (`accounts.me`): the email of the request's `user`, by session cookie or by bearer token; neither, or an unknown, tampered or expired token, is 403 `keel.denied`.
 
+At each sign-in the library accepts, `identity.server.ts` saves the user's id and email in the `accounts.profiles` store, and `/api/me` reads them there. Only `identity.server.ts` imports the library: a loader's imports are bundled into the browser code of the pages that use it, so no loader or page module imports the library.
+
 The pages are served in the three locales, their copy in `modules/accounts/AccountsText/<locale>.ts`.
 
 The library keeps users, password hashes and sessions in its own `node:sqlite` database, outside `ctx.storage`, and creates its tables with its own migration at the first request. Its ids, tokens, timestamps and session expiry come from its own clock and randomness, not the sim ctx; tests use an in-memory database per ctx and assert none of them.
