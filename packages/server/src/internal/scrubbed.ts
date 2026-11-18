@@ -1,3 +1,4 @@
+import { SCRUB_CAP } from "./SCRUB_CAP.ts";
 import { automatonOf } from "./automatonOf.ts";
 
 const WORD = /[\p{L}\p{N}\p{M}_]/u;
@@ -21,7 +22,7 @@ const split = (t: string, at: number, end: number): boolean =>
  * code unit the automaton's longest valid match ending there joins the run of matches it overlaps, and each run is
  * replaced as a whole, so the whole of each marked copy is replaced. The run's mark is that of its longest match; of
  * two as long, the earlier pass's. Past the automaton's cap the message is one mark, the first pass's that holds a
- * value. `count`, for tests, adds the walk's steps and, when the automaton is built, the build's.
+ * value; so is a message over `SCRUB_CAP` characters, which is not read (k.serverlog). `count`, for tests, adds the walk's steps and, when the automaton is built, the build's.
  */
 export function scrubbed(
   message: string,
@@ -30,6 +31,7 @@ export function scrubbed(
 ): string {
   const held = passes.find(([values]) => values.size > 0);
   if (held === undefined) return message;
+  if (message.length > SCRUB_CAP) return held[1];
   const a = automatonOf(
     passes.map(([values]) => values),
     count,
