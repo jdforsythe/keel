@@ -7,7 +7,7 @@ A client store kept current: it re-reads through its own loader after every push
 ## Contract
 
 - **Public API:**
-  - `live(ctx, origin, channel, params, { read, hydrate })`, inside a scope (E1203 outside one), returns `status()`, a signal read of `LiveStatus`. It follows `channel` with `subscribe` (`@keel/std-channels`) and runs `read(ctx)` after each `reset` and each `saved` event; an `ok` value commits `tx(hydrate, value)`. `read` receives the ctx `live` was given. `message` events cause no read.
+  - `live(ctx, origin, channel, params, { read, hydrate })`, inside a scope (E1203 outside one), returns `status()`, a signal read of `LiveStatus`. It follows `channel` with `subscribe` (`@keel/std-channels`) and runs `read(ctx, signal)` after each `reset` and each `saved` event; an `ok` value commits `tx(hydrate, value)`. `read` receives the ctx `live` was given and an `AbortSignal` that aborts when the read's 30 s pass while it is pending and when the scope is disposed while it is pending; a `read` that takes only `ctx` stays valid. `message` events cause no read.
   - `LiveStatus` (schema and type): `connecting`, `live`, `offline`, `denied`.
 - **Invariants:**
   - One read at a time: a read is pending until it settles or 30 s pass on `ctx.clock`, whichever is first. Any number of events while one is pending cause exactly one more read after it. A read never commits after its 30 s or after a read started later, so reads commit in the order they started.

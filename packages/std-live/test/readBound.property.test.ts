@@ -1,6 +1,6 @@
 // Property and examples: a std.live read is pending until it settles or 30 s pass on ctx.clock. For any schedule of
 // settle times on either side of the bound, and any events, one read is pending at a time, only reads settled within
-// 30 s commit, each at most once and in start order, and no clock wait outlives the scope. Seed 1337.
+// 30 s commit, a read given up or pending at dispose has an aborted signal, each at most once and in start order, and no clock wait outlives the scope. Seed 1337.
 import { type KeelError, type Result, ok } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -10,15 +10,16 @@ type Settle = (r: Result<number, KeelError<string, unknown>>) => void;
 interface Started {
   readonly at: number;
   readonly done: Settle;
+  readonly signal: AbortSignal;
   settledAt: number | null;
 }
 
 /** A read the test settles by hand; read `i` returns `ok(i)`. */
 function held(now: () => number) {
   const reads: Started[] = [];
-  const read = (): Promise<Result<number, KeelError<string, unknown>>> =>
+  const read = (_ctx: unknown, signal: AbortSignal): Promise<Result<number, KeelError<string, unknown>>> =>
     new Promise((done) => {
-      reads.push({ at: now(), done, settledAt: null });
+      reads.push({ at: now(), done, signal, settledAt: null });
     });
   const settleRead = (i: number): void => {
     const r = reads[i];
@@ -127,8 +128,12 @@ test("for any settle schedule around the bound, only reads settled within 30 s c
           expect(r?.settledAt ?? null).not.toBeNull();
           if (r !== undefined && r.settledAt !== null) expect(r.settledAt - r.at).toBeLessThan(30_000);
         }
+        for (const r of h.reads) {
+          if (r.settledAt === null && ctx.clock.now() - r.at >= 30_000) expect(r.signal.aborted).toBe(true);
+        }
         m.dispose();
         await settle();
+        for (const r of h.reads) if (r.settledAt === null) expect(r.signal.aborted).toBe(true);
         expect(ctx.clock.next()).toBeNull();
       },
     ),

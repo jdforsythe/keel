@@ -36,7 +36,10 @@ export function server(seed = 1337) {
 let n = 0;
 
 /** A view store and `live` over it, each in its own scope; `dispose` ends the live scope. */
-export function mount(ctx: SimCtx, read: (ctx: SimCtx) => Promise<Result<number, KeelError<string, unknown>>>) {
+export function mount(
+  ctx: SimCtx,
+  read: (ctx: SimCtx, signal: AbortSignal) => Promise<Result<number, KeelError<string, unknown>>>,
+) {
   const made: { view?: ReturnType<typeof makeView> } = {};
   scope(() => {
     made.view = makeView(`unit.view${++n}`);
