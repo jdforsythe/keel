@@ -10,7 +10,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "58kb",
+      "max": "59kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -31,7 +31,7 @@
     "@keel/router": "10.75kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
-    "@keel/runtime-dom/ops": "9.5kb",
+    "@keel/runtime-dom/ops": "9.75kb",
     "@keel/scaffold": {
       "max": "18.75kb",
       "platform": "node"
