@@ -6,7 +6,9 @@
 // page (index, show, catalog; Chrome itself scrolls a page with a focused input back to the top after load); then
 // on each page: no console warning or error; no element removed after the parser finished and no element added under
 // an island root while it resumes (text may be replaced and empty anchors added); every served element and island
-// mark still there; focus, typed value, caret and scroll position kept; and one interaction working.
+// mark still there; focus, typed value, caret and scroll position kept; and one interaction working. Last, on a fresh
+// page, the sign-in form is filled and submitted with Enter while the scripts are still held: the browser sends
+// exactly one POST.
 // Usage: node tooling/smoke/resume.mjs [runs] (default 1). Nothing is written inside the repo.
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -349,6 +351,32 @@ try {
 
     step(`run ${run} console`, logged.length === 0, logged.slice(0, 3).join(" | "));
     await page.close();
+
+    // A submit before the island resumes goes to the server once.
+    const early = await browser.newPage();
+    const posts = [];
+    early.on("request", (r) => {
+      if (r.method() === "POST") posts.push(new URL(r.url()).pathname);
+    });
+    const open = { release: () => undefined };
+    const gate = new Promise((resolve) => {
+      open.release = resolve;
+    });
+    await early.route("**/*.js", async (route) => {
+      await gate;
+      await route.continue().catch(() => undefined);
+    });
+    await early.goto(`${apiBase}/account/signin`, { waitUntil: "commit" });
+    await early.waitForFunction(() => document.readyState !== "loading");
+    await early.fill(email, "cook@example.com");
+    await early.fill('input[name="password"]', "not-the-password");
+    await early.press('input[name="password"]', "Enter");
+    await wait(500);
+    open.release();
+    await early.waitForLoadState("load").catch(() => undefined);
+    await wait(1000);
+    step(`run ${run} early submit posts once`, posts.length === 1, `${posts.length} POST ${posts.join(" ")}`);
+    await early.close();
   }
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
