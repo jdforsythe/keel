@@ -4,8 +4,7 @@ import { describe, expect, test } from "vitest";
 import { reveal, s } from "../src/index.ts";
 
 describe("a revealed value", () => {
-  // Open: `Secret.of` freezes the `Secret`, not its value.
-  test.fails("is frozen deep", () => {
+  test("is frozen deep", () => {
     const parsed = s.secret(s.object({ a: s.string(), list: s.array(s.string()) })).parse({ a: "x", list: ["y"] });
     if (!parsed.ok) throw new Error("parse");
     const v = reveal(parsed.value);

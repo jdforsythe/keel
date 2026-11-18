@@ -4,6 +4,19 @@ import { listening } from "./internal/listening.ts";
 const MARKER = "[secret]";
 const INSPECT = Symbol.for("nodejs.util.inspect.custom");
 
+/** Freeze `v` and every object and array reachable from it by own keys, each once, at any depth without recursion. */
+const freeze = (v: unknown): void => {
+  const seen = new Set<unknown>();
+  for (const todo = [v]; todo.length > 0; ) {
+    const o = todo.pop();
+    if (typeof o === "object" && o !== null && !seen.has(o)) {
+      seen.add(o);
+      Object.freeze(o);
+      for (const k of Reflect.ownKeys(o)) todo.push(Reflect.get(o, k));
+    }
+  }
+};
+
 /**
  * The parsed value of `s.secret(inner)` (k.schema Secrets). The value lives in a private field: JSON, `String()`,
  * templates and `inspect` print `[secret]`; keys, spread and `structuredClone` see nothing. Read it with `reveal`.
@@ -21,8 +34,12 @@ export class Secret<T> {
     Object.freeze(this);
   }
 
-  /** A new secret of `value`, sealed under `inner` (the `secret` node's inner node); the listener hears of it. */
+  /**
+   * A new secret of `value`, sealed under `inner` (the `secret` node's inner node); the listener hears of it. `value`
+   * and each object and array under it are frozen in place, so what `reveal` returns cannot change.
+   */
   static of<T>(value: T, inner: Node): Secret<T> {
+    freeze(value);
     const made = new Secret(value, inner);
     listening.current?.(made);
     return made;

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// k.privacy Sinks, the `req` path: where the line-up rule over-marks, and two paths it does not cover. Seed 1337.
+// k.privacy Sinks, the `req` path: where the line-up rule over-marks, an encoded separator, and a `.pii()` param. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { type RouteDef, manifest } from "@keel/router";
 import { compileRoutes, compileTable } from "@keel/router/internal";
@@ -35,8 +35,7 @@ describe("a route led by a param", () => {
 });
 
 describe("an encoded separator", () => {
-  // Open: segments split on a raw `/` only, and no stated limit names `%2F`.
-  test.fails("before the secret marks the segment that holds it", () => {
+  test("before the secret marks the segment that holds it", () => {
     const marks = marksOf({ "app.r": { path: "/reset/:token", params: s.object({ token: tok }), component: view } });
     for (const p of ["/reset%2FSECRETx", "/reset%2fSECRETx", "/RESET%2FSECRETx", "/reset%5CSECRETx"])
       expect(marks(p)).toBe("/[secret]");
@@ -44,8 +43,7 @@ describe("an encoded separator", () => {
 });
 
 describe("a personal-data route param", () => {
-  // Open: the req path marks secret params and the request's pii values, never a route param marked `.pii()`.
-  test.fails("is [pii] in the req path", async () => {
+  test("is [pii] in the req path", async () => {
     const lines: string[] = [];
     const app = await createApp({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),

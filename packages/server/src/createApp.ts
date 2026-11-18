@@ -282,9 +282,9 @@ export async function createApp(opts: AppOptions): Promise<ServerApp> {
         );
       for (const d of h.diags) log.write(diagLine(log.format, d));
       const ms = Math.max(0, Math.round(sv.ctx.clock.now() - t0));
-      // The path as the log may hold it: each segment where a route of `routes` has a secret param is `[secret]`
-      // whatever its spelling, a longer path cut there (`secretSegments`), then the request's own values are scrubbed;
-      // a request that never ran has empty sets.
+      // The path as the log may hold it: each segment where a route of `routes` has a secret or `.pii()` param is
+      // `[secret]` or `[pii]` whatever its spelling, a longer path cut there (`secretSegments`), then the request's own
+      // values are scrubbed; a request that never ran has empty sets.
       const shown = redacted(marks(path), { secrets, pii });
       log.write(reqLine(log.format, { method: raw.method, path: shown, route: h.route, status: response.status, ms }));
     }

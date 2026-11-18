@@ -10,8 +10,7 @@ import { requestSecrets } from "../src/internal/requestSecrets.ts";
 const Token = s.secret(s.object({ token: s.string() }));
 
 describe("a revealed value changed in place", () => {
-  // Open: a scope walks each Secret once, and a revealed value is not frozen.
-  test.fails("is marked when the scope reveals it again", () => {
+  test("is marked when the scope reveals it again", () => {
     noteRequestSecrets();
     const parsed = Token.parse({ token: "old-token-1234" });
     if (!parsed.ok) throw new Error("parse");
