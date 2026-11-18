@@ -584,17 +584,17 @@ async function outboxScenario({ ctx, run }: { ctx: SimCtx; run: () => Promise<vo
   const server = createCtx({ mode: "sim", seed: 7 });
   await server.storage.set(BOARD_KEY, BOARD);
   const app = await createApp({ topology: A, deployable: "api", routes: both, ctx: server, secret: SECRET });
-  ctx.net.route(`${ORIGIN}/api/*`, (req) => app.fetch(req));
+  ctx.net.route(new URL("/api/*", location.href).href, (req) => app.fetch(req));
   const page = scope(() => undefined);
-  page.run(() => void drain(ctx, boardOutbox));
+  page.run(() => void drain(ctx, boardOutbox, { owner: "" }));
   const settled = (p: Promise<unknown>) =>
     p.then(
       () => true,
       () => false,
     );
-  const toggled = settled(send(ctx, boardOutbox, ORIGIN, "toggleTodo", { params: t2.value, body: {} }, { base: 2 }));
+  const toggled = settled(send(ctx, boardOutbox, "toggleTodo", { params: t2.value, body: {} }, { base: 2, owner: "" }));
   const body = { title: "Oat milk", priority: "high" as const };
-  const edited = settled(send(ctx, boardOutbox, ORIGIN, "editTodo", { params: t1.value, body }, { base: 3 }));
+  const edited = settled(send(ctx, boardOutbox, "editTodo", { params: t1.value, body }, { base: 3, owner: "" }));
   await run();
   await Promise.all([toggled, edited]);
   page.dispose();
