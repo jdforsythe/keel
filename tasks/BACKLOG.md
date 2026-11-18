@@ -888,3 +888,23 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0785 red-team, decided as a stated limit: `dispose()` is a member of the shared app ctx, so any app code holding the ctx can stop its `online` and `offline` events; app code is inside the trust boundary · ctx · k.ctx
 - [x] 0786 compiler, low: the Vite plugin's `flush()` writes `.keel` under `process.cwd()` when `configResolved` never ran (`packages/compiler/src/vite.ts`, the `root` fallback), so a misused plugin writes into the working directory; fail or skip the write when no root was resolved · compiler · k.runtime
 - [ ] 0787 docs: `docs/THREAT-MODEL.md` (stored logs) does not mention the store's `keyLimit` · docs · k.sync
+## Red team and review 2026-11-18, round 7 (RFC 0120, 0126 to 0129, the amendments and the lanes; findings and probes in tasks/0338-s8-reach/proposed/red-team-7.md and review-7.md)
+- [ ] 0790 red-team, HIGH: std-offline flush posts an entry whose owner changed (and that `own` already failed) while its `sending` write was pending; re-read the entry and owner after the write · std-offline · std.offline · repro: red-team-7.md H1
+- [ ] 0791 red-team, HIGH: the outbox owner is not bound to the session cookie; a sign-in in a second tab makes the first tab post the previous user's entries under the new cookie; carry the owner in `write` and refuse a mismatch on the server, or state the limit · std-offline, sync · std.offline · repro: red-team-7.md H2
+- [ ] 0792 red-team, MEDIUM: a storage write that settles after the 10 s bound overwrites the second write; storage holds `queued`, a reload posts a write reported `failed` · std-offline · std.outbox · repro: red-team-7.md M1
+- [ ] 0793 red-team, MEDIUM: a write after the server's answer that rejects turns `sent`/`conflict` into `failed` `offline.storage`; a resend commits twice · std-offline · std.outbox · repro: red-team-7.md M2
+- [ ] 0794 red-team, MEDIUM: E1802 misses `&zwnj;`, `&emsp;`, `&shy;` and the other JSX named entities that decode to invisible characters · check · k.a11y · repro: red-team-7.md M3
+- [ ] 0795 red-team, MEDIUM: `Secret.of` freezes and walks the value before `check`; `parse` throws on a typed array, a throwing getter or a revoked Proxy, and freezes the caller's object on a failed parse · schema · k.schema · repro: red-team-7.md M4
+- [ ] 0796 red-team, low: E1802 passes a label of C0/C1 controls (`\u0001`, `&#0;`, `&#x7f;`) · check · k.a11y
+- [ ] 0797 red-team, low: the flush's retry timer outlives `drain`'s scope and still posts · std-offline · std.offline
+- [ ] 0798 red-team, low: `outbox` accepts an `events: true` endpoint; the flush throws on its stream and the entry stays `sending` across reloads · std-offline · std.offline
+- [ ] 0799 red-team, low: two ctxs over one module-level outbox fail each other's entries (shared store, per-ctx owner) · std-offline · std.offline
+- [ ] 0800 red-team, low: two tabs overwrite each other's stored outbox (whole-list writes); a reload loses the other tab's queued writes · std-offline · std.offline
+- [ ] 0801 red-team, low: `s.json()` check recursion overflows the stack on ~200k nesting from a JSON body · schema · k.schema
+- [ ] 0802 red-team, low: a large `keyLimit` costs O(keyLimit) per keyed write; `restore` parses a forged `keys` array whole before trimming · store · k.sync
+- [ ] 0803 review, MAJOR: a 2xx answer followed by a rejected or timed-out storage write resolves the call `failed` with `offline.storage`; a retry under a new key commits twice (`packages/std-offline/src/internal/flush.ts`) · std-offline · std.outbox
+- [ ] 0804 review, minor: the visible-character regex exists in three places (std-text, check, the conformance oracle), and check and std-text disagree on a lone surrogate · check, std-text
+- [ ] 0805 review, minor: the store's default `keyLimit` of 1024 makes snapshots up to four times larger than before; measure it on the golden apps · store · k.sync
+- [ ] 0806 review, minor: std-live aborts a read's signal on dispose even after the read has settled · std-live · std.live
+- [ ] 0807 tooling: `keel spec <topic>` prints more than 1,500 tokens for about 14 sections by the cli's measure while `tooling/budgets.mjs` passes them; only k.cli has a test on the printed form. Make the two measures one · cli, tooling
+- [ ] 0808 tasks: `tasks/STAGES.md` and `tasks/COVERAGE.md` are snapshots; regenerate them after each batch (COVERAGE's script is described in its header) · tasks
