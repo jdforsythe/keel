@@ -15,19 +15,11 @@ afterEach(() => {
 });
 
 /** Every own and inherited property name reachable from `root` through object-valued members, to a depth of 3. */
-function reachableNames(
-  root: object,
-  depth = 3,
-  seen = new Set<object>()
-): string[] {
+function reachableNames(root: object, depth = 3, seen = new Set<object>()): string[] {
   if (seen.has(root)) return [];
   seen.add(root);
   const names: string[] = [];
-  for (
-    let o: object | null = root;
-    o !== null && o !== Object.prototype;
-    o = Object.getPrototypeOf(o)
-  ) {
+  for (let o: object | null = root; o !== null && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
     for (const key of Object.getOwnPropertyNames(o)) {
       names.push(key);
       const desc = Object.getOwnPropertyDescriptor(o, key);
@@ -65,10 +57,7 @@ describe("k.owner: `Ctx` and `SimCtx` have no `dispose`", () => {
     vi.stubGlobal("window", new StubWindow());
     vi.stubGlobal("navigator", { onLine: true });
     for (const mode of MODES) {
-      for (const signal of [
-        new AbortController().signal,
-        AbortSignal.abort(),
-      ]) {
+      for (const signal of [new AbortController().signal, AbortSignal.abort()]) {
         const ctx = createCtx({ mode, seed: SEED, signal });
         expect("dispose" in ctx).toBe(false);
         expect(Object.getOwnPropertyNames(ctx)).not.toContain("dispose");
@@ -80,36 +69,20 @@ describe("k.owner: `Ctx` and `SimCtx` have no `dispose`", () => {
     vi.stubGlobal("window", new StubWindow());
     vi.stubGlobal("navigator", { onLine: true });
     fc.assert(
-      fc.property(
-        fc.constantFrom(...MODES),
-        fc.integer({ min: 0, max: 2 ** 31 - 1 }),
-        (mode, seed) => {
-          const names = reachableNames(createCtx({ mode, seed }));
-          expect(names).not.toContain("dispose");
-        }
-      ),
-      { seed: SEED, numRuns: 30 }
+      fc.property(fc.constantFrom(...MODES), fc.integer({ min: 0, max: 2 ** 31 - 1 }), (mode, seed) => {
+        const names = reachableNames(createCtx({ mode, seed }));
+        expect(names).not.toContain("dispose");
+      }),
+      { seed: SEED, numRuns: 30 },
     );
   });
 
   test("nothing reachable from a ctx is named like an ending: `close`, `destroy`, `teardown`, `abort`, `stop`, `unsubscribe`", () => {
     vi.stubGlobal("window", new StubWindow());
     vi.stubGlobal("navigator", { onLine: true });
-    const endings = [
-      "dispose",
-      "close",
-      "destroy",
-      "teardown",
-      "abort",
-      "stop",
-      "unsubscribe",
-      "signal",
-      "controller",
-    ];
+    const endings = ["dispose", "close", "destroy", "teardown", "abort", "stop", "unsubscribe", "signal", "controller"];
     for (const mode of MODES) {
-      const names = reachableNames(
-        createCtx({ mode, seed: SEED, signal: new AbortController().signal })
-      );
+      const names = reachableNames(createCtx({ mode, seed: SEED, signal: new AbortController().signal }));
       expect(names.filter((n) => endings.includes(n))).toEqual([]);
     }
   });
@@ -124,12 +97,7 @@ describe("k.owner: an object literal typed `Ctx` lists `clock`, `random`, `net` 
       net: real.net,
       storage: real.storage,
     };
-    expect(Object.keys(wrapper).sort()).toEqual([
-      "clock",
-      "net",
-      "random",
-      "storage",
-    ]);
+    expect(Object.keys(wrapper).sort()).toEqual(["clock", "net", "random", "storage"]);
     expect(wrapper.clock.now()).toBe(real.clock.now());
   });
 
