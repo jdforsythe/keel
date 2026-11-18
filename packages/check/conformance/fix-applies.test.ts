@@ -24,6 +24,10 @@ const CASES: { code: string; source: string; path?: string; more?: { path: strin
     source: `import { Box } from '@keel/ui'\nexport function Card(props: { icon?: unknown }) { return <Box>{props.icon}</Box> }\nexport function Icon() { return <Box>i</Box> }\nexport function Page() { return Card({ icon: Icon() }) }\n`,
   },
   {
+    code: "E1406",
+    source: `import { Box } from '@keel/ui'\nexport default function C(props: { icon: () => Node }) { return <Box>{props.icon}</Box> }\n`,
+  },
+  {
     code: "E1759",
     path: "modules/shop/paths.server.ts",
     source: "export const paths = __dirname\n",

@@ -820,6 +820,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("src/x.ts", "export const x = (n: number) => n.toLocaleString()\n")],
     clean: [f("src/x.ts", "export const x = (n: number, l: string) => n.toLocaleString(l)\n")],
   },
+  E1406: {
+    bad: [
+      f(
+        "modules/app/Card.tsx",
+        `${UI}export function Card(props: { icon: () => Node }) { return <Box>{props.icon}</Box> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "modules/app/Card.tsx",
+        `${UI}export function Card(props: { icon: () => Node }) { return <Box>{props.icon()}</Box> }\n`,
+      ),
+    ],
+  },
   E1759: {
     opts: NO_TYPES,
     bad: [
