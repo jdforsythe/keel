@@ -50,4 +50,3 @@ S8 adds std.db, std.workflows, std.shells, std.credentials and std.tokens.
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
 | std.credentials | Credential hashes | conformance-covered | capability, schema type and check rule registries, std config: `Hashed`, `hash`, `verify`, `ln`, E2201-E2202 |
 | std.tokens | Tokens | conformance-covered | `@keel/std-credentials`: `mint` with a ttl, `check`, `Digested` |
-| std.signin | Sign-in | proposed | `@keel/std-credentials`: the sign-in cookie's token, rows, rotation, `start`/`end`/`endAll`, shell slots |

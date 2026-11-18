@@ -106,4 +106,4 @@ Each is the orchestrator's call; the operator can reverse any of them.
 - Open: the caller cookie across an app restart (Proposal 4).
 
 ## Amendment
-RFC 0139 answers Proposal 4 with neither option as posed: the caller cookie stays session-only by default, a sign-in gets its own durable cookie in `@keel/std-credentials` (held in a native secure slot in the shells), and a `node` deployable may opt in to a caller of 1 to 400 days.
+RFC 0139 answers Proposal 4 with neither option as posed: the caller cookie stays session-only by default and is not a credential; a `node` deployable may opt in to a caller of 1 to 400 days; a sign-in that outlives a relaunch is the auth library's or platform's, which an app plugs in through `identity.server.ts` (k.user). The shells keep a cookie with `Max-Age` in their native store; whether it survives a relaunch on each platform is a shell smoke check RFC 0139 lists.
