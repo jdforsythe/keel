@@ -5,7 +5,7 @@ import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Write, outbox, resolve, send } from "../src/index.ts";
+import { Write, drain, outbox, resolve, send } from "../src/index.ts";
 
 const ORIGIN = "http://app.keel.invalid";
 const Api = endpoints({
@@ -149,4 +149,90 @@ test("an offline.owner err's message is the outbox id and its data is empty, wha
     }),
     { seed: 1337, numRuns: 20 },
   );
+});
+
+/** `ctx.storage.set` with each call held until `land(i)` lands the `i`-th held one (the oldest by default). */
+const holding = (ctx: SimCtx) => {
+  const real = ctx.storage.set.bind(ctx.storage);
+  const held: (() => Promise<void>)[] = [];
+  const set = (k: string, v: string): Promise<void> =>
+    new Promise<void>((done) => held.push(async () => done(await real(k, v))));
+  Object.defineProperty(ctx.storage, "set", { value: set, configurable: true, writable: true });
+  return { land: async (i = 0): Promise<void> => held.splice(i, 1)[0]?.() };
+};
+
+test("a `send` whose owner stops being the ctx's while its owner change is written adds nothing and resolves offline.owner", async () => {
+  const ctx = sim([]);
+  const { o, sc } = declare();
+  ctx.net.setOnline(false);
+  await send(ctx, o, "add", { body: { t: "b" } }, { base: 0, owner: "b" });
+  const storage = holding(ctx);
+  // `a`'s owner change fails `b`'s entry and writes the outbox; `c` takes the ctx meanwhile.
+  const a = send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: "a" });
+  await settle();
+  const c = send(ctx, o, "add", { body: { t: "c" } }, { base: 0, owner: "c" });
+  for (let i = 0; i < 4; i++) {
+    await storage.land();
+    await settle();
+  }
+  const out = await a;
+  expect(out.state === "failed" ? out.error.code : out.state).toBe("offline.owner");
+  expect((await c).state).toBe("queued");
+  expect(o.get("entries").map((e) => [e.owner, e.state])).toEqual([
+    ["b", "failed"],
+    ["c", "queued"],
+  ]);
+  sc.dispose();
+});
+
+test("an entry another owner fails while its own write is in flight resolves offline.owner and is never posted", async () => {
+  const ctx = sim([]);
+  const posts: unknown[] = [];
+  ctx.net.route(`${ORIGIN}/add`, async (req) => {
+    posts.push(await req.json());
+    return Response.json({ ok: true, value: {} });
+  });
+  const { o, sc } = declare();
+  await send(ctx, o, "add", { body: { t: "warm" } }, { base: 0, owner: "a" });
+  posts.length = 0;
+  const storage = holding(ctx);
+  const a = send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: "a" });
+  await settle();
+  const stop = scope(() => {
+    void drain(ctx, o, { owner: "b" });
+  });
+  await settle();
+  for (let i = 0; i < 4; i++) {
+    await storage.land();
+    await settle();
+  }
+  const out = await a;
+  expect(out.state === "failed" ? out.error.code : out.state).toBe("offline.owner");
+  expect(posts).toEqual([]);
+  stop.dispose();
+  sc.dispose();
+});
+
+test("a write given up at the 10 s bound that lands later is followed by one more write of the outbox", async () => {
+  const ctx = sim([]);
+  const { o, sc } = declare();
+  ctx.net.setOnline(false);
+  const storage = holding(ctx);
+  const r = send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: "u1" });
+  await settle();
+  ctx.clock.advance(10_000);
+  await settle();
+  // The write after the failure lands, then the given-up one with the entry `queued`, then the write it is followed by.
+  await storage.land(1);
+  await settle();
+  expect((await r).state).toBe("failed");
+  const second = await stored(ctx, o.id);
+  await storage.land();
+  await settle();
+  expect(await stored(ctx, o.id)).toMatchObject({ entries: [{ state: "queued" }] });
+  await storage.land();
+  await settle();
+  expect(await stored(ctx, o.id)).toEqual(second);
+  expect(await stored(ctx, o.id)).toMatchObject({ entries: [{ state: "failed" }] });
+  sc.dispose();
 });

@@ -8,6 +8,7 @@ import type { SendInput } from "./SendInput.ts";
 import type { Output } from "./internal/Output.ts";
 import { admit } from "./internal/admit.ts";
 import { configOf } from "./internal/configOf.ts";
+import { fault } from "./internal/fault.ts";
 import { flush } from "./internal/flush.ts";
 import { full } from "./internal/full.ts";
 import { load } from "./internal/load.ts";
@@ -20,7 +21,8 @@ import { own } from "./internal/own.ts";
  * `{ key: ctx.random.id('Write'), base }`; the outbox is written to `ctx.storage` `keel.outbox.<id>` first, and a running
  * flush does not take the entry until that write settles. Resolves
  * `sent`, `queued` (offline, or the network failed), `conflict` or `failed`; a full outbox resolves `failed` with
- * `offline.full` and adds nothing; a write to `ctx.storage` that rejects leaves the entry `failed` in memory, posts nothing
+ * `offline.full` and adds nothing, as does an owner that stops being the ctx's while the outbox is written for it
+ * (`offline.owner`); a write to `ctx.storage` that rejects leaves the entry `failed` in memory, posts nothing
  * and resolves `failed` with `offline.storage` (its message the outbox id). Throws when `input` is not JSON (a schema-typed input always is).
  */
 export async function send<const D extends EndpointMap, K extends keyof D & string>(
@@ -33,6 +35,8 @@ export async function send<const D extends EndpointMap, K extends keyof D & stri
   const c = configOf(o);
   await load(ctx, c);
   await own(ctx, c, opts.owner);
+  // A `send` or `drain` with another owner ran during that write: this entry would never be posted.
+  if (c.owners.get(ctx) !== opts.owner) return { state: "failed", error: fault(c, "offline.owner") };
   const key = ctx.random.id("Write");
   const entry: unknown = {
     key,

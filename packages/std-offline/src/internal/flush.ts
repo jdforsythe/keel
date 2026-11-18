@@ -13,14 +13,16 @@ const obj = (x: unknown): object => (typeof x === "object" && x !== null ? x : {
 /**
  * Sends the outbox's `queued` entries of the ctx's owner in order, one request at a time (std.offline Flush), unless its
  * flush is already running, through the module's service, whose answers `outcomeOf` reads; with no owner given on the
- * ctx it posts nothing. An entry whose owner stops being the ctx's while it is in flight and is not `sent` is `failed`
- * with `offline.owner`. A network failure keeps the
+ * ctx it posts nothing. An entry is posted only while, once its `sending` write settles, it is still `sending` and its
+ * owner is the ctx's; otherwise, or when its owner stops being the ctx's while it is in flight and it is not `sent`, it
+ * is `failed` with `offline.owner`. A network failure keeps the
  * entry queued, stops, and retries 1 s later doubling to 60 s on `ctx.clock` while online. A queued entry whose own
  * storage write (`send`, a `'mine'` `resolve`) has not settled is waited for in its place. An entry naming no endpoint
- * of the api is `failed` (`api.input`); a storage write that rejects or times out fails the entry in hand
- * (`offline.storage`), writes the outbox once more and ends the flush. Any other throw ends the flush, leaves the
- * entries as they are and is rethrown. Resolves the settlement of entry `key`, or `queued` when the flush stops
- * before it.
+ * of the api is `failed` (`api.input`). A storage write that rejects or times out fails the entry in hand
+ * (`offline.storage`) unless it is the write recording the server's answer (`sent`, `conflict`, `failed`), which then
+ * stands and is resolved; either way the outbox is written once more and the flush ends. Any other throw ends the flush, leaves the
+ * entries as they are and is rethrown. Resolves the settlement of entry `key`: `failed` with `offline.owner` when
+ * another owner failed it before the flush reached it, else `queued` when the flush stops before it.
  */
 export function flush(ctx: Ctx, c: Config, key = ""): Promise<OutboxResult<unknown>> {
   const done = new Promise<OutboxResult<unknown>>((go) => c.waits.set(key, go));
@@ -34,18 +36,22 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
   c.timer.abort();
   // Set once a storage write rejects: only that throw fails the entry in hand.
   let lost = false;
-  const put = (key: string, state: string, extra: object): Promise<void> => {
+  // The answer that settled the entry in hand: a failed write that records it leaves the answer standing.
+  let answer: OutboxResult<unknown> | undefined;
+  const done = (key: string, out: OutboxResult<unknown>): void => {
+    c.waits.get(key)?.(out);
+    c.waits.delete(key);
+  };
+  const put = (key: string, state: string, extra: object, out?: OutboxResult<unknown>): Promise<void> => {
     const payload: unknown = { key, state, ...extra };
     tx(c.settle, payload);
+    answer = out;
     return persist(ctx, c).catch((x: unknown) => {
       lost = true;
       throw x;
     });
   };
-  const done = (key: string, out: OutboxResult<unknown>): void => {
-    c.waits.get(key)?.(out);
-    c.waits.delete(key);
-  };
+  const stateOf = (key: string) => c.store.get("entries").find((x) => x.key === key)?.state;
   let key = "";
   try {
     for (;;) {
@@ -59,23 +65,27 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
         continue;
       }
       key = e.key;
+      answer = undefined;
       await put(e.key, "sending", {});
+      if (!c.live) break;
+      // A `drain` with another owner may fail the entry at any await: it is posted only while the owner's and `sending`.
+      const mine = (): boolean => c.owners.get(ctx) === e.owner && stateOf(e.key) === "sending";
+      const gone = { state: "failed" as const, error: fault(c, "offline.owner") };
       const call = Object.hasOwn(c.api, e.endpoint) ? c.client[e.endpoint] : undefined;
       const body = { ...obj(field(e.input, "body")), write: { key: e.key, base: e.base } };
-      const answer = call
-        ? outcomeOf(
-            await call({ params: field(e.input, "params"), query: field(e.input, "query"), body }, ctx),
-            c.again === e.key,
-          )
-        : {
-            state: "failed" as const,
-            error: { code: "api.input" as const, message: e.endpoint, data: { issues: [] } },
-          };
-      // The owner changed while the request was in flight: the entry is never posted again.
-      const out =
-        c.owners.get(ctx) === e.owner || answer?.state === "sent"
-          ? answer
-          : { state: "failed" as const, error: fault(c, "offline.owner") };
+      const got = !mine()
+        ? gone
+        : call
+          ? outcomeOf(
+              await call({ params: field(e.input, "params"), query: field(e.input, "query"), body }, ctx),
+              c.again === e.key,
+            )
+          : {
+              state: "failed" as const,
+              error: { code: "api.input" as const, message: e.endpoint, data: { issues: [] } },
+            };
+      // A 2xx answer stands whatever changed in flight: the server committed the write.
+      const out = got?.state === "sent" || mine() ? got : gone;
       c.again = out ? undefined : e.key;
       if (out?.state === "queued") {
         await put(e.key, "queued", {});
@@ -89,7 +99,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
         c.delay = Math.min(c.delay * 2, 60_000);
         break;
       }
-      await put(e.key, out?.state ?? "queued", out?.state === "sent" ? {} : { ...out });
+      await put(e.key, out?.state ?? "queued", out?.state === "sent" ? {} : { ...out }, out);
       if (out) {
         c.delay = 1000;
         done(e.key, out);
@@ -98,14 +108,16 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
   } catch (x) {
     // Any other throw leaves the entries as they are and is rethrown once the flush is released.
     if (!lost) throw x;
-    // A storage write that rejected: the entry in hand is failed in memory and written once more (best effort).
+    // A storage write that rejected: the entry in hand, unless an answer settled it, is failed in memory; the outbox
+    // is written once more (best effort).
     const error = fault(c, "offline.storage");
-    tx(c.settle, { key, state: "failed", error });
+    if (!answer) tx(c.settle, { key, state: "failed", error });
     await attempt(() => persist(ctx, c));
-    done(key, { state: "failed", error });
+    done(key, answer ?? { state: "failed", error });
   } finally {
     c.busy = false;
-    for (const go of c.waits.values()) go({ state: "queued" });
+    for (const [k, go] of c.waits)
+      go(stateOf(k) === "failed" ? { state: "failed", error: fault(c, "offline.owner") } : { state: "queued" });
     c.waits.clear();
   }
 }
