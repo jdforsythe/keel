@@ -83,7 +83,7 @@ describe("generated entries bind std (rfc:0069)", () => {
     const lines = RESUME_ENTRY.split("\n");
     const bind = lines.indexOf('bindClientStd(ctx, document.getElementById("k-state")?.textContent);');
     const run = lines.indexOf(
-      "for (const w of resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode }).warnings) console.warn(w);",
+      "  warnings = resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode }).warnings;",
     );
     expect(lines).toContain('import { bindClientStd } from "@keel/compiler/std/bindClientStd";');
     expect(bind).toBeGreaterThan(lines.indexOf('const ctx = createCtx({ mode: "real" });'));

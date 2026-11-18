@@ -12,6 +12,8 @@ import type { ResumeOptions } from "../types/ResumeOptions.ts";
 const WAITING = Symbol.for("keel.waitingSnapshots");
 /** What `@keel/store` leaves in place of a waiting snapshot the store's schema refuses. */
 const REFUSED = Symbol.for("keel.refusedSnapshot");
+/** Where `resume` leaves its warnings when it rethrows an island's throw, for the resume entry to print. */
+const THROWN_WARNINGS = Symbol.for("keel.resumeWarnings");
 
 /** Whether `result`, what a store's `restore` returned, is a refusal (`{ ok: false }`). */
 const refused = (result: unknown): boolean =>
@@ -31,7 +33,9 @@ eventQueue.install();
  * order they fired, each through every enclosing island as a live one (k.resume Replay). Each island has its own props, root
  * Boundary and delegation root, and a `children` that returns the server's content of its child level
  * (`heldChildren`); its claim stops at that content. The root Boundary's fallback shows the message only with
- * `options.mode` `"dev"`. Returns dev warnings (E1253: that island alone was re-rendered on the client).
+ * `options.mode` `"dev"`. Returns dev warnings (E1253: that island alone was re-rendered on the client). An island
+ * whose resume throws past its root Boundary is rethrown once the others resumed and the queue replayed; the warnings
+ * collected are then at `Symbol.for("keel.resumeWarnings")` on `globalThis`.
  */
 export function resume(
   root: Element,
@@ -92,6 +96,9 @@ export function resume(
   for (const [id, left] of waiting)
     warnings.push(left === REFUSED ? unrestored(id) : `E1253 #k-state has a snapshot for unknown store "${id}"`);
   eventQueue.replay();
-  if (thrown !== null) throw thrown.error;
+  if (thrown !== null) {
+    Reflect.set(globalThis, THROWN_WARNINGS, warnings);
+    throw thrown.error;
+  }
   return { warnings };
 }

@@ -143,7 +143,7 @@ describe("vite plugin: resume entry (RFC 0046)", () => {
     expect(resumeEntry(undefined, "dev")).toContain('const mode = "dev";');
     expect(RESUME_ENTRY).not.toContain("import.meta.env");
     expect(RESUME_ENTRY).toContain(
-      "for (const w of resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode }).warnings) console.warn(w);",
+      "  warnings = resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode }).warnings;",
     );
     expect(parseSync("entry.js", RESUME_ENTRY, { sourceType: "module" }).errors).toEqual([]);
   });

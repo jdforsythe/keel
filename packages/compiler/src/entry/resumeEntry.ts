@@ -9,7 +9,8 @@ import { ISLANDS_PATH } from "./ISLANDS_PATH.ts";
  * Std config); imports are hoisted, so every std schema has registered first. `resume` then reports the served route
  * of `#k-state` as the ctx's first `nav`, and inputs made before it as `fire` events, so a recorder started in an
  * island sees the page's route and every input. Each warning `resume` returns goes to `console.warn`, one line, in
- * every mode (k.claim Client).
+ * every mode (k.claim Client); when `resume` rethrows an island's throw, the warnings it left at
+ * `Symbol.for("keel.resumeWarnings")` go first.
  * App-independent, so a node `createApp` serves the same text the Vite plugin does; Vite resolves its imports (dev
  * server, `vite build`). Kernel specifiers are app code that runs in the browser; the compiler itself never imports them.
  */
@@ -24,7 +25,14 @@ export function resumeEntry(deployable?: string, mode: "dev" | "production" = "p
     'const ctx = createCtx({ mode: "real" });',
     'bindClientStd(ctx, document.getElementById("k-state")?.textContent);',
     `const mode = ${JSON.stringify(mode)};`,
-    "for (const w of resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode }).warnings) console.warn(w);",
+    "let warnings;",
+    "try {",
+    "  warnings = resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode }).warnings;",
+    "} catch (error) {",
+    '  for (const w of globalThis[Symbol.for("keel.resumeWarnings")] ?? []) console.warn(w);',
+    "  throw error;",
+    "}",
+    "for (const w of warnings) console.warn(w);",
     "",
   ].join("\n");
 }
