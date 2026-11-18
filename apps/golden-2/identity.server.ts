@@ -1,11 +1,15 @@
 import type { Ctx } from "@keel/ctx";
-import { identity } from "@keel/server";
+import { attempt, err, ok } from "@keel/schema";
+import { commitStores, identity } from "@keel/server";
+import { tx } from "@keel/store";
 import mount from "./identity.ts";
 import type { AccountError } from "./modules/accounts/AccountError.schema.ts";
 import { AccountsLocale } from "./modules/accounts/AccountsLocale.schema.ts";
+import { SignedInUser } from "./modules/accounts/SignedInUser.schema.ts";
 import { authOf } from "./modules/accounts/authOf.server.ts";
 import { authSettings } from "./modules/accounts/authSettings.server.ts";
 import { bearerUser } from "./modules/accounts/bearerUser.server.ts";
+import { profileStores } from "./modules/accounts/profileStores.ts";
 import { routes } from "./modules/accounts/routes.ts";
 
 // Fail closed: a server without the library's secret does not start.
@@ -32,6 +36,23 @@ async function identify(args: { readonly request: Request }, ctx: Ctx): Promise<
   return session?.user.id ?? "";
 }
 
+/**
+ * After a sign-in the library accepted, the user's id and email go into the `accounts.profiles` store, so `/api/me`
+ * answers without calling the library. A save that fails rejects: `createApp` answers 500.
+ */
+async function remember(path: string, res: Response, ctx: Ctx): Promise<Response> {
+  if (path !== `${mount.path}/sign-in/email` || !res.ok) return res;
+  const json = await attempt(() => res.clone().json());
+  const signed = SignedInUser.parse(json.ok ? json.value : null);
+  if (!signed.ok) return Promise.reject(new Error("sign-in answer without a user"));
+  const { id, email } = signed.value.user;
+  const saved = await commitStores(ctx, profileStores, (st) => {
+    const r = tx(st.saveProfile, { userId: id, email });
+    return r.ok ? ok(null) : err(r.error);
+  });
+  return saved.ok ? res : Promise.reject(new Error(saved.error.code));
+}
+
 /** A post a page's `<Form>` made natively, as opposed to a JSON call to the library's API. */
 const isFormPost = (r: Request): boolean =>
   r.method === "POST" && (r.headers.get("content-type") ?? "").startsWith("application/x-www-form-urlencoded");
@@ -43,19 +64,23 @@ const refusal = (res: Response): AccountError => (res.status === 401 ? "credenti
  * The library's endpoints. A JSON call passes through unchanged. A page's form post is sent to the library as the
  * JSON body its endpoints take (the form's fields, nothing added) and answered with a 303 carrying the library's
  * `set-cookie`: to the sign-in page on success, back to the posting page with `?error=` on a refusal. The page's
- * locale comes in the post's `locale` search key; the typed values never go into a URL.
+ * locale comes in the post's `locale` search key; the typed values never go into a URL. A sign-in the library accepts
+ * is remembered as a profile either way.
  */
 async function handle(request: Request, ctx: Ctx): Promise<Response> {
   const auth = await library(ctx);
-  if (!isFormPost(request)) return auth.handler(request);
   const url = new URL(request.url);
+  if (!isFormPost(request)) return remember(url.pathname, await auth.handler(request), ctx);
   const headers = new Headers(request.headers);
   headers.set("content-type", "application/json");
   headers.delete("content-length");
   const fields = Object.fromEntries(new URLSearchParams(await request.text()));
-  const res = await auth.handler(
-    new Request(new URL(url.pathname, url.origin), { method: "POST", headers, body: JSON.stringify(fields) }),
-  );
+  const sent = new Request(new URL(url.pathname, url.origin), {
+    method: "POST",
+    headers,
+    body: JSON.stringify(fields),
+  });
+  const res = await remember(url.pathname, await auth.handler(sent), ctx);
   const parsed = AccountsLocale.parse(url.searchParams.get("locale"));
   const locale = parsed.ok ? parsed.value : "en-US";
   const page = url.pathname === `${mount.path}/sign-up/email` ? "accounts.signup" : "accounts.signin";

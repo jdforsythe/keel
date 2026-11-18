@@ -14,9 +14,9 @@ import { routes } from "./routes.ts";
 export const Props = s.object({ params: AccountsParams, search: AccountsSearch, data: AccountData });
 
 /**
- * Route `accounts.signin`. Signed out: an email and a password, posted by the browser to the sign-in library once
- * they validate; a refusal comes back as `?error=` and shows above the form. Signed in: the account's email and a
- * sign-out form.
+ * Route `accounts.signin`: an email and a password, posted by the browser to the sign-in library once they
+ * validate; a refusal comes back as `?error=` and shows above the form. Signed in, the page first names the account
+ * and offers a sign-out form; the sign-in form stays, to sign in as someone else.
  */
 export default function SigninPage(props: Infer<typeof Props>) {
   const f = form(Credentials, { id: "accounts.signinForm" });
@@ -25,37 +25,7 @@ export default function SigninPage(props: Infer<typeof Props>) {
       <Heading id="accounts.signin.heading" level={1} fontSize="2xl" weight="semibold" m="0">
         {props.data.text.signinHeading}
       </Heading>
-      <If
-        when={props.data.email !== undefined}
-        fallback={() => (
-          <Box direction="column" gap="4">
-            <If when={props.search.error !== undefined}>
-              {() => (
-                <Text id="accounts.signinError" fg="error">
-                  {props.search.error === "credentials"
-                    ? props.data.text.errorCredentials
-                    : props.data.text.errorInvalid}
-                </Text>
-              )}
-            </If>
-            <Form method="POST" action={mount.href("/sign-in/email", { locale: props.params.locale })} form={f}>
-              <Input field={f.field("email")} label={props.data.text.emailLabel} autocomplete="email" />
-              <Input
-                field={f.field("password")}
-                type="password"
-                label={props.data.text.passwordLabel}
-                autocomplete="current-password"
-              />
-              <Button id="accounts.signinSubmit" type="submit">
-                {props.data.text.signinSubmit}
-              </Button>
-            </Form>
-            <Link id="accounts.toSignup" to={routes.href("accounts.signup", { locale: props.params.locale })}>
-              {props.data.text.toSignup}
-            </Link>
-          </Box>
-        )}
-      >
+      <If when={props.data.email !== undefined}>
         {() => (
           <Box direction="column" gap="4">
             <Text id="accounts.signedIn">
@@ -69,6 +39,28 @@ export default function SigninPage(props: Infer<typeof Props>) {
           </Box>
         )}
       </If>
+      <If when={props.search.error !== undefined}>
+        {() => (
+          <Text id="accounts.signinError" fg="error">
+            {props.search.error === "credentials" ? props.data.text.errorCredentials : props.data.text.errorInvalid}
+          </Text>
+        )}
+      </If>
+      <Form method="POST" action={mount.href("/sign-in/email", { locale: props.params.locale })} form={f}>
+        <Input field={f.field("email")} label={props.data.text.emailLabel} autocomplete="email" />
+        <Input
+          field={f.field("password")}
+          type="password"
+          label={props.data.text.passwordLabel}
+          autocomplete="current-password"
+        />
+        <Button id="accounts.signinSubmit" type="submit">
+          {props.data.text.signinSubmit}
+        </Button>
+      </Form>
+      <Link id="accounts.toSignup" to={routes.href("accounts.signup", { locale: props.params.locale })}>
+        {props.data.text.toSignup}
+      </Link>
     </Box>
   );
 }

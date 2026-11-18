@@ -1,19 +1,15 @@
 import { loader } from "@keel/router";
-import { attempt, err, ok } from "@keel/schema";
+import { err, ok } from "@keel/schema";
 import { Me } from "./Me.schema.ts";
-import { authOf } from "./authOf.server.ts";
+import { profileStores } from "./profileStores.ts";
 
 const denied = { code: "keel.denied", message: "Sign in first", data: null };
 
 /**
  * GET on `accounts.me`: the email of the request's `user`, whether a session cookie or an API token said who it is
- * (`identity.server.ts`). No user is `keel.denied`; the email is read from the sign-in library's database.
+ * (`identity.server.ts`), from the profile the last sign-in saved. No user, or none with a profile, is `keel.denied`.
  */
-export const loadMe = loader({ output: Me }, async ({ user }, ctx) => {
-  if (user === "") return err(denied);
-  const auth = await authOf(ctx);
-  if (!auth.ok) return err(auth.error);
-  const found = await attempt(async () => (await auth.value.$context).internalAdapter.findUserById(user));
-  if (!found.ok) return err(found.error);
-  return found.value === null ? err(denied) : ok({ email: found.value.email });
+export const loadMe = loader({ output: Me, stores: profileStores }, async ({ user, stores }) => {
+  const profile = user === "" ? undefined : stores.profiles.get("profiles").find((p) => p.userId === user);
+  return profile === undefined ? err(denied) : ok({ email: profile.email });
 });
