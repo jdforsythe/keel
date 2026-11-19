@@ -5,7 +5,7 @@
 // of the app whose `api.editTodo` rebases, where the same race scenario must find exactly one race), the rungs of the
 // golden-1 ledger, the correctness twins (an invariant, two chart and a schedule twin, each a sibling copy with one
 // planted change), the proof twins (an `addTodo` without its duplicate check, `api.purgeList` given to `prove`), the
-// stored-data twin (`TodoList.hidden` made required: E1563 under `--base`), and the built processes (splitBuilt.ts,
+// stored-data twin (`TodoList.hidden` made required and written by `addList`: E1563 under `--base`), and the built processes (splitBuilt.ts,
 // restartBuilt.ts).
 import { execFile } from "node:child_process";
 import { access, copyFile, cp, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
@@ -341,8 +341,9 @@ async function correctnessTwins(): Promise<string | undefined> {
  * The proof twins (k.prove), each a copy with one planted change, and the stored-data twin (k.compat):
  * - duplicate: `addTodo` drops its duplicate-id test. `board.prove.test.ts` fails with E1716.
  * - fragment: `api.purgeList` joins the `prove` list. `board.prove.test.ts` fails with E1715 naming `.filter`.
- * - required: `TodoList.hidden` loses `.optional()`. `keel check --base` the app's shipped `.keel/surface.json` is one
- *   E1563 at `lists.[].hidden`.
+ * - required: `TodoList.hidden` loses `.optional()` and `addList` writes `hidden: false`, so the copy type-checks and
+ *   `keel build` (which stops on a check error) writes its surface. `keel check --base` the app's shipped
+ *   `.keel/surface.json` is one E1563 at `lists.[].hidden` and no other error.
  */
 export async function proofTwins(): Promise<string | undefined> {
   const failing = async (dir: string, code: RegExp): Promise<boolean> => {
@@ -372,10 +373,16 @@ export async function proofTwins(): Promise<string | undefined> {
     `${api}/TodoList.schema.ts`,
     (src) => src.replace("hidden: s.boolean().optional()", "hidden: s.boolean()"),
     async (dir) => {
+      const writer = join(dir, api, "addList.ts");
+      const written = await readFile(writer, "utf8");
+      const whole = written.replace("{ id: p.id, name: p.name }", "{ id: p.id, name: p.name, hidden: false }");
+      if (whole === written) return false;
+      await writeFile(writer, whole);
       if (!(await sh("node", [keelBin, "build"], dir)).ok) return false;
       const r = await sh("node", [keelBin, "check", "--base", shipped], dir);
-      const e1563 = r.stdout.match(/^E1563 [^\n]*/gm) ?? [];
-      return !r.ok && e1563.length === 1 && (e1563[0] ?? "").includes("lists.[].hidden");
+      const errors = r.stdout.match(/^E\d{4} [^\n]*/gm) ?? [];
+      const [only = ""] = errors;
+      return !r.ok && errors.length === 1 && only.startsWith("E1563 ") && only.includes("lists.[].hidden");
     },
   );
   if (!required) return "stored-data twin (hidden required)";
