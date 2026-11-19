@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1277,
+    "example": 1276,
     "probabilistic": 327,
     "exhaustive": 15,
     "proven": 63,
@@ -15157,14 +15157,26 @@
     },
     {
       "item": "k.return#3",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.return#4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.return#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.return#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.return#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.return#8",
       "rung": "example"
     },
     {

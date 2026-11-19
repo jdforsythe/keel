@@ -59,6 +59,10 @@
           "run": "pnpm ledger --diff"
         },
         {
+          "name": "the committed ledger matches the tree, WCAG items and rung counts included (the a11y reports exist now)",
+          "run": "node tooling/ledger-fresh.mjs --a11y"
+        },
+        {
           "name": "the committed evidence report matches the ledger and the tests (coverage is compared only where measured)",
           "run": "pnpm evidence:report --check"
         },

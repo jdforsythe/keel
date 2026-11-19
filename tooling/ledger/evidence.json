@@ -1,5 +1,5 @@
 {
-  "commit": "fde43860c199a9cc06b4e4b2c80bd170b67bcfcf",
+  "commit": "7977c6598f63363e34280a5e731905714a8b9693",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T17:27:56.007Z",
+  "generatedAt": "2026-11-19T18:34:46.838Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1164,10 +1164,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 657,
+        "example": 656,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 0,
+        "none": 4,
         "probabilistic": 167,
         "proven": 31
       },
@@ -1655,16 +1655,16 @@
         },
         "k.return": {
           "byRung": {
-            "example": 5,
+            "example": 4,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 4,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 5,
-          "verified": 5
+          "status": "implemented",
+          "total": 8,
+          "verified": 4
         },
         "k.reveal": {
           "byRung": {
@@ -2278,11 +2278,11 @@
           "verified": 8
         }
       },
-      "total": 861,
-      "verified": 861
+      "total": 864,
+      "verified": 860
     },
     "evidenceByRung": {
-      "example": 1277,
+      "example": 1276,
       "exhaustive": 15,
       "monitored": 4,
       "probabilistic": 327,
@@ -2818,9 +2818,9 @@
       "total": 433,
       "verified": 402
     },
-    "items": 1634,
+    "items": 1637,
     "unsafe": 18,
-    "verified": 1381
+    "verified": 1380
   },
   "mutation": {
     "packages": {
