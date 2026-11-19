@@ -104,7 +104,18 @@ describe("peerPaths", () => {
   });
 
   it("gives none when the document or its data is not an object", async () => {
-    for (const text of ["null", "7", '"x"', "true", "[]", "{}", '{"data":null}', '{"data":7}', '{"data":"x"}', '{"data":true}']) {
+    for (const text of [
+      "null",
+      "7",
+      '"x"',
+      "true",
+      "[]",
+      "{}",
+      '{"data":null}',
+      '{"data":7}',
+      '{"data":"x"}',
+      '{"data":true}',
+    ]) {
       expect(await peerPaths(artifactsWith(text), ["api"]), text).toEqual([]);
     }
   });
@@ -128,7 +139,11 @@ describe("peerPaths", () => {
 
   it("does not match a module by a prefix or a different case", async () => {
     const dir = artifactsWith(
-      routes({ a: { module: "order", path: "/a" }, b: { module: "Orders", path: "/b" }, c: { module: "orders2", path: "/c" } }),
+      routes({
+        a: { module: "order", path: "/a" },
+        b: { module: "Orders", path: "/b" },
+        c: { module: "orders2", path: "/c" },
+      }),
     );
     expect(await peerPaths(dir, ["api"])).toEqual([]);
   });

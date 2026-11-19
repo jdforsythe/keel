@@ -79,7 +79,29 @@ describe("bearerOf on raw header values", () => {
     const all = "AZaz09-._~+/";
     expect(await read(`Bearer ${all}`)).toBe(all);
     expect(await read(`Bearer ${all}=`)).toBe(`${all}=`);
-    for (const c of ["=", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", ",", ";", ":", '"', "'", "\\", "|", "<", ">", "?"])
+    for (const c of [
+      "=",
+      "!",
+      "@",
+      "#",
+      "$",
+      "%",
+      "^",
+      "&",
+      "*",
+      "(",
+      ")",
+      ",",
+      ";",
+      ":",
+      '"',
+      "'",
+      "\\",
+      "|",
+      "<",
+      ">",
+      "?",
+    ])
       expect(await read(`Bearer a${c}`), c).toBe(c === "=" ? "a=" : undefined);
     expect(await read("Bearer =a")).toBeUndefined();
     expect(await read("Bearer a=b")).toBeUndefined();

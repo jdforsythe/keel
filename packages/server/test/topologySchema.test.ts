@@ -36,7 +36,8 @@ describe("TopologySchema", () => {
     expect(await accepts({ web: { modules: [], adapter: "deno" } })).toBe(false);
     expect(await accepts({ web: { modules: [], adapter: "" } })).toBe(false);
     expect(await accepts({ web: { modules: [], adapter: 1 } })).toBe(false);
-    for (const adapter of ["node", "static", "client"]) expect(await accepts({ web: { modules: [], adapter } })).toBe(true);
+    for (const adapter of ["node", "static", "client"])
+      expect(await accepts({ web: { modules: [], adapter } })).toBe(true);
   });
 
   it("takes host as an optional non-empty string", async () => {
@@ -46,7 +47,8 @@ describe("TopologySchema", () => {
   });
 
   it("takes storage as an optional file, sqlite or postgres", async () => {
-    for (const storage of ["file", "sqlite", "postgres"]) expect(await accepts({ web: { ...node, storage } })).toBe(true);
+    for (const storage of ["file", "sqlite", "postgres"])
+      expect(await accepts({ web: { ...node, storage } })).toBe(true);
     expect(await accepts({ web: { ...node, storage: "memory" } })).toBe(false);
     expect(await accepts({ web: { ...node, storage: "" } })).toBe(false);
     expect(await accepts({ web: { ...node, storage: 1 } })).toBe(false);
@@ -69,7 +71,8 @@ describe("TopologySchema", () => {
   });
 
   it("takes caller as an optional object whose days is an integer from 1 to 400", async () => {
-    for (const days of [1, 2, 30, 399, 400]) expect(await accepts({ web: { ...node, caller: { days } } }), `${days}`).toBe(true);
+    for (const days of [1, 2, 30, 399, 400])
+      expect(await accepts({ web: { ...node, caller: { days } } }), `${days}`).toBe(true);
     for (const days of [0, -1, 401, 1000, 1.5, "30", null, undefined])
       expect(await accepts({ web: { ...node, caller: { days } } }), `${days}`).toBe(false);
     expect(await accepts({ web: { ...node, caller: {} } })).toBe(false);

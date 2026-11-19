@@ -15,9 +15,14 @@ async function install(opts: { format?: "compact" | "json"; dev?: boolean } = {}
   const before = new Map(EVENTS.map((e) => [e, process.listeners(e)]));
   const lines: string[] = [];
   let thens = 0;
-  onUncaught({ format: opts.format ?? "compact", write: (l) => lines.push(l) }, `${ROOT}/artifacts`, opts.dev ?? false, () => {
-    thens++;
-  });
+  onUncaught(
+    { format: opts.format ?? "compact", write: (l) => lines.push(l) },
+    `${ROOT}/artifacts`,
+    opts.dev ?? false,
+    () => {
+      thens++;
+    },
+  );
   const fresh = new Map<string, Listener>();
   for (const event of EVENTS)
     for (const fn of process.listeners(event))
