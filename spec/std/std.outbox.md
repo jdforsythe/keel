@@ -9,7 +9,7 @@ What `@keel/std-offline` (std.offline) does when a `ctx.storage` write rejects o
 
 **Errors.** An `offline.storage` or `offline.owner` err is `{ code, message, data: {} }`, its `message` the outbox `id`, never thrown text.
 
-**Other throws.** Only those storage faults become `offline.storage`. Any other throw in a flush releases it: the entries stay as they are in memory (an entry in hand stays `sending`, so this session never posts it again), each call waiting on the flush resolves `queued`, and the error is rethrown as an unhandled rejection.
+**Other throws.** Only those storage faults become `offline.storage`. Any other throw in a flush releases it: the entries stay as they are in memory (an entry in hand stays `sending`, so this session never posts it again), each call waiting on the flush resolves `queued`, and the error is rethrown as an unhandled rejection. An `events: true` endpoint answers a stream no entry can settle on, so `outbox` throws E2652 for one.
 
 **Rules.** None.
 
@@ -28,3 +28,4 @@ What `@keel/std-offline` (std.offline) does when a `ctx.storage` write rejects o
 - Online, with a ctx whose `storage.set` throws synchronously on its second call (the flush's `sending` write), `send` resolves `failed` with `offline.storage`.
 - Offline, with `send`'s storage `set` held past 10 s and then released, `keel.outbox.<id>` holds the entry `failed` once that write settles, and `drain` on a new ctx over that storage, online, posts nothing.
 - Online, with the flush's `sending` `set` for owner `a`'s entry held, `drain` with owner `b` and then the write released, the entry is not posted and `a`'s `send` resolves `failed` with `offline.owner`.
+- `outbox` throws E2652 (an Error with `code`) for an api with an `events: true` endpoint.

@@ -13,7 +13,7 @@ export const boardOutbox = outbox('todos.outbox', BoardApi, { module: 'api', lim
 ```ts
 const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: { title } }, { base: view.get('head'), owner })
 ```
-`send` adds an entry with `body.write` `{ key: ctx.random.id('Write'), base }`, stores the outbox at `ctx.storage` `keel.outbox.<id>`, and flushes. It resolves `OutboxResult<O>`: `{ state: 'sent', value }`, `{ state: 'queued' }` (offline or network failure), `{ state: 'conflict', head }` or `{ state: 'failed', error }`, `error` an `ApiError`, `offline.full`, `offline.storage` or `offline.owner`. A full outbox (`limit` entries, `maxBytes` encoded) resolves `failed` with `offline.full`. A `ctx.storage` write that rejects or does not settle, and any other throw in a flush: std.outbox.
+`send` adds an entry with `body.write` `{ key: ctx.random.id('Write'), base }`, stores the outbox at `ctx.storage` `keel.outbox.<id>`, and flushes. It resolves `OutboxResult<O>`: `{ state: 'sent', value }`, `{ state: 'queued' }` (offline or network failure), `{ state: 'conflict', head }` or `{ state: 'failed', error }`, `error` an `ApiError`, `offline.full` (at `limit` entries or `maxBytes` encoded), `offline.storage` or `offline.owner`. Storage faults and other throws in a flush: std.outbox.
 
 **Owner.** `send` and `drain` require `owner`: the signed-in user's id, else `""`; an entry holds its `send`'s. A flush posts only entries of the owner last given on the ctx. When it changes, and on load, each other owner's entry not `failed` is stored `failed` with `offline.owner`, unless the owner given is `""`, which holds them `queued` (std.outbox-owner), as is a stored entry with an `origin` or no `owner`. A `failed` entry is never posted.
 
@@ -24,7 +24,7 @@ const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: {
 - 409 without it: sent once more; a second is `failed`.
 - Any other status: `failed` with its `ApiError`; `offline.signin`: std.outbox-owner; the next entry goes.
 
-`drain(ctx, outbox, { owner })`, in a scope, loads the stored outbox (`sending` as `queued`) and flushes, again on each reconnect until the scope ends. A resent entry keeps its key, so a committed write is not repeated (k.sync).
+`drain(ctx, outbox, { owner })`, in a scope, loads the stored outbox (`sending` as `queued`) and flushes, again on each reconnect until the scope ends, which drops a pending retry. A resent entry keeps its key, so a committed write is not repeated (k.sync).
 
 **Resolve.** `resolve(ctx, outbox, key, 'mine' | 'theirs')`. `'mine'` queues a `conflict` entry last, with `base` its `head`, flushes, and resolves as `send` does. `'theirs'` removes a `conflict` or `failed` entry, `true`. Without one, each resolves `false`. The outbox log records each as `<id>.resolve` `{ key, resolution }`.
 
@@ -48,3 +48,4 @@ const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: {
 - On an unbound sim ctx, `send` posts to `http://<module>.keel.invalid` plus the path; the stored entry has `owner`, no `origin`.
 - Stored entries of owner `a`: `drain` with `a` posts them; with `b`, none, each `failed` with `offline.owner`, as is one with an `origin` or no `owner`; so does `send` with `b` after `a`'s.
 - An `offline.storage` err's `message` is the outbox `id`, whatever was thrown.
+- Once the `drain` scope ends, its pending retry posts nothing.

@@ -16120,6 +16120,10 @@
       "rung": "example"
     },
     {
+      "item": "std.channels#12",
+      "rung": "none"
+    },
+    {
       "item": "std.conflicts#1",
       "rung": "example"
     },
@@ -16572,6 +16576,10 @@
       "rung": "example"
     },
     {
+      "item": "std.offline#16",
+      "rung": "none"
+    },
+    {
       "item": "std.options#1",
       "rung": "example"
     },
@@ -16614,6 +16622,10 @@
     {
       "item": "std.outbox-owner#4",
       "rung": "probabilistic"
+    },
+    {
+      "item": "std.outbox-owner#5",
+      "rung": "none"
     },
     {
       "item": "std.outbox#1",
@@ -16670,6 +16682,10 @@
     {
       "item": "std.outbox#14",
       "rung": "example"
+    },
+    {
+      "item": "std.outbox#15",
+      "rung": "none"
     },
     {
       "item": "std.report#1",
