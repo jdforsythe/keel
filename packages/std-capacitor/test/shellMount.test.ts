@@ -13,21 +13,43 @@ import { shellMount } from "../src/shellMount.ts";
 const native = vi.hoisted(() => {
   const state: {
     launch: { url: string } | undefined;
+    fails: boolean;
     listeners: ((e: { url: string }) => void)[];
     opened: string[];
     closed: number;
-  } = { launch: undefined, listeners: [], opened: [], closed: 0 };
+  } = { launch: undefined, fails: false, listeners: [], opened: [], closed: 0 };
   return state;
 });
 vi.mock("@capacitor/app", () => ({
   App: {
-    getLaunchUrl: async () => native.launch,
+    getLaunchUrl: async () => {
+      if (native.fails) throw new Error("no launch url");
+      return native.launch;
+    },
     addListener: async (_name: string, f: (e: { url: string }) => void) => {
       native.listeners.push(f);
       return { remove: async () => undefined };
     },
   },
 }));
+/** Each launch report the shell makes to the router's intake, in order (k.links Launch). */
+const reports = vi.hoisted((): (readonly string[] | null)[] => []);
+vi.mock("@keel/router/internal", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@keel/router/internal")>();
+  return {
+    ...real,
+    mountRequests: (...args: Parameters<typeof real.mountRequests>) => {
+      const intake = real.mountRequests(...args);
+      return {
+        ...intake,
+        launch: (links: readonly string[] | null) => {
+          reports.push(links);
+          return intake.launch(links);
+        },
+      };
+    },
+  };
+});
 vi.mock("@capacitor/browser", () => ({
   Browser: {
     open: async (o: { url: string }) => void native.opened.push(o.url),
@@ -61,6 +83,8 @@ async function start(opts: { launch?: string; pending?: boolean; ends?: boolean 
 }
 
 beforeEach(() => {
+  native.fails = false;
+  reports.length = 0;
   native.listeners.length = 0;
   native.opened.length = 0;
   native.closed = 0;
@@ -115,4 +139,21 @@ test("a link on another scheme is ignored and leaves the opening for the next re
   t.link("dev.keel.app:/api/auth/callback");
   await settle();
   expect(t.sent).toEqual(["/api/auth/callback"]);
+});
+
+test("the launch is reported once as getLaunchUrl settles: its URL, no link, or a failed read; appUrlOpen is listened for after it", async () => {
+  for (const [launch, fails, expected] of [
+    ["dev.keel.app:/api/auth/launch", false, ["dev.keel.app:/api/auth/launch"]],
+    [undefined, false, []],
+    [undefined, true, null],
+  ] as const) {
+    reports.length = 0;
+    native.listeners.length = 0;
+    native.fails = fails;
+    await start(launch === undefined ? {} : { launch });
+    expect(native.listeners).toHaveLength(0);
+    await settle();
+    expect(reports).toEqual([expected]);
+    expect(native.listeners).toHaveLength(1);
+  }
 });

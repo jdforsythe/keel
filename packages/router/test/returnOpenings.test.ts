@@ -26,7 +26,7 @@ function intake(ctx: SimCtx) {
     sent.push(new URL(req.url).pathname);
     throw new TypeError("offline");
   });
-  const link = mountRequests(ctx, {
+  const { link } = mountRequests(ctx, {
     id: ID,
     open: (u) => void opened.push(u),
     close: () => {
@@ -155,6 +155,60 @@ describe("returnOpenings", () => {
     expect(await returnOpenings.take(ctx)).toBe(false);
   });
 
+  it("an opening is written by set and taken by commit: a take that cannot commit leaves it as stored", async () => {
+    const ctx = sim();
+    await returnOpenings.record(ctx);
+    const stored = await ctx.storage.get(KEY);
+    const s = ctx.storage;
+    const writes: string[] = [];
+    const storage: KeyValueStorage = {
+      get: (k) => s.get(k),
+      set: async (k, v) => {
+        writes.push(`set ${k}`);
+        await s.set(k, v);
+      },
+      read: (ks) => s.read(ks),
+      commit: async () => {
+        writes.push("commit");
+        throw new Error("storage down");
+      },
+    };
+    const t = intake(withStorage(ctx, storage));
+    await t.link(`${ID}:/ret/cb?code=c`);
+    expect(t.sent).toEqual([]);
+    expect(writes).toEqual(["commit"]);
+    expect(await ctx.storage.get(KEY)).toBe(stored);
+    const next = sim();
+    await next.storage.set(KEY, stored ?? "");
+    const again = intake(next);
+    await again.link(`${ID}:/ret/cb?code=c`);
+    await again.link(`${ID}:/ret/cb?code=c`);
+    expect(again.sent).toEqual(["/ret/cb"]);
+  });
+
+  it("a later opening whose set fails leaves the older one pending until its own deadline", async () => {
+    for (const at of [599999, 600000]) {
+      const ctx = sim();
+      await returnOpenings.record(ctx);
+      await ctx.clock.advance(300000);
+      const s = ctx.storage;
+      const storage: KeyValueStorage = {
+        get: (k) => s.get(k),
+        set: async () => {
+          throw new Error("storage down");
+        },
+        read: (ks) => s.read(ks),
+        commit: (w) => s.commit(w),
+      };
+      const failing = withStorage(ctx, storage);
+      expect(await returnOpenings.record(failing)).toBe(false);
+      await ctx.clock.advance(at - 300000);
+      const t = intake(failing);
+      await t.link(`${ID}:/ret/cb?code=c`);
+      expect(t.sent, String(at)).toEqual(at < 600000 ? ["/ret/cb"] : []);
+    }
+  });
+
   it("a redirect to the shell's own scheme takes no opening and records none", async () => {
     const ctx = sim();
     await returnOpenings.record(ctx);
@@ -166,7 +220,7 @@ describe("returnOpenings", () => {
       if (u.pathname === "/ret/x") return new Response(null, { status: 302, headers: { location: `${ID}:/ret/y` } });
       throw new TypeError("offline");
     });
-    const link = mountRequests(ctx, { id: ID, open: () => undefined });
+    const { link } = mountRequests(ctx, { id: ID, open: () => undefined });
     await link(`${ID}:/ret/x`);
     await settle();
     expect(sent).toEqual(["/ret/x", "/ret/y"]);

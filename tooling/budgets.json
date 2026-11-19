@@ -176,7 +176,7 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "13.5kb",
+      "max": "13.6kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

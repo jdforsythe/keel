@@ -26,15 +26,15 @@ function pendingAt(raw: string, now: number): number | null {
 
 /**
  * The openings of a shell's ctx (k.return Opening), kept in `ctx.storage` `keel.return` so they survive a relaunch.
- * `record` makes one pending until `ctx.clock.now() + 600000`, replacing any other; it resolves false when storage
+ * `record` makes one pending until 600000 ms after `at` (default `ctx.clock.now()`), replacing any other; it resolves false when storage
  * fails. `take` takes the pending one in one `commit` and resolves true only when this call took it: with none
  * pending, past its deadline, a stored value of another shape, a `commit` another take won, or storage that fails, it
  * resolves false.
  */
 export const returnOpenings = {
-  async record(ctx: Ctx): Promise<boolean> {
+  async record(ctx: Ctx, at = ctx.clock.now()): Promise<boolean> {
     try {
-      await ctx.storage.set(KEY, JSON.stringify({ deadline: ctx.clock.now() + LIFETIME }));
+      await ctx.storage.set(KEY, JSON.stringify({ deadline: at + LIFETIME }));
       return true;
     } catch {
       return false;

@@ -740,6 +740,13 @@ const ROWS: readonly Row[] = [
   ["E1582", "a subpath mount.href refuses", "", "mount.href('/a/../x') -> mount.href('/x')", "k.mount"],
   ["E1583", "a native Form submit with a file chosen", "", "post files to a route action", "k.mount"],
   [
+    "E1584",
+    "an identityMount links entry not a literal subpath, '', or repeated",
+    "A shell sends a link to a declared path at any time, from any app or page, with the user's cookies.",
+    "links: ['verify'] -> links: ['/verify']",
+    "k.mount",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",

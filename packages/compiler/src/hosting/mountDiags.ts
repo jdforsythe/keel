@@ -16,19 +16,23 @@ const SUBPATH = /^(\/(?!\.\.?(\/|$))[\w.~-]+)*$/;
  * whose `handle.path` is `<its default import>.path` (`identitySource`). E1581: a file under `modules/<id>/`
  * importing `identity.ts` where a deployable of `topology.ts` serving `<id>` is `static`, or `client` without
  * `host`: no origin serving it mounts `handle`. E1582: `<default import>.href('<literal>')` whose subpath
- * `href` refuses. No fix.
+ * `href` refuses. E1584: a `links` entry of `identity.ts` that is not a string literal, is `''`, is not of the subpath
+ * form, or repeats one (`mountSource`), at the entry. No fix.
  */
 export function mountDiags(files: readonly SourceFile[]): Diagnostic[] {
   const own = files.find((f) => f.path === "identity.ts");
   if (own === undefined) return [];
   const server = files.find((f) => f.path === "identity.server.ts");
+  const read = mountSource(own.source);
   const problem =
-    mountSource(own.source).problem ??
+    read.problem ??
     (server !== undefined && identitySource(server.source).mounted
       ? undefined
       : "identity.server.ts needs handle: { path: mount.path }, mount its default import of ./identity.ts");
   const out: Diagnostic[] =
     problem === undefined ? [] : [{ code: "E1580", path: own.path, line: 1, col: 1, message: problem, see: "k.mount" }];
+  for (const l of read.links ?? [])
+    out.push({ code: "E1584", path: own.path, ...lineCol(own.source, l.offset), message: l.message, see: "k.mount" });
   const top = files.find((f) => f.path === "topology.ts");
   const deployables = Object.entries(top === undefined ? {} : parseTopology(top.source).topology);
   for (const f of files) {

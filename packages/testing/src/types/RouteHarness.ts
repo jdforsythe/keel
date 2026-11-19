@@ -15,9 +15,16 @@ export interface RouteHarness<S> extends Harness {
   /** The document navigations the page started, in order (k.mount Testing); none is made, so the page stays. */
   documents(): readonly DocumentNavigation[];
   /**
-   * Deliver a return link `<id>:/<path>?<search>` to the shell (k.return Testing; `renderRoute` with `shell`): a path
-   * under the identity mount is a mount request GET, a page a navigation, anything else ignored. Resolves when the
-   * page has settled; without `shell` it does nothing.
+   * Deliver a return link `<id>:/<path>?<search>` to the shell as the platform does (k.links Testing; `renderRoute`
+   * with `shell`), sorted by its path as k.links says. Resolves when the page has settled; without `shell` it does
+   * nothing.
    */
   returnLink(url: string): Promise<void>;
+  /**
+   * Report the shell's launch (k.links Launch; `renderRoute` with `shell` and `launch: 'later'`): `links` the return
+   * links the app was launched with, `[]` for none, `null` for a failed read. Resolves when they are delivered and the
+   * page has settled. A shell reports once: without `launch: 'later'` the launch was reported before the first render,
+   * so this, like any second report, changes nothing.
+   */
+  launch(links: readonly string[] | null): Promise<void>;
 }

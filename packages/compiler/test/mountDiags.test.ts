@@ -23,6 +23,22 @@ describe("mountSource and mountDiags", () => {
       expect(mountSource(bad).problem).toBeDefined();
   });
 
+  it("E1580 accepts { links: [...] } and {} as the second argument, and nothing else there or after it", () => {
+    const with2 = (second: string) => [
+      { path: "identity.ts", source: MOUNT.replace("('/api/auth')", `('/api/auth', ${second})`) },
+      base[1] ?? { path: "", source: "" },
+    ];
+    for (const ok of ["{ links: ['/verify'] }", "{ links: [] }", "{}"]) expect(codes(with2(ok)), ok).toEqual([]);
+    for (const bad of ["o", "{ links }", "{ links: v }", "{ links: [], x: 1 }", "{ ['links']: [] }", "{}, 1"])
+      expect(codes(with2(bad)), bad).toEqual(["E1580"]);
+  });
+
+  it("E1584 at each bad links entry: not a string literal, '', not a subpath, or repeated", () => {
+    const source = MOUNT.replace("('/api/auth')", "('/api/auth', { links: ['/a', v, '', 'b', '/a', `/c`] })");
+    const diags = mountDiags([{ path: "identity.ts", source }, base[1] ?? { path: "", source: "" }]);
+    expect(diags.map((d) => [d.code, d.line, d.col])).toEqual([59, 62, 66, 71, 77].map((col) => ["E1584", 2, col]));
+  });
+
   it("E1580 for a literal handle.path or none; clean with mount.path; nothing without identity.ts", () => {
     expect(codes(base)).toEqual([]);
     const literal = SERVER.replace("mount.path", "'/api/auth'");

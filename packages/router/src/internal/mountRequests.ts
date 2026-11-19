@@ -1,9 +1,11 @@
-import type { Ctx } from "@keel/ctx";
+import type { Ctx, FireEvent } from "@keel/ctx";
 import { absoluteUrl } from "./absoluteUrl.ts";
 import { findRouter } from "./findRouter.ts";
 import { formSeams } from "./formSeams.ts";
 import { isHref } from "./isHref.ts";
+import { mountLinks } from "./mountLinks.ts";
 import { mountPaths } from "./mountPaths.ts";
+import { personActs } from "./personActs.ts";
 import { returnOpenings } from "./returnOpenings.ts";
 import { shells } from "./shells.ts";
 
@@ -21,8 +23,8 @@ type Shell = {
 
 /**
  * A chain (k.opening Chains): a mount request and each redirect followed after it. `from` is who started it, the page
- * (a `Link` click, `navigate`, `ok(href)`, a `Form`) or a return link that took an opening; only a page's chain records
- * an opening. `redirects` counts the redirects followed in a row, on `KEEL_ORIGIN` or to the shell's own scheme. Each
+ * (a `Link` click, `navigate`, `ok(href)`, a `Form`) or a delivered return link (a declared path's, or one that took an
+ * opening); only a page's chain records an opening. `redirects` counts the redirects followed in a row, on `KEEL_ORIGIN` or to the shell's own scheme. Each
  * request gets its own value, so concurrent chains share nothing.
  */
 type Chain = { readonly from: "page" | "link"; readonly redirects: number };
@@ -33,6 +35,10 @@ const MAX_REDIRECTS = 5;
 const PAGE: Chain = { from: "page", redirects: 0 };
 const LINK: Chain = { from: "link", redirects: 0 };
 const agents = new WeakMap<Ctx, Shell>();
+/** The ctxs whose shell has reported its launch (k.links Launch). */
+const reported = new WeakSet<Ctx>();
+/** Per ctx, until its launch report: when the last held opening opened, on `ctx.clock`. */
+const held = new WeakMap<Ctx, number>();
 let listening = false;
 
 const under = (pathname: string): boolean => {
@@ -44,7 +50,28 @@ const routerOf = (ctx: Ctx) => {
   const core = findRouter();
   return core?.ctx === ctx ? core : null;
 };
+/** The base a root-relative path is read against, and a second one: a path that names a host has it against both. */
+const BASE = "http://keel.invalid";
+const ALT = "http://alt.invalid";
 const parsed = (url: string, base: string): URL | null => (URL.canParse(url, base) ? new URL(url, base) : null);
+
+/**
+ * A root-relative `path` (with search and hash) as its pathname and its `href` (pathname and search); null when it
+ * does not parse, when a URL parser reads it as naming a host (it begins `//` or `/\`, also past tabs and newlines),
+ * and when its path begins `//` once dot segments are removed.
+ */
+const split = (path: string): { pathname: string; href: string } | null => {
+  const u = parsed(path, BASE);
+  return u === null || u.origin !== BASE || parsed(path, ALT)?.origin !== ALT || u.pathname.startsWith("//")
+    ? null
+    : { pathname: u.pathname, href: `${u.pathname}${u.search}` };
+};
+
+/** The client-side navigation to `href` when the router rendering on `ctx` has a page there; null when it has none. */
+const page = (ctx: Ctx, href: string): Promise<void> | null => {
+  const core = routerOf(ctx);
+  return isHref(href) && core !== null && core.accepts(href, "POST") !== null ? core.navigate(href) : null;
+};
 
 /**
  * Where a root-relative `path` (with search and hash) on `KEEL_ORIGIN` goes, as part of `chain`: a page, a mount
@@ -57,20 +84,31 @@ async function arrive(
   chain: Chain,
   elsewhere: () => void | Promise<void>,
 ): Promise<void> {
-  const u = new URL(path, "http://keel.invalid");
-  const href = `${u.pathname}${u.search}`;
-  const core = routerOf(ctx);
-  if (isHref(href) && core !== null && core.accepts(href, "POST") !== null) return core.navigate(href);
-  if (!under(u.pathname)) return elsewhere();
+  const at = split(path);
+  if (at === null) return;
+  const { pathname, href } = at;
+  const to = page(ctx, href);
+  if (to !== null) return to;
+  if (!under(pathname)) return elsewhere();
   if (chain.redirects <= MAX_REDIRECTS) await request(ctx, shell, href, chain);
 }
 
 /**
- * A mount request of `chain` opens `url` in the external browser. A chain the page started records an opening first; a
- * chain a return link started records none. The browser opens either way, also when the opening cannot be stored.
+ * A mount request of `chain` opens `url` in the external browser. A chain the page started records an opening first
+ * (k.opening Chains) unless the ctx is link-started (`personActs`), read now as the browser opens, not when the chain
+ * started; before the shell reports its launch with no person's act since the ctx started, the opening is held
+ * instead (k.links Launch): nothing is stored, and the report decides. A chain a return link started records none.
+ * The browser opens either way, also when the opening cannot be stored.
  */
 async function opening(ctx: Ctx, shell: Shell, url: string, chain: Chain): Promise<void> {
-  if (chain.from === "page") await returnOpenings.record(ctx);
+  const acts = personActs.of(ctx);
+  if (chain.from === "page" && !acts.linked) {
+    if (!acts.acted && !reported.has(ctx)) held.set(ctx, ctx.clock.now());
+    else {
+      held.delete(ctx);
+      await returnOpenings.record(ctx);
+    }
+  }
   shell.open(url);
 }
 
@@ -79,8 +117,9 @@ async function opening(ctx: Ctx, shell: Shell, url: string, chain: Chain): Promi
  * `redirect: 'manual'`, a POST of `body` (urlencoded) when given, else a GET. Only the answer's status and `location`
  * are read. A redirect on `KEEL_ORIGIN` goes where `arrive` says, one elsewhere opens in the external browser when
  * it is `http:` or `https:`, and one on the shell's own scheme is read as a return link that takes no opening and
- * continues `chain`, counting toward its redirects in a row. A GET answered without a redirect opens its URL in the
- * external browser. Each opening of the external browser is recorded (`returnOpenings`) when `chain` is the page's.
+ * continues `chain`, counting toward its redirects in a row. A location whose path begins `//` or `/\` once dot
+ * segments are removed is ignored (`split`). A GET answered without a redirect opens its URL in the
+ * external browser, recorded or held as `opening` says.
  * A POST answered without a redirect, and a request that fails, change nothing.
  */
 async function request(ctx: Ctx, shell: Shell, href: string, chain: Chain, body?: string): Promise<void> {
@@ -107,37 +146,69 @@ async function request(ctx: Ctx, shell: Shell, href: string, chain: Chain, body?
   }
   const home = shell.origin ?? new URL(req.url).origin;
   const t = parsed(to, new URL(href, home).href);
-  if (t === null) return;
+  // A relative location `split` refuses (`//host`, `/\host`, `/.//host`) is ignored.
+  if (t === null || (!URL.canParse(to) && split(to) === null)) return;
   const next: Chain = { from: chain.from, redirects: chain.redirects + 1 };
   if (t.protocol === `${shell.id}:`) {
     const rest = returnPath(shell, t.href);
-    return rest === null ? undefined : arrive(ctx, shell, rest, next, () => undefined);
+    return rest === null ? undefined : arrive(ctx, shell, rest.href, next, () => undefined);
   }
   const path = `${t.pathname}${t.search}${t.hash}`;
   if (t.origin === home) return arrive(ctx, shell, path, next, () => opening(ctx, shell, path, chain));
   if (t.protocol === "https:" || t.protocol === "http:") await opening(ctx, shell, t.href, chain);
 }
 
-/** The `/<path>?<search>` of a return link `<id>:/<path>?<search>`, its scheme in any case; null for any other URL. */
-function returnPath(shell: Shell, url: string): string | null {
+/**
+ * The path of a return link `<id>:/<path>?<search>`, its scheme in any case, as `split` gives it; null for any other
+ * URL and for a path `split` refuses.
+ */
+function returnPath(shell: Shell, url: string): ReturnType<typeof split> {
   const scheme = `${shell.id}:`;
   const rest = url.slice(scheme.length);
-  if (url.slice(0, scheme.length).toLowerCase() !== scheme.toLowerCase() || !/^\/(?![/\\])/.test(rest)) return null;
-  return rest;
+  return url.slice(0, scheme.length).toLowerCase() === scheme.toLowerCase() && rest[0] === "/" ? split(rest) : null;
 }
 
 /**
- * The intake of return links (k.return Return links), every one the platform delivers, at launch or while running.
- * Any other URL is ignored and takes nothing. A return link first takes the pending opening (`returnOpenings.take`,
- * one `commit`) before anything else happens: when it took none it is ignored, with no request and no navigation.
- * One that took it closes the external browser and is read as a redirect to its path on `KEEL_ORIGIN`, starting a
- * chain of its own that records no opening, whatever it opens.
+ * The intake of return links (k.links Return links), every one the platform delivers, at launch or while running,
+ * sorted by its path. A page the router matches: a client-side navigation there. The mount's path plus a declared
+ * link (`mountLinks`), exactly: a mount request GET. Any other path under the mount first takes the pending opening
+ * (`returnOpenings.take`, one `commit`), then closes the external browser and is a mount request GET; with none taken
+ * it is ignored. Any other URL or path is ignored. A link taken any of these ways makes the ctx link-started
+ * (`personActs`) before anything else happens, and its GET starts a chain that records no opening.
  */
 async function link(ctx: Ctx, shell: Shell, url: string): Promise<void> {
-  const rest = returnPath(shell, url);
-  if (rest === null || !(await returnOpenings.take(ctx))) return;
-  shell.close?.();
-  await arrive(ctx, shell, rest, LINK, () => undefined);
+  const at = returnPath(shell, url);
+  if (at === null) return;
+  const { pathname, href } = at;
+  const acts = personActs.of(ctx);
+  const was = acts.linked;
+  acts.linked = true;
+  const to = page(ctx, href);
+  if (to !== null) return to;
+  if (!mountLinks.has(pathname)) {
+    acts.linked = was;
+    if (!under(pathname) || !(await returnOpenings.take(ctx))) return;
+    acts.linked = true;
+    shell.close?.();
+  }
+  await request(ctx, shell, href, LINK);
+}
+
+/**
+ * The shell's launch report (k.links Launch), once per ctx; a later one is ignored. `links` are the return links the
+ * app was launched with, `[]` for an ordinary launch, `null` when the shell could not read them. A report of no link
+ * records the held opening as of when it opened. Any other report drops it and makes the ctx link-started until a
+ * person acts, whether or not a link is taken, so a mount request in flight records no opening; then it delivers the
+ * links in order.
+ */
+async function launch(ctx: Ctx, shell: Shell, links: readonly string[] | null): Promise<void> {
+  if (reported.has(ctx)) return;
+  reported.add(ctx);
+  const at = held.get(ctx);
+  held.delete(ctx);
+  if (links?.length !== 0) personActs.of(ctx).linked = true;
+  else if (at !== undefined) await returnOpenings.record(ctx, at);
+  for (const url of links ?? []) await link(ctx, shell, url);
 }
 
 /** The mounted router's ctx and its shell, when a `Link` click or a `Form` post there is the shell's to take. */
@@ -183,20 +254,33 @@ function listen(): void {
 /**
  * Makes `ctx` a shell's for the identity mount (k.return): from then on, on a router of that ctx, each document
  * navigation to a path under an `identityMount` (a `Link` click, `navigate`, an action's `ok(href)`, a `Form` the
- * browser would post) is a mount request through `ctx.net` (`request`) and nothing leaves the page. Returns the intake
- * of return links (`link`): given `<id>:/<path>?<search>` that takes the pending opening it sends a mount request GET
- * for a path under the mount, navigates to a page, and ignores anything else; it resolves when that is done. Each
- * opening of the external browser by a chain the page started is recorded; one by a chain a return link started is
- * not. Calling it again for a ctx replaces its shell.
+ * browser would post) is a mount request through `ctx.net` (`request`) and nothing leaves the page. Returns the
+ * shell's inputs: `link`, the intake of return links (k.links), and `launch`, the launch report, each resolving when
+ * its work is done; and `fired`, a test harness's `fire` (`personActs.fired`). Each opening of the external browser
+ * by a chain the page started is recorded, held until the launch report, or not recorded while the ctx is
+ * link-started (`opening`; acts watched from here on); one by a chain a return link started is not. Calling it again
+ * for a ctx replaces its shell.
  */
-export function mountRequests(ctx: Ctx, shell: Shell): (url: string) => Promise<void> {
+export function mountRequests(
+  ctx: Ctx,
+  shell: Shell,
+): {
+  readonly link: (url: string) => Promise<void>;
+  readonly launch: (links: readonly string[] | null) => Promise<void>;
+  readonly fired: (e: FireEvent) => void;
+} {
   agents.set(ctx, shell);
+  personActs.watch(ctx);
   shells.set(ctx, (url) => {
-    const u = parsed(url, "http://keel.invalid");
+    const u = parsed(url, BASE);
     if (u === null || !under(u.pathname)) return false;
     void request(ctx, shell, `${u.pathname}${u.search}`, PAGE);
     return true;
   });
   listen();
-  return (url) => link(ctx, shell, url);
+  return {
+    link: (url) => link(ctx, shell, url),
+    launch: (links) => launch(ctx, shell, links),
+    fired: (e) => personActs.fired(ctx, e),
+  };
 }

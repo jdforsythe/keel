@@ -26,7 +26,10 @@ import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
  * the document navigations the page started, in order, recorded and not made, so the page stays). With
  * `options.shell` the page runs as in a native shell (k.return Testing): a navigation under the identity mount is a
  * mount request through `ctx.net`, `documents()` records each URL opened in the external browser as a GET, and
- * `returnLink(url)` delivers a return link on the shell's `id` (`dev.keel.golden2` for `true`);
+ * `returnLink(url)` delivers a return link on the shell's `id` (`dev.keel.golden2` for `true`), the shell reports a
+ * launch with no link before the first render unless `options.launch` is `'later'`, which leaves it to the handle's
+ * `launch(links)` (k.links Testing), and a `fire` of `click`, `submit` or a `keydown` other than Escape is a person's
+ * act (k.opening Link-started), which the handle's `navigate` is not;
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
  * `options.caller` and `options.user` (each default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
@@ -61,7 +64,8 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   const documents: DocumentNavigation[] = [];
   const open = (to: string): void => void documents.push({ method: "GET", url: to, body: null });
   const { shell } = options;
-  const link = shell && mountRequests(ctx, { id: shell === true ? "dev.keel.golden2" : shell.id, open });
+  const intake = shell ? mountRequests(ctx, { id: shell === true ? "dev.keel.golden2" : shell.id, open }) : null;
+  if (options.launch === undefined) void intake?.launch([]);
   try {
     router = createRouterWith(
       options.routes,
@@ -107,6 +111,11 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   }
   return {
     ...harness,
+    // Under a shell, a fire that stands for a person's act marks it on the ctx before the event is dispatched.
+    fire: (id, event) => {
+      intake?.fired(event);
+      return harness.fire(id, event);
+    },
     route: () => router.route.get(),
     navigate: async (href) => {
       void router.navigate(href);
@@ -115,7 +124,11 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
     location: () => ({ entries: history.length(), scrollY: window.scrollY }),
     documents: () => [...documents],
     returnLink: async (url) => {
-      await link?.(url);
+      await intake?.link(url);
+      await harness.settle();
+    },
+    launch: async (links) => {
+      await intake?.launch(links);
       await harness.settle();
     },
   };

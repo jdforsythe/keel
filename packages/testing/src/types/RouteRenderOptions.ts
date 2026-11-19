@@ -23,4 +23,9 @@ export interface RouteRenderOptions<M extends Readonly<Record<string, RouteDef>>
    * the shell's `id` (k.shell), the scheme of its return links, and `true` stands for `dev.keel.golden2`.
    */
   readonly shell?: true | { readonly id: string };
+  /**
+   * With `shell`, `'later'` reports no launch until the handle's `launch(links)` (k.links Testing); left out, the shell
+   * reports a launch with no link before the first render.
+   */
+  readonly launch?: "later";
 }

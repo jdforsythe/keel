@@ -15,6 +15,7 @@ export { matchUrl } from "./matchUrl.ts";
 export { mountRequests } from "./mountRequests.ts";
 export { needsBare } from "./needsBare.ts";
 export { parseSearch } from "./parseSearch.ts";
+export { personActs } from "./personActs.ts";
 export { publicError } from "./publicError.ts";
 export { routeActions } from "./routeActions.ts";
 export { runGuard } from "./runGuard.ts";

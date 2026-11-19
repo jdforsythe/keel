@@ -13,6 +13,7 @@ import { identityMount } from "../src/identityMount.ts";
 import { createRouterWith } from "../src/internal/createRouterWith.ts";
 import { formHandle } from "../src/internal/formHandle.ts";
 import { mountRequests } from "../src/internal/mountRequests.ts";
+import { personActs } from "../src/internal/personActs.ts";
 import { manifest } from "../src/manifest.ts";
 import type { FormHandle } from "../src/types/FormHandle.ts";
 import { memoryHistory } from "./memoryHistory.ts";
@@ -48,7 +49,9 @@ function shell(answer: (sent: Sent, i: number) => Response | Promise<Response>, 
   });
   const opened: string[] = [];
   const left: string[] = [];
-  const link = mountRequests(ctx, { id: ID, open: (url) => void opened.push(url), origin });
+  const { link, launch } = mountRequests(ctx, { id: ID, open: (url) => void opened.push(url), origin });
+  // An ordinary launch: the shell reports no launch link (k.links Launch).
+  void launch([]);
   const home = (): Node => {
     const name = document.createElement("input");
     name.name = "name";
@@ -173,7 +176,13 @@ describe("mount requests", () => {
     await settle();
     expect(page.router.route.get().id).toBe("t.done");
     expect(page.opened).toEqual([]);
-    for (const location of ["javascript:alert(1)", "file:///etc/passwd", "intent://x#Intent;end", "http://["]) {
+    for (const location of [
+      "javascript:alert(1)",
+      "data:text/html,x",
+      "file:///etc/passwd",
+      "intent://x#Intent;end",
+      "http://[",
+    ]) {
       const t = shell(() => to(302, location));
       await t.router.navigate(auth.href("/x"));
       await settle();
@@ -257,6 +266,50 @@ describe("return links", () => {
     );
   });
 
+  it("a location or a link whose path begins // or /\\, also once dot segments are removed, is ignored", async () => {
+    const off = [
+      "/.//evil.example/x",
+      "/\\evil.example/x",
+      "/./\\evil.example/x",
+      "/auth/..//evil.example/x",
+      "/\t/evil.example/x",
+      "//evil.example/x",
+      "\\\\evil.example/x",
+      "https://api.example/.//evil.example/x",
+      "//keel.invalid/auth/x",
+      "/\\keel.invalid/auth/x?t=1",
+      "/\t/keel.invalid/auth/x",
+      "/.//keel.invalid/auth/x",
+    ];
+    for (const location of off) {
+      const t = shell((_s, i) => (i === 0 ? to(302, location) : new Response("")), undefined, "https://api.example");
+      await pend(t.ctx);
+      const before = await t.ctx.storage.get("keel.return");
+      await t.router.navigate(auth.href("/x"));
+      await settle();
+      expect(t.opened, location).toEqual([]);
+      expect(t.sent, location).toHaveLength(1);
+      expect(t.router.route.get().id, location).toBe("t.home");
+      await t.link(`${ID}:${location.startsWith("/") ? location : `/${location}`}`);
+      await settle();
+      expect(t.sent, location).toHaveLength(1);
+      expect(t.opened, location).toEqual([]);
+      expect(t.router.route.get().id, location).toBe("t.home");
+      expect(await t.ctx.storage.get("keel.return"), location).toBe(before);
+      for (const stop of stops.splice(0)) stop();
+    }
+  });
+
+  it("a link whose path does not parse resolves and sends nothing", async () => {
+    const t = shell(() => new Response(""));
+    await pend(t.ctx);
+    for (const bad of [`${ID}://[`, `${ID}:/\\[`, `${ID}://keel.invalid/auth/verify`]) await t.link(bad);
+    await settle();
+    expect(t.sent).toEqual([]);
+    expect(t.opened).toEqual([]);
+    expect(t.router.route.get().id).toBe("t.home");
+  });
+
   it("a link under the mount with dot segments is read as the path a URL parser gives", async () => {
     const t = shell(() => new Response(""));
     await pend(t.ctx);
@@ -299,8 +352,12 @@ describe("chains (k.opening Chains)", () => {
           const c = r.url.slice("/auth/".length, "/auth/".length + 1);
           const k = Number(r.url.slice("/auth/".length + 1));
           if (c === "l" && k === 0) linkArrived();
-          // The page's chain starts only once the link took the opening and its chain is under way.
-          if (c === "p" && k === 0) await arrived;
+          // The page's chain starts only once the link took the opening and its chain is under way; a person acts
+          // then, which ends link-started, so the page's chain opens after a person's act and records an opening.
+          if (c === "p" && k === 0) {
+            await arrived;
+            personActs.fired(t.ctx, { type: "click" });
+          }
           if (c !== "p" && c !== "l") return new Response(null, { status: 404 });
           const n = c === "p" ? np : nl;
           return k < n ? to(302, hop(c, k)) : new Response(null, { status: 404 });

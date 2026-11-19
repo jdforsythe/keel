@@ -11,20 +11,47 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { shellMount } from "../src/shellMount.ts";
 
 const native = vi.hoisted(() => {
-  const state: { launch: string[] | null; listeners: ((urls: string[]) => void)[]; opened: string[] } = {
+  const state: {
+    launch: string[] | null;
+    fails: boolean;
+    listeners: ((urls: string[]) => void)[];
+    opened: string[];
+  } = {
     launch: null,
+    fails: false,
     listeners: [],
     opened: [],
   };
   return state;
 });
 vi.mock("@tauri-apps/plugin-deep-link", () => ({
-  getCurrent: async () => native.launch,
+  getCurrent: async () => {
+    if (native.fails) throw new Error("no launch urls");
+    return native.launch;
+  },
   onOpenUrl: async (f: (urls: string[]) => void) => {
     native.listeners.push(f);
     return () => undefined;
   },
 }));
+/** Each launch report the shell makes to the router's intake, in order (k.links Launch). */
+const reports = vi.hoisted((): (readonly string[] | null)[] => []);
+vi.mock("@keel/router/internal", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@keel/router/internal")>();
+  return {
+    ...real,
+    mountRequests: (...args: Parameters<typeof real.mountRequests>) => {
+      const intake = real.mountRequests(...args);
+      return {
+        ...intake,
+        launch: (links: readonly string[] | null) => {
+          reports.push(links);
+          return intake.launch(links);
+        },
+      };
+    },
+  };
+});
 vi.mock("@tauri-apps/plugin-opener", () => ({
   openUrl: async (url: string) => void native.opened.push(url),
 }));
@@ -54,6 +81,8 @@ async function start(opts: { launch?: string[]; pending?: boolean } = {}) {
 }
 
 beforeEach(() => {
+  native.fails = false;
+  reports.length = 0;
   native.listeners.length = 0;
   native.opened.length = 0;
 });
@@ -104,4 +133,21 @@ test("with no opening nothing is sent, and a link on another scheme is ignored",
   t.link("dev.keel.other:/api/auth/callback");
   await settle();
   expect(t.sent).toEqual([]);
+});
+
+test("the launch is reported once as getCurrent settles: its URLs, null as no link, or a failed read; onOpenUrl is listened for after it", async () => {
+  for (const [launch, fails, expected] of [
+    [["dev.keel.app:/api/auth/a", "dev.keel.app:/b"], false, ["dev.keel.app:/api/auth/a", "dev.keel.app:/b"]],
+    [undefined, false, []],
+    [undefined, true, null],
+  ] as const) {
+    reports.length = 0;
+    native.listeners.length = 0;
+    native.fails = fails;
+    await start(launch === undefined ? {} : { launch: [...launch] });
+    expect(native.listeners).toHaveLength(0);
+    await settle();
+    expect(reports).toEqual([expected]);
+    expect(native.listeners).toHaveLength(1);
+  }
 });
