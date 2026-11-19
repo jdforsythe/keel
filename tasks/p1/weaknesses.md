@@ -153,7 +153,7 @@ Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane
 - [ ] 0918 check, testing · S · a rule that throws becomes E1756, which tests filtering for one code never see · lane 15
 - [ ] 0936 check, cli · S · `keel build`'s check step reads a `dist/` left by `vite build` and reports E1561 · lane 15
 - [ ] 0826 std-tauri · M · a kill inside a store save and power loss are not shown; plugin-store does not fsync · lane 19
-- [ ] 0292 apps, tooling · S · `keel check` reports 7 errors in apps/sessions and no app's `check` script runs the checker · lane 08
+- [x] 0292 apps, tooling · S · `keel check` reports 7 errors in apps/sessions and no app's `check` script runs the checker · lane 08
 - [ ] 0958 std-capacitor, std-tauri, apps, tooling · L · the return-link path has no device proof and no app with `identity.ts` has a shell · lane 14
 - [ ] 0836 evals, apps/golden-3 · L · golden-3 has never been built; owned by W1 step 4, not a fix lane
 - [ ] 0914 std-health, std-geo, std-i18n, std-brands, std-text · L · tests to kill surviving mutants under threshold in the std packages · lane 21

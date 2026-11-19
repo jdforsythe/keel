@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "check": "tsc --noEmit && biome check modules test",
+    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs"
   },
@@ -23,6 +23,7 @@
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
+    "@keel/cli": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "vite": "^8.3.6"
