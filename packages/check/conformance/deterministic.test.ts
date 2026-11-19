@@ -3,7 +3,7 @@
 import { check, format } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { FIXTURES, one, SEED } from "./support.ts";
+import { FIXTURES, SEED, one } from "./support.ts";
 
 test("two runs on an unchanged tree produce identical output", () => {
   fc.assert(

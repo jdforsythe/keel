@@ -3,7 +3,6 @@
 // The real `keel` binary over a temp project (OS tmpdir). The mutation report is hand-written JSON in Stryker's shape;
 // Stryker never runs. Report keys are paths relative to the package, as Stryker writes them. Seed: 1337 (no property here).
 import { describe, expect, it } from "vitest";
-import { SOURCE, source } from "./ledger-fixture.ts";
 import {
   BOUND_FILE,
   CLAMP_FILE,
@@ -18,6 +17,7 @@ import {
   sha256,
   withProject,
 } from "./ledger-fixture-kinds.ts";
+import { SOURCE, source } from "./ledger-fixture.ts";
 import { keel, summaryOf, writeFiles } from "./test-sim-project.ts";
 
 const COMMITTED = ".keel/ledger.json";

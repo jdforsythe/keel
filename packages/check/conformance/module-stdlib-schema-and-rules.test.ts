@@ -8,7 +8,7 @@ import { check } from "@keel/check";
 import { module, ModuleSchema } from "@keel/compiler";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { codesOf, exportFile, has, lowerId, manifestFile, pascal, SEED, type Files } from "./module-support.ts";
+import { type Files, SEED, codesOf, exportFile, has, lowerId, manifestFile, pascal } from "./module-support.ts";
 
 const AUTH = "node_modules/@keel/std-auth";
 const MONEY = "node_modules/@keel/std-money";

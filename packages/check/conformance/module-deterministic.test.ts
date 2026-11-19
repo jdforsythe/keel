@@ -1,8 +1,8 @@
+import { check } from "@keel/check";
 // Seed 1337
 import fc from "fast-check";
-import { check } from "@keel/check";
 import { expect, test } from "vitest";
-import { exportFile, importer, manifestFile, routesFile, SEED } from "./module-support.ts";
+import { SEED, exportFile, importer, manifestFile, routesFile } from "./module-support.ts";
 
 const tree = [
   manifestFile({ id: "catalog", exports: ["Item", "Ghost"], routes: ["catalog.show"] }),

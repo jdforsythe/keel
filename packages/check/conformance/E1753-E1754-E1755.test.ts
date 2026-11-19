@@ -4,7 +4,7 @@
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { one, SEED } from "./support.ts";
+import { SEED, one } from "./support.ts";
 
 const UNSAFE = "unsafe"; // built so this file's own source holds no literal call; fixture text does
 const NO_TYPES = { types: false } as const;

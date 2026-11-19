@@ -2,7 +2,7 @@
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { codesOf, has, lowerId, manifestFile, routesFile, SEED } from "./module-support.ts";
+import { SEED, codesOf, has, lowerId, manifestFile, routesFile } from "./module-support.ts";
 
 const distinct = fc.tuple(lowerId, lowerId, lowerId).filter(([a, b]) => a !== b);
 

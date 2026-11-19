@@ -1,9 +1,9 @@
+import { check } from "@keel/check";
 // Shared helpers for the k.module conformance files (not a test file). Public API only. Seed 1337.
 // Assumed fixture conventions (spec is silent on specifiers): app modules live at modules/<id>/,
 // cross-module imports are relative paths naming the exporting file (no barrels),
 // stdlib modules are resolved as package specifiers `@keel/std-x/<File>` from node_modules/@keel/std-x/.
 import fc from "fast-check";
-import { check } from "@keel/check";
 import type { Files } from "./support.ts";
 
 export { SEED } from "./support.ts";

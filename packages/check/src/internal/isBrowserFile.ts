@@ -1,7 +1,8 @@
+import { SERVER_ONLY_NAME } from "@keel/compiler/internal";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { topologyFor } from "./topologyFor.ts";
 
-const SERVER_NAME = /\.(?:server|guard)\.[cm]?[jt]sx?$/;
+const SERVER_NAME = SERVER_ONLY_NAME;
 
 /**
  * A file the browser can load (k.host Node globals): with a `topology.ts` in its project, under `modules/<id>/` of a

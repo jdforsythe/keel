@@ -5,7 +5,7 @@
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, type Files } from "./support.ts";
+import { type Files, SEED } from "./support.ts";
 
 const MANIFEST = (id: string): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;

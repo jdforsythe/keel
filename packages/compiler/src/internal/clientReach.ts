@@ -2,41 +2,20 @@ import path from "node:path";
 import { type Program, Visitor } from "oxc-parser";
 import type { Topology } from "../types/Topology.ts";
 import type { ReachHit } from "./ReachHit.ts";
+import { SERVER_ONLY_NAME } from "./SERVER_ONLY_NAME.ts";
+import { importEdges } from "./importEdges.ts";
 
-const NAME = /\.(?:server|guard)(?:\.[cm]?[jt]sx?)?$/;
+const NAME = SERVER_ONLY_NAME;
 const TEST = /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$/;
 const EXT = ["", ".ts", ".tsx", ".js", ".jsx", "/index.ts", "/index.tsx"];
 const ROUTES = /(?:^|\/)routes\.ts$/;
 
-/** Value imports, re-exports and literal `import()` of `program`. */
-function edges(program: Program): { source: string; start: number }[] {
-  const out: { source: string; start: number }[] = [];
-  for (const s of program.body) {
-    const value =
-      s.type === "ImportDeclaration" ? s.importKind !== "type" : "exportKind" in s && s.exportKind !== "type";
-    const from = "source" in s ? s.source : null;
-    if (value && from !== null && from !== undefined && "value" in from && typeof from.value === "string")
-      out.push({ source: from.value, start: s.start });
-  }
-  new Visitor({
-    ImportExpression: (n) => {
-      const x = n.source;
-      const text =
-        x.type === "Literal"
-          ? x.value
-          : x.type === "TemplateLiteral" && x.expressions.length === 0
-            ? x.quasis[0]?.value.cooked
-            : null;
-      if (typeof text === "string") out.push({ source: text, start: n.start });
-    },
-  }).visit(program);
-  return out;
-}
-
 /**
- * Client-reachable code (k.boundary Reach) over one project's files (root-relative paths). With `topology`: the files of
- * a `node` or `static` module that are not server-only, and every file a client entry (each route `component` such a
- * module's `routes.ts` names, every file of a `client` module) reaches by value imports through no server-only file.
+ * Client-reachable code (k.boundary Reach, k.bundle Bundles) over one project's files (root-relative paths). With
+ * `topology`: the files of a `node` or `static` module that are not server-only, and every file a client entry (each
+ * route `component` such a module's `routes.ts` names, every file of a `client` module) reaches through no server-only
+ * file by value imports, literal `import()` and `new URL(<literal>, import.meta.url)`, a query (`?worker`, `?url`)
+ * naming its file; so a worker a client entry starts is a client entry. Server-only is by name, any extension, any case.
  * With none, every file but server-only ones. `hits` are their imports of server-only files (a query names its file;
  * a `routes.ts` reports none), with the chain when an entry reaches the importer.
  */
@@ -89,7 +68,7 @@ export function clientReach(
   };
   const visit = (p: string, walk: boolean): void => {
     const f = byPath.get(p);
-    for (const e of f === undefined ? [] : edges(f.program)) {
+    for (const e of f === undefined ? [] : importEdges(f.program)) {
       const t = target(p, e.source);
       if (t.server && !ROUTES.test(p))
         hits.push({

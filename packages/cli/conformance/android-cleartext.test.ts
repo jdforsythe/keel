@@ -65,7 +65,7 @@ const MANIFEST = `<?xml version="1.0" encoding="utf-8"?>
 let project = "";
 let scratch = "";
 let realNpx = "";
-let env: Record<string, string> = {};
+const env: Record<string, string> = {};
 
 function exe(path: string, body: string): void {
   mkdirSync(dirname(path), { recursive: true });

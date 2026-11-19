@@ -1,9 +1,9 @@
+import { check } from "@keel/check";
 // Spec: k.module, clause "Changing the signature of a non-public export produces no diagnostic in any other module."
 // Seed 1337
 import fc from "fast-check";
-import { check } from "@keel/check";
 import { expect, test } from "vitest";
-import { lowerId, manifestFile, pascal, SEED } from "./module-support.ts";
+import { SEED, lowerId, manifestFile, pascal } from "./module-support.ts";
 
 const bodies = [
   "(x: number) => x",

@@ -1,4 +1,4 @@
-import { clientReach } from "@keel/compiler/internal";
+import { SERVER_ONLY_NAME, clientReach } from "@keel/compiler/internal";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { parseFile } from "./parseFile.ts";
 import { topologyFor } from "./topologyFor.ts";
@@ -12,7 +12,7 @@ const reaches = new WeakMap<readonly SourceFile[], Map<string, ReadonlySet<strin
  */
 export function isClientReachable(path: string, project: readonly SourceFile[]): boolean {
   const read = topologyFor(path, project);
-  if (read === undefined) return !/\.(?:server|guard)\.[cm]?[jt]sx?$/.test(path);
+  if (read === undefined) return !SERVER_ONLY_NAME.test(path);
   const byDir = reaches.get(project) ?? new Map<string, ReadonlySet<string>>();
   reaches.set(project, byDir);
   let subject = byDir.get(read.dir);

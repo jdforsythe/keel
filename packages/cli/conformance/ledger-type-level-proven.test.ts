@@ -2,8 +2,8 @@
 // Spec: k.ledger, Ledger "`proven`: a passing type-level test (its body calls `expectTypeOf` or `assertType`, type-checked by the package's `check`), a passing closed-form `explore` (k.model), passing only when the store's whole space closed, or a passing `prove` its body awaits or returns (k.prove; evidence: Z3 version); nothing else claims it."
 // The real `keel` binary over a temp project (OS tmpdir). Seed: 1337 (no property in this file).
 import { describe, expect, it } from "vitest";
-import { EXAMPLE, ITEM, SOURCE, exampleTest, source } from "./ledger-fixture.ts";
 import { ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";
+import { EXAMPLE, ITEM, SOURCE, exampleTest, source } from "./ledger-fixture.ts";
 import { keel } from "./test-sim-project.ts";
 
 const TYPE_TEST = "packages/m/test/clamp-types.test.ts";

@@ -58,9 +58,28 @@ const ROWS: readonly Row[] = [
     "fix the throw, or export const routes",
     "k.compiler, k.compat",
   ],
-  ["E1007", "server code in a browser build (names the chain)", "", "move it to a *.server.ts file", "k.boundary"],
+  [
+    "E1007",
+    "server code in a browser build (names the chain)",
+    "Reasons: server-only file, node built-in, handler, environment config (a project envPrefix or define), environment value (a KEEL_* value in an emitted file). Workers count.",
+    "move it to a *.server.ts file; drop envPrefix and define, read browser values through clientStd",
+    "k.boundary, k.bundle",
+  ],
   ["E1008", "a stub of a server-only export called", "", "call it from a loader, action or guard", "k.boundary"],
-  ["E1009", "guard outside a *.guard.* or *.server.* file", "", "move it into <name>.guard.ts", "k.boundary"],
+  [
+    "E1009",
+    "guard used outside a *.guard.* or *.server.* file",
+    "A guard is its binding: R.guard, a re-export, or a value use count.",
+    "move it into <name>.guard.ts",
+    "k.boundary, k.bundle",
+  ],
+  [
+    "E1010",
+    "a specifier naming a file in a case other than its name on disk",
+    "It resolves on macOS and Windows and fails on Linux; keel check and every build report it.",
+    "import './notes.Server.ts' -> import './notes.server.ts'",
+    "k.bundle",
+  ],
   [
     "E1049",
     "internal compiler failure",
@@ -526,9 +545,9 @@ const ROWS: readonly Row[] = [
   [
     "E1551",
     "loader, action or commitStores outside a *.server.ts file",
-    "",
+    "A loader or action is its binding: R.loader, a re-export, or a value use count.",
     "move it into <route>.server.ts",
-    "k.server",
+    "k.server, k.bundle",
   ],
   [
     "E1552",

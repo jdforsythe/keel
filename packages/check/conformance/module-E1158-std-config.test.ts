@@ -5,7 +5,7 @@ import { check } from "@keel/check";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { type Files, lowerId, SEED } from "./module-support.ts";
+import { type Files, SEED, lowerId } from "./module-support.ts";
 
 const NO_TYPES = { types: false } as const;
 

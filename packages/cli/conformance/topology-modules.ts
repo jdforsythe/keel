@@ -10,8 +10,8 @@ import type { Ctx, SimCtx } from "@keel/ctx";
 import { action, loader, manifest, routesArtifact } from "@keel/router";
 import type { Manifest, RouteDef } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
-import { endpoints, service } from "@keel/services";
 import * as server from "@keel/server";
+import { endpoints, service } from "@keel/services";
 
 export const SEED = 1337;
 export type Fetcher = { fetch(req: Request): Promise<Response>; close?: () => Promise<void> };

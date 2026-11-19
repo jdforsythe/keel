@@ -3,8 +3,8 @@
 // The real `keel` binary over a temp project (OS tmpdir). `simulate` is @keel/testing's (k.sim); its options are read
 // from literals or imported constants. Seed: 1337.
 import { describe, expect, it } from "vitest";
-import { ITEM, SOURCE, source } from "./ledger-fixture.ts";
 import { evidenceText, ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";
+import { ITEM, SOURCE, source } from "./ledger-fixture.ts";
 import { keel } from "./test-sim-project.ts";
 
 const SIM_TEST = "packages/m/test/clamp-simulate.test.ts";

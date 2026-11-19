@@ -1,6 +1,7 @@
 import fs from "node:fs";
-import { createRequire, isBuiltin } from "node:module";
+import { createRequire } from "node:module";
 import path from "node:path";
+import { type Program, parseSync } from "oxc-parser";
 import { compile } from "./compile.ts";
 import { CLIENT_MANIFEST } from "./entry/CLIENT_MANIFEST.ts";
 import { DEV_ENTRY } from "./entry/DEV_ENTRY.ts";
@@ -10,9 +11,10 @@ import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
 import { resumeEntry } from "./entry/resumeEntry.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
+import { SERVER_ONLY_NAME } from "./internal/SERVER_ONLY_NAME.ts";
+import { STUB_NAME } from "./internal/STUB_NAME.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
-import { callsHandler } from "./internal/callsHandler.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
@@ -22,15 +24,18 @@ import { exportNames } from "./internal/exportNames.ts";
 import { hostClient } from "./internal/hostClient.ts";
 import { indexHtml } from "./internal/indexHtml.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
+import { isNodeBuiltin } from "./internal/isNodeBuiltin.ts";
 import { isSourcePath } from "./internal/isSourcePath.ts";
 import { islandsCode } from "./internal/islandsCode.ts";
 import { keelMark } from "./internal/keelMark.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
+import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { stubCode } from "./internal/stubCode.ts";
+import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
@@ -62,15 +67,20 @@ const PG_BANNER =
  * without it and `start` reports the version (k.deploy Rules E1560).
  */
 const SQLITE = "\0keel:sqlite";
-/** A server-only file's name (k.boundary): whether it is one depends on its module's placement. */
-const SERVER_NAME = /\.(?:server|guard)\.[cm]?[jt]sx?$/;
-/** No environment variable carries this prefix, so a browser build's `import.meta.env` exposes none (k.boundary). */
+/** A module Vite bundles as a worker of its own (`?worker`, `?sharedworker`; k.bundle Bundles). */
+const WORKER_QUERY = /[?&](?:shared)?worker(?:&|$)/;
+/**
+ * `KEEL_*` variables whose values a browser build may hold (k.bundle Environment): the public origins, and the names
+ * the build itself writes (the deployable, the shell kind).
+ */
+const PUBLIC_ENV = /^KEEL_(?:PEER_\w+|ORIGIN|DEPLOYABLE|SHELL|INSPECT_ORIGINS)$/;
+/** No environment variable carries this prefix, so a browser build's `import.meta.env` exposes none (k.bundle). */
 const NO_ENV = "\0";
 const SQLITE_CODE = 'export const { DatabaseSync } = process.getBuiltinModule("node:sqlite");';
 const CSS_ID = "/__keel.css";
 /** Files whose change can alter the CSS or `routes.json` beyond one module's own usages. */
 const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
-/** App module manifests: their `std` entries are `std.json` (rfc:0066). */
+/** App module manifests: their `std` entries are `std.json`. */
 const MANIFEST = /^modules\/[^/]+\/module\.[cm]?[jt]s$/;
 
 type Entry = { source: string; output: Output | undefined; artifacts: Artifacts; failures: string[] };
@@ -120,17 +130,34 @@ type ClientConfig = { build: { outDir: string; emptyOutDir: true } };
 type HtmlTag = { tag: "meta"; attrs: Record<string, string>; injectTo: "head" };
 type Builder = { environments: Record<string, unknown>; build(environment: unknown): Promise<unknown> };
 type ModuleInfo = { isEntry: boolean; importedIds: readonly string[]; dynamicallyImportedIds: readonly string[] };
+/** An emitted file of a bundle: a chunk's code or an asset's source. */
+type Emitted = { fileName: string; code?: string; source?: string | Uint8Array };
 /** The plugin context the browser-build hooks read: which environment runs, resolution, and the module graph. */
 type Ctx =
   | {
-      environment?: { config: { consumer: string } };
+      environment?: { config: { consumer: string; build?: { outDir: string } } };
       getModuleIds?: () => Iterable<string>;
       getModuleInfo?: (id: string) => ModuleInfo | null;
     }
   | undefined;
 type HookOptions = { ssr?: boolean | undefined } | undefined;
-/** What `config` returns: the locked `envPrefix`, and a deployable build's own settings. */
-type Config = { envPrefix: string } & (BuildConfig | ClientConfig | Record<never, never>);
+/** A plugin Vite runs in each worker's bundle (k.bundle Bundles): the stubs, built-ins and the graph E1007 walks. */
+type WorkerPlugin = {
+  name: string;
+  enforce: "pre";
+  resolveId: (id: string, importer?: string) => { id: string; external: true } | null;
+  load: (id: string) => string | null;
+  transform: (code: string, id: string) => null;
+  buildEnd: (this: Ctx, error?: Error) => void;
+};
+/** What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), and a deployable build's own settings. */
+type Config = { envPrefix: string; worker: { plugins: () => WorkerPlugin[] } } & (
+  | BuildConfig
+  | ClientConfig
+  | Record<never, never>
+);
+/** What the plugin reads of the project's config before Vite resolves it. */
+type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
 
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
@@ -165,8 +192,13 @@ type Config = { envPrefix: string } & (BuildConfig | ClientConfig | Record<never
 export default function (): {
   name: string;
   enforce: "pre";
-  config: (user: { root?: string }, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => Config;
-  configResolved: (config: { root: string; command?: "build" | "serve" }) => void;
+  config: (user: UserConfig, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => Config;
+  configResolved: (config: {
+    root: string;
+    command?: "build" | "serve";
+    configFile?: string | undefined;
+    envPrefix?: string | readonly string[];
+  }) => void;
   configureServer: (server: DevServer) => void;
   configurePreviewServer: (server: { middlewares: Middlewares }) => void;
   buildStart: (this: { warn?: Warn } | undefined) => Promise<void>;
@@ -174,6 +206,7 @@ export default function (): {
   load: (id: string, options?: HookOptions) => Promise<string | null>;
   transformIndexHtml: () => HtmlTag[];
   buildEnd: (this: Ctx, error?: Error) => void;
+  generateBundle: { order: "post"; handler: (this: Ctx, options: unknown, bundle: Record<string, Emitted>) => void };
   closeBundle: () => void;
   transform: (code: string, id: string, options?: HookOptions) => { code: string; map: null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
@@ -194,9 +227,33 @@ export default function (): {
   /** The `client` deployable a `vite build` with `KEEL_DEPLOYABLE` naming one writes to `dist/<name>/` (k.hosting). */
   let hosting: string | undefined;
   const modules = new Map<string, Entry>();
-  /** Browser builds (k.boundary): the server-only files loaded as stubs, and the modules calling a handler constructor. */
+  /**
+   * Browser builds (k.boundary, k.bundle): the server-only files loaded as stubs; the modules using a handler (read by
+   * `projectHandlerUses` over `programs`, the parsed browser modules of every bundle); each worker bundle's graph; and
+   * the files a module names by `new URL(<literal>, import.meta.url)`, which E1007 walks as imports.
+   */
   const stubbed = new Set<string>();
   const handlers = new Set<string>();
+  const programs = new Map<string, Program>();
+  const workerGraph = new Map<string, { importedIds: Set<string>; dynamicallyImportedIds: Set<string> }>();
+  const urlEdges = new Map<string, Set<string>>();
+  /** Whether the project's own config sets `envPrefix` or `define` (k.bundle Environment), and whether this is an SSR build. */
+  let projectEnv = false;
+  let ssrBuild = false;
+  /** Each file's path as its name on disk has it (`realpath`), and the root's, for the name tests and E1010. */
+  const disk = new Map<string, string>();
+  const onDisk = (file: string): string => {
+    let real = disk.get(file);
+    if (real === undefined) {
+      try {
+        real = fs.realpathSync.native(file);
+      } catch {
+        real = file;
+      }
+      disk.set(file, real);
+    }
+    return real;
+  };
   // Extra origins the inspect endpoint answers (RFC 0022): comma-separated, e.g. `http://localhost:*`.
   const origins = (process.env.KEEL_INSPECT_ORIGINS ?? "")
     .split(",")
@@ -294,9 +351,13 @@ export default function (): {
       return pkg !== undefined && file.startsWith(`${pkg}${path.sep}`);
     });
   };
-  /** A server-only file (k.boundary): named `*.server.*` or `*.guard.*`, unless only `client` deployables list its module. */
+  /**
+   * A server-only file (k.boundary, k.bundle Names): its name on disk `*.server.*` or `*.guard.*`, any extension, any
+   * case, unless only `client` deployables list its module.
+   */
   const serverOnlyFile = (file: string): boolean => {
-    if (!SERVER_NAME.test(file)) return false;
+    if (!SERVER_ONLY_NAME.test(path.basename(file)) && !SERVER_ONLY_NAME.test(path.basename(onDisk(file))))
+      return false;
     const m = moduleOf(file);
     const owners = Object.values(topology ?? {}).filter((d) => m !== undefined && d.modules.includes(m));
     return owners.length === 0 || owners.some((d) => d.adapter !== "client");
@@ -321,14 +382,79 @@ export default function (): {
   };
   /** Why a module of a browser build's graph breaks the boundary (E1007), else undefined. */
   const breach = (id: string): string | undefined => {
-    if (id.startsWith("node:") || isBuiltin(id)) return "node built-in";
+    if (isNodeBuiltin(id)) return "node built-in";
     if (id.startsWith("\0") || stubbed.has(id)) return undefined;
     const file = id.split("?")[0] ?? id;
     if (path.isAbsolute(file) && serverOnlyFile(file)) return "server-only file";
     const d = deployable();
     const own = d?.client === true && d.modules.includes(moduleOf(file) ?? "");
-    return handlers.has(id) && !own ? "handler" : undefined;
+    const named = handlers.has(id) || (WORKER_QUERY.test(id) && handlers.has(file));
+    return named && !own ? "handler" : undefined;
   };
+  /**
+   * E1010 (k.bundle Names): `id` names a project file in a case other than its name on disk. Read from the disk, so it
+   * holds on a file system that folds case; on one that does not, such a specifier does not resolve.
+   */
+  const miscased = (id: string): string | undefined => {
+    const file = id.split("?")[0] ?? id;
+    if (!path.isAbsolute(file)) return undefined;
+    const rel = path.relative(root, file);
+    if (rel.startsWith("..") || rel.split(path.sep).includes("node_modules") || !fs.existsSync(file)) return undefined;
+    const real = path.relative(onDisk(root), onDisk(file));
+    return real !== rel && real.toLowerCase() === rel.toLowerCase()
+      ? `E1010 ${rel.split(path.sep).join("/")} names ${real.split(path.sep).join("/")} in another case; use the name on disk`
+      : undefined;
+  };
+  /**
+   * A browser bundle's `load` (k.boundary, k.bundle): E1010 for a miscased file; a server-only JS or TS file without a
+   * query is its stub, so its code and imports never load. Dev and tests run the file itself.
+   */
+  const browserLoad = (id: string): string | null => {
+    const wrong = command === "build" ? miscased(id) : undefined;
+    if (wrong !== undefined) throw new Error(wrong);
+    if (command !== "build" || id.includes("?") || !path.isAbsolute(id) || !serverOnlyFile(id)) return null;
+    if (!STUB_NAME.test(onDisk(id))) return null;
+    stubbed.add(id);
+    return stubCode(show(id), exportNames(id), routerOf(id));
+  };
+  /**
+   * Note what a browser module holds for E1007 (k.bundle): its parsed program, when it is app code or names
+   * `@keel/router` (the handler binding pass reads it), and the files it names by `new URL(<literal>, import.meta.url)`.
+   */
+  const note = (code: string, id: string): void => {
+    if (command !== "build" || id.includes("?") || !path.isAbsolute(id) || stubbed.has(id)) return;
+    const app = !path.relative(root, id).startsWith("..") && !id.includes(`${path.sep}node_modules${path.sep}`);
+    if (!CODE.test(id) || id.endsWith(".d.ts") || !(app || code.includes("@keel/router"))) return;
+    const parsed = parseSync(id, code, { sourceType: "module" });
+    if (parsed.errors.length > 0) return;
+    programs.set(id, parsed.program);
+    for (const u of urlLiterals(parsed.program))
+      if (u.source.startsWith("."))
+        urlEdges.set(id, (urlEdges.get(id) ?? new Set()).add(path.resolve(path.dirname(id), u.source)));
+  };
+  /** The plugin each worker bundle runs (k.bundle Bundles): built-ins left out, stubs, notes, and its graph kept. */
+  const workerPlugin = (): WorkerPlugin => ({
+    name: "keel:worker",
+    enforce: "pre",
+    resolveId: (id, importer) => (importer !== undefined && isNodeBuiltin(id) ? { id, external: true } : null),
+    load: (id) => browserLoad(id),
+    transform: (code, id) => {
+      note(code, id);
+      return null;
+    },
+    buildEnd(error) {
+      if (error !== undefined) return;
+      for (const id of this?.getModuleIds?.() ?? []) {
+        const m = this?.getModuleInfo?.(id);
+        if (m === null || m === undefined) continue;
+        const into = workerGraph.get(id) ?? { importedIds: new Set(), dynamicallyImportedIds: new Set() };
+        for (const x of m.importedIds) into.importedIds.add(x);
+        for (const x of m.dynamicallyImportedIds) into.dynamicallyImportedIds.add(x);
+        workerGraph.set(id, into);
+      }
+    },
+  });
+
   /** The `@keel/router/internal` a stub of `file` imports: resolved from the file, else from the root. */
   const routerOf = (file: string): string => {
     for (const from of [file, path.join(root, "package.json")])
@@ -436,7 +562,9 @@ export default function (): {
     config(user, env) {
       const name = process.env.KEEL_DEPLOYABLE;
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
-      const own = { envPrefix: NO_ENV };
+      projectEnv = user.envPrefix !== undefined || user.define !== undefined;
+      ssrBuild = env.isSsrBuild === true;
+      const own = { envPrefix: NO_ENV, worker: { plugins: () => [workerPlugin()] } };
       if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return own;
       const top = parseTopology(fs.readFileSync(file, "utf8")).topology;
       const out = `dist/${name}`;
@@ -522,6 +650,14 @@ export default function (): {
       root = config.root;
       resolved = true;
       command = config.command;
+      // The plugin owns the inlining switches (k.bundle Environment): a project `envPrefix` or `define` fails a browser
+      // build before bundling, as does a prefix another plugin merged into the lock.
+      const prefix = [config.envPrefix ?? NO_ENV].flat();
+      const locked = prefix.length === 1 && prefix[0] === NO_ENV;
+      if (command === "build" && !ssrBuild && (projectEnv || !locked))
+        throw new Error(
+          `E1007 server code in browser build: environment config: ${config.configFile === undefined ? "vite.config.ts" : show(config.configFile)}`,
+        );
       readTopology();
     },
     configureServer(s) {
@@ -543,8 +679,8 @@ export default function (): {
       await refresh();
     },
     resolveId(id, importer, options) {
-      // A browser build leaves a Node built-in unbundled, so the graph keeps it for E1007 to name.
-      if (options?.ssr === false && command === "build" && importer !== undefined && isBuiltin(id))
+      // A browser build leaves a Node built-in unbundled and maps none, so the graph keeps it for E1007 to name.
+      if (options?.ssr === false && command === "build" && importer !== undefined && isNodeBuiltin(id))
         return { id, external: true };
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
       if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html")) return id;
@@ -557,17 +693,12 @@ export default function (): {
       return null;
     },
     async load(id, options) {
-      // A server-only file in a browser build is its stub: its code and imports never load (k.boundary). Dev and
-      // tests run the file itself.
-      if (
-        command === "build" &&
-        options?.ssr === false &&
-        !id.includes("?") &&
-        path.isAbsolute(id) &&
-        serverOnlyFile(id)
-      ) {
-        stubbed.add(id);
-        return stubCode(show(id), exportNames(id), routerOf(id));
+      if (options?.ssr === false) {
+        const stub = browserLoad(id);
+        if (stub !== null) return stub;
+      } else if (command === "build") {
+        const wrong = miscased(id);
+        if (wrong !== undefined) throw new Error(wrong);
       }
       if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html"))
         return indexHtml(hosting, ENTRY_PATH);
@@ -614,9 +745,44 @@ export default function (): {
     },
     buildEnd(error) {
       if (error !== undefined || command !== "build" || this?.environment?.config.consumer !== "client") return;
-      const info = (id: string): ModuleInfo | null => this.getModuleInfo?.(id) ?? null;
+      const uses = projectHandlerUses([...programs].map(([file, program]) => ({ path: file, program })));
+      for (const [file, list] of uses) if (list.length > 0) handlers.add(file);
+      // The graph of every bundle the build emitted: a `?worker` module, and a file a module names by `new URL`, lead
+      // into that worker's bundle, so a worker's chain runs through the file that names it (k.bundle Bundles).
+      const info = (id: string): ModuleInfo | null => {
+        const own = this.getModuleInfo?.(id) ?? null;
+        const worker = workerGraph.get(WORKER_QUERY.test(id) ? (id.split("?")[0] ?? id) : id);
+        const named = urlEdges.get(id);
+        if (own === null && worker === undefined && named === undefined) return null;
+        return {
+          isEntry: own?.isEntry ?? false,
+          importedIds: [...(own?.importedIds ?? []), ...(worker?.importedIds ?? []), ...(named ?? [])],
+          dynamicallyImportedIds: [...(own?.dynamicallyImportedIds ?? []), ...(worker?.dynamicallyImportedIds ?? [])],
+        };
+      };
       const why = browserBreach(this.getModuleIds?.() ?? [], info, breach, show, (id) => stubbed.has(id));
       if (why !== undefined) throw new Error(`E1007 ${why}`);
+    },
+    generateBundle: {
+      order: "post",
+      // After bundling, no emitted browser file holds a `KEEL_*` value of 8 characters or more (k.bundle Environment).
+      handler(_options, bundle) {
+        if (command !== "build" || this?.environment?.config.consumer !== "client") return;
+        const values = Object.entries(process.env).filter(
+          (e): e is [string, string] => e[0].startsWith("KEEL_") && !PUBLIC_ENV.test(e[0]) && (e[1] ?? "").length >= 8,
+        );
+        if (values.length === 0) return;
+        const decoder = new TextDecoder();
+        const out = this.environment.config.build?.outDir ?? "dist";
+        for (const f of Object.values(bundle)) {
+          const text = f.code ?? (typeof f.source === "string" ? f.source : decoder.decode(f.source));
+          const hit = values.find(([, v]) => text.includes(v));
+          if (hit !== undefined)
+            throw new Error(
+              `E1007 server code in browser build: environment value: ${hit[0]} -> ${show(path.resolve(root, out, f.fileName))}`,
+            );
+        }
+      },
     },
     closeBundle() {
       const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
@@ -625,7 +791,7 @@ export default function (): {
         fs.writeFileSync(mark, keelMark());
     },
     transform(code, id, options) {
-      if (options?.ssr === false && !stubbed.has(id) && callsHandler(code)) handlers.add(id);
+      if (options?.ssr === false) note(code, id);
       const rel = relOf(id);
       if (rel === null || stubbed.has(id)) return null;
       const entry = compileModule(rel, code);

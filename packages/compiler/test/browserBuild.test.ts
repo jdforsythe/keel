@@ -1,13 +1,17 @@
-// The browser-build helpers of the Vite plugin (k.boundary): stubs, handler calls and the E1007 graph walk.
+// The browser-build helpers of the Vite plugin (k.boundary, k.bundle): stubs, handler bindings, miscased specifiers,
+// `new URL` literals and the E1007 graph walk. Seed 1337.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import fc from "fast-check";
+import { parseSync } from "oxc-parser";
 import { describe, expect, it } from "vitest";
 import { browserBreach } from "../src/internal/browserBreach.ts";
-import { callsHandler } from "../src/internal/callsHandler.ts";
 import { exportNames } from "../src/internal/exportNames.ts";
+import { miscasedImports } from "../src/internal/miscasedImports.ts";
+import { projectHandlerUses } from "../src/internal/projectHandlerUses.ts";
 import { stubCode } from "../src/internal/stubCode.ts";
+import { urlLiterals } from "../src/internal/urlLiterals.ts";
 
 describe("exportNames", () => {
   it("lists value exports, follows export * and drops types", () => {
@@ -36,18 +40,93 @@ describe("stubCode", () => {
   });
 });
 
-describe("callsHandler", () => {
-  it("is true exactly when a constructor imported from @keel/router is called", () => {
+describe("projectHandlerUses", () => {
+  const uses = (files: Record<string, string>): Record<string, string[][]> => {
+    const parsed = Object.entries(files).map(([p, code]) => ({ path: p, program: parseSync(p, code).program }));
+    const out: Record<string, string[][]> = {};
+    for (const [p, list] of projectHandlerUses(parsed)) out[p] = list.map((u) => [...u.kinds].sort());
+    return out;
+  };
+
+  it("finds a handler by binding: any local name, a namespace member, a call or a value read", () => {
     fc.assert(
-      fc.property(fc.constantFrom("loader", "action", "guard"), fc.boolean(), fc.boolean(), (ctor, alias, called) => {
-        const local = alias ? "make" : ctor;
-        const code = `import { ${alias ? `${ctor} as make` : ctor} } from "@keel/router"\nexport const x = ${called ? `${local}({})` : local}\n`;
-        expect(callsHandler(code)).toBe(called);
-      }),
-      { seed: 1337, numRuns: 30 },
+      fc.property(
+        fc.constantFrom("loader", "action", "guard"),
+        fc.constantFrom("named", "alias", "namespace", "bracket", "dynamic"),
+        fc.boolean(),
+        (ctor, how, called) => {
+          const head =
+            how === "named"
+              ? `import { ${ctor} } from "@keel/router"\n`
+              : how === "alias"
+                ? `import { ${ctor} as make } from "@keel/router"\n`
+                : how === "dynamic"
+                  ? ""
+                  : `import * as R from "@keel/router"\n`;
+          const ref =
+            how === "named"
+              ? ctor
+              : how === "alias"
+                ? "make"
+                : how === "namespace"
+                  ? `R.${ctor}`
+                  : how === "bracket"
+                    ? `R["${ctor}"]`
+                    : `(await import("@keel/router")).${ctor}`;
+          const code = `${head}export const x = ${called ? `${ref}({})` : ref}\n`;
+          expect(uses({ "a.ts": code })["a.ts"]).toEqual([[ctor]]);
+        },
+      ),
+      { seed: 1337, numRuns: 60 },
     );
-    expect(callsHandler("import type { loader } from '@keel/router'\nloader()")).toBe(false);
-    expect(callsHandler("import { loader } from './mine'\nloader()")).toBe(false);
+  });
+
+  it("follows re-exports through project files and counts a namespace read as all three", () => {
+    const got = uses({
+      "lib/r.ts": 'export { loader } from "@keel/router"\n',
+      "lib/all.ts": 'export * from "./r.ts"\n',
+      "a.ts": 'import { loader as l } from "./lib/all.ts"\nexport const p = l({})\n',
+      "b.ts": 'import * as R from "@keel/router"\nexport const n = Object.keys(R)\n',
+    });
+    expect(got["lib/r.ts"]).toEqual([["loader"]]);
+    expect(got["lib/all.ts"]).toEqual([["loader"]]);
+    expect(got["a.ts"]).toEqual([["loader"]]);
+    expect(got["b.ts"]).toEqual([["action", "guard", "loader"]]);
+  });
+
+  it("finds none in a type position, a type-only import, another package or a file's own function", () => {
+    const got = uses({
+      "a.ts": 'import type { loader } from "@keel/router"\nexport type L = typeof loader\n',
+      "b.ts": 'import { loader } from "./mine.ts"\nexport const x = loader()\n',
+      "c.ts": "const loader = () => 1\nexport const y = loader()\n",
+      "d.ts": 'import * as R from "@keel/router"\nexport const m = R.manifest\n',
+    });
+    expect(Object.values(got).flat()).toEqual([]);
+  });
+});
+
+describe("miscasedImports", () => {
+  it("is one hit exactly when a relative specifier differs from a project file's name in case", () => {
+    fc.assert(
+      fc.property(fc.array(fc.boolean(), { minLength: 13, maxLength: 13 }), (mask) => {
+        const disk = "notes.server.ts";
+        const spelled = [...disk].map((c, i) => (mask[i] === true ? c.toUpperCase() : c)).join("");
+        const files = [
+          { path: `lib/${disk}`, program: parseSync("n.ts", "export const n = 1\n").program },
+          { path: "lib/a.ts", program: parseSync("a.ts", `import { n } from './${spelled}'\n`).program },
+        ];
+        expect(miscasedImports(files).map((m) => m.disk)).toEqual(spelled === disk ? [] : [`lib/${disk}`]);
+      }),
+      { seed: 1337, numRuns: 60 },
+    );
+  });
+});
+
+describe("urlLiterals", () => {
+  it("lists `new URL(<literal>, import.meta.url)` only", () => {
+    const code =
+      "new URL('./w.ts', import.meta.url)\nnew URL(`./t.ts`, import.meta.url)\nnew URL(x, import.meta.url)\nnew URL('./n.ts', base)\n";
+    expect(urlLiterals(parseSync("a.ts", code).program).map((u) => u.source)).toEqual(["./w.ts", "./t.ts"]);
   });
 });
 

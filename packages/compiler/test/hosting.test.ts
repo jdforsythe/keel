@@ -21,6 +21,9 @@ import { keelMark } from "../src/internal/keelMark.ts";
 import { parseTopology } from "../src/internal/parseTopology.ts";
 import keel from "../src/vite.ts";
 
+/** What the plugin's `config` always gives: the locked `envPrefix` and the worker bundles' plugin. */
+const OWN = { envPrefix: "\0", worker: { plugins: expect.any(Function) } };
+
 const SEED = 1337;
 const host = fc.stringMatching(/^[a-z]([a-z0-9-]{0,9}[a-z0-9])?(\.[a-z]([a-z0-9-]{0,5}[a-z0-9])?){0,2}$/);
 const port = fc.option(fc.integer({ min: 1, max: 65535 }), { nil: undefined });
@@ -229,7 +232,7 @@ describe("client build", () => {
     process.env.KEEL_PEER_API = "https://api.test/";
     const p = keel();
     expect(p.config({ root }, { command: "build" })).toEqual({
-      envPrefix: "\0",
+      ...OWN,
       build: { outDir: "dist/web", emptyOutDir: true },
     });
     p.configResolved({ root, command: "build" });

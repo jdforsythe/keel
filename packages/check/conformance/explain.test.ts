@@ -3,7 +3,7 @@ import { explain } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { specCodes } from "./spec-codes.ts";
-import { approxTokens, SEED } from "./support.ts";
+import { SEED, approxTokens } from "./support.ts";
 
 const SPEC_CODES: string[] = specCodes();
 

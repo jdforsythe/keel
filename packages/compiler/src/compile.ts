@@ -11,6 +11,7 @@ import { diag } from "./internal/diag.ts";
 import { hashOf } from "./internal/hashOf.ts";
 import { internalFailure } from "./internal/internalFailure.ts";
 import { lowerFile } from "./internal/lowerFile.ts";
+import { miscasedImports } from "./internal/miscasedImports.ts";
 import { ruleAndJsx } from "./internal/rules/ruleAndJsx.ts";
 import { ruleControlFlow } from "./internal/rules/ruleControlFlow.ts";
 import { rulePropsDestructuring } from "./internal/rules/rulePropsDestructuring.ts";
@@ -68,7 +69,7 @@ function syntaxMessage(parser: string): string {
  * Compile Keel sources (k.compiler): lower JSX to k.runtime ops, run the compile-time rules, and derive
  * the `.keel/` artifacts. Pure and deterministic: equal inputs give byte-identical results; nothing is
  * read from or written to disk. `mode: "server"` currently emits the same client module (see PLAN D9).
- * `topology` places each module for E1004 (k.boundary Reach); `routes` is copied (sorted) into `routes.json`, and its
+ * `topology` places each module for E1004 (k.boundary Reach); E1010 names a miscased specifier (k.bundle); `routes` is copied (sorted) into `routes.json`, and its
  * path patterns scope E1501 for relative literals. A file that does not parse gets only E1000: no
  * elements, deps, or output. Anything thrown inside is rethrown as E1049 (`internalFailure`), never as an app code.
  */
@@ -117,6 +118,12 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
     const via = h.chain === undefined ? "" : ` (${h.chain})`;
     if (a !== undefined)
       diagnostics.push(diag(a, "E1004", h.start, `client code imports server module ${h.source}${via}`, "k.compiler"));
+  }
+  // E1010 (k.bundle Names): a specifier naming a file of the project in a case other than its name on disk.
+  for (const m of miscasedImports([...byPath.values()])) {
+    const a = byPath.get(m.path);
+    const message = `${m.source} names ${m.disk} in another case; use the name on disk`;
+    if (a !== undefined) diagnostics.push(diag(a, "E1010", m.start, message, "k.bundle"));
   }
 
   const ids: Record<string, IdEntry> = Object.create(null);

@@ -4,7 +4,7 @@
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { one, SEED } from "./support.ts";
+import { SEED, one } from "./support.ts";
 
 const body = (expr: string): string =>
   `export function f(n: number, a: string, b: string, d: Date) {\n  return ${expr}\n}\n`;

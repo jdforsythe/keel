@@ -3,6 +3,7 @@
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import {
+  SEED,
   codesOf,
   exportFile,
   has,
@@ -11,7 +12,6 @@ import {
   manifestFile,
   pascal,
   routesFile,
-  SEED,
 } from "./module-support.ts";
 
 const distinct = fc.tuple(lowerId, lowerId, pascal).filter(([a, b]) => a !== b);

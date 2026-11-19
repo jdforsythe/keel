@@ -8,6 +8,9 @@ import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
 import keel from "@keel/compiler/vite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+/** What the plugin's `config` always gives: the locked `envPrefix` and the worker bundles' plugin. */
+const OWN = { envPrefix: "\0", worker: { plugins: expect.any(Function) } };
+
 let root = "";
 const saved = process.env.KEEL_DEPLOYABLE;
 beforeEach(() => {
@@ -60,23 +63,23 @@ describe("@keel/compiler/vite config (client build of a node deployable)", () =>
   it("builds a client deployable into dist/<name>/ with the project config", () => {
     process.env.KEEL_DEPLOYABLE = "web";
     expect(keel().config({ root }, { command: "build" })).toEqual({
-      envPrefix: "\0",
+      ...OWN,
       build: { outDir: "dist/web", emptyOutDir: true },
     });
   });
 
   it("keeps the project config for serve, ssr, static, unknown or unset deployables, or no topology", () => {
     process.env.KEEL_DEPLOYABLE = "api";
-    expect(keel().config({ root }, { command: "serve" })).toEqual({ envPrefix: "\0" });
-    expect(keel().config({ root }, { command: "build", isSsrBuild: true })).toEqual({ envPrefix: "\0" });
+    expect(keel().config({ root }, { command: "serve" })).toEqual(OWN);
+    expect(keel().config({ root }, { command: "build", isSsrBuild: true })).toEqual(OWN);
     for (const name of ["pre", "nope"]) {
       process.env.KEEL_DEPLOYABLE = name;
-      expect(keel().config({ root }, { command: "build" })).toEqual({ envPrefix: "\0" });
+      expect(keel().config({ root }, { command: "build" })).toEqual(OWN);
     }
     Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
-    expect(keel().config({ root }, { command: "build" })).toEqual({ envPrefix: "\0" });
+    expect(keel().config({ root }, { command: "build" })).toEqual(OWN);
     process.env.KEEL_DEPLOYABLE = "api";
-    expect(keel().config({ root: path.join(root, "missing") }, { command: "build" })).toEqual({ envPrefix: "\0" });
+    expect(keel().config({ root: path.join(root, "missing") }, { command: "build" })).toEqual(OWN);
   });
 
   it("writes no .keel artifacts in a node client build; the project's own build still does", () => {

@@ -4,8 +4,8 @@
 // Stryker never runs. The committed ledger is stored by `keel ledger --write` from a report at 100% with break 70.
 // Seed: 1337 (no property in this file).
 import { describe, expect, it } from "vitest";
-import { EXAMPLE, SOURCE, exampleTest, source } from "./ledger-fixture.ts";
 import { PKG_REPORT, diags, mutantsOf, mutationReport, withProject } from "./ledger-fixture-kinds.ts";
+import { EXAMPLE, SOURCE, exampleTest, source } from "./ledger-fixture.ts";
 import { keel, summaryOf, writeFiles } from "./test-sim-project.ts";
 
 const COMMITTED = ".keel/ledger.json";

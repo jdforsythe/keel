@@ -3,7 +3,7 @@
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { one, SEED } from "./support.ts";
+import { SEED, one } from "./support.ts";
 
 const ident = fc.stringMatching(/^[a-z]{3,8}$/);
 const BAD = (name: string): string =>

@@ -3,7 +3,7 @@
 import { check, defineRule, explain, rules } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { findAll, one, registryCodes, SEED } from "./support.ts";
+import { SEED, findAll, one, registryCodes } from "./support.ts";
 
 defineRule({
   code: "E2901",

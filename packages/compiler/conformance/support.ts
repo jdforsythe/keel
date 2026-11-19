@@ -1,8 +1,8 @@
 // Shared helpers for the compiler conformance suite (not a test file). Public API only.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
-import type { mount } from "@keel/runtime-dom";
 import type { Signal } from "@keel/reactive";
+import type { mount } from "@keel/runtime-dom";
 import { expect } from "vitest";
 
 export const SEED = 1337;

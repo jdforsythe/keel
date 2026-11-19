@@ -2,7 +2,7 @@
 // Links use the manifest member form `routes.href(id)` (rfc:0041; migrated by rfc:0040).
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { codesOf, has, lowerId, manifestFile, routesFile, SEED } from "./module-support.ts";
+import { SEED, codesOf, has, lowerId, manifestFile, routesFile } from "./module-support.ts";
 
 const distinct = fc.tuple(lowerId, lowerId, lowerId, lowerId).filter(([a, b, x, y]) => a !== b && x !== y);
 

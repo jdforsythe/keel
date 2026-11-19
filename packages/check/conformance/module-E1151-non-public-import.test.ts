@@ -2,7 +2,7 @@
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { codesOf, exportFile, has, importer, lowerId, manifestFile, pascal, SEED } from "./module-support.ts";
+import { SEED, codesOf, exportFile, has, importer, lowerId, manifestFile, pascal } from "./module-support.ts";
 
 const distinct = fc.tuple(lowerId, lowerId, pascal, pascal).filter(([a, b, x, y]) => a !== b && x !== y);
 
