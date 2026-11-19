@@ -33,10 +33,10 @@ function literalText(expr: Expression | null | undefined): string | null {
 
 /**
  * True for a text with no visible character: none outside White_Space (`space`), Default_Ignorable_Code_Point (`DI`),
- * Cf, M and U+2800, as std.text's `line` reads it, and Cc.
+ * Cf, M and U+2800, as std.text's `line` reads it, and Cc and a lone surrogate (Cs), which `line` refuses.
  */
 const blank = (text: string | null): boolean =>
-  text !== null && !/[^\p{space}\p{DI}\p{Cf}\p{M}\p{Cc}\u2800]/u.test(text);
+  text !== null && !/[^\p{space}\p{DI}\p{Cf}\p{M}\p{Cc}\p{Cs}\u2800]/u.test(text);
 
 /** A JSX attribute string with its numeric character references decoded and each named one (`&copy;`) left out. */
 const decode = (text: string): string =>

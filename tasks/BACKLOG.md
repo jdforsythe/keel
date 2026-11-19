@@ -983,7 +983,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0881 docs (low): principle 2 (no action at a distance) against build-time stubs of server-only files; decide whether the principle's text needs a sentence · docs
 - [x] 0882 review (medium): reviewer and red-team pass over the identity seam, the mount, the forms copy fix and the server boundary · k.user, k.mount, k.boundary
 - [ ] 0883 scaffold (medium): `keel scaffold service` in a module only client deployables list writes a file that fails E1571; refuse, or write something that works there · scaffold · k.scaffold, k.openapi
-- [ ] 0884 check (medium): `/// <reference types="vite/client" />` passes `keel check` though the only ambient types are Node's; forbid it or name it as the way browser code reads `import.meta.env` · check · k.check, k.boundary
+- [x] 0884 check (medium): `/// <reference types="vite/client" />` passes `keel check` though the only ambient types are Node's; forbid it or name it as the way browser code reads `import.meta.env` · check · k.check, k.boundary
 - [x] 0885 std-tokens (medium): RFC 0141 conformance and build (rename, password hashing removed, golden-2, skills, docs) · std · std.tokens
 - [x] 0886 red-team, high: a Web Worker (`new Worker(new URL(…))`, `?worker`) bundle carries a server-only file whole; worker builds get no stubs and no E1007, E1004 does not follow `new URL` · compiler · k.boundary · repro: red-team-9.md H1
 - [x] 0887 red-team, high: a `*.server.json` (any non-JS `*.server.*`) ships into the browser; `SERVER_NAME` covers JS/TS only · compiler, check · k.boundary · repro: red-team-9.md H2

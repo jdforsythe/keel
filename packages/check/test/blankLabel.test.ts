@@ -149,6 +149,11 @@ describe("E1802, named character references and control characters", () => {
     expect(out([f("modules/a/A.tsx", src)])).toHaveLength(3);
   });
 
+  it("reads a label of only a lone surrogate as blank, as std-text's line refuses it, and one beside a letter as not", () => {
+    const src = `${UI}export const A = () => <Input label={"\\uD800"} />\nexport const b = Input({ label: "\\uDC00\\u200b" })\nexport const C = () => <Input label="&#xD800;" />\nexport const D = () => <Input label={"a\\uD800"} />\n`;
+    expect(out([f("modules/a/A.tsx", src)])).toHaveLength(3);
+  });
+
   it("reads any run of named references as blank, and one ASCII letter outside them as not", () => {
     fc.assert(
       fc.property(
