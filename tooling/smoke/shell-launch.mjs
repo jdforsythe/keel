@@ -1,7 +1,7 @@
 // Shell launch for golden-1 where no WebDriver reaches the webview (WKWebView: the Tauri macOS binary and the
 // Capacitor iOS app on the Simulator): the app starts, its entry runs and reads the board through the shell's native
 // HTTP client, and a cookie with a lifetime set through that client is sent again after the app is killed and started
-// again. No input is made in the page, so no write, outbox or replay is checked here (tooling/smoke/shell.mjs, Linux).
+// again. No input is made in the page, so no write, outbox or replay is checked here (tooling/smoke/shell-drive.mjs).
 // Run on macOS after `KEEL_ORIGIN=http://localhost:4182 keel build --target tauri` or
 // `keel build --target capacitor --platform ios` in apps/golden-1.
 //

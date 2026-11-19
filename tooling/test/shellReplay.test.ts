@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { actionsOf, boardDiff, normalized, outboxIn } from "../smoke/shellReplay.mjs";
+import { actionsOf, boardDiff, labelled, linkTo, normalized, outboxIn, outboxInPairs } from "../smoke/shellReplay.mjs";
 
 /** The inputs golden-1's shell session records, with the observations between them left out. */
 const events = [
@@ -178,5 +178,59 @@ describe("outboxIn", () => {
     expect(outboxIn([file(1, [])], "todos.outbox")).toEqual([]);
     expect(outboxIn([undefined, "{"], "todos.outbox")).toBeUndefined();
     expect(outboxIn([], "todos.outbox")).toBeUndefined();
+  });
+});
+
+describe("outboxInPairs", () => {
+  const toggle = { key: "k1", endpoint: "toggleTodo", state: "queued" };
+  const doc = (entries: unknown[] | undefined) =>
+    JSON.stringify(
+      entries === undefined
+        ? [["other", "1"]]
+        : [
+            ["other", "1"],
+            ["keel.outbox.todos.outbox", JSON.stringify({ entries })],
+          ],
+    );
+  it("reads the entries of the outbox's pair", () => {
+    expect(outboxInPairs(doc([toggle]), "todos.outbox")).toEqual([toggle]);
+  });
+  it("is empty without the outbox or with one that does not parse, and undefined for another text", () => {
+    expect(outboxInPairs(doc(undefined), "todos.outbox")).toEqual([]);
+    expect(outboxInPairs(doc([]), "todos.outbox")).toEqual([]);
+    expect(outboxInPairs(JSON.stringify([["keel.outbox.todos.outbox", "{"]]), "todos.outbox")).toEqual([]);
+    expect(outboxInPairs("{", "todos.outbox")).toBeUndefined();
+    expect(outboxInPairs("{}", "todos.outbox")).toBeUndefined();
+    expect(outboxInPairs(undefined, "todos.outbox")).toBeUndefined();
+  });
+});
+
+describe("linkTo", () => {
+  it("names the list link and the edit link", () => {
+    expect(linkTo("/lists/l1")).toBe("todos.listLink.l1");
+    expect(linkTo("/lists/l1/todos/t1/edit")).toBe("todos.editLink.t1");
+  });
+  it("is undefined for another path", () => {
+    expect(linkTo("/")).toBeUndefined();
+    expect(linkTo("/lists/l1/todos/t1")).toBeUndefined();
+  });
+});
+
+describe("labelled", () => {
+  const state = { lists: [{ id: "l1", name: "Home" }], todos: [{ id: "t1", title: "Milk" }] };
+  it("names a control by role and accessible name under main", () => {
+    expect(labelled("todos.listLink.l1", state)).toEqual({ role: "link", label: "Home", within: "main" });
+    expect(labelled("todos.toggle.t1", state)).toEqual({ role: "checkbox", label: "Done: Milk", within: "main" });
+    expect(labelled("todos.editLink.t1", state)).toEqual({ role: "link", label: "Edit Milk", within: "main" });
+    expect(labelled("todos.editForm:title", state)).toEqual({ role: "field", label: "Title", within: "main" });
+    expect(labelled("todos.addForm:title", state)).toEqual({ role: "field", label: "Title", within: "main" });
+    expect(labelled("todos.save", state)).toEqual({ role: "button", label: "Save", within: "main" });
+    expect(labelled("todos.addTodo", state)).toEqual({ role: "button", label: "Add todo", within: "main" });
+  });
+  it("is undefined for an unknown id, list or todo", () => {
+    expect(labelled("todos.undo", state)).toBeUndefined();
+    expect(labelled("todos.listLink.l2", state)).toBeUndefined();
+    expect(labelled("todos.toggle.t9", state)).toBeUndefined();
+    expect(labelled("todos.toggle.t1", undefined)).toBeUndefined();
   });
 });

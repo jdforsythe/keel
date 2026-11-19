@@ -1,5 +1,6 @@
-// The pure parts of tooling/smoke/shell.mjs: a recorded session's inputs as shell actions, a stored board with its
-// minted ids normalized, a compact diff of two boards, and the outbox entries the shell's store files hold.
+// The pure parts of tooling/smoke/shell.mjs and shell-drive.mjs: a recorded session's inputs as shell actions, a stored
+// board with its minted ids normalized, a compact diff of two boards, the outbox entries a shell's store holds, and
+// golden-1's elements by link target and by accessible name.
 
 /** WebDriver key codes for the `keydown` keys a session can hold. */
 const KEYS = {
@@ -143,4 +144,65 @@ export function outboxIn(texts, id) {
   } catch {
     return [];
   }
+}
+
+/**
+ * The entries of outbox `id` in the iOS shell's store (`@keel/std-capacitor`: the one preferences entry `keel`, the
+ * JSON text of `[key, value]` pairs), given as that entry's text. Undefined when the text is no such document; `[]`
+ * when it holds no outbox.
+ */
+export function outboxInPairs(text, id) {
+  let pairs;
+  try {
+    pairs = JSON.parse(String(text));
+  } catch {
+    return undefined;
+  }
+  if (!Array.isArray(pairs)) return undefined;
+  const raw = pairs.find((p) => Array.isArray(p) && p[0] === `keel.outbox.${id}`)?.[1];
+  if (typeof raw !== "string") return [];
+  try {
+    const entries = JSON.parse(raw).entries;
+    return Array.isArray(entries) ? entries : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The id of golden-1's link to `href` (`todos.listLink.<list>` for `/lists/<list>`, `todos.editLink.<todo>` for
+ * `/lists/<list>/todos/<todo>/edit`), for a driver that reads no URL. Undefined for another path.
+ */
+export function linkTo(href) {
+  const list = /^\/lists\/([^/]+)$/.exec(href);
+  if (list) return `todos.listLink.${list[1]}`;
+  const edit = /^\/lists\/[^/]+\/todos\/([^/]+)\/edit$/.exec(href);
+  return edit ? `todos.editLink.${edit[1]}` : undefined;
+}
+
+/**
+ * Golden-1's element `id` as assistive technology names it, `{ role, label, within }`, for a driver that reads no
+ * DOM id: `role` one of `link`, `button`, `checkbox`, `field`; `label` its accessible name, a list's name or a todo's
+ * title taken from `state` (a board state: `lists`, `todos`); `within` the landmark it is under. Undefined for an id
+ * outside the list, edit and add controls, or one naming a list or todo `state` does not hold.
+ */
+export function labelled(id, state) {
+  const within = "main";
+  const fixed = {
+    "todos.editForm:title": { role: "field", label: "Title" },
+    "todos.addForm:title": { role: "field", label: "Title" },
+    "todos.save": { role: "button", label: "Save" },
+    "todos.addTodo": { role: "button", label: "Add todo" },
+  };
+  if (Object.hasOwn(fixed, id)) return { ...fixed[id], within };
+  const [, kind, key] = /^todos\.(listLink|toggle|editLink)\.(.+)$/.exec(id) ?? [];
+  if (kind === "listLink") {
+    const name = (state?.lists ?? []).find((l) => l.id === key)?.name;
+    return typeof name === "string" ? { role: "link", label: name, within } : undefined;
+  }
+  const title = (state?.todos ?? []).find((t) => t.id === key)?.title;
+  if (typeof title !== "string") return undefined;
+  if (kind === "toggle") return { role: "checkbox", label: `Done: ${title}`, within };
+  if (kind === "editLink") return { role: "link", label: `Edit ${title}`, within };
+  return undefined;
 }
