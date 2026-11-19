@@ -1,6 +1,6 @@
 ---
 name: keel-data
-description: "Durable Keel storage, concurrent and offline writes, conflicts, live updates and workflows: topology storage, KEEL_DATABASE_URL, commitStores, transaction concurrent, keel.conflict 409, std-offline outbox, std-conflicts, std-channels, std-live, std-workflows; E1560, E1563, E1572, E1605, E2151-E2153, E2351-E2355, E2601, E2602, E2651, E2701"
+description: "Durable Keel storage, concurrent and offline writes, conflicts, live updates and workflows: topology storage, KEEL_DATABASE_URL, commitStores, transaction concurrent, keel.conflict 409, std-offline outbox, std-conflicts, std-channels, std-live, std-workflows; E1560, E1563, E1572, E2151-E2153, E2351-E2355, E2601, E2602, E2651, E2701"
 ---
 
 # Data: storage, writes, live views, workflows
@@ -11,7 +11,7 @@ Signatures: `keel docs k.persist`, `k.sync`, `std.db`, `std.offline`, `std.outbo
 
 A `node` deployable's `storage` is `'file'`, `'sqlite'` or `'postgres'`, and the app lists `@keel/std-db` in `dependencies` (E1572). App code never imports `@keel/std-db` (E2151). `KEEL_DATABASE_URL`: SQLite takes a `file:` URL (default `file:/data/keel.sqlite`, Node 22.13 or later); Postgres requires a `postgres:` URL. A bad or missing value is E1560, an unopenable database E2153, a newer layout E2152. `keel check --base` reports a change that breaks stored data (E1563: make an added required field `.optional()`).
 
-Outside a request (runners, jobs) change stores with `commitStores(ctx, factory, fn)` from `@keel/server`, in `*.server.ts`. `fn` returns a `Result`, may run up to 3 times, and calls transactions only. `drivers` on a sim ctx is E1605.
+Outside a request (runners, jobs) change stores with `commitStores(ctx, factory, fn)` from `@keel/server`, in `*.server.ts`. `fn` returns a `Result`, may run up to 3 times, and calls transactions only.
 
 ## Concurrent writes
 
@@ -79,7 +79,7 @@ export const flush = (ctx: Ctx) => drain(ctx, todoOutbox, { owner: '' })
 
 ## Live updates
 
-Declare a channel in a shared file; serve it in `*.server.ts` (else E2601); follow it in a scope. `stores` returns each watched store as a direct value (a workflow's is `removal.stores(ctx).store`). `member` decides who may open and publish. A `message` holding `s.secret` is E2602. `live` re-reads after each save into `hydrate`; `status()` is `connecting | live | offline | denied`. A live loader is an `async function*` yielding `ok(v)`, read through an `events: true` endpoint.
+Declare a channel in a shared file; serve it in `*.server.ts` (else E2601); follow it in a scope. `stores` returns each watched store as a direct value. `member` decides who may open and publish. A `message` holding `s.secret` is E2602. `live` re-reads after each save into `hydrate`; its `status()` is `connecting | live | offline | denied`. The lower-level `subscribe` (with `publish`) reports `connecting | open | offline | denied`. A live loader is an `async function*` yielding `ok(v)`, read through an `events: true` endpoint.
 
 ```ts
 import type { Ctx } from '@keel/ctx'
@@ -105,7 +105,7 @@ export const follow = (ctx: Ctx, origin: string) =>
   live(ctx, origin, todoChannel, {}, { read: async () => ({ ok: true, value: { titles: [] } }), hydrate })
 ```
 
-List the route in the manifest as `{ api: true, path, loader }` and pass its `actions` to `routes.actions`. `subscribe` and `publish` are the lower level.
+List the route in the manifest as `{ api: true, path, loader }` and pass its `actions` to `routes.actions`.
 
 ## Workflows
 

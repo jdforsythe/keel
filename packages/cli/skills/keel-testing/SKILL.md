@@ -5,7 +5,7 @@ description: "Test and check Keel code: @keel/testing render, renderRoute (store
 
 # Testing and correctness
 
-Exact signatures: `keel docs k.testing`, `k.model`, `k.sim`, `k.prove`, `k.ledger`, `std.statecharts`; a code: `keel docs --for E1704`. Run with `keel test`, which sets `KEEL_TEST=1`.
+Exact signatures: `keel docs k.testing`, `k.model`, `k.sim`, `k.prove`, `k.ledger`, `std.statecharts`; a code: `keel docs --for E1704`. Run with `keel test`.
 
 ## Components and routes
 
@@ -76,7 +76,7 @@ test("a fetch survives drops, delays and 503s", async () => {
 - `properties(Comp | tx, { runs: 100, seed })`: a component renders without throwing, matches `a11y.json`, has no axe violations and renders equally under one seed. A transaction's output parses, every `invariant(store, fn)` (declared beside the store, from `@keel/store`) holds, and `undo` restores. A failure is E1704 with the seed, run and shrunk case; replay with `KEEL_SEED=<n>`.
 - `explore(txs, { from, payloads, depth, maxStates })` is synchronous and visits every state of one store, checking its invariants. Give `payloads: { 'demo.add': [...] }` for a transaction whose payload schema is not finite (E1710). E1708 an invariant broke (`data.snapshot` replays the shortest path); E1709 `maxStates` reached or a closed form that did not close.
 - With no options and every transaction named, `explore` is the closed form: `complete: true` means every state is covered.
-- `simulate(scenario, { runs, seed, horizon, replay })` runs the scenario under generated schedules of delays, drops, `lost` responses, 503s, storage failures and offline windows. `run()` settles and steps the clock. A failure is E1704 with the shrunk `SimRun`; `{ replay: simRun }` reruns it. Stores return to their pre-run state after each run.
+- `simulate(scenario, { runs, seed, horizon, replay })` runs the scenario under generated schedules of delays, drops, `lost` responses, 503s, storage failures and offline windows. `run()` settles and steps the clock. A failure is E1704 with the shrunk `SimRun`; `{ replay: simRun }` reruns it.
 - `prove(txs)` from `@keel/testing/prove` (Node, optional peer `z3-solver`) proves the invariants by induction for every state and payload, for functions in the fragment (no calls to other functions, loops or reassignment). E1715 outside the fragment (use `explore`), E1716 counterexample (the invariant may need strengthening), E1717 no verdict within `rlimit`, E1718 `z3-solver` missing.
 
 ## State charts
@@ -111,4 +111,4 @@ A flow with states (editing, saving, retrying) is a `chart` in a client-safe fil
 
 ## Ledger rungs
 
-Every public export is credited when a passing test's body, or a helper it calls in its own file or a relative import, names it. Rungs, highest held: `example` (a passing test), `probabilistic` (100-run `properties` or `simulate` with a literal or imported seed), `exhaustive` (`explore` given `from`, `payloads` or `depth`), `proven` (closed `explore`, awaited `prove`, or an `expectTypeOf` test), `monitored` (production `.keel/monitored.json`). `keel ledger --diff`: E1706 a rung lower than committed or more `unsafe`; E1707 a spec clause no test cites.
+Every public export is credited when a passing test's body, or a helper it calls in its own file or a relative import, names it. Rungs, highest held: `example` (a passing test), `probabilistic` (100-run `properties` or `simulate` with a literal or imported seed), `exhaustive` (`explore` given `from`, `payloads` or `depth`), `proven` (closed `explore`, awaited `prove`, or an `expectTypeOf` test), `monitored` (a transaction run in production, read from `.keel/monitored.json`, which `keel session monitor <url>` writes). `keel ledger --diff`: E1706 a rung lower than committed or more `unsafe`.

@@ -55,7 +55,7 @@ routes.actions({ 'api.lists': { POST: postList } })
 
 An API route's action declares `output` (a page's must not: E1512) and answers `{ ok: true, value }`; the value is parsed by `output` before any save (E1554), and `output` holds no `s.secret` (E1113: `reveal` it into a string). Bodies are `application/json`; bad input is 422 `keel.fields`. A loader or action denies with `err({ code: 'keel.denied', message, data: null })`, answered 403.
 
-**Bearer.** An API route's guard, loader and action get `bearer: Secret<string> | undefined`, from `Authorization: Bearer`; a page's get `undefined`. Keel only parses it. Check it in the handler that uses the token's row, once. Use a guard only on a route that merely admits; a guard's result reaches no handler, so a handler that needs the row checks again. A guard without `redirect` guards API routes only (on a page it is E1508); denial is 403.
+**Bearer.** An API route's guard, loader and action get `bearer: Secret<string> | undefined`, from `Authorization: Bearer`; a page's get `undefined`. Keel only parses it. Check it in the handler that uses the token's row, once (`tokens(ctx).check`, keel-compliance). Use a guard only on a route that merely admits; a guard's result reaches no handler, so a handler that needs the row checks again. A guard without `redirect` guards API routes only (on a page it is E1508); denial is 403.
 
 ```ts
 import { guard } from '@keel/router'
