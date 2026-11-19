@@ -222,12 +222,17 @@ describe("mount requests", () => {
   });
 });
 
+/** Stores an opening on `ctx`, as a mount request that opened the external browser does. */
+const pend = (ctx: SimCtx): Promise<void> =>
+  ctx.storage.set("keel.return", JSON.stringify({ deadline: ctx.clock.now() + 600000 }));
+
 describe("return links", () => {
   it("takes <id>:/<path> under the mount or to a page, whatever the scheme's case, and nothing else", async () => {
     const path = fc.stringMatching(/^[a-z]{1,6}$/);
     await fc.assert(
       fc.asyncProperty(path, fc.constantFrom(ID, ID.toUpperCase()), async (p, scheme) => {
         const t = shell(() => new Response(""));
+        await pend(t.ctx);
         await t.link(`${scheme}:/auth/${p}?code=1`);
         expect(t.sent.map((r) => r.url)).toEqual([`/auth/${p}?code=1`]);
         for (const bad of [
@@ -242,6 +247,7 @@ describe("return links", () => {
           await t.link(bad);
         expect(t.sent).toHaveLength(1);
         expect(t.router.route.get().id).toBe("t.home");
+        await pend(t.ctx);
         await t.link(`${scheme}:/done`);
         await settle();
         expect(t.router.route.get().id).toBe("t.done");
@@ -253,6 +259,7 @@ describe("return links", () => {
 
   it("a link under the mount with dot segments is read as the path a URL parser gives", async () => {
     const t = shell(() => new Response(""));
+    await pend(t.ctx);
     await t.link(`${ID}:/auth/../done`);
     await settle();
     expect(t.sent).toEqual([]);

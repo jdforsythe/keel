@@ -8,8 +8,9 @@ import { openUrl } from "@tauri-apps/plugin-opener";
  * it starts the router when the project has `identity.ts`. Navigations under the mount go through `ctx.net` as mount
  * requests. The external browser is the default browser (`@tauri-apps/plugin-opener`), opened on `origin`, the
  * build's `KEEL_ORIGIN`, for a root-relative URL. A return link on the scheme `id`, each one the app was launched with
- * (`@tauri-apps/plugin-deep-link` `getCurrent`) and each one it gets while running (`onOpenUrl`), is read as a
- * redirect. The launch links are taken once: the first `onOpenUrl` that repeats them is dropped.
+ * (`@tauri-apps/plugin-deep-link` `getCurrent`) and each one it gets while running (`onOpenUrl`), goes to the
+ * router's intake, which admits it only while a mount request's opening is pending (one link per opening) and reads
+ * one admitted as a redirect. The launch links are taken once: the first `onOpenUrl` that repeats them is dropped.
  */
 export function shellMount(ctx: Ctx, opts: { readonly id: string; readonly origin: URL }): void {
   const { origin } = opts.origin;

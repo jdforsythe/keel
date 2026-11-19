@@ -9,7 +9,8 @@ import { mountRequests } from "@keel/router/internal";
  * as mount requests. The external browser is `@capacitor/browser` (Custom Tabs on Android, an in-app Safari view on
  * iOS), opened on `origin`, the build's `KEEL_ORIGIN`, for a root-relative URL. A return link on the scheme `id`, the
  * one the app was launched with (`@capacitor/app` `getLaunchUrl`) and each one it gets while running (`appUrlOpen`),
- * closes that browser and is read as a redirect. The launch link is taken once: the first `appUrlOpen` that repeats
+ * goes to the router's intake, which admits it only while a mount request's opening is pending (one link per
+ * opening); one admitted closes that browser and is read as a redirect. The launch link is taken once: the first `appUrlOpen` that repeats
  * it is dropped.
  */
 export function shellMount(ctx: Ctx, opts: { readonly id: string; readonly origin: URL }): void {
@@ -18,12 +19,10 @@ export function shellMount(ctx: Ctx, opts: { readonly id: string; readonly origi
     id: opts.id,
     origin,
     open: (url) => void Browser.open({ url: new URL(url, origin).href }).catch(() => undefined),
-  });
-  const got = (url: string): void => {
     // Android has no browser to close: the call rejects there.
-    void Browser.close().catch(() => undefined);
-    void take(url);
-  };
+    close: () => void Browser.close().catch(() => undefined),
+  });
+  const got = (url: string): void => void take(url);
   void App.getLaunchUrl()
     .catch(() => undefined)
     .then((launch) => {
