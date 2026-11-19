@@ -4,7 +4,8 @@ import { stdRoutes } from "../std/stdRoutes.ts";
 import type { Topology } from "../types/Topology.ts";
 
 /** Specifiers the dev module imports; the app resolves them (the compiler itself never imports them). */
-const [DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
+const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
+  "@keel/compiler/inspect/inspectorsReload",
   "@keel/server/internal/dom",
   "@keel/server/internal/onUncaught",
   "@keel/server",
@@ -15,7 +16,8 @@ const [DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
 ].map((x) => JSON.stringify(x));
 
 /**
- * The `keel dev` server module (k.topology Local topology): after installing the server DOM and the process's
+ * The `keel dev` server module (k.topology Local topology): after installing the server DOM, marking the inspector
+ * sections registered by an earlier evaluation as carried over (`inspectorsReload`) and installing the process's
  * uncaught-error listeners (`onUncaught` in dev: each records E1577 with the thrown text and serving goes on), it creates one dev
  * `createApp` per `node` deployable of `topology`, each with its own real `ctx` whose storage is the file
  * `.keel-dev/<name>.storage.json`, its modules' routes (an app module's `routes.ts`, a stdlib module's package
@@ -33,7 +35,9 @@ export function devEntryCode(root: string, topology: Topology): string {
     .filter((n) => topology[n]?.adapter === "node");
   const lines = [
     `import { installServerDom } from ${DOM};`,
+    `import { inspectorsReload } from ${RELOAD};`,
     "installServerDom();",
+    "inspectorsReload();",
     `const log = { format: "compact", write: (l) => process.stdout.write(l + "\\n") };`,
     `(await import(${UNCAUGHT})).onUncaught(log, ${abs(".keel")}, true, () => undefined);`,
     `const { createApp } = await import(${SERVER});`,

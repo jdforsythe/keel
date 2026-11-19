@@ -4,11 +4,12 @@
 // deployable; a sign-up and a sign-in post to the identity mount (`/api/auth`) the way the account forms do and answer
 // 303 to the sign-in page, the sign-in with a session cookie; with that cookie the sign-in page names the account and
 // `GET /api/me` answers its email, and without it neither does; every server-only file the accounts routes import is
-// served to a browser request as its stub, with no `node:` import and none of the file's code. The child runs in its
-// own process group, which every path (a finished run, a failed step, a signal, the 90 s limit) kills.
+// served to a browser request as its stub, with no `node:` import and none of the file's code; after an edit to a server
+// file that registers an inspector section at its top level, `/api/*` still answers 200. The
+// child runs in its own process group, which every path (a finished run, a failed step, a signal, the 90 s limit) kills.
 // Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo.
 import { spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { appendFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { copyApp, freePort, recorder, root, wait } from "./built.mjs";
@@ -168,6 +169,20 @@ try {
       mod.status === 200 && mod.body.includes("serverOnly(") && !mod.body.includes("node:"),
       `status ${mod.status}${mod.body.includes("node:") ? ", node: import" : ""}`,
     );
+  }
+
+  const json = { accept: "application/json", cookie };
+
+  // An edit to the server file that registers the section at its top level: the dev apps load again and still answer.
+  const edited = "modules/kitchen/currencyTally.server.ts";
+  await appendFile(join(dir, edited), "\n// edited while serving\n");
+  let reloaded = false;
+  for (const end = Date.now() + 15_000; Date.now() < end && !reloaded; await wait(100))
+    reloaded = dev.log.some((l) => l.includes("page reload") && l.includes(edited));
+  step("dev server sees the edit", reloaded, reloaded ? "" : dev.log.slice(-2).join(" | "));
+  for (const path of ["/api/recipes", "/api/me"]) {
+    const after = await text(base, path, json);
+    step(`GET ${path} after the edit`, after.status === 200, `status ${after.status}`);
   }
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);

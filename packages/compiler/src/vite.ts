@@ -87,7 +87,11 @@ type Entry = { source: string; output: Output | undefined; artifacts: Artifacts;
 type ModuleNode = object;
 type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware>): void };
 type DevServer = {
-  moduleGraph: { getModuleById(id: string): ModuleNode | undefined; invalidateModule?(module: ModuleNode): void };
+  moduleGraph: {
+    getModuleById(id: string): ModuleNode | undefined;
+    invalidateModule?(module: ModuleNode): void;
+    invalidateAll?(): void;
+  };
   reloadModule(module: ModuleNode): Promise<void>;
   ssrLoadModule?(id: string): Promise<Record<string, unknown>>;
   middlewares: Middlewares;
@@ -304,6 +308,16 @@ export default function (): {
     if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
     const posix = rel.split(path.sep).join("/");
     return NOT_APP.test(posix) ? null : posix;
+  };
+  /** Whether `id` is a source file outside the project root and outside any `node_modules`. */
+  const linked = (id: string): boolean => {
+    const file = id.split("?")[0] ?? id;
+    return (
+      path.isAbsolute(file) &&
+      CODE.test(file) &&
+      !file.includes("/node_modules/") &&
+      path.relative(root, file).startsWith("..")
+    );
   };
   const exists = (rel: string): boolean => fs.existsSync(path.join(root, rel));
 
@@ -824,6 +838,12 @@ export default function (): {
     },
     watchChange(id, change) {
       const rel = relOf(id);
+      // A source outside the project (a linked package) is evaluated again by the modules that import it, not by the
+      // ones it registered with: the whole server graph loads again, so a registry and its registrations agree.
+      if (rel === null && devApps.length > 0 && linked(id)) {
+        server?.moduleGraph.invalidateAll?.();
+        reloadDev();
+      }
       if (rel !== null && devApps.length > 0 && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) reloadDev();
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
       else if (rel !== null && MANIFEST.test(rel) && exists(rel)) {

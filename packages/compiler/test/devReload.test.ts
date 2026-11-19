@@ -73,3 +73,60 @@ it("loads the next dev apps only after the old ones have closed", async () => {
   await second;
   expect(events).toEqual(["load 1", "close 1", "closed 1", "load 2"]);
 });
+
+it("a changed source outside the project loads the whole server graph again; one inside it does not", async () => {
+  fs.writeFileSync(path.join(root, "topology.ts"), `export default { api: { modules: ["a"], adapter: "node" } };\n`);
+  let loads = 0;
+  let all = 0;
+  const p = keel();
+  p.configResolved({ root });
+  const used: Parameters<Parameters<typeof p.configurePreviewServer>[0]["middlewares"]["use"]>[0][] = [];
+  p.configureServer({
+    moduleGraph: {
+      getModuleById: () => undefined,
+      invalidateAll: () => {
+        all++;
+      },
+    },
+    reloadModule: () => Promise.resolve(),
+    ssrLoadModule: () => {
+      loads++;
+      const app = { fetch: () => Promise.resolve(new Response(null)), close: () => Promise.resolve() };
+      return Promise.resolve({ apps: [["api", app, () => false]] });
+    },
+    middlewares: {
+      use(fn) {
+        used.push(fn);
+      },
+    },
+  });
+  const handle = used[1];
+  if (handle === undefined) throw new Error("no dev middleware");
+  const request = (): Promise<void> =>
+    new Promise((resolve) => {
+      const req = new http.IncomingMessage(new Socket());
+      req.url = "/elsewhere";
+      req.method = "GET";
+      req.headers = { host: "localhost" };
+      handle(req, new http.ServerResponse(req), () => resolve());
+    });
+  const outside = path.resolve(root, "..", "linked-package", "src");
+  p.watchChange(path.join(outside, "Locale.ts"), { event: "update" });
+  expect(all).toBe(0);
+  await request();
+  expect(loads).toBe(1);
+  for (const file of [
+    path.join(root, "modules/a/page.ts"),
+    path.join(outside, "node_modules/dep/index.js"),
+    path.join(outside, "package.json"),
+    "\0virtual.ts",
+  ])
+    p.watchChange(file, { event: "update" });
+  expect(all).toBe(0);
+  await request();
+  expect(loads).toBe(2);
+  p.watchChange(`${path.join(outside, "Locale.ts")}?v=1`, { event: "update" });
+  expect(all).toBe(1);
+  await request();
+  expect(loads).toBe(3);
+});
