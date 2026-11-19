@@ -235,6 +235,8 @@ export default function (): {
    * the files a module names by `new URL(<literal>, import.meta.url)`, which E1007 walks as imports.
    */
   const stubbed = new Set<string>();
+  /** The server-only files dev gave the browser as stubs; the dev server's runner still compiles each file itself. */
+  const devStubbed = new Set<string>();
   const handlers = new Set<string>();
   const programs = new Map<string, Program>();
   const workerGraph = new Map<string, { importedIds: Set<string>; dynamicallyImportedIds: Set<string> }>();
@@ -410,15 +412,29 @@ export default function (): {
       : undefined;
   };
   /**
-   * A browser bundle's `load` (k.boundary, k.bundle): E1010 for a miscased file; a server-only JS or TS file without a
-   * query is its stub, so its code and imports never load. Dev and tests run the file itself.
+   * Whether a hook's module goes to the browser: a browser build's, or in dev the client environment's when the browser
+   * loads it natively. A module runner (the dev server's own, or a test runner's on the client environment) runs the
+   * file itself.
    */
-  const browserLoad = (id: string): string | null => {
+  const forBrowser = (ctx: unknown, options: HookOptions): boolean => {
+    if (options?.ssr !== false) return false;
+    if (command === "build") return true;
+    const env: unknown = typeof ctx === "object" && ctx !== null ? Reflect.get(ctx, "environment") : undefined;
+    const config: unknown = typeof env === "object" && env !== null ? Reflect.get(env, "config") : undefined;
+    if (typeof config !== "object" || config === null || Reflect.get(config, "consumer") !== "client") return false;
+    const dev: unknown = Reflect.get(config, "dev");
+    return typeof dev !== "object" || dev === null || Reflect.get(dev, "moduleRunnerTransform") !== true;
+  };
+  /**
+   * A browser bundle's `load` (k.boundary, k.bundle): E1010 for a miscased file; a server-only JS or TS file without a
+   * query is its stub, so its code and imports never load. In dev only the browser gets the stub (`forBrowser`).
+   */
+  const browserLoad = (id: string, browser: boolean): string | null => {
     const wrong = command === "build" ? miscased(id) : undefined;
     if (wrong !== undefined) throw new Error(wrong);
-    if (command !== "build" || id.includes("?") || !path.isAbsolute(id) || !serverOnlyFile(id)) return null;
+    if (!browser || id.includes("?") || !path.isAbsolute(id) || !serverOnlyFile(id)) return null;
     if (!STUB_NAME.test(onDisk(id))) return null;
-    stubbed.add(id);
+    (command === "build" ? stubbed : devStubbed).add(id);
     return stubCode(show(id), exportNames(id), routerOf(id));
   };
   /**
@@ -441,7 +457,7 @@ export default function (): {
     name: "keel:worker",
     enforce: "pre",
     resolveId: (id, importer) => (importer !== undefined && isNodeBuiltin(id) ? { id, external: true } : null),
-    load: (id) => browserLoad(id),
+    load: (id) => browserLoad(id, command === "build"),
     transform: (code, id) => {
       note(code, id);
       return null;
@@ -696,9 +712,9 @@ export default function (): {
       if (id === "node:sqlite") return command === "build" ? SQLITE : { id, external: true };
       return null;
     },
-    async load(id, options) {
+    async load(this: unknown, id, options) {
       if (options?.ssr === false) {
-        const stub = browserLoad(id);
+        const stub = browserLoad(id, forBrowser(this, options));
         if (stub !== null) return stub;
       } else if (command === "build") {
         const wrong = miscased(id);
@@ -794,10 +810,10 @@ export default function (): {
       if (hosting !== undefined && fs.existsSync(path.dirname(mark)) && !fs.existsSync(mark))
         fs.writeFileSync(mark, keelMark());
     },
-    transform(code, id, options) {
+    transform(this: unknown, code, id, options) {
       if (options?.ssr === false) note(code, id);
       const rel = relOf(id);
-      if (rel === null || stubbed.has(id)) return null;
+      if (rel === null || stubbed.has(id) || (devStubbed.has(id) && forBrowser(this, options))) return null;
       const entry = compileModule(rel, code);
       const dupes = flush()
         .filter((d) => d.file === rel)
