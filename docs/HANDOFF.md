@@ -17,7 +17,7 @@ active:
   - safe to clear: YES.
 blockers: none
 pending decisions: the operator confirms or reverses D69 to D87 in tasks/0338-s8-reach/PLAN.md and D1 to D10 in the active plan, and the open decisions O1 to O11 of tasks/p1/PLAN.md; none blocks work. The golden-3 agent run (2 to 10 dollars estimated) waits for the operator's word.
-last updated: c4ec024c 2026-11-19
+last updated: 84e212d6 2026-11-19
 ```
 
 ## Reading on resume
