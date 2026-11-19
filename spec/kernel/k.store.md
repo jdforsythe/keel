@@ -18,7 +18,7 @@ Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx
 
 **Ownership.** A component declares `uses: [addItem]`, bound to the declaring scope (`owner()`); `tx` consults the declarations of the calling scope and its ancestors, and a caller with none in its chain is unrestricted. Calling an undeclared transaction from a component is E1301; loaders and actions (k.router) run outside component scopes and are unrestricted.
 
-**Rules.** E1302 `ctx` or global access inside a transaction function · E1303 `s.secret` anywhere in a store's state schema, or a `reveal` call in a transaction function. Partial (static): skips unresolved schemas, chains past 8 consts, `reveal` in helpers.
+**Rules.** E1302 `ctx` or global access inside a transaction function · E1303 `s.secret` in a store's state schema, or a `reveal` call in a transaction function. Partial (static): skips unresolved schemas, chains past 8 consts, `reveal` in imported helpers.
 
 **Conformance.**
 - Transactions are deterministic for equal inputs.
