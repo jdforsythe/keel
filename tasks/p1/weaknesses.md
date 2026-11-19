@@ -73,7 +73,7 @@ Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane
 - [ ] 0595 schema · S · a marked open object's undeclared keys have no `piiPaths` entry though `piiValues` returns them · lane 07
 - [ ] 0801 schema · S · red-team: the `s.json()` check overflows the stack on about 200k nesting from a JSON body · lane 07
 - [ ] 0802 store · S · red-team: a large `keyLimit` costs O(keyLimit) per keyed write; `restore` parses a forged `keys` array whole · lane 07
-- [ ] 0402 tooling · S · the `pnpm.overrides` pins (`minimatch`, `qs`) are ignored by this pnpm; move them, pin `packageManager`, rerun `pnpm audit` · lane 08
+- [x] 0402 tooling · S · the `pnpm.overrides` pins (`minimatch`, `qs`) are ignored by this pnpm; move them, pin `packageManager`, rerun `pnpm audit` · lane 08
 - [ ] 0942 tooling · S · CI workflows declare no `permissions:`, pin actions by tag and hand `TURBO_TOKEN` to every step · lane 08
 - [ ] 0353 docs, spec · S · one `KEEL_SECRET` signs callers for every deployable; state it in k.topology and THREAT-MODEL · lane 09
 - [ ] 0748 store, docs · S · THREAT-MODEL does not name `keys` in `#k-state`; `openHub.ts` re-derives keys `restore` derives · lane 09
@@ -272,7 +272,7 @@ Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane
 ### Tooling, flakes and budgets
 - [ ] 0291 Node declarations slow the type pass
 - [ ] 0293 vitest 5
-- [ ] 0294 `pnpm.overrides` location, joins 0402
+- [x] 0294 `pnpm.overrides` location, joins 0402
 - [ ] 0417 E1155 flake under load
 - [ ] 0464 a slow scaffold conformance file
 - [ ] 0514 std-schedules shrink time (`rfc:` edit)
