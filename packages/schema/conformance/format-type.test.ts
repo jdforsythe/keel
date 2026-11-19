@@ -1,4 +1,4 @@
-// Spec: k.schema, clause "For a fixture format type, every generated value parses and round-trips; a value `base` accepts and `check` refuses fails with rule `format` at its path; `doc()` is its name; JSON Schema adds `format`; `s.format` in an app file is E1106." (rfc:0079)
+// Spec: k.formats, clause "For a fixture format type, every generated value parses and round-trips; a value `base` accepts and `check` refuses fails with rule `format` at its path; `doc()` is its name; JSON Schema adds `format`; `s.format` in an app file is E1106." (rfc:0079)
 // Seed 1337. The JSON Schema half and the E1106 half are placed in other files (see the notes below).
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";

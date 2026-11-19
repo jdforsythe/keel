@@ -1,4 +1,5 @@
-// Spec: k.schema Rules, "E1106 `s.format` in app code (format types are stdlib's)." and Conformance "`s.format` in an app file is E1106." (rfc:0079)
+// Spec: k.schema Rules, "E1106 `s.format` in app code (format types are stdlib's)." (rfc:0079)
+// Spec: k.formats, Conformance "`s.format` in an app file is E1106." (rfc:0079)
 // Seed 1337.
 import { check } from "@keel/check";
 import fc from "fast-check";

@@ -114,7 +114,7 @@ export const buildObject = (spec: ObjectSpec): ObjectSchema<unknown> => {
 /** `path` as dotted text whether an implementation lists it as a string or as segments. */
 export const dotted = (path: unknown): string => (Array.isArray(path) ? path.join(".") : String(path));
 
-/** The marked leaves in declaration order; `*` is an array item. */
+/** The marked leaves in declaration order, `*` an array item; then `*` for each open object under a mark. */
 export const expectedPaths = (
   spec: Spec,
   prefix: readonly string[] = [],
@@ -122,7 +122,11 @@ export const expectedPaths = (
 ): { path: string; class: PiiClassName }[] => {
   const cls = inherited ?? spec.mark;
   if (spec.kind === "array") return expectedPaths(spec.item, [...prefix, "*"], cls);
-  if (spec.kind === "object") return spec.fields.flatMap((f, i) => expectedPaths(f, [...prefix, `f${i}`], cls));
+  if (spec.kind === "object") {
+    const leaves = spec.fields.flatMap((f, i) => expectedPaths(f, [...prefix, `f${i}`], cls));
+    // The fixture builds open objects: under a mark, `*` (the undeclared keys) follows the declared leaves.
+    return cls === null ? leaves : [...leaves, { path: [...prefix, "*"].join("."), class: cls }];
+  }
   return cls === null ? [] : [{ path: prefix.join("."), class: cls }];
 };
 

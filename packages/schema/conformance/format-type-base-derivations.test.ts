@@ -1,4 +1,4 @@
-// Spec: k.schema, clause "`encode` and JSON Schema are `base`'s (JSON Schema adds `format: name`); `decodeStrings` coerces as `base` does and then parses the format, so a value `check` refuses is a `format` issue; `doc()` is `name`; `gen` maps `gen(from)` through `map`, keeping values `parse` accepts." (rfc:0079)
+// Spec: k.formats, clause "`encode` and JSON Schema are `base`'s (JSON Schema adds `format: name`); `decodeStrings` coerces as `base` does and then parses the format, so a value `check` refuses is a `format` issue; `doc()` is `name`; `gen` maps `gen(from)` through `map`, keeping values `parse` accepts." (rfc:0079)
 // Seed 1337. JSON Schema: untestable from the public API (no derivation is exported by `@keel/schema`).
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";

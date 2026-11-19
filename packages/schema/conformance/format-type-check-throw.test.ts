@@ -1,4 +1,4 @@
-// Spec: k.schema, clause "`s.format(name, base, { check, gen: { from, map } })` narrows `base` by a pure `check(v): boolean` (a throw is false)" (rfc:0079)
+// Spec: k.formats, clause "`s.format(name, base, { check, gen: { from, map } })` narrows `base` by a pure `check(v): boolean` (a throw is false)" (rfc:0079)
 // Seed 1337.
 import { s } from "@keel/schema";
 import fc from "fast-check";

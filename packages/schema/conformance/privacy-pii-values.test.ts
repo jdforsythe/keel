@@ -49,4 +49,17 @@ describe("k.privacy piiValues", () => {
       distinctSorted(["Ada Lovelace", "12.5", "7", "first", "second"]),
     );
   });
+
+  it("an undeclared key at any depth under a marked open object is personal: its names and values are held; the same value under an unmarked schema gives none (rfc:0154)", () => {
+    const marked = s.object({
+      address: s.object({ street: s.string(), geo: s.object({ lat: s.number() }).pii("special") }).pii("location"),
+    });
+    const plain = s.object({
+      address: s.object({ street: s.string(), geo: s.object({ lat: s.number() }) }),
+    });
+    const value = { address: { street: "Elm", geo: { lat: 1 }, floor: { n: "3rd" } } };
+    const held = piiValues(marked, value);
+    for (const v of ["floor", "n", "3rd", "Elm", "1"]) expect(held).toContain(v);
+    expect(piiValues(plain, value)).toEqual([]);
+  });
 });

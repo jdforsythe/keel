@@ -33,10 +33,11 @@ export const Account = s.object({
   plan: s.string(),
 });
 `;
-/** Account's marked leaves: every leaf under the marked object, array items as `*`. */
+/** Account's marked paths (rfc:0154): every leaf under the marked object, then `holder.*` for its undeclared keys (it is open), array items as `*`. */
 const ACCOUNT_PII = [
   { path: "holder.first", class: "name" },
   { path: "holder.last", class: "name" },
+  { path: "holder.*", class: "name" },
   { path: "tags.*", class: "content" },
 ];
 

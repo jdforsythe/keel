@@ -1,4 +1,4 @@
-// Spec: k.schema, clause "`s.format(name, base, { check, gen: { from, map } })` ... brands its type `Format<T, name>`." (rfc:0079)
+// Spec: k.formats, clause "`s.format(name, base, { check, gen: { from, map } })` ... brands its type `Format<T, name>`." (rfc:0079)
 // Type-level only; no random inputs. The schemas are built inside the test so the module loads before `s.format` exists.
 import { type Format, type Infer, s } from "@keel/schema";
 import { describe, expect, expectTypeOf, test } from "vitest";
