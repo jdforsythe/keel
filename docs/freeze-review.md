@@ -7,6 +7,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | section | clauses | status | missing tests |
 | --- | --- | --- | --- |
 | k.schema | 15 | **conformance-covered** | none |
+| k.formats | 1 | implemented | clause 1: its tests' `// Spec:` headers name k.schema |
 | k.reactive | 20 | **conformance-covered** | none |
 | k.store | 23 | **conformance-covered** | none |
 | k.ctx | 18 | **conformance-covered** | none |
@@ -138,6 +139,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.shell and std.db are `proposed`; the other 83 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.shell and std.db are `proposed`, k.formats is `implemented`; the other 83 are `conformance-covered`.
 
 verified: 8e06a5f29c5a8fcf34eeba72b98ecbce7c4dccbd

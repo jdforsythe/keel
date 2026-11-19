@@ -1,7 +1,7 @@
 # std.temporal: Dates, instants and durations
 status: conformance-covered
 
-**Extension point.** Schema type registry (k.schema `s.register`). Importing `@keel/std-temporal` registers `temporal.Instant`, `temporal.PlainDate`, `temporal.TimeZone` and `temporal.Duration`, format types (k.schema `s.format`) over `s.string()` with one canonical text per value, so `encode` is the identity.
+**Extension point.** Schema type registry (k.schema `s.register`). Importing `@keel/std-temporal` registers `temporal.Instant`, `temporal.PlainDate`, `temporal.TimeZone` and `temporal.Duration`, format types (k.formats) over `s.string()` with one canonical text per value, so `encode` is the identity.
 
 **API** (`@keel/std-temporal`; client-safe, no config).
 ```ts

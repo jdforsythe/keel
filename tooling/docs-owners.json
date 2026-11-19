@@ -31,7 +31,7 @@
   ],
   "@keel/runtime-dom": ["k.component", "k.defaults", "k.runtime"],
   "@keel/scaffold": ["k.scaffold"],
-  "@keel/schema": ["k.privacy", "k.reveal", "k.schema"],
+  "@keel/schema": ["k.formats", "k.privacy", "k.reveal", "k.schema"],
   "@keel/server": [
     "k.claim",
     "k.deploy",

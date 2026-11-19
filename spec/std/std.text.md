@@ -1,7 +1,7 @@
 # std.text: Text
 status: conformance-covered
 
-**Extension point.** Schema type registry (k.schema `s.register`). Importing `@keel/std-text` registers `text.Email` and `text.Slug`, format types (k.schema `s.format`) over `s.string()`. It depends on `@keel/std-i18n` for `Locale`. A grapheme is an extended grapheme cluster (Unicode UAX #29), what a reader counts as one character.
+**Extension point.** Schema type registry (k.schema `s.register`). Importing `@keel/std-text` registers `text.Email` and `text.Slug`, format types (k.formats) over `s.string()`. It depends on `@keel/std-i18n` for `Locale`. A grapheme is an extended grapheme cluster (Unicode UAX #29), what a reader counts as one character.
 
 **API** (`@keel/std-text`; client-safe, no config).
 ```ts

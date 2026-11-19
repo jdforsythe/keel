@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,200 tokens, section 1,500.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,250 tokens, section 1,500.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
@@ -28,22 +28,23 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | id | section | status | one line |
 |-|-|-|-|
 | k.schema | Schemas | conformance-covered | codecs |
+| k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
-| k.runtime | DOM runtime and islands | conformance-covered | nodes |
+| k.runtime | DOM runtime, islands | conformance-covered | nodes |
 | k.resume | Served documents, resume | conformance-covered | regions |
 | k.claim | Claim order | conformance-covered | eager |
-| k.defaults | Queued default actions | conformance-covered | submit |
+| k.defaults | Queued defaults | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
 | k.router | Routes | conformance-covered | params |
 | k.guards | Guards | conformance-covered | deny |
 | k.prefix | Implied path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
-| k.ui | Tokens and styling | conformance-covered | CSS |
+| k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
@@ -52,7 +53,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.scaffold | Scaffold, codemods | conformance-covered | edits |
-| k.testing | Harness and properties | conformance-covered | fire |
+| k.testing | Harness, properties | conformance-covered | fire |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Schedules, simulation | conformance-covered | faults |
@@ -65,10 +66,10 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
-| k.sync | Heads and concurrent writes | conformance-covered | heads |
-| k.persist | Storage and durable state | conformance-covered | drivers |
+| k.sync | Heads, concurrent writes | conformance-covered | heads |
+| k.persist | Storage, durable state | conformance-covered | drivers |
 | k.topology | Deployables | conformance-covered | peers |
-| k.deploy | Production entry, deploy files | conformance-covered | entry |
+| k.deploy | Entry, deploy files | conformance-covered | entry |
 | k.shell | Native shells | proposed | Tauri |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
@@ -79,7 +80,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.module | Module manifest | conformance-covered | surface |
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
-| k.security | Headers and CSP | conformance-covered | CSP |
+| k.security | Headers, CSP | conformance-covered | CSP |
 | k.privacy | Secrets, personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
