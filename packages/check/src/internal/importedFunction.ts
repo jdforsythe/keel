@@ -42,7 +42,7 @@ function exportedFunction(file: SourceFile, name: string, project: readonly Sour
     }
     return null;
   };
-  const listed = (ex: ExportNamedDeclaration): Found | null => {
+  const fromList = (ex: ExportNamedDeclaration): Found | null => {
     for (const sp of ex.specifiers) {
       if (nameOf(sp.exported) !== name) continue;
       return ex.source === null ? local(nameOf(sp.local)) : via(ex.source.value, nameOf(sp.local));
@@ -62,7 +62,7 @@ function exportedFunction(file: SourceFile, name: string, project: readonly Sour
     if (ex.type !== "ExportNamedDeclaration") continue;
     const d = ex.declaration;
     if (d === null) {
-      const hit = listed(ex);
+      const hit = fromList(ex);
       if (hit !== null) return hit;
     } else if (d.type === "FunctionDeclaration" && d.id?.name === name) return fn(d);
     else if (d.type === "VariableDeclaration")
