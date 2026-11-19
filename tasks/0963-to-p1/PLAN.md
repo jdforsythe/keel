@@ -31,7 +31,7 @@ Each lane is a subagent; a lane in a worktree commits on its branch and the orch
 - `.worktrees/0967`, branch `lane-0967`: tests for the server's surviving mutants (backlog 0967) and the std-sessions mutation config (0966). It starts no mutation run.
 - golden-3 eval: ready short of the model call (backlog 0937 done; `pnpm eval --task golden-3 --runner none` ends `converged=false` only because `apps/golden-3` is absent). The agent run is `pnpm eval --task golden-3 --model claude-sonnet-5-5`, at most 5 iterations; earlier golden runs cost 0.84 to 2.55 dollars each, so this one is estimated at 2 to 10. It waits for the operator's word on spending and for a quiet machine (it runs the root check and test each iteration).
 - main tree, `tasks/0963-to-p1/freeze-review.md`: the freeze review audit (backlog 0034), report only.
-- main tree, `tasks/p1/PLAN.md`: the P1 and P2 plan (backlog 0962).
+- `tasks/p1/PLAN.md` is written (backlog 0962): twelve P1 workstreams, three P2, a first wave, proposed backlog lines and open decisions O1 to O11 for the operator, each with a recommendation. Its proposed lines are not yet in `tasks/BACKLOG.md`.
 
 ## Verification
 - [ ] Backlog 0956 built and conformance-covered. RFC 0147, ADR-0169, k.return and the threat model are written (k.return is `implemented` until its conformance lands); next the conformance lane, then the build, each in a worktree.
@@ -39,7 +39,7 @@ Each lane is a subagent; a lane in a worktree commits on its branch and the orch
 - [ ] Backlog 0961: a session proven in the macOS Tauri shell and the iOS shell (done locally by automation; the hosted-runner run is backlog 0965).
 - [ ] golden-3 built by an agent run of its eval; the eval converges.
 - [ ] Freeze review (backlog 0034): every kernel section conformance-covered, the `frozen` flip prepared for P1.
-- [ ] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962).
+- [x] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962): `tasks/p1/PLAN.md`; the operator reads its open decisions O1 to O11.
 
 ## Next action
 Read the CI run on the pushed head (`gh run list --limit 2`): it is the first with D6 and D7, and the first in which `shell-ios` can reach its replay steps (backlog 0965; `shell-tauri-macos` passed them). Check `shell-ios` and the seconds of `conformance/E1562-base-route-change.test.ts` in `test-shard (5)`. Fix what fails there, then take backlog 0956.
