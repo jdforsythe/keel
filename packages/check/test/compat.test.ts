@@ -1,9 +1,8 @@
+import { canonicalJson, hashOf } from "@keel/compiler/internal";
 // Seed 1337. The k.compat pass (E1561, E1562) and `surface.json` freshness (E1005) over in-memory projects.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type SourceFile, check } from "../src/index.ts";
-import { canonicalJson } from "../src/internal/canonicalJson.ts";
-import { hashOf } from "../src/internal/hashOf.ts";
 import { applyPatch } from "./support/applyPatch.ts";
 
 const SEED = 1337;

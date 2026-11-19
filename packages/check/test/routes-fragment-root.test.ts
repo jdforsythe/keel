@@ -2,11 +2,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { canonicalJson, hashOf } from "@keel/compiler/internal";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { check } from "../src/check.ts";
 import type { SourceFile } from "../src/index.ts";
-import { canonicalJson } from "../src/internal/canonicalJson.ts";
-import { hashOf } from "../src/internal/hashOf.ts";
 
 const PKG = "@keel/std-frag";
 let root = "";

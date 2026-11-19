@@ -1,8 +1,8 @@
 import type { Topology } from "@keel/compiler";
+import { hashOf } from "@keel/compiler/internal";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import { clip } from "../clip.ts";
-import { hashOf } from "../hashOf.ts";
 import { lineCol } from "../lineCol.ts";
 import { short } from "../modules/short.ts";
 import { unifiedDiff } from "../unifiedDiff.ts";

@@ -1,10 +1,9 @@
 // rfc:0059 (backlog 0155, 0149): routes.json compared with routes.ts literals; one compile per project.
 import { parseTopology } from "@keel/compiler";
+import { canonicalJson, hashOf } from "@keel/compiler/internal";
 import { describe, expect, it } from "vitest";
 import { check } from "../src/check.ts";
 import type { Diagnostic, SourceFile } from "../src/index.ts";
-import { canonicalJson } from "../src/internal/canonicalJson.ts";
-import { hashOf } from "../src/internal/hashOf.ts";
 
 const f = (path: string, source: string): SourceFile => ({ path, source });
 

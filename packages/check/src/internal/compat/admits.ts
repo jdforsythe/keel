@@ -1,4 +1,4 @@
-import { canonicalJson } from "../canonicalJson.ts";
+import { canonicalJson } from "@keel/compiler/internal";
 import type { Refusal } from "./Refusal.ts";
 import { isRecord } from "./isRecord.ts";
 import { shapeOf } from "./shapeOf.ts";

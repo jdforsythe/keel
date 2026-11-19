@@ -1,5 +1,5 @@
+import { hashOf } from "@keel/compiler/internal";
 import type { SourceFile } from "../../types/SourceFile.ts";
-import { hashOf } from "../hashOf.ts";
 import type { Surface } from "./Surface.ts";
 
 /**

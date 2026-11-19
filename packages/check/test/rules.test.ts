@@ -1,8 +1,7 @@
+import { canonicalJson, hashOf } from "@keel/compiler/internal";
 import { describe, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 import type { SourceFile } from "../src/index.ts";
-import { canonicalJson } from "../src/internal/canonicalJson.ts";
-import { hashOf } from "../src/internal/hashOf.ts";
 import { applyPatch } from "./support/applyPatch.ts";
 
 // Built so the factory's own lint does not read fixture text as a call in this file.

@@ -1,8 +1,7 @@
+import { canonicalJson, hashOf } from "@keel/compiler/internal";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type SourceFile, check } from "../src/index.ts";
-import { canonicalJson } from "../src/internal/canonicalJson.ts";
-import { hashOf } from "../src/internal/hashOf.ts";
 import { applyPatch } from "./support/applyPatch.ts";
 
 const SEED = 1337;

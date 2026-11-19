@@ -1,11 +1,10 @@
+import { canonicalJson, hashOf } from "@keel/compiler/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Expected } from "./Expected.ts";
 import { artifactDir } from "./artifactDir.ts";
-import { canonicalJson } from "./canonicalJson.ts";
 import { readSurface } from "./compat/readSurface.ts";
 import { staleSource } from "./compat/staleSource.ts";
-import { hashOf } from "./hashOf.ts";
 import { routesMismatch } from "./routesMismatch.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 

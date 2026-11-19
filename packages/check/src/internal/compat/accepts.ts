@@ -1,4 +1,4 @@
-import { canonicalJson } from "../canonicalJson.ts";
+import { canonicalJson } from "@keel/compiler/internal";
 import type { Refusal } from "./Refusal.ts";
 import type { Shape } from "./Shape.ts";
 import { admits } from "./admits.ts";
