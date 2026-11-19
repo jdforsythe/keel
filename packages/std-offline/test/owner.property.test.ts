@@ -289,6 +289,6 @@ test("an error body whose code is offline.owner is the refusal whatever its stat
   const refused = { state: "failed" as const, error: { code: "offline.owner" as const, message: "o", data: {} } };
   for (const status of [400, 403, 409, 500]) {
     const error = { code: "api.status" as const, message: "s", data: { status, body: { code: "offline.owner" } } };
-    expect(outcomeOf({ ok: false, error }, false, refused)).toBe(refused);
+    expect(outcomeOf({ ok: false, error }, false, refused, { state: "queued" })).toBe(refused);
   }
 });

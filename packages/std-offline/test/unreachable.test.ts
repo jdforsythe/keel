@@ -34,7 +34,7 @@ test("through a module service a 502 keel.unreachable is api.network, so its ent
   const ctx = ctxWith("http://api.keel.invalid/save");
   const r = await service({ module: "api", schema: Api }).save({ body: body(ctx) }, ctx);
   expect(r.ok ? undefined : r.error.code).toBe("api.network");
-  expect(outcomeOf(r, false, { state: "conflict", head: 0 })).toEqual({ state: "queued" });
+  expect(outcomeOf(r, false, { state: "conflict", head: 0 }, { state: "queued" })).toEqual({ state: "queued" });
 });
 
 test("an outbox leaves that entry queued, and posts it again once the server answers", async () => {

@@ -7,7 +7,7 @@ import { s } from "@keel/schema";
 import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Write, drain, outbox, send, writeFor } from "../src/index.ts";
+import { type OutboxResult, Write, drain, outbox, send, writeFor } from "../src/index.ts";
 import { field } from "../src/internal/field.ts";
 import { outcomeOf } from "../src/internal/outcomeOf.ts";
 
@@ -32,9 +32,10 @@ const draining = (ctx: ReturnType<typeof createCtx>, o: ReturnType<typeof declar
   });
 
 test("writeFor answers offline.signin exactly for a named write owner and no user", () => {
+  const key = createCtx({ mode: "sim", seed: 1337 }).random.id("Write");
   fc.assert(
     fc.property(fc.string({ maxLength: 6 }), fc.string({ maxLength: 6 }), fc.nat(50), (owner, user, base) => {
-      const r = writeFor({ key: "k", base, owner }, user);
+      const r = writeFor({ key, base, owner }, user);
       const code = owner === user ? undefined : user === "" ? "offline.signin" : "offline.owner";
       expect(r.ok ? undefined : r.error.code).toBe(code);
     }),
@@ -43,8 +44,8 @@ test("writeFor answers offline.signin exactly for a named write owner and no use
 });
 
 test("outcomeOf reads an offline.signin error body as the pause it is handed, whatever the status", () => {
-  const refused = { state: "failed" as const, error: { code: "x", message: "x", data: {} } };
-  const paused = { state: "queued" as const };
+  const refused: OutboxResult<unknown> = { state: "conflict", head: 1 };
+  const paused: OutboxResult<unknown> = { state: "queued" };
   fc.assert(
     fc.property(fc.constantFrom(400, 401, 403, 409, 500), fc.boolean(), (status, retried) => {
       const body = { code: "offline.signin", message: "signin", data: {} };
