@@ -1006,7 +1006,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0904 spec (low): k.bundle's environment-value exception names the public origins only; the scan also skips `KEEL_DEPLOYABLE`, `KEEL_SHELL` and `KEEL_INSPECT_ORIGINS` · spec · k.bundle
 - [ ] 0905 check (low): `keel check` reports E1010 for code files only; a miscased non-code specifier is caught by the build · check · k.bundle
 - [ ] 0906 ci (operator): GitHub Actions does not start jobs: payment or spending limit on a private repository · ci
-- [ ] 0907 smoke (medium): no smoke signs up and in under `keel dev` with scripts running; the built smoke missed two dev faults · tooling · k.user, k.boundary
+- [x] 0907 smoke (medium): no smoke signs up and in under `keel dev` with scripts running; the built smoke missed two dev faults · tooling · k.user, k.boundary
 - [ ] 0908 compiler (low): a path no route matches and not under the identity mount answers Vite's 404 in dev and Keel's `keel.notFound` (or `keel.denied` cross-site) in a build · compiler · k.server
 - [ ] 0909 spec (low): nothing says a dev server serves the identity `handle.path`, or that the dev browser gets the stub of a server-only file · spec · k.user, k.boundary, k.topology
 - [ ] 0910 compiler (low): a vitest `vmThreads` or `vmForks` pool is a client environment without a module runner and would get stubs · compiler · k.boundary
