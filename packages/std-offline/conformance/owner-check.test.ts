@@ -1,4 +1,4 @@
-// Spec: std.outbox-owner Conformance, bullet 1: "`writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` or `""` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: "" }, "")` is `ok`."
+// Spec: std.outbox-owner Conformance, bullet 1: "`writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: "" }, "")` is `ok`."
 // Spec: std.outbox-owner Conformance, bullet 2: "With entries queued offline under owner `a` and a route whose action passes `writeFor` owner `b`, `drain` with `a` online posts each with `body.write.owner` `a`, the server store commits nothing, and each entry is `failed` with `{ code: 'offline.owner', message: <id>, data: {} }`."
 // Spec: std.outbox-owner Conformance, bullet 3: "After that refusal, `drain` with `a` on a new ctx over that storage posts nothing, and a `send` with `a` to a route whose owner is `a` is posted and resolves `sent`."
 // Seed 1337
@@ -29,24 +29,25 @@ const keptStates = async (ctx: ReturnType<typeof simCtx>, key: string) => {
 };
 const owners = fc.string({ maxLength: 8 });
 
-test("`writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` or `\"\"` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: \"\" }, \"\")` is `ok`.", () => {
+test("`writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: \"\" }, \"\")` is `ok`.", () => {
   const ctx = simCtx();
   const key = ctx.random.id("Write");
   expect(writeFor({ key, base: 3, owner: "a" }, "a")).toEqual({ ok: true, value: { key, base: 3 } });
   const refused = { ok: false, error: { code: "offline.owner", message: "owner", data: {} } };
   expect(writeFor({ key, base: 3, owner: "a" }, "b")).toEqual(refused);
-  expect(writeFor({ key, base: 3, owner: "a" }, "")).toEqual(refused);
   expect(writeFor({ key, base: 3, owner: "" }, "")).toEqual({ ok: true, value: { key, base: 3 } });
   expect(writeFor({ key, base: 3, owner: "" }, "a")).toEqual(refused);
 });
 
-test("For generated owner pairs, `writeFor` is `ok` with `{ key, base }` exactly when the owners are equal, else `err` `offline.owner`.", () => {
+test("For generated owner pairs, `writeFor` is `ok` with `{ key, base }` exactly when the owners are equal, else `err` `offline.owner` (`offline.signin` when the server owner is empty).", () => {
   const ctx = simCtx();
   fc.assert(
     fc.property(owners, owners, fc.nat({ max: 1000 }), (writeOwner, serverOwner, base) => {
       const key = ctx.random.id("Write");
       const r = writeFor({ key, base, owner: writeOwner }, serverOwner);
       if (writeOwner === serverOwner) expect(r).toEqual({ ok: true, value: { key, base } });
+      else if (serverOwner === "")
+        expect(r).toEqual({ ok: false, error: { code: "offline.signin", message: "signin", data: {} } });
       else expect(r).toEqual({ ok: false, error: { code: "offline.owner", message: "owner", data: {} } });
     }),
     { seed: 1337, numRuns: 100 },
