@@ -970,7 +970,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0868 smoke (low): the browser resume smoke crashed once and passed on re-run during the RFC 0139 build; find the cause · tooling · k.resume
 - [x] 0869 apps (low): no app uses the identity seam yet; depends on 0862 · apps · k.security
 - [x] 0870 std-credentials (medium): RFC to split `@keel/std-credentials`: opaque tokens (`mint`, `check`) stay under a neutral name, password hashing leaves the framework · std · k.security
-- [ ] 0871 shells (medium): a shell cannot use the identity mount's sign-in path (E1581); design how a shell signs in through an auth library · shells, server · k.mount
+- [x] 0871 shells (medium): a shell cannot use the identity mount's sign-in path (E1581); design how a shell signs in through an auth library · shells, server · k.mount
 - [ ] 0872 ui (low): `Button` has no `name` or `value`, so a native post cannot say which button was pressed · ui · k.mount
 - [ ] 0873 check (low): E2406 runs only for modules that list std-messages · check · k.text
 - [ ] 0874 ui (low): `Text` has no `role` · ui · k.ui
@@ -1006,3 +1006,9 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0904 spec (low): k.bundle's environment-value exception names the public origins only; the scan also skips `KEEL_DEPLOYABLE`, `KEEL_SHELL` and `KEEL_INSPECT_ORIGINS` · spec · k.bundle
 - [ ] 0905 check (low): `keel check` reports E1010 for code files only; a miscased non-code specifier is caught by the build · check · k.bundle
 - [ ] 0906 ci (operator): GitHub Actions does not start jobs: payment or spending limit on a private repository · ci
+- [ ] 0907 smoke (medium): no smoke signs up and in under `keel dev` with scripts running; the built smoke missed two dev faults · tooling · k.user, k.boundary
+- [ ] 0908 compiler (low): a path no route matches and not under the identity mount answers Vite's 404 in dev and Keel's `keel.notFound` (or `keel.denied` cross-site) in a build · compiler · k.server
+- [ ] 0909 spec (low): nothing says a dev server serves the identity `handle.path`, or that the dev browser gets the stub of a server-only file · spec · k.user, k.boundary, k.topology
+- [ ] 0910 compiler (low): a vitest `vmThreads` or `vmForks` pool is a client environment without a module runner and would get stubs · compiler · k.boundary
+- [ ] 0911 apps (low): golden-2's `POST /api/recipes` writes without a signed-in user while the `/recipes/new` page is guarded; confirm intended · apps
+- [ ] 0912 shells (operator): RFC 0142 waits at commit 1 for the operator's read of two points (Keel follows a mount answer's redirect in a shell; the native cookie store holds the library's cookie) · shells · k.return
