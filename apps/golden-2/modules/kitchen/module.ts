@@ -10,6 +10,7 @@ export default module({
     "@keel/std-tables",
     "@keel/std-temporal",
     "@keel/std-text",
+    "@keel/std-timings",
   ],
   capabilities: ["clock", "random", "storage"],
   public: {

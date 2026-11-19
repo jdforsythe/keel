@@ -37,7 +37,7 @@ Environment, read on the server only:
 `modules/recipes/AppLocale.schema.ts` lists the served locales. `en-US` URLs carry no prefix (`/`, `/recipes/<id>`); the others do (`/de-DE`, `/ja-JP/recipes/<id>`), and `/en-US/...` redirects to the unprefixed URL. Every string the recipe pages show is in `modules/recipes/RecipesText/<locale>.ts`, and the account pages' in `modules/accounts/AccountsText/<locale>.ts`. To add a locale, add it to `AppLocale` and `AccountsLocale` and write one file in each.
 
 ## Dev
-Run `pnpm dev` from `apps/golden-2`. `keel dev` serves `web` with hot reload and the `api` deployable on one origin; storage lives in `.keel-dev/`.
+Run `pnpm dev` from `apps/golden-2`. `keel dev` serves `web` with hot reload and the `api` deployable on one origin; storage lives in `.keel-dev/`. `GET /__keel/inspect` (and `keel inspect`) shows `timings.recent` from `@keel/std-timings`: `kitchen.catalog.query`, the catalog query on the `api` deployable, and `recipes.api.catalog` and `recipes.api.box`, how long a recipes page waited for each `kitchen` call.
 
 Each module lists `@keel/std-brands` in `deps`, so `keel check` holds every id brand (`s.id('Recipe')`, `ctx.random.id('Recipe')`) to PascalCase (E2101, with a fix).
 

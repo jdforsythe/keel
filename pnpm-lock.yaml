@@ -232,6 +232,9 @@ importers:
       '@keel/std-text':
         specifier: workspace:*
         version: link:../../packages/std-text
+      '@keel/std-timings':
+        specifier: workspace:*
+        version: link:../../packages/std-timings
       '@keel/std-tokens':
         specifier: workspace:*
         version: link:../../packages/std-tokens

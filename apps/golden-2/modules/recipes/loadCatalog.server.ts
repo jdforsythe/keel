@@ -1,5 +1,6 @@
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
+import { time } from "@keel/std-timings";
 import { CatalogSearch } from "../kitchen/CatalogSearch.schema.ts";
 import { CatalogData } from "./CatalogData.schema.ts";
 import { LocaleParams } from "./LocaleParams.schema.ts";
@@ -10,9 +11,11 @@ import { kitchenApi } from "./kitchenApi.ts";
 export const loadCatalog = loader(
   { output: CatalogData, params: LocaleParams, search: CatalogSearch },
   async ({ params, search }, ctx) => {
-    const page = await kitchenApi.catalog({ params: { locale: params.locale }, query: search }, ctx);
+    const page = await time(ctx, "recipes.api.catalog", () =>
+      kitchenApi.catalog({ params: { locale: params.locale }, query: search }, ctx),
+    );
     if (!page.ok) return err(page.error);
-    const box = await kitchenApi.box({}, ctx);
+    const box = await time(ctx, "recipes.api.box", () => kitchenApi.box({}, ctx));
     if (!box.ok) return err(box.error);
     return ok({ page: page.value, recipes: box.value.recipes, text: await RecipesText.load(params.locale) });
   },

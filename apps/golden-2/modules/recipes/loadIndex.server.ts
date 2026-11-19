@@ -1,5 +1,6 @@
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
+import { time } from "@keel/std-timings";
 import { IndexData } from "./IndexData.schema.ts";
 import { LocaleParams } from "./LocaleParams.schema.ts";
 import { RecipeSearch } from "./RecipeSearch.schema.ts";
@@ -10,7 +11,7 @@ import { kitchenApi } from "./kitchenApi.ts";
 export const loadIndex = loader(
   { output: IndexData, params: LocaleParams, search: RecipeSearch },
   async ({ params, search }, ctx) => {
-    const r = await kitchenApi.box({}, ctx);
+    const r = await time(ctx, "recipes.api.box", () => kitchenApi.box({}, ctx));
     if (!r.ok) return err(r.error);
     const all = r.value.recipes;
     return ok({

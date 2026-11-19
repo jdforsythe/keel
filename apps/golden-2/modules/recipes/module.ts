@@ -10,6 +10,7 @@ export default module({
     "@keel/std-temporal",
     "@keel/std-text",
     "@keel/std-messages",
+    "@keel/std-timings",
   ],
   capabilities: ["net", "storage"],
   public: {

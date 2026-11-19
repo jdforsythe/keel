@@ -30,6 +30,7 @@
     "@keel/std-tables": "workspace:*",
     "@keel/std-temporal": "workspace:*",
     "@keel/std-text": "workspace:*",
+    "@keel/std-timings": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*",
     "better-auth": "1.7.26"
