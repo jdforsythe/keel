@@ -19,7 +19,7 @@ const r = tx(stores.editTodo, payload, { meta: { caller }, ...w.value })
 
 **Signed out.** A request whose `user` is `""` has no owner to compare: `writeFor(write, "")` with a `write.owner` other than `""` returns `err({ code: 'offline.signin', message: 'signin', data: {} })`, which k.server answers 400. A flush reads it as a pause: the entry stays `queued`, and flushing stops until `drain` or `send` is given that owner again. Giving `""` as the owner holds other owners' entries `queued` rather than failing them; another named owner still fails them. So a sign-in that expires, or a sign-out, keeps queued writes on the device until that user signs in again, their bodies in `ctx.storage` until then.
 
-**Ctxs.** One outbox used from several ctxs (one declared outside a scope, in tests or on a server) keeps their entries apart: a ctx's owner, flush, retry, `resolve` and storage writes reach only the entries that ctx added or loaded. The store shows them all.
+**Ctxs.** One outbox used from several ctxs (one declared outside a scope, in tests or on a server) keeps their entries apart: a ctx's owner, flush, retry, `resolve` and storage writes reach only the entries that ctx added or loaded. The store shows them all and holds one entry per key: `send` draws again a write key another ctx's entry has (two ctxs of one seed), and the load leaves out a stored entry with such a key, which that ctx's writes keep in its storage.
 
 **Rules.** None.
 
@@ -29,3 +29,4 @@ const r = tx(stores.editTodo, payload, { meta: { caller }, ...w.value })
 - After that refusal, `drain` with `a` on a new ctx over that storage posts nothing, and a `send` with `a` to a route whose owner is `a` is posted and resolves `sent`.
 - `writeFor({ key, base, owner: 'a' }, "")` is `err` with `{ code: 'offline.signin', message: 'signin', data: {} }`; entries of owner `a` refused with it stay `queued`, a `drain` with `""` posts none and fails none, and a later `drain` with `a` posts each once with its key.
 - With one outbox declared outside a scope, entries queued offline on ctx A with owner `a`, then `drain` with owner `b` on ctx B online: A's entries stay `queued`, none is posted, B's `keel.outbox.<id>` holds none of them, and `resolve` on B for one resolves `false`; a later `drain` with `a` on A online posts each once with its key.
+- With two ctxs of one seed over one outbox declared outside a scope, sending offline and online under owners `a` and `b` in any order, neither ctx fails, removes, posts or stores the other's entries.
