@@ -36,8 +36,9 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.deploy | 11 | **conformance-covered** | none |
 | k.bundle | 6 | **conformance-covered** | none |
 | k.explain | 4 | **conformance-covered** | none |
-| k.return | 8 | implemented | 3 clauses have no conformance test yet |
-| k.hosting | 6 | implemented | clause 2: the client entry's fetch URL and `credentials: 'include'` are not observed by a test |
+| k.return | 9 | **conformance-covered** | none |
+| k.opening | 6 | **conformance-covered** | none |
+| k.hosting | 6 | **conformance-covered** | none |
 | k.openapi | 1 | **conformance-covered** | none |
 | k.a11y | 12 | **conformance-covered** | none |
 | k.security | 13 | **conformance-covered** | none |
@@ -58,7 +59,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
 | k.serverlog | 6 | **conformance-covered** | none |
-| k.user | 8 | **conformance-covered** | none |
+| k.user | 9 | **conformance-covered** | none |
 | k.boundary | 8 | **conformance-covered** | not audited clause by clause; the environment and limits suites run `keel build` on fixtures whose `env.d.ts` the type pass does not read |
 | std.brands | 6 | **conformance-covered** | none |
 | std.channels | 11 | **conformance-covered** | none |
@@ -90,7 +91,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.timings | 7 | **conformance-covered** | none |
 | std.tokens | 12 | **conformance-covered** | none |
 | std.workflows | 8 | **conformance-covered** | none |
-| **total** | **828** | 76 of 81 covered | |
+| **total** | **854** | 83 of 85 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -137,6 +138,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.hosting and k.return are `implemented`; k.shell and std.db are `proposed`; the other 80 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.shell and std.db are `proposed`; the other 83 are `conformance-covered`.
 
 verified: 8e06a5f29c5a8fcf34eeba72b98ecbce7c4dccbd
