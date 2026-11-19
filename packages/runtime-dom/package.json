@@ -1,7 +1,7 @@
 {
   "name": "@keel/runtime-dom",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "sideEffects": ["./src/ops/resume.ts"],
   "exports": {
