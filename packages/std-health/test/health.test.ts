@@ -2,7 +2,7 @@
 // Seed 1337
 import { createCtx } from "@keel/ctx";
 import { createApp, topology } from "@keel/server";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { Health } from "../src/Health.ts";
 import { routes } from "../src/routes.ts";
 
@@ -44,4 +44,27 @@ test("the route table holds health.status at /health, answering with the loader 
   const result: unknown = Reflect.get(Object(Reflect.get(Object(body), "results")), "health.status");
   expect(Reflect.get(Object(result), "ok")).toBe(true);
   expect(Reflect.get(Object(Reflect.get(Object(result), "value")), "status")).toBe("ok");
+});
+
+test("a freshly evaluated module set holds the schema, the loader and the route table", async () => {
+  vi.resetModules();
+  const fresh = await import("../src/index.ts");
+  const server = await import("@keel/server");
+  const ctxMod = await import("@keel/ctx");
+  expect(fresh.Health.parse({ status: "ok", at: 5 }).ok).toBe(true);
+  expect(fresh.Health.parse({ status: "no", at: 5 }).ok).toBe(false);
+  expect(fresh.Health.parse({ status: "ok", at: 5, extra: 1 }).ok).toBe(false);
+  expect(fresh.Health.parse({ status: "ok", at: "5" }).ok).toBe(false);
+  expect(Object.keys(fresh.routes.routes)).toEqual(["health.status"]);
+  const app = await server.createApp({
+    topology: server.topology({ web: { modules: ["health"], adapter: "node" } }),
+    routes: fresh.routes,
+    ctx: ctxMod.createCtx({ mode: "sim", seed: 1337 }),
+    mode: "production",
+  });
+  const res = await app.fetch(new Request("http://localhost/health", { headers: { accept: "application/json" } }));
+  const body: unknown = await res.json();
+  const result: unknown = Reflect.get(Object(Reflect.get(Object(body), "results")), "health.status");
+  expect(Reflect.get(Object(Reflect.get(Object(result), "value")), "status")).toBe("ok");
+  expect(Reflect.get(Object(Reflect.get(Object(result), "value")), "at")).toBe(0);
 });
