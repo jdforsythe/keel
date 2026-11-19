@@ -7,16 +7,16 @@
 // Assumption: `ttl: null` is used so the digest does not depend on the clock.
 // Untestable: that real and shell draw from `randomBytes` and not `ctx.random` is not observable; the real mints differ, which `mint.test.ts` shows.
 import { gen } from "@keel/schema/gen";
-import { Digested } from "@keel/std-credentials";
-import { credentials } from "@keel/std-credentials/server";
+import { Digested } from "@keel/std-tokens";
+import { tokens } from "@keel/std-tokens/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, digestedOf, errorOf, isOk, realCtx, secretOf, shellCtx, simCtx, textOf } from "./fixtures.ts";
 
 const seeds = fc.integer({ min: 0, max: 2 ** 31 - 1 });
 
-function mintOne(ctx: Parameters<typeof credentials>[0]): { text: string; digest: string; id: string } {
-  const m = credentials(ctx).mint({ ttl: null });
+function mintOne(ctx: Parameters<typeof tokens>[0]): { text: string; digest: string; id: string } {
+  const m = tokens(ctx).mint({ ttl: null });
   if (!m.ok) throw new Error("mint refused a ttl");
   return { text: textOf(m.value.token), digest: m.value.digest, id: m.value.id };
 }
@@ -44,11 +44,9 @@ test("Sim draws them from the capability seed and a call count and writes `keels
       const m = mintOne(sim);
       expect(m.text).toMatch(/^keelsim_[0-9a-f]{16}_[0-9a-f]{64}$/);
       expect(m.digest.startsWith("$sha256-sim$")).toBe(true);
-      expect(isOk(credentials(sim).check(secretOf(m.text), () => ({ id: m.id, digest: digestedOf(m.digest) })))).toBe(
-        true,
-      );
+      expect(isOk(tokens(sim).check(secretOf(m.text), () => ({ id: m.id, digest: digestedOf(m.digest) })))).toBe(true);
       const real = mintOne(realCtx());
-      const r = credentials(sim).check(secretOf(real.text), () => ({ id: real.id, digest: digestedOf(real.digest) }));
+      const r = tokens(sim).check(secretOf(real.text), () => ({ id: real.id, digest: digestedOf(real.digest) }));
       expect(isOk(r)).toBe(true);
     }),
     { seed: SEED, numRuns: 50 },
@@ -60,7 +58,7 @@ test("Under real and shell, a sim token is `credentials.mismatch`.", () => {
     fc.property(seeds, (seed) => {
       const m = mintOne(simCtx(seed));
       for (const ctx of [realCtx(), shellCtx()]) {
-        const r = credentials(ctx).check(secretOf(m.text), () => ({ id: m.id, digest: digestedOf(m.digest) }));
+        const r = tokens(ctx).check(secretOf(m.text), () => ({ id: m.id, digest: digestedOf(m.digest) }));
         expect(errorOf(r).code).toBe("credentials.mismatch");
       }
     }),
@@ -76,7 +74,7 @@ test("Under real and shell, a row with a sim digest or any generated `Digested` 
       const simDigest = digestedOf(mintOne(simCtx(seed)).digest);
       for (const ctx of [realCtx(), shellCtx()]) {
         const real = mintOne(ctx);
-        const r = credentials(ctx).check(secretOf(real.text), () => ({ id: real.id, digest: simDigest }));
+        const r = tokens(ctx).check(secretOf(real.text), () => ({ id: real.id, digest: simDigest }));
         expect(errorOf(r).code).toBe("credentials.malformed");
         expect(errorOf(r).data).toEqual({ reason: "sim" });
       }
@@ -86,7 +84,7 @@ test("Under real and shell, a row with a sim digest or any generated `Digested` 
   for (const ctx of [realCtx(), shellCtx()]) {
     const real = mintOne(ctx);
     for (const digest of sample) {
-      const r = credentials(ctx).check(secretOf(real.text), () => ({ id: real.id, digest }));
+      const r = tokens(ctx).check(secretOf(real.text), () => ({ id: real.id, digest }));
       expect(errorOf(r).code, digest).toBe("credentials.malformed");
       expect(errorOf(r).data, digest).toEqual({ reason: "sim" });
     }

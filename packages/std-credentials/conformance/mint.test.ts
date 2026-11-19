@@ -11,7 +11,7 @@
 import { createHash } from "node:crypto";
 import { inspect } from "node:util";
 import { reveal } from "@keel/schema";
-import { credentials } from "@keel/std-credentials/server";
+import { tokens } from "@keel/std-tokens/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, digestedOf, errorOf, isOk, realCtx, simCtx } from "./fixtures.ts";
@@ -19,8 +19,8 @@ import { SEED, digestedOf, errorOf, isOk, realCtx, simCtx } from "./fixtures.ts"
 const MIN = 60_000;
 const MAX = 31_536_000_000;
 const b64sha = (text: string): string => createHash("sha256").update(text).digest("base64").replace(/=+$/, "");
-const mintOk = (ctx: Parameters<typeof credentials>[0], ttl: number | null) => {
-  const m = credentials(ctx).mint({ ttl });
+const mintOk = (ctx: Parameters<typeof tokens>[0], ttl: number | null) => {
+  const m = tokens(ctx).mint({ ttl });
   if (!m.ok) throw new Error("mint refused a ttl");
   return m.value;
 };
@@ -91,7 +91,7 @@ test("`mint({ ttl })` for `ttl` 60,000 and 31,536,000,000 is `ok` with `expiresA
   const refused = [MIN - 1, MAX + 1, 60_000.5, Number.NaN, Number.POSITIVE_INFINITY];
   for (const ctx of [simCtx(), realCtx()]) {
     for (const ttl of refused) {
-      const r = credentials(ctx).mint({ ttl });
+      const r = tokens(ctx).mint({ ttl });
       expect(isOk(r), `${ttl}`).toBe(false);
       expect(errorOf(r).code, `${ttl}`).toBe("credentials.ttl");
       expect(errorOf(r).data, `${ttl}`).toEqual({ min: MIN, max: MAX });
@@ -105,7 +105,7 @@ test("`mint({ ttl })` for `ttl` 60,000 and 31,536,000,000 is `ok` with `expiresA
         fc.integer({ min: MIN, max: MAX - 1 }).map((n) => n + 0.5),
       ),
       (ttl) => {
-        const r = credentials(simCtx()).mint({ ttl });
+        const r = tokens(simCtx()).mint({ ttl });
         expect(errorOf(r).code).toBe("credentials.ttl");
         expect(errorOf(r).data).toEqual({ min: MIN, max: MAX });
       },

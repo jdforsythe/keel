@@ -48,4 +48,4 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.db | SQLite and Postgres storage | proposed | storage drivers (k.persist) and check rule registry: E2151-E2153 |
 | std.workflows | Workflows | conformance-covered | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2355 |
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
-| std.tokens | Opaque tokens | implemented | capability, schema type and check rule registries: `mint` with a ttl, `check`, `Digested`, E2201-E2202 |
+| std.tokens | Opaque tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `Digested`, E2201-E2202 |

@@ -5,8 +5,8 @@
 // Assumption: a `service` call is `service({ module, method, path, body })`; E1112 has no `service` sink, so its shape does not matter to the rule.
 // Assumption: E1105 does not fire in a `*.server.ts` file, and the fixtures hold no other file.
 import { check } from "@keel/check";
-import "@keel/std-credentials/server";
-import "@keel/std-credentials/tools";
+import "@keel/std-tokens/server";
+import "@keel/std-tokens/tools";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED } from "./fixtures.ts";
@@ -15,13 +15,13 @@ type Files = Parameters<typeof check>[0];
 const PATH = "modules/app/x.server.ts";
 const MANIFEST = {
   path: "modules/app/module.ts",
-  source: `import { module } from "@keel/compiler"\nexport default module({ id: "app", deps: ["@keel/std-credentials"], capabilities: ["clock", "random"], public: { exports: [], routes: [] } })\n`,
+  source: `import { module } from "@keel/compiler"\nexport default module({ id: "app", deps: ["@keel/std-tokens"], capabilities: ["clock", "random"], public: { exports: [], routes: [] } })\n`,
 };
 const HEAD = [
   `import { reveal } from "@keel/schema"`,
   `import { tx } from "@keel/store"`,
   `import { service } from "@keel/services"`,
-  `import { credentials } from "@keel/std-credentials/server"`,
+  `import { tokens } from "@keel/std-tokens/server"`,
 ].join("\n");
 
 /** The fixture with `body` lines inside an action, and the 1-based line of body line `i`. */
@@ -29,7 +29,7 @@ function fixture(body: string[]): { files: Files; line: (i: number) => number } 
   const lines = [
     HEAD,
     "export async function act(ctx, t, input, find) {",
-    "  const m = credentials(ctx).mint({ ttl: 3600000 })",
+    "  const m = tokens(ctx).mint({ ttl: 3600000 })",
   ];
   const first = lines.join("\n").split("\n").length + 1;
   const source = `${[...lines, ...body.map((l) => `  ${l}`), "}"].join("\n")}\n`;
@@ -58,7 +58,7 @@ test("`tx(t, { id: m.value.id, digest: m.value.digest })`, `reveal(m.value.token
   const clean = [
     "tx(t, { id: m.value.id, digest: m.value.digest })",
     `await service({ module: "mail", method: "POST", path: "/send", body: { token: reveal(m.value.token) } })`,
-    "const found = credentials(ctx).check(input.token, find)",
+    "const found = tokens(ctx).check(input.token, find)",
   ];
   for (const stmt of clean) {
     const f = fixture([stmt]);

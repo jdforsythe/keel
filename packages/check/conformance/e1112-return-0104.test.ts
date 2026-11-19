@@ -13,10 +13,10 @@ const MANIFEST = f(
 );
 
 // The checked text names the package as a string; this file imports none of it.
-const CREDENTIALS_IMPORT = ["import { credentials } from", '"@keel/std-credentials/server";'].join(" ");
+const TOKENS_IMPORT = ["import { tokens } from", '"@keel/std-tokens/server";'].join(" ");
 const POST_TOKEN = `import { action } from "@keel/router";
 import { err, ok, reveal } from "@keel/schema";
-${CREDENTIALS_IMPORT}
+${TOKENS_IMPORT}
 import { tx } from "@keel/store";
 import { NewToken } from "./NewToken.schema.ts";
 import { Nothing } from "./Nothing.schema.ts";
@@ -26,7 +26,7 @@ import { accountStores } from "./accountStores.ts";
 export const postToken = action(
   { input: Nothing, output: NewToken, stores: accountStores },
   (_input, { caller, stores }, ctx) => {
-    const minted = credentials(ctx).mint({ ttl: 90 * 86_400_000 });
+    const minted = tokens(ctx).mint({ ttl: 90 * 86_400_000 });
     if (!minted.ok) return err(minted.error);
     const { id, digest, expiresAt, token } = minted.value;
     const r = tx(stores.addToken, { id, digest, owner: caller });
