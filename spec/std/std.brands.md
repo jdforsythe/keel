@@ -1,5 +1,5 @@
 # std.brands: Id brand case
-status: implemented
+status: conformance-covered
 
 **Extension point.** Check rule registry (k.check `defineRule`). Importing `@keel/std-brands/tools` registers rule E2101 with a `fix`. `keel check` runs it on each file with the kernel rules (k.check step 3).
 
