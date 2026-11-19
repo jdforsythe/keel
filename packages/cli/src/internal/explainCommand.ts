@@ -1,4 +1,3 @@
-import { explain } from "@keel/check/explain";
 import type { Input } from "../types/Input.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { makeDiag } from "./makeDiag.ts";
@@ -7,19 +6,15 @@ import { summary } from "./summary.ts";
 /** Whole output, trailer included, stays within the 120-token explain budget (chars / 4). */
 const BUDGET_CHARS = 480;
 
-const lookup = (code: string): string => {
-  try {
-    return explain(code).trim();
-  } catch {
-    return "";
-  }
-};
-
 /** `keel explain <code>`: delegates to `@keel/check` explain. No code: an empty result. Unknown code: E1052. */
-export function explainCommand(input: Input): OutRecord[] {
+export async function explainCommand(input: Input): Promise<OutRecord[]> {
   const code = input.code;
   if (code === undefined) return [summary("explain", [], { codes: 0 })];
-  const text = lookup(code);
+  // The explanation table loads here, on the first lookup, and not when the binary starts.
+  const text = await import("@keel/check/explain").then(
+    (m) => m.explain(code).trim(),
+    () => "",
+  );
   if (text === "") {
     const d = makeDiag("E1052", `no explain entry for ${JSON.stringify(code.slice(0, 24))}`, { see: "k.check" });
     return [d, summary("explain", [d], {})];

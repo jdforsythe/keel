@@ -121,27 +121,29 @@ describe("lspCodeActions", () => {
 
 describe("lspHover", () => {
   const uri = "file:///w/src/x.ts";
-  it("shows the explain text of the diagnostic on the hovered line", () => {
+  it("shows the explain text of the diagnostic on the hovered line", async () => {
     const s = fresh();
     s.diags.set(uri, [d({ code: "E1451", line: 2, message: "m" })]);
-    const rec = explainCommand({ code: "E1451" }).find((r) => r.kind === "explain.text");
+    const rec = (await explainCommand({ code: "E1451" })).find((r) => r.kind === "explain.text");
     expect(typeof rec?.text).toBe("string");
-    expect(lspHover(s, { textDocument: { uri }, position: { line: 1 } })).toEqual({
+    expect(await lspHover(s, { textDocument: { uri }, position: { line: 1 } })).toEqual({
       contents: { kind: "markdown", value: rec?.text },
     });
-    expect(lspHover(s, { textDocument: { uri }, position: { line: 0 } })).toBeNull();
-    expect(lspHover(s, { textDocument: { uri }, position: { line: 2 } })).toBeNull();
+    expect(await lspHover(s, { textDocument: { uri }, position: { line: 0 } })).toBeNull();
+    expect(await lspHover(s, { textDocument: { uri }, position: { line: 2 } })).toBeNull();
   });
 
-  it("missing position, unknown uri and malformed params give null", () => {
+  it("missing position, unknown uri and malformed params give null", async () => {
     const s = fresh();
     s.diags.set("", [d({ code: "E9999", line: 2 })]);
     s.diags.set(uri, [d({ code: "E9999" })]);
-    expect(lspHover(s, {})).toBeNull();
-    expect(lspHover(s, null)).toBeNull();
-    expect(lspHover(s, { textDocument: { uri }, position: { line: "0" } })).toBeNull();
-    expect(lspHover(s, { textDocument: { uri: "file:///other" }, position: { line: 0 } })).toBeNull();
-    expect(Object(lspHover(s, { textDocument: { uri: 7 }, position: { line: 1 } })).contents.kind).toBe("markdown");
+    expect(await lspHover(s, {})).toBeNull();
+    expect(await lspHover(s, null)).toBeNull();
+    expect(await lspHover(s, { textDocument: { uri }, position: { line: "0" } })).toBeNull();
+    expect(await lspHover(s, { textDocument: { uri: "file:///other" }, position: { line: 0 } })).toBeNull();
+    expect(Object(await lspHover(s, { textDocument: { uri: 7 }, position: { line: 1 } })).contents.kind).toBe(
+      "markdown",
+    );
   });
 });
 
@@ -345,7 +347,7 @@ describe("lspHandle", () => {
       () => io,
     );
     expect(out).toEqual([
-      { jsonrpc: "2.0", id: 6, result: lspHover(s, { textDocument: { uri }, position: { line: 1 } }) },
+      { jsonrpc: "2.0", id: 6, result: await lspHover(s, { textDocument: { uri }, position: { line: 1 } }) },
     ]);
     expect(JSON.stringify(out)).toContain("E1451");
     expect(await lspHandle(msg({ method: "textDocument/hover", params: {} }), s, () => io)).toEqual([]);

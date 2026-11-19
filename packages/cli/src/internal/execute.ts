@@ -38,7 +38,7 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     case "spec":
       return only(specCommand(input, io));
     case "explain":
-      return only(explainCommand(input));
+      return only(await explainCommand(input));
     case "ledger":
       return ledgerCommand(input, io, ledgerRules(io));
     case "evidence": {

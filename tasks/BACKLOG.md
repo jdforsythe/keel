@@ -1012,7 +1012,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0910 compiler (low): a vitest `vmThreads` or `vmForks` pool is a client environment without a module runner and would get stubs · compiler · k.boundary
 - [ ] 0911 apps (low): golden-2's `POST /api/recipes` writes without a signed-in user while the `/recipes/new` page is guarded; confirm intended · apps
 - [ ] 0912 shells (operator): RFC 0142 waits at commit 1 for the operator's read of two points (Keel follows a mount answer's redirect in a shell; the native cookie store holds the library's cookie) · shells · k.return
-- [ ] 0913 cli (low): the `keel` binary loads the explanation table on every command through `explainCommand`; load it only for `explain`, the hover and the MCP tool · cli · k.explain
+- [x] 0913 cli (low): the `keel` binary loads the explanation table on every command through `explainCommand`; load it only for `explain`, the hover and the MCP tool · cli · k.explain
 - [ ] 0914 std (medium): tests to kill the surviving mutants in std-health, std-geo, std-i18n, std-brands and std-text, and any other unit the first mutation runs put under threshold · std · k.ledger
 - [x] 0915 tooling (medium): in a std package's mutation sandbox a conformance test importing `@keel/std-<name>` was thought to reach the unmutated package; a conformance-only run kills mutants (std-geo 23 of 43, std-brands 110 of 165), so nothing to fix · tooling · k.ledger
 - [ ] 0916 tooling (medium): the mutation cache reuses a mutant's result after tests are added; key it on the test files too · tooling · k.ledger

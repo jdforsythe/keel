@@ -124,12 +124,12 @@ describe("check", () => {
 });
 
 describe("explain", () => {
-  it("no code is an empty result", () => {
-    expect(explainCommand({})).toEqual([{ kind: "summary", ok: true, name: "explain", counts: { codes: 0 } }]);
+  it("no code is an empty result", async () => {
+    expect(await explainCommand({})).toEqual([{ kind: "summary", ok: true, name: "explain", counts: { codes: 0 } }]);
   });
 
-  it("a known code yields its explain text and a named trailer", () => {
-    expect(explainCommand({ code: "E1757" })).toEqual([
+  it("a known code yields its explain text and a named trailer", async () => {
+    expect(await explainCommand({ code: "E1757" })).toEqual([
       { kind: "explain.text", code: "E1757", text: explain("E1757").trim() },
       { kind: "summary", ok: true, name: "explain E1757", counts: {} },
     ]);
@@ -139,7 +139,7 @@ describe("explain", () => {
     const code = "x".repeat(150);
     const full = explain(code).trim();
     const room = 480 - (`ok explain ${code}\n`.length + 1);
-    const recs = explainCommand({ code });
+    const recs = await explainCommand({ code });
     expect(recs[0]).toEqual({ kind: "explain.text", code, text: `${full.slice(0, room - 3)}...` });
     expect(room).toBe(317);
     const r = await run(["explain", code], { cwd: CWD });
@@ -147,13 +147,13 @@ describe("explain", () => {
     expect(r.stdout.length).toBe(317 + 1 + `ok explain ${code}\n`.length);
   });
 
-  it("text exactly at the budget is not clipped", () => {
+  it("text exactly at the budget is not clipped", async () => {
     // explain trims leading blanks of the code, so the text can be made as long as the room exactly.
     const at = ` ${"x".repeat(133)}`;
     const text = explain(at).trim();
     const room = 480 - (`ok explain ${at}\n`.length + 1);
     expect(text.length).toBe(room);
-    expect(explainCommand({ code: at })[0]).toEqual({ kind: "explain.text", code: at, text });
+    expect((await explainCommand({ code: at }))[0]).toEqual({ kind: "explain.text", code: at, text });
   });
 });
 

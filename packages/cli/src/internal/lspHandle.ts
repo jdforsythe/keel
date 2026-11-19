@@ -64,7 +64,7 @@ export async function lspHandle(body: string, state: LspState, provide: () => Io
       case "textDocument/codeAction":
         return reply(lspCodeActions(state, state.root ?? (await provide()).cwd, msg.params));
       case "textDocument/hover":
-        return reply(lspHover(state, msg.params));
+        return reply(await lspHover(state, msg.params));
       default:
         return id === undefined
           ? []
