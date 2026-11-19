@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@keel/cli": "workspace:*",
+    "@keel/std-brands": "workspace:*",
     "@types/node": "^22",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",

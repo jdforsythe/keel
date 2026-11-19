@@ -248,6 +248,9 @@ importers:
       '@keel/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@keel/std-brands':
+        specifier: workspace:*
+        version: link:../../packages/std-brands
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing

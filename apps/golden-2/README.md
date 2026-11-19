@@ -39,6 +39,8 @@ Environment, read on the server only:
 ## Dev
 Run `pnpm dev` from `apps/golden-2`. `keel dev` serves `web` with hot reload and the `api` deployable on one origin; storage lives in `.keel-dev/`.
 
+Each module lists `@keel/std-brands` in `deps`, so `keel check` holds every id brand (`s.id('Recipe')`, `ctx.random.id('Recipe')`) to PascalCase (E2101, with a fix).
+
 ## Production
 1. `pnpm --filter ./apps/golden-2 build` runs `keel build`. It writes:
    - the `.keel/` artifacts, `surface.json` among them;
