@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1276,
+    "example": 1287,
     "probabilistic": 327,
     "exhaustive": 15,
     "proven": 63,
@@ -14820,6 +14820,30 @@
       "rung": "proven"
     },
     {
+      "item": "k.opening#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.opening#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.opening#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.opening#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.opening#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.opening#6",
+      "rung": "example"
+    },
+    {
       "item": "k.owner#1",
       "rung": "example"
     },
@@ -15157,19 +15181,19 @@
     },
     {
       "item": "k.return#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.return#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.return#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.return#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.return#7",
@@ -15177,6 +15201,10 @@
     },
     {
       "item": "k.return#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.return#9",
       "rung": "example"
     },
     {
