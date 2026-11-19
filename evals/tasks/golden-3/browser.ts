@@ -155,7 +155,14 @@ export async function browserPass(root: string, app: string): Promise<string | u
   const log: string[] = [];
   const server = spawn("node", ["--experimental-webstorage", storage, "--disable-warning=ExperimentalWarning", entry], {
     cwd: app,
-    env: { ...process.env, PORT: String(PORT), KEEL_SECRET: secret, KEEL_ORIGIN: ORIGIN },
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      KEEL_SECRET: secret,
+      KEEL_ORIGIN: ORIGIN,
+      // A sign-in library an app mounts starts only with its own secret; the app's caller cookie does not read it.
+      BETTER_AUTH_SECRET: randomBytes(32).toString("base64url"),
+    },
   });
   server.stdout.on("data", (d) => log.push(...String(d).split("\n")));
   const problems: string[] = [];
