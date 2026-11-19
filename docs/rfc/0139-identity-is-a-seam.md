@@ -284,3 +284,39 @@ Alternative rejected: **absolute `href`s to the host's origin** (a cross-origin 
 - A5: D4 stands; nothing changes in `createApp` or the policy (M5).
 - A6: E1581 for modules on deployables whose origin mounts no `handle`; one public origin per app is a stated rule, not a check (M6).
 - A7: `documents()` records, never performs, a document navigation in the harness (M7).
+
+## Amendment (the user header binds the body and the peer, and its expiry has a ceiling)
+Red team 9 (`tasks/0338-s8-reach/proposed/red-team-9.md` M3, L6) ran `callerSigner` from source: a header minted for `POST http://b.keel.invalid/b/x?q=1` as `u1` verified on `https://other-host.example/b/x?q=1` with a body the signer never saw, for 59 s; a header minted with an expiry a year ahead verified now; a `user` of any length, a newline included, verified. The code matches k.user: the MAC covers method, path, search, `user` and expiry only, and the receiver checks only that the expiry has not passed. Peers may be plain `http` (E1565 accepts it), so anyone on the path between deployables could replay a captured write as that user with a body of their choosing within the window.
+
+**U1. The body.** The MAC also covers the SHA-256 of the body as sent: of no bytes for a request with no body (GET, HEAD, an event stream). A sender signs bytes it holds before sending; a `service` body is its encoded JSON, so this is every body a schema gives. A body it cannot read whole before sending, a stream, is refused with `user`: `api.input`, and nothing is sent. The receiver hashes the body it read (`maxBodyBytes`, already read once for the action) before it decides `user`. Why: the header then authorizes one request, not any request to that path. Alternative rejected: **a digest header the receiver trusts** (a second value to forge).
+
+**U2. The peer.** The MAC also covers the receiving deployable's name: the sender's from the module's placement (the `peers` key, or its own `createApp({ deployable })` when the module is here), the receiver's from its own `createApp({ deployable })`, `''` without one (tests). Why the name and not the origin: a sender reaches a peer at `KEEL_PEER_<NAME>`, often an internal URL, while the receiver knows its public `origin` or a request URL a proxy rewrote, so origins would disagree in a correct deployment; and the `Host` the receiver sees is set by whoever sends, so comparing it proves nothing. Both ends know the name, and two deployables of one app never share it. Replicas of one deployable accept each other's headers, which is the same code answering the same request. Alternative rejected: **the target origin** (above).
+
+**U3. An expiry ceiling.** A receiver ignores a header whose expiry is more than 65 s ahead of its own `ctx.clock`. The sender still signs 60 s ahead on its clock; the 5 s are for clocks apart, so a sender whose clock leads by up to 5 s is still accepted. Ignored means what it means today: the header is dropped and `identify` runs. Why: without a ceiling a sender with a clock far ahead, or a leaked secret, mints headers that live for as long as their author chose. Alternatives rejected: **exactly 60 s** (a header from a sender whose clock leads by a millisecond would be ignored, so split topologies would lose `user` on about half their calls); **a nonce store** (the kernel keeps no state across requests; within the window a captured header replays only the identical request to the same deployable).
+
+**U4. The `user` cap.** A sender refuses a `user` over 256 characters (`api.input`, as `identify`'s own cap), and a receiver ignores a header carrying one. A peer then never receives a `user` no `identify` could give.
+
+**U5. What the header is.** The header is not a sign-in credential and Keel still mints none: it is a server-to-server assertion between the app's own deployables under their shared `KEEL_SECRET`, never set on or sent to a browser. Within its window it replays that one request to that deployable; on plain `http` between peers anyone on the path can capture it, which k.user now says.
+
+**MAC input.** Both ends compute it alike: the existing input (method, path, search, `user`, expiry), then the receiving deployable's name, then the body's SHA-256 in lowercase hex, newline-joined; the header keeps its form `<user base64url>.<expiry ms>.<mac>`. A deployable name and a hex digest hold no newline.
+
+**Codes.** None new: the sender's refusals are `api.input` (k.services), the receiver's are an ignored header.
+
+**Spec diff (amendment).**
+- k.user: a **User header** paragraph after Across deployables and one Conformance bullet, appended; status `conformance-covered` to `implemented` in the section and the map until the conformance commit covers them. 5,182 to 5,990 characters, 1,296 to 1,498 tokens. The sender is specified here, beside the receiver; k.services' `user?` bullet is unchanged.
+- No existing sentence changes. Across deployables ("over method, path, search, `user` and an expiry 60 s ahead") stays true: User header says what the MAC "also covers". So no conformance header needs a new quote.
+
+**Conformance (amendment).** One `rfc:0139` commit by the `conformance-writer`, a new file `packages/cli/conformance/identity-peers-binding.test.ts` headed with the new bullet and the User header paragraph, on the split topology of `identity-peers.test.ts` plus a third deployable `c` under the same secret: the header captured from `a`'s call to `b`, resent to `b` with another body, sent to `c` at `b`'s path, and one signed (with the fixture's secret) 66 s ahead, each leave `user` to `identify`; resent unchanged at 59 s it gives `'u1'`; a `user` of 257 characters is `api.input` at `a`, and one signed by hand is ignored by `b`; a GET and a POST with an empty body sign the same digest.
+
+**Migration (amendment).**
+- `@keel/services`: `buildRequest` and the module target sign the body digest and the target deployable, and refuse a `user` over 256 characters or a stream body (`api.input`).
+- `@keel/server`: `callerSigner` (`assert` and `user` take the deployable and the body digest; `user` refuses an expiry past `now + 65_000` and a `user` over 256 characters); `userOf` reads the body before verifying; `bindModules` passes the deployable names.
+- `docs/THREAT-MODEL.md` Identity: the assertion binds the request's body and receiving deployable and lives at most 65 s; replay within it repeats one request; peers should talk over `https`. Skills: `keel-deploy` (peer URLs on `https`), `keel-server` (the header binds body and deployable). Changesets: `@keel/services`, `@keel/server` patch.
+
+**Build order (amendment).** 1: this amendment and k.user (commit 1). 2: the conformance above, red. 3: the Migration; k.user back to `conformance-covered` in the section and the map.
+
+**Choices (amendment)**, for the orchestrator to confirm or reverse:
+- U1: the MAC covers the body's SHA-256; a stream body with `user` is `api.input`.
+- U2: the MAC covers the receiving deployable's name, not its origin.
+- U3: the receiver's ceiling is 65 s: the 60 s window and 5 s for clocks apart.
+- U4: `user` over 256 characters is refused by the sender and ignored by the receiver.

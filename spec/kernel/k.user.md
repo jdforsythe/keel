@@ -1,5 +1,5 @@
 # k.user: Request user and caller lifetime
-status: conformance-covered
+status: implemented
 
 A request has two identities. `caller` (k.server, k.security) is an anonymous per-browser token and grants nothing. `user` is whoever the app's identity source says made the request. Keel authenticates no one: it carries what a function the app supplies answers, and never reads, writes, mints, rotates or stores a credential, session or token for it.
 
@@ -12,6 +12,8 @@ A request has two identities. `caller` (k.server, k.security) is an anonymous pe
 **User.** Guards, loaders (live too) and actions get `user: string` beside `caller`: `identify`'s answer; `''` with no identity source, on a `client` deployable, or under `renderRoute` without its `user` option. An event stream keeps the `user` it opened with until it closes. No header, cookie, search or body value of the client sets `user`.
 
 **Across deployables.** A forwarded request (k.topology) keeps its headers, so the peer runs its own `identify`. A `service({ module })` method takes `user?: string`, sent as `x-keel-user`: HMAC-SHA-256 under `createApp({ secret })` over method, path, search, `user` and an expiry 60 s ahead on `ctx.clock`. A server that verifies it uses it as `user` and runs no `identify`; any other `x-keel-user` is ignored. On a ctx with no secret (a browser) `user` is `api.input`.
+
+**User header.** The `x-keel-user` MAC also covers the body's SHA-256 (of no bytes for none) and the receiving deployable's name (`createApp({ deployable })`, else `''`). A sender answers `api.input` for a `user` over 256 characters or a stream body. A receiver ignores it on a MAC mismatch, an expiry over 65 s ahead of its `ctx.clock`, or such a `user`. It is no sign-in credential: an assertion between the app's own deployables, never sent to a browser; until it expires it replays that one request, and plain `http` between peers exposes it.
 
 **Caller lifetime.** The caller cookie has no `Max-Age` by default: a browser quit or a shell restart is a new caller. A `node` deployable may set `caller: { days }` in `topology.ts` (an integer 1 to 400): a caller cookie it mints carries `Max-Age=<days × 86,400>`, from that write, never extended. It is still not a credential. The caller hash is then a long-lived device identifier: k.privacy treats it as `.pii('network')`, so std.sessions' capture replaces a `meta.caller` it records, and the evidence bundle's `pii.json` holds `caller: { days, class: 'network' }` (`{ days: null, class: null }` without it).
 
@@ -26,3 +28,4 @@ A request has two identities. `caller` (k.server, k.security) is an anonymous pe
 - A caller cookie minted with no `caller` option has no `Max-Age`; with `caller: { days: 30 }`, `Max-Age=2592000`, and a request presenting it gets no new caller cookie.
 - `caller: { days: 0 }`, `{ days: 401 }`, `{ days: 1.5 }`, `caller` on a `client` deployable, and `handle.path` `/api` with a route `/api/x` are each one diagnostic (E1578, E1579).
 - With `caller: { days: 30 }`, `pii.json` has `caller: { days: 30, class: 'network' }` and a std.sessions capture of a `tx` whose `meta.caller` is a hash holds a generated value; without it, `{ days: null, class: null }`.
+- A `service({ module: 'b' })` header for `user: 'u1'` resent with another body or to deployable `c`, or signed 66 s ahead, is ignored and `identify` runs; resent unchanged within 60 s, `'u1'`. A 257-character `user`: `api.input` at the sender, ignored by the receiver.
