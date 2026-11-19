@@ -19,6 +19,13 @@ const root = path.join(import.meta.dirname, "..");
 const PROGRESS = path.join(".stryker-tmp", "progress.json");
 /** Seconds Stryker has to save and leave after its SIGINT before the runner kills the child it started. */
 const GRACE_S = 120;
+/**
+ * The test watchdog's grace (tooling/watchdog.ts) under a mutation run, in milliseconds. Stryker's own timeout ends a
+ * mutant that never finishes and counts it as detected; a test runner the watchdog kills first is a crash, which
+ * Stryker runs again and then reports as a runtime error. Ten minutes is longer than any mutant's timeout, so the
+ * watchdog only ends a runner Stryker has lost.
+ */
+const WATCHDOG_GRACE_MS = 10 * 60000;
 /** Milliseconds with no mutant finished before a run is stalled (E0011); `KEEL_MUTATE_STALL_MS` shortens it for tests. */
 const stallMs = () => Number(process.env.KEEL_MUTATE_STALL_MS) || 10 * 60000;
 /** Milliseconds between the runner's looks at its run (stop requests, stall); `KEEL_MUTATE_POLL_MS` shortens it for tests. */
@@ -257,7 +264,13 @@ function mutate(args) {
   const child = spawn(process.execPath, [bin, "run", ...args], {
     stdio: "inherit",
     detached: true,
-    env: { ...process.env, NODE_PATH, KEEL_TEST_TIMES: path.join(cache, `${pkg}.times.json`), KEEL_MUTATE_RUN: file },
+    env: {
+      KEEL_WATCHDOG_GRACE_MS: String(WATCHDOG_GRACE_MS),
+      ...process.env,
+      NODE_PATH,
+      KEEL_TEST_TIMES: path.join(cache, `${pkg}.times.json`),
+      KEEL_MUTATE_RUN: file,
+    },
   });
   let over = false;
   let killed = false;
