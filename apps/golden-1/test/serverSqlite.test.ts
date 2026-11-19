@@ -68,6 +68,8 @@ beforeAll(async () => {
   await mkdir(join(built, "node_modules", ".bin"), { recursive: true });
   for (const name of await readdir(modules))
     if (name !== ".bin") await symlink(join(modules, name), join(built, "node_modules", name));
+  // `keel build` checks first, test files included: their `vitest` resolves from the workspace root, as in the app.
+  await symlink(join(app, "..", "..", "node_modules", "vitest"), join(built, "node_modules", "vitest"));
   for (const name of await readdir(join(modules, ".bin")).catch(() => []))
     await writeFile(
       join(built, "node_modules", ".bin", name),

@@ -557,8 +557,15 @@ export default function (): {
       return null;
     },
     async load(id, options) {
-      // A server-only file in a browser graph is its stub: its code and imports never load (k.boundary).
-      if (options?.ssr === false && !id.includes("?") && path.isAbsolute(id) && serverOnlyFile(id)) {
+      // A server-only file in a browser build is its stub: its code and imports never load (k.boundary). Dev and
+      // tests run the file itself.
+      if (
+        command === "build" &&
+        options?.ssr === false &&
+        !id.includes("?") &&
+        path.isAbsolute(id) &&
+        serverOnlyFile(id)
+      ) {
         stubbed.add(id);
         return stubCode(show(id), exportNames(id), routerOf(id));
       }
