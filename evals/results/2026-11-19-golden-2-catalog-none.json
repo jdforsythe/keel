@@ -1,0 +1,32 @@
+{
+  "task": "golden-2-catalog",
+  "skill": "keel",
+  "specSections": [
+    "std.headless",
+    "std.options",
+    "std.tables",
+    "k.aria",
+    "k.router",
+    "k.testing",
+    "std.messages",
+    "std.i18n",
+    "std.money",
+    "std.temporal"
+  ],
+  "model": "none",
+  "runner": "none",
+  "converged": false,
+  "iterations": 1,
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "unsafeCount": 4,
+  "checkTrailer": "ok budgets 153 measured (5.6s)",
+  "testTrailer": "ok test 84 tasks (0.2s)",
+  "checkExit": 0,
+  "testExit": 0,
+  "durationMs": 55907,
+  "startedAt": "2026-11-19T09:28:25.713Z"
+}
