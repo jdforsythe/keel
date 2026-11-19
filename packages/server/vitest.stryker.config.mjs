@@ -6,7 +6,7 @@
 //   test/productionEntryBundle.test.ts: spawn `keel build` (packages/cli/src/bin.ts) of a fixture, directly or through
 //   conformance/topology-build-fixture.ts.
 // - test/*.scale.test.ts: the log scrub on texts of 400,000 to 2,000,000 characters. Instrumented, those cases take
-//   about 115 s of a 147 s dry run. Stryker gives a mutant 1.5 times its covering tests' time before it calls a
+//   about 115 s of the dry run's 147 s of tests. Stryker gives a mutant 1.5 times its covering tests' time before a
 //   timeout, and counts a loop as endless at 100 times the dry run's passes through it, so with them a scrub mutant
 //   that loops without end costs over 200 s and one that survives over 100 s. The same bounds on small texts, and
 //   the cap with a small cap, stay in (test/scrubSteps.test.ts, test/holdSecrets.test.ts).
@@ -28,7 +28,7 @@ export default mergeConfig(
         "**/node_modules/**",
       ],
       sequence: { sequencer: QuickFirst },
-      // The slowest test of the dry run takes about 1.1 s instrumented; 10 s leaves room for a loaded machine. A
+      // The slowest test of the dry run takes 1.1 s instrumented, 2.7 s on a loaded machine; 10 s leaves room. A
       // mutant that leaves a test waiting fails it at this bound, well inside Stryker's own timeout.
       testTimeout: 10_000,
     },
