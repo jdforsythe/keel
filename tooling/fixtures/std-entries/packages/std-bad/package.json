@@ -1,0 +1,17 @@
+{
+  "name": "@fixture/std-bad",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./late": {
+      "types": "./src/late.ts",
+      "default": "./src/late.ts"
+    },
+    "./parse": "./src/parse.ts",
+    "./tools": "./src/tools.ts",
+    "./tools/internal": "./src/tools/internal.ts",
+    "./module": "./src/module.ts",
+    "./package.json": "./package.json"
+  }
+}

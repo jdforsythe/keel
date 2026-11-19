@@ -1,0 +1,8 @@
+{
+  "name": "@fixture/std-pattern",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  }
+}
