@@ -47,7 +47,7 @@ Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane
 - [x] 0683 server · M · copies of a secret in other encodings (`+`, `encodeURI`, double encoding, JSON `\u`) are not scrubbed · lane 02
 - [x] 0722 server · S · the dev body of a component that throws while rendering is clipped and not scrubbed · lane 02
 - [ ] 0729 server · S · red-team: the scrub costs about 1.2 s of event-loop time on a 790 KB body of secret items · lane 02
-- [ ] 0737 server · S · red-team: some 404 path shapes (`;jsessionid`, `%20`, homoglyphs, `&code=`) are written raw · lane 02
+- [x] 0737 server · S · red-team: some 404 path shapes (`;jsessionid`, `%20`, homoglyphs, `&code=`) are written raw · lane 02
 - [ ] 0756 server · S · a secret beginning or ending with `/` leaves that slash beside `[secret]` in the `req` log line · lane 02
 - [ ] 0894 router · S · red-team: `identityMount` does not validate `path` at runtime, so `/\evil.example` resolves off-origin · lane 03
 - [ ] 0893 compiler, router · S · red-team: E1579 misses a param route matching `handle.path`, and the client router swallows mount links · lane 03

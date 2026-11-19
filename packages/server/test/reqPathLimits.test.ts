@@ -63,3 +63,22 @@ describe("a personal-data route param", () => {
     ]);
   });
 });
+
+describe("a path no route lines up with", () => {
+  test("is written as sent: the stated limits of the line-up rule", () => {
+    const marks = marksOf({
+      "app.r": { path: "/reset/:token", params: s.object({ token: tok }), component: view },
+      "app.cb": { path: "/callback", search: s.object({ code: s.string().optional() }), component: view },
+    });
+    for (const p of [
+      "/en/reset/SECRETx",
+      "/reset;jsessionid=AB12/SECRETx",
+      "/reset./SECRETx",
+      "/reset%20/SECRETx",
+      "/%2552ESET/SECRETx",
+      "/r%D0%B5set/SECRETx",
+      "/callback&code=SECRETx",
+    ])
+      expect(marks(p)).toBe(p);
+  });
+});
