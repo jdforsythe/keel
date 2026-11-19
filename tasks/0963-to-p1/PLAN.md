@@ -29,7 +29,7 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 Each lane is a subagent; a lane in a worktree commits on its branch and the orchestrator reviews and cherry-picks. A lane with no report is re-briefed from this list.
 - `.worktrees/0956`, branch `rfc-0147`: conformance for RFC 0147 (conformance-writer); the build follows on the same branch.
 - `.worktrees/0967`, branch `lane-0967`: tests for the server's surviving mutants (backlog 0967) and the std-sessions mutation config (0966). It starts no mutation run.
-- `.worktrees/golden3`, branch `lane-golden3`: the golden-3 eval made ready short of the model call (backlog 0937, stale references, how an agent run starts and what it costs). The model run waits for the operator's word on spending.
+- golden-3 eval: ready short of the model call (backlog 0937 done; `pnpm eval --task golden-3 --runner none` ends `converged=false` only because `apps/golden-3` is absent). The agent run is `pnpm eval --task golden-3 --model claude-sonnet-5-5`, at most 5 iterations; earlier golden runs cost 0.84 to 2.55 dollars each, so this one is estimated at 2 to 10. It waits for the operator's word on spending and for a quiet machine (it runs the root check and test each iteration).
 - main tree, `tasks/0963-to-p1/freeze-review.md`: the freeze review audit (backlog 0034), report only.
 - main tree, `tasks/p1/PLAN.md`: the P1 and P2 plan (backlog 0962).
 
