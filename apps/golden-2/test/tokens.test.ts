@@ -8,6 +8,8 @@ import { MintedToken } from "../modules/accounts/MintedToken.schema.ts";
 import { TokenRequest } from "../modules/accounts/TokenRequest.schema.ts";
 import { accounts } from "../modules/accounts/accounts.service.ts";
 import { accountsApi } from "../modules/accounts/accountsApi.ts";
+import { authOf } from "../modules/accounts/authOf.server.ts";
+import { bearerUser } from "../modules/accounts/bearerUser.server.ts";
 import { loadAccount } from "../modules/accounts/loadAccount.server.ts";
 import { loadMe } from "../modules/accounts/loadMe.server.ts";
 import { postToken } from "../modules/accounts/postToken.server.ts";
@@ -116,6 +118,70 @@ describe("API tokens", () => {
     expect(bearer.ok).toBe(true);
     if (!bearer.ok) return;
     expect(await accountsApi.me({ bearer: bearer.value }, ctx)).toEqual({ ok: true, value: { email: EMAIL } });
+  });
+});
+
+describe("the user a bearer header acts for", () => {
+  it("bearerUser gives the minting user for a live token and '' otherwise, saving nothing", async () => {
+    const { server, b } = await signedIn(24);
+    const minted = body((await b.json("POST", "/api/tokens", {}, {})).text, Minted);
+    expect(minted).not.toBeNull();
+    if (minted === null) return;
+    const { token } = minted;
+    const before = await server.storage.get("keel.store.accounts.tokens");
+    const profiles = (await server.storage.get("keel.store.accounts.profiles")) ?? "";
+
+    const userId = await bearerUser(`Bearer ${token}`, server);
+    expect(userId).not.toBe("");
+    expect(profiles).toContain(JSON.stringify(userId));
+    expect(await bearerUser(`bearer ${token}`, server)).toBe(userId);
+
+    const last = token.at(-1) === "0" ? "1" : "0";
+    for (const header of [
+      "",
+      "Bearer ",
+      token,
+      `Basic ${token}`,
+      `Bearer ${token} extra`,
+      `Bearer ${token.slice(0, -1)}${last}`,
+      `Bearer keelsim_unknown_${"0".repeat(32)}`,
+    ])
+      expect(await bearerUser(header, server)).toBe("");
+    expect(await bearerUser(`Bearer ${token}`, apiCtx(25))).toBe("");
+
+    server.clock.advance(THIRTY_DAYS - 1);
+    expect(await bearerUser(`Bearer ${token}`, server)).toBe(userId);
+    server.clock.advance(2);
+    expect(await bearerUser(`Bearer ${token}`, server)).toBe("");
+    expect(await server.storage.get("keel.store.accounts.tokens")).toBe(before);
+  });
+});
+
+describe("the sign-in library behind the identity seam", () => {
+  it("authOf opens one library per ctx storage, at the identity mount, each with users of its own", async () => {
+    const one = apiCtx(26);
+    const other = apiCtx(27);
+    const opened = authOf(one);
+    expect(authOf(one)).toBe(opened);
+    const auth = await opened;
+    const apart = await authOf(other);
+    expect(auth.ok).toBe(true);
+    expect(apart.ok).toBe(true);
+    if (!auth.ok || !apart.ok) return;
+    expect(apart.value).not.toBe(auth.value);
+    expect(auth.value.options.basePath).toBe(mount.path);
+
+    const first = browser((await accountsApp(one)).app);
+    const second = browser((await accountsApp(other)).app);
+    await first.post(mount.href("/sign-up/email"), { name: NAME, email: EMAIL, password: PASSWORD });
+    const known = await first.post(mount.href("/sign-in/email"), { email: EMAIL, password: PASSWORD });
+    const unknown = await second.post(mount.href("/sign-in/email"), { email: EMAIL, password: PASSWORD });
+    expect(known.posted.location).toBe(accountRoutes.href("accounts.signin", { locale: "en-US" }));
+    expect(unknown.posted.location).toBe(
+      accountRoutes.href("accounts.signin", { locale: "en-US" }, { error: "credentials" }),
+    );
+    expect(meOf((await first.json("GET", "/api/me")).text)).toEqual({ email: EMAIL });
+    expect((await second.json("GET", "/api/me")).status).toBe(403);
   });
 });
 

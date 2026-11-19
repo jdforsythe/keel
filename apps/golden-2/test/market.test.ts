@@ -2,6 +2,7 @@ import { createCtx } from "@keel/ctx";
 import { geo } from "@keel/std-geo";
 import { render, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { MarketKey } from "../modules/recipes/MarketKey.schema.ts";
 import NearestMarket from "../modules/recipes/NearestMarket.tsx";
 import { RecipesText } from "../modules/recipes/RecipesText.schema.ts";
 import { distanceKm } from "../modules/recipes/distanceKm.ts";
@@ -83,5 +84,27 @@ describe("market distances", () => {
     expect(Math.round(distanceKm({ lat: 90, lon: 0 }, { lat: -90, lon: 0 }))).toBe(20015);
     const [newYork, , tokyo] = markets;
     expect(newYork !== undefined && tokyo !== undefined && Math.round(distanceKm(newYork, tokyo))).toBe(10846);
+  });
+});
+
+describe("market keys", () => {
+  it("MarketKey takes each listed market's key, once each, and nothing else", () => {
+    const keys = markets.map((m) => m.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const key of keys) expect(MarketKey.parse(key)).toEqual({ ok: true, value: key });
+    for (const other of ["", "UnionSquare", "unionsquare", " tsukiji", "borough", 0, null, undefined, ["tsukiji"]])
+      expect(MarketKey.parse(other).ok).toBe(false);
+  });
+  it("names a listed market for the position of every sim seed from 1 to 100", async () => {
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 100; seed++) {
+      const at = await geo(createCtx({ mode: "sim", seed })).position();
+      expect(at.ok).toBe(true);
+      if (!at.ok) continue;
+      const key = MarketKey.parse(nearestMarket(at.value).key);
+      expect(key.ok).toBe(true);
+      if (key.ok) seen.add(key.value);
+    }
+    expect([...seen].sort()).toEqual(markets.map((m) => m.key).sort());
   });
 });
