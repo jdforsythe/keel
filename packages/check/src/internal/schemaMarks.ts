@@ -1,6 +1,7 @@
 import type { Argument, Expression, ObjectExpression, PropertyKey } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { followValue } from "./followValue.ts";
+import { mutatedBinding } from "./mutatedBinding.ts";
 import { parseFile } from "./parseFile.ts";
 
 /**
@@ -120,7 +121,7 @@ const worst = (a: Verdict, b: Verdict): Verdict =>
  * Whether the schema expression `expr` holds a `.pii(...)` mark or a `secret(...)` call on the `@keel/schema` namespace (k.privacy E1111), read through consts, imports,
  * re-exports, namespace members, spreads, array and object arguments and schema method chains. `unknown` when a
  * part cannot be read statically: a call whose callee is not a member (a factory), a binding it cannot follow, or an
- * object literal's getter, setter or method.
+ * object literal's getter, setter or method, or a binding the file changes after its literal.
  * A schema returned by a `SEARCH_FACTORIES` export (`tableSearch(columns)`, also through a namespace import) is that
  * package's, as its route table is: `clean` here, guarded by the package's own rule.
  * With `classes`, each literal class a `.pii(class)` names is added to it, the whole schema read (k.leave E1107).
@@ -140,6 +141,7 @@ export function schemaMarks(
   if (seen.has(key)) return "clean";
   seen.add(key);
   const e = at.expr;
+  if (mutatedBinding(e, at.file)) return "unknown";
   const sub = (x: Expression | Argument | null): Verdict =>
     x === null ? "clean" : schemaMarks(x, at.file, project, seen, classes);
   switch (e.type) {

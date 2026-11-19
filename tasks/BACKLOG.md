@@ -832,7 +832,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0730 docs: RFC 0108 D2 lists the wrong subpaths: `./action` and `./tools` reach `@keel/testing` through `@keel/cli`; `./group` does not · docs
 - [x] 0731 reactive: a throwing `onDispose` hook stops `disposeOwned`, so the children after it are never disposed · reactive · CLOSED 2026-11-17: every owned node is disposed and every hook runs; the first error in disposal order is rethrown; the k.reactive sentence and a conformance case are still owed (an RFC)
 - [x] 0732 spec: k.reactive does not say what a throwing `onDispose` hook does; the code disposes everything and rethrows the first error in disposal order, and `scope(fn)`'s own error wins over a hook's. Add the sentence and a conformance case (an RFC) · reactive · spec
-- [ ] 0733 check: E1111 reads a schema object changed after its literal (`Object.defineProperty(p, ...)`, `p.x = s.secret()`, `Object.assign(p, ...)`) as clean; read a mutated binding as unread · check
+- [x] 0733 check: E1111 reads a schema object changed after its literal (`Object.defineProperty(p, ...)`, `p.x = s.secret()`, `Object.assign(p, ...)`) as clean; read a mutated binding as unread · check
 - [x] 0734 std-sessions: `session.ts` creates inner real ctxs that are never disposed, so each leaks a window online/offline listener pair once `Ctx.dispose` exists; fix with RFC 0115 · std-sessions · k.ctx
 
 ## Red team and review 2026-11-17, round 4 (RFC 0110, 0111, 0113, 0118, 0119, the `req` path rule; findings and probes in tasks/0338-s8-reach/proposed/red-team-4.md and review-4.md)

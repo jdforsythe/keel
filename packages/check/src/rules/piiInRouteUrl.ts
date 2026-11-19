@@ -3,6 +3,7 @@ import { findingAt } from "../internal/findingAt.ts";
 import { followValue } from "../internal/followValue.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { keyName } from "../internal/keyName.ts";
+import { mutatedBinding } from "../internal/mutatedBinding.ts";
 import { localNames } from "../internal/modules/localNames.ts";
 import { schemaMarks } from "../internal/schemaMarks.ts";
 import { str } from "../internal/str.ts";
@@ -43,7 +44,7 @@ function propsOf(
       ? null
       : propsOf(arg, owner.file, project, depth + 1);
   }
-  if (at.expr.type !== "ObjectExpression") return null;
+  if (at.expr.type !== "ObjectExpression" || mutatedBinding(at.expr, at.file)) return null;
   const obj: ObjectExpression = at.expr;
   const out: Prop[] = [];
   for (const p of obj.properties) {
@@ -60,7 +61,7 @@ function propsOf(
  * E1111 (k.privacy): a `.pii()` or `s.secret` node in the `params` or `search` schema of a `manifest(...)` entry, read through
  * consts, imports, re-exports, namespace members, spreads and schema arguments: a path or query reaches browser
  * history and proxy logs Keel cannot redact. A table, entry or schema it cannot read statically (a factory call, a
- * computed key) is reported too, since nothing shows it unmarked. No fix.
+ * computed key, a binding changed after its literal) is reported too, since nothing shows it unmarked. No fix.
  */
 export const piiInRouteUrl: RuleDef = {
   code: "E1111",
