@@ -41,7 +41,7 @@ const lineArb: fc.Arbitrary<Line> = fc.oneof(
   fc
     .tuple(fc.constantFrom("packages/router/src", "node_modules/x", ".keel", "lib/node_modules/y"), seg, pos)
     .map(([d, f, [l, c]]): Line => ({ text: `    at y (${CWD}/${d}/${f}.js:${l}:${c})`, app: null })),
-  fc.tuple(seg, pos).map(([f, [l, c]]): Line => ({ text: `    at z (/srv/app/${f}.js:${l}:${c})`, app: null })),
+  fc.tuple(seg, pos).map(([f, [l, c]]): Line => ({ text: `    at z (/opt/other/${f}.js:${l}:${c})`, app: null })),
   pos.map(([l, c]): Line => ({ text: `    at node:internal/process/task_queues:${l}:${c}`, app: null })),
   fc.constant<Line>({ text: "    at new Promise (<anonymous>)", app: null }),
 );
