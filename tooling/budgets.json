@@ -60,8 +60,16 @@
       "max": "3kb",
       "platform": "node"
     },
+    "@keel/std-brands/tools": {
+      "max": "1.25kb",
+      "platform": "node"
+    },
     "@keel/std-conflicts": {
-      "max": "3kb",
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-conflicts/tools": {
+      "max": "1.25kb",
       "platform": "node"
     },
     "@keel/std-i18n": "1kb",
