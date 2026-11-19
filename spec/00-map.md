@@ -32,7 +32,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.store | Store, transactions | conformance-covered | log, undo |
 | k.component | Components | conformance-covered | props, slots |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX |
-| k.boundary | The server boundary | proposed | stubs, E1007 |
+| k.boundary | The server boundary | conformance-covered | stubs, E1007 |
 | k.runtime | DOM runtime and islands | conformance-covered | nodes |
 | k.resume | Served documents, resume | conformance-covered | regions |
 | k.claim | Claim order | conformance-covered | eager elements |
