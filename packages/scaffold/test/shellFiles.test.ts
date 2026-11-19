@@ -47,6 +47,7 @@ describe("shell files", () => {
         for (const dep of [
           'tauri = { version = "=2.12.5"',
           'tauri-build = { version = "=2.7.4"',
+          'serde_json = "=1.0.154"',
           'tauri-plugin-store = "=2.5.1"',
           'tauri-plugin-http = "=2.9.0"',
         ])
