@@ -3,7 +3,7 @@
 status key: proposed | implemented | conformance-covered | frozen. Budget: file <= 1,200 tokens, section <= 1,500.
 
 ## Code ranges
-Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; owner: `pnpm spec --for <code>`.
+Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | block | owner | block | owner |
 |-|-|-|-|
 | E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence |
@@ -71,7 +71,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; owner: `pnpm spec --f
 | k.shell | Native shells | proposed | Tauri |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
-| k.hosting | Client hosting | implemented | `host` |
+| k.hosting | Client hosting | conformance-covered | host |
 | k.head | Document head | conformance-covered | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
