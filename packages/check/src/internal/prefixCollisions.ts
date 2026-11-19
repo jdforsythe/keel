@@ -6,10 +6,10 @@ import type { Checked } from "./Checked.ts";
 import type { SchemaSource } from "./SchemaSource.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { clip } from "./clip.ts";
+import { importTarget } from "./importTarget.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { keyName } from "./keyName.ts";
 import { lineCol } from "./lineCol.ts";
-import { joinPath } from "./modules/joinPath.ts";
 import { localNames } from "./modules/localNames.ts";
 import { paramsFields } from "./paramsFields.ts";
 import { parseFile } from "./parseFile.ts";
@@ -18,7 +18,6 @@ import { schemaSourceOf } from "./schemaSourceOf.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
 const MAX_HOPS = 8;
-const SUFFIXES = ["", ".ts", ".tsx", "/index.ts"];
 
 type Prefix = { readonly name: string; readonly values: readonly string[]; readonly d: string };
 type Seg = { readonly param: boolean; readonly text: string };
@@ -41,17 +40,6 @@ const strings = (e: Expression | undefined): string[] | null => {
   return out;
 };
 
-/** The project file a relative import specifier in `from` names. */
-function target(from: string, spec: string, files: readonly SourceFile[]): SourceFile | undefined {
-  if (!spec.startsWith("./") && !spec.startsWith("../")) return undefined;
-  const base = joinPath(from.slice(0, Math.max(0, from.lastIndexOf("/"))), spec);
-  for (const suffix of SUFFIXES) {
-    const hit = files.find((f) => f.path === `${base}${suffix}`);
-    if (hit !== undefined) return hit;
-  }
-  return undefined;
-}
-
 /** `s.enum([...], { pathDefault: 'd' })` reached from `e` through consts and relative imports, as values and default. */
 function enumOf(
   e: Expression,
@@ -66,7 +54,7 @@ function enumOf(
     const init = src.consts.get(e.name);
     if (init !== undefined) return enumOf(init, src, files, hops + 1);
     const imp = src.imports.get(e.name);
-    const file = imp === undefined ? undefined : target(src.path, imp.source, files);
+    const file = imp === undefined ? undefined : importTarget(src.path, imp.source, files);
     if (imp === undefined || file === undefined) return null;
     const parsed = parseFile(file);
     if (!parsed.ok) return null;
