@@ -149,7 +149,7 @@
     "@keel/std-tauri": "1.75kb",
     "@keel/std-tokens": "1kb",
     "@keel/std-tokens/server": {
-      "max": "3kb",
+      "max": "1.75kb",
       "platform": "node"
     },
     "@keel/std-tokens/tools": {

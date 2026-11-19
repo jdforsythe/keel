@@ -70,7 +70,6 @@ Ideas that come up outside the current plans. An idea is built at once only when
 - Envelope encryption under a key read from the environment, for a credential the app must present later (an OAuth refresh token, a pasted API key); today such a value is written only from a file under `unsafe/`.
 - A types mode for E1112, so the rule reads a payload field's schema and follows a value into a helper's parameter. Built only if an app needs it: a rule that reports differently by mode is harder to predict than either mode alone.
 - `Number.MAX_SAFE_INTEGER` and `Number.MIN_SAFE_INTEGER` in `prove`'s fragment, so a guard can name the edge instead of a schema `max`.
-- An app-chosen token prefix as a second `std` key of `@keel/std-credentials`; today every token starts `keel_`.
-- `r` and `p` settable in the `@keel/std-credentials` cost; today only `ln` is.
+- An app-chosen token prefix as a second `std` key of `@keel/std-tokens`; today every token starts `keel_`.
 - `prove` from any thread: Z3 in a child process that `prove` starts, so a runner on worker threads can prove; today a worker call is refused (E1721). Costs a process start and a serialised query per call.
 - A static rule for E1256: `keel check` reports a `tx` reached from a `*.server.ts` loader, guard or action whose transaction is bound to a module-level store, across imports (as `refreshView.ts` and `hydrate.ts` sit two files from the loader). Today the check is at run time only.
