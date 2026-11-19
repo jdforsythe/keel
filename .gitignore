@@ -21,3 +21,4 @@ packages/*/.keel/
 !evals/results/*.log
 .cargo-target/
 .claude/settings.local.json
+packages/*/docs

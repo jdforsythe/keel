@@ -21,13 +21,14 @@
       "default": "./src/*.ts"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe module.ts",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "node ../../tooling/mutate.mjs"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/compiler": "workspace:*",

@@ -25,13 +25,14 @@
       "default": "./src/csp/index.ts"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "node ../../tooling/mutate.mjs"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.6",

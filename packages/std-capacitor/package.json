@@ -22,7 +22,7 @@
       "keel-capacitor-scheme": "./dist/src/schemeBin.js"
     }
   },
-  "files": ["dist", "android/src/main/", "android/build.gradle", "ios/Sources", "Package.swift"],
+  "files": ["dist", "android/src/main/", "android/build.gradle", "ios/Sources", "Package.swift", "docs"],
   "capacitor": {
     "android": {
       "src": "android"
@@ -36,7 +36,8 @@
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "node ../../tooling/mutate.mjs"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

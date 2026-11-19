@@ -46,13 +46,14 @@
     },
     "./tsconfig.strict.json": "./tsconfig.strict.json"
   },
-  "files": ["dist", "tsconfig.strict.json"],
+  "files": ["dist", "tsconfig.strict.json", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "node ../../tooling/mutate.mjs"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",
