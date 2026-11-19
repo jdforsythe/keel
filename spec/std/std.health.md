@@ -6,7 +6,7 @@ status: conformance-covered
 export default module({ id: 'health', deps: [], capabilities: ['clock'],
   public: { exports: ['Health', 'routes'], routes: ['health.status'] } })
 ```
-Files: `src/Health.ts`, `src/routes.ts` (public), `src/loadHealth.ts`, `src/HealthView.ts` (private).
+Files: `src/Health.ts`, `src/routes.ts` (public), `src/loadHealth.server.ts`, `src/HealthView.ts` (private).
 
 **API.**
 - `Health` is `s.object({ status: s.literal('ok'), at: s.number() }, { closed: true })`.

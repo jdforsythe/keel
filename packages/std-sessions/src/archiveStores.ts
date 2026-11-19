@@ -1,7 +1,7 @@
 import { invariant, store } from "@keel/store";
 import { Archive } from "./Archive.schema.ts";
 import { ARCHIVE_BOUNDS } from "./routes/ARCHIVE_BOUNDS.ts";
-import { addSession } from "./routes/addSession.ts";
+import { addSession } from "./routes/addSession.server.ts";
 import { archiveBytes } from "./routes/archiveBytes.ts";
 
 /**

@@ -1,7 +1,7 @@
 import { manifest } from "@keel/router";
 import { ListSearch } from "./routes/ListSearch.schema.ts";
-import { ingestSession } from "./routes/ingestSession.ts";
-import { listSessions } from "./routes/listSessions.ts";
+import { ingestSession } from "./routes/ingestSession.server.ts";
+import { listSessions } from "./routes/listSessions.server.ts";
 import { reader } from "./routes/reader.guard.ts";
 
 /**
