@@ -131,15 +131,22 @@ beforeAll(() => {
     : [];
 }, 60_000);
 
+// Commands reserved for std packages (k.cli): present only when the repository fills them.
+const STD_RESERVED: string[] = ["session", "report"];
+
 const OTHERS: unknown[] = [null, true, 1.5, 7, "x", [], ["a"], {}, { a: 1 }];
 
 describe("k.cli: MCP tool input schemas (real binary)", () => {
   it("Each MCP tool's input schema equals the JSON Schema of its operation's input: the tools list names every operation, in order", () => {
     // A repository module that depends on @keel/std-sessions fills the `session` slot (rfc:0070): it is listed after
     // the kernel operations, and its schema is checked with the others below.
-    const names = tools.map((t) => t.name);
-    expect(names.filter((n) => n !== "session")).toEqual(operations.map((o) => o.name));
-    if (names.includes("session")) expect(names[names.length - 1]).toBe("session");
+    const names = tools.map((t) => String(t.name));
+    expect(names.filter((n) => !STD_RESERVED.includes(n))).toEqual(operations.map((o) => o.name));
+    // Each std-reserved command is absent or present exactly once, and nothing else is extra.
+    for (const r of STD_RESERVED) expect(names.filter((n) => n === r).length).toBeLessThanOrEqual(1);
+    expect(names.length).toBe(operations.length + names.filter((n) => STD_RESERVED.includes(n)).length);
+    // Std-reserved tools come after the kernel operations.
+    expect(names.slice(0, operations.length)).toEqual(operations.map((o) => o.name));
   });
 
   it("Each MCP tool's input schema equals the JSON Schema of its operation's input: the validator accepts only keywords it implements", () => {
@@ -148,7 +155,7 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
   });
 
   it("Each MCP tool's input schema equals the JSON Schema of its operation's input: validating the tool's inputSchema agrees with parsing by the operation's input for every candidate", () => {
-    expect(tools.filter((t) => t.name !== "session").length).toBe(operations.length);
+    expect(tools.filter((t) => !STD_RESERVED.includes(String(t.name))).length).toBe(operations.length);
     for (const op of operations) {
       const tool = tools.find((t) => t.name === op.name);
       const schema = tool?.inputSchema;
