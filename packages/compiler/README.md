@@ -1,6 +1,6 @@
 # @keel/compiler
 
-**Spec:** k.compiler + k.component (+ k.module `module()`) · **Status:** implemented · **verified:** (none)
+**Spec:** k.compiler + k.component (+ k.module `module()`) · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

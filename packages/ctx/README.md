@@ -1,6 +1,6 @@
 # @keel/ctx
 
-**Spec:** k.ctx, k.sync, k.sim · **Status:** implemented · **verified:** (none)
+**Spec:** k.ctx, k.sync, k.sim · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

@@ -1,6 +1,6 @@
 # @keel/runtime-dom
 
-**Spec:** k.runtime · **Status:** implemented · **verified:** (none)
+**Spec:** k.runtime · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

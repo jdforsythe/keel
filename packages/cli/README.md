@@ -1,6 +1,6 @@
 # @keel/cli
 
-**Spec:** k.cli · **Status:** proposed · **verified:** (none)
+**Spec:** k.cli · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

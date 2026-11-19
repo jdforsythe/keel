@@ -1,6 +1,6 @@
 # @keel/reactive
 
-**Spec:** k.reactive · **Status:** implemented · **verified:** (none)
+**Spec:** k.reactive · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

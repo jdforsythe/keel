@@ -1,6 +1,6 @@
 # @keel/schema
 
-**Spec:** k.schema, k.errors (Result, KeelError, attempt), k.privacy · **Status:** implemented · **verified:** (none)
+**Spec:** k.schema, k.errors (Result, KeelError, attempt), k.privacy · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

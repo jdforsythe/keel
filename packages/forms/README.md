@@ -1,6 +1,6 @@
 # @keel/forms
 
-**Spec:** k.forms · **Status:** implemented · **verified:** (none)
+**Spec:** k.forms · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

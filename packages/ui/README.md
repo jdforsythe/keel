@@ -1,6 +1,6 @@
 # @keel/ui
 
-**Spec:** k.ui · **Status:** proposed · **verified:** (none)
+**Spec:** k.ui · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 

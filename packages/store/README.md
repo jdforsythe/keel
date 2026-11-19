@@ -1,6 +1,6 @@
 # @keel/store
 
-**Spec:** k.store, k.sync · **Status:** implemented · **verified:** (none)
+**Spec:** k.store, k.sync · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 
