@@ -82,3 +82,11 @@ test("several calls in one file are reported in source order with their line and
     [3, 3],
   ]);
 });
+
+test("names that exist only on the prototype chain are not formatters or locale methods", () => {
+  const names = ["constructor", "toString", "__proto__", "hasOwnProperty", "valueOf"];
+  for (const n of names) {
+    const code = `export const f = (o: any, a: string) => [new Intl.${n}('de-DE'), Intl.${n}('de-DE'), o.${n}('de-DE'), a.${n}(a, 'de-DE')]\n`;
+    expect(e2301(files(code)), n).toEqual([]);
+  }
+});

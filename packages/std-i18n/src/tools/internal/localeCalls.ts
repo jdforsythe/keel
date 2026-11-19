@@ -47,7 +47,7 @@ function intlMember(callee: Expression): string | null {
 
 function intlCall(start: number, callee: Expression, args: readonly Argument[]): LocaleCall | null {
   const name = intlMember(callee);
-  const use = name === null ? undefined : INTL[name];
+  const use = name !== null && Object.hasOwn(INTL, name) ? INTL[name] : undefined;
   if (name === null || use === undefined || !given(args[0])) return null;
   const money = name === "NumberFormat" && isCurrency(args[1]);
   return { start, what: `Intl.${name}`, use: money ? "formatMoney" : use };
@@ -56,7 +56,7 @@ function intlCall(start: number, callee: Expression, args: readonly Argument[]):
 function methodCall(start: number, callee: Expression, args: readonly Argument[]): LocaleCall | null {
   if (callee.type !== "MemberExpression" || callee.computed || callee.property.type !== "Identifier") return null;
   const name = callee.property.name;
-  const m = METHODS[name];
+  const m = Object.hasOwn(METHODS, name) ? METHODS[name] : undefined;
   return m !== undefined && given(args[m.at]) ? { start, what: name, use: m.use } : null;
 }
 

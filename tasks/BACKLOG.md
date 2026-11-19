@@ -1016,7 +1016,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0914 std (medium): tests to kill the surviving mutants in std-health, std-geo, std-i18n, std-brands and std-text, and any other unit the first mutation runs put under threshold · std · k.ledger
 - [ ] 0915 tooling (medium): in a std package's mutation sandbox a conformance test importing `@keel/std-<name>` reaches the unmutated workspace package, so conformance kills no mutant there; resolve the package to the sandbox source · tooling · k.ledger
 - [ ] 0916 tooling (medium): the mutation cache reuses a mutant's result after tests are added; key it on the test files too · tooling · k.ledger
-- [ ] 0917 std-i18n (low): `INTL[name]` and `METHODS[name]` in the locale-call tool read the prototype chain, so `Intl.constructor(...)` counts as a formatter · std-i18n · std.i18n
+- [x] 0917 std-i18n (low): `INTL[name]` and `METHODS[name]` in the locale-call tool read the prototype chain, so `Intl.constructor(...)` counts as a formatter · std-i18n · std.i18n
 - [ ] 0918 check (low): a rule that throws becomes E1756, which tests filtering for one code never see; test helpers should fail on it · check, testing · k.check
 - [ ] 0919 tooling (medium): mutation for `apps/*`: the tool names units from `packages/`, the ledger reads reports under `packages/` only, the planners assume `src/` · tooling · k.ledger
 - [ ] 0920 tooling (low): Stryker's vitest runner cannot reload a module per mutant, so module-top-level literals (tables, rule text) survive though tests assert them; count or exclude static mutants by rule · tooling · k.ledger
