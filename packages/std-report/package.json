@@ -14,7 +14,8 @@
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs"
   },
   "dependencies": {
     "@keel/cli": "workspace:*",

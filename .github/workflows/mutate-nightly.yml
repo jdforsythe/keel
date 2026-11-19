@@ -30,6 +30,31 @@ jobs:
           - schema
           - server
           - services
+          - std-brands
+          - std-capacitor
+          - std-channels
+          - std-conflicts
+          - std-db
+          - std-geo
+          - std-headless
+          - std-health
+          - std-i18n
+          - std-jobs
+          - std-live
+          - std-messages
+          - std-money
+          - std-offline
+          - std-report
+          - std-schedules
+          - std-sessions
+          - std-statecharts
+          - std-tables
+          - std-tauri
+          - std-temporal
+          - std-text
+          - std-timings
+          - std-tokens
+          - std-workflows
           - store
           - testing
           - ui
