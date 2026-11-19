@@ -1,5 +1,5 @@
 {
-  "commit": "adcd2e464b1ccc73ff4ee3b307d1c9df9a2cba7d",
+  "commit": "65e5ecae9fac5f33db3651fa05612894f25d6ebe",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -522,32 +522,6 @@
           "total": 134
         }
       },
-      "packages/std-credentials": {
-        "branches": {
-          "covered": 212,
-          "pct": 88.7,
-          "total": 239
-        },
-        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
-        "dirty": false,
-        "functions": {
-          "covered": 52,
-          "pct": 100,
-          "total": 52
-        },
-        "lines": {
-          "covered": 234,
-          "pct": 99.57,
-          "total": 235
-        },
-        "measuredAt": "2026-11-18T07:17:46.657Z",
-        "reason": null,
-        "statements": {
-          "covered": 281,
-          "pct": 97.9,
-          "total": 287
-        }
-      },
       "packages/std-db": {
         "branches": {
           "covered": 82,
@@ -1042,6 +1016,32 @@
           "total": 46
         }
       },
+      "packages/std-tokens": {
+        "branches": {
+          "covered": 212,
+          "pct": 88.7,
+          "total": 239
+        },
+        "commit": "e9a667fd68032409c41049d35806b1b2cca3d30b",
+        "dirty": false,
+        "functions": {
+          "covered": 52,
+          "pct": 100,
+          "total": 52
+        },
+        "lines": {
+          "covered": 234,
+          "pct": 99.57,
+          "total": 235
+        },
+        "measuredAt": "2026-11-18T07:17:46.657Z",
+        "reason": null,
+        "statements": {
+          "covered": 281,
+          "pct": 97.9,
+          "total": 287
+        }
+      },
       "packages/std-workflows": {
         "branches": {
           "covered": 273,
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T01:50:45.512Z",
+  "generatedAt": "2026-11-19T02:08:01.312Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -2234,7 +2234,7 @@
             "probabilistic": 9,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 10,
           "verified": 10
         },
@@ -2958,14 +2958,6 @@
         "stale": null,
         "threshold": null
       },
-      "packages/std-credentials": {
-        "claims": 0,
-        "reason": "no mutation run",
-        "reportDate": null,
-        "score": null,
-        "stale": null,
-        "threshold": null
-      },
       "packages/std-db": {
         "claims": 0,
         "reason": "no mutation run",
@@ -3111,6 +3103,14 @@
         "threshold": null
       },
       "packages/std-timings": {
+        "claims": 0,
+        "reason": "no mutation run",
+        "reportDate": null,
+        "score": null,
+        "stale": null,
+        "threshold": null
+      },
+      "packages/std-tokens": {
         "claims": 0,
         "reason": "no mutation run",
         "reportDate": null,
@@ -3436,20 +3436,6 @@
         "unitCases": 24,
         "unitFiles": 6
       },
-      "packages/std-credentials": {
-        "conformanceCases": 77,
-        "conformanceFiles": 14,
-        "exploreFiles": 0,
-        "fails": 0,
-        "otherCases": 0,
-        "otherFiles": 0,
-        "propertyCalls": 49,
-        "proveFiles": 0,
-        "simulateFiles": 0,
-        "skipTodo": 0,
-        "unitCases": 44,
-        "unitFiles": 12
-      },
       "packages/std-db": {
         "conformanceCases": 19,
         "conformanceFiles": 8,
@@ -3716,6 +3702,20 @@
         "unitCases": 9,
         "unitFiles": 2
       },
+      "packages/std-tokens": {
+        "conformanceCases": 37,
+        "conformanceFiles": 6,
+        "exploreFiles": 0,
+        "fails": 0,
+        "otherCases": 0,
+        "otherFiles": 0,
+        "propertyCalls": 22,
+        "proveFiles": 0,
+        "simulateFiles": 0,
+        "skipTodo": 0,
+        "unitCases": 24,
+        "unitFiles": 6
+      },
       "packages/std-workflows": {
         "conformanceCases": 27,
         "conformanceFiles": 10,
@@ -3774,18 +3774,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 3856,
-      "conformanceFiles": 934,
+      "conformanceCases": 3816,
+      "conformanceFiles": 926,
       "exploreFiles": 17,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 1902,
+      "propertyCalls": 1875,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4357,
-      "unitFiles": 728
+      "unitCases": 4337,
+      "unitFiles": 722
     }
   },
   "tool": {
