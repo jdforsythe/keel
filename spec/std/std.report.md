@@ -1,12 +1,12 @@
 # std.report: Tally report
-status: implemented
+status: conformance-covered
 
 **Extension point.** Output formatter registry (k.cli `formatter`), for `report.tally` records.
 
 **API** (`@keel/std-report`).
 - `Tally` is `s.object({ kind: s.literal('report.tally'), id: s.string({ min: 1, max: 60 }), rows: s.array(s.object({ key: s.string({ min: 1, max: 60 }), n: s.int({ min: 1 }) }, { closed: true })) }, { closed: true })`.
 - `tallyOf(id, keys: readonly string[])` counts each distinct non-empty key and returns a `Tally` record. Rows are sorted by `n` descending, then by `key` ascending. Empty keys are dropped.
-- **compact** is one line: `id` then `key=n` per row, space-separated, for example `orders.status paid=3 open=1`. A tally with no rows renders `id 0`.
+- **compact** is one line: `id` then `key=n` per row, space-separated, as in `orders.status paid=3 open=1`. A tally with no rows renders `id 0`.
 - **pretty** is the `id` line, then one line per row with the key left-aligned and padded to the longest key, two spaces, and `n` right-aligned and padded to the widest count.
 - **json** is the record encoded by `Tally`, as one NDJSON line (k.cli).
 
