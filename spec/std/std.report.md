@@ -1,5 +1,5 @@
 # std.report: Tally report
-status: implemented
+status: conformance-covered
 
 **Extension point.** Output formatter registry (k.cli `formatter`). Importing `@keel/std-report/tools` registers the record kind `report.tally` and the `report` command. Any command or tool that emits a `report.tally` record renders it through k.cli in `compact`, `pretty` or `json`.
 

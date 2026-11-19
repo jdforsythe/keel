@@ -1,6 +1,6 @@
 # @keel/std-report
 
-**Spec:** std.report · **Status:** implemented · **verified:** (none)
+**Spec:** std.report · **Status:** conformance-covered · **verified:** (none)
 
 ## Contract
 
