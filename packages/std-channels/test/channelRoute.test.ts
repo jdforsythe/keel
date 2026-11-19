@@ -12,6 +12,7 @@ import { store } from "@keel/store";
 import { afterEach, expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
 import { channelRoute } from "../src/server/channelRoute.ts";
+import { hubOf } from "../src/server/internal/hubOf.ts";
 
 const BASE = "http://localhost";
 const Flag = s.object({ on: s.boolean() });
@@ -28,7 +29,10 @@ async function until(pred: () => boolean): Promise<void> {
   if (!pred()) throw new Error("condition not reached");
 }
 
-async function serve(member: (at: { stores: ReturnType<typeof flags> }) => boolean, maxStreams?: number) {
+async function serve(
+  member: (at: { caller: string; stores: ReturnType<typeof flags> }) => boolean,
+  maxStreams?: number,
+) {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const route = channelRoute(room, { id: "t.room", stores: flags, member });
   const routes = manifest({ "t.room": { api: true, path: route.path, loader: route.loader } });
@@ -166,4 +170,19 @@ test("an open whose caller cookie does not verify counts as cookieless, and a st
   expect(again.lines).toEqual([{ ok: true, value: { kind: "reset" } }]);
   expect(again.ended()).toBe(false);
   for (const st of [...kept, again]) st.close();
+});
+
+test("a route whose member refuses caller '' holds no cookieless stream: every cookieless open, past perAnonymous too, is closed denied", async () => {
+  const seen: string[] = [];
+  const h = await serve(({ caller }) => {
+    seen.push(caller);
+    return caller !== "";
+  });
+  const opens: Awaited<ReturnType<typeof h.open>>[] = [];
+  for (let i = 0; i < 66; i++) opens.push(await h.open(`?room=r${i}`));
+  opens.push(await h.open("?room=x", "keel-caller=forged.0000"));
+  await until(() => opens.every((st) => st.ended()));
+  for (const st of opens) expect(st.lines).toEqual([{ ok: true, value: { kind: "closed", reason: "denied" } }]);
+  expect(hubOf(h.ctx).sinks.size).toBe(0);
+  expect(new Set(seen)).toEqual(new Set([""]));
 });

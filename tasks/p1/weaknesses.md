@@ -134,7 +134,7 @@ Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane
 - [ ] 0366 evals · S · `golden-1-api` acceptance hardcodes topologies and its hop count is a tautology · lane 11
 - [ ] 0692 compiler · S · k.shell clause 6's test matches the word `drivers`, which any bundle holds · lane 16
 - [ ] 0747 runtime-dom · S · `resume` with `mode: "dev"` has no conformance case · lane 10
-- [ ] 0783 std-channels · S · the std.channels sentence on a member refusing `""` has no test of its own · lane 01
+- [x] 0783 std-channels · S · the std.channels sentence on a member refusing `""` has no test of its own · lane 01
 - [ ] 0281 runtime-dom · S · a nested `Boundary` inside a resumed island on the claim path has no test (rfc:0075 leads) · lane 10
 - [ ] 0287 reactive, store · S · `untrack` and `scope.run` reads of a thrown computed, and effects disposed while queued, are untested · lane 07
 - [ ] 0469 schema, cli, router · M · values a user sees as blank pass `required`, and JSON Schema `\S` disagrees with Python; decide the blank set in k.schema · lane 07
