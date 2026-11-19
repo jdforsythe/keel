@@ -47,7 +47,7 @@ import type { RouteEntry } from "./types/RouteEntry.ts";
 import type { Topology } from "./types/Topology.ts";
 
 const CODE = /\.[cm]?[jt]sx?$/;
-/** Test code and tool configs are not app code: no rules, no lowering (k.testing lint E1701 covers tests, D37). */
+/** Test code and tool configs are not app code: no rules, no lowering (k.testing lint E1701 covers tests). */
 const NOT_APP =
   /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)vitest(?:\.[\w-]+)?\.config\.[cm]?[jt]s$/;
 const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json", "routes.json", "styles.json"];
@@ -165,22 +165,22 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  * other modules seen so far. `.keel/<name>` (`{ data, hash }`, sorted keys, read-only) is rewritten
  * atomically (temp file + rename) and only when its content changed. Deleted modules are evicted.
  *
- * Project inputs (D24-D25): `buildStart` compiles every app source once (style usages for the CSS), reads
+ * Project inputs: `buildStart` compiles every app source once (style usages for the CSS), reads
  * `topology.ts` statically (E1004 exemption for `client` deployables), and evaluates `tokens.ts` and the
  * deployable's modules' routes (an app module's `modules/<id>/routes.ts`, a stdlib module's package `./routes`)
  * to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
  * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
  * `client` one by name: the `mount` entry for a `client` deployable (binding the client-readable part of `std.json`,
- * `clientStdData`, reloaded when a manifest changes; rfc:0069), else the resume entry, whose island components
- * `/@keel/islands.ts` lists from the deployable's `routes.ts` files (RFC 0046). `/@keel/entry.ts?d=<name>` and
+ * `clientStdData`, reloaded when a manifest changes), else the resume entry, whose island components
+ * `/@keel/islands.ts` lists from the deployable's `routes.ts` files. `/@keel/entry.ts?d=<name>` and
  * `/@keel/islands.ts?d=<name>` are those of deployable `name`: for a `node` one, the resume entry over its own islands,
  * which its dev documents script (k.server Build). A `vite build` whose `KEEL_DEPLOYABLE`
  * is a `node` deployable builds that entry alone (input `entry`) into `dist/<name>/` with hashed `assets/` and the
- * manifest `CLIENT_MANIFEST` (k.server Build, RFC 0048), then its generated production entry (`SERVER_ENTRY`,
+ * manifest `CLIENT_MANIFEST` (k.server Build), then its generated production entry (`SERVER_ENTRY`,
  * `serverEntryCode`) with every dependency into `dist/<name>/server.mjs` beside `routes.json`, every module's routes
  * (`projectManifests` over every placed module, evaluated), and a copy of `.keel/std.json` (k.topology Build), and writes no `.keel/` artifacts (the project's own build does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
  * manifests' `deps` and writes `std.json` (`stdArtifact`); there a bad dep (E1159) or `std` entry (E1158) fails a build
- * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten (rfc:0066).
+ * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten.
  *
  * With a `node` deployable, the dev server is `keel dev`'s one origin (k.topology Local topology): a request a `node`
  * deployable's route matches is answered by that deployable's dev app (`DEV_ENTRY`, `devMiddleware`), anything else by
@@ -254,7 +254,7 @@ export default function (): {
     }
     return real;
   };
-  // Extra origins the inspect endpoint answers (RFC 0022): comma-separated, e.g. `http://localhost:*`.
+  // Extra origins the inspect endpoint answers: comma-separated, e.g. `http://localhost:*`.
   const origins = (process.env.KEEL_INSPECT_ORIGINS ?? "")
     .split(",")
     .map((o) => o.trim())
@@ -293,7 +293,7 @@ export default function (): {
     if (id.startsWith("\0") || id.startsWith("/@keel/") || id === CSS_ID) return null;
     const file = id.split("?")[0] ?? id;
     if (!CODE.test(file) || file.includes("/node_modules/") || file.endsWith(".d.ts")) return null;
-    // only app code under the root: linked workspace packages resolve to real paths outside it (D25)
+    // only app code under the root: linked workspace packages resolve to real paths outside it
     const rel = path.relative(root, file);
     if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
     const posix = rel.split(path.sep).join("/");
@@ -484,7 +484,7 @@ export default function (): {
   };
 
   const flush = (): { id: string; file: string }[] => {
-    // Only app sources feed the artifacts, by the rule `keel build` and `keel check` share (rfc:0050).
+    // Only app sources feed the artifacts, by the rule `keel build` and `keel check` share.
     const keys = [...modules.keys()].filter(isSourcePath).sort();
     const parts: Artifacts[] = [];
     for (const k of keys) {
@@ -514,7 +514,7 @@ export default function (): {
   const manifests = (): { path: string; source: string }[] =>
     [...modules].filter(([k]) => MANIFEST.test(k)).map(([path, e]) => ({ path, source: e.source }));
 
-  /** Import the manifests' stdlib deps, then their E1159 and E1158 lines (rfc:0066). */
+  /** Import the manifests' stdlib deps, then their E1159 and E1158 lines. */
   const stdProblems = async (): Promise<string[]> =>
     [...(await importDeps(root, manifests())), ...stdArtifact(manifests()).diagnostics].map(
       (d) => `${d.code} ${d.path}:${d.line}:${d.col} ${d.message}`,
@@ -547,7 +547,7 @@ export default function (): {
     for (const p of r.problems) warn(`keel: ${p}`);
     css = r.css;
     routes = r.routes;
-    // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it (rfc:0055).
+    // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it.
     const prior = path.join(root, ".keel", "routes.json");
     const next = artifactText(routes);
     if (command === "build" && !clientBuild && fs.existsSync(prior) && fs.readFileSync(prior, "utf8") !== next)
@@ -808,12 +808,12 @@ export default function (): {
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
       else if (rel !== null && MANIFEST.test(rel) && exists(rel)) {
         compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
-        // New deps load before std.json is rewritten; problems go where dev's other ones do (backlog 0196).
+        // New deps load before std.json is rewritten; problems go where dev's other ones do.
         void stdProblems()
           .then((bad) => {
             for (const b of bad) warn(`keel: ${b}`);
             flush();
-            // A `client` entry embeds std.json (rfc:0069): reload it with the new config.
+            // A `client` entry embeds std.json: reload it with the new config.
             const entry = server?.moduleGraph.getModuleById(ENTRY_PATH);
             if (server !== undefined && entry !== undefined) return server.reloadModule(entry);
           })
