@@ -20,7 +20,9 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   const table: unknown = Reflect.get(globalThis, MODULES_KEY);
   const bound: unknown = table instanceof WeakMap ? table.get(ctx) : undefined;
   const signer = bound instanceof Map ? bound.get("keel.user") : undefined;
-  const sign = isSigner(signer) ? signer : undefined;
+  const sign: Target["sign"] = isSigner(signer)
+    ? (method, url, user, body) => signer(module, method, url, user, body)
+    : undefined;
   const net = (base: string): Target => {
     const cross = origin !== undefined && base !== origin && !base.startsWith(`${origin}/`);
     return {

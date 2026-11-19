@@ -181,7 +181,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     routes: opts.routes ?? manifest({}),
     maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
-    keys: await callerSigner(opts.secret),
+    keys: await callerSigner(opts.secret, opts.deployable ?? ""),
     secure: opts.secure,
     built,
     entry:
@@ -335,8 +335,14 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
       await Promise.all(await running);
     },
   };
-  const unbind = bindModules(sv.ctx, opts.topology, sv.name, app, peers, (method, url, user) =>
-    sv.keys.assert(method, url, user, sv.ctx.clock.now()),
+  const unbind = bindModules(
+    sv.ctx,
+    opts.topology,
+    sv.name,
+    opts.deployable ?? "",
+    app,
+    peers,
+    (to, method, url, user, body) => sv.keys.assert(method, url, user, to, body, sv.ctx.clock.now()),
   );
   const own = opts.topology[sv.name]?.modules ?? [];
   // Each runner's `run` enters its own scrub scope (`keepRunning`), even when this app is made inside a request.

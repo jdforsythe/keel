@@ -14,8 +14,9 @@ const Bearer = s.secret(s.string());
  * `accept` (`application/json`; `text/event-stream` for an `events` endpoint), `x-keel: 1` (the k.server same-site proof for writes) and, with
  * a `bearer`, `authorization: Bearer <token>`, revealed here and nowhere else. Invalid input is `api.input` and nothing is
  * built: a `bearer` that is not a secret whose text is a token68 of 1 to 4,096 characters (k.api Bearer) is `format` at
- * `bearer`. A `user` is sent as `x-keel-user`, signed by the target's `sign` (k.user); a `user` that is not a string, or
- * one on a target with no `sign` (a ctx no `createApp` bound), is `api.input` at `user`. A Request the platform refuses (bad URL, body on GET) is `api.network`.
+ * `bearer`. A `user` is sent as `x-keel-user`, signed by the target's `sign` over the body as sent (k.user); a `user`
+ * that is not a string, or one on a target with no `sign` (a ctx no `createApp` bound), is `api.input` `type` at `user`,
+ * and one the signer refuses (over 256 characters) `max`. A Request the platform refuses (bad URL, body on GET) is `api.network`.
  */
 export function buildRequest(
   e: Endpoint,
@@ -40,10 +41,13 @@ export function buildRequest(
   if (!path.ok) return path;
   const qs = query.value === undefined ? "" : encodeQuery(query.value).toString();
   const url = `${base.replace(/\/+$/, "")}${path.value}${qs === "" ? "" : `?${qs}`}`;
-  const user: unknown = Reflect.get(Object(input), "user");
-  const signed = typeof user === "string" ? sign?.(e.method, url, user) : undefined;
-  if (user !== undefined && signed === undefined) return err(fail.input([{ path: ["user"], rule: "type" }]));
   const json = body.value;
+  // The body is JSON text, held whole before sending, so a signed `user` covers every byte sent; no stream is built.
+  const text = json === undefined ? "" : JSON.stringify(json);
+  const user: unknown = Reflect.get(Object(input), "user");
+  const signed = typeof user === "string" ? sign?.(e.method, url, user, text) : undefined;
+  if (user !== undefined && signed === undefined)
+    return err(fail.input([{ path: ["user"], rule: typeof user === "string" && sign !== undefined ? "max" : "type" }]));
   const headers: Record<string, string> = { accept, "x-keel": "1" };
   if (b !== undefined) headers.authorization = `Bearer ${token}`;
   if (signed !== undefined) headers["x-keel-user"] = signed;
@@ -53,7 +57,7 @@ export function buildRequest(
       : {
           method: e.method,
           headers: { ...headers, "content-type": "application/json" },
-          body: JSON.stringify(json),
+          body: text,
           signal,
         };
   const req = attempt(() => new Request(url, init));
