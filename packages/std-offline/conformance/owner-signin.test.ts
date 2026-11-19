@@ -14,6 +14,12 @@ const writesArb = fc.array(fc.tuple(fc.constantFrom(...TODOS), fc.string({ minLe
   minLength: 1,
   maxLength: 4,
 });
+// Each write's base is the head after the previous commit (write i has base i), so successive writes do not conflict.
+// Counterexample kept as an example: two writes [["t1"," "],["t1"," "]].
+const counterexample: [string, string][] = [
+  ["t1", " "],
+  ["t1", " "],
+];
 const stateOf = (e: unknown): unknown => (typeof e === "object" && e !== null ? Reflect.get(e, "state") : undefined);
 const errorOf = (e: unknown): unknown => (typeof e === "object" && e !== null ? Reflect.get(e, "error") : undefined);
 
@@ -37,8 +43,8 @@ test('entries of owner `a` refused with `offline.signin` stay `queued` and flush
       server.attach(ctx);
       const c = makeClient();
       ctx.net.setOnline(false);
-      for (const [todoId, title] of writes)
-        expect(await send(ctx, c.o, "editTodo", edit(todoId, title), { base: 0, owner: "a" })).toEqual({
+      for (const [i, [todoId, title]] of writes.entries())
+        expect(await send(ctx, c.o, "editTodo", edit(todoId, title), { base: i, owner: "a" })).toEqual({
           state: "queued",
         });
       const queuedKeys = (await stored(ctx, c.storageKey)).map((e) => e.key);
@@ -73,7 +79,7 @@ test('entries of owner `a` refused with `offline.signin` stay `queued` and flush
       stopBack();
       c.dispose();
     }),
-    { seed: 1337, numRuns: 8 },
+    { seed: 1337, numRuns: 8, examples: [[counterexample]] },
   );
 });
 
@@ -85,7 +91,8 @@ test('a drain with `""` holds the entries of every other owner `queued` online, 
       server.attach(ctx);
       const c = makeClient();
       ctx.net.setOnline(false);
-      for (const [todoId, title] of writes) await send(ctx, c.o, "editTodo", edit(todoId, title), { base: 0, owner });
+      for (const [i, [todoId, title]] of writes.entries())
+        await send(ctx, c.o, "editTodo", edit(todoId, title), { base: i, owner });
       ctx.net.setOnline(true);
       const stop = startDrain(ctx, c.o, "");
       await settle();
@@ -108,7 +115,7 @@ test('a drain with `""` holds the entries of every other owner `queued` online, 
       stopOwner();
       c2.dispose();
     }),
-    { seed: 1337, numRuns: 8 },
+    { seed: 1337, numRuns: 8, examples: [[counterexample, "a"]] },
   );
 });
 

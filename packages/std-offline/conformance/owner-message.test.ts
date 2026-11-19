@@ -12,7 +12,10 @@ const errorOf = (e: unknown): unknown => (typeof e === "object" && e !== null ? 
 test("With owners `a` and `b`, after `send` with `a` offline and then `send` with `b`, `a`'s entry `error` is `{ code: 'offline.owner', message: <id>, data: {} }`.", async () => {
   await fc.assert(
     fc.asyncProperty(
-      fc.tuple(fc.string({ maxLength: 8 }), fc.string({ maxLength: 8 })).filter(([a, b]) => a !== b),
+      // `b` is a named owner: `""` holds `a`'s entry queued (std.outbox-owner, Signed out).
+      fc
+        .tuple(fc.string({ maxLength: 8 }), fc.string({ minLength: 1, maxLength: 8 }))
+        .filter(([a, b]) => a !== b),
       fc.boolean(),
       async ([a, b], bOnline) => {
         const ctx = simCtx();
@@ -30,7 +33,7 @@ test("With owners `a` and `b`, after `send` with `a` offline and then `send` wit
         c.dispose();
       },
     ),
-    { seed: 1337, numRuns: 12 },
+    { seed: 1337, numRuns: 12, examples: [[["a", "b"], true]] },
   );
 });
 

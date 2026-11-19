@@ -134,7 +134,10 @@ test("After that refusal, `drain` with `a` on a new ctx over that storage posts 
 test("For generated owners and entries, an entry whose owner differs from the server's owner for the caller is never saved, its `send` resolves `failed` with `offline.owner`, a later flush or `drain` does not post it again, and the entries of the matching owner around it commit in order.", async () => {
   await fc.assert(
     fc.asyncProperty(
-      fc.tuple(owners, owners).filter(([a, b]) => a !== b),
+      // The clause is about two named owners; an empty server owner is the signin pause (std.outbox-owner bullet 4).
+      fc
+        .tuple(owners, fc.string({ minLength: 1, maxLength: 8 }))
+        .filter(([a, b]) => a !== b),
       fc.array(fc.boolean(), { minLength: 1, maxLength: 6 }),
       fc.array(fc.constantFrom(...TODOS), { minLength: 6, maxLength: 6 }),
       async ([mine, other], refusedAt, todoIds) => {
@@ -192,4 +195,17 @@ test("For generated owners and entries, an entry whose owner differs from the se
     ),
     { seed: 1337, numRuns: 20 },
   );
+});
+
+test("example: with an empty server owner the refused entry stays `queued` with `offline.signin`, not `failed` with `offline.owner`.", async () => {
+  const ctx = simCtx();
+  const server = createServer();
+  server.attach(ctx);
+  server.takesCallerAs("");
+  const c = makeClient();
+  const r = await send(ctx, c.o, "editTodo", edit("t1", "x"), { base: 0, owner: "a" });
+  await settle();
+  expect(r.state).toBe("queued");
+  expect(entriesOf(c.o).map((e) => e.state)).toEqual(["queued"]);
+  c.dispose();
 });
