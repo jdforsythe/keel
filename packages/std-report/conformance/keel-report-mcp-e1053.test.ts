@@ -1,4 +1,5 @@
-// Spec: std.report, clause "With it imported, the MCP tools include `report`, and `stdCommand('report', op)` with another `op` throws E1053."
+// Spec: std.report, clause "With the tools entry not imported and a project without `@keel/std-report` in its `deps`, `keel report` emits I1055 and exits 0. With it imported, the MCP tools include `report`, and `stdCommand('report', op)` with another `op` throws E1053."
+// This file tests the second sentence only; the first is keel-report-unfilled.test.ts.
 // Seed 1337 (no random inputs)
 import { mcp, stdCommand } from "@keel/cli";
 import type { StdOperation } from "@keel/cli";
