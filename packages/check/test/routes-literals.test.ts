@@ -190,7 +190,16 @@ describe("one compile per project (backlog 0149)", () => {
   });
 
   it("control: without apps/a/topology.ts the root topology applies and E1004 is reported", () => {
-    const all = [ROOT_TOP, LOAD("apps/a/"), VIEW("apps/a/")];
+    // Under the root, `apps/a/` is no module: `view.ts` is client code once a root route component reaches it.
+    const page = f(
+      "modules/todos/Page.ts",
+      'import { view } from "../../apps/a/modules/todos/view.ts";\nexport default view;\n',
+    );
+    const routes = f(
+      "modules/todos/routes.ts",
+      'import Page from "./Page.ts";\nexport const routes = manifest({ "t.p": { path: "/", component: Page } });\n',
+    );
+    const all = [ROOT_TOP, LOAD("apps/a/"), VIEW("apps/a/"), page, routes];
     const ds = check(all, { types: false, topology }).diagnostics;
     expect(at(ds, "E1004", "apps/a/modules/todos/view.ts").length).toBeGreaterThan(0);
   });

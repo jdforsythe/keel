@@ -79,13 +79,10 @@ describe("topology and routes inputs", () => {
     { path: "src/shared.ts", source: `import { x } from "../modules/todos/x.server.ts";\nexport const y = x;\n` },
   ];
 
-  it("reports E1004 without a topology or for a static deployable", () => {
-    expect(compile(files).diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual([
-      "E1004 modules/todos/routes.ts",
-      "E1004 src/shared.ts",
-    ]);
+  it("reports E1004 without a topology, never for a routes.ts (its server-only imports are stubs in a browser build)", () => {
+    expect(compile(files).diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual(["E1004 src/shared.ts"]);
     const stat = compile(files, { topology: { web: { modules: ["todos"], adapter: "static" } } });
-    expect(stat.diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual(["E1004 modules/todos/routes.ts"]);
+    expect(stat.diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual([]);
   });
 
   it("is per deployable: node-only routes.ts and files outside modules/ are legal (D40)", () => {

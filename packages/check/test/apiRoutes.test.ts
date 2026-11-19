@@ -15,7 +15,9 @@ const routes = (body: string): SourceFile => ({
   path: PATH,
   source: `import { manifest, guard } from '@keel/router'\nimport { ok } from '@keel/schema'\ndeclare const Page: () => Node\nconst g = guard({}, async () => ok(null))\nexport const routes = manifest({\n${body}\n})\n`,
 });
-const typed = (body: string): readonly Diagnostic[] => check([routes(body)], { root: ROOT }).diagnostics;
+/** The fixture's guard sits in `routes.ts` (E1009), which these cases do not test. */
+const typed = (body: string): readonly Diagnostic[] =>
+  check([routes(body)], { root: ROOT }).diagnostics.filter((d) => d.code !== "E1009");
 const brief = (ds: readonly Diagnostic[]): string[] => ds.map((d) => `${d.code} ${d.line}:${d.col} ${d.message}`);
 
 describe("E1510 and E1508 from the type check of a manifest entry", () => {
@@ -44,7 +46,9 @@ describe("E1510 and E1508 from the type check of a manifest entry", () => {
     const before = routes(body).source;
     const after = applyPatch(PATH, before, d?.fix ?? "");
     expect(after).toBe(before.replace(body, "  'a.x': { api: true, path: '/x', },"));
-    expect(check([{ path: PATH, source: after }], { root: ROOT }).diagnostics).toEqual([]);
+    expect(
+      check([{ path: PATH, source: after }], { root: ROOT }).diagnostics.filter((d) => d.code !== "E1009"),
+    ).toEqual([]);
   });
 
   it.each([
@@ -80,7 +84,8 @@ describe("E1510 and E1508 from the type check of a manifest entry", () => {
   });
 
   it("a manifest entry error with types off reports nothing", () => {
-    expect(check([routes("  'a.x': { path: '/x' },")], { types: false }).diagnostics).toEqual([]);
+    const ds = check([routes("  'a.x': { path: '/x' },")], { types: false }).diagnostics;
+    expect(ds.filter((d) => d.code !== "E1009")).toEqual([]);
   });
 
   it("names exactly the refused members of any API entry, in source order", () => {

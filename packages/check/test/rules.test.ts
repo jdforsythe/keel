@@ -237,10 +237,10 @@ describe("kernel rules", () => {
 
   it("E1004 is not reported in a client-only deployable when the topology is passed", () => {
     const routes = f(
-      "src/todos/routes.ts",
+      "modules/todos/view.ts",
       "import { loadList } from './loadList.server.ts'\nexport const routes = loadList\n",
     );
-    const server = f("src/todos/loadList.server.ts", "export const loader = () => 1\n");
+    const server = f("modules/todos/loadList.server.ts", "export const loader = () => 1\n");
     const codes = (o: object): string[] =>
       check([routes, server], { types: false, ...o }).diagnostics.map((d) => d.code);
     expect(codes({})).toContain("E1004");

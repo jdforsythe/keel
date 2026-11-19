@@ -27,8 +27,14 @@ function edges(program: Program): { source: string; start: number }[] {
   }
   new Visitor({
     ImportExpression: (n) => {
-      if (n.source.type === "Literal" && typeof n.source.value === "string")
-        out.push({ source: n.source.value, start: n.start });
+      const x = n.source;
+      const text =
+        x.type === "Literal"
+          ? x.value
+          : x.type === "TemplateLiteral" && x.expressions.length === 0
+            ? x.quasis[0]?.value.cooked
+            : null;
+      if (typeof text === "string") out.push({ source: text, start: n.start });
     },
   }).visit(program);
   return out;
