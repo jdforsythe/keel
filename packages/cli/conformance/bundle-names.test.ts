@@ -38,6 +38,7 @@ const TSCONFIG_JSON = JSON.stringify({
   },
 });
 
+const keysOf = <T extends object>(o: T): (keyof T)[] => Object.keys(o).filter((k): k is keyof T => k in o);
 const KINDS = {
   "keys.server.json": {
     file: "lib/keys.server.json",
@@ -81,7 +82,7 @@ const KINDS = {
   },
 } as const;
 type Kind = keyof typeof KINDS;
-const kinds = Object.keys(KINDS) as Kind[];
+const kinds = keysOf(KINDS);
 
 const withKind = (k: Kind) =>
   nodeWith({
@@ -124,17 +125,17 @@ describe("k.bundle: a server-only file is known by its name on disk, whatever th
       "modules/a/routes.ts": `import { notes } from '../../lib/Notes.SERVER.ts'\nReflect.set(globalThis, 'notes', notes)\nReflect.set(globalThis, 'alive', '${ALIVE}')\n${ROUTES}`,
     });
 
-  test("a file on disk `Notes.SERVER.ts`, imported by `routes.ts` under that name, is stubbed: the build exits 0, its canary is in no file under `dist/api/` and the page code is", async () => {
+  test("a file on disk `Notes.SERVER.ts`, imported by `routes.ts` under that name, is stubbed: the build exits 0, its canary is in no file under `dist/api/assets` and the page code is", async () => {
     await inProject(upper(), (dir) => {
       const r = viteBuild(dir, "api");
       expect(r.status, r.out).toBe(0);
       expect(linesWith(r.out, "E1007")).toEqual([]);
-      expect(filesHolding(join(dir, "dist", "api"), ALIVE)).not.toEqual([]);
-      expect(filesHolding(join(dir, "dist", "api"), CANARY_NOTES)).toEqual([]);
+      expect(filesHolding(join(dir, "dist", "api", "assets"), ALIVE)).not.toEqual([]);
+      expect(filesHolding(join(dir, "dist", "api", "assets"), CANARY_NOTES)).toEqual([]);
     });
   });
 
-  test("a `Notes.SERVER.ts` that a page imports is E1004 in `keel check` and one E1007 `server-only file` in `vite build`", async () => {
+  test("a `Notes.SERVER.ts` that a page imports is E1004 in `keel check`; `vite build` exits 0 and its canary is in no browser asset under `dist/api/assets`", async () => {
     const files = {
       ...upper(),
       "modules/a/Page.tsx": page("import { notes } from '../../lib/Notes.SERVER.ts'", "notes"),
@@ -144,11 +145,9 @@ describe("k.bundle: a server-only file is known by its name on disk, whatever th
       expect(c.status, c.out).toBe(1);
       expect(linesWith(c.out, '"E1004"').length).toBeGreaterThan(0);
       const b = viteBuild(dir, "api");
-      expect(b.status, b.out).toBe(1);
-      const hits = linesWith(b.out, "E1007");
-      expect(hits).toHaveLength(1);
-      expect(reasonOf(hits[0] ?? "")).toBe("server-only file");
-      expect(chainOf(hits[0] ?? "").slice(-2)).toEqual(["modules/a/Page.tsx", "lib/Notes.SERVER.ts"]);
+      expect(b.status, b.out).toBe(0);
+      expect(linesWith(b.out, "E1007")).toEqual([]);
+      expect(filesHolding(join(dir, "dist", "api", "assets"), CANARY_NOTES)).toEqual([]);
     });
   });
 });

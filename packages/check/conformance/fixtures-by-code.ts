@@ -725,6 +725,17 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1010: {
+    opts: NO_TYPES,
+    bad: [
+      f("lib/notes.server.ts", "export const notes = 1\n"),
+      f("api.server.ts", "import { notes } from './lib/notes.Server.ts'\nexport const api = notes\n"),
+    ],
+    clean: [
+      f("lib/notes.server.ts", "export const notes = 1\n"),
+      f("api.server.ts", "import { notes } from './lib/notes.server.ts'\nexport const api = notes\n"),
+    ],
+  },
   E1570: {
     opts: NO_TYPES,
     bad: [

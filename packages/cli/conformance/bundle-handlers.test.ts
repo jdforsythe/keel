@@ -12,6 +12,7 @@ const HEAD = "import { ok, s } from '@keel/schema'\n";
 const LOADER = "{ output: s.object({}) }, async () => ok({})";
 const GUARD = "{ redirect: 'a.home' }, async () => ok(null)";
 
+const keysOf = <T extends object>(o: T): (keyof T)[] => Object.keys(o).filter((k): k is keyof T => k in o);
 const cases = {
   "`R.loader(...)` through `import * as R from '@keel/router'`": {
     files: {
@@ -48,7 +49,7 @@ const fixture = (name: keyof typeof cases) =>
   nodeWith({ ...cases[name].files, "modules/a/Page.tsx": page("import { plain } from './plain.ts'", "plain") });
 
 describe("k.bundle Handlers: a handler used in a plain file is one E1007 `handler` in `vite build` and E1551 or E1009 in `keel check`", () => {
-  for (const name of Object.keys(cases) as (keyof typeof cases)[]) {
+  for (const name of keysOf(cases)) {
     test(`${name}, imported by \`Page.tsx\`: \`vite build\` exits 1 with one E1007 \`handler\` whose chain runs from \`modules/a/Page.tsx\`, and nothing is written`, async () => {
       await inProject(fixture(name), (dir) => {
         const r = viteBuild(dir, "api");

@@ -10,6 +10,7 @@ import { describe, expect, test } from "vitest";
 import { filesHolding, filesUnder, keelRun, linesWith, viteBuild } from "./boundary-support.ts";
 import { ALIVE, CANARY_NOTES, REF, bare, chainOf, inProject, nodeWith, page, reasonOf } from "./bundle-support.ts";
 
+const keysOf = <T extends object>(o: T): (keyof T)[] => Object.keys(o).filter((k): k is keyof T => k in o);
 const NOTES = `export const notes = '${CANARY_NOTES}'\n`;
 const W = `import { notes } from './notes.server.ts'\nself.postMessage(['${ALIVE}', notes])\n`;
 
@@ -38,7 +39,7 @@ const fixture = (spelling: keyof typeof SPELLINGS, worker: string) => {
 };
 
 describe("k.bundle: a worker a page starts ships no server-only code", () => {
-  for (const spelling of Object.keys(SPELLINGS) as (keyof typeof SPELLINGS)[]) {
+  for (const spelling of keysOf(SPELLINGS)) {
     test(`\`${spelling}\` in \`Page.tsx\`, with \`lib/w.ts\` importing \`lib/notes.server.ts\`: the build exits 0, a worker chunk is emitted and the canary is in no file under \`dist/api/\``, async () => {
       await inProject(fixture(spelling, W), (dir) => {
         const r = viteBuild(dir, "api");
@@ -50,7 +51,7 @@ describe("k.bundle: a worker a page starts ships no server-only code", () => {
     });
   }
 
-  for (const spelling of Object.keys(SPELLINGS) as (keyof typeof SPELLINGS)[]) {
+  for (const spelling of keysOf(SPELLINGS)) {
     test(`\`keel check\` of the \`${spelling}\` fixture reports E1004 at \`lib/w.ts\` naming the chain`, async () => {
       await inProject(fixture(spelling, W), (dir) => {
         const r = keelRun(dir, ["check"]);
@@ -66,7 +67,7 @@ describe("k.bundle: a worker a page starts ships no server-only code", () => {
 
 describe("k.bundle: a server-only file a worker imports fails the build with one E1007 whose chain runs through the worker", () => {
   const RAW_W = `${REF}import src from './notes.server.ts?raw'\nself.postMessage(src)\n`;
-  for (const spelling of Object.keys(SPELLINGS) as (keyof typeof SPELLINGS)[]) {
+  for (const spelling of keysOf(SPELLINGS)) {
     test(`\`${spelling}\` with \`lib/w.ts\` importing \`./notes.server.ts?raw\`: exit 1, one E1007 \`server-only file\`, a chain ending \`modules/a/Page.tsx -> lib/w.ts -> lib/notes.server.ts?raw\`, nothing written`, async () => {
       const files = fixture(spelling, RAW_W);
       await inProject(files, (dir) => {
