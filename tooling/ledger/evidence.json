@@ -1,5 +1,5 @@
 {
-  "commit": "3ca5e477f8f14a59c855c2f37e6b950378faa6ca",
+  "commit": "3b07e2f655e61978401483b77a6564837ce76814",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T02:18:35.008Z",
+  "generatedAt": "2026-11-19T02:29:50.565Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1167,7 +1167,7 @@
         "example": 625,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 0,
+        "none": 7,
         "probabilistic": 166,
         "proven": 31
       },
@@ -1236,6 +1236,19 @@
           "status": "conformance-covered",
           "total": 8,
           "verified": 8
+        },
+        "k.bundle": {
+          "byRung": {
+            "example": 0,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 6,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "proposed",
+          "total": 6,
+          "verified": 0
         },
         "k.check": {
           "byRung": {
@@ -1840,12 +1853,12 @@
             "example": 8,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 1,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 8,
+          "status": "implemented",
+          "total": 9,
           "verified": 8
         },
         "std.brands": {
@@ -2239,7 +2252,7 @@
           "verified": 8
         }
       },
-      "total": 828,
+      "total": 835,
       "verified": 828
     },
     "evidenceByRung": {
@@ -2779,7 +2792,7 @@
       "total": 423,
       "verified": 391
     },
-    "items": 1551,
+    "items": 1558,
     "unsafe": 18,
     "verified": 1287
   },
