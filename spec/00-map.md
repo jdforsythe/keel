@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file <= 1,200 tokens, section <= 1,500.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,200 tokens, section 1,500.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
@@ -32,7 +32,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
-| k.boundary | The server boundary | conformance-covered | stubs |
+| k.boundary | Server boundary | conformance-covered | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime and islands | conformance-covered | nodes |
 | k.resume | Served documents, resume | conformance-covered | regions |
@@ -60,10 +60,11 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | Request user, caller lifetime | conformance-covered | user |
-| k.mount | Pages into the mount | conformance-covered | submit |
-| k.return | Mount from a shell | conformance-covered | net |
-| k.opening | Return-link openings | conformance-covered | once |
-| k.serverlog | Server log records | conformance-covered | bounds |
+| k.mount | Pages to the mount | conformance-covered | submit |
+| k.return | Shell mount | conformance-covered | net |
+| k.opening | Openings | conformance-covered | once |
+| k.links | Links in | conformance-covered | ids |
+| k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |
 | k.topology | Deployables | conformance-covered | peers |

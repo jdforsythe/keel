@@ -18,7 +18,17 @@
   "@keel/ctx": ["k.ctx", "k.owner", "k.persist", "k.sim"],
   "@keel/forms": ["k.forms"],
   "@keel/reactive": ["k.reactive"],
-  "@keel/router": ["k.api", "k.guards", "k.head", "k.mount", "k.opening", "k.prefix", "k.return", "k.router"],
+  "@keel/router": [
+    "k.api",
+    "k.guards",
+    "k.head",
+    "k.links",
+    "k.mount",
+    "k.opening",
+    "k.prefix",
+    "k.return",
+    "k.router"
+  ],
   "@keel/runtime-dom": ["k.component", "k.defaults", "k.runtime"],
   "@keel/scaffold": ["k.scaffold"],
   "@keel/schema": ["k.privacy", "k.reveal", "k.schema"],
