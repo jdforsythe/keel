@@ -26,4 +26,4 @@ Canonical names. Changing one requires an RFC.
 - **identity source**: `identity.server.ts` beside `topology.ts`, default-exporting `identity({ identify, handle? })`: the app's `identify` and optional `handle` mount, through which an auth library or platform tells Keel who the user is (k.user), and `identity.ts`, its `identityMount(path)` half that pages import (k.mount).
 - **user**: the id `identify` answers for a request, `""` for no one; distinct from the anonymous `caller`, which grants nothing (k.user).
 
-verified: 7f8b706a6650972a4398989d17b2a34ccbc21f03
+verified: 64a0931dd19bcaa72dec3dd1666dd5fbdafd1b82
