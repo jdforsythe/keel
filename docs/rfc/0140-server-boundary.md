@@ -1,6 +1,6 @@
 # RFC 0140: the server boundary: server-only files never reach a browser, a build that breaks it fails, no environment value is built in
 
-Status: draft, for the orchestrator to accept (ADR-0162).
+Status: implemented (ADR-0162).
 
 ## Problem
 ADR-0006 records that the `.server.ts` boundary is enforced at compile time. A reproduction in a scratch copy (2026-11-18) showed it is not. Each claim below was read in the code on 2026-11-18.

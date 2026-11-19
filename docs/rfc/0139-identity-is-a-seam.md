@@ -1,6 +1,6 @@
 # RFC 0139: identity is a seam: the app says who the user is, Keel authenticates no one
 
-Status: draft, for the orchestrator to accept (ADR-0161). This text replaces an earlier draft of the same number, which put a durable sign-in inside `@keel/std-credentials` and which the operator rejected: Keel is not an authentication library and does not take on that risk; apps plug in established libraries and platforms.
+Status: implemented (ADR-0161). This text replaces an earlier draft of the same number, which put a durable sign-in inside `@keel/std-credentials` and which the operator rejected: Keel is not an authentication library and does not take on that risk; apps plug in established libraries and platforms.
 
 ## Problem
 Each claim below was read in the code on 2026-11-18.

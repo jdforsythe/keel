@@ -1,6 +1,6 @@
 # RFC 0020: Conformance completeness, wave 1 (k.router, k.check, k.cli)
 
-Status: draft
+Status: implemented
 
 ## Problem
 docs/freeze-review.md gaps 3, 4, 6: E1502-E1506 are `it.todo` though the code throws; check's explain/fixture test uses a hardcoded code list that misses E1000, E1206, E1757; cli surface parity and `inspect` exist only as unit tests.

@@ -1,6 +1,6 @@
 # ADR-0117: `keel check` refuses `@keel/*` internal entries outside library code (RFC 0094)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** Six kernel packages and one stdlib package export an `internal` entry (`@keel/compiler`, `router`, `reactive`, `schema`, `ctx`, `store`; `@keel/std-jobs/tools/internal`). They are the seams kernel and stdlib producers share. `@keel/store/internal` (`serverState`, `openStores`, `saveStores`, `copyOf`) and `@keel/router/internal` (`createRouterWith(routes, options, state?)`) together let browser code run server state, which k.server refuses to client routers; `@keel/ctx/internal` `report` lets app code forge the events observers and `std.sessions` record. The only guard is the k.router sentence "`@keel/router/internal` is not public". TypeScript and Vite resolve every `exports` entry, and `keel check` has one import rule (E1251, runtime ops). Today two app files import one: `apps/sessions/test/homeRecording.test.ts` and `homeOpaque.test.ts` (`report`).
 

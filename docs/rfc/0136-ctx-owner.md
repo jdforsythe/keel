@@ -1,6 +1,6 @@
 # RFC 0136: a ctx is ended only by the code that made it: `createCtx` takes a `signal`, and `Ctx` has no `dispose`
 
-Status: draft, for the orchestrator to accept (ADR-0158).
+Status: implemented (ADR-0158).
 
 ## Problem
 Each claim below was read in the code on 2026-11-18.
