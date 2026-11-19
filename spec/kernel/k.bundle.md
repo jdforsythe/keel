@@ -1,5 +1,5 @@
 # k.bundle: Browser bundles
-status: proposed
+status: conformance-covered
 
 Which bundles, file names and handler uses k.boundary's stubs, Assertion and Reach cover, and how a build keeps every environment value out of a browser asset.
 

@@ -33,7 +33,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.component | Components | conformance-covered | props, slots |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX |
 | k.boundary | The server boundary | conformance-covered | stubs, E1007 |
-| k.bundle | Browser bundles | proposed | workers |
+| k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime and islands | conformance-covered | nodes |
 | k.resume | Served documents, resume | conformance-covered | regions |
 | k.claim | Claim order | conformance-covered | eager |
@@ -58,8 +58,8 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.ledger | Ledger and evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loaders |
 | k.leave | What a request leaves | conformance-covered | `#k-state` |
-| k.user | Request user and caller lifetime | implemented | `identify` |
-| k.mount | Pages into the identity mount | conformance-covered | native submit |
+| k.user | Request user and caller lifetime | conformance-covered | `identify` |
+| k.mount | Pages into the identity mount | conformance-covered | submit |
 | k.serverlog | Server log records | conformance-covered | bounds |
 | k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |
