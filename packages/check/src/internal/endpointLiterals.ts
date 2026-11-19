@@ -1,23 +1,15 @@
 import { type Program, Visitor } from "oxc-parser";
 import type { EndpointLiteral } from "./EndpointLiteral.ts";
+import { localNames } from "./modules/localNames.ts";
+import { namespaceNames } from "./modules/namespaceNames.ts";
 
 /**
  * Every endpoint object literal in `endpoints({ key: { ... } })` calls, where `endpoints` is imported from
  * `@keel/services` (named, aliased, or through a namespace import). Entries that are not object literals are skipped.
  */
 export function endpointLiterals(ast: Program): EndpointLiteral[] {
-  const locals = new Set<string>();
-  const namespaces = new Set<string>();
-  for (const st of ast.body) {
-    if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/services") continue;
-    for (const sp of st.specifiers) {
-      if (sp.type === "ImportNamespaceSpecifier") namespaces.add(sp.local.name);
-      else if (sp.type === "ImportSpecifier") {
-        const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
-        if (imported === "endpoints") locals.add(sp.local.name);
-      }
-    }
-  }
+  const locals = localNames(ast, "endpoints", "@keel/services");
+  const namespaces = namespaceNames(ast, "@keel/services");
   const out: EndpointLiteral[] = [];
   if (locals.size === 0 && namespaces.size === 0) return out;
   new Visitor({

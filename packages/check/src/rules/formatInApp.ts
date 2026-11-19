@@ -1,6 +1,8 @@
 import { Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
+import { localNames } from "../internal/modules/localNames.ts";
+import { namespaceNames } from "../internal/modules/namespaceNames.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
 /**
@@ -14,18 +16,8 @@ export const formatInApp: RuleDef = {
   see: "k.schema",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];
-    const names = new Set<string>();
-    const namespaces = new Set<string>();
-    for (const st of ast.body) {
-      if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/schema") continue;
-      for (const sp of st.specifiers) {
-        if (sp.type === "ImportNamespaceSpecifier") namespaces.add(sp.local.name);
-        else if (sp.type === "ImportSpecifier") {
-          const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
-          if (imported === "s") names.add(sp.local.name);
-        }
-      }
-    }
+    const names = localNames(ast, "s", "@keel/schema");
+    const namespaces = namespaceNames(ast, "@keel/schema");
     if (names.size === 0 && namespaces.size === 0) return [];
     const at: number[] = [];
     new Visitor({
