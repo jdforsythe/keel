@@ -22,7 +22,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | E260x | std.channels | E265x | std.offline |
 | E270x | std.conflicts | E275x | std.statecharts |
 | E280x | std.headless | E285x | std.tables |
-| E220x | std.credentials | | |
+| E220x | std.tokens | | |
 
 ## Kernel
 | id | section | status | one line |
