@@ -16,7 +16,7 @@ active:
   - first thing on resume: the CI run on the pushed head is the first with D6 and D7 of the active plan (a longer simulator boot bound; two vitest workers for `@keel/cli` in CI) and the first in which `shell-ios` can reach its replay steps (backlog 0965; `shell-tauri-macos` passed them on 7d06c7bf): `gh run list --limit 2`, then fix what fails there before taking backlog 0956.
   - safe to clear: YES.
 blockers: none
-pending decisions: the operator confirms or reverses D69 to D87 in tasks/0338-s8-reach/PLAN.md and D1 to D7 in the active plan; none blocks work.
+pending decisions: the operator confirms or reverses D69 to D87 in tasks/0338-s8-reach/PLAN.md and D1 to D8 in the active plan; none blocks work.
 last updated: c4ec024c 2026-11-19
 ```
 

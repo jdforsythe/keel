@@ -18,13 +18,15 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 - D6 (2026-11-19): `tooling/smoke/shell-launch.mjs` gives a simulator 900 s to boot (was 300 s) and the `shell-ios` job 45 minutes (was 30). The hosted runner's first boot migrates data for about five minutes: three runs in a row failed E0014 at `Migration Elapsed:04:55`, and the one green run booted just under the bound.
 - D7 (2026-11-19): in CI `@keel/cli` runs its test files on two vitest workers (`WORKERS` in `tooling/ci-shards.mjs`). `conformance/E1562-base-route-change.test.ts` spawns about twenty builds inside a 120 s test limit and took 117 s to 172 s for the file across four runs on the 4-core runner, failing T0001 in two; the limit is in a conformance file, so the load is lowered instead. If the file still nears its limit with two workers, the limit needs an `rfc:` change.
 
+- D8 (2026-11-19): RFC 0147 and ADR-0169 (backlog 0956) are accepted as written by the design lane. An opening is one external-browser open by a mount request; it lasts 600000 ms, is kept in `ctx.storage` `keel.return` so a relaunch during sign-in keeps it, admits one link, and a new one replaces it. No binding value: the library's `state` and PKCE bind the flow. Two consequences for the operator to confirm: a link to a page needs an opening too (the agreed wording covers every return link, so the scheme is no general deep link into the app), and a flow started outside the app (an emailed link) cannot return to it. Residual risk in the threat model: another app can send its link first while an opening is pending.
+
 ## Method
 - RFC unit: RFC, spec and ADR; then conformance by the `conformance-writer` from the spec; then the build. Conformance and build run in their own git worktree and branch, merged when green, so red tests never sit on the main line.
 - Before a push: `pnpm check`, `pnpm test`, both apps' `keel test`, `pnpm ledger --diff`, `node tooling/evidence-report.mjs --check` and `pnpm build` on the exact commit in a clean checkout, each gated on its own exit status. `pnpm ledger` and `pnpm evidence:report` are written from a clean tree after both apps' `keel test`.
 - One mutation run at a time (machine-wide lock). Few test-running agents at once: the machine is shared, and spawn-heavy cli conformance times out under load (backlog 0938).
 
 ## Verification
-- [ ] Backlog 0956 built and conformance-covered.
+- [ ] Backlog 0956 built and conformance-covered. RFC 0147, ADR-0169, k.return and the threat model are written (k.return is `implemented` until its conformance lands); next the conformance lane, then the build, each in a worktree.
 - [x] Backlog 0921: the server's mutation run finishes (78.4 against 70); findings in `tasks/0338-s8-reach/proposed/server-mutation-tail.md`; follow-ups are backlog 0966 and 0967.
 - [ ] Backlog 0961: a session proven in the macOS Tauri shell and the iOS shell (done locally by automation; the hosted-runner run is backlog 0965).
 - [ ] golden-3 built by an agent run of its eval; the eval converges.

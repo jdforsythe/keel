@@ -61,7 +61,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | Request user and caller lifetime | conformance-covered | user |
 | k.mount | Pages into the identity mount | conformance-covered | submit |
-| k.return | Mount from a shell | conformance-covered | net |
+| k.return | Mount from a shell | implemented | net |
 | k.serverlog | Server log records | conformance-covered | bounds |
 | k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |
