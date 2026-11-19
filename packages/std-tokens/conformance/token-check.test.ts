@@ -206,7 +206,10 @@ test("An unreadable `digest` is `credentials.malformed`, data `{ reason }`: `for
   fc.assert(
     fc.property(fc.integer({ min: 1, max: 80 }), (len) => {
       fc.pre(len !== 43);
-      const r = tokens(ctx).check(secretOf(text), () => ({ id: row.id, digest: digestedOf(`$sha256$${"A".repeat(len)}`) }));
+      const r = tokens(ctx).check(secretOf(text), () => ({
+        id: row.id,
+        digest: digestedOf(`$sha256$${"A".repeat(len)}`),
+      }));
       expect(errorOf(r).code).toBe("credentials.malformed");
       expect(errorOf(r).data).toEqual({ reason: "parameters" });
     }),
