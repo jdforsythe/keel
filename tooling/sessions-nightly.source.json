@@ -10,7 +10,6 @@
     "workflow_dispatch": {}
   },
   "permissions": {
-    "issues": "write",
     "contents": "read"
   },
   "concurrency": {
@@ -22,6 +21,10 @@
   },
   "jobs": {
     "sessions": {
+      "permissions": {
+        "contents": "read",
+        "issues": "write"
+      },
       "if": "vars.KEEL_SESSIONS_URL != ''",
       "runs-on": "ubuntu-latest",
       "timeout-minutes": 30,

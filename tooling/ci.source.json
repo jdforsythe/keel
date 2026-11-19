@@ -11,19 +11,20 @@
       }
     ]
   },
+  "permissions": {
+    "contents": "read"
+  },
   "concurrency": {
     "group": "ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}",
     "cancel-in-progress": true
   },
   "env": {
     "KEEL_AGENT": "1",
-    "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
-    "TURBO_TEAM": "${{ vars.TURBO_TEAM }}",
     "TURBO_CACHE_DIR": ".turbo/cache"
   },
   "setup": [
     {
-      "uses": "actions/checkout@v4",
+      "uses": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
       "with": {
         "fetch-depth": 0
       }
@@ -32,7 +33,7 @@
       "uses": "pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1"
     },
     {
-      "uses": "actions/setup-node@v4",
+      "uses": "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0",
       "with": {
         "node-version": 22,
         "cache": "pnpm"
@@ -49,6 +50,10 @@
       "steps": [
         "$setup",
         {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm check"
         },
         {
@@ -72,7 +77,7 @@
         },
         {
           "name": "turbo cache for the jobs after this one",
-          "uses": "actions/cache/save@v4",
+          "uses": "actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".turbo/cache",
             "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
@@ -95,7 +100,7 @@
         "$setup",
         {
           "name": "turbo cache: the builds the check job ran",
-          "uses": "actions/cache/restore@v4",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".turbo/cache",
             "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
@@ -103,6 +108,10 @@
           }
         },
         {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "node tooling/ci-shards.mjs ${{ matrix.shard }}"
         }
       ]
@@ -145,7 +154,7 @@
         },
         {
           "name": "turbo cache: the builds the check job ran",
-          "uses": "actions/cache/restore@v4",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".turbo/cache",
             "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
@@ -153,6 +162,10 @@
           }
         },
         {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm build"
         },
         {
@@ -169,7 +182,7 @@
         "$setup",
         {
           "name": "turbo cache: the builds the check job ran",
-          "uses": "actions/cache/restore@v4",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".turbo/cache",
             "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
@@ -177,6 +190,10 @@
           }
         },
         {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm build"
         },
         {
@@ -209,7 +226,7 @@
       },
       "steps": [
         {
-          "uses": "actions/checkout@v4",
+          "uses": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
           "with": {
             "fetch-depth": 0
           }
@@ -246,7 +263,7 @@
         },
         {
           "name": "cargo registry and target for golden-1's shell",
-          "uses": "actions/cache@v4",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": "~/.cargo/registry/index\n~/.cargo/registry/cache\n~/.cargo/git/db\n.cargo-target",
             "key": "cargo-tauri-${{ runner.os }}-${{ hashFiles('apps/golden-1/deploy/web/tauri/Cargo.lock', 'apps/golden-1/deploy/web/tauri/Cargo.toml') }}",
@@ -256,7 +273,7 @@
         {
           "name": "tauri-driver, pinned",
           "id": "tauri-driver",
-          "uses": "actions/cache@v4",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": "~/.cargo/bin/tauri-driver",
             "key": "tauri-driver-2.1.0-${{ runner.os }}-${{ runner.arch }}"
@@ -280,7 +297,7 @@
           "run": "xvfb-run -a node --disable-warning=ExperimentalWarning tooling/smoke/shell.mjs --shell tauri --session outbox --binary .cargo-target/debug/golden-1"
         },
         {
-          "uses": "actions/upload-artifact@v4",
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
           "with": {
             "name": "golden-1-tauri-linux-debug",
             "path": ".cargo-target/debug/golden-1",
@@ -301,7 +318,7 @@
       "steps": [
         "$setup",
         {
-          "uses": "actions/setup-java@v4",
+          "uses": "actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1",
           "with": {
             "distribution": "temurin",
             "java-version": 21
@@ -309,7 +326,7 @@
         },
         {
           "name": "Gradle caches for the Capacitor Android project",
-          "uses": "actions/cache@v4",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": "~/.gradle/caches\n~/.gradle/wrapper",
             "key": "gradle-capacitor-${{ runner.os }}-${{ hashFiles('apps/golden-1/package.json') }}",
@@ -322,7 +339,7 @@
           "run": "pnpm exec keel build --target capacitor --platform android"
         },
         {
-          "uses": "actions/upload-artifact@v4",
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
           "with": {
             "name": "golden-1-android-debug",
             "path": "apps/golden-1/dist/web/capacitor/android/app/build/outputs/apk/debug/app-debug.apk",
@@ -349,7 +366,7 @@
         },
         {
           "name": "cargo registry and target for golden-1's shell",
-          "uses": "actions/cache@v4",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": "~/.cargo/registry/index\n~/.cargo/registry/cache\n~/.cargo/git/db\n.cargo-target",
             "key": "cargo-tauri-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/golden-1/deploy/web/tauri/Cargo.lock', 'apps/golden-1/deploy/web/tauri/Cargo.toml') }}",
@@ -374,7 +391,7 @@
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell tauri --session outbox --binary .cargo-target/debug/golden-1"
         },
         {
-          "uses": "actions/upload-artifact@v4",
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
           "with": {
             "name": "golden-1-tauri-macos-debug",
             "path": ".cargo-target/debug/golden-1",
@@ -396,7 +413,7 @@
         "$setup",
         {
           "name": "Swift packages of the Capacitor iOS project",
-          "uses": "actions/cache@v4",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": "~/Library/Caches/org.swift.swiftpm",
             "key": "swiftpm-capacitor-${{ runner.os }}-${{ hashFiles('apps/golden-1/package.json', 'packages/std-capacitor/Package.swift') }}",
@@ -421,7 +438,7 @@
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell ios --session outbox"
         },
         {
-          "uses": "actions/upload-artifact@v4",
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
           "with": {
             "name": "golden-1-ios-simulator-debug",
             "path": "apps/golden-1/dist/web/capacitor/ios/build/Build/Products/Debug-iphonesimulator/App.app",
@@ -438,7 +455,7 @@
         "$setup",
         {
           "name": "turbo cache: the builds the check job ran",
-          "uses": "actions/cache/restore@v4",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".turbo/cache",
             "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
@@ -446,6 +463,10 @@
           }
         },
         {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm build"
         }
       ],
@@ -458,7 +479,7 @@
         "$setup",
         {
           "name": "turbo cache: the builds the check job ran",
-          "uses": "actions/cache/restore@v4",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".turbo/cache",
             "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
@@ -466,6 +487,10 @@
           }
         },
         {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm build"
         },
         {
@@ -481,7 +506,7 @@
         "$setup",
         {
           "name": "turbo cache: the builds the check job ran",
-          "uses": "actions/cache/restore@v4",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".turbo/cache",
             "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
@@ -489,6 +514,10 @@
           }
         },
         {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm build"
         },
         {
@@ -505,7 +534,7 @@
       "steps": [
         "$setup",
         {
-          "uses": "actions/cache/restore@v4",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".git/keel-mutation",
             "key": "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
@@ -524,7 +553,7 @@
         },
         {
           "if": "always()",
-          "uses": "actions/cache/save@v4",
+          "uses": "actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
             "path": ".git/keel-mutation",
             "key": "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
