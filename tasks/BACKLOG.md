@@ -1011,7 +1011,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0909 spec (low): nothing says a dev server serves the identity `handle.path`, or that the dev browser gets the stub of a server-only file · spec · k.user, k.boundary, k.topology
 - [ ] 0910 compiler (low): a vitest `vmThreads` or `vmForks` pool is a client environment without a module runner and would get stubs · compiler · k.boundary
 - [ ] 0911 apps (low): golden-2's `POST /api/recipes` writes without a signed-in user while the `/recipes/new` page is guarded; confirm intended · apps
-- [ ] 0912 shells (operator): RFC 0142 waits at commit 1 for the operator's read of two points (Keel follows a mount answer's redirect in a shell; the native cookie store holds the library's cookie) · shells · k.return
+- [ ] 0912 shells (high): RFC 0142 is accepted as written; write `k.return` conformance and build it (native dependencies only with `identity.ts`) · shells · k.return
 - [x] 0913 cli (low): the `keel` binary loads the explanation table on every command through `explainCommand`; load it only for `explain`, the hover and the MCP tool · cli · k.explain
 - [ ] 0914 std (medium): tests to kill the surviving mutants in std-health, std-geo, std-i18n, std-brands and std-text, and any other unit the first mutation runs put under threshold · std · k.ledger
 - [x] 0915 tooling (medium): in a std package's mutation sandbox a conformance test importing `@keel/std-<name>` was thought to reach the unmutated package; a conformance-only run kills mutants (std-geo 23 of 43, std-brands 110 of 165), so nothing to fix · tooling · k.ledger
@@ -1038,3 +1038,5 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0936 check (medium): with a `dist/` left by a direct `vite build`, `keel build`'s check step counts its files and reports E1561 on `accounts.service.ts`; check must not read build output · check, cli · k.check
 - [ ] 0937 evals (low): `evals/tasks/golden-3/browser.ts` launches the built server the way golden-2-catalog did before it passed a sign-in secret; give it one when golden-3 is built · evals
 - [ ] 0938 tooling (medium): a cold, fully parallel `pnpm test` fails one task about one run in three on this machine and passes on the rerun (three sightings on 2026-11-19, two identified: 0933 and a golden-2 test that spawns the binary); find the common cause, likely timeouts under load · tooling
+- [ ] 0939 std-report (medium): `keel report <url>` reads only a dev inspect document; let it also read a URL answering a `Tally` or a list of them, so a build's own guarded route serves a tally (RFC amendment) · std-report, cli · std.report
+- [ ] 0940 ci (high): macOS runner jobs for the Tauri macOS shell and the Capacitor iOS shell (build, shell smoke, relaunch checks), run only when the repository is public · tooling · k.shell
