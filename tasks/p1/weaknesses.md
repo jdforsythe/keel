@@ -40,7 +40,7 @@ Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane
 - [ ] 0800 std-offline · S · red-team: two tabs overwrite each other's stored outbox, so a reload loses the other tab's queued writes · lane 01
 - [x] 0945 std-offline, std-channels · S · confirm with a test that the 0501 and 0478 fixes are built, then close both · lane 01
 - [x] 0478 std-channels · S · every cookieless caller shares one `perCaller` allowance; build RFC 0121 · lane 01
-- [ ] 0777 std-channels · S · red-team: the bounds read the opener module's config but count every module's sinks · lane 01
+- [x] 0777 std-channels · S · red-team: the bounds read the opener module's config but count every module's sinks · lane 01
 - [x] 0441 server · S · an input that becomes `type="password"` only in the browser keeps its value in `#k-state` · lane 02
 - [ ] 0442 server · S · plain siblings of an `s.secret` under an array, record or union drop from a 422 re-render (server budget) · lane 02
 - [x] 0671 server · S · another package replacing or clearing the `onSecret` slot leaves a running app unscrubbed · lane 02

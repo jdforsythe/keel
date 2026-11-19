@@ -12,6 +12,7 @@ import { reread } from "../src/server/internal/reread.ts";
 const sink = (caller: string, seen: unknown[]): Sink => ({
   key: "k",
   caller,
+  module: "m",
   post: () => undefined,
   saved: (store, head, read) => seen.push({ store, head, read }),
 });
@@ -51,6 +52,7 @@ test("a shared read reads ctx.storage once per key per save", async () => {
   const leave = join(ctx, hubOf(ctx), {
     key: "k",
     caller: "",
+    module: "m",
     post: () => undefined,
     saved: (_s, _h, read) => reads.push(read("keel.store.m.s"), read("keel.store.m.s")),
   });
