@@ -218,6 +218,8 @@ export async function browserPass(root: string, app: string): Promise<string | u
       PORT: String(PORT),
       KEEL_SECRET: randomBytes(32).toString("base64url"),
       KEEL_ORIGIN: ORIGIN,
+      // The app's sign-in library starts only with its own secret; its database lands beside the storage file.
+      BETTER_AUTH_SECRET: randomBytes(32).toString("base64url"),
     },
   });
   server.stdout.on("data", (d) => log.push(...String(d).split("\n")));

@@ -99,13 +99,43 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 
 const hasRoutes = (v: unknown): v is typeof kitchen => isRecord(v) && isRecord(v.routes);
 
-/** The `api` deployable's route table: `routes` of every module the app's topology places in it. */
+/** What `specifier` exports, or undefined when nothing is there to import. */
+const load = (specifier: Promise<unknown>): Promise<unknown> => specifier.catch(() => undefined);
+
+/** The default export of a `module.ts`: its `id` and `deps`, or undefined. */
+function manifestOf(mod: unknown): { id: string; deps: string[] } | undefined {
+  const def = isRecord(mod) ? mod.default : undefined;
+  if (!isRecord(def) || typeof def.id !== "string" || !Array.isArray(def.deps)) return undefined;
+  return { id: def.id, deps: def.deps.filter((d): d is string => typeof d === "string") };
+}
+
+/**
+ * The routes module of the stdlib module `id` (k.topology Route table): of the `@keel/std-*` packages the app's placed
+ * modules list in `deps`, the one whose `./module` manifest has that `id`, at its `./routes`.
+ */
+async function stdRoutes(id: string): Promise<unknown> {
+  const placed = Object.values(topology).flatMap((d) => d?.modules ?? []);
+  for (const name of [...new Set(placed)].sort()) {
+    const deps = manifestOf(await load(import(`../modules/${name}/module.ts`)))?.deps ?? [];
+    for (const dep of deps.filter((d) => /^@keel\/std-[a-z0-9-]+$/.test(d))) {
+      const own = manifestOf(await load(import(/* @vite-ignore */ `${dep}/module`)));
+      if (own?.id === id) return load(import(/* @vite-ignore */ `${dep}/routes`));
+    }
+  }
+  return undefined;
+}
+
+/**
+ * The `api` deployable's route table: `routes` of every module the app's topology places in it, an app module's from
+ * its `modules/<id>/routes.ts` and a stdlib module's from its package. A placed module with no routes fails the suite.
+ */
 async function apiRoutes() {
   let table = { ...kitchen.routes };
   for (const name of topology.api?.modules ?? []) {
     if (name === "kitchen") continue;
-    const mod: unknown = await import(`../modules/${name}/routes.ts`);
-    if (isRecord(mod) && hasRoutes(mod.routes)) table = { ...mod.routes.routes, ...table };
+    const mod = (await load(import(`../modules/${name}/routes.ts`))) ?? (await stdRoutes(name));
+    if (!isRecord(mod) || !hasRoutes(mod.routes)) throw new Error(`no routes for placed module ${name}`);
+    table = { ...mod.routes.routes, ...table };
   }
   return manifest(table);
 }
