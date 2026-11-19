@@ -284,8 +284,12 @@ jobs:
       - name: "golden-1's web as a Tauri debug binary for macOS"
         working-directory: apps/golden-1
         run: pnpm exec keel build --target tauri
-      - name: "the binary starts and reads the board through its native client; a cookie with a lifetime is sent again after a SIGKILL and restart (no input is made: WKWebView has no WebDriver)"
+      - name: "the binary starts and reads the board through its native client; a cookie with a lifetime is sent again after a SIGKILL and restart (no input is made)"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/shell-launch.mjs --shell tauri --binary .cargo-target/debug/golden-1"
+      - name: a recorded session replayed in the shell through the accessibility API gives the server board its sim replay gives
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell tauri --binary .cargo-target/debug/golden-1"
+      - name: "writes queued in the shell while the server is down drain after a SIGKILL and restart, giving the board the sim replay gives"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell tauri --session outbox --binary .cargo-target/debug/golden-1"
       - uses: actions/upload-artifact@v4
         with:
           name: golden-1-tauri-macos-debug
@@ -320,8 +324,12 @@ jobs:
       - name: "golden-1's web as an iOS app for the Simulator, unsigned (cap add, cap sync, xcodebuild)"
         working-directory: apps/golden-1
         run: pnpm exec keel build --target capacitor --platform ios
-      - name: "the app starts on a simulator and reads the board through its native client; a cookie with a lifetime is sent again after a force-stop and after a reboot (no input is made: WKWebView has no WebDriver)"
+      - name: "the app starts on a simulator and reads the board through its native client; a cookie with a lifetime is sent again after a force-stop and after a reboot (no input is made)"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/shell-launch.mjs --shell ios --reboot"
+      - name: a recorded session replayed in the app by a UI test on the simulator gives the server board its sim replay gives
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell ios"
+      - name: "writes queued in the app while the server is down drain after a force-stop and restart, giving the board the sim replay gives"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell ios --session outbox"
       - uses: actions/upload-artifact@v4
         with:
           name: golden-1-ios-simulator-debug
