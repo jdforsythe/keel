@@ -267,9 +267,10 @@ export default function (): {
     .split(",")
     .map((o) => o.trim())
     .filter((o) => o !== "");
-  const inspect = inspectMiddleware(() => root, origins);
   const written = new Map<string, string>();
   let devApps: DevApp[] = [];
+  /** Whether this dev server answers for `node` deployables (`keel dev` of a topology that has one). */
+  let hasNode = false;
   /** The closing of the last dev apps: the next ones load after it, so two never run on one storage. */
   let closed: Promise<unknown> = Promise.resolve();
   /** `keel dev`: every `node` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
@@ -282,6 +283,11 @@ export default function (): {
       .map(([, app, served, mount]) => ({ app, served, mount }));
     return devApps;
   });
+  const inspect = inspectMiddleware(
+    () => root,
+    origins,
+    async () => (hasNode ? (await dev.apps()).map((a) => a.app) : []),
+  );
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
     const old = devApps;
@@ -697,7 +703,8 @@ export default function (): {
     configureServer(s) {
       server = s;
       s.middlewares.use(inspect);
-      if (Object.values(topology ?? {}).some((d) => d.adapter === "node")) s.middlewares.use(dev.handle);
+      hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node");
+      if (hasNode) s.middlewares.use(dev.handle);
     },
     configurePreviewServer(s) {
       s.middlewares.use(inspect);

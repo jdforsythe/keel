@@ -11,17 +11,22 @@ const answers = (app: Served, path: string): boolean =>
  * The `keel dev` middleware (k.topology Local topology): a request whose path a `node` deployable's route matches, or
  * that is at or under its identity source's `handle.path`, is answered by that deployable's dev app, streaming its body
  * (event streams too); anything else goes on to Vite.
- * `load` gives the dev apps (`DEV_ENTRY`), loaded once and again after `reset`.
+ * `load` gives the dev apps (`DEV_ENTRY`), loaded once and again after `reset`; `apps` is that load, started when
+ * nothing has asked for it yet.
  */
 export function devMiddleware(load: () => Promise<readonly Served[]>): {
   handle(req: IncomingMessage, res: ServerResponse, next: (e?: unknown) => void): void;
   reset(): void;
+  apps(): Promise<readonly Served[]>;
 } {
-  let apps: Promise<readonly Served[]> | undefined;
+  let loaded: Promise<readonly Served[]> | undefined;
+  const apps = (): Promise<readonly Served[]> => {
+    loaded ??= load();
+    return loaded;
+  };
   const handle = async (req: IncomingMessage, res: ServerResponse, next: (e?: unknown) => void): Promise<void> => {
-    apps ??= load();
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
-    const pick = (await apps).find((a) => answers(a, url.pathname));
+    const pick = (await apps()).find((a) => answers(a, url.pathname));
     if (pick === undefined) return next();
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers))
@@ -48,7 +53,8 @@ export function devMiddleware(load: () => Promise<readonly Served[]>): {
   return {
     handle: (req, res, next) => void handle(req, res, next).catch(next),
     reset: () => {
-      apps = undefined;
+      loaded = undefined;
     },
+    apps,
   };
 }

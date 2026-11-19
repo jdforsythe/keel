@@ -4,11 +4,12 @@
 // deployable; a sign-up and a sign-in post to the identity mount (`/api/auth`) the way the account forms do and answer
 // 303 to the sign-in page, the sign-in with a session cookie; with that cookie the sign-in page names the account and
 // `GET /api/me` answers its email, and without it neither does; every server-only file the accounts routes import is
-// served to a browser request as its stub, with no `node:` import and none of the file's code; after an edit to a server
-// file that registers an inspector section at its top level, `/api/*` still answers 200. The
+// served to a browser request as its stub, with no `node:` import and none of the file's code; `/__keel/inspect` holds
+// the `api` deployable's inspector section `kitchen.box.currency` as a tally and `keel report` prints it; after an edit
+// to the server file that registers that section, `/api/*` still answers 200 and the section is still served. The
 // child runs in its own process group, which every path (a finished run, a failed step, a signal, the 90 s limit) kills.
 // Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo.
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { appendFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -86,6 +87,34 @@ const mountPost = (base, path, fields) =>
     (r) => ({ status: r.status, location: r.headers.get("location") ?? "", cookies: r.headers.getSetCookie() }),
     () => ({ status: 0, location: "", cookies: [] }),
   );
+
+/** The section `kitchen.box.currency` of the dev inspect document, and whether its value has a tally's shape. */
+async function currencySection(base) {
+  const doc = await text(base, "/__keel/inspect", { accept: "application/json" });
+  let value;
+  try {
+    value = JSON.parse(doc.body).sections?.["kitchen.box.currency"]?.value;
+  } catch {
+    // Not JSON: no section.
+  }
+  const tally =
+    value?.kind === "report.tally" &&
+    value.id === "kitchen.box.currency" &&
+    Array.isArray(value.rows) &&
+    value.rows.every((r) => typeof r.key === "string" && Number.isInteger(r.n));
+  return { status: doc.status, tally };
+}
+
+/** `keel report <base>` run in `dir`: its exit code and output. */
+const report = (dir, base) =>
+  new Promise((resolve) => {
+    execFile(
+      process.execPath,
+      ["--disable-warning=ExperimentalWarning", cli, "report", base],
+      { cwd: dir, env: { ...process.env, KEEL_AGENT: "1" }, timeout: 30_000 },
+      (err, stdout, stderr) => resolve({ code: err === null ? 0 : (err.code ?? 1), out: `${stdout}${stderr}` }),
+    );
+  });
 
 const tmp = await mkdtemp(join(tmpdir(), "keel-smoke-dev-"));
 try {
@@ -171,7 +200,22 @@ try {
     );
   }
 
+  // The inspect document holds the `api` deployable's inspector sections, and `keel report` prints its tally.
   const json = { accept: "application/json", cookie };
+  const recipes = await text(base, "/api/recipes", json);
+  step("GET /api/recipes", recipes.status === 200, `status ${recipes.status}`);
+  const section = await currencySection(base);
+  step(
+    "inspect document holds the api section kitchen.box.currency as a tally",
+    section.status === 200 && section.tally,
+    `status ${section.status}${section.tally ? "" : ", no tally section"}`,
+  );
+  const printed = await report(dir, base);
+  step(
+    "keel report prints the tally",
+    printed.code === 0 && printed.out.includes("ok report 1 tallies"),
+    `exit ${printed.code}, ${printed.out.trim().split("\n").at(-1) ?? ""}`,
+  );
 
   // An edit to the server file that registers the section at its top level: the dev apps load again and still answer.
   const edited = "modules/kitchen/currencyTally.server.ts";
@@ -184,6 +228,12 @@ try {
     const after = await text(base, path, json);
     step(`GET ${path} after the edit`, after.status === 200, `status ${after.status}`);
   }
+  const again = await currencySection(base);
+  step(
+    "inspect document still holds the section after the edit",
+    again.status === 200 && again.tally,
+    `status ${again.status}${again.tally ? "" : ", no tally section"}`,
+  );
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
 } finally {
