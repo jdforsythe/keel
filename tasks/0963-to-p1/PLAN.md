@@ -23,17 +23,17 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 
 ## Verification
 - [ ] Backlog 0956 built and conformance-covered.
-- [ ] Backlog 0921: the server's mutation run finishes; findings in `tasks/0338-s8-reach/proposed/server-mutation-tail.md` acted on.
+- [x] Backlog 0921: the server's mutation run finishes (78.4 against 70); findings in `tasks/0338-s8-reach/proposed/server-mutation-tail.md`; follow-ups are backlog 0966 and 0967.
 - [ ] Backlog 0961: a session proven in the macOS Tauri shell and the iOS shell (done locally by automation; the hosted-runner run is backlog 0965).
 - [ ] golden-3 built by an agent run of its eval; the eval converges.
 - [ ] Freeze review (backlog 0034): every kernel section conformance-covered, the `frozen` flip prepared for P1.
 - [ ] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962).
 
 ## Next action
-Check the two agents in flight (see `docs/HANDOFF.md`, in flight), review and push their commits, then take backlog 0956.
+Read the CI run on the pushed head (`gh run list --limit 2`): it is the first with the replay steps in `shell-tauri-macos` and `shell-ios` (backlog 0965). Fix what fails there, then take backlog 0956.
 
-1. In flight: backlog 0921 (server mutation tail) and backlog 0961 (automated shell session proof). Each commits to the main line and writes its findings to a file in the repo; review, gate in a clean checkout, push.
-2. Backlog 0956: RFC amendment to `k.return` (a return link is accepted only while the shell has opened the external browser from a mount redirect, once), conformance, build, threat model.
-3. golden-3 by agent eval (`evals/tasks/golden-3`; the first step with model calls; the runner's default is `none`, an agent run names a model). Its `browser.ts` needs a sign-in secret (backlog 0937).
-4. Freeze review (backlog 0034) and G3.
-5. The P1 and P2 plan (backlog 0962), in a context of its own.
+1. Backlog 0956: RFC amendment to `k.return` (a return link is accepted only while the shell has opened the external browser from a mount redirect, once), conformance, build, threat model.
+2. golden-3 by agent eval (`evals/tasks/golden-3`; the first step with model calls; the runner's default is `none`, an agent run names a model). Its `browser.ts` needs a sign-in secret (backlog 0937).
+3. Freeze review (backlog 0034) and G3.
+4. The P1 and P2 plan (backlog 0962), in a context of its own.
+5. Alongside, when the machine is quiet: backlog 0966 (std-sessions mutation config) and 0967 (server survivors).
