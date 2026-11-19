@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1193,
+    "example": 1199,
     "probabilistic": 326,
     "exhaustive": 15,
     "proven": 63,
@@ -15,7 +15,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 79.08,
+        "score": 78.94,
         "threshold": 70
       },
       "compiler": {
@@ -11853,6 +11853,18 @@
     },
     {
       "pkg": "golden-2",
+      "name": "MarketKey",
+      "file": "golden-2:recipes/MarketKey.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "NearestMarket",
+      "file": "golden-2:recipes/NearestMarket.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "NewRecipePage",
       "file": "golden-2:recipes/NewRecipePage.tsx",
       "rung": "example"
@@ -11985,6 +11997,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "distanceKm",
+      "file": "golden-2:recipes/distanceKm.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "favoriteRecipe",
       "file": "golden-2:recipes/favoriteRecipe.server.ts",
       "rung": "example"
@@ -12041,6 +12059,18 @@
       "pkg": "golden-2",
       "name": "loadShell",
       "file": "golden-2:recipes/loadShell.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "markets",
+      "file": "golden-2:recipes/markets.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "nearestMarket",
+      "file": "golden-2:recipes/nearestMarket.ts",
       "rung": "example"
     },
     {
@@ -17263,7 +17293,7 @@
     },
     {
       "item": "a11y:recipes.index#1.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.4.4",
@@ -17315,7 +17345,7 @@
     },
     {
       "item": "a11y:recipes.index#4.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.1.1",
