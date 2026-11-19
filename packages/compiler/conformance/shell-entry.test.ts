@@ -1,7 +1,8 @@
 // Spec: k.shell, Conformance "The `www` entry a shell build writes creates its ctx with `mode: 'shell'` and the package's drivers; the plain `client` entry is unchanged."
 // Seed: 1337.
 // The test builds a fixture whose `node_modules/.bin/tauri` and `PATH` tools (`cargo`, `rustc`, `npx`) are fakes that exit 0 without compiling, then reads
-// the `www` entry the build writes. "The package's drivers" is read as `drivers` passed to `createCtx` beside `mode: 'shell'`.
+// the `www` entry the build writes. "The package's drivers" is read as the `drivers` argument beside `mode: 'shell'` being a call to a function whose body builds `storage` and `net`.
+// ASSUMED: the bundle is minified, so the export's name is gone; the call's callee is identified by its body and by the store file name `keel.b.json` in the bundle.
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -135,6 +136,16 @@ function scripts(root: string): Map<string, string> {
   return out;
 }
 const SHELL_CTX = /mode\s*:\s*["'`]shell["'`]/;
+/** Text of the first brace-balanced block at or after `from`. */
+function braceBody(text: string, from: number): string {
+  const open = text.indexOf("{", text.indexOf(")", from));
+  let depth = 0;
+  for (let k = open; k < text.length; k++) {
+    if (text[k] === "{") depth++;
+    else if (text[k] === "}" && --depth === 0) return text.slice(open, k + 1);
+  }
+  return text.slice(open);
+}
 const joined = (m: Map<string, string>): string => [...m.values()].join("\n");
 
 describe("k.shell: the shell entry", () => {
@@ -149,7 +160,18 @@ describe("k.shell: the shell entry", () => {
       const www = scripts(join(dir, "dist", "web", "tauri", "www"));
       expect(www.size).toBeGreaterThan(0);
       expect(joined(www)).toMatch(SHELL_CTX);
-      expect(joined(www)).toMatch(/drivers/);
+      const text = joined(www);
+      const ctxCall = /mode\s*:\s*["'`]shell["'`]\s*,\s*drivers\s*:\s*([\w$]+)\s*\(/.exec(text);
+      expect(ctxCall).not.toBeNull();
+      const factory = ctxCall?.[1] ?? "";
+      // The `drivers` argument is a call to a function whose body builds the `storage` and `net` drivers.
+      const decl = new RegExp(`function\\s+${factory.replace(/\$/g, "\\$")}\\s*\\(`).exec(text);
+      expect(decl).not.toBeNull();
+      const body = braceBody(text, decl === null ? 0 : decl.index);
+      expect(body).toMatch(/storage/);
+      expect(body).toMatch(/net/);
+      // ... and the bundle holds the Tauri driver's own store file name.
+      expect(text).toContain("keel.b.json");
 
       expect(build([])).toBe(0);
       const plainAfter = scripts(join(dir, "dist", "web"));
