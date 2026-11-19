@@ -18,7 +18,7 @@ How a page on any deployable sends the browser to the identity source's `handle`
 
 **Testing.** `renderRoute` and `resumeDocument` handles have `documents()`: the document navigations the page started, in order, `{ method, url, body }` (`body` the urlencoded text, `null` for a GET); none is made and the page stays.
 
-**Rules.** E1580 `identity.ts` whose default export is not `identityMount('<literal>')` of lowercase `/` segments, or with no `identity.server.ts` giving `handle: { path: <its default import>.path }` (a literal there too) · E1581 a module file importing `identity.ts` where a `static` deployable, or a `client` one without `host` or with `shells`, serves the module: no origin serving it mounts `handle` · E1582 a `subpath` `href` refuses (`keel check` for a literal; the call throws) · E1583 a native submit with a file chosen. Fix: none.
+**Rules.** E1580 `identity.ts` whose default export is not `identityMount('<literal>')` of lowercase `/` segments, or with no `identity.server.ts` giving `handle: { path: <its default import>.path }` (a literal there too) · E1581 a module file importing `identity.ts` where a `static` deployable, or a `client` one without `host`, serves the module: no origin serving it mounts `handle` · E1582 a `subpath` `href` refuses (`keel check` for a literal; the call throws) · E1583 a native submit with a file chosen. Fix: none.
 
 **Conformance.**
 - With `path` `/api/auth`, `href('/sign-in/email', { b: '2', a: 'x y' })` is `/api/auth/sign-in/email?a=x%20y&b=2` and `href()` is `/api/auth`; `'//x.example'`, `'/../x'`, `'/a/..'`, `'/a?b'`, `'/a#b'`, `'/a%2f'` and `'https://x'` each throw E1582.

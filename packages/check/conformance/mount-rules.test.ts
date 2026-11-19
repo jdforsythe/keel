@@ -1,4 +1,4 @@
-// Spec: k.mount, Rules "E1580 `identity.ts` whose default export is not `identityMount('<literal>')` of lowercase `/` segments, or with no `identity.server.ts` giving `handle: { path: <its default import>.path }` (a literal there too) · E1581 a module file importing `identity.ts` where a `static` deployable, or a `client` one without `host` or with `shells`, serves the module: no origin serving it mounts `handle` · E1582 a `subpath` `href` refuses (`keel check` for a literal; the call throws) · E1583 a native submit with a file chosen. Fix: none."
+// Spec: k.mount, Rules "E1580 `identity.ts` whose default export is not `identityMount('<literal>')` of lowercase `/` segments, or with no `identity.server.ts` giving `handle: { path: <its default import>.path }` (a literal there too) · E1581 a module file importing `identity.ts` where a `static` deployable, or a `client` one without `host`, serves the module: no origin serving it mounts `handle` · E1582 a `subpath` `href` refuses (`keel check` for a literal; the call throws) · E1583 a native submit with a file chosen. Fix: none."
 // Spec: k.mount, Conformance "E1580, E1581 and E1582 each have a triggering fixture and a clean one; a chosen file is E1583, nothing recorded."
 // Spec: k.mount, Declaration "`identity.ts` imports nothing server-only, so a page on any deployable imports it."
 // Seed 1337 (fc.assert below). E1583 is a runtime error of a native submit: packages/testing/conformance/mount-form.test.ts. `keel build` reads the same
@@ -113,15 +113,12 @@ describe("k.mount: E1581 a module importing identity.ts where no origin mounts h
     expect(only(withTopology("web: { modules: ['a'], adapter: 'client' }"), "E1581")).toHaveLength(1);
   });
 
-  test("a module file importing `identity.ts` served by a `client` deployable with `host` and `shells` is one E1581", () => {
-    const files = withTopology(
+  test("the same module on a `node` deployable, and on a `client` deployable with `host`, with or without `shells`, is clean", () => {
+    const shelled = withTopology(
       `api: { modules: ['b'], adapter: 'node' }, web: { modules: ['a'], adapter: 'client', host: 'api', ${SHELLS} }`,
       [f("modules/b/module.ts", MANIFEST("b"))],
     );
-    expect(only(files, "E1581")).toHaveLength(1);
-  });
-
-  test("the same module on a `node` deployable, and on a `client` deployable with `host` and no `shells`, is clean", () => {
+    expect(only(shelled, "E1581")).toEqual([]);
     expect(only(clean(), "E1581")).toEqual([]);
     const hosted = withTopology(
       "api: { modules: ['b'], adapter: 'node' }, web: { modules: ['a'], adapter: 'client', host: 'api' }",
