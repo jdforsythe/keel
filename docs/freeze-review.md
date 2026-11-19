@@ -61,7 +61,6 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.channels | 11 | **conformance-covered** | none |
 | std.conflicts | 8 | **conformance-covered** | none |
 | std.copy | 2 | **conformance-covered** | none |
-| std.credentials | 15 | **conformance-covered** | none |
 | std.db | 8 | proposed | clause 1: the Postgres path runs on PGlite only; no job sets `KEEL_TEST_POSTGRES_URL` |
 | std.outbox | 14 | **conformance-covered** | none |
 | std.outbox-owner | 3 | proposed | not audited |
@@ -86,9 +85,9 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.temporal | 12 | **conformance-covered** | none |
 | std.text | 11 | **conformance-covered** | none |
 | std.timings | 7 | **conformance-covered** | none |
-| std.tokens | 10 | **conformance-covered** | none |
+| std.tokens | 12 | **conformance-covered** | none |
 | std.workflows | 8 | **conformance-covered** | none |
-| **total** | **841** | 77 of 82 covered | |
+| **total** | **828** | 76 of 81 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -135,6 +134,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.hosting is `implemented`; k.shell, k.boundary, std.db and std.outbox-owner are `proposed`; the other 77 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.hosting is `implemented`; k.shell, k.boundary, std.db and std.outbox-owner are `proposed`; the other 76 are `conformance-covered`.
 
 verified: 8141c656232bca08ab3b7f14c11c0efbc04b4ab9

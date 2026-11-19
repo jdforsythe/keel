@@ -844,3 +844,7 @@ The build is as the Proposal describes except where this section says otherwise.
 - THREAT-MODEL: the queue bound is per ctx, and the timing claim covers accounts stored at the app's cost only. An account at a lower `ln` answers faster than an unknown account until its next sign-in (red-team 1, medium; backlog 0648 holds a padding design for the user to weigh).
 - Stated as limits, with a conformance case each: the rules read a file's own `import`, `export ... from` and `import()` declarations, so a `createRequire` load and a helper file that re-exports the entry are not followed (following them does not fit the rules' 1.25kb, and a client bundle cannot hold the first). And `credentials(ctx)` throws E1158 for a ctx bound, before the package loaded, to a std config that fails its schema: a deployment fault that every other path reports earlier, not an answer a caller can act on.
 - A topology the checker cannot read is E1552 from `check(files)` as it is from the command line.
+
+## Amendment (2026-11-18, RFC 0141)
+
+RFC 0141 (ADR-0163) supersedes this RFC in part. Password hashing leaves the framework: `hash`, `verify`, `Hashed`, `CredentialsConfig`, the `ln` cost, the derivation queue and `credentials.length` are removed, and std.credentials is deleted. The package is `@keel/std-tokens`, the accessor `tokens(ctx)` with type `Tokens`, the capability `tokens` and the schema type `tokens.Digested`; E2201 and E2202 move to std.tokens. Token and digest forms and the `credentials.*` result codes of `mint` and `check` are unchanged.
