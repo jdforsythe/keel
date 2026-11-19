@@ -961,11 +961,24 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0859 std-headless (low): `listChart.ts:105,110` uses `toLocaleLowerCase`, which E1758 reports; package code is not keel-checked · std-headless · std.messages
 - [x] 0860 server, runtime-dom (medium, P-stage none): build RFC 0138 (what a request leaves), conformance first; closes 0849, 0851, 0852 and 0853 · server, runtime-dom, check · k.resume, k.privacy DONE 2026-11-18: conformance 6cd36b6b and cdc6637a, build ffe6dd16, smoke 4f016eec
 - [x] 0861 server (medium): build RFC 0139 (identity is a seam: `identity.server.ts`, `user` beside `caller`, fail closed, a signed header between deployables, opt-in `caller: { days }`); the sign-in session design was rejected by the operator and nothing in the framework authenticates anyone · server · k.security DONE 2026-11-18: conformance 6700a113 and 77afbaee, build f9ade783; closes 0811
-- [ ] 0862 apps (medium, the operator's choice): golden-2's `accounts` module: replace its hand-built sign-in with an established session library behind the identity seam (RFC 0139's recommendation), or keep the hand-built version labelled an example not for production · golden-2 · k.security
-- [ ] 0863 std-credentials (medium, the operator's choice): the future of `@keel/std-credentials` (password hash and verify, token mint and check): keep as documented low-level primitives with a warning, move to example code, or deprecate; not to be removed or extended without the operator's word · std-credentials · k.security
+- [x] 0862 apps (medium, the operator's choice): golden-2's `accounts` module: replace its hand-built sign-in with an established session library behind the identity seam (RFC 0139's recommendation), or keep the hand-built version labelled an example not for production · golden-2 · k.security
+- [x] 0863 std-credentials (medium, the operator's choice): the future of `@keel/std-credentials` (password hash and verify, token mint and check): keep as documented low-level primitives with a warning, move to example code, or deprecate; not to be removed or extended without the operator's word · std-credentials · k.security
 - [ ] 0864 budgets (medium): a size pass before the freeze: `@keel/server` grew from 24kb to 25.5kb and `@keel/check` from 54.5kb to 60kb on 2026-11-18; one saving was examined and found unsafe (folding E1303's `secretPath` into `schemaMarks` changes a limit the spec pins) · server, check
 - [ ] 0865 smoke (low): no real built `server.mjs` has run with an `identity.server.ts`; add it to the built smokes · tooling · k.security
 - [ ] 0866 shells (low): device checks owed: an auth library's cookie with a lifetime survives relaunch on Android, iOS and Tauri; the k.shell sentence RFC 0139 lists is unchanged until then · shells · k.shell
 - [ ] 0867 server (low): how a recorded session learns the caller lifetime is described by RFC 0139 and not specified; unbuilt · server, testing · k.security
 - [ ] 0868 smoke (low): the browser resume smoke crashed once and passed on re-run during the RFC 0139 build; find the cause · tooling · k.resume
-- [ ] 0869 apps (low): no app uses the identity seam yet; depends on 0862 · apps · k.security
+- [x] 0869 apps (low): no app uses the identity seam yet; depends on 0862 · apps · k.security
+- [ ] 0870 std-credentials (medium): RFC to split `@keel/std-credentials`: opaque tokens (`mint`, `check`) stay under a neutral name, password hashing leaves the framework · std · k.security
+- [ ] 0871 shells (medium): a shell cannot use the identity mount's sign-in path (E1581); design how a shell signs in through an auth library · shells, server · k.mount
+- [ ] 0872 ui (low): `Button` has no `name` or `value`, so a native post cannot say which button was pressed · ui · k.mount
+- [ ] 0873 check (low): E2406 runs only for modules that list std-messages · check · k.text
+- [ ] 0874 ui (low): `Text` has no `role` · ui · k.ui
+- [ ] 0875 server (low): no helper answers a redirect that carries an auth library's cookies · server · k.user
+- [ ] 0876 server (low): `identify` cannot open a Keel store · server · k.user
+- [ ] 0877 tooling (low): `pnpm evidence:report` writes data from a dirty tree without refusing · tooling
+- [ ] 0878 tooling (low): docs-freshness (D0001) trips several docs at once after a busy day; give the re-verify a cadence · tooling
+- [ ] 0879 cli (low): `keel build` prints E1007 on stderr only, not as a structured record · cli · k.boundary
+- [ ] 0880 check (low): E1107 keeps its own reach instead of the shared client reach · check · k.boundary
+- [ ] 0881 docs (low): principle 2 (no action at a distance) against build-time stubs of server-only files; decide whether the principle's text needs a sentence · docs
+- [ ] 0882 review (medium): reviewer and red-team pass over the identity seam, the mount, the forms copy fix and the server boundary · k.user, k.mount, k.boundary
