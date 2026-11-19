@@ -17,7 +17,7 @@ active:
   - safe to clear: YES once the `lane-w03` spec rewrite has reported (it commits on its branch either way).
 blockers: none
 pending decisions: none blocks work. The operator settled the return-link design (D18), the 0.x preview, no licence until launch, and golden-3 after the agent docs (D13 to D16 in the active plan). Still to ask, in conversation with a recommendation: whether `keel docs` replaces `keel spec` in the public CLI and thirteen app skills become seven (ADR-0173), whether the golden-3 agent run needs a container, and the remaining open decisions of tasks/p1/PLAN.md when their workstream starts.
-last updated: 84e212d6 2026-11-19
+last updated: 55696440 2026-11-19
 ```
 
 ## Reading on resume
