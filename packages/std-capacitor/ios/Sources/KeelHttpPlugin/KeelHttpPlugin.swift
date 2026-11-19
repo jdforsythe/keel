@@ -5,7 +5,8 @@ import Foundation
 /// whose cookies `HTTPCookieStorage.shared` keeps (the store `CapacitorHttp` uses). `request` resolves with the status
 /// and headers, `set-cookie` left out; the body follows as `chunk` events of at most 16 KiB (base64), then `end`, or
 /// `fail` on an error. A request with `redirect: "manual"` is not followed: its 3xx resolves as it came, its cookies
-/// kept. `cancel` cancels the task.
+/// kept. A response that sets a cookie resolves after `URLSession.flush` has written the cookie store to disk, so the
+/// cookie outlives a force-stop that follows at once. `cancel` cancels the task.
 @objc(KeelHttpPlugin)
 public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate {
     public let identifier = "KeelHttpPlugin"
@@ -70,7 +71,14 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
         for (k, v) in http?.allHeaderFields ?? [:] {
             if let k = k as? String, k.lowercased() != "set-cookie" { headers[k] = "\(v)" }
         }
-        call?.resolve(["status": http?.statusCode ?? 200, "headers": headers])
+        let answer: [String: Any] = ["status": http?.statusCode ?? 200, "headers": headers]
+        if http?.value(forHTTPHeaderField: "Set-Cookie") == nil {
+            call?.resolve(answer)
+        } else {
+            // The shared cookie store writes to disk a moment after it takes a cookie: the session flushes it, and
+            // the page hears of the response once the cookie outlives a force-stop.
+            session.flush { call?.resolve(answer) }
+        }
         completionHandler(.allow)
     }
 
@@ -79,6 +87,8 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
                            completionHandler: @escaping (URLRequest?) -> Void) {
         // No new request: the task completes with the redirect response itself.
         let manual = lock.withLock { table[task.taskIdentifier]?.manual ?? false }
+        // A followed redirect's own cookies reach no later delegate call: they are flushed here.
+        if !manual, response.value(forHTTPHeaderField: "Set-Cookie") != nil { session.flush {} }
         completionHandler(manual ? nil : request)
     }
 
