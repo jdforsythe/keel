@@ -985,21 +985,24 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0883 scaffold (medium): `keel scaffold service` in a module only client deployables list writes a file that fails E1571; refuse, or write something that works there · scaffold · k.scaffold, k.openapi
 - [ ] 0884 check (medium): `/// <reference types="vite/client" />` passes `keel check` though the only ambient types are Node's; forbid it or name it as the way browser code reads `import.meta.env` · check · k.check, k.boundary
 - [x] 0885 std-tokens (medium): RFC 0141 conformance and build (rename, password hashing removed, golden-2, skills, docs) · std · std.tokens
-- [ ] 0886 red-team, high: a Web Worker (`new Worker(new URL(…))`, `?worker`) bundle carries a server-only file whole; worker builds get no stubs and no E1007, E1004 does not follow `new URL` · compiler · k.boundary · repro: red-team-9.md H1
-- [ ] 0887 red-team, high: a `*.server.json` (any non-JS `*.server.*`) ships into the browser; `SERVER_NAME` covers JS/TS only · compiler, check · k.boundary · repro: red-team-9.md H2
-- [ ] 0888 red-team, high: `R.loader(…)` through `import * as R from '@keel/router'` (or a re-export) passes E1551 and E1007; the loader body ships · compiler, check · k.boundary, k.server · repro: red-team-9.md H3
-- [ ] 0889 red-team, medium: `vite build` on a case-insensitive FS ships `./notes.Server.ts`; test the real on-disk name · compiler · k.boundary · repro: red-team-9.md M1
-- [ ] 0890 red-team, medium: a project `envPrefix` array survives the plugin's `"\0"` lock (mergeConfig concatenates); `import.meta.env.KEEL_*` is inlined · compiler · k.boundary · repro: red-team-9.md M2
-- [ ] 0891 red-team, medium: `x-keel-user` is not bound to body or origin and the receiver has no expiry ceiling; a captured header replays any write for 60 s · server, services · k.user · repro: red-team-9.md M3
+- [x] 0886 red-team, high: a Web Worker (`new Worker(new URL(…))`, `?worker`) bundle carries a server-only file whole; worker builds get no stubs and no E1007, E1004 does not follow `new URL` · compiler · k.boundary · repro: red-team-9.md H1
+- [x] 0887 red-team, high: a `*.server.json` (any non-JS `*.server.*`) ships into the browser; `SERVER_NAME` covers JS/TS only · compiler, check · k.boundary · repro: red-team-9.md H2
+- [x] 0888 red-team, high: `R.loader(…)` through `import * as R from '@keel/router'` (or a re-export) passes E1551 and E1007; the loader body ships · compiler, check · k.boundary, k.server · repro: red-team-9.md H3
+- [x] 0889 red-team, medium: `vite build` on a case-insensitive FS ships `./notes.Server.ts`; test the real on-disk name · compiler · k.boundary · repro: red-team-9.md M1
+- [x] 0890 red-team, medium: a project `envPrefix` array survives the plugin's `"\0"` lock (mergeConfig concatenates); `import.meta.env.KEEL_*` is inlined · compiler · k.boundary · repro: red-team-9.md M2
+- [x] 0891 red-team, medium: `x-keel-user` is not bound to body or origin and the receiver has no expiry ceiling; a captured header replays any write for 60 s · server, services · k.user · repro: red-team-9.md M3
 - [ ] 0892 red-team, medium: no gate catches a committed ledger or evidence file that differs from what the tree produces; `pnpm ledger --diff` does not write · tooling · principle 11 · repro: red-team-9.md M4
 - [ ] 0893 red-team, low: E1579 misses a param route matching `handle.path`; the client router swallows mount links · compiler, server · k.user, k.mount · repro: red-team-9.md L1
 - [ ] 0894 red-team, low: `identityMount` does not validate `path` at runtime (`/\evil.example` resolves off-origin) · router · k.mount · repro: red-team-9.md L2
 - [ ] 0895 red-team, low: `handle.path` `/assets` shadows built assets; E1579 allows it · server, compiler · k.user · repro: red-team-9.md L3
-- [ ] 0896 red-team, low: `tokens.check` throws on a non-Secret token and answers `malformed` for an async `find` · std-tokens · std.tokens · repro: red-team-9.md L4
-- [ ] 0897 red-team, low: `tokens.check` accepts an expired token when the clock reads `NaN` · std-tokens · std.tokens · repro: red-team-9.md L5
-- [ ] 0898 red-team, low: `x-keel-user` carries a `user` of any length or content; cap at identify's 256 · services, server · k.user · repro: red-team-9.md L6
-- [ ] 0899 apps (medium): golden-2 takes a committed secret when `NODE_ENV` is `test` or `development`; take it only from an explicit dev entry · apps · k.user
-- [ ] 0900 compiler (medium): a browser build maps `node:sqlite` to the virtual module whatever the build side, and the assertion ignores virtual ids, so the result differs by Node version · compiler · k.boundary
+- [x] 0896 red-team, low: `tokens.check` throws on a non-Secret token and answers `malformed` for an async `find` · std-tokens · std.tokens · repro: red-team-9.md L4
+- [x] 0897 red-team, low: `tokens.check` accepts an expired token when the clock reads `NaN` · std-tokens · std.tokens · repro: red-team-9.md L5
+- [x] 0898 red-team, low: `x-keel-user` carries a `user` of any length or content; cap at identify's 256 · services, server · k.user · repro: red-team-9.md L6
+- [x] 0899 apps (medium): golden-2 takes a committed secret when `NODE_ENV` is `test` or `development`; take it only from an explicit dev entry · apps · k.user
+- [x] 0900 compiler (medium): a browser build maps `node:sqlite` to the virtual module whatever the build side, and the assertion ignores virtual ids, so the result differs by Node version · compiler · k.boundary
 - [ ] 0901 cli (low): a build stopped by the check gate ends with a `check` trailer, and check warnings are dropped on success · cli · k.boundary
-- [ ] 0902 compiler, cli (low): comments in `packages/cli/src/internal/buildCommand.ts` and `packages/compiler/src/vite.ts` carry RFC ids · compiler, cli
+- [x] 0902 compiler, cli (low): comments in `packages/cli/src/internal/buildCommand.ts` and `packages/compiler/src/vite.ts` carry RFC ids · compiler, cli
 - [ ] 0903 apps (low): golden-2's `identify` returns the bearer answer whenever an `authorization` header is present and never reads the session cookie · apps · k.user
+- [ ] 0904 spec (low): k.bundle's environment-value exception names the public origins only; the scan also skips `KEEL_DEPLOYABLE`, `KEEL_SHELL` and `KEEL_INSPECT_ORIGINS` · spec · k.bundle
+- [ ] 0905 check (low): `keel check` reports E1010 for code files only; a miscased non-code specifier is caught by the build · check · k.bundle
+- [ ] 0906 ci (operator): GitHub Actions does not start jobs: payment or spending limit on a private repository · ci
