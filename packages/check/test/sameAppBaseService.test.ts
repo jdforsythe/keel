@@ -27,14 +27,28 @@ const e1567 = (api: string): number =>
 
 describe("E1567 reads how service is imported", () => {
   it("reports a named import, an alias and a namespace import", () => {
-    expect(e1567("import { service } from '@keel/services'\nexport const api = service({ base: origin, schema: BApi })")).toBe(1);
-    expect(e1567("import { service as svc } from '@keel/services'\nexport const api = svc({ base: origin, schema: BApi })")).toBe(1);
-    expect(e1567("import * as sv from '@keel/services'\nexport const api = sv.service({ base: origin, schema: BApi })")).toBe(1);
+    expect(
+      e1567("import { service } from '@keel/services'\nexport const api = service({ base: origin, schema: BApi })"),
+    ).toBe(1);
+    expect(
+      e1567("import { service as svc } from '@keel/services'\nexport const api = svc({ base: origin, schema: BApi })"),
+    ).toBe(1);
+    expect(
+      e1567("import * as sv from '@keel/services'\nexport const api = sv.service({ base: origin, schema: BApi })"),
+    ).toBe(1);
   });
 
   it("passes a namespace call with an http base, another member and another package", () => {
-    expect(e1567("import * as sv from '@keel/services'\nexport const api = sv.service({ base: 'https://x.test', schema: BApi })")).toBe(0);
-    expect(e1567("import * as sv from '@keel/services'\nexport const api = sv.other({ base: origin, schema: BApi })")).toBe(0);
-    expect(e1567("import * as sv from './other.ts'\nexport const api = sv.service({ base: origin, schema: BApi })")).toBe(0);
+    expect(
+      e1567(
+        "import * as sv from '@keel/services'\nexport const api = sv.service({ base: 'https://x.test', schema: BApi })",
+      ),
+    ).toBe(0);
+    expect(
+      e1567("import * as sv from '@keel/services'\nexport const api = sv.other({ base: origin, schema: BApi })"),
+    ).toBe(0);
+    expect(
+      e1567("import * as sv from './other.ts'\nexport const api = sv.service({ base: origin, schema: BApi })"),
+    ).toBe(0);
   });
 });

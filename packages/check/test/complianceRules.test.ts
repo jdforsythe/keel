@@ -344,7 +344,14 @@ it("E1111 reads a schema object changed after its literal as unread, in the rout
     expect(ran(base, "s.object(FIELDS)", `${change}\n`)).toEqual([unread]);
   }
   expect(ran("const S = s.object({ q: s.string() })\nObject.assign(S, {})\n", "S")).toEqual([unread]);
-  expect(ran("const DEF = { path: '/c', search: s.object({}) }\nDEF.search = s.object({ t: s.secret() })\n", "DEF.search")).toEqual([unread]);
+  expect(
+    ran("const DEF = { path: '/c', search: s.object({}) }\nDEF.search = s.object({ t: s.secret() })\n", "DEF.search"),
+  ).toEqual([unread]);
   // Reading a binding or changing another one stays clean.
-  expect(ran(`${base}const OTHER = {}\nOTHER.x = 1\nObject.assign(OTHER, FIELDS)\nconsole.log(FIELDS.q)\n`, "s.object(FIELDS)")).toEqual([]);
+  expect(
+    ran(
+      `${base}const OTHER = {}\nOTHER.x = 1\nObject.assign(OTHER, FIELDS)\nconsole.log(FIELDS.q)\n`,
+      "s.object(FIELDS)",
+    ),
+  ).toEqual([]);
 });

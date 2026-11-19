@@ -7,13 +7,17 @@ import { localNames } from "./modules/localNames.ts";
 type Site = { readonly name: string; readonly at: number };
 
 /**
- * Offsets in `program` that read `reveal` from `@keel/schema`: an imported name, a `const` alias of one at any
+ * Offsets in `program` that read `reveal` from `@keel/schema`: an imported name (`imported` adds names bound to a
+ * re-export of it, `revealImports`), a `const` alias of one at any
  * chain length (`const r = reveal`, `const { reveal: r } = K`), or `K.reveal`/`K['reveal']` on a namespace import.
  * Each name counts only where it binds that import or alias (a local of the same name shadows it).
  */
-export function revealReads(program: Program): number[] {
+export function revealReads(program: Program, imported: ReadonlySet<string> = new Set()): number[] {
   const g = globalRefs(program);
-  const sites: Site[] = [...localNames(program, "reveal", "@keel/schema")].map((name) => ({ name, at: program.start }));
+  const sites: Site[] = [...localNames(program, "reveal", "@keel/schema"), ...imported].map((name) => ({
+    name,
+    at: program.start,
+  }));
   const namespaces = new Set<string>();
   for (const st of program.body)
     if (st.type === "ImportDeclaration" && st.source.value === "@keel/schema")

@@ -5,6 +5,8 @@ import { findingAt } from "../internal/findingAt.ts";
 import { importedFunction } from "../internal/importedFunction.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { localNames } from "../internal/modules/localNames.ts";
+import { reachedFunctions } from "../internal/reachedFunctions.ts";
+import { revealImports } from "../internal/revealImports.ts";
 import { revealReads } from "../internal/revealReads.ts";
 import { schemaSourceOf } from "../internal/schemaSourceOf.ts";
 import { secretPath } from "../internal/secretPath.ts";
@@ -24,7 +26,8 @@ const FUNCTIONS: ReadonlySet<string> = new Set([
  * the field path. (b) `reveal` from `@keel/schema` (`revealReads`: an alias, a const alias or destructured name, or
  * `<namespace>.reveal`/`['reveal']`) read inside a `transaction(...)` function, also one that only compares: an inline
  * function, a function declaration or const function named as the argument (reported at the read), or a function
- * imported from a relative file (reported at the argument). `store` and `transaction` count as named imports from
+ * imported from a relative file, also one it re-exports (reported at the argument); the functions of the same file
+ * those call by name count too. A `reveal` that a relative file re-exports (`export { reveal as open }`) is read. `store` and `transaction` count as named imports from
  * `@keel/store` or members of its namespace import, only where they bind the import (a local of the same name shadows
  * it). No fix: removing the field or the call leaves the code ill-typed, and the field may live in another file.
  */
@@ -75,16 +78,20 @@ export const noSecretInState: RuleDef = {
         const name = label?.type === "Literal" && typeof label.value === "string" ? label.value : "?";
         const arg = unwrapExpression(last);
         const fn = arg.type === "Identifier" ? (g.functionOf(arg.name, arg.start) ?? g.initOf(arg)) : arg;
-        if (FUNCTIONS.has(fn.type)) fns.push({ start: fn.start, end: fn.end, name });
+        if (FUNCTIONS.has(fn.type))
+          for (const s of reachedFunctions(ast, fn)) fns.push({ start: s.start, end: s.end, name });
         else if (arg.type === "Identifier" && imported(arg.name, arg.start)) {
           const far = importedFunction(ast, file.path, arg.name, project);
-          if (far !== null && revealReads(far.program).some((at) => at >= far.start && at < far.end))
+          if (far === null) return;
+          const spans = reachedFunctions(far.program, far);
+          const reads = revealReads(far.program, revealImports(far.program, far.file.path, project));
+          if (reads.some((at) => spans.some((s) => at >= s.start && at < s.end)))
             out.push(findingAt(file, arg.start, { tx: name }));
         }
       },
     }).visit(ast);
     if (fns.length === 0) return out;
-    for (const at of revealReads(ast)) {
+    for (const at of revealReads(ast, revealImports(ast, file.path, project))) {
       const owner = fns.find((f) => at >= f.start && at < f.end);
       if (owner !== undefined) out.push(findingAt(file, at, { tx: owner.name }));
     }
