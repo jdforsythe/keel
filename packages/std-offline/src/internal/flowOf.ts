@@ -13,8 +13,10 @@ export function flowOf(c: Config, ctx: Ctx): Flow {
     again: undefined,
     owner: undefined,
     paused: false,
+    ended: false,
     waits: new Map(),
     held: new Set(),
+    kept: [],
   };
   c.flows.set(ctx, f);
   return f;

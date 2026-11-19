@@ -11,8 +11,8 @@ import { flowOf } from "./flowOf.ts";
 export async function persist(ctx: Ctx, c: Config): Promise<void> {
   const stop = new AbortController();
   let gone = false;
-  const { held } = flowOf(c, ctx);
-  const entries = c.store.get("entries").filter((e) => held.has(e.key));
+  const { held, kept } = flowOf(c, ctx);
+  const entries = [...c.store.get("entries").filter((e) => held.has(e.key)), ...kept];
   const set = ctx.storage.set(`keel.outbox.${c.id}`, JSON.stringify({ entries }));
   set.then(
     () => void (gone && persist(ctx, c).catch(() => undefined)),

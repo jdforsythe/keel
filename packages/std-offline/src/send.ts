@@ -38,7 +38,9 @@ export async function send<const D extends EndpointMap, K extends keyof D & stri
   await own(ctx, c, opts.owner);
   // A `send` or `drain` with another owner ran during that write: this entry would never be posted.
   if (flowOf(c, ctx).owner !== opts.owner) return { state: "failed", error: fault(c, "offline.owner") };
-  const key = ctx.random.id("Write");
+  // A key another ctx's entry has (two ctxs of one seed) is drawn again: an entry is one key in the store.
+  let key = ctx.random.id("Write");
+  while (o.get("entries").some((e) => e.key === key)) key = ctx.random.id("Write");
   const entry: unknown = {
     key,
     endpoint,

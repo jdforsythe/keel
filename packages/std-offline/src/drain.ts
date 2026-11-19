@@ -20,8 +20,12 @@ export async function drain(ctx: Ctx, o: Outbox<EndpointMap>, opts: { readonly o
   if (sc === undefined) throw new Error("E1203: drain() outside a scope");
   const c = configOf(o);
   sc.onDispose(observe(ctx, (e) => e.kind === "net" && e.online && void flush(ctx, c)));
-  // The scope's end also drops the retry pending on this ctx.
-  sc.onDispose(() => flowOf(c, ctx).timer.abort());
+  // The scope's end also drops the retry pending on this ctx, and any the post in flight would arm.
+  sc.onDispose(() => {
+    const f = flowOf(c, ctx);
+    f.ended = true;
+    f.timer.abort();
+  });
   await load(ctx, c);
   await own(ctx, c, opts.owner);
   void flush(ctx, c);

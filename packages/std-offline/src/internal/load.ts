@@ -37,7 +37,11 @@ async function read(ctx: Ctx, c: Config): Promise<void> {
     if (!parsed.ok) continue;
     const e = parsed.value;
     const entries = c.store.get("entries");
-    if (entries.some((y) => y.key === e.key)) continue;
+    // Another ctx's entry has this key: left out here, and kept in this ctx's storage by its writes.
+    if (entries.some((y) => y.key === e.key)) {
+      flowOf(c, ctx).kept.push(x);
+      continue;
+    }
     const next = { ...e, state: e.state === "sending" ? ("queued" as const) : e.state };
     if (full(c, [...entries, next])) break;
     tx(c.add, next);

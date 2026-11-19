@@ -54,6 +54,7 @@ export async function resolve<const D extends EndpointMap>(
   if (state !== "conflict" && (resolution === "mine" || state !== "failed")) return false;
   tx(c.resolve, { key, resolution });
   if (resolution === "theirs") {
+    flowOf(c, ctx).held.delete(key);
     if (!(await attempt(() => persist(ctx, c))).ok) await attempt(() => persist(ctx, c));
     return true;
   }

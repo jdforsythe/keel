@@ -34,7 +34,9 @@ const paused: OutboxResult<unknown> = { state: "queued" };
  * another owner failed it before the flush reached it, else `queued` when the flush stops before it.
  */
 export function flush(ctx: Ctx, c: Config, key = ""): Promise<OutboxResult<unknown>> {
-  const done = new Promise<OutboxResult<unknown>>((go) => flowOf(c, ctx).waits.set(key, go));
+  const f = flowOf(c, ctx);
+  f.ended = false;
+  const done = new Promise<OutboxResult<unknown>>((go) => f.waits.set(key, go));
   void loop(ctx, c);
   return done;
 }
@@ -67,7 +69,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
     for (;;) {
       const who = f.owner;
       const e = c.store.get("entries").find((x) => x.state === "queued" && x.owner === who && f.held.has(x.key));
-      if (!c.live || !ctx.net.online() || e === undefined || f.paused) break;
+      if (!c.live || f.ended || !ctx.net.online() || e === undefined || f.paused) break;
       // An entry whose own write to `ctx.storage` has not settled: wait for it, then look again (it may be `failed`).
       const writing = c.writes.get(e.key);
       if (writing !== undefined) {
@@ -108,7 +110,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
       }
       if (out?.state === "queued") {
         await put(e.key, "queued", {});
-        if (ctx.net.online()) {
+        if (ctx.net.online() && !f.ended) {
           f.timer = new AbortController();
           ctx.clock.after(f.delay, f.timer.signal).then(
             () => loop(ctx, c),
@@ -119,6 +121,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
         break;
       }
       await put(e.key, out?.state ?? "queued", out?.state === "sent" ? {} : { ...out }, out);
+      if (out?.state === "sent") f.held.delete(e.key);
       if (out) {
         f.delay = 1000;
         done(e.key, out);

@@ -60,7 +60,10 @@ export function outbox<const D extends EndpointMap>(
       limit: opts.limit ?? 100,
       maxBytes: opts.maxBytes ?? 262_144,
       store: st,
-      add: transaction(st, `${id}.add`, OutboxEntry, (s0, e) => ({ entries: [...s0.entries, e] })),
+      // An entry is one key in the store: an `add` of a key it has changes nothing.
+      add: transaction(st, `${id}.add`, OutboxEntry, (s0, e) =>
+        s0.entries.some((x) => x.key === e.key) ? s0 : { entries: [...s0.entries, e] },
+      ),
       settle: transaction(st, `${id}.settle`, Settle, (s0, { key, state, ...extra }) =>
         state === "sent"
           ? { entries: s0.entries.filter((e) => e.key !== key) }
