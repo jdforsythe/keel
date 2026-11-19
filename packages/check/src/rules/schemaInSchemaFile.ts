@@ -1,24 +1,11 @@
-import type { Expression, Program } from "oxc-parser";
+import type { Expression } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { isComponentFile } from "../internal/isComponentFile.ts";
+import { localNames } from "../internal/modules/localNames.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
-
-/** Local names bound to `s` from `@keel/schema`. */
-function schemaNames(ast: Program): Set<string> {
-  const out = new Set<string>();
-  for (const st of ast.body) {
-    if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/schema") continue;
-    for (const sp of st.specifiers) {
-      if (sp.type !== "ImportSpecifier") continue;
-      const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
-      if (imported === "s") out.add(sp.local.name);
-    }
-  }
-  return out;
-}
 
 /** True when `e` is a call chain rooted at `<s>.<factory>(...)` (`s.object(...)`, `s.string().optional()`). */
 function isSchemaChain(e: Expression | null, names: ReadonlySet<string>): boolean {
@@ -45,7 +32,7 @@ export const schemaInSchemaFile: RuleDef = {
   see: "k.schema",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path) || /\.schema\.[cm]?[jt]s$/.test(file.path)) return [];
-    const names = schemaNames(ast);
+    const names = localNames(ast, "s", "@keel/schema");
     if (names.size === 0) return [];
     const component = isComponentFile(file.path, ast);
     const out: Finding[] = [];
