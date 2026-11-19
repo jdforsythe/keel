@@ -18,7 +18,7 @@ status: conformance-covered
 | `ledger` | emit and diff the ledger |
 | `evidence [--verify dir --key id]` | signed evidence bundle (k.evidence) |
 
-`session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps`; unfilled, I1055. `report` likewise (std.report).
+`session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps`; unfilled, I1055. `report`: std.report.
 
 Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting ones also take `--code <code>`.
 
