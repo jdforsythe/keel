@@ -1,6 +1,7 @@
 // Seed 1337
 // Spec: k.check, clause "Registering one code twice reports E1753; a rule that throws reports E1756 and other rules' diagnostics still appear."
-import { check, defineRule, explain, rules } from "@keel/check";
+import { check, defineRule, rules } from "@keel/check";
+import { explain } from "@keel/check/explain";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, findAll, one, registryCodes } from "./support.ts";

@@ -1,5 +1,5 @@
 // Seed 1337
-import { explain } from "@keel/check";
+import { explain } from "@keel/check/explain";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { specCodes } from "./spec-codes.ts";

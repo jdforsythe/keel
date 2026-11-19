@@ -5,7 +5,8 @@
 // Seed 1337 (no random inputs: codes are read from spec/kernel/*.md, `reportedCodes()` and packages/*/conformance).
 // RFC 0065 replaces the explain-only list (RFC 0020, 0040) with `reportedCodes()`.
 import { readFileSync, readdirSync } from "node:fs";
-import { check, defineRule, explain, reportedCodes } from "@keel/check";
+import { check, defineRule, reportedCodes } from "@keel/check";
+import { explain } from "@keel/check/explain";
 import { expect, test } from "vitest";
 import { CODE_FIXTURES } from "./fixtures-by-code.ts";
 import { specCodes } from "./spec-codes.ts";
