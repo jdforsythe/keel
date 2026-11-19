@@ -1,5 +1,6 @@
 import { respond } from "@keel/cli/testing";
 import { type RaceReport, raceRecords } from "@keel/std-conflicts";
+import "@keel/std-conflicts/tools";
 import type { Snapshot } from "@keel/store";
 import { describe, expect, test } from "vitest";
 
