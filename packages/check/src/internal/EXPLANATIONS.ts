@@ -117,8 +117,8 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1056",
-    "inspect target unreachable, not 2xx, or not an inspect document",
-    "The url must be a running dev app serving GET /__keel/inspect.",
+    "inspect or report target unreachable, not 2xx, or not the document the command reads",
+    "The url must be a running dev app serving GET /__keel/inspect, or for keel report with a path or a query, a route answering a Tally or an array of them as JSON, bare or as the ok value of a loader's answer.",
     "keel inspect http://localhost:5173 (start the app in dev first)",
     "k.cli",
   ],
