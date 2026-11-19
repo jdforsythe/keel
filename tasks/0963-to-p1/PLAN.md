@@ -24,7 +24,7 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 ## Verification
 - [ ] Backlog 0956 built and conformance-covered.
 - [ ] Backlog 0921: the server's mutation run finishes; findings in `tasks/0338-s8-reach/proposed/server-mutation-tail.md` acted on.
-- [ ] Backlog 0961: a session proven in the macOS Tauri shell and the iOS shell.
+- [ ] Backlog 0961: a session proven in the macOS Tauri shell and the iOS shell (done locally by automation; the hosted-runner run is backlog 0965).
 - [ ] golden-3 built by an agent run of its eval; the eval converges.
 - [ ] Freeze review (backlog 0034): every kernel section conformance-covered, the `frozen` flip prepared for P1.
 - [ ] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962).
