@@ -9,7 +9,7 @@ active:
     plan: tasks/0963-to-p1/PLAN.md
     branch: jdforsythe/test-impl
     worktree: this Orca worktree (test-impl); pull request 4 into master at https://github.com/jdforsythe/keel (public)
-  - state: pushed through 9c0102ec, gated in a clean checkout (`pnpm check`, both apps' `keel test`, `pnpm ledger --diff`, the evidence check, `pnpm build`; the full `pnpm test` was left to CI's shards). Later commits on the main line are local: the lane 05 merge and its review fixes, with `pnpm check`, the check suite and `pnpm ledger --diff` green; the ledger and evidence are written in `.worktrees/verify` before the next push. Lane branches under `.worktrees/` are local only.
+  - state: pushed through 3db682b8 (plus this stamp), gated in a clean checkout: `pnpm check`, both apps' `keel test`, `pnpm ledger --diff`, the evidence check, `pnpm build` and the check, compiler, router, testing, tooling and std-sessions suites; the full `pnpm test` is left to CI's shards. The ledger and evidence are written in `.worktrees/verify`. Lane branches under `.worktrees/` are local only.
   - built and conformance-covered this week: the server boundary and bundle rules, the identity seam and mount, `@keel/std-tokens`, `@keel/check/explain`, shell sign-in (`k.return`), std-report with `keel report`, std runtime entries (lint S0009). golden-2 exercises every std module that was unused.
   - stages: S1 to S5, S7 and S8 closed; S6 provisionally closed (its external reviews and the golden-3 build are P1 work). The P1 plan is `tasks/p1/PLAN.md` (a 0.x preview first; no licence until launch); P1 work has started ahead of the freeze flip.
   - in flight: see `## Lanes` in the active plan; it lists each lane's worktree, branch and state, what is merged and what waits.
@@ -17,7 +17,7 @@ active:
   - safe to clear: NO while subagents run on `lane-w07` and `lane-w5l1`; see `## Lanes` in the active plan for every lane and what waits.
 blockers: none
 pending decisions: none blocks work. Asked of the operator and not yet answered: ADR-0173 (`keel docs` replaces `keel spec`; thirteen app skills become seven), which gates W5's skill, packing and conformance lanes; the thirteen design choices of RFC 0151; the RFCs lane 09 names (0690, 0867). To confirm or reverse: D19 to D21 in the active plan. Still to ask when their work starts: whether the golden-3 agent run needs a container, and the open decisions of tasks/p1/PLAN.md.
-last updated: 39309c82 2026-11-19
+last updated: 3db682b8 2026-11-19
 ```
 
 ## Reading on resume
