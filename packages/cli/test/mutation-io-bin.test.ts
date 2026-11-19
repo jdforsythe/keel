@@ -292,12 +292,35 @@ describe("keel binary", () => {
     expect(r).toEqual({ code: 0, stdout: "ok build 0 files, 5 artifacts, 0 errors\n", stderr: "" });
   }, 30_000);
 
-  it("a vite build failure prints its last lines to stderr and fails the command with 1", async () => {
+  it("a vite build failure prints its message lines to stderr and fails the command with 1", async () => {
     const d = tmp();
     fakeVite(d, 'for i in 1 2 3 4 5 6; do echo "bad$i" >&2; done\nexit 5');
     const r = await keel(d, ["build"]);
     expect(r.code).toBe(1);
-    expect(r.stderr).toBe("bad2\nbad3\nbad4\nbad5\nbad6\n");
+    expect(r.stderr).toBe("bad1\nbad2\nbad3\nbad4\nbad5\nbad6\n");
+    expect(r.stdout).toBe("fail build 0 files, 5 artifacts, 1 errors\n");
+  }, 30_000);
+
+  it("a bundle that cannot resolve an import prints the specifier and the importing file, without the stack", async () => {
+    const d = tmp();
+    const err = [
+      "error during build:",
+      "Build failed with 1 error:",
+      "",
+      "[plugin keel]",
+      'modules/accounts/loadMe.server.ts:1:7: ERROR: Could not resolve "does-not-exist-xyz"',
+      "    at failureErrorWithLog (/x/node_modules/esbuild/lib/main.js:1752:15)",
+      "    at async CAC.<anonymous> (file:///x/node_modules/vite/dist/node/cli.js:789:3) {",
+      "  errors: [Getter/Setter]",
+      "}",
+    ];
+    put(d, "err.txt", `${err.join("\n")}\n`);
+    fakeVite(d, "cat err.txt >&2\nexit 1");
+    const r = await keel(d, ["build"]);
+    expect(r.code).toBe(1);
+    expect(r.stderr).toBe(
+      'error during build:\nBuild failed with 1 error:\n[plugin keel]\nmodules/accounts/loadMe.server.ts:1:7: ERROR: Could not resolve "does-not-exist-xyz"\n',
+    );
     expect(r.stdout).toBe("fail build 0 files, 5 artifacts, 1 errors\n");
   }, 30_000);
 

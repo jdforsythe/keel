@@ -396,10 +396,35 @@ describe("viteRun", () => {
     expect(readFileSync(join(d, "env.txt"), "utf8")).toBe("production\nproduction\n");
   });
 
-  it("build failure returns the last five lines of stderr, trimmed, with a trailing newline", () => {
+  it("build failure returns the last twelve lines of stderr under a count of the rest, with a trailing newline", () => {
     const d = tmp();
-    fakeVite(d, 'echo out-ignored\nfor i in 1 2 3 4 5 6 7; do echo "err$i" >&2; done\necho >&2\nexit 2');
-    expect(viteRun(d)).toEqual({ code: 2, tail: "err3\nerr4\nerr5\nerr6\nerr7\n", notes: [] });
+    const seq = (n: number): string => Array.from({ length: n }, (_, i) => i + 1).join(" ");
+    fakeVite(d, `echo out-ignored\nfor i in ${seq(12)}; do echo "err$i" >&2; done\necho >&2\nexit 2`);
+    const twelve = Array.from({ length: 12 }, (_, i) => `err${i + 1}\n`).join("");
+    expect(viteRun(d)).toEqual({ code: 2, tail: twelve, notes: [] });
+    fakeVite(d, `for i in ${seq(15)}; do echo "err$i" >&2; done\nexit 2`);
+    const last = Array.from({ length: 12 }, (_, i) => `err${i + 4}\n`).join("");
+    expect(viteRun(d)).toEqual({ code: 2, tail: `... +3 more\n${last}`, notes: [] });
+  });
+
+  it("build failure keeps the bundler's message and drops the stack under it", () => {
+    const d = tmp();
+    const err = [
+      "error during build:",
+      "Build failed with 1 error:",
+      'modules/a/load.server.ts:1:7: ERROR: Could not resolve "does-not-exist-xyz"',
+      "    at failureErrorWithLog (/x/node_modules/esbuild/lib/main.js:1752:15)",
+      "    at async CAC.<anonymous> (file:///x/node_modules/vite/dist/node/cli.js:789:3) {",
+      "  errors: [Getter/Setter]",
+      "}",
+    ];
+    put(d, "err.txt", `${err.join("\n")}\n`);
+    fakeVite(d, "cat err.txt >&2\nexit 1");
+    expect(viteRun(d)).toEqual({ code: 1, tail: `${err.slice(0, 3).join("\n")}\n`, notes: [] });
+    // Frames do not count toward the twelve lines: fourteen frames above one message leave the message alone.
+    const deep = [...Array.from({ length: 14 }, (_, i) => `    at f${i} (/x/y.js:1:1)`), "E1007 a.tsx server code"];
+    put(d, "err.txt", `${deep.join("\n")}\n`);
+    expect(viteRun(d)).toEqual({ code: 1, tail: "E1007 a.tsx server code\n", notes: [] });
   });
 
   it("build failure falls back to stdout when stderr is empty, and to a bare newline when both are", () => {
@@ -410,7 +435,7 @@ describe("viteRun", () => {
     expect(viteRun(d)).toEqual({ code: 9, tail: "\n", notes: [] });
   });
 
-  it("build failure keeps fewer than five lines whole", () => {
+  it("build failure keeps fewer than twelve lines whole", () => {
     const d = tmp();
     fakeVite(d, 'printf "a\\nb\\n" >&2\nexit 1');
     expect(viteRun(d)).toEqual({ code: 1, tail: "a\nb\n", notes: [] });

@@ -13,7 +13,7 @@ import { writeCspFiles } from "./writeCspFiles.ts";
  * deployable is `node` (`routesRun`), then `surface.json` (`surfaceRun`, k.compat), then one `vite build` per
  * `viteTargets` (k.server Build, k.hosting), stopping at the first that fails, then each `client` and `static`
  * deployable's `csp.txt` (`writeCspFiles`, k.security). Keel-coded lines become diagnostics;
- * `stderr` is a failed step's text (a Vite build's tail). `code` is the largest step code. Keel-coded lines become
+ * `stderr` is a failed step's text (a Vite build's message lines, `viteRun`). `code` is the largest step code. Keel-coded lines become
  * diagnostics (`stepNotes`); those of `routesRun` and the Vite builds are advisory: printed to stderr (W1005, E1006 for a `routes.ts`
  * that throws) and the exit code left alone, as the plugin's warning does.
  */
