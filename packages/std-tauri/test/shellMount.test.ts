@@ -58,15 +58,15 @@ beforeEach(() => {
   native.opened.length = 0;
 });
 
-test("an admitted return link sends its mount request; a provider redirect and a GET that ends open in the default browser, each an opening", async () => {
+test("an admitted return link sends its mount request; its provider redirect opens in the default browser and records no opening, so the next link sends nothing", async () => {
   const t = await start({ pending: true });
   await settle();
   t.link("dev.keel.app:/api/auth/start");
   await settle();
   t.link("dev.keel.app:/api/auth/callback?code=c");
   await settle();
-  expect(t.sent).toEqual(["/api/auth/start", "/api/auth/callback?code=c"]);
-  expect(native.opened).toEqual(["https://provider.example/a", "https://golden.example/api/auth/callback?code=c"]);
+  expect(t.sent).toEqual(["/api/auth/start"]);
+  expect(native.opened).toEqual(["https://provider.example/a"]);
 });
 
 test("links delivered in one batch share one opening: the first is admitted, the rest are ignored", async () => {
