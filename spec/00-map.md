@@ -1,9 +1,9 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: this file <= 1,200 tokens; a section <= 1,500.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file <= 1,200 tokens, section <= 1,500.
 
 ## Code ranges
-Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <code>` finds the owner.
+Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; owner: `pnpm spec --for <code>`.
 | block | owner | block | owner |
 |-|-|-|-|
 | E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence |
@@ -61,8 +61,8 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | Request user, caller lifetime | conformance-covered | user |
 | k.mount | Pages into the mount | conformance-covered | submit |
-| k.return | Mount from a shell | implemented | net |
-| k.opening | Return-link openings | implemented | once |
+| k.return | Mount from a shell | conformance-covered | net |
+| k.opening | Return-link openings | conformance-covered | once |
 | k.serverlog | Server log records | conformance-covered | bounds |
 | k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |

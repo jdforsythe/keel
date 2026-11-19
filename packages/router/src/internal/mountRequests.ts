@@ -19,8 +19,19 @@ type Shell = {
   readonly origin?: string | undefined;
 };
 
-/** Redirects in a row under the mount that are followed; the next one sends nothing. */
+/**
+ * A chain (k.opening Chains): a mount request and each redirect followed after it. `from` is who started it, the page
+ * (a `Link` click, `navigate`, `ok(href)`, a `Form`) or a return link that took an opening; only a page's chain records
+ * an opening. `redirects` counts the redirects followed in a row, on `KEEL_ORIGIN` or to the shell's own scheme. Each
+ * request gets its own value, so concurrent chains share nothing.
+ */
+type Chain = { readonly from: "page" | "link"; readonly redirects: number };
+
+/** Redirects in a row that are followed; the next one sends nothing. */
 const MAX_REDIRECTS = 5;
+/** The start of a chain the page starts, and of one a return link starts. */
+const PAGE: Chain = { from: "page", redirects: 0 };
+const LINK: Chain = { from: "link", redirects: 0 };
 const agents = new WeakMap<Ctx, Shell>();
 let listening = false;
 
@@ -35,12 +46,15 @@ const routerOf = (ctx: Ctx) => {
 };
 const parsed = (url: string, base: string): URL | null => (URL.canParse(url, base) ? new URL(url, base) : null);
 
-/** Where a root-relative `path` (with search and hash) on `KEEL_ORIGIN` goes: a mount request, a page, or nowhere. */
+/**
+ * Where a root-relative `path` (with search and hash) on `KEEL_ORIGIN` goes, as part of `chain`: a page, a mount
+ * request GET while the chain has followed no more than 5 redirects in a row, or `elsewhere`.
+ */
 async function arrive(
   ctx: Ctx,
   shell: Shell,
   path: string,
-  redirects: number,
+  chain: Chain,
   elsewhere: () => void | Promise<void>,
 ): Promise<void> {
   const u = new URL(path, "http://keel.invalid");
@@ -48,12 +62,15 @@ async function arrive(
   const core = routerOf(ctx);
   if (isHref(href) && core !== null && core.accepts(href, "POST") !== null) return core.navigate(href);
   if (!under(u.pathname)) return elsewhere();
-  if (redirects <= MAX_REDIRECTS) await request(ctx, shell, href, undefined, redirects);
+  if (chain.redirects <= MAX_REDIRECTS) await request(ctx, shell, href, chain);
 }
 
-/** A mount request opens `url` in the external browser: an opening is recorded first, then the browser opens. */
-async function opening(ctx: Ctx, shell: Shell, url: string): Promise<void> {
-  await returnOpenings.record(ctx);
+/**
+ * A mount request of `chain` opens `url` in the external browser. A chain the page started records an opening first; a
+ * chain a return link started records none. The browser opens either way, also when the opening cannot be stored.
+ */
+async function opening(ctx: Ctx, shell: Shell, url: string, chain: Chain): Promise<void> {
+  if (chain.from === "page") await returnOpenings.record(ctx);
   shell.open(url);
 }
 
@@ -61,12 +78,12 @@ async function opening(ctx: Ctx, shell: Shell, url: string): Promise<void> {
  * One mount request (k.return): `href` through `ctx.net` with `x-keel: 1`, `accept: application/json` and
  * `redirect: 'manual'`, a POST of `body` (urlencoded) when given, else a GET. Only the answer's status and `location`
  * are read. A redirect on `KEEL_ORIGIN` goes where `arrive` says, one elsewhere opens in the external browser when
- * it is `http:` or `https:`, and one on the shell's own scheme is read as a return link that takes no opening. A GET answered without a
- * redirect opens its URL in the external browser; each opening of the external browser is recorded
- * (`returnOpenings`). A POST answered without one, and a request that fails, change
- * nothing.
+ * it is `http:` or `https:`, and one on the shell's own scheme is read as a return link that takes no opening and
+ * continues `chain`, counting toward its redirects in a row. A GET answered without a redirect opens its URL in the
+ * external browser. Each opening of the external browser is recorded (`returnOpenings`) when `chain` is the page's.
+ * A POST answered without a redirect, and a request that fails, change nothing.
  */
-async function request(ctx: Ctx, shell: Shell, href: string, body?: string, redirects = 0): Promise<void> {
+async function request(ctx: Ctx, shell: Shell, href: string, chain: Chain, body?: string): Promise<void> {
   const headers: Record<string, string> = { "x-keel": "1", accept: "application/json" };
   if (body !== undefined) headers["content-type"] = "application/x-www-form-urlencoded";
   const req = new Request(absoluteUrl(href), {
@@ -85,19 +102,20 @@ async function request(ctx: Ctx, shell: Shell, href: string, body?: string, redi
   void res.body?.cancel().catch(() => undefined);
   const to = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
   if (to === null) {
-    if (body === undefined) await opening(ctx, shell, href);
+    if (body === undefined) await opening(ctx, shell, href, chain);
     return;
   }
   const home = shell.origin ?? new URL(req.url).origin;
   const t = parsed(to, new URL(href, home).href);
   if (t === null) return;
+  const next: Chain = { from: chain.from, redirects: chain.redirects + 1 };
   if (t.protocol === `${shell.id}:`) {
     const rest = returnPath(shell, t.href);
-    return rest === null ? undefined : arrive(ctx, shell, rest, 0, () => undefined);
+    return rest === null ? undefined : arrive(ctx, shell, rest, next, () => undefined);
   }
   const path = `${t.pathname}${t.search}${t.hash}`;
-  if (t.origin === home) return arrive(ctx, shell, path, redirects + 1, () => opening(ctx, shell, path));
-  if (t.protocol === "https:" || t.protocol === "http:") await opening(ctx, shell, t.href);
+  if (t.origin === home) return arrive(ctx, shell, path, next, () => opening(ctx, shell, path, chain));
+  if (t.protocol === "https:" || t.protocol === "http:") await opening(ctx, shell, t.href, chain);
 }
 
 /** The `/<path>?<search>` of a return link `<id>:/<path>?<search>`, its scheme in any case; null for any other URL. */
@@ -112,13 +130,14 @@ function returnPath(shell: Shell, url: string): string | null {
  * The intake of return links (k.return Return links), every one the platform delivers, at launch or while running.
  * Any other URL is ignored and takes nothing. A return link first takes the pending opening (`returnOpenings.take`,
  * one `commit`) before anything else happens: when it took none it is ignored, with no request and no navigation.
- * One that took it closes the external browser and is read as a redirect to its path on `KEEL_ORIGIN`.
+ * One that took it closes the external browser and is read as a redirect to its path on `KEEL_ORIGIN`, starting a
+ * chain of its own that records no opening, whatever it opens.
  */
 async function link(ctx: Ctx, shell: Shell, url: string): Promise<void> {
   const rest = returnPath(shell, url);
   if (rest === null || !(await returnOpenings.take(ctx))) return;
   shell.close?.();
-  await arrive(ctx, shell, rest, 0, () => undefined);
+  await arrive(ctx, shell, rest, LINK, () => undefined);
 }
 
 /** The mounted router's ctx and its shell, when a `Link` click or a `Form` post there is the shell's to take. */
@@ -143,7 +162,7 @@ function listen(): void {
     const mine = taking(e, a.href);
     if (mine === null) return;
     e.preventDefault();
-    void request(mine.ctx, mine.shell, mine.href);
+    void request(mine.ctx, mine.shell, mine.href, PAGE);
   });
   window.addEventListener("submit", (e) => {
     const form = e.target;
@@ -157,7 +176,7 @@ function listen(): void {
     for (const [k, v] of data) body.append(k, typeof v === "string" ? v : v.name);
     const seam = formSeams.get(form);
     seam?.setPending(true);
-    void request(mine.ctx, mine.shell, mine.href, body.toString()).then(() => seam?.setPending(false));
+    void request(mine.ctx, mine.shell, mine.href, PAGE, body.toString()).then(() => seam?.setPending(false));
   });
 }
 
@@ -165,15 +184,17 @@ function listen(): void {
  * Makes `ctx` a shell's for the identity mount (k.return): from then on, on a router of that ctx, each document
  * navigation to a path under an `identityMount` (a `Link` click, `navigate`, an action's `ok(href)`, a `Form` the
  * browser would post) is a mount request through `ctx.net` (`request`) and nothing leaves the page. Returns the intake
- * of return links (`link`): given `<id>:/<path>?<search>` that takes the pending opening it sends a mount request GET for a path under the mount, navigates to
- * a page, and ignores anything else; each opening of the external browser by a mount request is recorded; it resolves when that is done. Calling it again for a ctx replaces its shell.
+ * of return links (`link`): given `<id>:/<path>?<search>` that takes the pending opening it sends a mount request GET
+ * for a path under the mount, navigates to a page, and ignores anything else; it resolves when that is done. Each
+ * opening of the external browser by a chain the page started is recorded; one by a chain a return link started is
+ * not. Calling it again for a ctx replaces its shell.
  */
 export function mountRequests(ctx: Ctx, shell: Shell): (url: string) => Promise<void> {
   agents.set(ctx, shell);
   shells.set(ctx, (url) => {
     const u = parsed(url, "http://keel.invalid");
     if (u === null || !under(u.pathname)) return false;
-    void request(ctx, shell, `${u.pathname}${u.search}`);
+    void request(ctx, shell, `${u.pathname}${u.search}`, PAGE);
     return true;
   });
   listen();

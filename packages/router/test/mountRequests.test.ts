@@ -266,3 +266,64 @@ describe("return links", () => {
     expect(t.router.route.get().id).toBe("t.done");
   });
 });
+
+/** The hop after `k` of a chain named `c`: on even hops a path under the mount, on odd ones the shell's own scheme. */
+const hop = (c: string, k: number): string => (k % 2 === 0 ? `/auth/${c}${k + 1}` : `${ID}:/auth/${c}${k + 1}`);
+
+describe("chains (k.opening Chains)", () => {
+  it("counts mount and own-scheme redirects alike: five in a row are followed, the sixth sends nothing", async () => {
+    for (const n of [4, 5, 6]) {
+      const t = shell((r) => {
+        const k = Number(r.url.slice("/auth/p".length));
+        return k < n ? to(302, hop("p", k)) : new Response(null, { status: 404 });
+      });
+      await t.router.navigate(auth.href("/p0"));
+      await settle();
+      expect(
+        t.sent.map((r) => r.url),
+        String(n),
+      ).toEqual(Array.from({ length: Math.min(n, 5) + 1 }, (_v, k) => `/auth/p${k}`));
+      expect(t.opened, String(n)).toEqual(n <= 5 ? [`/auth/p${n}`] : []);
+      for (const stop of stops.splice(0)) stop();
+    }
+  });
+
+  it("a page-started chain and a link-started chain interleaved each keep their own origin and count", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 0, max: 7 }), fc.integer({ min: 0, max: 7 }), async (np, nl) => {
+        let linkArrived: () => void = () => undefined;
+        const arrived = new Promise<void>((resolve) => {
+          linkArrived = resolve;
+        });
+        const t = shell(async (r) => {
+          const c = r.url.slice("/auth/".length, "/auth/".length + 1);
+          const k = Number(r.url.slice("/auth/".length + 1));
+          if (c === "l" && k === 0) linkArrived();
+          // The page's chain starts only once the link took the opening and its chain is under way.
+          if (c === "p" && k === 0) await arrived;
+          if (c !== "p" && c !== "l") return new Response(null, { status: 404 });
+          const n = c === "p" ? np : nl;
+          return k < n ? to(302, hop(c, k)) : new Response(null, { status: 404 });
+        });
+        await pend(t.ctx);
+        const link = t.link(`${ID}:/auth/l0`);
+        await t.router.navigate(auth.href("/p0"));
+        await link;
+        await settle();
+        const of = (c: string): string[] => t.sent.map((r) => r.url).filter((u) => u.startsWith(`/auth/${c}`));
+        expect(of("p")).toHaveLength(Math.min(np, 5) + 1);
+        expect(of("l")).toHaveLength(Math.min(nl, 5) + 1);
+        expect([...t.opened].sort()).toEqual(
+          [...(np <= 5 ? [`/auth/p${np}`] : []), ...(nl <= 5 ? [`/auth/l${nl}`] : [])].sort(),
+        );
+        // Only the page's chain records an opening: one link is admitted exactly when it opened the browser.
+        const before = t.sent.length;
+        await t.link(`${ID}:/auth/x`);
+        await settle();
+        expect(t.sent.length - before).toBe(np <= 5 ? 1 : 0);
+        for (const stop of stops.splice(0)) stop();
+      }),
+      { seed: 1337, numRuns: 40 },
+    );
+  });
+});

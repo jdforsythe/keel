@@ -1,5 +1,5 @@
 # k.opening: Return-link openings
-status: implemented
+status: conformance-covered
 
 Which mount requests (k.return) record an opening, and which stored value is one. An opening admits one return link; these rules keep a return link from recording the next.
 
