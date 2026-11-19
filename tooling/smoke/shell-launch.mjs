@@ -48,6 +48,9 @@ const LOAD_MS = 180_000;
  * `simctl` command to end. */
 const BOOT_MS = 900_000;
 const SIMCTL_MS = 120_000;
+/** How many times `simctl launch` is tried, and the wait between tries. */
+const LAUNCH_TRIES = 3;
+const LAUNCH_WAIT_MS = 10_000;
 /** How long a killed app has to be gone. */
 const GONE_MS = 15_000;
 /** The pause between two polls. */
@@ -304,8 +307,13 @@ await run("shell-launch", async () => {
         shell = child(binary, [], { env: { ...process.env, HOME: home } });
         return;
       }
-      const r = await simctl(["launch", sim.udid, APP_ID]);
-      if (!r.ok) throw new Error(`simctl launch: ${tail(r.out, 1)}`);
+      // Just after a boot `simctl launch` can end without starting the app, or not end, while the simulator settles.
+      let r = await simctl(["launch", sim.udid, APP_ID]);
+      for (let again = 1; !r.ok && again < LAUNCH_TRIES; again++) {
+        await wait(LAUNCH_WAIT_MS);
+        r = await simctl(["launch", sim.udid, APP_ID]);
+      }
+      if (!r.ok) throw new Error(`simctl launch, ${LAUNCH_TRIES} tries: ${tail(r.out, 1)}`);
     };
     /** Kill the app without letting it end by itself: SIGKILL, or the simulator's force-stop. */
     const kill = async () => {

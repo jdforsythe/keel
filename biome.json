@@ -26,6 +26,7 @@
       "turbo.json",
       ".github/**",
       "dist/**",
+      ".worktrees/**",
       "coverage/**",
       "tooling/ledger/ledger.json",
       "**/test/.tmp-*/**",
