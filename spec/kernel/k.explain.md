@@ -1,5 +1,5 @@
 # k.explain: Explanations
-status: implemented
+status: conformance-covered
 
 The text `keel explain` prints (k.check **explain and spec**) lives in an entry of `@keel/check` of its own, apart from `check()`. What shows an explanation loads it: `keel explain`, the MCP `explain` tool and the LSP hover (k.cli). What checks code does not.
 
