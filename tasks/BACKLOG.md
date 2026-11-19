@@ -887,7 +887,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0784 std-offline: `fault.ts` gives `offline.owner` errs the same fixed message as `offline.storage`; std.offline states it for `offline.storage` only · std-offline · std.offline
 - [ ] 0785 red-team, decided as a stated limit: `dispose()` is a member of the shared app ctx, so any app code holding the ctx can stop its `online` and `offline` events; app code is inside the trust boundary · ctx · k.ctx
 - [x] 0786 compiler, low: the Vite plugin's `flush()` writes `.keel` under `process.cwd()` when `configResolved` never ran (`packages/compiler/src/vite.ts`, the `root` fallback), so a misused plugin writes into the working directory; fail or skip the write when no root was resolved · compiler · k.runtime
-- [ ] 0787 docs: `docs/THREAT-MODEL.md` (stored logs) does not mention the store's `keyLimit` · docs · k.sync
+- [x] 0787 docs: `docs/THREAT-MODEL.md` (stored logs) does not mention the store's `keyLimit` · docs · k.sync
 ## Red team and review 2026-11-18, round 7 (RFC 0120, 0126 to 0129, the amendments and the lanes; findings and probes in tasks/0338-s8-reach/proposed/red-team-7.md and review-7.md)
 - [x] 0790 red-team, HIGH: std-offline flush posts an entry whose owner changed (and that `own` already failed) while its `sending` write was pending; re-read the entry and owner after the write · std-offline · std.offline · repro: red-team-7.md H1
 - [x] 0791 red-team, HIGH: the outbox owner is not bound to the session cookie; a sign-in in a second tab makes the first tab post the previous user's entries under the new cookie; carry the owner in `write` and refuse a mismatch on the server, or state the limit · std-offline, sync · std.offline · repro: red-team-7.md H2
