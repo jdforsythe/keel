@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1287,
+    "example": 1292,
     "probabilistic": 327,
     "exhaustive": 15,
     "proven": 63,
@@ -67,7 +67,7 @@
         "threshold": 70
       },
       "std-channels": {
-        "score": 80.58,
+        "score": 77.24,
         "threshold": 70
       },
       "std-conflicts": {
@@ -111,7 +111,7 @@
         "threshold": 70
       },
       "std-offline": {
-        "score": 77.08,
+        "score": 71.43,
         "threshold": 70
       },
       "std-report": {
@@ -16121,7 +16121,7 @@
     },
     {
       "item": "std.channels#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.conflicts#1",
@@ -16577,7 +16577,7 @@
     },
     {
       "item": "std.offline#16",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.options#1",
@@ -16625,11 +16625,11 @@
     },
     {
       "item": "std.outbox-owner#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.outbox-owner#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.outbox#1",
@@ -16689,7 +16689,7 @@
     },
     {
       "item": "std.outbox#15",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.report#1",
