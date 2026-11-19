@@ -9,8 +9,7 @@
 // Seed 1337.
 // ASSUMPTIONS: `createApp({ allow: string[] })`; `topology({ <name>: { host } })`; `KEEL_ALLOW_ORIGINS` is read by the built `server.mjs`;
 // the client artifact copy lands at `dist/<host>/index.html` and `dist/<host>/assets/`; the W1567 diag is a JSON log line with kind "diag" (dev mode sink).
-// GAP: the client entry's binding of `keel-peer` tags to `ctx` has no public API and runs only in a browser, so the `service({ module })` fetch URL
-// and `credentials: 'include'` are not observed; the test checks the tag and that the built entry reads `keel-peer`. The unset case (document's origin) is likewise unobservable.
+// The `service({ module })` binding of the `keel-peer` tags is observed in packages/cli/conformance/hosting-peer-binding.test.ts.
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
@@ -249,7 +248,7 @@ describe("k.hosting", () => {
     }
   }, 180_000);
 
-  test("E1565 / With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`; `service({ module })` binding (gap above); `KEEL_PEER_API=nope` fails the build with one E1565 naming the key.", () => {
+  test("E1565 / With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`; `service({ module })` binding (packages/cli/conformance/hosting-peer-binding.test.ts); `KEEL_PEER_API=nope` fails the build with one E1565 naming the key.", () => {
     const set = buildFixture(WEB_AND_API, { KEEL_PEER_API: "https://api.test" });
     expect(set.status).toBe(0);
     const html = fs.readFileSync(path.join(set.root, "dist", "web", "index.html"), "utf8");
