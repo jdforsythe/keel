@@ -29,7 +29,7 @@
   ],
   "model": "none",
   "runner": "none",
-  "converged": false,
+  "converged": true,
   "iterations": 1,
   "tokens": {
     "input": 0,
@@ -37,10 +37,10 @@
   },
   "costUsd": 0,
   "unsafeCount": 4,
-  "checkTrailer": "ok budgets 153 measured (5.5s)",
-  "testTrailer": "ok test 84 tasks (0.2s)",
+  "checkTrailer": "ok budgets 153 measured (4.4s)",
+  "testTrailer": "ok test 84 tasks (0.3s)",
   "checkExit": 0,
   "testExit": 0,
-  "durationMs": 56186,
-  "startedAt": "2026-11-19T09:24:52.958Z"
+  "durationMs": 57299,
+  "startedAt": "2026-11-19T09:50:35.748Z"
 }
