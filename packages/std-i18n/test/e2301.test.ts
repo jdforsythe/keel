@@ -8,7 +8,12 @@ const SEED = 1337;
 type Files = Parameters<typeof check>[0];
 const DEP = "'@keel/std-i18n'";
 const BAD = "export const f = new Intl.NumberFormat('de-DE')\n";
-const run = (fs: Files) => check(fs, { types: false }).diagnostics.filter((d) => d.code === "E2301");
+/** The E2301 findings of `fs`; a rule that throws would show as E1756, which is never expected. */
+const run = (fs: Files) => {
+  const all = check(fs, { types: false }).diagnostics;
+  expect(all.filter((d) => d.code === "E1756")).toEqual([]);
+  return all.filter((d) => d.code === "E2301");
+};
 /** Findings for `code` in `modules/a/x.ts` under the manifest `manifestSource`. */
 const under = (manifestSource: string, code = BAD) =>
   run([
@@ -275,4 +280,34 @@ test("the first deps entry of the manifest object is the one read", () => {
 test("the first default export is the manifest", () => {
   expect(under("export default function m() {}\nexport const x = 1\n")).toEqual([]);
   expect(under(`export const x = 1\nexport default { deps: [${DEP}] }\n`).length).toBe(1);
+});
+
+test("a manifest listed after the module it nests in still wins for its own files", () => {
+  const fs: Files = [
+    { path: "modules/a/deep/module.ts", source: "export default { id: 'deep', deps: [] }\n" },
+    { path: "modules/a/module.ts", source: `export default { id: 'a', deps: [${DEP}] }\n` },
+    { path: "modules/a/deep/x.ts", source: BAD },
+    { path: "modules/a/y.ts", source: BAD },
+  ];
+  expect(run(fs).map((d) => d.path)).toEqual(["modules/a/y.ts"]);
+});
+
+test("a file whose name merely ends in module.ts is not a manifest", () => {
+  const fs: Files = [
+    { path: "modules/a/xmodule.ts", source: `export default { id: 'a', deps: [${DEP}] }\n` },
+    { path: "modules/a/xy.ts", source: BAD },
+    { path: "xmodule.ts", source: `export default { deps: [${DEP}] }\n` },
+    { path: "xz.ts", source: BAD },
+  ];
+  expect(run(fs)).toEqual([]);
+});
+
+test("a call without arguments or with a spread argument as the manifest lists nothing and does not throw", () => {
+  expect(under("export default module()\n")).toEqual([]);
+  expect(under("export default module(...args)\n")).toEqual([]);
+  expect(under("export default module({ deps: 7 })\n")).toEqual([]);
+});
+
+test("new expressions that are not Intl formatters are skipped without error", () => {
+  expect(withDeps("export const a = new Thing('de-DE')\nexport const b = new Intl.Segmenter('de-DE')\n")).toEqual([]);
 });
