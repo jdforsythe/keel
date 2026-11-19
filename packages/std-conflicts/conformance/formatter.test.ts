@@ -8,12 +8,13 @@ import { formatter } from "@keel/cli";
 import { respond } from "@keel/cli/testing";
 import { s } from "@keel/schema";
 import { raceRecords, races } from "@keel/std-conflicts";
+import "@keel/std-conflicts/tools";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { STORE_ID, boardStores, snapshotOf } from "./fixtures.ts";
 
 describe("std.conflicts: the conflicts.race formatter", () => {
-  test("importing @keel/std-conflicts registers the `conflicts.race` record kind (a second registration is E1053)", () => {
+  test("importing @keel/std-conflicts/tools registers the `conflicts.race` record kind (a second registration is E1053)", () => {
     expect(() => formatter("conflicts.race", { schema: s.object({}), compact: () => "", pretty: () => "" })).toThrow(
       /E1053/,
     );

@@ -2,7 +2,7 @@
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import "../src/index.ts";
+import "../src/tools/index.ts";
 import { pascalCase } from "../src/internal/pascalCase.ts";
 
 const SEED = 1337;

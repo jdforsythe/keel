@@ -162,7 +162,7 @@ std.multi
 - g.user(i).fire/navigate/find/state; g.setOnline(i, b); g.advance(ms); g.settle(); await g.stop() -> SessionGroup; replayGroup(group, { user, serve }) -> { users, server, reproduced }; inputs replay in order of at, then user, then event index
 
 std.conflicts
-- import { findRaces, raceRecords } from '@keel/std-conflicts': findRaces(group, { user, serve, stores: [boardStores] }) -> { replay, races, unchecked }; a race is a rebased entry whose order against its concurrent entries changes the result: E2701 <file>:1:1 race <name> #<id> over <name> #<id>, ... on <store>
+- import { findRaces, raceRecords } from '@keel/std-conflicts': findRaces(group, { user, serve, stores: [boardStores] }) -> { replay, races, unchecked }; a race is a rebased entry whose order against its concurrent entries changes the result: E2701 <file>:1:1 race <name> #<id> over <name> #<id>, ... on <store>; import '@keel/std-conflicts/tools' registers the conflicts.race formatter that prints the records
 
 k.model
 - import { explore } from '@keel/testing': explore(transactions, { from?, payloads?, depth?, maxStates = 10000 }) is synchronous over one store's transactions, breadth first; returns { states, edges, depth, complete, terminal }; the store's snapshot is restored after

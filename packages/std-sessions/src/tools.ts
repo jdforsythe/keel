@@ -3,7 +3,7 @@
 // `session.monitor` record formatters, the std config schema, and the `session` command (`stdCommand`).
 import { stdCommand } from "@keel/cli";
 import "./SessionsConfig.ts";
-import "./SessionRecord.ts";
+import "./sessionFormatter.ts";
 import "./adapterNotNode.ts";
 import "./monitorNotNode.ts";
 import "./SessionMonitorRecord.ts";

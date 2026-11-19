@@ -26,6 +26,7 @@ import { type Manifest, type RouteDef, manifest, routesArtifact } from "@keel/ro
 import { type ServerApp, topology } from "@keel/server";
 import { createApp } from "@keel/server";
 import { findRaces, raceRecords } from "@keel/std-conflicts";
+import "@keel/std-conflicts/tools";
 import { drain, send } from "@keel/std-offline";
 import { coverage } from "@keel/std-statecharts";
 import { tx as commit, isolate } from "@keel/store";
