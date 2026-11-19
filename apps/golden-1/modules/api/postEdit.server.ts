@@ -11,7 +11,7 @@ import { boardStores } from "./boardStores.ts";
  * `POST /api/todos/:todoId`: replace title and priority, with the write's key and base. `keel.fields` `{ title }` when
  * another todo in the same list has the title; an unknown todo is `keel.notFound`; a write whose base is not the
  * board's head is `keel.conflict` (409, `api.editTodo` refuses concurrent writes); a write queued under an owner
- * other than `""` (golden-1 has no sign-in) is `offline.owner`.
+ * other than `""` (golden-1 has no sign-in) is `offline.signin`.
  */
 export const postEdit = action(
   { input: TodoWrite, params: TodoIdParams, output: Nothing, stores: boardStores },

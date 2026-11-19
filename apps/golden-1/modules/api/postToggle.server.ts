@@ -8,7 +8,7 @@ import { ToggleWrite } from "./ToggleWrite.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
 /** `POST /api/todos/:todoId/toggle`: flip `done`, with the write's key and base; an unknown todo is `keel.notFound`;
- * a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.owner`. */
+ * a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.signin`. */
 export const postToggle = action(
   { input: ToggleWrite, params: TodoIdParams, output: Nothing, stores: boardStores },
   (input, { params, caller, stores }) => {
