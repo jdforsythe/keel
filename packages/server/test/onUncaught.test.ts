@@ -2,17 +2,25 @@
 // failing work ran in, `-` outside one, the thrown text only with `dev`, scrubbed of the request's values; the listeners
 // are installed once per process. Each case loads a fresh copy of the module so the once-flag starts unset, and calls
 // the listeners it added directly (emitting the process event would reach the test runner's own handlers).
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 type Listener = (e: unknown) => void;
 const EVENTS = ["uncaughtException", "unhandledRejection"] as const;
 const ROOT = "/srv/app";
 
+type Fn = (...args: never[]) => void;
+type Event = (typeof EVENTS)[number];
+const listenersOf = (event: Event): readonly Fn[] =>
+  event === "uncaughtException" ? process.listeners("uncaughtException") : process.listeners("unhandledRejection");
+const drop = (event: Event, fn: Fn): void => {
+  Reflect.apply(process.off, process, [event, fn]);
+};
+
 async function install(opts: { format?: "compact" | "json"; dev?: boolean } = {}) {
   vi.resetModules();
   const { onUncaught } = await import("../src/internal/onUncaught.ts");
   const { serving } = await import("../src/internal/serving.ts");
-  const before = new Map(EVENTS.map((e) => [e, process.listeners(e)]));
+  const before = new Map(EVENTS.map((e) => [e, listenersOf(e)]));
   const lines: string[] = [];
   let thens = 0;
   onUncaught(
@@ -25,10 +33,10 @@ async function install(opts: { format?: "compact" | "json"; dev?: boolean } = {}
   );
   const fresh = new Map<string, Listener>();
   for (const event of EVENTS)
-    for (const fn of process.listeners(event))
+    for (const fn of listenersOf(event))
       if (!before.get(event)?.includes(fn)) {
-        fresh.set(event, (e) => fn(e));
-        process.off(event, fn);
+        fresh.set(event, (e) => Reflect.apply(fn, process, [e]));
+        drop(event, fn);
       }
   return { lines, thens: () => thens, fresh, serving };
 }
@@ -42,18 +50,18 @@ describe("onUncaught", () => {
   it("installs once per process: a second call adds nothing", async () => {
     vi.resetModules();
     const { onUncaught } = await import("../src/internal/onUncaught.ts");
-    const before = EVENTS.map((e) => process.listeners(e));
+    const before = EVENTS.map((e) => listenersOf(e));
     const log = { format: "compact", write: () => undefined } as const;
     onUncaught(log, ROOT, false, () => undefined);
-    const after1 = EVENTS.map((e) => process.listeners(e));
+    const after1 = EVENTS.map((e) => listenersOf(e));
     onUncaught(log, ROOT, false, () => undefined);
-    const after2 = EVENTS.map((e) => process.listeners(e));
+    const after2 = EVENTS.map((e) => listenersOf(e));
     try {
       expect(after1.map((l, i) => l.length - (before[i]?.length ?? 0))).toEqual([1, 1]);
       expect(after2.map((l) => l.length)).toEqual(after1.map((l) => l.length));
     } finally {
       EVENTS.forEach((event, i) => {
-        for (const fn of process.listeners(event)) if (!before[i]?.includes(fn)) process.off(event, fn);
+        for (const fn of listenersOf(event)) if (!before[i]?.includes(fn)) drop(event, fn);
       });
     }
   });

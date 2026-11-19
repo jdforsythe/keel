@@ -190,7 +190,13 @@ describe("the cache of a built automaton", () => {
     expect(scrubbed("alpha beta gamma", passes(b))).toBe("[A] [B] gamma");
     expect(scrubbed("alpha beta gamma", passes(b2))).toBe("[A] beta [B]");
     expect(scrubbed("alpha beta gamma", [[a, "[A]"]])).toBe("[A] beta gamma");
-    expect(scrubbed("alpha beta gamma", [[a, "[A]"], [b, "[B]"], [b2, "[C]"]])).toBe("[A] [B] [C]");
+    expect(
+      scrubbed("alpha beta gamma", [
+        [a, "[A]"],
+        [b, "[B]"],
+        [b2, "[C]"],
+      ]),
+    ).toBe("[A] [B] [C]");
   });
 
   it("keeps `over` however the sets grow, without building again", () => {

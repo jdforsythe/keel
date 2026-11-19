@@ -90,7 +90,21 @@ describe("parseHtml elements", () => {
     expect(await parse("<p>a<br>b<img src=x>c<input>d</p>")).toEqual([
       el("p", ["text:a", el("br"), "text:b", el("img", undefined, { src: "x" }), "text:c", el("input"), "text:d"]),
     ]);
-    for (const tag of ["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"])
+    for (const tag of [
+      "area",
+      "base",
+      "br",
+      "col",
+      "embed",
+      "hr",
+      "img",
+      "input",
+      "link",
+      "meta",
+      "source",
+      "track",
+      "wbr",
+    ])
       expect(await parse(`<${tag}>x`), tag).toEqual([el(tag), "text:x"]);
   });
 
@@ -124,8 +138,10 @@ describe("parseHtml attributes", () => {
     expect(await parse(`<a title="x>y" alt='say "hi"' c="it's">z</a>`)).toEqual([
       el("a", ["text:z"], { title: "x>y", alt: 'say "hi"', c: "it's" }),
     ]);
-    expect(await parse(`<a title="a b  c" d="a&amp;b &lt;">`)).toEqual([el("a", undefined, { title: "a b  c", d: "a&b <" })]);
-    expect(await parse(`<a b=c&amp;d>`)).toEqual([el("a", undefined, { b: "c&d" })]);
+    expect(await parse(`<a title="a b  c" d="a&amp;b &lt;">`)).toEqual([
+      el("a", undefined, { title: "a b  c", d: "a&b <" }),
+    ]);
+    expect(await parse("<a b=c&amp;d>")).toEqual([el("a", undefined, { b: "c&d" })]);
   });
 
   it("ends an unquoted value at whitespace and keeps the attributes after it", async () => {
@@ -147,7 +163,9 @@ describe("parseHtml raw text", () => {
       el("style", ["text:a > b &amp; <i></i>"]),
       el("p", ["text:c"]),
     ]);
-    expect(await parse('<script src="a.js" async></script>')).toEqual([el("script", undefined, { src: "a.js", async: "" })]);
+    expect(await parse('<script src="a.js" async></script>')).toEqual([
+      el("script", undefined, { src: "a.js", async: "" }),
+    ]);
   });
 
   it("matches the closing tag in any letter case and allows spaces before its `>`", async () => {
@@ -162,12 +180,21 @@ describe("parseHtml raw text", () => {
     expect(await parse("<script>abc")).toEqual([el("script", ["text:abc"])]);
     expect(await parse("<script>")).toEqual([el("script")]);
     expect(await parse("<script>abc</script")).toEqual([el("script", ["text:abc"])]);
-    expect(await parse("<p><script>a</script>b</p>c")).toEqual([el("p", [el("script", ["text:a"]), "text:b"]), "text:c"]);
+    expect(await parse("<p><script>a</script>b</p>c")).toEqual([
+      el("p", [el("script", ["text:a"]), "text:b"]),
+      "text:c",
+    ]);
   });
 
   it("reads two raw elements in a row", async () => {
-    expect(await parse("<script>a</script><style>b</style>")).toEqual([el("script", ["text:a"]), el("style", ["text:b"])]);
-    expect(await parse("<script>a</script><script>b</script>")).toEqual([el("script", ["text:a"]), el("script", ["text:b"])]);
+    expect(await parse("<script>a</script><style>b</style>")).toEqual([
+      el("script", ["text:a"]),
+      el("style", ["text:b"]),
+    ]);
+    expect(await parse("<script>a</script><script>b</script>")).toEqual([
+      el("script", ["text:a"]),
+      el("script", ["text:b"]),
+    ]);
   });
 });
 
