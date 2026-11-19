@@ -18,7 +18,18 @@ function write(root: string, rel: string, content: string): void {
 function buildPostgresFixture(): string {
   const fixture = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-database-url-")));
   fs.mkdirSync(path.join(fixture, "node_modules", "@keel"), { recursive: true });
-  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server", "std-db"]) {
+  for (const p of [
+    "compiler",
+    "ctx",
+    "reactive",
+    "router",
+    "runtime-dom",
+    "schema",
+    "store",
+    "server",
+    "std-db",
+    "ui",
+  ]) {
     fs.symlinkSync(path.join(REPO, "packages", p), path.join(fixture, "node_modules", "@keel", p));
   }
   fs.symlinkSync(path.join(REPO, "node_modules", "vite"), path.join(fixture, "node_modules", "vite"));
@@ -52,7 +63,11 @@ function buildPostgresFixture(): string {
       },
     }),
   );
-  write(fixture, "modules/app/Page.tsx", "export default function Page() {\n  return <main>hi</main>\n}\n");
+  write(
+    fixture,
+    "modules/app/Page.tsx",
+    'import { Box } from "@keel/ui";\nexport default function Page() {\n  return <Box as="main">hi</Box>\n}\n',
+  );
   write(
     fixture,
     "modules/app/module.ts",

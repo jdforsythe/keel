@@ -13,24 +13,87 @@ export const THROWN = "planted-thrown-text";
 /** What the fixture's own timers are called, spelled so the fixture's source is data here. */
 const TIMER = ["set", "Timeout"].join("");
 
-const ROUTES = `import { loader, manifest } from "@keel/router";
-import { ok, s } from "@keel/schema";
-const Data = s.object({ title: s.string() });
-const Home = () => null;
-const answer = (title) => Promise.resolve(ok({ title }));
-// The work a request starts: each timer throws after the response has gone out.
-const throwLater = (...delays) => {
+/** The fixture's files under `modules/app/`, path -> source: loaders in `*.server.ts` files, the timers and writes under `unsafe/`. */
+const APP_FILES: Record<string, string> = {
+  "Data.schema.ts": `import { s } from "@keel/schema";
+export const Data = s.object({ title: s.string() });
+`,
+  "Home.tsx": `import { Text } from "@keel/ui";
+export default function Home() {
+  return Text({ children: "home" });
+}
+`,
+  "unsafe/throwLater.ts": `export const throwLater = (...delays: number[]): void => {
   for (const ms of delays) ${TIMER}(() => { throw new Error(${JSON.stringify(THROWN)}); }, ms);
 };
-const late = loader({ output: Data }, () => { throwLater(30); return answer("late"); });
-const twice = loader({ output: Data }, () => { throwLater(30, 40); return answer("twice"); });
-const slow = loader({ output: Data }, () => new Promise((resolve) => {
-  process.stdout.write("slow-started\\n");
-  ${TIMER}(() => resolve(ok({ title: "slow" })), 500);
-}));
-const hang = loader({ output: Data }, () => new Promise(() => process.stdout.write("hang-started\\n")));
-const quiet = loader({ output: Data }, () => answer("quiet"));
-if (process.env.LEAVE_MODE === "reject") void Promise.reject(new Error(${JSON.stringify(THROWN)}));
+`,
+  "unsafe/later.ts": `export const later = (ms: number, work: () => void): void => {
+  ${TIMER}(work, ms);
+};
+`,
+  "unsafe/announce.ts": `export const announce = (text: string): void => {
+  process.stdout.write(text);
+};
+`,
+  "unsafe/rejectOnLoad.ts": `if (process.env.LEAVE_MODE === "reject") void Promise.reject(new Error(${JSON.stringify(THROWN)}));
+export const rejectOnLoad = true;
+`,
+  "late.server.ts": `import { loader } from "@keel/router";
+import { ok } from "@keel/schema";
+import { Data } from "./Data.schema.ts";
+import { throwLater } from "./unsafe/throwLater.ts";
+export const late = loader({ output: Data }, () => {
+  throwLater(30);
+  return Promise.resolve(ok({ title: "late" }));
+});
+`,
+  "twice.server.ts": `import { loader } from "@keel/router";
+import { ok } from "@keel/schema";
+import { Data } from "./Data.schema.ts";
+import { throwLater } from "./unsafe/throwLater.ts";
+export const twice = loader({ output: Data }, () => {
+  throwLater(30, 40);
+  return Promise.resolve(ok({ title: "twice" }));
+});
+`,
+  "slow.server.ts": `import { loader } from "@keel/router";
+import { ok } from "@keel/schema";
+import { Data } from "./Data.schema.ts";
+import { announce } from "./unsafe/announce.ts";
+import { later } from "./unsafe/later.ts";
+export const slow = loader(
+  { output: Data },
+  () =>
+    new Promise((resolve) => {
+      announce("slow-started\\n");
+      later(500, () => resolve(ok({ title: "slow" })));
+    }),
+);
+`,
+  "hang.server.ts": `import { loader } from "@keel/router";
+import { Data } from "./Data.schema.ts";
+import { announce } from "./unsafe/announce.ts";
+export const hang = loader(
+  { output: Data },
+  () =>
+    new Promise<never>(() => {
+      announce("hang-started\\n");
+    }),
+);
+`,
+  "quiet.server.ts": `import { loader } from "@keel/router";
+import { ok } from "@keel/schema";
+import { Data } from "./Data.schema.ts";
+import "./unsafe/rejectOnLoad.ts";
+export const quiet = loader({ output: Data }, () => Promise.resolve(ok({ title: "quiet" })));
+`,
+  "routes.ts": `import { manifest } from "@keel/router";
+import Home from "./Home.tsx";
+import { hang } from "./hang.server.ts";
+import { late } from "./late.server.ts";
+import { quiet } from "./quiet.server.ts";
+import { slow } from "./slow.server.ts";
+import { twice } from "./twice.server.ts";
 export const routes = manifest({
   "app.home": { path: "/", component: Home, loader: quiet },
   "app.late": { path: "/late", component: Home, loader: late },
@@ -38,7 +101,8 @@ export const routes = manifest({
   "app.slow": { path: "/slow", component: Home, loader: slow },
   "app.hang": { path: "/hang", component: Home, loader: hang },
 });
-`;
+`,
+};
 
 function write(root: string, rel: string, content: string): void {
   const file = path.join(root, rel);
@@ -53,9 +117,13 @@ function link(target: string, at: string): void {
 /** Builds the fixture with the real CLI and returns its root; the caller removes it. */
 export function buildLeaveFixture(): string {
   const fixture = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-leave-")));
-  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server"]) {
+  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server", "ui"]) {
     link(path.join(REPO, "packages", p), path.join(fixture, "node_modules", "@keel", p));
   }
+  link(
+    path.join(REPO, "packages", "server", "node_modules", "@types", "node"),
+    path.join(fixture, "node_modules", "@types", "node"),
+  );
   link(path.join(REPO, "node_modules", "vite"), path.join(fixture, "node_modules", "vite"));
   link("../vite/bin/vite.js", path.join(fixture, "node_modules", ".bin", "vite"));
   write(fixture, "package.json", `${JSON.stringify({ name: "fx", private: true, type: "module" })}\n`);
@@ -87,7 +155,7 @@ export function buildLeaveFixture(): string {
     "modules/app/module.ts",
     'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n',
   );
-  write(fixture, "modules/app/routes.ts", ROUTES);
+  for (const [rel, source] of Object.entries(APP_FILES)) write(fixture, `modules/app/${rel}`, source);
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {
     cwd: fixture,
     encoding: "utf8",

@@ -13,19 +13,20 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { REPO, deployEnv } from "./topology-build-fixture.ts";
 
 const COUNTER = `import { signal } from "@keel/reactive";
+import { Box, Button, Text } from "@keel/ui";
 export default function Counter() {
   const n = signal(0);
-  return <div><button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</button><span id="c.out">{n.get()}</span></div>
+  return <Box><Button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</Button><Text id="c.out">{n.get()}</Text></Box>
 }
 `;
 const SERVER_FILE = `import { loader } from "@keel/router";
 import { s } from "@keel/schema";
-export const show = loader({ output: s.object({}) }, () => Promise.reject(new Error("boom")));
+export const a = loader({ output: s.object({}) }, () => Promise.reject(new Error("boom")));
 `;
 const ROUTES = `import { manifest } from "@keel/router";
 import Counter from "./Counter.tsx";
-import { show } from "./a.server.ts";
-export const routes = manifest({ "a.home": { path: "/", component: Counter }, "a.show": { path: "/a", loader: show, component: Counter } });
+import { a } from "./a.server.ts";
+export const routes = manifest({ "a.home": { path: "/", component: Counter }, "a.show": { path: "/a", loader: a, component: Counter } });
 `;
 
 function write(root: string, rel: string, content: string): void {
@@ -41,7 +42,7 @@ function link(target: string, at: string): void {
 /** A `keel build` fixture: one `node` deployable `web` serving module `a`, whose loader in `a.server.ts` throws. */
 function buildFixture(): string {
   const fixture = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-frames-map-")));
-  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server"]) {
+  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server", "ui"]) {
     link(path.join(REPO, "packages", p), path.join(fixture, "node_modules", "@keel", p));
   }
   link(path.join(REPO, "node_modules", "vite"), path.join(fixture, "node_modules", "vite"));

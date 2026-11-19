@@ -39,7 +39,7 @@ const tree: Record<string, string> = {
     "import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client', shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } } },\n})\n",
   "modules/c/module.ts": manifestSrc("c"),
   "modules/c/routes.ts":
-    "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+    "import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nconst Page = () => Text({ children: 'x' })\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
 };
 
 let dir = "";

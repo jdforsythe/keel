@@ -18,7 +18,7 @@ function write(root: string, rel: string, content: string): void {
 
 function buildTwoNodeFixture(): string {
   const fixture = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-deploy-env-")));
-  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server"]) {
+  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server", "ui"]) {
     fs.mkdirSync(path.join(fixture, "node_modules", "@keel"), { recursive: true });
     fs.symlinkSync(path.join(REPO, "packages", p), path.join(fixture, "node_modules", "@keel", p));
   }
@@ -53,7 +53,11 @@ function buildTwoNodeFixture(): string {
     ["app", "/"],
     ["other", "/other"],
   ] as const) {
-    write(fixture, `modules/${id}/Page.tsx`, "export default function Page() {\n  return <main>hi</main>\n}\n");
+    write(
+      fixture,
+      `modules/${id}/Page.tsx`,
+      'import { Box } from "@keel/ui";\nexport default function Page() {\n  return <Box as="main">hi</Box>\n}\n',
+    );
     write(
       fixture,
       `modules/${id}/module.ts`,

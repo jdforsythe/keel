@@ -27,6 +27,15 @@ export default function Counter() {
 }
 `;
 
+/** The file the fixture build compiles: the same counter from \`@keel/ui\` primitives, so the project passes \`keel check\`. */
+const BUILT_COUNTER = `import { signal } from "@keel/reactive";
+import { Box, Button, Text } from "@keel/ui";
+export default function Counter() {
+  const n = signal(0);
+  return <Box><Button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</Button><Text id="c.out">{n.get()}</Text></Box>
+}
+`;
+
 function compileComponent(source: string): Component {
   const r = compile([{ path: "Counter.tsx", source }]);
   expect(r.diagnostics).toEqual([]);
@@ -65,7 +74,7 @@ let emptyDir = "";
 beforeAll(() => {
   fixture = tmp("keel-build-");
   emptyDir = tmp("keel-noassets-");
-  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server"]) {
+  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server", "ui"]) {
     link(path.join(REPO, "packages", p), path.join(fixture, "node_modules", "@keel", p));
   }
   link(path.join(REPO, "node_modules", "vite"), path.join(fixture, "node_modules", "vite"));
@@ -94,7 +103,7 @@ beforeAll(() => {
       },
     }),
   );
-  write(fixture, "modules/app/Counter.tsx", COUNTER);
+  write(fixture, "modules/app/Counter.tsx", BUILT_COUNTER);
   write(
     fixture,
     "modules/app/routes.ts",

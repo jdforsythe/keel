@@ -121,15 +121,15 @@ describe("k.leave Rules: E1107 a store call in a client-reachable file whose sta
     expect(e1107(realFiles("apps/golden-2/modules/recipes", "modules/recipes"))).toEqual([]);
   });
 
-  test("the real accounts stores made reachable from a client component are E1107 for `contact`, and clean once the module lists it", () => {
+  test("the real accounts profile store made reachable from a client component is E1107 for `contact` and `identifier`, and clean once the module lists them", () => {
     const real = realFiles("apps/golden-2/modules/accounts", "modules/accounts");
     const panel = f(
       "modules/accounts/Panel.tsx",
-      "import { accountStores } from './accountStores.ts'\nexport default function Panel() { return <p>{String(accountStores)}</p> }\n",
+      "import { profileStores } from './profileStores.ts'\nexport default function Panel() { return <p>{String(profileStores)}</p> }\n",
     );
     const listed = real.map((x) =>
       x.path === "modules/accounts/module.ts"
-        ? { ...x, source: x.source.replace("capabilities:", "clientPii: ['contact'],\n  capabilities:") }
+        ? { ...x, source: x.source.replace("capabilities:", "clientPii: ['contact', 'identifier'],\n  capabilities:") }
         : x,
     );
     expect(e1107([...real, panel]).length).toBeGreaterThan(0);

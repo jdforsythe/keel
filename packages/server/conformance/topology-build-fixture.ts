@@ -9,9 +9,10 @@ import { fileURLToPath } from "node:url";
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const COUNTER = `import { signal } from "@keel/reactive";
+import { Box, Button, Text } from "@keel/ui";
 export default function Counter() {
   const n = signal(0);
-  return <div><button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</button><span id="c.out">{n.get()}</span></div>
+  return <Box><Button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</Button><Text id="c.out">{n.get()}</Text></Box>
 }
 `;
 
@@ -28,7 +29,7 @@ function link(target: string, at: string): void {
 /** Build the fixture with the real CLI and return its root; the caller removes it. */
 export function buildNodeFixture(): string {
   const fixture = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-topology-")));
-  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server"]) {
+  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server", "ui"]) {
     link(path.join(REPO, "packages", p), path.join(fixture, "node_modules", "@keel", p));
   }
   link(path.join(REPO, "node_modules", "vite"), path.join(fixture, "node_modules", "vite"));

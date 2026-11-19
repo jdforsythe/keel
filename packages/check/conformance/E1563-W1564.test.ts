@@ -2,7 +2,7 @@
 // Spec: k.compat, Rules "E1563 a state schema change a base store's stored states fail, naming the store and the first refused path; fix as E1562"
 // Spec: k.compat, Rules "W1564 a base transaction removed or its payload narrowed, naming it; no fix"
 // Seed: 1337.
-// ASSUMPTIONS (spec names no fixture layout): the stores factory lives in `modules/m/m.server.ts` and is named by an action's `stores`;
+// ASSUMPTIONS (spec names no fixture layout): the stores factory lives in `modules/m/factory.server.ts` and is named by an action's `stores`;
 // the surface is read through the real binary (`keel build` writes `.keel/surface.json`, `keel check --base <file>`), because the surface needs
 // `routes.ts` evaluated, which in-memory `check(files)` does not do. State schemas are closed objects: an open `{ a }` admits an extra `b`
 // a new `b: string.optional()` refuses (k.compat Accepts), so the base would not be accepted. "At `b`" is read as the diagnostic message naming `b`.
@@ -71,14 +71,17 @@ function files(sh: Shape): Record<string, string> {
       "import { topology } from '@keel/server'\nexport default topology({ x: { modules: ['m'], adapter: 'node' } })\n",
     "modules/m/module.ts":
       "import { module } from '@keel/compiler'\nexport default module({ id: 'm', deps: [], capabilities: [], public: { exports: [], routes: ['m.save'] } })\n",
-    "modules/m/m.server.ts":
-      "import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { store, transaction } from '@keel/store'\n" +
+    "modules/m/factory.server.ts":
+      "import { s } from '@keel/schema'\nimport { store, transaction } from '@keel/store'\n" +
       "export const factory = () => {\n" +
       `  const st = store(${sh.state}, ${sh.initial}, { id: 'm.s' })\n${txs}\n` +
-      `  return { st${sh.txs.map((_, i) => `, t${i}`).join("")} }\n}\n` +
+      `  return { st${sh.txs.map((_, i) => `, t${i}`).join("")} }\n}\n`,
+    "modules/m/save.server.ts":
+      "import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { factory } from './factory.server.ts'\n" +
       "export const save = action({ input: s.object({}), stores: factory }, async () => ok(null))\n",
     "modules/m/routes.ts":
-      "import { manifest } from '@keel/router'\nimport { save } from './m.server.ts'\nconst Page = () => null\n" +
+      "import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nimport { save } from './save.server.ts'\n" +
+      "const Page = () => Text({ children: 'x' })\n" +
       "export const routes = manifest({ 'm.save': { path: '/m/save', component: Page } })\n" +
       "routes.actions({ 'm.save': { POST: save } })\n",
   };

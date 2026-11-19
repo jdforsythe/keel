@@ -34,9 +34,10 @@ afterAll(() => {
 // ---- built fixtures -------------------------------------------------------------------------------------------
 
 const COUNTER = `import { signal } from "@keel/reactive";
+import { Box, Button, Text } from "@keel/ui";
 export default function Counter() {
   const n = signal(0);
-  return <div><button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</button><span id="c.out">{n.get()}</span></div>
+  return <Box><Button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</Button><Text id="c.out">{n.get()}</Text></Box>
 }
 `;
 
@@ -62,7 +63,7 @@ interface Built {
 function buildFixture(topologyArg: string, env: Record<string, string> = {}): Built {
   const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-hosting-")));
   roots.push(root);
-  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server"]) {
+  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server", "ui"]) {
     link(path.join(REPO, "packages", p), path.join(root, "node_modules", "@keel", p));
   }
   link(path.join(REPO, "node_modules", "vite"), path.join(root, "node_modules", "vite"));
@@ -106,7 +107,12 @@ function buildFixture(topologyArg: string, env: Record<string, string> = {}): Bu
   write(
     root,
     "modules/api/routes.ts",
-    'import { loader, manifest } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nconst ping = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\nexport const routes = manifest({ "api.ping": { api: true, path: "/api/ping", loader: ping } });\n',
+    'import { manifest } from "@keel/router";\nimport { ping } from "./ping.server.ts";\nexport const routes = manifest({ "api.ping": { api: true, path: "/api/ping", loader: ping } });\n',
+  );
+  write(
+    root,
+    "modules/api/ping.server.ts",
+    'import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nexport const ping = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n',
   );
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {
     cwd: root,
