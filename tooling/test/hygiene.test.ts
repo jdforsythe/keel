@@ -3,10 +3,14 @@ import { homePaths, quotations } from "../hygiene.mjs";
 
 const mac = ["", "Users", "someone", "work", "keel"].join("/");
 const linux = ["", "home", "someone", "keel"].join("/");
+const homes = [
+  ["", "Users", "someone"],
+  ["", "home", "someone"],
+].map((p) => p.join("/"));
 
 describe("homePaths", () => {
   it("finds a macOS and a Linux home path", () => {
-    expect(homePaths(`cd ${mac} and ${linux}`).map(([, p]) => p)).toEqual(["/Users/someone", "/home/someone"]);
+    expect(homePaths(`cd ${mac} and ${linux}`).map(([, p]) => p)).toEqual(homes);
   });
   it("allows a placeholder and CI's runner home", () => {
     expect(homePaths("strip `/Users/<name>` and /home/runner/work")).toEqual([]);
