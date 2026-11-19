@@ -26,7 +26,7 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 
 The policy has no option, so no app can widen it. Where the browser has Trusted Types, the runtime builds its compiler HTML through the one policy `keel`, and any other string assigned to an HTML sink throws. In dev the same policy is sent as `Content-Security-Policy-Report-Only`, with `'unsafe-inline'` in `style-src` for Vite's injected styles.
 
-**What it means for app code.** No inline script, no `<style>` element, no `style` attribute and no `on*` attribute: style comes from tokens, behavior from event props. No other origin: a literal absolute `http(s)` URL in `src`, `action` or `Image src` is E1570, and one given to `ctx.net.fetch` or `service({ base })` in client-reachable code is E1571. Fonts and images are served from the app's own origin.
+**What it means for app code.** No inline script, no `<style>` element, no `style` attribute and no `on*` attribute: style comes from tokens, behavior from event props. No other origin: a literal absolute `http(s)` URL in `src`, `action` or `Image src` is E1570, and one given to `ctx.net.fetch` or `service({ base })` in client-reachable code is E1571. Fonts and images are served from the app's own origin. Server code stays on the server: on a `node` or `static` deployable no byte of a `*.server.*` or `*.guard.*` file is in a browser asset, a build that would ship one fails with E1007, and no environment value is built into a browser file but the `KEEL_PEER_<NAME>` origins (k.boundary). A value hard-coded in any other file a page imports, such as a schema, a `routes.ts` or a shared helper, is public.
 
 **Reports.** Browsers post violations to `POST /__keel/csp`, which logs one `csp` record per report with the directive, the blocked origin (or `inline`, `eval`, `trusted-types`) and the route id. It logs no path, query or script sample, caps a body at 16 KiB and logs at most 100 reports per minute.
 
@@ -60,4 +60,4 @@ The command runs `test`, `check` and `ledger`, makes no network request, and wri
 
 Keel's checks stop where a person's judgment starts. Before a release, the app goes to an accessibility firm for WCAG 2.2 AA with a desktop and a mobile screen reader, starting from the criteria `a11y.json` leaves to a person, and to a pen-test firm for OWASP ASVS level 2. Both receive the verified bundle and its `keyId`, `docs/THREAT-MODEL.md`, an https deployment and one browser profile per role. The pen test covers access control, CSRF (the write proof), XSS (escaping, the policy, Trusted Types), headers and the caller cookie, personal data in logs, sessions and `/sessions/list`, and the documented caps on bodies, the report window and the session ingest. A finding on a criterion the ledger claimed at `example` also adds the rule or test that would have caught it.
 
-verified: c2a004b076a11c3b9c5cded38deed22cc5d9f9cb
+verified: dac9a06e2acd1eceb8877aa0d40a01e9d0144100
