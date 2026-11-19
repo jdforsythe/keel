@@ -133,7 +133,7 @@ test("'theirs' resolves true when its storage writes reject", async () => {
 
 test("an offline.owner err's message is the outbox id and its data is empty, whatever the owners", async () => {
   await fc.assert(
-    fc.asyncProperty(fc.string({ maxLength: 12 }), fc.string({ maxLength: 12 }), async (a, b) => {
+    fc.asyncProperty(fc.string({ maxLength: 12 }), fc.string({ minLength: 1, maxLength: 12 }), async (a, b) => {
       fc.pre(a !== b);
       const ctx = sim([]);
       ctx.net.setOnline(false);

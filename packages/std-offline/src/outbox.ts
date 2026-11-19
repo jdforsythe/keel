@@ -68,6 +68,7 @@ export function outbox<const D extends EndpointMap>(
         return { entries: [...entries, { ...plain, base: head, state: "queued" as const }] };
       }),
       owners: new WeakMap(),
+      paused: new WeakSet(),
       loads: new WeakMap(),
       live: true,
       busy: false,
