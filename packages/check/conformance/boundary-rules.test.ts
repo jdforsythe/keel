@@ -1,5 +1,5 @@
 // Spec: k.boundary, Conformance "In a `client` module `process.env.X` in `load.server.ts` is E1759; in a `node` module's `a.guard.ts` it is not; `guard(...)` in `modules/a/auth.ts` is E1009."
-// Spec: k.boundary, Rules "E1007 server code in a browser build (names the chain) · E1008 a stub of a server-only export called · E1009 `guard` from `@keel/router` called outside a `*.guard.*` or `*.server.*` file (fix: none)."
+// Spec: k.boundary, Rules "E1007 server code in a browser build (names the chain) · E1008 a stub of a server-only export called · E1009 `guard` from `@keel/router` used (k.bundle) outside a `*.guard.*` or `*.server.*` file (fix: none)."
 // Seed 1337 (the properties below). `check` over in-memory project trees (the type pass is off: the rules read syntax and the topology).
 // E1759 reads which files are browser files from `topology.ts`: a `client` module's `*.server.*` and `*.guard.*` files are, a `node` module's are not.
 import fc from "fast-check";
@@ -91,7 +91,7 @@ describe("k.boundary: a `node` module's server-only files are not browser files"
   });
 });
 
-describe("k.boundary Rules: E1009 `guard` from `@keel/router` called outside a `*.guard.*` or `*.server.*` file", () => {
+describe("k.boundary Rules: E1009 `guard` from `@keel/router` used (k.bundle) outside a `*.guard.*` or `*.server.*` file", () => {
   const GUARD =
     "import { guard } from '@keel/router'\nexport const auth = guard({ redirect: 'a.home' }, async () => null)\n";
   const e1009 = (path: string, source = GUARD) => diagsOf([file(path, source)], "E1009");
