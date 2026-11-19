@@ -72,7 +72,7 @@ export async function loadAssets(dir: string, hosted = false): Promise<BuiltClie
     for (const d of await fs.readdir(join(dir, rel), { withFileTypes: true }).catch(() => [])) {
       const at = `${rel}/${d.name}`;
       if (d.isDirectory()) await walk(at);
-      else if (root !== "" && !/\.map$/.test(d.name) && (await real(at)).startsWith(root + sep)) await add(at);
+      else if (root !== "" && !/\.map$/i.test(d.name) && (await real(at)).startsWith(root + sep)) await add(at);
     }
   };
   await walk("assets");

@@ -60,3 +60,11 @@ describe("a map is not reached by any spelling of its path", () => {
     expect((await app.fetch(new Request("http://localhost/assets/entry-Ab12Cd34.js"))).status).toBe(200);
   });
 });
+
+describe("a map in any letter case is not served", () => {
+  it("GET of a .MAP file is 404 and holds none of its text", async () => {
+    const res = await app.fetch(new Request("http://localhost/assets/upper-Ab12Cd34.js.MAP"));
+    expect(res.status).toBe(404);
+    expect(await res.text()).not.toContain(SECRET);
+  });
+});
