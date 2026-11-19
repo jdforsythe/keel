@@ -5,6 +5,11 @@
 // - conformance/hosting-0087.test.ts, conformance/e1560-deploy-env.test.ts, conformance/topology-server-mjs.test.ts,
 //   test/productionEntryBundle.test.ts: spawn `keel build` (packages/cli/src/bin.ts) of a fixture, directly or through
 //   conformance/topology-build-fixture.ts.
+// - test/*.scale.test.ts: the log scrub on texts of 400,000 to 2,000,000 characters. Instrumented, those cases take
+//   about 115 s of a 147 s dry run. Stryker gives a mutant 1.5 times its covering tests' time before it calls a
+//   timeout, and counts a loop as endless at 100 times the dry run's passes through it, so with them a scrub mutant
+//   that loops without end costs over 200 s and one that survives over 100 s. The same bounds on small texts, and
+//   the cap with a small cap, stay in (test/scrubSteps.test.ts, test/holdSecrets.test.ts).
 import { QuickFirst } from "@keel/tooling/quick-first";
 import { defineConfig, mergeConfig } from "vitest/config";
 import base from "./vitest.config.ts";
@@ -19,12 +24,13 @@ export default mergeConfig(
         "conformance/e1560-deploy-env.test.ts",
         "conformance/topology-server-mjs.test.ts",
         "test/productionEntryBundle.test.ts",
+        "test/*.scale.test.ts",
         "**/node_modules/**",
       ],
       sequence: { sequencer: QuickFirst },
-      // Instrumentation runs the scrub's string scans many times slower than a plain run. Outside mutation the 5 s
-      // default stays the bound the linear-scan cases of test/redTeam0105.test.ts rely on.
-      testTimeout: 60_000,
+      // The slowest test of the dry run takes about 1.1 s instrumented; 10 s leaves room for a loaded machine. A
+      // mutant that leaves a test waiting fails it at this bound, well inside Stryker's own timeout.
+      testTimeout: 10_000,
     },
   }),
 );
