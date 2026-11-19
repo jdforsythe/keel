@@ -1,15 +1,18 @@
 import { createCtx } from "@keel/ctx";
 import { type A11yNode, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { boardOutbox } from "../modules/todos/boardOutbox.ts";
 import { routes } from "../modules/todos/routes.ts";
 import { view } from "../modules/todos/view.ts";
 import { boardOf } from "./at.ts";
 import { readBoard, resetApi, seedBoard, simApi } from "./simApi.ts";
 
 const shown = view.snapshot();
+const queued = boardOutbox.snapshot();
 afterEach(() => {
   resetApi();
   expect(view.restore(shown).ok).toBe(true);
+  expect(boardOutbox.restore(queued).ok).toBe(true);
 });
 
 const L = { id: "l1", name: "Home" };
@@ -39,7 +42,8 @@ describe("todos.index", () => {
     await r.fire("todos.addList", { type: "click" });
     expect((await readBoard()).lists.map((l) => l.name)).toEqual(["Home", "Work"]);
     expect(r.state(view).lists.map((l) => l.name)).toEqual(["Home", "Work"]);
-    expect(sent).toEqual(["GET /api/lists", "POST /api/lists", "GET /api/lists"]);
+    expect(sent.filter((x) => x.startsWith("POST"))).toEqual(["POST /api/lists"]);
+    expect(sent).toContain("GET /api/board/events");
     r.dispose();
   });
   it("a created list survives navigation and a refresh (a fresh client finds it through the api)", async () => {
@@ -57,7 +61,8 @@ describe("todos.index", () => {
     const again = await simApi(2);
     const reloaded = await renderRoute("todos.list", { routes, params: { listId }, ctx: again.ctx });
     expect(reloaded.find("todos.list.title").text).toBe("Work");
-    expect(again.sent).toEqual(["GET /api/lists", "GET /api/suggestions"]);
+    expect(again.sent.slice(0, 2)).toEqual(["GET /api/lists", "GET /api/suggestions"]);
+    expect(again.sent.filter((x) => x.startsWith("POST"))).toEqual([]);
     reloaded.dispose();
   });
 });
@@ -96,7 +101,7 @@ describe("todos.list", () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();
     const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
-    await r.fire("todos.suggestions.title", { type: "focus" });
+    await r.settle();
     expect(r.find("todos.suggestions.list").text).toBe("BreadEggsMilk");
     r.dispose();
   });
@@ -146,7 +151,7 @@ describe("todos.list", () => {
   });
 });
 
-describe("event props (RFC 0009)", () => {
+describe("event props", () => {
   it("firing the row checkbox posts the toggle; firing Undo restores the prior board", async () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();
@@ -157,6 +162,29 @@ describe("event props (RFC 0009)", () => {
     await r.fire("todos.undo", { type: "click" });
     expect((await readBoard()).todos.map((t) => t.done)).toEqual([false, true]);
     expect(r.state(view).todos.map((t) => t.done)).toEqual([false, true]);
+    r.dispose();
+  });
+});
+
+describe("todos.list keyed rows", () => {
+  it("toggling a todo re-reads the board (live), keeps focus on the toggled control and changes only its checked state", async () => {
+    await seedBoard(boardOf(seeded));
+    const { ctx } = await simApi();
+    const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
+    await r.fire("todos.toggle.t1", { type: "focus" });
+    const before = r.a11y("todos.items");
+    await r.fire("todos.toggle.t1", { type: "change" });
+    expect(r.find("todos.toggle.t1")).toMatchObject({
+      role: "checkbox",
+      name: "Done: Milk",
+      state: { checked: true, focused: true },
+    });
+    const flip = (n: A11yNode): A11yNode => ({
+      ...n,
+      state: n.id === "todos.toggle.t1" ? { ...n.state, checked: true } : n.state,
+      children: n.children.map(flip),
+    });
+    expect(r.a11y("todos.items")).toEqual(flip(before));
     r.dispose();
   });
 });

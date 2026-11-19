@@ -2,6 +2,8 @@ import * as fc from "fast-check";
 import type { Schema } from "./Schema.ts";
 import { Secret } from "./Secret.ts";
 import type { Node } from "./internal/Node.ts";
+import { fits } from "./internal/fits.ts";
+import { formats } from "./internal/formats.ts";
 
 const limits = (node: { readonly min?: number; readonly max?: number }): { min?: number; max?: number } => ({
   ...(node.min === undefined ? {} : { min: node.min }),
@@ -11,8 +13,12 @@ const limits = (node: { readonly min?: number; readonly max?: number }): { min?:
 /** Arbitrary producing values that satisfy `node`. Optional keys are sometimes absent, never undefined. */
 function arbitrary(node: Node): fc.Arbitrary<unknown> {
   switch (node.kind) {
-    case "string":
-      return fc.string(node.max === undefined ? { minLength: node.min } : { minLength: node.min, maxLength: node.max });
+    case "string": {
+      const text = fc.string(
+        node.max === undefined ? { minLength: node.min } : { minLength: node.min, maxLength: node.max },
+      );
+      return node.min >= 1 ? text.filter((v) => /\S/.test(v)) : text;
+    }
     case "number":
       return fc.double({ noNaN: true, noDefaultInfinity: true, ...limits(node) });
     case "int":
@@ -36,6 +42,13 @@ function arbitrary(node: Node): fc.Arbitrary<unknown> {
       return arbitrary(node.inner);
     case "secret":
       return arbitrary(node.inner).map((v) => Secret.of(v));
+    case "format": {
+      const impl = formats.get(node);
+      if (impl === undefined) return arbitrary(node.base);
+      return arbitrary(impl.from)
+        .map(impl.map)
+        .filter((x) => fits(node, x));
+    }
     case "array":
       return fc.array(arbitrary(node.item));
     case "record":

@@ -1,0 +1,43 @@
+{
+  "name": "@keel/std-messages",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./tools": {
+      "types": "./src/tools/index.ts",
+      "default": "./src/tools/index.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/std-i18n": "workspace:*",
+    "oxc-parser": "^0.157.0"
+  },
+  "devDependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@keel/ui": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3",
+    "happy-dom": "^21",
+    "vite": "^8.3.6"
+  }
+}

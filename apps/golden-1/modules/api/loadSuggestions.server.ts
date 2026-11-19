@@ -1,6 +1,6 @@
 import { loader } from "@keel/router";
 import { ok, s } from "@keel/schema";
-import { Suggestion } from "../todos/Suggestion.schema.ts";
+import { Suggestion } from "./Suggestion.schema.ts";
 
 const TITLES = ["Bread", "Eggs", "Milk"];
 

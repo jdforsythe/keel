@@ -9,7 +9,7 @@ import { specStatus } from "./specStatus.ts";
 const COVERED = new Set(["conformance-covered", "frozen"]);
 
 /**
- * E1707 (k.testing Rules, `keel ledger --diff`): a section whose status is `conformance-covered` or `frozen` but
+ * E1707 (k.ledger Rules, `keel ledger --diff`): a section whose status is `conformance-covered` or `frozen` but
  * whose clause `n` is rated `none` in `records`, or which has no Conformance clause the ledger can read. Only
  * sections with an item in `records` (the `--scope`) are checked, except clause-less ones when no scope is given.
  * Located at the clause's line of the section file, or line 1.
@@ -28,7 +28,7 @@ export function coverageGaps(files: readonly SourceFile[], records: readonly Led
           path,
           line: 1,
           col: 1,
-          see: "k.testing",
+          see: "k.ledger",
         }),
       );
     for (const c of own)
@@ -38,7 +38,7 @@ export function coverageGaps(files: readonly SourceFile[], records: readonly Led
             path,
             line: c.line,
             col: 1,
-            see: "k.testing",
+            see: "k.ledger",
           }),
         );
   }

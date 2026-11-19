@@ -1,12 +1,19 @@
 import ts from "typescript";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
+import { applyEdits } from "./applyEdits.ts";
 import { clip } from "./clip.ts";
 import { lineCol } from "./lineCol.ts";
+import { manifestEntry } from "./manifestEntry.ts";
 import { nodeAt } from "./nodeAt.ts";
+import { unifiedDiff } from "./unifiedDiff.ts";
 
-/** `@keel/ui` base elements and their a11y-required props (k.ui), reported as E1802 when missing. */
+/**
+ * `@keel/ui` base elements and their a11y-required props (k.ui), reported as E1802 when missing. `Box` needs
+ * `label` only with `as` `nav` or `aside`, so only TypeScript's named missing `label` maps.
+ */
 const A11Y: ReadonlyMap<string, readonly string[]> = new Map([
+  ["Box", ["label"]],
   ["Button", ["children"]],
   ["Checkbox", ["label"]],
   ["Heading", ["level"]],
@@ -84,7 +91,8 @@ function isComponentProps(n: ts.Node, path: string): boolean {
 /**
  * Map one TS diagnostic to a Keel diagnostic (k.check): a missing a11y prop on a base element is E1802,
  * a missing `For` key is E1001, a string where `Href` is required is E1501 (E1003 when it is a literal
- * `javascript:`/`data:` URL); any other error is E1751 with
+ * `javascript:`/`data:` URL); one at the key or `api: true` of a `manifest({...})` entry is E1510 or E1508 (`manifestEntry`, E1510 with a
+ * fix removing an API route's refused members); any other error is E1751 with
  * the message starting `TS<code>`. Returns `null` for errors Keel does not report (implicit `any` on
  * component props) and for non-error categories.
  */
@@ -114,12 +122,20 @@ export function mapTsDiagnostic(
     message: clip(message, 89),
     see,
   });
+  const entry = manifestEntry(node, text);
+  if (entry !== null) {
+    const [code, message, edits] = entry;
+    const base = diag(code, message, code === "E1508" ? "k.guards" : "k.api");
+    if (edits === undefined) return base;
+    const moved = edits.map((e) => ({ ...e, start: original(e.start), end: original(e.end) }));
+    return { ...base, fix: unifiedDiff(path, file.source, applyEdits(file.source, moved)) };
+  }
   const tag = jsxTagOf(node);
   const missing = /Property '(\w+)' is missing/.exec(text)?.[1];
   const required = tag === null ? undefined : A11Y.get(tag);
   if (required !== undefined && missing !== undefined && required.includes(missing))
     return diag("E1802", `<${tag}> is missing a11y-required prop ${missing}`, "k.ui");
-  if (required !== undefined && MISSING_PROPS.has(d.code) && atTagName(node))
+  if (required !== undefined && tag !== "Box" && MISSING_PROPS.has(d.code) && atTagName(node))
     return diag("E1802", `<${tag}> is missing a11y-required prop ${required.join(" or ")}`, "k.ui");
   if (tag === "For" && missing === "key")
     return diag("E1001", 'For needs key="<field>" naming a field of the item', "k.compiler");

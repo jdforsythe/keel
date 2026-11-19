@@ -13,13 +13,13 @@ type Wide = {
 
 /**
  * What `route.get()` returns: the current match discriminated by `id` (`null` when no route matched or its
- * params failed). With an untyped table (non-literal keys) it widens to plain records.
+ * params failed); API routes (k.api) are never matched. With an untyped table (non-literal keys) it widens to plain records.
  */
 export type RouteState<M> = string extends keyof M
   ? Wide
   :
       | {
-          [K in keyof M & string]: M[K] extends { readonly path: string }
+          [K in keyof M & string]: M[K] extends { readonly path: string; readonly api?: never }
             ? {
                 readonly id: K;
                 readonly params: ParamsOf<M[K]>;

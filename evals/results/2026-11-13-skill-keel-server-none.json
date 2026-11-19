@@ -1,0 +1,17 @@
+{
+  "skill": "keel-server",
+  "runner": "none",
+  "model": "none",
+  "passed": true,
+  "tokenEstimate": 503,
+  "maxTokens": 600,
+  "frontmatterOk": true,
+  "missing": [],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "durationMs": 1,
+  "startedAt": "2026-11-13T22:59:14.567Z"
+}

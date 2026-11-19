@@ -8,6 +8,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./match": {
+      "types": "./src/match/index.ts",
+      "default": "./src/match/index.ts"
+    },
     "./internal": {
       "types": "./src/internal/index.ts",
       "default": "./src/internal/index.ts"
@@ -18,15 +22,17 @@
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs"
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
-    "@keel/schema": "workspace:*"
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/compiler": "workspace:*",
     "@keel/tooling": "workspace:*",
     "fast-check": "^3"

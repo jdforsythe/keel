@@ -39,3 +39,6 @@ Router, migrated: `fixtures.ts` (guards by value; `routes.href`; an in-memory hi
 
 ## Token impact
 k.router 1449 -> 1477; k.ui 1068 -> 1117. Both are within 1,500.
+
+## Amendment
+RFC 0063 (ADR-0052, backlog 0114) replaces the `const to: Href` binding. Actions attach with `routes.actions({...})` after the manifest, and an action returns `ok(routes.href(...))`.

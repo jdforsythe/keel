@@ -16,6 +16,10 @@
       "types": "./src/brand/index.ts",
       "default": "./src/brand/index.ts"
     },
+    "./aria": {
+      "types": "./src/aria/index.ts",
+      "default": "./src/aria/index.ts"
+    },
     "./fonts": "./fonts/fonts.css"
   },
   "files": ["dist", "fonts"],
@@ -23,7 +27,7 @@
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs"
   },
   "dependencies": {
     "@keel/compiler": "workspace:*",
@@ -34,6 +38,7 @@
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/tooling": "workspace:*",
     "axe-core": "4.14.0"
   }

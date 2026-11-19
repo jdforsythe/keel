@@ -1,18 +1,18 @@
 import type { StyleUsage } from "@keel/compiler";
+import type { PartState } from "../aria/PartState.ts";
 import { className } from "../internal/className.ts";
 import { states } from "../internal/states.ts";
 import { styleProps } from "../internal/styleProps.ts";
 import { tokenGroups } from "../internal/tokenGroups.ts";
 import { varName } from "../internal/varName.ts";
 import { vocabulary } from "../internal/vocabulary.ts";
-import type { StyleState } from "../types/StyleState.ts";
 import type { Tokens } from "../types/Tokens.ts";
 
 type Rule = {
   readonly cls: string;
   readonly order: readonly number[];
   readonly breakpoint: string | undefined;
-  readonly state: StyleState | undefined;
+  readonly state: PartState | undefined;
   readonly body: string;
 };
 
@@ -70,13 +70,15 @@ function rootBlocks(tokens: Tokens): string[] {
   return out;
 }
 
-const ruleText = (r: Rule): string => `.${r.cls}${states.find((s) => s.key === r.state)?.pseudo ?? ""}{${r.body}}`;
+const ruleText = (r: Rule): string =>
+  `${(states.find((s) => s.key === r.state)?.sel ?? [""]).map((s) => `.${r.cls}${s}`).join(",")}{${r.body}}`;
 
 /**
  * Compile style usages to atomic CSS. Pure and deterministic: one class per (prop, token, breakpoint,
  * state), deduplicated; equal props give equal class lists. Output order: `:root` custom properties
  * (dark-scheme and reduced-motion overrides in media blocks), base rules, one `min-width` block per
- * breakpoint in token order, then state rules (hover, focusVisible, active, disabled) and their
+ * breakpoint in token order, then state rules (selected, checked, expanded, highlighted, hover, focusVisible, active,
+ * disabled) and their
  * breakpoint blocks. Throws `code: 'E1801'` for an unknown token or breakpoint, `E1807` for an unsafe value.
  */
 export function compileStyles(input: { readonly tokens: Tokens; readonly usages: readonly StyleUsage[] }): {

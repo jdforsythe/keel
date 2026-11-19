@@ -7,6 +7,18 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./internal/start": {
+      "types": "./src/internal/start.ts",
+      "default": "./src/internal/start.ts"
+    },
+    "./internal/dom": {
+      "types": "./src/internal/dom/index.ts",
+      "default": "./src/internal/dom/index.ts"
+    },
+    "./csp": {
+      "types": "./src/csp/index.ts",
+      "default": "./src/csp/index.ts"
     }
   },
   "files": ["dist"],
@@ -14,9 +26,10 @@
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.6",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
@@ -27,7 +40,9 @@
     "hono": "^4.13.16"
   },
   "devDependencies": {
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
+    "@keel/ui": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3",
     "happy-dom": "^21"

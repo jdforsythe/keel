@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "Each of E1501-E1506 has a fixture that triggers it and a clean counterpart." (RFC 0020)
+// Spec: k.router, clause "E1501-E1506 each have a triggering fixture and a clean one." (RFC 0020)
 // E1501 has two halves. `navigate` with a string is type-only in this package (a TS error reported under E1501,
 // k.check), asserted here with type-level checks. Literal URL attributes and `Link to` are diagnosed by the compiler
 // (URL policy, k.compiler, RFC 0030), asserted through the public `compile`. Property seed: 1337.
@@ -137,11 +137,19 @@ describe("k.router rules", () => {
   });
 
   it("E1505 actions key that is not POST/PUT/PATCH/DELETE", () => {
-    const bad = (key: string) => ({ "f.one": { path: "/f", actions: { [key]: post }, component: page } });
-    expect(codeOf(() => manifest(bad("GET")))).toBe("E1505");
-    expect(codeOf(() => manifest(bad("post")))).toBe("E1505");
-    expect(codeOf(() => manifest(bad("POST")))).toBeNull();
-    expect(codeOf(() => manifest(bad("DELETE")))).toBeNull();
+    const attach = (key: string) => {
+      const m = manifest({ "f.one": { path: "/f", component: page } });
+      return codeOf(() => Reflect.apply(m.actions, m, [{ "f.one": { [key]: post } }]));
+    };
+    expect(attach("GET")).toBe("E1505");
+    expect(attach("post")).toBe("E1505");
+    expect(attach("POST")).toBeNull();
+    expect(attach("DELETE")).toBeNull();
+  });
+
+  it("E1505 actions in an entry (they attach with routes.actions)", () => {
+    const entry = { "f.two": { path: "/f2", actions: { POST: post }, component: page } };
+    expect(codeOf(() => Reflect.apply(manifest, undefined, [entry]))).toBe("E1505");
   });
 
   it("E1505 <Form method> outside POST/PUT/PATCH/DELETE", async () => {

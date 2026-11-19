@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { mutationScores } from "../src/internal/mutationScores.ts";
+import { mutationClaims } from "../src/internal/mutationClaims.ts";
 import { readProject } from "../src/internal/readProject.ts";
 import { testEvidence } from "../src/internal/testEvidence.ts";
 import { testFacts } from "../src/internal/testFacts.ts";
@@ -38,11 +38,11 @@ describe("testFacts / testEvidence: references", () => {
     expect(reached(src)).toEqual([["Four", "one", "three", "two"]]);
   });
 
-  it("a JSX tag and a default import count, the import also by its module's basename", () => {
+  it("a JSX tag counts; a default import that resolves to no known file counts by its module's basename", () => {
     const src = ['import View from "../modules/x/Page.view.tsx";', 'it("t", () => { render(<Card />, View); });'].join(
       "\n",
     );
-    expect(reached(src, [], "packages/a/test/t.test.tsx")).toEqual([["Card", "Page", "View", "render"]]);
+    expect(reached(src, [], "packages/a/test/t.test.tsx")).toEqual([["Card", "Page", "render"]]);
   });
 
   it("declarations, keys and labels are not references", () => {
@@ -113,9 +113,18 @@ describe("testFacts / testEvidence: references", () => {
       "const notFn = 3;",
       'it("t", () => { setup(); build(); loop(); remote(); notFn; missing(); });',
     ].join("\n");
-    expect(reached(src, [fixtures])).toEqual([
-      ["build", "deep", "inner", "loop", "mid", "missing", "notFn", "remote", "setup"].filter((n) => n !== "notFn"),
-    ]);
+    expect(reached(src, [fixtures])).toEqual([["deep", "inner", "loop", "mid", "missing", "remote", "setup"]]);
+  });
+
+  it("a relative import pins its names to the file it resolves to among the known files; others stay by name", () => {
+    const src = [
+      'import { board } from "../src/api/board.ts";',
+      'import { other } from "../src/missing.ts";',
+      'it("t", () => { board(); other(); });',
+    ].join("\n");
+    const [ref] = testEvidence([file(T, src)], new Set(["packages/a/src/api/board.ts"]));
+    expect([...(ref?.pinned ?? [])]).toEqual(["packages/a/src/api/board.ts#board"]);
+    expect([...(ref?.names ?? [])]).toEqual(["other"]);
   });
 
   it("only *.test.* files give tests; helper files with it(...) do not", () => {
@@ -252,9 +261,9 @@ describe("testFacts / testEvidence: property runs", () => {
     ]);
   });
 
-  it("properties(...) (k.testing) is a property run: 100 runs and seed 1337 unless given", () => {
+  it("properties(...) from @keel/testing is a property run: 100 runs and seed 1337 unless given; an unimported one is not", () => {
     const src = [
-      'import { properties as props } from "@keel/testing";',
+      'import { properties, properties as props } from "@keel/testing";',
       'it("a", () => properties(X));',
       'it("b", () => props(X, { runs: 50, seed: 3 }));',
     ].join("\n");
@@ -262,6 +271,7 @@ describe("testFacts / testEvidence: property runs", () => {
       { kind: "property", passed: true, runs: 100, seed: 1337 },
       { kind: "property", passed: true, runs: 50, seed: 3 },
     ]);
+    expect(evidence('it("c", () => properties(X));')).toEqual([EX]);
   });
 
   it("a helper's property run counts for the test that calls it", () => {
@@ -296,11 +306,13 @@ describe("testFacts / testEvidence: property runs", () => {
   });
 });
 
-describe("mutationScores", () => {
-  const report = (mutants: unknown): string => JSON.stringify({ files: { "a.ts": { mutants } } });
-  it("detected / (detected + undetected), one decimal, per package report", () => {
-    expect(
-      mutationScores([
+describe("mutationClaims", () => {
+  const report = (mutants: unknown, source = "x"): string =>
+    JSON.stringify({ thresholds: { high: 80, low: 60, break: 50 }, files: { "src/a.ts": { source, mutants } } });
+  it("one claim per file with a scored mutant; detected / (detected + undetected), one decimal; timeouts detected", () => {
+    const { mutation, fresh } = mutationClaims(
+      [
+        file("packages/a/src/a.ts", "x"),
         file(
           "packages/a/reports/mutation/mutation.json",
           report([
@@ -314,19 +326,46 @@ describe("mutationScores", () => {
             "x",
           ]),
         ),
+        file("packages/b/src/a.ts", "y"),
         file(
           "packages/b/reports/mutation/mutation.json",
-          report([{ status: "Killed" }, { status: "Survived" }, { status: "Killed" }]),
+          report([{ status: "Killed" }, { status: "Survived" }, { status: "Killed" }], "y"),
         ),
         file("packages/c/reports/mutation/mutation.json", report([{ status: "Ignored" }])),
         file("packages/d/reports/mutation/mutation.json", "{not json"),
         file("packages/e/reports/mutation/mutation.json", JSON.stringify({ files: [] })),
-        file("packages/f/reports/mutation/mutation.json", JSON.stringify({ files: { "a.ts": { mutants: 3 } } })),
-        file("packages/g/reports/mutation/mutation.json", JSON.stringify({ files: { "a.ts": 1 } })),
         file("packages/h/reports/mutation/other.json", report([{ status: "Killed" }])),
         file("apps/x/reports/mutation/mutation.json", report([{ status: "Killed" }])),
-      ]),
-    ).toEqual({ a: 50, b: 66.7 });
+      ],
+      undefined,
+    );
+    expect(mutation.claims.map((c) => [c.file, c.killed, c.survived, c.noCoverage, c.score])).toEqual([
+      ["packages/a/src/a.ts", 2, 1, 1, 50],
+      ["packages/b/src/a.ts", 2, 1, 0, 66.67],
+    ]);
+    expect(mutation.packages).toEqual({
+      a: { score: 50, threshold: 50 },
+      b: { score: 66.67, threshold: 50 },
+      c: { threshold: 50 },
+    });
+    expect([...fresh]).toEqual(["packages/a/src/a.ts", "packages/b/src/a.ts"]);
+  });
+
+  it("a changed file's claim is stale and its package score omits it; committed claims are kept", () => {
+    const committed = {
+      packages: { a: { score: 100, threshold: 70 } },
+      claims: [{ file: "packages/a/src/b.ts", sha: "0", killed: 1, survived: 0, noCoverage: 0, score: 100 }],
+    };
+    const { mutation, fresh } = mutationClaims(
+      [
+        file("packages/a/src/a.ts", "changed"),
+        file("packages/a/reports/mutation/mutation.json", report([{ status: "Killed" }])),
+      ],
+      committed,
+    );
+    expect(mutation.claims.map((c) => c.file)).toEqual(["packages/a/src/a.ts", "packages/a/src/b.ts"]);
+    expect(fresh.size).toBe(0);
+    expect(mutation.packages).toEqual({ a: { threshold: 50 } });
   });
 });
 

@@ -162,8 +162,7 @@ const act = (verb: Verb) =>
     bump(`action:${verb}`);
     control.lastInput = input;
     if (control.outcome === "href") {
-      const to: Href = routes.href("orders.list");
-      return ok(to);
+      return ok(routes.href("orders.list"));
     }
     return ok(null);
   });
@@ -199,7 +198,6 @@ export const routes = manifest({
     params: OrderParams,
     search: ShowSearch,
     loader: loadShow,
-    actions: { POST: act("POST"), PUT: act("PUT"), PATCH: act("PATCH"), DELETE: act("DELETE") },
     component: OrderPage,
     layout: "orders.shell",
     errorElement: errorElement("orders.show"),
@@ -229,6 +227,7 @@ export const routes = manifest({
   },
   "slow.page": { path: "/slow", loader: loadSlow, component: page("slow.page"), layout: "app.shell" },
 });
+routes.actions({ "orders.show": { POST: act("POST"), PUT: act("PUT"), PATCH: act("PATCH"), DELETE: act("DELETE") } });
 
 // ---- in-memory history
 export type MemoryHistory = {
@@ -321,8 +320,9 @@ const ProbeHome = (): Node =>
 const probeAct = action({ input: OrderEdit }, async () => ok(null));
 export const probeRoutes = manifest({
   "probe.home": { path: "/probe", component: ProbeHome },
-  "probe.show": { path: "/probe/:id", params: OrderParams, actions: { POST: probeAct }, component: page("probe.show") },
+  "probe.show": { path: "/probe/:id", params: OrderParams, component: page("probe.show") },
 });
+probeRoutes.actions({ "probe.show": { POST: probeAct } });
 export const probeLinks = manifest({
   "link.show": { path: "/probe/:id", params: OrderParams, component: page("link.show") },
   "link.ghost": { path: "/nowhere", component: page("link.ghost") },

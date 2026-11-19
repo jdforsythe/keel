@@ -1,0 +1,5 @@
+---
+"@keel/std-sessions": minor
+---
+
+std.sessions ingest service and recorder bounds (backlogs 0093, 0211, RFC 0070). `@keel/std-sessions/routes` serves `sessions.ingest` (`POST /sessions`, a `Session` up to 256 KiB, else 413 `keel.payloadTooLarge`; invalid input 422 `keel.fields`) and `sessions.list` (`GET /sessions/list`, search `failing` and `since`) behind guard `sessions.reader`, which admits the caller hashes in config `readers` and redirects anyone else to `sessions.ingest`. Sessions go to store `sessions.archive`, persisted through `ctx.storage`: 64 fingerprints, the newest 5 sessions of each, at most 4 MiB, oldest `last` evicted first. The ingest recomputes each fingerprint when the session holds its inputs. `record` now keeps a session's JSON within 192 KiB by cutting its oldest events with the overflow rule, keeps the first and last 32 errors, and records a rejected upload as a `sessions.putFailed` error. The real `session` capability sends `keepalive` only for bodies up to 64 KiB, the browser limit. `apps/sessions` is Keel's own node deployable running the service.

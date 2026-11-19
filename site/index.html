@@ -1,0 +1,1302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Keel</title>
+<meta name="description" content="Keel is a full-stack web framework whose primary author is a coding agent." />
+<link rel="icon" href="../docs/brand/keel-mark.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../packages/ui/fonts/fonts.css" />
+<style>
+  /* Tokens mirror brandTokens from @keel/ui/brand (docs/BRAND.md). Light only: the brand defines one scheme. */
+  :root {
+    --surface: #F9F9F9;
+    --surface-low: #F3F3F3;
+    --card: #FFFFFF;
+    --text: #1a191e;
+    --text-2: #6B6B74;
+    --accent: #b8420d;
+    --verified: #15803D;
+    --error: #B91C1C;
+    --divider: #E4E4E7;
+    --serif: "Source Serif 4", Georgia, serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --measure: 44rem;
+    --hair: 1px solid var(--divider);
+    --rule: 1px solid var(--text);
+  }
+  * { box-sizing: border-box; border-radius: 0; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.6;
+    font-feature-settings: "kern", "liga";
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--text); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover { color: var(--accent); }
+  code, pre, kbd, .mono { font-family: var(--mono); font-variant-ligatures: none; font-variant-numeric: tabular-nums; }
+  :not(pre) > code { font-size: 0.86em; background: var(--surface-low); border: var(--hair); padding: 0 4px; }
+  :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 16px; top: 8px; background: var(--card); border: var(--rule); padding: 8px 12px; z-index: 50; }
+
+  /* Masthead */
+  .mast {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--surface);
+    border-bottom: var(--hair);
+  }
+  .mast-in {
+    max-width: 1280px; margin: 0 auto; padding: 0 24px;
+    height: 56px; display: flex; align-items: center; gap: 24px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .brand svg { width: 26px; height: 29px; flex: none; }
+  .brand b { font-weight: 700; letter-spacing: 0.18em; font-size: 19px; }
+  .mast nav { display: flex; gap: 20px; font-family: var(--mono); font-size: 13px; margin-left: auto; }
+  .mast nav a { text-decoration: none; color: var(--text-2); }
+  .mast nav a:hover { color: var(--text); }
+  .badge {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1px solid var(--accent); color: var(--accent); padding: 2px 8px; white-space: nowrap;
+  }
+  .badge.ok { border-color: var(--verified); color: var(--verified); }
+  .badge.muted { border-color: var(--text-2); color: var(--text-2); }
+
+  /* Layout */
+  .page { max-width: 1280px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 56px; }
+  .toc { position: sticky; top: 56px; align-self: start; max-height: calc(100vh - 56px); overflow-y: auto; padding: 32px 0; }
+  .toc p { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-2); margin: 0 0 12px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; border-left: var(--hair); }
+  .toc li a {
+    display: grid; grid-template-columns: 28px 1fr; padding: 4px 0 4px 12px; margin-left: -1px;
+    border-left: 1px solid transparent; text-decoration: none; font-size: 15px; color: var(--text-2); line-height: 1.35;
+  }
+  .toc li a span { font-family: var(--mono); font-size: 11px; padding-top: 3px; }
+  .toc li a:hover { color: var(--text); }
+  .toc li a[aria-current="true"] { color: var(--text); border-left-color: var(--text); }
+  main { min-width: 0; padding-bottom: 96px; }
+
+  /* Hero */
+  .hero { padding: 72px 0 48px; border-bottom: var(--hair); }
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2); margin: 0 0 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .hero h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.08; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 24px; max-width: 18ch; }
+  .hero .lede { font-size: 21px; line-height: 1.5; max-width: var(--measure); margin: 0 0 32px; }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { font-family: var(--mono); font-size: 13px; padding: 10px 18px; border: var(--rule); text-decoration: none; display: inline-block; }
+  .btn.primary { background: var(--text); color: var(--card); }
+  .btn.primary:hover { background: var(--card); color: var(--text); }
+  .btn:hover { color: var(--text); background: var(--card); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: var(--hair); background: var(--divider); gap: 1px; margin-top: 48px; }
+  .stat { background: var(--card); padding: 16px 18px; }
+  .stat .n { font-family: var(--mono); font-size: 28px; line-height: 1.1; display: block; }
+  .stat .l { font-size: 14px; color: var(--text-2); line-height: 1.35; display: block; margin-top: 6px; }
+  .src { font-family: var(--mono); font-size: 12px; color: var(--text-2); margin-top: 10px; }
+
+  /* Sections */
+  section.s { padding: 64px 0 8px; border-bottom: var(--hair); }
+  section.s:last-of-type { border-bottom: 0; }
+  .sh { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: baseline; margin-bottom: 20px; }
+  .sh .num { font-family: var(--mono); font-size: 13px; color: var(--text-2); }
+  .sh h2 { font-size: 34px; line-height: 1.15; font-weight: 600; margin: 0; }
+  h3 { font-size: 22px; font-weight: 600; margin: 40px 0 10px; line-height: 1.3; }
+  h4 { font-family: var(--mono); font-size: 13px; font-weight: 500; letter-spacing: 0.04em; margin: 28px 0 8px; color: var(--text); }
+  .prose { max-width: var(--measure); }
+  .prose p, p.prose { margin: 0 0 16px; }
+  .note { font-size: 15px; color: var(--text-2); max-width: var(--measure); }
+
+  /* Four things */
+  .four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--divider); border: var(--hair); margin: 24px 0; }
+  .four div { background: var(--card); padding: 20px; }
+  .four .k { font-family: var(--mono); font-size: 12px; color: var(--text-2); display: block; margin-bottom: 10px; }
+  .four b { font-size: 20px; font-weight: 600; display: block; margin-bottom: 6px; }
+  .four p { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
+  .four code { font-size: 12px; }
+
+  /* Principles */
+  .principles { list-style: none; padding: 0; margin: 24px 0; border-top: var(--hair); counter-reset: p; }
+  .principles li { display: grid; grid-template-columns: 48px 220px 1fr; gap: 16px; padding: 14px 0; border-bottom: var(--hair); counter-increment: p; }
+  .principles li::before { content: counter(p, decimal-leading-zero); font-family: var(--mono); font-size: 13px; color: var(--text-2); padding-top: 3px; }
+  .principles b { font-weight: 600; }
+  .principles span { font-size: 16px; }
+
+  /* Two-column lists */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .ledger-list { list-style: none; padding: 0; margin: 0; border-top: var(--hair); }
+  .ledger-list li { padding: 12px 0; border-bottom: var(--hair); font-size: 16px; line-height: 1.5; }
+  .ledger-list li b { display: block; font-weight: 600; }
+
+  /* Tables */
+  .tbl-wrap { overflow-x: auto; margin: 20px 0; border: var(--hair); background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: var(--hair); }
+  th { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2); font-weight: 500; background: var(--surface-low); }
+  tr:last-child td { border-bottom: 0; }
+  td code { white-space: nowrap; }
+
+  /* Code */
+  .code { margin: 16px 0 24px; border: var(--hair); background: var(--card); }
+  .code .t { font-family: var(--mono); font-size: 12px; color: var(--text-2); padding: 8px 14px; border-bottom: var(--hair); background: var(--surface-low); display: flex; justify-content: space-between; gap: 12px; }
+  .code pre { margin: 0; padding: 14px; overflow-x: auto; font-size: 13px; line-height: 1.6; tab-size: 2; }
+  .code .c { color: var(--text-2); }
+  .copy { font-family: var(--mono); font-size: 11px; background: none; border: var(--hair); color: var(--text-2); padding: 1px 8px; cursor: pointer; }
+  .copy:hover { color: var(--text); border-color: var(--text); }
+
+  /* Diagnostic block (OUTPUT.md shape) */
+  .diag { border: var(--hair); border-left: 3px solid var(--accent); background: var(--card); margin: 20px 0; }
+  .diag pre { margin: 0; padding: 14px 16px; font-size: 13px; line-height: 1.65; overflow-x: auto; }
+  .diag .code-id { color: var(--accent); font-weight: 600; }
+  .diag .path { color: var(--text-2); }
+  .diag .del { color: var(--error); }
+  .diag .add { color: var(--verified); }
+  .diag .fin { color: var(--text-2); }
+
+  /* Kernel chain */
+  .chain { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--divider); border: var(--hair); margin: 24px 0 8px; counter-reset: k; }
+  .chain div { background: var(--card); padding: 12px 14px; counter-increment: k; position: relative; }
+  .chain div::before { content: counter(k, decimal-leading-zero); font-family: var(--mono); font-size: 11px; color: var(--text-2); display: block; }
+  .chain code { background: none; border: 0; padding: 0; font-size: 14px; }
+  .chain small { display: block; color: var(--text-2); font-size: 13px; line-height: 1.35; margin-top: 4px; }
+
+  /* Pipeline diagram */
+  .flow { display: grid; grid-template-columns: 1fr 64px 1fr 64px 1fr; align-items: stretch; margin: 24px 0; }
+  .flow .col { border: var(--hair); background: var(--card); }
+  .flow .col h4 { margin: 0; padding: 10px 14px; border-bottom: var(--hair); background: var(--surface-low); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-2); }
+  .flow ul { list-style: none; margin: 0; padding: 6px 14px 12px; font-family: var(--mono); font-size: 12.5px; }
+  .flow li { padding: 4px 0; border-bottom: var(--hair); }
+  .flow li:last-child { border-bottom: 0; }
+  .flow li span { display: block; font-family: var(--serif); font-size: 13px; color: var(--text-2); }
+  .flow .arrow { display: flex; align-items: center; justify-content: center; }
+  .flow .arrow svg { width: 48px; height: 16px; }
+
+  /* Mental model diagram */
+  .model { margin: 24px 0; border: var(--hair); background: var(--card); padding: 16px; overflow-x: auto; }
+  .model svg { display: block; width: 100%; min-width: 640px; height: auto; }
+
+  /* Cards (API, stdlib) */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--divider); border: var(--hair); margin: 20px 0; }
+  .card { background: var(--card); padding: 18px 20px; min-width: 0; }
+  .card h4 { margin: 0 0 6px; font-size: 14px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .card p { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
+  .card .ex { font-family: var(--mono); font-size: 12px; color: var(--text-2); line-height: 1.55; margin: 0 0 10px; }
+  .card pre { margin: 0; background: var(--surface-low); border: var(--hair); padding: 10px 12px; font-size: 12px; line-height: 1.55; overflow-x: auto; }
+  .group-h { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-2); margin: 36px 0 0; padding-bottom: 6px; border-bottom: var(--rule); display: flex; justify-content: space-between; }
+
+  /* Steps */
+  .steps { counter-reset: st; list-style: none; padding: 0; margin: 0; }
+  .steps > li { counter-increment: st; position: relative; padding-left: 52px; margin-bottom: 8px; }
+  .steps > li::before { content: counter(st); position: absolute; left: 0; top: 2px; width: 32px; height: 32px; border: var(--rule); font-family: var(--mono); font-size: 13px; display: flex; align-items: center; justify-content: center; background: var(--card); }
+  .steps > li > h3 { margin-top: 32px; }
+  .steps > li:first-child > h3 { margin-top: 8px; }
+
+  /* Rungs */
+  .rungs { margin: 20px 0; border: var(--hair); background: var(--card); }
+  .rung { display: grid; grid-template-columns: 140px 1fr 72px; gap: 16px; align-items: center; padding: 12px 16px; border-bottom: var(--hair); }
+  .rung:last-child { border-bottom: 0; }
+  .rung .nm { font-family: var(--mono); font-size: 13px; }
+  .rung .nm small { display: block; font-family: var(--serif); font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .rung .bar { height: 10px; background: var(--surface-low); border: var(--hair); position: relative; }
+  .rung .bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+  .rung .bar i.none { background: var(--error); }
+  .rung .ct { font-family: var(--mono); font-size: 14px; text-align: right; }
+
+  .status-cell { white-space: nowrap; }
+
+  footer { border-top: var(--rule); margin-top: 48px; padding: 24px 0 48px; font-family: var(--mono); font-size: 12px; color: var(--text-2); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 1100px) {
+    .four { grid-template-columns: 1fr 1fr; }
+    .principles li { grid-template-columns: 40px 1fr; }
+    .principles li span { grid-column: 2; }
+  }
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 0; padding: 0 16px; }
+    .mast-in { padding: 0 16px; }
+    .toc { display: none; }
+    .mast nav { display: none; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .grid2, .cols { grid-template-columns: 1fr; }
+    .chain { grid-template-columns: repeat(3, 1fr); }
+    .flow { grid-template-columns: 1fr; }
+    .flow .arrow { height: 40px; }
+    .flow .arrow svg { transform: rotate(90deg); }
+    .rung { grid-template-columns: 110px 1fr 56px; }
+    .sh h2 { font-size: 28px; }
+  }
+  @media (max-width: 560px) {
+    .four { grid-template-columns: 1fr; }
+    .chain { grid-template-columns: 1fr 1fr; }
+    .hero { padding-top: 48px; }
+    .hero .lede { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="mast">
+  <div class="mast-in">
+    <a class="brand" href="#top" aria-label="Keel, top of page">
+      <svg viewBox="0 0 425.36 479.32" aria-hidden="true">
+        <path fill="#1a191e" d="M163.91,324.65l.2,48.31-66.37.06c-13.29.64-24.09-8.85-24.46-22.39l.22-222.75c.01-11.62,10.5-20.6,21.19-20.62l69.49-.16-.1,48.3-42.02.09v169.25l41.84-.08h0Z"/>
+        <path fill="#1a191e" d="M352.16,203.26l-48.7.09-.02-47.84-42.06-.1v-48.29h71.14c12.13,1.7,19.71,11.67,19.7,23.7l-.06,72.45h0Z"/>
+        <path fill="#1a191e" d="M330.26,372.9l-68.86.11.09-48.25,41.83-.06.13-43.36,48.71.07v70.32c-.99,11.57-9.59,21.15-21.9,21.17h0Z"/>
+        <path fill="#1a191e" d="M425.34,226.81c0-5.04-3.88-8.59-9.03-8.59l-169.62.33v-.05h-68.02l-41.62-.28-.11,48.31,41.73.1h68.02s169.86-.05,169.86-.05c5.25,0,8.82-3.98,8.81-8.88l-.02-30.89Z"/>
+        <path fill="#1a191e" d="M10.12,266.55c-5.91.54-9.95-3.59-10.08-8.88l-.04-30.85c.14-4.92,3.86-8.51,8.8-8.59l49.6.02.06,48.34-48.33-.05h-.01Z"/>
+        <rect fill="#b8420d" x="178.2" width="67.97" height="479.32"/>
+      </svg>
+      <b>KEEL</b>
+    </a>
+    <span class="badge">pre-0.1</span>
+    <nav aria-label="Primary">
+      <a href="#principles">Principles</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#kernel">API</a>
+      <a href="#stdlib">Stdlib</a>
+      <a href="#first-app">Guide</a>
+      <a href="#ledger">Ledger</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page" id="top">
+  <aside class="toc" aria-label="On this page">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#overview"><span>00</span>Overview</a></li>
+      <li><a href="#four"><span>01</span>What you write</a></li>
+      <li><a href="#principles"><span>02</span>Principles</a></li>
+      <li><a href="#promises"><span>03</span>Promises and rules</a></li>
+      <li><a href="#model"><span>04</span>How to think in Keel</a></li>
+      <li><a href="#architecture"><span>05</span>Architecture</a></li>
+      <li><a href="#kernel"><span>06</span>Kernel API</a></li>
+      <li><a href="#stdlib"><span>07</span>Standard library</a></li>
+      <li><a href="#first-app"><span>08</span>Your first app</a></li>
+      <li><a href="#server"><span>09</span>Data, routes and forms</a></li>
+      <li><a href="#ledger"><span>10</span>Tests and the ledger</a></li>
+      <li><a href="#diagnostics"><span>11</span>Diagnostics and CLI</a></li>
+      <li><a href="#examples"><span>12</span>Example apps</a></li>
+      <li><a href="#roadmap"><span>13</span>Roadmap</a></li>
+    </ol>
+  </aside>
+
+  <main id="main">
+
+    <!-- 00 -->
+    <section class="hero" id="overview" data-toc>
+      <p class="kicker"><span>Full-stack web framework</span><span class="badge">pre-0.1, nothing is stable</span></p>
+      <h1>A web framework written for the agent that writes your app.</h1>
+      <p class="lede">Most new application code is written by coding agents, in frameworks designed for people. Keel is designed for the agent: one way to do each thing, a spec small enough to load, a checker that returns each error with its fix, and a ledger that states what has been proven, tested, or only run.</p>
+      <div class="actions">
+        <a class="btn primary" href="#first-app">Build your first app</a>
+        <a class="btn" href="#principles">Read the principles</a>
+        <a class="btn" href="#ledger">See the ledger</a>
+      </div>
+
+      <div class="stats" role="list">
+        <div class="stat" role="listitem"><span class="n">40</span><span class="l">packages: 15 kernel, 25 stdlib</span></div>
+        <div class="stat" role="listitem"><span class="n">693</span><span class="l">spec clauses tracked in the ledger</span></div>
+        <div class="stat" role="listitem"><span class="n">60 / 68</span><span class="l">spec sections conformance-covered</span></div>
+        <div class="stat" role="listitem"><span class="n">18</span><span class="l"><code>unsafe</code> uses, each with a written reason</span></div>
+      </div>
+      <p class="src">source: tooling/ledger/ledger.json and spec/**/status, read 2026-11-16</p>
+    </section>
+
+    <!-- 01 -->
+    <section class="s" id="four" data-toc>
+      <div class="sh"><span class="num">01</span><h2>What you write</h2></div>
+      <div class="prose">
+        <p>A Keel app is four kinds of source. Everything else is a declaration or a derivation that the compiler, the checker and the build produce from those four.</p>
+      </div>
+      <div class="four">
+        <div>
+          <span class="k">*.schema.ts</span>
+          <b>Schemas</b>
+          <p>What the data is. One declaration gives you the type, the validator, codecs, generators for property tests, and docs.</p>
+          <code>s.object({ title: s.string() })</code>
+        </div>
+        <div>
+          <span class="k">store + transaction</span>
+          <b>Transactions</b>
+          <p>What can happen to the data. A named, pure <code>(state, payload) =&gt; state</code>. It is the only way a store changes, and every one lands in the log.</p>
+          <code>transaction(board, "api.addTodo", …)</code>
+        </div>
+        <div>
+          <span class="k">Name.tsx</span>
+          <b>Components</b>
+          <p>How it looks. TSX with typed props, compiled to direct DOM operations. Style props take token names, never CSS.</p>
+          <code>&lt;Box gap="3" bg="card"&gt;</code>
+        </div>
+        <div>
+          <span class="k">routes.ts</span>
+          <b>A route manifest</b>
+          <p>How it is organized. Each route id maps to a path, typed params and search, a loader, a component, a layout and a guard.</p>
+          <code>manifest({ "todos.list": … })</code>
+        </div>
+      </div>
+      <p class="note">From those, Keel derives element ids, the accessibility expectations, the reactive dependency graph, the stylesheet, the HTTP surface, the server entry, the Dockerfile and the CI files. Every derived file is read-only, and a hand edit fails <code>keel check</code> with E1005.</p>
+    </section>
+
+    <!-- 02 -->
+    <section class="s" id="principles" data-toc>
+      <div class="sh"><span class="num">02</span><h2>Principles</h2></div>
+      <div class="prose">
+        <p>Every change to Keel is reviewed against these twelve, and reviews cite them by number. Each one names the consequence it buys.</p>
+      </div>
+      <ol class="principles">
+        <li><b>One way</b><span>Every alternative is a place for a model to hallucinate. No dual APIs. A deprecation is a removal at the next major.</span></li>
+        <li><b>No action at a distance</b><span>Nothing outside a file changes what that file does. No global cascade, no context providers, no ordering invariants, no auto-imports.</span></li>
+        <li><b>Locality and addressability</b><span>One export per file, and the file name is the export. Every component, element, state path and route has a stable string id.</span></li>
+        <li><b>Everything is a schema</b><span>Declared once with types; validation, codecs, generators, docs, mocks and tests derive from it. Closed vocabularies wherever a string would do.</span></li>
+        <li><b>The checker says how to fix it</b><span>Every diagnostic has a stable code, a location, one line of message, and a fix diff when one exists.</span></li>
+        <li><b>The runtime is queryable</b><span>State, the dependency graph, the render tree, the accessibility tree and the transaction log are tool endpoints.</span></li>
+        <li><b>Structure is an operation</b><span>Scaffold and codemod are first-class. A change that spans several files is never a hand edit.</span></li>
+        <li><b>Small, frozen, spec'd surface</b><span>Once frozen, the kernel spec never changes meaning. No task needs more than 4k tokens of spec in context.</span></li>
+        <li><b>In-distribution where free</b><span>TypeScript, JSX, familiar names. Novelty is spent only where it buys predictability, and the checker teaches it.</span></li>
+        <li><b>Pure core, effects at the edges</b><span>State is serializable and every effect comes through <code>ctx</code>. Every test reads "given state, do events, expect".</span></li>
+        <li><b>Claims lag machinery</b><span>The ledger reports only rungs that exist. This page follows the ledger.</span></li>
+        <li><b>Tokens are a budget</b><span>Docs, spec and every tool's output are measured in tokens and gated in CI.</span></li>
+      </ol>
+    </section>
+
+    <!-- 03 -->
+    <section class="s" id="promises" data-toc>
+      <div class="sh"><span class="num">03</span><h2>Promises and rules</h2></div>
+      <div class="prose">
+        <p>Keel makes a small number of promises to you, and asks you to follow a small number of rules in return. The rules are what make the promises checkable: the checker enforces each one with a code you can look up.</p>
+      </div>
+      <div class="cols">
+        <div>
+          <h3>What Keel promises</h3>
+          <ul class="ledger-list">
+            <li><b>A frozen kernel.</b>Every kernel change now goes through an RFC. When the <code>frozen</code> status lands, a frozen section never changes meaning.</li>
+            <li><b>Every error has a code and, where possible, a fix.</b>The diff in the diagnostic is the edit you apply.</li>
+            <li><b>Output fits a budget.</b><code>keel check</code> on golden-1 with 10 injected errors prints at most 600 tokens; <code>keel explain</code> at most 300.</li>
+            <li><b>Claims match evidence.</b>Each spec clause sits on one rung in the ledger, and <code>keel ledger --diff</code> fails the build when a covered section gains an untested clause (E1707).</li>
+            <li><b>Structural edits stay clean.</b>If <code>keel check</code> was clean before a scaffold or codemod, it is clean after; otherwise nothing is written (E1353).</li>
+            <li><b>Escape hatches are counted.</b><code>unsafe</code> is the only path around a guarantee, it needs a justification string, and the ledger counts it.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What Keel asks of you</h3>
+          <ul class="ledger-list">
+            <li><b>One export per file, named like the file.</b><code>Todo.schema.ts</code> exports <code>Todo</code> (E1752).</li>
+            <li><b>No <code>throw</code>, no <code>try</code>.</b>Return <code>err(...)</code> and use <code>attempt</code> (E1451, E1452).</li>
+            <li><b>No ambient effects.</b>No <code>Date.now</code>, <code>Math.random</code>, <code>fetch</code>, <code>localStorage</code> or DOM access in app code. Use <code>ctx.clock</code>, <code>ctx.random</code>, <code>ctx.net</code>, <code>ctx.storage</code> (E1601).</li>
+            <li><b>No <code>any</code>, casts, <code>!</code> or <code>@ts-ignore</code>.</b>Outside <code>unsafe/</code> directories, the type is the contract.</li>
+            <li><b>Ids carry their module.</b>Routes, stores, transactions and error codes start with the module id: <code>todos.view</code>, <code>api.addTodo</code> (E1155).</li>
+            <li><b>Control flow is a component.</b><code>&lt;If when&gt;</code>, <code>&lt;For each key&gt;</code>, <code>&lt;Match on&gt;</code>; never <code>&amp;&amp;</code> in JSX, never destructured props.</li>
+          </ul>
+        </div>
+      </div>
+      <h3>Bets we have not proven</h3>
+      <div class="prose">
+        <p>These are commitments made without evidence. We list them so you can weigh them, and we never cite them as findings.</p>
+      </div>
+      <ol class="principles">
+        <li><b>Distribution follows usage</b><span>A public corpus, skills and examples shrink the novelty cost of Keel across model generations.</span></li>
+        <li><b>One way survives pressure</b><span>One way per thing holds up under product pressure if escape hatches are named, justified and counted.</span></li>
+        <li><b>The ledger is the evidence</b><span>Companies will adopt a new framework when the code is agent-written and the ledger shows what it proves.</span></li>
+        <li><b>Frozen kernel, evolving stdlib</b><span>That split is a stable enough contract for a learner that reads everything in context.</span></li>
+        <li><b>Sessions become tests</b><span>Turning a recorded production session into a test closes the maintenance loop well enough to compete with incumbents.</span></li>
+      </ol>
+    </section>
+
+    <!-- 04 -->
+    <section class="s" id="model" data-toc>
+      <div class="sh"><span class="num">04</span><h2>How to think in Keel</h2></div>
+      <div class="prose">
+        <p>Picture the app as a set of stores, each holding state of one schema. State changes only through named transactions, and each transaction is recorded in a log. Components read stores and call transactions; loaders and actions read and write on behalf of a route. Effects such as time, randomness, network and storage arrive through <code>ctx</code>, so the same code runs against the real world, a native shell, or a seeded simulation.</p>
+        <p>Because state is serializable and every change is named, a test is always the same three steps. You give a state, you apply events, you compare the result. Undo, replay, audit and recorded sessions all read the same log.</p>
+      </div>
+      <figure class="model" aria-labelledby="model-cap">
+        <svg viewBox="0 0 960 300" role="img" aria-labelledby="model-title">
+          <title id="model-title">Data flow: a schema types a store; events become transactions that write the store and append to the log; components read the store; ctx supplies effects.</title>
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a191e"/></marker>
+          </defs>
+          <g font-family="JetBrains Mono, monospace" font-size="13" fill="#1a191e">
+            <!-- schema -->
+            <rect x="20" y="30" width="170" height="64" fill="#fff" stroke="#1a191e"/>
+            <text x="36" y="56">schema</text>
+            <text x="36" y="78" fill="#6B6B74" font-size="11.5">Todo.schema.ts</text>
+            <!-- store -->
+            <rect x="390" y="30" width="190" height="64" fill="#fff" stroke="#1a191e"/>
+            <text x="406" y="56">store</text>
+            <text x="406" y="78" fill="#6B6B74" font-size="11.5">todos.view + invariant</text>
+            <!-- transaction -->
+            <rect x="390" y="190" width="190" height="64" fill="#fff" stroke="#1a191e"/>
+            <text x="406" y="216">transaction</text>
+            <text x="406" y="238" fill="#6B6B74" font-size="11.5">(state, payload) =&gt; state</text>
+            <!-- log -->
+            <rect x="770" y="190" width="170" height="64" fill="#F3F3F3" stroke="#1a191e"/>
+            <text x="786" y="216">log</text>
+            <text x="786" y="238" fill="#6B6B74" font-size="11.5">undo · replay · sessions</text>
+            <!-- component -->
+            <rect x="770" y="30" width="170" height="64" fill="#fff" stroke="#1a191e"/>
+            <text x="786" y="56">component</text>
+            <text x="786" y="78" fill="#6B6B74" font-size="11.5">TodoRow.tsx</text>
+            <!-- ctx -->
+            <rect x="20" y="190" width="170" height="64" fill="#fff" stroke="#b8420d"/>
+            <text x="36" y="216" fill="#b8420d">ctx</text>
+            <text x="36" y="238" fill="#6B6B74" font-size="11.5">clock random net storage</text>
+          </g>
+          <g stroke="#1a191e" stroke-width="1.2" fill="none">
+            <line x1="190" y1="62" x2="386" y2="62" marker-end="url(#ah)"/>
+            <line x1="580" y1="62" x2="766" y2="62" marker-end="url(#ah)"/>
+            <path d="M855,94 L855,140 L485,140 L485,186" marker-end="url(#ah)"/>
+            <line x1="485" y1="190" x2="485" y2="98" marker-end="url(#ah)"/>
+            <line x1="580" y1="222" x2="766" y2="222" marker-end="url(#ah)"/>
+            <line x1="190" y1="222" x2="386" y2="222" stroke-dasharray="4 4" marker-end="url(#ah)"/>
+          </g>
+          <g font-family="Source Serif 4, Georgia, serif" font-size="13" fill="#6B6B74">
+            <text x="230" y="54">types</text>
+            <text x="630" y="54">read by</text>
+            <text x="640" y="132">tx(event)</text>
+            <text x="497" y="170">writes</text>
+            <text x="620" y="214">appends</text>
+            <text x="200" y="214">loaders and actions only</text>
+            <text x="200" y="270">transactions stay pure: ctx inside one is E1302</text>
+          </g>
+        </svg>
+        <figcaption id="model-cap" class="src">The loop you reason about. Transactions never touch ctx; loaders, actions and component handlers do.</figcaption>
+      </figure>
+
+      <h3>Habits that make Keel code read well</h3>
+      <div class="cols">
+        <ul class="ledger-list">
+          <li><b>Name the file before the code.</b>The file name tells Keel the role: <code>Name.schema.ts</code>, <code>name.server.ts</code>, <code>name.guard.ts</code>, <code>Name.tsx</code>. Pick the role, and the rules for it follow.</li>
+          <li><b>Write the schema first.</b>Params, search, loader output, action input and component props are all schemas. Types come from <code>s.infer</code>.</li>
+          <li><b>Return results.</b>A loader that cannot find a list returns <code>err({ code: "keel.notFound", ... })</code>, and the route's <code>errorElement</code> renders it.</li>
+        </ul>
+        <ul class="ledger-list">
+          <li><b>Give elements ids.</b>Ids such as <code>todos.addTodo</code> are how tests fire events, how the inspector finds nodes, and how a diagnostic names the element it means.</li>
+          <li><b>Keep structure in operations.</b>Rename a module or add a field with <code>keel codemod</code>, so every file that names it changes together.</li>
+          <li><b>Read the error code.</b><code>keel explain E1505</code> answers in at most 120 tokens; <code>keel spec --for E1505</code> returns the section that defines it.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section class="s" id="architecture" data-toc>
+      <div class="sh"><span class="num">05</span><h2>Architecture</h2></div>
+      <div class="prose">
+        <p>Keel is a pnpm monorepo of 40 packages. The 15 kernel packages form a strict dependency order: each may import only the packages before it, and <code>tooling/deps.json</code> enforces it. The 25 stdlib packages come after the kernel, and no kernel package imports one.</p>
+      </div>
+
+      <h4>Kernel, in dependency order</h4>
+      <div class="chain">
+        <div><code>schema</code><small>types, validators, codecs, generators</small></div>
+        <div><code>reactive</code><small>signals, computed, effects, resources</small></div>
+        <div><code>store</code><small>stores, transactions, log, invariants</small></div>
+        <div><code>runtime-dom</code><small>mount, <code>If</code> <code>For</code> <code>Match</code></small></div>
+        <div><code>compiler</code><small>JSX to DOM ops, <code>.keel/</code> artifacts</small></div>
+        <div><code>router</code><small>manifest, loaders, actions, guards</small></div>
+        <div><code>forms</code><small>schema-driven forms and fields</small></div>
+        <div><code>ui</code><small>elements, tokens, brand</small></div>
+        <div><code>check</code><small>rules, diagnostics, fixes</small></div>
+        <div><code>scaffold</code><small>structural edit sets</small></div>
+        <div><code>testing</code><small>render, properties, explore, prove</small></div>
+        <div><code>server</code><small>thin; Hono per deployable</small></div>
+        <div><code>services</code><small>thin; typed API clients</small></div>
+        <div><code>cli</code><small><code>keel</code>, MCP and LSP</small></div>
+        <div><code>ctx</code><small>clock, random, net, storage</small></div>
+      </div>
+      <p class="src">read left to right, top to bottom; arrows point only backwards</p>
+
+      <h3>From source to artifact</h3>
+      <div class="prose">
+        <p>The Vite plugin compiles each source as it loads, writes the <code>.keel/</code> artifacts, and generates the mount entry and the stylesheet. <code>keel build</code> adds the HTTP surface, one server per <code>node</code> deployable, and the deploy files.</p>
+      </div>
+      <div class="flow">
+        <div class="col">
+          <h4>You write</h4>
+          <ul>
+            <li>topology.ts<span>which modules form which deployable</span></li>
+            <li>modules/&lt;id&gt;/module.ts<span>deps, capabilities, public surface</span></li>
+            <li>*.schema.ts · store · tx<span>data and what can happen to it</span></li>
+            <li>*.tsx · routes.ts<span>pages and their organization</span></li>
+            <li>tokens.ts<span>design tokens</span></li>
+          </ul>
+        </div>
+        <div class="arrow" aria-hidden="true"><svg viewBox="0 0 48 16"><line x1="0" y1="8" x2="42" y2="8" stroke="#1a191e"/><path d="M40,3 L48,8 L40,13 z" fill="#1a191e"/></svg></div>
+        <div class="col">
+          <h4>Keel derives</h4>
+          <ul>
+            <li>.keel/ids.json<span>every element id, with file and line</span></li>
+            <li>.keel/a11y.json<span>the role and name each element must have</span></li>
+            <li>.keel/deps.json<span>the reactive graph</span></li>
+            <li>.keel/routes.json · surface.json<span>routes and the HTTP surface</span></li>
+            <li>virtual:keel.css<span>one atomic rule per style usage</span></li>
+          </ul>
+        </div>
+        <div class="arrow" aria-hidden="true"><svg viewBox="0 0 48 16"><line x1="0" y1="8" x2="42" y2="8" stroke="#1a191e"/><path d="M40,3 L48,8 L40,13 z" fill="#1a191e"/></svg></div>
+        <div class="col">
+          <h4>keel build writes</h4>
+          <ul>
+            <li>dist/web/<span>a client deployable as static files</span></li>
+            <li>dist/api/server.mjs<span>a node deployable, dependencies bundled</span></li>
+            <li>deploy/api/Dockerfile<span>one per node deployable</span></li>
+            <li>deploy/compose.yaml<span>one service each</span></li>
+            <li>deploy/web/tauri · capacitor<span>native shells, when declared</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Modules and deployables</h3>
+      <div class="prose">
+        <p>All app code lives in <code>modules/&lt;id&gt;/</code>. A module is a vertical slice: its schemas, stores, routes, components and handlers, with a manifest that names what it depends on, which <code>ctx</code> capabilities it uses, and which files and routes other modules may reach. A deployable is a set of modules that builds to one artifact, declared in <code>topology.ts</code>. No other file names a deployable, so moving a module to its own server is an edit to that one file.</p>
+      </div>
+      <div class="code">
+        <div class="t"><span>apps/golden-1/topology.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { topology } from "@keel/server";
+
+export default topology({
+  web: { modules: ["todos"], adapter: "client", host: "api" },
+  api: { modules: ["api", "digest", "sessions"], adapter: "node", storage: "sqlite" },
+});</pre>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Adapter</th><th>Runs as</th><th>Build output</th></tr></thead>
+          <tbody>
+            <tr><td><code>client</code></td><td>A browser app. Loaders and actions run in the browser with a real <code>ctx</code>; may declare native <code>shells</code> (Capacitor, Tauri).</td><td><code>dist/&lt;name&gt;/</code> static files</td></tr>
+            <tr><td><code>node</code></td><td>A Hono server. Renders pages to HTML, answers JSON and event streams, runs runners, resumes islands in the browser. <code>storage</code> picks <code>file</code>, <code>sqlite</code> or <code>postgres</code>.</td><td><code>dist/&lt;name&gt;/server.mjs</code></td></tr>
+            <tr><td><code>static</code></td><td>Prerendered HTML.</td><td>static files</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Extension points</h3>
+      <div class="prose">
+        <p>The stdlib builds on six kernel extension points. Wave 0 of the stdlib uses each one once, as proof that it works.</p>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Extension point</th><th>What it adds</th><th>First used by</th></tr></thead>
+          <tbody>
+            <tr><td>Schema type registry</td><td>New schema types and formats, with generators</td><td><code>std-money</code></td></tr>
+            <tr><td>Check rule registry</td><td>New diagnostics with codes and fixes</td><td><code>std-brands</code></td></tr>
+            <tr><td>Capability registry</td><td>New effects on <code>ctx</code>, with real, shell and sim forms</td><td><code>std-geo</code></td></tr>
+            <tr><td>Module manifest</td><td>A stdlib package placed as a module with routes</td><td><code>std-health</code></td></tr>
+            <tr><td>Inspector hooks</td><td>A named, schema-typed section of the inspect document</td><td><code>std-timings</code></td></tr>
+            <tr><td>Output formatter registry</td><td>New record kinds for compact, pretty and JSON output</td><td><code>std-report</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Borrowed and built</h3>
+      <div class="prose">
+        <p>The product is the spec, its conformance suite and the feedback loop. Runtime parts are borrowed where mature and replaced only when the spec demands it.</p>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Concern</th><th>Decision</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td>Reactivity</td><td>Build Solid-style signals</td><td>In-distribution; the compiler supplies the constraints</td></tr>
+            <tr><td>Schema validation</td><td>Build</td><td>Validators, generators and codecs derive from one declaration</td></tr>
+            <tr><td>Parser</td><td>oxc</td><td><code>check</code> latency is tokens</td></tr>
+            <tr><td>Bundler</td><td>Vite + rolldown</td><td>Ecosystem and adapters</td></tr>
+            <tr><td>HTTP server</td><td>Hono</td><td>Standard Request and Response</td></tr>
+            <tr><td>Tests</td><td>Vitest + fast-check, Playwright</td><td>Property testing and an engine matrix</td></tr>
+            <tr><td>Accessibility rules</td><td>axe-core; contrast built from tokens</td><td>The rule engine is solved; contrast comes from the tokens</td></tr>
+            <tr><td>Invariant proofs</td><td>Z3 via <code>z3-solver</code>; translation built</td><td>A transaction's own source is the model</td></tr>
+            <tr><td>Durable storage</td><td><code>node:sqlite</code> and <code>pg</code>; driver contract built</td><td>One <code>read</code> and <code>commit</code> contract, no query layer</td></tr>
+            <tr><td>State charts, widgets, tables</td><td>Build on stores and <code>Part</code></td><td>A chart is a store, so every tool already reads it</td></tr>
+            <tr><td>check, cli, MCP, LSP, sessions</td><td>Build</td><td>These are the product</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>How a page reaches the screen</h3>
+      <div class="prose">
+        <ol>
+          <li>Vite serves <code>index.html</code>, which loads <code>/@keel/entry.ts</code>. The plugin generates that entry from <code>topology.ts</code> and each module's <code>routes.ts</code>.</li>
+          <li>The entry creates a real <code>ctx</code>, builds a router from the merged manifest, and mounts it into <code>#app</code>.</li>
+          <li>The router matches the URL, parses params with their schema (a failure is a 404 rendered by <code>errorElement</code>), and drops search keys that fail.</li>
+          <li>Guards run outermost first, then loaders. A loader returns a <code>Result</code>.</li>
+          <li>The chain renders outermost first: the layout, then the page as its children, given <code>{ params, search, data }</code>.</li>
+        </ol>
+        <p>On a <code>node</code> deployable the same route renders to HTML on the server, with store state in a JSON script tag. Components with handlers or effects become islands, and the resume entry attaches to the server's DOM without rendering again.</p>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section class="s" id="kernel" data-toc>
+      <div class="sh"><span class="num">06</span><h2>Kernel API</h2></div>
+      <div class="prose">
+        <p>Each kernel package has one spec section, retrievable with <code>pnpm spec &lt;id&gt;</code> under a 1,500-token budget. The cards below list the exports you use most, with a line from a real app.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h4><span>@keel/schema</span><span class="badge muted">k.schema</span></h4>
+          <p>Runtime schemas with inference, <code>Result</code> helpers, personal-data tags and secrets.</p>
+          <p class="ex">s.string · int · enum · id · object · array · union · secret · .optional() · .pii() · ok · err · attempt · Infer</p>
+<pre>export const TodoParams = s.object({
+  listId: s.id("TodoList"), todoId: s.id("Todo"),
+});
+export type TodoParams = s.infer&lt;typeof TodoParams&gt;;</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/store</span><span class="badge muted">k.store</span></h4>
+          <p>Schema-typed stores whose changes go through pure, logged transactions.</p>
+          <p class="ex">store · transaction · invariant · tx · snapshot · restore · { concurrent: "rebase" | "reject" }</p>
+<pre>export const shoppingList = store(ShoppingList,
+  { recipes: [] }, { id: "recipes.list" });
+invariant(shoppingList, (s) =&gt;
+  new Set(s.recipes.map((r) =&gt; r.id)).size === s.recipes.length);</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/reactive</span><span class="badge muted">k.reactive</span></h4>
+          <p>Signals, computed values, effects with declared writes, scopes, and resources with a closed state union.</p>
+          <p class="ex">signal · computed · effect({ writes }) · resource · batch · scope</p>
+<pre>const status = computed(() =&gt;
+  statusOf(editorChart.store.get("state")));</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/runtime-dom</span><span class="badge muted">k.component</span></h4>
+          <p>Mounts components and supplies the control-flow intrinsics. A component is <code>(props, slots, ctx?)</code>.</p>
+          <p class="ex">mount · If · For · Match · Case · Boundary</p>
+<pre>&lt;For each={shown()} key="id"&gt;
+  {(todo) =&gt; &lt;TodoRow todo={todo} /&gt;}
+&lt;/For&gt;</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/router</span><span class="badge muted">k.router</span></h4>
+          <p>The route manifest, loaders, actions, guards, <code>Form</code>, typed hrefs and history.</p>
+          <p class="ex">manifest · .href · .actions · loader · action · guard · Form · navigate</p>
+<pre>routes.href("todos.list", { listId }, { filter: "done" })</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/forms</span><span class="badge muted">k.forms</span></h4>
+          <p>Form state from an object schema, with typed field bindings that controls take through <code>field</code>.</p>
+          <p class="ex">form · f.field(path) · toFormData</p>
+<pre>const f = form(TodoDraft, { id: "todos.addForm",
+  initial: { priority: "normal" } });
+&lt;Input field={f.field("title")} label="Title" /&gt;</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/ui</span><span class="badge muted">k.ui</span></h4>
+          <p>Typed elements whose style props take token names only. No <code>class</code>, no CSS in components.</p>
+          <p class="ex">Box · Text · Heading · Button · Link · Image · Input · TextArea · Select · Checkbox · defineTokens · brandTokens</p>
+<pre>&lt;Box direction="row" gap="3" px="3" py="2" bg="card"&gt;</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/ctx</span><span class="badge muted">k.ctx</span></h4>
+          <p>The effect context, in <code>real</code>, <code>shell</code> or seeded <code>sim</code> mode. A sim ctx can route network requests in tests.</p>
+          <p class="ex">createCtx · clock · random.id · net · storage.get / set / read / commit</p>
+<pre>const ctx = createCtx({ mode: "sim", seed: 1 });
+ctx.net.route("http://api.keel.invalid/api/*",
+  (req) =&gt; api.fetch(req));</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/server</span><span class="badge muted">k.server</span></h4>
+          <p>The topology, and a Hono app per deployable that serves routes, JSON, streams and runners.</p>
+          <p class="ex">topology · createApp · commitStores</p>
+<pre>const app = await createApp({ topology, routes, ctx });
+const res = await app.fetch(new Request(url));</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/services</span><span class="badge muted">k.services</span></h4>
+          <p>An HTTP API declared as schemas, and a typed client whose calls return <code>Result</code> and never throw.</p>
+          <p class="ex">endpoints · service({ module | base, schema })</p>
+<pre>export const todos = endpoints({
+  lists: { method: "GET", path: "/api/lists", output: BoardView },
+});</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/testing</span><span class="badge muted">k.testing</span></h4>
+          <p>The harness and the correctness tools that put claims on rungs.</p>
+          <p class="ex">render · renderRoute · fire · settle · find · properties · explore · simulate · prove · ledger</p>
+<pre>const t = render(Keys, { props: {}, ctx });
+await t.fire("lb", { type: "keydown", key: "ArrowDown" });</pre>
+        </div>
+        <div class="card">
+          <h4><span>@keel/compiler · check · scaffold · cli</span><span class="badge muted">tools</span></h4>
+          <p>The compiler emits artifacts, <code>check</code> runs the rule registry, <code>scaffold</code> computes edit sets, and <code>cli</code> serves all of them as <code>keel</code>, over MCP and over LSP.</p>
+          <p class="ex">module · compile · defineRule · explain · scaffold · run · formatter</p>
+<pre>export default module({ id: "todos", deps: ["api"],
+  capabilities: ["net", "storage"],
+  public: { exports: [], routes: [] } });</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section class="s" id="stdlib" data-toc>
+      <div class="sh"><span class="num">07</span><h2>Standard library</h2></div>
+      <div class="prose">
+        <p>The stdlib is 25 packages named <code>@keel/std-&lt;x&gt;</code>, each built on the kernel's extension points, versioned separately and frozen one at a time. A module lists the ones it uses in <code>deps</code>.</p>
+      </div>
+
+      <div class="group-h"><span>Values</span><span>schema types over Intl and ISO text</span></div>
+      <div class="grid2">
+        <div class="card"><h4><span>std-money</span><span class="badge ok">covered</span></h4><p>Integer minor-unit <code>Money</code> and <code>Currency</code>, with addition and locale formatting.</p><pre>formatMoney({ amount: 1250, currency: "EUR" }, "de-DE") // "12,50 €"</pre></div>
+        <div class="card"><h4><span>std-temporal</span><span class="badge ok">covered</span></h4><p><code>Instant</code>, <code>PlainDate</code>, <code>TimeZone</code> and <code>Duration</code> types, with conversions and formatting.</p><pre>formatDate("2026-11-10", "en-US", "long") // "November 10, 2026"</pre></div>
+        <div class="card"><h4><span>std-text</span><span class="badge ok">covered</span></h4><p>Grapheme-aware <code>line</code> and <code>para</code>, <code>Email</code>, <code>Slug</code>, truncation and comparison.</p><pre>graphemes("👨‍👩‍👧") // 1</pre></div>
+        <div class="card"><h4><span>std-i18n</span><span class="badge ok">covered</span></h4><p>The <code>Locale</code> type, <code>formatNumber</code>, <code>plural</code> and <code>localeName</code>.</p><pre>plural(1, "en-US", { one: "# recipe", other: "# recipes" })</pre></div>
+        <div class="card"><h4><span>std-messages</span><span class="badge ok">covered</span></h4><p>Typed message sets, one file per locale, loaded on demand.</p><pre>messages(AppLocale, { title: {}, count: { n: s.int({ min: 0 }) } },
+  (locale) =&gt; import(`./RecipesText/${locale}.ts`))</pre></div>
+        <div class="card"><h4><span>std-brands</span><span class="badge ok">covered</span></h4><p>Check rule E2101: ids passed to <code>s.id</code> and <code>random.id</code> are PascalCase, with an autofix.</p><pre>s.id("Todo")   // ok
+s.id("todo")   // E2101, fix: "Todo"</pre></div>
+      </div>
+
+      <div class="group-h"><span>Interface</span><span>widgets and tables on Part</span></div>
+      <div class="grid2">
+        <div class="card"><h4><span>std-headless</span><span class="badge ok">covered</span></h4><p><code>Listbox</code>, <code>Combobox</code>, <code>Menu</code>, <code>Tabs</code>, <code>Dialog</code>, <code>Disclosure</code>, <code>Toaster</code>. Keyboard, focus and ARIA follow the WAI-ARIA Authoring Practices, one tested state chart per widget.</p></div>
+        <div class="card"><h4><span>std-tables</span><span class="badge ok">covered</span></h4><p>Columns, search, sort and paging, with the query in the route's <code>search</code>. One <code>applyQuery</code> serves the loader and the client.</p><pre>columns(CatalogRow, { key: "id", rowHeader: "title",
+  sort: ["title", "price"], search: ["title"] })</pre></div>
+      </div>
+
+      <div class="group-h"><span>Server</span><span>jobs, schedules, credentials</span></div>
+      <div class="grid2">
+        <div class="card"><h4><span>std-jobs</span><span class="badge ok">covered</span></h4><p>Durable background jobs per module: enqueue with a key, retry with backoff, lease and restart.</p><pre>await jobs.enqueue(ctx, "orders.sendReceipt", { orderId }, { key: orderId })</pre></div>
+        <div class="card"><h4><span>std-schedules</span><span class="badge ok">covered</span></h4><p>Five-field cron in a time zone that enqueues jobs, with catch-up after downtime.</p><pre>{ cron: "0 3 * * *", zone: "UTC", job: "orders.digest", input: {} }</pre></div>
+        <div class="card"><h4><span>std-credentials</span><span class="badge ok">covered</span></h4><p>Password hashing and verification of a <code>Secret</code>, and token minting and checking, in node deployables.</p><pre>const h = await credentials(ctx).hash(input.password)</pre></div>
+        <div class="card"><h4><span>std-health</span><span class="badge ok">covered</span></h4><p>A stdlib module that adds <code>GET /health</code> when you place it in a deployable.</p></div>
+      </div>
+
+      <div class="group-h"><span>Realtime and offline</span><span>channels, live views, outbox, races</span></div>
+      <div class="grid2">
+        <div class="card"><h4><span>std-channels</span><span class="badge ok">covered</span></h4><p>Named channels over a server event stream, carrying schema-typed messages.</p><pre>channel("todos.board", { path: "/api/board/events",
+  params: s.object({}), message: BoardMessage })</pre></div>
+        <div class="card"><h4><span>std-live</span><span class="badge ok">covered</span></h4><p>Keeps a client store current by re-reading through its loader after each channel push.</p></div>
+        <div class="card"><h4><span>std-offline</span><span class="badge ok">covered</span></h4><p>An outbox for writes made offline. Each write keeps its key and base, goes out in order on reconnect, and waits for the user when refused.</p><pre>send(ctx, boardOutbox, origin, "editTodo", call, { base: view.get("head") })</pre></div>
+        <div class="card"><h4><span>std-conflicts</span><span class="badge ok">covered</span></h4><p>Finds races: rebased writes whose result depends on their order against writes they did not see (E2701).</p></div>
+      </div>
+
+      <div class="group-h"><span>Correctness and operations</span><span>charts, sessions, timings</span></div>
+      <div class="grid2">
+        <div class="card"><h4><span>std-statecharts</span><span class="badge ok">covered</span></h4><p>A flat state chart compiled to a store with one transaction per event, so <code>explore</code> and the checker read it like any store.</p><pre>chart("todos.editor", { initial: "viewing",
+  states: { viewing: { on: { edit: "editing" } }, … } })</pre></div>
+        <div class="card"><h4><span>std-sessions</span><span class="badge ok">covered</span></h4><p>Records a redacted session in the browser; ingest, replay, minimize and turn it into a test. Includes a GitHub Action and a production monitor.</p></div>
+        <div class="card"><h4><span>std-timings</span><span class="badge ok">covered</span></h4><p>Per-name timing stats on a ctx, shown as an inspector section.</p></div>
+        <div class="card"><h4><span>std-report</span><span class="badge ok">covered</span></h4><p>A <code>report.tally</code> record, rendered by the CLI in compact, pretty and JSON form.</p></div>
+        <div class="card"><h4><span>std-geo</span><span class="badge ok">covered</span></h4><p>A <code>geo</code> capability on <code>ctx</code>; the sim form returns a seeded position.</p></div>
+      </div>
+
+      <div class="group-h"><span>Reach</span><span>durable storage, workflows, native shells</span></div>
+      <div class="grid2">
+        <div class="card"><h4><span>std-db</span><span class="badge">proposed</span></h4><p>SQLite and Postgres storage drivers. The generated server entry opens the one <code>topology.ts</code> names; app code never imports it (E2151).</p></div>
+        <div class="card"><h4><span>std-workflows</span><span class="badge">proposed</span></h4><p>Durable multi-step workflows: a state chart per instance in one server store, each step run as a job, resumable after a restart.</p></div>
+        <div class="card"><h4><span>std-capacitor</span><span class="badge">proposed</span></h4><p>Storage and net drivers for Android and iOS builds. Native builds have not run yet.</p></div>
+        <div class="card"><h4><span>std-tauri</span><span class="badge">proposed</span></h4><p>Storage and net drivers for Linux, macOS and Windows builds. Native builds have not run yet.</p></div>
+      </div>
+      <p class="src">status from spec/std/*.md; "covered" means conformance-covered</p>
+    </section>
+
+    <!-- 08 -->
+    <section class="s" id="first-app" data-toc>
+      <div class="sh"><span class="num">08</span><h2>Your first app, by hand</h2></div>
+      <div class="prose">
+        <p>This section builds Tally, a one-page counter, with every file typed by you. It has one module, one store, two transactions and one route. It runs in the browser only. Packages are not published yet, so the folder lives inside the Keel repo under <code>apps/</code>, where pnpm links the <code>@keel/*</code> workspace packages.</p>
+        <p class="note">The shapes below follow the kernel spec and the golden apps. Treat this as a preview: <code>docs/guide/build-golden-1.md</code> is the full, tested walkthrough of a larger app.</p>
+      </div>
+
+      <ol class="steps">
+        <li>
+          <h3>Project files</h3>
+          <p class="prose">Copy <code>package.json</code>, <code>tsconfig.json</code>, <code>vite.config.ts</code> and <code>index.html</code> from <code>apps/golden-1</code>, give the package a new name, then run <code>pnpm install</code> at the repo root. Or let the scaffold write them: <code>keel scaffold project tally --workspace</code>. The two files that are pure Keel are the tokens and the topology.</p>
+          <div class="code"><div class="t"><span>apps/tally/tokens.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { brandTokens } from "@keel/ui/brand";
+
+/** The Keel brand: palette, Source Serif 4 and JetBrains Mono, radius 0, hairline dividers. */
+export const tokens = brandTokens;</pre></div>
+          <div class="code"><div class="t"><span>apps/tally/topology.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { topology } from "@keel/server";
+
+export default topology({
+  web: { modules: ["tally"], adapter: "client" },
+});</pre></div>
+          <div class="code"><div class="t"><span>apps/tally/vite.config.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import keel from "@keel/compiler/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({ plugins: [keel()] });</pre></div>
+        </li>
+
+        <li>
+          <h3>The module manifest</h3>
+          <p class="prose">The folder name is the module id, and the id prefixes every store, transaction and route inside it. Tally needs no other modules and no <code>ctx</code> capabilities.</p>
+          <div class="code"><div class="t"><span>modules/tally/module.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { module } from "@keel/compiler";
+
+export default module({
+  id: "tally",
+  deps: [],
+  capabilities: [],
+  public: { exports: [], routes: [] },
+});</pre></div>
+        </li>
+
+        <li>
+          <h3>A schema and a store</h3>
+          <p class="prose">The schema says what a count is. The store holds one value of it, starts at zero, and carries an invariant that every transaction must keep.</p>
+          <div class="code"><div class="t"><span>modules/tally/Count.schema.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { s } from "@keel/schema";
+
+/** The tally: a whole number, never below zero. */
+export const Count = s.object({ n: s.int({ min: 0 }) });
+export type Count = s.infer&lt;typeof Count&gt;;</pre></div>
+          <div class="code"><div class="t"><span>modules/tally/count.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { invariant, store } from "@keel/store";
+import { Count } from "./Count.schema.ts";
+
+/** The count in this browser tab. Changes only through tally.add and tally.reset. */
+export const count = store(Count, { n: 0 }, { id: "tally.count" });
+
+invariant(count, (state) =&gt; state.n &gt;= 0);</pre></div>
+        </li>
+
+        <li>
+          <h3>Transactions</h3>
+          <p class="prose">Each transaction is a pure function from the old state and a typed payload to the new state. Neither of these takes a payload, so both use an empty object schema.</p>
+          <div class="code"><div class="t"><span>modules/tally/Nothing.schema.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { s } from "@keel/schema";
+
+/** The payload of a transaction that takes no fields. */
+export const Nothing = s.object({});
+export type Nothing = s.infer&lt;typeof Nothing&gt;;</pre></div>
+          <div class="code"><div class="t"><span>modules/tally/add.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { transaction } from "@keel/store";
+import { Nothing } from "./Nothing.schema.ts";
+import { count } from "./count.ts";
+
+/** Adds one to the tally. */
+export const add = transaction(count, "tally.add", Nothing, (state) =&gt; ({ n: state.n + 1 }));</pre></div>
+          <div class="code"><div class="t"><span>modules/tally/reset.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { transaction } from "@keel/store";
+import { Nothing } from "./Nothing.schema.ts";
+import { count } from "./count.ts";
+
+/** Sets the tally back to zero. */
+export const reset = transaction(count, "tally.reset", Nothing, () =&gt; ({ n: 0 }));</pre></div>
+        </li>
+
+        <li>
+          <h3>A component</h3>
+          <p class="prose">The component reads the store and calls the transactions with <code>tx</code>. It lists them in <code>uses</code> so the compiler knows which writes it makes. Every element that a test or the inspector needs has an id, and every style prop names a token from <code>tokens.ts</code>.</p>
+          <div class="code"><div class="t"><span>modules/tally/TallyPage.tsx</span><button class="copy" type="button">copy</button></div>
+<pre>import { type Infer, s } from "@keel/schema";
+import { tx } from "@keel/store";
+import { Box, Button, Heading, Text } from "@keel/ui";
+import { add } from "./add.ts";
+import { count } from "./count.ts";
+import { reset } from "./reset.ts";
+
+export const Props = s.object({});
+
+export const uses = [add, reset];
+
+/** Route tally.home: the count, Add one and Reset. */
+export default function TallyPage(_props: Infer&lt;typeof Props&gt;) {
+  const addOne = (): void =&gt; {
+    const r = tx(add, {});
+    if (!r.ok) return;
+  };
+  const clear = (): void =&gt; {
+    const r = tx(reset, {});
+    if (!r.ok) return;
+  };
+  return (
+    &lt;Box as="main" id="tally.page" direction="column" gap="4" p="5" bg="surface" fg="text" font="serif"&gt;
+      &lt;Heading id="tally.title" level={1} fontSize="2xl" m="0"&gt;
+        Tally
+      &lt;/Heading&gt;
+      &lt;Text id="tally.value" font="mono" fontSize="xl"&gt;
+        {count.get("n")}
+      &lt;/Text&gt;
+      &lt;Box direction="row" gap="3"&gt;
+        &lt;Button id="tally.add" onClick={addOne} px="4" py="2" bg="text" fg="card" border="rule" radius="none"&gt;
+          Add one
+        &lt;/Button&gt;
+        &lt;Button id="tally.reset" onClick={clear} px="4" py="2" bg="card" fg="text" border="rule" radius="none"&gt;
+          Reset
+        &lt;/Button&gt;
+      &lt;/Box&gt;
+    &lt;/Box&gt;
+  );
+}</pre></div>
+        </li>
+
+        <li>
+          <h3>The route manifest</h3>
+          <p class="prose">One route, id <code>tally.home</code>, at <code>/</code>. Links to it anywhere in the module come from <code>routes.href("tally.home")</code>, never a string path.</p>
+          <div class="code"><div class="t"><span>modules/tally/routes.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { manifest } from "@keel/router";
+import TallyPage from "./TallyPage.tsx";
+
+export const routes = manifest({
+  "tally.home": { path: "/", component: TallyPage, title: () =&gt; "Tally" },
+});</pre></div>
+        </li>
+
+        <li>
+          <h3>A test</h3>
+          <p class="prose"><code>properties</code> runs a transaction against payloads generated from its schema and checks the store's invariant after each. <code>render</code> mounts the component on a seeded sim ctx, and <code>fire</code> sends an event to an element by id.</p>
+          <div class="code"><div class="t"><span>test/tally.test.ts</span><button class="copy" type="button">copy</button></div>
+<pre>import { createCtx } from "@keel/ctx";
+import { properties, render } from "@keel/testing";
+import { expect, it } from "vitest";
+import TallyPage from "../modules/tally/TallyPage.tsx";
+import { add } from "../modules/tally/add.ts";
+import { reset } from "../modules/tally/reset.ts";
+
+it("add and reset keep the invariant for every generated state", async () =&gt; {
+  await properties(add);
+  await properties(reset);
+});
+
+it("Add one shows 1", async () =&gt; {
+  const t = render(TallyPage, { props: {}, ctx: createCtx({ mode: "sim", seed: 1 }) });
+  await t.fire("tally.add", { type: "click" });
+  expect(t.find("tally.value").text).toBe("1");
+  t.dispose();
+});</pre></div>
+        </li>
+
+        <li>
+          <h3>Check, test, run</h3>
+          <div class="code"><div class="t"><span>shell, from apps/tally</span><button class="copy" type="button">copy</button></div>
+<pre>pnpm keel check     <span class="c"># silent when clean, one trailer line</span>
+pnpm keel test      <span class="c"># ok 2 tests, 0 failed, 0 skipped</span>
+pnpm keel dev       <span class="c"># hot reload on http://localhost:5173</span>
+pnpm keel build     <span class="c"># dist/web/, static files</span></pre></div>
+          <p class="prose">If you get something wrong, the checker answers with a code and, where it can, the diff that fixes it. Destructure <code>props</code> and you get E1401; call <code>Date.now()</code> and you get E1601; put two exports in <code>add.ts</code> and you get E1752.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 09 -->
+    <section class="s" id="server" data-toc>
+      <div class="sh"><span class="num">09</span><h2>Data, routes and forms</h2></div>
+      <div class="prose">
+        <p>Tally keeps its state in the tab. Real apps load and save data. In Keel that is the job of loaders, actions and guards, each in its own file, each typed by the route's schemas. These samples are from <code>apps/golden-1</code>, the todo app.</p>
+      </div>
+
+      <h3>A route with params, search, loader and guard</h3>
+      <div class="code"><div class="t"><span>modules/todos/routes.ts (excerpt)</span><button class="copy" type="button">copy</button></div>
+<pre>export const routes = manifest({
+  "todos.shell": { component: AppShell },
+  "todos.list": {
+    path: "/lists/:listId",
+    params: ListParams,
+    search: ListSearch,
+    loader: loadList,
+    component: ListPage,
+    layout: "todos.shell",
+    title: (p) =&gt; p.data.name,
+    errorElement: ListError,
+  },
+  "todos.edit": {
+    path: "/lists/:listId/todos/:todoId/edit",
+    params: TodoParams,
+    loader: loadTodo,
+    component: EditTodoPage,
+    layout: "todos.shell",
+    guard: editable,
+    title: (p) =&gt; `Edit ${p.data.title}`,
+    errorElement: ListError,
+  },
+});
+routes.actions({
+  "todos.list": { POST: createTodo },
+  "todos.edit": { POST: updateTodo },
+});</pre></div>
+
+      <div class="cols">
+        <div>
+          <h4>loadList.server.ts</h4>
+          <div class="code" style="margin-top:0"><pre>export const loadList = loader(
+  { output: TodoList, params: ListParams },
+  async ({ params }, ctx) =&gt; {
+    const board = await refreshView(ctx);
+    if (!board.ok) return board;
+    const list = board.value.lists
+      .find((l) =&gt; l.id === params.listId);
+    return list === undefined
+      ? err({ code: "keel.notFound",
+          message: `No list ${params.listId}`,
+          data: { listId: params.listId } })
+      : ok(list);
+  });</pre></div>
+        </div>
+        <div>
+          <h4>editable.guard.ts</h4>
+          <div class="code" style="margin-top:0"><pre>export const editable = guard(
+  { redirect: "todos.index" },
+  async (_req, ctx) =&gt;
+    (await ctx.storage.get("todos.readOnly")) === "1"
+      ? err({ code: "keel.denied",
+          message: "todos are read-only",
+          data: null })
+      : ok(null),
+);</pre></div>
+        </div>
+      </div>
+
+      <h3>A form bound to a schema</h3>
+      <div class="prose"><p><code>form(TodoDraft)</code> builds form state from the same schema the action takes as <code>input</code>. A failed input answers 422 with <code>keel.fields</code>, and <code>Form</code> shows each message next to its field.</p></div>
+      <div class="code"><div class="t"><span>modules/todos/ListPage.tsx (excerpt)</span><button class="copy" type="button">copy</button></div>
+<pre>const f = form(TodoDraft, { id: "todos.addForm", initial: { priority: "normal" } });
+
+Form({
+  method: "POST",
+  action: routes.href("todos.list", { listId }),
+  form: f,
+  error: (e) =&gt; &lt;Text fg="error"&gt;{e.message}&lt;/Text&gt;,
+  children: () =&gt; [
+    &lt;Input field={f.field("title")} label="Title" /&gt;,
+    &lt;Select field={f.field("priority")} label="Priority" options={PRIORITIES} /&gt;,
+    &lt;Button id="todos.addTodo" type="submit"&gt;Add todo&lt;/Button&gt;,
+  ],
+});</pre></div>
+
+      <h3>Server state with an invariant</h3>
+      <div class="prose"><p>On a <code>node</code> deployable each request gets its own instance of a server store, restored from <code>ctx.storage</code> and saved in one <code>commit</code> when an action succeeds. Two processes that read the same board and both write get a 409 <code>keel.conflict</code> for the second write, unless the transaction declares <code>concurrent: "rebase"</code>.</p></div>
+      <div class="code"><div class="t"><span>modules/api/addTodo.ts</span><button class="copy" type="button">copy</button></div>
+<pre>export const addTodo = (board: Store&lt;Board&gt;) =&gt;
+  transaction(
+    board,
+    "api.addTodo",
+    s.object({
+      id: s.id("Todo"),
+      listId: s.id("TodoList"),
+      title: s.string({ min: 1, max: 120 }),
+      priority: s.enum(["low", "normal", "high"]),
+    }),
+    (state, p) =&gt;
+      state.todos.some((t) =&gt; t.id === p.id) || !state.lists.some((l) =&gt; l.id === p.listId)
+        ? state
+        : { ...state, todos: [...state.todos, { ...p, done: false }] },
+    { concurrent: "rebase" },
+  );</pre></div>
+
+      <h3>File roles at a glance</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>File</th><th>Holds</th><th>Rule</th></tr></thead>
+          <tbody>
+            <tr><td><code>Name.schema.ts</code></td><td>One schema and its type</td><td>Every exported schema lives here (E1104)</td></tr>
+            <tr><td><code>name.server.ts</code></td><td>One <code>loader</code> or <code>action</code></td><td>Only here (E1551); never imported by client code except through <code>routes.ts</code> (E1004)</td></tr>
+            <tr><td><code>name.guard.ts</code></td><td>One <code>guard</code></td><td>Convention from the Keel skills</td></tr>
+            <tr><td><code>Name.tsx</code></td><td>One component, plus optional <code>Props</code> and <code>uses</code></td><td>PascalCase; default export</td></tr>
+            <tr><td><code>name.ts</code></td><td>One function, store or value</td><td>File name equals export (E1752)</td></tr>
+            <tr><td><code>module.ts</code>, <code>routes.ts</code></td><td>The manifest and the route table</td><td>Fixed names</td></tr>
+            <tr><td><code>jobs.server.ts</code>, <code>schedules.server.ts</code>, <code>runners.server.ts</code></td><td>Stdlib queue, schedules, runners</td><td>Fixed names (E2501, E2552, E2504)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section class="s" id="ledger" data-toc>
+      <div class="sh"><span class="num">10</span><h2>Tests and the ledger</h2></div>
+      <div class="prose">
+        <p>Each spec clause is backed by evidence on one rung, and <code>keel ledger</code> reports which. A conformance suite, written from the spec section by a separate agent that cannot read the implementation, is what moves a section to <code>conformance-covered</code>.</p>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Rung</th><th>Evidence</th><th>Tool</th></tr></thead>
+          <tbody>
+            <tr><td><code>proven</code></td><td>A store's invariant holds for every state it allows and every payload the schema allows, by induction</td><td><code>prove</code> with Z3</td></tr>
+            <tr><td><code>exhaustive</code></td><td>Every reachable state up to a bound was visited</td><td><code>explore</code></td></tr>
+            <tr><td><code>probabilistic</code></td><td>Generated inputs, shrunk on failure, replayed by seed</td><td><code>properties</code>, <code>simulate</code></td></tr>
+            <tr><td><code>example</code></td><td>A hand-written test case</td><td><code>render</code>, <code>renderRoute</code>, vitest</td></tr>
+            <tr><td><code>monitored</code></td><td>Observed in production by transaction name</td><td><code>keel session monitor</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Spec clauses by rung</h4>
+      <div class="rungs">
+        <div class="rung"><span class="nm">proven</span><span class="bar"><i style="width:3.9%"></i></span><span class="ct">27</span></div>
+        <div class="rung"><span class="nm">exhaustive</span><span class="bar"><i style="width:0.9%"></i></span><span class="ct">6</span></div>
+        <div class="rung"><span class="nm">probabilistic</span><span class="bar"><i style="width:22.1%"></i></span><span class="ct">153</span></div>
+        <div class="rung"><span class="nm">example</span><span class="bar"><i style="width:73.0%"></i></span><span class="ct">506</span></div>
+        <div class="rung"><span class="nm">none<small>no test yet</small></span><span class="bar"><i class="none" style="width:0.2%"></i></span><span class="ct">1</span></div>
+      </div>
+      <p class="src">693 clauses · tooling/ledger/ledger.json · items across all rungs also include 4 monitored</p>
+
+      <h3>Climbing a rung in golden-1</h3>
+      <div class="prose">
+        <p>The todo app's board carries one invariant: ids are unique and every todo belongs to a known list. The same six transactions sit on three rungs at once. <code>properties</code> runs each against generated payloads. <code>explore</code> visits all 112 states three writes deep. <code>prove</code> shows by induction with Z3 that no state and no payload can break it.</p>
+      </div>
+      <div class="code"><div class="t"><span>apps/golden-1/test/board.prove.test.ts</span><button class="copy" type="button">copy</button></div>
+<pre>it("the six board transactions keep the invariant from every state it allows", async () =&gt; {
+  const b = sc.run(board);
+  const r = await prove([addList(b), addTodo(b), toggleTodo(b), editTodo(b), hideList(b), showList(b)]);
+  expect([...r.proven].sort()).toEqual(
+    ["api.addList", "api.addTodo", "api.editTodo", "api.hideList", "api.showList", "api.toggleTodo"].sort(),
+  );
+}, 60_000);</pre></div>
+      <div class="prose">
+        <p>Kernel packages also carry a mutation score with a threshold of 70%, run by Stryker and recorded in the ledger, so a test suite that passes without testing anything shows up as a number.</p>
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section class="s" id="diagnostics" data-toc>
+      <div class="sh"><span class="num">11</span><h2>Diagnostics and the CLI</h2></div>
+      <div class="prose">
+        <p>Every <code>keel</code> command has one data model and three renderings: <code>compact</code> for agents (the default off a TTY), <code>json</code> as NDJSON for tools, and <code>pretty</code> for a person. A diagnostic always has the same shape: a stable code, a path with line and column, one line of message under 90 characters, an optional fix as a unified diff, and an optional spec section.</p>
+      </div>
+      <div class="diag" aria-label="Example keel check output">
+<pre><span class="code-id">E1752</span> <span class="path">modules/a/C.tsx:1:1</span> file C exports f; filename must equal its export
+  see: k.check
+<span class="code-id">E1451</span> <span class="path">modules/a/C.tsx:1:23</span> throw in app code; return err(...) for expected failures
+  fix: @@ -1 +1,2 @@
+<span class="del">       -export function f() { throw new Error("x") }</span>
+<span class="add">       +import { err } from "@keel/schema";</span>
+<span class="add">       +export function f() { return err(new Error("x")) }</span>
+  see: k.errors
+<span class="fin">fail check 1 files, 2 errors, 0 warnings</span></pre>
+      </div>
+      <p class="src">real output of keel check on a one-file fixture</p>
+
+      <div class="cols">
+        <div>
+          <h3>Codes you meet first</h3>
+          <div class="tbl-wrap">
+            <table>
+              <tbody>
+                <tr><td><code>E1001</code></td><td><code>For</code> without <code>key</code>, or a key not on the item</td></tr>
+                <tr><td><code>E1004</code></td><td>A <code>.server.ts</code> file imported by client code</td></tr>
+                <tr><td><code>E1005</code></td><td>A generated file edited by hand</td></tr>
+                <tr><td><code>E1201</code></td><td>A write inside <code>computed</code> or <code>effect</code> not listed in <code>writes</code></td></tr>
+                <tr><td><code>E1302</code></td><td><code>ctx</code> or a global read inside a transaction</td></tr>
+                <tr><td><code>E1401</code></td><td>Destructured props</td></tr>
+                <tr><td><code>E1451</code></td><td><code>throw</code> in app code</td></tr>
+                <tr><td><code>E1505</code></td><td><code>actions</code> inside a manifest entry</td></tr>
+                <tr><td><code>E1601</code></td><td>Ambient effect such as <code>Date.now()</code></td></tr>
+                <tr><td><code>E1752</code></td><td>File name does not equal its export</td></tr>
+                <tr><td><code>E1901</code></td><td>An input in a <code>Form</code> without <code>field</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3>Commands</h3>
+          <div class="tbl-wrap">
+            <table>
+              <tbody>
+                <tr><td><code>keel check</code></td><td>Rules over code and artifacts</td></tr>
+                <tr><td><code>keel test</code></td><td>The suites, compact output</td></tr>
+                <tr><td><code>keel dev</code></td><td>Dev server, every deployable on one origin</td></tr>
+                <tr><td><code>keel build</code></td><td>One artifact per deployable, plus deploy files</td></tr>
+                <tr><td><code>keel explain &lt;code&gt;</code></td><td>Meaning and fix pattern, at most 120 tokens</td></tr>
+                <tr><td><code>keel spec &lt;id&gt;</code></td><td>One spec section; <code>--for &lt;code&gt;</code> finds it</td></tr>
+                <tr><td><code>keel inspect</code></td><td>State, graph, render and a11y trees of a running app</td></tr>
+                <tr><td><code>keel render</code></td><td>The accessibility tree of one render</td></tr>
+                <tr><td><code>keel scaffold</code></td><td>project, module, route, component, store, transaction, service</td></tr>
+                <tr><td><code>keel codemod</code></td><td>rename, move, place, add-field</td></tr>
+                <tr><td><code>keel ledger</code></td><td>Emit and diff the ledger</td></tr>
+                <tr><td><code>keel session</code></td><td>Replay, minimize, to-test, monitor</td></tr>
+                <tr><td><code>keel mcp</code> · <code>lsp</code></td><td>The same operations over MCP and LSP</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section class="s" id="examples" data-toc>
+      <div class="sh"><span class="num">12</span><h2>Example apps</h2></div>
+      <div class="prose">
+        <p>Four apps in <code>apps/</code> are built in Keel and checked by the same gates as the framework. Two are the golden apps an agent builds from the spec during evals.</p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h4><span>golden-1 · todo board</span><span class="badge ok">agent-built</span></h4>
+          <p>Lists and todos with an edit page, undo, live updates across pages, an offline outbox with Keep mine and Keep theirs, a removal workflow with a 10-minute undo window, an hourly digest job, SQLite storage, and Tauri and Capacitor shells declared.</p>
+          <p class="ex">std-channels · std-live · std-offline · std-statecharts · std-workflows · std-jobs · std-schedules · std-db</p>
+        </div>
+        <div class="card">
+          <h4><span>golden-2 · recipe box</span><span class="badge ok">agent-built</span></h4>
+          <p>Recipes in en-US, de-DE and ja-JP, with prices and dates per locale. The catalog page uses every headless widget and a sorted, searched, paged table whose query lives in the URL.</p>
+          <p class="ex">std-money · std-temporal · std-i18n · std-messages · std-headless · std-tables</p>
+        </div>
+        <div class="card">
+          <h4><span>inspector</span><span class="badge muted">tool</span></h4>
+          <p>The viewer for a running app's inspect document: stores, the dependency graph, the render and accessibility trees, and the transaction log. Built in Keel.</p>
+        </div>
+        <div class="card">
+          <h4><span>sessions</span><span class="badge muted">service</span></h4>
+          <p>Keel's own session ingest service. Its home page records its own session and posts it on the first error; the nightly fix loop turns those sessions into tests.</p>
+        </div>
+      </div>
+      <div class="prose">
+        <p>Run one from its folder: <code>pnpm api</code> starts the API server, and <code>npx vite</code> serves the client and proxies <code>/api</code> to it. <code>pnpm dev</code> runs both on one origin with hot reload.</p>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section class="s" id="roadmap" data-toc>
+      <div class="sh"><span class="num">13</span><h2>Roadmap</h2></div>
+      <div class="prose">
+        <p>Keel moves through gates, not dates. A gate passes when its criteria are green in CI.</p>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Gate</th><th>Scope</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><code>G0</code> Factory</td><td>CI, commands, hooks, one eval end to end, output budgets</td><td class="status-cell"><span class="badge muted">no date recorded</span></td></tr>
+            <tr><td><code>G1</code> Kernel renders</td><td>An agent builds golden-1 to ledger green from spec and skill</td><td class="status-cell"><span class="badge ok">passed 2026-11-06</span></td></tr>
+            <tr><td><code>G2</code> Kernel full stack</td><td>Thin server and services, the inspector</td><td class="status-cell"><span class="badge ok">passed 2026-11-06</span></td></tr>
+            <tr><td><code>G3</code> Kernel freeze</td><td>Every section covered, every extension point used, two golden apps</td><td class="status-cell"><span class="badge">provisionally frozen</span></td></tr>
+            <tr><td><code>S1</code> Sessions</td><td>Capture, ingest, replay, minimize, to-test, GitHub Action</td><td class="status-cell"><span class="badge ok">passed 2026-11-09</span></td></tr>
+            <tr><td><code>S2</code> Values</td><td>Money, temporal, text, i18n, message sets</td><td class="status-cell"><span class="badge ok">passed 2026-11-10</span></td></tr>
+            <tr><td><code>S3</code> Server depth</td><td>Jobs, schedules, live loaders, split topology, generated Docker and CI</td><td class="status-cell"><span class="badge muted">open</span></td></tr>
+            <tr><td><code>S4</code> Realtime</td><td>Live resources, channels, offline, conflicts</td><td class="status-cell"><span class="badge ok">passed 2026-11-12</span></td></tr>
+            <tr><td><code>S5</code> Correctness</td><td>State charts, model checking, simulation, mutation in the ledger</td><td class="status-cell"><span class="badge muted">open</span></td></tr>
+            <tr><td><code>S6</code> Compliance</td><td>Accessibility pack, CSP, PII redaction, evidence bundle</td><td class="status-cell"><span class="badge muted">open</span></td></tr>
+            <tr><td><code>S7</code> UI modules</td><td>Headless widgets and tables</td><td class="status-cell"><span class="badge muted">open</span></td></tr>
+            <tr><td><code>S8</code> Reach</td><td>SQLite and Postgres, workflows, native shells, Z3 proofs</td><td class="status-cell"><span class="badge">built; shells unverified</span></td></tr>
+            <tr><td><code>P1</code> Go public</td><td>The frozen flip, system diagrams, public docs and site, external review</td><td class="status-cell"><span class="badge muted">open</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">source: docs/ROADMAP.md</p>
+    </section>
+
+    <footer>
+      <span>Keel · pre-0.1 preview page · claims follow tooling/ledger/ledger.json</span>
+      <span>Source Serif 4 and JetBrains Mono, SIL OFL 1.1</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // Copy buttons: copy the sibling <pre> text.
+  for (const btn of document.querySelectorAll(".copy")) {
+    btn.addEventListener("click", () => {
+      const pre = btn.closest(".code")?.querySelector("pre");
+      if (!pre || !navigator.clipboard) return;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        btn.textContent = "copied";
+        setTimeout(() => { btn.textContent = "copy"; }, 1200);
+      }, () => {});
+    });
+  }
+  // Contents: mark the section in view.
+  const links = new Map([...document.querySelectorAll(".toc a")].map((a) => [a.getAttribute("href").slice(1), a]));
+  const seen = new Set();
+  const obs = new IntersectionObserver((entries) => {
+    for (const e of entries) e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id);
+    const first = [...document.querySelectorAll("[data-toc]")].find((s) => seen.has(s.id));
+    if (!first) return;
+    for (const [id, a] of links) a.setAttribute("aria-current", String(id === first.id));
+  }, { rootMargin: "-64px 0px -60% 0px" });
+  for (const s of document.querySelectorAll("[data-toc]")) obs.observe(s);
+</script>
+</body>
+</html>

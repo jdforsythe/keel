@@ -13,26 +13,23 @@ type LoaderFits<D> = D extends {
     ? true
     : false
   : true;
-type ActionFits<D, A> = A extends { run(input: never, at: { readonly params: infer P }, ctx: Ctx): unknown }
-  ? Fits<Parsed<D, "params">, P>
-  : true;
-type ActionsFit<D> = D extends { readonly actions: infer M }
-  ? false extends { [V in keyof M]-?: ActionFits<D, M[V]> }[keyof M]
-    ? false
-    : true
-  : true;
 
 /**
- * What `manifest` requires of each entry beyond `RouteDef` (k.router): its loader's `params`/`search` and each
- * action's `params` accept `Infer` of the entry's `params`/`search` schema (`{}` when the entry has none), as
- * typing them `Infer<typeof schema>` (or leaving them unread) does. A missing, renamed, or narrower field makes the
- * `loader` or `actions` key fail to compile with this message.
+ * What `manifest` requires of each entry beyond `RouteDef` (k.router): its loader's `params`/`search` accept `Infer`
+ * of the entry's `params`/`search` schema (`{}` when the entry has none), as typing them `Infer<typeof schema>` (or
+ * leaving them unread) does; a missing, renamed, or narrower field makes `loader` fail to compile with this message.
+ * An entry has no `actions` key: they move to `routes.actions({...})` (E1505, RFC 0063).
  */
 export type RouteFit<M> = {
   readonly [K in keyof M]: (LoaderFits<M[K]> extends true
     ? unknown
     : { readonly loader: "loader params/search must be Infer<typeof schema> of this route's params/search" }) &
-    (ActionsFit<M[K]> extends true
-      ? unknown
-      : { readonly actions: "action params must be Infer<typeof schema> of this route's params" });
+    (M[K] extends { readonly title: unknown }
+      ? M[K] extends { readonly path: string }
+        ? unknown
+        : { readonly title: "a layout has no title (k.head); declare it on a path route" }
+      : unknown) &
+    (M[K] extends { readonly actions: unknown }
+      ? { readonly actions: "E1505 move actions to routes.actions({ [id]: { POST } }) after the manifest" }
+      : unknown);
 };

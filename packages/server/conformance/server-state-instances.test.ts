@@ -73,11 +73,18 @@ async function setup() {
   });
   const component = (): Node => document.createElement("p");
   const routes = manifest({
-    "app.slow": { path: "/slow", actions: { POST: slowWrite }, component },
-    "app.write": { path: "/write", actions: { POST: write }, component },
-    "app.undo": { path: "/undo", actions: { POST: undo }, component },
-    "app.err": { path: "/err", actions: { POST: writeThenErr }, component },
-    "app.touch": { path: "/touch", actions: { POST: touch }, component },
+    "app.slow": { path: "/slow", component },
+    "app.write": { path: "/write", component },
+    "app.undo": { path: "/undo", component },
+    "app.err": { path: "/err", component },
+    "app.touch": { path: "/touch", component },
+  });
+  routes.actions({
+    "app.slow": { POST: slowWrite },
+    "app.write": { POST: write },
+    "app.undo": { POST: undo },
+    "app.err": { POST: writeThenErr },
+    "app.touch": { POST: touch },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

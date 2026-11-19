@@ -1,10 +1,12 @@
 import type { JSXElement } from "oxc-parser";
+import { roleFor } from "../a11y/roleFor.ts";
 import type { Analysis } from "./Analysis.ts";
 import type { ElementInfo } from "./ElementInfo.ts";
 import { attrOf } from "./attrOf.ts";
 import { componentAt } from "./componentAt.ts";
 import { decodeEntities } from "./decodeEntities.ts";
 import { isHtmlTag } from "./isHtmlTag.ts";
+import { jsxAttrs } from "./jsxAttrs.ts";
 import { lineCol } from "./lineCol.ts";
 import { nameSourceOf } from "./nameSourceOf.ts";
 import { roleOf } from "./roleOf.ts";
@@ -25,6 +27,12 @@ function baseShape(el: JSXElement, base: string): { tag: string; role: string | 
     case "Box":
     case "Text": {
       const tag = literal(el, "as") ?? (base === "Box" ? "div" : "span");
+      // A `label` is written as `aria-label` (k.ui): it names the element and makes a `section` a `region`.
+      if (has("label")) {
+        const attr = jsxAttrs(el);
+        const role = roleFor(tag, (n) => attr(n === "aria-label" ? "label" : n)) ?? null;
+        return { tag, role, name: "aria" };
+      }
       const role = roleOf(el, tag);
       return { tag, role, name: nameSourceOf(el, tag, role, false) };
     }

@@ -4,7 +4,7 @@ import type { Transaction } from "@keel/store";
 /**
  * One transaction property case: from `state` (restored as the store's base, empty log), `tx(t, payload)` commits
  * (payload and output parse, every declared `invariant` holds), `undo` restores `state`, and a second `tx` gives the
- * same output. The store is restored to its snapshot from before the case, log `meta` included (rfc:0028).
+ * same output. The store is restored to its snapshot from before the case, log `meta` included.
  */
 export function checkTransaction<T, P>(t: Transaction<T, P>, state: T, payload: P): void {
   const st = t.store;

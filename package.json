@@ -6,10 +6,14 @@
     "node": ">=22"
   },
   "scripts": {
-    "check": "node tooling/turbo.mjs check && node tooling/structure-lint.mjs && node tooling/conformance-guard.mjs && node tooling/generate.mjs --check && node tooling/docs-freshness.mjs && node tooling/voice-lint.mjs && node tooling/budgets.mjs",
+    "check": "node tooling/turbo.mjs check && node tooling/structure-lint.mjs && node tooling/conformance-guard.mjs && node tooling/generate.mjs --check && node tooling/docs-freshness.mjs && node tooling/voice-lint.mjs && node tooling/format-check.mjs && node tooling/budgets.mjs",
     "test": "node tooling/turbo.mjs test",
     "build": "node tooling/turbo.mjs build",
     "mutate": "node tooling/turbo.mjs mutate",
+    "mutate:changed": "node tooling/mutate-changed.mjs",
+    "mutate:status": "node tooling/mutate.mjs --status",
+    "mutate:stop": "node tooling/mutate.mjs --stop",
+    "orphans": "node tooling/orphans.mjs",
     "eval": "tsx evals/run.ts",
     "spec": "node tooling/spec.mjs",
     "ledger": "node packages/cli/src/bin.ts ledger --write tooling/ledger/ledger.json",
@@ -22,8 +26,8 @@
     "@biomejs/biome": "^1.9",
     "@changesets/cli": "^2",
     "@playwright/test": "^1.48",
-    "@stryker-mutator/core": "^8",
-    "@stryker-mutator/vitest-runner": "^8",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/vitest-runner": "^10.1.1",
     "esbuild": "^0.28.2",
     "fast-check": "^3",
     "happy-dom": "^21.0.4",
@@ -33,6 +37,12 @@
     "turbo": "^2",
     "typescript": "^5.6",
     "vite": "^8.3.6",
-    "vitest": "^2"
+    "vitest": "^4.1.12"
+  },
+  "pnpm": {
+    "overrides": {
+      "@stryker-mutator/core>minimatch": "^11.0.1",
+      "typed-rest-client>qs": "^6.16.1"
+    }
   }
 }

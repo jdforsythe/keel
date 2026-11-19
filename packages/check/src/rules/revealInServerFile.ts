@@ -1,11 +1,12 @@
 import { Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
+import { isTestPath } from "../internal/isTestPath.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
 /**
- * E1105 (k.schema): `reveal` from `@keel/schema` in an app file other than `*.server.ts`: a named import
+ * E1105 (k.privacy): `reveal` from `@keel/schema` in an app file other than `*.server.ts`, tests included: a named import
  * (`reveal`, `reveal as x`) or a `<namespace>.reveal` use of a namespace import. Reported at the specifier
  * or member; no fix (moving code is not a one-hunk edit).
  */
@@ -13,9 +14,9 @@ export const revealInServerFile: RuleDef = {
   code: "E1105",
   message: () => "`reveal` in client code; move to a *.server.ts file",
   explain: "Secrets are revealed only on the server, so client bundles never hold a plaintext secret.",
-  see: "k.schema",
+  see: "k.privacy",
   check: ({ file, ast }) => {
-    if (!isAppPath(file.path) || /\.server\.[cm]?[jt]s$/.test(file.path)) return [];
+    if (!(isAppPath(file.path) || isTestPath(file.path)) || /\.server\.[cm]?[jt]s$/.test(file.path)) return [];
     const out: Finding[] = [];
     const namespaces = new Set<string>();
     for (const st of ast.body) {

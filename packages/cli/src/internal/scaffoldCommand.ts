@@ -12,14 +12,19 @@ import { summary } from "./summary.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
 const GENERATORS: readonly Op[] = ["project", "module", "route", "component", "store", "transaction", "service"];
-const CODEMODS: readonly Op[] = ["rename", "move", "add-field"];
+const CODEMODS: readonly Op[] = ["rename", "move", "add-field", "place"];
 const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
   pascal: ["component", "schema"],
   dotted: ["store", "route"],
 };
 
-const refusal = (d: ScaffoldDiag): OutRecord[] => [
-  makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see }),
+const refusal = (d: ScaffoldDiag, into: string): OutRecord[] => [
+  makeDiag(d.code, d.message, {
+    path: d.path === undefined ? undefined : `${into}${d.path}`,
+    line: d.line,
+    col: d.col,
+    see: d.see,
+  }),
   ...(d.cause === undefined
     ? []
     : [makeDiag(d.cause.code, d.cause.message, { path: d.cause.path, line: d.cause.line, col: 1, see: "k.check" })]),
@@ -28,7 +33,7 @@ const refusal = (d: ScaffoldDiag): OutRecord[] => [
 /**
  * `keel scaffold <op> ...` / `keel codemod <op> ...` over `io.files` through `@keel/scaffold`, which is pure, so
  * `--dry-run` only skips the writes (RFC 0045). The edit set comes back as `scaffold.edit` records (unified diffs
- * under `--dry-run`) plus writes for the binary; a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
+ * under `--dry-run`) plus writes for the binary (`project <name>`: under `<name>/`); a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
  * `--kind` tries component then schema (PascalCase) or store then route (dotted), first one that finds `from`.
  */
 export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: Io): Outcome {
@@ -45,7 +50,14 @@ export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: 
     });
     return { records: [d, summary(name, [d], {})], writes: [] };
   }
-  const files = new Map(projectFiles(io).map((f) => [f.path, f.source]));
+  // `scaffold project <name>` writes under `<name>/` (rfc:0068): the generator sees that directory as its tree.
+  const dir = input.args?.[0];
+  const into = op === "project" && typeof dir === "string" && dir !== "" ? `${dir}/` : "";
+  const files = new Map(
+    projectFiles(io)
+      .filter((f) => f.path.startsWith(into))
+      .map((f) => [f.path.slice(into.length), f.source]),
+  );
   const dry = input["dry-run"] === true;
   const generated = op === "service" ? openapiInput(input.args?.[0], input, io.cwd, files) : undefined;
   if (generated !== undefined && !generated.ok)
@@ -63,7 +75,7 @@ export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: 
   }
   const label = `${name} ${op}`;
   if (!result.ok) {
-    const rs = refusal(result.error.data);
+    const rs = refusal(result.error.data, into);
     return { records: [...rs, summary(label, rs, {})], writes: [] };
   }
   const edit = result.value;
@@ -71,11 +83,10 @@ export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: 
   const records: OutRecord[] = [];
   const writes: Write[] = [];
   const add = (action: "create" | "change" | "remove", path: string): void => {
-    const diff = dry
-      ? unifiedDiff(path, action === "create" ? null : (files.get(path) ?? null), after(path))
-      : undefined;
-    records.push({ kind: "scaffold.edit", action, path, ...(diff === undefined ? {} : { diff }) });
-    writes.push({ path, content: action === "remove" ? null : after(path), readonly: false });
+    const at = `${into}${path}`;
+    const diff = dry ? unifiedDiff(at, action === "create" ? null : (files.get(path) ?? null), after(path)) : undefined;
+    records.push({ kind: "scaffold.edit", action, path: at, ...(diff === undefined ? {} : { diff }) });
+    writes.push({ path: at, content: action === "remove" ? null : after(path), readonly: false });
   };
   for (const p of edit.created) add("create", p);
   for (const p of edit.changed) add("change", p);

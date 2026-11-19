@@ -4,7 +4,7 @@ import { Case, For, Match, type Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { type ApiError, service } from "@keel/services";
 import { Box, Heading, Text } from "@keel/ui";
-import type { Suggestion } from "./Suggestion.schema.ts";
+import type { Suggestion } from "../api/Suggestion.schema.ts";
 import { suggestions } from "./suggestions.service.ts";
 
 export const Props = s.object({});
@@ -19,8 +19,8 @@ const failure = (e: ApiError): Error =>
 
 async function fetchSuggestions(ctx: Ctx | undefined): Promise<Suggestion[]> {
   if (ctx === undefined) return Promise.reject(new Error("Suggestions need a ctx"));
-  const r = await service({ base: location.origin, schema: suggestions }).list({}, ctx);
-  return r.ok ? r.value.results["api.suggestions"].value : Promise.reject(failure(r.error));
+  const r = await service({ module: "api", schema: suggestions }).list({}, ctx);
+  return r.ok ? r.value : Promise.reject(failure(r.error));
 }
 
 /** Suggested titles from `GET /api/suggestions` through a typed `suggestions` client, shown by resource state. */

@@ -86,6 +86,23 @@ describe("module pass", () => {
     expect(of(fixed, "E1156")).toEqual([]);
   });
 
+  it("E1156 observe (rfc:0071): a named import or namespace member needs the capability; a type import does not", () => {
+    const use = (src: string) => [man("orders", { caps: ["clock"] }), f("modules/orders/rec.ts", src)];
+    const named = of(use("import { observe as o } from '@keel/ctx'\nexport const r = o\n"), "E1156");
+    expect(named.map((x) => [x.line, x.message])).toEqual([
+      [1, "module orders calls observe but it is not in its capabilities"],
+    ]);
+    const fixed = applyFix(use("import { observe } from '@keel/ctx'\n"), named[0]);
+    expect(fixed.find((x) => x.path === "modules/orders/module.ts")?.source).toContain(
+      "capabilities: ['clock', 'observe']",
+    );
+    expect(of(fixed, "E1156")).toEqual([]);
+    expect(of(use("import * as k from '@keel/ctx'\nexport const r = k['observe']\n"), "E1156")).toHaveLength(1);
+    expect(
+      of(use("import type { observe } from '@keel/ctx'\nimport { createCtx } from '@keel/ctx'\n"), "E1156"),
+    ).toEqual([]);
+  });
+
   it("E1153 names a self-dependency and reports once per cycle", () => {
     expect(of([man("orders", { deps: ["orders"] })], "E1153").map((d) => d.message)).toEqual([
       "module deps cycle: orders -> orders",
@@ -229,5 +246,20 @@ describe("module pass", () => {
       expect(x.message).not.toContain("\n");
       expect(x.see).toBe("k.module");
     }
+  });
+});
+
+describe("E1158 non-finite literals (rfc:0066, backlog 0195)", () => {
+  const std = (value: string): SourceFile =>
+    f(
+      "modules/a/module.ts",
+      `export default module({ id: 'a', deps: ['@keel/std-free'], capabilities: [], public: { exports: [], routes: [] }, std: { '@keel/std-free': ${value} } })\n`,
+    );
+  it("-1e999 and 1e999 are not literal JSON; finite negatives and -0 are", () => {
+    for (const v of ["-1e999", "{ n: -1e999 }", "[1e999]"])
+      expect(of([std(v)], "E1158").map((d) => d.message)).toEqual([
+        "std config for @keel/std-free in module a is not literal JSON",
+      ]);
+    for (const v of ["-2.5", "{ n: -0 }"]) expect(of([std(v)], "E1158")).toEqual([]);
   });
 });

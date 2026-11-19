@@ -2,7 +2,7 @@
 // Spec: k.testing Harness (`renderRoute`) with k.router manifests, navigation, and Form actions. Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { Form, type Href, action, loader, manifest } from "@keel/router";
+import { Form, action, loader, manifest } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -36,13 +36,6 @@ const routes = manifest({
       loads.n++;
       return ok({ count: list.snapshot().state.titles.length });
     }),
-    actions: {
-      POST: action({ input: s.object({ title: s.string() }) }, async ({ title }) => {
-        tx(add, { title });
-        const to: Href = routes.href("rt.show", { n: list.snapshot().state.titles.length });
-        return ok(to);
-      }),
-    },
     component: (props) => {
       const root = el("main", { id: "rt.main" });
       const data: unknown = props.data;
@@ -64,6 +57,14 @@ const routes = manifest({
       const n = typeof props.params === "object" && props.params !== null ? Reflect.get(props.params, "n") : undefined;
       return el("h1", { id: "rt.heading" }, `note ${String(n)}`);
     },
+  },
+});
+routes.actions({
+  "rt.list": {
+    POST: action({ input: s.object({ title: s.string() }) }, async ({ title }) => {
+      tx(add, { title });
+      return ok(routes.href("rt.show", { n: list.snapshot().state.titles.length }));
+    }),
   },
 });
 

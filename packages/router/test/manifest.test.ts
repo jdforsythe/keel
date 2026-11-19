@@ -1,10 +1,13 @@
+import { createCtx } from "@keel/ctx";
 // Examples: manifest validation codes (E1502-E1506 at runtime) and the routes.json artifact.
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
+import { createRouter } from "../src/createRouter.ts";
 import { guard } from "../src/guard.ts";
 import { manifest } from "../src/manifest.ts";
 import { routesArtifact } from "../src/routesArtifact.ts";
 import type { RouteDef } from "../src/types/RouteDef.ts";
+import { memoryHistory } from "./memoryHistory.ts";
 
 const view = (): Node => document.createComment("");
 const codeOf = (fn: () => unknown): string | undefined => {
@@ -16,6 +19,7 @@ const codeOf = (fn: () => unknown): string | undefined => {
   }
 };
 const P = s.object({ id: s.id("X") });
+const save = { kind: "keel.action" as const, input: s.object({}), run: async () => ok(null) };
 
 describe("manifest validation", () => {
   it.each<[string, Record<string, RouteDef>]>([
@@ -35,9 +39,36 @@ describe("manifest validation", () => {
     expect(codeOf(() => manifest(routes))).toBe(code);
   });
 
-  it("E1505 for an actions key that is not a verb", () => {
+  it("E1505 for actions in an entry, a routes.actions key that is not a verb, a layout or unknown id, or a second attach", () => {
     const routes = { "v7.a": { path: "/v7", component: view, actions: { GET: {} } } };
     expect(codeOf(() => Reflect.apply(manifest, undefined, [routes]))).toBe("E1505");
+    const m = manifest({ "v7.l": { component: view }, "v7.b": { path: "/v7b", component: view } });
+    const attach = (arg: unknown) => codeOf(() => Reflect.apply(m.actions, m, [arg]));
+    expect(attach({ "v7.b": { GET: save } })).toBe("E1505");
+    expect(attach({ "v7.l": { POST: save } })).toBe("E1505");
+    expect(attach({ "v7.none": { POST: save } })).toBe("E1505");
+    expect(attach({ "v7.b": { POST: save } })).toBeUndefined();
+    expect(attach({ "v7.b": { PUT: save } })).toBe("E1505");
+  });
+
+  it("E1505 for an action value that is undefined, a plain object or a string; nothing attaches (backlog 0191)", () => {
+    const m = manifest({ "v11.a": { path: "/v11", component: view }, "v11.b": { path: "/v11b", component: view } });
+    const attach = (arg: unknown) => codeOf(() => Reflect.apply(m.actions, m, [arg]));
+    expect(attach({ "v11.b": { POST: save }, "v11.a": { POST: undefined } })).toBe("E1505");
+    expect(attach({ "v11.a": { POST: {} } })).toBe("E1505");
+    expect(attach({ "v11.a": { POST: "save" } })).toBe("E1505");
+    const noInput = { kind: "keel.action", run: () => ok(null) };
+    expect(attach({ "v11.a": { POST: noInput } })).toBe("E1505");
+    expect(attach({ "v11.a": { POST: new Proxy(noInput, {}) } })).toBe("E1505");
+    expect(attach({ "v11.b": { POST: save } })).toBeUndefined();
+    expect(attach({ "v11.a": { POST: save } })).toBeUndefined();
+  });
+
+  it("E1505 for routes.actions after createRouter compiled the entries (backlog 0183)", () => {
+    const m = manifest({ "v10.a": { path: "/v10", component: view } });
+    const router = createRouter(m, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/v10") });
+    expect(codeOf(() => m.actions({ "v10.a": { POST: save } }))).toBe("E1505");
+    router.dispose();
   });
 
   it("E1506 for a layout name not in the same manifest (manifests never share entries)", () => {
@@ -82,12 +113,12 @@ describe("routesArtifact", () => {
         path: "/art/:id",
         params: P,
         search: s.object({ tab: s.enum(["a", "b"]).optional() }),
-        actions: { POST: save, DELETE: save },
         component: view,
         layout: "art.shell",
         guard: guard({ redirect: "art.login" }, async () => ok(null)),
       },
     });
+    routes.actions({ "art.show": { POST: save, DELETE: save } });
     const a = routesArtifact(routes);
     expect(Object.keys(a)).toEqual(["art.login", "art.shell", "art.show"]);
     expect(a["art.shell"]).toEqual({

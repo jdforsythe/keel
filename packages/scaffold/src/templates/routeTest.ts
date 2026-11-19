@@ -1,6 +1,35 @@
-/** `<mod>.<name>.route.test.ts` (k.testing): renders the route's chain. `routes` is the import specifier of the module's manifest. */
-export function routeTest(id: string, params: readonly string[], routes = "./routes.ts"): string {
+/**
+ * `<mod>.<name>.route.test.ts` (k.testing): renders the route's chain. `routes` is the import specifier of the module's manifest.
+ * `apiPath` (k.api): the route is an API route with no view, so the test serves the module alone from a node
+ * deployable, requests that path and expects JSON.
+ */
+export function routeTest(
+  id: string,
+  params: readonly string[],
+  routes = "./routes.ts",
+  apiPath: string | null = null,
+): string {
   const p = params.length === 0 ? "{}" : `{ ${params.map((n) => n.concat(': "1"')).join(", ")} }`;
+  if (apiPath !== null) {
+    const mod = id.split(".")[0] ?? id;
+    return [
+      "// @vitest-environment node",
+      `import { createCtx } from "@keel/ctx";`,
+      `import { createApp, topology } from "@keel/server";`,
+      `import { expect, it } from "vitest";`,
+      `import { routes } from "${routes}";`,
+      "",
+      "// The module alone, in a node deployable: an API route needs a server.",
+      `const served = topology({ api: { modules: ["${mod}"], adapter: "node" } });`,
+      "",
+      `it("answers JSON", async () => {`,
+      `  const app = await createApp({ topology: served, routes, ctx: createCtx({ mode: "sim", seed: 1337 }) });`,
+      `  const res = await app.fetch(new Request("http://localhost${apiPath.replace(/:[^/]+/g, "1")}"));`,
+      `  expect(await res.json()).toMatchObject({ id: "${id}" });`,
+      "});",
+      "",
+    ].join("\n");
+  }
   return [
     `import { renderRoute } from "@keel/testing";`,
     `import { expect, it } from "vitest";`,

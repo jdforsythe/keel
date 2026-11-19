@@ -1,12 +1,23 @@
 // The compiler's copy of ui's class-name scheme (src/internal/className.ts) must agree with ui's own, and the
 // classes the compiler writes for static style props must be exactly the rules ui's compileStyles emits.
-// ui is imported by relative path, in this test only (the compiler package never depends on @keel/ui).
+// ui is imported from the repository root, in this test only (the compiler package never depends on @keel/ui).
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { compile } from "@keel/compiler";
+import { repoRoot } from "@keel/tooling/repo-root";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { compileStyles } from "../../ui/src/css/compileStyles.ts";
-import { className as uiClassName } from "../../ui/src/internal/className.ts";
 import { className } from "../src/internal/className.ts";
+
+const ui = path.join(repoRoot(import.meta.dirname), "packages", "ui", "src");
+const styles: typeof import("../../ui/src/css/compileStyles.ts") = await import(
+  pathToFileURL(path.join(ui, "css", "compileStyles.ts")).href
+);
+const uiNames: typeof import("../../ui/src/internal/className.ts") = await import(
+  pathToFileURL(path.join(ui, "internal", "className.ts")).href
+);
+const { compileStyles } = styles;
+const uiClassName = uiNames.className;
 
 const STATES = [undefined, "hover", "focusVisible", "active", "disabled"] as const;
 

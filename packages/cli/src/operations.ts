@@ -1,4 +1,5 @@
 import { s } from "@keel/schema";
+import { EvidenceRecord } from "./evidence/EvidenceRecord.ts";
 import { A11ySchema } from "./internal/A11ySchema.ts";
 import { CiteSchema } from "./internal/CiteSchema.ts";
 import { EditSchema } from "./internal/EditSchema.ts";
@@ -32,6 +33,7 @@ const structural = {
   workspace: s.boolean().optional(),
   path: s.string().optional(),
   file: s.string().optional(),
+  api: s.boolean().optional(),
   openapi: s.string().optional(),
   to: s.string().optional(),
   default: s.string().optional(),
@@ -41,8 +43,8 @@ const structural = {
 export const operations: readonly Operation[] = [
   {
     name: "check",
-    description: "Run the k.check pipeline over the project, or the given paths.",
-    input: s.object({ paths, ...diagnostic }),
+    description: "Run k.check over the project or the given paths.",
+    input: s.object({ paths, base: s.string().optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
     scope: "query",
@@ -57,8 +59,13 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "build",
-    description: "Compile the project and write the .keel artifacts; vite build when vite.config.ts exists.",
-    input: s.object(diagnostic),
+    description: "Compile the project, write .keel artifacts, vite build.",
+    input: s.object({
+      target: s.enum(["capacitor", "tauri"]).optional(),
+      platform: s.enum(["android", "ios"]).optional(),
+      release: s.boolean().optional(),
+      ...diagnostic,
+    }),
     output: outputOf(),
     positional: [],
     scope: "query",
@@ -66,14 +73,14 @@ export const operations: readonly Operation[] = [
   {
     name: "dev",
     description: "Dev server and log stream (k.server).",
-    input: s.object(diagnostic),
+    input: s.object({ port: s.int({ min: 1, max: 65535 }).optional(), ...diagnostic }),
     output: outputOf(ReqSchema),
     positional: [],
     scope: "none",
   },
   {
     name: "spec",
-    description: "Print one spec section, every spec line citing a code (for), or the map.",
+    description: "Print one spec section, sections citing a code, or the map.",
     input: s.object({ id: s.string().optional(), for: s.string().optional(), map: s.boolean().optional(), ...common }),
     output: outputOf(SectionSchema, CiteSchema),
     positional: ["id"],
@@ -81,7 +88,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "explain",
-    description: "Meaning and fix pattern of one diagnostic code, at most 120 tokens.",
+    description: "Meaning and fix of one diagnostic code.",
     input: s.object({ code: s.string().optional(), ...common }),
     output: outputOf(ExplainSchema),
     positional: ["code"],
@@ -89,7 +96,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "inspect",
-    description: "Summarize GET /__keel/inspect of a running dev app (default http://localhost:5173).",
+    description: "Summarize GET /__keel/inspect of a dev app (default http://localhost:5173).",
     input: s.object({ url: s.string().optional(), ...common }),
     output: outputOf(InspectStoreSchema, InspectSectionSchema),
     positional: ["url"],
@@ -113,7 +120,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "codemod",
-    description: "Structural codemod: rename, move, add-field (k.scaffold).",
+    description: "Structural codemod: rename, move, add-field, place (k.scaffold).",
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],
@@ -121,7 +128,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "ledger",
-    description: "Emit the verification ledger (or --write it to a file), or diff it against the committed one.",
+    description: "Emit the ledger, --write it, or diff it against the committed one.",
     input: s.object({
       diff: s.boolean().optional(),
       write: s.string().optional(),
@@ -129,6 +136,20 @@ export const operations: readonly Operation[] = [
       ...diagnostic,
     }),
     output: outputOf(LedgerSchema),
+    positional: [],
+    scope: "ledger",
+  },
+  {
+    name: "evidence",
+    description: "Write a signed evidence bundle, or --verify one with --key <keyId>.",
+    input: s.object({
+      out: s.string().optional(),
+      audit: s.string().optional(),
+      verify: s.string().optional(),
+      key: s.string().optional(),
+      ...common,
+    }),
+    output: outputOf(EvidenceRecord),
     positional: [],
     scope: "ledger",
   },

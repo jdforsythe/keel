@@ -15,32 +15,48 @@ const applied = (files: Files, writes: readonly { path: string; content: string 
     else m.set(w.path, w.content);
   return [...m].map(([path, source]) => ({ path, source }));
 };
+/** `scaffold project shop` writes under `shop/` (rfc:0068); later ops run inside it (`CWD`), so the prefix is dropped. */
+const inShop = (writes: readonly { path: string; content: string | null }[]) =>
+  writes.map((w) => ({ ...w, path: w.path.replace(/^shop\//, "") }));
 const project = async (): Promise<Files> =>
-  applied([], (await runEngine(["scaffold", "project", "shop"], { cwd: CWD })).writes);
+  applied([], inShop((await runEngine(["scaffold", "project", "shop"], { cwd: "/work" })).writes));
 
 describe("scaffold and codemod", () => {
-  it("scaffold project lists the created files and returns them as writes", async () => {
-    const e = await runEngine(["scaffold", "project", "shop"], { cwd: CWD, files: [] });
+  it("scaffold project lists the created files and returns them as writes under <name>/ (rfc:0068)", async () => {
+    const e = await runEngine(["scaffold", "project", "shop"], { cwd: "/work", files: [] });
     expect(e.result.code).toBe(0);
-    expect(lines(e.result.stdout)).toContain("create topology.ts");
+    expect(lines(e.result.stdout)).toContain("create shop/topology.ts");
     expect(lines(e.result.stdout).at(-1)).toMatch(/^ok scaffold project \d+ created, 0 changed, 0 removed$/);
-    expect(e.writes.map((w) => w.path)).toContain("topology.ts");
+    expect(e.writes.map((w) => w.path)).toContain("shop/topology.ts");
+    expect(e.writes.every((w) => w.path.startsWith("shop/"))).toBe(true);
+    // A tree already holding shop/ is refused at shop/package.json; files beside it do not count.
+    const again = await runEngine(["scaffold", "project", "shop"], {
+      cwd: "/work",
+      files: [{ path: "/work/shop/package.json", source: "{}" }],
+    });
+    expect(again.result.stdout).toContain("shop/package.json");
+    expect(again.writes).toEqual([]);
+    const beside = await runEngine(["scaffold", "project", "shop"], {
+      cwd: "/work",
+      files: [{ path: "/work/package.json", source: "{}" }],
+    });
+    expect(beside.result.code).toBe(0);
   });
 
   it("scaffold project accepts --workspace and --adapter and emits the workspace files and .gitignore", async () => {
     const e = await runEngine(["scaffold", "project", "shop", "--workspace", "--adapter", "node"], {
-      cwd: CWD,
+      cwd: "/work",
       files: [],
     });
     expect(e.result.code).toBe(0);
     const paths = e.writes.map((w) => w.path);
-    expect(paths).toContain("vitest.config.ts");
-    expect(paths).not.toContain("turbo.json");
-    const ignore = e.writes.find((w) => w.path === ".gitignore")?.content ?? "";
+    expect(paths).toContain("shop/vitest.config.ts");
+    expect(paths).not.toContain("shop/turbo.json");
+    const ignore = e.writes.find((w) => w.path === "shop/.gitignore")?.content ?? "";
     expect(ignore.split("\n")).toEqual(
-      expect.arrayContaining(["dist", ".turbo", "coverage", "reports", ".stryker-tmp"]),
+      expect.arrayContaining(["dist", ".turbo", "coverage", "reports", ".stryker-tmp", ".keel/sessions/"]),
     );
-    expect(ignore).not.toContain(".keel");
+    expect(ignore.split("\n")).not.toContain(".keel");
     const bad = await runEngine(["scaffold", "project", "shop", "--adapter", "bogus"], { cwd: CWD, files: [] });
     expect(bad.result.code).not.toBe(0);
   });
@@ -108,6 +124,7 @@ describe("build", () => {
       [".keel/deps.json", true],
       [".keel/ids.json", true],
       [".keel/styles.json", true],
+      [".keel/std.json", true],
     ]);
     for (const w of e.writes) expect(Object.keys(JSON.parse(w.content ?? "{}"))).toEqual(["data", "hash"]);
   });

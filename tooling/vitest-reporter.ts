@@ -1,6 +1,7 @@
-// Vitest 2 reporter implementing docs/OUTPUT.md: silent passes, failures as T0001 diagnostics, one trailer.
+// Vitest reporter implementing docs/OUTPUT.md: silent passes, failures as T0001 diagnostics, one trailer.
 // The task-tree walk (frames, compact diff, messages) is `testResults` from @keel/testing: one implementation,
 // shared with `keel test`. Imported by path: tooling is private and @keel/testing depends on it.
+import type { Vitest } from "vitest/node";
 import type { Reporter } from "vitest/reporters";
 import { testResults } from "../packages/testing/src/testResults.ts";
 import type { Diag, Summary } from "./output.ts";
@@ -8,9 +9,20 @@ import { emit } from "./output.ts";
 
 export class KeelReporter implements Reporter {
   private t0 = performance.now();
+  private run: Vitest | undefined;
 
-  onFinished(files: unknown[] = [], errors: unknown[] = []): void {
-    const r = testResults(files, errors, process.cwd());
+  onInit(vitest: Vitest): void {
+    this.run = vitest;
+  }
+
+  onTestRunEnd(_modules: readonly unknown[], errors: readonly unknown[]): void {
+    // Without the instance there is no task tree to read: report that as an error, never as an empty green run.
+    const started = this.run !== undefined;
+    const r = testResults(
+      this.run?.state.getFiles() ?? [],
+      started ? errors : [new Error("vitest ended the run without starting it")],
+      process.cwd(),
+    );
     const diags: Diag[] = r.diagnostics.map((d) => ({ ...d }));
     const bad = r.failed > 0 || r.errors > 0;
     const summary: Summary = {

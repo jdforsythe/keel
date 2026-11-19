@@ -49,10 +49,10 @@ async function build() {
   const routes = manifest({
     "orders.edit": {
       path: "/orders/edit",
-      actions: { POST: act, PUT: act, PATCH: act, DELETE: act },
       component: () => document.createElement("p"),
     },
   });
+  routes.actions({ "orders.edit": { POST: act, PUT: act, PATCH: act, DELETE: act } });
   const app = await createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
     routes,

@@ -1,9 +1,11 @@
-/** The closed set of events `fire` dispatches (k.testing). `input` sets the element's value first. */
+import type { FireEvent } from "@keel/ctx";
+
+type KeyDown = Extract<FireEvent, { type: "keydown" }>;
+
+/**
+ * The closed set of events `fire` dispatches (k.testing): k.ctx `FireEvent`, with `keydown` also taking the
+ * modifiers `shift`, `alt` and `mod` (Ctrl), each false when absent. `input` sets the element's value first.
+ */
 export type TestEvent =
-  | { readonly type: "click" }
-  | { readonly type: "input"; readonly value: string }
-  | { readonly type: "change" }
-  | { readonly type: "keydown"; readonly key: string }
-  | { readonly type: "submit" }
-  | { readonly type: "focus" }
-  | { readonly type: "blur" };
+  | Exclude<FireEvent, KeyDown>
+  | (KeyDown & { readonly shift?: boolean; readonly alt?: boolean; readonly mod?: boolean });

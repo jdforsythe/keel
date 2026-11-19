@@ -1,0 +1,5 @@
+---
+"@keel/std-sessions": minor
+---
+
+std.sessions ingest size accounting and a fingerprint recomputable from the session. The ingest archive keeps each session's encoded size beside it, so a write never re-encodes the archive, and the 256 KiB bound applies to the session as filed. Eviction takes the fingerprint with the oldest `last`. The `error` session event carries `route`, the route id it fired under. The fingerprint hashes the first error event's code, recorded `data.at` and route, so the recorder, `replay`, `minimize` and the ingest compute the same value from the session alone, and the ingest never keeps a posted value. `replay` and `minimize` take the recording's `redact` entries and bind them on the replay ctx, so a session with a masked `data.at` reproduces; `keel session` passes the serving modules' entries. Typed values are never scrubbed out of `data.at`. `replay` seeds every live store, starting one the base `state` lacks at its `initial`, so `minimize` is deterministic whatever the live stores held.

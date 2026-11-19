@@ -209,6 +209,7 @@ describe("vite: artifacts on disk", () => {
       "deps.json",
       "ids.json",
       "routes.json",
+      "std.json",
       "styles.json",
     ]);
     expect(Object.keys(artifact("ids.json").data)).toEqual(["src.A.0"]);
@@ -375,7 +376,15 @@ describe("vite: project inputs", () => {
     await p.buildStart.call(undefined);
     expect(Object.keys(artifact("routes.json").data)).toEqual(["a.index", "b.index"]);
     expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(["/modules/a/routes.ts", "/modules/b/routes.ts"], "virtual:keel.css"),
+      entryCode(
+        ["/modules/a/routes.ts", "/modules/b/routes.ts"],
+        "virtual:keel.css",
+        {},
+        {
+          web: ["b", "a", "missing"],
+          api: ["x"],
+        },
+      ),
     );
   });
 
@@ -387,9 +396,10 @@ describe("vite: project inputs", () => {
     for (const m of ["z", "a", "m"]) write(`modules/${m}/routes.ts`, routesTs(m));
     const p = keel();
     p.configResolved({ root });
-    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/m/routes.ts"], "virtual:keel.css"));
+    const all = { zeta: ["z"], api: ["a"], mid: ["m"] };
+    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all));
     process.env.KEEL_DEPLOYABLE = "zeta";
-    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/z/routes.ts"], "virtual:keel.css"));
+    expect(await p.load("/@keel/entry.ts")).toBe(entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all));
     process.env.KEEL_DEPLOYABLE = "api";
     expect(await p.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
     process.env.KEEL_DEPLOYABLE = "nope";
@@ -398,7 +408,7 @@ describe("vite: project inputs", () => {
     );
   });
 
-  it("refuses the entry without a topology or without a client deployable", async () => {
+  it("refuses the entry without a topology; with node deployables only it is the resume entry (keel dev)", async () => {
     const msg = "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one";
     const p = keel();
     p.configResolved({ root });
@@ -406,7 +416,7 @@ describe("vite: project inputs", () => {
     write("topology.ts", `export default { api: { modules: ["a"], adapter: "node" } };\n`);
     const q = keel();
     q.configResolved({ root });
-    await expect(q.load("/@keel/entry.ts")).rejects.toThrow(msg);
+    expect(await q.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
   });
 
   it("throws topology problems when building and warns when serving", { timeout: 30000 }, async () => {
@@ -414,7 +424,7 @@ describe("vite: project inputs", () => {
     const p = keel();
     expect(() => p.configResolved({ root, command: "build" })).toThrow(
       new Error(
-        "keel: topology.ts: a: not an object; b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
+        "E1552 topology.ts a: not an object\nE1552 topology.ts b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
       ),
     );
     const q = keel();
@@ -424,7 +434,7 @@ describe("vite: project inputs", () => {
     const warnings: string[] = [];
     await r.buildStart.call({ warn: (m: string) => void warnings.push(m) });
     expect(warnings).toEqual([
-      "keel: topology.ts: a: not an object; b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
+      "E1552 topology.ts a: not an object\nE1552 topology.ts b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
     ]);
   });
 

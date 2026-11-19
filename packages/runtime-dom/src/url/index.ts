@@ -1,5 +1,6 @@
 // re-exports only. The URL attribute table and scheme policy (k.compiler escaping by context), shared by the
 // runtime ops, the compiler (E1003/E1501, static templates), and @keel/ui. Not app-facing.
+export { isRefusedAttr } from "./isRefusedAttr.ts";
 export { isSafeUrl } from "./isSafeUrl.ts";
 export { RAW_HTML_ATTRS } from "./RAW_HTML_ATTRS.ts";
 export { safeUrl } from "./safeUrl.ts";

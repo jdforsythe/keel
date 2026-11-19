@@ -6,7 +6,7 @@ export const Props = s.object({
   error: s.object({ code: s.string(), message: s.string() }),
 });
 
-/** `errorElement` of `todos.list` and `todos.edit`: names the error and links home. */
+/** `errorElement` of `todos.index`, `todos.list` and `todos.edit`: names the error and links home. */
 export default function ListError(props: Infer<typeof Props>) {
   return (
     <Box as="section" id="todos.error" direction="column" gap="3" p="4" bg="card" border="error">

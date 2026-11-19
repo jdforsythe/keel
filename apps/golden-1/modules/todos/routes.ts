@@ -1,9 +1,9 @@
 import { manifest } from "@keel/router";
+import { ListParams } from "../api/ListParams.schema.ts";
 import AppShell from "./AppShell.tsx";
 import EditTodoPage from "./EditTodoPage.tsx";
 import ListError from "./ListError.tsx";
 import ListPage from "./ListPage.tsx";
-import { ListParams } from "./ListParams.schema.ts";
 import { ListSearch } from "./ListSearch.schema.ts";
 import ListsPage from "./ListsPage.tsx";
 import { TodoParams } from "./TodoParams.schema.ts";
@@ -20,28 +20,34 @@ export const routes = manifest({
   "todos.index": {
     path: "/",
     loader: loadIndex,
-    actions: { POST: createList },
     component: ListsPage,
     layout: "todos.shell",
+    title: () => "Lists",
+    errorElement: ListError,
   },
   "todos.list": {
     path: "/lists/:listId",
     params: ListParams,
     search: ListSearch,
     loader: loadList,
-    actions: { POST: createTodo },
     component: ListPage,
     layout: "todos.shell",
+    title: (p) => p.data.name,
     errorElement: ListError,
   },
   "todos.edit": {
     path: "/lists/:listId/todos/:todoId/edit",
     params: TodoParams,
     loader: loadTodo,
-    actions: { POST: updateTodo },
     component: EditTodoPage,
     layout: "todos.shell",
     guard: editable,
+    title: (p) => `Edit ${p.data.title}`,
     errorElement: ListError,
   },
+});
+routes.actions({
+  "todos.index": { POST: createList },
+  "todos.list": { POST: createTodo },
+  "todos.edit": { POST: updateTodo },
 });

@@ -2,7 +2,7 @@
 // Examples and properties (seed 1337): the dev log stream writes exactly one `req` record per request (after any
 // `diag`); json lines parse. Requests cover every branch of the flow (308, 404s, 405s, guards, actions).
 import { createCtx } from "@keel/ctx";
-import { type Href, action, guard, loader, manifest } from "@keel/router";
+import { action, guard, loader, manifest } from "@keel/router";
 import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -24,13 +24,6 @@ async function build(format: LogSink["format"], lines: string[]) {
       path: "/orders/:id",
       params: s.object({ id: s.int({ min: 1 }) }),
       loader: loader({ output: Page }, () => Promise.resolve(ok({ title: "T" }))),
-      actions: {
-        POST: action({ input: Note }, () => {
-          const to: Href = routes.href("orders.list");
-          return ok(to);
-        }),
-        PUT: action({ input: Note }, () => err({ code: "orders.locked", message: "locked", data: {} })),
-      },
       component: () => document.createElement("p"),
       errorElement: ({ error }) => {
         const e = document.createElement("em");
@@ -45,6 +38,14 @@ async function build(format: LogSink["format"], lines: string[]) {
     },
     "orders.deny": { path: "/deny", guard: deny, component: () => document.createElement("p") },
     "orders.broken": { path: "/broken", guard: broken, component: () => document.createElement("p") },
+  });
+  routes.actions({
+    "orders.show": {
+      POST: action({ input: Note }, () => {
+        return ok(routes.href("orders.list"));
+      }),
+      PUT: action({ input: Note }, () => err({ code: "orders.locked", message: "locked", data: {} })),
+    },
   });
   return createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
@@ -162,7 +163,7 @@ describe("dev log stream", () => {
     expect(nope.status).toBe(405);
     expect(nope.headers.get("allow")).toBe("GET, HEAD, POST, PUT");
     const opt = await app.fetch(req({ method: "OPTIONS", path: "/orders/7" }));
-    expect(opt.headers.get("allow")).toBe("GET, HEAD");
+    expect(opt.headers.get("allow")).toBe("GET, HEAD, POST, PUT");
     const noBody = await app.fetch(new Request(`${BASE}/orders/7`, { method: "POST" }));
     expect(noBody.status).toBe(422);
   });

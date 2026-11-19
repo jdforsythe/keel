@@ -8,17 +8,20 @@ import { islandIn } from "./islandIn.ts";
 import { renderUnit } from "./renderUnit.ts";
 import { toHtml } from "./toHtml.ts";
 
+/** The default alert: the error's message, or for `keel.notFound` the heading `Not found`. */
 const defaultError = (e: KeelError<string, unknown>): string =>
-  `<div role="alert" data-keel-error="${escapeHtml(e.code)}">${escapeHtml(e.message)}</div>`;
+  `<div role="alert" data-keel-error="${escapeHtml(e.code)}">${
+    e.code === "keel.notFound" ? "<h1>Not found</h1>" : escapeHtml(e.message)
+  }</div>`;
 
 /**
  * Render a chain to HTML like the router's view (k.router, k.errors): outermost layout first, each layout
  * receiving the next level, rendered before it, as `children` (a thunk whose string form is the child HTML, so string
  * components can interpolate it). A failure renders its level's `errorElement` (layouts above intact unless
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
- * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a
- * compiler-marked `data-k` element outside nested levels' islands is an island: it gets
- * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup, rfc:0037).
+ * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a bound
+ * (`data-k`) element outside nested levels' islands, however it was built (template or base element), is an island: it gets
+ * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup).
  */
 export function renderChain(input: ChainInput): Rendered {
   const { chain, failure, ctx } = input;
@@ -28,7 +31,9 @@ export function renderChain(input: ChainInput): Rendered {
   const errorAt = (i: number, error: KeelError<string, unknown>): string => {
     const el = chain[i]?.def;
     const shown = input.publicize(error);
-    return el?.errorElement === undefined ? defaultError(shown) : toHtml(el.errorElement({ error: shown }));
+    const make = el?.errorElement;
+    // A render unit, as for components: a compiled errorElement's bindings need a mount context.
+    return make === undefined ? defaultError(shown) : toHtml(renderUnit(() => make({ error: shown })));
   };
 
   const componentAt = (i: number, lvl: Level): string => {
@@ -38,7 +43,8 @@ export function renderChain(input: ChainInput): Rendered {
     const childHtml = (): string => inner;
     const children = Object.assign((): Node => htmlToNode(childHtml()), { toString: childHtml });
     const base = { params: input.params, search: input.search, data: input.data[i] };
-    const out = renderUnit(() => lvl.def.component(last ? base : { ...base, children }, undefined, ctx));
+    // An API route (k.api) has no component and is never rendered.
+    const out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, undefined, ctx) ?? "");
     if (typeof Element !== "undefined" && out instanceof Element && islandIn(out)) {
       out.setAttribute("data-k-island", lvl.id);
       islands[lvl.id] = input.props(i);

@@ -1,0 +1,46 @@
+# _generated: edit tooling/sessions-nightly.source.json and run pnpm generate. Do not edit by hand.
+name: sessions-nightly
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch: {}
+permissions:
+  issues: write
+  contents: read
+concurrency:
+  group: sessions-nightly
+  cancel-in-progress: false
+env:
+  KEEL_AGENT: "1"
+jobs:
+  sessions:
+    if: "vars.KEEL_SESSIONS_URL != ''"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - id: gate
+        env:
+          TOKEN: "${{ secrets.KEEL_SESSIONS_TOKEN }}"
+        run: "if [ -n \"$TOKEN\" ]; then echo ready=true >> \"$GITHUB_OUTPUT\"; else echo \"KEEL_SESSIONS_TOKEN is not set: skipped\"; fi"
+      - if: "steps.gate.outputs.ready == 'true'"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - if: "steps.gate.outputs.ready == 'true'"
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - if: "steps.gate.outputs.ready == 'true'"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - if: "steps.gate.outputs.ready == 'true'"
+        run: pnpm install --frozen-lockfile
+      - if: "steps.gate.outputs.ready == 'true'"
+        run: pnpm --filter @keel/std-sessions build
+      - if: "steps.gate.outputs.ready == 'true'"
+        uses: ./packages/std-sessions/action
+        with:
+          url: "${{ vars.KEEL_SESSIONS_URL }}"
+          token: "${{ secrets.KEEL_SESSIONS_TOKEN }}"
+          working-directory: apps/sessions
+          keel: node ../../packages/cli/src/bin.ts

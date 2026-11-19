@@ -32,13 +32,15 @@ it("loaders and actions get the absolute url of the page and of the action's rou
         seen.push(`load ${url}`);
         return ok({});
       }),
-      actions: {
-        POST: action({ input: s.object({}), params: P }, async (_input, { params, url }) => {
-          seen.push(`act ${params.n} ${url}`);
-          return ok(null);
-        }),
-      },
       component: () => Form({ method: "POST", action: to("/ru/7"), children: () => "go" }),
+    },
+  });
+  routes.actions({
+    "ru.page": {
+      POST: action({ input: s.object({}), params: P }, async (_input, { params, url }) => {
+        seen.push(`act ${params.n} ${url}`);
+        return ok(null);
+      }),
     },
   });
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/ru/7?tab=a") });

@@ -1,8 +1,10 @@
 import type { Href } from "../types/Href.ts";
 import type { Table } from "./Table.ts";
+import { apiComplete } from "./apiComplete.ts";
 import { codedError } from "./codedError.ts";
 import { flattenJson } from "./flattenJson.ts";
 import { isHref } from "./isHref.ts";
+import { prefixOf } from "./prefixOf.ts";
 import { stripUndefined } from "./stripUndefined.ts";
 import { toRecord } from "./toRecord.ts";
 
@@ -10,7 +12,7 @@ const byKey = (a: readonly [string, string], b: readonly [string, string]): numb
   a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0;
 
 /**
- * Build the `Href` of route `id` in `table`: params encoded by the params schema then URL-encoded into the
+ * Build the `Href` of page `id` in `table` (an API route has none, k.api): params encoded by the params schema then URL-encoded into the
  * path; search encoded by the search schema, absent optionals omitted, keys sorted.
  */
 export function hrefIn(
@@ -19,12 +21,16 @@ export function hrefIn(
   params: Readonly<Record<string, unknown>>,
   search: Readonly<Record<string, unknown>>,
 ): Href {
+  if (table !== undefined) apiComplete(table);
   const route = table?.get(id);
-  if (route === undefined || route.segments === null)
-    throw codedError("E1501", `href("${id}"): no declared route with a path has this id`);
+  if (route === undefined || route.segments === null || route.def.api)
+    throw codedError("E1501", `href("${id}"): no declared page has this id`);
   const { def, segments } = route;
   const fields = toRecord(def.params === undefined ? {} : def.params.encode(stripUndefined(params)));
-  const path = segments
+  // k.prefix Write: the prefix param's default value leaves its segment out.
+  const pre = prefixOf(def, segments);
+  const elide = pre !== null && fields[pre.name] === pre.d;
+  const path = (elide ? segments.slice(1) : segments)
     .map((s) => {
       if (s.kind === "static") return s.text;
       const v = fields[s.name];

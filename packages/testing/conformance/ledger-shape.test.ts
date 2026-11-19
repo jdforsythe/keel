@@ -1,4 +1,4 @@
-// Spec: k.testing, Ledger "`keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence)."
+// Spec: k.ledger, Ledger "`keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence)."
 // Seed: 1337.
 import { ledger } from "@keel/testing";
 import * as fc from "fast-check";
@@ -17,7 +17,7 @@ const evArb: fc.Arbitrary<Ev> = fc.oneof(
   }),
 );
 
-describe("k.testing: ledger(items) output has the shape { item, rung, evidence }", () => {
+describe("k.ledger: ledger(items) output has the shape { item, rung, evidence }", () => {
   it("one output record per input item, in order, each with item, rung, and evidence", () => {
     fc.assert(
       fc.property(

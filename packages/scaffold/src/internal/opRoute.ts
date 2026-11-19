@@ -34,13 +34,14 @@ function importsS(src: string): boolean {
 }
 
 /**
- * `scaffold route <module>.<name> --path <path> [--file <page.tsx>]`: a manifest entry in the module's
- * `routes.ts`, a `<name>.server.ts` loader, a page component, and a route test.
+ * `scaffold route <module>.<name> --path <path> [--file <page.tsx>] [--api]`: a manifest entry in the module's
+ * `routes.ts`, a `<name>.server.ts` loader, a page component, and a route test. `api` (k.api) writes an API entry
+ * (`api: true`, no `component`) and a JSON request test, and no page.
  */
 export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.route.parse(input);
   if (!r.ok) return badInput("route", r.error);
-  const { id, path, file } = r.value;
+  const { id, path, file, api } = r.value;
   if (targetsGenerated(id) || (file !== undefined && targetsGenerated(file)))
     return fail("E1005", file ?? id, `${file ?? id} is a generated location`);
   const rid = routeId(id);
@@ -60,7 +61,9 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
     return fail("E1352", routesPath, `route path ${path} must be /-separated lowercase segments or :params`);
   const pagePath = file ?? `${dir}/${pascal(leaf)}Page.tsx`;
   const page = (pagePath.split("/").pop() ?? "").replace(/\.tsx$/, "");
-  if (!pagePath.startsWith(`${dir}/`) || !pagePath.endsWith(".tsx") || !isPascal(page))
+  if (
+    api === true ? file !== undefined : !pagePath.startsWith(`${dir}/`) || !pagePath.endsWith(".tsx") || !isPascal(page)
+  )
     return fail("E1352", pagePath, `page file must be ${dir}/<Name>.tsx with a PascalCase name`);
   const table = routeTable(files);
   if (table.has(id)) return fail("E1351", table.get(id)?.file ?? routesPath, `route ${id} already exists`);
@@ -71,7 +74,7 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   const loaderPath = `${dir}/${loaderName}.server.ts`;
   const inTestDir = files.has("vitest.config.ts");
   const testPath = inTestDir ? `test/${mod}.${leaf}.route.test.ts` : `${dir}/${leaf}.route.test.ts`;
-  for (const p of [loaderPath, testPath, ...basenames(files, `${page}.tsx`)])
+  for (const p of [loaderPath, testPath, ...(api === true ? [] : basenames(files, `${page}.tsx`))])
     if (files.has(p)) return fail("E1351", p, `${p} already exists`);
   const src = files.get(routesPath);
   const program = src === undefined ? null : parseSource(routesPath, src);
@@ -83,19 +86,21 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   const pageSpec = `./${pagePath.slice(dir.length + 1)}`;
   insertImports(ms, program, [
     ...(params.length > 0 && !importsS(src) ? [`import { s } from "@keel/schema";`] : []),
-    `import ${page} from "${pageSpec}";`,
+    ...(api === true ? [] : [`import ${page} from "${pageSpec}";`]),
     `import { ${loaderName} } from "./${loaderName}.server.ts";`,
   ]);
   const last = obj.properties[obj.properties.length - 1];
   const multi = last !== undefined && src.slice(obj.start, obj.properties[0]?.start ?? obj.start).includes("\n");
   const ind = multi && last !== undefined ? lineIndent(src, last.start) : `${lineIndent(src, obj.start)}  `;
-  const entry = routeEntry(id, path, params, loaderName, page).split("\n").join(`\n${ind}`);
+  const entry = routeEntry(id, path, params, loaderName, api === true ? null : page)
+    .split("\n")
+    .join(`\n${ind}`);
   appendProperty(ms, src, obj, entry, true);
   const writes: Writes = new Map([
     [routesPath, ms.toString()],
     [loaderPath, loaderTs(loaderName)],
-    [pagePath, componentTsx(page)],
-    [testPath, routeTest(id, params, inTestDir ? `../${dir}/routes.ts` : "./routes.ts")],
+    [testPath, routeTest(id, params, inTestDir ? `../${dir}/routes.ts` : "./routes.ts", api === true ? path : null)],
   ]);
+  if (api !== true) writes.set(pagePath, componentTsx(page));
   return commit(files, writes);
 }

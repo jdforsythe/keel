@@ -15,11 +15,11 @@ async function build(seen: unknown[], maxBodyBytes?: number) {
     seen.push(input);
     return ok(null);
   });
+  const routes = manifest({ "app.notes": { path: "/notes", component: () => document.createElement("p") } });
+  routes.actions({ "app.notes": { POST: save } });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
-      "app.notes": { path: "/notes", actions: { POST: save }, component: () => document.createElement("p") },
-    }),
+    routes,
     ctx: createCtx({ mode: "sim", seed: 1 }),
     ...(maxBodyBytes === undefined ? {} : { maxBodyBytes }),
   });

@@ -14,7 +14,7 @@ test("E1902 field(path) path not in the schema throws", () => {
       fc.property(
         fc.stringMatching(/^[a-z]{1,8}(\.[a-z]{1,8})?$/).filter((p) => !FIELDS.some((n) => n === p)),
         (path) => {
-          expect(() => loose(path)).toThrow();
+          expect(() => loose(path)).toThrow(/^E1902 /);
         },
       ),
       { seed: SEED, numRuns: RUNS },

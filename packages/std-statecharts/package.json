@@ -1,0 +1,41 @@
+{
+  "name": "@keel/std-statecharts",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./tools": {
+      "types": "./src/tools/index.ts",
+      "default": "./src/tools/index.ts"
+    },
+    "./tools/internal": {
+      "types": "./src/tools/internal/index.ts",
+      "default": "./src/tools/internal/index.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
+  },
+  "peerDependencies": {
+    "fast-check": "^3"
+  }
+}

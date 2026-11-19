@@ -99,7 +99,7 @@ describe("commands", () => {
         "packages/a/src/foo.ts#foo probabilistic property runs 100 seed 1337 packages/a/test/foo.test.ts",
         "k.a#1 probabilistic property runs 200 seed 1337 packages/a/conformance/one.test.ts",
         "k.a#2 none none",
-        "ok ledger 5 items, 3 verified, 1 unsafe, 0 warnings",
+        "ok ledger 5 items, 3 verified, 1 unsafe, 0 warnings, 1 example, 2 probabilistic",
         "",
       ].join("\n"),
     );

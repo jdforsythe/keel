@@ -1,5 +1,5 @@
 # Accessibility target
 
-WCAG 2.2 AA, enforced structurally: base elements require labels at the type level; headless primitives ship keyboard and focus behavior; contrast computed from tokens at build; motion honors reduced-motion; tests assert on the a11y tree. `keel check` is static (RFC 0023); `@keel/testing` `render` runs axe-core rules on rendered output (E1702, E1703).
+WCAG 2.2 AA, enforced structurally: base elements require labels at the type level (`Box` as `nav` or `aside` requires `label`); headless primitives ship keyboard and focus behavior (`@keel/std-headless` widgets follow the WAI-ARIA Authoring Practices 1.2 patterns, std.headless and std.options state each key, and a closed dialog returns focus to the element focused before it); contrast computed from tokens at build; motion honors reduced-motion; tests assert on the a11y tree. `keel check` is static; `@keel/testing` `render` runs axe-core's WCAG 2.2 A and AA rules plus `landmark-unique`, checks contrast from the tokens, and compares roles and names with `a11y.json` (E1702, E1703).
 
-verified: 959a568f16e924fac59329e75c1585fe38d4c00e
+verified: b22fdf1c7acce90ee81f02ef3a0241ee12e0b6e4

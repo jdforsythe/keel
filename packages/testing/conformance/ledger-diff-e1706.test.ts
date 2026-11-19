@@ -1,4 +1,4 @@
-// Spec: k.testing, clause "Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706."
+// Spec: k.ledger, clause "Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706."
 // Seed: 1337.
 import { ledgerDiff } from "@keel/testing";
 import * as fc from "fast-check";
@@ -9,7 +9,7 @@ import { RUNGS } from "./ledger-fixtures.ts";
 const rec = (item: string, rung: string) => ({ kind: "ledger", item, rung, evidence: rung === "none" ? "none" : "x" });
 const rungArb = fc.constantFrom(...RUNGS);
 
-describe("k.testing: lowering an item's rung below the committed ledger makes ledger --diff report E1706", () => {
+describe("k.ledger: lowering an item's rung below the committed ledger makes ledger --diff report E1706", () => {
   it("probabilistic -> example reports exactly one E1706 for that item", () => {
     const out = ledgerDiff([rec("a.ts#f", "probabilistic")], [rec("a.ts#f", "example")]);
     expect(out).toHaveLength(1);

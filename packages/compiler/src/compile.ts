@@ -16,6 +16,7 @@ import { ruleControlFlow } from "./internal/rules/ruleControlFlow.ts";
 import { rulePropsDestructuring } from "./internal/rules/rulePropsDestructuring.ts";
 import { ruleRawHtml } from "./internal/rules/ruleRawHtml.ts";
 import { ruleServerImport } from "./internal/rules/ruleServerImport.ts";
+import { ruleTopLevelPropRead } from "./internal/rules/ruleTopLevelPropRead.ts";
 import { ruleUrlLiteral } from "./internal/rules/ruleUrlLiteral.ts";
 import type { A11yEntry } from "./types/A11yEntry.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
@@ -100,17 +101,14 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
       ...ruleServerImport(a, clientOnly(a.path, options.topology)),
       ...ruleAndJsx(a),
       ...ruleControlFlow(a),
+      ...ruleTopLevelPropRead(a),
       ...destructuring.diagnostics,
     );
     const elements = collectElements(a);
     const styles = collectStyles(a);
+    diagnostics.push(...styles.diagnostics);
     for (const u of styles.usages) usages.set(canonicalJson(u), u);
-    const lowered = lowerFile(
-      a,
-      elements.filter((e) => !e.base),
-      destructuring.edits,
-      styles.rewrites,
-    );
+    const lowered = lowerFile(a, elements, destructuring.edits, styles.rewrites);
     done.push({ a, elements, bindings: lowered.bindings, code: lowered.code });
   }
   diagnostics.push(...duplicateIds(done));

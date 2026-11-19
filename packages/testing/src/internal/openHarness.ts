@@ -10,12 +10,14 @@ import type { Found } from "../types/Found.ts";
 import type { Harness } from "../types/Harness.ts";
 import type { TestEvent } from "../types/TestEvent.ts";
 import type { HarnessSetup } from "./HarnessSetup.ts";
-import { assertAccessible } from "./assertAccessible.ts";
-import { assertArtifacts } from "./assertArtifacts.ts";
+import { asMain } from "./asMain.ts";
 import { eventFor } from "./eventFor.ts";
 import { fail } from "./fail.ts";
+import { focusOrder } from "./focusOrder.ts";
+import { moveFocus } from "./moveFocus.ts";
 import { nameOf } from "./nameOf.ts";
 import { nodeOf } from "./nodeOf.ts";
+import { renderChecks } from "./renderChecks.ts";
 import { resolve } from "./resolve.ts";
 import { roleOf } from "./roleOf.ts";
 import { settle } from "./settle.ts";
@@ -25,13 +27,14 @@ import { treeOf } from "./treeOf.ts";
 import { unexpected } from "./unexpected.ts";
 
 /**
- * Mount `view` through runtime-dom (`ctx`, root-Boundary `onError`) inside a scope, in a container on
- * `document.body`, and build the harness. `check()` raises the first root-Boundary catch (`keel.unexpected`),
- * then E1702 against `a11y` (when given), then E1703; `fire` runs it after settling. `dispose` unmounts, runs
+ * Mount `view` through runtime-dom (`ctx`, root-Boundary `onError`), or run `start`, inside a scope, in a container
+ * on `document.body`, and build the harness. `check()` raises the first root-Boundary catch (`keel.unexpected`),
+ * then the render checks (`renderChecks`: E1702 with `a11y`, E1703, E1804 with `tokens`, E1821); `fire` and `settle` run it after settling. `dispose` unmounts, runs
  * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
  */
 export function openHarness(setup: HarnessSetup): { readonly harness: Harness; check(): void } {
-  const { view, ctx, seeded, a11y: expected, busy, teardown } = setup;
+  const { ctx, seeded, a11y, tokens, busy, teardown, target } = setup;
+  const page = setup.page === true;
   const container = document.createElement("div");
   document.body.appendChild(container);
   let unmount: (() => void) | undefined;
@@ -50,17 +53,25 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
   const check = (): void => {
     const [first] = caught.splice(0);
     if (first !== undefined) throw unexpected(first);
-    if (expected !== undefined) assertArtifacts(container, expected);
-    assertAccessible(container);
+    if (page) asMain(container);
+    renderChecks({
+      root: container,
+      page,
+      target,
+      ...(a11y === undefined ? {} : { a11y }),
+      ...(tokens === undefined ? {} : { tokens }),
+    });
   };
   try {
     owner = scope(() => {
-      unmount = mount(view, container, {
-        ctx,
-        onError: (error) => {
-          caught.push(error);
-        },
-      });
+      if ("start" in setup) setup.start(container);
+      else
+        unmount = mount(setup.view, container, {
+          ctx,
+          onError: (error) => {
+            caught.push(error);
+          },
+        });
     });
   } catch (error) {
     dispose();
@@ -71,9 +82,9 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     if (gone) throw fail("E1705", "the render was disposed; no ids remain", {});
   };
 
-  function a11y(): readonly A11yNode[];
-  function a11y(id: string): A11yNode;
-  function a11y(id?: string): A11yNode | readonly A11yNode[] {
+  function tree(): readonly A11yNode[];
+  function tree(id: string): A11yNode;
+  function tree(id?: string): A11yNode | readonly A11yNode[] {
     live();
     return id === undefined ? treeOf(container) : nodeOf(resolve(container, id));
   }
@@ -94,6 +105,12 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
   const fire = async (id: string, event: TestEvent): Promise<void> => {
     live();
     const el = resolve(container, id);
+    const act =
+      event.type === "focus" || event.type === "blur"
+        ? moveFocus(el, event.type)
+        : () => {
+            el.dispatchEvent(eventFor(el, event));
+          };
     const errors: unknown[] = [];
     const onError = (e: Event): void => {
       errors.push(e instanceof ErrorEvent ? e.error : e);
@@ -102,13 +119,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     const win = document.defaultView;
     win?.addEventListener("error", onError);
     try {
-      await settle(
-        container,
-        () => {
-          el.dispatchEvent(eventFor(el, event));
-        },
-        busy,
-      );
+      await settle(container, act, busy);
     } finally {
       win?.removeEventListener("error", onError);
     }
@@ -123,5 +134,10 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     if (!gone) check();
   };
 
-  return { harness: { a11y, state, fire, settle: settleNow, find, dispose }, check };
+  const order = (): readonly string[] => {
+    live();
+    return focusOrder(container);
+  };
+
+  return { harness: { a11y: tree, state, fire, settle: settleNow, find, focusOrder: order, dispose }, check };
 }

@@ -1,4 +1,5 @@
 import type { Node } from "./Node.ts";
+import { blankAbsent } from "./blankAbsent.ts";
 import { fits } from "./fits.ts";
 import { leafFromString } from "./leafFromString.ts";
 
@@ -10,7 +11,11 @@ const under = (entries: Entries, key: string): string[] =>
   [...entries.keys()].filter((k) => k.startsWith(`${key}.`) || k === key || k === `${key}[]`);
 const join = (prefix: string, name: string): string => (prefix === "" ? name : `${prefix}.${name}`);
 const unwrap = (node: Node): Node =>
-  node.kind === "optional" || node.kind === "nullable" || node.kind === "secret" ? unwrap(node.inner) : node;
+  node.kind === "optional" || node.kind === "nullable" || node.kind === "secret"
+    ? unwrap(node.inner)
+    : node.kind === "format"
+      ? unwrap(node.base)
+      : node;
 
 /**
  * Build the candidate value for `node` from string entries stored under `key`; `undefined` means absent.
@@ -25,6 +30,7 @@ export function fromStrings(node: Node, key: string, entries: Entries): unknown 
     );
   if (key === "" && node.kind === "object") return fieldsOf(node.fields);
   if (node.kind === "secret") return fromStrings(node.inner, key, entries);
+  if (node.kind === "format") return fromStrings(node.base, key, entries);
   if (node.kind === "anyOf") {
     let candidate: unknown;
     for (const member of node.members) {
@@ -36,7 +42,7 @@ export function fromStrings(node: Node, key: string, entries: Entries): unknown 
   if (node.kind === "optional") {
     if (under(entries, key).length === 0) return undefined;
     const v = fromStrings(node.inner, key, entries);
-    return v === "" ? undefined : v;
+    return v === "" || blankAbsent(node.inner, v) ? undefined : v;
   }
   if (node.kind === "nullable") {
     const v = fromStrings(node.inner, key, entries);

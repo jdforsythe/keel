@@ -45,11 +45,10 @@ it("passes ctx as the third argument to layouts and pages", async () => {
   router.dispose();
 });
 
-const formRoutes = (id: string, kids: "thunk" | "plain" | "array" | "text") =>
-  manifest({
+const formRoutes = (id: string, kids: "thunk" | "plain" | "array" | "text") => {
+  const routes = manifest({
     [id]: {
       path: `/${id}`,
-      actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
       component: () => {
         const child = document.createElement("span");
         child.setAttribute("data-x", "kid");
@@ -59,6 +58,9 @@ const formRoutes = (id: string, kids: "thunk" | "plain" | "array" | "text") =>
       },
     },
   });
+  routes.actions({ [id]: { POST: action({ input: s.object({}) }, async () => ok(null)) } });
+  return routes;
+};
 
 it.each(["thunk", "plain", "array", "text"] as const)("Form renders %s children", async (kind) => {
   const id = `fc.${kind}`;

@@ -1,0 +1,28 @@
+import type { Topology } from "@keel/compiler";
+import { hostProblems } from "@keel/compiler/hosting/hostProblems";
+import { peerOrigins } from "@keel/compiler/hosting/peerOrigins";
+import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
+import type { OutRecord } from "../types/OutRecord.ts";
+import { makeDiag } from "./makeDiag.ts";
+
+/**
+ * `keel build`'s errors at `topology.ts`: each problem of `source` the static read finds (`topologyReadProblems`: E1552,
+ * k.topology, or E1566 for a `host` that is not a string literal), E1566 per bad `host` (`hostProblems`), and, when a
+ * `client` deployable is built, E1565 per `KEEL_PEER_<NAME>` in `env` that is not an http(s) origin, naming the key, never the
+ * value.
+ */
+export function hostingDiags(topology: Topology, env: Readonly<Record<string, string>>, source?: string): OutRecord[] {
+  const at = { path: "topology.ts", see: "k.hosting" };
+  const client = Object.values(topology).some((d) => d.adapter === "client");
+  return [
+    ...[
+      ...(source === undefined ? [] : topologyReadProblems(source)),
+      ...hostProblems(topology).map((p) => ["E1566", ...p]),
+    ].map(([code = "", , message = ""]) =>
+      makeDiag(code, message, { path: at.path, see: code === "E1566" ? at.see : "k.topology" }),
+    ),
+    ...(client ? peerOrigins(topology, env).bad : []).map((key) =>
+      makeDiag("E1565", `${key} is not an http(s) origin; set it to one, as https://api.example.com`, at),
+    ),
+  ];
+}

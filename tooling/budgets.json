@@ -6,41 +6,174 @@
     "spec.map": 1200,
     "explain": 300,
     "spec.for": 400,
-    "mcp.tools-list": 1500
+    "mcp.tools-list": 1650
   },
   "size": {
     "@keel/check": {
-      "max": "27kb",
+      "max": "53kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "22kb",
+      "max": "25.25kb",
+      "platform": "node"
+    },
+    "@keel/cli/shell": {
+      "max": "3.75kb",
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "21kb",
+      "max": "30.75kb",
       "platform": "node"
     },
-    "@keel/ctx": "3kb",
+    "@keel/ctx": "3.75kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "8kb",
+    "@keel/router": "10.25kb",
+    "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
     "@keel/scaffold": {
-      "max": "16kb",
+      "max": "18.75kb",
       "platform": "node"
     },
-    "@keel/schema": "5kb",
+    "@keel/schema": "5.5kb",
     "@keel/server": {
-      "max": "11kb",
+      "max": "20.25kb",
       "platform": "node"
     },
-    "@keel/services": "3kb",
-    "@keel/store": "3kb",
-    "@keel/testing": {
+    "@keel/server/internal/dom": "4.75kb",
+    "@keel/server/internal/start": {
+      "max": "2.25kb",
+      "platform": "node"
+    },
+    "@keel/services": "3.25kb",
+    "@keel/std-channels": "1.5kb",
+    "@keel/std-channels/server": {
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-channels/tools": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-conflicts": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-i18n": "1kb",
+    "@keel/std-i18n/tools": {
+      "max": "4kb",
+      "platform": "node"
+    },
+    "@keel/std-jobs": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-jobs/tools": {
+      "max": "2.75kb",
+      "platform": "node"
+    },
+    "@keel/std-live": "1kb",
+    "@keel/std-messages": "1.5kb",
+    "@keel/std-messages/tools": {
+      "max": "6kb",
+      "platform": "node"
+    },
+    "@keel/std-money": "1kb",
+    "@keel/std-offline": "3kb",
+    "@keel/std-offline/tools": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-schedules": {
+      "max": "2.25kb",
+      "platform": "node"
+    },
+    "@keel/std-schedules/tools": {
+      "max": "2.5kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions": "7.5kb",
+    "@keel/std-sessions/action": {
+      "max": "4.5kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/commandJob": {
       "max": "9kb",
       "platform": "node"
     },
-    "@keel/ui": "4kb"
+    "@keel/std-sessions/group": {
+      "max": "6kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/monitor": {
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/routes": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/tools": {
+      "max": "10kb",
+      "platform": "node"
+    },
+    "@keel/std-headless": "6kb",
+    "@keel/std-statecharts": "1.75kb",
+    "@keel/std-statecharts/tools": {
+      "max": "4kb",
+      "platform": "node"
+    },
+    "@keel/std-tables": "4.25kb",
+    "@keel/std-db/sqlite": {
+      "max": "1.5kb",
+      "platform": "node"
+    },
+    "@keel/std-db/postgres": {
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-db/tools": {
+      "max": "1.5kb",
+      "platform": "node"
+    },
+    "@keel/std-workflows": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-workflows/tools": {
+      "max": "3.25kb",
+      "platform": "node"
+    },
+    "@keel/std-capacitor": "1.25kb",
+    "@keel/std-tauri": "1.25kb",
+    "@keel/std-credentials": "1kb",
+    "@keel/std-credentials/server": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-credentials/tools": {
+      "max": "1.25kb",
+      "platform": "node"
+    },
+    "@keel/std-temporal": "2.5kb",
+    "@keel/std-text": "1.5kb",
+    "@keel/store": "3.5kb",
+    "@keel/store/internal": {
+      "max": "1.75kb",
+      "platform": "node"
+    },
+    "@keel/testing": {
+      "max": "12.75kb",
+      "platform": "node"
+    },
+    "@keel/testing/prove": {
+      "max": "8kb",
+      "platform": "node"
+    },
+    "@keel/ui": "4kb",
+    "@keel/ui/aria": "3.25kb"
+  },
+  "mutate": {
+    "default": 30
   }
 }

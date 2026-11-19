@@ -39,26 +39,48 @@ function pixels(tokens: unknown, name: string | undefined): number {
   return m?.[1] === undefined ? 0 : Number(m[1]);
 }
 
+/** A `weight` token's numeric weight, or 0 when unknown. */
+function weightOf(tokens: unknown, name: string | undefined): number {
+  const weights = isRec(tokens) ? tokens.weight : undefined;
+  const v = name !== undefined && isRec(weights) ? weights[name] : undefined;
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : 0;
+  return Number.isFinite(n) ? n : 0;
+}
+
 /**
- * E1804 (k.ui): an element whose `fg` and `bg` token props contrast below 4.5:1 (3:1 at `fontSize` >= 24px) in
- * either color scheme. Tokens come from the `tokens` project artifact; without it the rule reports nothing.
+ * E1804 (k.a11y): an element whose `fg` token contrasts below 4.5:1 (3:1 when large: `fontSize` >= 24px, or
+ * >= 18.66px at `weight` >= 700) in either color scheme against its `bg`, else the nearest ancestor's `bg` in the
+ * same component. With neither, or a `bg` that is not a literal, it is left to the render check; `states` are not
+ * read, so text under `states.disabled` is exempt. Tokens come from the `tokens` project artifact; without it the
+ * rule reports nothing.
  */
 export const lowContrast: RuleDef = {
   code: "E1804",
   message: (f) =>
     `fg "${str(f.data, "fg")}" on bg "${str(f.data, "bg")}" is ${str(f.data, "ratio")}:1 in ${str(f.data, "scheme")}`,
-  explain: "fg/bg need 4.5:1 contrast (3:1 at fontSize >= 24px) in light and dark. Pick token colors that pass.",
-  see: "k.ui",
+  explain: "Text needs 4.5:1 (3:1 when large) against its own or its nearest ancestor's bg, in light and dark.",
+  see: "k.a11y",
   check: ({ file, ast, artifacts }) => {
     const tokens = artifacts.tokens;
     if (!isAppPath(file.path) || tokens === undefined) return [];
     const out: ReturnType<typeof findingAt>[] = [];
+    // The `bg` of each open JSX element: its literal, null when not a literal, undefined when it has none.
+    const bgs: (string | null | undefined)[] = [];
     new Visitor({
-      JSXOpeningElement: (n) => {
+      JSXElement: (el) => {
+        const n = el.openingElement;
+        const own = n.attributes.some(
+          (a) => a.type === "JSXAttribute" && a.name.type === "JSXIdentifier" && a.name.name === "bg",
+        )
+          ? (literal(n.attributes, "bg") ?? null)
+          : undefined;
+        const bg = own !== undefined ? own : [...bgs].reverse().find((b) => b !== undefined);
+        bgs.push(own);
         const fg = literal(n.attributes, "fg");
-        const bg = literal(n.attributes, "bg");
-        if (fg === undefined || bg === undefined) return;
-        const min = pixels(tokens, literal(n.attributes, "fontSize")) >= 24 ? 3 : 4.5;
+        if (fg === undefined || typeof bg !== "string") return;
+        const px = pixels(tokens, literal(n.attributes, "fontSize"));
+        const large = px >= 24 || (px >= 18.66 && weightOf(tokens, literal(n.attributes, "weight")) >= 700);
+        const min = large ? 3 : 4.5;
         for (const scheme of SCHEMES) {
           const a = colorIn(tokens, fg, scheme);
           const b = colorIn(tokens, bg, scheme);
@@ -68,6 +90,9 @@ export const lowContrast: RuleDef = {
           out.push(findingAt(file, n.start, { fg, bg, scheme, ratio: ratio.toFixed(2) }));
           return;
         }
+      },
+      "JSXElement:exit": () => {
+        bgs.pop();
       },
     }).visit(ast);
     return out;

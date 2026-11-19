@@ -1,0 +1,50 @@
+import { Visitor } from "oxc-parser";
+import { findingAt } from "../internal/findingAt.ts";
+import { isAppPath } from "../internal/isAppPath.ts";
+import type { RuleDef } from "../types/RuleDef.ts";
+
+/**
+ * E1106 (k.schema): `s.format` in app code. Reported at each `<s>.format` member, `<s>` a local name bound to `s`
+ * from `@keel/schema` (renamed imports too) or `<ns>.s` of a namespace import. No fix: the app uses a stdlib format
+ * type instead, which is a choice of type, not an edit.
+ */
+export const formatInApp: RuleDef = {
+  code: "E1106",
+  message: () => "`s.format` in app code; use a stdlib format type",
+  explain: "Format types are the stdlib's: each brings a generator that the stdlib tests.",
+  see: "k.schema",
+  check: ({ file, ast }) => {
+    if (!isAppPath(file.path)) return [];
+    const names = new Set<string>();
+    const namespaces = new Set<string>();
+    for (const st of ast.body) {
+      if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/schema") continue;
+      for (const sp of st.specifiers) {
+        if (sp.type === "ImportNamespaceSpecifier") namespaces.add(sp.local.name);
+        else if (sp.type === "ImportSpecifier") {
+          const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
+          if (imported === "s") names.add(sp.local.name);
+        }
+      }
+    }
+    if (names.size === 0 && namespaces.size === 0) return [];
+    const at: number[] = [];
+    new Visitor({
+      MemberExpression: (n) => {
+        if (n.computed || n.property.type !== "Identifier" || n.property.name !== "format") return;
+        const o = n.object;
+        if (o.type === "Identifier" && names.has(o.name)) at.push(n.start);
+        else if (
+          o.type === "MemberExpression" &&
+          !o.computed &&
+          o.object.type === "Identifier" &&
+          namespaces.has(o.object.name) &&
+          o.property.type === "Identifier" &&
+          o.property.name === "s"
+        )
+          at.push(n.start);
+      },
+    }).visit(ast);
+    return at.map((start) => findingAt(file, start));
+  },
+};

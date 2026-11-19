@@ -21,6 +21,14 @@ describe("scaffold transaction / service input", () => {
     expect(scaffoldInput("transaction", {})).toEqual({});
   });
 
+  it("route passes --api through", () => {
+    expect(scaffoldInput("route", { args: ["orders.feed"], path: "/api/feed", api: true })).toEqual({
+      id: "orders.feed",
+      path: "/api/feed",
+      api: true,
+    });
+  });
+
   it("service passes id with the generated schema and service texts", () => {
     const r = openapiInput("orders", { openapi: "openapi.json" }, CWD, new Map(files.map((f) => [f.path, f.source])));
     expect(r.ok).toBe(true);

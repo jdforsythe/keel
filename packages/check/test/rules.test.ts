@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 import type { SourceFile } from "../src/index.ts";
+import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { hashOf } from "../src/internal/hashOf.ts";
 import { applyPatch } from "./support/applyPatch.ts";
 
@@ -217,12 +218,18 @@ describe("kernel rules", () => {
     expect(check([f("src/orders/show.server.ts", extra)], {}).diagnostics.map((d) => d.code)).toContain("E1752");
   });
 
-  it("E1752: a component file may export Props and uses beside its default; a schema file its type alias", () => {
+  it("E1752: a component file (.tsx or PascalCase .ts) may export Props and uses beside its default; a schema file its type alias", () => {
     const codes = (x: SourceFile): string[] => check([x], { types: false }).diagnostics.map((d) => d.code);
     const comp = "export const Props = 1\nexport const uses = []\nexport default function Row() {\n  return null\n}\n";
     expect(codes(f("src/Row.tsx", comp))).not.toContain("E1752");
     expect(codes(f("src/Row.tsx", `${comp}export const other = 1\n`))).toContain("E1752");
+    // A PascalCase plain `.ts` whose default takes `Props` is a component file too (rfc:0068); others are not.
+    const tsComp = comp.replace("Row()", "Row(props: Props)");
+    expect(codes(f("src/Row.ts", tsComp))).not.toContain("E1752");
     expect(codes(f("src/Row.ts", comp))).toContain("E1752");
+    expect(codes(f("src/Row.ts", `${tsComp}export const other = 1\n`))).toContain("E1752");
+    expect(codes(f("src/row.ts", tsComp.replace("Row(", "row(")))).toContain("E1752");
+    expect(codes(f("src/Row.server.ts", tsComp))).toContain("E1752");
     const schema = "export const Todo = s.object({})\nexport type Todo = Infer<typeof Todo>\n";
     expect(codes(f("src/Todo.schema.ts", schema))).not.toContain("E1752");
     expect(codes(f("src/Todo.schema.ts", `${schema}export const Other = 1\n`))).toContain("E1752");
@@ -241,13 +248,18 @@ describe("kernel rules", () => {
   });
 
   it("E1005: a .keel/ artifact whose bytes or hash differ from what the compiler writes", () => {
-    const data = { "C.0": { col: 1 } };
-    const good = `{"data":{"C.0":{"col":1}},"hash":"${hashOf(data)}"}\n`;
+    // No sources: the compiler's ids.json is `{}` (rfc:0050).
+    const good = `{"data":{},"hash":"${hashOf({})}"}\n`;
     const codes = (source: string, artifacts = {}) =>
       check([f(".keel/ids.json", source)], { artifacts }).diagnostics.map((d) => d.code);
     expect(codes(good)).toEqual([]);
-    expect(codes(good.replace('"col":1', '"col":2'))).toEqual(["E1005"]);
-    expect(codes(good, { hashes: { "ids.json": "fnv1a:00000000" } })).toEqual(["E1005"]);
+    expect(codes(good.replace('"data":{}', '"data":{"C.0":{"col":1}}'))).toEqual(["E1005"]);
+    // 0143 repro: a caller's hashes never replace the derivation, so `{}` or a matching forged hash stays E1005.
+    const data = { "C.0": { col: 1 } };
+    const forged = `${canonicalJson({ data, hash: hashOf(data) })}\n`;
+    expect(codes(forged, { hashes: {} })).toEqual(["E1005"]);
+    expect(codes(forged, { hashes: { "ids.json": hashOf(data) } })).toEqual(["E1005"]);
+    expect(codes(good, { hashes: { "ids.json": "fnv1a:00000000" } })).toEqual([]);
     const spaced = good.replace('{"data"', '{ "data"');
     const d = check([f(".keel/ids.json", spaced)], {}).diagnostics;
     expect(d.map((x) => x.code)).toEqual(["E1005"]);

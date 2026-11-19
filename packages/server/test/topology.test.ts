@@ -72,4 +72,22 @@ describe("topology", () => {
     const bad = JSON.parse('{"web":{"modules":["a"],"adapter":"lambda"}}');
     expect(() => topology(bad)).toThrow(/^E1552/);
   });
+
+  it("throws E1552 for any deployable name out of its one form, so no two names share a storage file or peer key", () => {
+    const form = /^[a-z][a-z0-9-]*$/;
+    fc.assert(
+      fc.property(fc.string({ maxLength: 10 }), (name) => {
+        fc.pre(!form.test(name));
+        expect(() => topology({ [name]: { modules: ["a"], adapter: "node" } })).toThrow(
+          new Error(`E1552 ${name}: name must be lowercase letters, digits and -, starting with a letter`),
+        );
+      }),
+      { seed: SEED },
+    );
+    for (const name of ["Web", "../x", "API", "my_api"])
+      expect(() => topology({ [name]: { modules: ["a"], adapter: "node" } }), name).toThrow(/^E1552 /);
+    expect(topology({ "edge-2": { modules: ["a"], adapter: "node" } })).toEqual({
+      "edge-2": { modules: ["a"], adapter: "node" },
+    });
+  });
 });

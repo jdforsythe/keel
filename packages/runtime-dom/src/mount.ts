@@ -4,6 +4,7 @@ import { createOwner } from "./internal/createOwner.ts";
 import { createRoot } from "./internal/createRoot.ts";
 import { disposeOwner } from "./internal/disposeOwner.ts";
 import { rootFallback } from "./internal/rootFallback.ts";
+import { stampOf } from "./internal/stampOf.ts";
 import { withCx } from "./internal/withCx.ts";
 import { boundary } from "./ops/boundary.ts";
 import type { Component } from "./types/Component.ts";
@@ -22,7 +23,7 @@ export function mount(
   el: Element,
   options: MountOptions = {},
 ): () => void {
-  const root = createRoot(el);
+  const root = createRoot(el, options.ctx);
   const owner = createOwner(null, root, null);
   const before = el.lastChild;
   const anchor = el.appendChild(el.ownerDocument.createComment(""));
@@ -49,6 +50,9 @@ export function mount(
             options.onError?.(error);
             return fallback;
           },
+          // A throw at no element of its own (the root component's effect, computed or render): the stamp at the
+          // root's place, as for a resumed island (k.errors).
+          { at: stampOf(el) },
         ),
       );
     });

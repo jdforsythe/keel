@@ -1,4 +1,4 @@
-// Spec: k.schema, clause "For every generated secret: it parses; `encode`, `String` and `util.inspect` give the marker, `JSON.stringify` the marker's JSON, `structuredClone` an empty object; parsing a raw value yields a secret revealing it; the marker fails with rule `secret-missing`."
+// Spec: k.privacy, clause "For every generated secret: it parses; `encode`, `String` and `util.inspect` give the marker, `JSON.stringify` the marker's JSON, `structuredClone` an empty object; parsing a raw value yields a secret revealing it; the marker fails with rule `secret-missing`."
 // Seed 1337.
 import { inspect } from "node:util";
 import { type Infer, type Secret, reveal, s } from "@keel/schema";
@@ -15,7 +15,7 @@ const Int = s.secret(s.int());
 const Obj = s.object({ id: s.int(), token: s.secret(s.string()) });
 const Arr = s.array(s.secret(s.string()));
 
-describe("k.schema secrets", () => {
+describe("k.privacy secrets", () => {
   it("every generated secret parses (string, int, object with nested secret, array of secrets)", () => {
     fc.assert(
       fc.property(gen(Str), gen(Int), gen(Obj), gen(Arr), (a, b, c, d) => {

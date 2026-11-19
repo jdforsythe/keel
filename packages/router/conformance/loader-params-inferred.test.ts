@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "A loader declared with `params: P` gives `fn` `params` of type `Infer<typeof P>`; `manifest` throws E1507 when the route's `params` is another schema value."
+// Spec: k.router, clause "A loader declared with `params: P` gives `fn` `params` of type `Infer<typeof P>`; `manifest` throws E1507 for another schema value."
 // The type half is checked by `tsc --noEmit` (expectTypeOf inside fn bodies); the runtime half by `manifest`.
 import { action, loader, manifest } from "@keel/router";
 import { type Infer, ok, s } from "@keel/schema";
@@ -56,12 +56,10 @@ describe("k.router E1507", () => {
     ).toBe("E1507");
   });
 
-  it("`manifest` throws E1507 when the route's `params` is another schema value (action)", () => {
-    expect(
-      codeOf(() => manifest({ "a.one": { path: "/a/:id", params: POther, actions: { POST: save }, component: page } })),
-    ).toBe("E1507");
-    expect(
-      codeOf(() => manifest({ "a.two": { path: "/a/:id", params: P, actions: { POST: save }, component: page } })),
-    ).toBeNull();
+  it("`routes.actions` throws E1507 when the route's `params` is another schema value (action)", () => {
+    const one = manifest({ "a.one": { path: "/a/:id", params: POther, component: page } });
+    expect(codeOf(() => Reflect.apply(one.actions, one, [{ "a.one": { POST: save } }]))).toBe("E1507");
+    const two = manifest({ "a.two": { path: "/a/:id", params: P, component: page } });
+    expect(codeOf(() => two.actions({ "a.two": { POST: save } }))).toBeNull();
   });
 });

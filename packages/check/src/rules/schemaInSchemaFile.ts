@@ -1,6 +1,7 @@
 import type { Expression, Program } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
+import { isComponentFile } from "../internal/isComponentFile.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -35,7 +36,8 @@ function isSchemaChain(e: Expression | null, names: ReadonlySet<string>): boolea
 
 /**
  * E1104 (k.schema): a top-level schema declaration (`const X = s.<factory>(...)`) outside a `*.schema.ts`
- * file. A component file's `Props` is exempt (k.component declares it beside the component).
+ * file. A component file's `Props` is exempt (k.component declares it beside the component), a PascalCase `.ts`
+ * component's too (rfc:0068).
  */
 export const schemaInSchemaFile: RuleDef = {
   code: "E1104",
@@ -46,7 +48,7 @@ export const schemaInSchemaFile: RuleDef = {
     if (!isAppPath(file.path) || /\.schema\.[cm]?[jt]s$/.test(file.path)) return [];
     const names = schemaNames(ast);
     if (names.size === 0) return [];
-    const component = /\.[jt]sx$/.test(file.path);
+    const component = isComponentFile(file.path, ast);
     const out: Finding[] = [];
     for (const st of ast.body) {
       const decl = st.type === "ExportNamedDeclaration" ? st.declaration : st;

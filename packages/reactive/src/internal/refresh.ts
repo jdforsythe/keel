@@ -33,7 +33,8 @@ export function refresh(n: Node): void {
   } finally {
     rt.reaction = prevReaction;
     rt.owner = prevOwner;
-    // A failed computed stays Dirty so the next read retries; a failed effect waits for its next change.
+    // A failed effect waits for its next change; any other node whose run threw stays Dirty (a computed keeps its
+    // own error and never throws here).
     n.state = ok || isEffect(n) ? State.Clean : State.Dirty;
     // Disposed while running: free what the rest of the run created.
     if (n.gone) {

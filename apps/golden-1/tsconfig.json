@@ -3,5 +3,5 @@
   "compilerOptions": {
     "jsxImportSource": "@keel/runtime-dom"
   },
-  "include": ["modules", "test", "tokens.ts", "routes.ts", "topology.ts"]
+  "include": ["modules", "test", "tokens.ts", "topology.ts"]
 }

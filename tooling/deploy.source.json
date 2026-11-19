@@ -1,0 +1,4 @@
+{
+  "$comment": "Apps whose deploy files (k.topology: deploy/<name>/Dockerfile, deploy/compose.yaml) tooling/generate.mjs writes and checks with the @keel/scaffold generator.",
+  "apps": ["apps/golden-1", "apps/golden-2", "apps/sessions"]
+}

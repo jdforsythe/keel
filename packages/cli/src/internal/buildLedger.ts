@@ -6,15 +6,14 @@ import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
 import { citesClause } from "./citesClause.ts";
 import { makeDiag } from "./makeDiag.ts";
+import { monitoredEvidence } from "./monitoredEvidence.ts";
 import { scrubCode } from "./scrubCode.ts";
 import { specClauses } from "./specClauses.ts";
 import { specHeaders } from "./specHeaders.ts";
 import { testEvidence } from "./testEvidence.ts";
+import { z3Version } from "./z3Version.ts";
 
-const FN_DECL = /^export\s+(?:async\s+)?function\*?\s+([A-Za-z_$][\w$]*)/;
-const FN_CONST =
-  /^export\s+const\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*(?:async\s*)?(?:function\b|\(|[A-Za-z_$][\w$]*\s*=>)/;
-const APP_EXPORT = /^export\s+(?:async\s+)?(?:const|let|function\*?|class)\s+([A-Za-z_$][\w$]*)/;
+const EXPORT = /^export\s+(?:async\s+)?(?:const|let|function\*?|class)\s+([A-Za-z_$][\w$]*)/;
 const APP_DEFAULT = /^export\s+default\b/;
 /** A component's `Props` and `uses` belong to the component; `module.ts` and `routes.ts` are manifests. */
 const APP_PARTS = new Set(["Props", "uses"]);
@@ -44,12 +43,12 @@ const countUnsafe = (source: string): number =>
   scrubCode(source).reduce((n, l) => n + (l.match(UNSAFE_CALL) ?? []).length, 0);
 
 /** Evidence for `name` from an area's executed tests (`testEvidence`): every test that reaches it. */
-const evidenceFor = (refs: readonly TestRef[], name: string): LedgerItem["evidence"] =>
-  refs.filter((r) => r.names.has(name)).map((r) => ({ ev: r.ev, path: r.path }));
+const evidenceFor = (refs: readonly TestRef[], name: string, file: string): LedgerItem["evidence"] =>
+  refs.filter((r) => r.names.has(name) || r.pinned.has(`${file}#${name}`)).map((r) => ({ ev: r.ev, path: r.path }));
 
 /**
- * Ledger items, pure over the given files (k.testing Ledger; the one implementation, `keel ledger`):
- * - every exported function in `packages/<pkg>/src/*.ts` (`<file>#<name>`), with evidence from the package's
+ * Ledger items, pure over the given files (k.ledger; the one implementation, `keel ledger`):
+ * - every export (`const`, `let`, `function`, `class`) of `packages/<pkg>/src/*.ts` (`<file>#<name>`), with evidence from the package's
  *   `test/` and `conformance/` tests that reach it (`testEvidence`: an import or a call by name inside a
  *   non-skipped test body or a helper it calls; never a comment, a string, or a skipped test);
  * - every export of `apps/<app>/modules/**` except manifests and component parts (`<app>:<path>#<name>`), with
@@ -57,9 +56,14 @@ const evidenceFor = (refs: readonly TestRef[], name: string): LedgerItem["eviden
  * - every spec Conformance clause (`k.cli#7`), with the non-skipped tests of every conformance file, in any package,
  *   with a leading `// Spec: <id>` header block (`specHeaders`, which may wrap) that quotes the clause (`citesClause`:
  *   backticks, quote style, spacing and case aside). A `// Clause:` header is not read; it is W1706 with the fix.
- * Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`.
+ * Export items also get `monitored` evidence from `.keel/monitored.json` (`monitoredEvidence`; E1711 when it fails its
+ * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`. `z3` is the Z3
+ * version a `prove` call's `proven` evidence names (default: the installed `z3-solver`'s, `z3Version`).
  */
-export function buildLedger(files: readonly SourceFile[]): {
+export function buildLedger(
+  files: readonly SourceFile[],
+  z3: string | undefined = z3Version(),
+): {
   items: LedgerItem[];
   unsafe: number;
   appUnsafe: Record<string, number>;
@@ -81,33 +85,46 @@ export function buildLedger(files: readonly SourceFile[]): {
     appUnsafe[a[1]] = (appUnsafe[a[1]] ?? 0) + countUnsafe(f.source);
     if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && TEST_FILE.test(f.path))) add(`apps/${a[1]}`, f);
   }
-  const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs)]));
-  const items: LedgerItem[] = [];
-  const push = (item: string, pkg: string, area: string, name: string): void => {
-    if (!items.some((i) => i.item === item))
-      items.push({ item, pkg, evidence: evidenceFor(refs.get(area) ?? [], name) });
+  const known = new Set(code.map((f) => f.path));
+  const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs, known, z3)]));
+  const monitored = monitoredEvidence(files);
+  const found: { item: string; pkg: string; area: string; name: string; path: string }[] = [];
+  const push = (item: string, pkg: string, area: string, name: string, path: string): void => {
+    if (!found.some((i) => i.item === item)) found.push({ item, pkg, area, name, path });
   };
   for (const f of code) {
     const p = PKG.exec(f.path);
     if (p?.[1] !== undefined && p[2] === "src" && f.path.endsWith(".ts") && f.path.split("/").length === 4)
       for (const l of scrubCode(f.source)) {
-        const name = (FN_DECL.exec(l) ?? FN_CONST.exec(l))?.[1];
-        if (name !== undefined) push(`${f.path}#${name}`, p[1], `packages/${p[1]}`, name);
+        const name = EXPORT.exec(l)?.[1];
+        if (name !== undefined) push(`${f.path}#${name}`, p[1], `packages/${p[1]}`, name, f.path);
       }
     const a = APP.exec(f.path);
     const rel = a?.[2]?.startsWith("modules/") === true ? a[2].slice("modules/".length) : undefined;
     const base = f.path.split("/").pop() ?? "";
     if (a?.[1] === undefined || rel === undefined || TEST_FILE.test(f.path) || APP_MANIFESTS.has(base)) continue;
     for (const l of scrubCode(f.source)) {
-      const name = APP_EXPORT.exec(l)?.[1] ?? (APP_DEFAULT.test(l) ? base.split(".")[0] : undefined);
-      if (name !== undefined && !APP_PARTS.has(name)) push(`${a[1]}:${rel}#${name}`, a[1], `apps/${a[1]}`, name);
+      const name = EXPORT.exec(l)?.[1] ?? (APP_DEFAULT.test(l) ? base.split(".")[0] : undefined);
+      if (name !== undefined && !APP_PARTS.has(name))
+        push(`${a[1]}:${rel}#${name}`, a[1], `apps/${a[1]}`, name, f.path);
     }
   }
+  // A relative import pins a name to the file declaring it; one resolving to a file that only re-exports the name
+  // (an `index.ts`) reaches it by name, as a package import does.
+  const declared = new Set(found.map((i) => `${i.path}#${i.name}`));
+  const loose = (r: TestRef): ReadonlySet<string> =>
+    new Set([...r.names, ...[...r.pinned].filter((k) => !declared.has(k)).map((k) => k.slice(k.lastIndexOf("#") + 1))]);
+  const reach = new Map([...refs].map(([area, rs]) => [area, rs.map((r) => ({ ...r, names: loose(r) }))]));
+  const items: LedgerItem[] = found.map((i) => ({
+    item: i.item,
+    pkg: i.pkg,
+    evidence: [...evidenceFor(reach.get(i.area) ?? [], i.name, i.path), ...(monitored.byFile.get(i.path) ?? [])],
+  }));
   items.sort((x, y) => (x.item < y.item ? -1 : x.item > y.item ? 1 : 0));
 
   const sections = new Set(specClauses(files).map((c) => c.id));
   const conformance = code.filter((f) => PKG.exec(f.path)?.[2] === "conformance" && TEST_FILE.test(f.path));
-  const diags: Diag[] = [];
+  const diags: Diag[] = [...monitored.diags];
   const headed = conformance.map((f) => {
     const head = header(f.source);
     for (const h of head.filter((x) => x.text.startsWith(OTHER_HEADER))) {
@@ -120,7 +137,7 @@ export function buildLedger(files: readonly SourceFile[]): {
           line: h.line,
           col: 1,
           fix: `-${h.text}\n+// Spec: ${id}, clause "${clause}"`,
-          see: "k.testing",
+          see: "k.ledger",
         }),
       );
     }

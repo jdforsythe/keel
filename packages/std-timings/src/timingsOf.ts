@@ -1,18 +1,12 @@
-import { inspector } from "@keel/compiler/inspect/inspector";
 import type { Ctx } from "@keel/ctx";
-import { Timings } from "./Timings.ts";
-import { stats } from "./internal/stats.ts";
+import type { Timings } from "./Timings.ts";
+import { readRecent } from "./internal/readRecent.ts";
+import { registerSection } from "./internal/registerSection.ts";
+import { snapshot } from "./internal/snapshot.ts";
 
 /** The `Timings` of `ctx` (std.timings), sorted by name; `{}` for a ctx with no `time` calls. */
 export function timingsOf(ctx: Ctx): Timings {
-  const byName = stats.get(ctx);
-  if (byName === undefined) return {};
-  const out: Timings = {};
-  for (const name of [...byName.keys()].sort()) {
-    const st = byName.get(name);
-    if (st !== undefined) out[name] = { ...st };
-  }
-  return out;
+  return snapshot(ctx);
 }
 
-inspector({ id: "timings.recent", schema: Timings, read: timingsOf });
+registerSection(readRecent);

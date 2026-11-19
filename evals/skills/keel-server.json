@@ -1,0 +1,6 @@
+{
+  "skill": "keel-server",
+  "maxTokens": 600,
+  "prompt": "How do I give a Keel loader and action per-request server stores, undo one caller's writes, and what happens when two requests save the same store?",
+  "expect": ["stores", "ctx.storage", "keel.conflict", "undoWhere", "E1558"]
+}

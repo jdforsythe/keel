@@ -1,10 +1,16 @@
-// PR-gating mutation run (backlog 0080): mutate only packages whose files changed in origin/main...HEAD (or HEAD~50 without origin/main).
-// Stryker is incremental (.stryker-tmp/incremental.json, restored by the CI cache), so unchanged mutants are reused.
-// A change to the shared Stryker factory or reporter re-runs every package. Usage: node tooling/mutate-changed.mjs [--list]
-import { execFileSync, spawnSync } from "node:child_process";
+// Mutation run for the work at hand: only packages with changed files, and inside a package only its changed
+// `src` files when nothing else in it changed (prose aside). Range: `--base <ref>...HEAD` (default origin/main, or HEAD~50 without it).
+// Stryker is incremental (shared cache, tooling/mutate-cache.ts), so unchanged mutants are reused either way.
+// A change to the shared mutation tooling runs every package whole. Usage: node tooling/mutate-changed.mjs [--base <ref>] [--list]
+// A stop (`pnpm mutate:stop`, Ctrl-C, SIGTERM) ends the whole sequence: the live package's run stops and no further
+// package starts.
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { parseArgs, run } from "./output.ts";
+import { mutateCacheDir } from "./mutate-cache.ts";
+import { stopFile } from "./mutate.mjs";
+import { acquire, lockedDiag } from "./mutateLock.mjs";
+import { run } from "./output.ts";
 
 const root = path.join(import.meta.dirname, "..");
 const git = (...a) => execFileSync("git", a, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
@@ -17,38 +23,93 @@ const has = (ref) => {
   }
 };
 
-/** Package dirs (packages/<dir>) touched by `files`; all packages when the shared Stryker tooling changed. */
-export function changedPackages(files, all) {
-  if (files.some((f) => /^tooling\/(stryker|stryker-reporter)\.mjs$/.test(f))) return all;
-  const out = new Set();
+const SHARED =
+  /^tooling\/(stryker|stryker-reporter|mutate|mutateLock|quick-first|mutate-cache|vitest\.mutate\.config)\.(mjs|ts)$/;
+const IGNORED = /^packages\/[^/]+\/(reports|\.stryker-tmp|node_modules)\//;
+const MUTATED = /^src\/(?!index\.ts$)(?!types\/).+\.ts$/;
+
+/**
+ * What to run for `files` (repo-relative changed paths): one entry per package in `all` order.
+ * `mutate` lists the package-relative `src` files to scope the run to; absent means the whole package.
+ */
+export function changedScope(files, all) {
+  if (files.some((f) => SHARED.test(f))) return all.map((pkg) => ({ pkg }));
+  const by = new Map();
   for (const f of files) {
-    const m = /^packages\/([^/]+)\//.exec(f);
-    if (m && all.includes(m[1]) && !/^packages\/[^/]+\/(reports|\.stryker-tmp|node_modules)\//.test(f)) out.add(m[1]);
+    const m = /^packages\/([^/]+)\/(.+)$/.exec(f);
+    if (!m || !all.includes(m[1]) || IGNORED.test(f)) continue;
+    const e = by.get(m[1]) ?? { src: [], whole: false };
+    if (MUTATED.test(m[2])) e.src.push(m[2]);
+    else if (!/\.md$/.test(m[2])) e.whole = true;
+    by.set(m[1], e);
   }
-  return all.filter((p) => out.has(p));
+  return all
+    .filter((p) => by.get(p)?.whole || by.get(p)?.src.length)
+    .map((pkg) => {
+      const e = by.get(pkg);
+      return e.whole ? { pkg } : { pkg, mutate: e.src };
+    });
+}
+
+const show = (s) => (s.mutate ? `${s.pkg}(${s.mutate.length} files)` : s.pkg);
+
+/** True when a stop was requested at or after `since` (ms): the stop file `mutate:stop` writes. */
+export function stopRequested(file, since) {
+  try {
+    const at = JSON.parse(fs.readFileSync(file, "utf8"))?.at;
+    return typeof at === "number" && at >= since;
+  } catch {
+    return false;
+  }
 }
 
 if (process.argv[1] === new URL(import.meta.url).pathname) {
-  const args = parseArgs();
-  await run("mutate-changed", () => {
+  const argv = process.argv.slice(2);
+  const at = argv.indexOf("--base");
+  const base = at >= 0 ? argv[at + 1] : has("origin/main") ? "origin/main" : "HEAD~50";
+  await run("mutate-changed", async () => {
     const all = fs
       .readdirSync(path.join(root, "packages"))
+      .sort()
       .filter((p) => fs.existsSync(path.join(root, "packages", p, "stryker.config.mjs")));
-    const range = has("origin/main") ? "origin/main...HEAD" : "HEAD~50...HEAD";
-    const pkgs = changedPackages(git("diff", "--name-only", range).split("\n").filter(Boolean), all);
-    if (args.flags.has("list") || pkgs.length === 0)
-      return { diags: [], counts: { packages: pkgs.length }, line: `ok mutate-changed ${pkgs.join(",") || "none"}` };
-    const r = spawnSync("node", ["tooling/turbo.mjs", "mutate", ...pkgs.map((p) => `--filter=@keel/${p}`)], {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "inherit"],
-    });
-    if (r.stdout) console.log(r.stdout.trimEnd());
-    return {
-      diags: [],
-      counts: { packages: pkgs.length },
-      exit: r.status ?? 1,
-      line: `ok mutate-changed ${pkgs.join(",")}`,
-    };
+    // A file deleted in the range has no mutants left to run.
+    const changed = git("diff", "--name-only", "--diff-filter=d", `${base}...HEAD`).split("\n").filter(Boolean);
+    const scope = changedScope(changed, all);
+    const line = `ok mutate-changed ${scope.map(show).join(",") || "none"}`;
+    if (argv.includes("--list") || scope.length === 0) return { diags: [], counts: { packages: scope.length }, line };
+    // The whole sequence holds the lock, so no second run starts between two packages; each package's runner passes.
+    const lock = acquire();
+    if (!lock.held) return { diags: [lockedDiag(lock.holder)], counts: { packages: scope.length } };
+    const since = Date.now();
+    const stops = stopFile(mutateCacheDir(root));
+    let child;
+    let signalled = false;
+    // The runner owns the one SIGINT to its Stryker group; a signal here is passed to it once and ends the sequence.
+    for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"])
+      process.on(sig, () => {
+        signalled = true;
+        child?.kill(sig);
+      });
+    let exit = 0;
+    let ran = 0;
+    for (const s of scope) {
+      if (signalled || stopRequested(stops, since)) break;
+      // One package at a time: each Stryker run fills the cores by itself.
+      child = spawn(
+        "node",
+        [path.join(root, "tooling", "mutate.mjs"), ...(s.mutate ? ["--mutate", s.mutate.join(",")] : [])],
+        { cwd: path.join(root, "packages", s.pkg), stdio: ["ignore", "pipe", "inherit"] },
+      );
+      const out = [];
+      child.stdout.on("data", (b) => out.push(b));
+      const status = await new Promise((resolve) => child.on("close", (code) => resolve(code ?? 1)));
+      const text = Buffer.concat(out).toString("utf8").trimEnd();
+      if (text) console.log(text);
+      ran++;
+      exit ||= status;
+      if (status === 130) break;
+    }
+    const skipped = scope.length - ran;
+    return { diags: [], counts: { packages: scope.length, skipped }, exit, line };
   });
 }

@@ -1,6 +1,6 @@
-k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.services k.forms k.ui k.testing k.module k.scaffold k.check
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.topology k.hosting k.services k.forms k.ui k.testing k.module k.scaffold k.check k.sync std.jobs std.schedules std.channels std.live std.offline std.multi std.conflicts k.model k.sim std.statecharts std.monitor
 
-Key lines only (current spec, RFCs through 0046). Full text: `pnpm spec <id>`.
+Key lines only (current spec, RFCs through 0082). Full text: `pnpm spec <id>`.
 
 k.schema
 - import { s, ok, err, attempt, type Result } from '@keel/schema'
@@ -16,6 +16,7 @@ k.errors
 
 k.reactive
 - signal(v), computed(fn), effect(fn, { writes: [] }), resource(fetcher); resource consumed only via Match (E1204); primitives outside a scope E1203
+- resource(fetcher): a Result made by ok/err unwraps (ok(v) -> ready v, err(e) -> error e; a plain { ok, error } object stays ready), so resource(() => client.call(input, ctx)) needs no throw; a throw or rejection is also error
 
 k.store
 - import { store, transaction, tx, invariant, type Store } from '@keel/store'
@@ -30,7 +31,7 @@ k.ctx
 - Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
 
 k.component
-- one default export per file, filename = name: (props, slots?, ctx?) => JSX; export const Props = s.object(...)
+- one default export per file, filename = name: (props, slots?, ctx?) => JSX; export const Props = s.object(...); a plain .ts component (PascalCase file, no JSX, default export a function whose first parameter is typed from Props: (props: Infer<typeof Props>)) may export Props and uses too
 - props are getters, never destructure (E1401); <If when>, <For each key="id">, <Match on={union}><Case tag>; {a && <b/>} is E1403
 - explicit ids on everything a test touches (id="todos.addTodo", id={`todos.row.${t.id}`}); duplicates E1404
 
@@ -38,8 +39,10 @@ k.runtime
 - import { If, For, Match, Case } from '@keel/runtime-dom'; mount is the generated entry only; no document/window in app code (E1252)
 
 k.router
+- API route (no component): { 'api.lists': { api: true, path: '/api/lists', loader: loadBoard } } plus routes.actions({ 'api.lists': { POST: postList } }); keeps params, search, loader, guard; refuses component, errorElement, title, layout (E1510); needs a loader or an action; the server answers it with JSON whatever accept says (GET with a loader: { id, results }; GET without one: 405 with allow; a write: the action Result as JSON, never 303; a guard denial: 403 keel.denied); routes.href, Link and navigate take page ids only
+- guard({}, fn) (no redirect) guards API routes only; on a page or layout it is a type error and manifest() throws E1508
 - import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
-- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, actions: { POST: updateTodo }, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } })
+- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } }); then routes.actions({ 'todos.edit': { POST: updateTodo } }) (a statement; actions are never in an entry: E1505); an action returning ok(routes.href(...)) imports routes.ts, which imports it: import routes.ts (never the *.server.ts) first in tests
 - entry without path = layout, renders {props.children?.()}; a static segment beats :param
 - component receives { params, search, data } (data = loader ok value); errorElement receives { error: KeelError }
 - links: routes.href(id, params?, search?) -> Href, typed by the manifest; Link to, navigate, Form action take Href only (E1501)
@@ -51,25 +54,47 @@ k.router
 
 k.server
 - loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, stores }, ctx) -> Promise<Result<T, KeelError>>
-- action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `const to: Href = routes.href(...); return ok(to)`
+- action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
 - stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)
-- createApp({ topology, routes, ctx, deployable: 'api' }) from '@keel/server' -> Promise<{ fetch(req) }>
+- createApp({ topology, routes, ctx, deployable: 'api', runners?, peers?, artifacts? }) from '@keel/server' -> Promise<{ fetch(req), close() }> (tests; production runs the generated entry)
+- live loader: loader({ output }, async function* ({ signal }, ctx) { yield ok(v) }); document/JSON GET takes the first yield; accept: text/event-stream gets each yield as a `data:` line (its Result JSON)
 - writes pass the same-site check: send accept: application/json with x-keel: 1 (a services client does)
-- JSON body (content-type application/json) decodes with the action input schema; fail: 422 keel.fields, action not called
+- JSON body (content-type application/json) decodes with the action input schema, an empty body as {}; fail: 422 keel.fields naming each bad or missing field, action not called
 - runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; action -> { ok: true, value: null | href } or { ok: false, error: { code, message, data } }
 - status: keel.notFound 404, keel.denied 403, keel.fields 422, keel.conflict 409, other err 400
-- a route may be action-only; component still required (api components: plain .ts, `export default function ActionApi(): Node { return Box({ id: 'api.action', children: 'POST only' }) }`)
+- a route may be action-only (an API route: `api: true`, no component; its loader or action is all it has)
 
 k.services
 - import { endpoints, service } from '@keel/services'; endpoints in a *.service.ts file, body/output schemas in *.schema.ts
-- export const todos = endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardReply }, editTodo: { method: 'POST', path: '/api/todos/:todoId', params: TodoIdParams, body: TodoDraft, output: ActionReply, errors: { 422: FieldsReply } } })
-- service({ base, schema }) built per call (base new URL(url).origin in *.server.ts); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
-- output describes the whole runtime body (see k.server); read r.value.results['api.lists'].value
+- export const todos = endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardView }, editTodo: { method: 'POST', path: '/api/todos/:todoId', params: TodoIdParams, body: TodoDraft, output: s.string().nullable(), errors: { 422: FieldsReply } } })
+- service({ module: 'api', schema }): the topology resolves the origin (a browser: the peer's or the page's); the endpoints must agree with the module's public.routes (E1152, E1157, E1561: errors must accept any error answer of the route); await api.add({ params?, body? }, ctx) -> Result<Output, ApiError>; never throws
+- a module service reads the route's Result: output is the loader's value (GET) or the action's Href | null; errors[status] decodes the KeelError { code, message, data }
 - ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
-- pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body?.error ?? r.error)
+- pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body ?? r.error)
+- in an unbound sim ctx a service({ module: 'api' }) call goes to http://api.keel.invalid plus the path; route that host with ctx.net.route
 - ctx.net.fetch in app code is E1651; E1652 :param without params field; E1653 body on GET
+- service({ module: 'api', schema }) calls app module api's routes (api in deps, route in its public.routes): in process, a peer, a browser's document origin; on a ctx no createApp bound, http://api.keel.invalid
+
+k.topology
+- each module (app or stdlib) in one deployable; a split edits topology.ts alone
+- keel build writes dist/<name>/server.mjs per node deployable (no server.ts): env PORT (8080), KEEL_SECRET (32+, one for the app), KEEL_ORIGIN, KEEL_PEER_<NAME>; E1560 names a bad key; SIGTERM awaits close() and exits
+- modules/<id>/runners.server.ts: export const runners = [jobs, schedules]; createApp({ runners: { digest: runners } }) runs them after startup; close() aborts them
+- a client deployable may carry host: 'api' (k.hosting): topology({ web: { modules: ['todos'], adapter: 'client', host: 'api' }, api: { ... adapter: 'node' } })
+- peers: a request for a path a peer serves (routes.json in artifacts) is forwarded; deploy/<name>/Dockerfile and deploy/compose.yaml are generated (E1005)
+
+k.hosting
+- k.hosting: `host: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<host>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes; E1565 bad peer value, E1566 bad host
+
+std.jobs
+- export const recount = job({ input: RecountInput }, async (input, ctx, signal) => ok(null))  // recount.server.ts; at least once, so idempotent
+- export const jobs = queue({ 'digest.recount': recount })  // modules/digest/jobs.server.ts; jobs.enqueue(ctx, 'digest.recount', input, { delayMs?, key? }) -> Result<Id<'Job'>, KeelError>
+- module deps '@keel/std-jobs', capabilities clock random storage; node deployable only; E2501-E2504
+
+std.schedules
+- export const schedules = schedule(jobs, { 'digest.hourly': { cron: '0 * * * *', zone: 'UTC', job: 'digest.recount', input: {} } })  // schedules.server.ts
+- module deps '@keel/std-schedules' and '@keel/std-jobs'; runners lists schedules (E2553); a bad cron is E2551
 
 k.forms
 - import { form } from '@keel/forms'; const f = form(TodoDraft, { initial?, id? }) in a component; f.field('title') f.values() f.errors() f.pending() f.reset()
@@ -99,8 +124,86 @@ k.module
 - importing another module's file needs it in deps (E1152) and in its public.exports (E1151); ids, transaction names, error codes prefixed by module id (E1155); used ctx capabilities listed (E1156)
 
 k.scaffold
-- keel scaffold project <name> --workspace | module | route | component | store | transaction; keel codemod rename|move; --dry-run
+- keel scaffold project <name> --workspace (writes <name>/; run it from apps/) | module | route | component | store | transaction; keel codemod rename|move; --dry-run
 
 k.check
 - one export per file, filename = export (E1752); unsafe needs a justification (E1754)
 - keel check --quiet prints the trailer; keel explain <code>
+
+k.sync
+- store.head(): 0 for a new store, +1 per commit and per undo that undoes; an entry's id is the head it produced; snapshot() holds head
+- tx(t, payload, { meta?, base?, key? }): base = the head the writer last read; concurrent when base !== head(); key (1-64 chars) names one write across retries: a key the kept log holds commits nothing and returns ok (checked before base)
+- transaction(store, name, Payload, fn, { concurrent: 'reject' | 'rebase' }), default 'reject': a concurrent write is err keel.conflict { store, transaction, base, head } (k.server answers 409); 'rebase' runs fn on the current state and the entry keeps base
+- 'rebase' only where the payload holds on any state (a toggle, an add with a fresh id); a payload carrying values the writer read (a full-field edit) keeps 'reject'
+- after an action's save the server ctx observe gets { kind: 'save', store, head } per saved store; ctx.net.online(); sim ctx.net.setOnline(b): offline fetch rejects and open sim bodies error; observe gets { kind: 'net', online }
+
+std.channels
+- import { channel } from '@keel/std-channels'; in a shared file named for the export: export const boardChannel = channel('api.board', { path: '/api/board/events', params: s.object({}) }) (name prefixed by the declaring module; no message: nothing is published)
+- import { channelRoute } from '@keel/std-channels/server'; in a *.server.ts file (E2601): export const boardEvents = channelRoute(boardChannel, { id: 'api.boardEvents', stores: boardStores, member: () => true }); list { api: true, path: boardEvents.path, loader: boardEvents.loader } under its id and pass boardEvents.actions to routes.actions
+- the stream yields { kind: 'reset' } first, then { kind: 'saved', store, head } after each save of a store its stores create, { kind: 'closed', reason: 'denied' | 'full' } before it ends; events carry no data: members re-read through their own loaders
+- a module that declares, serves or follows a channel lists '@keel/std-channels' in deps; the serving module lists capabilities clock, net, observe
+
+std.live
+- import { live } from '@keel/std-live'; inside a scope (a component): const status = live(ctx, origin, boardChannel, {}, { read: (c) => client.lists({}, c), hydrate }); after each reset and saved it runs read and commits tx(hydrate, value); hydrate is in the component's uses
+- one read at a time; status(): 'connecting' | 'live' | 'offline' | 'denied'
+
+std.offline
+- import { outbox, send, drain, resolve, Write } from '@keel/std-offline'; export const boardOutbox = outbox('todos.outbox', endpointsMap) in a client-safe file (store todos.outbox, state { entries }, kept in ctx.storage keel.outbox.<id>)
+- an endpoint an outbox sends to has body s.object({ ..., write: Write }) and declares errors: { 409: s.json() }; its action passes tx(t, payload, { meta, ...input.write }); Write = { key: s.id('Write'), base: s.int({ min: 0 }) }
+- the outbox calls service({ base: origin }): output and errors decode the whole k.server answer ({ ok: true, value } / { ok: false, error })
+- const r = await send(ctx, boardOutbox, origin, 'editTodo', { params, body }, { base: view.get('head') }): r.state 'sent' | 'queued' (offline or network) | 'conflict' (with head) | 'failed' (with error)
+- drain(ctx, boardOutbox) inside a scope: loads the stored outbox and flushes, again on each reconnect; entries go in order, one at a time; resolve(ctx, boardOutbox, key, 'mine' | 'theirs'): mine re-queues a conflict last with base = its head, theirs drops a conflict or failed entry
+- entry: { key, endpoint, origin, input, base, at, state: 'queued' | 'sending' | 'conflict' | 'failed', head?, error? }
+
+std.multi
+- import { openGroup, replayGroup } from '@keel/std-sessions/group' (node): const g = await openGroup({ user: <url of a module exporting { routes, base: { id, params, search } }>, serve: (ctx) => ({ fetch }), users: 2, seed: 11, origin, server: { 'api.board': <snapshot JSON> } })
+- g.user(i).fire/navigate/find/state; g.setOnline(i, b); g.advance(ms); g.settle(); await g.stop() -> SessionGroup; replayGroup(group, { user, serve }) -> { users, server, reproduced }; inputs replay in order of at, then user, then event index
+
+std.conflicts
+- import { findRaces, raceRecords } from '@keel/std-conflicts': findRaces(group, { user, serve, stores: [boardStores] }) -> { replay, races, unchecked }; a race is a rebased entry whose order against its concurrent entries changes the result: E2701 <file>:1:1 race <name> #<id> over <name> #<id>, ... on <store>
+
+k.model
+- import { explore } from '@keel/testing': explore(transactions, { from?, payloads?, depth?, maxStates = 10000 }) is synchronous over one store's transactions, breadth first; returns { states, edges, depth, complete, terminal }; the store's snapshot is restored after
+- payloads: { '<transaction name>': [payload, ...] } (each parsed by its schema); without an entry, every value of a finite payload schema (enums, booleans, bounded ints, objects of those); an s.string() field with no entry is E1710
+- closed form explore(Object.values(chart.events)): no from, payloads or depth; every transaction of the store, empty log, must end complete (else E1709/E1710)
+- E1708: an edge broke an invariant (or threw): error.data { snapshot, transaction, payload }, snapshot.log the shortest path; store.restore(snapshot) then tx(transaction, payload) returns store.invariant
+- factory stores: explore([addList(b), addTodo(b), ...], { from: fixture, payloads, depth: 3 }) with b = board() made inside an isolated scope
+
+k.sim
+- import { simulate } from '@keel/testing': await simulate(async ({ ctx, run }) => { ...; await run(); expect(...) }, { runs: 100, seed: 11 }); each run gets a sim ctx with a generated Schedule { net, storage, offline, plans }
+- net step { delay: 0..60000, fault: 'none' | 'drop' | 'lost' | 'unavailable' } per ctx.net.fetch in order: drop rejects without running the route, lost runs it then rejects, unavailable answers 503; storage 'fail' rejects a get or set; offline windows { at, ms }
+- run() settles, then advances ctx.clock to each pending deadline within horizon (600000 ms) and settles again; start sends without awaiting them, then await run()
+- live stores are restored to their pre-simulate snapshots before each run; make server state (createApp, its sim ctx) fresh inside each run
+- failure: E1704 simulate: <reason> (seed, run, shrunk) with the shrunk SimRun JSON on the next line; simulate(scenario, { replay: simRun }) runs it once
+
+std.statecharts
+- import { chart, coverage } from '@keel/std-statecharts' (module deps list '@keel/std-statecharts'); in a client-safe file named for the export: export const editorChart = chart('todos.editor', { data, start, events, guards, actions, initial, states })
+- events: { name: payloadSchema }; a state is { on?: { event: target }, final? }; target: 'stateName' | { to?, guard?, do? } | [targets tried in order]; guards (d, payload) => boolean, actions (d, payload) => data, both pure; an action keeps data inside its schema
+- compiles to store id with state { state, data } and one transaction <id>.<event> per event: tx(editorChart.events.save, {}); no applicable target leaves the state unchanged
+- chart.enabled({ state, data }, event, payload): true when that event's tx would change the state name or apply a do; chart.store.get('state'), chart.store.get('data')
+- coverage(chart, explore(Object.values(chart.events))) -> { unreached, dead }; keel check E2751 unknown state name, E2752 unreachable state, E2753 non-final state with no exit (fix: final: true), E2754 bad final/event/guard/action name, E2755 non-literal declaration
+
+std.monitor
+- import { monitor, monitorRoutes } from '@keel/std-sessions/monitor' (node): runners.server.ts export const runners = [monitor]; routes.ts manifest({ ...monitorRoutes.routes, ... }); module deps '@keel/std-sessions' with std: { '@keel/std-sessions': { readers: [] } }; the deployable lists module 'sessions'
+- monitor counts each server-store commit by transaction name into ctx.storage sessions.tally every 60000 ms and at shutdown; GET /sessions/tally answers it to a caller in readers (403 keel.denied otherwise)
+- KEEL_SESSIONS_TOKEN=<reader cookie> keel session monitor <url> writes .keel/monitored.json, read by keel ledger as the monitored rung
+
+k.persist
+- ctx.storage: get, set, read(keys) one cut, commit([{ key, expect, value? }]) -> true when every expect holds, else false and nothing stored; one key twice E1606
+- an action's ok saves its changed stores in one commit expecting the values it read; false is 409 keel.conflict, so two processes on one driver keep the read-set rule
+- import { commitStores } from '@keel/server' in *.server.ts: await commitStores(ctx, boardStores, (S) => { const r = tx(S.showList, { id }); return r.ok ? ok(null) : err(r.error) }) -> Result; up to 3 runs, then keel.conflict; fn calls transactions only
+- restore of a stored snapshot whose log names a removed transaction keeps state and head and keeps no entry; keel check --base <surface.json>: E1563 a state change stored states fail, W1564 a removed or narrowed transaction
+
+k.deploy
+- topology.ts node deployable storage: 'file' (default) | 'sqlite' (KEEL_DATABASE_URL a file: URL, default file:/data/keel.sqlite) | 'postgres' (postgres: URL, required); the app lists @keel/std-db in dependencies (E1572); a bad database is E2152/E2153, exit 1; the URL is never printed
+
+std.workflows
+- import { workflow, flows } from '@keel/std-workflows' (module deps add '@keel/std-workflows', '@keel/std-jobs', '@keel/std-statecharts'): export const removal = workflow('api.removal', { chart: removalChart, steps: { purging: { run: purge, done: 'purged', failed: 'purgeFailed' } }, waits: { hidden: { ms: 600_000, event: 'expired' } } }) in removal.server.ts
+- a step run(data, ctx, { signal, key }) returns Promise<Result>; its ok value is the done event's payload; err on the last attempt (default 3) sends failed { code }; past its attempts failed { code: 'workflows.attempts' }
+- jobs.server.ts: export const jobs = queue({ ...removal.jobs }); runners.server.ts: export const runners = [jobs, flows(jobs, [removal])]; E2351 workflow outside *.server.ts, E2354 queue or runners missing them
+- removal.stores(ctx) -> { store, start, events, attempt, forget }; in an action's stores factory: tx(S.removal.start, { id: ctx.random.id('Flow'), data: { list } }), tx(S.removal.events.undo, { id, payload: {} }); store state { instances: { [id]: { state, data, entered, attempt } } }
+
+k.prove
+- import { prove } from '@keel/testing/prove' (Node; z3-solver in devDependencies, else E1718): await prove([addList(b), addTodo(b), ...]) -> { proven, z3 }: every invariant holds for every state and payload the schemas allow, by induction; the ledger's proven rung
+- fragment: params, const, return, if/else, ?:, && || !, === !== < <= > >=, + -, literals, object spread and reads, array spread, .length, .map/.some/.every/.find, new Set(a.map(f)) read by .has and .size; anything else (.filter, calls, loops) is E1715
+- E1716 a counterexample (state and payload JSON on the next line); E1717 no verdict within rlimit

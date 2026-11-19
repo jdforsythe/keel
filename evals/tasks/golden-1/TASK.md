@@ -1,6 +1,6 @@
 # Golden app 1 (client-only)
 
-Build `apps/golden-1/`: a todo app, client-only (`topology.ts`: one deployable, `adapter: 'client'`; the compiler generates the `mount` entry). Use only kernel APIs from the spec slice; read a full section with `pnpm spec <id>` (k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.forms k.ui k.testing k.module k.server k.services k.scaffold k.check). Edit nothing outside `apps/golden-1/`. Prefer `keel scaffold`/`keel codemod` for structure. Scaffold the project with `scaffold('project', { workspace: true })` (CLI: `keel scaffold project golden-1 --workspace`): it emits `index.html` and `vitest.config.ts` for an app inside the monorepo, which the files list below omits; keep them. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; do not invent one.
+Build `apps/golden-1/`: a todo app, client-only (`topology.ts`: one deployable, `adapter: 'client'`; the compiler generates the `mount` entry). Use only kernel APIs from the spec slice; read a full section with `pnpm spec <id>` (k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.forms k.ui k.testing k.module k.server k.services k.scaffold k.check). Edit nothing outside `apps/golden-1/`. Prefer `keel scaffold`/`keel codemod` for structure. Scaffold the project with `scaffold('project', { workspace: true })` (CLI, from `apps/`: `keel scaffold project golden-1 --workspace`, which writes `apps/golden-1/`): it emits `index.html` and `vitest.config.ts` for an app inside the monorepo, which the files list below omits; keep them. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; do not invent one.
 
 ## Behavior
 - `/` (`todos.index`): every list with its open-todo count; a Form adding a list.
@@ -20,7 +20,7 @@ Build `apps/golden-1/`: a todo app, client-only (`topology.ts`: one deployable, 
 
 ## Files (exactly these)
 ```
-apps/golden-1/package.json   name "golden-1"; scripts check/test/build: keel check|test|build
+apps/golden-1/package.json   name "golden-1"; scripts as the workspace scaffold writes them: check `tsc --noEmit && biome check modules test`, test `vitest run`, build `vite build`
 apps/golden-1/tsconfig.json  extends ../../tsconfig.base.json
 apps/golden-1/{vite.config.ts,tokens.ts,topology.ts}   tokens: fg/bg/accent/danger with light and dark
 apps/golden-1/modules/todos/{module.ts,routes.ts,editable.guard.ts}

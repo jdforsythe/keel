@@ -18,13 +18,14 @@
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs"
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/check": "workspace:*",
     "@keel/tooling": "workspace:*",
     "fast-check": "^3"

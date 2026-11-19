@@ -72,7 +72,7 @@ function entrySource(tokensFile: string | undefined, routesFiles: readonly strin
       "};",
     );
   lines.push(
-    `const routes = Object.assign({}, ${routesFiles.map((f) => `await manifest(${q(f)}, () => import(${q(`./${f}`)}))`).join(", ")});`,
+    `const routes = Object.assign({}, ${routesFiles.map((f) => `await manifest(${q(f)}, () => import(${q(path.isAbsolute(f) ? f : `./${f}`)}))`).join(", ")});`,
     "export default JSON.stringify({ css, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
   );
   return lines.join("\n");
@@ -112,6 +112,9 @@ export async function evaluateProject(input: {
     write: false,
     format: "esm",
     platform: "node",
+    // Node's own conditions (`node`, `import`, `default`), without esbuild's `module`: the file a package's `exports`
+    // gives here is the one Node imports and the one `routeLiterals` reads.
+    conditions: [],
     target: "node20",
     logLevel: "silent",
     plugins: [

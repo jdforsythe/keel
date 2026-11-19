@@ -104,7 +104,12 @@ await run("budgets", async () => {
     const max = typeof limit === "string" ? limit : limit.max;
     const platform = typeof limit === "string" ? "browser" : (limit.platform ?? "browser");
     const m = /^(\d+(?:\.\d+)?)\s*kb$/i.exec(max);
-    const entry = path.join(root, "packages", name.replace(/^@keel\//, ""), "src", "index.ts");
+    // A subpath export (`@keel/router/match`) is its own entry: `packages/<pkg>/src/<subpath>/index.ts` (rfc:0071).
+    const [pkg, ...sub] = name.replace(/^@keel\//, "").split("/");
+    // A subpath with no folder index is the file `packages/<pkg>/src/<subpath>.ts` (`@keel/std-sessions/routes`, 0093).
+    const nested = path.join(root, "packages", pkg, "src", ...sub, "index.ts");
+    const file = path.join(root, "packages", pkg, "src", `${sub.join("/")}.ts`);
+    const entry = sub.length > 0 && !fs.existsSync(nested) ? file : nested;
     if (!m || !fs.existsSync(entry)) continue;
     const bundle = await build({
       entryPoints: [entry],

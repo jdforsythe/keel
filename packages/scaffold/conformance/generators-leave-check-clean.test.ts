@@ -1,7 +1,7 @@
 // Spec: k.scaffold, clause "Each generator run in a fresh project leaves `keel check` and `keel test` clean."
 // Real: each generator's tree is materialized and the actual `keel` binary runs `check` and `test` on it.
 // Extra cases keep the relative-import proxy (every relative import resolves to a file in the tree).
-// Service (RFC 0039): `modules/orders/OrdersApi.schema.ts` exporting `OrdersApi` and `api.ts` exporting `api` satisfy
+// Service (RFC 0039): `modules/orders/OrdersApi.schema.ts` exporting `OrdersApi` and `api.server.ts` exporting `api` satisfy
 // E1752; the case runs both on the in-process placement and on the real `keel scaffold service --openapi` output.
 import { afterAll, describe, expect, it } from "vitest";
 import { type Files, SERVICE_INPUT, apply, fresh, withOpenApi, withStoreCart } from "./fixtures.ts";
@@ -122,7 +122,7 @@ describe("keel check and keel test are clean after each generator", () => {
     expect(gen.status, JSON.stringify(gen.records)).toBe(0);
     const tree = readTree(dir);
     expect(tree.get("modules/orders/OrdersApi.schema.ts")).toMatch(/^export const OrdersApi = endpoints\(/m);
-    expect(tree.get("modules/orders/api.ts")).toContain('import { OrdersApi } from "./OrdersApi.schema.ts";');
+    expect(tree.get("modules/orders/api.server.ts")).toContain('import { OrdersApi } from "./OrdersApi.schema.ts";');
     cleanDir(dir, [...tree.keys()].filter((p) => /\.test\.tsx?$/.test(p)).length);
   }, 60000);
 });

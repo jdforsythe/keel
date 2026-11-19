@@ -11,6 +11,10 @@
     "./gen": {
       "types": "./src/gen.ts",
       "default": "./src/gen.ts"
+    },
+    "./internal": {
+      "types": "./src/internal/index.ts",
+      "default": "./src/internal/index.ts"
     }
   },
   "files": ["dist"],
@@ -18,12 +22,13 @@
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs"
   },
   "peerDependencies": {
     "fast-check": "^3"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "fast-check": "^3",
     "@keel/tooling": "workspace:*"
   }

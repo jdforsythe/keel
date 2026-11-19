@@ -49,10 +49,6 @@ async function build(o: Opts = {}) {
       path: "/",
       layout: "app.shell",
       loader: loader({ output: Page }, () => Promise.resolve(ok({ title: o.title ?? "Home" }))),
-      actions: {
-        POST: action({ input: Edit }, () => ok(null)),
-        PATCH: action({ input: Edit }, () => err({ code: "app.locked", message: "locked", data: {} })),
-      },
       guard: auth,
       component: ({ data }) => {
         if (o.throwIn === "page") throw new Error("page broke");
@@ -64,6 +60,12 @@ async function build(o: Opts = {}) {
       errorElement: ({ error }) => el("p", { "data-error": error.code }, error.message),
     },
     "app.login": { path: "/login", component: () => el("main", {}, "login") },
+  });
+  routes.actions({
+    "app.home": {
+      POST: action({ input: Edit }, () => ok(null)),
+      PATCH: action({ input: Edit }, () => err({ code: "app.locked", message: "locked", data: {} })),
+    },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
@@ -89,7 +91,9 @@ describe("document", () => {
     const html = await res.text();
     expect(html.startsWith("<!doctype html>")).toBe(true);
     expect(html).toContain('<div id="app"><section data-page="home" data-k="app.home" data-k-island="app.home">');
-    expect(html.match(/<script type="module" src="\/@keel\/entry.ts"><\/script>/g)?.length).toBe(1);
+    expect(html.match(/<script type="module" src="\/@keel\/entry.ts" nonce="[0-9a-f]{64}"><\/script>/g)?.length).toBe(
+      1,
+    );
     expect(html).toContain("<main>");
     expect(state(html)).toMatchObject({
       islands: { "app.home": { params: {}, search: {}, data: { title: "Hello" } } },
@@ -131,7 +135,7 @@ describe("document", () => {
     expect(Counter.node.kind).toBe("object");
   });
 
-  it("actions and redirects are cache-control: no-store", async () => {
+  it("actions and redirects are cache-control: no-store; a document is private, no-store", async () => {
     const app = await build();
     const ok303 = await app.fetch(post("/", { note: "hello" }));
     expect(ok303.status).toBe(303);
@@ -141,7 +145,7 @@ describe("document", () => {
     const bad = await app.fetch(post("/", { note: "x" }));
     expect(bad.status).toBe(422);
     expect(bad.headers.get("cache-control")).toBe("no-store");
-    expect((await app.fetch(get("/"))).headers.get("cache-control")).toBeNull();
+    expect((await app.fetch(get("/"))).headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("a throw in a route with an errorElement renders it with 500; production hides the message", async () => {

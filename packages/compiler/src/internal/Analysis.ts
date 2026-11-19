@@ -1,4 +1,12 @@
-import type { Expression, ImportDeclaration, JSXElement, JSXFragment, LogicalExpression, Program } from "oxc-parser";
+import type {
+  CallExpression,
+  Expression,
+  ImportDeclaration,
+  JSXElement,
+  JSXFragment,
+  LogicalExpression,
+  Program,
+} from "oxc-parser";
 import type { FnInfo } from "./FnInfo.ts";
 import type { IdentRef } from "./IdentRef.ts";
 import type { IntrinsicKind } from "./IntrinsicKind.ts";
@@ -18,6 +26,8 @@ export type Analysis = {
   /** All JSX elements and fragments, sorted by start. */
   jsx: (JSXElement | JSXFragment)[];
   imports: ImportDeclaration[];
+  /** `import('<literal>')` calls: the specifier and the call's offset. */
+  dynamicImports: { source: string; start: number }[];
   /** Local name -> intrinsic, for names imported from `@keel/runtime-dom`. */
   intrinsics: Map<string, IntrinsicKind>;
   functions: FnInfo[];
@@ -26,7 +36,7 @@ export type Analysis = {
   identsByName: Map<string, IdentRef[]>;
   /** Declared name -> spans of the scopes that declare it (function, block, catch, program). */
   decls: Map<string, Span[]>;
-  /** Declaration positions (params, variable ids, imports): identifiers inside are not reads. */
+  /** Declared names (in params, variable and catch patterns, but not their defaults) and imports: not reads. */
   bindings: Span[];
   /** Member accesses by property name (non-computed), for raw-HTML detection. */
   members: (Span & { name: string })[];
@@ -36,4 +46,6 @@ export type Analysis = {
   consts: Map<string, Expression>;
   /** `effect(...)` calls. */
   effects: Span[];
+  /** Calls whose callee is a plain identifier (`Button({ … })`), in source order. */
+  calls: CallExpression[];
 };

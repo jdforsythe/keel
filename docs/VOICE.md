@@ -38,7 +38,7 @@ The only nautical word is Keel.
 | --- | --- |
 | `docs/`, `spec/`, README files | Reference docs may use the OUTPUT.md run-in label style; everything else is narrative prose. |
 | Code comments | Same rules. A comment states what the code guarantees and why, in one or two sentences. |
-| Diagnostics | Message under 90 chars, imperative fix, no adjectives (OUTPUT.md). |
+| Diagnostics | Message under 90 chars, optional fix as a unified diff hunk (OUTPUT.md). |
 | Example apps and the inspector | Page copy, empty states, labels, and errors. The copy is part of the product. |
 | Skills | The agent reads these as instructions; plain and specific, no sales language. |
 | Commit messages, RFCs, ADRs | Same rules; numbers and file names over adjectives. |
@@ -50,3 +50,5 @@ To: "Keel compiles JSX to DOM operations and keeps every state change in a named
 
 Rewrite: "It's not the framework that's slow, it's the reasoning."
 To: "The framework is fast enough; the agent's reasoning about invisible rules is what costs tokens."
+
+verified: e0d6c6ef452d307d4290952005188b8353866c82

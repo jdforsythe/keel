@@ -4,10 +4,11 @@ import { Form } from "@keel/router";
 import { For, type Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Select, Text } from "@keel/ui";
+import { TodoDraft } from "../api/TodoDraft.schema.ts";
+import { TodoList } from "../api/TodoList.schema.ts";
 import Suggestions from "./Suggestions.tsx";
-import { TodoDraft } from "./TodoDraft.schema.ts";
-import { TodoList } from "./TodoList.schema.ts";
 import TodoRow from "./TodoRow.tsx";
+import { idPart } from "./idPart.ts";
 import { routes } from "./routes.ts";
 import { view } from "./view.ts";
 
@@ -25,7 +26,7 @@ const PRIORITIES = [
 
 /** Route `todos.list`: the list's todos filtered by `search.filter`, filter links, an add-todo Form, Suggestions. */
 export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
-  const f = form(TodoDraft, { initial: { priority: "normal" } });
+  const f = form(TodoDraft, { id: "todos.addForm", initial: { priority: "normal" } });
   const shown = () =>
     view
       .get("todos")
@@ -94,20 +95,36 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       <Heading id="todos.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
         {props.data.name}
       </Heading>
-      <Box as="nav" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
-        <Link id="todos.filter.all" to={routes.href("todos.list", { listId }, { filter: "all" })} fg="text">
+      <Box as="section" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
+        <Link
+          id="todos.filter.all"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "all" })}
+          fg="text"
+        >
           All
         </Link>
-        <Link id="todos.filter.active" to={routes.href("todos.list", { listId }, { filter: "active" })} fg="text">
+        <Link
+          id="todos.filter.active"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "active" })}
+          fg="text"
+        >
           Active
         </Link>
-        <Link id="todos.filter.done" to={routes.href("todos.list", { listId }, { filter: "done" })} fg="text">
+        <Link
+          id="todos.filter.done"
+          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "done" })}
+          fg="text"
+        >
           Done
         </Link>
       </Box>
       <Box as="ul" id="todos.items" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
         <For each={shown()} key="id">
-          {(todo) => <TodoRow todo={todo} />}
+          {(todo) => (
+            <Box as="li" id={`todos.row.${idPart(todo.id)}`}>
+              <TodoRow todo={todo} />
+            </Box>
+          )}
         </For>
       </Box>
       {children()}

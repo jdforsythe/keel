@@ -1,0 +1,17 @@
+{
+  "skill": "keel-deploy",
+  "runner": "none",
+  "model": "none",
+  "passed": true,
+  "tokenEstimate": 362,
+  "maxTokens": 600,
+  "frontmatterOk": true,
+  "missing": [],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "durationMs": 2,
+  "startedAt": "2026-11-13T23:27:55.536Z"
+}

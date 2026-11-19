@@ -3,6 +3,16 @@ import { createApp } from "@keel/server";
 import { routes } from "../modules/kitchen/routes.ts";
 import topology from "../topology.ts";
 
+/** 2026-11-10T09:30:00.000Z, the api's sim clock in every test: recipes added now are dated 2026-11-10. */
+export const NOW = 1794303000000;
+
+/** A sim ctx for the api deployable whose clock reads `NOW`. */
+export const apiCtx = (seed = 7): SimCtx => {
+  const ctx = createCtx({ mode: "sim", seed });
+  ctx.clock.advance(NOW);
+  return ctx;
+};
+
 /** Serve the real `api` deployable over `server`'s sim ctx (its storage is the box's persistence). */
 export const apiApp = (server: SimCtx) => createApp({ topology, routes, ctx: server, deployable: "api" });
 
@@ -14,12 +24,19 @@ export const asJson = (method: string, path: string, body?: unknown): Request =>
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 
+/** A draft as the api takes it: `minutes` and a price in minor units. */
+export const draft = (title: string, minutes: number, amount = 1250, currency = "EUR") => ({
+  title,
+  minutes,
+  price: { amount, currency },
+});
+
 /**
  * A client sim ctx whose net sends every `/api/*` request to a fresh `api` deployable; `sent` records `METHOD /path`
  * of each request and `app` lets a test seed the box through the api itself.
  */
 export async function simApi(seed = 1) {
-  const app = await apiApp(createCtx({ mode: "sim", seed: 7 }));
+  const app = await apiApp(apiCtx());
   const ctx = createCtx({ mode: "sim", seed });
   const sent: string[] = [];
   ctx.net.route(new URL("/api/*", location.href).href, (req) => {

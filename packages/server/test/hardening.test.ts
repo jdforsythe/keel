@@ -36,12 +36,12 @@ function build(calls: Calls, extra: Extra = {}) {
   const routes = manifest({
     "app.notes": {
       path: "/notes",
-      actions: { POST: act("POST"), PUT: act("PUT"), PATCH: act("PATCH"), DELETE: act("DELETE") },
       component: () => {
         throw new Error("not rendered under node");
       },
     },
   });
+  routes.actions({ "app.notes": { POST: act("POST"), PUT: act("PUT"), PATCH: act("PATCH"), DELETE: act("DELETE") } });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
@@ -219,7 +219,7 @@ describe("submitted values", () => {
     fd.append("prototype", "p");
     fd.append("tag", "1");
     fd.append("tag", "2");
-    const v = valuesOf(fd);
+    const v = valuesOf(fd, s.object({}).node);
     expect(Object.getPrototypeOf(v)).toBe(Object.prototype);
     expect(Object.keys(v)).toEqual(["note", "tag"]);
     expect(v).toEqual({ note: "a", tag: ["1", "2"] });

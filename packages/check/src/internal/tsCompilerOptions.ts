@@ -2,7 +2,7 @@ import ts from "typescript";
 
 /**
  * The strict profile of `tsconfig.base.json` as compiler options, plus what an in-memory check needs:
- * `noEmit`, `.ts` import paths, global JSX typing (no `jsxImportSource`), and no ambient `@types`.
+ * `noEmit`, `.ts` import paths, global JSX typing (no `jsxImportSource`), and no ambient `@types` (`typeCheck` adds Node's when the project has them).
  */
 export function tsCompilerOptions(): ts.CompilerOptions {
   return {

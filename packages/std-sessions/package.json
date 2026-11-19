@@ -1,0 +1,97 @@
+{
+  "name": "@keel/std-sessions",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./module": {
+      "types": "./module.ts",
+      "default": "./module.ts"
+    },
+    "./record": {
+      "types": "./src/record.ts",
+      "default": "./src/record.ts"
+    },
+    "./replay": {
+      "types": "./src/replay.ts",
+      "default": "./src/replay.ts"
+    },
+    "./minimize": {
+      "types": "./src/minimize.ts",
+      "default": "./src/minimize.ts"
+    },
+    "./commandJob": {
+      "types": "./src/commandJob.ts",
+      "default": "./src/commandJob.ts"
+    },
+    "./session": {
+      "types": "./src/session.ts",
+      "default": "./src/session.ts"
+    },
+    "./Session": {
+      "types": "./src/Session.schema.ts",
+      "default": "./src/Session.schema.ts"
+    },
+    "./redact": {
+      "types": "./src/redact.ts",
+      "default": "./src/redact.ts"
+    },
+    "./tools": {
+      "types": "./src/tools.ts",
+      "default": "./src/tools.ts"
+    },
+    "./routes": {
+      "types": "./src/routes.ts",
+      "default": "./src/routes.ts"
+    },
+    "./action": {
+      "types": "./src/action/index.ts",
+      "default": "./src/action/index.ts"
+    },
+    "./group": {
+      "types": "./src/group/index.ts",
+      "default": "./src/group/index.ts"
+    },
+    "./monitor": {
+      "types": "./src/monitor/index.ts",
+      "default": "./src/monitor/index.ts"
+    }
+  },
+  "bin": {
+    "keel-session-action": "./dist/src/actionBin.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe module.ts",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/ui": "workspace:*",
+    "happy-dom": "^21",
+    "oxc-parser": "^0.157.0",
+    "tsx": "^4",
+    "vite": "^8.3.6",
+    "vitest": "^4.1.12"
+  },
+  "devDependencies": {
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
+  }
+}

@@ -327,7 +327,7 @@ describe("guards", () => {
     expect(t.history.entries).toEqual(["/login?next=%2Fsec"]);
     t.stop();
   });
-  it("a redirect loop stops after 8 hops with keel.unexpected", async () => {
+  it("a redirect loop stops at the first revisited location with E1508 keel.unexpected (rfc:0051)", async () => {
     const glNo = deny("gl.b");
     const glNo2 = deny("gl.a");
     const rs = manifest({
@@ -338,20 +338,29 @@ describe("guards", () => {
     await settle();
     const alert = t.host.querySelector('[role="alert"]');
     expect(alert?.getAttribute("data-keel-error")).toBe("keel.unexpected");
-    expect(alert?.textContent).toBe("too many guard redirects");
+    expect(alert?.textContent).toBe("E1508 guard redirect loop: /a -> /b?next=%2Fa -> /a?next=%2Fa -> /b?next=%2Fa");
     t.stop();
   });
-  it("a redirect that can reach the login after several hops still works (hops below the limit)", async () => {
-    let n = 0;
-    const ghStep = guard({ redirect: "gh.b" }, async () => (++n < 8 ? err(Denied.make({})) : ok(null)));
-    const rs = manifest({
-      "gh.a": { path: "/a", guard: ghStep, component: () => el("a") },
-      "gh.b": { path: "/b", guard: ghStep, component: () => el("b") },
-    });
-    const t = boot(rs, "/a");
+  it("eight guard redirects through distinct routes still land; a ninth is E1508 (rfc:0051)", async () => {
+    const chain = (n: number) => {
+      const defs: Record<string, RouteDef> = {};
+      for (let i = 0; i <= n; i++)
+        defs[`gh.r${i}`] = {
+          path: `/r${i}`,
+          component: () => el(`r${i}`),
+          ...(i < n ? { guard: deny(`gh.r${i + 1}`) } : {}),
+        };
+      return manifest(defs);
+    };
+    const eight = boot(chain(8), "/r0");
     await settle();
-    expect(t.host.querySelector('[role="alert"]')).toBeNull();
-    t.stop();
+    expect(eight.host.querySelector('[role="alert"]')).toBeNull();
+    expect(eight.history.current()).toBe("/r8?next=%2Fr0");
+    eight.stop();
+    const nine = boot(chain(9), "/r0");
+    await settle();
+    expect(nine.host.querySelector('[role="alert"]')?.textContent).toBe("E1508 more than 8 guard redirects from /r0");
+    nine.stop();
   });
   it("redirect to an unknown route id is a keel.unexpected naming the target", async () => {
     const guNo = deny("gu.nowhere");
@@ -361,7 +370,7 @@ describe("guards", () => {
     const alert = t.host.querySelector('[role="alert"]');
     expect(alert?.getAttribute("data-keel-error")).toBe("keel.unexpected");
     expect(alert?.textContent).toBe(
-      'guard redirect to "gu.nowhere" failed: Error: E1501 href("gu.nowhere"): no declared route with a path has this id',
+      'guard redirect to "gu.nowhere" failed: Error: E1501 href("gu.nowhere"): no declared page has this id',
     );
     t.stop();
   });
@@ -439,7 +448,7 @@ describe("errors and not found", () => {
     await settle();
     const alert = t.host.querySelector('[role="alert"]');
     expect(alert?.getAttribute("data-keel-error")).toBe("keel.notFound");
-    expect(alert?.textContent).toBe("keel.notFound");
+    expect(alert?.innerHTML).toBe("<h1>Not found</h1>");
     expect(t.router.route.get()).toEqual({ id: null, params: {}, search: {}, pending: false });
     await t.router.navigate(to("/a"));
     await settle();
@@ -698,7 +707,6 @@ describe("Form", () => {
       "fm.a": {
         path: "/fm/:id",
         params: s.object({ id: s.int() }),
-        actions: { POST: act, PUT: act },
         component: () => {
           tryForm("POST", to("/fm/4"));
           tryForm("DELETE", to("/fm/4"));
@@ -707,6 +715,7 @@ describe("Form", () => {
         },
       },
     });
+    rs.actions({ "fm.a": { POST: act, PUT: act } });
     const t = boot(rs, "/fm/4");
     await settle();
     expect(msgs).toEqual([
@@ -735,13 +744,6 @@ describe("Form", () => {
       "fs.page": {
         path: "/p/:id",
         params: s.object({ id: s.int() }),
-        actions: {
-          PUT: action({ input: input }, async (i, at) => {
-            log.push("run");
-            seen.push([i, at.params]);
-            return ok(await Promise.resolve(to("/next")));
-          }),
-        },
         component: () => {
           const f = Form({ method: "PUT", action: to("/p/9"), form: handleOf(log) });
           const box = document.createElement("input");
@@ -750,6 +752,15 @@ describe("Form", () => {
           f.append(box);
           return el("page", [f]);
         },
+      },
+    });
+    rs.actions({
+      "fs.page": {
+        PUT: action({ input: input }, async (i, at) => {
+          log.push("run");
+          seen.push([i, at.params]);
+          return ok(await Promise.resolve(to("/next")));
+        }),
       },
     });
     const t = boot(rs, "/p/9");
@@ -768,10 +779,10 @@ describe("Form", () => {
     const rs = manifest({
       "fv.page": {
         path: "/p",
-        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: to("/p"), form: handleOf(log, false) }),
       },
     });
+    rs.actions({ "fv.page": { POST: action({ input: input }, async () => ok(null)) } });
     const t = boot(rs, "/p");
     await settle();
     const f = t.host.querySelector("form");
@@ -788,10 +799,10 @@ describe("Form", () => {
     const rs = manifest({
       "ff.page": {
         path: "/p",
-        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: to("/p"), form: handleOf(log) }),
       },
     });
+    rs.actions({ "ff.page": { POST: action({ input: input }, async () => ok(null)) } });
     const t = boot(rs, "/p");
     await settle();
     submit(t.host.querySelector("form"));
@@ -805,17 +816,19 @@ describe("Form", () => {
     const rs = manifest({
       "fe.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            throw new Error("nope");
-          }),
-        },
         component: () =>
           Form({
             method: "POST",
             action: to("/p"),
             error: (e) => el(`err:${e.code}`),
           }),
+      },
+    });
+    rs.actions({
+      "fe.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          throw new Error("nope");
+        }),
       },
     });
     const t = boot(rs, "/p");
@@ -834,21 +847,23 @@ describe("Form", () => {
     const rs = manifest({
       "fl.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            if (fail) return err(Boom.make({}));
-            await new Promise<void>((r) => {
-              release = r;
-            });
-            return ok(null);
-          }),
-        },
         component: () =>
           Form({
             method: "POST",
             action: to("/p"),
             error: (e) => el(`err:${e.code}`),
           }),
+      },
+    });
+    rs.actions({
+      "fl.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          if (fail) return err(Boom.make({}));
+          await new Promise<void>((r) => {
+            release = r;
+          });
+          return ok(null);
+        }),
       },
     });
     const t = boot(rs, "/p");
@@ -873,13 +888,15 @@ describe("Form", () => {
     const rs = manifest({
       "fh.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () =>
-            which === "fields" ? err({ code: "keel.fields", message: "f", data: {} }) : err(Boom.make({})),
-          ),
-        },
         component: () =>
           Form({ method: "POST", action: to("/p"), form: handleOf([]), error: (e) => el(`err:${e.code}`) }),
+      },
+    });
+    rs.actions({
+      "fh.page": {
+        POST: action({ input: s.object({}) }, async () =>
+          which === "fields" ? err({ code: "keel.fields", message: "f", data: {} }) : err(Boom.make({})),
+        ),
       },
     });
     const t = boot(rs, "/p");
@@ -898,10 +915,10 @@ describe("Form", () => {
     const rs = manifest({
       "fn.page": {
         path: "/p",
-        actions: { POST: action({ input: input }, async () => ok(null)) },
         component: () => Form({ method: "POST", action: to("/p"), error: (e) => el(`err:${e.code}`) }),
       },
     });
+    rs.actions({ "fn.page": { POST: action({ input: input }, async () => ok(null)) } });
     const t = boot(rs, "/p");
     await settle();
     submit(t.host.querySelector("form"));
@@ -915,13 +932,15 @@ describe("Form", () => {
     const rs = manifest({
       "fd.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            calls.push("run");
-            return ok(null);
-          }),
-        },
         component: () => Form({ method: "POST", action: to("/p") }),
+      },
+    });
+    rs.actions({
+      "fd.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          calls.push("run");
+          return ok(null);
+        }),
       },
     });
     const t = boot(rs, "/p");
@@ -941,7 +960,6 @@ describe("Form", () => {
       "fr.page": {
         path: "/p",
         loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: ++n })),
-        actions: { POST: action({ input: s.object({}) }, async () => ok(null)) },
         component: (p) => {
           const out = el("out");
           const f = Form({ method: "POST", action: to("/p") });
@@ -949,6 +967,7 @@ describe("Form", () => {
         },
       },
     });
+    rs.actions({ "fr.page": { POST: action({ input: s.object({}) }, async () => ok(null)) } });
     const t = boot(rs, "/p");
     await settle();
     expect(n).toBe(1);
@@ -966,14 +985,16 @@ describe("Form", () => {
       "fx.page": {
         path: "/p",
         loader: loader({ output: s.object({}) }, async () => (fail ? err(Boom.make({})) : ok({}))),
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            fail = true;
-            return ok(null);
-          }),
-        },
         component: () => Form({ method: "POST", action: to("/p") }),
         errorElement: ({ error }) => el(`err:${error.code}`),
+      },
+    });
+    rs.actions({
+      "fx.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          fail = true;
+          return ok(null);
+        }),
       },
     });
     const t = boot(rs, "/p");
@@ -989,13 +1010,15 @@ describe("Form", () => {
     const rs = manifest({
       "fz.page": {
         path: "/p",
-        actions: {
-          POST: action({ input: s.object({}) }, async () => {
-            calls.push("run");
-            return ok(null);
-          }),
-        },
         component: () => Form({ method: "POST", action: to("/p") }),
+      },
+    });
+    rs.actions({
+      "fz.page": {
+        POST: action({ input: s.object({}) }, async () => {
+          calls.push("run");
+          return ok(null);
+        }),
       },
     });
     const t = boot(rs, "/p");

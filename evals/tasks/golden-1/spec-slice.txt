@@ -16,6 +16,7 @@ k.errors
 
 k.reactive
 - signal(v), computed(fn), effect(fn, { writes: [] }), resource(fetcher); resource consumed only via Match (E1204); primitives outside a scope E1203
+- resource(fetcher): a Result made by ok/err unwraps (ok(v) -> ready v, err(e) -> error e; a plain { ok, error } object stays ready), so resource(() => client.call(input, ctx)) needs no throw; a throw or rejection is also error
 
 k.store
 - import { store, transaction, tx, invariant, type Store } from '@keel/store'
@@ -30,7 +31,7 @@ k.ctx
 - Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
 
 k.component
-- one default export per file, filename = name: (props, slots?, ctx?) => JSX; export const Props = s.object(...)
+- one default export per file, filename = name: (props, slots?, ctx?) => JSX; export const Props = s.object(...); a plain .ts component (PascalCase file, no JSX, default export a function whose first parameter is typed from Props: (props: Infer<typeof Props>)) may export Props and uses too
 - props are getters, never destructure (E1401); <If when>, <For each key="id">, <Match on={union}><Case tag>; {a && <b/>} is E1403
 - explicit ids on everything a test touches (id="todos.addTodo", id={`todos.row.${t.id}`}); duplicates E1404
 
@@ -39,7 +40,7 @@ k.runtime
 
 k.router
 - import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
-- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, actions: { POST: updateTodo }, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } })
+- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } }); then routes.actions({ 'todos.edit': { POST: updateTodo } }) (a statement; actions are never in an entry: E1505); an action returning ok(routes.href(...)) imports routes.ts, which imports it: import routes.ts (never the *.server.ts) first in tests
 - entry without path = layout, renders {props.children?.()}; a static segment beats :param
 - component receives { params, search, data } (data = loader ok value); errorElement receives { error: KeelError }
 - links: routes.href(id, params?, search?) -> Href, typed by the manifest; Link to, navigate, Form action take Href only (E1501)
@@ -51,7 +52,7 @@ k.router
 
 k.server (declarations, run in the browser by a client deployable)
 - loader({ output, params?, search? }, fn): fn({ params, search, url }, ctx) -> Promise<Result<T, KeelError>>
-- action({ input, params? }, fn): fn(input, { params, url }, ctx) -> Result<Href | null, KeelError>; return a link as `const to: Href = routes.href(...); return ok(to)`
+- action({ input, params? }, fn): fn(input, { params, url }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; the client router refuses `stores`
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' } }); the compiler generates the mount entry; ctx is createCtx({ mode: 'real' })
 
@@ -90,7 +91,7 @@ k.module
 - importing another module's file needs it in deps (E1152) and in its public.exports (E1151); ids, transaction names, error codes prefixed by module id (E1155); used ctx capabilities listed (E1156)
 
 k.scaffold
-- keel scaffold project <name> --workspace | module | route | component | store | transaction; keel codemod rename|move; --dry-run
+- keel scaffold project <name> --workspace (writes <name>/; run it from apps/) | module | route | component | store | transaction; keel codemod rename|move; --dry-run
 
 k.check
 - one export per file, filename = export (E1752); unsafe needs a justification (E1754)

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 // Mutation-killing tests for the ledger: item discovery (buildLedger) and its rendering, file and diff (ledgerCommand).
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
@@ -18,9 +19,11 @@ const prop = (runs: number, seed?: number) => ({
 const test = (path: string, body: string, head = "") =>
   file(path, `${head}import { it } from "vitest";\nit("t", () => {\n  ${body}\n});\n`);
 const FC = 'import fc from "fast-check";\n';
+/** sha256 of the source "a" a test report holds. */
+const SHA_A = createHash("sha256").update("a").digest("hex");
 
 describe("buildLedger", () => {
-  it("lists exported functions sorted by path, with evidence from the same package's tests only", () => {
+  it("lists every export sorted by path, with evidence from the same package's tests only", () => {
     const { items, unsafe } = buildLedger([
       file("packages/a/src/zeta.ts", "export function zeta() {}\n"),
       file("packages/a/src/mid.ts", "export const mid = async () => 1\n"),
@@ -45,6 +48,7 @@ describe("buildLedger", () => {
       "packages/a/src/arrow.ts#arrow",
       "packages/a/src/mid.ts#mid",
       "packages/a/src/ty.ts#ty",
+      "packages/a/src/val.ts#val",
       "packages/a/src/zeta.ts#zeta",
     ]);
     const ev = (name: string) => items.find((i) => i.item.endsWith(`#${name}`))?.evidence;
@@ -244,7 +248,7 @@ describe("buildLedger", () => {
         col: 1,
         message: "clause header not counted by the ledger; name it with // Spec:",
         fix: '-// Clause: One works.\n+// Spec: k.a, clause "One works."',
-        see: "k.testing",
+        see: "k.ledger",
       },
       {
         kind: "diag",
@@ -254,7 +258,7 @@ describe("buildLedger", () => {
         col: 1,
         message: "clause header not counted by the ledger; name it with // Spec:",
         fix: '-// Clause: Two.\n+// Spec: <section>, clause "Two."',
-        see: "k.testing",
+        see: "k.ledger",
       },
     ]);
   });
@@ -279,7 +283,7 @@ describe("ledger command", () => {
       "packages/a/src/bar.ts#bar none none",
       "packages/a/src/baz.ts#baz example property runs 100 packages/a/test/baz2.test.ts +1",
       "packages/a/src/foo.ts#foo probabilistic property runs 100 seed 1337 packages/a/test/foo.test.ts +2",
-      "ok ledger 3 items, 2 verified, 1 unsafe, 0 warnings",
+      "ok ledger 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic",
     ]);
   });
 
@@ -305,16 +309,20 @@ describe("ledger command", () => {
     const files = [...base, file("packages/a/conformance/c.test.ts", '// Clause: One.\nit("t", () => {});\n')];
     const r = await run(["ledger", "--quiet"], { cwd: CWD, files });
     expect(r.code).toBe(0);
-    expect(lines(r.stdout)).toEqual(["ok ledger 3 items, 2 verified, 1 unsafe, 1 warnings"]);
+    expect(lines(r.stdout)).toEqual([
+      "ok ledger 3 items, 2 verified, 1 unsafe, 1 warnings, 2 example, 1 probabilistic",
+    ]);
     const json = await run(["ledger", "--format=json"], { cwd: CWD, files });
     expect(JSON.parse(lines(json.stdout)[0] ?? "")).toMatchObject({ code: "W1706" });
   });
 
-  it("--write <file> writes the ledger file: unsafe, mutation scores, exports, clauses", async () => {
+  it("--write <file> writes the ledger file: unsafe, rungs, mutation claims, exports, clauses", async () => {
     const writes: Write[] = [];
     const report = JSON.stringify({
+      thresholds: { high: 80, low: 60, break: 50 },
       files: {
         "src/a.ts": {
+          source: "a",
           mutants: [{ status: "Killed" }, { status: "Timeout" }, { status: "Survived" }, { status: "Ignored" }],
         },
       },
@@ -323,6 +331,7 @@ describe("ledger command", () => {
       ...base,
       file("spec/kernel/k.a.md", "# k.a\n**Conformance.**\n- One works.\n"),
       file("packages/a/reports/mutation/mutation.json", report),
+      file("packages/a/src/a.ts", "a"),
     ];
     const r = await run(["ledger", "--write", "tooling/ledger/ledger.json"], {
       cwd: CWD,
@@ -330,18 +339,25 @@ describe("ledger command", () => {
       apply: (w) => void writes.push(...w),
     });
     expect(r.code).toBe(0);
-    expect(lines(r.stdout)).toEqual(["ok ledger 4 items, 2 verified, 1 unsafe, 0 warnings"]);
+    expect(lines(r.stdout)).toEqual([
+      "ok ledger 4 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic",
+    ]);
     expect(writes.map((w) => [w.path, w.readonly])).toEqual([["tooling/ledger/ledger.json", false]]);
     expect(JSON.parse(writes[0]?.content ?? "")).toEqual({
       version: 1,
       unsafe: 1,
-      mutationScore: { a: 66.7 },
+      rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
+      mutation: {
+        packages: { a: { score: 66.67, threshold: 50 } },
+        claims: [{ file: "packages/a/src/a.ts", sha: SHA_A, killed: 2, survived: 1, noCoverage: 0, score: 66.67 }],
+      },
       exports: [
         { pkg: "a", name: "bar", file: "packages/a/src/bar.ts", rung: "none" },
         { pkg: "a", name: "baz", file: "packages/a/src/baz.ts", rung: "example" },
         { pkg: "a", name: "foo", file: "packages/a/src/foo.ts", rung: "probabilistic" },
       ],
       clauses: [{ item: "k.a#1", rung: "none" }],
+      a11y: [],
     });
     expect(writes[0]?.content?.endsWith("}\n")).toBe(true);
     const none: Write[] = [];
@@ -349,7 +365,7 @@ describe("ledger command", () => {
     expect(none).toEqual([]);
     const plain: Write[] = [];
     await run(["ledger", "--write", "l.json"], { cwd: CWD, files: base, apply: (w) => void plain.push(...w) });
-    expect(JSON.parse(plain[0]?.content ?? "")).not.toHaveProperty("mutationScore");
+    expect(JSON.parse(plain[0]?.content ?? "")).not.toHaveProperty("mutation");
   });
 
   const committed = (rung: string, path = "tooling/ledger/ledger.json", unsafe = 1) =>
@@ -373,8 +389,8 @@ describe("ledger command", () => {
     expect(writes).toEqual([]);
     expect(lines(r.stdout)).toEqual([
       "E1706 packages/a/src/foo.ts:1:1 ledger rung lowered: packages/a/src/foo.ts#foo exhaustive -> probabilistic",
-      "  see: k.testing",
-      "fail ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 1 lowered, 0 uncovered",
+      "  see: k.ledger",
+      "fail ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic, 1 lowered, 0 uncovered",
     ]);
     const json = await run(["ledger", "--diff", "--format=json"], {
       cwd: CWD,
@@ -456,7 +472,7 @@ describe("ledger command", () => {
     const r = await run(["ledger", "--diff"], { cwd: CWD, files: reversed });
     expect(r.code).toBe(0);
     expect(lines(r.stdout)).toEqual([
-      "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 0 lowered, 0 uncovered",
+      "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic, 0 lowered, 0 uncovered",
     ]);
   });
 
@@ -469,7 +485,7 @@ describe("ledger command", () => {
       const r = await run(["ledger", "--diff"], { cwd: CWD, files });
       expect(r.code).toBe(0);
       expect(lines(r.stdout)).toEqual([
-        "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 0 lowered, 0 uncovered",
+        "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic, 0 lowered, 0 uncovered",
       ]);
     }
   });

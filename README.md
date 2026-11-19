@@ -4,7 +4,7 @@
 
 # Keel
 
-Keel is a full-stack web framework whose primary author is a coding agent. It has 21 packages under `packages/` (15 kernel, 6 `std-*`); `tooling/ledger/ledger.json` lists 225 spec clauses: 63 have property tests, 147 have example tests, and 15 have no test yet. It records 6 `unsafe` uses. Of the 25 spec sections under `spec/`, 19 carry the status `conformance-covered`, 5 are `implemented` (one clause each still short of the strict verdict, backlog 0138), and 1 is `proposed`. `keel ledger --diff` fails the build if a covered section ever has an untested clause (E1707). Status: pre-0.1, nothing is stable. The brand and voice rules are in `docs/BRAND.md` and `docs/VOICE.md`.
+Keel is a full-stack web framework whose primary author is a coding agent. It has 35 packages under `packages/` (15 kernel, 20 `std-*`); `tooling/ledger/ledger.json` lists 603 spec clauses: 162 have property, exhaustive or proof evidence, 440 have example tests, and 1 has no test yet. It records 14 `unsafe` uses. All 59 spec sections under `spec/` carry a status: 57 are `conformance-covered` and 2 are `implemented`. `keel ledger --diff` fails the build if a covered section ever has an untested clause (E1707). Status: pre-0.1, nothing is stable. The brand and voice rules are in `docs/BRAND.md` and `docs/VOICE.md`.
 
 ## Start here
 
@@ -21,6 +21,7 @@ First run: `pnpm install && pnpm check`.
 - [docs/BRAND.md](docs/BRAND.md): palette, type, layout, voice rules.
 - [docs/VOICE.md](docs/VOICE.md): how every sentence is written; enforced by `tooling/voice-lint.mjs`.
 - [docs/ROADMAP.md](docs/ROADMAP.md): milestones and exit criteria.
+- [docs/COMPLIANCE.md](docs/COMPLIANCE.md): what a Keel app gets for accessibility, the content security policy and personal data, what its author still owes, and the signed evidence bundle.
 
 ## Golden apps
 
@@ -31,4 +32,4 @@ To run one, from its directory (`apps/golden-1` or `apps/golden-2`): `pnpm api` 
 
 ## Layout
 
-`docs/` (PRDs, principles, ADRs, process) · `spec/` (kernel and stdlib sections with status) · `tasks/` (backlog, per-task plans) · `packages/` (kernel) · `apps/` · `evals/` (agent benchmark) · `tooling/` (budgets, dependency rules, lints) · `.claude/` (skills, subagents, commands, hooks).
+`docs/` (PRDs, principles, ADRs, process) · `spec/` (kernel and stdlib sections with status) · `tasks/` (backlog, per-task plans) · `packages/` (kernel and stdlib) · `apps/` · `evals/` (agent benchmark) · `tooling/` (budgets, dependency rules, lints) · `.claude/` (skills, subagents, commands, hooks).

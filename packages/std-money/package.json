@@ -16,7 +16,8 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@keel/schema": "workspace:*"
+    "@keel/schema": "workspace:*",
+    "@keel/std-i18n": "workspace:*"
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*",

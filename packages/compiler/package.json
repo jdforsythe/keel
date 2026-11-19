@@ -12,17 +12,33 @@
       "types": "./src/vite.ts",
       "default": "./src/vite.ts"
     },
+    "./routes": {
+      "types": "./src/buildRoutes.ts",
+      "default": "./src/buildRoutes.ts"
+    },
+    "./internal": {
+      "types": "./src/globals/index.ts",
+      "default": "./src/globals/index.ts"
+    },
     "./a11y": {
       "types": "./src/a11y/index.ts",
       "default": "./src/a11y/index.ts"
     },
-    "./entry/*": {
+    "./internal/entry/*": {
       "types": "./src/entry/*.ts",
       "default": "./src/entry/*.ts"
     },
     "./inspect/*": {
       "types": "./src/inspect/*.ts",
       "default": "./src/inspect/*.ts"
+    },
+    "./std/*": {
+      "types": "./src/std/*.ts",
+      "default": "./src/std/*.ts"
+    },
+    "./hosting/*": {
+      "types": "./src/hosting/*.ts",
+      "default": "./src/hosting/*.ts"
     },
     "./testing": {
       "types": "./src/testing/evaluate.ts",
@@ -35,7 +51,7 @@
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs"
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",

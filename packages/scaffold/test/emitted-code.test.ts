@@ -45,6 +45,7 @@ function build(workspace: boolean): Files {
   files = apply("route", { id: "todos.edit", path: "/lists/:listId/todos/:todoId/edit" }, files);
   files = apply("route", { id: "todos.item", path: "/items/:id" }, files);
   files = apply("route", { id: "todos.tagged", path: "/tags/:slug" }, files);
+  files = apply("route", { id: "todos.feed", path: "/api/feed/:slug", api: true }, files);
   files = apply("component", { id: "todos/TodoRow" }, files);
   files = apply("store", { id: "todos.board" }, files);
   files = apply("transaction", { id: "todos.board.addCard" }, files);
@@ -110,7 +111,7 @@ describe("project --workspace", () => {
 
   it("emits index.html and vitest.config.ts, and no turbo, CI or .keel", () => {
     const f = files();
-    expect(f.get("vitest.config.ts")).toContain(`import { KeelReporter } from "@keel/tooling/vitest-reporter";`);
+    expect(f.get("vitest.config.ts")).toContain(`import { keelConfig } from "@keel/tooling/vitest-config";`);
     expect(f.get("vitest.config.ts")).toContain(`environment: "happy-dom"`);
     expect(f.get("vitest.config.ts")).toContain("plugins: [keel()]");
     expect(f.get("index.html")).toContain("/@keel/entry.ts");

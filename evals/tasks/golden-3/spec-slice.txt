@@ -1,0 +1,148 @@
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.head k.server k.services k.forms k.ui k.testing k.ledger k.module k.scaffold k.check k.a11y k.security k.privacy k.evidence std.text std.sessions
+
+Key lines only (current spec, RFCs through 0083). Full text: `pnpm spec <id>`. Guide: docs/COMPLIANCE.md.
+
+k.schema
+- import { s, ok, err, attempt, type Result } from '@keel/schema'
+- s.string({ min, max }) s.number({ min, max }) s.int({ min, max }) s.boolean() s.literal(v) s.enum([...]) s.id('Brand') s.object({...}) s.array(T) s.union('tag', variants) s.record(T) s.json()
+- .optional() = key may be absent; .nullable() = value may be null; distinct
+- type T = s.infer<typeof T>; T.parse(x): Result<T, SchemaError> (parses JSON from T.encode too; there is no decode); T.decodeStrings(FormData | URLSearchParams); gen(T) from '@keel/schema/gen'
+- schemas live only in *.schema.ts, one export per file
+
+k.errors
+- Result<T,E> = { ok: true, value } | { ok: false, error }; ok(v) / err(e); narrow on r.ok
+- KeelError { code, message, data }; kernel codes keel.notFound keel.denied keel.fields keel.conflict keel.unexpected schema.invalid
+- no throw (E1451), no try/catch or .catch() (E1452, use attempt), no discarded Result (E1453)
+
+k.reactive
+- signal(v), computed(fn), effect(fn, { writes: [] }), resource(fetcher); resource consumed only via Match (E1204); primitives outside a scope E1203
+- resource(fetcher): a Result made by ok/err unwraps (ok(v) -> ready v, err(e) -> error e; a plain { ok, error } object stays ready), so resource(() => client.call(input, ctx)) needs no throw; a throw or rejection is also error
+
+k.store
+- import { store, transaction, tx, invariant, type Store } from '@keel/store'
+- store(Schema, initial, { id: 'todos.board' }); transaction(store, 'todos.addTodo', PayloadSchema, (state, payload) => next) is pure (E1302: no ctx, no globals)
+- invariant(store, (state) => boolean), declared once beside the store; a violating tx returns err store.invariant and rolls back
+- reads store.get(key), store.select(fn); writes only tx(t, payload, { meta }?) -> Result; store.log(), undo(), undoWhere(pred), snapshot(), restore(snap)
+- a component that calls tx exports uses = [t] (E1301 otherwise); loaders and actions are unrestricted
+
+k.ctx
+- ctx.clock.now() ctx.random.float() ctx.random.id(brand) (the only way to mint ids) ctx.net.fetch(req) ctx.storage.get(key)/set(key, v) (async)
+- createCtx({ mode: 'sim' | 'real', seed? }) from '@keel/ctx'; sim: net.route(urlPattern, (req) => Response | Promise<Response>), clock.advance(ms)
+- Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
+
+k.component
+- one default export per file, filename = name: (props, slots?, ctx?) => JSX; export const Props = s.object(...); a plain .ts component (PascalCase file, no JSX, default export a function whose first parameter is typed from Props: (props: Infer<typeof Props>)) may export Props and uses too
+- props are getters, never destructure (E1401); <If when>, <For each key="id">, <Match on={union}><Case tag>; {a && <b/>} is E1403
+- explicit ids on everything a test touches (id="todos.addTodo", id={`todos.row.${t.id}`}); duplicates E1404
+
+k.runtime
+- import { If, For, Match, Case } from '@keel/runtime-dom'; mount is the generated entry only; no document/window in app code (E1252)
+
+k.router
+- API route (no component): { 'api.lists': { api: true, path: '/api/lists', loader: loadBoard } } plus routes.actions({ 'api.lists': { POST: postList } }); keeps params, search, loader, guard; refuses component, errorElement, title, layout (E1510); needs a loader or an action; the server answers it with JSON whatever accept says (GET with a loader: { id, results }; GET without one: 405 with allow; a write: the action Result as JSON, never 303; a guard denial: 403 keel.denied); routes.href, Link and navigate take page ids only
+- guard({}, fn) (no redirect) guards API routes only; on a page or layout it is a type error and manifest() throws E1508
+- import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
+- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } }); then routes.actions({ 'todos.edit': { POST: updateTodo } }) (a statement; actions are never in an entry: E1505); an action returning ok(routes.href(...)) imports routes.ts, which imports it: import routes.ts (never the *.server.ts) first in tests
+- entry without path = layout, renders {props.children?.()}; a static segment beats :param
+- component receives { params, search, data } (data = loader ok value); errorElement receives { error: KeelError }
+- links: routes.href(id, params?, search?) -> Href, typed by the manifest; Link to, navigate, Form action take Href only (E1501)
+- guards: export const editable = guard({ redirect: 'todos.index' }, async ({ url }, ctx) => ok(null) | err({ code: 'keel.denied', message, data: null })); file *.guard.ts; the route holds the value (guard: editable)
+- route() { id, params, search, pending }; navigate(href, { replace? })
+- <Form method="POST" action={routes.href(...)} form? error?>: ok(href) navigates, ok(null) revalidates the chain's loaders
+- client deployable: the router runs guards, loaders and actions in the browser; it refuses `stores`
+- E1502 duplicate path, E1503 :param without params field, E1504 required search field, E1505 undeclared verb, E1506 unknown layout, E1507 params/search typed by hand
+
+k.server
+- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, stores }, ctx) -> Promise<Result<T, KeelError>>
+- action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`
+- both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
+- stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
+- topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)
+- createApp({ topology, routes, ctx, deployable: 'api', runners?, peers?, artifacts? }) from '@keel/server' -> Promise<{ fetch(req), close() }> (tests; production runs the generated entry)
+- live loader: loader({ output }, async function* ({ signal }, ctx) { yield ok(v) }); document/JSON GET takes the first yield; accept: text/event-stream gets each yield as a `data:` line (its Result JSON)
+- writes pass the same-site check: send accept: application/json with x-keel: 1 (a services client does)
+- JSON body (content-type application/json) decodes with the action input schema, an empty body as {}; fail: 422 keel.fields naming each bad or missing field, action not called
+- runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; action -> { ok: true, value: null | href } or { ok: false, error: { code, message, data } }
+- status: keel.notFound 404, keel.denied 403, keel.fields 422, keel.conflict 409, other err 400
+- a route may be action-only (an API route: `api: true`, no component; its loader or action is all it has)
+
+k.forms
+- import { form } from '@keel/forms'; const f = form(TodoDraft, { initial?, id? }) in a component; f.field('title') f.values() f.errors() f.pending() f.reset()
+- field id is `<formId>:<path>` (default formId `form-<hash>`), its error element `<formId>:<path>:error`; find it from r.a11y() by label
+- <Form method="POST" action={routes.href('todos.list', { listId })} form={f} error={(e) => <Text>{e.message}</Text>}><Input field={f.field('title')} label="Title" /><Button id="todos.addTodo" type="submit">Add</Button></Form>
+- number fields coerce from input text; invalid submit sends nothing, sets every error, focuses the first invalid field
+- action err keel.fields { [path]: message } sets exactly those errors; other err renders the error slot
+- E1901 input in a Form without field; E1902 unknown path
+
+k.ui
+- tokens.ts: export const tokens = defineTokens({ color: { fg: { light, dark }, bg, accent, danger }, space, radius, font, fontSize })
+- base elements from '@keel/ui': Box Text Heading Button Link Image Input TextArea Select Checkbox
+- required: Heading level; label on Input/TextArea/Select/Checkbox; Link to: Href with text; Button text as children (no label prop)
+- style props take token names only (no class, no styles(), no raw values: E1801): p px py m gap w h bg fg radius font fontSize weight direction align justify; Box as / Text as: section nav main ul li p span
+- event props: Button onClick, Checkbox onChange, Input onInput, Select onChange
+
+k.testing
+- import { render, renderRoute, properties } from '@keel/testing'
+- const t = render(C, { props, state: [[store, value]], ctx }); await t.fire(id, { type: 'click' }); t.find(id) -> { id, role, name, text, state }; t.state(store); t.a11y(); t.dispose()
+- const r = await renderRoute('todos.list', { routes, params, search, ctx }); runs guards and loaders first; r.route(); r.settle()
+- TestEvent: click | input { value } | change | keydown { key } | submit | focus | blur
+- properties(Component | transaction, { runs = 100, seed? }) checks invariants, determinism, undo; factory stores need a scope: `const sc = scope(() => undefined); isolate(sc); const st = sc.run(boardStores); await properties(st.addTodo)` (scope from '@keel/reactive', isolate from '@keel/store'; sc.dispose() after)
+- tests address elements by id only; DOM queries E1701; unknown id E1705
+
+k.module
+- modules/<id>/module.ts: import { module } from '@keel/compiler'; export default module({ id: 'api', deps: ['todos'], capabilities: ['random', 'storage'], public: { exports: [], routes: [] } })
+- importing another module's file needs it in deps (E1152) and in its public.exports (E1151); ids, transaction names, error codes prefixed by module id (E1155); used ctx capabilities listed (E1156)
+
+k.scaffold
+- keel scaffold project <name> --workspace (writes <name>/; run it from apps/) | module | route | component | store | transaction; keel codemod rename|move; --dry-run
+
+k.check
+- one export per file, filename = export (E1752); unsafe needs a justification (E1754)
+- keel check --quiet prints the trailer; keel explain <code>
+
+k.head
+- a path route may declare title: (p) => string from { params, search, data }; a layout has none; the document title is the matched route's title
+- <html lang> is the prefix param's value, else `en`; after a client navigation to another route focus moves to the page's first h1 (tabindex="-1"), else main
+
+k.ledger
+- keel ledger: one item per export (`golden-3:<module>/<file>#<export>`), rung none < example < probabilistic < exhaustive < proven < monitored; a passing test naming the export is example, a 100-run property probabilistic
+- keel ledger --diff: E1706 per lowered item (a11y claims included)
+
+k.a11y
+- target WCAG 2.2 A and AA; required props are types (E1802): Heading level, Image alt or decorative, label on Input/TextArea/Select/Checkbox and on Box as nav or aside, Link text, Button text children
+- autocomplete: Autofill on Input, TextArea, Select, written as the attribute: name, email, tel, street-address, bday, ... or off (the data is not the user's own, or not a purpose)
+- contrast: 4.5:1, 3:1 at fontSize >= 24px or >= 18.66px at weight 700; per scheme and breakpoint; E1804 statically (bg on the element or an ancestor in the same component) and at render (nearest painted ancestor, else #FFFFFF)
+- no tabindex, order, position, z-index or outline exist: focus order is document order; direction row-reverse/column-reverse over two or more focusable elements is E1820
+- harness: t.focusOrder() -> ids of focusable elements in sequential order (no disabled or hidden ones)
+- render checks after the first render, every fire and settle(): a11y.json roles (E1702), axe-core wcag2a/2aa/21a/21aa/22aa rules (E1703; renderRoute also runs document-title, html-has-lang, landmark-one-main, region, bypass), render contrast (E1804), a data-k-pii control without autocomplete (E1821)
+- renderRoute renders the document: <html lang>, <title>, the chain as the main landmark unless it renders one
+- claims: keel test writes reports/a11y.json; keel ledger emits a11y:<routeId>#<criterion> at example when a passing renderRoute test rendered the route and every rule mapped to the criterion ran with no violation; else none. A claim is about the checks, not the criterion
+
+k.security
+- every createApp response: X-Content-Type-Options nosniff, Referrer-Policy same-origin, Cross-Origin-Opener-Policy same-origin, Cross-Origin-Resource-Policy same-origin, X-Frame-Options DENY, Permissions-Policy camera=(), microphone=(), payment=(), usb=(); on https also Strict-Transport-Security
+- every document: Content-Security-Policy (Report-Only in dev) default-src 'none'; script-src 'nonce-<n>' 'strict-dynamic'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; report-uri /__keel/csp; report-to keel-csp
+- the nonce is new per response; the policy has no option: no inline script or style, no style attribute, no on* attribute, no other origin
+- POST /__keel/csp logs one { kind: 'csp', directive, blocked, route } record per report
+- E1570 a literal absolute http(s) URL in src, action, Image src, ... (fix: none); E1571 a literal absolute http(s) URL given to ctx.net.fetch or service({ base }) in client-reachable code
+
+k.privacy
+- schema.pii(class) marks a node and everything under it as personal data, in a *.schema.ts file; PiiClass: name, contact, location, identifier, financial, special, network, content
+- the mark keeps the type and parse/encode/decodeStrings/gen; doc() appends pii(<class>); JSON Schema x-keel-pii
+- import { piiPaths, piiValues } from '@keel/schema': piiPaths(schema) -> { path, class }[]; piiValues(schema, value) -> the non-empty strings and numbers under marked paths
+- sinks: sessions replace marked values with generated ones; a control bound to a marked path carries data-k-pii and its input reaches observers as x repeated; a diag log record holds [pii] for each marked value of the request's input, loader outputs and store states; the evidence bundle holds no app value
+- E1111 a .pii() node in a route's params or search schema (fix: none); E1105 reveal outside *.server.ts
+
+k.evidence
+- keel evidence [--out <dir>] [--audit <file>]: runs test, check and ledger; writes manifest.json, manifest.sig, check.ndjson, ledger.ndjson, a11y.json, security.json, pii.json, deps.json; no network request
+- KEEL_EVIDENCE_KEY: an Ed25519 private key, PKCS#8 PEM, from the environment only (E1061); keyId = first 16 hex of SHA-256 of the raw public key
+- keel evidence --verify <dir> [--key <keyId>]: E1062 a file missing, changed or extra; E1063 bad signature or another keyId; ok evidence <dir> 6 files key <keyId>
+- failing runs still write the bundle and exit 1 with E1060
+
+std.text
+- import { line, para, Email } from '@keel/std-text': line({ min = 1, max }) one line of text, para({ min = 1, max }) allows line breaks, Email an ASCII address; s.string() for machine strings (ids, hashes)
+
+std.sessions
+- stdlib module `sessions` (`@keel/std-sessions`): topology places `sessions` beside your modules; module.ts std: { '@keel/std-sessions': { readers: [] } } lists the caller hashes that may read sessions; `@keel/std-sessions/routes` exports `routes` (POST /sessions ingest, GET /sessions/list for readers) on a node deployable (E2005)
+- record(ctx, { limit?, upload? }) from '@keel/std-sessions': upload is new URL('/sessions', <the page's origin>); the first error uploads the session through session(ctx)
+- session(ctx) from '@keel/std-sessions': put(url, s), id(); on a sim ctx taken() lists what was put
+- .pii() marks redact in sessions beside each module's redact entries; s.secret fields always go

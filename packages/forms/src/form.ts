@@ -1,18 +1,22 @@
+import { quiet } from "@keel/ctx/internal";
 import { batch, effect, owner, signal } from "@keel/reactive";
 import { formHandle } from "@keel/router/internal";
-import type { Infer, ObjectSchema, Result, SchemaError } from "@keel/schema";
+import { type Infer, type ObjectSchema, type Result, type SchemaError, pathToString } from "@keel/schema";
 import { asSchemaValue } from "../unsafe/asSchemaValue.ts";
 import type { Bindable } from "./internal/Bindable.ts";
 import type { Reading } from "./internal/Reading.ts";
 import { claimFormId } from "./internal/claimFormId.ts";
 import { describedBy } from "./internal/describedBy.ts";
 import { documentOrder } from "./internal/documentOrder.ts";
+import { edited } from "./internal/edited.ts";
 import { fieldMessages } from "./internal/fieldMessages.ts";
 import { fieldPathError } from "./internal/fieldPathError.ts";
 import { formatValue } from "./internal/formatValue.ts";
 import { getAt } from "./internal/getAt.ts";
 import { issueMessages } from "./internal/issueMessages.ts";
+import { markDefault } from "./internal/markDefault.ts";
 import { nodeAt } from "./internal/nodeAt.ts";
+import { piiClassAt } from "./internal/piiClassAt.ts";
 import { readElement } from "./internal/readElement.ts";
 import { setAt } from "./internal/setAt.ts";
 import { shapeHash } from "./internal/shapeHash.ts";
@@ -23,9 +27,11 @@ import { withUnmapped } from "./internal/withUnmapped.ts";
 import { without } from "./internal/without.ts";
 import type { DeepPartial } from "./types/DeepPartial.ts";
 import type { Field } from "./types/Field.ts";
+import type { FieldIssue } from "./types/FieldIssue.ts";
 import type { FieldPath } from "./types/FieldPath.ts";
 import type { FormState } from "./types/FormState.ts";
 import type { PathValue } from "./types/PathValue.ts";
+import type { Unbranded } from "./types/Unbranded.ts";
 
 type Messages = Readonly<Record<string, string>>;
 
@@ -35,7 +41,12 @@ type Messages = Readonly<Record<string, string>>;
  */
 export function form<S extends ObjectSchema<object>, T extends object = Infer<S>>(
   schema: ObjectSchema<T> & S,
-  options: { readonly initial?: DeepPartial<NoInfer<T>>; readonly id?: string } = {},
+  options: {
+    readonly initial?: DeepPartial<NoInfer<T>>;
+    readonly id?: string;
+    /** A field's error text for each issue; without it, English from the rule and constraint (k.forms Validation). */
+    readonly issueText?: (issue: FieldIssue) => string;
+  } = {},
 ): FormState<T> {
   const typed: ObjectSchema<T> = schema;
   const root = typed.node;
@@ -62,7 +73,14 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
   };
   const validateField = (path: string): void => {
     const parsed = typed.parse(candidate());
-    const message = parsed.ok ? undefined : issueMessages(root, parsed.error.data.issues, [path])[path];
+    // Only this field's issues (its own, an ancestor's, the root's), so `issueText` sees no other field's.
+    const mine = parsed.ok
+      ? []
+      : parsed.error.data.issues.filter((i) => {
+          const key = pathToString(i.path);
+          return key === "" || key === path || path.startsWith(`${key}.`);
+        });
+    const message = mine.length === 0 ? undefined : issueMessages(root, mine, [path], options.issueText)[path];
     const current = errs.get();
     if (message !== undefined) {
       shown.add(path);
@@ -71,7 +89,9 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
   };
   const validateAll = (): Result<T, SchemaError> => {
     const parsed = typed.parse(candidate());
-    setErrors(parsed.ok ? {} : withUnmapped(issueMessages(root, parsed.error.data.issues, known), known));
+    setErrors(
+      parsed.ok ? {} : withUnmapped(issueMessages(root, parsed.error.data.issues, known, options.issueText), known),
+    );
     return parsed;
   };
   const focusFirstInvalid = (): void => {
@@ -80,7 +100,8 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
       .filter(([p]) => Object.hasOwn(current, p))
       .flatMap(([, set]) => [...set])
       .filter((el) => el.isConnected);
-    els.sort(documentOrder)[0]?.focus();
+    // Kernel focus, not user input: not reported to ctx observers (rfc:0070).
+    quiet(() => els.sort(documentOrder)[0]?.focus());
   };
   const reset = (): void =>
     batch(() => {
@@ -96,6 +117,7 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
     const node = segs.length === 0 ? undefined : nodeAt(root, segs);
     if (node === undefined) throw fieldPathError(path);
     known.add(path);
+    const pii = piiClassAt(typed, segs);
     let id = `${formId}:${path}`;
     let errorId = `${id}:error`;
     const write = (r: Reading): void =>
@@ -154,6 +176,8 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
       blur,
       bind: (el) => {
         el.name = path;
+        // A control bound to personal data says so; the ctx observer then masks it as a password (k.privacy).
+        if (pii !== undefined) el.setAttribute("data-k-pii", pii);
         if (!(el instanceof HTMLInputElement && el.type === "radio")) {
           // An id already on the element wins over the counter-derived one (D19); errorId follows it.
           if (el.id === "") el.id = id;
@@ -171,7 +195,20 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
         };
         el.addEventListener("input", onInput);
         el.addEventListener("blur", blur);
-        const effects = [effect(() => sync(el)), effect(() => aria(el))];
+        // A control the user changed before bind (server HTML, then edits before the runtime loaded) keeps that
+        // value: the field takes it, and its markup default stays the server's (rfc:0062, backlog 0180).
+        let first = !edited(el);
+        if (!first) onInput();
+        const effects = [
+          effect(() => {
+            sync(el);
+            // The first render's value is also the markup default: server HTML shows it; later writes, the user's
+            // included, change the property only. An `s.secret` field writes none.
+            if (first && unwrap(node).kind !== "secret") markDefault(el);
+            first = false;
+          }),
+          effect(() => aria(el)),
+        ];
         let done = false;
         const unbind = (): void => {
           if (done) return;
@@ -191,8 +228,8 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
   return {
     field: <P extends FieldPath<T> | (string & {})>(
       path: string extends P ? P : P & FieldPath<T>,
-    ): Field<string extends P ? unknown : PathValue<T, P & string>> =>
-      makeField<string extends P ? unknown : PathValue<T, P & string>>(path),
+    ): Field<string extends P ? unknown : Unbranded<PathValue<T, P & string>>> =>
+      makeField<string extends P ? unknown : Unbranded<PathValue<T, P & string>>>(path),
     values: () => asSchemaValue<DeepPartial<T>>(vals.get()),
     errors: () => errs.get(),
     pending: () => pendingSignal.get(),

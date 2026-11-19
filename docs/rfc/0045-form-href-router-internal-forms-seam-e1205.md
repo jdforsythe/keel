@@ -68,3 +68,6 @@ Backlog 0113, 0114, 0112, and the router, forms, and scaffold parts of 0065 (doc
 
 ## Token impact
 k.router 1478 -> 1477 (net of this RFC's +1 conformance bullet and the trims; RFC 0043 edits the same file). k.reactive 487 -> 525. k.forms +12 for the example. All are within 1,500.
+
+## Amendment
+RFC 0063 (ADR-0052, backlog 0114) replaces the `const to: Href` binding. Actions attach with `routes.actions({...})` after the manifest, and an action returns `ok(routes.href(...))`.

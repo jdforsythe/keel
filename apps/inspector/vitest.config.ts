@@ -1,12 +1,10 @@
 import keel from "@keel/compiler/vite";
-import { KeelReporter } from "@keel/tooling/vitest-reporter";
-import { defineConfig } from "vitest/config";
+import { keelConfig } from "@keel/tooling/vitest-config";
 
-export default defineConfig({
+export default keelConfig({
   plugins: [keel()],
   test: {
     include: ["test/**/*.test.{ts,tsx}"],
     environment: "happy-dom",
-    reporters: [new KeelReporter()],
   },
 });

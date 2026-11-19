@@ -1,11 +1,23 @@
+import type { KeelError } from "@keel/schema";
+import type { ServedRoute } from "./ServedRoute.ts";
 import { isRecord } from "./isRecord.ts";
+import { readError } from "./readError.ts";
+import { readRoute } from "./readRoute.ts";
 
-/** Read `<script type="application/json" id="k-state">` under `root` (else in its document). */
+/**
+ * Read `<script type="application/json" id="k-state">` under `root` (else in its document), with its served `route`
+ * and the served page's failed loader `error`, if any.
+ */
 export function readState(
   root: Element,
   warnings: string[],
-): { stores: Record<string, unknown>; islands: Record<string, unknown> } {
-  const empty = { stores: {}, islands: {} };
+): {
+  stores: Record<string, unknown>;
+  islands: Record<string, unknown>;
+  route: ServedRoute | null;
+  error: KeelError<string, { readonly at?: string }> | null;
+} {
+  const empty = { stores: {}, islands: {}, route: null, error: null };
   const script = root.querySelector("script#k-state") ?? root.ownerDocument.getElementById("k-state");
   if (script === null) return empty;
   let raw: unknown;
@@ -22,5 +34,7 @@ export function readState(
   return {
     stores: isRecord(raw.stores) ? raw.stores : {},
     islands: isRecord(raw.islands) ? raw.islands : {},
+    route: readRoute(raw.route),
+    error: readError(raw.error),
   };
 }

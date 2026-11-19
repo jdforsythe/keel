@@ -7,6 +7,7 @@ import type { IntrinsicKind } from "./IntrinsicKind.ts";
 import type { ReactiveDecl } from "./ReactiveDecl.ts";
 import type { Span } from "./Span.ts";
 import { coverage } from "./coverage.ts";
+import { patternIdents } from "./patternIdents.ts";
 import { patternNames } from "./patternNames.ts";
 
 const INTRINSICS: ReadonlySet<string> = new Set(["If", "For", "Match", "Case", "Boundary"]);
@@ -55,6 +56,7 @@ export function analyze(file: SourceFile): Analysis {
     parseErrors: parsed.errors.map((e) => ({ message: e.message, start: e.labels[0]?.start ?? 0 })),
     jsx: [],
     imports: [],
+    dynamicImports: [],
     intrinsics: new Map(),
     functions: [],
     idents: [],
@@ -66,6 +68,7 @@ export function analyze(file: SourceFile): Analysis {
     reactive: [],
     consts: new Map(),
     effects: [],
+    calls: [],
   };
   const excluded: Span[] = [];
   const candidates: { name: string; start: number; end: number }[] = [];
@@ -86,7 +89,7 @@ export function analyze(file: SourceFile): Analysis {
   const exitScope = (): void => void scopes.pop();
   const params = (ps: ParamPattern[], scope: Span): void => {
     for (const p of ps) {
-      a.bindings.push(span(p));
+      a.bindings.push(...patternIdents(p));
       declare(patternNames(p), scope);
     }
   };
@@ -105,6 +108,16 @@ export function analyze(file: SourceFile): Analysis {
   new Visitor({
     JSXElement: (n) => void a.jsx.push(n),
     JSXFragment: (n) => void a.jsx.push(n),
+    ImportExpression: (n) => {
+      const s = n.source;
+      const text =
+        s.type === "Literal"
+          ? s.value
+          : s.type === "TemplateLiteral" && s.expressions.length === 0
+            ? s.quasis[0]?.value.cooked
+            : null;
+      if (typeof text === "string") a.dynamicImports.push({ source: text, start: n.start });
+    },
     ImportDeclaration: (n) => {
       a.imports.push(n);
       a.bindings.push(span(n));
@@ -156,7 +169,7 @@ export function analyze(file: SourceFile): Analysis {
       for (const d of n.declarations) declare(patternNames(d.id), scope);
     },
     VariableDeclarator: (n) => {
-      a.bindings.push(span(n.id));
+      a.bindings.push(...patternIdents(n.id));
       const init = n.init;
       if (n.id.type !== "Identifier" || init === null) return;
       const name = n.id.name;
@@ -167,12 +180,13 @@ export function analyze(file: SourceFile): Analysis {
       }
     },
     CallExpression: (n) => {
+      if (n.callee.type === "Identifier") a.calls.push(n);
       if (n.callee.type === "Identifier" && n.callee.name === "effect") a.effects.push(span(n));
     },
     CatchClause: (n) => {
       enterScope(n);
       if (n.param) {
-        a.bindings.push(span(n.param));
+        a.bindings.push(...patternIdents(n.param));
         declare(patternNames(n.param), span(n));
       }
     },

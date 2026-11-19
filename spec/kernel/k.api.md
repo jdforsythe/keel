@@ -1,0 +1,52 @@
+# k.api: API routes
+status: conformance-covered
+
+**Purpose.** A route that answers JSON has no view. It is declared in the module's one manifest (k.router), marked so no page can lose its view by omission.
+
+**Entry.** An entry of `manifest()` is one of three kinds, told apart by required members:
+
+| Kind | Requires | Refuses |
+| --- | --- | --- |
+| page | `path`, `component` | `api` |
+| layout | `component`, no `path` | `api` |
+| API route | `api: true`, `path` | `component`, `errorElement`, `title`, `layout` |
+
+```ts
+export const routes = manifest({
+  'api.lists': { api: true, path: '/api/lists', loader: loadBoard },
+  'ops.home': { path: '/', component: Home },
+})
+routes.actions({ 'api.lists': { POST: postList } })
+```
+An API route keeps `params`, `search`, `loader` and `guard`, takes its actions through `routes.actions`, and has a loader or an action. A guard's `redirect` is optional: a guard without one guards API routes only, and on a page or layout it is a type error and `manifest()` throws E1508 (k.guards). In `routes.json` an API route's entry has `api: true`.
+
+**Requests.** The server answers an API route as a runtime request (k.server) whatever `accept` says; it renders no HTML and is no island root.
+- GET with a loader: `{ id, results }` as JSON with the loader's status. With `accept: text/event-stream` on a live loader: the stream.
+- GET without a loader: 405 with `allow` listing its action methods.
+- A write: the same-site check, then the action's `Result` as JSON (Output); never 303.
+- A guard denial: 403 `keel.denied` as JSON; the guard's `redirect` is not followed.
+- Every error status of k.server, as the `Result` JSON.
+
+**Output.** An API route's action declares `output`, a schema, and a page's action does not (E1512): `action({ input, output, params?, stores? }, fn)`, whose `fn` returns `Result<T, KeelError>` for `output`'s type `T`. An `ok` value is parsed by `output` before any store is saved (fail: E1554, nothing saved), then the stores are saved (k.server Server state), then the answer is 200 `application/json` `{ "ok": true, "value": <encoded> }`; a 409 `keel.conflict` sends no value. A write that answers nothing declares `output: s.object({})` and returns `ok({})`. Every write's answer is `Cache-Control: no-store`. `output` holds no `s.secret` (k.privacy).
+
+**Bearer.** An API route's guard, loader and action get `bearer: Secret<string> | undefined` beside `caller`, from the `authorization` header; a page's action has none, and a page's guard and loader get `undefined`. The header's value, less leading and trailing whitespace, is the scheme `Bearer` in any letter case, one or more spaces, then 1 to 4,096 characters of `A-Z a-z 0-9 - . _ ~ + /` and any trailing `=`. Anything else is `undefined`: no header, another scheme, an empty or longer token, a space inside it, or two headers (joined by `, `); it is no error and is not logged. The token is a `Secret` before app code runs (k.privacy). `bearer` and `caller` are independent: neither reads the other's header, and the same-site check of a write is unchanged. A response to a request carrying `authorization` is `Cache-Control: no-store`.
+
+**Calling.** `routes.href` takes page ids only, so `Link`, `navigate` and `Form action` cannot name an API route; a guard `redirect` naming one is E1508 at the first read of the table. `matchHref` returns `null` for an API route's path and the client router matches none, so a link to one is a document request. Modules call an API route through `service({ module })` (k.services).
+
+**Rules.** E1510 an entry with neither `component` nor `api: true`, or with `api` other than `true`; an API route with `component`, `errorElement`, `title` or `layout`, without `path`, or with neither a loader nor an action. A type error where the literal is checked; `manifest()` throws it for the entry, `routes.actions` or the first read of the table for a missing loader and action. Fix: remove the refused member; none for a missing `component` · E1511 an API route in a module a `client` or `static` deployable serves (k.topology); reported from `topology.ts`, thrown by `createApp`; no fix · E1512 an action without `output` on an API route, or with one on a page; a type error, and `routes.actions` throws it; no fix.
+
+**Conformance.**
+- An entry with neither `component` nor `api: true` does not compile, and `manifest()` throws E1510 for it.
+- An API entry with `component` does not compile and throws E1510.
+- `routes.href` of an API route's id does not compile; `matchHref` of its path is `null`.
+- E1510 has a triggering fixture and a clean one.
+- A GET with `accept: text/html` to an API route with a loader gets the JSON body and status a runtime GET gets.
+- A GET to an API route without a loader is 405 with `allow` listing its action methods.
+- A form POST to an API route gets the action's `Result` as JSON with no `Location`.
+- A denying guard with a `redirect` answers 403 `keel.denied` and no `Location`.
+- A guard without `redirect` on an API route denies with 403 `keel.denied`; on a page it does not compile and `manifest()` throws E1508.
+- `createApp` for a `client` deployable serving an API route throws E1511.
+- An action with `output: s.object({ n: s.int() })` returning `ok({ n: 1 })` answers 200 `{ "ok": true, "value": { "n": 1 } }`, `cache-control: no-store`; returning `ok({ n: 0.5 })`, 500 and no store saved.
+- An API route's action without `output`, and a page's with one, do not compile, and `routes.actions` throws E1512.
+- With `authorization` `Bearer abc`, `bearer abc` or `BEARER  abc=`, an API route's guard, loader and action get a `bearer` revealing `abc` (`abc=`); with `Basic abc`, `Bearer`, `Bearer a b`, a 4,097-character token or two headers, `undefined`; on a page, `undefined`.
+- A GET to an API route with `authorization` answers `cache-control: no-store`.

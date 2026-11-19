@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Unit and property tests (seed 1337) for the pure internals of the request flow.
 import type { RouteDef } from "@keel/router";
-import { compileRoutes, compileTable, needsBare } from "@keel/router/internal";
+import { compileRoutes, compileTable, needsBare, routeActions } from "@keel/router/internal";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -16,6 +16,7 @@ import { nearestErrorElement } from "../src/internal/nearestErrorElement.ts";
 import { notFound } from "../src/internal/notFound.ts";
 import { publicError } from "../src/internal/publicError.ts";
 import { reqLine } from "../src/internal/reqLine.ts";
+import { seeOf } from "../src/internal/seeOf.ts";
 import { selectDeployable } from "../src/internal/selectDeployable.ts";
 import { stateJson } from "../src/internal/stateJson.ts";
 import { statusOf } from "../src/internal/statusOf.ts";
@@ -30,14 +31,12 @@ const tableOf = (routes: Record<string, RouteDef>) => compileTable(compileRoutes
 const loaderStub = { kind: "keel.loader" as const, output: s.object({}), run: () => Promise.resolve(ok({})) };
 
 describe("selectDeployable", () => {
+  const shop = { path: "/shop", component: p };
+  routeActions.set(shop, { POST: { kind: "keel.action", input: s.object({}), run: () => ok(null) } });
   const table = tableOf({
     "app.home": { path: "/", component: p },
     "orders.show": { path: "/orders/:id", params: s.object({ id: s.string() }), component: p },
-    "shop.list": {
-      path: "/shop",
-      component: p,
-      actions: { POST: { kind: "keel.action", input: s.object({}), run: () => ok(null) } },
-    },
+    "shop.list": shop,
     "blog.list": { path: "/blog", component: p, loader: loaderStub },
   });
   const mods = new Set(["app", "orders", "shop", "blog"]);
@@ -101,7 +100,7 @@ describe("messages and fields", () => {
     fd.append("b", "3");
     fd.append("f", new File(["x"], "pic.png"));
     fd.append("e", "");
-    expect(valuesOf(fd)).toEqual({ a: "1", b: ["2", "3"], f: "pic.png", e: "" });
+    expect(valuesOf(fd, s.object({}).node)).toEqual({ a: "1", b: ["2", "3"], f: "pic.png", e: "" });
   });
 });
 
@@ -142,18 +141,18 @@ describe("rendering helpers", () => {
   });
 
   it("documentHtml wraps in <main> once and shows the dev panel only when given", () => {
-    const d = documentHtml("<p>x</p>", { a: 1 }, null, null);
+    const d = documentHtml("<p>x</p>", { a: 1 }, null, null, "", "en", "n0");
     expect(d).toContain("<body><main><p>x</p></main><script");
     expect(d).not.toContain("data-k-dev");
-    expect(documentHtml('<main id="m">x</main>', {}, null, null)).not.toContain("<main><main");
-    expect(documentHtml("<mainx>", {}, null, null)).toContain("<main><mainx>");
-    expect(documentHtml("<MAIN>x</MAIN>", {}, null, null)).not.toContain("<main><MAIN>");
-    expect(documentHtml("x", {}, "E1554 <bad>", null)).toContain(
+    expect(documentHtml('<main id="m">x</main>', {}, null, null, "", "en", "n0")).not.toContain("<main><main");
+    expect(documentHtml("<mainx>", {}, null, null, "", "en", "n0")).toContain("<main><mainx>");
+    expect(documentHtml("<MAIN>x</MAIN>", {}, null, null, "", "en", "n0")).not.toContain("<main><MAIN>");
+    expect(documentHtml("x", {}, "E1554 <bad>", null, "", "en", "n0")).toContain(
       '<pre role="alert" data-k-dev="diag">E1554 &lt;bad&gt;</pre>',
     );
     expect(d).not.toContain('type="module"');
-    expect(documentHtml("x", {}, null, "/@keel/entry.ts")).toContain(
-      '<script type="module" src="/@keel/entry.ts"></script></body>',
+    expect(documentHtml("x", {}, null, "/@keel/entry.ts", "", "en", "n0")).toContain(
+      '<script type="module" src="/@keel/entry.ts" nonce="n0"></script></body>',
     );
     expect(d.startsWith('<!doctype html><html lang="en">')).toBe(true);
     expect(d.endsWith('<script type="application/json" id="k-state">{"a":1}</script></body></html>')).toBe(true);
@@ -169,6 +168,7 @@ describe("small pure helpers", () => {
           "keel.denied": 403,
           "keel.fields": 422,
           "keel.unexpected": 500,
+          "keel.unreachable": 502,
         };
         expect(statusOf(c)).toBe(Object.hasOwn(known, c) ? known[c] : 400);
       }),
@@ -222,6 +222,7 @@ describe("small pure helpers", () => {
     const d = { code: "E1554", message: "m" };
     expect(diagLine("compact", d)).toBe("E1554 m");
     expect(JSON.parse(diagLine("json", d))).toEqual({ kind: "diag", code: "E1554", message: "m", see: "k.server" });
+    expect(JSON.parse(diagLine("json", { code: "E1508", message: "loop" }))).toMatchObject({ see: "k.guards" });
     expect(notFound("/u")).toEqual({ code: "keel.notFound", message: "keel.notFound", data: { url: "/u" } });
     const e = codedError("E1", "msg");
     expect(e.message).toBe("E1 msg");
@@ -234,5 +235,33 @@ describe("small pure helpers", () => {
         { code: "keel.unexpected", message: "u2", data: {} },
       ]),
     ).toBe("u1");
+  });
+});
+
+describe("seeOf", () => {
+  it("maps a kernel code to the section owning its block (spec map Code ranges), else k.server", () => {
+    const cases: readonly (readonly [string, string])[] = [
+      ["E1000", "k.compiler"],
+      ["E1057", "k.cli"],
+      ["E1203", "k.reactive"],
+      ["E1499", "k.errors"],
+      ["E1500", "k.router"],
+      ["E1508", "k.guards"],
+      ["E1549", "k.router"],
+      ["E1550", "k.server"],
+      ["E1555", "k.server"],
+      ["E1558", "k.topology"],
+      ["E1601", "k.ctx"],
+      ["E1799", "k.check"],
+      ["E1800", "k.ui"],
+      ["E1899", "k.ui"],
+      ["E1903", "k.forms"],
+      ["E2001", "k.server"],
+      ["E0005", "k.server"],
+      ["E15081", "k.server"],
+      ["xE1508", "k.server"],
+      ["keel.unexpected", "k.server"],
+    ];
+    for (const [code, see] of cases) expect(seeOf(code)).toBe(see);
   });
 });

@@ -3,6 +3,11 @@ import { fail } from "./fail.ts";
 
 /** Rounds `settle` waits at most before reporting work that never goes quiet. */
 const MAX_ROUNDS = 50;
+/**
+ * Macrotask turns `settle` waits at most while `busy` names work in flight (a loader awaiting a first dynamic
+ * `import()`, which resolves on I/O, not on microtasks). A turn count, not a clock: about seconds of I/O in practice.
+ */
+const MAX_BUSY_TURNS = 200_000;
 /** Microtask hops per round before its macrotask turn: one `await Promise.resolve()` each. */
 const ROUND_HOPS = 16;
 
@@ -28,39 +33,68 @@ const logSizes = (): string => [...stores()].map(([id, st]) => `${id}:${st.log()
 
 /**
  * Run `act`, then wait without timers until triggered work is quiescent: rounds of microtask hops; a round that
- * saw no change then waits until the microtask queue has drained (one macrotask turn, RFC 0036), so a silent
+ * saw no change then waits until the microtask queue has drained (one macrotask turn), so a silent
  * promise chain of any length finishes. Done after
  * two consecutive rounds with no DOM mutation under `root` (MutationObserver) and no change in any store's log
- * length, while `busy()` is false (e.g. a router navigation in flight). More than 50 rounds throws `keel.unexpected`
- * "fire did not settle". Deterministic: no clock, no timers.
+ * length, while `busy()` is null (it names a router navigation's route while one is in flight). A round while busy
+ * with nothing moving waits one macrotask turn and does not count toward the 50 quiet-bound rounds; more than 50
+ * moving rounds, or `MAX_BUSY_TURNS` busy turns, throws `keel.unexpected` "fire did not settle" (with the pending
+ * route id). Without `root` only store logs count. Deterministic: no clock, no timers.
  */
-export async function settle(root: Element, act: () => void, busy: () => boolean = () => false): Promise<void> {
+export async function settle(
+  root: Element | undefined,
+  act: () => void,
+  busy: () => string | null = () => null,
+): Promise<void> {
   let mutations = 0;
-  const observer = new MutationObserver((records) => {
-    mutations += records.length;
-  });
-  observer.observe(root, { subtree: true, childList: true, attributes: true, characterData: true });
+  const observer =
+    root === undefined
+      ? undefined
+      : new MutationObserver((records) => {
+          mutations += records.length;
+        });
+  if (root !== undefined)
+    observer?.observe(root, { subtree: true, childList: true, attributes: true, characterData: true });
   try {
     act();
     let quiet = 0;
     let last = logSizes();
-    const active = (): boolean => {
-      mutations += observer.takeRecords().length;
-      return mutations > 0 || logSizes() !== last || busy();
+    const changed = (): boolean => {
+      mutations += observer?.takeRecords().length ?? 0;
+      return mutations > 0 || logSizes() !== last;
     };
-    for (let round = 0; round < MAX_ROUNDS; round++) {
+    let turns = 0;
+    for (let round = 0; round < MAX_ROUNDS; ) {
       for (let hop = 0; hop < ROUND_HOPS; hop++) await Promise.resolve();
       // Only a round that looks quiet waits for the queue to drain: work that keeps writing never reaches it, so a
       // microtask loop that never stops still ends in "fire did not settle" instead of starving the macrotask.
-      if (!active()) await drained();
-      const moved = active();
+      if (!changed() && busy() === null) await drained();
+      const moved = changed();
+      const pending = busy();
       mutations = 0;
       last = logSizes();
-      quiet = moved ? 0 : quiet + 1;
+      if (pending !== null && !moved) {
+        // Waiting on I/O (a module load): one macrotask turn, counted apart from the quiet-bound rounds.
+        if (++turns > MAX_BUSY_TURNS)
+          throw fail("keel.unexpected", `fire did not settle: ${pending} still loading`, {
+            rounds: round,
+            route: pending,
+          });
+        await drained();
+        quiet = 0;
+        continue;
+      }
+      round++;
+      quiet = moved || pending !== null ? 0 : quiet + 1;
       if (quiet === QUIET_ROUNDS) return;
     }
-    throw fail("keel.unexpected", "fire did not settle", { rounds: MAX_ROUNDS });
+    const pending = busy();
+    throw fail(
+      "keel.unexpected",
+      `fire did not settle${pending === null ? "" : `: ${pending} still loading`}`,
+      pending === null ? { rounds: MAX_ROUNDS } : { rounds: MAX_ROUNDS, route: pending },
+    );
   } finally {
-    observer.disconnect();
+    observer?.disconnect();
   }
 }

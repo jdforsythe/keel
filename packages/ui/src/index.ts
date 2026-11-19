@@ -1,4 +1,5 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
+export { contrastTable } from "./contrastTable.ts";
 export { defineTokens } from "./defineTokens.ts";
 export { TokenSchema } from "./TokenSchema.ts";
 export { Box } from "./elements/Box.ts";
@@ -11,7 +12,9 @@ export { Link } from "./elements/Link.ts";
 export { Select } from "./elements/Select.ts";
 export { Text } from "./elements/Text.ts";
 export { TextArea } from "./elements/TextArea.ts";
+export type { Autofill } from "./types/Autofill.ts";
 export type { Child } from "./types/Child.ts";
+export type { ContrastRow } from "./types/ContrastRow.ts";
 export type { Children } from "./types/Children.ts";
 export type { ColorValue } from "./types/ColorValue.ts";
 export type { Responsive } from "./types/Responsive.ts";

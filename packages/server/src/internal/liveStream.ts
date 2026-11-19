@@ -1,0 +1,74 @@
+import { scope } from "@keel/reactive";
+import type { Loader } from "@keel/router";
+import type { Match } from "@keel/router/internal";
+import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
+import { isolate } from "@keel/store";
+import type { Context } from "hono";
+import { streamSSE } from "hono/streaming";
+import type { Handled } from "./Handled.ts";
+import type { Req } from "./Req.ts";
+import type { RequestScope } from "./RequestScope.ts";
+import { busy } from "./busy.ts";
+import { openFactory } from "./openFactory.ts";
+import { publicError } from "./publicError.ts";
+
+const HEARTBEAT_MS = 15_000;
+
+/**
+ * The event stream of a live loader (k.server Request flow), after its guards passed: its `stores` factory opens
+ * once and nothing saves; each yield is one `data:` line, its `Result` JSON (`ok` encoded by `output`, `err` as it may
+ * leave the server); a `:` line goes out per 15 s of `ctx.clock`. It ends when `fn` returns or its `signal` aborts:
+ * on request abort or `close()` (both also cancel the stream, so a stalled write ends), or when the reader cancels.
+ * The factory opens in the stream's own isolated scope, not the request's (disposed when `handle` returns), and that
+ * scope is disposed when the stream ends. Written with Hono's `streamSSE`; `cache-control: no-store`. With
+ * `maxStreams` streams open it is 503 `keel.busy` and opens nothing; a stream holds its place until it ends.
+ */
+export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<unknown>, c: Context): Handled {
+  const { sv, raw } = r;
+  if (sv.streams.open >= sv.maxStreams) return { response: busy(sv.maxStreams), route: m.route.id, diags: [] };
+  const rq: RequestScope = { ...r.rq, scope: scope(() => undefined, { detached: true }), held: new Map() };
+  isolate(rq.scope);
+  const ac = new AbortController();
+  const stop = (): void => ac.abort();
+  const ended = new Promise<undefined>((resolve) => ac.signal.addEventListener("abort", () => resolve(undefined)));
+  sv.streams.open++;
+  const response = streamSSE(c, async (stream) => {
+    const halt = (): void => {
+      stop();
+      stream.abort();
+    };
+    let beat: Promise<void> | undefined;
+    let it: AsyncIterator<Result<unknown, KeelError<string, unknown>>> | undefined;
+    try {
+      raw.signal.addEventListener("abort", halt, { once: true });
+      sv.lifecycle.signal.addEventListener("abort", halt, { once: true });
+      stream.onAbort(stop);
+      if (raw.signal.aborted) halt();
+      beat = (async () => {
+        while ((await attempt(() => sv.ctx.clock.after(HEARTBEAT_MS, ac.signal))).ok) await stream.write(":\n\n");
+      })();
+      const stores = live.stores === undefined ? undefined : await openFactory(sv.ctx, rq, live.stores);
+      const args = { params: m.params, search: m.search, url: r.url, caller: rq.caller.id, stores, signal: ac.signal };
+      it = live.live?.(args, sv.ctx)[Symbol.asyncIterator]();
+      while (it !== undefined) {
+        const next = await Promise.race([it.next(), ended]);
+        if (next === undefined || next.done === true) break;
+        const res = next.value;
+        const json = res.ok
+          ? attempt(() => ok(live.output.encode(res.value)))
+          : ok(err(publicError(res.error, sv.mode)));
+        await stream.writeSSE({ data: JSON.stringify(json.ok ? json.value : err(publicError(json.error, sv.mode))) });
+      }
+    } finally {
+      sv.streams.open--;
+      stop();
+      raw.signal.removeEventListener("abort", halt);
+      sv.lifecycle.signal.removeEventListener("abort", halt);
+      void it?.return?.().catch(() => undefined);
+      await beat;
+      rq.scope.dispose();
+    }
+  });
+  response.headers.set("cache-control", "no-store");
+  return { response, route: m.route.id, diags: [] };
+}

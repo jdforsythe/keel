@@ -1,52 +1,72 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: this file <= 1,200 tokens; each section <= 1,500. Retrieve with `pnpm spec <id>`.
+status key: proposed | implemented | conformance-covered | frozen. Budget: this file <= 1,200 tokens; a section <= 1,500.
 
 ## Code ranges
 Kernel E1xxx in blocks of 50; stdlib E2xxx; factory tooling E0xxx. `pnpm spec --for <code>` finds the owner.
 | block | owner | block | owner |
 | --- | --- | --- | --- |
-| E100x | k.compiler | E105x | k.cli |
-| E110x | k.schema | E115x | k.module |
+| E100x | k.compiler | E105x | k.cli, k.evidence |
+| E110x | k.schema, k.privacy, k.reveal | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component | E145x | k.errors |
-| E150x | k.router | E155x | k.server |
-| E160x | k.ctx | E165x | k.services |
-| E170x | k.testing | E175x | k.check |
-| E18xx | k.ui | E19xx | k.forms |
-| E200x | std.sessions | E210x | std.brands |
+| E150x | k.router, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security |
+| E160x | k.ctx, k.sim, k.persist | E165x | k.services |
+| E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check |
+| E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
+| E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
+| E215x | std.db | E230x | std.i18n |
+| E235x | std.workflows | E240x | std.messages |
+| E250x | std.jobs | E255x | std.schedules |
+| E260x | std.channels | E265x | std.offline |
+| E270x | std.conflicts | E275x | std.statecharts |
+| E280x | std.headless | E285x | std.tables |
+| E220x | std.credentials | | |
 
 ## Kernel
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| k.schema | Schemas | implemented | declare once; types, validators, codecs, generators derive |
-| k.reactive | Reactivity | conformance-covered | signal, computed, effect, resource; scopes dispose |
-| k.store | Store and transactions | implemented | named pure transactions, log, undo, ownership |
-| k.component | Components | conformance-covered | one default export, schema props, named slots, If/For/Match |
-| k.compiler | Compiler and artifacts | conformance-covered | JSX to DOM ops; dep graph, ID index, route table, a11y expectations |
-| k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes, delegation, resume |
-| k.router | Routes | conformance-covered | manifest, typed params and search, loaders, actions by verb, guards |
-| k.forms | Forms | conformance-covered | form(schema): bindings, validation, submit, server errors |
-| k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS, scoped, a11y-required props |
-| k.ctx | Capabilities | implemented | clock, random, net, storage; real, shell, simulated |
-| k.errors | Results and boundaries | conformance-covered | Result for expected, boundary for unexpected |
-| k.check | Checker and diagnostics | implemented | codes, fix diffs, budgets, rule registry |
-| k.cli | CLI, MCP, LSP | implemented | one engine, three surfaces, formatter registry |
-| k.scaffold | Scaffold and codemods | conformance-covered | structural edits as operations |
-| k.testing | Harness and ledger | conformance-covered | given state, do events, expect; rungs |
-| k.server | Thin server | conformance-covered | loaders, actions, dev server, adapters, local topology |
-| k.services | Thin services | conformance-covered | typed client from schema, timeouts, ApiError |
-| k.module | Module manifest | conformance-covered | declared public surface; cross-module access checked |
+| k.schema | Schemas | conformance-covered | types, validators, codecs, generators from one schema |
+| k.reactive | Reactivity | conformance-covered | signals, effects, resources, scopes |
+| k.store | Store and transactions | conformance-covered | pure transactions, log, undo, ownership |
+| k.component | Components | conformance-covered | schema and slot props, If/For/Match |
+| k.compiler | Compiler and artifacts | conformance-covered | JSX to DOM ops, ids, a11y |
+| k.runtime | DOM runtime and islands | conformance-covered | fine-grained nodes, resume |
+| k.router | Routes | conformance-covered | typed params and search, loaders, actions |
+| k.guards | Guards | conformance-covered | redirects with `next`, loop limit |
+| k.prefix | Implied path prefix | conformance-covered | a leading enum param the URL omits |
+| k.forms | Forms | conformance-covered | form(schema): bindings, validation, errors |
+| k.ui | Tokens and styling | conformance-covered | typed style props, atomic CSS |
+| k.ctx | Capabilities | conformance-covered | clock, random, net, storage |
+| k.errors | Results and boundaries | conformance-covered | Result if expected, boundary if not |
+| k.check | Checker and diagnostics | conformance-covered | codes, fixes, budgets, rules |
+| k.cli | CLI, MCP, LSP | conformance-covered | one engine, three surfaces |
+| k.scaffold | Scaffold and codemods | conformance-covered | structural edits |
+| k.testing | Harness and properties | conformance-covered | given, do, expect |
+| k.model | Exploring a store's transactions | conformance-covered | reachable states, invariants |
+| k.prove | Proving invariants | proposed | Z3 induction proofs |
+| k.sim | Schedules and simulation | conformance-covered | delays, faults, offline; simulate |
+| k.ledger | Ledger and evidence | conformance-covered | rungs, producers, mutation claims |
+| k.server | Thin server | conformance-covered | loaders, actions, server state |
+| k.sync | Heads and concurrent writes | conformance-covered | heads, write bases, reject or rebase |
+| k.persist | Storage and durable state | proposed | atomic storage, drivers |
+| k.topology | Deployables | implemented | placement, routes, runners, peers |
+| k.deploy | Production entry and deploy files | conformance-covered | `server.mjs`, `storage` |
+| k.shell | Native shells | proposed | Capacitor and Tauri apps |
+| k.compat | Surface compatibility | conformance-covered | surface, `accepts`, `--base` |
+| k.api | API routes | conformance-covered | `api: true` entries: JSON, no view |
+| k.hosting | Client hosting | implemented | static artifact, peers, origins, `host` |
+| k.head | Document head | conformance-covered | title, `lang`, links |
+| k.services | Thin services | conformance-covered | typed clients, timeouts, ApiError |
+| k.openapi | OpenAPI import | conformance-covered | OpenAPI 3 to clients |
+| k.module | Module manifest | conformance-covered | public surface, cross-module checks |
+| k.a11y | Accessibility | conformance-covered | contrast, focus order, claims |
+| k.aria | Widget parts | conformance-covered | Part: roles, focus, dialog, styles |
+| k.security | Headers and CSP | conformance-covered | headers, nonce CSP, cookie |
+| k.privacy | Secrets and personal data | conformance-covered | `s.secret`, `.pii(class)`, sinks |
+| k.reveal | Revealed values | conformance-covered | E1112 |
+| k.evidence | Evidence bundle | conformance-covered | a signed bundle |
 
 ## Stdlib
-See `spec/std/README.md`. Sections are added per wave with their own budgets.
-| id | section | status | one line |
-| --- | --- | --- | --- |
-| std.sessions | Sessions | proposed | capture, ingest, replay, minimize, to-test; GitHub Action |
-| std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format |
-| std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
-| std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
-| std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
-| std.timings | Timings | conformance-covered | inspector hooks: `timings.recent` section |
-| std.report | Tally report | conformance-covered | formatter registry: `report.tally` |
+Sections: `spec/std/README.md`.

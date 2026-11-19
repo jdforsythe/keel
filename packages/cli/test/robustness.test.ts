@@ -123,7 +123,7 @@ describe("engine owns file scope and effects", () => {
     const ok = await run(["scaffold", "project", "shop"], io);
     expect(ok.code).toBe(0);
     expect(applied).toHaveLength(1);
-    expect(applied[0]?.some((w) => w.path === "topology.ts")).toBe(true);
+    expect(applied[0]?.some((w) => w.path === "shop/topology.ts")).toBe(true);
   });
 
   it("mcp and lsp stream through run: replies are emitted as stdin arrives; lsp exit ends the stream", async () => {

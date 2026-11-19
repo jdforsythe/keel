@@ -84,6 +84,22 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm ledger --diff
+  golden-1-images:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: "docker build per node deployable, never pushed"
+        run: "for f in apps/golden-1/deploy/*/Dockerfile; do n=$(basename \"$(dirname \"$f\")\"); docker build -f \"$f\" -t \"golden-1-$n\" apps/golden-1; done"
   mutate-pr:
     if: "github.event_name == 'pull_request'"
     needs: test
@@ -98,12 +114,18 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
-          path: "packages/*/.stryker-tmp/incremental.json"
-          key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}"
-          restore-keys: "stryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
+          path: .git/keel-mutation
+          key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          restore-keys: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-\nstryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
       - run: node tooling/mutate-changed.mjs
+      - run: pnpm ledger --diff
+      - if: "always()"
+        uses: actions/cache/save@v4
+        with:
+          path: .git/keel-mutation
+          key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
   mutate:
     if: "github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'"
     runs-on: ubuntu-latest
@@ -117,12 +139,18 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
-          path: "packages/*/.stryker-tmp/incremental.json"
-          key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}"
-          restore-keys: "stryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
+          path: .git/keel-mutation
+          key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          restore-keys: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-\nstryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
       - run: "pnpm mutate --filter=\"./packages/*\""
+      - run: pnpm ledger --diff
+      - if: "always()"
+        uses: actions/cache/save@v4
+        with:
+          path: .git/keel-mutation
+          key: "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
   eval:
     if: "github.event_name == 'schedule' && github.event.schedule == '0 4 * * 1'"
     runs-on: ubuntu-latest

@@ -8,7 +8,7 @@ import { fillPath } from "./fillPath.ts";
 
 /**
  * Build the Request for one call: path params URL-encoded, query by its schema, body as JSON, with
- * `accept: application/json` and `x-keel: 1` (the k.server same-site proof for writes, RFC 0022). Invalid input is
+ * `accept` (`application/json`; `text/event-stream` for an `events` endpoint) and `x-keel: 1` (the k.server same-site proof for writes, RFC 0022). Invalid input is
  * `api.input`; a Request the platform refuses (bad URL, body on GET) is `api.network`.
  */
 export function buildRequest(
@@ -16,6 +16,7 @@ export function buildRequest(
   base: string,
   input: unknown,
   signal: AbortSignal,
+  accept = "application/json",
 ): Result<Request, ApiError<never>> {
   const params = encodePart(e.params, "params", input);
   if (!params.ok) return params;
@@ -30,10 +31,10 @@ export function buildRequest(
   const json = body.value;
   const init: RequestInit =
     json === undefined
-      ? { method: e.method, headers: { accept: "application/json", "x-keel": "1" }, signal }
+      ? { method: e.method, headers: { accept, "x-keel": "1" }, signal }
       : {
           method: e.method,
-          headers: { accept: "application/json", "x-keel": "1", "content-type": "application/json" },
+          headers: { accept, "x-keel": "1", "content-type": "application/json" },
           body: JSON.stringify(json),
           signal,
         };

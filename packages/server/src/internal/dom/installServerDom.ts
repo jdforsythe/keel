@@ -2,9 +2,13 @@ import { ServerComment } from "./ServerComment.ts";
 import { ServerDocument } from "./ServerDocument.ts";
 import { ServerElement } from "./ServerElement.ts";
 import { ServerFragment } from "./ServerFragment.ts";
+import { ServerInput } from "./ServerInput.ts";
 import { ServerNode } from "./ServerNode.ts";
+import { ServerOption } from "./ServerOption.ts";
+import { ServerSelect } from "./ServerSelect.ts";
 import { ServerTemplate } from "./ServerTemplate.ts";
 import { ServerText } from "./ServerText.ts";
+import { ServerTextArea } from "./ServerTextArea.ts";
 
 /**
  * Give plain Node the DOM globals kernel components build with (`document`, `Node`, `Element`, ...), backed
@@ -21,5 +25,10 @@ export function installServerDom(): void {
     Comment: ServerComment,
     DocumentFragment: ServerFragment,
     HTMLTemplateElement: ServerTemplate,
+    HTMLElement: ServerElement,
+    HTMLInputElement: ServerInput,
+    HTMLSelectElement: ServerSelect,
+    HTMLTextAreaElement: ServerTextArea,
+    HTMLOptionElement: ServerOption,
   });
 }

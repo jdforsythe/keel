@@ -29,7 +29,12 @@
       "coverage/**",
       "tooling/ledger/ledger.json",
       "**/test/.tmp-*/**",
-      "**/conformance/.tmp-*/**"
+      "**/conformance/.tmp-*/**",
+      ".fixtures/**",
+      "**/.keel/**",
+      "packages/*/reports/**",
+      "tooling/reports/**",
+      "**/.stryker-tmp/**"
     ]
   }
 }

@@ -39,6 +39,7 @@ describe("@keel/compiler/vite", () => {
       "deps.json",
       "ids.json",
       "routes.json",
+      "std.json",
       "styles.json",
     ]);
     p.watchChange(b, { event: "delete" });

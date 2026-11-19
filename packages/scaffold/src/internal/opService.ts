@@ -13,8 +13,8 @@ import { targetsGenerated } from "./targetsGenerated.ts";
 /**
  * `scaffold service <module> --openapi <file>`: place the endpoint declaration and the service file that
  * `@keel/services/openapi` generated (the cli converts the document; scaffold may not import services) at
- * `modules/<module>/<Module>Api.schema.ts` (filename equals its export `<Module>Api`, rfc:0039) and `api.ts`
- * (k.services). Both carry the generated marker, so later operations may not edit them (E1005).
+ * `modules/<module>/<Module>Api.schema.ts` (filename equals its export `<Module>Api`, rfc:0039) and
+ * `api.server.ts` (k.openapi: a literal `base` is server-only, E1571). Both carry the generated marker, so later operations may not edit them (E1005).
  */
 export function opService(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.service.parse(input);
@@ -26,7 +26,7 @@ export function opService(input: unknown, files: ReadonlyMap<string, string>): R
   if (!files.has(`${dir}/module.ts`)) return fail("E1052", dir, `${id} is not a module of this project`);
   const writes: Writes = new Map([
     [`${dir}/${pascal(id)}Api.schema.ts`, schema],
-    [`${dir}/api.ts`, service],
+    [`${dir}/api.server.ts`, service],
   ]);
   for (const p of writes.keys()) if (files.has(p)) return fail("E1351", p, `service ${id} already exists`);
   return commit(files, writes);

@@ -152,8 +152,9 @@ describe("nodeAt", () => {
 describe("jsonSchemaOf", () => {
   const sortedKeys = (v: unknown): string => JSON.stringify(v);
   it("scalars", () => {
-    expect(jsonSchemaOf(str(2))).toEqual({ minLength: 2, type: "string" });
-    expect(jsonSchemaOf(str(2, 4))).toEqual({ maxLength: 4, minLength: 2, type: "string" });
+    expect(jsonSchemaOf(str(2))).toEqual({ minLength: 2, pattern: "\\S", type: "string" });
+    expect(jsonSchemaOf(str(2, 4))).toEqual({ maxLength: 4, minLength: 2, pattern: "\\S", type: "string" });
+    expect(jsonSchemaOf(str(1))).toEqual({ minLength: 1, pattern: "\\S", type: "string" });
     expect(jsonSchemaOf(str(0, 0))).toEqual({ maxLength: 0, minLength: 0, type: "string" });
     expect(jsonSchemaOf({ kind: "number" })).toEqual({ type: "number" });
     expect(jsonSchemaOf({ kind: "int" })).toEqual({ type: "integer" });
@@ -163,7 +164,7 @@ describe("jsonSchemaOf", () => {
     expect(jsonSchemaOf({ kind: "id", brand: "U" })).toEqual({ minLength: 1, type: "string", "x-keel-id": "U" });
   });
   it("keys are sorted in the serialised form", () => {
-    expect(sortedKeys(jsonSchemaOf(str(2, 4)))).toBe('{"maxLength":4,"minLength":2,"type":"string"}');
+    expect(sortedKeys(jsonSchemaOf(str(2, 4)))).toBe('{"maxLength":4,"minLength":2,"pattern":"\\\\S","type":"string"}');
     expect(sortedKeys(jsonSchemaOf({ kind: "id", brand: "U" }))).toBe(
       '{"minLength":1,"type":"string","x-keel-id":"U"}',
     );
@@ -335,7 +336,10 @@ describe("isRouteStateOf", () => {
 });
 
 describe("needsBare", () => {
-  const lvl = (extra: Partial<RouteDef>): Level => ({ id: "x", def: { component: view, ...extra } });
+  const lvl = (extra: Partial<Exclude<RouteDef, { readonly api: true }>>): Level => ({
+    id: "x",
+    def: { component: view, ...extra },
+  });
   const ld = loader({ output: s.object({}) }, async () => ok({}));
   it("only levels above the error level count", () => {
     const chain = [lvl({}), lvl({ loader: ld }), lvl({})];
@@ -392,9 +396,9 @@ describe("chainOf / compileRoutes messages", () => {
     expect(
       fail(() => compileRoutes({ a: { path: "/v", search: s.object({ q: s.string() }), component: view } })).message,
     ).toBe('E1504 a: search field "q" must be optional');
-    const badVerb = { a: { path: "/v", component: view, actions: { GET: {} } } };
-    expect(fail(() => Reflect.apply(compileRoutes, undefined, [badVerb])).message).toBe(
-      'E1505 a: actions key "GET" is not POST/PUT/PATCH/DELETE',
+    const inEntry = { a: { path: "/v", component: view, actions: { POST: {} } } };
+    expect(fail(() => Reflect.apply(compileRoutes, undefined, [inEntry])).message).toBe(
+      'E1505 a: move actions to routes.actions({ "a": {...} }) after the manifest',
     );
   });
   it("layouts have no segments and are not routable", () => {
@@ -547,7 +551,7 @@ describe("hrefIn", () => {
   it("exact error codes and messages", () => {
     expect(fail(() => h("h.layout"))).toEqual({
       code: "E1501",
-      message: 'E1501 href("h.layout"): no declared route with a path has this id',
+      message: 'E1501 href("h.layout"): no declared page has this id',
     });
     expect(fail(() => h("nope")).code).toBe("E1501");
     expect(fail(() => hrefIn(undefined, "nope", {}, {})).code).toBe("E1501");
@@ -580,9 +584,10 @@ describe("routesArtifact details", () => {
       run: async () => ok(null),
     };
     const m = manifest({
-      "z.b.deep": { path: "/zb", component: view, actions: { PUT: act, POST: act, PATCH: act, DELETE: act } },
+      "z.b.deep": { path: "/zb", component: view },
       plain: { path: "/plain-art", component: view },
     });
+    m.actions({ "z.b.deep": { PUT: act, POST: act, PATCH: act, DELETE: act } });
     const a = routesArtifact(m);
     expect(Object.keys(a)).toEqual(["plain", "z.b.deep"]);
     expect(a.plain?.module).toBe("plain");
@@ -597,8 +602,11 @@ describe("routesArtifact details", () => {
 });
 
 describe("runLoaders / runGuard", () => {
-  const lvl = (def: Partial<RouteDef>): Level => ({ id: "l", def: { component: view, ...def } });
-  const args = { params: {}, search: {}, url: "http://localhost/" };
+  const lvl = (def: Partial<Exclude<RouteDef, { readonly api: true }>>): Level => ({
+    id: "l",
+    def: { component: view, ...def },
+  });
+  const args = { params: {}, search: {}, url: "http://localhost/", caller: "" };
   it("no loader gives ok(undefined); a loader's value is parsed by its output schema", async () => {
     const out = await runLoaders(
       [lvl({}), lvl({ loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 })) })],
@@ -648,20 +656,21 @@ describe("runLoaders / runGuard", () => {
     const boom = guard({ redirect: "x" }, async () => {
       throw new Error("bang");
     });
-    expect(await runGuard(yes, "/u", ctx)).toEqual(ok(null));
-    const denied = await runGuard(no, "/u", ctx);
+    expect(await runGuard(yes, "/u", ctx, "")).toEqual(ok(null));
+    const denied = await runGuard(no, "/u", ctx, "");
     expect(denied.ok === false && denied.error.code).toBe("keel.denied");
-    const thrown = await runGuard(boom, "/u", ctx);
+    const thrown = await runGuard(boom, "/u", ctx, "");
     expect(thrown.ok === false && thrown.error.code).toBe("keel.unexpected");
   });
-  it("runGuard hands the url to the guard", async () => {
+  it("runGuard hands the url and the caller to the guard", async () => {
     const seen: string[] = [];
     const g = guard({ redirect: "x" }, async (req) => {
-      seen.push(req.url);
+      seen.push(req.url, req.caller);
       return ok(null);
     });
-    await runGuard(g, "/the/url?x=1", ctx);
-    expect(seen).toEqual(["/the/url?x=1"]);
+    await runGuard(g, "/the/url?x=1", ctx, "");
+    await runGuard(g, "/u", ctx, "c4ll3r");
+    expect(seen).toEqual(["/the/url?x=1", "", "/u", "c4ll3r"]);
   });
 });
 

@@ -765,7 +765,7 @@ describe("form wiring", () => {
     typeInto(el, "");
     expect(Object.keys(f.errors())).toEqual([]);
     el.dispatchEvent(new Event("blur"));
-    expect(f.errors().title).toBe("Must be at least 1 character");
+    expect(f.errors().title).toBe("Required");
     typeInto(el, "again");
     expect(Object.keys(f.errors())).toEqual([]);
   });
@@ -854,7 +854,7 @@ describe("form wiring", () => {
     expect(f.errors()).toEqual({});
     f.field("title").set("");
     expect(f[formHandle].validate().ok).toBe(false);
-    expect(f.errors().title).toBe("Must be at least 1 character");
+    expect(f.errors().title).toBe("Required");
     f.field("title").set("z");
     expect(f[formHandle].validate().ok).toBe(true);
     expect(Object.keys(f.errors())).toEqual([]);
@@ -1116,7 +1116,7 @@ describe("form wiring", () => {
     const title = f.field("title");
     f[formHandle].onResult(err({ code: "keel.fields", message: "m", data: { title: "taken" } }));
     title.set("");
-    expect(f.errors().title).toBe("Must be at least 1 character");
+    expect(f.errors().title).toBe("Required");
   });
 
   it("reset forgets which errors had shown", () => {
@@ -1124,7 +1124,7 @@ describe("form wiring", () => {
     const title = f.field("title");
     title.set("");
     title.blur();
-    expect(f.errors().title).toBe("Must be at least 1 character");
+    expect(f.errors().title).toBe("Required");
     f.reset();
     title.set("");
     expect(Object.keys(f.errors())).toEqual([]);

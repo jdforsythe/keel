@@ -1,93 +1,92 @@
-# Freeze review (0034, G3)
+# Freeze review (G3)
 
-2026-11-06. Each Conformance block split into atomic clauses, each mapped to a non-todo test body in any `packages/*/conformance/**`. PARTIAL: the test asserts less than the clause. All 15 suites green (33 skipped). `conformance-covered` requires 0 partial, todo, none.
+Each Conformance block is split into atomic clauses; each clause maps to a non-todo test body in some `packages/*/conformance/**`. `conformance-covered` requires 0 partial, todo, none. One conformance test is skipped: `std-i18n/conformance/e2301.test.ts`.
 
 ## 1. Per section
 
-| section | clauses | tested | partial | todo | none | verdict | missing tests |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| k.schema | 8 | 8 | 0 | 0 | 0 | **conformance-covered** | none (clause 8 `json`, rfc:0018, landed 95961ef) |
-| k.forms | 7 | 7 | 0 | 0 | 0 | **conformance-covered** | none (clause 7 asserted in `server/conformance/post-invalid-formdata-422.test.ts:33`; the forms copy is `it.skip`) |
-| k.reactive | 15 | 14 | 1 | 0 | 0 | no | owner() inside an effect re-run triggered from outside the scope (`owner.test.ts:39` sees only the first run) |
-| k.store | 12 | 10 | 2 | 0 | 0 | no | restore from a store with a *different* initial (`snapshot.test.ts:40` uses equal initials); `transaction.schema` over generated *valid* payloads (`schema-exposed.test.ts:21` is `fc.anything()`) |
-| k.ctx | 8 | 7 | 1 | 0 | 0 | no | `keel test` itself runs under sim (`default-sim` only sets `KEEL_TEST=1`) |
-| k.errors | 14 | 13 | 1 | 0 | 0 | no | E1453, E1454 trigger + clean fixtures; status line still `proposed` |
-| k.compiler | 8 | 6 | 1 | 1 | 0 | no | `.keel/` byte change → E1005 (`keel-dir-tamper` skip); `ids.json` keys via harness `find(id)` (test uses `getElementById`) |
-| k.component | 5 | 5 | 0 | 0 | 0 | **conformance-covered** | none (rfc:0021: `testing/conformance/component-*.test.ts`; compiler cannot import testing or ui, S0003, so its two files stay compiled stand-ins) |
-| k.runtime | 11 | 8 | 1 | 2 | 0 | no | `state()` equals snapshot after resume (todo); no islands → no runtime JS (todo); post-resume `fire(id)` vs client-only state and DOM |
-| k.ui | 11 | 11 | 0 | 0 | 0 | **conformance-covered** | none (rfc:0021: `testing/conformance/ui-*.test.ts`; E1804 was unimplemented and is now a `check` rule reading the `tokens` artifact; Checkbox change is driven by `fire` click, which toggles then emits change; `fire(id, 'change')` alone passes the held state) |
-| k.router | 9 | 8 | 1 | 0 | 0 | no | E1501 diagnostic, not type only (E1502-E1506 trigger + clean tests landed, rfc:0020, `rules-e1501-e1506.test.ts`) |
-| k.server | 7 | 6 | 0 | 1 | 0 | no | dev log stream: one `req` per request, json lines parse (todo) |
-| k.services | 9 | 8 | 0 | 1 | 0 | no | OpenAPI fixture client: one method per operation, types match (todo) |
-| k.check | 8 | 6 | 2 | 0 | 0 | no | fix diffs for 30 codes (5 today); golden-1 + 10 injected errors ≤ 600 tokens (explain + fixture per spec-derived code and W-only `summary.ok` landed, rfc:0020; explain-only codes listed in RFC 0020) |
-| k.cli | 10 | 9 | 0 | 0 | 1 | no | `GET /__keel/inspect` on a dev `createApp` and prod 404 (server side; parity, MCP schema fields/types, inspect client and E1056 landed, rfc:0020: `surfaces.test.ts`, `inspect.test.ts`) |
-| k.module | 7 | 6 | 1 | 0 | 0 | no | malformed stdlib manifest rejected by `ModuleSchema`; E1153, E1155-E1157 on a stdlib module |
-| k.scaffold | 7 | 4 | 3 | 0 | 0 | no | run `keel check` + `keel test` after every generator (proxy: imports resolve; transaction, service skipped); printed dry-run diff equals apply; `turbo.json` vs independently computed graph |
-| k.testing | 9 | 9 | 0 | 0 | 0 | **conformance-covered** | none (rfc:0021: `default-sim-seed`, `fire-resource`, `ledger-real-runs`). Finding: `fire` settles on 32 DOM-quiet microtask hops, so a resource pending 40+ hops with no DOM change is missed; asserted to 24 hops |
-| **total** | **165** | **145** | **14** | **5** | **1** | 5 of 18 | |
+| section | clauses | status | missing tests |
+| --- | --- | --- | --- |
+| k.schema | 12 | **conformance-covered** | none |
+| k.reactive | 19 | **conformance-covered** | none |
+| k.store | 23 | **conformance-covered** | none |
+| k.ctx | 18 | **conformance-covered** | none |
+| k.errors | 13 | **conformance-covered** | none |
+| k.compiler | 20 | **conformance-covered** | none (`keel-dir-tamper` runs in `testing/conformance/compiler-keel-dir-tamper.test.ts`) |
+| k.component | 11 | **conformance-covered** | none (`testing/conformance/component-*.test.ts`; the compiler cannot import testing or ui, S0003) |
+| k.runtime | 13 | **conformance-covered** | none |
+| k.ui | 14 | **conformance-covered** | none (`testing/conformance/ui-*.test.ts`) |
+| k.router | 15 | **conformance-covered** | none (E1501-E1506: `rules-e1501-e1506.test.ts`) |
+| k.prefix | 7 | **conformance-covered** | none |
+| k.head | 6 | **conformance-covered** | none |
+| k.forms | 16 | **conformance-covered** | none |
+| k.server | 16 | **conformance-covered** | none |
+| k.topology | 8 | implemented | the forwarding test compares status, body and `content-type` only, not all headers; the deploy-files test does not run `keel build` |
+| k.compat | 11 | **conformance-covered** | none |
+| k.api | 10 | **conformance-covered** | none (`router/conformance/api-routes-0086.test.ts`, `server/conformance/api-routes-0086.test.ts`) |
+| k.services | 11 | **conformance-covered** | none |
+| k.check | 13 | **conformance-covered** | none |
+| k.cli | 19 | **conformance-covered** | none (`surfaces.test.ts`, `inspect.test.ts`) |
+| k.module | 14 | **conformance-covered** | none |
+| k.scaffold | 10 | **conformance-covered** | none |
+| k.testing | 12 | **conformance-covered** | none (`default-sim-seed`, `fire-resource`, `ledger-real-runs`) |
+| k.model | 7 | **conformance-covered** | none |
+| k.sim | 10 | **conformance-covered** | none |
+| k.ledger | 10 | **conformance-covered** | none |
+| k.sync | 10 | **conformance-covered** | none |
+| k.deploy | 5 | **conformance-covered** | none |
+| k.hosting | 6 | implemented | the `service({ module })` call from the client entry to the tagged origin |
+| k.openapi | 1 | **conformance-covered** | none |
+| k.a11y | 9 | **conformance-covered** | none |
+| k.security | 13 | **conformance-covered** | none |
+| k.privacy | 9 | **conformance-covered** | none |
+| k.evidence | 10 | **conformance-covered** | none |
+| **total** | **401** | 32 of 34 covered | |
 
 ## 2. One-way audit (principle 1)
 
-| # | where | two ways | single way | RFC |
-| --- | --- | --- | --- | --- |
-| 1 | `router/src/types/RouteDef.ts:23`, `guard.ts:11-17` | `guard('auth', fn)` object, referenced as string `'auth'` | `guard: authGuard` by reference | 0044 |
-| 2 | `server/src/types/AppOptions.ts:10-11`, `runGuards.ts:32` | `createApp({ guards })` and global `guard()` table | route-held reference only | 0044 |
-| 3 | `router/src/href.ts:11-16`, `manifest.ts:10,16`, `Form.ts:28` | free `href` (latest manifest) vs router table | `routes.href` typed by manifest | 0044 |
-| 4 | `schema/src/internal/make.ts:26-27` | `decode` is `parse` | `decode` JSON-codec only, or drop | yes |
-| 5 | `ctx/src/Random.ts:8-9` | `random.uuid()` and `random.id(brand)` | `random.id(brand)` | yes |
-| 6 | `ui/src/types/StyleProps.ts:11`, `ui/src/styles.ts:9` | style props vs `styles()` + `class` | style props only | yes |
-| 7 | `ui/src/elements/Button.ts:12-13,33-36` | text from children or `label` | children = text; `label` = `aria-label` | yes |
-| 8 | `forms/src/types/FormState.ts:20`, `router/src/types/FormProps.ts:12`, `RouteState.ts:27` | `form.pending()`, `<Form loading>`, `route().pending` | slot to render, `pending()` to read | yes |
-| 9 | `forms/src/types/FormState.ts:22,29,31` | public `setPending/validate/onResult` beside `<Form>` | symbol-keyed handle | no |
-| 10 | `store/src/types/Transaction.ts:9,11` | `payload` alias of `schema` (RFC 0007 kept it) | `schema` | 0044 (done) |
-| 11 | `scaffold/src/plan.ts:11-16`, `scaffold.ts:13-18` | `plan()` and `scaffold()` identical | `scaffold()`; dry run is a flag | no |
-| 12 | `router/src/index.ts:4-18` | `compileRoutes`, writable `guardTable`, `matchUrl`, `runGuard` beside `manifest()` | `@keel/router/internal` for server | no |
-| 13 | `server/src/types/Topology.ts:2`, `compiler/src/types/Topology.ts:5`, `server/src/index.ts:7-8` | duplicate `Topology` (and `StyleUsage`); `TopologySchema.parse` accepts what `topology()` rejects | one owner; unexport `TopologySchema` | no |
+Every audited surface has one way.
 
-Contradiction: k.cli Rules make `session` I1055 (exit 0); `cli/conformance/rules-e1051.test.ts:41` asserts E1051.
+| # | where | single way |
+| --- | --- | --- |
+| 1 | `router/src/types/RouteDef.ts`, `guard.ts` | `guard: authGuard` by reference; no name, no registry |
+| 2 | `server/src/types/AppOptions.ts`, `server/src/internal/runGuards.ts` | the route holds the guard; `createApp` has no guard table |
+| 3 | `router/src/manifest.ts`, `Form.ts` | `routes.href` typed by the manifest; `<Form action>` takes an `Href` |
+| 4 | `schema/src/internal/make.ts` | `parse`; there is no `decode` |
+| 5 | `ctx/src/Random.ts` | `random.id(brand)` |
+| 6 | `ui/src/index.ts` | style props; there is no `styles()` |
+| 7 | `ui/src/elements/Button.ts` | children name the button; there is no `label` |
+| 8 | `forms/src/types/FormState.ts`, `router/src/types/FormProps.ts` | `form.pending()`; `<Form>` has no `loading` |
+| 9 | `forms/src/types/FormState.ts` | `setPending/validate/onResult` behind a symbol-keyed handle |
+| 10 | `store/src/types/Transaction.ts` | `schema` only |
+| 11 | `scaffold/src/scaffold.ts` | `scaffold()`; there is no `plan()` |
+| 12 | `router/src/index.ts`, `store/src/index.ts` | public exports only; the server reads `@keel/router/internal` and `@keel/store/internal` |
+| 13 | `server/src/index.ts`, `compiler/src/types/Topology.ts` | one `Topology`, owned by the compiler; `TopologySchema` is internal |
+
+The `session` command without the sessions module reports I1055 (exit 0); `cli/conformance/rules-e1051.test.ts` asserts it.
 
 ## 3. Extension points
 
 | point | registers via public API in a test | used by a stdlib module |
 | --- | --- | --- |
-| schema type registry | yes: `schema/conformance/registry.test.ts:11-27` (`s.register`); registers names only, no new kinds/codecs | yes (`@keel/std-money`: `money.Money`, `money.Currency`; RFC 0047) |
-| check rule registry | yes: `check/conformance/define-rule.test.ts:7,15` (E2901 seen in `check()` and `explain`); `fix` exercised by `std-brands/conformance/brands.test.ts` (`git apply`) | yes (`@keel/std-brands`: E2101) |
-| capability registry | yes: `ctx/conformance/three-implementations.conformance.test.ts:14` (`probe3`, all modes) | yes (`@keel/std-geo`: `geo`) |
-| module manifest | yes: `check/conformance/module-stdlib-same-rules.test.ts:19-40` (fixture `@keel/std-x`); apps golden-1, inspector; `std` key E1158 (RFC 0047) | yes (`@keel/std-health`: `health.status`) |
-| inspector hooks | yes: RFC 0042, `server/conformance/inspect-sections.test.ts` | yes (`@keel/std-timings`: `timings.recent`) |
+| schema type registry | yes: `schema/conformance/registry.test.ts` (`s.register`) | yes (`@keel/std-money`: `money.Money`, `money.Currency`) |
+| check rule registry | yes: `check/conformance/define-rule.test.ts` (E1753, E1756); `fix` exercised by `std-brands/conformance/brands.test.ts` (`git apply`) | yes (`@keel/std-brands`: E2101) |
+| capability registry | yes: `ctx/conformance/three-implementations.conformance.test.ts` (all modes) | yes (`@keel/std-geo`: `geo`) |
+| module manifest | yes: `check/conformance/module-stdlib-same-rules.test.ts` (fixture `@keel/std-x`); apps golden-1, inspector; `std` key E1158 | yes (`@keel/std-health`: `health.status`) |
+| inspector hooks | yes: `server/conformance/inspect-sections.test.ts`, `cli/conformance/inspect-sections.test.ts` | yes (`@keel/std-timings`: `timings.recent`) |
 | output formatter registry | yes: `cli/conformance/rules-e1053-e1054.test.ts` through `@keel/cli/testing` `respond` | yes (`@keel/std-report`: `report.tally`) |
 
-Stdlib wave 0 (RFC 0047, 2026-11-07) uses each point once, so the G3 criterion is 6 of 6.
+Each point has a stdlib user, so the G3 criterion is 6 of 6.
 
-## 4. Implemented but untested; tested but unstated
-
-**Implemented, no conformance test:** E1054, I1055, `/__keel/inspect` server endpoint (unit only); `defineRule` `fix`; schema "parse never throws", re-register throws; Boundary for computed/effect throws and root default; E1301 static form; E1004 per-deployable exceptions; E1752 re-export clause.
-
-**Spec'd, not implemented or not triggered anywhere:** E1000, E1101-E1104, E1204, E1205, E1251, E1252, E1254, E1302, E1453, E1454, E1551, E1651-E1653, E1702, E1754, E1755, E1803, E1806, E1901, E1903, E1904.
+## 4. Unstated behavior
 
 **Tested, not stated (spec-addition candidates):** schema `min > max` throws at construction; store created outside a scope throws, default id `store.<n>`; router guards run outermost first, revalidation keeps scroll and focus; server trailing-slash 308; services default timeout 10,000 ms; forms other `err` clears field errors; runtime no handler after dispose; check `as const`/`satisfies` are not casts, module diagnostics order-independent, `--code` keeps the exit status of all errors; scaffold refuses edits into `.keel/` (E1005); testing failure output under 10 lines.
 
-**Defects found:** `schema/conformance/result.test.ts:87` `fc.assert(await fc.asyncProperty(...))` never awaits the assertion; `check/conformance/zz.test.ts.bak` is a tracked debug probe; RFCs 0001-0013, 0015-0017 still say `Status: draft` though implemented.
-
-## 5. RFCs needed before freeze
-
-1. **0044** router: guards by reference, `routes.href`, one guard registry (findings 1-3).
-2. Conformance completion: one RFC per section group adding the section 1 missing tests (conformance edits on `implemented` sections need a number; `rfc:0000` is refused).
-3. Inspector hooks: specify the extension point (register a named, schema-typed section of the inspect document) or remove it from GLOSSARY and ARCHITECTURE.
-4. Rules triage: each code in section 4's "not implemented" list is implemented with conformance, or deleted from spec.
-5. schema `decode` vs `parse` (finding 4).
-6. ctx `uuid`/`id` (finding 5).
-7. ui one styling path and Button `label` (findings 6, 7).
-8. forms/router pending surface (finding 8).
-9. k.cli `session`: I1055 or E1051.
-10. Open semantic items: 0038 typed `tx`, 0039 closed objects, 0041 E1000/E1501, 0054 per-request stores.
-11. k.errors: move status to `implemented` with E1453/E1454 covered.
-
 ## Other G3 criteria
 
-Two golden apps: one (`apps/inspector` is not eval-built). Evals improving: no trend (one day of results; `skill-keel`, `skill-keel-api` fail).
+Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/results/2026-11-13-golden-1-api-none.json`, `2026-11-12-golden-2-none.json`); `apps/inspector` and `apps/sessions` are not eval-built. Converged runs are recorded on 2026-11-07, 2026-11-10, 2026-11-11, 2026-11-12 and 2026-11-13.
 
-## Status flips (evidence)
+## Status
 
-- **k.schema**: `round-trip.test.ts:9,19` (12 types); `generator-valid.test.ts:9`; `parse-rejects.test.ts:51`; `brands.test.ts:10,13` (type-level; tsconfig includes conformance); `decode-strings.test.ts:23`; `number-bounds.test.ts:17,36-46`; `json.test.ts:15,30`.
-- **k.forms**: `submit-invalid-{sends-no-request,sets-every-error,focuses-first-invalid}.test.ts:7`; `formdata-roundtrip.test.ts:18`; `keel-fields-sets-exactly-listed.test.ts:10`; `other-err-renders-in-error-slot.test.ts:8`; `invalid-input-has-aria-wiring.test.ts:7`; `pending-true-from-submit-until-response.test.ts:6`; `server/conformance/post-invalid-formdata-422.test.ts:33`.
+No section is `frozen`. k.topology and k.hosting are `implemented`.
+
+verified: 71dcf02ad646880c26e6c512810d5aae547133ee
