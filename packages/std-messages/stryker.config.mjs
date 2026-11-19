@@ -1,3 +1,5 @@
-import { strykerConfig } from "../../tooling/stryker.mjs";
+import { ROOT_SANDBOX, strykerConfig } from "../../tooling/stryker.mjs";
 
-export default strykerConfig("std-messages", 70);
+// The sandbox sits under the repository root, so the tests that reach `apps/` or a sibling package by a path relative
+// to the test file find it.
+export default { ...strykerConfig("std-messages", 70), ...ROOT_SANDBOX };
