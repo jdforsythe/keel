@@ -10,6 +10,8 @@ Load when starting any task. Keep under 600 tokens in context.
 
 **Reach.** `ctx.storage` has `read` and `commit`; drivers go in `createCtx({ drivers })`. `@keel/std-db` (sqlite, postgres), `std-workflows`, `std-capacitor`, `std-tauri` are generated or server-side: app code never imports the drivers. `@keel/std-credentials` is server-side: passwords and tokens. `@keel/testing/prove` proves invariants with Z3.
 
+**Boundary.** Server-only is read from placement: `*.server.*` and `*.guard.*` of a `node` or `static` module, or outside every module (`identity.server.ts`); a `client` module's handler files run in the browser. Browser builds stub server-only imports (E1008 if called) and fail with E1007 when server code is still in the graph; `keel build` runs `keel check` first.
+
 **Where.** Spec: `spec/kernel/<id>.md` via `pnpm spec <id>`. Decisions: `docs/adr/`. Process: `docs/WORKFLOW.md`. Output rules: `docs/OUTPUT.md`. Current state: `docs/HANDOFF.md`.
 
 **Never.** Rename glossary terms · add a second way to do a thing · edit `conformance/` without an RFC · use bare `Date`, `Math.random`, `fetch` in app or test code · print anything that violates OUTPUT.md · read generated output or `.worktrees/` of other tasks.

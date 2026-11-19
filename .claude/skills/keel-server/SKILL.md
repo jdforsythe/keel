@@ -17,10 +17,10 @@ export const postTodo = action({ input: TodoDraft, stores: boardStores }, (input
 ```
 Undo one caller's writes: `stores.board.undoWhere((e) => e.meta?.caller === caller)`. `caller` grants nothing.
 
-**User:** Keel authenticates no one. Beside `topology.ts`: `identity.ts` `export default identityMount('/api/auth')` (`@keel/router`); `identity.server.ts` `export default identity({ identify: async ({ request }) => libSession(request)?.id ?? '', handle: { path: mount.path, fn } })` (`mount` its default import, E1580). Handlers get `user` (`''`: no one). `handle` hosts the library's endpoints and cookies (E1579: a route under it); pages reach it by `Link to={mount.href('/login/github')}` or a native `Form` post to `mount.href('/sign-in/email')` (keel-forms), which `fn` answers with a 303 to a page `Href` plus the library's `set-cookie`, or back with `?error=credentials`. A module importing `identity.ts` needs a `node` or hosted `client` deployable (E1581).
+**User:** Keel authenticates no one. Beside `topology.ts`: `identity.ts` `export default identityMount('/api/auth')` (`@keel/router`); `identity.server.ts` `export default identity({ identify: async ({ request }) => libSession(request)?.id ?? '', handle: { path: mount.path, fn } })` (`mount` its default import, E1580). Handlers get `user` (`''`: none). `handle` hosts the library's endpoints and cookies (E1579: a route under it); pages reach it by `Link to={mount.href('/login/github')}` or a native `Form` post to `mount.href('/sign-in/email')` (keel-forms), which `fn` answers with a 303 and the library's `set-cookie`. A module importing `identity.ts` needs a `node` or hosted `client` deployable (E1581).
 
-**Where:** `loader`/`action` only in `*.server.ts` (E1551). One naming `stores`, or a live loader, in a module a `client` or `static` deployable serves is E1558. Server code never writes module-level stores (E1256).
+**Where:** `loader`/`action` only in `*.server.ts` (E1551), `guard` in `*.guard.ts` (E1009); a page imports `routes.ts` freely, as browser builds stub those files. One naming `stores`, or a live loader, in a module a `client` or `static` deployable serves is E1558. Server code never writes module-level stores (E1256).
 
-**Runners:** `export const runners = [{ run(ctx, signal) }]` in `modules/<id>/runners.server.ts`; a rejection reruns 1 s later.
+**Runners:** `export const runners = [{ run(ctx, signal) }]` in `modules/<id>/runners.server.ts`.
 
-**Tests:** `renderRoute(id, { user })` runs `stores` over `ctx.storage`; `documents()` lists posts and links into the mount. Concurrent writes: keel-writes.
+**Tests:** `renderRoute(id, { user })` runs `stores` over `ctx.storage`; `documents()` lists posts and mount links. Races: keel-writes.
