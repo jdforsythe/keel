@@ -1067,3 +1067,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0967 server (medium): 961 server mutants survive and in several files nearly every one does (`dom/parseHtml.ts` 38 of 38, `bearerOf.ts` 25 of 25, `peerPaths.ts` 23 of 24, `TopologySchema.ts` 15 of 15, `onUncaught.ts` 11 of 11); find whether tests miss them or the module-level gap of 0920 hides kills, and write the tests; add small-scale cases for the 8 scrub automaton mutants only the scale cases kill · server · k.ledger
 - [ ] 0963 release: the active task to the start of P1 (`tasks/0963-to-p1/PLAN.md`) · release
 - [x] 0962 release: write the P1 and P2 plan from `tasks/p1/INPUT.md` in a fresh context: workstreams, gates, order; a steal list from the best framework sites; the list of feature moments to show · release
+
+## Red team
+
+- [ ] 0968 router (medium): an admitted return link re-arms the gate through app code: link `<id>:/auth/act` → 302 `/private` → guard → sign-in page that `navigate(auth.href('/login/github'))` on render → that chain is `PAGE` and records an opening → a second link admitted (`mountRequests.ts:140`→`:63` loses `from: "link"`; `:197` defaults to `PAGE`); record only after a trusted click/submit since the last admitted link, or carry `link` through the navigation it starts; repro: happy-dom probe in `packages/router/test`, one `pend` + 2 links → 2 `/auth/act` GETs · router · k.opening
+- [ ] 0969 spec (low): k.opening says a new opening replaces the pending one, but a failed `record` (`returnOpenings.ts:37`) leaves the older one, which admits its link until its own deadline; harmless (no link beyond what it already admitted), state it in k.opening Stored value · spec · k.opening
