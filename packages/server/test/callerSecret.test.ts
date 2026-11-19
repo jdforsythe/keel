@@ -34,6 +34,7 @@ const app = (o: {
   assets?: string;
   lines?: string[];
   secure?: boolean;
+  origin?: string;
 }) =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
@@ -41,6 +42,7 @@ const app = (o: {
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     ...(o.secret === undefined ? {} : { secret: o.secret }),
     ...(o.secure === undefined ? {} : { secure: o.secure }),
+    ...(o.origin === undefined ? {} : { origin: o.origin }),
     ...(o.mode === undefined ? {} : { mode: o.mode }),
     ...(o.assets === undefined ? {} : { assets: o.assets }),
     ...(o.lines === undefined ? {} : { log: { format: "json", write: (l: string) => o.lines?.push(l) } }),
@@ -103,5 +105,16 @@ describe("createApp({ secret }) (backlog 0159)", () => {
     vi.stubEnv("NODE_ENV", "development");
     await app({ lines: quiet, secret: "s".repeat(32) });
     expect(quiet).toEqual([]);
+  });
+
+  it("behind a proxy, the public https origin (KEEL_ORIGIN in server.mjs) is the switch: no W1557, and the cookie is Secure", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const lines: string[] = [];
+    const a = await app({ assets: built(), lines, secret: "s".repeat(32), origin: "https://a.example" });
+    expect(lines).toEqual([]);
+    const res = await a.fetch(
+      new Request("http://10.0.0.2:8080/", { method: "POST", headers: { origin: "https://a.example" } }),
+    );
+    expect(res.headers.get("set-cookie") ?? "").toMatch(/^__Host-keel-caller=.*; Secure/);
   });
 });
