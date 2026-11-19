@@ -71,16 +71,16 @@ test("the plist gains CFBundleURLTypes with the id as its one scheme before the 
   );
 });
 
-test("keel-capacitor-scheme writes the scheme of capacitor.config.json's appId into the platform file, and fails without one", () => {
+test("keel-capacitor-scheme writes the scheme of capacitor.config.json's appId into the platform file, and fails without an appId or a known platform", () => {
   const bin = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "schemeBin.ts");
   const dir = mkdtempSync(join(tmpdir(), "keel-scheme-"));
   const run = (platform: string) => spawnSync(process.execPath, [bin, platform], { cwd: dir, encoding: "utf8" });
   try {
     expect(run("android").status).toBe(1);
     writeFileSync(join(dir, "capacitor.config.json"), JSON.stringify({ appId: "dev.keel.app", webDir: "www" }));
-    const missing = run("ios");
-    expect(missing.status).toBe(1);
-    expect(missing.stderr).toMatch(/^error: /);
+    expect(run("windows").stderr).toMatch(/^error: /);
+    // A platform project without the file is left as it is.
+    expect([run("ios").status, run("ios").stderr]).toEqual([0, ""]);
     mkdirSync(join(dir, "android/app/src/main"), { recursive: true });
     mkdirSync(join(dir, "ios/App/App"), { recursive: true });
     writeFileSync(join(dir, "android/app/src/main/AndroidManifest.xml"), MANIFEST);
