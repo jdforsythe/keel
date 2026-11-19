@@ -32,10 +32,8 @@ export function scrubbed(
   passes: readonly (readonly [ReadonlySet<string>, string])[],
   count?: { build: number; walk: number; forms: number },
 ): string {
-  const lost = passes.find(([values]) => {
-    const at = slotSince.get(values);
-    return at !== undefined && at !== noteRequestSecrets();
-  });
+  const n = noteRequestSecrets();
+  const lost = passes.find(([values]) => (slotSince.get(values) ?? n) !== n);
   if (lost !== undefined) return lost[1];
   const held = passes.find(([values]) => values.size > 0);
   if (held === undefined) return message;

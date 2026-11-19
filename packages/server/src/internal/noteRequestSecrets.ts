@@ -14,13 +14,14 @@ import { requestSecrets } from "./requestSecrets.ts";
  * its 1,000,000 values left values unread, so the set is past its cap (`pastCap`) and every text of the scope is one
  * mark.
  */
-let probing = false;
+// 1 while a probe `Secret` is made; the listener sets it back to 0.
+let probing = 0;
 let losses = 0;
 const PROBE = s.secret(s.boolean());
 
 const note: SecretListener = (made) => {
   if (probing) {
-    probing = false;
+    probing = 0;
     return;
   }
   const into = requestSecrets.getStore();
@@ -46,10 +47,10 @@ const note: SecretListener = (made) => {
  * count is the one its scope began with (`slotSince`, `scrubbed`).
  */
 export function noteRequestSecrets(): number {
-  probing = true;
+  probing = 1;
   PROBE.parse(true);
-  if (probing) losses++;
-  probing = false;
+  losses += probing;
+  probing = 0;
   onSecret(note);
   return losses;
 }
