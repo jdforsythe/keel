@@ -45,7 +45,7 @@ Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane
 - [ ] 0442 server · S · plain siblings of an `s.secret` under an array, record or union drop from a 422 re-render (server budget) · lane 02
 - [x] 0671 server · S · another package replacing or clearing the `onSecret` slot leaves a running app unscrubbed · lane 02
 - [x] 0683 server · M · copies of a secret in other encodings (`+`, `encodeURI`, double encoding, JSON `\u`) are not scrubbed · lane 02
-- [ ] 0722 server · S · the dev body of a component that throws while rendering is clipped and not scrubbed · lane 02
+- [x] 0722 server · S · the dev body of a component that throws while rendering is clipped and not scrubbed · lane 02
 - [ ] 0729 server · S · red-team: the scrub costs about 1.2 s of event-loop time on a 790 KB body of secret items · lane 02
 - [ ] 0737 server · S · red-team: some 404 path shapes (`;jsessionid`, `%20`, homoglyphs, `&code=`) are written raw · lane 02
 - [ ] 0756 server · S · a secret beginning or ending with `/` leaves that slash beside `[secret]` in the `req` log line · lane 02
