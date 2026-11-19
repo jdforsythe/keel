@@ -2,4 +2,4 @@
 "@keel/check": patch
 ---
 
-The E1112 explanation names `credentials(ctx).hash` of `@keel/std-credentials` as the way to store a value derived from a secret.
+The E1112 explanation names the `digest` a minted token gives (`@keel/std-tokens`) as the value to store in place of a revealed one.

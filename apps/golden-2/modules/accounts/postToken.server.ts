@@ -1,6 +1,6 @@
 import { action } from "@keel/router";
 import { err, ok, reveal } from "@keel/schema";
-import { credentials } from "@keel/std-credentials/server";
+import { tokens } from "@keel/std-tokens/server";
 import { tx } from "@keel/store";
 import { MintedToken } from "./MintedToken.schema.ts";
 import { TokenRequest } from "./TokenRequest.schema.ts";
@@ -18,7 +18,7 @@ export const postToken = action(
   { input: TokenRequest, output: MintedToken, stores: tokenStores },
   (_input, { user, bearer, stores }, ctx) => {
     if (user === "" || bearer !== undefined) return err({ code: "keel.denied", message: "Sign in first", data: null });
-    const minted = credentials(ctx).mint({ ttl: TTL });
+    const minted = tokens(ctx).mint({ ttl: TTL });
     if (!minted.ok) return err(minted.error);
     const { token, id, digest, expiresAt } = minted.value;
     const added = tx(stores.addToken, { id, digest, userId: user });

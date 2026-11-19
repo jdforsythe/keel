@@ -48,7 +48,7 @@ const SECONDS = {
   "@keel/compiler": 70,
   "@keel/router": 65,
   "golden-1": 60,
-  "@keel/std-credentials": 55,
+  "@keel/std-tokens": 55,
   "golden-2": 35,
   "@keel/runtime-dom": 35,
   "@keel/ui": 35,

@@ -208,9 +208,6 @@ importers:
       '@keel/services':
         specifier: workspace:*
         version: link:../../packages/services
-      '@keel/std-credentials':
-        specifier: workspace:*
-        version: link:../../packages/std-credentials
       '@keel/std-headless':
         specifier: workspace:*
         version: link:../../packages/std-headless
@@ -232,6 +229,9 @@ importers:
       '@keel/std-text':
         specifier: workspace:*
         version: link:../../packages/std-text
+      '@keel/std-tokens':
+        specifier: workspace:*
+        version: link:../../packages/std-tokens
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store
@@ -838,46 +838,6 @@ importers:
       '@keel/ui':
         specifier: workspace:*
         version: link:../ui
-      '@types/node':
-        specifier: ^22
-        version: 22.20.5
-      fast-check:
-        specifier: ^3
-        version: 3.23.2
-
-  packages/std-credentials:
-    dependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
-      '@keel/compiler':
-        specifier: workspace:*
-        version: link:../compiler
-      '@keel/ctx':
-        specifier: workspace:*
-        version: link:../ctx
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-    devDependencies:
-      '@keel/router':
-        specifier: workspace:*
-        version: link:../router
-      '@keel/server':
-        specifier: workspace:*
-        version: link:../server
-      '@keel/services':
-        specifier: workspace:*
-        version: link:../services
-      '@keel/store':
-        specifier: workspace:*
-        version: link:../store
-      '@keel/testing':
-        specifier: workspace:*
-        version: link:../testing
-      '@keel/tooling':
-        specifier: workspace:*
-        version: link:../../tooling
       '@types/node':
         specifier: ^22
         version: 22.20.5
@@ -1545,6 +1505,46 @@ importers:
       happy-dom:
         specifier: ^21
         version: 21.0.4
+
+  packages/std-tokens:
+    dependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../server
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../services
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
 
   packages/std-workflows:
     dependencies:

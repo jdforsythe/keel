@@ -21,7 +21,7 @@
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
-    "@keel/std-credentials": "workspace:*",
+    "@keel/std-tokens": "workspace:*",
     "@keel/std-headless": "workspace:*",
     "@keel/std-i18n": "workspace:*",
     "@keel/std-messages": "workspace:*",

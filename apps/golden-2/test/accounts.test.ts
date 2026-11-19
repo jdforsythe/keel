@@ -1,6 +1,6 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { credentials } from "@keel/std-credentials/server";
+import { tokens } from "@keel/std-tokens/server";
 import { invariant, isolate, store } from "@keel/store";
 import { properties, render, renderRoute, resumeDocument } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
@@ -51,12 +51,12 @@ describe("accounts transactions", () => {
     await properties(isolated(tokenStores).addToken);
   });
   it("addToken keeps token ids unique", async () => {
-    const tokens = isolated(() => {
+    const tokenStore = isolated(() => {
       const made = store(ApiTokens, { tokens: [] }, { id: "accounts.tokens" });
       invariant(made, (state) => new Set(state.tokens.map((t) => t.id)).size === state.tokens.length);
       return made;
     });
-    await properties(addToken(tokens));
+    await properties(addToken(tokenStore));
   });
   it("saveProfile keeps one profile per user, the latest email", async () => {
     await properties(isolated(profileStores).saveProfile);
@@ -94,7 +94,7 @@ describe("accounts schemas", () => {
 
   it("ApiToken and ApiTokens hold a digest and the library's user id, and refuse a token's text", () => {
     const ctx = createCtx({ mode: "sim", seed: 31 });
-    const minted = credentials(ctx).mint({ ttl: 60_000 });
+    const minted = tokens(ctx).mint({ ttl: 60_000 });
     if (!minted.ok) throw new Error("sim mint refused");
     const row = { id: minted.value.id, digest: minted.value.digest, userId: "9b8CJ0rjFLjoNDXn" };
     expect(ApiToken.parse(row).ok).toBe(true);

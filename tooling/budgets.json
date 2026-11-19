@@ -147,12 +147,12 @@
     },
     "@keel/std-capacitor": "1.5kb",
     "@keel/std-tauri": "1.75kb",
-    "@keel/std-credentials": "1kb",
-    "@keel/std-credentials/server": {
+    "@keel/std-tokens": "1kb",
+    "@keel/std-tokens/server": {
       "max": "3kb",
       "platform": "node"
     },
-    "@keel/std-credentials/tools": {
+    "@keel/std-tokens/tools": {
       "max": "1.25kb",
       "platform": "node"
     },

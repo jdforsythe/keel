@@ -39,7 +39,7 @@
     "std-workflows",
     "std-capacitor",
     "std-tauri",
-    "std-credentials"
+    "std-tokens"
   ],
   "rule": "a package may import only packages earlier in order, plus ctx and tooling; stdlib packages (std-*) come after the kernel, so no kernel package imports one (RFC 0047)"
 }
