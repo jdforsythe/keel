@@ -7,6 +7,7 @@ export default module({
     "@keel/std-health",
     "@keel/std-i18n",
     "@keel/std-money",
+    "@keel/std-report",
     "@keel/std-tables",
     "@keel/std-temporal",
     "@keel/std-text",

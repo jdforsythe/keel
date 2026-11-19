@@ -39,6 +39,8 @@ Environment, read on the server only:
 ## Dev
 Run `pnpm dev` from `apps/golden-2`. `keel dev` serves `web` with hot reload and the `api` deployable on one origin; storage lives in `.keel-dev/`. `GET /__keel/inspect` (and `keel inspect`) shows `timings.recent` from `@keel/std-timings`: `kitchen.catalog.query`, the catalog query on the `api` deployable, and `recipes.api.catalog` and `recipes.api.box`, how long a recipes page waited for each `kitchen` call.
 
+The `kitchen` module counts the box's recipes by price currency each time `/api/recipes` or `/api/catalog/<locale>` reads the box (`currencyTally`, `tallyOf` of `@keel/std-report`) and serves the tally as the inspector section `kitchen.box.currency` of the `api` deployable's dev app. `keel report <url>` against that app prints it as `kitchen.box.currency EUR=2 JPY=1`, then `ok report 1 tallies`.
+
 Each module lists `@keel/std-brands` in `deps`, so `keel check` holds every id brand (`s.id('Recipe')`, `ctx.random.id('Recipe')`) to PascalCase (E2101, with a fix).
 
 ## Production
