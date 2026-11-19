@@ -28,7 +28,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.cli | 19 | **conformance-covered** | none |
 | k.module | 14 | **conformance-covered** | none |
 | k.scaffold | 10 | **conformance-covered** | none |
-| k.testing | 13 | **conformance-covered** | none |
+| k.testing | 14 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 10 | **conformance-covered** | none |
 | k.ledger | 11 | **conformance-covered** | none |
@@ -36,7 +36,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.deploy | 11 | **conformance-covered** | none |
 | k.hosting | 6 | implemented | clause 2: the client entry's fetch URL and `credentials: 'include'` are not observed by a test |
 | k.openapi | 1 | **conformance-covered** | none |
-| k.a11y | 11 | **conformance-covered** | none |
+| k.a11y | 12 | **conformance-covered** | none |
 | k.security | 13 | **conformance-covered** | none |
 | k.privacy | 10 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
@@ -45,13 +45,26 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.persist | 12 | **conformance-covered** | none |
 | k.prove | 10 | **conformance-covered** | none |
 | k.reveal | 9 | **conformance-covered** | none |
-| k.shell | 6 | proposed | clause 6: the test for "the package's drivers" matches the word `drivers` only |
+| k.shell | 7 | proposed | clause 6: the test for "the package's drivers" matches the word `drivers` only |
+| k.claim | 9 | **conformance-covered** | none |
+| k.defaults | 6 | **conformance-covered** | none |
+| k.host | 5 | **conformance-covered** | none |
+| k.leave | 10 | **conformance-covered** | none |
+| k.mount | 7 | **conformance-covered** | none |
+| k.owner | 5 | **conformance-covered** | none |
+| k.place | 5 | **conformance-covered** | none |
+| k.resume | 13 | **conformance-covered** | none |
+| k.serverlog | 6 | **conformance-covered** | none |
+| k.user | 8 | **conformance-covered** | none |
+| k.boundary | 8 | proposed | not audited; the environment and limits suites run `keel build` on fixtures whose `env.d.ts` the type pass does not read |
 | std.brands | 6 | **conformance-covered** | none |
 | std.channels | 11 | **conformance-covered** | none |
 | std.conflicts | 8 | **conformance-covered** | none |
+| std.copy | 2 | **conformance-covered** | none |
 | std.credentials | 15 | **conformance-covered** | none |
 | std.db | 8 | proposed | clause 1: the Postgres path runs on PGlite only; no job sets `KEEL_TEST_POSTGRES_URL` |
-| std.outbox | 6 | proposed | not audited |
+| std.outbox | 14 | **conformance-covered** | none |
+| std.outbox-owner | 3 | proposed | not audited |
 | std.geo | 5 | **conformance-covered** | none |
 | std.headless | 7 | **conformance-covered** | none |
 | std.health | 7 | **conformance-covered** | none |
@@ -67,7 +80,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.report | 6 | **conformance-covered** | none |
 | std.schedules | 9 | **conformance-covered** | none |
 | std.sessions | 13 | **conformance-covered** | none |
-| std.shells | 6 | **conformance-covered** | none |
+| std.shells | 8 | **conformance-covered** | none |
 | std.statecharts | 10 | **conformance-covered** | none |
 | std.tables | 9 | **conformance-covered** | none |
 | std.temporal | 12 | **conformance-covered** | none |
@@ -75,7 +88,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.timings | 7 | **conformance-covered** | none |
 | std.tokens | 10 | **conformance-covered** | none |
 | std.workflows | 8 | **conformance-covered** | none |
-| **total** | **741** | 65 of 69 covered | |
+| **total** | **841** | 77 of 82 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -122,6 +135,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.hosting is `implemented`; k.shell, std.db and std.outbox are `proposed`; the other 65 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.hosting is `implemented`; k.shell, k.boundary, std.db and std.outbox-owner are `proposed`; the other 77 are `conformance-covered`.
 
-verified: 7f8b706a6650972a4398989d17b2a34ccbc21f03
+verified: 8141c656232bca08ab3b7f14c11c0efbc04b4ab9
