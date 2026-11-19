@@ -6,7 +6,7 @@ status key: proposed | implemented | conformance-covered | frozen. Budget: this 
 Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <code>` finds the owner.
 | block | owner | block | owner |
 | --- | --- | --- | --- |
-| E100x | k.compiler, k.boundary | E105x | k.cli, k.evidence |
+| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence |
 | E110x | k.schema, k.privacy, k.reveal, k.leave | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold |
@@ -33,14 +33,15 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.component | Components | conformance-covered | props, slots |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX |
 | k.boundary | The server boundary | conformance-covered | stubs, E1007 |
+| k.bundle | Browser bundles | proposed | workers |
 | k.runtime | DOM runtime and islands | conformance-covered | nodes |
 | k.resume | Served documents, resume | conformance-covered | regions |
-| k.claim | Claim order | conformance-covered | eager elements |
-| k.defaults | Queued default actions | conformance-covered | submit once |
+| k.claim | Claim order | conformance-covered | eager |
+| k.defaults | Queued default actions | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
 | k.router | Routes | conformance-covered | params |
 | k.guards | Guards | conformance-covered | redirects |
-| k.prefix | Implied path prefix | conformance-covered | enum params |
+| k.prefix | Implied path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | validation |
 | k.ui | Tokens and styling | conformance-covered | atomic CSS |
 | k.ctx | Capabilities | conformance-covered | clock, net |
@@ -55,7 +56,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Schedules and simulation | conformance-covered | faults |
 | k.ledger | Ledger and evidence | conformance-covered | rungs |
-| k.server | Thin server | conformance-covered | loaders, actions |
+| k.server | Thin server | conformance-covered | loaders |
 | k.leave | What a request leaves | conformance-covered | `#k-state` |
 | k.user | Request user and caller lifetime | conformance-covered | `identify` |
 | k.mount | Pages into the identity mount | conformance-covered | native submit |
@@ -63,21 +64,21 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |
 | k.topology | Deployables | conformance-covered | peers |
-| k.deploy | Production entry and deploy files | conformance-covered | `server.mjs` |
-| k.shell | Native shells | proposed | Capacitor, Tauri |
+| k.deploy | Production entry and deploy files | conformance-covered | entry |
+| k.shell | Native shells | proposed | Tauri |
 | k.compat | Surface compatibility | conformance-covered | `accepts` |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | implemented | `host` |
 | k.head | Document head | conformance-covered | title |
-| k.services | Thin services | conformance-covered | typed clients |
+| k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |
 | k.a11y | Accessibility | conformance-covered | contrast |
-| k.aria | Widget parts | conformance-covered | roles, focus |
+| k.aria | Widget parts | conformance-covered | roles |
 | k.security | Headers and CSP | conformance-covered | nonce CSP |
 | k.privacy | Secrets and personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
-| k.evidence | Evidence bundle | conformance-covered | signed bundle |
+| k.evidence | Evidence bundle | conformance-covered | bundle |
 
 ## Stdlib
 Sections: `spec/std/README.md`.
