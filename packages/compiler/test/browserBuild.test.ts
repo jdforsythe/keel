@@ -41,6 +41,8 @@ describe("stubCode", () => {
 });
 
 describe("projectHandlerUses", () => {
+  /** The router's specifier, quoted, for the fixtures' dynamic `import()`. */
+  const ROUTER = JSON.stringify(["@keel", "router"].join("/"));
   const uses = (files: Record<string, string>): Record<string, string[][]> => {
     const parsed = Object.entries(files).map(([p, code]) => ({ path: p, program: parseSync(p, code).program }));
     const out: Record<string, string[][]> = {};
@@ -72,7 +74,7 @@ describe("projectHandlerUses", () => {
                   ? `R.${ctor}`
                   : how === "bracket"
                     ? `R["${ctor}"]`
-                    : `(await import("@keel/router")).${ctor}`;
+                    : `(await import(${ROUTER})).${ctor}`;
           const code = `${head}export const x = ${called ? `${ref}({})` : ref}\n`;
           expect(uses({ "a.ts": code })["a.ts"]).toEqual([[ctor]]);
         },
