@@ -15,7 +15,10 @@ const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 const manifestSrc = (id: string): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
 const routesSrc = (id: string, path: string): string =>
-  `import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
+  `import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
+
+const pageSrc =
+  "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>page</Text>\n    </Box>\n  )\n}\n";
 
 const files = (): Record<string, string> => ({
   "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module" })}\n`,
@@ -29,8 +32,10 @@ const files = (): Record<string, string> => ({
   "topology.ts":
     "import { topology } from '@keel/server'\nexport default topology({\n  api: { modules: ['a'], adapter: 'node' },\n  w: { modules: ['c'], adapter: 'client' },\n})\n",
   "modules/a/module.ts": manifestSrc("a"),
+  "modules/a/Page.tsx": pageSrc,
   "modules/a/routes.ts": routesSrc("a", "/a"),
   "modules/c/module.ts": manifestSrc("c"),
+  "modules/c/Page.tsx": pageSrc,
   "modules/c/routes.ts": routesSrc("c", "/"),
 });
 

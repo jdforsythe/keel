@@ -52,9 +52,7 @@ test(
     const noLoader = {
       ...withLoader,
       "modules/y/routes.ts":
-        "import { action, manifest } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n" +
-        "const Page = () => null\n" +
-        "const save = action({ input: s.object({ name: s.string() }) }, async () => ok(null))\n" +
+        "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nimport { save } from './save.server.ts'\n" +
         "export const routes = manifest({ 'y.save': { path: '/y/save', component: Page } })\n" +
         "routes.actions({ 'y.save': { POST: save } })\n",
     };
@@ -147,9 +145,10 @@ test(
       fc.property(fc.stringMatching(/^[a-z]{4,10}$/), (word) => {
         const files = project();
         const api = files["modules/a/api.ts"] ?? "";
+        // An invalid pattern makes the file throw on evaluation without a `throw` statement, which `keel check` refuses.
         const dir = fresh({
           ...files,
-          "modules/a/api.ts": `const boom = (m: string): never => {\n  throw new Error(m)\n}\nboom('endpoints-${word}')\n${api}`,
+          "modules/a/api.ts": `new RegExp('(endpoints-${word}')\n${api}`,
         });
         const built = keel(dir, ["build"]);
         expect(built.status).toBe(1);

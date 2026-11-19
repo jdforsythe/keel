@@ -12,11 +12,10 @@ const DEFINE = "K_DEFINE_2b7f0c9e4a1d8365c0f9";
 const base = nodeTree("node");
 const tree = () =>
   withFiles(base, {
-    "modules/a/Params.schema.ts": `import { s } from '@keel/schema'\nexport const Params = s.object({ id: s.string().default('${HARD}') })\n`,
+    "modules/a/Params.schema.ts": `import { s } from '@keel/schema'\nexport const Params = s.object({ id: s.enum(['x', '${HARD}']) })\n`,
     "modules/a/routes.ts": `${base["modules/a/routes.ts"] ?? ""}Reflect.set(globalThis, 'routesTop', '${TOPLEVEL}')\n`,
     "vite.config.ts": `import keel from "@keel/compiler/vite";\nimport { defineConfig } from "vite";\nexport default defineConfig({ plugins: [keel()], define: { __FROM_CONFIG__: JSON.stringify('${DEFINE}') } });\n`,
-    "env.d.ts": "declare const __FROM_CONFIG__: string\n",
-    "modules/a/Page.tsx": `${base["modules/a/Page.tsx"] ?? ""}Reflect.set(globalThis, 'fromConfig', __FROM_CONFIG__)\n`,
+    "modules/a/Page.tsx": `${base["modules/a/Page.tsx"] ?? ""}declare const __FROM_CONFIG__: string\nReflect.set(globalThis, 'fromConfig', __FROM_CONFIG__)\n`,
   });
 
 let dir = "";

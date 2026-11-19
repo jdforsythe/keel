@@ -151,11 +151,15 @@ export function project(sh: Shape = {}): Tree {
     "modules/y/module.ts":
       `import { module } from '@keel/compiler'\n` +
       `export default module({ id: 'y', deps: [], capabilities: [], public: { exports: [], routes: ${q(sh.publicRoutes ?? ["y.save"])} } })\n`,
+    "modules/y/Page.tsx": `import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as="main">\n      <Text>y</Text>\n    </Box>\n  )\n}\n`,
+    "modules/y/load.server.ts":
+      `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n` +
+      `export const load = loader({ output: ${output} }, async () => ok(${sh.outputValue ?? "{ id: 'i' }"}))\n`,
+    "modules/y/save.server.ts":
+      `import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n` +
+      `export const save = action({ input: ${input} }, async () => ok(null))\n`,
     "modules/y/routes.ts":
-      `import { action, loader, manifest } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n` +
-      `const Page = () => null\n` +
-      `const load = loader({ output: ${output} }, async () => ok(${sh.outputValue ?? "{ id: 'i' }"}))\n` +
-      `const save = action({ input: ${input} }, async () => ok(null))\n` +
+      `import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nimport { load } from './load.server.ts'\nimport { save } from './save.server.ts'\n` +
       `export const routes = manifest({ 'y.save': { path: '/y/save', loader: load, component: Page } })\n` +
       `routes.actions({ 'y.save': { POST: save } })\n`,
     "modules/a/api.ts":

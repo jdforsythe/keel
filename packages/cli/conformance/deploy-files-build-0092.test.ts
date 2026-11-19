@@ -12,7 +12,9 @@ const SLOW = 300_000;
 const manifestSrc = (id: string): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
 const routesSrc = (id: string, path: string): string =>
-  `import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
+  `import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
+const pageSrc =
+  "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>page</Text>\n    </Box>\n  )\n}\n";
 const topologySrc = (bIn: "x" | "y"): string =>
   "import { topology } from '@keel/server'\n" +
   "export default topology({\n" +
@@ -30,12 +32,16 @@ const files = (bIn: "x" | "y"): Record<string, string> => ({
   }),
   "topology.ts": topologySrc(bIn),
   "modules/a/module.ts": manifestSrc("a"),
+  "modules/a/Page.tsx": pageSrc,
   "modules/a/routes.ts": routesSrc("a", "/a"),
   "modules/b/module.ts": manifestSrc("b"),
+  "modules/b/Page.tsx": pageSrc,
   "modules/b/routes.ts": routesSrc("b", "/b"),
   "modules/c/module.ts": manifestSrc("c"),
+  "modules/c/Page.tsx": pageSrc,
   "modules/c/routes.ts": routesSrc("c", "/"),
   "modules/d/module.ts": manifestSrc("d"),
+  "modules/d/Page.tsx": pageSrc,
   "modules/d/routes.ts": routesSrc("d", "/d"),
 });
 

@@ -45,8 +45,10 @@ const files = (): Record<string, string> => ({
   "topology.ts":
     "import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client', shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' }, capacitor: { id: 'dev.keel.golden', name: 'Golden' } } },\n})\n",
   "modules/c/module.ts": manifestSrc("c"),
+  "modules/c/Page.tsx":
+    "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>home</Text>\n    </Box>\n  )\n}\n",
   "modules/c/routes.ts":
-    "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+    "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
 });
 
 /** Any small valid RGB PNG (8-bit, color type 2, 1x1), so it differs from Keel's RGBA mark. */

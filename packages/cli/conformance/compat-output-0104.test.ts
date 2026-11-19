@@ -36,10 +36,15 @@ function apiProject(output: string, value: string, endpointOutput: string, split
   const base = project({ split });
   return {
     ...base,
-    "modules/y/routes.ts": [
-      "import { action, manifest } from '@keel/router'",
+    "modules/y/save.server.ts": [
+      "import { action } from '@keel/router'",
       "import { ok, s } from '@keel/schema'",
-      `const save = action({ input: s.object({ name: s.string() }), output: ${output} }, async () => ok(${value}))`,
+      `export const save = action({ input: s.object({ name: s.string() }), output: ${output} }, async () => ok(${value}))`,
+      "",
+    ].join("\n"),
+    "modules/y/routes.ts": [
+      "import { manifest } from '@keel/router'",
+      "import { save } from './save.server.ts'",
       "export const routes = manifest({ 'y.save': { api: true, path: '/y/save' } })",
       "routes.actions({ 'y.save': { POST: save } })",
       "",

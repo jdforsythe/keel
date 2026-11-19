@@ -29,6 +29,11 @@ beforeAll(() => {
     );
     fs.writeFileSync(path.join(dir, "index.js"), "export {};\n");
   }
+  const packages = path.resolve(import.meta.dirname, "..", "..");
+  for (const name of fs.readdirSync(packages)) {
+    const link = path.join(tmp, "node_modules/@keel", name);
+    if (!fs.existsSync(link)) fs.symlinkSync(path.join(packages, name), link);
+  }
 });
 afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
 

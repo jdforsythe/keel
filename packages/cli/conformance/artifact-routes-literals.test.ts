@@ -18,9 +18,24 @@ const BADGE = `export default function Badge() {
   return <span id="badge.count">3</span>
 }
 `;
+const PAGE = `import { Box, Text } from "@keel/ui";
+export default function Page() {
+  return (
+    <Box as="main">
+      <Text>home</Text>
+    </Box>
+  );
+}
+`;
+const BADGE_UI = `import { Text } from "@keel/ui";
+export default function Badge() {
+  return <Text id="badge.count">3</Text>;
+}
+`;
 const ROUTES_TS = `import { manifest } from "@keel/router";
+import Page from "./Page.tsx";
 export const routes = manifest({
-  "m.home": { path: "/home", component: () => null },
+  "m.home": { path: "/home", component: Page },
 });
 `;
 const ROUTES_TS_COMPUTED = `import { manifest } from "@keel/router";
@@ -142,7 +157,7 @@ const writeRoutes = (root: string, text: string): void => {
   fs.writeFileSync(routesFileOf(root), text);
 };
 
-const BASE_FILES = { "src/Badge.tsx": BADGE, "tsconfig.json": TSCONFIG };
+const BASE_FILES = { "src/Badge.tsx": BADGE, "tsconfig.json": TSCONFIG, "modules/m/Page.tsx": PAGE };
 const created: string[] = [];
 let proj = "";
 let genuine = "";
@@ -157,6 +172,7 @@ beforeAll(async () => {
   });
   nodeProj = makeProject("keel-routes-lit-node-", {
     ...BASE_FILES,
+    "src/Badge.tsx": BADGE_UI,
     "topology.ts": TOPOLOGY_NODE,
     "modules/m/routes.ts": ROUTES_TS,
   });
