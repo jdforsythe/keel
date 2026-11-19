@@ -404,9 +404,10 @@ test("enqueue names the job id a queue lacks, and a refused input with its messa
   const jobs = queue({
     "orders.work": job({ input: s.object({ a: s.object({ n: s.int() }) }) }, async () => ok(null)),
   });
-  const gone: { n: number } = { n: 1 };
-  // @ts-expect-error the id is not in the table
-  await expect(jobs.enqueue(ctx, "orders.gone", gone)).rejects.toThrow("std.jobs: no job orders.gone in this queue");
+  const wide: { enqueue(ctx: Ctx, id: string, input: unknown): Promise<unknown> } = jobs;
+  await expect(wide.enqueue(ctx, "orders.gone", { n: 1 })).rejects.toThrow(
+    "std.jobs: no job orders.gone in this queue",
+  );
   const bad: { a: { n: number } } = { a: { n: 1.5 } };
   const r = await jobs.enqueue(ctx, "orders.work", bad);
   expect(r).toEqual({ ok: false, error: { code: "keel.fields", message: "keel.fields", data: { "a.n": "int" } } });
