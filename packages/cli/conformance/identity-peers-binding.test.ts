@@ -205,6 +205,7 @@ describe("k.user: the user header binds the body, the deployable and an expiry c
     expect(toC.status).toBeLessThan(500);
     expect(t.seenC).toEqual(["anon-c"]);
     expect(t.identifiedC).toHaveLength(1);
+    t.seenB.put.length = 0;
     const toB = await t.y.fetch(putB(header, body));
     expect(toB.status).toBeLessThan(400);
     expect(t.seenB.put).toEqual(["u1"]);
