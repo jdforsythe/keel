@@ -312,7 +312,7 @@ export function presentInputs(root, unitList) {
  * The parts `--check` compares, as text: the ledger, the tests, the schema and tool, and the mutation parts the
  * committed tree decides (score, threshold, claims, stale claims). The header (commit, time) is left out. A unit's
  * coverage entry and a unit's mutation report date are compared only when `present` lists the unit, because their
- * source files come from local runs.
+ * source files come from local runs. A report marked `dirty` never equals a fresh one, which is not.
  */
 export function checkedParts(report, present = { coverage: [], mutationReports: [] }) {
   const mutation = Object.fromEntries(
@@ -324,6 +324,7 @@ export function checkedParts(report, present = { coverage: [], mutationReports: 
   const coverage = Object.fromEntries(present.coverage.map((u) => [u, report.coverage.packages[u]]));
   return stableJson({
     coverage,
+    dirty: report.dirty ?? null,
     ledger: report.ledger,
     mutation: { packages: mutation, stale: report.mutation.stale },
     schema: report.schema,
@@ -340,13 +341,47 @@ export function notChecked(unitList, present) {
   };
 }
 
+const SPEC_FILE = /^spec\/(?:kernel|std)\/[^/]+\.md$/;
+const UNIT_MANIFEST = /^(?:apps|packages)\/[^/]+\/package\.json$/;
+const UNIT_TEST = /^(?:apps|packages)\/[^/]+\/(?:.+\/)?[^/]+\.test\.(?:ts|tsx|mts|cts|js|jsx|mjs)$/;
+
+/** Whether a repo-relative path is a file the report reads from the tree: a spec section, a unit manifest or a test file. */
+export const feedsReport = (rel) => SPEC_FILE.test(rel) || UNIT_MANIFEST.test(rel) || UNIT_TEST.test(rel);
+
+/**
+ * The paths that differ from HEAD (modified, staged, deleted, renamed or untracked and not ignored) among the files
+ * the report reads: spec sections, unit manifests and test files, sorted. The committed ledger file and the report's
+ * own outputs are not listed: `pnpm ledger` rewrites the first just before a report is written, and the
+ * ledger gate compares it with the tree. Outside a git checkout nothing is known and the list is empty.
+ */
+export function dirtyInputs(root) {
+  const r = spawnSync("git", ["status", "--porcelain=v1", "-z", "--untracked-files=all"], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  if (r.status !== 0) return [];
+  const prefix = spawnSync("git", ["rev-parse", "--show-prefix"], { cwd: root, encoding: "utf8" }).stdout.trim();
+  const entries = r.stdout.split("\0").filter((e) => e !== "");
+  const paths = [];
+  for (let i = 0; i < entries.length; i++) {
+    const status = entries[i].slice(0, 2);
+    paths.push(entries[i].slice(3));
+    // A rename or copy lists its origin as the next entry.
+    if (/[RC]/.test(status)) paths.push(entries[++i] ?? "");
+  }
+  return [...new Set(paths.filter((p) => p.startsWith(prefix)).map((p) => p.slice(prefix.length)))]
+    .filter(feedsReport)
+    .sort();
+}
+
 /** The whole report: header, ledger, tests, mutation and coverage. `previous` is the committed report, if any. */
-export function buildReport({ root, ledger, commit, generatedAt, previous }) {
+export function buildReport({ root, ledger, commit, generatedAt, previous, dirty = [] }) {
   const tests = testsPart(root);
   const unitList = units(root);
   return {
     commit,
     coverage: coveragePart(root, unitList, previous?.coverage?.packages),
+    ...(dirty.length > 0 ? { dirty } : {}),
     generatedAt,
     ledger: ledgerPart(ledger, specStatuses(root)),
     mutation: mutationPart(root, ledger, unitList, previous?.mutation?.packages),
