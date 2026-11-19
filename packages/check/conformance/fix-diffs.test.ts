@@ -319,6 +319,7 @@ const FIX = [
   "E1406",
   "E1759",
   "E1820",
+  "E1010",
 ];
 const NO_FIX = [
   "E1000", // a syntax error has no unique repair

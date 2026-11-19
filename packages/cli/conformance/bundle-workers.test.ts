@@ -10,7 +10,11 @@ import { describe, expect, test } from "vitest";
 import { filesHolding, filesUnder, keelRun, linesWith, viteBuild } from "./boundary-support.ts";
 import { ALIVE, CANARY_NOTES, REF, bare, chainOf, inProject, nodeWith, page, reasonOf } from "./bundle-support.ts";
 
-const keysOf = <T extends object>(o: T): (keyof T)[] => Object.keys(o).filter((k): k is keyof T => k in o);
+const keysOf = <T extends object>(o: T): (keyof T)[] => {
+  const out: (keyof T)[] = [];
+  for (const k in o) out.push(k);
+  return out;
+};
 const NOTES = `export const notes = '${CANARY_NOTES}'\n`;
 const W = `import { notes } from './notes.server.ts'\nself.postMessage(['${ALIVE}', notes])\n`;
 

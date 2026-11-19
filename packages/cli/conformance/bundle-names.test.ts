@@ -38,7 +38,11 @@ const TSCONFIG_JSON = JSON.stringify({
   },
 });
 
-const keysOf = <T extends object>(o: T): (keyof T)[] => Object.keys(o).filter((k): k is keyof T => k in o);
+const keysOf = <T extends object>(o: T): (keyof T)[] => {
+  const out: (keyof T)[] = [];
+  for (const k in o) out.push(k);
+  return out;
+};
 const KINDS = {
   "keys.server.json": {
     file: "lib/keys.server.json",

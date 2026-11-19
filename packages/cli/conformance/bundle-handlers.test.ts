@@ -12,7 +12,11 @@ const HEAD = "import { ok, s } from '@keel/schema'\n";
 const LOADER = "{ output: s.object({}) }, async () => ok({})";
 const GUARD = "{ redirect: 'a.home' }, async () => ok(null)";
 
-const keysOf = <T extends object>(o: T): (keyof T)[] => Object.keys(o).filter((k): k is keyof T => k in o);
+const keysOf = <T extends object>(o: T): (keyof T)[] => {
+  const out: (keyof T)[] = [];
+  for (const k in o) out.push(k);
+  return out;
+};
 const cases = {
   "`R.loader(...)` through `import * as R from '@keel/router'`": {
     files: {
