@@ -67,4 +67,11 @@ export default RecipesText.text({
   cancel: "キャンセル",
   confirmClear: "空にする",
   dismiss: "閉じる",
+  findMarket: "最寄りの市場を探す",
+  nearestMarket: { text: "最寄りの市場: {name}（約 {km} km）" },
+  marketUnavailable:
+    "現在地を取得できません。ブラウザーで位置情報の利用を許可してから、もう一度ボタンを押してください。",
+  marketUnionSquare: "ユニオンスクエア・グリーンマーケット（ニューヨーク）",
+  marketViktualien: "ヴィクトアーリエンマルクト（ミュンヘン）",
+  marketTsukiji: "築地場外市場（東京）",
 });

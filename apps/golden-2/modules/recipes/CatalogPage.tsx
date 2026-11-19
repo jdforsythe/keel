@@ -15,6 +15,7 @@ import { CatalogSearch } from "../kitchen/CatalogSearch.schema.ts";
 import { catalogColumns } from "../kitchen/catalogColumns.ts";
 import { CatalogData } from "./CatalogData.schema.ts";
 import { LocaleParams } from "./LocaleParams.schema.ts";
+import NearestMarket from "./NearestMarket.tsx";
 import { addToList } from "./addToList.ts";
 import { clearList } from "./clearList.ts";
 import { currencyOptions } from "./currencyOptions.ts";
@@ -209,6 +210,7 @@ export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefin
           )}
         </For>
       </Box>
+      <NearestMarket params={props.params} text={props.data.text} />
       <Dialog
         id="recipes.clear"
         styles={{

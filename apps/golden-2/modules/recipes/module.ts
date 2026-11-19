@@ -5,6 +5,7 @@ export default module({
   deps: [
     "kitchen",
     "@keel/std-brands",
+    "@keel/std-geo",
     "@keel/std-i18n",
     "@keel/std-money",
     "@keel/std-temporal",
@@ -12,7 +13,7 @@ export default module({
     "@keel/std-messages",
     "@keel/std-timings",
   ],
-  capabilities: ["net", "storage"],
+  capabilities: ["geo", "net", "storage"],
   public: {
     exports: ["RecipeParams", "RecipeSearch"],
     routes: [],

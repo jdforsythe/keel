@@ -208,6 +208,9 @@ importers:
       '@keel/services':
         specifier: workspace:*
         version: link:../../packages/services
+      '@keel/std-geo':
+        specifier: workspace:*
+        version: link:../../packages/std-geo
       '@keel/std-headless':
         specifier: workspace:*
         version: link:../../packages/std-headless

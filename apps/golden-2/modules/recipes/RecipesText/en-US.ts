@@ -67,4 +67,11 @@ export default RecipesText.text({
   cancel: "Cancel",
   confirmClear: "Clear",
   dismiss: "Dismiss",
+  findMarket: "Find the nearest market",
+  nearestMarket: { text: "Nearest market: {name}, {km} km away" },
+  marketUnavailable:
+    "Your location is not available. Allow location access in the browser, then press the button again.",
+  marketUnionSquare: "Union Square Greenmarket, New York",
+  marketViktualien: "Viktualienmarkt, Munich",
+  marketTsukiji: "Tsukiji Outer Market, Tokyo",
 });

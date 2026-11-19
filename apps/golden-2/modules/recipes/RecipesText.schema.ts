@@ -72,6 +72,12 @@ export const RecipesText = messages(
     cancel: {},
     confirmClear: {},
     dismiss: {},
+    findMarket: {},
+    nearestMarket: { name: s.string(), km: s.int({ min: 0 }) },
+    marketUnavailable: {},
+    marketUnionSquare: {},
+    marketViktualien: {},
+    marketTsukiji: {},
   },
   (locale) => import(`./RecipesText/${locale}.ts`),
 );
