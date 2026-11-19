@@ -22,6 +22,8 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 
 - D9 (2026-11-19): the first wave of `tasks/p1/PLAN.md` starts before the freeze review closes, on the operator's word to run more lanes at once: weakness triage under the O1 definition, release hygiene and the evidence gates. None touches a kernel section.
 
+- D10 (2026-11-19): the red-team pass on RFC 0147 reproduced two holes, so the branch is not merged as built. One opening admitted any number of links, because an admitted link's own GET recorded a new opening (a 404, an outside redirect); and a redirect to the shell's own scheme restarted the redirect count, so a loop never ended. Decided: only a request the page starts, and its redirects, record an opening; a chain started by a return link records none; an own-scheme redirect continues the row of five. The spec also states the far-future and malformed stored value and the failed write. Order: spec text, conformance, build, then a second red-team pass.
+
 ## Method
 - RFC unit: RFC, spec and ADR; then conformance by the `conformance-writer` from the spec; then the build. Conformance and build run in their own git worktree and branch, merged when green, so red tests never sit on the main line.
 - Before a push: `pnpm check`, `pnpm test`, both apps' `keel test`, `pnpm ledger --diff`, `node tooling/evidence-report.mjs --check` and `pnpm build` on the exact commit in a clean checkout, each gated on its own exit status. `pnpm ledger` and `pnpm evidence:report` are written from a clean tree after both apps' `keel test`.
@@ -29,7 +31,7 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 
 ## Lanes in flight (2026-11-19)
 Each lane is a subagent; a lane in a worktree commits on its branch and the orchestrator reviews and cherry-picks. A lane with no report is re-briefed from this list.
-- `.worktrees/0956`, branch `rfc-0147`: RFC 0147 conformance (e71d564a) and build (36112e58) are done there, all conformance green; a reviewer pass and a red-team pass run before the merge. The build's three choices beyond the spec wait on the reviewer: a stored deadline more than 600000 ms ahead counts as no opening; a failed record still opens the browser; a Tauri batch of links shares one opening.
+- `.worktrees/0956`, branch `rfc-0147`: RFC 0147 conformance (e71d564a) and build (36112e58); the reviewer passed it, the red-team pass did not (D10). In order on that branch: the spec amendment (in flight), conformance for the new clauses, the fix, a second red-team pass, then the merge.
 - `.worktrees/0967`, branch `lane-0967`: tests for the server's surviving mutants (backlog 0967) and the std-sessions mutation config (0966). It starts no mutation run.
 - golden-3 eval: ready short of the model call (backlog 0937 done; `pnpm eval --task golden-3 --runner none` ends `converged=false` only because `apps/golden-3` is absent). The agent run is `pnpm eval --task golden-3 --model claude-sonnet-5-5`, at most 5 iterations; earlier golden runs cost 0.84 to 2.55 dollars each, so this one is estimated at 2 to 10. It waits for the operator's word on spending and for a quiet machine (it runs the root check and test each iteration).
 - `tasks/0963-to-p1/freeze-review.md` is written: 51 of 54 kernel sections are conformance-covered; its blocking items are listed there with sizes.
