@@ -21,7 +21,7 @@ const dir = (files: Record<string, string>): string => {
 };
 
 describe("client source maps under assets/", () => {
-  it.fails("are not loaded, so no request reaches them", async () => {
+  it("are not loaded, so no request reaches them", async () => {
     const d = dir({
       ".vite/manifest.json": JSON.stringify({ e: { file: "assets/entry-Ab12Cd34.js", isEntry: true } }),
       "assets/entry-Ab12Cd34.js": "resume()\n//# sourceMappingURL=entry-Ab12Cd34.js.map",

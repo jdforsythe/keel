@@ -7,7 +7,6 @@ const TYPES: Readonly<Record<string, string>> = {
   js: "text/javascript; charset=utf-8",
   mjs: "text/javascript; charset=utf-8",
   css: "text/css; charset=utf-8",
-  map: "application/json",
   json: "application/json",
   svg: "image/svg+xml",
   png: "image/png",
@@ -31,7 +30,7 @@ const namedBy = (chunk: unknown): unknown[] =>
     : [];
 
 /**
- * Read the client build in `dir` (`dist/<deployable>`, k.server Build) once, at startup: every regular file under the
+ * Read the client build in `dir` (`dist/<deployable>`, k.server Build) once, at startup: every regular file but `*.map` under the
  * real `assets/` (a symlinked `assets/` is followed) and the top-level `keel-mark.svg` when it is a regular file, keyed
  * by its decoded URL path, `immutable` when the manifest names it and its name carries a hash (`HASHED`), with a weak
  * `etag` from its bytes. The walk descends real directories only; a file (or symlink) under `assets/` is read only
@@ -73,7 +72,7 @@ export async function loadAssets(dir: string, hosted = false): Promise<BuiltClie
     for (const d of await fs.readdir(join(dir, rel), { withFileTypes: true }).catch(() => [])) {
       const at = `${rel}/${d.name}`;
       if (d.isDirectory()) await walk(at);
-      else if (root !== "" && (await real(at)).startsWith(root + sep)) await add(at);
+      else if (root !== "" && !/\.map$/.test(d.name) && (await real(at)).startsWith(root + sep)) await add(at);
     }
   };
   await walk("assets");
