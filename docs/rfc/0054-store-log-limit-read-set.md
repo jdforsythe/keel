@@ -1,6 +1,6 @@
 # RFC 0054: store log limit, hashed caller, and serializable server saves
 
-Status: accepted (ADR-0044)
+Status: implemented (ADR-0044)
 
 ## Problem
 - **Red team M7 (backlog 0131).** A saved store snapshot kept the whole transaction log forever. Each entry carried `meta.caller`, the `keel-caller` cookie value itself, so anyone who reads `ctx.storage` (a backup, a log line) could send that cookie and undo as that caller. Every request re-parsed the stored JSON and restored, validated and bound every entry, so cost grew with the store's age. In memory, `undo` replayed the whole log.

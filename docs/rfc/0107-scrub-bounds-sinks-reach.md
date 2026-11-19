@@ -1,6 +1,6 @@
 # RFC 0107: scrub: bounds, sinks and reach
 
-Status: accepted (user for the decisions, orchestrator for the choices, 2026-11-17). For backlog 0717, 0716, 0668, 0654 and 0682. ADR-0130 records it. The user chose each of the five answers; this RFC gives their exact shape, the spec diff and the conformance diff. Where the choice left a detail open, the detail is decided under the default it applies (`docs/WORKFLOW.md` RFC defaults) and listed under Choices; the two security calls the defaults did not settle are under Stated limits.
+Status: implemented. Accepted (user for the decisions, orchestrator for the choices, 2026-11-17). For backlog 0717, 0716, 0668, 0654 and 0682. ADR-0130 records it. The user chose each of the five answers; this RFC gives their exact shape, the spec diff and the conformance diff. Where the choice left a detail open, the detail is decided under the default it applies (`docs/WORKFLOW.md` RFC defaults) and listed under Choices; the two security calls the defaults did not settle are under Stated limits.
 
 ## Decisions
 - D1 (0717): a request's secret set holds at most 100,000 distinct values. The 100,001st puts the set past the cap, exactly as 2,000,000 characters of written forms do, and every scrubbed text of that scope is then written as it is past the character cap (D2).

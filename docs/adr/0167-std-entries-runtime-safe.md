@@ -1,6 +1,6 @@
 # ADR-0167: every std package's runtime entries reach no CLI-time package (RFC 0145)
 
-**Status:** proposed (for the orchestrator to accept).
+**Status:** accepted
 
 **Context.** A deployable that imports a std entry bundles that entry's import graph. An entry that reaches `@keel/cli` or `@keel/check` carries vite, vitest, typescript and oxc-parser, and `keel build` fails. RFC 0144 fixed `@keel/std-report`; the rule was unstated and unchecked. A bundle of all 62 `exports` entries of the 25 std packages finds three offenders: the main entries of `@keel/std-conflicts` (a formatter and two rules) and `@keel/std-brands` (its one rule), and `./action` of `@keel/std-sessions` (a formatter registered beside a schema). The main entry of `@keel/std-sessions` is clean.
 

@@ -1,6 +1,6 @@
 # RFC 0051: guard redirects are bounded and `next` never nests (E1508)
 
-Status: accepted (ADR-0040)
+Status: implemented (ADR-0040)
 
 ## Problem
 - **Red team M2 (2026-11-07, backlog 0126).** A guard that redirects to a route under its own guarded layout loops forever. Repro: a layout `app.shell` with `guard: auth`, where `auth` redirects to `app.login`, and `app.login` sits under `app.shell`. `GET /login` gets `302 /login?next=%2Flogin`. That request gets `302 /login?next=%2Flogin%3Fnext%3D%252Flogin`, and so on, until the browser gives up.

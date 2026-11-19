@@ -1,6 +1,6 @@
 # RFC 0077: `routeLiterals` reads a spread of a `deps` package's routes
 
-Status: accepted (ADR-0066, 2026-11-10). Applies WORKFLOW RFC default 1 (a stdlib need that exposes a kernel gap is met by a kernel change), default 2 (one way per thing), default 3 (reuse the existing execution path) and default 6 (kernel-level enforcement). No app-facing API changes.
+Status: implemented. Accepted (ADR-0066, 2026-11-10). Applies WORKFLOW RFC default 1 (a stdlib need that exposes a kernel gap is met by a kernel change), default 2 (one way per thing), default 3 (reuse the existing execution path) and default 6 (kernel-level enforcement). No app-facing API changes.
 
 ## Problem
 `keel check` compares a `routes.json` beside a `routes.ts` with the literals `routeLiterals` reads from the manifest, without running it. Any spread in the manifest object opens the id set: the routes read before it are unread and the spread is named `<file> ids`, so the check reports W1005. A stdlib package ships its routes as a `routes` export the app spreads, as `apps/sessions/modules/ops/routes.ts` does with `...sessions.routes` from `@keel/std-sessions/routes`. Every app that mounts std routes warns W1005 on a clean `routes.json`, and the routes before the spread lose their E1005 comparison.

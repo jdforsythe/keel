@@ -1,6 +1,6 @@
 # RFC 0120: std.offline: the outbox sends through `service({ module })`, and each entry has an owner
 
-Status: accepted (user, 2026-11-17). For backlogs 0501 and 0509. ADR-0146 records it.
+Status: implemented. Accepted (user, 2026-11-17). For backlogs 0501 and 0509. ADR-0146 records it.
 
 ## Decisions
 - D1 (user): the outbox is bound to its module's service. `outbox(id, api, { module, limit, maxBytes })` sends through `service({ module, schema: api })` (k.services), and reads answers as `service({ module })` reads them. `send(ctx, outbox, endpoint, input, { base, owner })` takes no origin, and entries hold no `origin`.

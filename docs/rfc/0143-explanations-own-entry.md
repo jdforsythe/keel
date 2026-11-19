@@ -1,6 +1,6 @@
 # RFC 0143: explanations in their own entry of the checker
 
-Status: draft, for the orchestrator to accept (ADR-0165).
+Status: implemented (ADR-0165)
 
 ## Problem
 The main entry of `@keel/check` is 62,109 B gzip (bundled alone, minified esm, dependencies external, as `tooling/budgets.mjs` measures it). Its budget line was raised seven times in one day, from 54.5kb to 61.25kb, and a size pass found 318 B of safe dedup. Measured on 2026-11-18 in a scratch build outside the tree:

@@ -1,6 +1,6 @@
 # RFC 0130: every server log record has a size bound, a cut marker the input cannot forge, and a cut after the scrub
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-18), ADR-0152. For backlog 0723; 0729 is the scrub-cost side of the same input.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-18), ADR-0152. For backlog 0723; 0729 is the scrub-cost side of the same input.
 
 ## Problem
 No log record has a size bound. A loader, action or guard throw that echoes a request body writes a `diag` of up to `maxBodyBytes` (1 MiB by default) on one line; a runner's thrown text is as long as the runner makes it; the guard loop record (E1508) joins every URL of the loop. The scrub walks all of it (about 5 ms per 520,000 characters, `tasks/0338-s8-reach/proposed/scrub-cost-0685.md`), and only a request whose value forms pass the 2,000,000-character cap stops it. A long line is split by Docker's json-file driver at 16 KiB into partial records, refused or cut by other pipelines, and costs storage per request an attacker sends.

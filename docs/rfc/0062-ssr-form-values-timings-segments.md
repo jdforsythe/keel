@@ -1,6 +1,6 @@
 # RFC 0062: bound controls write their first value as the markup default, and the timings cap protects names with history
 
-Status: accepted (ADR-0051)
+Status: implemented (ADR-0051)
 
 ## Problem
 - **Backlog 0166.** The server DOM keeps `value`, `checked` and `selected` as control state, as a browser does (RFC 0060). Neither `Field.bind` nor a reactive `value` on a `@keel/ui` control wrote anything else. So a server-rendered edit form had empty fields and the first option selected until the runtime loaded. Golden-1's edit page has no island, so it stayed that way: `<input name="title">` with no value, `<option value="normal">` not selected. A user without JS posted the empty values.

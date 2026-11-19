@@ -1,6 +1,6 @@
 # RFC 0066: `keel check` loads the stdlib packages in `deps`, and `std` config reaches the runtime
 
-Status: accepted (ADR-0055)
+Status: implemented (ADR-0055)
 
 ## Problem
 - **Backlog 0118.** `keel check` never imported the stdlib packages a module names in `deps`. Their check rules (std.brands E2101) and their `std` config schemas (`s.register('@keel/std-x', Config)`) registered only when something else imported them, as tests do. On a real project `keel check` passed a non-PascalCase brand, and E1158 never validated a value. RFC 0047 follow-up 1.

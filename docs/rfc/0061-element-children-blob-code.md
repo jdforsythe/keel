@@ -1,6 +1,6 @@
 # RFC 0061: elements in a JSX child expression are E1403 and bind nothing, `If` lowers its `fallback`, and E1002/E1603 follow more forms
 
-Status: accepted (ADR-0050)
+Status: implemented (ADR-0050)
 
 ## Problem
 - **Backlog 0165.** `{p.on ? <b/> : <i/>}` compiled to a `text()` binding whose value was a node. The browser rendered "[object HTMLElement]" and the server DOM "[object Object]". The same happened for `{a && <b/>}` (already E1403, but still lowered), `{xs.map((x) => <li/>)}`, `{[<b/>]}`, a function child and `{row(x)}` with a same-file `row` that returns JSX. Only literal JSX and slot calls were inserted as nodes.

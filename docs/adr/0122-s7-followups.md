@@ -1,6 +1,6 @@
 # ADR-0122: getter props in k.ui, `styles` on any component and E1823, a closed audited search list, `#` specifiers as E1576 (RFC 0099)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** S7 left four gaps. k.ui does not say which props follow a changing source; the runtime binds every getter prop, and compiled JSX passes every non-literal value as one, but `TableSearch` builds its `Input` by hand with `label` copied once. The compiler drops a non-literal `styles` with no diagnostic, so its CSS is missing. The E1111 rule and the part-styles collection name stdlib packages. E1822 and E1576 read specifier text, and a `#` specifier resolves through a `package.json` no rule sees.
 

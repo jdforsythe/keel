@@ -1,6 +1,6 @@
 # RFC 0123: the `req` path marks and the last resort enter the spec; a longer path is cut at its secret
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0743 (review 4, M1, major), 0736 (red team 4, finding 2, medium), 0737 (findings 3 and 4, stated limits), 0742 (finding 9) and 0746 (review 4, minor m6).
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0743 (review 4, M1, major), 0736 (red team 4, finding 2, medium), 0737 (findings 3 and 4, stated limits), 0742 (finding 9) and 0746 (review 4, minor m6).
 
 ## Problem
 **No spec, no conformance.** k.privacy says one thing about the `req` path's route marks: "A secret route param is `[secret]` in the `req` path." The rule the server runs (`packages/server/src/internal/secretSegments.ts`) and the last resort (`packages/server/src/createApp.ts:192-206`, `internal/logUnwritable.ts`) are written down only in `packages/server/README.md` and pinned only by `packages/server/test/{reqPathEscapes.property,reqPathForwarded,reqPathScrub,lastResort}.test.ts`. Anyone may edit `test/` without an RFC, so the privacy behavior is not frozen.

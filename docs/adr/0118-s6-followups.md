@@ -1,6 +1,6 @@
 # ADR-0118: throw frames in the log, shipped sink rungs, E1558 for server state, a per-source CSP cap, E1004's reach, kernel-only entries under `internal` (RFC 0095)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** S6 left six gaps. A `keel.unexpected` diag has no frames although k.server Log asks for them, because the server catches through `attempt`, which drops the stack. `pii.json` reads its sink rungs from the project's own ledger, so an app outside the repo gets `coverage` 0. A `client` deployable's route naming `stores` passes `renderRoute` and fails only in the browser; E1558 covers live loaders, at `createApp` only. One CSP report window serves the whole process, so one client can turn every other report into `dropped`. k.compiler is at 1,500 tokens and cannot state that E1004 covers re-exports and literal `import()`. `@keel/server/dom`, `@keel/server/start` and `@keel/compiler/entry/*` are kernel-only entries without an `internal` segment, outside E1576.
 

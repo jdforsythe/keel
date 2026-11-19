@@ -1,6 +1,6 @@
 # RFC 0087: Client hosting: a static artifact, a node host, and allowed origins
 
-Status: accepted (2026-11-11); the user's answers are D1 and D3. Design RFC for backlog 0375, with the context of 0406. It builds on RFC 0086 (API routes).
+Status: implemented. Accepted (2026-11-11); the user's answers are D1 and D3. Design RFC for backlog 0375, with the context of 0406. It builds on RFC 0086 (API routes).
 
 ## Decisions (user, 2026-11-11)
 - D1: the node host is declared as `host: '<node deployable>'` on the `client` deployable (Proposal 5).

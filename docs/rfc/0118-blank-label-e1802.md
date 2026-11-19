@@ -1,6 +1,6 @@
 # RFC 0118: a blank literal `label` is E1802
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0474. ADR-0140 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0474. ADR-0140 records it.
 
 ## Problem
 `Box({ as: 'nav', label: '' })`, `<Box as="nav" label="  ">` and `<Input label="" />` type-check: the `@keel/ui` types require a `label` on `Input`, `TextArea`, `Select`, `Checkbox` and on `Box as` `nav` or `aside`, and a blank string is a string. `Box` then writes `aria-label=""` (`packages/ui/src/elements/Box.ts:34`), which names nothing, so the page has an unnamed `nav`; the controls get an empty `<label for>`, so the control has no accessible name. E1802 is the type rule for a missing a11y-required prop: `mapTsDiagnostic` maps TypeScript's "property is missing" errors to it (`packages/check/src/internal/mapTsDiagnostic.ts:137-142`), and nothing reads the value. axe at render does not flag an unnamed `nav` either. The ledger then counts 1.3.1, 2.4.4 and 4.1.2 as met for a route whose landmark or control has no name.

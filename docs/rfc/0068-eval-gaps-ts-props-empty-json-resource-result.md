@@ -1,6 +1,6 @@
 # RFC 0068: `.ts` components export `Props`, an empty JSON body is `{}`, `scaffold project` writes `<name>/`, a resource unwraps a `Result`
 
-Status: accepted (ADR-0057)
+Status: implemented (ADR-0057)
 
 ## Problem
 Backlog 0120. The golden-1-api eval (2026-11-07) did not converge, and its runs and the golden-2 runs found these gaps:

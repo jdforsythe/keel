@@ -1,6 +1,6 @@
 # RFC 0112: std.offline: `offline.storage` and the answer to `resolve(..., 'mine')`
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlogs 0510 and 0527. ADR-0134 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlogs 0510 and 0527. ADR-0134 records it.
 
 ## Decisions
 - D1: `offline.storage` is spec. `OutboxResult`'s `failed` names its three errors: an `ApiError`, `offline.full` or `offline.storage`. A write to `ctx.storage` that rejects, in `send`, a flush or a `'mine'` `resolve`, leaves the entry `failed` with `offline.storage` in memory, posts nothing more and releases the flush. The code does this today (`packages/std-offline/src/send.ts:49-54`, `internal/flush.ts:78-83`); the spec did not say it.

@@ -1,6 +1,6 @@
 # RFC 0057: signed `__Host-` caller cookie and hardened asset serving
 
-Status: accepted (ADR-0046)
+Status: implemented (ADR-0046)
 
 ## Problem
 - **Red team L3 (backlog 0134).** `callerOf` accepted any well-formed `keel-caller` value. A host on a sibling subdomain can set `keel-caller=<known>; Domain=example.com`. The victim's writes then carry a caller the attacker knows, and the attacker can undo them (session fixation). Any value a client invents also became a caller. That includes a raw token read from a pre-0054 snapshot's `meta.caller`, which still names the browser that owns it.

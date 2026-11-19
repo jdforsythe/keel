@@ -1,6 +1,6 @@
 # RFC 0127: std-offline storage faults
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-18). For backlog 0763, 0764, 0781, 0784 and 0758 (task 0338, lane B). ADR-0149 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-18). For backlog 0763, 0764, 0781, 0784 and 0758 (task 0338, lane B). ADR-0149 records it.
 
 ## Problem
 Five gaps in how `@keel/std-offline` handles a `ctx.storage` write that goes wrong. Each has a reproduction marked `test.fails` in `packages/std-offline/test/storageFaults.test.ts`.

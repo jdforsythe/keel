@@ -1,6 +1,6 @@
 # RFC 0116: std.text: a value shows a character, and no bidi control
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0328. ADR-0138 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0328. ADR-0138 records it.
 
 ## Problem
 std.text says a `line` or `para` value has "a character outside `White_Space` unless empty" and forbids the bidi embeddings, overrides and isolates (U+202A to U+202E, U+2066 to U+2069). `packages/std-text/src/textCheck.ts` does exactly that, and so accepts text a reader cannot see or that reorders what they see:

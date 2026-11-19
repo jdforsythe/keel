@@ -1,6 +1,6 @@
 # RFC 0044: Per-request server stores, caller meta, no `Transaction.payload`
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Backlog 0054, 0102, and the `Transaction.payload` item of 0065 (freeze review §2 row 10).

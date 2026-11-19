@@ -1,6 +1,6 @@
 # RFC 0110: reveal notes the value it opens into the current scrub scope
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). ADR-0142 records it. The design is the accepted proposal `tasks/0338-s8-reach/proposed/reveal-notes-scope.md`.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). ADR-0142 records it. The design is the accepted proposal `tasks/0338-s8-reach/proposed/reveal-notes-scope.md`.
 
 ## Problem
 A `Secret` joins a request's or a runner `run`'s scrub set only when it is made there: `Secret.of` calls the one listener slot (`packages/schema/src/internal/listening.ts`), and the server's listener (`noteRequestSecrets`) walks the new `Secret` into the set of the running scope. A `Secret` made earlier and revealed later is in no set:

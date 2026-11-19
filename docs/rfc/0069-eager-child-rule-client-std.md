@@ -1,6 +1,6 @@
 # RFC 0069: E1808 flags eager base-element children, and the browser reads std config
 
-Status: accepted (ADR-0058)
+Status: implemented (ADR-0058)
 
 ## Problem
 - **Backlog 0188.** A base element given an eager child (`Box({ children: Input({ label, onInput }) })`) is bound, so its route level is an island (rfc:0067). The child is made before its parent, so at resume it claims the parent's server element: E1253, and the island re-renders on the client. Nothing told the author before the page shipped. RFC 0067 known limit, filed as a follow-up.

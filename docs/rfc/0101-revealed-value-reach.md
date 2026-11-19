@@ -1,6 +1,6 @@
 # RFC 0101: revealed-value reach (E1112 sinks, flow and the `[secret]` log scrub)
 
-Status: proposed. For backlog 0613 and 0614. Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0124 records it.
+Status: implemented (ADR-0124)
 
 ## Decisions
 - D1: E1112 stays a one-file syntax rule, and it reaches every miss a reader of that one file can see. New sinks: `process.stdout.write`, `process.stderr.write`, the `node:fs` writes, `Promise.reject` and the value of a `throw`. A sink counts under any local name or `.bind()`. New flow steps: `for...of`, a member write, `push`-style mutation, `Object.assign`, an alias of `reveal`, a renamed `ctx.storage`, and the closed list of conversions and encodings in D2. Helpers, callbacks, imports and a payload field's schema need a second function, a second file or types, so they stay Known limits. The rule is one sentence for an app author: a revealed value that reaches a log, storage, a file, store state or a throw, through bindings, literals, operators, members, methods and the standard conversions and encodings, is reported, and a call to anything else ends it (defaults 4, 6).

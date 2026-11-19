@@ -1,6 +1,6 @@
 # RFC 0043: One way for schema validation, random ids, styling, button text, and pending state
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Backlog 0064 (docs/freeze-review.md §2 rows 4-8). Five surfaces each have two or three ways to do one thing (principle 1: every alternative is a hallucination target):

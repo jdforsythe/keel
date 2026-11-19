@@ -1,6 +1,6 @@
 # RFC 0131: std.offline: the action behind an outbox endpoint refuses a write of another owner
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-18). For red team 7, H2 (task 0338). ADR-0153 records it. Extends RFC 0120.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-18). For red team 7, H2 (task 0338). ADR-0153 records it. Extends RFC 0120.
 
 ## Problem
 RFC 0120 gave each outbox entry an `owner`, a string the page gives `send` and `drain`, and a flush posts only entries of the owner last given on its ctx. Nothing ties that string to the caller the server sees. The caller (k.server Server state) is the hash of one cookie per browser, shared by every tab, and an app signs a user in by tying that caller to an account in its own store (golden-2's `submitSignIn.server.ts` records `{ caller, userId }`); the cookie does not change at sign-in.

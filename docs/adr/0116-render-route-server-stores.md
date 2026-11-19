@@ -1,6 +1,6 @@
 # ADR-0116: `renderRoute` runs server stores through the server's runner, moved to `@keel/store/internal` (RFC 0093)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** `renderRoute` builds its page with the client router, which answers `keel.unexpected` ("stores (server state) run on a node deployable only") for any loader or action naming `stores`. A page a `node` deployable renders from server stores therefore has no `renderRoute` test: no `a11y:` claims, focus checks or Form tests. golden-1 works around it with `createApp` HTML string matches; golden-3, the S6 exit-proof app, declares `stores` on every loader and action and cannot. The store runner (`openStores`, `saveStores`) lives in `@keel/server`, above `@keel/testing` in `tooling/deps.json`, and each `createApp` keeps its own copy of saved snapshots.
 

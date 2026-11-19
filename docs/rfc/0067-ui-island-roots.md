@@ -1,6 +1,6 @@
 # RFC 0067: a bound base element marks its route level as an island
 
-Status: accepted (ADR-0056)
+Status: implemented (ADR-0056)
 
 ## Problem
 - **Backlog 0182.** A route component built only from `@keel/ui` base elements was never an island. The server marks a route level as an island when the element it returned holds a `data-k` element outside nested islands, and only compiled templates wrote `data-k`. `() => Box({ children: Input({ label: "Title", onInput }) })` served static HTML with no `data-k-island` and no resume entry, so its `onInput` never ran. The same held for JSX whose elements are all base elements (`<Box><Input onInput={...} /></Box>`): the compiler lowers those to component calls, not templates.

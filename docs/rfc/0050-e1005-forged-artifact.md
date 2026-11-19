@@ -1,6 +1,6 @@
 # RFC 0050: `keel check` compares `.keel/` artifacts with the current sources (E1005 forged and stale)
 
-Status: accepted (ADR-0039)
+Status: implemented (ADR-0039)
 
 ## Problem
 - **Red team H2 (2026-11-07, backlog 0124).** E1005 missed a forged artifact. If you change `data` and recompute `hash`, `keel check` reports nothing. Repro: `check([{ path: ".keel/routes.json", source: canonicalJson({ data, hash: hashOf(data) }) + "\n" }])` returned `[]`.

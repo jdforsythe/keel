@@ -1,6 +1,6 @@
 # RFC 0144: a runtime-safe entry for std-report, and `keel report`
 
-Status: draft, for the orchestrator to accept (ADR-0166).
+Status: implemented (ADR-0166)
 
 ## Problem
 Found by exercising `@keel/std-report` in `apps/golden-2`.

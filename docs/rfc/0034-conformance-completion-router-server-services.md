@@ -1,6 +1,6 @@
 # RFC 0034: Conformance completion for k.router, k.server, k.services
 
-Status: accepted (ADR-0023)
+Status: implemented (ADR-0023)
 
 ## Problem
 Backlog 0059. Under the strict verdict (task 0034 D1), the freeze review and a re-audit against the current spec found these gaps:

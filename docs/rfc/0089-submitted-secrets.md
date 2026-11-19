@@ -1,6 +1,6 @@
 # RFC 0089: a submitted secret never returns in a response
 
-Status: accepted by the orchestrator (2026-11-12) under WORKFLOW RFC default 4 (privacy by default). For backlog 0407.
+Status: implemented. Accepted by the orchestrator (2026-11-12) under WORKFLOW RFC default 4 (privacy by default). For backlog 0407.
 
 ## Problem
 A document POST that fails its input schema is answered 422 with the page re-rendered and the submission restored. The markup left password inputs empty, but `#k-state` carried every submitted value under `form`, password and `s.secret` fields included, and `Field.bind` wrote an `s.secret` field's value into a text input's `value` attribute. Reproduced with a form holding a `type="password"` input over `s.string`, an `s.secret` field and an array of `s.secret`.

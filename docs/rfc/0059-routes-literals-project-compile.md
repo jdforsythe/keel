@@ -1,6 +1,6 @@
 # RFC 0059: `keel check` reads `routes.ts` literals, `keel build` writes `routes.json` for `node`-only topologies, rules compile per project, and the timings cap evicts the least recent name
 
-Status: accepted (ADR-0049)
+Status: implemented (ADR-0049)
 
 ## Problem
 - **Red team 0155.** W1005 carried no signal. A clean golden-1 printed `W1005 .keel/routes.json not verified` with exit 0. A forged, self-consistent `routes.json` (`data:{"app.admin":{path:"/admin",guards:[]}}`, hash recomputed) printed the same line, also exit 0. Users learn to ignore a warning that never changes.

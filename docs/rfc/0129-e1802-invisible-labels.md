@@ -1,6 +1,6 @@
 # RFC 0129: a `label` of invisible characters is blank for E1802
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-18). For backlog 0740 (task 0338, lane B). ADR-0151 records it. Extends RFC 0118.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-18). For backlog 0740 (task 0338, lane B). ADR-0151 records it. Extends RFC 0118.
 
 ## Problem
 k.a11y calls a literal `label` blank when it is `""` or white space, and `packages/check/src/rules/blankLabel.ts` tests `/^\s*$/`. `<Input label={"\u{200B}"} />`, `<Input label="&#x2800;" />` and `<Input label={"\u{3164}"} />` report no E1802 (`it.fails` in `packages/check/test/blankLabel.test.ts`, last `describe`): U+200B ZERO WIDTH SPACE, U+2800 BRAILLE PATTERN BLANK and U+3164 HANGUL FILLER are not white space. Each gives the control an accessible name a reader cannot see, which names nothing; axe-core's render check does not catch these either. The rest of backlog 0740 (parentheses, `as`, `satisfies`, `!`, a wrapped call argument, object spreads) is built.

@@ -1,6 +1,6 @@
 # RFC 0113: std.schedules: an entry without a mark stores its start time
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0518. ADR-0135 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0518. ADR-0135 records it.
 
 ## Problem
 std.schedules Restart says "an entry without a mark starts from now". `packages/std-schedules/src/internal/runSchedule.ts` reads that as: with no mark, look only forward from `ctx.clock.now()`. Run says an `err` from `enqueue` stores no mark and rejects `run`, which k.topology runs again.

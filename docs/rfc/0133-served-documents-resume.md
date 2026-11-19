@@ -1,6 +1,6 @@
 # RFC 0133: a served document resumes: the server writes regions, a layout island's `children` holds the child level, and every island resumes
 
-Status: draft, for the orchestrator to accept. From backlog 0482 (HIGH): documents served by `createApp` do not resume on the client.
+Status: implemented (ADR-0155)
 
 ## Problem
 Two independent faults, each read in the code on 2026-11-18.

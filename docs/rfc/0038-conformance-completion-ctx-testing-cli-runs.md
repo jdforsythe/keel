@@ -1,6 +1,6 @@
 # RFC 0038: Conformance completion k.ctx, k.testing: real `keel test` and `keel ledger` runs
 
-Status: accepted (ADR-0027)
+Status: implemented (ADR-0027)
 
 ## Problem
 Backlog 0107. Two remainders block the flips. rfc:0032 left k.ctx "`keel test` runs under sim by default" asserted only for the env contract: no test ran a real `keel test` and saw a sim ctx. rfc:0036 left k.testing clauses 8 and 9 partial. Their tests call the `ledger()` and `ledgerDiff()` engines, which proxies a CLI run, because testing may not import cli. Two smaller defects:

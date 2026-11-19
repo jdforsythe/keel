@@ -1,6 +1,6 @@
 # RFC 0134: claim order: content arrives as thunks, an eager element is reported by the check, the server and the console, resume moves no served node, and every packaged component resumes
 
-Status: draft, for the orchestrator to accept (ADR-0156). The operator confirmed the direction: keep cursor-based claiming, fix the code, make the hazard loud.
+Status: implemented (ADR-0156)
 
 ## Problem
 Each claim below was read in the code on 2026-11-18.

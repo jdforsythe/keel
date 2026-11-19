@@ -1,6 +1,6 @@
 # RFC 0029: closed objects and member unions
 
-Status: accepted
+Status: implemented
 
 ## Problem
 `TokenSchema` (k.ui, E1807) needs two shapes k.schema cannot declare: an object that rejects keys it does not declare (the closed token groups) and a value that is either a string or an object (a color is `'#0a5'` or `{ light, dark }`). ui works around both with a hand-written `parse/decode/encode` over an open `s.object` with string colors, so `node`, `gen` and `doc` describe a different shape than `parse` accepts (ui PLAN D8, backlog 0039). Principle 4: everything derives from one declaration.

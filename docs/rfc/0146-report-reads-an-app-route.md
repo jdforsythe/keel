@@ -1,6 +1,6 @@
 # RFC 0146: `keel report` reads an app's own route
 
-Status: draft, for the orchestrator to accept (ADR-0168).
+Status: implemented (ADR-0168)
 
 ## Problem
 `keel report [url]` fetches `<url>/__keel/inspect`, which a dev server answers and a build does not. A built app can make a `Tally` and has no way to hand it to a person through Keel: std.report's own Known limit. The fix must not add a production endpoint to Keel or make Keel hold a credential.

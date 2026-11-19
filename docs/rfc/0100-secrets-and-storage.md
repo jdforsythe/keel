@@ -1,6 +1,6 @@
 # RFC 0100: secrets and storage (what `reveal` returns is plain data; E1112)
 
-Status: proposed. For backlog 0257 and `tasks/0338-s8-reach/PLAN.md` D5 (c). Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0123 records it.
+Status: implemented (ADR-0123)
 
 ## Decisions
 - D1: a `Secret` already cannot become durable, and this RFC adds no runtime guard. `store()` refuses `s.secret` in state (E1303), `snapshot()` folds every log entry up to the last secret payload, and a schema refuses a `Secret` in a plain or `s.json()` field. A revealed value is a plain string at run time, so neither the store nor `commit` nor a driver can refuse it. k.privacy states this once; k.store, k.persist and std.db point to it (default 2).

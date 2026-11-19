@@ -1,6 +1,6 @@
 # RFC 0145: every std package's runtime entries reach no CLI-time package
 
-Status: draft, for the orchestrator to accept (ADR-0167).
+Status: implemented (ADR-0167)
 
 ## Problem
 A deployable that imports a std entry carries that entry's whole import graph into `server.mjs`, and into a browser bundle when a page imports it. An entry that reaches `@keel/cli` or `@keel/check` pulls vite, vitest, typescript and oxc-parser behind it, and `keel build` fails on packages those tools resolve lazily (`Could not resolve "@vitejs/devtools/config"`). RFC 0144 fixed this for `@keel/std-report` alone and left the rule unstated.

@@ -1,6 +1,6 @@
 # RFC 0119: the root fallback shows `keel.unexpected` in production
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0281 (the production-message part). ADR-0141 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0281 (the production-message part). ADR-0141 records it.
 
 ## Problem
 The app root's default Boundary, for a `mount` tree and for each island `resume` resumes, renders `<pre data-k-error="<at>">` with the thrown error's message (`packages/runtime-dom/src/internal/rootFallback.ts:7`, `pre.textContent = error.message`), and k.errors says so. That is the page people see in production. A message is whatever a library or the app put in it: an internal path, a query, a token echoed by a parser, a person's data. The server already keeps this out of production: an uncaught throw is 500 `keel.unexpected` with message `unexpected` in production (k.server Status), and docs/THREAT-MODEL's Mode line covers only server error text. The client root fallback has no production mode at all.

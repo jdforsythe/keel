@@ -1,6 +1,6 @@
 # RFC 0064: base elements and child components resume in place
 
-Status: accepted (ADR-0053)
+Status: implemented (ADR-0053)
 
 ## Problem
 - **Backlog 0174.** An island built from `@keel/ui` elements re-rendered at resume with E1253. Base elements were made with `document.createElement`, so nothing claimed the server nodes. A `Box` root never became the island root ("the component did not render the island root"). A compiled template inside it claimed the island root first ("`<section>` where the template has `<p>`").

@@ -1,6 +1,6 @@
 # RFC 0063: actions attach with `routes.actions`, so an action can return `ok(routes.href(...))`
 
-Status: accepted (ADR-0052)
+Status: implemented (ADR-0052)
 
 ## Problem
 Backlog 0114 (decided 2026-11-07, D8 in tasks/0034-freeze). A route entry held its actions (`actions: { POST: save }`), so the type of `routes` depended on the type of each action. An action that links into its own manifest reads `routes`. With `return ok(routes.href(...))` its return type depends on `routes`, whose initializer depends on the action: TypeScript reports TS7022 (implicit `any` from a circular initializer). RFC 0041 and RFC 0045 kept a workaround: bind `const to: Href = routes.href(...)` first, then `return ok(to)`. That is a second way to write a redirect, taught by the skills and copied into both golden apps and the evals.

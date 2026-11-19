@@ -1,6 +1,6 @@
 # ADR-0121: a search-only navigation keeps the page (RFC 0098)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** Every committed navigation renders the page from scratch: the router root keys its `list` row by the `View` object, and `props.search` is a plain value per view. A sort, page, filter or `TableSearch` change on a table route therefore rebuilds the page. The table's `status` live region is a new node, which screen readers usually do not announce; focus survives only through k.head's same-id refocus; local signals, selection, typed text, open widgets and scroll reset. std-tables carries two module-level maps keyed by id (`pagerFocus`, `typed`) to hand state across the rebuild. Revalidation already keeps the page and updates `data` in place, and since RFC 0097 bindings are the only way a built component updates.
 

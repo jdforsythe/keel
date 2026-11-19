@@ -1,6 +1,6 @@
 # ADR-0124: E1112 reads one file by syntax and reaches every sink and carrier it can see there; the server logs `[secret]` for a request's secret input (RFC 0101)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** E1112 (ADR-0123) reports a value `reveal` returns reaching `tx`, `store`, `ctx.storage`, `console` or an `Error`. A review and a red-team found ordinary code it misses: `throw reveal(k)`, `process.stdout.write`, `node:fs` writes, `btoa` and `Buffer.from` encodings, `for...of`, member writes and `push`, an alias of `reveal`, `console.log.bind`, a renamed `ctx.storage`, `new String`. A thrown string is the `keel.unexpected` cause and lands in the server's log line verbatim, in dev and production; the `[pii]` scrub does not hold it, since a `Secret` encodes as the marker. The rule also reports code that cannot write the value: `reveal(x).length`, `startsWith`, `reveal(x) && y`, a `let` reassigned to a hash, another field of an object holding the value, a `new Map()` named `storage`. k.privacy has 36 tokens of room.
 

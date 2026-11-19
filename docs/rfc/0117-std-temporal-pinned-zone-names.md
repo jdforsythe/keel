@@ -1,6 +1,6 @@
 # RFC 0117: std.temporal: `TimeZone` names from a pinned IANA list, kept as written
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0321. ADR-0139 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0321. ADR-0139 records it.
 
 ## Problem
 std.temporal defines `TimeZone` as `UTC` or an IANA name that `Intl.DateTimeFormat` accepts and "reports back unchanged in `resolvedOptions().timeZone`". The second half depends on the host's canonicalisation, which differs:

@@ -1,6 +1,6 @@
 # RFC 0070: the @keel/std-sessions module, kernel observers, and the session commands
 
-Status: accepted (ADR-0059, accepted 2026-11-09)
+Status: implemented. Accepted (ADR-0059, accepted 2026-11-09)
 
 ## Problem
 Backlog 0092 builds `@keel/std-sessions` from spec/std/std.sessions.md (1,498 tokens, status proposed). Backlog 0091 wrote its conformance suite first: 13 files under `packages/std-sessions/conformance/`, all `describe.skip`. The conformance-writer could not write a passing test for 7 clauses, because the section leaves these points open.

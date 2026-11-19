@@ -1,6 +1,6 @@
 # RFC 0025: ctx register order independence
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Red team 0085: a ctx created before `register(capability)` throws on access to that capability. That is an ordering invariant (PRINCIPLES 2).

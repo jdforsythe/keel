@@ -1,6 +1,6 @@
 # ADR-0119: production frames through `server.mjs.map`, the frame root from `artifacts`, E1558 reports unreadable calls (RFC 0096)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** A production `diag`'s `frames` name positions in `server.mjs`, kernel frames included, because `keel build` bundles the server with no source map and frames are made relative to the working directory, which holds the bundle. `caught` reads `process.cwd()` for that root, a hidden global. E1558's static read passes a generator held in a `const`, calls through `import * as`, and options built by a spread or a helper, so those reach `createApp` before anything fails.
 

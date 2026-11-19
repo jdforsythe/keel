@@ -1,6 +1,6 @@
 # RFC 0056: URL policy covers object, srcset, SVG animation and `<base>`; `attr` refuses `on*`
 
-Status: accepted (ADR-0045)
+Status: implemented (ADR-0045)
 
 ## Problem
 - **Red team L1 (2026-11-07, backlog 0132).** The URL policy (RFC 0024) named seven attributes. Each of these passed `keel check` and rendered unchanged:

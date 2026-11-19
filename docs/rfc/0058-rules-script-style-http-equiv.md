@@ -1,6 +1,6 @@
 # RFC 0058: `script`/`style` take literals only, `<meta http-equiv>` is refused, E1002 shares the rfc:0053 resolver, and E1601/E1603 cover more forms
 
-Status: accepted (ADR-0048)
+Status: implemented (ADR-0048)
 
 ## Problem
 - **Backlog 0157.** `<script>{x}</script>` and `<style>{x}</style>` compiled with no diagnostic. The lowering bound a `text` op into the element, so SSR wrote the data as live code. Repro: `<div><script>{p.x}</script></div>` with `x: "alert(document.cookie)"` rendered `<script …>alert(document.cookie)</script>`.

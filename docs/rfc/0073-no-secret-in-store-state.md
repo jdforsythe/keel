@@ -1,6 +1,6 @@
 # RFC 0073: store state never holds a secret (E1303)
 
-Status: accepted (ADR-0062, 2026-11-09). The user chose a check rule over a documented limit. The design applies the WORKFLOW RFC defaults 6 (kernel-level enforcement over documentation) and 4 (privacy by default: secrets never persist), and default 2 (one way) for what it leaves alone. Amended the same day after the red-team pass (backlog 0257-0262): `store()` refuses a state schema holding a secret at run time, the `snapshot()` error names E1303, the fix text no longer moves `reveal` to a payload, and names resolve by binding.
+Status: implemented. Accepted (ADR-0062, 2026-11-09). The user chose a check rule over a documented limit. The design applies the WORKFLOW RFC defaults 6 (kernel-level enforcement over documentation) and 4 (privacy by default: secrets never persist), and default 2 (one way) for what it leaves alone. Amended the same day after the red-team pass (backlog 0257-0262): `store()` refuses a state schema holding a secret at run time, the `snapshot()` error names E1303, the fix text no longer moves `reveal` to a payload, and names resolve by binding.
 
 ## Problem
 Backlog 0239, filed by the red-team pass on RFC 0071. The snapshot fold removes secrets from transaction payloads only. A reducer that copies `reveal(p.token)` into a state field writes the plaintext into `state`, into the snapshot `initial`, and from there into `#k-state`, `ctx.storage` and session captures. `packages/store/test/secretFold.test.ts` pins this. Two ways lead there:

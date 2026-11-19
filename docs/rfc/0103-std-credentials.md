@@ -1,6 +1,6 @@
 # RFC 0103: std-credentials (hash and verify a `Secret`, mint and check a token; stored forms whose parameters can rise)
 
-Status: accepted (user, 2026-11-16: the accessor, the error Result, the cost setting, the token API with built-in expiry; build now, the kernel RFC for action output and `bearer` follows). For backlog 0615. Each decision cites the WORKFLOW RFC default it applies; what is still open is under Questions with a recommendation. ADR-0126 records it.
+Status: implemented. Accepted (user, 2026-11-16: the accessor, the error Result, the cost setting, the token API with built-in expiry; build now, the kernel RFC for action output and `bearer` follows). For backlog 0615. Each decision cites the WORKFLOW RFC default it applies; what is still open is under Questions with a recommendation. ADR-0126 records it.
 
 ## Decisions
 The user approved D2, D3, D7's shape with expiry built in, and D9's build order on 2026-11-16. The others apply the defaults cited; what is still open is under Questions.

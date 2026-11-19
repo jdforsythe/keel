@@ -1,6 +1,6 @@
 # ADR-0168: `keel report` reads an app's own route (RFC 0146)
 
-**Status:** proposed (for the orchestrator to accept).
+**Status:** accepted
 
 **Context.** `keel report [url]` reads `<url>/__keel/inspect`, which only a dev server answers, so a built app has no way to hand a tally to a person. Keel must not add a production endpoint or hold a credential. The one credential mechanism in the CLI is `keel session ingest`'s: a token from the caller's environment sent as the caller cookie, admitted by a guard that lists callers.
 

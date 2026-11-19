@@ -1,6 +1,6 @@
 # RFC 0114: std.live: a read is bounded at 30 s
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0507. ADR-0136 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0507. ADR-0136 records it.
 
 ## Problem
 `live` runs one read at a time. In `packages/std-live/src/live.ts` the flag `reading` is set before `await attempt(() => opts.read(ctx))` (line 35) and cleared only when that promise settles. A `read` that never settles (a fetch with no timeout on a stalled connection, a loader awaiting a lock) leaves `reading` true for the life of the scope: every later `saved` event only sets `again`, no read runs again, the hydrated store never refreshes, and `status()` keeps the value of the read before, `live`. Nothing in std.live bounds a read, and the backoff covers only reads that settle `err`.

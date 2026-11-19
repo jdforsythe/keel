@@ -1,6 +1,6 @@
 # RFC 0102: `prove` holds every post-state integer within the safe range
 
-Status: accepted (user decision 2026-11-16: the safe-integer limit becomes an obligation). For backlog 0606. Each further decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0125 records it.
+Status: implemented. Accepted (user decision 2026-11-16: the safe-integer limit becomes an obligation). For backlog 0606. Each further decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0125 records it.
 
 ## Decisions
 - D1: the obligation. Every `s.int` the post-state holds, at any depth, is within ±(2^53 − 1), the range `s.int` parses. The goal checks the post-state with the rule the pre-state is assumed under. The limit sentence in k.prove Sorts goes and one sentence replaces it. `n + 1` on a field with no bound and no guard rejects E1716 with the state at the edge (user decision; default 6: the limit was a sentence, the check is in the prover).

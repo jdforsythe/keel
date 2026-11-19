@@ -1,6 +1,6 @@
 # RFC 0076: the type pass loads Node's types when the project has them
 
-Status: accepted (ADR-0065, 2026-11-10). Applies WORKFLOW RFC default 1 (a gap in the kernel is met by a kernel change, not a workaround) and default 3 (one execution path). No app-facing API changes.
+Status: implemented. Accepted (ADR-0065, 2026-11-10). Applies WORKFLOW RFC default 1 (a gap in the kernel is met by a kernel change, not a workaround) and default 3 (one execution path). No app-facing API changes.
 
 ## Problem
 `keel check` step 1 type-checks a project with no ambient `@types`. A node deployable's entry (`server.ts`) reads `process.env` and `import.meta.dirname`, and tests import `node:` modules, so those files need Node's types. Nothing in the kernel provides them: they reach the program only when some file imports a package whose own types reference `node`. The test runner did that for every project with a test, so the gap was invisible; a runner whose types no longer reference `node` turns every node entry into E1751 (`TS2591 Cannot find name 'process'`), while `tsc` on the same project passes because a `tsconfig.json` loads every visible `@types` package.

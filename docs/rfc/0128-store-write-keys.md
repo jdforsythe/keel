@@ -1,6 +1,6 @@
 # RFC 0128: store write keys outlive the undo log
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-18). For backlog 0741 (task 0338, lane B). ADR-0150 records it. Reverses the `keyLimit` alternative RFC 0111 set aside.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-18). For backlog 0741 (task 0338, lane B). ADR-0150 records it. Reverses the `keyLimit` alternative RFC 0111 set aside.
 
 ## Problem
 k.sync bounds the write keys a store remembers by `logLimit`: "the `{ name, key }` of its last `logLimit` commits made with a `key`". Conformance bullet 11 pins it: a key "commits again once `logLimit` later commits with a `key` have passed it". `packages/store/test/keysBound.test.ts` reproduces both halves: with `logLimit: 0`, `tx(push, { v: 1 }, { key: 'k' })` twice commits twice; with `logLimit: 2`, keys `k1`, `k2`, `k3` and then `k1` again commits again.

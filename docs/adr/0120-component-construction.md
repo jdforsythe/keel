@@ -1,6 +1,6 @@
 # ADR-0120: components and op children are built untracked (RFC 0097)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** `renderUnit` builds each child of `If`, `For`, `Match`, `Boundary`, a route page and the `mount` root inside an `effect`, and components are called inline while it runs, so a reactive read in any component body subscribes the nearest unit. A change then disposes the unit and builds it again: local signals reset and focus falls to `<body>`. A `Combobox` whose `options` read a page signal rebuilt the page on each keystroke; std-headless and std-tables each read through an `owner().run` helper to avoid it. The spec already treats a top-level read as read once (E1405, the keyed `For` row, k.head's revalidation sentence), and bindings are the documented way to update.
 

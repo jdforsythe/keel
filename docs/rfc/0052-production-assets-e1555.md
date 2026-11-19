@@ -1,6 +1,6 @@
 # RFC 0052: a production server without `assets` is E1555 at startup
 
-Status: accepted (ADR-0041)
+Status: implemented (ADR-0041)
 
 ## Problem
 - **Red team M3 (2026-11-07, backlog 0127).** A production `createApp` without `assets` scripted `/@keel/entry.ts` into island documents. That entry imports bare `@keel/*` specifiers that only Vite resolves, so in a deployed server every island failed in the browser with no server-side signal.

@@ -1,6 +1,6 @@
 # RFC 0138: what a request leaves: `#k-state` carries only what islands need, a queued submit goes out once, late work and uncaught errors have a chosen end
 
-Status: draft, for the orchestrator to accept (ADR-0160).
+Status: implemented (ADR-0160)
 
 ## Problem
 Four gaps found by a review and red-team 8 (2026-11-18, `tasks/0338-s8-reach/proposed/red-team-8.md` M2, M3, M4, L1, L2). Each claim below was read in the code on 2026-11-18.

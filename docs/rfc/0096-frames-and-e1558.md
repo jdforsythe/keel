@@ -1,6 +1,6 @@
 # RFC 0096: production frames name app files, the frame root comes from `artifacts`, E1558 reports what it cannot read
 
-Status: accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 2, 3, 4, 6; open questions answered as recommended; the user confirms or reverses, tasks/0312-s6-compliance/PLAN.md D28). For backlog 0566, 0567, 0568. Each decision cites the WORKFLOW RFC default it applies; the points the defaults leave open are under Questions with a recommendation. ADR-0119 records it.
+Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 2, 3, 4, 6; open questions answered as recommended; the user confirms or reverses, tasks/0312-s6-compliance/PLAN.md D28). For backlog 0566, 0567, 0568. Each decision cites the WORKFLOW RFC default it applies; the points the defaults leave open are under Questions with a recommendation. ADR-0119 records it.
 
 ## Decisions
 - D1 (0566): `keel build` writes `dist/<name>/server.mjs.map` beside `server.mjs`: an external file, sources relative to the project (one outside it written `../`), no `sourcesContent`. `@keel/server` maps a frame in `<artifacts>/server.mjs` through that file itself, with Node's `SourceMap` class, read on the first throw that needs it. No process flag and no `process.setSourceMapsEnabled`: called inside the bundle it maps nothing of the bundle (measured below). The map is never served (defaults 4, 3, 6).

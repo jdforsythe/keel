@@ -1,6 +1,6 @@
 # RFC 0041: Guards by reference, manifest-typed `routes.href`, scroll keyed by history entry, `Image src` as an asset
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Backlog 0044 (router PLAN D19, D20, D23; freeze review rows 1-2) and 0103.

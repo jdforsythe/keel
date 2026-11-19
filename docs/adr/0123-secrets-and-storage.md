@@ -1,6 +1,6 @@
 # ADR-0123: what `reveal` returns is plain data; E1112 reports a revealed value reaching storage or a log (RFC 0100)
 
-**Status:** proposed; the orchestrator accepts or reverses it under the WORKFLOW RFC defaults.
+**Status:** accepted
 
 **Context.** S8 makes server state durable on SQLite and Postgres. A `Secret` never gets there: `store()` refuses `s.secret` in state (E1303), `snapshot()` folds secret payloads out, and a plain or JSON field refuses a `Secret`. A value `reveal` returns is a plain string at run time. Written into a `tx` payload, `meta`, a store's `initial`, `ctx.storage`, `console` or an `Error` message, it is kept as written. No rule fires: E1105 allows `reveal` in a server file, and E1303 reads only transaction functions. Neither the store nor `commit` nor a driver can tell a revealed string from another one.
 

@@ -1,6 +1,6 @@
 # RFC 0033: Conformance completion: k.compiler, k.component, k.runtime, k.ui
 
-Status: accepted (ADR-0022)
+Status: implemented (ADR-0022)
 
 ## Problem
 The freeze review (docs/freeze-review.md §1, backlog 0058) and a strict re-audit of the current spec text (k.compiler now has 14 clauses) found clauses in these sections asserted only in part. Under task 0034 D1 that blocks `conformance-covered`, and D5 requires a numbered RFC to edit conformance on `implemented` sections. k.component and k.ui were reported covered, but their status lines still read `implemented`, and the re-audit found partial clauses there too.

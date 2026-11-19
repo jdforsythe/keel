@@ -1,6 +1,6 @@
 # RFC 0086: API routes: a route that answers JSON and has no view
 
-Status: accepted (2026-11-11); the user's answers are D1 and D2. Design RFC for backlog 0385, with the context of 0406.
+Status: implemented. Accepted (2026-11-11); the user's answers are D1 and D2. Design RFC for backlog 0385, with the context of 0406.
 
 ## Decisions (user, 2026-11-11)
 - D1: the tagged entry of Proposal 1, with the member `api: true`: "tagged is the right way".

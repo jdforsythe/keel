@@ -1,6 +1,6 @@
 # RFC 0055: `.keel/` artifacts in every project, no trusted hashes, and `routes.json` reported as unverified (W1005)
 
-Status: accepted (ADR-0043)
+Status: implemented (ADR-0043)
 
 ## Problem
 - **Red team 0143.** `check()` used the caller's `artifacts.hashes` whenever it was an object. `{}`, or a map without a compiled name, silenced E1005. Repro: `check([{ path: ".keel/ids.json", source: canonicalJson({ data, hash: hashOf(data) }) + "\n" }], { types: false, artifacts: { hashes: {} } })` returned `[]`. RFC 0050 called this trusted caller input. Nothing enforced that trust.

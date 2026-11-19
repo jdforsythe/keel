@@ -1,6 +1,6 @@
 # RFC 0023: keel check is static only
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Pipeline step 4 of `keel check` and the LSP evaluate compiled app modules in-process with full Node access (red-team C1, 0070). The step also skips most components silently (M4), and `keel test` already enforces rendered a11y (E1702/E1703).

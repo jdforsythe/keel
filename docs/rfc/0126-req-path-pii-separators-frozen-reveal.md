@@ -1,6 +1,6 @@
 # RFC 0126: a revealed value is frozen deep; the `req` path marks `.pii()` params and cuts at an encoded separator
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-18). For backlog 0739, 0746, 0753, 0754 and 0760; the options and measurements are in `tasks/0338-s8-reach/proposed/lane-a-0718.md`.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-18). For backlog 0739, 0746, 0753, 0754 and 0760; the options and measurements are in `tasks/0338-s8-reach/proposed/lane-a-0718.md`.
 
 ## Problem
 Four gaps in k.privacy, each reproduced by a test in the build:

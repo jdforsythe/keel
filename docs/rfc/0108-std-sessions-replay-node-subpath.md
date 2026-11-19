@@ -1,6 +1,6 @@
 # RFC 0108: std-sessions: `replay` on the node subpath
 
-Status: accepted (user for the decisions, orchestrator for the choices, 2026-11-17). For backlog 0714. ADR-0131 records it.
+Status: implemented. Accepted (user for the decisions, orchestrator for the choices, 2026-11-17). For backlog 0714. ADR-0131 records it.
 
 ## Decisions
 - D1: `replay` leaves the root entry of `@keel/std-sessions`. It is imported from `@keel/std-sessions/replay` only, the subpath that already exists. The root keeps `record`, `redact`, `session`, `Session`, `SessionEvent`, `SessionsConfig` and the types `RecordOptions`, `Recorder`, `ReplayResult`, `SessionSink`; a type import costs no bytes.

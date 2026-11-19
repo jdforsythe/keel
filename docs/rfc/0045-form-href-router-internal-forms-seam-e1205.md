@@ -1,6 +1,6 @@
 # RFC 0045: `Form action` is an `Href`, router internals behind `@keel/router/internal`, a symbol-keyed forms seam, no scaffold `plan`, E1205 restored; the TS7022 action cycle
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Backlog 0113, 0114, 0112, and the router, forms, and scaffold parts of 0065 (docs/freeze-review.md §2 rows 9, 11, 12).

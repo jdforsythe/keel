@@ -1,6 +1,6 @@
 # RFC 0121: std.channels: a `perAnonymous` bound for cookieless opens
 
-Status: accepted (user, 2026-11-17). For backlog 0478. ADR-0147 records it.
+Status: implemented. Accepted (user, 2026-11-17). For backlog 0478. ADR-0147 records it.
 
 ## Decisions
 - D1 (user): cookieless opens get their own bound, `perAnonymous` (default 64). Every open whose caller is `""` counts, with all the others, against `perAnonymous` and never against `perCaller`. Config is `std['@keel/std-channels']: { perCaller?, perAnonymous?, maxStreams? }`.

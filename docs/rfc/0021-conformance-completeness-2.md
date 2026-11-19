@@ -1,6 +1,6 @@
 # RFC 0021: Conformance completeness wave 2
 
-Status: draft
+Status: implemented
 
 ## Problem
 The freeze review lists k.component (5 partial), k.ui (6 partial) and k.testing (3 partial) clauses asserted through stand-ins: `getElementById`, a structural axe imitation, contrast arithmetic instead of E1804, hand-built Rule evidence.

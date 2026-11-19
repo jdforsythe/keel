@@ -1,6 +1,6 @@
 # RFC 0141: tokens stay, password hashing leaves: `@keel/std-credentials` becomes `@keel/std-tokens`
 
-Status: draft, for the orchestrator to accept (ADR-0163).
+Status: implemented (ADR-0163)
 
 ## Problem
 The operator's direction (2026-11-18, binding; backlog 0863 answered, 0870 opened): Keel is not an authentication library and must not mint, store, rotate or verify sign-in credentials. RFC 0139 made identity a seam: an app's `identify` answers `user`, and sign-in, sessions and their storage belong to the library, platform or proxy behind it (k.user, k.mount). golden-2 signs in through such a library.

@@ -1,6 +1,6 @@
 # ADR-0166: a runtime-safe entry for std-report, and `keel report` (RFC 0144)
 
-**Status:** proposed (for the orchestrator to accept).
+**Status:** accepted
 
 **Context.** `@keel/std-report` registers its `report.tally` formatter from the main entry, which imports `@keel/cli`. `keel build` follows that import into vite and vitest and fails, so a deployable cannot import `Tally` or `tallyOf`. The formatter also has no app-facing consumer: `respond` is test-only, `stdCommand` reserves `session` alone, and the server log writes fixed kinds. Other std packages keep CLI-time code behind a `./tools` export that `keel` loads from a module's `deps` (k.module).
 

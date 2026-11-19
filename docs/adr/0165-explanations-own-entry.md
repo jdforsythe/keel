@@ -1,6 +1,6 @@
 # ADR-0165: explanations in their own entry of the checker (RFC 0143)
 
-**Status:** proposed (for the orchestrator to accept).
+**Status:** accepted
 
 **Context.** The `@keel/check` main entry is 62,109 B gzip and its budget was raised seven times in one day. The explanation table is 12,686 B gzip of it and only `explain()` reads it: `check()` and `format()` never do, and a diagnostic's `fix` is the rule's own edit. `explain()` falls back to the registry, which imports every kernel rule, so a plain move would bundle the rules a second time (40,164 B).
 

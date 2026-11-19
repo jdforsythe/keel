@@ -1,6 +1,6 @@
 # RFC 0135: check rules catch what they name: literal copy in every user-visible place, the whole zone and locale list, and Node-only globals in browser code
 
-Status: draft, for the orchestrator to accept (ADR-0157).
+Status: implemented (ADR-0157)
 
 ## Problem
 Each claim below was read in the code on 2026-11-18.

@@ -1,6 +1,6 @@
 # RFC 0137: a called prop is placed as content, and a JSX child that would render nothing is reported by the check and in dev
 
-Status: draft, for the orchestrator to accept (ADR-0159).
+Status: implemented (ADR-0159)
 
 ## Problem
 Each claim below was read, and each compiled case run in memory with `compile` from `@keel/compiler`, on 2026-11-18.

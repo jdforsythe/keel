@@ -1,6 +1,6 @@
 # RFC 0071: kernel follow-ups to RFC 0070 (resume `nav`, `observe` as a capability, `@keel/router/match`, secret payloads)
 
-Status: accepted (ADR-0060, 2026-11-09). These follow from the user-accepted RFC 0070 and fix gaps the red-team pass on it found. They amend RFC 0070's decisions as listed under Amendments.
+Status: implemented. Accepted (ADR-0060, 2026-11-09). These follow from the user-accepted RFC 0070 and fix gaps the red-team pass on it found. They amend RFC 0070's decisions as listed under Amendments.
 
 ## Problem
 Backlog 0212, 0216, 0218 and 0205 (filed by 0092 and its red-team pass):

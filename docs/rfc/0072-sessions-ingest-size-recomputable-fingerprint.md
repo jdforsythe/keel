@@ -1,6 +1,6 @@
 # RFC 0072: sessions ingest size accounting, and a fingerprint recomputable from the session
 
-Status: accepted (ADR-0061, 2026-11-09). It applies three WORKFLOW RFC defaults: 4 (privacy by default), 6 (kernel-level enforcement over documentation) and 2 (one way per thing). The orchestrator accepts it because it adds no hand-written user-facing API shape, weakens neither privacy nor auth, and needs no golden-app migration.
+Status: implemented. Accepted (ADR-0061, 2026-11-09). It applies three WORKFLOW RFC defaults: 4 (privacy by default), 6 (kernel-level enforcement over documentation) and 2 (one way per thing). The orchestrator accepts it because it adds no hand-written user-facing API shape, weakens neither privacy nor auth, and needs no golden-app migration.
 
 ## Problem
 Backlog 0225, 0226, 0234-0236 and lead 1 of task 0225:

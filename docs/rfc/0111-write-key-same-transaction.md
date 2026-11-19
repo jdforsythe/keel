@@ -1,6 +1,6 @@
 # RFC 0111: a write key matches its own transaction and outlives undo and the fold
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0502. ADR-0133 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0502. ADR-0133 records it.
 
 ## Decisions
 - D1: a write `key` matches only a write of the same transaction. The same `key` on another transaction commits as usual.

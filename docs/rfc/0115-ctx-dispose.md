@@ -1,6 +1,6 @@
 # RFC 0115: k.ctx: `ctx.dispose()` removes the window listeners
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0496. ADR-0137 records it.
+Status: implemented. Accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0496. ADR-0137 records it.
 
 ## Problem
 `packages/ctx/src/internal/realNet.ts` adds a window `online` and a window `offline` listener for each real or shell ctx whose net is the platform one (no `drivers.net`), and nothing removes them. `createCtx` holds the ctx through a `WeakRef` so the listener does not keep the ctx alive, but the two closures stay on `window` for the life of the page. A page or test that creates many real ctxs in one window (a test file under happy-dom creating one per case, a dev page re-created on reload of a module) gathers two listeners per ctx, each reading `navigator.onLine` on every connectivity change. `Ctx` has no member that ends a ctx, so a caller has no way to take them off.

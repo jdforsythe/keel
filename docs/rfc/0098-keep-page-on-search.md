@@ -1,6 +1,6 @@
 # RFC 0098: a search-only navigation keeps the page
 
-Status: accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 1, 2, 3, 6; open questions answered as recommended; the user confirms or reverses, tasks/0337-s7-ui-modules/PLAN.md D24). For backlog 0593; 0599 stays separate (Known limits). Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0121 records it.
+Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 1, 2, 3, 6; open questions answered as recommended; the user confirms or reverses, tasks/0337-s7-ui-modules/PLAN.md D24). For backlog 0593; 0599 stays separate (Known limits). Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0121 records it.
 
 ## Decisions
 - D1: a navigation to the rendered page's path keeps the page. The router's root `list` keys the committed view by its path when the view rendered without an error (`v.error === null ? splitUrl(v.url).path : v`), not by the view object. A navigation whose path equals the rendered page's (only the search or hash differs) and whose guards and loaders all succeed commits a new `View` under the same key, so the row stays and its `item()` is the new view. Any other navigation, a failing guard or loader, or a page that showed its `errorElement` gets a new key and renders anew, as today (defaults 3, 2).

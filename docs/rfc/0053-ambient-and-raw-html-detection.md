@@ -1,6 +1,6 @@
 # RFC 0053: E1601 and E1002 see aliases, literal keys, and string code (E1603)
 
-Status: accepted (ADR-0042)
+Status: implemented (ADR-0042)
 
 ## Problem
 - **Red team M5 (2026-11-07, backlog 0129).** E1601 matched only a syntactic path rooted at a global name. Each of these passed `keel check` with no E1601:

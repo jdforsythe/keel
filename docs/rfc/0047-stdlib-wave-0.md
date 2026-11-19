@@ -1,6 +1,6 @@
 # RFC 0047: Stdlib wave 0, one module per extension point, and the k.module `std` key
 
-Status: accepted (ADR-0036)
+Status: implemented (ADR-0036)
 
 ## Problem
 The G3 exit criterion says each extension point is used by at least one stdlib module (docs/ROADMAP.md). Freeze review §3 counted 0 of 6, because no stdlib package existed. Some registries had never been exercised by a package at all. The check registry's `fix` had never run, and the schema registry had only registered names. std.sessions (backlog 0092) also needs per-module config, `std: { '@keel/std-sessions': { redact } }`, which k.module did not allow.

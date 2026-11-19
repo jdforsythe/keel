@@ -1,6 +1,6 @@
 # RFC 0065: `reportedCodes()` decides which codes need a check fixture, and E1603 follows a URL or constructor to its origin
 
-Status: accepted (ADR-0054)
+Status: implemented (ADR-0054)
 
 ## Problem
 - **Backlog 0173.** k.check's first Conformance clause asked for a fixture for every E code in a kernel section's Rules. 38 of the 83 Rules codes had none, so `explain-and-fixture-per-code.test.ts` ran it as `test.fails` and k.check stayed `implemented`.
