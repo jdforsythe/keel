@@ -43,6 +43,8 @@ interface Resource {
 }
 interface Pending {
   readonly wire: Wire;
+  /** `maxRedirections` of the request's client config; absent means the plugin's default of 10. */
+  readonly maxRedirections: number;
 }
 interface Body {
   readonly bytes: number[];
@@ -244,7 +246,9 @@ export function installShell(): FakeShell {
         }
         const bytes = payload instanceof Uint8Array ? payload : new Uint8Array();
         const rid = next++;
+        const maxRaw = field(raw, "maxRedirections");
         pending.set(rid, {
+          maxRedirections: typeof maxRaw === "number" ? maxRaw : 10,
           wire: {
             url: text(field(raw, "url")),
             method: text(field(raw, "method")).toUpperCase(),
@@ -257,21 +261,31 @@ export function installShell(): FakeShell {
       case "fetch_send": {
         const p = pending.get(num(field(payload, "rid")));
         if (p === undefined) throw new Error("request id invalid");
-        const origin = new URL(p.wire.url).origin;
-        const headers = { ...p.wire.headers };
-        const cookies = jar.get(origin);
-        if (cookies && cookies.size > 0) headers.cookie = [...cookies].map(([k, v]) => `${k}=${v}`).join("; ");
-        const seen: Wire = { ...p.wire, headers };
-        wire.push(seen);
-        if (shell.refuse) throw `error sending request for url (${p.wire.url}): connection refused`;
-        const reply = shell.backend(seen);
-        const cookie = lowered(reply.headers)["set-cookie"];
-        if (cookie !== undefined) {
-          const pair = cookie.split(";")[0] ?? "";
-          const at = pair.indexOf("=");
-          const mine = jar.get(origin) ?? new Map<string, string>();
-          mine.set(pair.slice(0, at), pair.slice(at + 1));
-          jar.set(origin, mine);
+        // The native client follows a 3xx with a `location` as GET, at most `maxRedirections` times, storing each response's `set-cookie` (RFC 0142: `maxRedirections: 0` is manual).
+        let at: Wire = p.wire;
+        let reply: Reply = ok(at);
+        let finalUrl = p.wire.url;
+        for (let hops = 0; ; hops++) {
+          const origin = new URL(at.url).origin;
+          const headers = { ...at.headers };
+          const cookies = jar.get(origin);
+          if (cookies && cookies.size > 0) headers.cookie = [...cookies].map(([k, v]) => `${k}=${v}`).join("; ");
+          const seen: Wire = { ...at, headers };
+          wire.push(seen);
+          if (shell.refuse) throw `error sending request for url (${at.url}): connection refused`;
+          reply = shell.backend(seen);
+          finalUrl = at.url;
+          const cookie = lowered(reply.headers)["set-cookie"];
+          if (cookie !== undefined) {
+            const pair = cookie.split(";")[0] ?? "";
+            const eq = pair.indexOf("=");
+            const mine = jar.get(origin) ?? new Map<string, string>();
+            mine.set(pair.slice(0, eq), pair.slice(eq + 1));
+            jar.set(origin, mine);
+          }
+          const to = lowered(reply.headers).location;
+          if (reply.status < 300 || reply.status > 399 || to === undefined || hops >= p.maxRedirections) break;
+          at = { url: new URL(to, at.url).href, method: "GET", headers: {}, body: null };
         }
         const bodyRid = next++;
         bodies.set(bodyRid, {
@@ -282,7 +296,7 @@ export function installShell(): FakeShell {
         return {
           status: reply.status,
           statusText: "",
-          url: p.wire.url,
+          url: finalUrl,
           headers: Object.entries(reply.headers ?? {}),
           rid: bodyRid,
         };
