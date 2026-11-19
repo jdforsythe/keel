@@ -1032,3 +1032,4 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0930 std-timings (low): timings are readable only through the dev inspect document; a build has no reader (no `Server-Timing` header, no log record) · std-timings, server · std.timings
 - [ ] 0931 std-brands (low): E2101 runs project-wide once one module lists the package; say so where a reader expects per-module opt-in, or scope it · std-brands · std.brands, k.module
 - [ ] 0932 ui (low): no app-level live region, so a result line that appears after an action is not announced · ui · k.ui
+- [ ] 0933 check (medium): `conformance/module-stdlib-schema-and-rules.test.ts:170` (E1155) fails once in a cold, fully parallel `pnpm test` and passes alone and on a second run; find whether it is a timeout or shared state and fix it in an `rfc:` commit · check · k.check
