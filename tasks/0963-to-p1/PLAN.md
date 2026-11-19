@@ -20,6 +20,8 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 
 - D8 (2026-11-19): RFC 0147 and ADR-0169 (backlog 0956) are accepted as written by the design lane. An opening is one external-browser open by a mount request; it lasts 600000 ms, is kept in `ctx.storage` `keel.return` so a relaunch during sign-in keeps it, admits one link, and a new one replaces it. No binding value: the library's `state` and PKCE bind the flow. Two consequences for the operator to confirm: a link to a page needs an opening too (the agreed wording covers every return link, so the scheme is no general deep link into the app), and a flow started outside the app (an emailed link) cannot return to it. Residual risk in the threat model: another app can send its link first while an opening is pending.
 
+- D9 (2026-11-19): the first wave of `tasks/p1/PLAN.md` starts before the freeze review closes, on the operator's word to run more lanes at once: weakness triage under the O1 definition, release hygiene and the evidence gates. None touches a kernel section.
+
 ## Method
 - RFC unit: RFC, spec and ADR; then conformance by the `conformance-writer` from the spec; then the build. Conformance and build run in their own git worktree and branch, merged when green, so red tests never sit on the main line.
 - Before a push: `pnpm check`, `pnpm test`, both apps' `keel test`, `pnpm ledger --diff`, `node tooling/evidence-report.mjs --check` and `pnpm build` on the exact commit in a clean checkout, each gated on its own exit status. `pnpm ledger` and `pnpm evidence:report` are written from a clean tree after both apps' `keel test`.
@@ -32,6 +34,9 @@ Each lane is a subagent; a lane in a worktree commits on its branch and the orch
 - golden-3 eval: ready short of the model call (backlog 0937 done; `pnpm eval --task golden-3 --runner none` ends `converged=false` only because `apps/golden-3` is absent). The agent run is `pnpm eval --task golden-3 --model claude-sonnet-5-5`, at most 5 iterations; earlier golden runs cost 0.84 to 2.55 dollars each, so this one is estimated at 2 to 10. It waits for the operator's word on spending and for a quiet machine (it runs the root check and test each iteration).
 - main tree, `tasks/0963-to-p1/freeze-review.md`: the freeze review audit (backlog 0034), report only.
 - `tasks/p1/PLAN.md` is written (backlog 0962): twelve P1 workstreams, three P2, a first wave, proposed backlog lines and open decisions O1 to O11 for the operator, each with a recommendation. Its proposed lines are not yet in `tasks/BACKLOG.md`.
+- `.worktrees/hygiene`, branch `lane-hygiene`: backlog 0946 (no home paths or quoted operator messages in tracked files, with a check), 0943 (packages private until launch), 0944 (`.gitignore`, `SECURITY.md`, `CONTRIBUTING.md`).
+- `.worktrees/evidence`, branch `lane-evidence`: backlog 0877 (the evidence report refuses a dirty tree) and 0892 (a gate for a committed ledger or evidence file that differs from the tree).
+- main tree, `tasks/p1/weaknesses.md`: the triage of every open backlog line and the fix lanes (W2 steps 1 and 2 of `tasks/p1/PLAN.md`), under the weakness definition its O1 recommends.
 
 ## Verification
 - [ ] Backlog 0956 built and conformance-covered. RFC 0147, ADR-0169, k.return and the threat model are written (k.return is `implemented` until its conformance lands); next the conformance lane, then the build, each in a worktree.
