@@ -1,6 +1,6 @@
 # RFC 0104 lanes 4 to 7: shared brief
 
-Repository: /Users/jforsythe/orca/workspaces/keel/test-impl. Read `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard; where it names `@keel/std-credentials` read the package you are in). Then `CLAUDE.md`, `docs/PRINCIPLES.md`, `.claude/skills/keel-package-dev/SKILL.md`.
+Repository: the Keel worktree you were started in. Read `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard; where it names `@keel/std-credentials` read the package you are in). Then `CLAUDE.md`, `docs/PRINCIPLES.md`, `.claude/skills/keel-package-dev/SKILL.md`.
 
 The design: `docs/rfc/0104-action-output-and-bearer.md` (accepted). Read `## Decisions`, `### API`, the `### D` subsections your lane touches, and your own `### Lane N` under `## Lanes and build order`, by section (`grep -n '^##' <file>`, `sed -n 'a,bp'`); the file is 81 KB. The contract: the spec sections your lane touches, in full (`spec/kernel/k.api.md`, `k.server.md`, `k.guards.md`, `k.privacy.md`, `k.reveal.md`, `k.hosting.md`, `k.services.md`, `k.compat.md`).
 

@@ -6,7 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "check": "node tooling/turbo.mjs check && node tooling/structure-lint.mjs && node tooling/conformance-guard.mjs && node tooling/generate.mjs --check && node tooling/docs-freshness.mjs && node tooling/voice-lint.mjs && node tooling/format-check.mjs && node tooling/budgets.mjs",
+    "check": "node tooling/turbo.mjs check && node tooling/structure-lint.mjs && node tooling/conformance-guard.mjs && node tooling/generate.mjs --check && node tooling/docs-freshness.mjs && node tooling/voice-lint.mjs && node tooling/hygiene.mjs && node tooling/format-check.mjs && node tooling/budgets.mjs",
     "test": "node tooling/turbo.mjs test",
     "coverage": "node tooling/turbo.mjs coverage",
     "build": "node tooling/turbo.mjs build",

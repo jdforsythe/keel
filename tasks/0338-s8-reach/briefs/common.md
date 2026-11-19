@@ -1,4 +1,4 @@
-Repository: /Users/jforsythe/orca/workspaces/keel/test-impl (git worktree, branch jdforsythe/test-impl). Work only there; never cd to another checkout.
+Repository: the Keel worktree you were started in (git worktree, branch jdforsythe/test-impl). Work only there; never cd to another checkout.
 
 Machine rules (shared machine, hard rules):
 - Every shell command you run must end on its own. Never run a command that waits on stdin (a bare `cat`, `read`, an editor, a watch mode, a dev server left running). Pipe through `| tail -40` or `| head -60` and give long commands a bound, e.g. `perl -e 'alarm 600; exec @ARGV' <cmd>`.

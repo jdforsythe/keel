@@ -1,6 +1,6 @@
 # Tests that reach the cli's uncovered code in process (2026-11-17)
 
-Repository: /Users/jforsythe/orca/workspaces/keel/test-impl. Read `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard), then `docs/TESTING.md` (Mutation; property tests; no clock), `packages/cli/vitest.mutate.config.ts` and `packages/cli/stryker.config.mjs`.
+Repository: the Keel worktree you were started in. Read `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard), then `docs/TESTING.md` (Mutation; property tests; no clock), `packages/cli/vitest.mutate.config.ts` and `packages/cli/stryker.config.mjs`.
 
 ## The problem
 The 2026-11-17 mutation run of `@keel/cli` scored 67.7% against a threshold of 70% (8,355 mutants: 5,117 killed, 93 timed out, 894 survived, 1,596 with no covering test, 655 ignored). The threshold does not move. 180 more kills pass it.

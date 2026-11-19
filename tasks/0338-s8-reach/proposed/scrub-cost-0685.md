@@ -1,6 +1,6 @@
 # Design: the scrub's cost (0685)
 
-Node v24.19.0 on this machine. The prototype is plain JS in `/private/tmp/claude-501/-Users-jforsythe-orca-workspaces-keel-test-impl/160694c1-cde0-495d-8cae-8b0d57117967/scratchpad/scrub0685/` (`ac.mjs`, with the scripts `check`, `time`, `time2`, `diff`, `prop` and `steps`). Today's code was timed by importing `packages/server/src/internal/scrubbed.ts` into the same Node. No app was booted and no suite was run. **Measured** means a number taken here; **estimate** means one reasoned from measured parts.
+Node v24.19.0 on this machine. The prototype is plain JS in a session scratch directory (`scrub0685/`) (`ac.mjs`, with the scripts `check`, `time`, `time2`, `diff`, `prop` and `steps`). Today's code was timed by importing `packages/server/src/internal/scrubbed.ts` into the same Node. No app was booted and no suite was run. **Measured** means a number taken here; **estimate** means one reasoned from measured parts.
 
 ## Recommendation
 One Aho-Corasick automaton over every written form of both sets (secret and pii) replaces the regex batches, the KMP scan and `folded`. It is built once per pair of sets and walked once per text, one code unit at a time, so each text costs a fixed number of steps per character however many values there are. A cap on the automaton's size is the backstop: past 2,000,000 characters of distinct forms, no automaton is built, and the message and each frame are written as one mark. This is option (c) below.

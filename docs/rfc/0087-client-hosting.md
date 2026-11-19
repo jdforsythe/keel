@@ -11,7 +11,7 @@ Status: implemented. Accepted (2026-11-11); the user's answers are D1 and D3. De
 A static host is any server that returns files: S3, a CDN, nginx. The `static` adapter is a different thing: pages prerendered at build, with no params and no actions (E1553). This RFC is about a `client` deployable, whose loaders, actions and views run in the browser, and never uses "static" for it without "host".
 
 ## Problem
-User decision, 2026-11-11: "the right way of deploying would be a static host. we can provide a default way for node to serve it, but as this is intended to build production apps, it should be able to be built to be deployed on e.g. s3 or cdns or elsewhere", and on the origin split, as in any app: "the server needs to set CORS for it to work". Evidence from the code as of this RFC:
+Operator decision, 2026-11-11: the right way of deploying is a static host; Keel provides a default way for node to serve the client, but because Keel builds production apps the client must also build for deployment on S3, a CDN or elsewhere. On the origin split, as in any app, the server sets CORS for it to work. Evidence from the code as of this RFC:
 
 1. **The client build is not a deployable's artifact.** `keel build` writes `dist/<name>/` per `node` deployable only (`packages/cli/src/internal/viteTargets.ts`, `packages/compiler/src/vite.ts`). The `client` build is the project's own `vite build` into `dist/`, beside `dist/api/`, and nothing names it, checks it or documents it as something to upload.
 2. **No server serves it.** `createApp` answers its route table, `/assets/*` and `/keel-mark.svg` (`servedEntry.ts`, `loadAssets.ts`). golden-1's `api` has no `/` route and never reads `dist/index.html`, so `GET /` on the production server is 404.

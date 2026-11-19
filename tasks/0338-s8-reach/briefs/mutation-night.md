@@ -1,6 +1,6 @@
 # Mutation night run: orchestrator brief (2026-11-17, after 00:00 local)
 
-You orchestrate tonight's mutation runs for the Keel monorepo at `/Users/jforsythe/orca/workspaces/keel/test-impl` (git worktree, branch jdforsythe/test-impl; work only there). The user allowed these runs after midnight on one condition, in their words: "put a timer on it, and kill anything that takes too long or runs away. it should check for progress so nothing gets stuck and kills the cpu". The machine is shared; a stuck or orphaned Stryker or vitest process pinning the CPU until morning is the failure you exist to prevent. Finishing fewer packages cleanly is a good result; a process left running is a bad one.
+You orchestrate tonight's mutation runs for the Keel monorepo in the current git worktree (branch jdforsythe/test-impl; work only there). The operator allowed these runs after midnight on one condition: a timer bounds them, anything that takes too long or runs away is killed, and progress is checked so nothing gets stuck and pins the CPU. The machine is shared; a stuck or orphaned Stryker or vitest process pinning the CPU until morning is the failure you exist to prevent. Finishing fewer packages cleanly is a good result; a process left running is a bad one.
 
 ## Read first
 - `docs/TESTING.md`, the paragraphs **Mutation**, **Wall-clock bounds** and **Mutation run time** (how `tooling/mutate.mjs` runs Stryker, the 30-minute budget per run, the incremental cache, `pnpm mutate:status`, `pnpm mutate:stop`).

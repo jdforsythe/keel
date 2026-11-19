@@ -53,7 +53,7 @@ Open backlog counts are unchecked lines in `tasks/BACKLOG.md` matched to a stage
 ## G3 Kernel freeze
 
 1. Exit criterion, `docs/ROADMAP.md`: "Every section conformance-covered; each extension point used by >= 1 stdlib module; two golden apps; evals improving".
-2. Not met as written. `docs/ROADMAP.md` says "criteria met 2026-11-07" in the same cell that says "38 of 40 kernel sections are conformance-covered, k.hosting is implemented and k.shell proposed". `tasks/0034-freeze/PLAN.md` has Status "open" and every Verification box unticked, including "`spec/00-map.md`: every kernel row `frozen`". Its D8 (2026-11-09, user) makes the kernel provisionally frozen and holds the `frozen` flip "until the S stages (S1-S8) have exercised the kernel".
+2. Not met as written. `docs/ROADMAP.md` says "criteria met 2026-11-07" in the same cell that says "38 of 40 kernel sections are conformance-covered, k.hosting is implemented and k.shell proposed". `tasks/0034-freeze/PLAN.md` has Status "open" and every Verification box unticked, including "`spec/00-map.md`: every kernel row `frozen`". Its D8 (2026-11-09, user) makes the kernel provisionally frozen and holds the `frozen` flip until the S stages (S1-S8) have exercised the kernel.
 3. Built: the review, `docs/freeze-review.md`; the stdlib packages cover the extension points.
 4. Open: 0034 itself; 0349 (k.topology clauses 2, 6 and 9 have no evidence). The flip is also launch checklist item 0223 in P1.
 5. Verdict: BUILT, EXIT WAITS ON SOMETHING EXTERNAL: the user's hold on the `frozen` flip, plus the two sections not yet conformance-covered.

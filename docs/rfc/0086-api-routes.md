@@ -13,7 +13,7 @@ A route in a `node` deployable that only answers JSON must still carry a view. E
 2. **golden-1 carries five views nobody sees.** `modules/api/routes.ts` has six entries and `modules/digest/routes.ts` three. Their `component`s are `BoardApi`, `SuggestionsApi`, `DigestApi`, `ActionApi` and `RefreshApi`; the last two render the text "POST only". The `web` deployable reaches every one of these routes through `@keel/services`, which sends `accept: application/json`, and `page.ts` returns the loader results before `renderChain` runs. The views render only when a person types the API path into a browser.
 3. **std-sessions carries one more.** `packages/std-sessions/src/routes.ts` gives `sessions.ingest` and `sessions.list` the stub `SessionsView`.
 4. **The adapter cannot decide.** `apps/sessions` is one `node` deployable whose `ops.home` is a real page beside the two JSON routes, so "a `node` route needs no view" is wrong and the marker has to sit on the route.
-5. **An optional `component` is refused.** User constraint, 2026-11-11: "i don't want the ability to accidentally leave a component out when one should be there". That rules out `component?:` and a structural union in which a page that drops `component` falls into the JSON arm.
+5. **An optional `component` is refused.** Operator constraint, 2026-11-11: a page must never lose its `component` by accident. That rules out `component?:` and a structural union in which a page that drops `component` falls into the JSON arm.
 
 ## Proposal
 

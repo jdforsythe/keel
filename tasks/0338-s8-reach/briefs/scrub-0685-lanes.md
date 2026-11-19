@@ -1,6 +1,6 @@
 # Build the scrub's single pass (0685), three lanes
 
-Repository: /Users/jforsythe/orca/workspaces/keel/test-impl. Every lane reads `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard), then `tasks/0338-s8-reach/proposed/scrub-cost-0685.md` whole: it is the design, and it is decided. The prototype it measured is `tasks/0338-s8-reach/proposed/scrub0685-prototype.mjs.txt` (plain JS, a reference, not code to paste: the built file follows the code rules).
+Repository: the Keel worktree you were started in. Every lane reads `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard), then `tasks/0338-s8-reach/proposed/scrub-cost-0685.md` whole: it is the design, and it is decided. The prototype it measured is `tasks/0338-s8-reach/proposed/scrub0685-prototype.mjs.txt` (plain JS, a reference, not code to paste: the built file follows the code rules).
 
 Decided (orchestrator, D24 in `tasks/0338-s8-reach/PLAN.md`, for the user to confirm or reverse): the design's five recommendations as written. The cap is 2,000,000 characters of distinct folded forms and fails closed to one mark, stated in k.privacy; base64 is matched without regard to case; letters outside the Basic Multilingual Plane match only as written; the `@keel/server` size budget is the orchestrator's to re-base, so a lane reports the measured size and does not edit `tooling/budgets.json`; 0672's set growth is not in this change.
 

@@ -1,6 +1,6 @@
 # Fix four mutation dry runs (2026-11-17)
 
-Repository: /Users/jforsythe/orca/workspaces/keel/test-impl. Read `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard), then `docs/TESTING.md` paragraphs **Mutation**, **Wall-clock bounds** and **Mutation run time**, `tooling/stryker.mjs`, the header of `tooling/mutate.mjs`, and each package's `stryker.config.mjs` and mutation vitest config.
+Repository: the Keel worktree you were started in. Read `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard), then `docs/TESTING.md` paragraphs **Mutation**, **Wall-clock bounds** and **Mutation run time**, `tooling/stryker.mjs`, the header of `tooling/mutate.mjs`, and each package's `stryker.config.mjs` and mutation vitest config.
 
 ## The problem
 A mutation run starts with a dry run: the package's whole suite runs once from Stryker's sandbox copy, under instrumentation, and must pass. On 2026-11-17 the dry run failed for four kernel packages, so they have no mutation score and their ledger claims are stale (cli 22, server 14, testing 5, check 5). Each failed on one test. The log of that night is `$TMPDIR/keel-mutate/night.log`, with each run's output in `<pkg>-<n>.log` beside it (`ls "$TMPDIR"keel-mutate/`). Outside mutation these suites are green (root `pnpm test`).
