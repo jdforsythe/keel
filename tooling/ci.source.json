@@ -328,6 +328,89 @@
         }
       ]
     },
+    "shell-tauri-macos": {
+      "needs": ["check", "changes"],
+      "if": "github.event.repository.private == false && needs.changes.outputs.shells == 'true'",
+      "runs-on": "macos-26",
+      "timeout-minutes": 30,
+      "env": {
+        "KEEL_ORIGIN": "http://localhost:4182",
+        "CARGO_TARGET_DIR": "${{ github.workspace }}/.cargo-target"
+      },
+      "steps": [
+        "$setup",
+        {
+          "name": "Rust stable",
+          "run": "rustup toolchain install stable --profile minimal --no-self-update && rustup default stable && cargo --version"
+        },
+        {
+          "name": "cargo registry and target for golden-1's shell",
+          "uses": "actions/cache@v4",
+          "with": {
+            "path": "~/.cargo/registry/index\n~/.cargo/registry/cache\n~/.cargo/git/db\n.cargo-target",
+            "key": "cargo-tauri-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/golden-1/deploy/web/tauri/Cargo.lock', 'apps/golden-1/deploy/web/tauri/Cargo.toml') }}",
+            "restore-keys": "cargo-tauri-${{ runner.os }}-${{ runner.arch }}-"
+          }
+        },
+        {
+          "name": "golden-1's web as a Tauri debug binary for macOS",
+          "working-directory": "apps/golden-1",
+          "run": "pnpm exec keel build --target tauri"
+        },
+        {
+          "name": "the binary starts and reads the board through its native client; a cookie with a lifetime is sent again after a SIGKILL and restart (no input is made: WKWebView has no WebDriver)",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-launch.mjs --shell tauri --binary .cargo-target/debug/golden-1"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "golden-1-tauri-macos-debug",
+            "path": ".cargo-target/debug/golden-1",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
+        }
+      ]
+    },
+    "shell-ios": {
+      "needs": ["check", "changes"],
+      "if": "github.event.repository.private == false && needs.changes.outputs.shells == 'true'",
+      "runs-on": "macos-26",
+      "timeout-minutes": 30,
+      "env": {
+        "KEEL_ORIGIN": "http://localhost:4182"
+      },
+      "steps": [
+        "$setup",
+        {
+          "name": "Swift packages of the Capacitor iOS project",
+          "uses": "actions/cache@v4",
+          "with": {
+            "path": "~/Library/Caches/org.swift.swiftpm",
+            "key": "swiftpm-capacitor-${{ runner.os }}-${{ hashFiles('apps/golden-1/package.json', 'packages/std-capacitor/Package.swift') }}",
+            "restore-keys": "swiftpm-capacitor-${{ runner.os }}-"
+          }
+        },
+        {
+          "name": "golden-1's web as an iOS app for the Simulator, unsigned (cap add, cap sync, xcodebuild)",
+          "working-directory": "apps/golden-1",
+          "run": "pnpm exec keel build --target capacitor --platform ios"
+        },
+        {
+          "name": "the app starts on a simulator and reads the board through its native client; a cookie with a lifetime is sent again after a force-stop and after a reboot (no input is made: WKWebView has no WebDriver)",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-launch.mjs --shell ios --reboot"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "golden-1-ios-simulator-debug",
+            "path": "apps/golden-1/dist/web/capacitor/ios/build/Build/Products/Debug-iphonesimulator/App.app",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
+        }
+      ]
+    },
     "build": {
       "needs": "test",
       "runs-on": "ubuntu-latest",
