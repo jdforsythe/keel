@@ -1,6 +1,17 @@
 {
   "skill": "keel-server",
-  "maxTokens": 600,
-  "prompt": "How do I give a Keel loader and action per-request server stores, undo one caller's writes, and what happens when two requests save the same store?",
-  "expect": ["stores", "ctx.storage", "keel.conflict", "undoWhere", "E1558"]
+  "maxTokens": 2000,
+  "prompt": "In a Keel node module, how do I give a loader and an action per-request server stores, undo one caller's writes, and declare a JSON API route that a client-only deployable calls through a typed service client? Where does the bearer token get checked, and what happens when two requests save the same store?",
+  "expect": [
+    "stores",
+    "ctx.storage",
+    "keel.conflict",
+    "undoWhere",
+    "E1558",
+    "api: true",
+    "endpoints",
+    "service",
+    "bearer",
+    "output"
+  ]
 }
