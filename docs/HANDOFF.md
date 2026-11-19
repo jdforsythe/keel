@@ -17,7 +17,7 @@ active:
   - safe to clear: YES.
 blockers: none
 pending decisions: the operator confirms or reverses D69 to D87 in tasks/0338-s8-reach/PLAN.md and D1 to D7 in the active plan; none blocks work.
-last updated: 374edbcc 2026-11-19
+last updated: c4ec024c 2026-11-19
 ```
 
 ## Reading on resume
