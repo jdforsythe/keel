@@ -29,8 +29,8 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | --- | --- | --- | --- |
 | k.schema | Schemas | conformance-covered | codecs |
 | k.reactive | Reactivity | conformance-covered | signals |
-| k.store | Store, transactions | conformance-covered | log, undo |
-| k.component | Components | conformance-covered | props, slots |
+| k.store | Store, transactions | conformance-covered | log |
+| k.component | Components | conformance-covered | props |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX |
 | k.boundary | The server boundary | conformance-covered | stubs, E1007 |
 | k.bundle | Browser bundles | conformance-covered | workers |
@@ -40,19 +40,19 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.defaults | Queued default actions | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
 | k.router | Routes | conformance-covered | params |
-| k.guards | Guards | conformance-covered | redirects |
+| k.guards | Guards | conformance-covered | deny |
 | k.prefix | Implied path prefix | conformance-covered | enums |
-| k.forms | Forms | conformance-covered | validation |
-| k.ui | Tokens and styling | conformance-covered | atomic CSS |
+| k.forms | Forms | conformance-covered | fields |
+| k.ui | Tokens and styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock, net |
 | k.owner | Ctx owner | conformance-covered | disposal |
 | k.errors | Results and boundaries | conformance-covered | Result |
 | k.check | Checker and diagnostics | conformance-covered | codes |
-| k.host | Host reads | conformance-covered | zone, locale |
-| k.cli | CLI, MCP, LSP | conformance-covered | one engine |
+| k.host | Host reads | conformance-covered | zone |
+| k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.scaffold | Scaffold and codemods | conformance-covered | edits |
 | k.testing | Harness and properties | conformance-covered | harness |
-| k.model | Exploring a store's transactions | conformance-covered | invariants |
+| k.model | Exploring a store's transactions | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Schedules and simulation | conformance-covered | faults |
 | k.ledger | Ledger and evidence | conformance-covered | rungs |
@@ -60,6 +60,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.leave | What a request leaves | conformance-covered | `#k-state` |
 | k.user | Request user and caller lifetime | conformance-covered | `identify` |
 | k.mount | Pages into the identity mount | conformance-covered | submit |
+| k.return | Mount from a shell | proposed | links |
 | k.serverlog | Server log records | conformance-covered | bounds |
 | k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |
@@ -73,9 +74,9 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |
-| k.a11y | Accessibility | conformance-covered | contrast |
+| k.a11y | Accessibility | conformance-covered | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
-| k.security | Headers and CSP | conformance-covered | nonce CSP |
+| k.security | Headers and CSP | conformance-covered | CSP |
 | k.privacy | Secrets and personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | bundle |

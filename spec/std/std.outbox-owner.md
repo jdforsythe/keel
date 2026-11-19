@@ -17,9 +17,12 @@ const r = tx(stores.editTodo, payload, { meta: { caller }, ...w.value })
 
 **Limits.** An action that spreads `input.write` into `tx` without `writeFor` commits a write of any owner. The check decides which owner a write commits under, not what reaches the server: a refused entry's body reaches the action.
 
+**Signed out.** A request whose `user` is `""` has no owner to compare: `writeFor(write, "")` with a `write.owner` other than `""` returns `err({ code: 'offline.signin', message: 'signin', data: {} })`, which k.server answers 400. A flush reads it as a pause: the entry stays `queued`, and flushing stops until `drain` or `send` is given that owner again. Giving `""` as the owner holds other owners' entries `queued` rather than failing them; another named owner still fails them. So a sign-in that expires, or a sign-out, keeps queued writes on the device until that user signs in again, their bodies in `ctx.storage` until then.
+
 **Rules.** None.
 
 **Conformance.**
 - `writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` or `""` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: "" }, "")` is `ok`.
 - With entries queued offline under owner `a` and a route whose action passes `writeFor` owner `b`, `drain` with `a` online posts each with `body.write.owner` `a`, the server store commits nothing, and each entry is `failed` with `{ code: 'offline.owner', message: <id>, data: {} }`.
 - After that refusal, `drain` with `a` on a new ctx over that storage posts nothing, and a `send` with `a` to a route whose owner is `a` is posted and resolves `sent`.
+- `writeFor({ key, base, owner: 'a' }, "")` is `err` with `{ code: 'offline.signin', message: 'signin', data: {} }`; entries of owner `a` refused with it stay `queued`, a `drain` with `""` posts none and fails none, and a later `drain` with `a` posts each once with its key.
