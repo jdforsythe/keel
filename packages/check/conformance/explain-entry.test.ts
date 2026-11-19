@@ -1,5 +1,8 @@
 // Seed 1337
-// Spec: k.explain, four Conformance bullets, each quoted above its tests.
+// Spec: k.explain, clause "`@keel/check` has no `explain` export. `@keel/check/explain` exports `explain`, and for every code in `reportedCodes()` it returns at most 120 tokens naming the code."
+// Spec: k.explain, clause "A rule registered with `defineRule` imported from `@keel/check` is explained by `explain` from `@keel/check/explain`: its message, its `explain` text and its `see`."
+// Spec: k.explain, clause "The `@keel/check` entry bundled alone (esbuild, minified esm, dependencies external) contains no reason line and no fix example of any kernel code's explanation; the `@keel/check/explain` entry bundled alone contains every one."
+// Spec: k.explain, clause "`tooling/budgets.json` has a size line for `@keel/check` and one for `@keel/check/explain`."
 import { readFileSync } from "node:fs";
 import { defineRule, reportedCodes } from "@keel/check";
 import * as main from "@keel/check";
@@ -12,7 +15,7 @@ import { SEED, approxTokens } from "./support.ts";
 const PKG = new URL("../", import.meta.url);
 const ROOT = new URL("../../../", import.meta.url);
 
-// - `@keel/check` has no `explain` export. `@keel/check/explain` exports `explain`, and for every code in `reportedCodes()` it returns at most 120 tokens naming the code.
+// clause 1
 test("@keel/check has no explain export", () => {
   expect("explain" in main).toBe(false);
   expect(Object.keys(main)).not.toContain("explain");
@@ -36,7 +39,7 @@ test("for every code in reportedCodes() explain returns at most 120 tokens namin
   );
 });
 
-// - A rule registered with `defineRule` imported from `@keel/check` is explained by `explain` from `@keel/check/explain`: its message, its `explain` text and its `see`.
+// clause 2
 test("a rule registered with defineRule from @keel/check is explained by explain from @keel/check/explain: message, explain text and see", () => {
   const word = fc.stringMatching(/^[a-z]{4,10}( [a-z]{4,10}){0,2}$/);
   const sample = fc.sample(
@@ -62,7 +65,7 @@ test("a rule registered with defineRule from @keel/check is explained by explain
   expect(seen.size).toBeGreaterThan(0);
 });
 
-// - The `@keel/check` entry bundled alone (esbuild, minified esm, dependencies external) contains no reason line and no fix example of any kernel code's explanation; the `@keel/check/explain` entry bundled alone contains every one.
+// clause 3
 const bundle = async (entry: string): Promise<string> => {
   const out = await build({
     entryPoints: [entry],
@@ -122,7 +125,7 @@ test("the @keel/check entry bundled alone has no reason line and no fix example 
   expect(checked).toBeGreaterThan(0);
 }, 60_000);
 
-// - `tooling/budgets.json` has a size line for `@keel/check` and one for `@keel/check/explain`.
+// clause 4
 test("tooling/budgets.json has a size line for @keel/check and one for @keel/check/explain", () => {
   const budgets: unknown = JSON.parse(readFileSync(new URL("tooling/budgets.json", ROOT), "utf8"));
   const size = typeof budgets === "object" && budgets !== null && "size" in budgets ? budgets.size : undefined;
