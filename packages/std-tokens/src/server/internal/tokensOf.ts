@@ -56,7 +56,8 @@ export function tokensOf(engine: Engine, now: () => number): Tokens {
       if (want.sim && !engine.sim) return malformed("sim");
       const same = timingSafeEqual(got, want.digest);
       if (!same || want.sim !== (m[1] === "keelsim")) return MISMATCH;
-      if (want.expiresAt !== null && now() >= want.expiresAt) return EXPIRED;
+      // An expiry the clock does not read as later than now (`NaN` included) has passed.
+      if (want.expiresAt !== null && !(now() < want.expiresAt)) return EXPIRED;
       return ok(row);
     },
   };

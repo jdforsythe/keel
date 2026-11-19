@@ -101,3 +101,38 @@ test("a find that returns null or a non-object is credentials.mismatch", () => {
     expect(raw).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
   }
 });
+
+test("a presented value that is not a `Secret` string answers `credentials.mismatch` without calling `find`, and never throws", () => {
+  const { c, m } = minted(() => 0, null);
+  fc.assert(
+    fc.property(
+      fc.oneof(fc.string(), fc.constant(undefined), fc.constant(null), fc.integer(), fc.object()),
+      (value) => {
+        let calls = 0;
+        const find = () => {
+          calls++;
+          return undefined;
+        };
+        const r: unknown = Reflect.apply(c.check, c, [value, find]);
+        expect(r).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
+        expect(calls).toBe(0);
+      },
+    ),
+    { seed: SEED, numRuns: 100 },
+  );
+  // The minted text itself, presented as a plain string rather than a Secret, is no token either.
+  const r: unknown = Reflect.apply(c.check, c, [reveal(m.token), () => undefined]);
+  expect(r).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
+});
+
+test("an expiring token is `credentials.expired` when the clock reads `NaN`; a token with no expiry is still `ok`", () => {
+  let clock = 0;
+  const expiring = minted(() => clock, 3_600_000);
+  const forever = minted(() => clock, null);
+  clock = Number.NaN;
+  expect(expiring.c.check(expiring.m.token, expiring.find)).toMatchObject({
+    ok: false,
+    error: { code: "credentials.expired" },
+  });
+  expect(forever.c.check(forever.m.token, forever.find).ok).toBe(true);
+});
