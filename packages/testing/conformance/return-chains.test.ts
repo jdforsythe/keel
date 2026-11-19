@@ -1,5 +1,11 @@
 // @vitest-environment happy-dom
-// Spec: k.opening, Chains, Stored value and Conformance (every bullet, quoted at its tests); k.return, last Conformance bullet (the redirect count through `<id>:`).
+// Spec: k.opening, clause "The link's GET answered 404 records `/api/auth/callback?code=c` on `KEEL_ORIGIN` in `documents()`; a second delivery of the link then sends nothing."
+// Spec: k.opening, clause "The link's GET answered 302 to `https://provider.example/b`, or to `/elsewhere` (neither a page nor under the mount), records that URL in `documents()`; a second delivery then sends nothing."
+// Spec: k.opening, clause "The link's GET answered 302 to `dev.keel.golden2:/api/auth/y`, whose GET is answered 404, records `/api/auth/y` in `documents()`; a second delivery then sends nothing."
+// Spec: k.opening, clause "With no opening first, a `Link` to the mount answered 302 to `dev.keel.golden2:/api/auth/x`, whose GET is answered 302 to `https://provider.example/a`, records that URL in `documents()`; the link then sends one `net` GET."
+// Spec: k.opening, clause "The opening made at 1 ms (sim clock): a new ctx at 0 ms given its `keel.return` value admits no link; a new ctx given the value `x` admits no link."
+// Spec: k.opening, clause "With a `ctx.storage` whose writes fail, the opening still records `https://provider.example/a` in `documents()`, and the link then sends nothing."
+// Spec: k.return, clause "With every GET answered 302 to `dev.keel.golden2:/api/auth/loop`, a `Link` to the mount sends six `net` GETs."
 // Seed 1337 (fc.assert below; the sim ctx's seed is 1337). The sim clock starts at 0 and moves only through `advance` (k.sim).
 // ASSUMED: "The link" is delivered with `handle.returnLink`, its own GET answered by the test; a link that was not admitted sends no `net` request.
 // ASSUMED: a `documents()` entry for a URL on KEEL_ORIGIN holds an absolute or rooted URL whose path and search are the request's; compared by `pathname + search` only (the origin is the harness's).
@@ -30,7 +36,6 @@ const withStart =
     s.url === START ? redirect(302, PROVIDER) : rest(s);
 
 describe("k.opening: a chain a return link starts records no opening", () => {
-  // Spec: k.opening, clause "The link's GET answered 404 records `/api/auth/callback?code=c` on `KEEL_ORIGIN` in `documents()`; a second delivery of the link then sends nothing."
   it("the link's GET answered 404 records /api/auth/callback?code=c on KEEL_ORIGIN in documents(); a second delivery of the link then sends nothing", async () => {
     const { handle, sent } = await openShell("mt.home", withStart(notFound));
     await beginOpening(handle);
@@ -49,7 +54,6 @@ describe("k.opening: a chain a return link starts records no opening", () => {
     handle.dispose();
   });
 
-  // Spec: k.opening, clause "The link's GET answered 302 to `https://provider.example/b`, or to `/elsewhere` (neither a page nor under the mount), records that URL in `documents()`; a second delivery then sends nothing."
   for (const [location, recorded] of [
     ["https://provider.example/b", "https://provider.example/b"],
     ["/elsewhere", "/elsewhere"],
@@ -75,7 +79,6 @@ describe("k.opening: a chain a return link starts records no opening", () => {
     });
   }
 
-  // Spec: k.opening, clause "The link's GET answered 302 to `dev.keel.golden2:/api/auth/y`, whose GET is answered 404, records `/api/auth/y` in `documents()`; a second delivery then sends nothing."
   it("the link's GET answered 302 to dev.keel.golden2:/api/auth/y, whose GET is answered 404, records /api/auth/y in documents(); a second delivery then sends nothing", async () => {
     const { handle, sent } = await openShell(
       "mt.home",
@@ -95,7 +98,6 @@ describe("k.opening: a chain a return link starts records no opening", () => {
     handle.dispose();
   });
 
-  // Spec: k.opening, clause "With no opening first, a `Link` to the mount answered 302 to `dev.keel.golden2:/api/auth/x`, whose GET is answered 302 to `https://provider.example/a`, records that URL in `documents()`; the link then sends one `net` GET."
   it("with no opening first, a Link to the mount answered 302 to dev.keel.golden2:/api/auth/x, whose GET is answered 302 to https://provider.example/a, records that URL in documents(); the link then sends one net GET", async () => {
     const { handle, sent } = await openShell("mt.home", (s) =>
       s.url === START
@@ -116,7 +118,6 @@ describe("k.opening: a chain a return link starts records no opening", () => {
 });
 
 describe("k.opening: the stored value", () => {
-  // Spec: k.opening, clause "The opening made at 1 ms (sim clock): a new ctx at 0 ms given its `keel.return` value admits no link; a new ctx given the value `x` admits no link."
   async function admitted(value: (first: string) => string, madeAt: number): Promise<number> {
     closeAll();
     const first = createCtx({ mode: "sim", seed: SEED });
@@ -182,7 +183,6 @@ describe("k.opening: the stored value", () => {
     );
   });
 
-  // Spec: k.opening, clause "With a `ctx.storage` whose writes fail, the opening still records `https://provider.example/a` in `documents()`, and the link then sends nothing."
   it("with a ctx.storage whose writes fail, the opening still records https://provider.example/a in documents(), and the link then sends nothing", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
     const { handle, sent } = await openShell(
@@ -251,7 +251,6 @@ describe("k.opening: links admitted never exceed the openings the page started",
   });
 });
 
-// Spec: k.return, clause "With every GET answered 302 to `dev.keel.golden2:/api/auth/loop`, a `Link` to the mount sends six `net` GETs."
 describe("k.return: a redirect through the shell's own scheme counts toward the 5 in a row", () => {
   it("with every GET answered 302 to dev.keel.golden2:/api/auth/loop, a Link to the mount sends six net GETs", async () => {
     const { handle, sent } = await openShell("mt.home", (_s, i) =>
