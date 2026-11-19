@@ -12,11 +12,11 @@ active:
   - state: every commit is pushed (see `git log -1`). CI runs on the public repository; the last full run is green on f184c8e4 (check, six test shards, build, budgets, built smokes, Postgres, Tauri on Linux and macOS, Android, iOS). `test-macos` runs weekly once this branch is on master.
   - built and conformance-covered this week: the server boundary and bundle rules, the identity seam and mount, `@keel/std-tokens`, `@keel/check/explain`, shell sign-in (`k.return`), std-report with `keel report`, std runtime entries (lint S0009). golden-2 exercises every std module that was unused.
   - stages: S1 to S5, S7 and S8 closed; S6 provisionally closed (its external reviews are P1 gates); G3 waits for the freeze review.
-  - in flight: nothing. Done on 2026-11-19 and pushed: backlog 0921 (the server's mutation run finishes: 78.4 against 70, no missing bound found; tasks/0338-s8-reach/proposed/server-mutation-tail.md) and backlog 0961 (a session and the outbox drain replayed by automation in the macOS Tauri shell and the iOS Simulator app; tasks/0963-to-p1/shell-session-proof.md).
-  - first thing on resume: the CI run on the pushed head is the first with D6 and D7 of the active plan (a longer simulator boot bound; two vitest workers for `@keel/cli` in CI) and the first in which `shell-ios` can reach its replay steps (backlog 0965; `shell-tauri-macos` passed them on 7d06c7bf): `gh run list --limit 2`, then fix what fails there before taking backlog 0956.
-  - safe to clear: YES.
+  - in flight: see `## Lanes` in the active plan; it lists each lane's worktree, branch and state, what is merged and what waits.
+  - first thing on resume: `git worktree list` and `## Lanes` in the active plan; then the CI run on the pushed head (`gh run list --limit 2`).
+  - safe to clear: only when `## Lanes` shows nothing in flight.
 blockers: none
-pending decisions: the operator confirms or reverses D69 to D87 in tasks/0338-s8-reach/PLAN.md and D1 to D10 in the active plan, and the open decisions O1 to O11 of tasks/p1/PLAN.md; none blocks work. The golden-3 agent run (2 to 10 dollars estimated) waits for the operator's word.
+pending decisions: the operator confirms or reverses D69 to D87 in tasks/0338-s8-reach/PLAN.md and D1 to D11 in the active plan, and the open decisions O1 to O11 of tasks/p1/PLAN.md; none blocks work. The golden-3 agent run (2 to 10 dollars estimated) waits for the operator's word.
 last updated: 84e212d6 2026-11-19
 ```
 

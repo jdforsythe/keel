@@ -788,8 +788,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 
 ## Spec status audit 2026-11-16 (tasks/0338-s8-reach/proposed/spec-status-0659.md)
 - [x] 0691 spec: std.workflows has every Conformance clause covered but stays `proposed`: the section is at 1,499 of 1,500 tokens and the status word needs 11 more characters; trim seven characters from a sentence no conformance header quotes, then set the status, `spec/std/README.md` and `docs/freeze-review.md` · spec
-- [ ] 0692 conformance: k.shell clause 6: `packages/compiler/conformance/shell-entry.test.ts` checks "the package's drivers" by matching the word `drivers`, which any bundle holds; assert the `createCtx` call's `drivers` argument names the package's export · conformance · compiler
-- [ ] 0693 conformance: k.hosting clause 2: the client entry's service fetch URL, `credentials: 'include'` and the unset case are not observed by a test (the file's own GAP comment says so) · conformance · server
+- [x] 0692 conformance: k.shell clause 6: `packages/compiler/conformance/shell-entry.test.ts` checks "the package's drivers" by matching the word `drivers`, which any bundle holds; assert the `createCtx` call's `drivers` argument names the package's export · conformance · compiler
+- [x] 0693 conformance: k.hosting clause 2: the client entry's service fetch URL, `credentials: 'include'` and the unset case are not observed by a test (the file's own GAP comment says so) · conformance · server
 - [x] 0694 std-db: clause 1 runs on PGlite only; the real Postgres path needs `KEEL_TEST_POSTGRES_URL`, which no CI job sets (a Postgres 17 service container, as D3 of the S8 plan asked) · std-db · tooling
 - [x] 0695 spec, conformance: the ledger refuses `conformance-covered` for two sections a reading audit had passed: k.topology clause 2 has no test the ledger credits, and std.shells has no Conformance clause the ledger can read (and its std-tauri tests cite clauses as "Same clause as ...", not with a `// Spec:` line). Fix the test headers and the section's Conformance paragraph, run `pnpm ledger --diff`, then set the statuses · spec · conformance
 
@@ -976,7 +976,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0874 ui (low): `Text` has no `role` · ui · k.ui
 - [ ] 0875 server (low): no helper answers a redirect that carries an auth library's cookies · server · k.user
 - [ ] 0876 server (low): `identify` cannot open a Keel store · server · k.user
-- [ ] 0877 tooling (low): `pnpm evidence:report` writes data from a dirty tree without refusing · tooling
+- [x] 0877 tooling (low): `pnpm evidence:report` writes data from a dirty tree without refusing · tooling
 - [ ] 0878 tooling (low): docs-freshness (D0001) trips several docs at once after a busy day; give the re-verify a cadence · tooling
 - [ ] 0879 cli (low): `keel build` prints E1007 on stderr only, not as a structured record · cli · k.boundary
 - [ ] 0880 check (low): E1107 keeps its own reach instead of the shared client reach · check · k.boundary
@@ -991,7 +991,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0889 red-team, medium: `vite build` on a case-insensitive FS ships `./notes.Server.ts`; test the real on-disk name · compiler · k.boundary · repro: red-team-9.md M1
 - [x] 0890 red-team, medium: a project `envPrefix` array survives the plugin's `"\0"` lock (mergeConfig concatenates); `import.meta.env.KEEL_*` is inlined · compiler · k.boundary · repro: red-team-9.md M2
 - [x] 0891 red-team, medium: `x-keel-user` is not bound to body or origin and the receiver has no expiry ceiling; a captured header replays any write for 60 s · server, services · k.user · repro: red-team-9.md M3
-- [ ] 0892 red-team, medium: no gate catches a committed ledger or evidence file that differs from what the tree produces; `pnpm ledger --diff` does not write · tooling · principle 11 · repro: red-team-9.md M4
+- [x] 0892 red-team, medium: no gate catches a committed ledger or evidence file that differs from what the tree produces; `pnpm ledger --diff` does not write · tooling · principle 11 · repro: red-team-9.md M4
 - [ ] 0893 red-team, low: E1579 misses a param route matching `handle.path`; the client router swallows mount links · compiler, server · k.user, k.mount · repro: red-team-9.md L1
 - [ ] 0894 red-team, low: `identityMount` does not validate `path` at runtime (`/\evil.example` resolves off-origin) · router · k.mount · repro: red-team-9.md L2
 - [ ] 0895 red-team, low: `handle.path` `/assets` shadows built assets; E1579 allows it · server, compiler · k.user · repro: red-team-9.md L3

@@ -24,23 +24,21 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 
 - D10 (2026-11-19): the red-team pass on RFC 0147 reproduced two holes, so the branch is not merged as built. One opening admitted any number of links, because an admitted link's own GET recorded a new opening (a 404, an outside redirect); and a redirect to the shell's own scheme restarted the redirect count, so a loop never ended. Decided: only a request the page starts, and its redirects, record an opening; a chain started by a return link records none; an own-scheme redirect continues the row of five. The spec also states the far-future and malformed stored value and the failed write. Order: spec text, conformance, build, then a second red-team pass.
 
+- D11 (2026-11-19): the amended return-link text does not fit `k.return`'s size limit, so the chain and stored-value rules are a section of their own, `k.opening`, as RFC 0130 and 0138 did for full sections; eleven map-only titles are shortened to pay for its row.
+
 ## Method
 - RFC unit: RFC, spec and ADR; then conformance by the `conformance-writer` from the spec; then the build. Conformance and build run in their own git worktree and branch, merged when green, so red tests never sit on the main line.
 - Before a push: `pnpm check`, `pnpm test`, both apps' `keel test`, `pnpm ledger --diff`, `node tooling/evidence-report.mjs --check` and `pnpm build` on the exact commit in a clean checkout, each gated on its own exit status. `pnpm ledger` and `pnpm evidence:report` are written from a clean tree after both apps' `keel test`.
 - One mutation run at a time (machine-wide lock). Few test-running agents at once: the machine is shared, and spawn-heavy cli conformance times out under load (backlog 0938).
 
-## Lanes in flight (2026-11-19)
-Each lane is a subagent; a lane in a worktree commits on its branch and the orchestrator reviews and cherry-picks. A lane with no report is re-briefed from this list.
-- `.worktrees/0956`, branch `rfc-0147`: RFC 0147 conformance (e71d564a) and build (36112e58); the reviewer passed it, the red-team pass did not (D10). In order on that branch: the spec amendment (in flight), conformance for the new clauses, the fix, a second red-team pass, then the merge.
-- `.worktrees/0967`, branch `lane-0967`: tests for the server's surviving mutants (backlog 0967) and the std-sessions mutation config (0966). It starts no mutation run.
-- golden-3 eval: ready short of the model call (backlog 0937 done; `pnpm eval --task golden-3 --runner none` ends `converged=false` only because `apps/golden-3` is absent). The agent run is `pnpm eval --task golden-3 --model claude-sonnet-5-5`, at most 5 iterations; earlier golden runs cost 0.84 to 2.55 dollars each, so this one is estimated at 2 to 10. It waits for the operator's word on spending and for a quiet machine (it runs the root check and test each iteration).
-- `tasks/0963-to-p1/freeze-review.md` is written: 51 of 54 kernel sections are conformance-covered; its blocking items are listed there with sizes.
-- `.worktrees/schemaconf`, branch `lane-schemaconf`: conformance for the freeze gaps (k.schema bullet 16 and k.privacy bullet 1 JSON Schema halves, k.hosting clause 2, k.shell clause 6).
-- `.worktrees/status`, branch `lane-status`: RFC and ADR status lines, stale statuses in READMEs and the roadmap, k.shell's CI paragraph.
-- `tasks/p1/PLAN.md` is written (backlog 0962): twelve P1 workstreams, three P2, a first wave, proposed backlog lines and open decisions O1 to O11 for the operator, each with a recommendation. Its proposed lines are not yet in `tasks/BACKLOG.md`.
-- `.worktrees/hygiene`, branch `lane-hygiene`: backlog 0946 (no home paths or quoted operator messages in tracked files, with a check), 0943 (packages private until launch), 0944 (`.gitignore`, `SECURITY.md`, `CONTRIBUTING.md`).
-- `.worktrees/evidence`, branch `lane-evidence`: backlog 0877 (the evidence report refuses a dirty tree) and 0892 (a gate for a committed ledger or evidence file that differs from the tree).
-- main tree, `tasks/p1/weaknesses.md`: the triage of every open backlog line and the fix lanes (W2 steps 1 and 2 of `tasks/p1/PLAN.md`), under the weakness definition its O1 recommends.
+## Lanes (2026-11-19)
+Each lane is a subagent in a worktree under `.worktrees/`, committing on its branch; the orchestrator reviews and cherry-picks. A lane with no report is re-briefed from this list.
+- In flight, `.worktrees/0956`, branch `rfc-0147`: RFC 0147. Done there: conformance (e71d564a), build (36112e58), the spec amendment after the red-team pass (2f0aa705; D10, D11). In flight: conformance for `k.opening` and the new `k.return` bullet. Then: the fix, a second red-team pass, the merge.
+- Merged: the server's mutation tests and the std-sessions mutation config (backlog 0967 tests, 0966); the mutation runs of server and std-sessions are still to do, on a quiet machine. Release hygiene (0946 with check H0001 and H0002, 0943, 0944). Evidence gates (0877 S0010, 0892 S0011 `tooling/ledger-fresh.mjs`). RFC and ADR status lines. Conformance for the four freeze gaps (k.schema `format`, k.privacy `x-keel-pii`, k.hosting clause 2, k.shell clause 6).
+- Written: `tasks/0963-to-p1/freeze-review.md`, `tasks/p1/PLAN.md`, `tasks/p1/weaknesses.md` (128 weaknesses in 21 fix lanes, in waves of two test-running lanes).
+- golden-3 eval: ready short of the model call (`pnpm eval --task golden-3 --model claude-sonnet-5-5`, estimated 2 to 10 dollars); it waits for the operator's word on spending and a quiet machine.
+- Open from the lanes: k.shell's CI paragraph describes the workflow `keel build` generates for an app, not Keel's CI, so backlog 0948 is a misreading unless the generated workflow should change; `stripped()` in the server's `bearerOf` never changes a real request's value and can go; the 16 RFCs and 2 ADRs the status lane left unchanged (ten name `k.shell`, still `proposed`); `pnpm ledger --diff` cannot run locally without the apps' a11y reports.
+- CI: `shell-ios` passed its boot with the 900 s bound and failed at the launch after the reboot; the launch is tried three times (84e212d6). `conformance/E1562-base-route-change.test.ts` took 158 s with two workers and passed; D7 is not shown to help, and the lasting fix is its 120 s limit under an `rfc:` change.
 
 ## Verification
 - [ ] Backlog 0956 built and conformance-covered. RFC 0147, ADR-0169, k.return and the threat model are written (k.return is `implemented` until its conformance lands); next the conformance lane, then the build, each in a worktree.
