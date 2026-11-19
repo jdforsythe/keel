@@ -24,16 +24,13 @@ export function render<P>(component: TestComponent<P>, options: RenderOptions): 
   if (!parsed.ok) throw fail("schema.invalid", `props: ${clip(parsed.error.message, 80)}`, parsed.error.data);
   const seeded = seedStores(options.state ?? []);
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
-  const a11y = options.artifacts?.["a11y.json"];
-  const tokens = options.artifacts?.tokens;
   const name = component.name === "" ? "anonymous" : component.name;
   const { harness, check } = openHarness({
     view: () => component(parsed.value, undefined, ctx),
     ctx,
     seeded,
     target: () => ({ route: null, component: name }),
-    ...(a11y === undefined ? {} : { a11y }),
-    ...(tokens === undefined ? {} : { tokens }),
+    artifacts: options.artifacts,
   });
   try {
     check();

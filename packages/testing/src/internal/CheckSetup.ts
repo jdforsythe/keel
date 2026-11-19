@@ -7,7 +7,7 @@ export interface CheckSetup {
   readonly root: Element;
   /** A `renderRoute` page: axe judges the document and runs the document rules. */
   readonly page: boolean;
-  readonly a11y?: Readonly<Record<string, A11yEntry>>;
-  readonly tokens?: Tokens;
+  readonly a11y: Readonly<Record<string, A11yEntry>> | undefined;
+  readonly tokens: Tokens | undefined;
   readonly target: () => Pick<A11yCheck, "route" | "component">;
 }

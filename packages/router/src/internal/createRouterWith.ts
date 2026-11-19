@@ -41,6 +41,7 @@ import { routeActions } from "./routeActions.ts";
 import { routers } from "./routers.ts";
 import { runGuard } from "./runGuard.ts";
 import { runLoaders } from "./runLoaders.ts";
+import { shells } from "./shells.ts";
 import { splitUrl } from "./splitUrl.ts";
 import { tables } from "./tables.ts";
 import { unexpected } from "./unexpected.ts";
@@ -74,7 +75,8 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * loader or action is `keel.unexpected`. Unless `mode` is `dev` (the default is `production`), every error the
  * default alert, an `errorElement` or a `Form` gets is its `publicError`; observers get the full error. A link click,
  * `navigate` or `ok(href)` to a path no page of the table matches is a document navigation (`leave`, k.mount); an
- * initial load or a history pop of one renders the 404.
+ * initial load or a history pop of one renders the 404. On a shell's ctx (`mountRequests`, k.return) a navigation
+ * under the identity mount is a mount request and nothing leaves.
  */
 export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   routes: Manifest<M>,
@@ -90,6 +92,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   state?: ServerState,
 ): Router<RouteState<M>> {
   const { ctx, history, leave = (u, r) => location[r ? "replace" : "assign"](u) } = opts;
+  const mount = shells.get(ctx);
   const who = { caller: opts.caller ?? "", user: opts.user ?? "" };
   const shownMode = opts.mode === "dev" ? "dev" : "production";
   const shown = (e: KeelError<string, unknown>): KeelError<string, unknown> => publicError(e, shownMode);
@@ -235,7 +238,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     // A path no page of the table matches is the server's: a link, `navigate` or `ok` there loads a document.
     if (m.route === null && (mode === "push" || mode === "replace")) {
       pending.set(false);
-      leave(url, mode === "replace");
+      if (!mount?.(url)) leave(url, mode === "replace");
       return done;
     }
     const t = ++token;

@@ -14,4 +14,10 @@ export interface RouteHarness<S> extends Harness {
   location(): { readonly entries: number; readonly scrollY: number };
   /** The document navigations the page started, in order (k.mount Testing); none is made, so the page stays. */
   documents(): readonly DocumentNavigation[];
+  /**
+   * Deliver a return link `<id>:/<path>?<search>` to the shell (k.return Testing; `renderRoute` with `shell`): a path
+   * under the identity mount is a mount request GET, a page a navigation, anything else ignored. Resolves when the
+   * page has settled; without `shell` it does nothing.
+   */
+  returnLink(url: string): Promise<void>;
 }
