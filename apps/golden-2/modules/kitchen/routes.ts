@@ -3,6 +3,7 @@ import { CatalogParams } from "./CatalogParams.schema.ts";
 import { CatalogSearch } from "./CatalogSearch.schema.ts";
 import { RecipeRef } from "./RecipeRef.schema.ts";
 import { loadCatalog } from "./loadCatalog.server.ts";
+import { loadCurrencyTally } from "./loadCurrencyTally.server.ts";
 import { loadRecipes } from "./loadRecipes.server.ts";
 import { postFavorite } from "./postFavorite.server.ts";
 import { postRecipe } from "./postRecipe.server.ts";
@@ -24,6 +25,11 @@ export const routes = manifest({
     params: CatalogParams,
     search: CatalogSearch,
     loader: loadCatalog,
+  },
+  "kitchen.tally.currency": {
+    api: true,
+    path: "/api/tally/currency",
+    loader: loadCurrencyTally,
   },
 });
 routes.actions({ "kitchen.recipes": { POST: postRecipe }, "kitchen.favorite": { POST: postFavorite } });

@@ -3,7 +3,7 @@
 The recipe box, in `en-US`, `de-DE` and `ja-JP`. `topology.ts` defines two deployables:
 
 - `web` (`client`, `host: 'api'`): the browser app, built to `dist/web/` and copied into `dist/api/`, so `api` serves it.
-- `api` (`node`): the `kitchen` module at `/api/recipes` and `/api/catalog/<locale>`, and the `accounts` module: its sign-up and sign-in pages, `/api/tokens` and `/api/me`, and the sign-in library at `/api/auth`; and the `health` module of `@keel/std-health` at `/health`.
+- `api` (`node`): the `kitchen` module at `/api/recipes`, `/api/catalog/<locale>` and `/api/tally/currency`, and the `accounts` module: its sign-up and sign-in pages, `/api/tokens` and `/api/me`, and the sign-in library at `/api/auth`; and the `health` module of `@keel/std-health` at `/health`.
 
 ## Pages
 - `/` (`recipes.index`): every recipe, or only favorites.
@@ -39,7 +39,9 @@ Environment, read on the server only:
 ## Dev
 Run `pnpm dev` from `apps/golden-2`. `keel dev` serves `web` with hot reload and the `api` deployable on one origin; storage lives in `.keel-dev/`. `GET /__keel/inspect` (and `keel inspect`) shows the `api` deployable's inspector sections. Its `timings.recent`, from `@keel/std-timings`, holds `kitchen.catalog.query`, the catalog query. The recipes pages time how long they waited for each `kitchen` call (`recipes.api.catalog`, `recipes.api.box`) in the page's own `timings.recent`, which the `api` deployable's section of the same id replaces in this document.
 
-The `kitchen` module counts the box's recipes by price currency each time `/api/recipes` or `/api/catalog/<locale>` reads the box (`currencyTally`, `tallyOf` of `@keel/std-report`) and serves the tally as the inspector section `kitchen.box.currency` of the `api` deployable's dev app. `keel report <url>` against `keel dev` prints it as `kitchen.box.currency EUR=2 JPY=1`, then `ok report 1 tallies`.
+The `kitchen` module counts the box's recipes by price currency each time `/api/recipes`, `/api/catalog/<locale>` or `/api/tally/currency` reads the box (`currencyTally`, `tallyOf` of `@keel/std-report`) and serves the tally as the inspector section `kitchen.box.currency` of the `api` deployable's dev app. `keel report <url>` against `keel dev` prints it as `kitchen.box.currency EUR=2 JPY=1`, then `ok report 1 tallies`.
+
+`GET /api/tally/currency` (`kitchen.tally.currency`) answers the same tally from a build as well: a loader with `output: Tally`, so the body is the loader's answer holding it. Like the kitchen's other reads it has no guard and anyone may call it; the tally holds currency codes and counts, nothing of a recipe or a person. `keel report http://localhost:8080/api/tally/currency` against `pnpm api` prints `kitchen.box.currency EUR=2 JPY=1`, then `ok report 1 tallies`.
 
 Each module lists `@keel/std-brands` in `deps`, so `keel check` holds every id brand (`s.id('Recipe')`, `ctx.random.id('Recipe')`) to PascalCase (E2101, with a fix).
 
