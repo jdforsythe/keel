@@ -102,7 +102,7 @@ export const Page = messages(AppLocale, { title: {} }, (locale) => import(\`./Pa
   write(
     fx,
     "modules/app/PageView.tsx",
-    "import { Heading } from \"@keel/ui\";\nexport default function PageView(props) {\n  return <Heading level={1}>{props.data.text.title}</Heading>\n}\n",
+    'import { Heading } from "@keel/ui";\nexport default function PageView(props) {\n  return <Heading level={1}>{props.data.text.title}</Heading>\n}\n',
   );
   write(
     fx,
