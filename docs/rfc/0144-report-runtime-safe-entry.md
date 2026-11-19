@@ -55,7 +55,7 @@ E1053, E1054, E1056 and I1055 keep their meanings. Nothing is reserved in the co
   - Extension point: "Importing `@keel/std-report` registers the record kind `report.tally`." becomes "Importing `@keel/std-report/tools` registers the record kind `report.tally` and the `report` command."
   - New paragraphs **Entries** (D1, D2) and **Reaching a person** (D3, D4) before Rules.
   - Conformance: bullets 1 to 6 unchanged. Appended 7 to 15 (below).
-- `spec/kernel/k.cli.md`: after the sentence on `session`, "`report` likewise (std.report)." 5,964 to 5,995 characters. Status unchanged: no bullet is added there; std.report's bullets carry the command.
+- `spec/kernel/k.cli.md`: after the sentence on `session`, "`report`: std.report."; the `session` sentence drops its package note. The section is 5966 characters. Status unchanged: no bullet is added there; std.report's bullets carry the command.
 - `spec/std/README.md`: the std.report row reads `implemented` and names `keel report`.
 - `spec/00-map.md`: unchanged (std sections are not listed there, and k.cli keeps its status).
 - Codes: none new.
