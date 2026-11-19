@@ -30,7 +30,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
 | std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
 | std.timings | Timings | conformance-covered | inspector hooks: `timings.recent` section |
-| std.report | Tally report | conformance-covered | formatter registry: `report.tally`; `keel report` |
+| std.report | Tally report | implemented | formatter registry: `report.tally`; `keel report` |
 | std.jobs | Background jobs | conformance-covered | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2504 |
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
 | std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, E2601-E2602 |
