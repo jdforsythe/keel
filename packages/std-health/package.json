@@ -12,6 +12,10 @@
       "types": "./module.ts",
       "default": "./module.ts"
     },
+    "./routes": {
+      "types": "./src/routes.ts",
+      "default": "./src/routes.ts"
+    },
     "./*": {
       "types": "./src/*.ts",
       "default": "./src/*.ts"

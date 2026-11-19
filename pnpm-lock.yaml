@@ -211,6 +211,9 @@ importers:
       '@keel/std-headless':
         specifier: workspace:*
         version: link:../../packages/std-headless
+      '@keel/std-health':
+        specifier: workspace:*
+        version: link:../../packages/std-health
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../../packages/std-i18n

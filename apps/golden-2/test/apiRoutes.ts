@@ -1,6 +1,7 @@
 import { manifest } from "@keel/router";
+import { routes as health } from "@keel/std-health/routes";
 import { routes as accounts } from "../modules/accounts/routes.ts";
 import { routes as kitchen } from "../modules/kitchen/routes.ts";
 
-/** The `api` deployable's route table as its generated entry merges it: the `accounts` and `kitchen` modules' routes. */
-export const apiRoutes = manifest({ ...accounts.routes, ...kitchen.routes });
+/** The `api` deployable's route table as its generated entry merges it: the `accounts` and `kitchen` modules' routes and the `health` stdlib module's. */
+export const apiRoutes = manifest({ ...accounts.routes, ...kitchen.routes, ...health.routes });
