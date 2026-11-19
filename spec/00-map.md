@@ -5,7 +5,7 @@ status key: proposed | implemented | conformance-covered | frozen. Budget: this 
 ## Code ranges
 Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <code>` finds the owner.
 | block | owner | block | owner |
-| --- | --- | --- | --- |
+|-|-|-|-|
 | E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence |
 | E110x | k.schema, k.privacy, k.reveal, k.leave | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
@@ -26,13 +26,13 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 
 ## Kernel
 | id | section | status | one line |
-| --- | --- | --- | --- |
+|-|-|-|-|
 | k.schema | Schemas | conformance-covered | codecs |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler and artifacts | conformance-covered | JSX |
-| k.boundary | The server boundary | conformance-covered | stubs, E1007 |
+| k.boundary | The server boundary | conformance-covered | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime and islands | conformance-covered | nodes |
 | k.resume | Served documents, resume | conformance-covered | regions |
@@ -44,10 +44,11 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.prefix | Implied path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
 | k.ui | Tokens and styling | conformance-covered | CSS |
-| k.ctx | Capabilities | conformance-covered | clock, net |
+| k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | disposal |
 | k.errors | Results and boundaries | conformance-covered | Result |
 | k.check | Checker and diagnostics | conformance-covered | codes |
+| k.explain | Explanations | proposed | text |
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.scaffold | Scaffold and codemods | conformance-covered | edits |
@@ -58,7 +59,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.ledger | Ledger and evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loaders |
 | k.leave | What a request leaves | conformance-covered | `#k-state` |
-| k.user | Request user and caller lifetime | conformance-covered | `identify` |
+| k.user | Request user and caller lifetime | conformance-covered | identify |
 | k.mount | Pages into the identity mount | conformance-covered | submit |
 | k.return | Mount from a shell | proposed | links |
 | k.serverlog | Server log records | conformance-covered | bounds |
@@ -67,7 +68,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Production entry and deploy files | conformance-covered | entry |
 | k.shell | Native shells | proposed | Tauri |
-| k.compat | Surface compatibility | conformance-covered | `accepts` |
+| k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | implemented | `host` |
 | k.head | Document head | conformance-covered | title |
