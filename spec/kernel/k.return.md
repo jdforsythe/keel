@@ -1,24 +1,24 @@
 # k.return: Mount from a shell
-status: conformance-covered
+status: implemented
 
-How a page in a native shell (k.shell) reaches the identity source's `handle` (k.user, k.mount) on `KEEL_ORIGIN`. The auth library's cookie lands in the shell's native cookie store, as the caller cookie does, and never reaches the page; Keel reads, writes and sends no credential of its own.
+How a shell page (k.shell) reaches the identity source's `handle` (k.user, k.mount) on `KEEL_ORIGIN`. The library's cookie stays in the native cookie store, as the caller cookie does; Keel reads, writes and sends no credential.
 
 **Mount requests.** A shell build cannot leave its bundled origin by navigation, so in a ctx of `mode: 'shell'` each document navigation to a `MountHref` (k.mount) is a mount request through `ctx.net`, the `href` unchanged: a `Link` click, `navigate` or `ok(href)` is a GET; a `Form`, after the same validation, POSTs the body a browser would, with `pending()` `true` until the answer. Each carries `x-keel: 1` and `accept: application/json` (the same-site check, k.server) and `redirect: 'manual'`, which the shell's `net` honours: a 3xx resolves as it came, its `set-cookie` kept by the native store.
-- Keel reads the answer's status and `location`, nothing else. A redirect to a page the router matches: a client-side navigation there. To another path under `handle.path`: a mount request GET, at most 5 in a row. To `<id>:/<path>`: read as a return link that takes no opening. To any other URL: it opens in the external browser. A GET answered without a redirect opens its URL on `KEEL_ORIGIN` in the external browser; a POST's leaves the page as it was, `pending()` `false`.
+- Keel reads the answer's status and `location`, nothing else. A redirect to a page the router matches: a client-side navigation there. To another path under `handle.path`: a mount request GET, at most 5 in a row. To `<id>:/<path>`: read as a return link that takes no opening, its GET one of those 5. To any other URL: it opens in the external browser. A GET answered without a redirect opens its URL on `KEEL_ORIGIN` in the external browser; a POST's leaves the page as it was, `pending()` `false`.
 - A shell build's `KEEL_ORIGIN` is the origin of its deployable's `host` (k.hosting), which mounts `handle`.
 
-**External browser.** The platform's browser, outside the app's webview: Custom Tabs on Android, an in-app Safari view on iOS, the default browser on desktop. It shares no cookie with the app or the native store.
+**External browser.** Custom Tabs on Android, an in-app Safari view on iOS, the default browser on desktop; it shares no cookie with the app or the native store.
 
 **Return links.** Each shell registers its `id` as a URI scheme (`dev.keel.golden2:`). A return link is `<id>:/<path>?<search>`, its scheme in any case, at launch or while running; other links are ignored. Keel adds nothing to it.
-- **Opening.** Each time a mount request opens the external browser, one opening is pending until `ctx.clock.now()` reaches its deadline, 600000 ms after it. It is kept in `ctx.storage` `keel.return`, so it survives a relaunch. A new one replaces it.
+- **Opening.** Each time a mount request opens the external browser (which ones count: k.opening), one opening is pending until `ctx.clock.now()` reaches its deadline, 600000 ms after it. It is kept in `ctx.storage` `keel.return`, so it survives a relaunch. A new one replaces it.
 - A return link first takes the pending opening, in one `commit`. With none pending, or past its deadline, it is ignored: no request, no navigation. So each opening admits one link.
 - A link that took it closes the in-app Safari view and is read as a redirect to that path on `KEEL_ORIGIN`: under `handle.path`, a mount request GET; a page, a navigation; anything else, nothing.
 
-So OAuth runs as on the web: the library's start redirects to the provider, an opening, and sets its verifier cookie in the native store; the provider returns to `<id>:/<callback path>`; the callback's GET carries that cookie and sets the session.
+So OAuth runs as on the web: the library's start redirects to the provider (an opening) and sets its verifier cookie in the native store; the return to `<id>:/<callback path>` GETs with that cookie and sets the session.
 
 **Sign-out.** A `Form` POST to the library's sign-out path, as above; its expiring `set-cookie` clears the native store. A session the external browser holds stays there.
 
-**The app's part.** The library's cookie or token, its lifetime, rotation and revocation; the return URIs each provider accepts, and the library's trust in them; any one-time code a library passes from the external browser to the app. A token an app keeps in a secure-storage plugin goes on its own requests as `bearer` (k.services); Keel attaches none.
+**The app's part.** The library's cookie or token, its lifetime, rotation and revocation; the return URIs providers accept; any one-time code passed from the external browser. A token in a secure-storage plugin goes on the app's own requests as `bearer` (k.services); Keel attaches none.
 
 **Testing.** `renderRoute(id, { shell: true })` runs the page under a ctx of `mode: 'shell'`: mount requests go to the sim `net`, `documents()` records each URL opened in the external browser as a GET, and the handle's `returnLink(url)` delivers a return link as the platform does; a passed `ctx` gives the clock and storage.
 
@@ -35,3 +35,4 @@ So OAuth runs as on the web: the library's start redirects to the provider, an o
 - A mount answer 302 to `dev.keel.golden2:/api/auth/x`, with no opening, sends a second `net` GET of `/api/auth/x`.
 - With `redirect: 'manual'`, std-capacitor's and std-tauri's `net` resolve a 303 with its `location` and no `set-cookie`, and the next request to that origin carries the cookie.
 - The shell files register `id` as a scheme: an Android intent filter, iOS `CFBundleURLTypes`, Tauri's deep-link schemes.
+- With every GET answered 302 to `dev.keel.golden2:/api/auth/loop`, a `Link` to the mount sends six `net` GETs.
