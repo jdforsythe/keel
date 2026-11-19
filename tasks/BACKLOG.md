@@ -969,7 +969,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0867 server (low): how a recorded session learns the caller lifetime is described by RFC 0139 and not specified; unbuilt · server, testing · k.security
 - [ ] 0868 smoke (low): the browser resume smoke crashed once and passed on re-run during the RFC 0139 build; find the cause · tooling · k.resume
 - [x] 0869 apps (low): no app uses the identity seam yet; depends on 0862 · apps · k.security
-- [ ] 0870 std-credentials (medium): RFC to split `@keel/std-credentials`: opaque tokens (`mint`, `check`) stay under a neutral name, password hashing leaves the framework · std · k.security
+- [x] 0870 std-credentials (medium): RFC to split `@keel/std-credentials`: opaque tokens (`mint`, `check`) stay under a neutral name, password hashing leaves the framework · std · k.security
 - [ ] 0871 shells (medium): a shell cannot use the identity mount's sign-in path (E1581); design how a shell signs in through an auth library · shells, server · k.mount
 - [ ] 0872 ui (low): `Button` has no `name` or `value`, so a native post cannot say which button was pressed · ui · k.mount
 - [ ] 0873 check (low): E2406 runs only for modules that list std-messages · check · k.text
@@ -982,3 +982,6 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0880 check (low): E1107 keeps its own reach instead of the shared client reach · check · k.boundary
 - [ ] 0881 docs (low): principle 2 (no action at a distance) against build-time stubs of server-only files; decide whether the principle's text needs a sentence · docs
 - [ ] 0882 review (medium): reviewer and red-team pass over the identity seam, the mount, the forms copy fix and the server boundary · k.user, k.mount, k.boundary
+- [ ] 0883 scaffold (medium): `keel scaffold service` in a module only client deployables list writes a file that fails E1571; refuse, or write something that works there · scaffold · k.scaffold, k.openapi
+- [ ] 0884 check (medium): `/// <reference types="vite/client" />` passes `keel check` though the only ambient types are Node's; forbid it or name it as the way browser code reads `import.meta.env` · check · k.check, k.boundary
+- [ ] 0885 std-tokens (medium): RFC 0141 conformance and build (rename, password hashing removed, golden-2, skills, docs) · std · std.tokens
