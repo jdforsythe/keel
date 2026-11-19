@@ -384,7 +384,7 @@
       "needs": ["check", "changes"],
       "if": "github.event.repository.private == false && needs.changes.outputs.shells == 'true'",
       "runs-on": "macos-26",
-      "timeout-minutes": 30,
+      "timeout-minutes": 45,
       "env": {
         "KEEL_ORIGIN": "http://localhost:4182"
       },

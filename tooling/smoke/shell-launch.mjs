@@ -44,8 +44,9 @@ import { app, freePort, root, wait } from "./built.mjs";
 const LISTEN_MS = 20_000;
 /** How long a launched app has to read the board and open its event stream. */
 const LOAD_MS = 180_000;
-/** How long a simulator has to boot, and one `simctl` command to end. */
-const BOOT_MS = 300_000;
+/** How long a simulator has to boot (a hosted runner's first boot migrates its data for about five minutes), and one
+ * `simctl` command to end. */
+const BOOT_MS = 900_000;
 const SIMCTL_MS = 120_000;
 /** How long a killed app has to be gone. */
 const GONE_MS = 15_000;

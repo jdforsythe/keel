@@ -81,6 +81,13 @@ const SECONDS_PER_FILE = 1;
  */
 const SPLIT = { "@keel/cli": 4 };
 
+/**
+ * Packages whose test files run on at most this many vitest workers here. `@keel/cli`'s property tests spawn several
+ * builds per run under a per-test time limit; with a worker per core the builds wait on each other and a test ends at
+ * its limit on a slow runner.
+ */
+const WORKERS = { "@keel/cli": 2 };
+
 const matrix = JSON.parse(fs.readFileSync(path.join(root, "tooling/ci.source.json"), "utf8")).jobs["test-shard"]
   .strategy.matrix.shard;
 const n = matrix.length;
@@ -165,6 +172,15 @@ function treeRss(pid) {
   return sum;
 }
 
+/** What follows `--` on a unit's test task: its part of a split package and its worker limit. */
+function vitestArgs(unit) {
+  const args = [
+    ...(unit.parts === 1 ? [] : [`--shard=${unit.part}/${unit.parts}`]),
+    ...(WORKERS[unit.name] === undefined ? [] : [`--maxWorkers=${WORKERS[unit.name]}`]),
+  ];
+  return args.length === 0 ? [] : ["--", ...args];
+}
+
 /**
  * Runs one package's test task through turbo, its output streamed as it comes and kept for the closing report.
  * Resolves with the task's exit code, seconds, its process tree's peak memory and the machine's least free memory.
@@ -188,7 +204,7 @@ function runTask(unit, state) {
         "--no-color",
         // Lets KEEL_FILE_TIMES reach vitest (tooling/vitest-config.ts prints a line per test file with it).
         "--env-mode=loose",
-        ...(unit.parts === 1 ? [] : ["--", `--shard=${unit.part}/${unit.parts}`]),
+        ...vitestArgs(unit),
       ],
       { cwd: root, env: { ...env, KEEL_FILE_TIMES: "1" }, stdio: ["ignore", "pipe", "pipe"] },
     );

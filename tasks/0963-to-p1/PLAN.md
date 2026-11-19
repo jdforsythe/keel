@@ -15,6 +15,8 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 - D3 (2026-11-19, operator): the return-link restriction (backlog 0956) is agreed.
 - D4 (2026-11-19, operator): a session in a macOS or iOS shell is proven by automation first, since that repeats; a person at the machine is the fallback for a one-time check (backlog 0961).
 - D5 (2026-11-19, operator): no `/clear` while a subagent runs; the handoff says when it is safe.
+- D6 (2026-11-19): `tooling/smoke/shell-launch.mjs` gives a simulator 900 s to boot (was 300 s) and the `shell-ios` job 45 minutes (was 30). The hosted runner's first boot migrates data for about five minutes: three runs in a row failed E0014 at `Migration Elapsed:04:55`, and the one green run booted just under the bound.
+- D7 (2026-11-19): in CI `@keel/cli` runs its test files on two vitest workers (`WORKERS` in `tooling/ci-shards.mjs`). `conformance/E1562-base-route-change.test.ts` spawns about twenty builds inside a 120 s test limit and took 117 s to 172 s for the file across four runs on the 4-core runner, failing T0001 in two; the limit is in a conformance file, so the load is lowered instead. If the file still nears its limit with two workers, the limit needs an `rfc:` change.
 
 ## Method
 - RFC unit: RFC, spec and ADR; then conformance by the `conformance-writer` from the spec; then the build. Conformance and build run in their own git worktree and branch, merged when green, so red tests never sit on the main line.
@@ -30,7 +32,7 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 - [ ] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962).
 
 ## Next action
-Read the CI run on the pushed head (`gh run list --limit 2`): it is the first with the replay steps in `shell-tauri-macos` and `shell-ios` (backlog 0965). Fix what fails there, then take backlog 0956.
+Read the CI run on the pushed head (`gh run list --limit 2`): it is the first with D6 and D7, and the first in which `shell-ios` can reach its replay steps (backlog 0965; `shell-tauri-macos` passed them). Check `shell-ios` and the seconds of `conformance/E1562-base-route-change.test.ts` in `test-shard (5)`. Fix what fails there, then take backlog 0956.
 
 1. Backlog 0956: RFC amendment to `k.return` (a return link is accepted only while the shell has opened the external browser from a mount redirect, once), conformance, build, threat model.
 2. golden-3 by agent eval (`evals/tasks/golden-3`; the first step with model calls; the runner's default is `none`, an agent run names a model). Its `browser.ts` needs a sign-in secret (backlog 0937).
