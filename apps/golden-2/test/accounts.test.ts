@@ -137,15 +137,23 @@ describe("accounts schemas", () => {
 
 describe("authSettings", () => {
   const argv = ["--experimental-webstorage", "--localstorage-file=/data/storage"];
-  it("uses a fixed secret and an in-memory database under test, and stays quiet", () => {
-    expect(authSettings({ NODE_ENV: "test", BETTER_AUTH_SECRET: "ignored" }, argv)).toMatchObject({
+  it("uses a fixed secret and an in-memory database for the explicit test entry, and stays quiet", () => {
+    expect(authSettings({ AUTH_FIXTURE: "test", BETTER_AUTH_SECRET: "ignored" }, argv)).toMatchObject({
       ok: true,
       value: { database: ":memory:", quiet: true },
     });
   });
-  it("refuses to run without BETTER_AUTH_SECRET outside test and dev, naming the variable and no value", () => {
+  it("refuses to run without BETTER_AUTH_SECRET outside the explicit test and dev entries, whatever NODE_ENV says", () => {
     const short = "too-short-secret";
-    for (const env of [{}, { NODE_ENV: "production" }, { BETTER_AUTH_SECRET: short }]) {
+    const envs = [
+      {},
+      { NODE_ENV: "production" },
+      { NODE_ENV: "test" },
+      { NODE_ENV: "development" },
+      { AUTH_FIXTURE: "prod" },
+      { BETTER_AUTH_SECRET: short },
+    ];
+    for (const env of envs) {
       const r = authSettings(env, argv);
       expect(r.ok).toBe(false);
       expect(r.ok ? "" : r.error.message).toContain("BETTER_AUTH_SECRET");
@@ -164,7 +172,7 @@ describe("authSettings", () => {
     expect(authSettings({ BETTER_AUTH_SECRET: secret, KEEL_ORIGIN: "https://box.example" }, [])).toMatchObject({
       value: { database: "auth.sqlite", origin: "https://box.example" },
     });
-    expect(authSettings({ NODE_ENV: "development" }, [])).toMatchObject({ ok: true, value: { quiet: false } });
+    expect(authSettings({ AUTH_FIXTURE: "dev" }, [])).toMatchObject({ ok: true, value: { quiet: false } });
   });
 });
 

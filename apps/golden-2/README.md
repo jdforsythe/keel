@@ -29,8 +29,8 @@ The pages are served in the three locales, their copy in `modules/accounts/Accou
 The library keeps users, password hashes and sessions in its own `node:sqlite` database, outside `ctx.storage`, and creates its tables with its own migration at the first request. Its ids, tokens, timestamps and session expiry come from its own clock and randomness, not the sim ctx; tests use an in-memory database per ctx and assert none of them.
 
 Environment, read on the server only:
-- `BETTER_AUTH_SECRET`: 32 or more random characters, signing the session cookie. Required outside tests and `keel dev`: without it the server prints `accounts.secret` and exits 1 at start. Tests and `keel dev` use fixed values.
-- `AUTH_DATABASE_PATH` (optional): the database file. Default `auth.sqlite` beside the web storage file (`/data/auth.sqlite` in the image, `apps/golden-2/auth.sqlite` under `pnpm api`); `keel dev` uses `.keel-dev/auth.sqlite`.
+- `BETTER_AUTH_SECRET`: 32 or more random characters, signing the session cookie. Required unless `AUTH_FIXTURE` is `test` (the vitest config sets it) or `dev` (`pnpm dev` sets it), which use fixed values; `NODE_ENV` never does. Without it the server prints `accounts.secret` and exits 1 at start.
+- `AUTH_DATABASE_PATH` (optional): the database file. Default `auth.sqlite` beside the web storage file (`/data/auth.sqlite` in the image, `apps/golden-2/auth.sqlite` under `pnpm api`); `pnpm dev` uses `.keel-dev/auth.sqlite`.
 - `KEEL_ORIGIN`, when set, is also the library's base URL.
 
 ## Locales
