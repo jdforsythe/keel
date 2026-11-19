@@ -1,4 +1,4 @@
-// Spec: std.brands, clause "After importing `@keel/std-brands`, `rules()` lists E2101 and `explain('E2101')` returns the rule's explain text, at most 120 tokens."
+// Spec: std.brands, clause "After importing `@keel/std-brands/tools`, `rules()` lists E2101 and `explain('E2101')` returns the rule's explain text, at most 120 tokens."
 // Spec: std.brands, clause "For generated non-PascalCase brands (lower, snake, kebab, camel), `s.id('<b>')` reports exactly one E2101 at the literal's line and col; `ctx.random.id('<b>')` does too."
 // Spec: std.brands, clause "A file whose brands are all PascalCase literals, variables, or other expressions reports no E2101."
 // Spec: std.brands, clause "For each generated E2101 with a fix, the fix applies to its file with `git apply`, and re-checking the patched file reports no E2101."
@@ -11,9 +11,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { check, rules } from "@keel/check";
 import { explain } from "@keel/check/explain";
+import { idBrandCase } from "@keel/std-brands/tools";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { idBrandCase } from "@keel/std-brands";
 
 const SEED = 1337;
 type Files = Parameters<typeof check>[0];
@@ -44,7 +44,7 @@ const kebab = fc.stringMatching(/^[a-z]{2,6}-[a-z]{2,6}$/);
 const camel = fc.stringMatching(/^[a-z]{2,6}[A-Z][a-z]{2,6}$/);
 const badBrand = fc.oneof(lower, snake, kebab, camel);
 
-test("After importing `@keel/std-brands`, `rules()` lists E2101 and `explain('E2101')` returns the rule's explain text, at most 120 tokens.", () => {
+test("After importing `@keel/std-brands/tools`, `rules()` lists E2101 and `explain('E2101')` returns the rule's explain text, at most 120 tokens.", () => {
   expect(idBrandCase.code).toBe("E2101");
   expect(idBrandCase.see).toBe("std.brands");
   expect(JSON.stringify(rules())).toContain("E2101");

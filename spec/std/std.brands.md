@@ -16,7 +16,7 @@ status: implemented
 **Rules.** E2101 `s.id` or `ctx.random.id` brand literal not PascalCase (fix: the PascalCase form).
 
 **Conformance.**
-- After importing `@keel/std-brands`, `rules()` lists E2101 and `explain('E2101')` returns the rule's explain text, at most 120 tokens.
+- After importing `@keel/std-brands/tools`, `rules()` lists E2101 and `explain('E2101')` returns the rule's explain text, at most 120 tokens.
 - For generated non-PascalCase brands (lower, snake, kebab, camel), `s.id('<b>')` reports exactly one E2101 at the literal's line and col; `ctx.random.id('<b>')` does too.
 - A file whose brands are all PascalCase literals, variables, or other expressions reports no E2101.
 - For each generated E2101 with a fix, the fix applies to its file with `git apply`, and re-checking the patched file reports no E2101.
