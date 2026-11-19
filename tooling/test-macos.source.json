@@ -1,8 +1,12 @@
 {
-  "$comment": "The ordinary test suite on macOS, split into the shards of the Linux test-shard job (node tooling/ci-shards.mjs <n>, the shard count is that job's matrix). It runs on pull requests and workflow_dispatch while it proves itself; once a pull-request run is green, replace the `pull_request` trigger with `schedule: [{ cron: '0 6 * * 1' }]` (weekly, Monday 06:00 UTC), keep `workflow_dispatch`. Only while the repository is public, so a private repository uses no macOS minutes. Tests that take KEEL_TEST_POSTGRES_URL stay skipped.",
+  "$comment": "The ordinary test suite on macOS, split into the shards of the Linux test-shard job (node tooling/ci-shards.mjs <n>, the shard count is that job's matrix). It runs weekly, on Mondays at 06:00 UTC, from the default branch, and on workflow_dispatch.",
   "name": "test-macos",
   "on": {
-    "pull_request": {},
+    "schedule": [
+      {
+        "cron": "0 6 * * 1"
+      }
+    ],
     "workflow_dispatch": {}
   },
   "permissions": {

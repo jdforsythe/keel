@@ -1,7 +1,8 @@
 # _generated: edit tooling/test-macos.source.json and run pnpm generate. Do not edit by hand.
 name: test-macos
 on:
-  pull_request: {}
+  schedule:
+    - cron: "0 6 * * 1"
   workflow_dispatch: {}
 permissions:
   contents: read
