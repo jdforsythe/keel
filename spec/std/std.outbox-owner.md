@@ -1,5 +1,5 @@
 # std.outbox-owner: Outbox owner check
-status: proposed
+status: implemented
 
 How the action behind an outbox endpoint (std.offline) refuses a write queued by another owner than the request's `user` when the action runs.
 
@@ -13,7 +13,7 @@ const r = tx(stores.editTodo, payload, { meta: { caller }, ...w.value })
 
 **Refused.** A flush reads an answer whose error `code` is `offline.owner` as `failed` with `offline.owner` (std.outbox Errors), whatever its status, and goes on to the next entry. The entry is never posted again; `'theirs'` removes it.
 
-**When.** The check runs when the action runs. A sign-in or sign-out in another tab before then refuses the write; one after it leaves the write committed under the owner who queued it. A write the server committed whose answer was lost, resent after the owner changed, is refused, so its entry is `failed` though the server holds the write.
+**When.** The check runs when the action runs. A sign-in as another user in another tab before then refuses the write; a sign-out pauses it (Signed out); one after it leaves the write committed under the owner who queued it. A write the server committed whose answer was lost, resent after the owner changed, is refused, so its entry is `failed` though the server holds the write.
 
 **Limits.** An action that spreads `input.write` into `tx` without `writeFor` commits a write of any owner. The check decides which owner a write commits under, not what reaches the server: a refused entry's body reaches the action.
 
@@ -22,7 +22,7 @@ const r = tx(stores.editTodo, payload, { meta: { caller }, ...w.value })
 **Rules.** None.
 
 **Conformance.**
-- `writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` or `""` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: "" }, "")` is `ok`.
+- `writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: "" }, "")` is `ok`.
 - With entries queued offline under owner `a` and a route whose action passes `writeFor` owner `b`, `drain` with `a` online posts each with `body.write.owner` `a`, the server store commits nothing, and each entry is `failed` with `{ code: 'offline.owner', message: <id>, data: {} }`.
 - After that refusal, `drain` with `a` on a new ctx over that storage posts nothing, and a `send` with `a` to a route whose owner is `a` is posted and resolves `sent`.
 - `writeFor({ key, base, owner: 'a' }, "")` is `err` with `{ code: 'offline.signin', message: 'signin', data: {} }`; entries of owner `a` refused with it stay `queued`, a `drain` with `""` posts none and fails none, and a later `drain` with `a` posts each once with its key.

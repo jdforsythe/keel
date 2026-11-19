@@ -15,14 +15,14 @@ const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: {
 ```
 `send` adds an entry with `body.write` `{ key: ctx.random.id('Write'), base }`, stores the outbox at `ctx.storage` `keel.outbox.<id>`, and flushes. It resolves `OutboxResult<O>`: `{ state: 'sent', value }`, `{ state: 'queued' }` (offline or network failure), `{ state: 'conflict', head }` or `{ state: 'failed', error }`, `error` an `ApiError`, `offline.full`, `offline.storage` or `offline.owner`. A full outbox (`limit` entries, `maxBytes` encoded) resolves `failed` with `offline.full`. A `ctx.storage` write that rejects or does not settle, and any other throw in a flush: std.outbox.
 
-**Owner.** `send` and `drain` require `owner`: the signed-in user's id, else `""`; an entry holds its `send`'s. A flush posts only entries of the owner last given on the ctx. When it changes, and on load, each other owner's entry not `failed` is stored `failed` with `offline.owner`, as is a stored entry with an `origin` or no `owner`. A `failed` entry is never posted.
+**Owner.** `send` and `drain` require `owner`: the signed-in user's id, else `""`; an entry holds its `send`'s. A flush posts only entries of the owner last given on the ctx. When it changes, and on load, each other owner's entry not `failed` is stored `failed` with `offline.owner`, unless the owner given is `""`, which holds them `queued` (std.outbox-owner), as is a stored entry with an `origin` or no `owner`. A `failed` entry is never posted.
 
 **Flush.** In order, one request at a time, through `service({ module, schema: api })`, answers read as `service({ module })` reads them:
 - 2xx: `sent`; the entry is removed.
 - `api.network` or `api.timeout`: it stays `queued`; flushing stops until `{ kind: 'net', online: true }`, the next `send`, or 1 s later doubling to 60 s on `ctx.clock` while `online()`.
 - 409 `keel.conflict` with `data.transaction` (k.sync): `conflict`, keeping `data.head`; the next entry goes.
 - 409 without it: sent once more; a second is `failed`.
-- Any other status: `failed` with its `ApiError`; the next entry goes.
+- Any other status: `failed` with its `ApiError`; `offline.signin`: std.outbox-owner; the next entry goes.
 
 `drain(ctx, outbox, { owner })`, in a scope, loads the stored outbox (`sending` as `queued`) and flushes, again on each reconnect until the scope ends. A resent entry keeps its key, so a committed write is not repeated (k.sync).
 

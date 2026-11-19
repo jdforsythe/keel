@@ -15,6 +15,6 @@ Spec: `pnpm spec k.persist`, `std.db`, `std.workflows`, `k.shell`, `k.prove`.
 
 **Proofs:** `test('invariants', () => prove([addTodo(b), toggleTodo(b)]))`, needs dev `z3-solver` (E1718; without it the ledger says `example`). E1715 outside the fragment (use `explore`); E1716 counterexample (an integer written with no `max` and guard leaves the safe range: bound it, `n < 9 ? n + 1 : n`; an optional written as `o: p.o` may be `undefined`: guard it); E1717 raise `rlimit`; E1721 `prove` ran in a worker thread: vitest `pool: "forks"`.
 
-**Shells:** `shells: { tauri: { id: 'dev.acme.app', name } }` on a `client` deployable (E1573). `KEEL_ORIGIN=https://... keel build --target tauri` or `--target capacitor --platform android|ios` (E1574 origin, E1575 missing toolchain, E1052 flags).
+**Shells:** `shells: { tauri: { id: 'dev.acme.app', name } }` on a `client` deployable (E1573). `KEEL_ORIGIN=https://... keel build --target tauri` or `--target capacitor --platform android|ios` (E1574 origin, E1575 missing toolchain, E1052 flags). Sign-in in a shell (`pnpm spec k.return`): with `identity.ts` the build adds the return-link and external-browser plugins and registers the shell `id` as a URI scheme; a Capacitor app then lists `@capacitor/app` and `@capacitor/browser` in its `dependencies`.
 
 **Secrets:** a `reveal`ed value reaching `tx`, `store`, `storage`, a log, a file or a `throw` is E1112: store a minted token's `digest` (keel-compliance).
