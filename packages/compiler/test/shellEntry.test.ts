@@ -1,5 +1,6 @@
 // k.shell Shell ctx: a shell build's client entry creates `createCtx({ mode: 'shell', drivers })` from its std.shells
-// package for `KEEL_ORIGIN`; the plain client entry is unchanged.
+// package for `KEEL_ORIGIN`; the plain client entry is unchanged. k.return: with the shell's id it also sets up the
+// identity mount.
 import { describe, expect, it } from "vitest";
 import { entryCode } from "../src/internal/entryCode.ts";
 
@@ -21,6 +22,24 @@ describe("entryCode shell", () => {
     );
     const cap = entryCode(["/r.ts"], "c.css", {}, {}, { kind: "capacitor", origin: "http://localhost:8080" });
     expect(cap).toContain('import { capacitorDrivers as __keelDrivers } from "@keel/std-capacitor";');
+  });
+
+  it("with the shell's id (the project has identity.ts) imports identity.ts and calls shellMount before the router starts", () => {
+    for (const [kind, pkg] of [
+      ["tauri", "@keel/std-tauri"],
+      ["capacitor", "@keel/std-capacitor"],
+    ] as const) {
+      const shell = { kind, origin: "https://app.example", id: "dev.keel.app" };
+      const code = entryCode(["/r.ts"], "c.css", {}, {}, shell);
+      expect(code).toContain(`import { shellMount as __keelMount } from "${pkg}/shellMount";`);
+      expect(code).toContain('import "/identity.ts";');
+      const call = '__keelMount(ctx, { id: "dev.keel.app", origin: new URL("https://app.example") });';
+      expect(code).toContain(call);
+      expect(code.indexOf("const ctx =")).toBeLessThan(code.indexOf(call));
+      expect(code.indexOf(call)).toBeLessThan(code.indexOf("createRouter("));
+      const without = entryCode(["/r.ts"], "c.css", {}, {}, { kind, origin: "https://app.example" });
+      expect(without).not.toMatch(/shellMount|identity/);
+    }
   });
 
   it("leaves the plain entry a real ctx with no shell import", () => {

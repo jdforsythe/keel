@@ -52,11 +52,16 @@ const NOT_APP =
   /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)vitest(?:\.[\w-]+)?\.config\.[cm]?[jt]s$/;
 const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json", "routes.json", "styles.json"];
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
-/** The shell a `keel build --target` build makes (`KEEL_SHELL`) and its `KEEL_ORIGIN`, else none (k.shell Build). */
-const shellOf = (): { kind: "capacitor" | "tauri"; origin: string } | undefined => {
+/**
+ * The shell a `keel build --target` build makes (`KEEL_SHELL`) and its `KEEL_ORIGIN`, else none (k.shell Build); with
+ * `shells`, the deployable's, its `id` there (k.return: the caller gives them when the project has `identity.ts`).
+ */
+const shellOf = (
+  shells?: NonNullable<Topology[string]["shells"]>,
+): { kind: "capacitor" | "tauri"; origin: string; id: string | undefined } | undefined => {
   const kind = process.env.KEEL_SHELL;
   const origin = process.env.KEEL_ORIGIN ?? "";
-  return kind === "capacitor" || kind === "tauri" ? { kind, origin } : undefined;
+  return kind === "capacitor" || kind === "tauri" ? { kind, origin, id: shells?.[kind]?.id } : undefined;
 };
 const CSS_IMPORT = "virtual:keel.css";
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
@@ -749,7 +754,7 @@ export default function (): {
         CSS_IMPORT,
         clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
         served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},
-        shellOf(),
+        shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
         mode,
       );
     },

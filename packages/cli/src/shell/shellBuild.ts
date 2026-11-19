@@ -55,6 +55,8 @@ function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; ar
     ? []
     : [{ ...toolCommand(at, "@capacitor/cli", "cap", ["add", platform]), cwd: at }];
   const sync: Step = { ...toolCommand(at, "@capacitor/cli", "cap", ["sync", platform]), cwd: at };
+  // The shell's `id` as a URI scheme in the platform project (k.return), by the shell package's own tool.
+  const scheme: Step = { ...toolCommand(at, "@keel/std-capacitor", "keel-capacitor-scheme", [platform]), cwd: at };
   if (platform === "android") {
     const task = plan.release ? "assembleRelease" : "assembleDebug";
     const mode = plan.release ? "release/app-release-unsigned.apk" : "debug/app-debug.apk";
@@ -62,6 +64,7 @@ function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; ar
       steps: [
         ...add,
         sync,
+        scheme,
         {
           cmd: "./gradlew",
           args: [task],
@@ -92,7 +95,7 @@ function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; ar
     cwd: join(at, "ios"),
   };
   return {
-    steps: [...add, sync, build],
+    steps: [...add, sync, scheme, build],
     artifact: `${rel}/ios/build/Build/Products/${config}-iphonesimulator/App.app`,
   };
 }
@@ -103,9 +106,11 @@ function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; ar
  * the shell or a project `.env` sets, k.deploy Build), which the Vite plugin writes to
  * `dist/<name>/<shell>/www/`; the shell files of `deploy/<name>/<shell>/` beside it (with Cargo's `Cargo.lock` when
  * committed, and the app's `icons/icon.png` when it has one); for Tauri `capabilities/http.json` allowing `KEEL_ORIGIN`
- * and, when the app has no `icons/icon.png`, `defaultIcon`; for Capacitor the deployable's `csp.txt` policy as a meta
- * tag in `www/index.html` and, on Android before Gradle, `androidNetworkSecurity`'s cleartext rule; then the shell's
- * tools. A Tauri build's new `Cargo.lock` is copied back to
+ * (to the default browser too when the project has `identity.ts`) and, when the app has no `icons/icon.png`,
+ * `defaultIcon`; for Capacitor the deployable's `csp.txt` policy as a meta tag in `www/index.html` and, on Android
+ * before Gradle, `androidNetworkSecurity`'s cleartext rule; then the shell's tools, for Capacitor `cap add` (once),
+ * `cap sync`, `@keel/std-capacitor`'s `keel-capacitor-scheme` (the shell's `id` as a URI scheme, k.return) and the
+ * platform's build. A Tauri build's new `Cargo.lock` is copied back to
  * `deploy/<name>/tauri/`. The tools run with Cargo's `bin` folder first on `PATH`. Stops at the first failing step: its
  * error lines (`toolError`) are `stderr`.
  */
@@ -132,7 +137,8 @@ export function shellBuild(cwd: string, plan: ShellPlan): Done {
     const from = join(cwd, "deploy", name, plan.target);
     cpSync(from, at, { recursive: true });
     if (plan.target === "tauri") {
-      writeFileSync(join(at, "capabilities", "http.json"), tauriHttpCapability(plan.origin));
+      const identity = existsSync(join(cwd, "identity.ts"));
+      writeFileSync(join(at, "capabilities", "http.json"), tauriHttpCapability(plan.origin, identity));
       if (!existsSync(join(from, "icons", "icon.png"))) {
         mkdirSync(join(at, "icons"), { recursive: true });
         writeFileSync(join(at, "icons", "icon.png"), defaultIcon());

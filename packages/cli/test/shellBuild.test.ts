@@ -28,7 +28,8 @@ const PLAN: ShellPlan = {
 };
 /**
  * The fake `npx`: `vite build` writes the shell entry's page; `tauri build` runs the test's `tauri.sh` in the build
- * folder; `cap`, as the Capacitor CLI, refuses a folder without a `package.json`, and `cap add` leaves a `gradlew`.
+ * folder; `cap`, as the Capacitor CLI, refuses a folder without a `package.json`, and `cap add` leaves a `gradlew`;
+ * `keel-capacitor-scheme` (the tool of `@keel/std-capacitor`, not installed here) does nothing.
  */
 const NPX = `#!/bin/sh
 echo "$@" >> "$(dirname "$0")/calls.txt"
@@ -38,6 +39,7 @@ case "$2" in
   cap)
     test -f package.json || { echo "[error] The Capacitor CLI needs to run at the root of an npm package." >&2; exit 1; }
     if [ "$3" = add ]; then mkdir -p "$4" && printf '#!/bin/sh\\necho "$@" > task.txt\\n' > "$4/gradlew" && chmod +x "$4/gradlew"; fi ;;
+  keel-capacitor-scheme) ;;
   *) exit 64 ;;
 esac
 `;
@@ -210,8 +212,10 @@ describe.skipIf(process.platform === "win32")("shellBuild", () => {
       "--no-install vite build",
       "--no-install cap add android",
       "--no-install cap sync android",
+      "--no-install keel-capacitor-scheme android",
       "--no-install vite build",
       "--no-install cap sync android",
+      "--no-install keel-capacitor-scheme android",
       "",
     ]);
   });

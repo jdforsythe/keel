@@ -12,6 +12,8 @@ const SECTIONS = "@keel/compiler/inspect/inspectorSections";
 const BIND_STD = "@keel/compiler/std/bindStd";
 
 const q = (s: string): string => JSON.stringify(s);
+/** What a shell build's entry imports so its runtime knows the identity mount's path (k.return). */
+const IDENTITY = "/identity.ts";
 /** The std.shells package and drivers factory of each shell (k.shell Shell ctx). */
 const SHELLS = {
   capacitor: ["@keel/std-capacitor", "capacitorDrivers"],
@@ -30,17 +32,21 @@ const SHELLS = {
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports. With `shell` (a `keel build --target` build, k.shell
  * Shell ctx) the ctx is `createCtx({ mode: 'shell', drivers })`, the drivers of that shell's std.shells package for
- * the build's `origin` (`KEEL_ORIGIN`). Under `"production"` the reporter is dead code a build drops.
+ * the build's `origin` (`KEEL_ORIGIN`); with `shell.id` (the project has `identity.ts`, k.return) the entry also
+ * imports `identity.ts` and, before the router starts, calls that package's `shellMount` with the shell's `id` and the
+ * origin. Under `"production"` the reporter is dead code a build drops.
  */
 export function entryCode(
   routesFiles: readonly string[],
   cssId: string,
   std: StdData = {},
   deployables: Readonly<Record<string, readonly string[]>> = {},
-  shell?: { readonly kind: keyof typeof SHELLS; readonly origin: string },
+  shell?: { readonly kind: keyof typeof SHELLS; readonly origin: string; readonly id?: string | undefined },
   mode: "dev" | "production" = "production",
 ): string {
   const native = shell === undefined ? undefined : SHELLS[shell.kind];
+  const origin = `new URL(${q(shell?.origin ?? "")})`;
+  const id = native === undefined ? undefined : shell?.id;
   const bind = Object.keys(std).length > 0;
   const peers = Object.keys(deployables).length > 0;
   const imports = routesFiles.map((f, i) => `import { routes as __keelRoutes${i} } from ${q(f)};`);
@@ -57,10 +63,14 @@ export function entryCode(
     `import { inspectorSections } from ${q(SECTIONS)};`,
     ...(bind ? [`import { bindStd } from ${q(BIND_STD)};`] : []),
     ...(native === undefined ? [] : [`import { ${native[1]} as __keelDrivers } from ${q(native[0])};`]),
+    ...(native === undefined || id === undefined
+      ? []
+      : [`import { shellMount as __keelMount } from ${q(`${native[0]}/shellMount`)};`, `import ${q(IDENTITY)};`]),
     ...imports,
     native === undefined
       ? `const ctx = createCtx({ mode: "real" });`
-      : `const ctx = createCtx({ mode: "shell", drivers: __keelDrivers({ origin: new URL(${q(shell?.origin ?? "")}) }) });`,
+      : `const ctx = createCtx({ mode: "shell", drivers: __keelDrivers({ origin: ${origin} }) });`,
+    ...(id === undefined ? [] : [`__keelMount(ctx, { id: ${q(id)}, origin: ${origin} });`]),
     ...(bind ? [`bindStd(ctx, ${JSON.stringify(std)});`] : []),
     ...(peers
       ? [
