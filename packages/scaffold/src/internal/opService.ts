@@ -14,7 +14,7 @@ import { targetsGenerated } from "./targetsGenerated.ts";
  * `scaffold service <module> --openapi <file>`: place the endpoint declaration and the service file that
  * `@keel/services/openapi` generated (the cli converts the document; scaffold may not import services) at
  * `modules/<module>/<Module>Api.schema.ts` (filename equals its export `<Module>Api`, rfc:0039) and
- * `api.server.ts` (k.openapi: a literal `base` is server-only, E1571). Both carry the generated marker, so later operations may not edit them (E1005).
+ * `api.server.ts` (k.openapi: a literal `base` there is clean in a module a `node` deployable lists, and E1571 in one only `client` deployables list, where the file ships). Both carry the generated marker, so later operations may not edit them (E1005).
  */
 export function opService(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.service.parse(input);

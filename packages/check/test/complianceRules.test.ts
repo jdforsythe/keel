@@ -1,5 +1,6 @@
 // k.privacy E1111, k.security E1570/E1571, k.a11y E1804/E1820: edges the conformance suites do not cover.
 import { expect, it } from "vitest";
+import { explain } from "../src/explain.ts";
 import { check } from "../src/index.ts";
 
 type Files = Parameters<typeof check>[0];
@@ -87,13 +88,26 @@ it("E1571: the OpenAPI service in api.server.ts, called by a loader a route impo
         "import { manifest } from '@keel/router'\nimport { loadOrder } from './loadOrder.server.ts'\nconst Page = () => null\nexport const routes = manifest({ 'orders.show': { path: '/orders', loader: loadOrder, component: Page } })\n",
     },
   ];
-  const ran = (service: string) =>
-    check(files(service), {
-      types: false,
-      topology: { web: { modules: ["orders"], adapter: "node" } },
-    }).diagnostics.filter((d) => d.code === "E1571" || d.code === "E1004");
+  const ran = (service: string, adapter: "node" | "client" = "node") =>
+    check(
+      [
+        ...files(service),
+        {
+          path: "topology.ts",
+          source: `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['orders'], adapter: '${adapter}' } })\n`,
+        },
+      ],
+      { types: false },
+    ).diagnostics.filter((d) => d.code === "E1571" || d.code === "E1004");
   expect(ran("api.server.ts")).toEqual([]);
   expect(ran("api.ts").map((d) => d.code)).toEqual(["E1571"]);
+  expect(ran("api.server.ts", "client").map((d) => d.code)).toEqual(["E1571"]);
+});
+
+it("E1571's explanation sends the service to a module a node deployable lists, as a client module's *.server.ts file ships", () => {
+  const text = explain("E1571");
+  expect(text).toContain("a *.server.ts file of a module a node deployable lists");
+  expect(text).toContain("in a module only client deployables list it ships");
 });
 
 it("E1111 reads anyOf members, spreads, namespace imports, re-exports and a const table; it reports what it cannot read", () => {

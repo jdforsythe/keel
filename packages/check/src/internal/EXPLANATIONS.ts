@@ -624,8 +624,8 @@ const ROWS: readonly Row[] = [
   [
     "E1571",
     "absolute or protocol-relative URL given to ctx.net.fetch or service({ base }) in client code",
-    "The policy's connect-src is this origin; reach another origin from a *.server.ts file.",
-    "move the service to a *.server.ts file and call it from a loader or action",
+    "The policy's connect-src is this origin. A *.server.ts file stays on the server only in a module a node deployable lists; in a module only client deployables list it ships.",
+    "move the service to a *.server.ts file of a module a node deployable lists and call it from a loader or action",
     "k.security",
   ],
   [
