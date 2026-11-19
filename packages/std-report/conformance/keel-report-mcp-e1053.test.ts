@@ -11,6 +11,7 @@ const other: StdOperation = {
   description: "another report operation",
   input: s.object({}),
   output: s.object({ records: s.array(s.object({ kind: s.string() })) }),
+  positional: [],
   scope: "none",
   run: async () => ({ records: [], writes: [] }),
 };
