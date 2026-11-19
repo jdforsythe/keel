@@ -1,5 +1,5 @@
 {
-  "commit": "8df9f40998362da6855d54a0c8b600d5ef7c2a5c",
+  "commit": "9162382ea0d30c121323f9234331b51aeac8524f",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,26 +1148,26 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T09:00:31.300Z",
+  "generatedAt": "2026-11-19T09:59:54.596Z",
   "ledger": {
     "a11y": {
       "byRung": {
-        "example": 70,
+        "example": 118,
         "exhaustive": 0,
         "monitored": 0,
-        "none": 270,
+        "none": 222,
         "probabilistic": 0,
         "proven": 0
       },
       "total": 340,
-      "verified": 70
+      "verified": 118
     },
     "clauses": {
       "byRung": {
         "example": 636,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 6,
+        "none": 15,
         "probabilistic": 166,
         "proven": 31
       },
@@ -2139,12 +2139,12 @@
             "example": 1,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 9,
             "probabilistic": 5,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 6,
+          "status": "implemented",
+          "total": 15,
           "verified": 6
         },
         "std.schedules": {
@@ -2278,11 +2278,11 @@
           "verified": 8
         }
       },
-      "total": 845,
+      "total": 854,
       "verified": 839
     },
     "evidenceByRung": {
-      "example": 1199,
+      "example": 1250,
       "exhaustive": 15,
       "monitored": 4,
       "probabilistic": 326,
@@ -2290,10 +2290,10 @@
     },
     "exports": {
       "byRung": {
-        "example": 234,
+        "example": 237,
         "exhaustive": 1,
         "monitored": 0,
-        "none": 33,
+        "none": 30,
         "probabilistic": 128,
         "proven": 32
       },
@@ -2372,15 +2372,15 @@
         },
         "golden-2": {
           "byRung": {
-            "example": 81,
+            "example": 84,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 3,
+            "none": 0,
             "probabilistic": 18,
             "proven": 0
           },
           "total": 102,
-          "verified": 99
+          "verified": 102
         },
         "inspector": {
           "byRung": {
@@ -2816,11 +2816,11 @@
         }
       },
       "total": 428,
-      "verified": 395
+      "verified": 398
     },
-    "items": 1613,
+    "items": 1622,
     "unsafe": 18,
-    "verified": 1304
+    "verified": 1355
   },
   "mutation": {
     "packages": {
@@ -2868,16 +2868,16 @@
         "claims": 146,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 78.94,
-        "stale": 4,
+        "score": 79.29,
+        "stale": 6,
         "threshold": 70
       },
       "packages/compiler": {
         "claims": 106,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 75.95,
-        "stale": 0,
+        "score": 76.02,
+        "stale": 1,
         "threshold": 70
       },
       "packages/ctx": {
@@ -3177,7 +3177,7 @@
         "threshold": 70
       }
     },
-    "stale": 5
+    "stale": 8
   },
   "schema": 1,
   "tests": {
@@ -3207,7 +3207,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 123,
+        "unitCases": 127,
         "unitFiles": 14
       },
       "apps/inspector": {
@@ -3263,7 +3263,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 688,
+        "unitCases": 690,
         "unitFiles": 82
       },
       "packages/compiler": {
@@ -3277,8 +3277,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 546,
-        "unitFiles": 63
+        "unitCases": 557,
+        "unitFiles": 64
       },
       "packages/ctx": {
         "conformanceCases": 144,
@@ -3810,8 +3810,8 @@
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4642,
-      "unitFiles": 751
+      "unitCases": 4659,
+      "unitFiles": 752
     }
   },
   "tool": {
