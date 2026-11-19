@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1269,
+    "example": 1277,
     "probabilistic": 327,
     "exhaustive": 15,
     "proven": 63,
@@ -71,7 +71,7 @@
         "threshold": 70
       },
       "std-conflicts": {
-        "score": 76.52,
+        "score": 77.41,
         "threshold": 70
       },
       "std-db": {
@@ -7705,28 +7705,12 @@
         "score": 52.94
       },
       {
-        "file": "packages/std-conflicts/src/raceFound.ts",
-        "sha": "73790f94df5361aa2cabc2ea01060a092c38824ee731d54e238129048f1218a3",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 1,
-        "score": 0
-      },
-      {
         "file": "packages/std-conflicts/src/raceRecords.ts",
         "sha": "0af3c58a64d04bf07334043d1a88a0fa9b369395c23a9f0306a9c6aa2a1f4a86",
         "killed": 19,
         "survived": 2,
         "noCoverage": 2,
         "score": 82.61
-      },
-      {
-        "file": "packages/std-conflicts/src/raceUnchecked.ts",
-        "sha": "0e809e5536838ab0013ed07cee59b9ac77248a35fed330ba34af949eb2ca31df",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 1,
-        "score": 0
       },
       {
         "file": "packages/std-conflicts/src/races.ts",
@@ -11787,6 +11771,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "loadCurrencyTally",
+      "file": "golden-2:kitchen/loadCurrencyTally.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
       "name": "loadRecipes",
       "file": "golden-2:kitchen/loadRecipes.server.ts",
       "rung": "example"
@@ -12699,21 +12689,9 @@
     },
     {
       "pkg": "std-conflicts",
-      "name": "raceFound",
-      "file": "packages/std-conflicts/src/raceFound.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": "std-conflicts",
       "name": "raceRecords",
       "file": "packages/std-conflicts/src/raceRecords.ts",
       "rung": "example"
-    },
-    {
-      "pkg": "std-conflicts",
-      "name": "raceUnchecked",
-      "file": "packages/std-conflicts/src/raceUnchecked.ts",
-      "rung": "none"
     },
     {
       "pkg": "std-conflicts",
@@ -12960,6 +12938,12 @@
       "name": "Tally",
       "file": "packages/std-report/src/Tally.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-report",
+      "name": "callerCookie",
+      "file": "packages/std-report/src/callerCookie.ts",
+      "rung": "example"
     },
     {
       "pkg": "std-report",
@@ -15889,7 +15873,7 @@
     },
     {
       "item": "std.brands#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.channels#1",
@@ -15969,11 +15953,11 @@
     },
     {
       "item": "std.conflicts#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.conflicts#10",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.copy#1",
@@ -16549,15 +16533,19 @@
     },
     {
       "item": "std.report#16",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.report#17",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.report#18",
-      "rung": "none"
+      "rung": "example"
+    },
+    {
+      "item": "std.report#19",
+      "rung": "example"
     },
     {
       "item": "std.schedules#1",
