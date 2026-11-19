@@ -1,5 +1,5 @@
 {
-  "commit": "ab62aad0268a1f1c38f26a2c69362842d852f7a5",
+  "commit": "b808303ff29526e7c81e4ef57de50a6ff1fea859",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T13:48:24.242Z",
+  "generatedAt": "2026-11-19T14:16:31.215Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1167,7 +1167,7 @@
         "example": 645,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 6,
+        "none": 12,
         "probabilistic": 166,
         "proven": 31
       },
@@ -1892,12 +1892,12 @@
             "example": 6,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 1,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 6,
+          "status": "implemented",
+          "total": 7,
           "verified": 6
         },
         "std.channels": {
@@ -1918,12 +1918,12 @@
             "example": 8,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 2,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 8,
+          "status": "implemented",
+          "total": 10,
           "verified": 8
         },
         "std.copy": {
@@ -2139,12 +2139,12 @@
             "example": 10,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 3,
             "probabilistic": 5,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 15,
+          "status": "implemented",
+          "total": 18,
           "verified": 15
         },
         "std.schedules": {
@@ -2278,7 +2278,7 @@
           "verified": 8
         }
       },
-      "total": 854,
+      "total": 860,
       "verified": 848
     },
     "evidenceByRung": {
@@ -2818,7 +2818,7 @@
       "total": 430,
       "verified": 398
     },
-    "items": 1624,
+    "items": 1630,
     "unsafe": 18,
     "verified": 1364
   },
@@ -2876,8 +2876,8 @@
         "claims": 106,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 76.02,
-        "stale": 1,
+        "score": 79.34,
+        "stale": 6,
         "threshold": 70
       },
       "packages/ctx": {
@@ -3177,7 +3177,7 @@
         "threshold": 70
       }
     },
-    "stale": 17
+    "stale": 22
   },
   "schema": 1,
   "tests": {
@@ -3277,8 +3277,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 557,
-        "unitFiles": 64
+        "unitCases": 569,
+        "unitFiles": 66
       },
       "packages/ctx": {
         "conformanceCases": 144,
@@ -3810,8 +3810,8 @@
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4674,
-      "unitFiles": 754
+      "unitCases": 4686,
+      "unitFiles": 756
     }
   },
   "tool": {

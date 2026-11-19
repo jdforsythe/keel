@@ -19,7 +19,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 76.02,
+        "score": 79.34,
         "threshold": 70
       },
       "ctx": {
@@ -15870,6 +15870,10 @@
       "rung": "example"
     },
     {
+      "item": "std.brands#7",
+      "rung": "none"
+    },
+    {
       "item": "std.channels#1",
       "rung": "example"
     },
@@ -15944,6 +15948,14 @@
     {
       "item": "std.conflicts#8",
       "rung": "example"
+    },
+    {
+      "item": "std.conflicts#9",
+      "rung": "none"
+    },
+    {
+      "item": "std.conflicts#10",
+      "rung": "none"
     },
     {
       "item": "std.copy#1",
@@ -16516,6 +16528,18 @@
     {
       "item": "std.report#15",
       "rung": "example"
+    },
+    {
+      "item": "std.report#16",
+      "rung": "none"
+    },
+    {
+      "item": "std.report#17",
+      "rung": "none"
+    },
+    {
+      "item": "std.report#18",
+      "rung": "none"
     },
     {
       "item": "std.schedules#1",
