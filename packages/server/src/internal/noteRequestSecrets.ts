@@ -1,3 +1,4 @@
+import { s } from "@keel/schema";
 import { type SecretListener, onSecret, secretWalk } from "@keel/schema/internal";
 import { holdSecrets } from "./holdSecrets.ts";
 import { notedSecrets } from "./notedSecrets.ts";
@@ -13,7 +14,15 @@ import { requestSecrets } from "./requestSecrets.ts";
  * its 1,000,000 values left values unread, so the set is past its cap (`pastCap`) and every text of the scope is one
  * mark.
  */
+let probing = false;
+let losses = 0;
+const PROBE = s.secret(s.boolean());
+
 const note: SecretListener = (made) => {
+  if (probing) {
+    probing = false;
+    return;
+  }
   const into = requestSecrets.getStore();
   if (into === undefined) return;
   let noted = notedSecrets.get(into);
@@ -31,9 +40,16 @@ const note: SecretListener = (made) => {
  * Makes the server's listener the one `onSecret` calls, so each `Secret` made or revealed while a request or a runner's
  * `run` runs adds its revealed strings, numbers and data keys to that scope's set (`requestSecrets`) until the set is
  * past a cap. A `Secret` made at startup adds nothing until a scope reveals it; a value revealed outside every scope
- * and kept as plain text is in no set. Each `createApp` calls it, so an app created after another listener took the
- * slot, or after the slot was cleared, has the server's listener again.
+ * and kept as plain text is in no set. Before it takes the slot it makes a probe `Secret` to learn whether the slot
+ * still held the listener; each time it did not (another package cleared or replaced it), the count it returns grows.
+ * Each `createApp`, each request and each runner's `run` calls it, and each scope's texts are scrubbed only while the
+ * count is the one its scope began with (`slotSince`, `scrubbed`).
  */
-export function noteRequestSecrets(): void {
+export function noteRequestSecrets(): number {
+  probing = true;
+  PROBE.parse(true);
+  if (probing) losses++;
+  probing = false;
   onSecret(note);
+  return losses;
 }

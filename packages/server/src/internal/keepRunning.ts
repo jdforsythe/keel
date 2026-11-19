@@ -2,8 +2,10 @@ import type { Ctx } from "@keel/ctx";
 import type { Runner } from "../types/Runner.ts";
 import { attempted } from "./attempted.ts";
 import { caught } from "./caught.ts";
+import { noteRequestSecrets } from "./noteRequestSecrets.ts";
 import { requestSecrets } from "./requestSecrets.ts";
 import { serving } from "./serving.ts";
+import { slotSince } from "./slotSince.ts";
 
 const RESTART_MS = 1000;
 
@@ -24,6 +26,7 @@ export async function keepRunning(
 ): Promise<void> {
   while (!signal.aborted) {
     const secrets = new Set<string>();
+    slotSince.set(secrets, noteRequestSecrets());
     const { result: ran, frames } = await caught(
       () => serving.run(undefined, () => requestSecrets.run(secrets, () => runner.run(ctx, signal))),
       read,

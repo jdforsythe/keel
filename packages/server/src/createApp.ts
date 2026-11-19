@@ -48,6 +48,7 @@ import { secretSegments } from "./internal/secretSegments.ts";
 import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import { serving } from "./internal/serving.ts";
+import { slotSince } from "./internal/slotSince.ts";
 import { unexpected } from "./internal/unexpected.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -249,6 +250,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     // Each request runs in its own `requestSecrets` set: every `Secret` made or revealed while it runs joins it (k.privacy). The
     // sets outlive `routed` so the `req` path is scrubbed with them too.
     const secrets = new Set<string>();
+    slotSince.set(secrets, noteRequestSecrets());
     const pii = new Set<string>();
     // While it runs, and in all the work it schedules, a write to a module store throws E1256 (`serving`, `refuseModuleWrites`).
     const routed = () =>

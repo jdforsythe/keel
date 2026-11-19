@@ -1,5 +1,7 @@
 import { SCRUB_CAP } from "./SCRUB_CAP.ts";
 import { automatonOf } from "./automatonOf.ts";
+import { noteRequestSecrets } from "./noteRequestSecrets.ts";
+import { slotSince } from "./slotSince.ts";
 
 const WORD = /[\p{L}\p{N}\p{M}_]/u;
 
@@ -21,7 +23,8 @@ const split = (t: string, at: number, end: number): boolean =>
  * that splits no surrogate pair. The text is read once: at each
  * code unit the automaton's longest valid match ending there joins the run of matches it overlaps, and each run is
  * replaced as a whole, so the whole of each marked copy is replaced. The run's mark is that of its longest match; of
- * two as long, the earlier pass's. Past the automaton's cap the message is one mark, the first pass's that holds a
+ * two as long, the earlier pass's. A message scrubbed with a set that was open while the `onSecret` slot was lost
+ * (`slotSince`) is that pass's mark. Past the automaton's cap the message is one mark, the first pass's that holds a
  * value; so is a message over `SCRUB_CAP` characters, which is not read (k.serverlog). `count`, for tests, adds the walk's steps and, when the automaton is built, the build's.
  */
 export function scrubbed(
@@ -29,6 +32,11 @@ export function scrubbed(
   passes: readonly (readonly [ReadonlySet<string>, string])[],
   count?: { build: number; walk: number; forms: number },
 ): string {
+  const lost = passes.find(([values]) => {
+    const at = slotSince.get(values);
+    return at !== undefined && at !== noteRequestSecrets();
+  });
+  if (lost !== undefined) return lost[1];
   const held = passes.find(([values]) => values.size > 0);
   if (held === undefined) return message;
   if (message.length > SCRUB_CAP) return held[1];
