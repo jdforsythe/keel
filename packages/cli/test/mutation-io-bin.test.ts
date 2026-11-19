@@ -271,7 +271,7 @@ describe("keel binary", () => {
     put(
       d,
       "topology.ts",
-      'export default topology({ web: { modules: ["w"], adapter: "client" }, z: { modules: ["z"], adapter: "node" }, api: { modules: ["a"], adapter: "node" } })\n',
+      'declare const topology: (t: object) => object\nexport default topology({ web: { modules: ["w"], adapter: "client" }, z: { modules: ["z"], adapter: "node" }, api: { modules: ["a"], adapter: "node" } })\n',
     );
     fakeVite(d, 'echo "${KEEL_DEPLOYABLE-own}" >> runs.txt');
     const r = await keel(d, ["build"]);

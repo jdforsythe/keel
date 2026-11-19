@@ -97,8 +97,10 @@ describe("build trailer", () => {
       "topology.ts":
         "import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client', shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } } },\n})\n",
       "modules/c/module.ts": manifest,
+      "modules/c/Page.tsx":
+        "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>page</Text>\n    </Box>\n  )\n}\n",
       "modules/c/routes.ts":
-        "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+        "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
     });
     made.push(app);
     mkdirSync(join(app, "node_modules", "@tauri-apps", "cli"), { recursive: true });

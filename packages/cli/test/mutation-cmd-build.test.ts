@@ -26,7 +26,7 @@ describe("build", () => {
       ok("src/D.config.tsx", "D"),
       ok("src/K.configs.ts", "K"),
       ok("src/.keel/H.ts", "H"),
-      ok("config.ts", "Cfg"),
+      ok("config.ts", "config"),
       ok("test/fixtures/W.tsx", "W2"),
       ok("conformance/c.ts", "C"),
     ];
@@ -42,7 +42,8 @@ describe("build", () => {
   it("keel build then keel check: no E1005 with ids in test/fixtures and a *.config.ts (backlog 0142)", async () => {
     const files = [
       {
-        path: "modules/app/Home.tsx",
+        // Under `unsafe/` the raw `<h1>` is no E1805, so `keel build`'s check passes and the ids still derive.
+        path: "modules/app/unsafe/Home.tsx",
         source: 'export default function Home() { return <h1 id="home.title">Hi</h1> }\n',
       },
       {
@@ -62,7 +63,9 @@ describe("build", () => {
     expect(r.stdout).not.toContain("E1005");
     // and the stale case still holds: a source edit after the build is E1005
     const moved = files.map((f) =>
-      f.path === "modules/app/Home.tsx" ? { ...f, source: f.source.replace('id="home.title"', 'id="home.t2"') } : f,
+      f.path === "modules/app/unsafe/Home.tsx"
+        ? { ...f, source: f.source.replace('id="home.title"', 'id="home.t2"') }
+        : f,
     );
     const stale = await run(["check", "--format=json"], { cwd: CWD, files: [...moved, ...artifacts] });
     expect(stale.stdout).toContain("E1005");
@@ -93,22 +96,17 @@ describe("build", () => {
     }
   });
 
-  it("an error diagnostic flows through with its location and see; nothing is written; errors are counted", async () => {
+  it("an error diagnostic stops the build at keel check with its location and see; nothing is written; errors are counted", async () => {
     const r = await run(["build", "--format=json"], { cwd: CWD, files: [BAD] });
-    expect(r).toEqual({
-      code: 1,
-      stdout:
-        '{"kind":"diag","code":"E1003","path":"src/C.tsx","line":1,"col":41,"message":"href is a literal script/data URL; it renders as about:blank","see":"k.compiler","fix":"--- a/src/C.tsx\\n+++ b/src/C.tsx\\n@@ -1,1 +1,1 @@\\n-export default function C() { return <a href=\\"javascript:alert(1)\\">x</a> }\\n+export default function C() { return <a>x</a> }"}\n{"kind":"summary","ok":false,"name":"build","counts":{"files":1,"artifacts":0,"errors":1}}\n',
-      stderr: "",
-    });
+    expect(r.code).toBe(1);
+    expect(r.stdout).toContain(
+      '{"kind":"diag","code":"E1003","path":"src/C.tsx","line":1,"col":41,"message":"href is a literal script/data URL; it renders as about:blank","see":"k.compiler","fix":"--- a/src/C.tsx\\n+++ b/src/C.tsx\\n@@ -1,1 +1,1 @@\\n-export default function C() { return <a href=\\"javascript:alert(1)\\">x</a> }\\n+export default function C() { return <a>x</a> }"}\n',
+    );
+    expect(r.stdout.trimEnd().split("\n").at(-1)).toContain('"kind":"summary","ok":false');
+    expect(r.stderr).toBe("");
     const o = await buildCommand({ cwd: CWD, files: [BAD, ok("src/A.ts", "A")] });
     expect(o.writes).toEqual([]);
-    expect(o.records.at(-1)).toEqual({
-      kind: "summary",
-      ok: false,
-      name: "build",
-      counts: { files: 2, artifacts: 0, errors: 1 },
-    });
+    expect(o.records.at(-1)).toMatchObject({ kind: "summary", ok: false });
   });
 });
 

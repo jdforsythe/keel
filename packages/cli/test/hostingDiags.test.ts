@@ -84,7 +84,7 @@ describe("hostingDiags", () => {
         {
           path: "topology.ts",
           source:
-            'export default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client" } })',
+            'declare const topology: (t: object) => object\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client" } })',
         },
       ],
     });

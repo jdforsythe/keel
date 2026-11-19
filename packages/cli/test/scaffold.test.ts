@@ -117,8 +117,10 @@ describe("scaffold and codemod", () => {
 describe("build", () => {
   it("compiles the project and returns the .keel artifacts as read-only canonical writes", async () => {
     const files = await project();
-    const e = await runEngine(["build"], { cwd: CWD, files });
-    expect(e.result).toMatchObject({ code: 0 });
+    // `keel build` checks first: the project's imports resolve from an app of this repo, as from an installed one.
+    const cwd = new URL("../../../apps/golden-2", import.meta.url).pathname;
+    const e = await runEngine(["build"], { cwd, files });
+    expect(e.result, e.result.stdout).toMatchObject({ code: 0 });
     expect(e.writes.map((w) => [w.path, w.readonly])).toEqual([
       [".keel/a11y.json", true],
       [".keel/deps.json", true],
@@ -135,7 +137,7 @@ describe("build", () => {
     ];
     const e = await runEngine(["build"], { cwd: CWD, files });
     expect(e.result.code).toBe(1);
-    expect(e.result.stdout).toMatch(/^E1003 src\/C\.tsx:/);
+    expect(e.result.stdout).toMatch(/^E1003 src\/C\.tsx:/m);
     expect(e.writes).toEqual([]);
   });
 });

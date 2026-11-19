@@ -47,9 +47,10 @@ beforeAll(async () => {
   root = realpathSync(mkdtempSync(join(tmpdir(), "keel-workspace-")));
   put("package.json", "{}\n");
   put("apps/a/package.json", "{}\n");
-  put("apps/a/src/A.tsx", A);
+  // Under `unsafe/` a raw `<p>` is no E1805, so `keel build`'s check passes and the ids still derive.
+  put("apps/a/src/unsafe/A.tsx", A);
   put("apps/b/package.json", "{}\n");
-  put("apps/b/src/B.tsx", B);
+  put("apps/b/src/unsafe/B.tsx", B);
   for (const app of ["apps/a", "apps/b"]) expect((await run(["build"], io(join(root, app)))).code).toBe(0);
 }, 60_000);
 
@@ -59,7 +60,7 @@ describe("keel check in a workspace (0144)", () => {
   it("counts the same files for an app from the root and from inside it, artifacts included, all genuine", async () => {
     const inside = await check(join(root, "apps/a"), []);
     const fromRoot = await check(root, ["apps/a"]);
-    expect(inside.files).toBe(6); // src/A.tsx and the five artifacts `keel build` writes
+    expect(inside.files).toBe(6); // src/unsafe/A.tsx and the five artifacts `keel build` writes
     expect(fromRoot).toEqual(inside);
     expect((await check(root, [])).e1005).toEqual([]);
   });

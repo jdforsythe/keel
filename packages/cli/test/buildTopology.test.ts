@@ -1,12 +1,14 @@
-// cli D31: `keel build` parses topology.ts like `keel check`, so client-only deployables skip E1004.
+// `keel build` parses topology.ts like `keel check`: a `client` module's `*.server.ts` file is no server-only file, so
+// importing it is no E1004; under a `static` deployable or with no topology.ts it is, and the build stops at the check.
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
 import { buildCommand } from "../src/internal/buildCommand.ts";
 
 const CWD = "/work/app";
-const routes = {
-  path: "modules/todos/routes.ts",
-  source: `import { loadList } from "./loadList.server.ts";\nexport const r = loadList;\n`,
+const load = { path: "modules/todos/loadList.server.ts", source: "export const loadList = 1;\n" };
+const view = {
+  path: "modules/todos/view.ts",
+  source: `import { loadList } from "./loadList.server.ts";\nexport const view = loadList;\n`,
 };
 const topology = (adapter: string) => ({
   path: "topology.ts",
@@ -17,7 +19,7 @@ describe("build with a topology", () => {
   it("adapter 'client' does not report E1004 and writes the artifacts", async () => {
     const r = await run(["build", "--format=json"], {
       cwd: CWD,
-      files: [topology("client"), routes],
+      files: [topology("client"), load, view],
     });
     expect(r.stdout).not.toContain("E1004");
     expect(r.code).toBe(0);
@@ -26,12 +28,12 @@ describe("build with a topology", () => {
   it("a static deployable still reports E1004; so does a project without topology.ts", async () => {
     const node = await run(["build", "--format=json"], {
       cwd: CWD,
-      files: [topology("static"), routes],
+      files: [topology("static"), load, view],
     });
     expect(node.stdout).toContain("E1004");
     const none = await run(["build", "--format=json"], {
       cwd: CWD,
-      files: [routes],
+      files: [load, view],
     });
     expect(none.stdout).toContain("E1004");
   });
@@ -39,7 +41,8 @@ describe("build with a topology", () => {
   it("counts every artifact the build is responsible for, written or unchanged", async () => {
     const node = {
       path: "topology.ts",
-      source: "export default topology({ api: { modules: ['todos'], adapter: 'node' } });\n",
+      source:
+        "declare const topology: (t: object) => object;\nexport default topology({ api: { modules: ['todos'], adapter: 'node' } });\n",
     };
     const count = (o: { records: readonly object[] }) => {
       const last = o.records.at(-1);
@@ -47,11 +50,11 @@ describe("build with a topology", () => {
         ? last.counts.artifacts
         : undefined;
     };
-    const first = await buildCommand({ cwd: CWD, files: [node, routes] });
+    const first = await buildCommand({ cwd: CWD, files: [node, load] });
     const written = first.writes.flatMap((w) => (w.content === null ? [] : [{ path: w.path, source: w.content }]));
     const again = await buildCommand({
       cwd: CWD,
-      files: [node, routes, ...written],
+      files: [node, load, ...written],
     });
     // four .keel artifacts, std.json, compose, the Dockerfile and the CI workflow
     expect(count(first)).toBe(8);
@@ -62,10 +65,11 @@ describe("build with a topology", () => {
   it("writes no CI workflow for an app inside a workspace: its CI lives at the workspace root", async () => {
     const node = {
       path: "topology.ts",
-      source: "export default topology({ api: { modules: ['todos'], adapter: 'node' } });\n",
+      source:
+        "declare const topology: (t: object) => object;\nexport default topology({ api: { modules: ['todos'], adapter: 'node' } });\n",
     };
     const read = (p: string) => (p === "/work/pnpm-workspace.yaml" ? "packages: []\n" : undefined);
-    const inside = await buildCommand({ cwd: CWD, files: [node, routes], read });
+    const inside = await buildCommand({ cwd: CWD, files: [node, load], read });
     expect(inside.writes.map((w) => w.path)).not.toContain(".github/workflows/ci.yml");
     expect(inside.writes.map((w) => w.path)).toContain("deploy/api/Dockerfile");
   });
