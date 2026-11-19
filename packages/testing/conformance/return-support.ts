@@ -77,3 +77,40 @@ export async function beginOpening(handle: {
 
 /** The `Sent` requests that are not the opening's start request. */
 export const returned = (sent: readonly Sent[]): Sent[] => sent.filter((r) => r.url !== START);
+
+/** `openShell` over another module's routes (the k.opening act suites). Same recording of `sent` and the same `closeAll`. */
+export async function openShellOver(
+  routeTable: Parameters<typeof renderRoute>[1] extends infer O ? (O extends { routes?: infer R } ? R : never) : never,
+  id: string,
+  answer: Answer = plain,
+  given?: SimCtx,
+  launch?: "later",
+) {
+  const ctx = given ?? createCtx({ mode: "sim", seed: 1337 });
+  const sent: Sent[] = [];
+  ctx.net.route("*", async (req) => {
+    const u = new URL(req.url, "http://localhost");
+    const headers: Record<string, string> = {};
+    req.headers.forEach((v, k) => {
+      headers[k.toLowerCase()] = v;
+    });
+    const entry: Sent = {
+      method: req.method,
+      url: u.pathname + u.search,
+      headers,
+      redirect: req.redirect,
+      body: req.method === "GET" ? "" : await req.text(),
+    };
+    sent.push(entry);
+    return answer(entry, sent.length - 1);
+  });
+  // ASSUMED (k.links Testing): `launch: 'later'` is a `renderRoute` option beside `shell`; the handle then has `launch(links)`.
+  const handle = await renderRoute(id, {
+    routes: routeTable,
+    ctx,
+    shell: true,
+    ...(launch === undefined ? {} : { launch }),
+  });
+  opened.push(handle);
+  return { handle, sent, ctx };
+}

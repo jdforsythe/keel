@@ -853,6 +853,17 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("src/signin.ts", "import mount from '../identity.ts'\nexport const signin = mount.href('/sign-in/email')\n"),
     ],
   },
+  E1584: {
+    opts: NO_TYPES,
+    bad: [
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth', { links: [''] })\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+    ],
+    clean: [
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth', { links: ['/verify'] })\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+    ],
+  },
   E1601: {
     bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],
     clean: [

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.return, clause "After such an opening, a link to a page navigates; a link of another scheme, or to a path neither a page nor under the mount, sends nothing; a link 600000 ms after the opening (sim clock) sends nothing, one at 599999 ms sends the GET."
-// Spec: k.return, clause "After two openings, two links send one GET. A new ctx given that ctx's `keel.return` value admits the link once."
-// Spec: k.return, clause "A mount answer 302 to `dev.keel.golden2:/api/auth/x`, with no opening, sends a second `net` GET of `/api/auth/x`."
+// Spec: k.links, clause "After such an opening, a link to a page navigates; a link of another scheme, or to a path neither a page nor under the mount, sends nothing; a link 600000 ms after the opening (sim clock) sends nothing, one at 599999 ms sends the GET." (the deadline half)
+// Spec: k.links, clause "After two openings, two links send one GET. A new ctx given that ctx's `keel.return` value admits the link once."
+// Spec: k.return, Mount requests (the last test: a mount answer to the shell's own scheme).
 // Seed 1337 (fc.assert below; the sim ctx's seed is 1337). The sim clock starts at 0 and moves only through `advance` (k.sim).
 // ASSUMED: `ctx.clock.advance(ms)` may return a promise or nothing (awaited either way).
 // ASSUMED: the `keel.return` value is a string in `ctx.storage` that a second sim ctx accepts through `set`, read after the opening and before any link.
@@ -27,7 +27,7 @@ afterEach(closeAll);
 const CALLBACK = `${SCHEME}:/api/auth/callback?code=c`;
 const DEADLINE = 600000;
 
-describe("k.return: an opening admits one return link until its deadline", () => {
+describe("k.links: an opening admits one return link until its deadline", () => {
   it("a link 599999 ms after the opening (sim clock) sends the GET", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
     const { handle, sent } = await openShell("mt.home", sessionAnswer, ctx);

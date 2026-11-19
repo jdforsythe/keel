@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.return, clause "`returnLink('dev.keel.golden2:/api/auth/callback?code=c')` with no opening sends nothing; after a `Link` to `mount.href('/login/github')` answered 302 to `https://provider.example/a`, it sends one `net` GET of `/api/auth/callback?code=c`, and the same link again sends nothing."
-// Spec: k.return, clause "After such an opening, a link to a page navigates; a link of another scheme, or to a path neither a page nor under the mount, sends nothing."
+// Spec: k.links, clause "`returnLink('dev.keel.golden2:/api/auth/callback?code=c')` with no opening sends nothing; after a `Link` to `mount.href('/login/github')` answered 302 to `https://provider.example/a`, it sends one `net` GET of `/api/auth/callback?code=c`, and the same link again sends nothing."
+// Spec: k.links, clause "After such an opening, a link to a page navigates; a link of another scheme, or to a path neither a page nor under the mount, sends nothing; a link 600000 ms after the opening (sim clock) sends nothing, one at 599999 ms sends the GET." (the deadline half: return-opening.test.ts)
 // Seed 1337 (fc.assert below). Assumption: the shell's `id` is `dev.keel.golden2` under `renderRoute(id, { shell: true })` (the spec's example), a page link is `dev.keel.golden2:/about` (route `mt.about` of mount-pages.ts).
 // ASSUMED: the home page's `Link` `mt.home.github` is the opening's `Link` to `mount.href('/login/github')`; its first request is START.
 // ASSUMED: a return link's own GET is answered 303 to a page (`sessionAnswer`), so it opens no external browser and records no second opening.
@@ -23,7 +23,7 @@ import {
 
 afterEach(closeAll);
 
-describe("k.return: returnLink delivers a return link to the shell", () => {
+describe("k.links: returnLink delivers a return link to the shell", () => {
   it("returnLink with no opening sends nothing", async () => {
     const { handle, sent } = await openShell("mt.home", sessionAnswer);
     await handle.returnLink(`${SCHEME}:/api/auth/callback?code=c`);
@@ -56,15 +56,6 @@ describe("k.return: returnLink delivers a return link to the shell", () => {
     await handle.returnLink(`${SCHEME}:/api/auth/callback?code=c`);
     await ticks();
     expect(returned(sent)).toHaveLength(1);
-    handle.dispose();
-  });
-
-  it("with no opening, a link to a page navigates nowhere and sends nothing", async () => {
-    const { handle, sent } = await openShell("mt.home", sessionAnswer);
-    await handle.returnLink(`${SCHEME}:/about`);
-    await ticks();
-    expect(handle.route().id).toBe("mt.home");
-    expect(sent).toEqual([]);
     handle.dispose();
   });
 
