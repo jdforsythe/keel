@@ -26,7 +26,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.text | Text | conformance-covered | schema type registry: `text.Email`, `Slug`, `line`, `para`, collation |
 | std.messages | Message sets | conformance-covered | check rule registry: message sets, one file per locale |
 | std.copy | Literal copy | conformance-covered | `@keel/std-messages`: where E2406 reads copy and the shapes it follows |
-| std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
+| std.brands | Id brand case | implemented | check rule registry: E2101 with fix |
 | std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
 | std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
 | std.timings | Timings | conformance-covered | inspector hooks: `timings.recent` section |
@@ -38,7 +38,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
 | std.outbox | Outbox storage faults | conformance-covered | `@keel/std-offline`: storage writes that reject or never settle, other throws in a flush |
 | std.outbox-owner | Outbox owner check | proposed | `@keel/std-offline`: `writeFor` refuses a write of another owner than the caller's, `offline.owner` |
-| std.conflicts | Races | conformance-covered | formatter registry: order-dependent rebased entries, E2701 |
+| std.conflicts | Races | implemented | formatter registry: order-dependent rebased entries, E2701 |
 | std.multi | Multi-user sessions | conformance-covered | std-sessions: groups of users recorded and replayed under simulation, E2007-E2008 |
 | std.statecharts | State charts | conformance-covered | check rule registry: flat charts compiled to a store and transactions, E2751-E2755 |
 | std.monitor | Production tallies | conformance-covered | std-sessions: server transaction counts as `monitored` evidence, E2009-E2010 |
