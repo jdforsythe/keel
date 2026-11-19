@@ -33,7 +33,7 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
       break;
     }
     case "json":
-      if (!isJson(x, new Set())) issues.push({ path, rule: "type" });
+      if (!isJson(x)) issues.push({ path, rule: "type" });
       break;
     case "array":
       if (!Array.isArray(x)) issues.push({ path, rule: "type" });

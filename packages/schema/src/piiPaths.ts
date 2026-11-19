@@ -5,8 +5,9 @@ import type { Node } from "./internal/Node.ts";
 
 /**
  * Each marked leaf of `schema` once, in declaration order: its dotted path (`*` for an array item or record
- * value) and the class of the nearest mark above it (k.privacy). A `format` is read through to its base, as
- * `piiValues` reads it.
+ * value) and the class of the nearest mark above it (k.privacy). A marked open object adds `<object>.*` (`*` at the
+ * root) after its fields, for the keys it does not declare. A `format` is read through to its base, as `piiValues`
+ * reads it.
  */
 export function piiPaths(schema: Schema<unknown, boolean>): readonly PiiPath[] {
   const out: PiiPath[] = [];
@@ -29,6 +30,8 @@ export function piiPaths(schema: Schema<unknown, boolean>): readonly PiiPath[] {
         return;
       case "object":
         for (const [k, f] of Object.entries(node.fields)) walk(f, [...prefix, k], cls);
+        // An open object's undeclared keys, as one leaf `*` under the class in force.
+        if (node.closed !== true) walk({ kind: "json" }, [...prefix, "*"], cls);
         return;
       case "union":
         for (const v of node.variants) walk(v, prefix, cls);

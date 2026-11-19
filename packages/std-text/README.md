@@ -11,7 +11,7 @@
 
 ## Extension points
 
-Uses the **schema type registry** (k.schema `s.register`). It registers the format types `text.Email` and `text.Slug` (k.schema `s.format`); `line` and `para` are format types made per bound and not registered.
+Uses the **schema type registry** (k.schema `s.register`). It registers the format types `text.Email` and `text.Slug` (k.formats); `line` and `para` are format types made per bound and not registered.
 
 ## Unsafe
 

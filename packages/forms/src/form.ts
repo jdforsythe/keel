@@ -117,7 +117,7 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
     const node = segs.length === 0 ? undefined : nodeAt(root, segs);
     if (node === undefined) throw fieldPathError(path);
     known.add(path);
-    const pii = piiClassAt(typed, segs);
+    const pii = piiClassAt(root, segs);
     let id = `${formId}:${path}`;
     let errorId = `${id}:error`;
     const write = (r: Reading): void =>

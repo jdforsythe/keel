@@ -100,7 +100,7 @@ export function buildLedger(
         if (name !== undefined) push(`${f.path}#${name}`, p[1], `packages/${p[1]}`, name, f.path);
       }
     const a = APP.exec(f.path);
-    const rel = a?.[2]?.startsWith("modules/") === true ? a[2].slice("modules/".length) : undefined;
+    const rel = a?.[2]?.startsWith("modules/") ? a[2].slice("modules/".length) : undefined;
     const base = f.path.split("/").pop() ?? "";
     if (a?.[1] === undefined || rel === undefined || TEST_FILE.test(f.path) || APP_MANIFESTS.has(base)) continue;
     for (const l of scrubCode(f.source)) {

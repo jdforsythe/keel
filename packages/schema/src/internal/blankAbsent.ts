@@ -8,7 +8,7 @@ const needsContent = (node: Node): boolean =>
       ? needsContent(node.base)
       : node.kind === "string" && node.min >= 1;
 
-/** True when `value` has no non-whitespace character and `inner` (an optional key's node) is a `string` with `min` >= 1. */
+/** True when `value` is blank (`isBlank`) and `inner` (an optional key's node) is a `string` with `min` >= 1. */
 export function blankAbsent(inner: Node, value: unknown): boolean {
   return typeof value === "string" && isBlank(value) && needsContent(inner);
 }

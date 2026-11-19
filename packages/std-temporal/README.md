@@ -11,7 +11,7 @@
 
 ## Extension points
 
-Uses the **schema type registry** (k.schema `s.register`). It registers four format types (k.schema `s.format`) over `s.string()`; parse, encode, generator and doc derive from them.
+Uses the **schema type registry** (k.schema `s.register`). It registers four format types (k.formats) over `s.string()`; parse, encode, generator and doc derive from them.
 
 ## Unsafe
 

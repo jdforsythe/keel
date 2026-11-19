@@ -31,11 +31,12 @@ test("piiValues of a value with no marked path is empty", () => {
   );
 });
 
-test("a leaf under nested marks takes the nearest mark's class", () => {
+test("a leaf under nested marks takes the nearest mark's class; the marked open object's `*` comes after its fields", () => {
   const schema = s.object({ a: s.object({ b: s.string().pii("contact"), c: s.int() }).pii("location") });
   expect(piiPaths(schema)).toEqual([
     { path: "a.b", class: "contact" },
     { path: "a.c", class: "location" },
+    { path: "a.*", class: "location" },
   ]);
 });
 

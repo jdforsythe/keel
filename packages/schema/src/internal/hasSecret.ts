@@ -1,7 +1,9 @@
 import type { Node } from "./Node.ts";
-import { secretPathOf } from "./secretPathOf.ts";
 
-/** True when a `secret` node occurs anywhere in the tree, so `parse` must wrap raw values. */
+/**
+ * True when a `secret` node occurs anywhere in the tree, so `parse` must wrap raw values. A node is plain JSON data and
+ * `JSON.stringify` escapes every quote inside a string, so `"kind":"secret"` appears in its text only as a node's kind.
+ */
 export function hasSecret(node: Node): boolean {
-  return secretPathOf(node) !== null;
+  return JSON.stringify(node).includes('"kind":"secret"');
 }

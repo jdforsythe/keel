@@ -49,8 +49,7 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
     "req",
     entryOf({
       schema: ReqSchema,
-      compact: (r) =>
-        [r.method, r.path, r.route, String(r.status), `${r.ms}ms`].filter((p) => p !== undefined).join(" "),
+      compact: (r) => [r.method, r.path, r.route, r.status, `${r.ms}ms`].filter((p) => p !== undefined).join(" "),
       pretty: (r) => `${r.status} ${r.method} ${r.path}${r.route === undefined ? "" : `  (${r.route})`}  ${r.ms}ms`,
     }),
   ],

@@ -12,7 +12,7 @@
 
 ## Extension points
 
-Uses the **schema type registry** (k.schema `s.format`: each message is a format type) and the **check rule registry** (k.check `defineRule`, `./tools`).
+Uses the **schema type registry** (k.formats `s.format`: each message is a format type) and the **check rule registry** (k.check `defineRule`, `./tools`).
 
 ## Unsafe
 

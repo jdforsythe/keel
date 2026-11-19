@@ -14,6 +14,7 @@ import { declaredSources } from "./internal/declaredSources.ts";
 import { freeze } from "./internal/freeze.ts";
 import { holdsSecret } from "./internal/holdsSecret.ts";
 import { keySchema } from "./internal/keySchema.ts";
+import { keyWindow } from "./internal/keyWindow.ts";
 import { logSchema } from "./internal/logSchema.ts";
 import { metaSchema } from "./internal/metaSchema.ts";
 import { moduleWrites } from "./internal/moduleWrites.ts";
@@ -80,8 +81,7 @@ export function store<T extends object>(
   let current = base;
   let rows: Row<T>[] = [];
   // The `{ name, key }` of the latest `keyLimit` commits made with a `key`, oldest first (k.sync Write key).
-  let keys: Snapshot<T>["keys"] = [];
-  const recent = (list: Snapshot<T>["keys"]): Snapshot<T>["keys"] => list.slice(-keyLimit);
+  const keys = keyWindow(keyLimit);
   let ver = 0;
   // The head: commits and undos that undid; each commit's entry id.
   let seq = 0;
@@ -169,7 +169,7 @@ export function store<T extends object>(
     if (!key.ok) return key;
     if (!declared(t)) return err(undeclared.make({ transaction: t.name }, `${t.name} is not in this scope's uses`));
     const held = key.value;
-    if (held !== undefined && keys.some((k) => k.name === t.name && k.key === held)) return ok(current);
+    if (held !== undefined && keys.has({ name: t.name, key: held })) return ok(current);
     const concurrent = seen.value !== undefined && seen.value !== seq;
     if (concurrent && t.concurrent === "reject")
       return err(
@@ -197,7 +197,7 @@ export function store<T extends object>(
       rows.push({ entry: freeze(entry), apply: bound.value.apply });
       const kept = trim(base, rows, limit);
       base = kept.base;
-      if (key.value !== undefined) keys = recent([...keys, freeze({ name: t.name, key: key.value })]);
+      if (key.value !== undefined) keys.add({ name: t.name, key: key.value });
       commit(next, kept.rows);
       return ok(next);
     });
@@ -261,7 +261,7 @@ export function store<T extends object>(
         log: log.value,
         initial: initial.value,
         head: seq,
-        keys: keys.map((k) => ({ ...k })),
+        keys: keys.list(),
       };
     },
     restore(snap) {
@@ -310,7 +310,7 @@ export function store<T extends object>(
       for (const r of next ?? []) tick = Math.max(tick, r.entry.at);
       seq = head.value.head ?? last;
       base = kept.base;
-      keys = recent(restoredKeys.map((k) => freeze({ name: k.name, key: k.key })));
+      keys.reset(restoredKeys);
       commit(restored, kept.rows);
       return ok(restored);
     },

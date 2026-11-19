@@ -34,3 +34,10 @@ describe("coerceText: blank text", () => {
     );
   });
 });
+
+describe("coerceText: invisible text", () => {
+  it("is absent for an optional string with min >= 1 when it holds only zero-width, filler or combining characters", () => {
+    for (const blank of ["​", "⁠", "ㅤ", "́", "‎ ", "⠀"])
+      expect(coerceText(s.string({ min: 1 }).optional().node, blank)).toEqual(absent);
+  });
+});

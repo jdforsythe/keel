@@ -3,7 +3,7 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 1500,
-    "spec.map": 1200,
+    "spec.map": 1250,
     "explain": 300,
     "spec.for": 400,
     "mcp.tools-list": 1750
@@ -32,7 +32,7 @@
     "@keel/ctx": "3.75kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "11.25kb",
+    "@keel/router": "11.3kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
     "@keel/runtime-dom/ops": "10kb",

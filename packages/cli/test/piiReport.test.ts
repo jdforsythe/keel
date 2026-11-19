@@ -44,6 +44,18 @@ const SINKS = [
 const all = (r: Rung) => (): Rung => r;
 
 describe("piiReport", () => {
+  test("a marked open object gives a `<object>.*` row after its fields; a closed one does not", async () => {
+    const p = project({
+      "modules/a/place.schema.ts": `import { s } from "@keel/schema";\nexport const Open = s.object({ address: s.object({ street: s.string() }).pii("location") });\nexport const Shut = s.object({ address: s.object({ street: s.string() }, { closed: true }).pii("location") });\n`,
+    });
+    const r = await piiReport(p.dir, p.files, all("proven"));
+    expect(r.paths).toEqual([
+      { file: "modules/a/place.schema.ts", export: "Open", path: "address.street", class: "location" },
+      { file: "modules/a/place.schema.ts", export: "Open", path: "address.*", class: "location" },
+      { file: "modules/a/place.schema.ts", export: "Shut", path: "address.street", class: "location" },
+    ]);
+  });
+
   test("piiReport reads every marked leaf of each schema export, exports in name order, files in the order given", async () => {
     const p = project({
       "modules/a/user.schema.ts": USER,

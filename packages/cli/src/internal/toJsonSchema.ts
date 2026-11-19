@@ -1,3 +1,4 @@
+import { blankPattern } from "@keel/schema/internal";
 import type { JsonSchema } from "./JsonSchema.ts";
 import type { SchemaNode } from "./SchemaNode.ts";
 
@@ -38,7 +39,7 @@ function derive(node: SchemaNode): JsonSchema {
         type: "string",
         ...(node.min > 0 ? { minLength: node.min } : {}),
         ...(node.max === undefined ? {} : { maxLength: node.max }),
-        ...(node.min >= 1 ? { pattern: "\\S" } : {}),
+        ...(node.min >= 1 ? { pattern: blankPattern } : {}),
       };
     case "number":
       return { type: "number", ...bounds(node, false) };
@@ -60,7 +61,7 @@ function derive(node: SchemaNode): JsonSchema {
         type: "object",
         properties: Object.fromEntries(entries.map(([k, f]) => [k, toJsonSchema(f)])),
         required: entries.filter(([, f]) => f.kind !== "optional").map(([k]) => k),
-        ...(node.closed === true ? { additionalProperties: false } : {}),
+        ...(node.closed ? { additionalProperties: false } : {}),
       };
     }
     case "array":

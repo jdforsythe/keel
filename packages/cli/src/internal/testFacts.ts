@@ -326,7 +326,7 @@ export function testFacts(path: string, source: string): FileFacts {
         if (hidden) return;
         const own = bound;
         // A relative import pins the name to the file it resolves to (`pins`); any other reference is by name.
-        const rel = own?.from.startsWith(".") === true ? own : undefined;
+        const rel = own?.from.startsWith(".") ? own : undefined;
         if (ts.isPropertyAccessExpression(p) && p.name === n) {
           const base = p.expression;
           const ns = ts.isIdentifier(base) ? importOf(base) : undefined;

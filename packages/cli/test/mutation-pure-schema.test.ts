@@ -1,5 +1,6 @@
 // Exact-output tests for toJsonSchema (mutation killers).
 import { s } from "@keel/schema";
+import { blankPattern } from "@keel/schema/internal";
 import { describe, expect, it } from "vitest";
 import { toJsonSchema } from "../src/internal/toJsonSchema.ts";
 
@@ -9,12 +10,16 @@ describe("toJsonSchema exact output", () => {
   it("string bounds appear only when set (min > 0, max defined)", () => {
     expect(toJsonSchema(s.string().node)).toStrictEqual({ type: "string" });
     expect(toJsonSchema(s.string({ min: 0 }).node)).toStrictEqual({ type: "string" });
-    expect(toJsonSchema(s.string({ min: 1 }).node)).toStrictEqual({ type: "string", minLength: 1, pattern: "\\S" });
+    expect(toJsonSchema(s.string({ min: 1 }).node)).toStrictEqual({
+      type: "string",
+      minLength: 1,
+      pattern: blankPattern,
+    });
     expect(toJsonSchema(s.string({ min: 2, max: 5 }).node)).toStrictEqual({
       type: "string",
       minLength: 2,
       maxLength: 5,
-      pattern: "\\S",
+      pattern: blankPattern,
     });
     expect(toJsonSchema(s.string({ max: 0 }).node)).toStrictEqual({ type: "string", maxLength: 0 });
     expect(toJsonSchema(s.string({ max: 7 }).node)).toStrictEqual({ type: "string", maxLength: 7 });

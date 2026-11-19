@@ -5,6 +5,7 @@ import type { Node } from "./internal/Node.ts";
 import { fits } from "./internal/fits.ts";
 import { formats } from "./internal/formats.ts";
 import { freeze } from "./internal/freeze.ts";
+import { isBlank } from "./internal/isBlank.ts";
 
 const limits = (node: { readonly min?: number; readonly max?: number }): { min?: number; max?: number } => ({
   ...(node.min === undefined ? {} : { min: node.min }),
@@ -18,7 +19,7 @@ function arbitrary(node: Node): fc.Arbitrary<unknown> {
       const text = fc.string(
         node.max === undefined ? { minLength: node.min } : { minLength: node.min, maxLength: node.max },
       );
-      return node.min >= 1 ? text.filter((v) => /\S/.test(v)) : text;
+      return node.min >= 1 ? text.filter((v) => !isBlank(v)) : text;
     }
     case "number":
       return fc.double({ noNaN: true, noDefaultInfinity: true, ...limits(node) });

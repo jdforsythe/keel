@@ -4,17 +4,16 @@ import { fits } from "./internal/fits.ts";
 import { isRecord } from "./internal/isRecord.ts";
 import { variantOf } from "./internal/variantOf.ts";
 
-/** Every non-empty string, number and object key in a JSON value. */
+/** Every non-empty string, number and object key in a JSON value, in the order they stand, without recursion. */
 function collect(value: unknown, out: Set<string>): void {
-  if (typeof value === "string") {
-    if (value !== "") out.add(value);
-  } else if (typeof value === "number") out.add(String(value));
-  else if (Array.isArray(value)) for (const v of value) collect(v, out);
-  else if (isRecord(value))
-    for (const [k, v] of Object.entries(value)) {
-      collect(k, out);
-      collect(v, out);
-    }
+  for (const todo = [value]; todo.length > 0; ) {
+    const v = todo.pop();
+    if (typeof v === "string") {
+      if (v !== "") out.add(v);
+    } else if (typeof v === "number") out.add(String(v));
+    else if (Array.isArray(v)) for (let i = v.length - 1; i >= 0; i--) todo.push(v[i]);
+    else if (isRecord(v)) for (const [k, x] of Object.entries(v).reverse()) todo.push(x, k);
+  }
 }
 
 /**
