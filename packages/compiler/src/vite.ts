@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { createRequire, isBuiltin } from "node:module";
 import path from "node:path";
 import { compile } from "./compile.ts";
 import { CLIENT_MANIFEST } from "./entry/CLIENT_MANIFEST.ts";
@@ -10,11 +11,14 @@ import { resumeEntry } from "./entry/resumeEntry.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
 import { artifactText } from "./internal/artifactText.ts";
+import { browserBreach } from "./internal/browserBreach.ts";
+import { callsHandler } from "./internal/callsHandler.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
+import { exportNames } from "./internal/exportNames.ts";
 import { hostClient } from "./internal/hostClient.ts";
 import { indexHtml } from "./internal/indexHtml.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
@@ -26,6 +30,7 @@ import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
+import { stubCode } from "./internal/stubCode.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
@@ -57,6 +62,10 @@ const PG_BANNER =
  * without it and `start` reports the version (k.deploy Rules E1560).
  */
 const SQLITE = "\0keel:sqlite";
+/** A server-only file's name (k.boundary): whether it is one depends on its module's placement. */
+const SERVER_NAME = /\.(?:server|guard)\.[cm]?[jt]sx?$/;
+/** No environment variable carries this prefix, so a browser build's `import.meta.env` exposes none (k.boundary). */
+const NO_ENV = "\0";
 const SQLITE_CODE = 'export const { DatabaseSync } = process.getBuiltinModule("node:sqlite");';
 const CSS_ID = "/__keel.css";
 /** Files whose change can alter the CSS or `routes.json` beyond one module's own usages. */
@@ -110,6 +119,18 @@ type BuildConfig = {
 type ClientConfig = { build: { outDir: string; emptyOutDir: true } };
 type HtmlTag = { tag: "meta"; attrs: Record<string, string>; injectTo: "head" };
 type Builder = { environments: Record<string, unknown>; build(environment: unknown): Promise<unknown> };
+type ModuleInfo = { isEntry: boolean; importedIds: readonly string[]; dynamicallyImportedIds: readonly string[] };
+/** The plugin context the browser-build hooks read: which environment runs, resolution, and the module graph. */
+type Ctx =
+  | {
+      environment?: { config: { consumer: string } };
+      getModuleIds?: () => Iterable<string>;
+      getModuleInfo?: (id: string) => ModuleInfo | null;
+    }
+  | undefined;
+type HookOptions = { ssr?: boolean | undefined } | undefined;
+/** What `config` returns: the locked `envPrefix`, and a deployable build's own settings. */
+type Config = { envPrefix: string } & (BuildConfig | ClientConfig | Record<never, never>);
 
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
@@ -144,19 +165,17 @@ type Builder = { environments: Record<string, unknown>; build(environment: unkno
 export default function (): {
   name: string;
   enforce: "pre";
-  config: (
-    user: { root?: string },
-    env: { command: "build" | "serve"; isSsrBuild?: boolean },
-  ) => BuildConfig | ClientConfig | null;
+  config: (user: { root?: string }, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => Config;
   configResolved: (config: { root: string; command?: "build" | "serve" }) => void;
   configureServer: (server: DevServer) => void;
   configurePreviewServer: (server: { middlewares: Middlewares }) => void;
   buildStart: (this: { warn?: Warn } | undefined) => Promise<void>;
-  resolveId: (id: string) => string | { id: string; external: true } | null;
-  load: (id: string) => Promise<string | null>;
+  resolveId: (id: string, importer?: string, options?: HookOptions) => string | { id: string; external: true } | null;
+  load: (id: string, options?: HookOptions) => Promise<string | null>;
   transformIndexHtml: () => HtmlTag[];
+  buildEnd: (this: Ctx, error?: Error) => void;
   closeBundle: () => void;
-  transform: (code: string, id: string) => { code: string; map: null } | null;
+  transform: (code: string, id: string, options?: HookOptions) => { code: string; map: null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
   let root = process.cwd();
@@ -175,6 +194,9 @@ export default function (): {
   /** The `client` deployable a `vite build` with `KEEL_DEPLOYABLE` naming one writes to `dist/<name>/` (k.hosting). */
   let hosting: string | undefined;
   const modules = new Map<string, Entry>();
+  /** Browser builds (k.boundary): the server-only files loaded as stubs, and the modules calling a handler constructor. */
+  const stubbed = new Set<string>();
+  const handlers = new Set<string>();
   // Extra origins the inspect endpoint answers (RFC 0022): comma-separated, e.g. `http://localhost:*`.
   const origins = (process.env.KEEL_INSPECT_ORIGINS ?? "")
     .split(",")
@@ -261,6 +283,61 @@ export default function (): {
     });
   };
 
+  /** The module a file is in: `modules/<id>/` under the root, else the placed stdlib module whose package holds it. */
+  const moduleOf = (file: string): string | undefined => {
+    const rel = path.relative(root, file).split(path.sep).join("/");
+    const app = /^modules\/([^/]+)\//.exec(rel)?.[1];
+    if (app !== undefined) return app;
+    const ids = Object.values(topology ?? {}).flatMap((d) => d.modules);
+    return ids.find((m) => {
+      const pkg = stdRoutes(root, m)?.[1];
+      return pkg !== undefined && file.startsWith(`${pkg}${path.sep}`);
+    });
+  };
+  /** A server-only file (k.boundary): named `*.server.*` or `*.guard.*`, unless only `client` deployables list its module. */
+  const serverOnlyFile = (file: string): boolean => {
+    if (!SERVER_NAME.test(file)) return false;
+    const m = moduleOf(file);
+    const owners = Object.values(topology ?? {}).filter((d) => m !== undefined && d.modules.includes(m));
+    return owners.length === 0 || owners.some((d) => d.adapter !== "client");
+  };
+  /** A graph id as E1007 names it: a project-relative path, a package specifier, or the id itself. */
+  const show = (id: string): string => {
+    const bare = id.replace(/^\0/, "");
+    if (bare.startsWith("/@keel/")) return bare.slice(1);
+    const [file = bare, query] = bare.split("?");
+    if (!path.isAbsolute(file)) return bare;
+    const tail = query === undefined ? "" : `?${query}`;
+    const rel = path.relative(root, file);
+    if (!rel.startsWith("..") && !rel.split(path.sep).includes("node_modules"))
+      return rel.split(path.sep).join("/") + tail;
+    for (let dir = path.dirname(file); dir !== path.dirname(dir); dir = path.dirname(dir)) {
+      const pkg = path.join(dir, "package.json");
+      if (!fs.existsSync(pkg)) continue;
+      const name: unknown = JSON.parse(fs.readFileSync(pkg, "utf8")).name;
+      return `${typeof name === "string" ? name : dir}/${path.relative(dir, file).split(path.sep).join("/")}${tail}`;
+    }
+    return bare;
+  };
+  /** Why a module of a browser build's graph breaks the boundary (E1007), else undefined. */
+  const breach = (id: string): string | undefined => {
+    if (id.startsWith("node:") || isBuiltin(id)) return "node built-in";
+    if (id.startsWith("\0") || stubbed.has(id)) return undefined;
+    const file = id.split("?")[0] ?? id;
+    if (path.isAbsolute(file) && serverOnlyFile(file)) return "server-only file";
+    const d = deployable();
+    const own = d?.client === true && d.modules.includes(moduleOf(file) ?? "");
+    return handlers.has(id) && !own ? "handler" : undefined;
+  };
+  /** The `@keel/router/internal` a stub of `file` imports: resolved from the file, else from the root. */
+  const routerOf = (file: string): string => {
+    for (const from of [file, path.join(root, "package.json")])
+      try {
+        return createRequire(from).resolve("@keel/router/internal");
+      } catch {}
+    return "@keel/router/internal";
+  };
+
   /** Dev only: make the browser fetch `keel.css` again (it re-evaluates when stale). */
   const reloadCss = (): void => {
     const mod = server?.moduleGraph.getModuleById(CSS_ID);
@@ -322,7 +399,8 @@ export default function (): {
     if (entry === undefined || entry.source !== code) {
       const r = compile([{ path: rel, source: code }], topology === undefined ? {} : { topology });
       const failures = r.diagnostics
-        .filter((d) => !/^[WI]/.test(d.code))
+        // E1004 reads the whole import graph: `keel check` reports it, and a browser build fails with E1007 instead.
+        .filter((d) => !/^[WI]/.test(d.code) && d.code !== "E1004")
         .map((d) => `${d.code} ${d.path}:${d.line}:${d.col} ${d.message}`);
       entry = { source: code, output: r.outputs[0], artifacts: r.artifacts, failures };
       modules.set(rel, entry);
@@ -358,7 +436,8 @@ export default function (): {
     config(user, env) {
       const name = process.env.KEEL_DEPLOYABLE;
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
-      if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return null;
+      const own = { envPrefix: NO_ENV };
+      if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return own;
       const top = parseTopology(fs.readFileSync(file, "utf8")).topology;
       const out = `dist/${name}`;
       if (top[name]?.adapter === "client") {
@@ -367,20 +446,21 @@ export default function (): {
         const shell = shellOf();
         if (shell !== undefined) {
           clientBuild = true;
-          return { build: { outDir: `${out}/${shell.kind}/www`, emptyOutDir: true } };
+          return { ...own, build: { outDir: `${out}/${shell.kind}/www`, emptyOutDir: true } };
         }
         // One client build writes `.keel/`, as the project's own build did: the first by name.
         clientBuild =
           Object.keys(top)
             .sort()
             .find((n) => top[n]?.adapter === "client") !== name;
-        return { build: { outDir: out, emptyOutDir: true } };
+        return { ...own, build: { outDir: out, emptyOutDir: true } };
       }
-      if (top[name]?.adapter !== "node") return null;
+      if (top[name]?.adapter !== "node") return own;
       clientBuild = true;
       const pg = top[name]?.storage === "postgres";
       const at = path.resolve(user.root ?? process.cwd());
       return {
+        ...own,
         build: {
           outDir: out,
           emptyOutDir: true,
@@ -462,17 +542,26 @@ export default function (): {
       for (const b of bad) warn(`keel: ${b}`);
       await refresh();
     },
-    resolveId(id) {
+    resolveId(id, importer, options) {
+      // A browser build leaves a Node built-in unbundled, so the graph keeps it for E1007 to name.
+      if (options?.ssr === false && command === "build" && importer !== undefined && isBuiltin(id))
+        return { id, external: true };
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
       if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html")) return id;
       const q = keyed(id);
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
       if (id === DEV_ENTRY) return `\0${DEV_ENTRY}`;
+      // The server build reads `node:sqlite` when the driver first runs; dev and tests leave it to Node.
       if (id === "node:sqlite") return command === "build" ? SQLITE : { id, external: true };
       return null;
     },
-    async load(id) {
+    async load(id, options) {
+      // A server-only file in a browser graph is its stub: its code and imports never load (k.boundary).
+      if (options?.ssr === false && !id.includes("?") && path.isAbsolute(id) && serverOnlyFile(id)) {
+        stubbed.add(id);
+        return stubCode(show(id), exportNames(id), routerOf(id));
+      }
       if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html"))
         return indexHtml(hosting, ENTRY_PATH);
       if (id === CSS_ID) {
@@ -516,13 +605,22 @@ export default function (): {
         injectTo: "head",
       }));
     },
+    buildEnd(error) {
+      if (error !== undefined || command !== "build" || this?.environment?.config.consumer !== "client") return;
+      const info = (id: string): ModuleInfo | null => this.getModuleInfo?.(id) ?? null;
+      const why = browserBreach(this.getModuleIds?.() ?? [], info, breach, show, (id) => stubbed.has(id));
+      if (why !== undefined) throw new Error(`E1007 ${why}`);
+    },
     closeBundle() {
       const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
-      if (hosting !== undefined && !fs.existsSync(mark)) fs.writeFileSync(mark, keelMark());
+      // A failed build wrote no `dist/<name>/`, and gets no mark either.
+      if (hosting !== undefined && fs.existsSync(path.dirname(mark)) && !fs.existsSync(mark))
+        fs.writeFileSync(mark, keelMark());
     },
-    transform(code, id) {
+    transform(code, id, options) {
+      if (options?.ssr === false && !stubbed.has(id) && callsHandler(code)) handlers.add(id);
       const rel = relOf(id);
-      if (rel === null) return null;
+      if (rel === null || stubbed.has(id)) return null;
       const entry = compileModule(rel, code);
       const dupes = flush()
         .filter((d) => d.file === rel)

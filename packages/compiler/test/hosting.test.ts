@@ -228,7 +228,10 @@ describe("client build", () => {
     process.env.KEEL_DEPLOYABLE = "web";
     process.env.KEEL_PEER_API = "https://api.test/";
     const p = keel();
-    expect(p.config({ root }, { command: "build" })).toEqual({ build: { outDir: "dist/web", emptyOutDir: true } });
+    expect(p.config({ root }, { command: "build" })).toEqual({
+      envPrefix: "\0",
+      build: { outDir: "dist/web", emptyOutDir: true },
+    });
     p.configResolved({ root, command: "build" });
     const index = path.join(root, "index.html");
     expect(p.resolveId(index)).toBe(index);

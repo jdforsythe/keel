@@ -118,7 +118,7 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(parseSync("entry.js", entry, { sourceType: "module" }).errors).toEqual([]);
   });
 
-  it("exempts client deployables from E1004 and reports it again after topology.ts changes", async () => {
+  it("leaves E1004 to keel check and E1007 under any topology, and reads topology.ts again when it changes", async () => {
     const p = keel();
     p.configResolved({ root });
     const file = path.join(root, "modules/todos/routes.ts");
@@ -126,7 +126,7 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(p.transform(ROUTES, file)?.code).toContain("manifest(");
     const topo = write("topology.ts", `export default topology({ web: { modules: ["todos"], adapter: "static" } });\n`);
     p.watchChange(topo, { event: "update" });
-    expect(() => p.transform(ROUTES, file)).toThrow(/^E1004 modules\/todos\/routes.ts/);
+    expect(p.transform(ROUTES, file)?.code).toContain("manifest(");
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(/needs a client deployable/);
   });
 

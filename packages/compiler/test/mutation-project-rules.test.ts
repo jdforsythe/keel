@@ -1,7 +1,6 @@
 // Mutation-killing tests for compile() and the compile-time rules: exact diagnostics (code, position, message, see).
 import { compile } from "@keel/compiler";
 import { describe, expect, it } from "vitest";
-import { clientOnly } from "../src/internal/clientOnly.ts";
 import type { Diagnostic } from "../src/types/Diagnostic.ts";
 
 type D = Diagnostic;
@@ -409,37 +408,5 @@ describe("compile()", () => {
     const r = compile([]);
     expect(r.outputs).toEqual([]);
     expect(r.diagnostics).toEqual([]);
-  });
-});
-
-describe("clientOnly (mutation)", () => {
-  const top = (adapter: "node" | "static" | "client", mods = ["a"]) => ({ web: { modules: mods, adapter } });
-  it("is false without a topology", () => {
-    expect(clientOnly("modules/a/x.ts", undefined)).toBe(false);
-    expect(clientOnly("other/x.ts", undefined)).toBe(false);
-  });
-  it("exempts files outside a module once a topology is known", () => {
-    const t = { n: { modules: ["a"], adapter: "node" as const } };
-    expect(clientOnly("a/b/c.ts", t)).toBe(true);
-    expect(clientOnly("modules/a", t)).toBe(true);
-    expect(clientOnly("x.ts", t)).toBe(true);
-  });
-  it("normalizes backslashes", () => {
-    const t = top("client");
-    expect(clientOnly("modules\\a\\x.ts", t)).toBe(true);
-    expect(clientOnly("modules\\a\\x.ts", top("node"))).toBe(false);
-  });
-  it("applies owner rules", () => {
-    expect(clientOnly("modules/zzz/x.ts", top("client"))).toBe(false);
-    expect(clientOnly("modules/a/x.ts", top("client"))).toBe(true);
-    expect(clientOnly("modules/a/x.ts", { c: top("client").web, n: top("node").web })).toBe(false);
-    expect(clientOnly("modules/a/routes.ts", top("node"))).toBe(true);
-    expect(clientOnly("modules/a/routes.ts", top("static"))).toBe(false);
-    expect(clientOnly("modules/a/routes.ts", { s: top("static").web, n: top("node").web })).toBe(false);
-    expect(clientOnly("modules/a/routes.ts", { c: top("client").web, n: top("node").web })).toBe(true);
-    expect(clientOnly("modules/a/sub/routes.ts", top("node"))).toBe(false);
-    expect(clientOnly("modules/a/other.ts", top("node"))).toBe(false);
-    expect(clientOnly("src/modules/a/routes.ts", top("node"))).toBe(true);
-    expect(clientOnly("modules/a/routes.ts", { x: top("node", ["b"]).web, n: top("static").web })).toBe(false);
   });
 });

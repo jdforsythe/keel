@@ -121,6 +121,16 @@ export async function evaluateProject(input: {
       {
         name: "keel-jsx",
         setup(b) {
+          // A query import (`./notes.md?raw`, `?url`) is Vite's: here `?raw` is the file's text, any other an empty string.
+          b.onResolve({ filter: /\?/ }, (args) => ({
+            path: path.resolve(args.resolveDir, args.path.split("?")[0] ?? ""),
+            namespace: "keel-query",
+            pluginData: args.path.endsWith("?raw"),
+          }));
+          b.onLoad({ filter: /.*/, namespace: "keel-query" }, (args) => ({
+            contents: args.pluginData === true ? fs.readFileSync(args.path, "utf8") : "",
+            loader: "text",
+          }));
           b.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, (args) => {
             const rel = path.relative(root, args.path).split(path.sep).join("/");
             if (rel.startsWith("../") || path.isAbsolute(rel) || rel.split("/").includes("node_modules"))

@@ -17,6 +17,7 @@ export { parseSearch } from "./parseSearch.ts";
 export { publicError } from "./publicError.ts";
 export { routeActions } from "./routeActions.ts";
 export { runGuard } from "./runGuard.ts";
+export { serverOnly } from "./serverOnly.ts";
 export { withNext } from "./withNext.ts";
 export type { FormSeam } from "./FormSeam.ts";
 export type { DocHead } from "./DocHead.ts";

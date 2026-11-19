@@ -1,6 +1,7 @@
 import { type Expression, Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
+import { isClientReachable } from "../internal/isClientReachable.ts";
 import { localNames } from "../internal/modules/localNames.ts";
 import { propertyOf } from "../internal/propertyOf.ts";
 import { urlText } from "../internal/urlText.ts";
@@ -11,8 +12,7 @@ const ABSOLUTE = /^\s*(?:https?:)?\/\//i;
 
 /**
  * E1571 (k.security): an absolute http(s) or protocol-relative URL, read as `urlText` reads it, given to
- * `ctx.net.fetch` or as `service({ base })` in client-reachable code: an app file other than `*.server.ts` (E1004's
- * reachability). `ctx` is also `<x>.ctx` or a `const` alias of either; `net` also a name destructured as `{ net }`.
+ * `ctx.net.fetch` or as `service({ base })` in client-reachable code (`isClientReachable`, E1004's reachability). `ctx` is also `<x>.ctx` or a `const` alias of either; `net` also a name destructured as `{ net }`.
  * The policy's `connect-src` is this origin. At the argument; no fix.
  */
 export const foreignUrlFetch: RuleDef = {
@@ -20,7 +20,7 @@ export const foreignUrlFetch: RuleDef = {
   message: "absolute URL fetched from client code; the content security policy allows this origin only",
   see: "k.security",
   check: ({ file, ast, project }) => {
-    if (!isAppPath(file.path) || /\.server\.[cm]?[jt]sx?$/.test(file.path)) return [];
+    if (!isAppPath(file.path) || !isClientReachable(file.path, project)) return [];
     const services = localNames(ast, "service", "@keel/services");
     const ctxs = new Set(["ctx"]);
     const nets = new Set<string>();

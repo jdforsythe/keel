@@ -1,6 +1,7 @@
 import type { RouteActions } from "../types/RouteActions.ts";
 import type { Table } from "./Table.ts";
 import { codedError } from "./codedError.ts";
+import { isStub } from "./isStub.ts";
 import { routeActions } from "./routeActions.ts";
 import { sealed } from "./sealed.ts";
 
@@ -27,7 +28,7 @@ function badField(v: unknown): string | null {
  * id that is not a route with a `path` here, a key that is not POST/PUT/PATCH/DELETE, a value lacking a field of the `action(...)` shape (`undefined` hints an import cycle), a route that already has
  * actions, or one a router or server already compiled (`sealed`: attach in `routes.ts`, before `createApp`); E1507
  * an action declaring a `params` schema that is not the route's own value; E1512 an action without `output` on an API
- * route, or one with `output` on a page (k.api).
+ * route, or one with `output` on a page (k.api). A stub (`serverOnly`) is checked by none of these.
  */
 export function attachActions(table: Table, byId: Readonly<Record<string, RouteActions | undefined>>): void {
   for (const [id, acts] of Object.entries(byId)) {
@@ -37,6 +38,7 @@ export function attachActions(table: Table, byId: Readonly<Record<string, RouteA
     if (sealed.has(r.def)) throw codedError("E1505", `${id}: actions attached after createApp or createRouter`);
     for (const [verb, act] of Object.entries(acts ?? {})) {
       if (!VERBS.includes(verb)) throw codedError("E1505", `${id}: actions key "${verb}" is not POST/PUT/PATCH/DELETE`);
+      if (isStub(act)) continue;
       const bad = badField(act);
       if (bad !== null)
         throw codedError(

@@ -5,13 +5,14 @@ import { chainOf } from "./chainOf.ts";
 import { codedError } from "./codedError.ts";
 import { compilePath } from "./compilePath.ts";
 import { fieldsOf } from "./fieldsOf.ts";
+import { isStub } from "./isStub.ts";
 import { patternKey } from "./patternKey.ts";
 import { prefixCollision } from "./prefixCollision.ts";
 
 /**
  * Validate one manifest and compile its table. Throws an Error with `code`: E1502 two routes with one path
  * pattern, E1510 an entry that is no page, layout or API route (k.api; `api` other than `true` included), E1508 a guard without `redirect` on a page or
- * layout, E1503 path/params mismatch or malformed path, E1504 required search field, E1505 an `actions` key on
+ * layout (a stub guard, `serverOnly`, is not read), E1503 path/params mismatch or malformed path, E1504 required search field, E1505 an `actions` key on
  * an entry (they attach with `routes.actions`), E1506 unknown layout, layout with a path, or layout cycle,
  * E1507 a loader declaring a `params` or `search` schema that is not this route's own value, E1509 a
  * k.prefix collision (`prefixCollision`). Looks at
@@ -27,7 +28,8 @@ export function compileRoutes(routes: Readonly<Record<string, RouteDef>>): Table
         : !def.component
     )
       throw codedError("E1510", `${id}: needs component, or api: true with a path and no view`);
-    if (!def.api && def.guard && !def.guard.redirect) throw codedError("E1508", `${id}: guard without redirect`);
+    if (!def.api && def.guard && !isStub(def.guard) && !def.guard.redirect)
+      throw codedError("E1508", `${id}: guard without redirect`);
     if (Object.hasOwn(def, "actions"))
       throw codedError("E1505", `${id}: move actions to routes.actions({ "${id}": {...} }) after the manifest`);
     const segments = def.path === undefined ? null : compilePath(id, def.path);

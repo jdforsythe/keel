@@ -32,10 +32,10 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1004",
-    "*.server.ts module imported from client-reachable code (ADR-0006)",
-    "Server code must not ship to the browser; not reported in client-only builds.",
+    "server-only module (*.server.*, *.guard.*) imported from client-reachable code",
+    "Reach follows imports from each route component, naming the chain; routes.ts may import them.",
     "reach loaders and actions through the route, not an import",
-    "k.compiler",
+    "k.compiler, k.boundary",
   ],
   [
     "E1005",
@@ -58,6 +58,9 @@ const ROWS: readonly Row[] = [
     "fix the throw, or export const routes",
     "k.compiler, k.compat",
   ],
+  ["E1007", "server code in a browser build (names the chain)", "", "move it to a *.server.ts file", "k.boundary"],
+  ["E1008", "a stub of a server-only export called", "", "call it from a loader, action or guard", "k.boundary"],
+  ["E1009", "guard outside a *.guard.* or *.server.* file", "", "move it into <name>.guard.ts", "k.boundary"],
   [
     "E1049",
     "internal compiler failure",

@@ -59,21 +59,24 @@ describe("@keel/compiler/vite config (client build of a node deployable)", () =>
 
   it("builds a client deployable into dist/<name>/ with the project config", () => {
     process.env.KEEL_DEPLOYABLE = "web";
-    expect(keel().config({ root }, { command: "build" })).toEqual({ build: { outDir: "dist/web", emptyOutDir: true } });
+    expect(keel().config({ root }, { command: "build" })).toEqual({
+      envPrefix: "\0",
+      build: { outDir: "dist/web", emptyOutDir: true },
+    });
   });
 
   it("keeps the project config for serve, ssr, static, unknown or unset deployables, or no topology", () => {
     process.env.KEEL_DEPLOYABLE = "api";
-    expect(keel().config({ root }, { command: "serve" })).toBeNull();
-    expect(keel().config({ root }, { command: "build", isSsrBuild: true })).toBeNull();
+    expect(keel().config({ root }, { command: "serve" })).toEqual({ envPrefix: "\0" });
+    expect(keel().config({ root }, { command: "build", isSsrBuild: true })).toEqual({ envPrefix: "\0" });
     for (const name of ["pre", "nope"]) {
       process.env.KEEL_DEPLOYABLE = name;
-      expect(keel().config({ root }, { command: "build" })).toBeNull();
+      expect(keel().config({ root }, { command: "build" })).toEqual({ envPrefix: "\0" });
     }
     Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
-    expect(keel().config({ root }, { command: "build" })).toBeNull();
+    expect(keel().config({ root }, { command: "build" })).toEqual({ envPrefix: "\0" });
     process.env.KEEL_DEPLOYABLE = "api";
-    expect(keel().config({ root: path.join(root, "missing") }, { command: "build" })).toBeNull();
+    expect(keel().config({ root: path.join(root, "missing") }, { command: "build" })).toEqual({ envPrefix: "\0" });
   });
 
   it("writes no .keel artifacts in a node client build; the project's own build still does", () => {
@@ -95,7 +98,8 @@ describe("@keel/compiler/vite config (client build of a node deployable)", () =>
     process.env.KEEL_DEPLOYABLE = "api";
     const spy = vi.spyOn(process, "cwd").mockReturnValue(root);
     try {
-      expect(keel().config({}, { command: "build" })?.build.outDir).toBe("dist/api");
+      const made = keel().config({}, { command: "build" });
+      expect("build" in made ? made.build.outDir : undefined).toBe("dist/api");
     } finally {
       spy.mockRestore();
     }

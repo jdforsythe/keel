@@ -4,7 +4,7 @@ import type { ElementInfo } from "./internal/ElementInfo.ts";
 import { analyze } from "./internal/analyze.ts";
 import { buildDeps } from "./internal/buildDeps.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
-import { clientOnly } from "./internal/clientOnly.ts";
+import { clientReach } from "./internal/clientReach.ts";
 import { collectElements } from "./internal/collectElements.ts";
 import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
@@ -15,7 +15,6 @@ import { ruleAndJsx } from "./internal/rules/ruleAndJsx.ts";
 import { ruleControlFlow } from "./internal/rules/ruleControlFlow.ts";
 import { rulePropsDestructuring } from "./internal/rules/rulePropsDestructuring.ts";
 import { ruleRawHtml } from "./internal/rules/ruleRawHtml.ts";
-import { ruleServerImport } from "./internal/rules/ruleServerImport.ts";
 import { ruleTopLevelPropRead } from "./internal/rules/ruleTopLevelPropRead.ts";
 import { ruleUrlLiteral } from "./internal/rules/ruleUrlLiteral.ts";
 import type { A11yEntry } from "./types/A11yEntry.ts";
@@ -69,7 +68,7 @@ function syntaxMessage(parser: string): string {
  * Compile Keel sources (k.compiler): lower JSX to k.runtime ops, run the compile-time rules, and derive
  * the `.keel/` artifacts. Pure and deterministic: equal inputs give byte-identical results; nothing is
  * read from or written to disk. `mode: "server"` currently emits the same client module (see PLAN D9).
- * `topology` exempts client-only deployables from E1004; `routes` is copied (sorted) into `routes.json`, and its
+ * `topology` places each module for E1004 (k.boundary Reach); `routes` is copied (sorted) into `routes.json`, and its
  * path patterns scope E1501 for relative literals. A file that does not parse gets only E1000: no
  * elements, deps, or output. Anything thrown inside is rethrown as E1049 (`internalFailure`), never as an app code.
  */
@@ -98,7 +97,6 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
     diagnostics.push(
       ...ruleRawHtml(a),
       ...ruleUrlLiteral(a, patterns),
-      ...ruleServerImport(a, clientOnly(a.path, options.topology)),
       ...ruleAndJsx(a),
       ...ruleControlFlow(a),
       ...ruleTopLevelPropRead(a),
@@ -112,6 +110,14 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
     done.push({ a, elements, bindings: lowered.bindings, code: lowered.code });
   }
   diagnostics.push(...duplicateIds(done));
+  // E1004 (k.boundary Reach): a server-only import in client-reachable code, with the chain from a client entry.
+  const byPath = new Map(done.map((d) => [d.a.path, d.a]));
+  for (const h of clientReach([...byPath.values()], options.topology).hits) {
+    const a = byPath.get(h.path);
+    const via = h.chain === undefined ? "" : ` (${h.chain})`;
+    if (a !== undefined)
+      diagnostics.push(diag(a, "E1004", h.start, `client code imports server module ${h.source}${via}`, "k.compiler"));
+  }
 
   const ids: Record<string, IdEntry> = Object.create(null);
   const a11y: Record<string, A11yEntry> = Object.create(null);

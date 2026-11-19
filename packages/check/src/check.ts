@@ -105,8 +105,10 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     for (const f of group) projectOf.set(f.path, project);
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
-    const compiled = compile(sources, topology === undefined ? {} : { topology });
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;
+    // E1004 reads placement from the project's own `topology.ts` when the caller passes none (k.boundary Reach).
+    const placed = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
+    const compiled = compile(sources, placed === undefined ? {} : { topology: placed });
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
