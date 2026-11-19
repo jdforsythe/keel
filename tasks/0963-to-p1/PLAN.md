@@ -29,10 +29,12 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 
 ## Lanes in flight (2026-11-19)
 Each lane is a subagent; a lane in a worktree commits on its branch and the orchestrator reviews and cherry-picks. A lane with no report is re-briefed from this list.
-- `.worktrees/0956`, branch `rfc-0147`: conformance for RFC 0147 (conformance-writer); the build follows on the same branch.
+- `.worktrees/0956`, branch `rfc-0147`: RFC 0147 conformance (e71d564a) and build (36112e58) are done there, all conformance green; a reviewer pass and a red-team pass run before the merge. The build's three choices beyond the spec wait on the reviewer: a stored deadline more than 600000 ms ahead counts as no opening; a failed record still opens the browser; a Tauri batch of links shares one opening.
 - `.worktrees/0967`, branch `lane-0967`: tests for the server's surviving mutants (backlog 0967) and the std-sessions mutation config (0966). It starts no mutation run.
 - golden-3 eval: ready short of the model call (backlog 0937 done; `pnpm eval --task golden-3 --runner none` ends `converged=false` only because `apps/golden-3` is absent). The agent run is `pnpm eval --task golden-3 --model claude-sonnet-5-5`, at most 5 iterations; earlier golden runs cost 0.84 to 2.55 dollars each, so this one is estimated at 2 to 10. It waits for the operator's word on spending and for a quiet machine (it runs the root check and test each iteration).
-- main tree, `tasks/0963-to-p1/freeze-review.md`: the freeze review audit (backlog 0034), report only.
+- `tasks/0963-to-p1/freeze-review.md` is written: 51 of 54 kernel sections are conformance-covered; its blocking items are listed there with sizes.
+- `.worktrees/schemaconf`, branch `lane-schemaconf`: conformance for the freeze gaps (k.schema bullet 16 and k.privacy bullet 1 JSON Schema halves, k.hosting clause 2, k.shell clause 6).
+- `.worktrees/status`, branch `lane-status`: RFC and ADR status lines, stale statuses in READMEs and the roadmap, k.shell's CI paragraph.
 - `tasks/p1/PLAN.md` is written (backlog 0962): twelve P1 workstreams, three P2, a first wave, proposed backlog lines and open decisions O1 to O11 for the operator, each with a recommendation. Its proposed lines are not yet in `tasks/BACKLOG.md`.
 - `.worktrees/hygiene`, branch `lane-hygiene`: backlog 0946 (no home paths or quoted operator messages in tracked files, with a check), 0943 (packages private until launch), 0944 (`.gitignore`, `SECURITY.md`, `CONTRIBUTING.md`).
 - `.worktrees/evidence`, branch `lane-evidence`: backlog 0877 (the evidence report refuses a dirty tree) and 0892 (a gate for a committed ledger or evidence file that differs from the tree).
