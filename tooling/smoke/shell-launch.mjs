@@ -14,8 +14,8 @@
 //    native client (a `tauri-plugin-http` or `CFNetwork` agent), and a later request of that launch carrying the
 //    cookie.
 // 3. Kill and launch again: SIGKILL of the binary, or `simctl terminate` (a force-stop), `--hold` seconds after the
-//    cookie was first sent: 0 for Tauri, 10 for iOS, whose `HTTPCookieStorage` writes to disk a moment after a
-//    cookie arrives (on the Simulator a force-stop within about 2 s of it loses the cookie). Every request of the new
+//    cookie was first sent, 0 by default: the cookie must be on disk by then (on iOS `KeelHttp` flushes the session's
+//    cookie store before a response that sets a cookie resolves). Every request of the new
 //    launch up to the event stream must carry the cookie. With `--shell ios --reboot` the simulator is then shut down
 //    and booted and the app started a third time, under the same rule. `--drop-data` deletes the app's data before
 //    the second launch (the temporary `HOME`, or an uninstall and install): the planted failure, where the cookie is
@@ -70,7 +70,7 @@ const shellName = arg("shell");
 const reboot = argv.includes("--reboot");
 const dropData = argv.includes("--drop-data");
 /** How long the first launch runs on after it first sent the cookie, before the kill (iOS writes its store late). */
-const holdMs = Number(arg("hold") ?? (shellName === "ios" ? 10 : 0)) * 1000;
+const holdMs = Number(arg("hold") ?? 0) * 1000;
 const binary = path.resolve(
   root,
   arg("binary") ??

@@ -18,6 +18,7 @@ interface KeelHttp {
     method: string;
     headers: Record<string, string>;
     data?: string | undefined;
+    redirect?: "manual" | undefined;
   }): Promise<{ status: number; headers: Record<string, string> }>;
   cancel(o: { id: string }): Promise<void>;
   addListener(name: BodyName, cb: (e: BodyEvent) => void): Promise<PluginListenerHandle>;
@@ -31,7 +32,8 @@ let seq = 0;
  * store keeps every cookie and sends it to its own origin only; `set-cookie` never reaches the page. The response
  * resolves on its headers and its body yields each chunk as it arrives; an abort or a reader's cancel cancels the native
  * request. The body's listeners are added before the request is sent and removed when the body ends, fails or is
- * cancelled. The global `fetch` stays unpatched. A failure rejects with a `TypeError` that names no URL; an aborted
+ * cancelled. A request with `redirect: 'manual'` is not followed: its 3xx resolves as it came, `location` included.
+ * The global `fetch` stays unpatched. A failure rejects with a `TypeError` that names no URL; an aborted
  * request with the signal's reason.
  */
 export function capacitorNet(origin: URL): Net {
@@ -86,6 +88,7 @@ export function capacitorNet(origin: URL): Net {
           method: req.method,
           headers: Object.fromEntries(req.headers),
           data: data === "" ? undefined : data,
+          redirect: req.redirect === "manual" ? "manual" : undefined,
         });
       } catch {
         quit();

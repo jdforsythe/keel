@@ -1280,6 +1280,7 @@ dependencies = [
 name = "golden-1"
 version = "0.0.0"
 dependencies = [
+ "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-http",

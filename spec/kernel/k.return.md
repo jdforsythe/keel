@@ -1,5 +1,5 @@
 # k.return: Mount from a shell
-status: proposed
+status: conformance-covered
 
 How a page in a native shell (k.shell) reaches the identity source's `handle` (k.user, k.mount) on `KEEL_ORIGIN`. The auth library's cookie lands in the shell's native cookie store, as the caller cookie does, and never reaches the page; Keel reads, writes and sends no credential of its own.
 

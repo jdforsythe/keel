@@ -56,7 +56,7 @@ function declare() {
 const codes = (o: { get(k: "entries"): readonly { state: string; error?: unknown }[] }) =>
   o.get("entries").map((e) => [e.state, field(e.error, "code")]);
 
-test("a drain for owner x posts exactly x's well-formed entries in order and fails the rest with offline.owner", async () => {
+test("a drain for owner x posts exactly x's well-formed entries in order and fails the rest with offline.owner, or holds named owners' entries queued when x is no one", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.array(
@@ -85,7 +85,12 @@ test("a drain for owner x posts exactly x's well-formed entries in order and fai
         const mine = entries.filter((_, i) => kinds[i]?.[0] === who).map((e) => e.key);
         expect(posts).toEqual(mine);
         expect(evil).toEqual([]);
-        expect(codes(o)).toEqual(entries.filter((e) => !mine.includes(e.key)).map(() => ["failed", "offline.owner"]));
+        const named = (i: number): boolean => kinds[i]?.[0] === "a" || kinds[i]?.[0] === "b";
+        expect(codes(o)).toEqual(
+          entries.flatMap((e, i) =>
+            mine.includes(e.key) ? [] : [who === "" && named(i) ? ["queued", undefined] : ["failed", "offline.owner"]],
+          ),
+        );
         const raw = await ctx.storage.get(`keel.outbox.${id}`);
         expect(raw === null ? "" : raw).not.toContain("evil.example");
         stop.dispose();
@@ -284,6 +289,6 @@ test("an error body whose code is offline.owner is the refusal whatever its stat
   const refused = { state: "failed" as const, error: { code: "offline.owner" as const, message: "o", data: {} } };
   for (const status of [400, 403, 409, 500]) {
     const error = { code: "api.status" as const, message: "s", data: { status, body: { code: "offline.owner" } } };
-    expect(outcomeOf({ ok: false, error }, false, refused)).toBe(refused);
+    expect(outcomeOf({ ok: false, error }, false, refused, { state: "queued" })).toBe(refused);
   }
 });

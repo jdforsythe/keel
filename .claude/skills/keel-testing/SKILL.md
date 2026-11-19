@@ -27,6 +27,8 @@ await r.navigate(routes.href('todos.show', { id }))
 - A server log line: `createApp({ log: { format: 'json', write } })` (k.server Log). A saved store: `await ctx.storage.get('keel.store.<id>')` is JSON whose `state` is the store's value.
 - Between tests: `const base = store.snapshot()` and `store.restore(base)` in `afterEach`.
 
+**Shell:** `renderRoute(id, { routes, shell: true })` runs the page as in a native shell (k.return): a `Link` or `Form` to the identity mount is a request through `ctx.net` (answer it with a sim route), `t.documents()` lists what the external browser opened, `t.returnLink('dev.keel.golden2:/api/auth/callback?code=c')` delivers a return link (`shell: { id }` for another id).
+
 **A11y:** a passing `renderRoute` per page (axe-core, token contrast) makes its `a11y:` claims; E1703/E1804/E1821 fail it. `t.focusOrder()`: ids in tab order.
 
 **Errors:** E1701 selector/DOM query in a test · E1702 role/name differs from `a11y.json` · E1703 axe violation · E1705 unknown id (3 nearest listed) · E1719 `focus` on an unfocusable element. Properties, `explore`, `simulate`, rungs: keel-correctness.

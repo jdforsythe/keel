@@ -10,7 +10,7 @@ import { boardStores } from "./boardStores.ts";
 /**
  * `POST /api/lists/:listId/todos`: add an open todo with a ctx-minted id, with the write's key and base; an unknown
  * list is `keel.notFound`; a write queued under an owner other than `""` (golden-1 has no sign-in) is
- * `offline.owner`.
+ * `offline.signin`.
  */
 export const postTodo = action(
   { input: TodoWrite, params: ListParams, output: Nothing, stores: boardStores },

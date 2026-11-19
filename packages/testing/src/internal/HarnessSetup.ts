@@ -1,8 +1,7 @@
-import type { A11yEntry } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
 import type { Snapshot, Store } from "@keel/store";
-import type { Tokens } from "@keel/ui";
 import type { DocumentNavigation } from "../types/DocumentNavigation.ts";
+import type { HarnessArtifacts } from "../types/HarnessArtifacts.ts";
 import type { CheckSetup } from "./CheckSetup.ts";
 
 /**
@@ -15,8 +14,8 @@ export type HarnessSetup = Shared &
 interface Shared {
   readonly ctx: Ctx;
   readonly seeded: readonly (readonly [Store<unknown>, Snapshot<unknown>])[];
-  readonly a11y?: Readonly<Record<string, A11yEntry>>;
-  readonly tokens?: Tokens;
+  /** The project's artifacts the render checks read (`a11y.json`: E1702; `tokens`: E1804). */
+  readonly artifacts: HarnessArtifacts | undefined;
   /** What the render checks record as rendered (a route id or a component name). */
   readonly target: CheckSetup["target"];
   /** A `renderRoute` page: the chain is the document's `main` landmark, and axe judges the document (k.a11y). */

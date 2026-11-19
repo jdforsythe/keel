@@ -2,6 +2,8 @@
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { deployFiles } from "../src/deployFiles.ts";
+import { deployWrites } from "../src/internal/deployWrites.ts";
+import { tauriHttpCapability } from "../src/templates/tauriHttpCapability.ts";
 import type { DeployTopology } from "../src/types/DeployTopology.ts";
 
 const POLICY = "default-src 'none'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'";
@@ -37,6 +39,7 @@ describe("shell files", () => {
               csp: "default-src 'none'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost; frame-ancestors 'none'",
             },
           },
+          plugins: { "deep-link": { desktop: { schemes: [tau.id] } } },
         });
         const cargo = files.get("deploy/web/tauri/Cargo.toml") ?? "";
         expect(cargo).toContain('name = "golden-1"');
@@ -44,6 +47,7 @@ describe("shell files", () => {
         for (const dep of [
           'tauri = { version = "=2.12.5"',
           'tauri-build = { version = "=2.7.4"',
+          'serde_json = "=1.0.154"',
           'tauri-plugin-store = "=2.5.1"',
           'tauri-plugin-http = "=2.9.0"',
         ])
@@ -54,6 +58,65 @@ describe("shell files", () => {
       }),
       { seed: 1337, numRuns: 30 },
     );
+  });
+
+  test("the plugins of return links and the default browser are in the Tauri files only with identity", () => {
+    const topology: DeployTopology = {
+      web: { modules: ["c"], adapter: "client", shells: { tauri: { id: "dev.keel.golden", name: "Golden" } } },
+    };
+    const at = "deploy/web/tauri/";
+    const plain = deployFiles(topology, { ci: false, policy: POLICY });
+    const signed = deployFiles(topology, { ci: false, policy: POLICY, identity: true });
+    const extra = [
+      'tauri-plugin-deep-link = "=2.6.3"',
+      'tauri-plugin-opener = "=2.7.3"',
+      'tauri-plugin-single-instance = { version = "=2.5.5", features = ["deep-link"] }',
+    ];
+    for (const dep of extra) {
+      expect(plain.get(`${at}Cargo.toml`)).not.toContain(dep);
+      expect(signed.get(`${at}Cargo.toml`)).toContain(dep);
+    }
+    const plugins = ["tauri_plugin_single_instance::init", "tauri_plugin_deep_link::init", "tauri_plugin_opener::init"];
+    const lib = signed.get(`${at}src/lib.rs`) ?? "";
+    for (const plugin of plugins) {
+      expect(plain.get(`${at}src/lib.rs`)).not.toContain(plugin);
+      expect(lib).toContain(plugin);
+    }
+    // The single-instance plugin is registered first, so a second launch never starts the others.
+    expect(plugins.map((x) => lib.indexOf(x))).toEqual(plugins.map((x) => lib.indexOf(x)).sort((a, b) => a - b));
+    const permissions = (files: Map<string, string>): unknown =>
+      Reflect.get(Object(JSON.parse(files.get(`${at}capabilities/default.json`) ?? "{}")), "permissions");
+    expect(permissions(plain)).toEqual(["core:default", "store:default"]);
+    expect(permissions(signed)).toEqual([
+      "core:default",
+      "store:default",
+      "deep-link:default",
+      { identifier: "opener:allow-open-url", allow: [{ url: "https://*" }] },
+    ]);
+    // The scheme is registered either way.
+    expect(plain.get(`${at}tauri.conf.json`)).toBe(signed.get(`${at}tauri.conf.json`));
+  });
+
+  test("the build's http capability lets the default browser open KEEL_ORIGIN only with identity", () => {
+    const http = { identifier: "http:default", allow: [{ url: "http://localhost:8787/*" }] };
+    const opener = { identifier: "opener:allow-open-url", allow: [{ url: "http://localhost:8787/*" }] };
+    const permissions = (text: string): unknown => Reflect.get(Object(JSON.parse(text)), "permissions");
+    expect(permissions(tauriHttpCapability("http://localhost:8787"))).toEqual([http]);
+    expect(permissions(tauriHttpCapability("http://localhost:8787", true))).toEqual([http, opener]);
+  });
+
+  test("a tree with identity.ts gets the Tauri files with the plugins; without it, without them", () => {
+    const tree = new Map([
+      [
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['c'], adapter: 'client', shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } } } })\n",
+      ],
+      ["package.json", '{ "name": "fx", "version": "1.0.0" }'],
+    ]);
+    const cargo = (files: Map<string, string>): string =>
+      deployWrites(files, true).get("deploy/web/tauri/Cargo.toml") ?? "";
+    expect(cargo(tree)).not.toContain("tauri-plugin-deep-link");
+    expect(cargo(new Map([...tree, ["identity.ts", ""]]))).toContain("tauri-plugin-deep-link");
   });
 
   test("without a policy there is no tauri.conf.json; shells on a node or static deployable write nothing", () => {

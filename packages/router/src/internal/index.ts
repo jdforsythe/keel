@@ -12,6 +12,7 @@ export { formHandle } from "./formHandle.ts";
 export { guardLoop } from "./guardLoop.ts";
 export { guardNext } from "./guardNext.ts";
 export { matchUrl } from "./matchUrl.ts";
+export { mountRequests } from "./mountRequests.ts";
 export { needsBare } from "./needsBare.ts";
 export { parseSearch } from "./parseSearch.ts";
 export { publicError } from "./publicError.ts";

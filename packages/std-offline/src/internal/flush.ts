@@ -9,6 +9,10 @@ import { outcomeOf } from "./outcomeOf.ts";
 import { persist } from "./persist.ts";
 
 const obj = (x: unknown): object => (typeof x === "object" && x !== null ? x : {});
+/** The entry waits for its owner: the ctx's owner became `""` before its answer. */
+const held: OutboxResult<unknown> = { state: "queued" };
+/** The server answered `offline.signin`. */
+const paused: OutboxResult<unknown> = { state: "queued" };
 
 /**
  * Sends the outbox's `queued` entries of the ctx's owner in order, one request at a time (std.offline Flush), unless its
@@ -17,7 +21,9 @@ const obj = (x: unknown): object => (typeof x === "object" && x !== null ? x : {
  * `code` is `offline.owner` (the action refused the owner, std.outbox-owner) fails that entry alone with `offline.owner`,
  * never to be posted again. An entry is posted only while, once its `sending` write settles, it is still `sending` and its
  * owner is the ctx's; otherwise, or when its owner stops being the ctx's while it is in flight and it is not `sent`, it
- * is `failed` with `offline.owner`. A network failure keeps the
+ * is `failed` with `offline.owner`, unless the ctx's owner became `""`, which leaves it `queued`. An answer whose error
+ * `code` is `offline.signin` (the request had no user) leaves the entry `queued` and pauses the flush on that ctx until
+ * `send` or `drain` gives an owner again. A network failure keeps the
  * entry queued, stops, and retries 1 s later doubling to 60 s on `ctx.clock` while online. A queued entry whose own
  * storage write (`send`, a `'mine'` `resolve`) has not settled is waited for in its place. An entry naming no endpoint
  * of the api is `failed` (`api.input`). A storage write that rejects or times out fails the entry in hand
@@ -59,7 +65,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
     for (;;) {
       const who = c.owners.get(ctx);
       const e = c.store.get("entries").find((x) => x.state === "queued" && x.owner === who);
-      if (!c.live || !ctx.net.online() || e === undefined) break;
+      if (!c.live || !ctx.net.online() || e === undefined || c.paused.has(ctx)) break;
       // An entry whose own write to `ctx.storage` has not settled: wait for it, then look again (it may be `failed`).
       const writing = c.writes.get(e.key);
       if (writing !== undefined) {
@@ -73,23 +79,32 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
       // A `drain` with another owner may fail the entry at any await: it is posted only while the owner's and `sending`.
       const mine = (): boolean => c.owners.get(ctx) === e.owner && stateOf(e.key) === "sending";
       const gone = { state: "failed" as const, error: fault(c, "offline.owner") };
+      const away = (): OutboxResult<unknown> =>
+        c.owners.get(ctx) === "" && stateOf(e.key) === "sending" ? held : gone;
       const call = Object.hasOwn(c.api, e.endpoint) ? c.client[e.endpoint] : undefined;
       const body = { ...obj(field(e.input, "body")), write: { key: e.key, base: e.base, owner: e.owner } };
       const got = !mine()
-        ? gone
+        ? away()
         : call
           ? outcomeOf(
               await call({ params: field(e.input, "params"), query: field(e.input, "query"), body }, ctx),
               c.again === e.key,
               gone,
+              paused,
             )
           : {
               state: "failed" as const,
               error: { code: "api.input" as const, message: e.endpoint, data: { issues: [] } },
             };
       // A 2xx answer stands whatever changed in flight: the server committed the write.
-      const out = got?.state === "sent" || mine() ? got : gone;
+      const out = got?.state === "sent" || mine() ? got : away();
       c.again = out ? undefined : e.key;
+      if (out === held || out === paused) {
+        await put(e.key, "queued", {});
+        if (out === held) continue;
+        c.paused.add(ctx);
+        break;
+      }
       if (out?.state === "queued") {
         await put(e.key, "queued", {});
         if (ctx.net.online()) {

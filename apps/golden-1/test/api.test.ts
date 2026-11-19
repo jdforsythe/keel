@@ -311,11 +311,11 @@ describe("api deployable over HTTP (createApp fetch, runtime JSON)", () => {
     ]);
     expect((await readBoard()).todos).toEqual([milk, eggs]);
   });
-  it("a write queued under another owner than the caller's is 400 offline.owner on every write endpoint and saves nothing", async () => {
+  it("a write queued under a named owner, sent with no one signed in, is 400 offline.signin on every write endpoint and saves nothing", async () => {
     await seedBoard(boardOf({ lists: [L], todos: [milk] }));
     const app = await apiApp();
     const w = { key: "w1", base: 0, owner: "x" };
-    const refused = { code: "offline.owner", message: "owner", data: {} };
+    const refused = { code: "offline.signin", message: "signin", data: {} };
     for (const [path, body] of [
       ["/api/lists", { name: "Work", write: w }],
       ["/api/lists/l1/todos", { title: "X", priority: "low", write: w }],

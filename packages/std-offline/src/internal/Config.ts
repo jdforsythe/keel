@@ -31,6 +31,8 @@ export interface Config {
   readonly resolve: Transaction<State, { key: string; resolution: Resolution }>;
   /** The owner last given to `send` or `drain` on each ctx; the flush posts only that owner's entries. */
   readonly owners: WeakMap<Ctx, string>;
+  /** The ctxs whose flush an `offline.signin` answer paused, until `send` or `drain` gives an owner there again. */
+  readonly paused: WeakSet<Ctx>;
   /** The load of the stored entries, once per ctx. */
   readonly loads: WeakMap<Ctx, Promise<void>>;
   /** False once the scope that declared the outbox is disposed. */

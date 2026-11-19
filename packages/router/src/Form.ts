@@ -4,6 +4,7 @@ import type { KeelError } from "@keel/schema";
 import { codedError } from "./internal/codedError.ts";
 import { findRouter } from "./internal/findRouter.ts";
 import { formHandle } from "./internal/formHandle.ts";
+import { formSeams } from "./internal/formSeams.ts";
 import { renderChildren } from "./internal/renderChildren.ts";
 import type { FormProps } from "./types/FormProps.ts";
 import type { Href } from "./types/Href.ts";
@@ -24,7 +25,8 @@ function slot(parent: HTMLFormElement, when: () => boolean, render: () => Node):
  * `form` (if any), submits the FormData to `actions[method]` of that route, and applies the Result (`ok(href)`
  * navigates, `ok(null)` revalidates); it throws E1505 when that route does not declare the method. Otherwise the
  * browser posts it: on submit `form` is validated (errors prevent the submit), a chosen file throws E1583 and sends
- * nothing, else `form.pending()` is true until a `pageshow` from the back-forward cache.
+ * nothing, else `form.pending()` is true until a `pageshow` from the back-forward cache, or in a shell until the mount
+ * request is answered (k.return).
  */
 export function Form(
   props: (FormProps & { readonly method: "POST" }) | FormProps<Href & { readonly __mount?: never }>,
@@ -69,7 +71,8 @@ export function Form(
     };
     el.addEventListener("submit", files);
     // Delegated, so a submit queued before resume (k.defaults) is validated at its replay, where a file is refused too.
-    if (seam !== undefined)
+    if (seam !== undefined) {
+      formSeams.set(el, seam);
       on(el, "submit", (e) => {
         if (refused === e) return;
         if (!seam.validate().ok) return e.preventDefault();
@@ -77,6 +80,7 @@ export function Form(
         seam.setPending(true);
         addEventListener("pageshow", onShow);
       });
+    }
     // A server render has no window; the page listener is added at a submit, which only a browser makes.
     scope(() => {}).onDispose(() => {
       el.removeEventListener("submit", files);

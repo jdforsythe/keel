@@ -123,29 +123,41 @@ const send = async (id: string, reply: Reply): Promise<void> => {
 const request = async (o: unknown): Promise<{ status: number; headers: Record<string, string> }> => {
   const id = text(field(o, "id"));
   const url = new URL(text(field(o, "url"))).href;
-  const origin = new URL(url).origin;
   const headers: Record<string, string> = {};
   for (const [k, v] of Object.entries(Object(field(o, "headers")))) headers[k.toLowerCase()] = text(v);
-  const jar = native.jar.get(origin);
-  if (jar && jar.size > 0) headers.cookie = [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
   const data = field(o, "data");
-  const wire: Wire = {
+  // The native client follows a 3xx with a `location` as GET (up to 10 hops) unless the call is manual (RFC 0142).
+  // Assumption: manual is spelled `redirect: 'manual'` on the `request` call; `followRedirects: false` and `maxRedirections: 0` are read the same, since the spec fixes the behavior, not the call shape.
+  const manual =
+    field(o, "redirect") === "manual" || field(o, "followRedirects") === false || field(o, "maxRedirections") === 0;
+  let at: Wire = {
     url,
     method: (text(field(o, "method")) || "GET").toUpperCase(),
     headers,
     body: typeof data === "string" ? data : null,
   };
-  native.wire.push(wire);
   native.ids.push(id);
-  if (native.refuse) throw new Error(`Connection refused: ${origin}`);
-  const reply = native.backend(wire);
-  const cookie = lower(reply.headers)["set-cookie"];
-  if (cookie !== undefined) {
-    const pair = cookie.split(";")[0] ?? "";
-    const at = pair.indexOf("=");
-    const jarOf = native.jar.get(origin) ?? new Map<string, string>();
-    jarOf.set(pair.slice(0, at), pair.slice(at + 1));
-    native.jar.set(origin, jarOf);
+  let reply: Reply = ok(at);
+  for (let hops = 0; ; hops++) {
+    const hopOrigin = new URL(at.url).origin;
+    const jar = native.jar.get(hopOrigin);
+    const hopHeaders = { ...at.headers };
+    if (jar && jar.size > 0) hopHeaders.cookie = [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
+    at = { ...at, headers: hopHeaders };
+    native.wire.push(at);
+    if (native.refuse) throw new Error(`Connection refused: ${hopOrigin}`);
+    reply = native.backend(at);
+    const cookie = lower(reply.headers)["set-cookie"];
+    if (cookie !== undefined) {
+      const pair = cookie.split(";")[0] ?? "";
+      const eq = pair.indexOf("=");
+      const jarOf = native.jar.get(hopOrigin) ?? new Map<string, string>();
+      jarOf.set(pair.slice(0, eq), pair.slice(eq + 1));
+      native.jar.set(hopOrigin, jarOf);
+    }
+    const to = lower(reply.headers).location;
+    if (manual || reply.status < 300 || reply.status > 399 || to === undefined || hops >= 10) break;
+    at = { url: new URL(to, at.url).href, method: "GET", headers: {}, body: null };
   }
   gone.delete(id);
   queueMicrotask(() => {

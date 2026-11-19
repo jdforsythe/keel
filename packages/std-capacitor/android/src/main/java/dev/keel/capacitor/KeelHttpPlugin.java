@@ -22,7 +22,8 @@ import java.util.concurrent.Executors;
  * Keel's HTTP client for a Capacitor shell. Each request runs on a background thread over {@link HttpURLConnection},
  * which keeps cookies in the default {@code CookieHandler} (the store {@code CapacitorHttp} uses). {@code request}
  * resolves with the status and headers, {@code set-cookie} left out; the body follows as {@code chunk} events of at
- * most 16 KiB (base64), then {@code end}, or {@code fail} on an error. {@code cancel} disconnects the request.
+ * most 16 KiB (base64), then {@code end}, or {@code fail} on an error. A request with {@code redirect: "manual"} is
+ * not followed: its 3xx resolves as it came, its cookies kept. {@code cancel} disconnects the request.
  */
 @CapacitorPlugin(name = "KeelHttp")
 public class KeelHttpPlugin extends Plugin {
@@ -62,6 +63,7 @@ public class KeelHttpPlugin extends Plugin {
             c = (HttpURLConnection) new URL(call.getString("url", "")).openConnection();
             open.put(id, c);
             c.setRequestMethod(call.getString("method", "GET"));
+            c.setInstanceFollowRedirects(!"manual".equals(call.getString("redirect")));
             JSObject headers = call.getObject("headers", new JSObject());
             for (Iterator<String> keys = headers.keys(); keys.hasNext(); ) {
                 String k = keys.next();

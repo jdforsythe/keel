@@ -1,6 +1,6 @@
 import { createCtx } from "@keel/ctx";
 import type { Manifest, RouteDef, RouteState, Router } from "@keel/router";
-import { createRouterWith } from "@keel/router/internal";
+import { createRouterWith, mountRequests } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
 import { serverState } from "@keel/store/internal";
 import { fail } from "./internal/fail.ts";
@@ -23,7 +23,10 @@ import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
  * `<html lang>` (k.head), and a document without a title takes the route id as the server's fallback title. The
  * handle is `render`'s plus `route()`, `navigate(href)` (push, then the same quiescence and checks as `fire`) and
  * `location()` (`{ entries, scrollY }`: the history length and the scroll position) and `documents()` (k.mount Testing:
- * the document navigations the page started, in order, recorded and not made, so the page stays);
+ * the document navigations the page started, in order, recorded and not made, so the page stays). With
+ * `options.shell` the page runs as in a native shell (k.return Testing): a navigation under the identity mount is a
+ * mount request through `ctx.net`, `documents()` records each URL opened in the external browser as a GET, and
+ * `returnLink(url)` delivers a return link on the shell's `id` (`dev.keel.golden2` for `true`);
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
  * `options.caller` and `options.user` (each default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
@@ -56,6 +59,9 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   let router: Router<RouteState<M>>;
   const history = memoryHistory(url);
   const documents: DocumentNavigation[] = [];
+  const open = (to: string): void => void documents.push({ method: "GET", url: to, body: null });
+  const { shell } = options;
+  const link = shell && mountRequests(ctx, { id: shell === true ? "dev.keel.golden2" : shell.id, open });
   try {
     router = createRouterWith(
       options.routes,
@@ -64,7 +70,7 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
         history,
         caller: options.caller ?? "",
         user: options.user ?? "",
-        leave: (to) => void documents.push({ method: "GET", url: to, body: null }),
+        leave: open,
       },
       serverState(ctx),
     );
@@ -77,8 +83,6 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
     const r = router.route.get();
     return r.pending ? String(r.id) : null;
   };
-  const a11y = options.artifacts?.["a11y.json"];
-  const tokens = options.artifacts?.tokens;
   const { harness, check } = openHarness({
     view: () => router.App(),
     ctx,
@@ -92,8 +96,7 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
       restoreHead();
       window.scrollTo(0, 0);
     },
-    ...(a11y === undefined ? {} : { a11y }),
-    ...(tokens === undefined ? {} : { tokens }),
+    artifacts: options.artifacts,
   });
   try {
     await settle(document.body, () => undefined, busy);
@@ -111,5 +114,9 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
     },
     location: () => ({ entries: history.length(), scrollY: window.scrollY }),
     documents: () => [...documents],
+    returnLink: async (url) => {
+      await link?.(url);
+      await harness.settle();
+    },
   };
 }

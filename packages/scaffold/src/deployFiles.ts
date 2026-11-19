@@ -16,7 +16,8 @@ import type { DeployTopology } from "./types/DeployTopology.ts";
  * per `client` deployable declaring a shell, `deploy/<name>/capacitor/capacitor.config.json` or the
  * `deploy/<name>/tauri/` files (`tauri.conf.json` only with `project.policy`, the deployable's content security
  * policy); plus `.github/workflows/ci.yml` when `project.ci` (a project outside the Keel monorepo). `project.version`
- * is the app's `package.json` version (default `0.0.0`), `project.crate` the Tauri crate name (default `app`). Pure; equal
+ * is the app's `package.json` version (default `0.0.0`), `project.crate` the Tauri crate name (default `app`);
+ * with `project.identity` (the project has `identity.ts`) the Tauri files hold the plugins of k.return. Pure; equal
  * input gives byte-identical output, whatever the order of deployables or modules in `topology`.
  */
 export function deployFiles(
@@ -26,6 +27,7 @@ export function deployFiles(
     readonly version?: string | undefined;
     readonly crate?: string | undefined;
     readonly policy?: string | undefined;
+    readonly identity?: boolean | undefined;
   },
 ): Map<string, string> {
   const names = Object.keys(topology).sort();
@@ -45,11 +47,11 @@ export function deployFiles(
     const at = `deploy/${n}/tauri/`;
     if (project.policy !== undefined) files.push([`${at}tauri.conf.json`, tauriConf(tauri, version, project.policy)]);
     files.push(
-      [`${at}Cargo.toml`, cargoToml(project.crate ?? "app", version)],
+      [`${at}Cargo.toml`, cargoToml(project.crate ?? "app", version, project.identity)],
       [`${at}build.rs`, tauriBuildRs()],
       [`${at}src/main.rs`, tauriMainRs()],
-      [`${at}src/lib.rs`, tauriLibRs()],
-      [`${at}capabilities/default.json`, tauriCapability()],
+      [`${at}src/lib.rs`, tauriLibRs(project.identity)],
+      [`${at}capabilities/default.json`, tauriCapability(project.identity)],
     );
   }
   return new Map(files);

@@ -1,0 +1,60 @@
+// Fixtures for the k.return suites (not a test file). Seed for every property: 1337.
+// A shell run of the k.mount pages: `renderRoute(id, { routes, ctx, shell: true })` over a sim ctx whose net answers every URL through `answer`.
+// Assumptions (the spec does not say): `shell: true` is a `renderRoute` option beside `ctx`; the sim net sees the mount request as a `Request` whose URL
+// resolves (against the page's origin, whatever it is) to the `href` unchanged, so a request is recorded as pathname + search;
+// the shell's `id` for `returnLink` is `dev.keel.golden2` (the spec's example), supplied by the harness; `returnLink(url)` returns a promise or nothing (awaited either way).
+import { createCtx } from "@keel/ctx";
+import { renderRoute } from "@keel/testing";
+import { routes } from "./mount-pages.ts";
+
+export { SEED, VALID, INVALID, mount } from "./mount-pages.ts";
+export const SCHEME = "dev.keel.golden2";
+
+/** One request the page made through the sim `net`. */
+export interface Sent {
+  readonly method: string;
+  readonly url: string;
+  readonly headers: Readonly<Record<string, string>>;
+  readonly redirect: string;
+  readonly body: string;
+}
+export type Answer = (sent: Sent, index: number) => Response | Promise<Response>;
+
+export const redirect = (status: number, location: string): Response =>
+  new Response(null, { status, headers: { location } });
+export const plain = (): Response => new Response("ok", { status: 200 });
+
+const opened: { dispose(): void }[] = [];
+
+/** A shell render of `id`; `sent` fills with each `net` request; `answer` decides each response (default 200). */
+export async function openShell(id: string, answer: Answer = plain) {
+  const ctx = createCtx({ mode: "sim", seed: 1337 });
+  const sent: Sent[] = [];
+  ctx.net.route("*", async (req) => {
+    const u = new URL(req.url, "http://localhost");
+    const headers: Record<string, string> = {};
+    req.headers.forEach((v, k) => {
+      headers[k.toLowerCase()] = v;
+    });
+    const entry: Sent = {
+      method: req.method,
+      url: u.pathname + u.search,
+      headers,
+      redirect: req.redirect,
+      body: req.method === "GET" ? "" : await req.text(),
+    };
+    sent.push(entry);
+    return answer(entry, sent.length - 1);
+  });
+  const handle = await renderRoute(id, { routes, ctx, shell: true });
+  opened.push(handle);
+  return { handle, sent };
+}
+
+export function closeAll(): void {
+  for (const h of opened.splice(0)) h.dispose();
+}
+
+export async function ticks(): Promise<void> {
+  for (let i = 0; i < 60; i++) await Promise.resolve();
+}

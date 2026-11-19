@@ -732,7 +732,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1581",
-    "identity.ts imported by a module a static, hostless client or shell deployable serves",
+    "identity.ts imported by a module a static or hostless client deployable serves",
     "",
     "adapter: 'client' -> adapter: 'client', host: 'api'",
     "k.mount",

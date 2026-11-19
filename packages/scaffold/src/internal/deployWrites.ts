@@ -27,6 +27,7 @@ function versionOf(text: string | undefined): string | undefined {
  * when the tree has `turbo.json` (a project outside the Keel monorepo) or when it already holds a `deploy/` file.
  * A deployable's CI job runs on its modules and those they dep on, transitively (`modules/<id>/module.ts` `deps`).
  * `tauri.conf.json` is written and removed only with `policy`, the content security policy of a `client` document.
+ * A tree with `identity.ts` gets the Tauri files with the plugins of k.return.
  * Empty without a readable `topology.ts`.
  */
 export function deployWrites(files: ReadonlyMap<string, string>, always = false, policy?: string): Writes {
@@ -46,7 +47,8 @@ export function deployWrites(files: ReadonlyMap<string, string>, always = false,
     }),
   );
   const pkg = files.get("package.json");
-  const want = deployFiles(built, { ci, version: versionOf(pkg), crate: crateName(pkg), policy });
+  const identity = files.has("identity.ts");
+  const want = deployFiles(built, { ci, version: versionOf(pkg), crate: crateName(pkg), policy, identity });
   const paths = [...files.keys()];
   const keep = always || files.has("turbo.json") || paths.some((p) => p.startsWith("deploy/"));
   for (const [p, v] of want) if (p === CI || keep) out.set(p, v);

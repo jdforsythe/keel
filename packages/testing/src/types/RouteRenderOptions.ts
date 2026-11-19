@@ -18,4 +18,9 @@ export interface RouteRenderOptions<M extends Readonly<Record<string, RouteDef>>
   readonly caller?: string;
   readonly user?: string;
   readonly artifacts?: HarnessArtifacts;
+  /**
+   * Run the page as in a native shell (k.return Testing), which gives it a ctx of `mode: 'shell'` in a build; `id` is
+   * the shell's `id` (k.shell), the scheme of its return links, and `true` stands for `dev.keel.golden2`.
+   */
+  readonly shell?: true | { readonly id: string };
 }

@@ -35,7 +35,7 @@ import { unexpected } from "./unexpected.ts";
  * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
  */
 export function openHarness(setup: HarnessSetup): { readonly harness: Harness; check(): void } {
-  const { ctx, seeded, a11y, tokens, busy, teardown, target, registry } = setup;
+  const { ctx, seeded, artifacts, busy, teardown, target, registry } = setup;
   const page = setup.page === true;
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -58,13 +58,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     const [first] = caught.splice(0);
     if (first !== undefined) throw unexpected(first);
     if (page) asMain(container);
-    renderChecks({
-      root: container,
-      page,
-      target,
-      ...(a11y === undefined ? {} : { a11y }),
-      ...(tokens === undefined ? {} : { tokens }),
-    });
+    renderChecks({ root: container, page, target, a11y: artifacts?.["a11y.json"], tokens: artifacts?.tokens });
   };
   try {
     owner = scope(() => {

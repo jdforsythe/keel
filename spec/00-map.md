@@ -52,16 +52,16 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.scaffold | Scaffold and codemods | conformance-covered | edits |
-| k.testing | Harness and properties | conformance-covered | harness |
+| k.testing | Harness and properties | conformance-covered | fire |
 | k.model | Exploring a store's transactions | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Schedules and simulation | conformance-covered | faults |
 | k.ledger | Ledger and evidence | conformance-covered | rungs |
-| k.server | Thin server | conformance-covered | loaders |
+| k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
-| k.user | Request user and caller lifetime | conformance-covered | identify |
+| k.user | Request user and caller lifetime | conformance-covered | user |
 | k.mount | Pages into the identity mount | conformance-covered | submit |
-| k.return | Mount from a shell | proposed | links |
+| k.return | Mount from a shell | conformance-covered | net |
 | k.serverlog | Server log records | conformance-covered | bounds |
 | k.sync | Heads and concurrent writes | conformance-covered | heads |
 | k.persist | Storage and durable state | conformance-covered | drivers |

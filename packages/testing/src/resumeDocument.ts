@@ -42,8 +42,6 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
   const body = new DOMParser().parseFromString(html, "text/html").body;
   for (const s of body.querySelectorAll("script:not(#k-state)")) s.remove();
   const warnings: string[] = [];
-  const a11y = options.artifacts?.["a11y.json"];
-  const tokens = options.artifacts?.tokens;
   // The islands' scope in the graph's own reactive engine, which the harness scope does not own.
   const islands: { dispose: () => void } = { dispose: () => undefined };
   // The served elements under island roots, and a MutationObserver over the container while resume runs.
@@ -66,8 +64,7 @@ export async function resumeDocument<M extends Readonly<Record<string, RouteDef>
     documents,
     teardown: () => islands.dispose(),
     target: () => ({ route: null, component: "resumeDocument" }),
-    ...(a11y === undefined ? {} : { a11y }),
-    ...(tokens === undefined ? {} : { tokens }),
+    artifacts: options.artifacts,
   });
   try {
     const [first] = warnings;

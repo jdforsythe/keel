@@ -8,7 +8,7 @@ import { boardStores } from "./boardStores.ts";
 
 /**
  * `POST /api/lists`: add a list with a ctx-minted id, recorded with this caller (undo, `postUndo`) and the write's key
- * and base; a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.owner`.
+ * and base; a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.signin`.
  */
 export const postList = action(
   { input: ListWrite, output: Nothing, stores: boardStores },
