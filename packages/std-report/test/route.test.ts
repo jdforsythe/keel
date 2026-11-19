@@ -83,6 +83,63 @@ describe("keel report, the route form", () => {
     expect((await report(`${long}?k=v`, {})).stdout).toContain(`of them: http://h/${"a".repeat(36)}...\n`);
   });
 
+  it("reads a loader's answer by the route id it names, whatever else `results` and the answer hold", async () => {
+    const other = tallyOf("z", ["q"]);
+    const bodies = [
+      { id: "r", results: { r: { ok: true, value: tally } } },
+      { id: "r", results: { r: { ok: true, value: [tally] } } },
+      { id: "r", results: { a: { ok: true, value: other }, r: { ok: true, value: tally }, z: { ok: false } } },
+      { id: "r", results: { r: { ok: true, value: tally, extra: 1 } }, more: [other] },
+      { id: "", results: { "": { ok: true, value: tally } } },
+    ];
+    for (const body of bodies) {
+      const r = await report("http://h/t?k=v", body);
+      expect(r).toMatchObject({ code: 0, stdout: "a x=2 y=1\nok report 1 tallies\n" });
+      expect(r.seen.map((x) => x.url)).toEqual(["http://h/t?k=v"]);
+    }
+    const two = await report("http://h/t", { id: "r", results: { r: { ok: true, value: [other, tally] } } });
+    expect(two.stdout).toBe("z q=1\na x=2 y=1\nok report 2 tallies\n");
+    const none = await report("http://h/t", { id: "r", results: { r: { ok: true, value: [] } } });
+    expect(none.stdout).toBe("ok report 0 tallies\n");
+  });
+
+  it("answers E1056 for a loader's answer that holds no tally under its own id", async () => {
+    const ok = { ok: true, value: tally };
+    const bodies = [
+      { id: "r", results: {} },
+      { id: "r", results: { other: ok } },
+      { id: 1, results: { 1: ok } },
+      { id: ["r"], results: { r: ok } },
+      { results: { r: ok } },
+      { id: "r" },
+      { id: "r", results: [ok] },
+      { id: "r", results: ok },
+      { id: "r", results: { r: tally } },
+      { id: "r", results: { r: { value: tally } } },
+      { id: "r", results: { r: { ok: 1, value: tally } } },
+      { id: "r", results: { r: { ok: false, value: tally } } },
+      { id: "r", results: { r: { ok: false, error: { code: "keel.denied", message: "no", data: null } } } },
+      { id: "r", results: { r: { ok: true } } },
+      { id: "r", results: { r: { ok: true, value: null } } },
+      { id: "r", results: { r: { ok: true, value: { ...tally, extra: 1 } } } },
+      { id: "r", results: { r: { ok: true, value: [tally, { ...tally, id: "" }] } } },
+      { id: "r", results: { r: { ok: true, value: { id: "r", results: { r: ok } } } } },
+      { id: "r", results: { r: { ok: true, value: ok } } },
+      { id: "toString", results: {} },
+      [{ id: "r", results: { r: ok } }],
+    ];
+    for (const body of bodies) {
+      expect((await report("http://h/t?k=v", body)).stdout).toBe(
+        "E1056 not a tally or an array of them: http://h/t\n  see: k.cli\nfail report\n",
+      );
+    }
+  });
+
+  it("reads no loader's answer in the inspect form", async () => {
+    const r = await report("http://h", { id: "r", results: { r: { ok: true, value: tally } } });
+    expect(r.stdout).toBe("E1056 not an inspect document: http://h\n  see: k.cli\nfail report\n");
+  });
+
   it("prints the token in no output, whatever the answer", async () => {
     const env = { KEEL_REPORT_TOKEN: "s3cr3tvalue" };
     const down = { cwd: "/work/app", files: [], env, fetch: (): Promise<Response> => Promise.reject(new Error("x")) };

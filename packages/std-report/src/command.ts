@@ -18,6 +18,28 @@ const InspectDoc = s.object({
   sections: s.record(s.json()).optional(),
 });
 
+/** A loader's answer (k.api): the route's `id` and the `Result` of each loader that ran, by route id. */
+const LoaderAnswer = s.object({ id: s.string(), results: s.record(s.json()) });
+
+/** A loader's `Result` that is ok. */
+const OkResult = s.object({ ok: s.literal(true), value: s.json() });
+
+/** The tallies a route-form body holds, a lone `Tally` as an array of one; `undefined` for a body of another shape. */
+const talliesOf = (body: unknown): OutRecord[] | undefined => {
+  const one = Tally.parse(body);
+  if (one.ok) return [one.value];
+  const many = s.array(Tally).parse(body);
+  return many.ok ? many.value : undefined;
+};
+
+/** The `value` of the ok `results[id]` in a loader's answer; `undefined` for any other body. */
+const loaded = (body: unknown): unknown => {
+  const answer = LoaderAnswer.parse(body);
+  if (!answer.ok || !Object.hasOwn(answer.value.results, answer.value.id)) return undefined;
+  const result = OkResult.parse(answer.value.results[answer.value.id]);
+  return result.ok ? result.value.value : undefined;
+};
+
 const done = (records: OutRecord[], counts: Record<string, number>, ok: boolean): Outcome => ({
   records: [...records, { kind: "summary", ok, name: "report", counts }],
   writes: [],
@@ -48,8 +70,10 @@ const routeOf = (url: string): URL | undefined => {
  * Sections of another shape and sections holding an `error` are skipped. No credential is sent.
  *
  * Route form (a path beyond `/` or a query): fetches the url as given, a route the app serves behind its own guard.
- * The JSON body is a `Tally` or an array of them, emitted in the order given, then the summary; an inspect document
- * or an array with one item failing `Tally` is E1056. A non-empty `KEEL_REPORT_TOKEN` in `io.env` goes with that
+ * The JSON body is a `Tally` or an array of them, emitted in the order given, then the summary. A loader's answer
+ * `{ id, results }` (k.api) whose `results[id]` is `{ ok: true, value }` is read as its `value` is; no other entry of
+ * `results` is read. An inspect document, an array with one item failing `Tally`, or a loader's answer whose
+ * `results[id]` is absent, not ok or holds another `value` is E1056. A non-empty `KEEL_REPORT_TOKEN` in `io.env` goes with that
  * request as the caller cookie (`callerCookie`): it is read for the request and neither kept nor printed.
  */
 export const command: StdOperation = {
@@ -90,10 +114,10 @@ export const command: StdOperation = {
       body = undefined;
     }
     if (route !== undefined) {
-      const one = Tally.parse(body);
-      if (one.ok) return done([one.value], { tallies: 1 }, true);
-      const many = s.array(Tally).parse(body);
-      return many.ok ? done(many.value, { tallies: many.value.length }, true) : fail("not a tally or an array of them");
+      const tallies = talliesOf(body) ?? talliesOf(loaded(body));
+      return tallies === undefined
+        ? fail("not a tally or an array of them")
+        : done(tallies, { tallies: tallies.length }, true);
     }
     const doc = InspectDoc.parse(body);
     if (!doc.ok) return fail("not an inspect document");
