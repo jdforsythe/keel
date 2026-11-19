@@ -1,0 +1,16 @@
+# _generated: keel writes this from topology.ts (k.topology). Do not edit by hand.
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      KEEL_ORIGIN: ${KEEL_ORIGIN:?}
+      KEEL_SECRET: ${KEEL_SECRET:?}
+      KEEL_DATABASE_URL:
+    volumes:
+      - api-data:/data
+volumes:
+  api-data: {}
