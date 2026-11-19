@@ -95,14 +95,6 @@ export function typeCheck(
   const dirs = new Set([...byName.keys()].flatMap((n) => n.split("/").map((_, i, p) => p.slice(0, i).join("/"))));
   const dirOnDisk = host.directoryExists?.bind(host);
   host.directoryExists = (d) => dirs.has(norm(d).replace(/\/$/, "")) || dirOnDisk?.(d) !== false;
-  // A `/// <reference types>` in project code resolves for Node's types only; another package's ambient types are not Keel's.
-  host.resolveTypeReferenceDirectives = (names, containing, redirected, opts) =>
-    names.map((n) => {
-      const name = typeof n === "string" ? n : n.fileName;
-      return byName.has(norm(containing)) && name !== "node"
-        ? undefined
-        : ts.resolveTypeReferenceDirective(name, containing, opts, host, redirected).resolvedTypeReferenceDirective;
-    });
   const probe = ts.resolveModuleName(`${JSX_SOURCE}/jsx-runtime`, `${base}/__probe__.tsx`, strict, host);
   const shim = probe.resolvedModule === undefined;
   const options: ts.CompilerOptions = shim ? strict : { ...strict, jsxImportSource: JSX_SOURCE };
