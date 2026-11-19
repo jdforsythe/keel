@@ -4,7 +4,8 @@ import Foundation
 /// Keel's HTTP client for a Capacitor shell. Each request is a `URLSession` data task with the default configuration,
 /// whose cookies `HTTPCookieStorage.shared` keeps (the store `CapacitorHttp` uses). `request` resolves with the status
 /// and headers, `set-cookie` left out; the body follows as `chunk` events of at most 16 KiB (base64), then `end`, or
-/// `fail` on an error. `cancel` cancels the task.
+/// `fail` on an error. A request with `redirect: "manual"` is not followed: its 3xx resolves as it came, its cookies
+/// kept. `cancel` cancels the task.
 @objc(KeelHttpPlugin)
 public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate {
     public let identifier = "KeelHttpPlugin"
@@ -18,6 +19,7 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
         let id: String
         let task: URLSessionDataTask
         var call: CAPPluginCall?
+        let manual: Bool
         var cancelled = false
     }
 
@@ -40,7 +42,8 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
         }
         if let data = call.getString("data") { req.httpBody = Data(data.utf8) }
         let task = session.dataTask(with: req)
-        lock.withLock { table[task.taskIdentifier] = Entry(id: id, task: task, call: call) }
+        let manual = call.getString("redirect") == "manual"
+        lock.withLock { table[task.taskIdentifier] = Entry(id: id, task: task, call: call, manual: manual) }
         task.resume()
     }
 
@@ -69,6 +72,14 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
         }
         call?.resolve(["status": http?.statusCode ?? 200, "headers": headers])
         completionHandler(.allow)
+    }
+
+    public func urlSession(_ session: URLSession, task: URLSessionTask,
+                           willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+                           completionHandler: @escaping (URLRequest?) -> Void) {
+        // No new request: the task completes with the redirect response itself.
+        let manual = lock.withLock { table[task.taskIdentifier]?.manual ?? false }
+        completionHandler(manual ? nil : request)
     }
 
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
