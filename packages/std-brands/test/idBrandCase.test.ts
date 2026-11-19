@@ -6,8 +6,12 @@ import "../src/index.ts";
 import { pascalCase } from "../src/internal/pascalCase.ts";
 
 const SEED = 1337;
-const e2101 = (source: string) =>
-  check([{ path: "a.ts", source }], { types: false }).diagnostics.filter((d) => d.code === "E2101");
+/** The E2101 findings of `source`; a rule that throws would show as E1756, which is never expected. */
+const e2101 = (source: string) => {
+  const all = check([{ path: "a.ts", source }], { types: false }).diagnostics;
+  expect(all.filter((d) => d.code === "E1756")).toEqual([]);
+  return all.filter((d) => d.code === "E2101");
+};
 const flagged = (source: string) => e2101(source).length;
 const lines = (source: string) => e2101(source).map((d) => d.line);
 
@@ -96,6 +100,11 @@ test("only s.id and <expr>.random.id calls are brands", () => {
   expect(flagged(`a.b.random.id(${bad})`)).toBe(1);
   expect(flagged(`this.random.id(${bad})`)).toBe(1);
   expect(flagged(`f().random.id(${bad})`)).toBe(1);
+  expect(flagged(`f().id(${bad})`)).toBe(0);
+  expect(flagged(`this.id(${bad})`)).toBe(0);
+  expect(flagged(`new Thing().id(${bad})`)).toBe(0);
+  expect(flagged(`new Thing(${bad})`)).toBe(0);
+  expect(flagged(`foo(${bad})`)).toBe(0);
 });
 
 test("a brand inside a call, an argument or a function is found wherever it sits", () => {
