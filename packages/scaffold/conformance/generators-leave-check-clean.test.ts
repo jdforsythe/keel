@@ -4,7 +4,7 @@
 // Service (RFC 0039): `modules/orders/OrdersApi.schema.ts` exporting `OrdersApi` and `api.server.ts` exporting `api` satisfy
 // E1752; the case runs both on the in-process placement and on the real `keel scaffold service --openapi` output.
 import { afterAll, describe, expect, it } from "vitest";
-import { type Files, SERVICE_INPUT, apply, fresh, withOpenApi, withStoreCart } from "./fixtures.ts";
+import { type Files, ORDERS_OPENAPI, SERVICE_INPUT, apply, fresh, withStoreCart } from "./fixtures.ts";
 import { type CliRecord, cleanup, keel, materialize, readTree } from "./keel-cli.ts";
 
 function unresolved(files: Files): string[] {
@@ -30,6 +30,20 @@ function unresolved(files: Files): string[] {
     }
   }
   return bad;
+}
+
+function freshNode(): Files {
+  let files: Files = new Map();
+  files = apply("project", { name: "shop", adapter: "node" }, files).files;
+  files = apply("module", { id: "orders" }, files).files;
+  files = apply("module", { id: "catalog" }, files).files;
+  return files;
+}
+
+function nodeWithOpenApi(): Files {
+  const f = freshNode();
+  f.set("openapi.json", `${ORDERS_OPENAPI}\n`);
+  return f;
 }
 
 describe("generators leave the tree self-consistent", () => {
@@ -113,10 +127,10 @@ describe("keel check and keel test are clean after each generator", () => {
     clean(fresh());
   }, 60000);
   it("service orders with an OpenAPI-generated schema and service source leaves keel check and keel test clean", () => {
-    clean(apply("service", SERVICE_INPUT, fresh()).files);
+    clean(apply("service", SERVICE_INPUT, freshNode()).files);
   }, 60000);
-  it("keel scaffold service orders --openapi openapi.json in a fresh project leaves keel check and keel test clean", () => {
-    const dir = materialize(withOpenApi());
+  it("keel scaffold service orders --openapi openapi.json in a fresh node project leaves keel check and keel test clean", () => {
+    const dir = materialize(nodeWithOpenApi());
     dirs.push(dir);
     const gen = keel(dir, ["scaffold", "service", "orders", "--openapi", "openapi.json"]);
     expect(gen.status, JSON.stringify(gen.records)).toBe(0);

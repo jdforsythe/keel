@@ -35,8 +35,12 @@ const project = (shell: boolean): Map<string, string> =>
     ["topology.ts", topologySrc(shell)],
     ["modules/c/module.ts", manifestSrc("c")],
     [
+      "modules/c/Page.tsx",
+      'import { Box, Text } from "@keel/ui";\nexport default function Page() {\n  return (\n    <Box as="main">\n      <Text>Page</Text>\n    </Box>\n  );\n}\n',
+    ],
+    [
       "modules/c/routes.ts",
-      "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+      "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
     ],
   ]);
 

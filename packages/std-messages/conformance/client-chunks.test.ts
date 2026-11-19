@@ -43,6 +43,7 @@ beforeAll(() => {
     "server",
     "std-i18n",
     "std-messages",
+    "ui",
   ]) {
     link(path.join(REPO, "packages", p), path.join(fx, "node_modules", "@keel", p));
   }
@@ -101,18 +102,30 @@ export const Page = messages(AppLocale, { title: {} }, (locale) => import(\`./Pa
   write(
     fx,
     "modules/app/PageView.tsx",
-    "export default function PageView(props) {\n  return <h1>{props.data.text.title}</h1>\n}\n",
+    "import { Heading } from \"@keel/ui\";\nexport default function PageView(props) {\n  return <Heading level={1}>{props.data.text.title}</Heading>\n}\n",
+  );
+  write(
+    fx,
+    "modules/app/Params.schema.ts",
+    'import { s } from "@keel/schema";\nimport { AppLocale } from "./AppLocale.schema.ts";\nexport const Params = s.object({ locale: AppLocale });\n',
+  );
+  write(
+    fx,
+    "modules/app/pageLoader.server.ts",
+    `import { loader } from "@keel/router";
+import { ok, s } from "@keel/schema";
+import { Page } from "./Page.schema.ts";
+import { Params } from "./Params.schema.ts";
+export const pageLoader = loader({ output: s.object({ text: Page }), params: Params }, async ({ params }) => ok({ text: await Page.load(params.locale) }));
+`,
   );
   write(
     fx,
     "modules/app/routes.ts",
-    `import { loader, manifest } from "@keel/router";
-import { ok, s } from "@keel/schema";
-import { AppLocale } from "./AppLocale.schema.ts";
-import { Page } from "./Page.schema.ts";
+    `import { manifest } from "@keel/router";
 import PageView from "./PageView.tsx";
-const Params = s.object({ locale: AppLocale });
-const pageLoader = loader({ output: s.object({ text: Page }), params: Params }, async ({ params }) => ok({ text: await Page.load(params.locale) }));
+import { pageLoader } from "./pageLoader.server.ts";
+import { Params } from "./Params.schema.ts";
 export const routes = manifest({ "app.page": { path: "/:locale", params: Params, component: PageView, loader: pageLoader } });
 `,
   );
