@@ -1,6 +1,7 @@
 // Seed 1337. E2201 and E2202 on aliased, namespace and re-export forms of the import, and not on type-only forms;
 // their `explain` rows exist and are under 120 tokens.
-import { check, explain } from "@keel/check";
+import { check } from "@keel/check";
+import { explain } from "@keel/check/explain";
 import "@keel/std-tokens/tools";
 import fc from "fast-check";
 import { expect, test } from "vitest";

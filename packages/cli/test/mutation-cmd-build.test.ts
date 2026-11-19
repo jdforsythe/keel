@@ -1,5 +1,5 @@
 // Mutation-killing tests for build, check, explain and the operations execute routes to.
-import { explain } from "@keel/check";
+import { explain } from "@keel/check/explain";
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
 import { buildCommand } from "../src/internal/buildCommand.ts";

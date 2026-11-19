@@ -1,7 +1,6 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { check } from "./check.ts";
 export { defineRule } from "./defineRule.ts";
-export { explain } from "./explain.ts";
 export { format } from "./format.ts";
 export { reportedCodes } from "./reportedCodes.ts";
 export { rules } from "./rules.ts";

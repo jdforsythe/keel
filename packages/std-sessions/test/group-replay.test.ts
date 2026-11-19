@@ -5,7 +5,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { explain } from "@keel/check";
+import { explain } from "@keel/check/explain";
 import { afterAll, describe, expect, test } from "vitest";
 import "../src/tools.ts";
 import { commandRun } from "../src/internal/commandRun.ts";

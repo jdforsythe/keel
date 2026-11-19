@@ -1,4 +1,4 @@
-import { explain } from "@keel/check";
+import { explain } from "@keel/check/explain";
 import type { Input } from "../types/Input.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { makeDiag } from "./makeDiag.ts";

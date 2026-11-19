@@ -48,7 +48,7 @@ Kernel E1xxx in blocks of 50, stdlib E2xxx, tooling E0xxx; `pnpm spec --for <cod
 | k.owner | Ctx owner | conformance-covered | disposal |
 | k.errors | Results and boundaries | conformance-covered | Result |
 | k.check | Checker and diagnostics | conformance-covered | codes |
-| k.explain | Explanations | proposed | text |
+| k.explain | Explanations | implemented | text |
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.scaffold | Scaffold and codemods | conformance-covered | edits |

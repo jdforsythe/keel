@@ -7,5 +7,5 @@ import { registry } from "./internal/registry.ts";
  * from another command and is asserted by its own package's conformance.
  */
 export function reportedCodes(): string[] {
-  return [...new Set([...PIPELINE_CODES, ...registry.keys()])].sort();
+  return [...new Set([...PIPELINE_CODES, ...registry().keys()])].sort();
 }

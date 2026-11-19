@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./explain": {
+      "types": "./src/explain.ts",
+      "default": "./src/explain.ts"
     }
   },
   "files": ["dist"],

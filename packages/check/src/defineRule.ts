@@ -1,3 +1,4 @@
+import { registrations } from "./internal/registrations.ts";
 import { registry } from "./internal/registry.ts";
 import type { RuleDef } from "./types/RuleDef.ts";
 
@@ -7,8 +8,8 @@ import type { RuleDef } from "./types/RuleDef.ts";
  */
 export function defineRule(def: RuleDef & { readonly explain: string }): RuleDef {
   if (!/^[EW]2\d{3}$/.test(def.code)) throw new Error(`E1753 rule code ${def.code} is outside E2xxx/W2xxx`);
-  if (registry.has(def.code)) throw new Error(`E1753 rule code ${def.code} registered twice`);
+  if (registry().has(def.code)) throw new Error(`E1753 rule code ${def.code} registered twice`);
   const rule: RuleDef = Object.freeze({ ...def });
-  registry.set(rule.code, rule);
+  registrations.set(rule.code, rule);
   return rule;
 }
