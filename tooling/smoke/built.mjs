@@ -48,7 +48,12 @@ export const freePort = () =>
 
 /** Copy the app at `from` (apps/golden-1 when left out) into `dir` (a temporary folder). */
 export async function copyApp(dir, from = app) {
-  await cp(from, dir, { recursive: true, filter: (src) => src === from || !SKIP.has(basename(src)) });
+  // No `test/`: `keel build` checks first, and the tests' `vitest` resolves from the workspace root, not from the copy.
+  const tests = join(from, "test");
+  await cp(from, dir, {
+    recursive: true,
+    filter: (src) => src === from || (src !== tests && !SKIP.has(basename(src))),
+  });
   await symlink(join(from, "node_modules"), join(dir, "node_modules"), "dir");
 }
 
