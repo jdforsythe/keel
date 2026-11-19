@@ -1,14 +1,7 @@
 import path from "node:path";
 import { type Program, Visitor } from "oxc-parser";
 import type { Topology } from "../types/Topology.ts";
-
-/** A server-only import E1004 reports: where, what, and the chain from a client entry when one reaches the file. */
-export type ReachHit = {
-  readonly path: string;
-  readonly start: number;
-  readonly source: string;
-  readonly chain?: string;
-};
+import type { ReachHit } from "./ReachHit.ts";
 
 const NAME = /\.(?:server|guard)(?:\.[cm]?[jt]sx?)?$/;
 const TEST = /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$/;

@@ -1,9 +1,4 @@
-/** What a build tells about one module of its graph. */
-export type GraphInfo = {
-  readonly isEntry: boolean;
-  readonly importedIds: readonly string[];
-  readonly dynamicallyImportedIds: readonly string[];
-};
+import type { GraphInfo } from "./GraphInfo.ts";
 
 /**
  * The E1007 message for a browser build's module graph (k.boundary Assertion), else undefined: the first module, in

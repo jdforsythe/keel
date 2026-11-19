@@ -529,23 +529,27 @@ describe("vite: project inputs", () => {
     },
   );
 
-  it("recompiles every module when topology.ts changes, and never fails a transform on E1004", { timeout: 30000 }, async () => {
-    write("topology.ts", `export default { web: { modules: ["m"], adapter: "client" } };\n`);
-    const p = keel();
-    p.configResolved({ root });
-    const file = path.join(root, "modules/m/a.ts");
-    const src = "import x from './x.server.ts';\nexport const y = x;\n";
-    expect(p.transform(src, file)).not.toBeNull();
-    write("topology.ts", `export default { web: { modules: ["m"], adapter: "node" } };\n`);
-    p.watchChange(path.join(root, "topology.ts"), { event: "update" });
-    expect(p.transform(src, file)).not.toBeNull();
-    write("topology.ts", `export default { web: { modules: ["m"], adapter: "client" } };\n`);
-    p.watchChange(path.join(root, "topology.ts"), { event: "update" });
-    expect(p.transform(src, file)).not.toBeNull();
-    fs.rmSync(path.join(root, "topology.ts"));
-    p.watchChange(path.join(root, "topology.ts"), { event: "delete" });
-    expect(p.transform(src, file)).not.toBeNull();
-  });
+  it(
+    "recompiles every module when topology.ts changes, and never fails a transform on E1004",
+    { timeout: 30000 },
+    async () => {
+      write("topology.ts", `export default { web: { modules: ["m"], adapter: "client" } };\n`);
+      const p = keel();
+      p.configResolved({ root });
+      const file = path.join(root, "modules/m/a.ts");
+      const src = "import x from './x.server.ts';\nexport const y = x;\n";
+      expect(p.transform(src, file)).not.toBeNull();
+      write("topology.ts", `export default { web: { modules: ["m"], adapter: "node" } };\n`);
+      p.watchChange(path.join(root, "topology.ts"), { event: "update" });
+      expect(p.transform(src, file)).not.toBeNull();
+      write("topology.ts", `export default { web: { modules: ["m"], adapter: "client" } };\n`);
+      p.watchChange(path.join(root, "topology.ts"), { event: "update" });
+      expect(p.transform(src, file)).not.toBeNull();
+      fs.rmSync(path.join(root, "topology.ts"));
+      p.watchChange(path.join(root, "topology.ts"), { event: "delete" });
+      expect(p.transform(src, file)).not.toBeNull();
+    },
+  );
 
   it("warns when a background refresh fails", { timeout: 30000 }, async () => {
     write("tokens.ts", TOKENS);
