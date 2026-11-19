@@ -44,4 +44,4 @@
 
 **Generated, read-only:** `turbo.json`, CI workflows, Dockerfiles, compose. Hand edits fail `pnpm check`.
 
-verified: e23b0f2f0815e2dc76754c22cd494c3ae9cb35ae
+verified: c9445b64de62fe7035797d1249e25de0c90a9f65
