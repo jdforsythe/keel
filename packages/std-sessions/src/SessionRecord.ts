@@ -1,6 +1,4 @@
-import { formatter } from "@keel/cli";
 import { s } from "@keel/schema";
-import { sessionCompact } from "./internal/sessionCompact.ts";
 
 /**
  * Output record kind `session` (std.sessions, docs/OUTPUT.md) that `keel session` emits: the base `route` id, `events`
@@ -20,10 +18,3 @@ export const SessionRecord = s.object(
   { closed: true },
 );
 export type SessionRecord = s.infer<typeof SessionRecord>;
-
-const pretty = (r: SessionRecord): string =>
-  `session ${r.fingerprint} ${r.route}: ${r.events} events, ${r.inputs} inputs, ${r.error ?? "ok"}${
-    r.file === null ? "" : `\n  file: ${r.file}`
-  }`;
-
-formatter("session", { schema: SessionRecord, compact: sessionCompact, pretty });
