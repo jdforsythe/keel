@@ -1,11 +1,16 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 type App = { fetch(req: Request): Promise<Response> };
-type Served = { readonly app: App; served(path: string): boolean };
+type Served = { readonly app: App; served(path: string): boolean; readonly mount: string | undefined };
+
+/** Whether `app` answers `path` as its built server does: a route of it matches, or it is at or under its identity mount (k.user). */
+const answers = (app: Served, path: string): boolean =>
+  app.served(path) || (app.mount !== undefined && `${path}/`.startsWith(`${app.mount}/`));
 
 /**
- * The `keel dev` middleware (k.topology Local topology): a request whose path a `node` deployable's route matches is
- * answered by that deployable's dev app, streaming its body (event streams too); anything else goes on to Vite.
+ * The `keel dev` middleware (k.topology Local topology): a request whose path a `node` deployable's route matches, or
+ * that is at or under its identity source's `handle.path`, is answered by that deployable's dev app, streaming its body
+ * (event streams too); anything else goes on to Vite.
  * `load` gives the dev apps (`DEV_ENTRY`), loaded once and again after `reset`.
  */
 export function devMiddleware(load: () => Promise<readonly Served[]>): {
@@ -16,7 +21,7 @@ export function devMiddleware(load: () => Promise<readonly Served[]>): {
   const handle = async (req: IncomingMessage, res: ServerResponse, next: (e?: unknown) => void): Promise<void> => {
     apps ??= load();
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
-    const pick = (await apps).find((a) => a.served(url.pathname));
+    const pick = (await apps).find((a) => answers(a, url.pathname));
     if (pick === undefined) return next();
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers))

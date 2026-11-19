@@ -95,10 +95,12 @@ type DevServer = {
 type DevApp = {
   readonly app: { fetch(req: Request): Promise<Response>; close(): Promise<void> };
   served(path: string): boolean;
+  readonly mount: string | undefined;
 };
-const isDevApp = (v: unknown): v is [string, DevApp["app"], DevApp["served"]] =>
+const isDevApp = (v: unknown): v is [string, DevApp["app"], DevApp["served"], DevApp["mount"]] =>
   Array.isArray(v) &&
   typeof v[2] === "function" &&
+  (v[3] === undefined || typeof v[3] === "string") &&
   typeof v[1] === "object" &&
   v[1] !== null &&
   typeof Reflect.get(v[1], "fetch") === "function" &&
@@ -269,7 +271,9 @@ export default function (): {
     await closed;
     const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
     const apps: unknown = mod?.apps;
-    devApps = (Array.isArray(apps) ? apps : []).filter(isDevApp).map(([, app, served]) => ({ app, served }));
+    devApps = (Array.isArray(apps) ? apps : [])
+      .filter(isDevApp)
+      .map(([, app, served, mount]) => ({ app, served, mount }));
     return devApps;
   });
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
