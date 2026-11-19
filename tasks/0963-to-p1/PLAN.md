@@ -25,6 +25,14 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 - Before a push: `pnpm check`, `pnpm test`, both apps' `keel test`, `pnpm ledger --diff`, `node tooling/evidence-report.mjs --check` and `pnpm build` on the exact commit in a clean checkout, each gated on its own exit status. `pnpm ledger` and `pnpm evidence:report` are written from a clean tree after both apps' `keel test`.
 - One mutation run at a time (machine-wide lock). Few test-running agents at once: the machine is shared, and spawn-heavy cli conformance times out under load (backlog 0938).
 
+## Lanes in flight (2026-11-19)
+Each lane is a subagent; a lane in a worktree commits on its branch and the orchestrator reviews and cherry-picks. A lane with no report is re-briefed from this list.
+- `.worktrees/0956`, branch `rfc-0147`: conformance for RFC 0147 (conformance-writer); the build follows on the same branch.
+- `.worktrees/0967`, branch `lane-0967`: tests for the server's surviving mutants (backlog 0967) and the std-sessions mutation config (0966). It starts no mutation run.
+- `.worktrees/golden3`, branch `lane-golden3`: the golden-3 eval made ready short of the model call (backlog 0937, stale references, how an agent run starts and what it costs). The model run waits for the operator's word on spending.
+- main tree, `tasks/0963-to-p1/freeze-review.md`: the freeze review audit (backlog 0034), report only.
+- main tree, `tasks/p1/PLAN.md`: the P1 and P2 plan (backlog 0962).
+
 ## Verification
 - [ ] Backlog 0956 built and conformance-covered. RFC 0147, ADR-0169, k.return and the threat model are written (k.return is `implemented` until its conformance lands); next the conformance lane, then the build, each in a worktree.
 - [x] Backlog 0921: the server's mutation run finishes (78.4 against 70); findings in `tasks/0338-s8-reach/proposed/server-mutation-tail.md`; follow-ups are backlog 0966 and 0967.
