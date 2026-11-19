@@ -147,6 +147,22 @@ function liveRuns() {
 }
 
 /** Marks the run file `signalled`; false when it already is, so the caller sends nothing. */
+/**
+ * A link `<root>/.stryker-tmp/<name>` to every `packages/<name>`. A sandbox under the repository root's `.stryker-tmp`
+ * (`ROOT_SANDBOX`, tooling/stryker.mjs) sits beside those links as a package sits beside its siblings, so a test or a
+ * process it starts that reaches `../../<name>/src/index.ts` from its own directory finds the sibling's source.
+ */
+export function linkPackages(repo) {
+  const home = path.join(repo, ".stryker-tmp");
+  fs.mkdirSync(home, { recursive: true });
+  for (const e of fs.readdirSync(path.join(repo, "packages"), { withFileTypes: true })) {
+    if (!e.isDirectory() || e.name.startsWith(".")) continue;
+    const link = path.join(home, e.name);
+    if (fs.lstatSync(link, { throwIfNoEntry: false })) continue;
+    fs.symlinkSync(path.join("..", "packages", e.name), link, "dir");
+  }
+}
+
 function claimSignal(file) {
   const r = readJson(file);
   if (!r || r.signalled) return false;
@@ -230,14 +246,18 @@ function mutate(args) {
     for (const d of fs.readdirSync(home))
       if (d.startsWith("sandbox-")) fs.rmSync(path.join(home, d), { recursive: true, force: true });
   }
+  linkPackages(root);
 
   const bin =
     process.env.KEEL_MUTATE_BIN || path.join(root, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");
+  // `pnpm test` starts vitest through pnpm's bin shim, which puts pnpm's hoisted packages on NODE_PATH; Stryker starts
+  // its test runners without the shim, so the same directory is named here and a test resolves what it does there.
+  const NODE_PATH = process.env.NODE_PATH || path.join(root, "node_modules", ".pnpm", "node_modules");
   // Its own process group: a terminal's Ctrl-C reaches the runner only, which passes on exactly one SIGINT.
   const child = spawn(process.execPath, [bin, "run", ...args], {
     stdio: "inherit",
     detached: true,
-    env: { ...process.env, KEEL_TEST_TIMES: path.join(cache, `${pkg}.times.json`), KEEL_MUTATE_RUN: file },
+    env: { ...process.env, NODE_PATH, KEEL_TEST_TIMES: path.join(cache, `${pkg}.times.json`), KEEL_MUTATE_RUN: file },
   });
   let over = false;
   let killed = false;

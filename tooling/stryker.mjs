@@ -8,9 +8,10 @@ export const REPORTER = path.join(import.meta.dirname, "stryker-reporter.mjs");
 export const VITEST = path.join(import.meta.dirname, "vitest.mutate.config.ts");
 
 /**
- * Options for a package whose tests reach `spec/`, `tooling/` or a sibling package by a path relative to the test file:
- * the sandbox copy goes under the repository root's `.stryker-tmp`, two levels below the root as the package is, so
- * those paths end where they do from the package. Spread after `strykerConfig(...)`.
+ * Options for a package whose tests reach `spec/`, `tooling/`, `apps/` or a sibling package by a path relative to the
+ * test file: the sandbox copy goes under the repository root's `.stryker-tmp`, two levels below the root as the package
+ * is, so a path through the root ends where it does from the package. A path to a sibling (`../../<name>`) ends at
+ * `.stryker-tmp/<name>`, which tooling/mutate.mjs links to `packages/<name>`. Spread after `strykerConfig(...)`.
  */
 export const ROOT_SANDBOX = {
   tempDirName: path.join(import.meta.dirname, "..", ".stryker-tmp"),
