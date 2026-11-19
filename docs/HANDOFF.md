@@ -14,7 +14,7 @@ active:
   - stages: S1 to S5, S7 and S8 closed; S6 provisionally closed (its external reviews and the golden-3 build are P1 work). The P1 plan is `tasks/p1/PLAN.md` (a 0.x preview first; no licence until launch); P1 work has started ahead of the freeze flip.
   - in flight: see `## Lanes` in the active plan; it lists each lane's worktree, branch and state, what is merged and what waits.
   - first thing on resume: `git worktree list` and `## Lanes` in the active plan; then the CI run on the pushed head (`gh run list --limit 2`).
-  - safe to clear: NO while subagents run on `lane-w07` and `lane-w5l1`; see `## Lanes` in the active plan for every lane and what waits.
+  - safe to clear: NO while subagents run (`lane-w07`: the build review; `lane-w5l1`: the RFC 0151 build). The operator left the session running overnight on 2026-11-19: keep dispatching, merge what passes its gates, push gated batches. If this session ended with lanes in flight, their commits are on the lane branches; read `## Lanes` in the active plan and re-dispatch from each lane's last commit.
 blockers: none
 pending decisions: none blocks work. Asked of the operator and not yet answered: ADR-0173 (`keel docs` replaces `keel spec`; thirteen app skills become seven), which gates W5's skill, packing and conformance lanes; the thirteen design choices of RFC 0151; the RFCs lane 09 names (0690, 0867). To confirm or reverse: D19 to D21 in the active plan. Still to ask when their work starts: whether the golden-3 agent run needs a container, and the open decisions of tasks/p1/PLAN.md.
 last updated: 3db682b8 2026-11-19
