@@ -25,7 +25,7 @@ const usage = (command: string, argv: readonly string[], diags: Diag[]): Parsed 
  * Parse argv against the command table. Flags are `--name`, `--name=value` or `--name value`; booleans take no
  * value. Bare words fill the operation's positional fields in order (an array field takes the rest). The text is
  * coerced and validated by the operation's input schema (`decodeStrings`), so every invalid value is E1052.
- * E1051 for an unknown or missing command (`session` is answered earlier, in runEngine, with I1055).
+ * E1051 for an unknown or missing command (`session` and `report` are answered earlier, in runEngine, with I1055).
  */
 export function parseArgv(argv: readonly string[], ops: readonly Operation[]): Parsed {
   const name = argv[0];

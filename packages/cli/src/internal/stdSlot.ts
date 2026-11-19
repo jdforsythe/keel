@@ -1,4 +1,4 @@
 import type { StdOperation } from "../types/StdOperation.ts";
 
-/** The `session` command slot (k.cli): empty until `stdCommand` fills it. Process-wide, like the formatter registry. */
-export const stdSlot: { op: StdOperation | undefined } = { op: undefined };
+/** The reserved command slots (k.cli), by name: empty until `stdCommand` fills one. Process-wide, like the formatter registry. */
+export const stdSlot = new Map<string, StdOperation>();

@@ -226,6 +226,9 @@ importers:
       '@keel/std-money':
         specifier: workspace:*
         version: link:../../packages/std-money
+      '@keel/std-report':
+        specifier: workspace:*
+        version: link:../../packages/std-report
       '@keel/std-tables':
         specifier: workspace:*
         version: link:../../packages/std-tables
@@ -1218,12 +1221,30 @@ importers:
         specifier: workspace:*
         version: link:../schema
     devDependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../server
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
       fast-check:
         specifier: ^3
         version: 3.23.2
+      happy-dom:
+        specifier: ^21
+        version: 21.0.4
 
   packages/std-schedules:
     dependencies:

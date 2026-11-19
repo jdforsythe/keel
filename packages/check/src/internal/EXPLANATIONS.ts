@@ -87,7 +87,13 @@ const ROWS: readonly Row[] = [
     "report it with the message",
     "k.compiler",
   ],
-  ["E1051", "unknown command", "`session` needs the stdlib sessions module.", "keel help lists the commands", "k.cli"],
+  [
+    "E1051",
+    "unknown command",
+    "`session` and `report` need their stdlib modules.",
+    "keel help lists the commands",
+    "k.cli",
+  ],
   [
     "E1052",
     "unknown flag, or flag value invalid for the input schema",
@@ -98,7 +104,7 @@ const ROWS: readonly Row[] = [
   [
     "E1053",
     "formatter kind or std command registered twice",
-    "Each record kind has one formatter, and the reserved `session` command one operation.",
+    "Each record kind has one formatter, and each reserved command (`session`, `report`) one operation.",
     "remove the second registration or use a new kind",
     "k.cli",
   ],

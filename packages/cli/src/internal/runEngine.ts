@@ -12,10 +12,11 @@ import { usageResult } from "./usageResult.ts";
 
 /** Parse argv, then `perform`. Returns the writes too (tests inspect them; `io.apply` already received them). */
 export async function runEngine(argv: readonly string[], io: Io): Promise<EngineResult> {
-  if (argv[0] === "session") {
-    // The stdlib sessions module fills the slot when the project's std deps load; unfilled: I1055 (info), exit 0 (k.cli Rules).
+  const std = argv[0];
+  if (std === "session" || std === "report") {
+    // A stdlib module fills the slot when the project's std deps load; unfilled: I1055 (info), exit 0 (k.cli Rules).
     const loaded = await loadStd(io);
-    const op = stdSlot.op;
+    const op = stdSlot.get(std);
     if (op !== undefined) {
       const parsedStd = parseArgv(argv, [op]);
       if (!parsedStd.ok) {
@@ -28,9 +29,9 @@ export async function runEngine(argv: readonly string[], io: Io): Promise<Engine
       }
       return perform(parsedStd.op, parsedStd.input, io);
     }
-    const unfilled = unavailable("session", "the stdlib sessions module", "k.cli");
+    const unfilled = unavailable(std, `the stdlib ${std} module`, "k.cli");
     const r = respond(loaded.length === 0 ? unfilled : [...loaded, ...unfilled], io, {
-      command: "session",
+      command: std,
       format: sniffFormat(argv),
     });
     return {

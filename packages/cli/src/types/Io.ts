@@ -9,7 +9,7 @@ import type { Write } from "./Write.ts";
  * asks it for the file scope of the operation it runs (`Operation.scope`). `apply` receives the file effects of a
  * successful command (absent: they are dropped). `stdin` as a stream plus `emit` serve `mcp`/`lsp` incrementally;
  * as a string they are served in one batch and the replies returned as stdout. `tty` and `env.KEEL_AGENT` select
- * the default format (OUTPUT.md). `fetch` is the network for `inspect` and `session ingest` (absent: I1055); `init` carries headers, method, body.
+ * the default format (OUTPUT.md). `fetch` is the network for `inspect`, `report` and `session ingest` (absent: I1055); `init` carries headers, method, body.
  * `read` returns the text of a file a flag names outside the loaded scope (`check --base`), relative to `cwd`, or undefined.
  * `build` is the disk half of `build` after the engine's writes (`routes.json`, `surface.json`, the Vite builds), so
  * `keel build` and MCP `build` run one path; absent, `build` writes the engine's artifacts only. `shell` loads what

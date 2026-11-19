@@ -169,7 +169,7 @@ describe("operations that are not available in-process", () => {
       "I1055 render not available: needs a compiled component or route loader\n  see: k.testing\nok render\n",
     );
     expect((await run(["session"], { cwd: CWD })).stdout).toBe(
-      "I1055 session not available: needs the stdlib sessions module\n  see: k.cli\nok session\n",
+      "I1055 session not available: needs the stdlib session module\n  see: k.cli\nok session\n",
     );
   });
 

@@ -53,13 +53,10 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
       return only(unavailable(op.name, "vite.config.ts and the keel binary (vite dev server)", "k.server"));
     case "inspect":
       return only(await inspectCommand(input, io));
-    case "session": {
-      const std = stdSlot.op;
-      return std === undefined
-        ? only(unavailable(op.name, "the stdlib sessions module", "k.cli"))
-        : await std.run(input, io);
-    }
     case "render":
       return only(unavailable(op.name, "a compiled component or route loader", "k.testing"));
   }
+  // `session` and `report`: the operation a stdlib package filled into the slot (`stdCommand`).
+  const std = stdSlot.get(op.name);
+  return std === undefined ? only(unavailable(op.name, `the stdlib ${op.name} module`, "k.cli")) : std.run(input, io);
 }

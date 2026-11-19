@@ -1,10 +1,10 @@
 import { s } from "@keel/schema";
 import type { Input, OutRecord, StdOperation } from "../src/index.ts";
 
-/** A `session` operation that echoes its parsed positional input as an `I9999`-free info diag plus a summary. */
-export const makeOp = (tag: string, seen: Input[] = []): StdOperation => ({
-  name: "session",
-  description: `session ${tag}`,
+/** A `session` (or `report`) operation that echoes its parsed positional input as an `I9999`-free info diag plus a summary. */
+export const makeOp = (tag: string, seen: Input[] = [], name: "session" | "report" = "session"): StdOperation => ({
+  name,
+  description: `${name} ${tag}`,
   input: s.object({
     op: s.string().optional(),
     target: s.string().optional(),
@@ -18,7 +18,7 @@ export const makeOp = (tag: string, seen: Input[] = []): StdOperation => ({
   run: async (input) => {
     seen.push(input);
     const records: OutRecord[] = [
-      { kind: "summary", ok: true, name: `session ${input.op ?? ""} ${input.target ?? ""}`.trim(), counts: {} },
+      { kind: "summary", ok: true, name: `${name} ${input.op ?? ""} ${input.target ?? ""}`.trim(), counts: {} },
     ];
     return { records, writes: [] };
   },

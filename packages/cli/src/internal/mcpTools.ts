@@ -13,7 +13,7 @@ export function mcpTools(): {
   description: string;
   inputSchema: JsonSchema;
 }[] {
-  return [...operations, ...(stdSlot.op === undefined ? [] : [stdSlot.op])].map((op) => ({
+  return [...operations, ...stdSlot.values()].map((op) => ({
     name: op.name,
     description: op.description,
     inputSchema: toJsonSchema(op.input.node),

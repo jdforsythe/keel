@@ -38,7 +38,8 @@ export async function mcpHandle(
         await fillStd(provide);
         return rpcReply(msg.id, { tools: mcpTools() });
       case "tools/call":
-        if (isRecord(msg.params) && msg.params.name === "session") await fillStd(provide);
+        if (isRecord(msg.params) && (msg.params.name === "session" || msg.params.name === "report"))
+          await fillStd(provide);
         return rpcReply(msg.id, await mcpCall(msg.params, await provide()));
       default:
         return rpcReply(msg.id, undefined, {

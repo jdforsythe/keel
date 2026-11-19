@@ -33,7 +33,7 @@ export async function mcpCall(params: unknown, io: Io): Promise<ToolResult> {
   const p = isRecord(params) ? params : {};
   const name = typeof p.name === "string" ? p.name : "";
   const agent: Io = { ...io, tty: false };
-  const op = [...operations, ...(stdSlot.op === undefined ? [] : [stdSlot.op])].find((o) => o.name === name);
+  const op = [...operations, ...stdSlot.values()].find((o) => o.name === name);
   if (op === undefined)
     return result(
       usageResult(
