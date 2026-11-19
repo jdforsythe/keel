@@ -325,6 +325,7 @@ const NO_FIX = [
   "E1001", // the key field is a choice of the author
   "E1002", // the safe replacement depends on intent (text vs. markup)
   "E1004", // moving server code is a design change
+  "E1009", // k.boundary Rules: fix none; moving the guard to a `*.guard.*` file is a file move
   "E1104", // renaming the file would break imports in other files
   "E1105", // moving to a .server file is a design change
   "E1106", // which stdlib format type to use is the author's choice

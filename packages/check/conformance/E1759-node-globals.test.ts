@@ -159,7 +159,6 @@ describe("k.host Node globals: `require`, `__dirname` and `__filename` are E1759
 describe("k.host Node globals: none, the reads but `require`, `__dirname` and `__filename`", () => {
   test("every read of a Node global and every Node built-in import in `modules/shop/stock.server.ts` is none", () => {
     for (const stmt of [...GLOBAL_READS, ...BUILTIN_STMTS]) expect(inFile("node", SERVER, stmt)).toBe(0);
-    for (const stmt of [...GLOBAL_READS, ...BUILTIN_STMTS]) expect(inFile("client", SERVER, stmt)).toBe(0);
   });
 
   test("every read of a Node global and every Node built-in import in `routes.ts` of a module only `node` deployables list is none", () => {

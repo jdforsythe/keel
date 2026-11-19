@@ -710,6 +710,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1009: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "src/auth.ts",
+        "import { guard } from '@keel/router'\nexport const auth = guard({ redirect: 'app.home' }, async () => null)\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/auth.guard.ts",
+        "import { guard } from '@keel/router'\nexport const auth = guard({ redirect: 'app.home' }, async () => null)\n",
+      ),
+    ],
+  },
   E1570: {
     opts: NO_TYPES,
     bad: [
