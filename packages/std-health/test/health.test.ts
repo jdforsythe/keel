@@ -2,9 +2,9 @@
 // Seed 1337
 import { createCtx } from "@keel/ctx";
 import { createApp, topology } from "@keel/server";
+import { expect, test } from "vitest";
 import { Health } from "../src/Health.ts";
 import { routes } from "../src/routes.ts";
-import { expect, test } from "vitest";
 
 test("Health accepts the ok report and nothing else", () => {
   expect(Health.parse({ status: "ok", at: 5 }).ok).toBe(true);

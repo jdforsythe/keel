@@ -1,7 +1,7 @@
 // Seed 1337
 import { afterEach, expect, test, vi } from "vitest";
-import { realGeo } from "../src/internal/realGeo.ts";
 import { mulberry32 } from "../src/internal/mulberry32.ts";
+import { realGeo } from "../src/internal/realGeo.ts";
 import { simGeo } from "../src/internal/simGeo.ts";
 
 afterEach(() => {
