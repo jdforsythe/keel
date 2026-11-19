@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1260,
-    "probabilistic": 326,
+    "example": 1269,
+    "probabilistic": 327,
     "exhaustive": 15,
     "proven": 63,
     "monitored": 4
@@ -15,11 +15,11 @@
         "threshold": 70
       },
       "cli": {
-        "score": 78.84,
+        "score": 78.8,
         "threshold": 70
       },
       "compiler": {
-        "score": 79.34,
+        "score": 79.19,
         "threshold": 70
       },
       "ctx": {
@@ -35,7 +35,7 @@
         "threshold": 80
       },
       "router": {
-        "score": 84.5,
+        "score": 86.13,
         "threshold": 80
       },
       "runtime-dom": {
@@ -43,7 +43,7 @@
         "threshold": 70
       },
       "scaffold": {
-        "score": 79,
+        "score": 79.51,
         "threshold": 70
       },
       "schema": {
@@ -63,7 +63,7 @@
         "threshold": 70
       },
       "std-capacitor": {
-        "score": 82.32,
+        "score": 86.11,
         "threshold": 70
       },
       "std-channels": {
@@ -111,7 +111,7 @@
         "threshold": 70
       },
       "std-offline": {
-        "score": 79.22,
+        "score": 77.08,
         "threshold": 70
       },
       "std-report": {
@@ -131,7 +131,7 @@
         "threshold": 70
       },
       "std-tauri": {
-        "score": 76.99,
+        "score": 80,
         "threshold": 70
       },
       "std-temporal": {
@@ -159,7 +159,7 @@
         "threshold": 80
       },
       "testing": {
-        "score": 86.13,
+        "score": 87.61,
         "threshold": 70
       },
       "ui": {
@@ -12656,6 +12656,18 @@
       "rung": "probabilistic"
     },
     {
+      "pkg": "std-capacitor",
+      "name": "returnScheme",
+      "file": "packages/std-capacitor/src/returnScheme.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-capacitor",
+      "name": "shellMount",
+      "file": "packages/std-capacitor/src/shellMount.ts",
+      "rung": "example"
+    },
+    {
       "pkg": "std-channels",
       "name": "channel",
       "file": "packages/std-channels/src/channel.ts",
@@ -13152,6 +13164,12 @@
       "name": "tableSearch",
       "file": "packages/std-tables/src/tableSearch.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-tauri",
+      "name": "shellMount",
+      "file": "packages/std-tauri/src/shellMount.ts",
+      "rung": "example"
     },
     {
       "pkg": "std-tauri",
@@ -14987,23 +15005,23 @@
     },
     {
       "item": "k.return#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.return#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.return#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.return#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.return#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.reveal#1",
@@ -16411,7 +16429,7 @@
     },
     {
       "item": "std.outbox-owner#4",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.outbox#1",
