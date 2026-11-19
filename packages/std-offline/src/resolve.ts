@@ -9,6 +9,7 @@ import type { Resolution } from "./Resolution.schema.ts";
 import type { Outputs } from "./internal/Outputs.ts";
 import { admit } from "./internal/admit.ts";
 import { configOf } from "./internal/configOf.ts";
+import { flowOf } from "./internal/flowOf.ts";
 import { flush } from "./internal/flush.ts";
 import { load } from "./internal/load.ts";
 import { persist } from "./internal/persist.ts";
@@ -20,7 +21,7 @@ import { persist } from "./internal/persist.ts";
  * `OutboxResult` as `send` does: `queued` when offline or when the flush stops before it, `failed` with
  * `offline.storage` (the entry failed in memory, nothing posted) when the storage write rejects. `'theirs'` removes a
  * `conflict` or `failed` entry, writes the outbox (once more when that write rejects) and resolves true. Each logs `<id>.resolve` `{ key, resolution }`.
- * Resolves false, changing nothing, for a key with no such entry.
+ * Resolves false, changing nothing, for a key with no such entry among those the ctx added or loaded.
  */
 export function resolve<const D extends EndpointMap>(
   ctx: Ctx,
@@ -48,7 +49,8 @@ export async function resolve<const D extends EndpointMap>(
 ): Promise<boolean | OutboxResult<Outputs<D>>> {
   const c = configOf(o);
   await load(ctx, c);
-  const state = c.store.get("entries").find((e) => e.key === key)?.state;
+  // Only an entry this ctx added or loaded.
+  const state = flowOf(c, ctx).held.has(key) ? c.store.get("entries").find((e) => e.key === key)?.state : undefined;
   if (state !== "conflict" && (resolution === "mine" || state !== "failed")) return false;
   tx(c.resolve, { key, resolution });
   if (resolution === "theirs") {

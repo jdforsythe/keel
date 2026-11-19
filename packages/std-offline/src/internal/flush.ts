@@ -5,6 +5,7 @@ import type { OutboxResult } from "../OutboxResult.ts";
 import type { Config } from "./Config.ts";
 import { fault } from "./fault.ts";
 import { field } from "./field.ts";
+import { flowOf } from "./flowOf.ts";
 import { outcomeOf } from "./outcomeOf.ts";
 import { persist } from "./persist.ts";
 
@@ -15,8 +16,8 @@ const held: OutboxResult<unknown> = { state: "queued" };
 const paused: OutboxResult<unknown> = { state: "queued" };
 
 /**
- * Sends the outbox's `queued` entries of the ctx's owner in order, one request at a time (std.offline Flush), unless its
- * flush is already running, through the module's service, whose answers `outcomeOf` reads; with no owner given on the
+ * Sends the outbox's `queued` entries of the ctx's owner that the ctx holds (added or loaded there) in order, one request
+ * at a time (std.offline Flush), unless that ctx's flush is already running, through the module's service, whose answers `outcomeOf` reads; with no owner given on the
  * ctx it posts nothing. Each post's `body.write` is `{ key, base, owner }` of its entry, and an answer whose error
  * `code` is `offline.owner` (the action refused the owner, std.outbox-owner) fails that entry alone with `offline.owner`,
  * never to be posted again. An entry is posted only while, once its `sending` write settles, it is still `sending` and its
@@ -33,22 +34,23 @@ const paused: OutboxResult<unknown> = { state: "queued" };
  * another owner failed it before the flush reached it, else `queued` when the flush stops before it.
  */
 export function flush(ctx: Ctx, c: Config, key = ""): Promise<OutboxResult<unknown>> {
-  const done = new Promise<OutboxResult<unknown>>((go) => c.waits.set(key, go));
+  const done = new Promise<OutboxResult<unknown>>((go) => flowOf(c, ctx).waits.set(key, go));
   void loop(ctx, c);
   return done;
 }
 
 async function loop(ctx: Ctx, c: Config): Promise<void> {
-  if (c.busy) return;
-  c.busy = true;
-  c.timer.abort();
+  const f = flowOf(c, ctx);
+  if (f.busy) return;
+  f.busy = true;
+  f.timer.abort();
   // Set once a storage write rejects: only that throw fails the entry in hand.
   let lost = false;
   // The answer that settled the entry in hand: a failed write that records it leaves the answer standing.
   let answer: OutboxResult<unknown> | undefined;
   const done = (key: string, out: OutboxResult<unknown>): void => {
-    c.waits.get(key)?.(out);
-    c.waits.delete(key);
+    f.waits.get(key)?.(out);
+    f.waits.delete(key);
   };
   const put = (key: string, state: string, extra: object, out?: OutboxResult<unknown>): Promise<void> => {
     const payload: unknown = { key, state, ...extra };
@@ -63,9 +65,9 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
   let key = "";
   try {
     for (;;) {
-      const who = c.owners.get(ctx);
-      const e = c.store.get("entries").find((x) => x.state === "queued" && x.owner === who);
-      if (!c.live || !ctx.net.online() || e === undefined || c.paused.has(ctx)) break;
+      const who = f.owner;
+      const e = c.store.get("entries").find((x) => x.state === "queued" && x.owner === who && f.held.has(x.key));
+      if (!c.live || !ctx.net.online() || e === undefined || f.paused) break;
       // An entry whose own write to `ctx.storage` has not settled: wait for it, then look again (it may be `failed`).
       const writing = c.writes.get(e.key);
       if (writing !== undefined) {
@@ -77,10 +79,9 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
       await put(e.key, "sending", {});
       if (!c.live) break;
       // A `drain` with another owner may fail the entry at any await: it is posted only while the owner's and `sending`.
-      const mine = (): boolean => c.owners.get(ctx) === e.owner && stateOf(e.key) === "sending";
+      const mine = (): boolean => f.owner === e.owner && stateOf(e.key) === "sending";
       const gone = { state: "failed" as const, error: fault(c, "offline.owner") };
-      const away = (): OutboxResult<unknown> =>
-        c.owners.get(ctx) === "" && stateOf(e.key) === "sending" ? held : gone;
+      const away = (): OutboxResult<unknown> => (f.owner === "" && stateOf(e.key) === "sending" ? held : gone);
       const call = Object.hasOwn(c.api, e.endpoint) ? c.client[e.endpoint] : undefined;
       const body = { ...obj(field(e.input, "body")), write: { key: e.key, base: e.base, owner: e.owner } };
       const got = !mine()
@@ -88,7 +89,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
         : call
           ? outcomeOf(
               await call({ params: field(e.input, "params"), query: field(e.input, "query"), body }, ctx),
-              c.again === e.key,
+              f.again === e.key,
               gone,
               paused,
             )
@@ -98,28 +99,28 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
             };
       // A 2xx answer stands whatever changed in flight: the server committed the write.
       const out = got?.state === "sent" || mine() ? got : away();
-      c.again = out ? undefined : e.key;
+      f.again = out ? undefined : e.key;
       if (out === held || out === paused) {
         await put(e.key, "queued", {});
         if (out === held) continue;
-        c.paused.add(ctx);
+        f.paused = true;
         break;
       }
       if (out?.state === "queued") {
         await put(e.key, "queued", {});
         if (ctx.net.online()) {
-          c.timer = new AbortController();
-          ctx.clock.after(c.delay, c.timer.signal).then(
+          f.timer = new AbortController();
+          ctx.clock.after(f.delay, f.timer.signal).then(
             () => loop(ctx, c),
             () => undefined,
           );
         }
-        c.delay = Math.min(c.delay * 2, 60_000);
+        f.delay = Math.min(f.delay * 2, 60_000);
         break;
       }
       await put(e.key, out?.state ?? "queued", out?.state === "sent" ? {} : { ...out }, out);
       if (out) {
-        c.delay = 1000;
+        f.delay = 1000;
         done(e.key, out);
       }
     }
@@ -133,9 +134,9 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
     await attempt(() => persist(ctx, c));
     done(key, answer ?? { state: "failed", error });
   } finally {
-    c.busy = false;
-    for (const [k, go] of c.waits)
+    f.busy = false;
+    for (const [k, go] of f.waits)
       go(stateOf(k) === "failed" ? { state: "failed", error: fault(c, "offline.owner") } : { state: "queued" });
-    c.waits.clear();
+    f.waits.clear();
   }
 }

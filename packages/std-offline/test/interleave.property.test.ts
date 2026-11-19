@@ -16,6 +16,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type OutboxResult, Write, drain, outbox, resolve, send, writeFor } from "../src/index.ts";
 import { configOf } from "../src/internal/configOf.ts";
+import { flowOf } from "../src/internal/flowOf.ts";
 
 const ORIGIN = "http://app.keel.invalid";
 const OWNER = "u1";
@@ -184,7 +185,7 @@ async function run(script: readonly Step[], refuseAt: readonly boolean[]) {
   const server = gatedServer(
     ctx,
     (key) => entryOf(key)?.state,
-    (key) => held.o !== undefined && configOf(held.o).owners.get(ctx) === entryOf(key)?.owner,
+    (key) => held.o !== undefined && flowOf(configOf(held.o), ctx).owner === entryOf(key)?.owner,
     refuseAt,
   );
   const sc = scope(() => {

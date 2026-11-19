@@ -5,12 +5,13 @@ import { OutboxEntry } from "../OutboxEntry.schema.ts";
 import type { Config } from "./Config.ts";
 import { fault } from "./fault.ts";
 import { field } from "./field.ts";
+import { flowOf } from "./flowOf.ts";
 import { full } from "./full.ts";
 import { persist } from "./persist.ts";
 
 /**
  * Loads the outbox stored in `ctx.storage` once per ctx, entry by entry: adds, in order, each entry the store lacks
- * (`sending` as `queued`) while the entries stay within `limit` and `maxBytes`; the rest are not loaded, nor is an
+ * (`sending` as `queued`), which the ctx then holds, while the entries stay within `limit` and `maxBytes`; the rest are not loaded, nor is an
  * entry that is not an `OutboxEntry`. A stored entry that holds an `origin`, or no string `owner`, loads `failed` with
  * `offline.owner`, owner `""` and no `origin`, and the outbox is then written back once. A value that is not JSON, or
  * whose `entries` is not an array, loads nothing.
@@ -40,6 +41,7 @@ async function read(ctx: Ctx, c: Config): Promise<void> {
     const next = { ...e, state: e.state === "sending" ? ("queued" as const) : e.state };
     if (full(c, [...entries, next])) break;
     tx(c.add, next);
+    flowOf(c, ctx).held.add(next.key);
     moved ||= foreign;
   }
   if (moved) await attempt(() => persist(ctx, c));

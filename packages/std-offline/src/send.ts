@@ -9,6 +9,7 @@ import type { Output } from "./internal/Output.ts";
 import { admit } from "./internal/admit.ts";
 import { configOf } from "./internal/configOf.ts";
 import { fault } from "./internal/fault.ts";
+import { flowOf } from "./internal/flowOf.ts";
 import { flush } from "./internal/flush.ts";
 import { full } from "./internal/full.ts";
 import { load } from "./internal/load.ts";
@@ -36,7 +37,7 @@ export async function send<const D extends EndpointMap, K extends keyof D & stri
   await load(ctx, c);
   await own(ctx, c, opts.owner);
   // A `send` or `drain` with another owner ran during that write: this entry would never be posted.
-  if (c.owners.get(ctx) !== opts.owner) return { state: "failed", error: fault(c, "offline.owner") };
+  if (flowOf(c, ctx).owner !== opts.owner) return { state: "failed", error: fault(c, "offline.owner") };
   const key = ctx.random.id("Write");
   const entry: unknown = {
     key,
@@ -54,6 +55,7 @@ export async function send<const D extends EndpointMap, K extends keyof D & stri
   }
   const added = tx(c.add, entry);
   if (!added.ok) throw new Error(added.error.message);
+  flowOf(c, ctx).held.add(key);
   const error = await admit(ctx, c, key);
   if (error) return { state: "failed", error };
   return ctx.net.online() ? asResult<Output<D, K>>(await flush(ctx, c, key)) : { state: "queued" };

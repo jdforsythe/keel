@@ -34,9 +34,9 @@ Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane
 
 - [x] 0501 std-offline · M · a stored outbox entry posts to its stored `origin` unchecked and to the next signed-in user's caller; build RFC 0120 · lane 01
 - [x] 0509 std-offline · M · the outbox sends through `service({ module })`, `send` takes no origin and entries carry none (RFC 0120, with 0501) · lane 01
-- [ ] 0797 std-offline · S · red-team: the flush's retry timer outlives `drain`'s scope and still posts · lane 01
-- [ ] 0798 std-offline · S · red-team: an `events: true` endpoint in an outbox leaves its entry `sending` across reloads · lane 01
-- [ ] 0799 std-offline · S · red-team: two ctxs over one module-level outbox fail each other's entries · lane 01
+- [x] 0797 std-offline · S · red-team: the flush's retry timer outlives `drain`'s scope and still posts · lane 01
+- [x] 0798 std-offline · S · red-team: an `events: true` endpoint in an outbox leaves its entry `sending` across reloads · lane 01
+- [x] 0799 std-offline · S · red-team: two ctxs over one module-level outbox fail each other's entries · lane 01
 - [ ] 0800 std-offline · S · red-team: two tabs overwrite each other's stored outbox, so a reload loses the other tab's queued writes · lane 01
 - [x] 0945 std-offline, std-channels · S · confirm with a test that the 0501 and 0478 fixes are built, then close both · lane 01
 - [x] 0478 std-channels · S · every cookieless caller shares one `perCaller` allowance; build RFC 0121 · lane 01

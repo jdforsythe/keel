@@ -10,6 +10,7 @@ import { expect, test } from "vitest";
 import { Write, drain, outbox, resolve, send, writeFor } from "../src/index.ts";
 import { configOf } from "../src/internal/configOf.ts";
 import { field } from "../src/internal/field.ts";
+import { flowOf } from "../src/internal/flowOf.ts";
 import { outcomeOf } from "../src/internal/outcomeOf.ts";
 
 const Api = endpoints({
@@ -126,7 +127,7 @@ test("an entry whose owner changes while it is in flight is failed with offline.
   sc.dispose();
 });
 
-test("on a ctx no owner was given, a 'mine' resolve posts nothing and resolves queued", async () => {
+test("on a ctx no owner was given, a 'mine' resolve posts nothing and resolves queued; on a ctx that does not hold the entry it resolves false", async () => {
   const base = createCtx({ mode: "sim", seed: 1337 });
   const posts: string[] = [];
   base.net.route("http://app.keel.invalid/add", async (req) => {
@@ -144,9 +145,25 @@ test("on a ctx no owner was given, a 'mine' resolve posts nothing and resolves q
     posts.push(String(field(await req.json(), "t")));
     return Response.json({ ok: true, value: {} });
   });
-  expect(await resolve(other, o, key, "mine")).toEqual({ state: "queued" });
+  expect(await resolve(other, o, key, "mine")).toBe(false);
   expect(posts).toEqual(["a1"]);
   sc.dispose();
+  // The same entry stored on `other` and loaded there by a new outbox: held, with no owner given on that ctx.
+  const { o: o2, sc: sc2, id } = declare();
+  const conflict = {
+    key,
+    endpoint: "add",
+    owner: "a",
+    input: { body: { t: "a1" } },
+    base: 0,
+    at: 0,
+    state: "conflict",
+    head: 3,
+  };
+  await other.storage.set(`keel.outbox.${id}`, JSON.stringify({ entries: [conflict] }));
+  expect(await resolve(other, o2, key, "mine")).toEqual({ state: "queued" });
+  expect(posts).toEqual(["a1"]);
+  sc2.dispose();
 });
 
 test("an owner change at any await of a send's flush: never posted for another owner, 2xx stands, storage agrees", async () => {
@@ -163,7 +180,7 @@ test("an owner change at any await of a send's flush: never posted for another o
         const key = String(field(field(await req.json(), "write"), "key"));
         posts.push(key);
         const e = o.get("entries").find((x) => x.key === key);
-        if (e?.state !== "sending" || e.owner !== cfg.owners.get(ctx)) wrong.push(key);
+        if (e?.state !== "sending" || e.owner !== flowOf(cfg, ctx).owner) wrong.push(key);
         await new Promise<void>((go) => answers.push(go));
         if (conflict) {
           const error = { code: "keel.conflict", message: "c", data: { transaction: "x", head: 3 } };

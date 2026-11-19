@@ -25,8 +25,10 @@ const Resolve = s.object({ key: s.string(), resolution: Resolution });
  * `service({ module, schema: api })` with an undeclared 400 or 409 read as JSON: the client store `id` with state `{ entries }`,
  * changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. Inside a scope the store is created now and the outbox
  * stops flushing when that scope is disposed; outside one (a module-level declaration) it is created on first use and
- * lives as long as the module. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it. Throws E2651
- * (an Error with `code`) when an endpoint body holds an `s.secret`: entries are stored in the browser.
+ * lives as long as the module; each ctx that uses it reaches only the entries it added or loaded. `limit` (100) and
+ * `maxBytes` (262,144 bytes of encoded entries) bound it. Throws E2652 (an Error with `code`) for an `events: true`
+ * endpoint, whose answer is a stream, and E2651 when an endpoint body holds an `s.secret`: entries are stored in the
+ * browser.
  */
 export function outbox<const D extends EndpointMap>(
   id: string,
@@ -34,6 +36,10 @@ export function outbox<const D extends EndpointMap>(
   opts: { readonly module: string; readonly limit?: number; readonly maxBytes?: number },
 ): Outbox<D> {
   for (const [name, e] of Object.entries(api)) {
+    if (e.events === true) {
+      const message = `E2652 outbox ${id} endpoint ${name} answers a stream`;
+      throw Object.assign(new Error(message), { code: "E2652" });
+    }
     const at = e.body === undefined ? null : secretPathOf(e.body.node);
     if (at !== null) {
       const message = `E2651 outbox ${id} endpoint ${name} body holds s.secret at ${at || "(root)"}`;
@@ -67,15 +73,9 @@ export function outbox<const D extends EndpointMap>(
         const { head, error, ...plain } = e;
         return { entries: [...entries, { ...plain, base: head, state: "queued" as const }] };
       }),
-      owners: new WeakMap(),
-      paused: new WeakSet(),
       loads: new WeakMap(),
       live: true,
-      busy: false,
-      delay: 1000,
-      timer: new AbortController(),
-      waits: new Map(),
-      again: undefined,
+      flows: new WeakMap(),
       writes: new Map(),
     };
     return c;
