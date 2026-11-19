@@ -14,9 +14,9 @@
 
 **Gates.** A brief tells its agent to run the package's own `check` (typecheck and lint, conformance included), not only the one test file it touched. The root `pnpm check` does not run the ledger diff; the orchestrator runs `pnpm ledger --diff` with the root gates, because CI's `check` job does.
 
-**CI.** `tooling/ci.source.json` defines the jobs: `check`; six `test-shard` jobs, to one of which every package must belong (`tooling/ci-shards.mjs`); a `test` job that passes only if every shard passed; and `postgres`. Each job has a time limit. Nothing is skipped or retried.
+**CI.** `tooling/ci.source.json` defines the jobs: `check`; six `test-shard` jobs, to one of which every package must belong (`tooling/ci-shards.mjs`); a `test` job that passes only if every shard passed; `postgres`, `built-smokes`, `build`, `budgets` and `golden-1-images`; `shell-tauri` and `shell-android`, which run when the `changes` job reports a shell change; `mutate-pr` on a pull request labelled `mutate`; and the weekly scheduled `eval`. Every job but `eval` has a time limit. Nothing is retried.
 
-**Reference files.** The orchestrator keeps `tasks/STAGES.md` (each stage's verdict and evidence) and the evidence report current: `pnpm evidence:report` generates `tooling/ledger/evidence.json` and `tasks/COVERAGE.md` from it, and `pnpm coverage` measures line and branch coverage per package.
+**Reference files.** The orchestrator keeps `tasks/STAGES.md` (each stage's verdict and evidence) and the evidence report current: `pnpm evidence:report` generates `tooling/ledger/evidence.json`, and with `--markdown` `tasks/COVERAGE.md` from it, and `pnpm coverage` measures line and branch coverage per package.
 
 **Brand.** `docs/BRAND.md` is the one style and voice guide. New apps start from the scaffold `project` template (brand tokens, self-hosted fonts, the mark); READMEs and docs pass `tooling/voice-lint.mjs`; the lockup goes on every public page.
 
@@ -50,4 +50,4 @@ Brief every subagent with: the files it owns, the files other agents own concurr
 
 **Processes.** The machine is shared. A brief tells its agent to run one test file at a time, to run a whole package suite at most twice, to bound every command, and to leave no process behind. The orchestrator runs `pnpm orphans` before and after a batch and after any root run that stopped early: it lists this worktree's processes whose parent is gone (O0001), and `pnpm orphans --kill` ends them. Agents keep scratch files outside the repo. A mutation run is watched and stopped with `pnpm mutate:status` and `pnpm mutate:stop` only.
 
-verified: 7f4978b7f8c962693d25fa5ac9d1266412467bf7
+verified: 35de06f8d4339b737d647838e5ff50a923463c10
