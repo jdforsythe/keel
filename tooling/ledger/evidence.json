@@ -1,5 +1,5 @@
 {
-  "commit": "0d438639aa396842643d1b9f1204eb08b0adb049",
+  "commit": "adcd2e464b1ccc73ff4ee3b307d1c9df9a2cba7d",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-18T23:49:47.391Z",
+  "generatedAt": "2026-11-19T01:50:45.512Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1233,7 +1233,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "conformance-covered",
           "total": 0,
           "verified": 0
         },
@@ -1909,7 +1909,7 @@
             "probabilistic": 7,
             "proven": 0
           },
-          "status": "conformance-covered",
+          "status": "unknown",
           "total": 15,
           "verified": 15
         },
@@ -2234,7 +2234,7 @@
             "probabilistic": 9,
             "proven": 0
           },
-          "status": "conformance-covered",
+          "status": "implemented",
           "total": 10,
           "verified": 10
         },
@@ -2835,7 +2835,7 @@
         "reason": null,
         "reportDate": "2026-11-18",
         "score": 74.49,
-        "stale": 1,
+        "stale": 2,
         "threshold": 70
       },
       "packages/cli": {
@@ -2843,7 +2843,7 @@
         "reason": null,
         "reportDate": "2026-11-18",
         "score": 79.36,
-        "stale": 0,
+        "stale": 1,
         "threshold": 70
       },
       "packages/compiler": {
@@ -2851,7 +2851,7 @@
         "reason": null,
         "reportDate": "2026-11-18",
         "score": 78.89,
-        "stale": 1,
+        "stale": 3,
         "threshold": 70
       },
       "packages/ctx": {
@@ -2883,7 +2883,7 @@
         "reason": null,
         "reportDate": "2026-11-18",
         "score": 86.09,
-        "stale": 2,
+        "stale": 4,
         "threshold": 80
       },
       "packages/runtime-dom": {
@@ -2899,7 +2899,7 @@
         "reason": null,
         "reportDate": "2026-11-16",
         "score": 79,
-        "stale": 0,
+        "stale": 1,
         "threshold": 70
       },
       "packages/schema": {
@@ -3151,7 +3151,7 @@
         "threshold": 70
       }
     },
-    "stale": 9
+    "stale": 16
   },
   "schema": 1,
   "tests": {
@@ -3213,27 +3213,27 @@
         "unitFiles": 7
       },
       "packages/check": {
-        "conformanceCases": 611,
+        "conformanceCases": 634,
+        "conformanceFiles": 86,
+        "exploreFiles": 0,
+        "fails": 0,
+        "otherCases": 0,
+        "otherFiles": 0,
+        "propertyCalls": 181,
+        "proveFiles": 0,
+        "simulateFiles": 0,
+        "skipTodo": 0,
+        "unitCases": 350,
+        "unitFiles": 46
+      },
+      "packages/cli": {
+        "conformanceCases": 308,
         "conformanceFiles": 84,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 178,
-        "proveFiles": 0,
-        "simulateFiles": 0,
-        "skipTodo": 0,
-        "unitCases": 347,
-        "unitFiles": 45
-      },
-      "packages/cli": {
-        "conformanceCases": 262,
-        "conformanceFiles": 77,
-        "exploreFiles": 0,
-        "fails": 0,
-        "otherCases": 0,
-        "otherFiles": 0,
-        "propertyCalls": 111,
+        "propertyCalls": 112,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
@@ -3241,18 +3241,18 @@
         "unitFiles": 80
       },
       "packages/compiler": {
-        "conformanceCases": 149,
-        "conformanceFiles": 36,
+        "conformanceCases": 156,
+        "conformanceFiles": 37,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 72,
+        "propertyCalls": 74,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 531,
-        "unitFiles": 58
+        "unitCases": 535,
+        "unitFiles": 60
       },
       "packages/ctx": {
         "conformanceCases": 144,
@@ -3303,12 +3303,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 68,
+        "propertyCalls": 69,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 197,
-        "unitFiles": 32
+        "unitCases": 201,
+        "unitFiles": 33
       },
       "packages/runtime-dom": {
         "conformanceCases": 111,
@@ -3774,18 +3774,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 3780,
-      "conformanceFiles": 924,
+      "conformanceCases": 3856,
+      "conformanceFiles": 934,
       "exploreFiles": 17,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 1895,
+      "propertyCalls": 1902,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4346,
-      "unitFiles": 724
+      "unitCases": 4357,
+      "unitFiles": 728
     }
   },
   "tool": {
