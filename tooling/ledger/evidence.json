@@ -1,5 +1,5 @@
 {
-  "commit": "60f62443583fbfef4ff3be343db016a71f2e4fd6",
+  "commit": "fde43860c199a9cc06b4e4b2c80bd170b67bcfcf",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T15:22:21.351Z",
+  "generatedAt": "2026-11-19T17:27:56.007Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -2937,10 +2937,10 @@
         "threshold": 80
       },
       "packages/server": {
-        "claims": 115,
+        "claims": 135,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 81.59,
+        "score": 78.4,
         "stale": 0,
         "threshold": 70
       },
@@ -3390,7 +3390,7 @@
         "simulateFiles": 0,
         "skipTodo": 0,
         "unitCases": 480,
-        "unitFiles": 93
+        "unitFiles": 95
       },
       "packages/services": {
         "conformanceCases": 64,
@@ -3811,7 +3811,7 @@
       "simulateFiles": 6,
       "skipTodo": 1,
       "unitCases": 4730,
-      "unitFiles": 764
+      "unitFiles": 766
     }
   },
   "tool": {
