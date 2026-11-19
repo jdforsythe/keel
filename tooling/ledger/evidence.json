@@ -1,5 +1,5 @@
 {
-  "commit": "3b07e2f655e61978401483b77a6564837ce76814",
+  "commit": "c5f344601a627ef0a79ebe96b7f3a95d46c9ea62",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T02:29:50.565Z",
+  "generatedAt": "2026-11-19T03:32:16.814Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1164,10 +1164,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 625,
+        "example": 632,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 7,
+        "none": 0,
         "probabilistic": 166,
         "proven": 31
       },
@@ -1239,16 +1239,16 @@
         },
         "k.bundle": {
           "byRung": {
-            "example": 0,
+            "example": 6,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 6,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "conformance-covered",
           "total": 6,
-          "verified": 0
+          "verified": 6
         },
         "k.check": {
           "byRung": {
@@ -1850,16 +1850,16 @@
         },
         "k.user": {
           "byRung": {
-            "example": 8,
+            "example": 9,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 1,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 9,
-          "verified": 8
+          "verified": 9
         },
         "std.brands": {
           "byRung": {
@@ -2253,10 +2253,10 @@
         }
       },
       "total": 835,
-      "verified": 828
+      "verified": 835
     },
     "evidenceByRung": {
-      "example": 1181,
+      "example": 1188,
       "exhaustive": 15,
       "monitored": 4,
       "probabilistic": 326,
@@ -2794,7 +2794,7 @@
     },
     "items": 1558,
     "unsafe": 18,
-    "verified": 1287
+    "verified": 1294
   },
   "mutation": {
     "packages": {
@@ -2834,16 +2834,16 @@
         "claims": 134,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 74.55,
-        "stale": 2,
+        "score": 74.54,
+        "stale": 3,
         "threshold": 70
       },
       "packages/cli": {
         "claims": 146,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 79.83,
-        "stale": 1,
+        "score": 79.76,
+        "stale": 2,
         "threshold": 70
       },
       "packages/compiler": {
@@ -2914,16 +2914,16 @@
         "claims": 115,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 81.85,
-        "stale": 0,
+        "score": 80.97,
+        "stale": 3,
         "threshold": 70
       },
       "packages/services": {
         "claims": 35,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 84.01,
-        "stale": 0,
+        "score": 83.55,
+        "stale": 2,
         "threshold": 70
       },
       "packages/std-brands": {
@@ -3151,7 +3151,7 @@
         "threshold": 70
       }
     },
-    "stale": 16
+    "stale": 23
   },
   "schema": 1,
   "tests": {
@@ -3213,13 +3213,13 @@
         "unitFiles": 7
       },
       "packages/check": {
-        "conformanceCases": 634,
-        "conformanceFiles": 86,
+        "conformanceCases": 653,
+        "conformanceFiles": 88,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 181,
+        "propertyCalls": 183,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
@@ -3227,18 +3227,18 @@
         "unitFiles": 46
       },
       "packages/cli": {
-        "conformanceCases": 308,
-        "conformanceFiles": 84,
+        "conformanceCases": 340,
+        "conformanceFiles": 90,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 112,
+        "propertyCalls": 115,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 685,
-        "unitFiles": 80
+        "unitCases": 686,
+        "unitFiles": 81
       },
       "packages/compiler": {
         "conformanceCases": 156,
@@ -3247,12 +3247,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 74,
+        "propertyCalls": 75,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 535,
-        "unitFiles": 60
+        "unitCases": 540,
+        "unitFiles": 61
       },
       "packages/ctx": {
         "conformanceCases": 144,
@@ -3359,11 +3359,11 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 219,
+        "propertyCalls": 221,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 478,
+        "unitCases": 480,
         "unitFiles": 93
       },
       "packages/services": {
@@ -3709,11 +3709,11 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 22,
+        "propertyCalls": 23,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 24,
+        "unitCases": 26,
         "unitFiles": 6
       },
       "packages/std-workflows": {
@@ -3774,18 +3774,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 3816,
-      "conformanceFiles": 926,
+      "conformanceCases": 3867,
+      "conformanceFiles": 934,
       "exploreFiles": 17,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 1875,
+      "propertyCalls": 1884,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4337,
-      "unitFiles": 722
+      "unitCases": 4347,
+      "unitFiles": 724
     }
   },
   "tool": {
