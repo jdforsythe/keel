@@ -134,6 +134,7 @@ await run("voice-lint", () => {
     ...under("packages", (r) => /^packages\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
     ...under("apps", (r) => /^apps\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
     ...under(".claude/skills", (r) => r.endsWith("/SKILL.md")).map((p) => [p, "md"]),
+    ...under("packages/cli/skills", (r) => r.endsWith("/SKILL.md")).map((p) => [p, "md"]),
     ...under("spec", (r) => r.endsWith(".md")).map((p) => [p, "md"]),
     ...under("apps", (r) => /^apps\/[^/]+\/modules\/.*\.tsx$/.test(r)).map((p) => [p, "tsx"]),
     ...under("apps", (r) => /^apps\/[^/]+\/modules\/.*\.tsx?$/.test(r)).map((p) => [p, "comment"]),

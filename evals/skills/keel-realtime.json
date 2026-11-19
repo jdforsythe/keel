@@ -1,6 +1,0 @@
-{
-  "skill": "keel-realtime",
-  "maxTokens": 600,
-  "prompt": "How do I push changes from a Keel server to every open client and keep a client view current when other users write?",
-  "expect": ["channel(", "channelRoute", "subscribe", "live(", "hydrate", "async function*"]
-}

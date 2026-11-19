@@ -1,6 +1,0 @@
-{
-  "skill": "keel-writes",
-  "maxTokens": 600,
-  "prompt": "How do I let two Keel users write one server store at once, and queue writes made offline until the network returns?",
-  "expect": ["concurrent", "rebase", "reject", "base", "outbox(", "send(", "drain("]
-}

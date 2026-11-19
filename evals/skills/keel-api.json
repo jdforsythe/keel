@@ -1,6 +1,0 @@
-{
-  "skill": "keel-api",
-  "maxTokens": 600,
-  "prompt": "How do I declare a JSON API route in a Keel node module, call it from a client-only deployable with a typed service client, and keep the client's view store current after a write?",
-  "expect": ["api: true", "createApp", "deployable", "endpoints", "service", "hydrate", "application/json"]
-}

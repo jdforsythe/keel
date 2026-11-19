@@ -1,6 +1,0 @@
-{
-  "skill": "keel-storage",
-  "maxTokens": 600,
-  "prompt": "How do I keep a Keel node deployable's state in SQLite, run a removal workflow with an undo window on it, and prove the board store's invariants in a test?",
-  "expect": ["storage: 'sqlite'", "KEEL_DATABASE_URL", "workflow(", "flows(", "prove("]
-}

@@ -1,6 +1,0 @@
-{
-  "skill": "keel-text",
-  "maxTokens": 600,
-  "prompt": "How do I show translated page text and a route title in Keel, and format money and counts for the route's locale?",
-  "expect": ["Set.load", "formatMessage", "title", "formatMoney", "plural("]
-}

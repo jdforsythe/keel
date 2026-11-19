@@ -1,6 +1,0 @@
-{
-  "skill": "keel-widgets",
-  "maxTokens": 600,
-  "prompt": "How do I add a sortable, searchable, paged table of recipes and a row menu to a Keel page, and test it?",
-  "expect": ["columns(", "tableSearch", "applyQuery", "DataTable", "renderRoute", "<Menu"]
-}
