@@ -2,8 +2,8 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1182,
-    "probabilistic": 335,
+    "example": 1181,
+    "probabilistic": 326,
     "exhaustive": 15,
     "proven": 63,
     "monitored": 4
@@ -11,15 +11,15 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 74.49,
+        "score": 74.55,
         "threshold": 70
       },
       "cli": {
-        "score": 79.36,
+        "score": 79.83,
         "threshold": 70
       },
       "compiler": {
-        "score": 78.89,
+        "score": 78.95,
         "threshold": 70
       },
       "ctx": {
@@ -27,7 +27,7 @@
         "threshold": 70
       },
       "forms": {
-        "score": 89.44,
+        "score": 88.49,
         "threshold": 70
       },
       "reactive": {
@@ -35,7 +35,7 @@
         "threshold": 80
       },
       "router": {
-        "score": 86.09,
+        "score": 86.27,
         "threshold": 80
       },
       "runtime-dom": {
@@ -43,7 +43,7 @@
         "threshold": 70
       },
       "scaffold": {
-        "score": 79,
+        "score": 79.11,
         "threshold": 70
       },
       "schema": {
@@ -2561,14 +2561,6 @@
         "score": 93.55
       },
       {
-        "file": "packages/compiler/src/internal/clientOnly.ts",
-        "sha": "a12d5726ab86cff45898edaab0adbd51587b5de97579887b29a317cd0cd6d83d",
-        "killed": 55,
-        "survived": 1,
-        "noCoverage": 0,
-        "score": 98.21
-      },
-      {
         "file": "packages/compiler/src/internal/collectElements.ts",
         "sha": "fb6c08fcd66dee4e191a1deef3b48fa03283109ec6c6a9410ae518be978e8fe8",
         "killed": 174,
@@ -2959,14 +2951,6 @@
         "survived": 17,
         "noCoverage": 0,
         "score": 58.54
-      },
-      {
-        "file": "packages/compiler/src/internal/rules/ruleServerImport.ts",
-        "sha": "474c4c53a220e7532396700012be27d0196ffd2b2eb4fc6ffc49c648ffdafd02",
-        "killed": 37,
-        "survived": 1,
-        "noCoverage": 1,
-        "score": 94.87
       },
       {
         "file": "packages/compiler/src/internal/rules/ruleTopLevelPropRead.ts",
@@ -9015,6 +8999,60 @@
     },
     {
       "pkg": "golden-2",
+      "name": "AccountData",
+      "file": "golden-2:accounts/AccountData.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "AccountError",
+      "file": "golden-2:accounts/AccountError.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "AccountsLocale",
+      "file": "golden-2:accounts/AccountsLocale.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "AccountsParams",
+      "file": "golden-2:accounts/AccountsParams.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "AccountsSearch",
+      "file": "golden-2:accounts/AccountsSearch.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "AccountsText",
+      "file": "golden-2:accounts/AccountsText.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "de-DE",
+      "file": "golden-2:accounts/AccountsText/de-DE.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "en-US",
+      "file": "golden-2:accounts/AccountsText/en-US.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ja-JP",
+      "file": "golden-2:accounts/AccountsText/ja-JP.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "ApiToken",
       "file": "golden-2:accounts/ApiToken.schema.ts",
       "rung": "example"
@@ -9024,6 +9062,12 @@
       "name": "ApiTokens",
       "file": "golden-2:accounts/ApiTokens.schema.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "BearerToken",
+      "file": "golden-2:accounts/BearerToken.schema.ts",
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -9051,26 +9095,26 @@
     },
     {
       "pkg": "golden-2",
-      "name": "PasswordChange",
-      "file": "golden-2:accounts/PasswordChange.schema.ts",
+      "name": "Profile",
+      "file": "golden-2:accounts/Profile.schema.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-2",
-      "name": "Session",
-      "file": "golden-2:accounts/Session.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "Sessions",
-      "file": "golden-2:accounts/Sessions.schema.ts",
+      "name": "Profiles",
+      "file": "golden-2:accounts/Profiles.schema.ts",
       "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
-      "name": "SignedIn",
-      "file": "golden-2:accounts/SignedIn.schema.ts",
+      "name": "Registration",
+      "file": "golden-2:accounts/Registration.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "SignedInUser",
+      "file": "golden-2:accounts/SignedInUser.schema.ts",
       "rung": "example"
     },
     {
@@ -9093,24 +9137,6 @@
     },
     {
       "pkg": "golden-2",
-      "name": "User",
-      "file": "golden-2:accounts/User.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "Users",
-      "file": "golden-2:accounts/Users.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "accountStores",
-      "file": "golden-2:accounts/accountStores.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-2",
       "name": "accounts",
       "file": "golden-2:accounts/accounts.service.ts",
       "rung": "example"
@@ -9129,9 +9155,21 @@
     },
     {
       "pkg": "golden-2",
-      "name": "addUser",
-      "file": "golden-2:accounts/addUser.ts",
-      "rung": "probabilistic"
+      "name": "authOf",
+      "file": "golden-2:accounts/authOf.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "authSettings",
+      "file": "golden-2:accounts/authSettings.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "bearerUser",
+      "file": "golden-2:accounts/bearerUser.server.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-2",
@@ -9153,33 +9191,21 @@
     },
     {
       "pkg": "golden-2",
-      "name": "setPassword",
-      "file": "golden-2:accounts/setPassword.ts",
+      "name": "profileStores",
+      "file": "golden-2:accounts/profileStores.ts",
       "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
-      "name": "signIn",
-      "file": "golden-2:accounts/signIn.ts",
+      "name": "saveProfile",
+      "file": "golden-2:accounts/saveProfile.ts",
       "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
-      "name": "submitSignIn",
-      "file": "golden-2:accounts/submitSignIn.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "submitSignUp",
-      "file": "golden-2:accounts/submitSignUp.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "wrongCredentials",
-      "file": "golden-2:accounts/wrongCredentials.ts",
-      "rung": "example"
+      "name": "tokenStores",
+      "file": "golden-2:accounts/tokenStores.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -10160,24 +10186,6 @@
       "rung": "probabilistic"
     },
     {
-      "pkg": "std-credentials",
-      "name": "CredentialsConfig",
-      "file": "packages/std-credentials/src/CredentialsConfig.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "std-credentials",
-      "name": "Digested",
-      "file": "packages/std-credentials/src/Digested.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "std-credentials",
-      "name": "Hashed",
-      "file": "packages/std-credentials/src/Hashed.ts",
-      "rung": "probabilistic"
-    },
-    {
       "pkg": "std-geo",
       "name": "Position",
       "file": "packages/std-geo/src/Position.ts",
@@ -10258,7 +10266,7 @@
     {
       "pkg": "std-health",
       "name": "loadHealth",
-      "file": "packages/std-health/src/loadHealth.ts",
+      "file": "packages/std-health/src/loadHealth.server.ts",
       "rung": "example"
     },
     {
@@ -10814,6 +10822,12 @@
       "rung": "example"
     },
     {
+      "pkg": "std-tokens",
+      "name": "Digested",
+      "file": "packages/std-tokens/src/Digested.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "std-workflows",
       "name": "WorkflowsInstances",
       "file": "packages/std-workflows/src/WorkflowsInstances.ts",
@@ -11096,6 +11110,38 @@
     {
       "item": "k.aria#10",
       "rung": "example"
+    },
+    {
+      "item": "k.boundary#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.boundary#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.boundary#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.boundary#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.boundary#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.boundary#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.boundary#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.boundary#8",
+      "rung": "probabilistic"
     },
     {
       "item": "k.check#1",
@@ -13314,66 +13360,6 @@
       "rung": "example"
     },
     {
-      "item": "std.credentials#1",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "std.credentials#2",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "std.credentials#3",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "std.credentials#4",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "std.credentials#5",
-      "rung": "example"
-    },
-    {
-      "item": "std.credentials#6",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "std.credentials#7",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "std.credentials#8",
-      "rung": "example"
-    },
-    {
-      "item": "std.credentials#9",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "std.credentials#10",
-      "rung": "example"
-    },
-    {
-      "item": "std.credentials#11",
-      "rung": "example"
-    },
-    {
-      "item": "std.credentials#12",
-      "rung": "example"
-    },
-    {
-      "item": "std.credentials#13",
-      "rung": "example"
-    },
-    {
-      "item": "std.credentials#14",
-      "rung": "example"
-    },
-    {
-      "item": "std.credentials#15",
-      "rung": "example"
-    },
-    {
       "item": "std.db#1",
       "rung": "example"
     },
@@ -14251,6 +14237,14 @@
     },
     {
       "item": "std.tokens#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.tokens#11",
+      "rung": "example"
+    },
+    {
+      "item": "std.tokens#12",
       "rung": "example"
     },
     {

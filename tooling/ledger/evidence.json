@@ -1,5 +1,5 @@
 {
-  "commit": "65e5ecae9fac5f33db3651fa05612894f25d6ebe",
+  "commit": "3ca5e477f8f14a59c855c2f37e6b950378faa6ca",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T02:08:01.312Z",
+  "generatedAt": "2026-11-19T02:18:35.008Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1168,7 +1168,7 @@
         "exhaustive": 6,
         "monitored": 0,
         "none": 0,
-        "probabilistic": 171,
+        "probabilistic": 166,
         "proven": 31
       },
       "sections": {
@@ -1226,16 +1226,16 @@
         },
         "k.boundary": {
           "byRung": {
-            "example": 0,
+            "example": 6,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 0,
+            "probabilistic": 2,
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 0,
-          "verified": 0
+          "total": 8,
+          "verified": 8
         },
         "k.check": {
           "byRung": {
@@ -1900,19 +1900,6 @@
           "total": 2,
           "verified": 2
         },
-        "std.credentials": {
-          "byRung": {
-            "example": 8,
-            "exhaustive": 0,
-            "monitored": 0,
-            "none": 0,
-            "probabilistic": 7,
-            "proven": 0
-          },
-          "status": "unknown",
-          "total": 15,
-          "verified": 15
-        },
         "std.db": {
           "byRung": {
             "example": 8,
@@ -2227,7 +2214,7 @@
         },
         "std.tokens": {
           "byRung": {
-            "example": 1,
+            "example": 3,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2235,8 +2222,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 10,
-          "verified": 10
+          "total": 12,
+          "verified": 12
         },
         "std.workflows": {
           "byRung": {
@@ -2252,23 +2239,23 @@
           "verified": 8
         }
       },
-      "total": 833,
-      "verified": 833
+      "total": 828,
+      "verified": 828
     },
     "evidenceByRung": {
-      "example": 1182,
+      "example": 1181,
       "exhaustive": 15,
       "monitored": 4,
-      "probabilistic": 335,
+      "probabilistic": 326,
       "proven": 63
     },
     "exports": {
       "byRung": {
-        "example": 223,
+        "example": 230,
         "exhaustive": 1,
         "monitored": 0,
-        "none": 30,
-        "probabilistic": 132,
+        "none": 32,
+        "probabilistic": 128,
         "proven": 32
       },
       "packages": {
@@ -2346,15 +2333,15 @@
         },
         "golden-2": {
           "byRung": {
-            "example": 70,
+            "example": 77,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
-            "probabilistic": 20,
+            "none": 2,
+            "probabilistic": 18,
             "proven": 0
           },
-          "total": 90,
-          "verified": 90
+          "total": 97,
+          "verified": 95
         },
         "inspector": {
           "byRung": {
@@ -2510,18 +2497,6 @@
             "proven": 0
           },
           "total": 6,
-          "verified": 3
-        },
-        "std-credentials": {
-          "byRung": {
-            "example": 0,
-            "exhaustive": 0,
-            "monitored": 0,
-            "none": 0,
-            "probabilistic": 3,
-            "proven": 0
-          },
-          "total": 3,
           "verified": 3
         },
         "std-geo": {
@@ -2740,6 +2715,18 @@
           "total": 4,
           "verified": 3
         },
+        "std-tokens": {
+          "byRung": {
+            "example": 0,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 0,
+            "probabilistic": 1,
+            "proven": 0
+          },
+          "total": 1,
+          "verified": 1
+        },
         "std-workflows": {
           "byRung": {
             "example": 2,
@@ -2789,12 +2776,12 @@
           "verified": 3
         }
       },
-      "total": 418,
-      "verified": 388
+      "total": 423,
+      "verified": 391
     },
     "items": 1551,
     "unsafe": 18,
-    "verified": 1289
+    "verified": 1287
   },
   "mutation": {
     "packages": {
@@ -2834,7 +2821,7 @@
         "claims": 134,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 74.49,
+        "score": 74.55,
         "stale": 2,
         "threshold": 70
       },
@@ -2842,15 +2829,15 @@
         "claims": 146,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 79.36,
+        "score": 79.83,
         "stale": 1,
         "threshold": 70
       },
       "packages/compiler": {
-        "claims": 108,
+        "claims": 106,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 78.89,
+        "score": 78.95,
         "stale": 3,
         "threshold": 70
       },
@@ -2866,7 +2853,7 @@
         "claims": 28,
         "reason": null,
         "reportDate": "2026-11-16",
-        "score": 89.44,
+        "score": 88.49,
         "stale": 1,
         "threshold": 70
       },
@@ -2882,7 +2869,7 @@
         "claims": 63,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 86.09,
+        "score": 86.27,
         "stale": 4,
         "threshold": 80
       },
@@ -2898,7 +2885,7 @@
         "claims": 114,
         "reason": null,
         "reportDate": "2026-11-16",
-        "score": 79,
+        "score": 79.11,
         "stale": 1,
         "threshold": 70
       },
