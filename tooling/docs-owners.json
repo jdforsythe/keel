@@ -24,6 +24,7 @@
     "k.head",
     "k.links",
     "k.mount",
+    "k.mount-scope",
     "k.opening",
     "k.prefix",
     "k.return",

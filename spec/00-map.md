@@ -63,6 +63,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | Request user, caller | conformance-covered | user |
 | k.mount | Pages to the mount | conformance-covered | submit |
+| k.mount-scope | What counts as the mount | proposed | proxy |
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
