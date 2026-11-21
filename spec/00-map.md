@@ -87,6 +87,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.privacy | Secrets, personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
+| k.parity | Stdlib parity | proposed | seams |
 
 ## Stdlib
 Sections: `spec/std/README.md`.

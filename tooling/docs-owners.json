@@ -11,6 +11,7 @@
     "k.ledger",
     "k.module",
     "k.origins",
+    "k.parity",
     "k.security",
     "k.shell",
     "k.topology"
