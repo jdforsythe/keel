@@ -2,8 +2,9 @@
 // Assumption: the accessor `database(name, { migrations })(ctx)` returns `{ query, one, run, transaction }` (spec: API); each result is a `Result`.
 // Assumption: `createCtx({ mode: 'real' })` is enough for a real ctx; `KEEL_POSTGRES_URL` is set before the first query and restored after.
 // Assumption: `fragment(strings)` also works as a plain call with a TemplateStringsArray (`sqlName`), the one way a test names a per-test table.
-// Assumption: a database name is made unique per test (`t.db<N>`), and so are its tables, so files can share one Postgres 17 (`KEEL_TEST_POSTGRES_URL`).
+// Assumption: a database name is made unique per test (`t.db<run tag>n<N>`, one lowerCamel segment), and so are its tables, so files can share one Postgres 17 (`KEEL_TEST_POSTGRES_URL`).
 // Assumption: a `pglite:<folder>` URL is used for the real-mode PGlite runs, each in a fresh temporary folder.
+import { randomBytes } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,9 +20,11 @@ export const SEED = 1337;
 export const PG17 = process.env.KEEL_TEST_POSTGRES_URL ?? "";
 
 let counter = 0;
+// One random tag per process (per test file and run): names never collide on a shared database, reruns included.
+const RUN = randomBytes(4).toString("hex");
 export function fresh(): { cap: string; table: string } {
   counter += 1;
-  return { cap: `t.db${counter}`, table: `t_${counter}_${process.pid}` };
+  return { cap: `t.db${RUN}n${counter}`, table: `t_${RUN}_${counter}_${process.pid}` };
 }
 
 export const Row = s.object({ id: s.int(), name: s.string() });
