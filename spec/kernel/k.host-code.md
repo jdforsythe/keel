@@ -1,7 +1,7 @@
 # k.host-code: Host element code
 status: implemented
 
-**Code.** `hostCode({ mount, update?, dispose? })` from `@keel/ui` makes a `HostCode<I, E>`, what a `Host`'s `code` (k.host-element) resolves to:
+**Code.** `hostCode({ mount, update?, dispose? })` from `@keel/ui` makes a `HostCode<I, E>`, what a `Host`'s `code` (k.host-element) resolves to. `hostCode<I, E, S>` takes the value type `I` (`Infer<typeof Input>`, not the schema), the events `E` (default `never`) and the state `S` that `mount` returns (default `undefined`, so a `mount` that returns state names `S` or goes unannotated):
 - `mount(node, value, out)` returns the code's own state `S`; `node` is the element, `out` is `{ emit(e: E): void, signal: AbortSignal }`.
 - `update(state, value, prev)`, optional: with none, a change of value calls nothing. `prev` is the value the last call got. Values pass by reference, never copied: an unchanged store or loader value keeps its identity, so `value.points !== prev.points` skips work.
 - `dispose(state)`: runs once, then `signal` aborts.

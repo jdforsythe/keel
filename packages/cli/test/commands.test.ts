@@ -126,3 +126,12 @@ describe("commands", () => {
     expect(normalize([{ kind: "orders.report", id: 1 }])[0]).toMatchObject({ code: "E1054" });
   });
 });
+
+describe("keel with no command", () => {
+  it("names the commands to try and keeps usage exit 2", async () => {
+    const r = await run([], { cwd: CWD });
+    expect(r.code).toBe(2);
+    expect(r.stdout).toContain("E1051 no command given; try check, test, build, dev, scaffold, or keel docs");
+    expect(r.stdout).toContain("see: keel docs k.cli");
+  });
+});

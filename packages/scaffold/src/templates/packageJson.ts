@@ -5,15 +5,19 @@ const KERNEL = ["compiler", "ctx", "forms", "reactive", "router", "runtime-dom",
 /**
  * `package.json` of a new project. Standalone: scripts call `keel`, kernel packages as versioned dependencies,
  * `happy-dom` for the test environment `vite.config.ts` names, `@types/node` for the type pass (k.check).
- * `workspace`: an app inside the Keel monorepo; only `check`/`test`/`build` scripts, `workspace:*` dependencies.
+ * `workspace`: an app inside the Keel monorepo; the same `keel` scripts (`check` adds `tsc` and Biome over `modules`, which the repo's own
+ * tooling runs), `workspace:*` dependencies, no versioned tool dependencies.
  */
 export function packageJson(name: string, workspace = false): string {
   const v = workspace ? "workspace:*" : KEEL;
-  const scripts = workspace
-    ? { build: "vite build", check: "tsc --noEmit && biome check modules test", test: "vitest run" }
-    : { build: "keel build", check: "keel check", dev: "keel dev", test: "keel test" };
+  const scripts = {
+    build: "keel build",
+    check: workspace ? "tsc --noEmit && biome check modules && keel check" : "keel check",
+    dev: "keel dev",
+    test: "keel test",
+  };
   const dev = workspace
-    ? { "@keel/testing": v, "@keel/tooling": v, "@types/node": "^22", vite: "^8.3.6" }
+    ? { "@keel/cli": v, "@keel/testing": v, "@keel/tooling": v, "@types/node": "^22", vite: "^8.3.6" }
     : {
         "@keel/cli": v,
         "@keel/testing": v,
