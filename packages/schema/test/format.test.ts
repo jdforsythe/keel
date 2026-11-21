@@ -3,8 +3,8 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { s } from "../src/index.ts";
 import type { Node } from "../src/internal/Node.ts";
-import { sampleFormat } from "../src/sampleFormat.ts";
 import { make } from "../src/internal/make.ts";
+import { sampleFormat } from "../src/sampleFormat.ts";
 
 const Even = s.format("even", s.int(), {
   check: (v) => v % 2 === 0,
