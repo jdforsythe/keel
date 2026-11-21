@@ -243,7 +243,7 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 
 ## Next action
 1. `git worktree list`, `git status --short`, CI on the pushed head (`gh run list --branch jdforsythe/test-impl --limit 2`); fix what fails. The last lines of the Lanes block name each worktree and what it owes.
-2. If 28a9c4de is not pushed: read the gate's verdict (it ran in `.worktrees/verify`), push when green, watch CI to the end.
+2. 28a9c4de is gated and pushed: read its CI run to the end and fix what fails. `keel review 67c75523..28a9c4de` reads 24 fail, 13 warn (conformance, CI and framework edits in one range, with no baseline yet): see item 5.
 3. Ask the operator about `lane-r176`'s lint block (biome `a11y/useSemanticElements` against `Text role="status"`); then finish and merge that lane.
 4. Build the written RFCs: 0179 to 0183 on `lane-r180`, 0184 on `lane-r184` (conformance first). Keep to four test-running lanes.
 5. Decide `tasks/p1/review-findings.md` (fix or accept each) and create this repo's `keel-review.json`; then consider gating this repo's CI on `keel review`.
