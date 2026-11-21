@@ -48,6 +48,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.aria | 10 | **conformance-covered** | none |
 | k.guards | 3 | **conformance-covered** | none |
 | k.persist | 12 | **conformance-covered** | none |
+| k.data | 6 | **conformance-covered** | none |
 | k.prove | 10 | **conformance-covered** | none |
 | k.reveal | 9 | **conformance-covered** | none |
 | k.shell | 8 | **conformance-covered** | none |
@@ -67,6 +68,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.conflicts | 10 | **conformance-covered** | none |
 | std.copy | 2 | **conformance-covered** | none |
 | std.db | 8 | proposed | clause 1: the Postgres path runs on PGlite only; no job sets `KEEL_TEST_POSTGRES_URL` |
+| std.postgres | 8 | **conformance-covered** | none; clauses 5 and 7 meet Postgres 17 in CI's `postgres` job only |
 | std.outbox | 14 | **conformance-covered** | none |
 | std.outbox-owner | 6 | **conformance-covered** | not audited clause by clause |
 | std.geo | 5 | **conformance-covered** | none |

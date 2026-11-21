@@ -4,8 +4,8 @@ Backlog 0034. This file lists what stands between the kernel spec and the `froze
 
 ## Summary
 
-- 66 kernel sections. 60 are `conformance-covered`; the five `implemented` are k.docs, k.host-code, k.mount-scope, k.roles and k.scaffold; k.parity is `proposed`.
-- 699 Conformance bullets. 691 are cited by a conformance test in the ledger (`tooling/ledger/ledger.json`, no clause at rung `none`); the 8 that are not: k.docs 5 and 8, k.mount-scope 1, k.parity 5 and 6, k.roles 6, k.scaffold 11 and 14.
+- 67 kernel sections. 61 are `conformance-covered`; the five `implemented` are k.docs, k.host-code, k.mount-scope, k.roles and k.scaffold; k.parity is `proposed`.
+- 705 Conformance bullets. 697 are cited by a conformance test in the ledger (`tooling/ledger/ledger.json`, no clause at rung `none`); the 8 that are not: k.docs 5 and 8, k.mount-scope 1, k.parity 5 and 6, k.roles 6, k.scaffold 11 and 14.
 - Tests exist for k.mount-scope 1 and k.roles 6 (`router/conformance`, `server/conformance`, `ui/conformance/roles-grid.test.ts`), but their `// Spec:` headers do not quote the whole clause, so the ledger lists them at `none`.
 - k.host-code is `implemented`: its Chromium clause needs a real browser's computed style and `server/conformance/host-code-styles-policy.test.ts` asserts the policy header only.
 - k.parity is `proposed`: S0012 (its first part) is built; S0013, the kind gates, is not (RFC 0169).
@@ -15,7 +15,7 @@ Backlog 0034. This file lists what stands between the kernel spec and the `froze
 
 ## 1. Kernel sections and status
 
-`grep -h '^status:' spec/kernel/k.*.md | sort | uniq -c`: 60 `conformance-covered`, 5 `implemented`, 1 `proposed`. `spec/00-map.md` carries the same status per row.
+`grep -h '^status:' spec/kernel/k.*.md | sort | uniq -c`: 61 `conformance-covered`, 5 `implemented`, 1 `proposed`. `spec/00-map.md` carries the same status per row.
 
 | section | status | missing |
 | --- | --- | --- |
@@ -72,6 +72,7 @@ Bullets are the lines under each section's `**Conformance.**` paragraph; "no evi
 | k.owner | conformance-covered | 5 | 0 | 0 | 0 |
 | k.parity | proposed | 6 | 2 | 0 | 0 |
 | k.persist | conformance-covered | 12 | 0 | 0 | 2 |
+| k.data | conformance-covered | 6 | 0 | 0 | 0 |
 | k.place | conformance-covered | 5 | 0 | 0 | 0 |
 | k.prefix | conformance-covered | 7 | 0 | 0 | 0 |
 | k.privacy | conformance-covered | 10 | 0 | 0 | 2 |

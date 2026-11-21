@@ -1,6 +1,6 @@
 # RFC 0158: k.data and std.postgres: app data outside the kernel
 
-Status: proposed (ADR-0180), for the operator to read (W14 step 1, decision D43). Spec text applied at status `proposed`: `spec/kernel/k.data.md`, `spec/std/std.postgres.md`, one sentence of k.persist, the map rows.
+Status: implemented (ADR-0180). W14 step 1, decision D43. Spec text: `spec/kernel/k.data.md`, `spec/std/std.postgres.md`, one sentence each of k.persist and k.check, the map rows.
 
 ## Decisions
 - D1: the kernel neither stores nor fetches app data. It validates what crosses a boundary (`input`, `params`, `search`, `output`) and nothing else, as it signs no one in (k.user). New kernel section k.data states it; new glossary term **app data**.
