@@ -1,5 +1,5 @@
 // Spec: std.tokens, API "`mint({ ttl })`: `ttl` is required, milliseconds as an integer from 60,000 to 31,536,000,000 (365 days), or `null` for a token that does not expire; any other value is `credentials.ttl` (data `{ min: 60000, max: 31536000000 }`)."
-// Spec: std.tokens, API "It returns the new `token` as a `Secret<string>`, its `id` (the token's non-secret part, the row's lookup key), the `digest` to store, and `expiresAt`, `ctx.clock.now()` plus `ttl`, or `null`."
+// Spec: std.tokens, API "It returns the new `token` as a `Secret<string>`, its `id` (non-secret, the row's key), the `digest` to store, and `expiresAt`, `ctx.clock.now()` plus `ttl`, or `null`."
 // Spec: std.tokens, Forms "Token: `keel_<id>_<secret>`, `id` 16 and `secret` 64 lowercase hex characters (64 and 256 random bits), 86 characters."
 // Spec: std.tokens, Forms "Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` with no expiry: `<ms>` is `expiresAt` in decimal, `<digest>` the SHA-256 of the token's text in base64 without padding."
 // Spec: std.tokens, Conformance "Under real, `mint({ ttl: null })` gives a token of the token form whose id part is `id`, `expiresAt` `null`, and a `digest` `$sha256$<digest>` that parses with `Digested`; two mints share no `id`, `secret` or `digest`."
