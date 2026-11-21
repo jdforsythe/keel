@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "A passing `explore` with `from`, `payloads` or `depth` makes the transactions it names `exhaustive`; one with none of them makes them `proven`; one whose options are an imported variable gives `exhaustive`."
-// Spec: k.ledger, Ledger "`exhaustive`: a passing `explore` (k.model) given `from`, `payloads` or `depth`; evidence lists `depth` when it is a literal."
+// Spec: k.ledger, Ledger "`exhaustive`: a passing `explore` (k.model) given `from`, `payloads` or `depth`; evidence lists a literal `depth`."
 // The real `keel` binary over a temp project (OS tmpdir). Each case explores its own one-transaction store, so one
 // `keel ledger` run reports every case. `explore` is @keel/testing's (k.model). Seed: 1337 (no property in this file).
 import { describe, expect, it } from "vitest";

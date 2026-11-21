@@ -6,8 +6,10 @@ import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
 import { citesClause } from "./citesClause.ts";
 import { countHosts } from "./countHosts.ts";
+import { headerCodes } from "./headerCodes.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { monitoredEvidence } from "./monitoredEvidence.ts";
+import { rangeCodes } from "./rangeCodes.ts";
 import { scrubCode } from "./scrubCode.ts";
 import { specClauses } from "./specClauses.ts";
 import { specHeaders } from "./specHeaders.ts";
@@ -58,7 +60,9 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  *   evidence from the app's `test/` and co-located tests;
  * - every spec Conformance clause (`k.cli#7`), with the non-skipped tests of every conformance file, in any package,
  *   with a leading `// Spec: <id>` header block (`specHeaders`, which may wrap) that quotes the clause (`citesClause`:
- *   backticks, quote style, spacing and case aside). A `// Clause:` header is not read; it is W1706 with the fix.
+ *   backticks, quote style, spacing and case aside). A range clause (`rangeCodes`) has evidence only while each of its
+ *   codes is named outside the quote (`headerCodes`) in the header of a citing file with a non-skipped test. A
+ *   `// Clause:` header is not read; it is W1706 with the fix.
  * Export items also get `monitored` evidence from `.keel/monitored.json` (`monitoredEvidence`; E1711 when it fails its
  * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`, and the host
  * elements (`countHosts`) in those files and, per file, in a root `modules/**` (an app's own folder). `z3` is the Z3
@@ -164,14 +168,17 @@ export function buildLedger(
     }
     return {
       path: f.path,
+      head: head.map((h) => h.text),
       blocks: specHeaders(head),
       tests: (refs.get(`packages/${PKG.exec(f.path)?.[1] ?? ""}`) ?? []).filter((r) => r.path === f.path),
     };
   });
   for (const { id, n, text } of specClauses(files)) {
-    const evidence = headed
-      .filter((h) => h.blocks.some((b) => b.section === id && citesClause(b.text, text)))
-      .flatMap((h) => h.tests.map((t) => ({ ev: t.ev, path: t.path })));
+    const citing = headed.filter((h) => h.blocks.some((b) => b.section === id && citesClause(b.text, text)));
+    const range = rangeCodes(text);
+    const named = new Set(citing.filter((h) => h.tests.length > 0).flatMap((h) => [...headerCodes(h.head, text)]));
+    const held = range === undefined || range.every((c) => named.has(c));
+    const evidence = held ? citing.flatMap((h) => h.tests.map((t) => ({ ev: t.ev, path: t.path }))) : [];
     items.push({ item: `${id}#${n}`, evidence });
   }
   return { items, unsafe, appUnsafe, hostElements, appHosts, rootHosts, diags };

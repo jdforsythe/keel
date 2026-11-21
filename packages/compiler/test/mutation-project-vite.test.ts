@@ -386,7 +386,16 @@ describe("vite: project inputs", () => {
     await p.buildStart.call(undefined);
     expect(Object.keys(artifact("routes.json").data)).toEqual(["a.index", "b.index"]);
     expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(["/modules/a/routes.ts", "/modules/b/routes.ts"], "virtual:keel.css", {}, {}, undefined, "dev"),
+      entryCode(
+        ["/modules/a/routes.ts", "/modules/b/routes.ts"],
+        "virtual:keel.css",
+        {},
+        {},
+        undefined,
+        "dev",
+        false,
+        true,
+      ),
     );
   });
 
@@ -406,7 +415,16 @@ describe("vite: project inputs", () => {
     await p.buildStart.call(undefined);
     const code = await p.load("/@keel/entry.ts");
     expect(code).toBe(
-      entryCode(["/modules/w/routes.ts"], "virtual:keel.css", {}, { api: ["used", "sessions"] }, undefined, "dev"),
+      entryCode(
+        ["/modules/w/routes.ts"],
+        "virtual:keel.css",
+        {},
+        { api: ["used", "sessions"] },
+        undefined,
+        "dev",
+        false,
+        true,
+      ),
     );
     expect(code).not.toContain("hidden");
     expect(code).not.toContain("unseen");
@@ -422,11 +440,11 @@ describe("vite: project inputs", () => {
     p.configResolved({ root, command: "serve" });
     const all = {};
     expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev"),
+      entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev", false, true),
     );
     process.env.KEEL_DEPLOYABLE = "zeta";
     expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev"),
+      entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev", false, true),
     );
     process.env.KEEL_DEPLOYABLE = "api";
     expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
@@ -461,7 +479,7 @@ describe("vite: project inputs", () => {
       write("modules/a/routes.ts", routesTs("a"));
       const all = {};
       const client = (mode: "dev" | "production") =>
-        entryCode(["/modules/a/routes.ts"], "virtual:keel.css", {}, all, undefined, mode);
+        entryCode(["/modules/a/routes.ts"], "virtual:keel.css", {}, all, undefined, mode, false, true);
       const none = keel();
       none.configResolved({ root });
       expect(await none.load("/@keel/entry.ts")).toBe(client("production"));

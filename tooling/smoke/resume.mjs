@@ -16,7 +16,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { buildIn, copyApp, field, freePort, get, post, recorder, root, stop, wait } from "./built.mjs";
+import { buildIn, copyApp, field, freePort, get, recorder, root, stop, wait } from "./built.mjs";
 
 const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
 /** The sign-in library's secret (`BETTER_AUTH_SECRET`), which golden-2's server requires. */
@@ -64,6 +64,39 @@ async function up(url, accept, ms = 20_000) {
   }
   return false;
 }
+
+/** Sign up and sign in through the identity mount as the account forms post; the session cookie, or "" when none is set. */
+async function session(base) {
+  const email = `seed-${Date.now()}@example.com`;
+  const password = "smoke password";
+  const mount = (path, fields) =>
+    fetch(`${base}/api/auth${path}`, {
+      method: "POST",
+      headers: { accept: "text/html", "content-type": "application/x-www-form-urlencoded", origin: base },
+      body: new URLSearchParams(fields).toString(),
+      redirect: "manual",
+    }).then(
+      (r) => r.headers.getSetCookie(),
+      () => [],
+    );
+  await mount("/sign-up/email", { name: "Seed Cook", email, password });
+  const cookies = await mount("/sign-in/email", { email, password });
+  return cookies
+    .map((c) => c.split(";")[0])
+    .filter((c) => c.startsWith("better-auth.session_token="))
+    .join("; ");
+}
+
+/** `POST path` on `base` as the signed-in `cookie`; the status, 0 when the server does not answer. */
+const postAs = (base, path, body, cookie) =>
+  fetch(`${base}${path}`, {
+    method: "POST",
+    headers: { accept: "application/json", "content-type": "application/json", "x-keel": "1", cookie },
+    body: JSON.stringify(body),
+  }).then(
+    (r) => r.status,
+    () => 0,
+  );
 
 /** The recipes `GET /api/recipes` lists. */
 async function recipes(base) {
@@ -233,8 +266,10 @@ try {
     { title: "Pasta bake", minutes: 30, price: { amount: 1250, currency: "EUR" } },
     { title: "Miso soup", minutes: 90, price: { amount: 1800, currency: "JPY" } },
   ];
+  const cookie = await session(apiBase);
+  step("seed session", cookie !== "");
   const statuses = [];
-  for (const body of seeds) statuses.push(await post(apiBase, "/api/recipes", body));
+  for (const body of seeds) statuses.push(await postAs(apiBase, "/api/recipes", body, cookie));
   const seeded = await recipes(apiBase);
   const soup = seeded.find((r) => r.title === "Miso soup")?.id;
   step("seed", statuses.every((s) => s === 200) && seeded.length === 2 && typeof soup === "string", statuses.join(" "));

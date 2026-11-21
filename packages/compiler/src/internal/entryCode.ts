@@ -25,7 +25,8 @@ const SHELLS = {
  * CSS, builds a real ctx, unions the modules' bindings with `routeTable` (`routesFiles`, root-relative, `/`-prefixed),
  * binds `std` (the client-readable part of the build's `std.json`, embedded as a JSON literal; nothing when empty) to the ctx
  * (k.module Std config, rfc:0069), binds `service({ contract })` for every module of `deployables` (deployable -> its modules) to
- * the origin its deployable's `keel-peer` tag in the document names, else the document's origin (k.hosting Peers),
+ * the origin its deployable's `keel-peer` tag in the document names, else the document's origin (k.hosting Peers); with
+ * `served` (the topology has a `node` deployable, whose origin a tag can name) it reads the tags even when `deployables` is empty,
  * starts the router on the browser history, and mounts its `App` into `#app` with
  * the ctx and `mode`, a string literal: `"dev"` only when Vite serves, `"production"` for a build (k.runtime, k.deploy); the
  * entry reads no `import.meta.env`. Under `"dev"` it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
@@ -46,12 +47,13 @@ export function entryCode(
   shell?: { readonly kind: keyof typeof SHELLS; readonly origin: string; readonly id?: string | undefined },
   mode: "dev" | "production" = "production",
   identity = false,
+  served = false,
 ): string {
   const native = shell === undefined ? undefined : SHELLS[shell.kind];
   const origin = `new URL(${q(shell?.origin ?? "")})`;
   const id = native === undefined ? undefined : shell?.id;
   const bind = Object.keys(std).length > 0;
-  const peers = Object.keys(deployables).length > 0;
+  const peers = served || Object.keys(deployables).length > 0;
   const imports = routesFiles.map((f, i) => `import { routes as __keelRoutes${i} } from ${q(f)};`);
   const names = routesFiles.map((_, i) => `__keelRoutes${i}`);
   const table = `routeTable(${names.join(", ")})`;

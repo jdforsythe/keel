@@ -1,5 +1,6 @@
 // Not a test file. One triggering fixture and one clean counterpart per kernel E code `check()` reports
 // (`reportedCodes()`, RFC 0065), E1756 aside (a registered rule that throws). Public API only.
+import fs from "node:fs";
 import path from "node:path";
 import type { check } from "@keel/check";
 import { repoRoot } from "@keel/tooling/repo-root";
@@ -72,6 +73,53 @@ const MATCH = `${SCHEMA}import { Match, Case } from '@keel/runtime-dom'\nexport 
 /** Color tokens for E1804: `mid` on `white` is about 3:1, `ink` on `white` passes 4.5:1 in both schemes. */
 const TOKENS = { color: { mid: "#949494", ink: "#111111", white: "#ffffff" }, fontSize: { sm: "14px" } };
 
+/**
+ * A root for E1586 whose `node_modules/@keel/` holds `std-nort` (`./contract`, no `./routes`) and `std-full` (both),
+ * written once to `conformance/.tmp-e1586/` (git-ignored) through a fresh folder renamed into place, so a concurrent
+ * run never reads a partial package.
+ */
+const stdRoot = (): string => {
+  const root = path.join(import.meta.dirname, ".tmp-e1586");
+  if (fs.existsSync(path.join(root, "node_modules", "@keel", "std-full", "routes.ts")))
+    return path.join(root, path.sep);
+  const tmp = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-e1586-"));
+  for (const [id, routes] of [
+    ["nort", false],
+    ["full", true],
+  ] as const) {
+    const dir = path.join(tmp, "node_modules", "@keel", `std-${id}`);
+    fs.mkdirSync(dir, { recursive: true });
+    const exports = {
+      "./module": "./module.ts",
+      "./contract": "./contract.ts",
+      ...(routes ? { "./routes": "./routes.ts" } : {}),
+    };
+    fs.writeFileSync(
+      path.join(dir, "package.json"),
+      JSON.stringify({ name: `@keel/std-${id}`, type: "module", exports }),
+    );
+    fs.writeFileSync(
+      path.join(dir, "module.ts"),
+      `export default { id: '${id}', deps: [], capabilities: [], public: { exports: [] } }\n`,
+    );
+    fs.writeFileSync(path.join(dir, "contract.ts"), `export const ${id} = { id: '${id}' }\n`);
+    if (routes) fs.writeFileSync(path.join(dir, "routes.ts"), "export const routes = {}\n");
+  }
+  try {
+    fs.renameSync(tmp, root);
+  } catch {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  return path.join(root, path.sep);
+};
+/** A project placing stdlib module `id`, found through module `a`'s `deps` (E1586). */
+const placesStd = (id: string): Files => [
+  f(
+    "topology.ts",
+    `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a', '${id}'], adapter: 'node' } })\n`,
+  ),
+  mod("a", [`@keel/std-${id}`], []),
+];
 /** A `.keel/surface.json` (k.compat) over `data`: canonical `{ data, hash }`, the hash the compiler's FNV-1a of it. */
 const surfaceFile = (data: unknown): Files[number] => {
   const canon = (v: unknown): string =>
@@ -931,6 +979,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth', { links: ['/verify'] })\n`),
       f("identity.server.ts", MOUNT_SERVER),
     ],
+  },
+  E1586: {
+    opts: { types: false, root: stdRoot() },
+    bad: placesStd("nort"),
+    clean: placesStd("full"),
   },
   E1590: {
     opts: NO_TYPES,
