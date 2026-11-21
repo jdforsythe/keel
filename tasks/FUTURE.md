@@ -73,3 +73,4 @@ Ideas that come up outside the current plans. An idea is built at once only when
 - An app-chosen token prefix as a second `std` key of `@keel/std-tokens`; today every token starts `keel_`.
 - `prove` from any thread: Z3 in a child process that `prove` starts, so a runner on worker threads can prove; today a worker call is refused (E1721). Costs a process start and a serialised query per call.
 - A static rule for E1256: `keel check` reports a `tx` reached from a `*.server.ts` loader, guard or action whose transaction is bound to a module-level store, across imports (as `refreshView.ts` and `hydrate.ts` sit two files from the loader). Today the check is at run time only.
+- A rule-code range for Keel libraries (E9xxx, W9xxx), so a library's own check rules never collide with the kernel's or the stdlib's (RFC 0169's author; needed when the library format of RFC 0163 is built).
