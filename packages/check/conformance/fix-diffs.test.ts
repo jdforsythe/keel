@@ -381,8 +381,9 @@ const NO_FIX = [
   "E1802", // the missing prop value is the author's choice
   "E1803", // the replacement token is the author's choice
   "E1804", // which token pair to use is a design choice
-  "E1822", // which widget replaces the part is the author's choice
   "E1823", // which literal to write is the author's choice
+  "E1824", // the code prop is rewritten to the literal form by the author, who names the file and export
+  "E1825", // moving the stylesheet import to the code file is a design change
   "E1901", // the form path to bind is the author's choice
 ];
 

@@ -17,6 +17,7 @@ export interface CodeFixture {
 }
 
 const f = (path: string, source: string): Files[number] => ({ path, source });
+const HOST_HEAD = "import { Host } from '@keel/ui'\nimport { In } from './In.schema.ts'\n";
 const UI = "import { Box, Text, Button } from '@keel/ui'\n";
 const SCHEMA = "import { s } from '@keel/schema'\n";
 const SERVICES = "import { endpoints } from '@keel/services'\n";
@@ -1104,11 +1105,6 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
-  E1822: {
-    opts: NO_TYPES,
-    bad: [f("modules/a/x.ts", "import { Part } from '@keel/ui/aria'\nexport const x = Part\n")],
-    clean: [f("packages/std-x/src/a.ts", "import { Part } from '@keel/ui/aria'\nexport const a = Part\n")],
-  },
   E1823: {
     opts: NO_TYPES,
     bad: [
@@ -1122,6 +1118,38 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "C.tsx",
         "import { DataTable } from '@keel/std-tables'\nexport default function C() { return <DataTable styles={{ table: { p: '2' } }} /> }\n",
       ),
+    ],
+  },
+  E1824: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${HOST_HEAD}const load = () => import('./chart.ts').then((m) => m.chart)\nexport default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={load} /> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${HOST_HEAD}export default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} /> }\n`,
+      ),
+    ],
+  },
+  E1825: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `import 'x/a.css'\n${HOST_HEAD}export default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} /> }\n`,
+      ),
+      f("chart.ts", "export const chart = undefined\n"),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${HOST_HEAD}export default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} /> }\n`,
+      ),
+      f("chart.ts", "import 'x/a.css'\nexport const chart = undefined\n"),
     ],
   },
   E1901: {
