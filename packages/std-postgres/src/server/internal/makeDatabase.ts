@@ -65,6 +65,19 @@ const answer = (e: unknown): StatementError => {
   return c;
 };
 
+/**
+ * The engine, made ready by `backend.ensure()`: a refused or lost connection, opening the store or in the migration
+ * pass, is `keel.unreachable`; any other failure throws as it is.
+ */
+async function ready(backend: Backend): Promise<Engine | Unreachable> {
+  try {
+    return await backend.ensure();
+  } catch (e) {
+    if (classify(e) === errors.unreachable) return errors.unreachable;
+    throw e;
+  }
+}
+
 /** Reads `pg_type` again on `c` when `raw` holds a type the cache has not seen (one a migration made). */
 async function known(raw: Raw, engine: Engine, c: Conn | null): Promise<void> {
   if (raw.fields.every((f) => engine.types.known.has(f.oid))) return;
@@ -95,7 +108,8 @@ export function makeDatabase(backend: Backend, plan?: Plan): Database {
   const statement = async (q: Query<unknown>): Promise<{ raw: Raw; engine: Engine } | StatementError> => {
     const stop = await gate();
     if (stop !== null) return stop;
-    const engine = await backend.ensure();
+    const engine = await ready(backend);
+    if (!("tx" in engine)) return engine;
     try {
       const raw = backend.pooled
         ? await engine.statement(q.text, paramsOf(q))
@@ -134,7 +148,8 @@ export function makeDatabase(backend: Backend, plan?: Plan): Database {
       for (let n = 1; ; n++) {
         const stop = await gate();
         if (stop === errors.unreachable) return err(errors.unreachable);
-        const engine = await backend.ensure();
+        const engine = await ready(backend);
+        if (!("tx" in engine)) return err(engine);
         // A plan step `conflict` lets the run's statements run, then fails it as a serialization failure at its commit.
         const forced = stop !== null;
         const state = { serial: false, lost: false };

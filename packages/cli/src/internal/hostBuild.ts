@@ -8,15 +8,19 @@ import { viteRun } from "./viteRun.ts";
 import { viteTargets } from "./viteTargets.ts";
 import { writeCspFiles } from "./writeCspFiles.ts";
 
+/** A Keel-coded error line. */
+const ERROR = /^E\d{4} /;
+
 /**
  * Binary only: the disk half of `keel build` (`Io.build`), after the engine's writes: `routes.json` when every
  * deployable is `node` (`routesRun`), then `surface.json` (`surfaceRun`, k.compat), then one `vite build` per
  * `viteTargets` (k.server Build, k.hosting), stopping at the first that fails, then each `client` and `static`
- * deployable's `csp.txt` (`writeCspFiles`, k.security). Keel-coded lines become diagnostics;
- * `stderr` is a failed step's text (a Vite build's message lines, `viteRun`). `code` is the largest step code. Keel-coded lines become
- * diagnostics (`stepNotes`); those of `routesRun` and the Vite builds are advisory: printed to stderr (W1005, E1006 for a `routes.ts`
- * that throws) and the exit code left alone, as the plugin's warning does. A throwing contract file is the surface step's
- * failing E1006, so the routes step's line for that file is dropped.
+ * deployable's `csp.txt` (`writeCspFiles`, k.security). Keel-coded lines become diagnostics (`stepNotes`);
+ * `stderr` is a failed step's text (a Vite build's message lines, `viteRun`). `code` is the largest step code; only a
+ * rejected routes evaluation (E1000, E1049) stops the steps after it. An
+ * error line of `routesRun` or a Vite build (an evaluation problem: E1006, E1807) is an error diagnostic, as each fails
+ * its step (k.compiler Build-time evaluation); a warning line (W1005) is advisory, printed to stderr. A throwing
+ * contract file is the surface step's E1006, so the routes step's line for that file is dropped.
  */
 export async function hostBuild(cwd: string): Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }> {
   const topo = join(cwd, "topology.ts");
@@ -24,18 +28,22 @@ export async function hostBuild(cwd: string): Promise<{ code: number; diagnostic
   const advisory: string[] = [];
   const failing: string[] = [];
   let stderr = "";
+  /** A step's lines: errors fail the build, the rest are advisory. */
+  const sort = (notes: readonly string[]): void => {
+    for (const n of notes) (ERROR.test(n) ? failing : advisory).push(n);
+  };
   const routes = await routesRun(cwd, topology);
   let code = routes.code;
-  if (routes.code !== 0) advisory.push(...routes.notes);
+  if (routes.rejected === true) sort(routes.notes);
   else {
     const surface = await surfaceRun(cwd);
     failing.push(...surface.notes);
     const reported = surface.notes.flatMap((n) => /^E1006 (\S+) /.exec(n)?.[1] ?? []);
-    advisory.push(...routes.notes.filter((n) => !reported.some((f) => n.startsWith(`E1006 ${f} `))));
+    sort(routes.notes.filter((n) => !reported.some((f) => n.startsWith(`E1006 ${f} `))));
     code = Math.max(code, surface.code);
     for (const target of viteTargets(topology)) {
       const b = viteRun(cwd, target);
-      advisory.push(...(b?.notes ?? []));
+      sort((b?.notes ?? []).filter((n) => !reported.some((f) => n.startsWith(`E1006 ${f} `))));
       if (b !== undefined && b.code !== 0) {
         stderr += b.tail;
         code = Math.max(code, 1);
@@ -45,9 +53,10 @@ export async function hostBuild(cwd: string): Promise<{ code: number; diagnostic
     if (code === 0) advisory.push(...(await writeCspFiles(cwd, topology, process.env)));
   }
   const diagnostics: Diag[] = [];
+  // A node deployable's Vite build evaluates the routes again: its lines repeat the routes step's.
   for (const [notes, soft] of [
-    [advisory, true],
-    [failing, false],
+    [[...new Set(advisory)], true],
+    [[...new Set(failing)], false],
   ] as const) {
     const sorted = stepNotes(notes, soft);
     diagnostics.push(...sorted.diagnostics);

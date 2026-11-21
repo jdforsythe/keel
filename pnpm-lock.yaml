@@ -226,6 +226,9 @@ importers:
       '@keel/std-money':
         specifier: workspace:*
         version: link:../../packages/std-money
+      '@keel/std-postgres':
+        specifier: workspace:*
+        version: link:../../packages/std-postgres
       '@keel/std-report':
         specifier: workspace:*
         version: link:../../packages/std-report

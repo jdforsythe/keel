@@ -5,6 +5,7 @@ import type { Entries } from "./contract/types/Entries.ts";
 import { isObjectSchema } from "./internal/isObjectSchema.ts";
 import { isSchema } from "./internal/isSchema.ts";
 import { ownValue } from "./internal/ownValue.ts";
+import { withStores } from "./internal/withStores.ts";
 import type { Action } from "./types/Action.ts";
 import type { ApiAction } from "./types/ApiAction.ts";
 import type { Href } from "./types/Href.ts";
@@ -39,7 +40,8 @@ type At<P, St> = {
   readonly bearer: Secret<string> | undefined;
   readonly stores: St;
 };
-type RunAt<P, St> = Omit<At<P, St>, "user" | "bearer"> & {
+type RunAt<P, St> = Omit<At<P, St>, "user" | "bearer" | "stores"> & {
+  readonly stores?: St;
   readonly user?: string;
   readonly bearer?: Secret<string> | undefined;
 };
@@ -87,12 +89,17 @@ export function action<I, P, St>(
   contract: Contract,
   id: string,
   decl: { readonly input?: ObjectSchema<unknown>; readonly stores?: (ctx: Ctx) => St },
-  fn: (input: I, at: At<P, St>, ctx: Ctx) => Out<unknown> | Promise<Out<unknown>>,
+  fn: (input: I, at: At<P, St | undefined>, ctx: Ctx) => Out<unknown> | Promise<Out<unknown>>,
 ): Built<I, P, St> {
   const entry = ownValue(contract.entries, id);
   const at = typeof entry === "object" && entry !== null ? entry : {};
   const { stores } = decl;
-  const run = (input: I, a: RunAt<P, St>, ctx: Ctx) => fn(input, { ...a, user: a.user ?? "", bearer: a.bearer }, ctx);
+  const run = (input: I, a: RunAt<P, St>, ctx: Ctx) =>
+    a.stores !== undefined || stores === undefined
+      ? fn(input, { ...a, user: a.user ?? "", bearer: a.bearer, stores: a.stores }, ctx)
+      : withStores(stores, undefined, ctx, (st) =>
+          fn(input, { ...a, user: a.user ?? "", bearer: a.bearer, stores: st }, ctx),
+        );
   const base = { kind: "keel.action" as const, contract, id, ...(stores === undefined ? {} : { stores }), run };
   const output = ownValue(at, "output");
   if (decl.input === undefined && isSchema(output)) {

@@ -41,7 +41,7 @@ Bullets are the lines under each section's `**Conformance.**` paragraph; "no evi
 | k.claim | conformance-covered | 9 | 0 | 0 | 0 |
 | k.cli | conformance-covered | 19 | 0 | 1 | 0 |
 | k.compat | conformance-covered | 11 | 0 | 0 | 1 |
-| k.compiler | conformance-covered | 20 | 0 | 0 | 0 |
+| k.compiler | conformance-covered | 22 | 0 | 0 | 0 |
 | k.component | conformance-covered | 17 | 0 | 0 | 0 |
 | k.contract | conformance-covered | 11 | 0 | 0 | 0 |
 | k.ctx | conformance-covered | 18 | 0 | 0 | 0 |

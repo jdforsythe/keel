@@ -1,15 +1,12 @@
 import { createCtx } from "@keel/ctx";
-import { scope } from "@keel/reactive";
 import { type Infer, s } from "@keel/schema";
 import { applyQuery } from "@keel/std-tables";
-import { isolate } from "@keel/store";
 import { properties, render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { CatalogParams } from "../modules/kitchen/CatalogParams.schema.ts";
 import { CatalogResult } from "../modules/kitchen/CatalogResult.schema.ts";
 import { CatalogRow } from "../modules/kitchen/CatalogRow.schema.ts";
 import { CatalogSearch } from "../modules/kitchen/CatalogSearch.schema.ts";
-import { boxStores } from "../modules/kitchen/boxStores.ts";
 import { catalogColumns } from "../modules/kitchen/catalogColumns.ts";
 import { kitchen } from "../modules/kitchen/kitchen.contract.ts";
 import { loadCatalog as loadCatalogApi } from "../modules/kitchen/loadCatalog.server.ts";
@@ -65,9 +62,7 @@ const titles = (rows: readonly Row[]) => rows.map((r) => r.title);
 
 const listBase = shoppingList.snapshot();
 const toastBase = toasts.snapshot();
-const scopes: { dispose(): void }[] = [];
 afterEach(() => {
-  for (const sc of scopes.splice(0)) sc.dispose();
   expect(shoppingList.restore(listBase).ok).toBe(true);
   expect(toasts.restore(toastBase).ok).toBe(true);
 });
@@ -194,10 +189,7 @@ describe("kitchen.catalog (api)", () => {
     expect(page).toMatchObject({ total: 4, page: 1, pages: 1 });
     expect(page?.rows.map((r) => r.title)).toEqual(["Empanadas", "Borscht", "Hummus", "Kimchi"]);
   });
-  it("runs the kitchen loader over the box store", async () => {
-    const sc = scope(() => undefined);
-    isolate(sc);
-    scopes.push(sc);
+  it("runs the kitchen loader over an empty recipes table", async () => {
     const app = await apiApp(apiCtx(4));
     expect(app).toBeDefined();
     const out = await loadCatalogApi.run(
@@ -206,7 +198,6 @@ describe("kitchen.catalog (api)", () => {
         search: query({}),
         url: location.href,
         caller: "c1",
-        stores: sc.run(boxStores),
       },
       apiCtx(4),
     );

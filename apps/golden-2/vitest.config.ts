@@ -6,6 +6,7 @@ export default keelConfig({
   test: {
     include: ["test/**/*.test.{ts,tsx}", "modules/*/test/**/*.test.{ts,tsx}", ".keel/sessions/*.test.ts"],
     environment: "happy-dom",
+    setupFiles: ["test/setup.ts"],
     // The sign-in library's fixed test secret and in-memory database (authSettings).
     env: { AUTH_FIXTURE: "test" },
   },

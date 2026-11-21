@@ -1,6 +1,6 @@
 // True when golden app 2 meets evals/tasks/golden-2/TASK.md acceptance: key files exist, the app's `check` script and
-// `keel check` clean (app-scoped, so other packages' work in progress cannot fail it), the app's tests green, invariant,
-// server stores and transaction properties present, unsafe count 0, every golden-2 ledger item at rung example or better
+// `keel check` clean (app-scoped, so other packages' work in progress cannot fail it), the app's tests green, the kitchen
+// database and its first migration present, unsafe count 0, every golden-2 ledger item at rung example or better
 // and the ledger not regressed (backlog 0120), and the hidden renderRoute suite (acceptance.test.ts, copied into the
 // app, run, and removed) passes.
 import { execFile } from "node:child_process";
@@ -104,12 +104,11 @@ export default async (): Promise<boolean> => {
       .join("\n");
 
   if (BANNED.test(all(() => true))) return false;
-  if (!all((f) => f.startsWith("modules/kitchen/")).includes("invariant(")) return false;
-  if (!/\bstores:/.test(all((f) => f.startsWith("modules/kitchen/") && f.endsWith(".server.ts")))) return false;
+  if (!all((f) => f.startsWith("modules/kitchen/") && f.endsWith(".server.ts")).includes("database(")) return false;
+  const migrations = await readdir(join(app, "modules", "kitchen", "migrations")).catch((): string[] => []);
+  if (!migrations.some((f) => /^0001-.*\.sql$/.test(f))) return false;
   const tests = all((f) => f.startsWith("test/"));
   if (!tests.includes("@keel/testing")) return false;
-  for (const t of ["addRecipe", "toggleFavorite"])
-    if (!new RegExp(`\\bproperties\\([^;]*\\b${t}\\b`).test(tests)) return false;
 
   if (!(await sh("pnpm", ["--filter", "golden-2", "check"])).ok) return false;
   if (!(await sh("node", [join(root, "packages", "cli", "src", "bin.ts"), "check", "--quiet"], app)).ok) return false;

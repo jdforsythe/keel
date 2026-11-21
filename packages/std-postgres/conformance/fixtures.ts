@@ -110,3 +110,8 @@ export const hasPg17 = PG17 !== "";
 export const tpl = (parts: string[]): TemplateStringsArray => Object.assign([...parts], { raw: [...parts] });
 /** A fragment holding the table's name, spliced with `${sqlName(table)}` (the only way text enters a query). */
 export const sqlName = (table: string) => fragment(tpl([table]));
+
+/** `database(name)` with no options: the call the spec allows once the folder is found by module; untyped until the options become optional. */
+export function databaseFound(name: string): ReturnType<typeof database> {
+  return Reflect.apply(database, undefined, [name]);
+}
