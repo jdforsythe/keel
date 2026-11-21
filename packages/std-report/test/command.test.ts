@@ -62,13 +62,13 @@ describe("keel report", () => {
   it("names the reason and the url in E1056, the url cut to 48 characters", async () => {
     const down = { cwd: "/work/app", files: [], fetch: (): Promise<Response> => Promise.reject(new Error("down")) };
     expect((await run(["report", "http://localhost:9", "--format=compact"], down)).stdout).toBe(
-      "E1056 report target unreachable: http://localhost:9\n  see: k.cli\nfail report\n",
+      "E1056 report target unreachable: http://localhost:9\n  see: keel docs k.cli\nfail report\n",
     );
     expect((await run(["report", "--format=compact"], io({}, [], 503))).stdout).toBe(
-      "E1056 report target answered 503: http://localhost:5173\n  see: k.cli\nfail report\n",
+      "E1056 report target answered 503: http://localhost:5173\n  see: keel docs k.cli\nfail report\n",
     );
     expect((await run(["report", "--format=compact"], io({ live: true }))).stdout).toBe(
-      "E1056 not an inspect document: http://localhost:5173\n  see: k.cli\nfail report\n",
+      "E1056 not an inspect document: http://localhost:5173\n  see: keel docs k.cli\nfail report\n",
     );
     const exact = `http://${"a".repeat(41)}`;
     const long = `http://${"a".repeat(42)}`;
@@ -82,7 +82,7 @@ describe("keel report", () => {
     const r = await run(["report", "--format=compact"], { cwd: "/work/app", files: [] });
     expect(r).toMatchObject({
       code: 0,
-      stdout: "I1055 report not available: needs a network (io.fetch)\n  see: k.cli\nok report\n",
+      stdout: "I1055 report not available: needs a network (io.fetch)\n  see: keel docs k.cli\nok report\n",
     });
   });
 

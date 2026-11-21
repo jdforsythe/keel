@@ -39,7 +39,7 @@ describe("keel report, the inspect form", () => {
     const r = await report("http://h/", tally);
     expect(r).toMatchObject({
       code: 1,
-      stdout: "E1056 not an inspect document: http://h\n  see: k.cli\nfail report\n",
+      stdout: "E1056 not an inspect document: http://h\n  see: keel docs k.cli\nfail report\n",
     });
   });
 
@@ -48,7 +48,7 @@ describe("keel report, the inspect form", () => {
     expect(r.seen.map((x) => x.url)).toEqual(["not a url/__keel/inspect"]);
     const down = { cwd: "/work/app", files: [], fetch: (): Promise<Response> => Promise.reject(new Error("down")) };
     expect((await run(["report", "not a url?k=v", "--format=compact"], down)).stdout).toBe(
-      "E1056 report target unreachable: not a url\n  see: k.cli\nfail report\n",
+      "E1056 report target unreachable: not a url\n  see: keel docs k.cli\nfail report\n",
     );
   });
 });
@@ -72,11 +72,11 @@ describe("keel report, the route form", () => {
 
   it("names the reason and the url without query or fragment in E1056, cut to 48 characters", async () => {
     expect((await report("http://h/t?k=v#f", {}, {}, 404)).stdout).toBe(
-      "E1056 report target answered 404: http://h/t\n  see: k.cli\nfail report\n",
+      "E1056 report target answered 404: http://h/t\n  see: keel docs k.cli\nfail report\n",
     );
     for (const body of [{}, null, 3, "a", { ...tally, extra: 1 }, [tally, { ...tally, id: "" }], [[tally]]]) {
       expect((await report("http://h/t?k=v", body)).stdout).toBe(
-        "E1056 not a tally or an array of them: http://h/t\n  see: k.cli\nfail report\n",
+        "E1056 not a tally or an array of them: http://h/t\n  see: keel docs k.cli\nfail report\n",
       );
     }
     const long = `http://h/${"a".repeat(40)}`;
@@ -130,14 +130,14 @@ describe("keel report, the route form", () => {
     ];
     for (const body of bodies) {
       expect((await report("http://h/t?k=v", body)).stdout).toBe(
-        "E1056 not a tally or an array of them: http://h/t\n  see: k.cli\nfail report\n",
+        "E1056 not a tally or an array of them: http://h/t\n  see: keel docs k.cli\nfail report\n",
       );
     }
   });
 
   it("reads no loader's answer in the inspect form", async () => {
     const r = await report("http://h", { id: "r", results: { r: { ok: true, value: tally } } });
-    expect(r.stdout).toBe("E1056 not an inspect document: http://h\n  see: k.cli\nfail report\n");
+    expect(r.stdout).toBe("E1056 not an inspect document: http://h\n  see: keel docs k.cli\nfail report\n");
   });
 
   it("prints the token in no output, whatever the answer", async () => {
