@@ -3,10 +3,10 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1420,
+    "example": 1425,
     "probabilistic": 332,
     "exhaustive": 15,
-    "proven": 72,
+    "proven": 73,
     "monitored": 8
   },
   "mutation": {
@@ -14160,27 +14160,27 @@
     },
     {
       "item": "k.data#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.data#2",
-      "rung": "none"
+      "rung": "proven"
     },
     {
       "item": "k.data#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.data#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.data#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.data#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.defaults#1",
