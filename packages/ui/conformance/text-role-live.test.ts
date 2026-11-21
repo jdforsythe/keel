@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.ui, clause "`Text role="status"` and `Text role="alert"` write that `role` attribute in server and client output; a `Text` without `role` writes none; any other `role` is a type error."
 // Seed 1337 (RFC 0176 clause k.ui #16). The client-output half; the server-output half is packages/server/conformance/text-role-server.test.ts.
-// Pending: not built. The tests that need `Text` to take `role` are skipped; `role` is reached through a variable so this file type-checks before the prop exists.
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Text } from "@keel/ui";
