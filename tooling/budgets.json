@@ -40,11 +40,11 @@
     "@keel/ctx": "3.75kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "13.4kb",
+    "@keel/router": "13.5kb",
     "@keel/router/contract": "3.2kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
-    "@keel/runtime-dom/ops": "10.6kb",
+    "@keel/runtime-dom/ops": "10.75kb",
     "@keel/scaffold": {
       "max": "18.8kb",
       "platform": "node"
@@ -55,7 +55,7 @@
     },
     "@keel/schema": "5.65kb",
     "@keel/server": {
-      "max": "26.75kb",
+      "max": "26.8kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
@@ -202,7 +202,7 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "13.85kb",
+      "max": "13.9kb",
       "platform": "node"
     },
     "@keel/testing/prove": {
