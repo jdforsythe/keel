@@ -28,7 +28,7 @@ Without JS the server runs the same flow: it decodes FormData with the action's 
 
 **Slot** on `<Form>`: `error` for non-field errors (k.ui standard slots); no `loading` slot (rfc:0043).
 
-**Rules.** E1901 input inside a `<Form>` without `field` · E1902 `field(path)` path not in the schema.
+**Rules.** E1901 input inside a `<Form>` without `field` · E1902 `field(path)` path not in the schema. A password control's field: W1114 (k.privacy-reads).
 
 **Conformance.**
 - Submitting invalid values sends no request.
