@@ -209,6 +209,8 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 - `.worktrees/w14g2` `lane-w14g2`: golden-2's app data is on `@keel/std-postgres` (85f91aaf..307800b1; `kitchen.db` recipes, `accounts.db` profiles and api_tokens; tokens by `idOf`; 134 tests, check clean, both smokes), not merged: it waits for RFC 0175, being written on that branch, which closes what the app met: `keel build` ends ok after E1006 and `routes.json` lacks the routes of modules that reach `pg`; migrations loaded by `import.meta.glob` in app code; a refused connection is a 500; no dev, compose or scaffold default for `KEEL_POSTGRES_URL`; a loader's test `.run` needs `stores: {}`. The lane also fixed the built server's missing `pglite.data` in the compiler. Owed there: the evals' golden-2 task specs still describe `boxStores`; `postgres:` was tried only against a closed port.
 - Before `ledger-fresh --a11y` in the verify checkout, delete the ignored `packages/std-sessions/test/fixtures/notes/.keel/` a root `pnpm test` leaves behind.
 - Merged, not pushed: `lane-wdbtls` (D85). Running: RFC 0175 on `lane-w14g2`; `lane-wtest` (0960, 0916, 0919); `lane-r176` (RFC 0176 and 0177).
+- Merged, not pushed: `lane-wtest` (b144f6bd; backlog 0919's tooling half; 0916 not confirmed and closed; 0960 stays open: its cure moves `resumeDocument` to a test-only entry of `@keel/testing` or gives `replayRun` a narrow entry, which is public API and needs an RFC, number 0178 free). A first cut that hid the vitest import behind a joined string was refused and reverted.
+- Running: on `lane-w14g2` the build of RFC 0175 (a3ebfc01 the RFC with ADR-0197, 753342fd its conformance, 11 clauses) and golden-2 finished on it, then that branch merges; on `lane-r176` the conformance writer for RFC 0176 (ADR-0198; `Text role`, E1826) and RFC 0177 (ADR-0199; E1508 when a guard's redirect params do not fit), written at 1dfe58ed and b5a0c707; their build follows. Backlog 1000 wants its own RFC.
 - Still to do for D65 (no migration): RFC 0161, 0162 and 0167's Migration wording on the main line and lanes, with RFC 0158's.
 
 ## Verification
@@ -220,9 +222,10 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 - [x] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962): `tasks/p1/PLAN.md`; the operator reads its open decisions O1 to O11.
 
 ## Next action
-1. `git worktree list`, `git status --short`, CI on the pushed head (`gh run list --branch jdforsythe/test-impl --limit 2`); fix what fails. Worktrees: this one, `.worktrees/verify` (the gate's clean checkout), `.worktrees/r158` (RFC 0158).
-2. The status sweep D79 owes: spec sections, RFCs and ADRs of today's merged RFCs to the status their conformance earns; then the freeze review's list (`tasks/0963-to-p1/freeze-review.md`) against it.
-3. W14 step 2 (app data): `lane-r158` holds RFC 0158; merge the main line into it, remove its Migration text (D65), bring its handler assumption to the contract shapes, then conformance (k.data 6 clauses, std.postgres 8) and the build of `@keel/std-postgres`; golden-2's app data moves to it (W14 step 3).
-4. RFC 0163 (the library format, `lane-r163`) and RFC 0169's second part (the kind gates, S0013) are built after the first real apps (D49, D68).
-5. Not started: the weakness lanes 06 and 10 to 21 of `tasks/p1/weaknesses.md` (several lines may be closed or changed by today's RFCs: re-triage first), the mutation runs (231 stale claims), W4 scoping, W5's golden-3 agent run and W16's first pair (both the operator's to start).
-6. For the operator: D51 to D79 to confirm or reverse; nothing blocks.
+1. `git worktree list`, `git status --short`, CI on the pushed head (`gh run list --branch jdforsythe/test-impl --limit 2`; run 44936139831 is for 60f98d39); fix what fails. Worktrees: this one, `.worktrees/verify`, `.worktrees/w14g2`, `.worktrees/r176`.
+2. Land `lane-w14g2` (RFC 0175 built, golden-2 on `@keel/std-postgres`) and `lane-r176` (RFC 0176 and 0177: conformance, then the build with an opus lane, then merge). Regenerate the ledger and evidence after each merge.
+3. Gate in `.worktrees/verify` in CI's order (the Lanes block says how; run std-postgres and std-db against a throwaway `postgres:17` too), then push, then watch CI to the end.
+4. Next packages from `tasks/p1/weaknesses-triage.md`, not started: a11y-harness (0572, 0573, 0580), shell-origin-and-deps (0608, 0957), inspect-sections (0954), surface-run-throws (0517), resume-dev-conformance (0747), golden-polish (0386, 0964, 0366), the rest of 0302 and 0883 and 0960 and 1000 by RFC, backlog 1004 to 1007. Then the mutation runs when the machine is quiet (check's score is estimated at 73.66 after RFC 0170).
+5. RFC 0163 (the library format, `lane-r163`) and RFC 0169's second part (the kind gates, S0013) are built after the first real apps (D49, D68).
+6. Not started: W4 scoping, W5's golden-3 agent run and W16's first pair (both the operator's to start).
+7. For the operator: D51 to D85 to confirm or reverse; nothing blocks.
