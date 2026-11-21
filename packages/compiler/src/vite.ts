@@ -17,6 +17,7 @@ import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
+import { copyPgliteFiles } from "./internal/copyPgliteFiles.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
@@ -31,6 +32,7 @@ import { islandsCode } from "./internal/islandsCode.ts";
 import { keelMark } from "./internal/keelMark.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
+import { noDeployable } from "./internal/noDeployable.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
@@ -70,6 +72,27 @@ const CSS_IMPORT = "virtual:keel.css";
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
 const PG_BANNER =
   "import { createRequire as keelCreateRequire } from 'node:module'; const require = keelCreateRequire(import.meta.url);";
+/** A build's failure on evaluation problems: one `keel: <code> ...` line each, as the plugin's warnings read. */
+const evaluationFailed = (problems: readonly string[]): Error =>
+  new Error(problems.map((p) => `keel: ${p}`).join("\n"));
+
+/** The served modules' `modules/<id>/migrations/` folders of `root`, copied under `out` at the same path (k.data Files). */
+function copyMigrations(root: string, out: string, modules: readonly string[]): void {
+  for (const id of modules) {
+    const from = path.join(root, "modules", id, "migrations");
+    if (fs.existsSync(from)) fs.cpSync(from, path.join(out, "modules", id, "migrations"), { recursive: true });
+  }
+}
+
+/** The folder of the PGlite package `@keel/std-postgres` resolves from the project at `at`, if it resolves. */
+function pgliteDist(at: string): string | undefined {
+  try {
+    const server = createRequire(path.join(at, "package.json")).resolve("@keel/std-postgres/server");
+    return path.dirname(createRequire(server).resolve("@electric-sql/pglite"));
+  } catch {
+    return undefined;
+  }
+}
 /**
  * `node:sqlite` in a build: read when the driver first runs, not linked at load, so `server.mjs` starts on a Node
  * without it and `start` reports the version (k.deploy Rules E1560).
@@ -225,6 +248,7 @@ export default function (): {
   load: (id: string, options?: HookOptions) => Promise<string | null>;
   transformIndexHtml: () => HtmlTag[];
   buildEnd: (this: Ctx, error?: Error) => void;
+  renderStart: () => void;
   generateBundle: { order: "post"; handler: (this: Ctx, options: unknown, bundle: Record<string, Emitted>) => void };
   closeBundle: () => void;
   transform: (code: string, id: string, options?: HookOptions) => { code: string; map: null } | null;
@@ -241,6 +265,8 @@ export default function (): {
   let stale = true;
   let usageKeys = "";
   let warn: Warn = () => {};
+  /** The latest evaluation's problems: each fails a build at its end (k.compiler Build-time evaluation). */
+  let problems: readonly string[] = [];
   /** A node deployable's client build (`config`) leaves `.keel/` to the project's own build: no artifact writes. */
   let clientBuild = false;
   /** The `client` deployable a `vite build` with `KEEL_DEPLOYABLE` naming one writes to `dist/<name>/` (k.hosting). */
@@ -344,15 +370,16 @@ export default function (): {
 
   /**
    * The deployable this build serves: `want` (a dev entry's `?d=`, else `KEEL_DEPLOYABLE`), else the first `client`
-   * one by name, else every `node` one's modules.
+   * one by name, else every `node` one's modules, else the first `static` one by name.
    */
   const deployable = (
     want = process.env.KEEL_DEPLOYABLE,
   ): { name: string; modules: readonly string[]; client: boolean } | undefined => {
     if (topology === undefined) return undefined;
     const names = Object.keys(topology).sort();
-    const name = want ?? names.find((n) => topology?.[n]?.adapter === "client");
-    const node = names.filter((n) => topology?.[n]?.adapter === "node");
+    const of = (adapter: string): string[] => names.filter((n) => topology?.[n]?.adapter === adapter);
+    const node = of("node");
+    const name = want ?? of("client")[0] ?? (node.length > 0 ? undefined : of("static")[0]);
     // `keel dev` with no client deployable: one resume entry for every node deployable's islands (one origin).
     if (name === undefined && node.length > 0)
       return { name: node[0] ?? "", modules: node.flatMap((n) => topology?.[n]?.modules ?? []), client: false };
@@ -360,6 +387,15 @@ export default function (): {
     return name === undefined || d === undefined
       ? undefined
       : { name, modules: d.modules, client: d.adapter === "client" };
+  };
+  /**
+   * The deployable whose `index.html` the plugin writes when the project has none: the `client` one hosted, else, in a
+   * build, the `static` one served.
+   */
+  const page = (): string | undefined => {
+    if (hosting !== undefined || command !== "build") return hosting;
+    const d = deployable();
+    return d !== undefined && topology?.[d.name]?.adapter === "static" ? d.name : undefined;
   };
   /**
    * The routes files of the deployable's modules (every module without a topology): an app module's
@@ -632,6 +668,7 @@ export default function (): {
       usages,
     });
     for (const p of r.problems) warn(`keel: ${p}`);
+    problems = r.problems;
     css = r.css;
     routes = r.routes;
     // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it.
@@ -722,6 +759,7 @@ export default function (): {
           buildApp: async (b) => {
             await b.build(b.environments.client);
             await b.build(b.environments.ssr);
+            copyPgliteFiles(path.join(at, out), () => pgliteDist(at));
             // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
             // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
             const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
@@ -731,6 +769,8 @@ export default function (): {
             const every = Object.fromEntries(Object.entries(top).map(([n, d]) => [n, asNode(d)]));
             const all = projectManifests(every, listSources(at), at);
             const table = await evaluateProject({ root: at, tokensFile: undefined, routesFiles: all, usages: [] });
+            if (table.problems.length > 0) throw evaluationFailed(table.problems);
+            copyMigrations(at, path.join(at, out), top[name]?.modules ?? []);
             fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
             if (fs.existsSync(path.join(at, ".keel", "std.json")))
               fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
@@ -778,7 +818,7 @@ export default function (): {
       if (options?.ssr === false && command === "build" && importer !== undefined && isNodeBuiltin(id))
         return { id, external: true };
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
-      if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html")) return id;
+      if (id === path.join(root, "index.html") && !exists("index.html") && page() !== undefined) return id;
       const q = keyed(id);
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
@@ -795,8 +835,8 @@ export default function (): {
         const wrong = miscased(id);
         if (wrong !== undefined) throw new Error(wrong);
       }
-      if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html"))
-        return indexHtml(hosting, ENTRY_PATH);
+      const shown = id === path.join(root, "index.html") && !exists("index.html") ? page() : undefined;
+      if (shown !== undefined) return indexHtml(shown, ENTRY_PATH);
       if (id === CSS_ID) {
         if (stale) await refresh();
         return css;
@@ -821,10 +861,9 @@ export default function (): {
         );
       if (q?.path !== ENTRY_PATH) return null;
       const d = deployable(q.d);
-      if (d === undefined)
-        throw new Error(`keel: ${ENTRY_PATH} needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one`);
+      if (d === undefined) throw new Error(noDeployable(ENTRY_PATH, topology, q.d ?? process.env.KEEL_DEPLOYABLE));
       const mode = command === "serve" ? "dev" : "production";
-      if (!d.client) return resumeEntry(q.d, mode);
+      if (!d.client) return resumeEntry(q.d, mode, CSS_IMPORT);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       const targets = served ? calledByClient(all, d.modules) : {};
@@ -914,6 +953,11 @@ export default function (): {
             );
         }
       },
+    },
+    renderStart() {
+      // Each evaluation problem fails a build, after the bundle's own checks (E1007, E1011) have run; dev prints it and
+      // keeps serving (k.compiler Build-time evaluation).
+      if (command === "build" && problems.length > 0) throw evaluationFailed(problems);
     },
     closeBundle() {
       const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");

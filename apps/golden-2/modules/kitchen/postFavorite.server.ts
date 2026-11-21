@@ -1,13 +1,14 @@
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
-import { tx } from "@keel/store";
-import { boxStores } from "./boxStores.ts";
+import { sql } from "@keel/std-postgres";
+import { RecipeRef } from "./RecipeRef.schema.ts";
 import { kitchen } from "./kitchen.contract.ts";
+import { kitchenDb } from "./kitchenDb.server.ts";
 
-export const postFavorite = action(kitchen, "kitchen.favorite", { stores: boxStores }, (_body, { params, stores }) => {
-  if (!stores.box.get("recipes").some((r) => r.id === params.recipeId)) {
-    return err({ code: "keel.notFound", message: "No such recipe", data: null });
-  }
-  const toggled = tx(stores.toggleFavorite, { recipeId: params.recipeId });
+/** Toggles a recipe's favorite in one statement; an unknown id is `keel.notFound` (404). */
+export const postFavorite = action(kitchen, "kitchen.favorite", {}, async (_body, { params }, ctx) => {
+  const toggled = await kitchenDb(ctx).one(
+    sql(RecipeRef)`update recipes set favorite = not favorite where id = ${params.recipeId} returning id as "recipeId"`,
+  );
   return toggled.ok ? ok({}) : err(toggled.error);
 });

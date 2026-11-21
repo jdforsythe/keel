@@ -1,16 +1,16 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt, err, ok } from "@keel/schema";
-import { commitStores, identity } from "@keel/server";
-import { tx } from "@keel/store";
+import { attempt } from "@keel/schema";
+import { identity } from "@keel/server";
+import { NoRows, sql } from "@keel/std-postgres";
 import mount from "./identity.ts";
 import type { AccountError } from "./modules/accounts/AccountError.schema.ts";
 import { AccountsLocale } from "./modules/accounts/AccountsLocale.schema.ts";
 import { SignedInUser } from "./modules/accounts/SignedInUser.schema.ts";
+import { accounts } from "./modules/accounts/accounts.contract.ts";
+import { accountsDb } from "./modules/accounts/accountsDb.server.ts";
 import { authOf } from "./modules/accounts/authOf.server.ts";
 import { authSettings } from "./modules/accounts/authSettings.server.ts";
 import { bearerUser } from "./modules/accounts/bearerUser.server.ts";
-import { profileStores } from "./modules/accounts/profileStores.ts";
-import { accounts } from "./modules/accounts/accounts.contract.ts";
 
 // Fail closed: a server without the library's secret does not start.
 const settings = authSettings(process.env, process.execArgv);
@@ -38,7 +38,7 @@ async function identify(args: { readonly request: Request }, ctx: Ctx): Promise<
 }
 
 /**
- * After a sign-in the library accepted, the user's id and email go into the `accounts.profiles` store, so `/api/me`
+ * After a sign-in the library accepted, the user's id and email are upserted into the `profiles` table, so `/api/me`
  * answers without calling the library. A save that fails rejects: `createApp` answers 500.
  */
 async function remember(path: string, res: Response, ctx: Ctx): Promise<Response> {
@@ -47,10 +47,10 @@ async function remember(path: string, res: Response, ctx: Ctx): Promise<Response
   const signed = SignedInUser.parse(json.ok ? json.value : null);
   if (!signed.ok) return Promise.reject(new Error("sign-in answer without a user"));
   const { id, email } = signed.value.user;
-  const saved = await commitStores(ctx, profileStores, (st) => {
-    const r = tx(st.saveProfile, { userId: id, email });
-    return r.ok ? ok(null) : err(r.error);
-  });
+  const saved = await accountsDb(ctx).run(
+    sql(NoRows)`insert into profiles (user_id, email) values (${id}, ${email})
+                on conflict (user_id) do update set email = excluded.email`,
+  );
   return saved.ok ? res : Promise.reject(new Error(saved.error.code));
 }
 

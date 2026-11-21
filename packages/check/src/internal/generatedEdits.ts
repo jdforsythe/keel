@@ -77,13 +77,19 @@ export function generatedEdits(
       }
       continue;
     }
+    const moved =
+      surface === undefined || surface === null
+        ? undefined
+        : staleSource(surface, artifactDir(file.path) ?? "", sources);
     const message = !known
       ? `${shown} is not among the compiled artifacts; remove it`
       : off !== undefined && intact
         ? `${shown} differs from the contracts and bindings at "${off.slice(0, 24)}"; run keel build`
-        : consistent && !intact
-          ? `generated ${shown} does not match its sources; run keel build`
-          : `hand edit to generated ${shown}; revert and run keel build`;
+        : consistent && !intact && moved !== undefined
+          ? `${shown} is stale, ${moved.slice(-34)} changed; run keel build`
+          : consistent && !intact
+            ? `generated ${shown} does not match its sources; run keel build`
+            : `hand edit to generated ${shown}; revert and run keel build`;
     const base: Diagnostic = { kind: "diag", code: "E1005", ...at, message };
     out.push(intact && off === undefined ? { ...base, fix: unifiedDiff(file.path, file.source, canonical) } : base);
   }

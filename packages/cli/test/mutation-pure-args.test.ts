@@ -27,7 +27,12 @@ describe("parseArgv", () => {
       const p = fails(argv);
       expect(p.command).toBe("keel");
       expect(p.diags).toStrictEqual([
-        { kind: "diag", code: "E1051", message: "no command given; see keel docs k.cli", see: "k.cli" },
+        {
+          kind: "diag",
+          code: "E1051",
+          message: "no command given; try check, test, build, dev, scaffold, or keel docs",
+          see: "k.cli",
+        },
       ]);
     }
     expect(fails(["--format=json"]).format).toBe("json");

@@ -370,11 +370,11 @@ describe("viteRun", () => {
     fakeVite(d, 'echo "$@" > args.txt\npwd > cwd.txt\necho noisy\necho noisy-err >&2');
     expect(viteRun(d)).toEqual({ code: 0, tail: "", notes: [] });
     expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("build\n");
-    // rfc:0055: a successful build keeps the plugin's Keel-coded lines (stdout and stderr), a failed one does not.
+    // A build keeps the plugin's Keel-coded lines (stdout and stderr), failed or not.
     fakeVite(d, 'echo "[plugin keel] keel: W1005 .keel/routes.json differed; rewritten"\necho "keel: E1006 x" >&2');
     expect(viteRun(d)?.notes).toEqual(["W1005 .keel/routes.json differed; rewritten\n", "E1006 x\n"]);
     fakeVite(d, 'echo "keel: W1005 y"\nexit 3');
-    expect(viteRun(d)).toEqual({ code: 3, tail: "keel: W1005 y\n", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 3, tail: "keel: W1005 y\n", notes: ["W1005 y\n"] });
     expect(realpathSync(readFileSync(join(d, "cwd.txt"), "utf8").trim())).toBe(d);
   });
 

@@ -22,6 +22,8 @@ const r = await mongoNotes(ctx).forOwner(user)   // in a loader's fn: Result<Not
 
 **Dev.** In `keel dev`, editing an app file that calls `register` loads the server graph again whole, so the registry is empty when the file registers again: no E1602.
 
+**Files.** A module's data migrations are its files `modules/<id>/migrations/*.sql`. A data capability reads them from the app folder: `KEEL_APP_DIR` when set, else the working directory (`keel dev`, `keel test` and an app's vitest run in the app's folder). `keel build` copies the folder of each module a `node` deployable serves to `dist/<name>/modules/<id>/migrations/`, and `server.mjs` sets `KEEL_APP_DIR` to its own folder when unset. `keel dev` sets `KEEL_DEV_DIR` to the app's absolute `.keel-dev/` folder, where a capability keeps its dev data.
+
 **Rules.** E1607, at `keel check`: a call of `@keel/ctx`'s `register` in a file under `modules/<id>/` whose name is not a string literal `<id>.<name>`, `<name>` one lowerCamel segment; or a name another app file registers too, reported at the call in the file whose path sorts later (no fix).
 
 **Conformance.**
@@ -31,3 +33,6 @@ const r = await mongoNotes(ctx).forOwner(user)   // in a loader's fn: Result<Not
 - An API loader returning its capability's `err` `keel.unreachable`, `keel.conflict` or `keel.notFound` answers 502, 409 or 404; one returning `ok` of a value failing the entry's `output` answers 500 and, in dev, an E1554 `diag`.
 - Under `keel dev`, editing and saving `modules/notes/mongoNotes.server.ts` twice: the next request to a loader calling its accessor answers with the edited code, and no E1602 is thrown or logged.
 - `capabilities()` lists an app-registered name after its file is imported.
+- `keel build` of a fixture whose `node` deployable serves module `a` holding `modules/a/migrations/0001-x.sql` writes `dist/<name>/modules/a/migrations/0001-x.sql` with the same bytes, and no folder for a module of a `client` deployable.
+- A loader answering `process.env.KEEL_APP_DIR`, from `node dist/<name>/server.mjs` started in another working directory, answers the absolute path of `dist/<name>`; with `KEEL_APP_DIR` set before start, that value.
+- Under `keel dev`, a loader answering `process.env.KEEL_DEV_DIR` answers the absolute path of the app's `.keel-dev/`.

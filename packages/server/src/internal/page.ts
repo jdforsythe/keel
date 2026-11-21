@@ -1,5 +1,6 @@
 import { type Match, pageHead } from "@keel/router/internal";
 import { publicError } from "@keel/router/internal";
+import { servedForm } from "@keel/runtime-dom/internal";
 import { type JsonValue, type KeelError, err, ok } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
@@ -18,6 +19,7 @@ import { renderChain } from "./renderChain.ts";
 import { runLoaders } from "./runLoaders.ts";
 import { scrubbedError } from "./scrubbedError.ts";
 import { statusOf } from "./statusOf.ts";
+import { withServedForm } from "./withServedForm.ts";
 import { withoutPasswords } from "./withoutPasswords.ts";
 
 /**
@@ -25,7 +27,7 @@ import { withoutPasswords } from "./withoutPasswords.ts";
  * `{ id, results: { [levelId]: Result } }`. Documents render the chain: the first loader `err` (chain order)
  * renders the nearest errorElement at or above it with the layouts above intact and sets the status by its
  * code; otherwise `status`, `failure` (an action error at the route) and `submission` (the 422 re-render:
- * field summary before the route component, `form` in `#k-state` less the keys the page renders as password
+ * field summary before the route component, the submitted values and errors in the `<Form>` that posted them, `form` in `#k-state` less the keys the page renders as password
  * inputs, none when an errorElement renders instead or rendering threw) apply. `#k-state` also carries the served `route`
  * (`{ id, path, href, params, search }`, encoded) and, when a loader failed, its `error` (`code`, `data.at` only).
  */
@@ -65,19 +67,24 @@ export async function page(
     const o = outcomes[i]?.result;
     return { params, search, data: o?.ok === true ? o.value.json : null };
   };
+  // The rejected post goes to the `<Form>` that posted it (its `action` and method), so its controls render the
+  // submitted values and errors (k.forms Submit); the render is synchronous, the slot cleared after it.
+  const posted = submission === null || shown !== null ? null : { ...submission, href: m.url };
   const rendered = attempted(() =>
     inRequest(r.rq, () =>
-      renderChain({
-        chain,
-        params: m.params,
-        search: m.search,
-        data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
-        props,
-        failure: shown,
-        prepend: submission === null || shown !== null ? "" : fieldSummary(submission),
-        ctx: r.sv.ctx,
-        publicize,
-      }),
+      withServedForm(posted, () =>
+        renderChain({
+          chain,
+          params: m.params,
+          search: m.search,
+          data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
+          props,
+          failure: shown,
+          prepend: submission === null || shown !== null ? "" : fieldSummary(submission),
+          ctx: r.sv.ctx,
+          publicize,
+        }),
+      ),
     ),
   );
   // The served route, for the resume entry to report as the ctx's first `nav` (k.runtime).

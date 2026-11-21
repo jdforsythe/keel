@@ -148,9 +148,21 @@
       "steps": [
         "$setup",
         {
+          "name": "a second Postgres 17 with a self-signed certificate and ssl on, for the TLS cases",
+          "run": "set -e\nmkdir \"$RUNNER_TEMP/pg-tls\"\nopenssl req -new -x509 -nodes -days 1 -subj /CN=localhost -newkey rsa:2048 -keyout \"$RUNNER_TEMP/pg-tls/server.key\" -out \"$RUNNER_TEMP/pg-tls/server.crt\"\nchmod 644 \"$RUNNER_TEMP/pg-tls/server.crt\" \"$RUNNER_TEMP/pg-tls/server.key\"\ndocker run -d --name pg-tls -e POSTGRES_PASSWORD=keel-ci-throwaway -p 5433:5432 -v \"$RUNNER_TEMP/pg-tls:/certs:ro\" postgres:17 sh -c 'cp /certs/server.* /var/lib/postgresql/ && chown postgres:postgres /var/lib/postgresql/server.* && chmod 600 /var/lib/postgresql/server.key && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key'\nfor i in $(seq 1 30); do docker exec pg-tls pg_isready -h 127.0.0.1 -U postgres && break; sleep 2; done"
+        },
+        {
           "name": "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database",
           "working-directory": "packages/std-db",
-          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/postgres-server.test.ts; do pnpm exec vitest run \"$f\"; done"
+          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts; do pnpm exec vitest run \"$f\"; done"
+        },
+        {
+          "name": "std-db Postgres driver cases, TLS ones included, on the ssl server",
+          "working-directory": "packages/std-db",
+          "env": {
+            "KEEL_TEST_POSTGRES_URL": "postgres://postgres:keel-ci-throwaway@127.0.0.1:5433/postgres"
+          },
+          "run": "pnpm exec vitest run test/postgres-server.test.ts"
         },
         {
           "name": "std-postgres on Postgres 17, its files one at a time on one database",
@@ -220,6 +232,14 @@
         {
           "name": "served golden-2 pages resume in place in Chromium, three runs",
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
+        },
+        {
+          "name": "built household: guard, setup, list, receipts, cross-site refusal and a rejected form, scripts on and off",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs"
+        },
+        {
+          "name": "examples: check, test, build and one proof on the built output of each",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/examples.mjs"
         }
       ]
     },

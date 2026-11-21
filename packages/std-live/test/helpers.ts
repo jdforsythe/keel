@@ -14,12 +14,19 @@ export const settle = async (): Promise<void> => {
   for (let i = 0; i < 300; i++) await Promise.resolve();
 };
 
-/** A sim ctx whose `/events` stream sends `reset` on open; `emit` pushes an event to every open stream. */
+/**
+ * A sim ctx whose `/events` stream sends `reset` on open; `emit` pushes an event to every open stream and `drop` ends
+ * every open stream as a lost connection does.
+ */
 export function server(seed = 1337) {
   const ctx: SimCtx = createCtx({ mode: "sim", seed });
   const open = new Set<ReadableStreamDefaultController<Uint8Array>>();
   const emit = (event: unknown): void => {
     for (const c of open) c.enqueue(enc.encode(`data: ${JSON.stringify({ ok: true, value: event })}\n\n`));
+  };
+  const drop = (): void => {
+    for (const c of open) c.error(new TypeError("connection lost"));
+    open.clear();
   };
   ctx.net.route(`${ORIGIN}/events`, () => {
     const body = new ReadableStream<Uint8Array>({
@@ -30,7 +37,7 @@ export function server(seed = 1337) {
     });
     return new Response(body, { headers: { "content-type": "text/event-stream" } });
   });
-  return { ctx, emit };
+  return { ctx, emit, drop };
 }
 
 let n = 0;

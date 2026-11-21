@@ -11,12 +11,15 @@ import { ISLANDS_PATH } from "./ISLANDS_PATH.ts";
  * island sees the page's route and every input. Each warning `resume` returns goes to `console.warn`, one line, in
  * every mode (k.claim Client); when `resume` rethrows an island's throw, the warnings it left at
  * `Symbol.for("keel.resumeWarnings")` go first.
- * App-independent, so a node `createApp` serves the same text the Vite plugin does; Vite resolves its imports (dev
- * server, `vite build`). Kernel specifiers are app code that runs in the browser; the compiler itself never imports them.
+ * With `cssId` (the Vite plugin's, dev server and `vite build`) it first imports the atomic CSS, so the build's entry
+ * chunk names the stylesheet the server head links (k.head Server). Without it the text is app-independent, the one
+ * a node `createApp` serves unbundled. Vite resolves its imports. Kernel specifiers are app code that runs in the
+ * browser; the compiler itself never imports them.
  */
-export function resumeEntry(deployable?: string, mode: "dev" | "production" = "production"): string {
+export function resumeEntry(deployable?: string, mode: "dev" | "production" = "production", cssId?: string): string {
   const islands = deployable === undefined ? ISLANDS_PATH : `${ISLANDS_PATH}?d=${encodeURIComponent(deployable)}`;
   return [
+    ...(cssId === undefined ? [] : [`import ${JSON.stringify(cssId)};`]),
     'import { bindClientStd } from "@keel/compiler/std/bindClientStd";',
     'import { createCtx } from "@keel/ctx";',
     'import { resume } from "@keel/runtime-dom/ops";',

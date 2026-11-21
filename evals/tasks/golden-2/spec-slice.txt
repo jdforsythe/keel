@@ -1,4 +1,4 @@
-k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.contract k.router k.prefix k.head k.server k.services k.forms k.ui k.testing k.module k.scaffold k.hosting k.check std.i18n std.money std.temporal std.text std.messages
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.contract k.router k.prefix k.head k.server k.services k.forms k.ui k.testing k.module k.scaffold k.hosting k.check std.i18n std.money std.temporal std.text std.messages std.postgres
 
 Key lines only (current spec, RFCs through 0162). Full text: `pnpm spec <id>`.
 
@@ -44,7 +44,7 @@ k.contract
 - modules/<id>/<id>.contract.ts: import { contract } from '@keel/router/contract'; export const kitchen = contract('kitchen', { 'kitchen.box': { method: 'GET', path: '/api/recipes', output: Box }, 'kitchen.add': { method: 'POST', path: '/api/recipes', body: RecipeDraft, output: Nothing, errors: { 422: ErrorReply } }, 'kitchen.favorite': { method: 'POST', path: '/api/recipes/:recipeId/favorite', params: RecipeRef, output: Nothing, errors: { 404: ErrorReply } } }); a page entry is { path, params?, search? }, a layout { layout: true }, an API entry { method, path, output, params?, query?, body?, errors?, events? }; a member the kind refuses is E1510
 - one contract per module, its export named for the module (E1513); keys are route ids prefixed by the module id; an API id is <module>.<name>, one lowerCamel segment, one id per method (GET and POST at one path are two ids); the file imports *.schema.ts files and packages only (E1514)
 - routes.ts: export const routes = manifest(kitchen, { 'kitchen.box': { loader: loadRecipes }, 'kitchen.add': { action: postRecipe } }): every entry bound and nothing else (E1515); an API GET binds loader, an API write action, each with an optional guard; a page binds component and optionally loader, guard, layout, errorElement, title and its actions by verb (POST: save); a layout binds component
-- handlers name their entry and are never annotated: loader(kitchen, 'kitchen.box', { stores: boxStores }, fn), action(kitchen, 'kitchen.add', { stores: boxStores }, fn(body, { params, caller, stores }, ctx)); a page's loader declares { output }, a page's action { input } and returns Result<Href | null>; a handler bound under another id is E1515; only an `events: true` entry's loader is live
+- handlers name their entry and are never annotated: loader(kitchen, 'kitchen.box', {}, fn), action(kitchen, 'kitchen.add', {}, fn(body, { params, caller }, ctx)); a page's loader declares { output }, a page's action { input } and returns Result<Href | null>; a handler bound under another id is E1515; only an `events: true` entry's loader is live
 - links: kitchen.href / recipes.href(id, params?, search?) -> Href, typed by the contract, page ids only; another module's pages are linked through its contract (its module in deps; no public.exports needed)
 - clients: service({ contract: kitchen }) has one method per API entry named by the id after the module (kitchen.box -> api.box, api.add, api.favorite)
 - a deployable's table: routeTable(...tables) from '@keel/router'
@@ -115,11 +115,11 @@ k.testing
 - const t = render(C, { props, state: [[store, value]], ctx }); await t.fire(id, { type: 'click' }); t.find(id) -> { id, role, name, text, state }; t.state(store); t.a11y(); t.dispose()
 - const r = await renderRoute('recipes.show', { routes, params, search, ctx }); runs guards and loaders first; r.route(); r.settle()
 - TestEvent: click | input { value } | change | keydown { key } | submit | focus | blur
-- properties(Component | transaction, { runs = 100, seed? }) checks invariants, determinism, undo; factory stores need a scope: `const sc = scope(() => undefined); isolate(sc); const st = sc.run(boxStores); await properties(st.addRecipe)` (scope from '@keel/reactive', isolate from '@keel/store'; sc.dispose() after)
+- properties(Component | transaction, { runs = 100, seed? }) checks invariants, determinism, undo
 - tests address elements by id only; DOM queries E1701; unknown id E1705
 
 k.module
-- modules/<id>/module.ts: import { module } from '@keel/compiler'; export default module({ id: 'kitchen', deps: ['recipes'], capabilities: ['random', 'storage'], public: { exports: [] } })
+- modules/<id>/module.ts: import { module } from '@keel/compiler'; export default module({ id: 'kitchen', deps: ['recipes'], capabilities: ['random', 'storage', 'kitchen.db'], public: { exports: [] } })
 - importing another module's file needs it in deps (E1152) and in its public.exports (E1151), a contract file in deps only; its routes are public to a module that lists it in deps; ids, transaction names, error codes prefixed by module id (E1155); used ctx capabilities listed (E1156)
 
 k.scaffold
@@ -157,3 +157,12 @@ std.messages
 - RecipesText/de-DE.ts: export default RecipesText.text({ title: 'Rezepte', count: { plural: 'n', one: '# Rezept', other: '# Rezepte' } }); one file per locale; a key with params is { text: 'Added {date}' }, { plural: p, ... } or { select: p, cases }
 - a loader returns ok({ ..., text: await RecipesText.load(params.locale) }) with output schema s.object({ text: RecipesText }); a component reads props.data.text.title or formatMessage(props.data.text.count, { n }, props.params.locale); a date or price param is passed formatted
 - E2401 missing locale file · E2402 missing key · E2403 undeclared key · E2404 unused key · E2405 placeholder mismatch · E2406 literal copy (JSX text, label, alt, a route title) in a component or routes.ts
+
+std.postgres
+- import { database } from '@keel/std-postgres/server' (only in a *.server.ts, E2451): export const kitchenDb = database('kitchen.db'); the name is a literal <moduleId>.<name> (E2458); the module lists '@keel/std-postgres' in deps and 'kitchen.db' in capabilities
+- tables: modules/<moduleId>/migrations/NNNN-<kebab>.sql from 0001, no gap (E2453); read at the database's first query, applied once; no migration or timestamp functions in SQL (use ctx.clock.now(), ctx.random.id(brand))
+- import { NoRows, sql } from '@keel/std-postgres'; sql(Schema)`select ... where id = ${id}` is a Query<T>; each ${} is a parameter (a JSON value), never text
+- const r = await kitchenDb(ctx).query(q) -> Result<T[]>; .one(q) -> the one row, none is keel.notFound; .run(sql(NoRows)`insert ...`) -> Result<count>; `returning id as "recipeId"` names a column for the schema's key
+- errors: unique, foreign key, check or not-null violation is err postgres.constraint, data { constraint, kind }; a row failing its schema is postgres.result; an unreachable database is keel.unreachable
+- a unique index `recipes_title_key` on lower(title): a duplicate insert answers postgres.constraint with data.constraint 'recipes_title_key'; the action answers it as err keel.fields naming title
+- tests: test/setup.ts in vitest setupFiles: import { ready } from '@keel/std-postgres/testing'; await ready(); each sim ctx gets migrated, empty tables

@@ -1,15 +1,18 @@
-// Dev-mode proof for golden-2: `keel dev` (`AUTH_FIXTURE=dev`, as the app's `dev` script sets it) in a copy of the app
-// in a temporary folder, so its `.keel-dev/` state is that folder's, on a free port. Over HTTP, with no browser: `/` and
+// Dev-mode proof for golden-2: `keel dev` (`AUTH_FIXTURE=dev` and `KEEL_POSTGRES_URL=pglite:.keel-dev/postgres`, as the
+// app's `dev` script sets them) in a copy of the app in a temporary folder, so its `.keel-dev/` state is that folder's,
+// on a free port. Over HTTP, with no browser: `/` and
 // `/catalog` answer the page shell that loads `/@keel/entry.ts`; the sign-in page is server-rendered by the `api`
 // deployable; a sign-up and a sign-in post to the identity mount (`/api/auth`) the way the account forms do and answer
 // 303 to the sign-in page, the sign-in with a session cookie; with that cookie the sign-in page names the account and
-// `GET /api/me` answers its email, and without it neither does; every server-only file the accounts routes import is
+// `GET /api/me` answers its email, and without it neither does; a recipe posted with that cookie is in `GET /api/recipes`
+// and the app's database is a PGlite folder under `.keel-dev/postgres`; every server-only file the accounts routes import is
 // served to a browser request as its stub, with no `node:` import and none of the file's code; `/__keel/inspect` holds
 // the `api` deployable's inspector section `kitchen.box.currency` as a tally and `keel report` prints it; after an edit
 // to the server file that registers that section, `/api/*` still answers 200 and the section is still served. The
 // child runs in its own process group, which every path (a finished run, a failed step, a signal, the 90 s limit) kills.
 // Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo.
 import { execFile, spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { appendFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -47,7 +50,7 @@ const limit = setTimeout(() => {
 function startDev(dir, port) {
   const child = spawn(process.execPath, ["--disable-warning=ExperimentalWarning", cli, "dev", "--port", String(port)], {
     cwd: dir,
-    env: { ...process.env, AUTH_FIXTURE: "dev", KEEL_AGENT: "1" },
+    env: { ...process.env, AUTH_FIXTURE: "dev", KEEL_POSTGRES_URL: "pglite:.keel-dev/postgres", KEEL_AGENT: "1" },
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
   });
@@ -202,8 +205,22 @@ try {
 
   // The inspect document holds the `api` deployable's inspector sections, and `keel report` prints its tally.
   const json = { accept: "application/json", cookie };
+  const posted = await fetch(`${base}/api/recipes`, {
+    method: "POST",
+    headers: { ...json, "content-type": "application/json", "x-keel": "1" },
+    body: JSON.stringify({ title: "Smoke stew", minutes: 40, price: { amount: 900, currency: "EUR" } }),
+  }).then(
+    (r) => r.status,
+    () => 0,
+  );
+  step("POST /api/recipes with the session", posted === 200, `status ${posted}`);
   const recipes = await text(base, "/api/recipes", json);
-  step("GET /api/recipes", recipes.status === 200, `status ${recipes.status}`);
+  step(
+    "GET /api/recipes holds the posted recipe",
+    recipes.status === 200 && recipes.body.includes('"title":"Smoke stew"'),
+    `status ${recipes.status}`,
+  );
+  step("the app database is a PGlite folder", existsSync(join(dir, ".keel-dev", "postgres", "PG_VERSION")));
   const section = await currencySection(base);
   step(
     "inspect document holds the api section kitchen.box.currency as a tally",

@@ -9,7 +9,7 @@
     "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
-    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
+    "api": "KEEL_POSTGRES_URL=${KEEL_POSTGRES_URL:-pglite:.api.postgres} node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
     "@keel/compiler": "workspace:*",
@@ -28,6 +28,7 @@
     "@keel/std-i18n": "workspace:*",
     "@keel/std-messages": "workspace:*",
     "@keel/std-money": "workspace:*",
+    "@keel/std-postgres": "workspace:*",
     "@keel/std-report": "workspace:*",
     "@keel/std-tables": "workspace:*",
     "@keel/std-temporal": "workspace:*",

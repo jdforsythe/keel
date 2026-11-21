@@ -21,12 +21,41 @@ export function recorder() {
   const lines = [];
   const t0 = Date.now();
   let failed = 0;
+  let finished = false;
+  // A crash (an uncaught error, a rejection nobody awaited, an exit before `finish`) keeps and prints the steps so far.
+  const crashed = (why) => {
+    if (finished) return;
+    finished = true;
+    for (const l of lines) console.log(l);
+    console.log(`fail crashed after ${lines.length} steps: ${why}`);
+    process.exitCode = 1;
+  };
+  process.on("uncaughtException", (e) => {
+    crashed(
+      String(e?.stack ?? e)
+        .split("\n")
+        .slice(0, 3)
+        .join(" | "),
+    );
+    process.exit(1);
+  });
+  process.on("unhandledRejection", (e) => {
+    crashed(
+      String(e?.stack ?? e)
+        .split("\n")
+        .slice(0, 3)
+        .join(" | "),
+    );
+    process.exit(1);
+  });
+  process.on("exit", (code) => crashed(`exit ${code} before the last line`));
   return {
     step(label, pass, detail = "") {
       if (!pass) failed++;
       lines.push(`${pass ? "ok" : "fail"} ${label}${detail === "" ? "" : ` ${detail}`}`);
     },
     finish(name) {
+      finished = true;
       for (const l of lines) console.log(l);
       console.log(
         `${failed === 0 ? "ok" : "fail"} ${name} ${lines.length} steps, ${failed} failed (${((Date.now() - t0) / 1000).toFixed(1)}s)`,

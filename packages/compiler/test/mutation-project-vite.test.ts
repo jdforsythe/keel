@@ -447,25 +447,35 @@ describe("vite: project inputs", () => {
       entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev", false, true),
     );
     process.env.KEEL_DEPLOYABLE = "api";
-    expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
+    expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev", "virtual:keel.css"));
     process.env.KEEL_DEPLOYABLE = "nope";
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(
-      "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one",
+      "keel: /@keel/entry.ts serves no deployable nope; set KEEL_DEPLOYABLE to one of api, mid, zeta",
     );
   });
 
   it("refuses the entry without a topology; with node deployables only it is the resume entry (keel dev)", async () => {
-    const msg = "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one";
+    const msg =
+      "keel: /@keel/entry.ts needs a deployable; add a client or static one to topology.ts, or set KEEL_DEPLOYABLE to one";
     const p = keel();
     p.configResolved({ root });
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(msg);
     write("topology.ts", `export default { api: { modules: ["a"], adapter: "node" } };\n`);
     const q = keel();
     q.configResolved({ root, command: "serve" });
-    expect(await q.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
+    expect(await q.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev", "virtual:keel.css"));
     const b = keel();
     b.configResolved({ root, command: "build" });
-    expect(await b.load("/@keel/entry.ts")).toBe(RESUME_ENTRY);
+    expect(await b.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "production", "virtual:keel.css"));
+  });
+
+  it("a node-only build's resume entry imports the atomic CSS, so the entry chunk names the stylesheet", async () => {
+    write("topology.ts", `export default { web: { modules: ["a"], adapter: "node" } };\n`);
+    const b = keel();
+    b.configResolved({ root, command: "build" });
+    const text = await b.load("/@keel/entry.ts");
+    expect(typeof text === "string" && text.split("\n")[0]).toBe('import "virtual:keel.css";');
+    expect(RESUME_ENTRY).not.toContain("virtual:keel.css");
   });
 
   it(
@@ -487,8 +497,8 @@ describe("vite: project inputs", () => {
       serve.configResolved({ root, command: "serve" });
       expect(await serve.load("/@keel/entry.ts")).toBe(client("dev"));
       process.env.KEEL_DEPLOYABLE = "api";
-      expect(await none.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "production"));
-      expect(await serve.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
+      expect(await none.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "production", "virtual:keel.css"));
+      expect(await serve.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev", "virtual:keel.css"));
     },
   );
 

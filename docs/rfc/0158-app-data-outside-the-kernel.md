@@ -342,3 +342,6 @@ For the build lane:
 2. **A check for records in a server store.** k.data says records that grow with use are app data, and nothing checks it. Recommendation: no rule now (schemas have no array bound to read, so a rule would guess); the W14 gate checks golden-2, and the keel-data skill teaches it. Revisit if a real app puts records in a store.
 3. **The identity source's library is outside simulation.** k.data names it as data not simulated. Recommendation: leave it so; better-auth takes a Postgres adapter, and an app that wants its users in the app's database passes it std.postgres' URL, outside this RFC.
 4. **A shared contract test for a fake and its real side.** An app's fake can drift from the library it stands for. Recommendation: not in 1.0's kernel; record in `tasks/FUTURE.md` a `@keel/testing` helper that runs one scenario against both sides when a URL is set, built only if a real app asks.
+
+## Amendment
+RFC 0175 replaces D11: migrations are found in `modules/<id>/migrations/` of the app folder and `keel build` copies them beside `server.mjs`; the `migrations` map is optional. It also replaces the poisoned ctx after a failed pass with a retry, and adds the `KEEL_DEV_DIR` default for `KEEL_POSTGRES_URL`.

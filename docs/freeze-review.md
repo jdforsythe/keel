@@ -12,7 +12,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.store | 23 | **conformance-covered** | none |
 | k.ctx | 18 | **conformance-covered** | none |
 | k.errors | 13 | **conformance-covered** | none |
-| k.compiler | 20 | **conformance-covered** | none |
+| k.compiler | 22 | **conformance-covered** | none |
 | k.component | 17 | **conformance-covered** | none |
 | k.runtime | 13 | **conformance-covered** | none |
 | k.ui | 15 | **conformance-covered** | none |

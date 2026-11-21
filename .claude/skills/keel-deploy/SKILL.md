@@ -30,14 +30,15 @@ export default topology({
 
 **Origins.** A deployable may set `origins: { img?, media?, font?, connect?, frame? }`, each an origin-to-reason map (exact https origin, at most 16 per directive; E1590, E1591). The declared origins reach the document policy, `csp.txt`, a hosted client's `index.html` and the shells' policies.
 
-**Build.** `keel build` runs `keel check` first and stops on an error. It writes `dist/<name>/` per deployable: `server.mjs` and `server.mjs.map` for a `node` one, `index.html`, hashed `assets/` and `keel-mark.svg` for a `client` one. It always builds for production (`NODE_ENV=production`, whatever the shell or `.env` says). It also writes the read-only `deploy/<name>/Dockerfile`, `deploy/compose.yaml` and the CI workflow; edit `topology.ts` instead (E1005).
+**Build.** `keel build` runs `keel check` first and stops on an error. It writes `dist/<name>/` per deployable: `server.mjs` and `server.mjs.map` for a `node` one, `index.html`, hashed `assets/` and `keel-mark.svg` for a `client` one. It always builds for production (`NODE_ENV=production`, whatever the shell or `.env` says). E1006 fails it. `dist/<name>/` holds the served modules' `migrations/`. It also writes the read-only `deploy/<name>/Dockerfile`, `deploy/compose.yaml` and the CI workflow; edit `topology.ts` instead (E1005).
 
-**Run `server.mjs`.** `node dist/<name>/server.mjs` reads these variables:
+**Run `server.mjs`.** `node dist/<name>/server.mjs` reads these variables. A deployable with `storage: 'file'` (the default) also needs the flags `node --experimental-webstorage --localstorage-file=<path> dist/<name>/server.mjs` (without them every page that names `stores` is a 500; the generated `deploy/<name>/Dockerfile` passes them); `'sqlite'` and `'postgres'` need none.
 - `PORT` (default 8080).
 - `KEEL_SECRET`, 32 bytes or more, the same in every `node` deployable of the app: it signs the caller cookie and the `x-keel-user` header of a `service({ contract })` call. Whoever holds it can sign a caller every deployable accepts.
 - `KEEL_ORIGIN`, the public origin (optional).
 - `KEEL_PEER_<NAME>`, an http(s) URL per other `node` deployable (`my-api` is `KEEL_PEER_MY_API`). Use `https`: a captured `x-keel-user` header replays its one request until it expires (60 s).
 - `KEEL_DATABASE_URL`, for `storage: 'sqlite'` or `'postgres'` (needs `@keel/std-db` in `dependencies`: E1572).
+- `KEEL_POSTGRES_URL` when a served module lists `@keel/std-postgres` in `deps` (compose requires it). `KEEL_APP_DIR` defaults to the folder of `server.mjs`.
 - `KEEL_FORMAT=json` logs json.
 A bad value is one E1560 naming the key, never the value, and exit 1. An uncaught throw or rejection logs E1577, drains up to 10 s and exits 1: run it under a supervisor. `keel dev` serves every deployable on one origin.
 

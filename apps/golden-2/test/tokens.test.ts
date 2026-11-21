@@ -1,7 +1,10 @@
 // @vitest-environment node
+import { s } from "@keel/schema";
+import { sql } from "@keel/std-postgres";
 import { describe, expect, it } from "vitest";
 import mount from "../identity.ts";
 import { AccountData } from "../modules/accounts/AccountData.schema.ts";
+import { ApiToken as TokenRow } from "../modules/accounts/ApiToken.schema.ts";
 import { BearerToken } from "../modules/accounts/BearerToken.schema.ts";
 import { ErrorReply } from "../modules/accounts/ErrorReply.schema.ts";
 import { Me } from "../modules/accounts/Me.schema.ts";
@@ -9,6 +12,7 @@ import { MintedToken } from "../modules/accounts/MintedToken.schema.ts";
 import { TokenRequest } from "../modules/accounts/TokenRequest.schema.ts";
 import { accounts } from "../modules/accounts/accounts.contract.ts";
 import { accountsApi } from "../modules/accounts/accountsApi.ts";
+import { accountsDb } from "../modules/accounts/accountsDb.server.ts";
 import { authOf } from "../modules/accounts/authOf.server.ts";
 import { bearerUser } from "../modules/accounts/bearerUser.server.ts";
 import { loadMe } from "../modules/accounts/loadMe.server.ts";
@@ -17,6 +21,9 @@ import { loadSignup } from "../modules/accounts/loadSignup.server.ts";
 import { postToken } from "../modules/accounts/postToken.server.ts";
 import { EMAIL, NAME, PASSWORD, accountsApp, browser } from "./accountsApp.ts";
 import { apiCtx } from "./simApi.ts";
+
+/** A `profiles` row as the test reads it back. */
+const ProfileRow = s.object({ userId: s.string(), email: s.string() });
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
@@ -80,7 +87,8 @@ describe("API tokens", () => {
     server.clock.advance(2);
     expect((await bearer.json("GET", "/api/me", { authorization: `Bearer ${token}` })).status).toBe(403);
 
-    const stored = (await server.storage.get("keel.store.accounts.tokens")) ?? "";
+    const rows = await accountsDb(server).query(sql(TokenRow)`select id, digest, user_id as "userId" from api_tokens`);
+    const stored = JSON.stringify(rows.ok ? rows.value : rows.error);
     expect(stored).toContain(id);
     expect(stored).toContain("$sha256-sim$");
     expect(stored).not.toContain(token);
@@ -162,12 +170,14 @@ describe("the user a bearer header acts for", () => {
     expect(minted).not.toBeNull();
     if (minted === null) return;
     const { token } = minted;
-    const before = await server.storage.get("keel.store.accounts.tokens");
-    const profiles = (await server.storage.get("keel.store.accounts.profiles")) ?? "";
+    const tokenRows = () =>
+      accountsDb(server).query(sql(TokenRow)`select id, digest, user_id as "userId" from api_tokens`);
+    const before = await tokenRows();
+    const profiles = await accountsDb(server).query(sql(ProfileRow)`select user_id as "userId", email from profiles`);
 
     const userId = await bearerUser(`Bearer ${token}`, server);
     expect(userId).not.toBe("");
-    expect(profiles).toContain(JSON.stringify(userId));
+    expect(profiles.ok ? profiles.value.map((p) => p.userId) : []).toEqual([userId]);
     expect(await bearerUser(`bearer ${token}`, server)).toBe(userId);
 
     const last = token.at(-1) === "0" ? "1" : "0";
@@ -187,7 +197,7 @@ describe("the user a bearer header acts for", () => {
     expect(await bearerUser(`Bearer ${token}`, server)).toBe(userId);
     server.clock.advance(2);
     expect(await bearerUser(`Bearer ${token}`, server)).toBe("");
-    expect(await server.storage.get("keel.store.accounts.tokens")).toBe(before);
+    expect(await tokenRows()).toEqual(before);
   });
 });
 

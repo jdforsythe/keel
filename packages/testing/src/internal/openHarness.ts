@@ -12,6 +12,7 @@ import type { Harness } from "../types/Harness.ts";
 import type { TestEvent } from "../types/TestEvent.ts";
 import type { HarnessSetup } from "./HarnessSetup.ts";
 import { asMain } from "./asMain.ts";
+import { clockStep } from "./clockStep.ts";
 import { emitOn } from "./emitOn.ts";
 import { eventFor } from "./eventFor.ts";
 import { fail } from "./fail.ts";
@@ -32,7 +33,7 @@ import { unexpected } from "./unexpected.ts";
 /**
  * Mount `view` through runtime-dom (`ctx`, root-Boundary `onError`), or run `start`, inside a scope, in a container
  * on `document.body`, and build the harness; with `documents`, the page's document navigations are recorded there
- * (`recordDocuments`) instead of made. `check()` raises the first root-Boundary catch (`keel.unexpected`),
+ * (`recordDocuments`) instead of made. `check()` raises the first root-Boundary catch (`keel.unexpected`), or one `setup.caught` holds,
  * then the render checks (`renderChecks`: E1702 with `a11y`, E1703, E1804 with `tokens`, E1821); `fire` and `settle` run it after settling. `dispose` unmounts, runs
  * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
  */
@@ -45,7 +46,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
   let unmount: (() => void) | undefined;
   let owner: Scope | undefined;
   let gone = false;
-  const caught: CaughtError[] = [];
+  const caught: CaughtError[] = setup.caught ?? [];
   const dispose = (): void => {
     if (gone) return;
     gone = true;
@@ -126,7 +127,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     const win = document.defaultView;
     win?.addEventListener("error", onError);
     try {
-      await settle(container, act, busy, registry);
+      await settle(container, act, busy, registry, clockStep(ctx));
     } finally {
       win?.removeEventListener("error", onError);
     }
@@ -137,7 +138,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
 
   const settleNow = async (): Promise<void> => {
     live();
-    await settle(container, () => undefined, busy, registry);
+    await settle(container, () => undefined, busy, registry, clockStep(ctx));
     if (!gone) check();
   };
 

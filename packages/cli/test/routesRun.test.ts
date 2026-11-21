@@ -72,4 +72,10 @@ describe("routesRun", () => {
     const r = await routesRun(bad, NODE_TOP);
     expect(r.code === 1 || r.notes.some((n) => /E10(00|06)/.test(n))).toBe(true);
   }, 60_000);
+
+  it("a routes.ts exporting no routes is an E1006 note and code 1", async () => {
+    const none = makeProject("export const other = 1;\n");
+    const r = await routesRun(none, NODE_TOP);
+    expect(r).toEqual({ code: 1, notes: ["E1006 modules/m/routes.ts exports no routes\n"] });
+  }, 60_000);
 });

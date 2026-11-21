@@ -35,7 +35,7 @@ k.router
 
 k.contract
 - kitchen.contract.ts: contract('kitchen', { ..., 'kitchen.catalog': { method: 'GET', path: '/api/catalog/:locale', params: CatalogParams, query: CatalogSearch, output: CatalogResult } }) from '@keel/router/contract'; one id per method, <module>.<name> for an API entry; imports *.schema.ts files and packages only (E1514)
-- routes.ts: manifest(kitchen, { 'kitchen.catalog': { loader: loadCatalog } }) binds every entry and nothing else (E1515); loader(kitchen, 'kitchen.catalog', { stores: boxStores }, fn) names its entry and is never annotated; a page binds component, loader, layout, title and its verbs
+- routes.ts: manifest(kitchen, { 'kitchen.catalog': { loader: loadCatalog } }) binds every entry and nothing else (E1515); loader(kitchen, 'kitchen.catalog', {}, fn) names its entry and is never annotated; a page binds component, loader, layout, title and its verbs
 - service({ contract: kitchen }) has a method per API entry named by the id after the module (api.catalog({ params, query }, ctx)); recipes.contract.ts holds the pages: 'recipes.catalog': { path: '/:locale/catalog', params: LocaleParams, search: CatalogSearch }
 
 k.testing

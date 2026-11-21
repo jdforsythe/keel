@@ -14,7 +14,8 @@ const ROUTER = JSON.stringify("@keel/router");
  * imports `topology.ts`, each of `modules`' bindings (an app module's `routes.ts` under `root`, a stdlib module's
  * package `./routes` export: `stdRoutes`), unioned by `routeTable` (`@keel/router`) in `modules` order, `runners.server.ts` and the project's `identity.server.ts` (k.user) that
  * exist, and calls `start`
- * (`@keel/server/internal/start`) with them and its own folder; for `storage` `'sqlite'` or `'postgres'` (k.deploy
+ * (`@keel/server/internal/start`) with them and its own folder, which it first sets as `KEEL_APP_DIR` when that is unset
+ * (k.data Files); for `storage` `'sqlite'` or `'postgres'` (k.deploy
  * Storage), `open` imports the `@keel/std-db` driver named when `start` first calls it, so `start` checks the Node
  * version before the driver loads. `origins`, every deployable's declaration as the static read of `topology.ts`
  * accepted it (k.origins), is written into the entry as JSON and handed to `start`, so the served policies hold no
@@ -32,6 +33,8 @@ export function serverEntryCode(
   const lines = [
     `import { installServerDom } from ${DOM};`,
     "installServerDom();",
+    // The app folder (k.data Files): this file's own, where the build copied the served modules' `migrations/`.
+    "process.env.KEEL_APP_DIR ||= import.meta.dirname;",
     `const { start } = await import(${START});`,
     `const { routeTable } = await import(${ROUTER});`,
     `const { default: topology } = await import(${abs("topology.ts")});`,

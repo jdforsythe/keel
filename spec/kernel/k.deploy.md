@@ -13,7 +13,7 @@ status: conformance-covered
 
 **Deploy files.** Derived from `topology.ts` by `@keel/scaffold`, written by `keel build` and scaffold operations that change them; read-only (E1005, fix: the regenerated file).
 - `deploy/<name>/Dockerfile` per `node` deployable: `node:22-slim` by digest, `dist/<name>/` only, user `node`, port 8080; `'file'`: volume `/data` for storage, owned by `node`, `--localstorage-file=/data/storage`; `'sqlite'`: that volume, no storage flag; `'postgres'`: no volume.
-- `deploy/compose.yaml`: a service per `node` deployable and a volume per one with a volume, `KEEL_PEER_<NAME>` set to peers' service URLs, other `DeployEnv` keys from the environment.
+- `deploy/compose.yaml`: a service per `node` deployable and a volume per one with a volume, `KEEL_PEER_<NAME>` set to peers' service URLs, other `DeployEnv` keys from the environment, and `KEEL_POSTGRES_URL` from the environment, required, for one serving a module whose `deps` list `@keel/std-postgres`.
 - `.github/workflows/ci.yml`: a job per deployable, run when its modules or shared config change: install, `keel check --base` the base branch's surface (k.compat; none there: W1568), `keel test`, `keel build`, an unpushed image build per `node` deployable; shell jobs: k.shell.
 - Shell files: k.shell.
 `DeployEnv` values are set where the image runs, in no generated file.
@@ -32,3 +32,4 @@ status: conformance-covered
 - The Dockerfile of a `'sqlite'` deployable declares `/data` and runs `server.mjs` without `--localstorage-file`; of a `'postgres'` one declares no volume; `compose.yaml` passes `KEEL_DATABASE_URL` from the environment and holds no URL.
 - `storage: 'sqlite'` without `@keel/std-db` in `dependencies` is one E1572 whose fix adds it; with it, none.
 - `keel build` under `NODE_ENV=staging`, or with `NODE_ENV=development` in `.env`, builds an entry with `mode` `'production'` and no inspect reporter.
+- With module `a` listing `@keel/std-postgres` in `deps`, served by `node` deployable `x` beside `y`, `deploy/compose.yaml` passes `KEEL_POSTGRES_URL` to `x` as a required value from the environment and to `y` not at all, and holds no URL.

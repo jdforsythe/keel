@@ -1,4 +1,5 @@
 import { scope, signal } from "@keel/reactive";
+import { servedForm } from "@keel/runtime-dom/internal";
 import { cond, element, on } from "@keel/runtime-dom/ops";
 import type { KeelError } from "@keel/schema";
 import { codedError } from "./internal/codedError.ts";
@@ -27,7 +28,9 @@ function slot(parent: HTMLFormElement, when: () => boolean, render: () => Node):
  * navigates, `ok(null)` revalidates); it throws E1505 when that route does not declare the method. Otherwise the
  * browser posts it: on submit `form` is validated (errors prevent the submit), a chosen file throws E1583 and sends
  * nothing, else `form.pending()` is true until a `pageshow` from the back-forward cache, or in a shell until the mount
- * request is answered (k.return). An `action` that is no `Href` at run time (`isHref`) throws E1501.
+ * request is answered (k.return). Rendered for the post it sent that the server answered `keel.fields` (`servedForm`,
+ * on the server's 422 re-render and at its resume), its `form` takes the submitted values and errors before its
+ * controls bind. An `action` that is no `Href` at run time (`isHref`) throws E1501.
  */
 export function Form(
   props: (FormProps & { readonly method: "POST" }) | FormProps<Href & { readonly __mount?: never }>,
@@ -42,6 +45,11 @@ export function Form(
       "E1505",
       `<Form method="${props.method}" action="${props.action}">: no route of this router declares that action`,
     );
+  // The rejected post this form sent, re-rendered (k.forms Submit): its handle takes the submitted values and errors
+  // before the controls bind, on the server and at resume alike.
+  const posted = servedForm.current;
+  if (posted !== null && posted.href === props.action && posted.method === props.method)
+    props.form?.[formHandle].restore?.(posted.values, posted.errors);
   // Through the runtime's `element`, so at resume the form, its hidden input and its children claim the server's
   // nodes, which stay where they are.
   const el = element("form", (f) => {

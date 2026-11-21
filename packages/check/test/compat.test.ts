@@ -65,7 +65,10 @@ describe("surface.json freshness", () => {
     const file = surface(data({ body: obj(["name", "note"]) }, [contract]));
     const edited = f(contract.path, `${contract.source}// edited\n`);
     expect(run([edited, file], { base, topology: SPLIT }).map((d) => d.code)).toEqual(["E1005"]);
-    expect(run([edited, file])[0]?.message).toContain("does not match its sources");
+    expect(run([edited, file])[0]?.message).toBe(
+      `.keel/surface.json is stale, ${contract.path} changed; run keel build`,
+    );
+    expect(run([edited, file])[0]?.message.length).toBeLessThan(90);
     const tampered = f(file.path, file.source.replace('"name"', '"nome"'));
     expect(run([contract, tampered]).map((d) => d.code)).toEqual(["E1005"]);
   });

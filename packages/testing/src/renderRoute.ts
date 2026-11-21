@@ -2,7 +2,9 @@ import { type Ctx, createCtx } from "@keel/ctx";
 import type { RouteTable } from "@keel/router";
 import { compileRoutes, createRouterWith, encodeHref, identityMounts, mountRequests } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
+import type { CaughtError } from "@keel/runtime-dom";
 import { serverState } from "@keel/store/internal";
+import { clockStep } from "./internal/clockStep.ts";
 import { fail } from "./internal/fail.ts";
 import { memoryHistory } from "./internal/memoryHistory.ts";
 import { openHarness } from "./internal/openHarness.ts";
@@ -19,7 +21,7 @@ import type { RouteStateOf } from "./types/RouteStateOf.ts";
  * layout, rejects with E1501) (k.testing Harness): seed `state`, create a router on an in-memory history at `url` (a
  * root-relative path and query matching page `id`, else E1501), else page `id`'s href of `params` and `search`; scroll goes to the top at open and at dispose (its initial navigation runs the
  * chain's guards and loaders), mount its `App`, and resolve once no navigation is pending and the DOM is quiet; then
- * the render checks run (`keel.unexpected`, then k.a11y's: E1702, E1703 with the document rules, E1804, E1821). The
+ * the render checks run (`keel.unexpected`, a render throw no `errorElement` caught included, then k.a11y's: E1702, E1703 with the document rules, E1804, E1821). The
  * page is a document: the chain is its `main` landmark unless it renders one, the router writes `<title>` and
  * `<html lang>` (k.head), and a document without a title takes the route id as the server's fallback title. The
  * handle is `render`'s plus `route()`, `navigate(href)` (push, then the same quiescence and checks as `fire`) and
@@ -74,6 +76,8 @@ export async function renderRoute<T extends RouteTable>(
   };
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   let router: ReturnType<typeof createRouterWith<T>>;
+  // A render throw no errorElement caught: the router's root alert shows it, and the checks raise it.
+  const caught: CaughtError[] = [];
   const history = memoryHistory(url);
   const documents: DocumentNavigation[] = [];
   const open = (to: string): void => void documents.push({ method: "GET", url: to, body: null });
@@ -94,6 +98,7 @@ export async function renderRoute<T extends RouteTable>(
         user: options.user ?? "",
         leave: open,
         mount: options.mount,
+        onError: (error) => void caught.push(error),
       },
       serverState(ctx),
     );
@@ -112,6 +117,7 @@ export async function renderRoute<T extends RouteTable>(
     seeded,
     busy,
     documents,
+    caught,
     page: true,
     target: () => ({ route: String(router.route.get().id), component: null }),
     teardown: () => {
@@ -122,7 +128,7 @@ export async function renderRoute<T extends RouteTable>(
     artifacts: options.artifacts,
   });
   try {
-    await settle(document.body, () => undefined, busy);
+    await settle(document.body, () => undefined, busy, undefined, clockStep(ctx));
     check();
   } catch (error) {
     harness.dispose();

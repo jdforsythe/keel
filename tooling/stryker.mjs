@@ -25,10 +25,13 @@ export const ROOT_SANDBOX = {
 /** Test runner processes per run, from `KEEL_MUTATE_CONCURRENCY`; unset leaves Stryker's own choice (one fewer than the cores). */
 const CONCURRENCY = Number.parseInt(process.env.KEEL_MUTATE_CONCURRENCY ?? "", 10) || 0;
 
-/** @param {string} pkg package directory name; names its files in the shared cache @param {number} threshold minimum mutation score (percent) @param {number} [floor] temporary `break` below threshold (needs a TODO + backlog line) */
-export function strykerConfig(pkg, threshold, floor = threshold) {
+/** The mutated files of an app (`apps/<name>`): its `modules/` folder; a package mutates `src/`. */
+export const APP_MUTATE = ["modules/**/*.ts", "!modules/index.ts", "!modules/types/**"];
+
+/** @param {string} pkg unit directory name; names its files in the shared cache @param {number} threshold minimum mutation score (percent) @param {number} [floor] temporary `break` below threshold (needs a TODO + backlog line) @param {{ mutate?: string[] }} [options] `mutate`: the globs to mutate (an app passes `APP_MUTATE`) */
+export function strykerConfig(pkg, threshold, floor = threshold, options = {}) {
   return {
-    mutate: ["src/**/*.ts", "!src/index.ts", "!src/types/**"],
+    mutate: options.mutate ?? ["src/**/*.ts", "!src/index.ts", "!src/types/**"],
     testRunner: "vitest",
     vitest: { configFile: VITEST },
     plugins: ["@stryker-mutator/vitest-runner", REPORTER],

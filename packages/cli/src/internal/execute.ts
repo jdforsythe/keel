@@ -10,6 +10,7 @@ import { checkCommand } from "./checkCommand.ts";
 import { explainCommand } from "./explainCommand.ts";
 import { inspectCommand } from "./inspectCommand.ts";
 import { ledgerCommand } from "./ledgerCommand.ts";
+import { loadStd } from "./loadStd.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { scaffoldCommand } from "./scaffoldCommand.ts";
 import { stdSlot } from "./stdSlot.ts";
@@ -40,7 +41,8 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
       return docsCommand(input, io);
     }
     case "explain":
-      return only(await explainCommand(input));
+      // `explain` reads no files; a stdlib code loads the project's manifests to register its std deps' rules.
+      return only(await explainCommand(input, () => loadStd(io.load === undefined ? io : { ...io, files: undefined })));
     case "ledger":
       return ledgerCommand(input, io, ledgerRules(io));
     case "evidence": {

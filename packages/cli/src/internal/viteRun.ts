@@ -12,8 +12,8 @@ const FRAME = /^\s+at |Getter\/S|^}|^\s*$/;
  * failure the message lines of its stderr (stdout when stderr is empty) are returned, the bundler's own errors among
  * them (`<file>:<line>:<col>: ERROR: Could not resolve "<specifier>"`, a Keel-coded E1007): stack frames are dropped
  * and the last 12 lines kept under a count of the lines before them (`... +3 more`); on success (OUTPUT.md: success
- * is silent) its Keel-coded lines (`notes`, such as a
- * rewritten `routes.json`, W1005). Undefined when there is no Vite config. Vite runs with `NODE_ENV=production`
+ * is silent). Its Keel-coded lines are `notes`, on success and on failure: a rewritten `routes.json` (W1005), an
+ * evaluation problem that failed the build (E1006, E1807). Undefined when there is no Vite config. Vite runs with `NODE_ENV=production`
  * whatever the shell or a project `.env` sets, so the client is the production one (k.deploy Build); `deployable` sets
  * `KEEL_DEPLOYABLE` for that run (k.server Build).
  */
@@ -27,6 +27,6 @@ export function viteRun(cwd: string, deployable?: string): { code: number; tail:
   const lines = (r.stderr || r.stdout || "").split("\n").filter((l) => !FRAME.test(l));
   const more = lines.length - 12;
   const tail = code === 0 ? "" : `${more > 0 ? `... +${more} more\n` : ""}${lines.slice(-12).join("\n").trim()}\n`;
-  const notes = code === 0 ? keelLines(`${r.stdout ?? ""}\n${r.stderr ?? ""}`) : [];
+  const notes = keelLines(`${r.stdout ?? ""}\n${r.stderr ?? ""}`);
   return { code, tail, notes };
 }

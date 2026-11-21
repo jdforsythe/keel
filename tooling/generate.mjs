@@ -78,6 +78,9 @@ function deployTree(dir) {
     add(rel);
   const deploy = path.join(root, dir, "deploy");
   if (fs.existsSync(deploy)) for (const name of fs.readdirSync(deploy).sort()) add(`deploy/${name}/Dockerfile`);
+  // Module manifests: their `deps` decide a deployable's `KEEL_POSTGRES_URL` and its CI job's paths.
+  const modules = path.join(root, dir, "modules");
+  if (fs.existsSync(modules)) for (const id of fs.readdirSync(modules).sort()) add(`modules/${id}/module.ts`);
   return tree;
 }
 
