@@ -162,6 +162,19 @@
       "max": "1.5kb",
       "platform": "node"
     },
+    "@keel/std-postgres": "1kb",
+    "@keel/std-postgres/server": {
+      "max": "5.25kb",
+      "platform": "node"
+    },
+    "@keel/std-postgres/testing": {
+      "max": "0.75kb",
+      "platform": "node"
+    },
+    "@keel/std-postgres/tools": {
+      "max": "2.5kb",
+      "platform": "node"
+    },
     "@keel/std-workflows": {
       "max": "3kb",
       "platform": "node"

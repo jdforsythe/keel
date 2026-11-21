@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1425,
-    "probabilistic": 332,
+    "example": 1432,
+    "probabilistic": 335,
     "exhaustive": 15,
     "proven": 73,
     "monitored": 8
@@ -12893,6 +12893,24 @@
       "rung": "proven"
     },
     {
+      "pkg": "std-postgres",
+      "name": "NoRows",
+      "file": "packages/std-postgres/src/NoRows.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-postgres",
+      "name": "fragment",
+      "file": "packages/std-postgres/src/fragment.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-postgres",
+      "name": "sql",
+      "file": "packages/std-postgres/src/sql.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "std-report",
       "name": "Tally",
       "file": "packages/std-report/src/Tally.ts",
@@ -17020,31 +17038,31 @@
     },
     {
       "item": "std.postgres#1",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.postgres#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#8",
