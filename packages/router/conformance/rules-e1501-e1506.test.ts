@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "E1501-E1506 each have a triggering fixture and a clean one." (RFC 0020; E1502-E1504 and E1506 read the contract, k.contract)
+// Spec: k.router, clause "E1501-E1506 each have a triggering fixture and a clean one." (RFC 0020; E1502-E1504 and E1506 read the contract, k.contract; E1503)
 // E1501 has two halves. `navigate` with a string is type-only in this package (a TS error reported under E1501,
 // k.check), asserted here with type-level checks. Literal URL attributes and `Link to` are diagnosed by the compiler
 // (URL policy, k.compiler, RFC 0030), asserted through the public `compile`. Property seed: 1337.
