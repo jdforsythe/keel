@@ -68,6 +68,70 @@
   "bin": {
     "keel-session-action": "./dist/src/actionBin.js"
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./module": {
+        "types": "./dist/module.d.ts",
+        "default": "./dist/module.js"
+      },
+      "./record": {
+        "types": "./dist/src/record.d.ts",
+        "default": "./dist/src/record.js"
+      },
+      "./replay": {
+        "types": "./dist/src/replay.d.ts",
+        "default": "./dist/src/replay.js"
+      },
+      "./minimize": {
+        "types": "./dist/src/minimize.d.ts",
+        "default": "./dist/src/minimize.js"
+      },
+      "./commandJob": {
+        "types": "./dist/src/commandJob.d.ts",
+        "default": "./dist/src/commandJob.js"
+      },
+      "./session": {
+        "types": "./dist/src/session.d.ts",
+        "default": "./dist/src/session.js"
+      },
+      "./Session": {
+        "types": "./dist/src/Session.schema.d.ts",
+        "default": "./dist/src/Session.schema.js"
+      },
+      "./redact": {
+        "types": "./dist/src/redact.d.ts",
+        "default": "./dist/src/redact.js"
+      },
+      "./tools": {
+        "types": "./dist/src/tools.d.ts",
+        "default": "./dist/src/tools.js"
+      },
+      "./routes": {
+        "types": "./dist/src/routes.d.ts",
+        "default": "./dist/src/routes.js"
+      },
+      "./contract": {
+        "types": "./dist/src/sessions.contract.d.ts",
+        "default": "./dist/src/sessions.contract.js"
+      },
+      "./action": {
+        "types": "./dist/src/action/index.d.ts",
+        "default": "./dist/src/action/index.js"
+      },
+      "./group": {
+        "types": "./dist/src/group/index.d.ts",
+        "default": "./dist/src/group/index.js"
+      },
+      "./monitor": {
+        "types": "./dist/src/monitor/index.d.ts",
+        "default": "./dist/src/monitor/index.js"
+      }
+    }
+  },
   "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe module.ts",
