@@ -14981,6 +14981,14 @@
       "rung": "example"
     },
     {
+      "item": "k.hosting#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.hosting#9",
+      "rung": "none"
+    },
+    {
       "item": "k.leave#1",
       "rung": "example"
     },
@@ -16599,6 +16607,10 @@
     {
       "item": "k.topology#10",
       "rung": "example"
+    },
+    {
+      "item": "k.topology#11",
+      "rung": "none"
     },
     {
       "item": "k.ui#1",

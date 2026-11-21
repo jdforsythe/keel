@@ -73,12 +73,12 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: keel docs --for <code>.
 | k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
-| k.topology | Deployables | conformance-covered | peers |
+| k.topology | Deployables | implemented | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
 | k.shell | Native shells | conformance-covered | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
-| k.hosting | Client hosting | conformance-covered | servedBy |
+| k.hosting | Client hosting | implemented | servedBy |
 | k.head | Document head | conformance-covered | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
