@@ -3,10 +3,10 @@ import { computed, signal } from "@keel/reactive";
 import { instance } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import type { KeyInput } from "@keel/ui/aria";
-import type { Option } from "../Option.ts";
-import { optionsChart } from "../optionsChart.ts";
 import type { ListState } from "./ListState.ts";
-import { checkKeys } from "./checkKeys.ts";
+import type { Option } from "./Option.ts";
+import { checkKeys } from "./internal/checkKeys.ts";
+import { optionsChart } from "./optionsChart.ts";
 import { stableRows } from "./stableRows.ts";
 
 const PAUSE = 500;

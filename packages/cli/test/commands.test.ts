@@ -87,6 +87,7 @@ describe("commands", () => {
         source: JSON.stringify({
           version: 1,
           unsafe: 0,
+          hostElements: 0,
           exports: [{ pkg: "a", name: "bar", file: "packages/a/src/bar.ts", rung: "example" }],
         }),
       },

@@ -12,6 +12,7 @@ const committed = (source: string) =>
     JSON.stringify({
       version: 1,
       unsafe: 0,
+      hostElements: 0,
       mutation: {
         packages: { a: { score: 100, threshold: 70 } },
         claims: [{ file: "packages/a/src/a.ts", sha: sha(source), killed: 3, survived: 0, noCoverage: 0, score: 100 }],

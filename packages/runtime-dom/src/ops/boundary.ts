@@ -7,9 +7,9 @@ import { current } from "../internal/current.ts";
 import { idOf } from "../internal/idOf.ts";
 import { prepare } from "../internal/prepare.ts";
 import { renderUnit } from "../internal/renderUnit.ts";
-import { toUnexpected } from "../internal/toUnexpected.ts";
+import { toCaught } from "../internal/toCaught.ts";
 import { writesOf } from "../internal/writesOf.ts";
-import type { UnexpectedError } from "../types/UnexpectedError.ts";
+import type { CaughtError } from "../types/CaughtError.ts";
 
 /**
  * `Boundary` (k.errors): render `children()` before `anchor`. A throw from their render, bindings, or
@@ -23,14 +23,14 @@ import type { UnexpectedError } from "../types/UnexpectedError.ts";
 export function boundary(
   anchor: Node,
   children: () => Node,
-  fallback: (error: UnexpectedError, reset: () => void) => Node,
+  fallback: (error: CaughtError, reset: () => void) => Node,
   root?: { readonly at: string },
 ): void {
   const parent = current("boundary");
   const at = root?.at ?? idOf(anchor);
   const { end, claim } = prepare(anchor);
-  let failed: UnexpectedError | null = null;
-  const state = signal<{ readonly error: UnexpectedError | null }>({ error: null });
+  let failed: CaughtError | null = null;
+  const state = signal<{ readonly error: CaughtError | null }>({ error: null });
   const home = scope(() => {});
   let unit: Unit | null = null;
   const reset = (): void => {
@@ -43,7 +43,7 @@ export function boundary(
       if (failed !== null) return;
       unit?.dispose();
       unit = null;
-      failed = toUnexpected(error, where);
+      failed = toCaught(error, where);
       report(parent.root.ctx, { kind: "error", error: failed });
       state.set({ error: failed });
     },

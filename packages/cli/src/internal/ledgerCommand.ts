@@ -77,13 +77,14 @@ const rungCounts = (items: readonly LedgerItem[]): Record<string, number> => {
 };
 
 /**
- * The ledger file: unsafe count, rungs, mutation, exports (`{ pkg, name, file, rung }`), clauses (`{ item, rung }`) and
+ * The ledger file: unsafe count, host element count, rungs, mutation, exports (`{ pkg, name, file, rung }`), clauses (`{ item, rung }`) and
  * the a11y claims (`{ item, rung }`).
  */
 const ledgerFile = (
   records: readonly LedgerRecord[],
   byItem: ReadonlyMap<string, LedgerItem>,
   unsafe: number,
+  hostElements: number,
   rungs: Readonly<Record<string, number>>,
   mutation: Mutation,
   a11y: readonly A11yClaim[],
@@ -98,7 +99,7 @@ const ledgerFile = (
   }
   const mut = mutation.claims.length > 0 || Object.keys(mutation.packages).length > 0 ? { mutation } : {};
   const claims = a11y.map((c) => ({ item: c.item, rung: c.rung }));
-  return `${JSON.stringify({ version: 1, unsafe, rungs, ...mut, exports, clauses, a11y: claims }, null, 2)}\n`;
+  return `${JSON.stringify({ version: 1, unsafe, hostElements, rungs, ...mut, exports, clauses, a11y: claims }, null, 2)}\n`;
 };
 
 /**
@@ -108,11 +109,13 @@ const ledgerFile = (
  * header notes, E1711 and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
  * records there instead (with `rungs` and `mutation`, the reports on disk merged into the file's claims; stdout keeps
  * the notes and the trailer); `--diff` compares with it (default `.keel/ledger.json`, else
- * `tooling/ledger/ledger.json`) and writes nothing: E1706 per lowered rung, E1706 when the unsafe count rose, E1707
+ * `tooling/ledger/ledger.json`) and writes nothing: E1706 per lowered rung, E1706 when the unsafe count rose, E1706
+ * (no `--scope`) when the host element count rose, E1707
  * per clause of a `conformance-covered` section left at `none` (`coverageGaps`), E1712 (no `--scope`) per rung the
  * file counts above 0 that no item holds, E1713 per package whose fresh score is below its threshold (a package
  * with claims and none fresh has no score and fails too) or whose threshold is below the committed one. `--scope <prefix>` keeps the items whose key starts with it; the unsafe count
- * is then the matching apps' (`golden-1:`), compared with zero. The summary counts the items on each rung and the
+ * is then the matching apps' (`golden-1:`), compared with zero, and the host element count theirs plus a root
+ * `modules/**` file's whose path starts with it. The summary counts the items on each rung and the
  * stale claims, each when above 0.
  */
 export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = new Map()): Outcome {
@@ -126,6 +129,11 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
   const claims = a11y.filter((c) => c.item.startsWith(scope));
   const apps = Object.keys(built.appUnsafe).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`));
   const unsafe = scope === "" ? built.unsafe : apps.reduce((n, a) => n + (built.appUnsafe[a] ?? 0), 0);
+  const hostElements =
+    scope === ""
+      ? built.hostElements
+      : apps.reduce((n, a) => n + (built.appHosts[a] ?? 0), 0) +
+        Object.entries(built.rootHosts).reduce((n, [path, k]) => n + (path.startsWith(scope) ? k : 0), 0);
   const name = input.write ?? COMMITTED.find((p) => files.some((f) => f.path === p));
   const file = files.find((f) => f.path === name);
   const parsed = file === undefined ? undefined : LedgerFileSchema.parse(safeJson(file.source));
@@ -153,8 +161,8 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
     verified: records.filter((r) => r.rung !== "none").length + claims.filter((c) => c.rung !== "none").length,
     unsafe,
     warnings: notes.length,
-    // Rung and stale counts only when above 0, so a trailer stays one short line.
-    ...Object.fromEntries(Object.entries({ ...shown, stale: stale.length }).filter(([, n]) => n > 0)),
+    // Host element, rung and stale counts only when above 0, so a trailer stays one short line.
+    ...Object.fromEntries(Object.entries({ hostElements, ...shown, stale: stale.length }).filter(([, n]) => n > 0)),
   };
   if (input.diff !== true) {
     const out: OutRecord[] = [
@@ -175,7 +183,7 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
           fresh: fresh.has(c.file),
         })),
     ];
-    const content = ledgerFile(all, byItem, built.unsafe, rungs, mutation, a11y);
+    const content = ledgerFile(all, byItem, built.unsafe, built.hostElements, rungs, mutation, a11y);
     return {
       records: [...notes, ...(input.write === undefined ? out : []), summary("ledger", notes, counts)],
       writes: input.write === undefined ? [] : [{ path: input.write, content, readonly: false }],
@@ -192,6 +200,14 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
   const allowed = scope === "" ? committed?.unsafe : 0;
   if (committed !== undefined && allowed !== undefined && unsafe > allowed)
     diags.push(makeDiag("E1706", `unsafe count up ${allowed} -> ${unsafe}`, { path: name, see: "k.ledger" }));
+  // An app's host elements are its own design, so under `--scope` no count is compared (unsafe's zero would refuse them).
+  if (scope === "" && committed !== undefined && hostElements > committed.hostElements)
+    diags.push(
+      makeDiag("E1706", `host elements up ${committed.hostElements} -> ${hostElements}`, {
+        path: name,
+        see: "k.host-element",
+      }),
+    );
   if (scope === "")
     for (const [rung, n] of Object.entries(committed?.rungs ?? {}))
       if (n > 0 && (rungs[rung] ?? 0) === 0)

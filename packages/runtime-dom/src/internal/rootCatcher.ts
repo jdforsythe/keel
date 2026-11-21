@@ -2,10 +2,10 @@ import type { Ctx } from "@keel/ctx";
 import { report } from "@keel/ctx/internal";
 import { scope, signal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
-import type { UnexpectedError } from "../types/UnexpectedError.ts";
+import type { CaughtError } from "../types/CaughtError.ts";
 import type { Catcher } from "./Catcher.ts";
 import { rootFallback } from "./rootFallback.ts";
-import { toUnexpected } from "./toUnexpected.ts";
+import { toCaught } from "./toCaught.ts";
 
 /**
  * The default root Boundary of a resumed island (k.errors), the same one `mount` puts around its tree: the first
@@ -18,15 +18,15 @@ export function rootCatcher(
   mode: "dev" | "production" | undefined,
   settle: (fallback: Node) => void,
 ): Catcher & { arm(): void } {
-  const made: Signal<{ readonly error: UnexpectedError | null }>[] = [];
+  const made: Signal<{ readonly error: CaughtError | null }>[] = [];
   // Its own detached scope: the island outlives whatever scope `resume` runs in, and the state goes once it fails.
-  const home = scope(() => void made.push(signal<{ readonly error: UnexpectedError | null }>({ error: null })), {
+  const home = scope(() => void made.push(signal<{ readonly error: CaughtError | null }>({ error: null })), {
     detached: true,
   });
   const [state] = made;
   if (state === undefined) throw new Error("k.runtime: root catcher state");
   let armed = false;
-  let failed: UnexpectedError | null = null;
+  let failed: CaughtError | null = null;
   return {
     state,
     arm: () => {
@@ -35,7 +35,7 @@ export function rootCatcher(
     fail(error, at) {
       if (!armed) throw error;
       if (failed !== null) return;
-      failed = toUnexpected(error, at);
+      failed = toCaught(error, at);
       report(ctx, { kind: "error", error: failed });
       settle(rootFallback(failed, mode));
       state.set({ error: failed });

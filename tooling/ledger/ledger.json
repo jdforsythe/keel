@@ -1,6 +1,7 @@
 {
   "version": 1,
   "unsafe": 18,
+  "hostElements": 0,
   "rungs": {
     "example": 1349,
     "probabilistic": 333,

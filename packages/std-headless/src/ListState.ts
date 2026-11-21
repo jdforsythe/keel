@@ -1,6 +1,6 @@
 import type { Computed } from "@keel/reactive";
 import type { KeyInput } from "@keel/ui/aria";
-import type { Option } from "../Option.ts";
+import type { Option } from "./Option.ts";
 
 /** A list widget's interaction state (`listChart`): the checked list, the active option, and the chart's events. */
 export type ListState<O extends Option> = {

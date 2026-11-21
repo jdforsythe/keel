@@ -7,8 +7,8 @@ import { Box } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
 import type { ToastItem } from "./ToastItem.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
-import { stableRows } from "./internal/stableRows.ts";
 import { toastKey } from "./internal/toastKey.ts";
+import { stableRows } from "./stableRows.ts";
 import { toastChart } from "./toastChart.ts";
 
 const LEAST = 5000;

@@ -36,7 +36,7 @@ const base = [
   spec("packages/a/test/baz.test.ts", "baz();"),
 ];
 const committed = (body: Record<string, unknown>, path = LEDGER): SourceFile =>
-  file(path, JSON.stringify({ version: 1, unsafe: 1, exports: [], ...body }));
+  file(path, JSON.stringify({ version: 1, unsafe: 1, hostElements: 0, exports: [], ...body }));
 
 const MAP: A11yCriteriaMap = new Map([["1.1.1", { render: ["image-alt"], static: [] }]]);
 const a11yFiles = (passed: boolean): SourceFile[] => [
@@ -188,6 +188,7 @@ describe("ledgerCommand: the plain ledger", () => {
     expect(parsed).toEqual({
       version: 1,
       unsafe: 1,
+      hostElements: 0,
       rungs: { example: 1, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
       exports: [
         { pkg: "a", name: "bar", file: "packages/a/src/bar.ts", rung: "none" },
@@ -349,7 +350,10 @@ describe("ledgerCommand --diff", () => {
 
   test("a committed file with no exports lists no before-items", () => {
     expect(
-      diags(call({ diff: true }, [...base, file(LEDGER, JSON.stringify({ version: 1, unsafe: 1 }))]).records),
+      diags(
+        call({ diff: true }, [...base, file(LEDGER, JSON.stringify({ version: 1, unsafe: 1, hostElements: 0 }))])
+          .records,
+      ),
     ).toEqual([]);
   });
 
@@ -434,6 +438,41 @@ describe("ledgerCommand --diff", () => {
     ]);
     expect(diags(call({ diff: true, scope: "g:" }, [...files, committed({ unsafe: 9 })]).records)).toEqual([]);
     expect(diags(call({ diff: true }, files).records)).toEqual([]);
+  });
+
+  test("host elements: counted in packages' src, apps and a root modules/ folder, by binding; E1706 on a rise without --scope", () => {
+    const HOST = "import { Host as H } from '@keel/ui'\nimport * as ui from '@keel/ui'\n";
+    const files = [
+      ...base,
+      file(
+        "apps/h/modules/y/C.tsx",
+        `${HOST}export const C = () => <div><H id="a" /><ui.Host id="b"></ui.Host></div>\n`,
+      ),
+      file("apps/g/modules/x/c.ts", `${HOST}export const c = () => H({ id: "c" })\n`),
+      file("modules/r/D.tsx", `${HOST}export const D = () => <H id="d" />\n`),
+      file("packages/b/src/e.ts", `${HOST}export const e = () => ui.Host({ id: "e" })\n`),
+      file("packages/b/test/t.test.tsx", `${HOST}H({ id: "t" })\n`),
+      file("lib/l.tsx", `${HOST}export const l = () => <H id="l" />\n`),
+      file("apps/g/modules/x/o.tsx", "import { Host } from './Host.tsx'\nexport const o = () => <Host id=\"o\" />\n"),
+    ];
+    const count = (scope?: string) => {
+      const t = trailer(call(scope === undefined ? {} : { scope }, files).records);
+      return t?.kind === "summary" ? t.counts : undefined;
+    };
+    expect(count()).toMatchObject({ hostElements: 5 });
+    expect(count("h:")).toMatchObject({ hostElements: 2 });
+    expect(count("g:")).toMatchObject({ hostElements: 1 });
+    expect(count("modules/r/")).toMatchObject({ hostElements: 1 });
+    expect(count("packages/")).not.toHaveProperty("hostElements");
+    const up = call({ diff: true }, [...files, committed({ hostElements: 4 })]);
+    expect(diags(up.records)).toEqual([
+      { kind: "diag", code: "E1706", path: LEDGER, message: "host elements up 4 -> 5", see: "k.host-element" },
+    ]);
+    expect(diags(call({ diff: true }, [...files, committed({ hostElements: 5 })]).records)).toEqual([]);
+    expect(diags(call({ diff: true, scope: "h:" }, [...files, committed({ hostElements: 0 })]).records)).toEqual([]);
+    const written = call({ write: LEDGER }, files).writes[0]?.content ?? "";
+    expect(Object.keys(JSON.parse(written)).slice(0, 3)).toEqual(["version", "unsafe", "hostElements"]);
+    expect(JSON.parse(written)).toMatchObject({ hostElements: 5 });
   });
 
   test("a rung the file counts above 0 that no item holds is E1712; counted-0 rungs and held ones are not; scoped runs skip it", () => {

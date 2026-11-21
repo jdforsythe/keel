@@ -1061,7 +1061,7 @@ const ROWS: readonly Row[] = [
   [
     "E1802",
     "missing or blank a11y-required prop",
-    "Heading level, Image alt, label on inputs, Link and Button text; a blank literal label names nothing.",
+    "Heading level, Image alt, label on inputs, Link and Button text, one of label and labelledBy on Host; a blank literal label names nothing.",
     '<Input /> -> <Input label="Email" />',
     "k.ui",
   ],
@@ -1110,18 +1110,25 @@ const ROWS: readonly Row[] = [
     "k.a11y",
   ],
   [
-    "E1822",
-    "@keel/ui/aria imported by app code",
-    "Widget parts carry ARIA contracts a stdlib widget keeps; app code uses the widget.",
-    "import { Part } from '@keel/ui/aria' -> use a @keel/std-headless widget, or a file under unsafe/",
-    "k.aria",
-  ],
-  [
     "E1823",
     "styles not readable statically",
     "On every JSX component `styles` is part styles: an object literal of part objects. A prop with another meaning needs another name, or a call from a .ts file.",
     "styles={shared} -> styles={{ table: { p: '2' } }}",
     "k.aria",
+  ],
+  [
+    "E1824",
+    "Host code not a literal dynamic import, or Host without input",
+    "The import keeps the outside code off the server and out of pages without the element; input parses its value.",
+    'code={load} -> code={() => import("./chart.ts").then((m) => m.chart)}',
+    "k.host-element",
+  ],
+  [
+    "E1825",
+    "a .css import outside a host element code file",
+    "A stylesheet applies to the whole page (a global cascade); only the code a Host's code prop imports may bring one.",
+    "import './chart.css' in Page.tsx -> import it in chart.ts, the Host's code file",
+    "k.host-code",
   ],
   ["E1901", "input inside a <Form> without field", "", "bind the input to a form path with field(path)", "k.forms"],
   [

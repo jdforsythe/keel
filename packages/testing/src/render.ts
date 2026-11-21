@@ -1,4 +1,5 @@
 import { createCtx } from "@keel/ctx";
+import { withCallbacks } from "../unsafe/withCallbacks.ts";
 import { clip } from "./internal/clip.ts";
 import { fail } from "./internal/fail.ts";
 import { openHarness } from "./internal/openHarness.ts";
@@ -17,7 +18,7 @@ import type { TestComponent } from "./types/TestComponent.ts";
  * `artifacts["a11y.json"]`, axe-core element rules E1703, E1804 with `artifacts.tokens`, E1821), recorded for
  * `reports/a11y.json`. `dispose` puts every seeded store back to its snapshot from before the render.
  */
-export function render<P>(component: TestComponent<P>, options: RenderOptions): Harness {
+export function render<P, A extends P = P>(component: TestComponent<P, A>, options: RenderOptions): Harness {
   const schema = component.Props;
   if (schema === undefined) throw fail("schema.invalid", "component has no Props (export `Props` from its file)", null);
   const parsed = schema.parse(options.props);
@@ -26,7 +27,7 @@ export function render<P>(component: TestComponent<P>, options: RenderOptions): 
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   const name = component.name === "" ? "anonymous" : component.name;
   const { harness, check } = openHarness({
-    view: () => component(parsed.value, undefined, ctx),
+    view: () => component(withCallbacks<P, A>(parsed.value), undefined, ctx),
     ctx,
     seeded,
     target: () => ({ route: null, component: name }),

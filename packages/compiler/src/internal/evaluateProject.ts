@@ -117,6 +117,8 @@ export async function evaluateProject(input: {
     conditions: [],
     target: "node20",
     logLevel: "silent",
+    // A stylesheet a host element code file imports (k.host-code) is the browser build's asset: here it is nothing.
+    loader: { ".css": "empty" },
     plugins: [
       {
         name: "keel-jsx",

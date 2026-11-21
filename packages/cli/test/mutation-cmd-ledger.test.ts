@@ -346,6 +346,7 @@ describe("ledger command", () => {
     expect(JSON.parse(writes[0]?.content ?? "")).toEqual({
       version: 1,
       unsafe: 1,
+      hostElements: 0,
       rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
       mutation: {
         packages: { a: { score: 66.67, threshold: 50 } },
@@ -374,6 +375,7 @@ describe("ledger command", () => {
       JSON.stringify({
         version: 1,
         unsafe,
+        hostElements: 0,
         exports: [{ pkg: "a", name: "foo", file: "packages/a/src/foo.ts", rung }],
       }),
     );
@@ -411,6 +413,7 @@ describe("ledger command", () => {
       JSON.stringify({
         version: 1,
         unsafe: 0,
+        hostElements: 0,
         exports: [{ pkg: "g", name: "add", file: "g:todos/add.ts", rung: "example" }],
         clauses: [
           { item: "k.a#1", rung: "example" },

@@ -52,6 +52,9 @@ function baseShape(el: JSXElement, base: string): { tag: string; role: string | 
       return { tag: "textarea", role: "textbox", name: "label" };
     case "Select":
       return { tag: "select", role: "combobox", name: "label" };
+    case "Host":
+      // An empty `div` with its `role` (`img` unless `group` is written) and an ARIA name (k.host-element).
+      return { tag: "div", role: literal(el, "role") ?? "img", name: "aria" };
     default:
       return { tag: "input", role: "checkbox", name: "label" };
   }
