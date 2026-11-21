@@ -15,6 +15,7 @@ import { SERVER_ONLY_NAME } from "./internal/SERVER_ONLY_NAME.ts";
 import { STUB_NAME } from "./internal/STUB_NAME.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
+import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
@@ -35,6 +36,7 @@ import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { stubCode } from "./internal/stubCode.ts";
+import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { clientStdData } from "./std/clientStdData.ts";
@@ -140,7 +142,12 @@ type BuildConfig = {
 type ClientConfig = { build: { outDir: string; emptyOutDir: true } };
 type HtmlTag = { tag: "meta"; attrs: Record<string, string>; injectTo: "head" };
 type Builder = { environments: Record<string, unknown>; build(environment: unknown): Promise<unknown> };
-type ModuleInfo = { isEntry: boolean; importedIds: readonly string[]; dynamicallyImportedIds: readonly string[] };
+type ModuleInfo = {
+  isEntry: boolean;
+  importedIds: readonly string[];
+  dynamicallyImportedIds: readonly string[];
+  importers?: readonly string[];
+};
 /** An emitted file of a bundle: a chunk's code or an asset's source. */
 type Emitted = { fileName: string; code?: string; source?: string | Uint8Array };
 /** The plugin context the browser-build hooks read: which environment runs, resolution, and the module graph. */
@@ -237,6 +244,8 @@ export default function (): {
   let clientBuild = false;
   /** The `client` deployable a `vite build` with `KEEL_DEPLOYABLE` naming one writes to `dist/<name>/` (k.hosting). */
   let hosting: string | undefined;
+  /** The app modules the client entry's service map names, and the client's own; unset until the entry loads. */
+  let mapped: ReadonlySet<string> | undefined;
   const modules = new Map<string, Entry>();
   /**
    * Browser builds (k.boundary, k.bundle): the server-only files loaded as stubs; the modules using a handler (read by
@@ -371,6 +380,38 @@ export default function (): {
     });
   };
 
+  /**
+   * The deployable -> modules map the client entry binds service targets for: the modules of any `node` or `static` deployable
+   * the client's browser code imports (`calledModules`), plus every module that has no folder under `modules/` (a placed
+   * stdlib module, whose contract comes by package), so no other app module's name is in the browser build.
+   */
+  const calledByClient = (all: Topology, own: readonly string[]): Record<string, readonly string[]> => {
+    const called = new Set(
+      calledModules(own, {
+        read: (f) => {
+          try {
+            return fs.readFileSync(path.join(root, f), "utf8");
+          } catch {
+            return undefined;
+          }
+        },
+        list: (dir) => {
+          try {
+            return fs.readdirSync(path.join(root, dir));
+          } catch {
+            return [];
+          }
+        },
+      }),
+    );
+    const out: Record<string, readonly string[]> = {};
+    for (const [n, x] of Object.entries(all)) {
+      if (x.adapter === "client") continue;
+      const ms = x.modules.filter((m) => called.has(m) || !exists(`modules/${m}`));
+      if (ms.length > 0) out[n] = ms;
+    }
+    return out;
+  };
   /** The module a file is in: `modules/<id>/` under the root, else the placed stdlib module whose package holds it. */
   const moduleOf = (file: string): string | undefined => {
     const rel = path.relative(root, file).split(path.sep).join("/");
@@ -785,11 +826,13 @@ export default function (): {
       if (!d.client) return resumeEntry(q.d, mode);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
+      const targets = served ? calledByClient(all, d.modules) : {};
+      mapped = served ? new Set([...d.modules, ...Object.values(targets).flat()]) : undefined;
       return entryCode(
         routesFiles(q.d).map((f) => (path.isAbsolute(f) ? f : `/${f}`)),
         CSS_IMPORT,
         clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
-        served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},
+        targets,
         shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
         mode,
         exists("identity.ts"),
@@ -824,6 +867,30 @@ export default function (): {
       };
       const why = browserBreach(this.getModuleIds?.() ?? [], info, breach, show, (id) => stubbed.has(id));
       if (why !== undefined) throw new Error(`E1007 ${why}`);
+      // E1011 (k.bundle Service map): the entry maps the modules the scan found; one the bundler reached by another way
+      // (an alias, a package name, a template import) would send its calls to an origin that is not its deployable's.
+      if (mapped === undefined) return;
+      const topo = Object.values(topology ?? {});
+      const unmapped = unmappedModule(
+        this.getModuleIds?.() ?? [],
+        (id) => {
+          const file = id.split("?")[0] ?? id;
+          if (id.startsWith("\0") || !path.isAbsolute(file)) return undefined;
+          const m = moduleOf(file);
+          return m !== undefined &&
+            exists(`modules/${m}`) &&
+            topo.some((x) => x.adapter !== "client" && x.modules.includes(m))
+            ? m
+            : undefined;
+        },
+        mapped,
+        (id) => stubbed.has(id) || serverOnlyFile(id.split("?")[0] ?? id),
+        (id) => this.getModuleInfo?.(id)?.importers?.[0],
+      );
+      if (unmapped !== undefined)
+        throw new Error(
+          `E1011 ${unmapped.module} is not in the client's service map: imported by ${show(unmapped.importer)}`,
+        );
     },
     generateBundle: {
       order: "post",
