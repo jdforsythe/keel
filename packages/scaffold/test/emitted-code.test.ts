@@ -123,7 +123,12 @@ describe("project --workspace", () => {
 
   it("package.json has the keel scripts; tsconfig extends the strict profile", () => {
     const f = files();
-    expect(Object.keys(JSON.parse(f.get("package.json") ?? "{}").scripts).sort()).toEqual(["build", "check", "dev", "test"]);
+    expect(Object.keys(JSON.parse(f.get("package.json") ?? "{}").scripts).sort()).toEqual([
+      "build",
+      "check",
+      "dev",
+      "test",
+    ]);
     expect(JSON.parse(f.get("tsconfig.json") ?? "{}").extends).toBe("@keel/compiler/tsconfig.strict.json");
   });
 

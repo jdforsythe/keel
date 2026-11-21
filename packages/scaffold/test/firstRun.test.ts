@@ -46,7 +46,9 @@ function onDisk(files: Files, dir: string): void {
 
 /** Runs a script of the project's `package.json` as written, the way `pnpm <name>` does. */
 function script(dir: string, name: string): { status: number | null; out: string } {
-  const pkg: { scripts: Record<string, string> } = JSON.parse(fs.readFileSync(nodePath.join(dir, "package.json"), "utf8"));
+  const pkg: { scripts: Record<string, string> } = JSON.parse(
+    fs.readFileSync(nodePath.join(dir, "package.json"), "utf8"),
+  );
   const line = pkg.scripts[name];
   if (line === undefined) return { status: null, out: `no script ${name}` };
   const env = { ...process.env, PATH: `${nodePath.join(dir, "node_modules/.bin")}:${process.env.PATH ?? ""}` };
@@ -65,7 +67,9 @@ describe("a fresh scaffold passes its own scripts untouched", () => {
           expect(pkg.devDependencies["@keel/cli"]).toBeDefined();
           expect(pkg.scripts.check).toContain("keel check");
           const results = SCRIPTS(adapter).map((n) => ({ n, ...script(dir, n) }));
-          expect(results.map((r) => (r.status === 0 ? `${r.n} 0` : `${r.n} ${r.status}\n${r.out.slice(-1500)}`))).toEqual(SCRIPTS(adapter).map((n) => `${n} 0`));
+          expect(
+            results.map((r) => (r.status === 0 ? `${r.n} 0` : `${r.n} ${r.status}\n${r.out.slice(-1500)}`)),
+          ).toEqual(SCRIPTS(adapter).map((n) => `${n} 0`));
         } finally {
           fs.rmSync(dir, { recursive: true, force: true });
         }
