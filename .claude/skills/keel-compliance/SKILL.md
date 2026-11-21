@@ -1,6 +1,6 @@
 ---
 name: keel-compliance
-description: "Keel personal data and compliance: .pii(class), clientPii, s.secret and reveal, autocomplete on pii controls, what leaves the browser or lands in a log, the content security policy's limits on app code, the caller lifetime, sessions redaction, pii canary tests, keel evidence and --verify; E1105, E1107, E1111, E1112, E1113, E1570, E1571, E1590, E1591, E1821, E1578, E2201, E2202, E1061, E1062, E1063"
+description: "Keel personal data and compliance: .pii(class), clientPii, s.secret and reveal, autocomplete on pii controls, what leaves the browser or lands in a log, the content security policy's limits on app code, the caller lifetime, sessions redaction, pii canary tests, keel evidence and --verify; E1105, E1107, E1111, E1112, E1113, E1570, E1571, E1590, E1591, E1821, E1578, E2201, E2202, E2203, E2506, W1114, E1061, E1062, E1063"
 ---
 
 # Personal data, secrets, policy, evidence
@@ -43,7 +43,7 @@ export default module({
 
 ## Secrets and reveal
 
-`s.secret(inner)` parses to a `Secret<T>` that encodes, stringifies and logs as `"[secret]"`. `reveal(secret)` reads it and is allowed only in `*.server.ts` files (E1105, tests included). A revealed value reaching a log, `ctx.storage`, a file, store state or a `throw` is E1112: hash it first. A `return` is not a sink. An `s.secret` node in a loader or action `output` is E1113: return `reveal(token)` as an `s.string()` output.
+`s.secret(inner)` parses to a `Secret<T>` that encodes, stringifies and logs as `"[secret]"`. `reveal(secret)` reads it and is allowed only in `*.server.ts` files (E1105, tests included). A revealed value reaching a log, `ctx.storage`, a file, store state or a `throw` is E1112: hash it first. A `return` is not a sink. An `s.secret` node in a loader or action `output` is E1113: return `reveal(token)` as an `s.string()` output. E2506: a revealed value given to `enqueue`. E2203: `Digested` in an `output`. W1114: a password control over a field not `s.secret`.
 
 Keel hashes no password (`keel docs k.user`). Opaque API keys and invite links use `tokens(ctx)`:
 

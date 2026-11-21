@@ -21,6 +21,7 @@ test("Each rule's explanation names its fix and points at std.jobs", async () =>
     ["E2503", "std.jobs"],
     ["E2504", "std.jobs"],
     ["E2505", "std.jobs"],
+    ["E2506", "std.jobs"],
   ]);
   expect(explain("E2501")).toBe(
     "E2501.\nOne queue per module, in modules/<id>/jobs.server.ts, keyed by module-prefixed ids. Fix: queue({ send }) -> queue({ 'orders.send': send }).\nsee: std.jobs",
@@ -36,6 +37,9 @@ test("Each rule's explanation names its fix and points at std.jobs", async () =>
   );
   expect(explain("E2505")).toBe(
     "E2505 attempts or timeoutMs is not a positive integer.\nBoth are whole numbers above zero. Fix: job({ input, attempts: 5, timeoutMs: 30000 }, fn).\nsee: std.jobs",
+  );
+  expect(explain("E2506")).toBe(
+    "E2506 revealed value given to enqueue; a job's input and key are stored.\nA job's input and key are stored as written, so a revealed secret would sit in storage in plain text. Fix: pass an id the job reads the value by: jobs.enqueue(ctx, 'orders.mail', { tokenId: minted.value.id }).\nsee: std.jobs",
   );
 });
 

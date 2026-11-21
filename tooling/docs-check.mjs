@@ -50,7 +50,7 @@ export const TARGETS = {
   "keel-data": 2300,
   "keel-testing": 2000,
   "keel-deploy": 1500,
-  "keel-compliance": 1500,
+  "keel-compliance": 1550,
 };
 export const MAX_FRAGMENTS = 2;
 
