@@ -187,6 +187,7 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 - `.worktrees/verify`: the clean checkout for the gate and the ledger. Keep it.
 - Branches kept without a worktree: `lane-r160`, `lane-r164`, `lane-w03b`, `lane-w5l1` (merged; delete after the next green CI).
 - Running since the resume of 2026-11-21 (second session), four subagents: the status sweep with the Migration wording of RFC 0161, 0162 and 0167 (main line, docs only); `lane-r158` brought to the contract shapes (merge of the main line, Migration text out, clauses made testable); a hunt for one flaky test (a root `pnpm test` failed once with `- true + false` in the 1,238-test package and passed on the rerun); the re-triage of weakness lanes 06 and 10 to 21 into `tasks/p1/weaknesses-triage.md`. CI is green on 1d638c4a (run 44920696712).
+- The re-triage is in `tasks/p1/weaknesses-triage.md`: 61 lines, 22 closed, 33 open as written, 5 restated, 1 waiting on RFC 0163; 20 work packages in value order. Started from it, each in its worktree: `.worktrees/w0521` `lane-w0521` (std-module-publish), `.worktrees/wg2access` `lane-wg2access` (golden-2-access), `.worktrees/r170` `lane-r170` (RFC 0170, the privacy check rules: 0616, 0617, 0638), `.worktrees/r171` `lane-r171` (RFC 0171 ledger range clauses: 0270, 0531; RFC 0172 a placed module with no routes: 0926). RFC numbers 0170 to 0172 are taken.
 - Still to do for D65 (no migration): RFC 0161, 0162 and 0167's Migration wording on the main line and lanes, with RFC 0158's.
 
 ## Verification
