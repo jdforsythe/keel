@@ -1207,4 +1207,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1607: {
+    opts: NO_TYPES,
+    bad: [
+      mod("notes", [], [], ["notes.mongo"]),
+      f(
+        "modules/notes/mongoNotes.server.ts",
+        "import { register } from '@keel/ctx'\nconst impl = () => ({})\nexport const mongoNotes = register('mongo', { real: impl, shell: impl, sim: impl })\n",
+      ),
+    ],
+    clean: [
+      mod("notes", [], [], ["notes.mongo"]),
+      f(
+        "modules/notes/mongoNotes.server.ts",
+        "import { register } from '@keel/ctx'\nconst impl = () => ({})\nexport const mongoNotes = register('notes.mongo', { real: impl, shell: impl, sim: impl })\n",
+      ),
+    ],
+  },
 };
