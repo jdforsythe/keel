@@ -73,6 +73,13 @@ export function Tabs<K extends string>(
                 onFocus: () => l.opened(l.indexOf(key)),
                 onBlur: () => l.close(false),
                 onKey,
+                onClick: () => {
+                  const option = o.get();
+                  if (option === undefined || option.disabled === true) return;
+                  l.opened(l.indexOf(key));
+                  l.jump(l.indexOf(key));
+                  props.onChange(key);
+                },
                 children: () => content(o, props.tab, s),
               });
             },
