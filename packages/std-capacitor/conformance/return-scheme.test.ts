@@ -1,5 +1,5 @@
-// Spec: k.return, clause "The shell files register `id` as a scheme: an Android intent filter, iOS `CFBundleURLTypes`, Tauri's deep-link schemes."
-// Seed: 1337 (the reverse-DNS `id` is generated). This file is the Android part (the `AndroidManifest.xml` a Capacitor build leaves); the Tauri part is packages/scaffold/conformance/return-scheme.test.ts.
+// Spec: std.capacitor, Conformance "The Capacitor shell files register `id` as a scheme: an Android intent filter, iOS `CFBundleURLTypes`."
+// Seed: 1337 (the reverse-DNS `id` is generated). This file is the Android part (the `AndroidManifest.xml` a Capacitor build leaves).
 // UNTESTABLE blind: iOS `CFBundleURLTypes` (the `Info.plist` belongs to the platform project, and the spec does not say how the build finds Xcode 26, so no fake toolchain can be written from the spec).
 // Fake tools: as in android-cleartext.test.ts (a fake `npx` answering `cap`, `java`, `ANDROID_HOME`); the fake `cap add android` writes a manifest with a launcher activity and no scheme.
 // ASSUMPTION: "an Android intent filter" is an `<intent-filter>` of the manifest holding the action `android.intent.action.VIEW`, the categories `android.intent.category.DEFAULT` and `android.intent.category.BROWSABLE`, and a `<data android:scheme="<id>"/>`.
@@ -149,7 +149,7 @@ function walk(root: string, dir: string, out: string[] = []): string[] {
 const label = fc.stringMatching(/^[a-z][a-z0-9]{2,8}$/);
 const identifier = fc.tuple(label, label, label).map(([a, b, c]) => `${a}.${b}.${c}`);
 
-describe("k.return: the shell files register id as a scheme (Android)", () => {
+describe("std.capacitor: the shell files register id as a scheme (Android)", () => {
   test(
     "the Android manifest a Capacitor build leaves has an intent filter for the declared `id` as a scheme: VIEW, DEFAULT, BROWSABLE",
     () => {

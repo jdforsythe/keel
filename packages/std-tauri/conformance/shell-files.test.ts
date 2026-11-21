@@ -1,7 +1,7 @@
-// Spec: k.shell, Conformance "With `web` (`client`) declaring `tauri`, `keel build` writes the `deploy/web/tauri/` files and no Capacitor file; a changed byte is E1005 whose fix restores it; removing `tauri` from `topology.ts` removes them."
+// Spec: std.tauri, Conformance "With `web` (`client`) declaring `tauri`, `keel build` writes the `deploy/web/tauri/` files and no Capacitor file; a changed byte is E1005 whose fix restores it; removing `tauri` from `topology.ts` removes them."
 // Seed: 1337 (the file and the byte position of the tamper are generated).
 // The real binary over a temp project (`keel-cli.ts`): `keel build` writes the shell files, `keel check` reads E1005 and its fix (a unified diff of the changed file).
-// ASSUMPTION: `Cargo.lock` is never generated (k.shell Files), so the generated set is exactly the six files listed.
+// ASSUMPTION: `Cargo.lock` is never generated (std.tauri Files), so the generated set is exactly the six files listed.
 import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
@@ -66,7 +66,7 @@ const anyCapacitor = (tree: Map<string, string>): string[] =>
 const e1005 = (records: { kind: string; code?: unknown; path?: unknown; fix?: unknown }[], path: string) =>
   records.filter((r) => r.kind === "diag" && r.code === "E1005" && r.path === path);
 
-describe("k.shell: shell files", () => {
+describe("std.tauri: shell files", () => {
   test(
     "With `web` (`client`) declaring `tauri`, `keel build` writes the `deploy/web/tauri/` files and no Capacitor file; a changed byte is E1005 whose fix restores it; removing `tauri` from `topology.ts` removes them.",
     () => {

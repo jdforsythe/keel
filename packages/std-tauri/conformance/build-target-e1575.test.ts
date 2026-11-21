@@ -1,7 +1,7 @@
-// Spec: k.shell, Conformance "With no `cargo` on `PATH`, `keel build --target tauri` prints one E1575 naming `cargo` and Rust 1.95, exits 1 and writes nothing under `dist/web/tauri/`."
+// Spec: std.tauri, Conformance "With no `cargo` on `PATH`, `keel build --target tauri` prints one E1575 naming `cargo` and Rust 1.95, exits 1 and writes nothing under `dist/web/tauri/`."
 // Spec: k.shell, Rules "E1575 a shell build's tool missing or too old (names it and the version needed)"
 // Seed: 1337.
-// No native tool runs: `PATH` is a directory (or several) that holds no executable, so the toolchain step (k.shell Build 2, before any work) reports the missing tool.
+// No native tool runs: `PATH` is a directory (or several) that holds no executable, so the toolchain step (k.shell Build 3, before any work) reports the missing tool.
 // UNTESTABLE without a tool: "too old" (the spec does not say how a version is read, and any reading means running a tool); the Capacitor, Gradle and Xcode toolchains (JDK 21, Android SDK, Xcode 26): the spec does not say how they are found.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
@@ -85,7 +85,7 @@ const naming = (run: { records: Rec[] }, word: string): Rec[] =>
 
 const dirNames = fc.uniqueArray(fc.stringMatching(/^[a-z]{3,8}$/), { minLength: 0, maxLength: 3 });
 
-describe("k.shell: E1575", () => {
+describe("std.tauri: E1575", () => {
   test(
     "With no `cargo` on `PATH`, `keel build --target tauri` prints one E1575 naming `cargo` and Rust 1.95, exits 1 and writes nothing under `dist/web/tauri/`.",
     () => {

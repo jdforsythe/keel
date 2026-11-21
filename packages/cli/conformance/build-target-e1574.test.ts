@@ -51,8 +51,8 @@ function build(origin: string | undefined): { status: number | null; records: Re
     if (k === "NODE_OPTIONS" || k === "TEST" || k === "JAVA_HOME" || k === "ANDROID_HOME") continue;
     env[k] = v;
   }
-  env["PATH"] = empty;
-  if (origin !== undefined) env["KEEL_ORIGIN"] = origin;
+  env.PATH = empty;
+  if (origin !== undefined) env.KEEL_ORIGIN = origin;
   const r = spawnSync(process.execPath, [BIN, "build", "--target", "tauri", "--format=json"], {
     cwd: project,
     encoding: "utf8",

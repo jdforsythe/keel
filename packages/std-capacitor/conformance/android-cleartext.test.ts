@@ -1,6 +1,6 @@
-// Spec: k.shell, Conformance "`KEEL_ORIGIN=http://localhost:8080 keel build --target capacitor --platform android` leaves a network security config whose one cleartext domain is `localhost`, named in `AndroidManifest.xml`; a next build with `https://golden-1.example`, or with `--release`, leaves neither; `capacitor.config.json` is the generated one each time."
+// Spec: std.capacitor, Conformance "`KEEL_ORIGIN=http://localhost:8080 keel build --target capacitor --platform android` leaves a network security config whose one cleartext domain is `localhost`, named in `AndroidManifest.xml`; a next build with `https://golden-1.example`, or with `--release`, leaves neither; `capacitor.config.json` is the generated one each time."
 // Seed: 1337 (no generated input: the origins are the ones the clause names; the build writes files and binds no port, 8080 is only text).
-// Fake tools: as in build-target-tools.test.ts, `PATH` holds a fake `npx` that hands `vite` to the real `npx` (the web build runs for real) and answers `cap`; `java`, `JAVA_HOME` and `ANDROID_HOME` satisfy the toolchain check.
+// Fake tools: as in build-tools.test.ts, `PATH` holds a fake `npx` that hands `vite` to the real `npx` (the web build runs for real) and answers `cap`; `java`, `JAVA_HOME` and `ANDROID_HOME` satisfy the toolchain check.
 // The fake `cap add android` makes the platform folder the way Capacitor does: a `gradlew` and `app/src/main/AndroidManifest.xml` with an `<application>`, and only when the folder is not there yet, so a later build meets the folder an earlier build left.
 // Assumptions (the clause names no paths): the config and the manifest are found by name anywhere under the project (outside `node_modules`); a network security config is an `.xml` file under a `res/xml` folder whose root is `network-security-config`;
 // "named in `AndroidManifest.xml`" is `android:networkSecurityConfig="@xml/<file name without .xml>"`; "cleartext domain" is a `<domain>` inside a `<domain-config>` that permits cleartext, and no `<base-config>` permits it.
@@ -210,7 +210,7 @@ function expectGeneratedConfig(): void {
   else generated = now;
 }
 
-describe("k.shell: a debug Android build with an http origin allows cleartext to that host only", () => {
+describe("std.capacitor: a debug Android build with an http origin allows cleartext to that host only", () => {
   test(
     "`KEEL_ORIGIN=http://localhost:8080 keel build --target capacitor --platform android` leaves a network security config whose one cleartext domain is `localhost`, named in `AndroidManifest.xml`",
     () => {

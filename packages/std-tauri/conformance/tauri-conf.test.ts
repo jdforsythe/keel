@@ -1,7 +1,8 @@
-// Spec: k.return, clause "The shell files register `id` as a scheme: an Android intent filter, iOS `CFBundleURLTypes`, Tauri's deep-link schemes."
-// Seed: 1337 (the reverse-DNS `id` is generated). This file is the Tauri part (the generated `tauri.conf.json`); the Android part is packages/cli/conformance/return-scheme-android.test.ts.
-// UNTESTABLE blind: iOS `CFBundleURLTypes`. The `Info.plist` belongs to the platform project `cap add ios` writes, and the spec does not say how the build finds Xcode 26, so no fake toolchain can be written from the spec.
-// ASSUMPTION: Tauri's deep-link schemes are `plugins["deep-link"].desktop.schemes` of `tauri.conf.json`, an array holding the `id` as it is (no `:`), as RFC 0142 D3 names the key.
+// Spec: k.shell, Conformance "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`."
+// Seed: 1337 (identifier, name and version are generated).
+// The real binary over a temp project (`keel-cli.ts`): `keel build` writes `deploy/web/tauri/tauri.conf.json` and `dist/web/csp.txt`.
+// ASSUMPTION: `app.security.csp` is the policy as one string, as `csp.txt` is; "the deployable's policy with ... added" is read as the same directive set as `csp.txt`, `connect-src` gaining the source `ipc: http://ipc.localhost`
+// (written as one token `ipc:` followed by `http://ipc.localhost`, as the spec prints it). `app.windows[0].title` is not asserted here (std.tauri Files, not this clause).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
@@ -46,21 +47,38 @@ const project = (id: string, name: string, version: string): Map<string, string>
 
 const label = fc.stringMatching(/^[a-z][a-z0-9]{2,8}$/);
 const identifier = fc.tuple(label, label, label).map(([a, b, c]) => `${a}.${b}.${c}`);
+const productName = fc.stringMatching(/^[A-Z][a-z]{2,8}( [A-Z][a-z]{2,8})?$/);
+const version = fc.tuple(fc.nat(20), fc.nat(20), fc.nat(20)).map(([a, b, c]) => `${a}.${b}.${c}`);
 
 const field = (v: unknown, k: string): unknown => (typeof v === "object" && v !== null ? Reflect.get(v, k) : undefined);
+const directives = (policy: string): string[] =>
+  policy
+    .split(";")
+    .map((d) => d.trim())
+    .filter((d) => d !== "");
 
-describe("k.return: the shell files register id as a scheme (Tauri)", () => {
+describe("std.tauri: tauri.conf.json", () => {
   test(
-    "the generated `tauri.conf.json` lists the declared `id` in the deep-link plugin's desktop schemes",
+    "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`.",
     () => {
       fc.assert(
-        fc.property(identifier, (id) => {
-          const dir = materialize(project(id, "Golden", "1.0.0"));
+        fc.property(identifier, productName, version, (id, name, v) => {
+          const dir = materialize(project(id, name, v));
           try {
             expect(keel(dir, ["build"]).status).toBe(0);
             const conf: unknown = JSON.parse(readFileSync(join(dir, "deploy/web/tauri/tauri.conf.json"), "utf8"));
-            const schemes = field(field(field(field(conf, "plugins"), "deep-link"), "desktop"), "schemes");
-            expect(schemes).toEqual([id]);
+            expect(field(conf, "identifier")).toBe(id);
+            expect(field(conf, "productName")).toBe(name);
+            expect(field(conf, "version")).toBe(v);
+
+            const csp = field(field(field(conf, "app"), "security"), "csp");
+            expect(typeof csp).toBe("string");
+            const policy = directives(readFileSync(join(dir, "dist/web/csp.txt"), "utf8"));
+            const tauri = directives(String(csp));
+            const connect = tauri.find((d) => d.startsWith("connect-src ")) ?? "";
+            expect(connect).toContain("ipc: http://ipc.localhost");
+            const without = (d: string): string => d.replace(" ipc: http://ipc.localhost", "");
+            expect(tauri.map(without).sort()).toEqual(policy.sort());
           } finally {
             cleanup(dir);
           }

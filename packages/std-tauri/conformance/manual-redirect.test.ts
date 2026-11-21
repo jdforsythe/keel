@@ -1,4 +1,4 @@
-// Spec: k.return, clause "With `redirect: 'manual'`, std-capacitor's and std-tauri's `net` resolve a 303 with its `location` and no `set-cookie`, and the next request to that origin carries the cookie."
+// Spec: std.shells, clause "With `redirect: 'manual'`, std-capacitor's and std-tauri's `net` resolve a 303 with its `location` and no `set-cookie`, and the next request to that origin carries the cookie."
 // Seed: 1337. This file is the std-tauri half; the other package has the same file name.
 // @vitest-environment happy-dom
 // Assumption: the native stand-in (fixtures.ts) follows a 3xx as GET like the platform clients do unless the driver asks for no redirects, and keeps each response's `set-cookie` in its jar;

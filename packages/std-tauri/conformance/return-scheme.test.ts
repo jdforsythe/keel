@@ -1,8 +1,6 @@
-// Spec: k.shell, Conformance "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`."
-// Seed: 1337 (identifier, name and version are generated).
-// The real binary over a temp project (`keel-cli.ts`): `keel build` writes `deploy/web/tauri/tauri.conf.json` and `dist/web/csp.txt`.
-// ASSUMPTION: `app.security.csp` is the policy as one string, as `csp.txt` is; "the deployable's policy with ... added" is read as the same directive set as `csp.txt`, `connect-src` gaining the source `ipc: http://ipc.localhost`
-// (written as one token `ipc:` followed by `http://ipc.localhost`, as the spec prints it). `app.windows[0].title` is not asserted here (k.shell Files, not this clause).
+// Spec: std.tauri, Conformance "The Tauri shell files register `id` as a scheme: Tauri's deep-link schemes."
+// Seed: 1337 (the reverse-DNS `id` is generated). The iOS and Android parts are std.capacitor's (packages/std-capacitor/conformance/return-scheme.test.ts).
+// ASSUMPTION: Tauri's deep-link schemes are `plugins["deep-link"].desktop.schemes` of `tauri.conf.json` (std.tauri Return links), an array holding the `id` as it is (no `:`).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
@@ -47,38 +45,21 @@ const project = (id: string, name: string, version: string): Map<string, string>
 
 const label = fc.stringMatching(/^[a-z][a-z0-9]{2,8}$/);
 const identifier = fc.tuple(label, label, label).map(([a, b, c]) => `${a}.${b}.${c}`);
-const productName = fc.stringMatching(/^[A-Z][a-z]{2,8}( [A-Z][a-z]{2,8})?$/);
-const version = fc.tuple(fc.nat(20), fc.nat(20), fc.nat(20)).map(([a, b, c]) => `${a}.${b}.${c}`);
 
 const field = (v: unknown, k: string): unknown => (typeof v === "object" && v !== null ? Reflect.get(v, k) : undefined);
-const directives = (policy: string): string[] =>
-  policy
-    .split(";")
-    .map((d) => d.trim())
-    .filter((d) => d !== "");
 
-describe("k.shell: tauri.conf.json", () => {
+describe("std.tauri: the shell files register id as a scheme", () => {
   test(
-    "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`.",
+    "the generated `tauri.conf.json` lists the declared `id` in the deep-link plugin's desktop schemes",
     () => {
       fc.assert(
-        fc.property(identifier, productName, version, (id, name, v) => {
-          const dir = materialize(project(id, name, v));
+        fc.property(identifier, (id) => {
+          const dir = materialize(project(id, "Golden", "1.0.0"));
           try {
             expect(keel(dir, ["build"]).status).toBe(0);
             const conf: unknown = JSON.parse(readFileSync(join(dir, "deploy/web/tauri/tauri.conf.json"), "utf8"));
-            expect(field(conf, "identifier")).toBe(id);
-            expect(field(conf, "productName")).toBe(name);
-            expect(field(conf, "version")).toBe(v);
-
-            const csp = field(field(field(conf, "app"), "security"), "csp");
-            expect(typeof csp).toBe("string");
-            const policy = directives(readFileSync(join(dir, "dist/web/csp.txt"), "utf8"));
-            const tauri = directives(String(csp));
-            const connect = tauri.find((d) => d.startsWith("connect-src ")) ?? "";
-            expect(connect).toContain("ipc: http://ipc.localhost");
-            const without = (d: string): string => d.replace(" ipc: http://ipc.localhost", "");
-            expect(tauri.map(without).sort()).toEqual(policy.sort());
+            const schemes = field(field(field(field(conf, "plugins"), "deep-link"), "desktop"), "schemes");
+            expect(schemes).toEqual([id]);
           } finally {
             cleanup(dir);
           }
