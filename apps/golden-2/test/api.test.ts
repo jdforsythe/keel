@@ -1,17 +1,11 @@
 import { createCtx } from "@keel/ctx";
-import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
-import { invariant, isolate, store } from "@keel/store";
-import { properties } from "@keel/testing";
-import { afterEach, describe, expect, it } from "vitest";
+import { NoRows, sql } from "@keel/std-postgres";
+import { describe, expect, it } from "vitest";
 import { Box } from "../modules/kitchen/Box.schema.ts";
-import { NewRecipe } from "../modules/kitchen/NewRecipe.schema.ts";
-import { addRecipe } from "../modules/kitchen/addRecipe.ts";
-import { boxStores } from "../modules/kitchen/boxStores.ts";
-import { loadRecipes } from "../modules/kitchen/loadRecipes.server.ts";
-import { postFavorite } from "../modules/kitchen/postFavorite.server.ts";
-import { postRecipe } from "../modules/kitchen/postRecipe.server.ts";
-import { toggleFavorite } from "../modules/kitchen/toggleFavorite.ts";
+import { Recipe } from "../modules/kitchen/Recipe.schema.ts";
+import { kitchenDb } from "../modules/kitchen/kitchenDb.server.ts";
+import { recipeColumns } from "../modules/kitchen/recipeColumns.ts";
 import { apiApp, apiCtx, asJson, draft } from "./simApi.ts";
 
 /** The runtime body of `GET /api/recipes` (k.server): the `kitchen.box` loader `Result`. */
@@ -20,57 +14,29 @@ const BoxBody = s.object({
   results: s.object({ "kitchen.box": s.object({ ok: s.literal(true), value: Box }) }),
 });
 
-const scopes: { dispose(): void }[] = [];
-afterEach(() => {
-  for (const sc of scopes.splice(0)) sc.dispose();
-});
+describe("kitchen database", () => {
+  it("starts each sim ctx with an empty, migrated recipes table of its own", async () => {
+    const one = apiCtx(3);
+    const two = apiCtx(3);
+    const added = await kitchenDb(one).run(sql(NoRows)`
+      insert into recipes (id, title, minutes, price_amount, price_currency, added_on)
+      values (${one.random.id("Recipe")}, ${"Soup"}, ${30}, ${1800}, ${"JPY"}, ${"2026-11-10"})`);
+    expect(added).toEqual({ ok: true, value: 1 });
+    const mine = await kitchenDb(one).query(sql(Recipe)`${recipeColumns}`);
+    const theirs = await kitchenDb(two).query(sql(Recipe)`${recipeColumns}`);
+    expect(mine.ok ? mine.value.map((r) => r.title) : mine.error.code).toEqual(["Soup"]);
+    expect(theirs).toEqual({ ok: true, value: [] });
+  });
 
-/** Stores for one request, in a fresh isolated scope (k.testing: factory stores need a scope). */
-const fresh = () => {
-  const sc = scope(() => undefined);
-  isolate(sc);
-  scopes.push(sc);
-  return sc.run(boxStores);
-};
-
-/** A box store with the recipe invariant and no transactions yet, so each test builds the one it drives. */
-const bareBox = () => {
-  const sc = scope(() => undefined);
-  isolate(sc);
-  scopes.push(sc);
-  return sc.run(() => {
-    const box = store(Box, { recipes: [] }, { id: "kitchen.box" });
-    invariant(
-      box,
-      (state) =>
-        new Set(state.recipes.map((r) => r.id)).size === state.recipes.length &&
-        new Set(state.recipes.map((r) => r.title.toLowerCase())).size === state.recipes.length,
-    );
-    return box;
-  });
-};
-
-describe("kitchen transactions", () => {
-  it("the request store's transactions hold the box invariant", async () => {
-    const st = fresh();
-    await properties(st.addRecipe);
-    await properties(st.toggleFavorite);
-  });
-  it("addRecipe holds the box invariant under generated states and payloads", async () => {
-    await properties(addRecipe(bareBox()));
-  });
-  it("toggleFavorite holds the box invariant and leaves unknown ids unchanged", async () => {
-    await properties(toggleFavorite(bareBox()));
-  });
-  it("builds the transactions from the factory", () => {
-    const st = fresh();
-    expect(typeof addRecipe).toBe("function");
-    expect(typeof toggleFavorite).toBe("function");
-    expect(st.box.id).toBe("kitchen.box");
-    expect(typeof NewRecipe.parse).toBe("function");
-    expect(typeof loadRecipes).toBe("object");
-    expect(typeof postRecipe).toBe("object");
-    expect(typeof postFavorite).toBe("object");
+  it("lands one of two concurrent posts of one title; the other is the field error", async () => {
+    const app = await apiApp(apiCtx(5));
+    const [a, b] = await Promise.all([
+      fetchJson(app, asJson("POST", "/api/recipes", draft("Soup", 30))),
+      fetchJson(app, asJson("POST", "/api/recipes", draft("soup", 20))),
+    ]);
+    expect([a?.status, b?.status].sort()).toEqual([200, 422]);
+    const listed = BoxBody.parse((await fetchJson(app, asJson("GET", "/api/recipes"))).body);
+    expect(listed.ok ? listed.value.results["kitchen.box"].value.recipes.length : -1).toBe(1);
   });
 });
 

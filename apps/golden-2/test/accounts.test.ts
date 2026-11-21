@@ -1,9 +1,8 @@
 import { createCtx } from "@keel/ctx";
-import { scope } from "@keel/reactive";
+import { NoRows, sql } from "@keel/std-postgres";
 import { tokens } from "@keel/std-tokens/server";
-import { invariant, isolate, store } from "@keel/store";
-import { properties, render, renderRoute, resumeDocument } from "@keel/testing";
-import { afterEach, describe, expect, it } from "vitest";
+import { render, renderRoute, resumeDocument } from "@keel/testing";
+import { describe, expect, it } from "vitest";
 import mount from "../identity.ts";
 import { AccountData } from "../modules/accounts/AccountData.schema.ts";
 import { AccountError } from "../modules/accounts/AccountError.schema.ts";
@@ -15,57 +14,43 @@ import deText from "../modules/accounts/AccountsText/de-DE.ts";
 import enText from "../modules/accounts/AccountsText/en-US.ts";
 import jaText from "../modules/accounts/AccountsText/ja-JP.ts";
 import { ApiToken } from "../modules/accounts/ApiToken.schema.ts";
-import { ApiTokens } from "../modules/accounts/ApiTokens.schema.ts";
 import { BearerToken } from "../modules/accounts/BearerToken.schema.ts";
 import { Credentials } from "../modules/accounts/Credentials.schema.ts";
-import { Profile } from "../modules/accounts/Profile.schema.ts";
-import { Profiles } from "../modules/accounts/Profiles.schema.ts";
+import { Me } from "../modules/accounts/Me.schema.ts";
 import { Registration } from "../modules/accounts/Registration.schema.ts";
 import { SignedInUser } from "../modules/accounts/SignedInUser.schema.ts";
 import SigninPage from "../modules/accounts/SigninPage.tsx";
 import SignupPage from "../modules/accounts/SignupPage.tsx";
-import { addToken } from "../modules/accounts/addToken.ts";
+import { accountsDb } from "../modules/accounts/accountsDb.server.ts";
 import { authSettings } from "../modules/accounts/authSettings.server.ts";
-import { profileStores } from "../modules/accounts/profileStores.ts";
 import { routes } from "../modules/accounts/routes.ts";
-import { saveProfile } from "../modules/accounts/saveProfile.ts";
-import { tokenStores } from "../modules/accounts/tokenStores.ts";
 import { EMAIL, NAME, PASSWORD, accountsApp } from "./accountsApp.ts";
 import { apiCtx } from "./simApi.ts";
 
-const scopes: { dispose(): void }[] = [];
-afterEach(() => {
-  for (const sc of scopes.splice(0)) sc.dispose();
-});
-
-/** A fresh isolated scope running `fn` (k.testing: factory stores need a scope). */
-function isolated<T>(fn: () => T): T {
-  const sc = scope(() => undefined);
-  isolate(sc);
-  scopes.push(sc);
-  return sc.run(fn);
-}
-
-describe("accounts transactions", () => {
-  it("the request stores' addToken holds the tokens invariant", async () => {
-    await properties(isolated(tokenStores).addToken);
-  });
-  it("addToken keeps token ids unique", async () => {
-    const tokenStore = isolated(() => {
-      const made = store(ApiTokens, { tokens: [] }, { id: "accounts.tokens" });
-      invariant(made, (state) => new Set(state.tokens.map((t) => t.id)).size === state.tokens.length);
-      return made;
+describe("accounts database", () => {
+  it("keeps one profile per user, the latest email", async () => {
+    const ctx = apiCtx(11);
+    const db = accountsDb(ctx);
+    const upsert = (email: string) =>
+      db.run(sql(NoRows)`insert into profiles (user_id, email) values (${"u1"}, ${email})
+                         on conflict (user_id) do update set email = excluded.email`);
+    expect(await upsert(EMAIL)).toEqual({ ok: true, value: 1 });
+    expect(await upsert("ada.second@example.com")).toEqual({ ok: true, value: 1 });
+    expect(await db.query(sql(Me)`select email from profiles`)).toEqual({
+      ok: true,
+      value: [{ email: "ada.second@example.com" }],
     });
-    await properties(addToken(tokenStore));
   });
-  it("saveProfile keeps one profile per user, the latest email", async () => {
-    await properties(isolated(profileStores).saveProfile);
-    const profiles = isolated(() => {
-      const made = store(Profiles, { profiles: [] }, { id: "accounts.profiles" });
-      invariant(made, (state) => new Set(state.profiles.map((p) => p.userId)).size === state.profiles.length);
-      return made;
-    });
-    await properties(saveProfile(profiles));
+  it("refuses a second token row with one id", async () => {
+    const ctx = apiCtx(12);
+    const minted = tokens(ctx).mint({ ttl: 60_000 });
+    if (!minted.ok) throw new Error("sim mint refused");
+    const { id, digest } = minted.value;
+    const insert = () =>
+      accountsDb(ctx).run(sql(NoRows)`insert into api_tokens (id, digest, user_id) values (${id}, ${digest}, ${"u1"})`);
+    expect(await insert()).toEqual({ ok: true, value: 1 });
+    const again = await insert();
+    expect(again.ok ? null : again.error.code).toBe("postgres.constraint");
   });
 });
 
@@ -86,22 +71,20 @@ describe("accounts schemas", () => {
     expect(Registration.doc()).toMatch(/email: .*pii\(contact\)/);
     expect(Credentials.doc()).toMatch(/email: .*pii\(contact\)/);
     expect(ApiToken.doc()).toMatch(/userId: .*pii\(identifier\)/);
-    expect(Profile.doc()).toMatch(/userId: .*pii\(identifier\)/);
-    expect(Profile.doc()).toMatch(/email: .*pii\(contact\)/);
+    expect(Me.doc()).toMatch(/email: .*pii\(contact\)/);
     expect(SignedInUser.doc()).toMatch(/email: .*pii\(contact\)/);
     expect(AccountData.doc()).toMatch(/email\?: .*pii\(contact\)/);
   });
 
-  it("ApiToken and ApiTokens hold a digest and the library's user id, and refuse a token's text", () => {
+  it("ApiToken holds a digest and the library's user id, and refuse a token's text", () => {
     const ctx = createCtx({ mode: "sim", seed: 31 });
     const minted = tokens(ctx).mint({ ttl: 60_000 });
     if (!minted.ok) throw new Error("sim mint refused");
     const row = { id: minted.value.id, digest: minted.value.digest, userId: "9b8CJ0rjFLjoNDXn" };
     expect(ApiToken.parse(row).ok).toBe(true);
-    expect(ApiTokens.parse({ tokens: [row] }).ok).toBe(true);
     expect(ApiToken.parse({ ...row, digest: "keel_0_0" }).ok).toBe(false);
     expect(ApiToken.parse({ ...row, userId: "" }).ok).toBe(false);
-    expect(ApiTokens.parse({ tokens: [{ ...row, id: "" }] }).ok).toBe(false);
+    expect(ApiToken.parse({ ...row, id: "" }).ok).toBe(false);
   });
 
   it("the page schemas: locale, params, search, refusal, data and a bearer token", async () => {
@@ -119,12 +102,7 @@ describe("accounts schemas", () => {
     expect(BearerToken.parse("").ok).toBe(false);
   });
 
-  it("Profile, Profiles and SignedInUser read a user id and an email, and refuse a missing one", () => {
-    const profile = { userId: "9b8CJ0rjFLjoNDXn", email: EMAIL };
-    expect(Profile.parse(profile).ok).toBe(true);
-    expect(Profiles.parse({ profiles: [profile] }).ok).toBe(true);
-    expect(Profile.parse({ ...profile, userId: "" }).ok).toBe(false);
-    expect(Profiles.parse({ profiles: [{ userId: "u" }] }).ok).toBe(false);
+  it("SignedInUser reads a user id and an email, and refuses a missing one", () => {
     expect(SignedInUser.parse({ redirect: false, user: { id: "u", email: EMAIL, name: NAME } }).ok).toBe(true);
     expect(SignedInUser.parse({ user: { id: "u" } }).ok).toBe(false);
   });

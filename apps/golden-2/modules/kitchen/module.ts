@@ -7,13 +7,14 @@ export default module({
     "@keel/std-health",
     "@keel/std-i18n",
     "@keel/std-money",
+    "@keel/std-postgres",
     "@keel/std-report",
     "@keel/std-tables",
     "@keel/std-temporal",
     "@keel/std-text",
     "@keel/std-timings",
   ],
-  capabilities: ["clock", "random", "storage"],
+  capabilities: ["clock", "random", "storage", "kitchen.db"],
   public: {
     exports: [
       "Recipe",
