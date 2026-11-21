@@ -137,16 +137,18 @@ Each lane is a subagent in a worktree under `.worktrees/` (created by the orches
 - Open notes: backlog 0948 is a misreading (k.shell's CI paragraph describes the generated app workflow); `stripped()` in the server's `bearerOf` never changes a real request's value; `pnpm ledger --diff` needs both apps' `keel test` reports on disk; the docs-freshness rule fires after 50 docs commits, so a busy day needs `verified:` stamps on untouched docs; `conformance/E1562-base-route-change.test.ts` sits at its 120 s limit on slow runners (D7 did not clearly help; the fix is the limit, under an `rfc:` change); a full local `pnpm test` times out cli conformance while three lanes run tests, so run it when lanes are quiet.
 
 ## Lanes (2026-11-21)
-Dispatched from 3a35d635 plus the ledger commit; each is a subagent in its worktree, unpushed. Numbers are assigned here so lanes never collide.
-- `.worktrees/r157` `lane-r157` (opus, writing): RFC 0157 / ADR-0179 the module contract, and RFC 0162 / ADR-0184 the component signature (W13 step 1; D41, D42).
-- `.worktrees/r158` `lane-r158` (opus, writing): RFC 0158 / ADR-0180 app data outside the kernel, with the Postgres module's first scope (W14 step 1; D43).
-- `.worktrees/r159` `lane-r159` (opus, writing): RFC 0159 / ADR-0181 custom components; the library format in the same RFC or as RFC 0163 / ADR-0185 (W15 step 1; D44, D48 to D50).
-- `.worktrees/r160` `lane-r160` (opus, writing): RFC 0160 / ADR-0182 declared third-party origins (D46).
-- `.worktrees/r161` `lane-r161` (opus, writing): RFC 0161 / ADR-0183 the k.shell split (D47).
-- `.worktrees/w5l1`: the conformance-writer writes RFC 0151's four symlink and E1357 bullets (step 1 of that lane's five).
-- `.worktrees/w03b` (opus): the D39 fixes and RFC 0156 / ADR-0178.
-- `.worktrees/w16` `lane-w16` (sonnet): the head-to-head harness (W16 step 1; D45); dry mode only, no paid agent run.
-- The RFC lanes share `tasks/0963-to-p1/briefs/rfc-lane.md`. Each RFC ends with "For the operator": those questions are gathered into `docs/HANDOFF.md` when the lane reports. An RFC lane merges to the main line only with its conformance (D12); until then its branch is the record.
+State at the last checkpoint; each lane is a subagent in its worktree, unpushed. The older Lanes block above is history of 2026-11-19 and 20: where it disagrees, this one stands.
+- Merged to the main line today, unpushed: RFC 0151 (D61), RFC 0164 to 0167 with their conformance and build (D56), the `Tabs` click fix (0986), the head-to-head harness (W16 step 1). The ledger and evidence are stale until rewritten in `.worktrees/verify`.
+- `.worktrees/m156` `merge-0156`: a merge agent squashes `lane-w03b` (RFC 0156, k.mount-scope; D39, D60) into three commits and runs router, testing, server and compiler. Then cherry-pick its three commits to the main line, remove `.worktrees/w03b` and `m156`.
+- `.worktrees/r160` `lane-r160`: RFC 0160 written (D53), conformance committed (cf3a7a52, red), an opus build lane runs. After it: the conformance-writer tightens tests to the sentences the build made exact, a red-team pass (security lane), the merge. It conflicts with `lane-r161` in the shell policy call sites: merge r160 first.
+- `.worktrees/r161` `lane-r161`: RFC 0161 written (D54), conformance committed (884cc00b), an opus build lane runs; it also takes backlog 0988. Four biome style findings sit in its conformance files for the conformance-writer.
+- `.worktrees/r157` `lane-r157`: RFC 0157 and 0162 written (D59); a conformance-writer works through both Conformance diffs. The build waits for the operator's read of D59's list.
+- `.worktrees/r158` `lane-r158`: RFC 0158 written (D55). Conformance (k.data, std.postgres) waits for the W13 build.
+- `.worktrees/r159` `lane-r159`: RFC 0159 and 0163 written (D57). Next: conformance for k.roles, k.foreign and std.lists when a test lane frees. The `internal` seams question waits for the operator.
+- `.worktrees/w5l7` `lane-w5l7` (sonnet): W5 L7, the eval's public mode, and the packed kit both eval modes use (backlog 0987). No paid run.
+- `.worktrees/verify`: the clean checkout for the gate and the ledger. Keep it.
+- Gone: `lane-w5l1` is merged (its worktree `.worktrees/w5l1` and branch can be removed once the push is green); `.worktrees/w03` and `.worktrees/w08` of the older block: check `git worktree list`.
+- The RFC lanes share `tasks/0963-to-p1/briefs/rfc-lane.md`. An RFC lane merges to the main line only with its conformance and build (D12).
 
 ## Verification
 - [x] Backlog 0956 built and conformance-covered: RFC 0147 and RFC 0150 (links into a shell), red-teamed twice.
@@ -157,9 +159,10 @@ Dispatched from 3a35d635 plus the ledger commit; each is a subagent in its workt
 - [x] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962): `tasks/p1/PLAN.md`; the operator reads its open decisions O1 to O11.
 
 ## Next action
-1. `git worktree list`, `git status --short`, then the CI run on the pushed head (`gh run list --branch jdforsythe/test-impl --limit 2`); fix what fails. The gate passed on 2f7f64e7 in `.worktrees/verify` (full `pnpm test`, 85 tasks); the rewritten `tooling/ledger/ledger.json` and `evidence.json` are uncommitted there: commit them to the main line, gate the commits after 2f7f64e7 (plans and docs only), push.
-2. `lane-w5l1`: the five steps under Lanes, ending in the RFC 0151 merge and a push.
-3. `lane-w03b`: the fix lane of D39, RFC 0156, conformance, review, merge.
-4. D41 to D50 are decided (D49 on the orchestrator's recommendation). Dispatch five RFC writing lanes (opus; writing only, so they run beside steps 2 and 3): the module contract with the component signature (W13 step 1), app data (W14 step 1), custom components with the library format (W15 step 1; D44, D48 to D50), declared third-party origins (D46), the k.shell split (D47). Each brief names its decisions by id and says the RFC lands before the freeze flip. Then W16 step 1, the eval harness (sonnet); its first pair of runs needs the operator's read before the next.
-5. Dispatch W5 L7 after step 2, and two weakness lanes that share no package with the lanes in flight.
-6. The operator has nine questions open (D25 lists them; work goes ahead on the recommendation for each) and D19 to D40 to confirm or reverse. Ask in conversation, with a recommendation, only what changes the direction.
+1. `git worktree list`, `git status --short`. If lanes were running when the context ended, their worktrees hold the state: read each branch's `git log --oneline -5` and continue from the Lanes block above.
+2. Land `merge-0156` (three commits) on the main line. Then the gate in `.worktrees/verify` on the exact head: both apps' `keel test`, `pnpm ledger` and `pnpm evidence:report` written there, committed to the main line, then the full Method gate (`pnpm check`, full `pnpm test`, `pnpm ledger --diff`, the evidence check, `pnpm build`), each read by its own last `ok` or `fail` line. Push when green; watch CI.
+3. RFC 0160: after the build, the conformance tightening, a red-team pass, the merge. RFC 0161: after the build, the merge on top of it.
+4. W13: when the operator has read D59's list, an opus lane designs the build order across services, router, server, check and scaffold and sonnet lanes build it; then both golden apps and the skills move to contracts. W14 and W15 conformance follow as test lanes free.
+5. After W5 L7: the golden-3 agent run is the operator's to start (cost, and whether it needs a container).
+6. Two weakness lanes that share no package with lanes in flight (`tasks/p1/weaknesses.md`: 06, 10 to 21). W4 scoping and vendor shortlist has not started and has the longest lead time.
+7. For the operator, in `docs/HANDOFF.md`: D59's list (before the W13 build), the `internal` seams of D57 (before it is built), and D51 to D61 to confirm or reverse.
