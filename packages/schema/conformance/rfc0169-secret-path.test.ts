@@ -46,16 +46,23 @@ describe("rfc:0169 conformance: secretPath", () => {
     fc.assert(
       fc.property(fc.array(step, { maxLength: 6 }), wrap, (steps, w) => {
         const leaf = s.secret(s.int());
-        let node: Schema<unknown> = w === "optional" ? leaf.optional() : w === "nullable" ? leaf.nullable() : leaf;
+        // Containers take a required schema, so optional and nullable apply only where the leaf sits at the root or under an object key.
+        const wrapped: Schema<unknown, boolean> =
+          w === "optional" ? leaf.optional() : w === "nullable" ? leaf.nullable() : leaf;
+        let node: Schema<unknown, boolean> = wrapped;
+        let required: Schema<unknown, false> | null = null;
         const keys: string[] = [];
         for (const st of [...steps].reverse()) {
           if (st.k === "key") {
             // `z` is a plain sibling, listed first in source order, and holds no secret.
-            node = s.object({ z: s.int(), [st.name]: node });
+            required = s.object({ z: s.int(), [st.name]: node });
             keys.unshift(st.name);
-          } else if (st.k === "array") node = s.array(node);
-          else if (st.k === "record") node = s.record(node);
-          else node = s.union([s.string(), node]);
+          } else {
+            const inner: Schema<unknown, false> = required ?? leaf;
+            required =
+              st.k === "array" ? s.array(inner) : st.k === "record" ? s.record(inner) : s.union([s.string(), inner]);
+          }
+          node = required;
         }
         expect(secretPath(node)).toBe(keys.join("."));
       }),
