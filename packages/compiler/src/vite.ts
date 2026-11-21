@@ -761,7 +761,15 @@ export default function (): {
       if (id === SQLITE) return SQLITE_CODE;
       const node = deployable();
       if (id === `\0${SERVER_ENTRY}` && node !== undefined)
-        return serverEntryCode(root, node.name, node.modules, topology?.[node.name]?.storage);
+        return serverEntryCode(
+          root,
+          node.name,
+          node.modules,
+          topology?.[node.name]?.storage,
+          Object.fromEntries(
+            Object.entries(topology ?? {}).flatMap(([n, d]) => (d.origins === undefined ? [] : [[n, d.origins]])),
+          ),
+        );
       if (q?.path !== ENTRY_PATH) return null;
       const d = deployable(q.d);
       if (d === undefined)

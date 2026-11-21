@@ -70,8 +70,9 @@ describe("parseTopology (mutation)", () => {
     ]);
   });
 
-  it("ignores unreadable fields but needs modules and adapter", () => {
+  it("reports a spread or computed field, ignores an unknown one, and needs modules and adapter", () => {
     const need = "x: needs modules: [...] and adapter: 'node' | 'static' | 'client'";
+    const computed = "x: a spread or a computed key; write each field out";
     expect(parseTopology("export default { x: { modules: ['m'] } }").problems.map(([, m]) => m)).toEqual([need]);
     expect(parseTopology("export default { x: { adapter: 'node' } }").problems.map(([, m]) => m)).toEqual([need]);
     expect(parseTopology("export default { x: { modules: 'm', adapter: 'node' } }").problems.map(([, m]) => m)).toEqual(
@@ -88,15 +89,15 @@ describe("parseTopology (mutation)", () => {
     ).toEqual([need]);
     expect(
       parseTopology("export default { x: { ['modules']: ['m'], adapter: 'node' } }").problems.map(([, m]) => m),
-    ).toEqual([need]);
+    ).toEqual([computed, need]);
     expect(
       parseTopology("export default { x: { modules: ['m'], ['adapter']: 'node' } }").problems.map(([, m]) => m),
-    ).toEqual([need]);
+    ).toEqual([computed, need]);
     expect(
       parseTopology("export default { x: { modules: ['m'], adapter: `node` } }").problems.map(([, m]) => m),
     ).toEqual([need]);
     const r = parseTopology("export default { x: { ...s, 1: 2, 'modules': ['m'], 'adapter': 'static' } }");
-    expect(r.problems.map(([, m]) => m)).toEqual([]);
+    expect(r.problems.map(([, m]) => m)).toEqual([computed]);
     expect(r.topology).toEqual({ x: { modules: ["m"], adapter: "static" } });
     expect(Object.keys(parseTopology("export default { x: { modules: ['m'] } }").topology)).toEqual([]);
     expect(parseTopology("export default { x: { modules: ['m'], adapter: ('client') } }").topology).toEqual({

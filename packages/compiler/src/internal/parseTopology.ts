@@ -1,4 +1,5 @@
 import { type Expression, parseSync } from "oxc-parser";
+import { declaredOrigins } from "../hosting/declaredOrigins.ts";
 import { deployableNameProblem } from "../hosting/deployableNameProblem.ts";
 import type { Topology } from "../types/Topology.ts";
 import { HOST_NOT_LITERAL } from "./HOST_NOT_LITERAL.ts";
@@ -43,7 +44,10 @@ function shellOf(e: Expression): Shell | undefined {
  * `shells` entry that is not `capacitor` or `tauri` with literal `id` and `name`, is a problem. Only literal deployable names (in the form `deployableNameProblem` takes),
  * module ids, adapters and hosts count; anything else is a problem, `[deployable, message]` (`deployable` is the key,
  * `""` for the whole file; the message is one short line), and the deployable is skipped, except a `host` that is not a
- * string literal, which is dropped from the kept deployable. Nothing is executed.
+ * string literal, which is dropped from the kept deployable. A spread, a computed key or a key written twice in a
+ * deployable's declaration, or a deployable name written twice, is a problem too: what it holds is known only when it
+ * runs. Each kept deployable carries the `origins` the static read accepts (`declaredOrigins`), the one declaration
+ * every policy Keel emits reads (k.origins). Nothing is executed.
  */
 export function parseTopology(source: string): { topology: Topology; problems: [string, string][] } {
   const problems: [string, string][] = [];
@@ -64,12 +68,19 @@ export function parseTopology(source: string): { topology: Topology; problems: [
   }
   if (e.type !== "ObjectExpression")
     return { topology: out, problems: [["", "default export is not topology({...})"]] };
+  const declared = declaredOrigins(source).origins;
+  const names = new Set<string>();
   for (const p of e.properties) {
     const name = p.type === "Property" && !p.computed ? keyName(p.key) : undefined;
     if (p.type !== "Property" || name === undefined) {
       problems.push(["", "deployable name is not a literal"]);
       continue;
     }
+    if (names.has(name)) {
+      problems.push([name, `${name}: the deployable is written twice`]);
+      continue;
+    }
+    names.add(name);
     const bad = deployableNameProblem(name);
     if (bad !== undefined) {
       problems.push([name, bad]);
@@ -85,9 +96,19 @@ export function parseTopology(source: string): { topology: Topology; problems: [
     let host: string | undefined;
     let storage: Storage | undefined;
     let shells: { capacitor?: Shell; tauri?: Shell } | undefined;
+    const fields = new Set<string>();
     for (const f of v.properties) {
-      const k = f.type === "Property" && !f.computed ? keyName(f.key) : undefined;
-      if (f.type !== "Property" || k === undefined) continue;
+      if (f.type !== "Property" || f.computed) {
+        problems.push([name, `${name}: a spread or a computed key; write each field out`]);
+        continue;
+      }
+      const k = keyName(f.key);
+      if (k === undefined) continue;
+      if (fields.has(k)) {
+        problems.push([name, `${name}: ${k} is written twice`]);
+        continue;
+      }
+      fields.add(k);
       const fv = unwrap(f.value);
       if (k === "modules" && fv.type === "ArrayExpression") {
         modules = [];
@@ -123,6 +144,7 @@ export function parseTopology(source: string): { topology: Topology; problems: [
       ...(host === undefined ? {} : { host }),
       ...(storage === undefined ? {} : { storage }),
       ...(shells === undefined ? {} : { shells }),
+      ...(declared[name] === undefined ? {} : { origins: declared[name] }),
     };
   }
   return { topology: out, problems };

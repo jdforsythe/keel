@@ -26,7 +26,7 @@ const keyText = (k: { type: string; name?: unknown; value?: unknown }): string |
  * E1590 at the node for an `origins` or a directive that is not an object literal, a spread or computed key, a key
  * outside the five, a directive over 16 origins, an origin that is not exact (with a fix to its serialization when
  * `originOf` gives an exact one), and a reason that is not a string literal of the form; E1591 at an origin a
- * directive holds twice, with a fix removing it. Nothing is executed; no source, or a file the static read cannot take, gives none.
+ * directive holds twice, or a directive `origins` holds twice, with a fix removing it (the first is the one read). Nothing is executed; no source, or a file the static read cannot take, gives none.
  */
 export function declaredOrigins(source = ""): {
   origins: Record<string, Origins>;
@@ -60,12 +60,27 @@ export function declaredOrigins(source = ""): {
       continue;
     }
     const read: { -readonly [K in keyof Origins]: Record<string, string> } = {};
+    const directives = new Set<string>();
+    let before = value.start + 1;
     for (const q of value.properties) {
       const key = q.type === "Property" && !q.computed ? keyText(q.key) : undefined;
+      const after = before;
+      before = q.end;
       if (q.type !== "Property" || key === undefined) {
         e1590("origins holds a spread or a computed key; write each directive out", q.start);
         continue;
       }
+      if (directives.has(key)) {
+        problems.push([
+          "E1591",
+          name,
+          `origins: ${key} is written twice`,
+          q.key.start,
+          { start: after, end: q.end, text: "" },
+        ]);
+        continue;
+      }
+      directives.add(key);
       const directive = ORIGIN_DIRECTIVES.find((x) => x === key);
       if (directive === undefined) {
         e1590(originDirectiveProblem(key) ?? key, q.key.start);
