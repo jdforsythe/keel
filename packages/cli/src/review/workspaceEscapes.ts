@@ -22,7 +22,10 @@ export function workspaceEscapes(source: string): Raw[] {
       indent = -1;
       const inline = /^\[(.*)\]$/.exec(top[2] ?? "");
       if (block === "onlyBuiltDependencies" && inline !== null)
-        for (const name of (inline[1] ?? "").split(",").map(unquote).filter((n) => n !== ""))
+        for (const name of (inline[1] ?? "")
+          .split(",")
+          .map(unquote)
+          .filter((n) => n !== ""))
           out.push({ code: "R1102", line: i + 1, col: 1, text: name, message: `${name} allowed to build` });
       return;
     }

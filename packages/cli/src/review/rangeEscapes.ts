@@ -49,7 +49,8 @@ export function rangeEscapes(
       out.push(at(c.path, "R1061", `a conformance file ${c.status === "D" ? "deleted" : "changed"}`));
     if (c.same === true) continue;
     if (CONFIG.test(name)) out.push(at(c.path, "R1103", `${name} changed`));
-    if (name === "package.json" && scripts(old) !== scripts(now)) out.push(at(c.path, "R1103", "package.json scripts changed"));
+    if (name === "package.json" && scripts(old) !== scripts(now))
+      out.push(at(c.path, "R1103", "package.json scripts changed"));
     if (/(?:^|\/)\.(?:github|githooks)\//.test(c.path)) out.push(at(c.path, "R1104", `${c.path} changed`));
     if (name === "keel-review.json") out.push(at(c.path, "R1105", "the review baseline changed"));
     if (/(?:^|\/)(?:\.keel|dist)\//.test(c.path)) out.push(at(c.path, "R1107", "a generated file changed"));

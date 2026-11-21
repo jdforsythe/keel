@@ -1,24 +1,24 @@
 # k.escapes: Escape codes
 status: proposed
 
-**Purpose.** The findings `keel review` reports (k.review): each code, its danger, and what it reads. A file is read by syntax, as `keel check` reads it; a range code reads the changes between `<base>` and `<head>`. A test file is `*.test.*` or `*.spec.*`, or under `test/`, `tests/` or `__tests__/`; a server file is named `*.server.*` or `*.guard.*` (k.boundary's server-only names); app code is k.check's. A finding's text (its `id`, k.review) is the source of the node its row names; of a JSON or YAML entry, its key and value as written; of a whole file, empty; of a range code, its message. A call is by its callee's name, whatever it was imported as.
+**Purpose.** The findings `keel review` reports (k.review): each code, its danger, and what it reads. A file is read by syntax, as `keel check` reads it; a range code reads the changes between `<base>` and `<head>`. A test file is `*.test.*` or `*.spec.*`, or under `test/`, `tests/` or `__tests__/`; a server file is named `*.server.*` or `*.guard.*` (k.boundary's server-only names); app code is k.check's. A finding's text (its `id`, k.review) is the source of the node its row names; of a JSON or YAML entry, its key and value as written; of a whole file, empty; of a range code, its message. A call is one whose callee is that name.
 
 **Codes.**
 | code | danger | finding |
 |-|-|-|
 | R1001 | medium, opt-in | `unsafe(reason, fn)` |
 | R1010 | opt-in | each entry of `origins` in `topology.ts` (`origins: { img: { 'https://img.cdn.example': 'photos' } }`, k.origins): `connect`, `frame` high; `img`, `media`, `font` low; the value its reason |
-| R1011 | high, opt-in | an `allow` property of the object a `createApp(` call takes, or the word `KEEL_ALLOW_ORIGINS` in a tracked file |
+| R1011 | high, opt-in | an `allow` property of the object a `createApp(` call takes, or the word `KEEL_ALLOW_ORIGINS` in a tracked file but Markdown |
 | R1012 | high, opt-in | a `reveal` call |
 | R1014 | high, opt-in | a `handle` property of the object an `identity(` call takes, or of `createApp(`'s `identity` object |
 | R1050 | medium | a cast (not `as const`), `any`, `!` or ts-suppression comment outside app code: a test file, a `.d.ts`, a `*.config.*` file, or under `unsafe/` or `.keel/` |
 | R1051 | medium | a comment that starts `eslint-disable`, `biome-ignore` or `oxlint-disable` |
 | R1052 | critical | a string folded from literals, `+`, templates, `.join` or `String.raw` that starts, after any `//` or `/*` and spaces, `@ts-`, `eslint-disable`, `biome-ignore` or `oxlint-disable`; the outermost fold once |
-| R1053 | critical | a module specifier not a string literal or a template without `${}`: `import()`, `require`, `new Worker`, `import.meta.resolve` |
+| R1053 | critical | a module specifier not a string literal or a template without `${}`: `import()`, `require`, `new Worker`, `import.meta.resolve`; but an `import()` template starting `./` or `../` and ending in a file extension (std.messages' `load`), and `new Worker(new URL('<literal>', import.meta.url))` |
 | R1055 | critical | a `@keel/*` specifier with a `src`, `dist` or `unsafe` segment, or a relative path into `node_modules/@keel/` |
 | R1056 | critical | a non-literal key on `globalThis`, `window`, `self` or `global`, or an indirect `eval` |
 | R1057 | high | in a server file or a test file: `process.env`, an import of `fs`, `net`, `http` or `https` (with or without `node:`, subpaths too), or a global `fetch` under `unsafe/`; `child_process`, critical |
-| R1058 | high | a project file under `unsafe/` with no `unsafe(` call |
+| R1058 | high | a project's code file under `unsafe/` with no `unsafe(` call |
 | R1059 | medium | `.only`, `.skip`, `.todo`, `.skipIf` or `.fails` on a test or suite in a test file |
 | R1060 | medium | a deleted test file, or fewer calls of `expect`, `assert`, `test` or `it` (their members too) in a test file |
 | R1061 | critical | a changed file under a `conformance/` folder |

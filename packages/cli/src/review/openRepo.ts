@@ -82,7 +82,8 @@ export function openRepo(cwd: string): GitRepo | null {
           i += 3;
         } else {
           const path = f[i + 1] ?? "";
-          if (kind === "A" || kind === "D") out.push(kind === "A" ? { status: "A", path } : { status: "D", path, from: path });
+          if (kind === "A" || kind === "D")
+            out.push(kind === "A" ? { status: "A", path } : { status: "D", path, from: path });
           else out.push({ status: "M", path, from: path });
           i += 2;
         }

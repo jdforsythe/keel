@@ -1,6 +1,6 @@
+import { ESCAPES } from "./ESCAPES.ts";
 import type { Found } from "./Found.ts";
 import type { Raw } from "./Raw.ts";
-import { ESCAPES } from "./ESCAPES.ts";
 import { escapeId } from "./escapeId.ts";
 
 const clip = (s: string): string => (s.length > 89 ? `${s.slice(0, 86)}...` : s);

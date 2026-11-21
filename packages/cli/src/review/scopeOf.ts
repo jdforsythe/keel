@@ -2,7 +2,14 @@ import type { Scope } from "./Scope.ts";
 import type { Snapshot } from "./Snapshot.ts";
 
 const DEFAULT_EXPORT = /^\s*export\s+default\b/m;
-const REPO_FILES = new Set(["package.json", "pnpm-workspace.yaml", "pnpm-lock.yaml", "package-lock.json", "yarn.lock", "keel-review.json"]);
+const REPO_FILES = new Set([
+  "package.json",
+  "pnpm-workspace.yaml",
+  "pnpm-lock.yaml",
+  "package-lock.json",
+  "yarn.lock",
+  "keel-review.json",
+]);
 
 /** A file of the git root the review always reads: manifests, lockfiles, CI, hooks, patches, tracked `node_modules/`. */
 const isRepoFile = (p: string): boolean =>

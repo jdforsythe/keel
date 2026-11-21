@@ -1,11 +1,11 @@
 import { realpathSync } from "node:fs";
 import { relative, resolve } from "node:path";
-import type { Input } from "../types/Input.ts";
-import type { Io } from "../types/Io.ts";
-import type { OutRecord } from "../types/OutRecord.ts";
 import type { Outcome } from "../internal/Outcome.ts";
 import { defaultMode } from "../internal/defaultMode.ts";
 import { makeDiag } from "../internal/makeDiag.ts";
+import type { Input } from "../types/Input.ts";
+import type { Io } from "../types/Io.ts";
+import type { OutRecord } from "../types/OutRecord.ts";
 import type { AtPath } from "./AtPath.ts";
 import type { Baseline } from "./Baseline.ts";
 import type { Found } from "./Found.ts";
@@ -101,7 +101,11 @@ function stale(by: Map<string, readonly Baseline[]>, ids: ReadonlySet<string>, h
     for (const e of entries) {
       if (ids.has(e.id) || !text.includes(e.id)) continue;
       const line = text.slice(0, text.indexOf(e.id)).split("\n").length;
-      out.push(...placed(path, [{ code: "R1151", line, col: 1, text: e.id, message: `accepted ${e.code} ${e.id} matches no finding` }]));
+      out.push(
+        ...placed(path, [
+          { code: "R1151", line, col: 1, text: e.id, message: `accepted ${e.code} ${e.id} matches no finding` },
+        ]),
+      );
     }
   }
   return out;
@@ -198,13 +202,14 @@ function reviewRange(repo: GitRepo, from: string, to: string, at: readonly strin
   }
   const baselineFor = (f: Found): readonly Baseline[] =>
     accepted.by.get(scope.projectOf(f.path) ?? "") ?? accepted.by.get("") ?? [];
-  const isAccepted = (f: Found): boolean =>
-    baselineFor(f).some((e) => e.id === f.id || e.id === alias.get(f.id));
+  const isAccepted = (f: Found): boolean => baselineFor(f).some((e) => e.id === f.id || e.id === alias.get(f.id));
   const all = [...headFound.values()].flat();
   const judged = judge(all, baseFound, isAccepted).filter(
     (j) => (j.found.code !== "R1101" && j.found.code !== "R1102") || j.novelty === "new" || j.novelty === "changed",
   );
-  const tree = judged.map((j): Judged => (j.found.code === "R1101" || j.found.code === "R1102" ? { found: j.found, novelty: "new" } : j));
+  const tree = judged.map(
+    (j): Judged => (j.found.code === "R1101" || j.found.code === "R1102" ? { found: j.found, novelty: "new" } : j),
+  );
   const inScope = changes.filter((c) => scope.has(c.path) || (c.from !== undefined && scope.has(c.from)));
   const ranged = [
     ...rangeEscapes(inScope, base.text, head.text),
@@ -267,8 +272,7 @@ export async function reviewCommand(input: Input, io: Io): Promise<Outcome> {
   const root = repo?.root ?? cwd;
   const at = targets(root, cwd, paths);
   const m = range === undefined || input.accept !== undefined ? null : RANGE.exec(range);
-  const run =
-    m === null || repo === null ? reviewTree(root, repo, at) : reviewRange(repo, m[1] ?? "", m[2] ?? "", at);
+  const run = m === null || repo === null ? reviewTree(root, repo, at) : reviewRange(repo, m[1] ?? "", m[2] ?? "", at);
   if (!("judged" in run)) return run;
   if (input.accept !== undefined) return accept(run, input.accept, input.reason ?? "", cwd);
 
@@ -276,7 +280,11 @@ export async function reviewCommand(input: Input, io: Io): Promise<Outcome> {
   const mode = input.format ?? defaultMode(io);
   const listed = input.list === true;
   const shown = all.filter((r) =>
-    r.loud === "fail" || r.loud === "warn" ? true : r.loud === "list" ? listed || mode === "json" : listed && mode === "json",
+    r.loud === "fail" || r.loud === "warn"
+      ? true
+      : r.loud === "list"
+        ? listed || mode === "json"
+        : listed && mode === "json",
   );
   const count = (l: Loud): number => all.filter((r) => r.loud === l).length;
   const counts = { fail: count("fail"), warn: count("warn"), list: count("list"), accepted: count("count") };

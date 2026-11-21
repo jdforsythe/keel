@@ -49,6 +49,17 @@ function props(o: ObjectExpression): { name: string; start: number; end: number;
 const isLiteralText = (e: Expression): boolean =>
   (e.type === "Literal" && typeof e.value === "string") || (e.type === "TemplateLiteral" && e.expressions.length === 0);
 
+/**
+ * A template the bundler expands to the files beside the importer, as Vite's dynamic imports require: it starts `./`
+ * or `../` and ends in a file extension (std.messages' `` import(`./<Set>/${locale}.ts`) ``). It names no package.
+ */
+const isLocalGlob = (e: Expression): boolean => {
+  if (e.type !== "TemplateLiteral") return false;
+  const head = e.quasis[0]?.value.cooked ?? "";
+  const tail = e.quasis.at(-1)?.value.cooked ?? "";
+  return /^\.\.?\//.test(head) && /\.[A-Za-z0-9]+$/.test(tail) && e.quasis.length > 1;
+};
+
 /** `new URL('<literal>', import.meta.url)`: the bundler's own form for a worker or asset next to the file. */
 const isUrlBesideFile = (e: Expression): boolean =>
   e.type === "NewExpression" &&
@@ -132,7 +143,8 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
     if (DIRECTIVE.test(v)) add("R1052", n.start, n.end);
   };
   const evalRef = (e: Expression | null | undefined): void => {
-    if (e?.type === "Identifier" && e.name === "eval") add("R1056", e.start, e.end, { message: "eval used indirectly" });
+    if (e?.type === "Identifier" && e.name === "eval")
+      add("R1056", e.start, e.end, { message: "eval used indirectly" });
   };
 
   for (const st of parsed.program.body)
@@ -192,7 +204,7 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
       }
     },
     ImportExpression: (n) => {
-      if (!isLiteralText(n.source)) add("R1053", n.start, n.end);
+      if (!isLiteralText(n.source) && !isLocalGlob(n.source)) add("R1053", n.start, n.end);
       else {
         const spec = foldString(n.source);
         if (spec !== null) specifier(n.source.start, n.source.end, spec);
@@ -218,7 +230,11 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
           add("R1056", n.start, n.end, { message: "eval used indirectly" });
       }
       // `process.env.KEY` is one read: its text is the whole member, so a changed key reads as `changed`.
-      const env = isProcessEnv(n) ? n : n.object.type === "MemberExpression" && isProcessEnv(n.object) ? n.object : null;
+      const env = isProcessEnv(n)
+        ? n
+        : n.object.type === "MemberExpression" && isProcessEnv(n.object)
+          ? n.object
+          : null;
       if ((kind.server || kind.test) && env !== null && !envs.has(env.start)) {
         envs.add(env.start);
         add("R1057", n.start, n.end, { message: `process.env read in a ${kind.test ? "test" : "server"} file` });
@@ -245,7 +261,8 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
     TSAsExpression: (n) => {
       const t = n.typeAnnotation;
       const isConst = t.type === "TSTypeReference" && t.typeName.type === "Identifier" && t.typeName.name === "const";
-      if (!kind.app && !isConst) add("R1050", n.start, n.end, { message: "a type cast where keel check does not read" });
+      if (!kind.app && !isConst)
+        add("R1050", n.start, n.end, { message: "a type cast where keel check does not read" });
     },
     TSTypeAssertion: (n) => {
       if (!kind.app) add("R1050", n.start, n.end, { message: "a type cast where keel check does not read" });

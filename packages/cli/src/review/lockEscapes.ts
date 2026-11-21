@@ -25,13 +25,25 @@ export function lockEscapes(name: string, source: string): Raw[] {
         const l = lines[j] ?? "";
         if (l.trim() !== "" && l.length - l.trimStart().length < lead) owner = l.trim();
       }
-      out.push({ code: "R1101", line: i + 1, col: lead + 1, text: `${owner} ${line.trim()}`, message: `${owner.replace(/:$/, "")} resolved outside the registry` });
+      out.push({
+        code: "R1101",
+        line: i + 1,
+        col: lead + 1,
+        text: `${owner} ${line.trim()}`,
+        message: `${owner.replace(/:$/, "")} resolved outside the registry`,
+      });
     });
   if (name === "yarn.lock")
     lines.forEach((line, i) => {
       const m = YARN_RESOLVED.exec(line);
       if (m !== null && !(m[1] ?? "").startsWith("https:"))
-        out.push({ code: "R1101", line: i + 1, col: 1, text: line.trim(), message: "a dependency resolved outside the registry" });
+        out.push({
+          code: "R1101",
+          line: i + 1,
+          col: 1,
+          text: line.trim(),
+          message: "a dependency resolved outside the registry",
+        });
     });
   if (name === "package-lock.json") {
     let lock: unknown;
@@ -43,7 +55,8 @@ export function lockEscapes(name: string, source: string): Raw[] {
     const packages = isBag(lock) && isBag(lock.packages) ? lock.packages : {};
     for (const [key, entry] of Object.entries(packages)) {
       const resolved = isBag(entry) ? entry.resolved : undefined;
-      if (typeof resolved !== "string" || resolved.startsWith("https:") || (isBag(entry) && entry.link === true)) continue;
+      if (typeof resolved !== "string" || resolved.startsWith("https:") || (isBag(entry) && entry.link === true))
+        continue;
       const i = source.indexOf(JSON.stringify(resolved));
       out.push({
         code: "R1101",
