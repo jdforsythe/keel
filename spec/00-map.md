@@ -95,8 +95,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.privacy-reads | Static privacy reads | conformance-covered | readers |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
 | k.parity | Stdlib parity | proposed | seams |
-| k.review | Review of escapes | proposed | ranges |
-| k.escapes | Escape codes | proposed | R codes |
+| k.review | Review of escapes | implemented | ranges |
+| k.escapes | Escape codes | implemented | R codes |
 
 ## Stdlib
 Sections: `spec/std/README.md`.

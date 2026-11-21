@@ -1,5 +1,5 @@
 # k.review: Review of escapes
-status: proposed
+status: implemented
 
 **Purpose.** `keel review` lists each escape in a project: a place where code opts out of a protection by its sanctioned name (an opt-in) or goes around one (a workaround), ranked by what it reaches and whether it is new. `keel check` decides correctness per file; review reads a git range or a tree, makes no network request and runs no project code.
 

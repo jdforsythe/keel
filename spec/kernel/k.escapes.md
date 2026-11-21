@@ -1,5 +1,5 @@
 # k.escapes: Escape codes
-status: proposed
+status: implemented
 
 **Purpose.** The findings `keel review` reports (k.review): each code, its danger, and what it reads. A file is read by syntax, as `keel check` reads it; a range code reads the changes between `<base>` and `<head>`. A test file is `*.test.*` or `*.spec.*`, or under `test/`, `tests/` or `__tests__/`; a server file is named `*.server.*` or `*.guard.*` (k.boundary's server-only names); app code is k.check's. A finding's text (its `id`, k.review) is the source of the node its row names; of a JSON or YAML entry, its key and value as written; of a whole file, empty; of a range code, its message. A call is one whose callee is that name.
 
