@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { database } from "@keel/std-postgres/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { PG17, SEED, fresh, migrationsOf } from "./fixtures.ts";
+import { PG17, SEED, fresh, hasPg17, migrationsOf } from "./fixtures.ts";
 
 const CHILD = join(import.meta.dirname, "migrate-child.ts");
 type Out = { ok: boolean; rows?: number; error?: string };
@@ -33,7 +33,7 @@ const run = (url: string, cap: string, table: string, variant: string): Promise<
     );
   });
 
-test.skip("Two processes on one `postgres:` URL apply each pending migration once", async () => {
+test.skipIf(!hasPg17)("Two processes on one `postgres:` URL apply each pending migration once", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 2, max: 4 }), async (n) => {
       const { cap, table } = fresh();
@@ -44,7 +44,7 @@ test.skip("Two processes on one `postgres:` URL apply each pending migration onc
   );
 });
 
-test.skip("a changed applied file is E2454", async () => {
+test("a changed applied file is E2454", async () => {
   const dir = mkdtempSync(join(tmpdir(), "keel-pg-"));
   try {
     const { cap, table } = fresh();
@@ -59,14 +59,14 @@ test.skip("a changed applied file is E2454", async () => {
   }
 });
 
-test.skip("`0001`, `0003` is E2453 when `database` runs", () => {
+test("`0001`, `0003` is E2453 when `database` runs", () => {
   const { cap } = fresh();
   expect(() =>
     database(cap, { migrations: { "./migrations/0001-a.sql": "select 1", "./migrations/0003-c.sql": "select 1" } }),
   ).toThrow(/E2453/);
 });
 
-test.skip("migrations numbered from 0001 without a gap are accepted; a gap, a start past 0001 or another key is E2453", () => {
+test("migrations numbered from 0001 without a gap are accepted; a gap, a start past 0001 or another key is E2453", () => {
   fc.assert(
     fc.property(fc.integer({ min: 1, max: 6 }), fc.integer({ min: 0, max: 5 }), (n, skip) => {
       const ok = migrationsOf(...Array.from({ length: n }, () => "select 1"));

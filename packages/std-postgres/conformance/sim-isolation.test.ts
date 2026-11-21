@@ -15,7 +15,7 @@ beforeAll(async () => {
   await ready();
 });
 
-test.skip("two ctxs of one seed give equal answers to the same calls", async () => {
+test("two ctxs of one seed give equal answers to the same calls", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.integer({ min: 0, max: 1_000_000 }),
@@ -42,7 +42,7 @@ test.skip("two ctxs of one seed give equal answers to the same calls", async () 
   );
 });
 
-test.skip("one ctx sees none of another's rows", async () => {
+test("one ctx sees none of another's rows", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{3,8}$/), async (name) => {
       const { cap, table } = fresh();
@@ -59,7 +59,7 @@ test.skip("one ctx sees none of another's rows", async () => {
   );
 });
 
-test.skip("a plan step `unavailable` is `keel.unreachable` and writes nothing", async () => {
+test("a plan step `unavailable` is `keel.unreachable` and writes nothing", async () => {
   const U = { delay: 0, fault: "unavailable" as const };
   const { cap, table } = fresh();
   const db = notesDb(cap, table);

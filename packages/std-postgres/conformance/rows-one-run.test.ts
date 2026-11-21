@@ -15,7 +15,7 @@ const SECRETISH = fc.stringMatching(/^[a-z]{12,20}$/);
 
 for (const m of MODES) {
   describe(m.name, () => {
-    test.skip("`query` parses every row with the schema", async () => {
+    test("`query` parses every row with the schema", async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.uniqueArray(fc.stringMatching(/^[a-z]{3,10}$/), { minLength: 0, maxLength: 6 }),
@@ -41,7 +41,7 @@ for (const m of MODES) {
       );
     });
 
-    test.skip("a row failing the schema is `postgres.result`, holding no value", async () => {
+    test("a row failing the schema is `postgres.result`, holding no value", async () => {
       await fc.assert(
         fc.asyncProperty(SECRETISH, async (value) => {
           const { cap, table } = fresh();
@@ -64,7 +64,7 @@ for (const m of MODES) {
       );
     });
 
-    test.skip("`one` of no row is `keel.notFound`", async () => {
+    test("`one` of no row is `keel.notFound`", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {
@@ -83,7 +83,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("`one` of more than one row throws", async () => {
+    test("`one` of more than one row throws", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {
@@ -98,7 +98,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("`run` of a statement returning a row is `postgres.result`", async () => {
+    test("`run` of a statement returning a row is `postgres.result`", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {

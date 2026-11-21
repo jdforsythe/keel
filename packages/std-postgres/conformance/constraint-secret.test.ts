@@ -39,7 +39,7 @@ for (const m of MODES) {
       );
     });
 
-    test.skip("a foreign key, check or not-null violation is `postgres.constraint` with kind `foreign`, `check` or `notNull`", async () => {
+    test("a foreign key, check or not-null violation is `postgres.constraint` with kind `foreign`, `check` or `notNull`", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {
@@ -67,7 +67,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("a `Secret` or `undefined` parameter throws E2457 naming its position", async () => {
+    test("a `Secret` or `undefined` parameter throws E2457 naming its position", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {
@@ -95,7 +95,7 @@ for (const m of MODES) {
   });
 }
 
-test.skip("a parameter that is not a JSON value (function, bigint, symbol, Map, NaN, Infinity, an array holding undefined) throws E2457", () => {
+test("a parameter that is not a JSON value (function, bigint, symbol, Map, NaN, Infinity, an array holding undefined) throws E2457", () => {
   const S = s.object({});
   const bad: unknown[] = [() => 1, 1n, Symbol("x"), new Map(), Number.NaN, Number.POSITIVE_INFINITY, [1, undefined]];
   for (const v of bad) {

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "unsafe", "conformance"],
+  "exclude": ["conformance/constraint-secret.test.ts", "conformance/rows-one-run.test.ts"]
+}

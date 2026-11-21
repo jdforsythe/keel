@@ -1,0 +1,70 @@
+{
+  "name": "@keel/std-postgres",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./server": {
+      "types": "./src/server/index.ts",
+      "default": "./src/server/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing/index.ts",
+      "default": "./src/testing/index.ts"
+    },
+    "./tools": {
+      "types": "./src/tools/index.ts",
+      "default": "./src/tools/index.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./server": {
+        "types": "./dist/src/server/index.d.ts",
+        "default": "./dist/src/server/index.js"
+      },
+      "./testing": {
+        "types": "./dist/src/testing/index.d.ts",
+        "default": "./dist/src/testing/index.js"
+      },
+      "./tools": {
+        "types": "./dist/src/tools/index.d.ts",
+        "default": "./dist/src/tools/index.js"
+      }
+    }
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "files": ["dist", "docs"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe",
+    "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.16",
+    "@keel/check": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "@types/pg": "8.23.1",
+    "fast-check": "^3"
+  }
+}

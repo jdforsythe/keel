@@ -16,7 +16,7 @@ const withQuery = (expr: string) =>
     `import { sql } from "@keel/std-postgres"\nimport { s } from "@keel/schema"\nexport const q = sql(s.object({ v: s.string() }))\`select ${expr} as v\`\n`,
   );
 
-test.skip("W2456 fires on each of its five SQL calls in a template's text, not on the clean twin passing a parameter", () => {
+test("W2456 fires on each of its five SQL calls in a template's text, not on the clean twin passing a parameter", () => {
   for (const c of CALLS) {
     expect(found(project(P, withQuery(c)), "W2456").length).toBe(1);
   }

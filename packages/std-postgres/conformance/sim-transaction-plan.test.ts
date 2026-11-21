@@ -37,7 +37,7 @@ async function setup(plan: { delay: number; fault: "none" | "unavailable" | "con
   };
 }
 
-test.skip("a plan `conflict`, `conflict`, `none` makes a `transaction` run `fn` three times and commit once", async () => {
+test("a plan `conflict`, `conflict`, `none` makes a `transaction` run `fn` three times and commit once", async () => {
   const x = await setup([C, C, N, ...none(5)]);
   const r = await x.db(x.ctx).transaction(async (tx) => {
     x.bump();
@@ -49,7 +49,7 @@ test.skip("a plan `conflict`, `conflict`, `none` makes a `transaction` run `fn` 
   expect(rows).toEqual([{ id: 1, name: "a" }]);
 });
 
-test.skip("`conflict` three times is `keel.conflict`, nothing committed", async () => {
+test("`conflict` three times is `keel.conflict`, nothing committed", async () => {
   const x = await setup([C, C, C, ...none(5)]);
   const r = await x.db(x.ctx).transaction(async (tx) => {
     x.bump();
@@ -60,7 +60,7 @@ test.skip("`conflict` three times is `keel.conflict`, nothing committed", async 
   expect(okOf(await x.db(x.ctx).query(sql(Row)`select id, name from ${x.T}`))).toEqual([]);
 });
 
-test.skip("`fn`'s `err` commits nothing", async () => {
+test("`fn`'s `err` commits nothing", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{3,10}$/), async (code) => {
       const x = await setup(none(8));
@@ -78,7 +78,7 @@ test.skip("`fn`'s `err` commits nothing", async () => {
   );
 });
 
-test.skip("a throw in `fn` rolls back and rejects", async () => {
+test("a throw in `fn` rolls back and rejects", async () => {
   const x = await setup(none(8));
   await expect(
     x.db(x.ctx).transaction(async (tx) => {
@@ -89,7 +89,7 @@ test.skip("a throw in `fn` rolls back and rejects", async () => {
   expect(okOf(await x.db(x.ctx).query(sql(Row)`select id, name from ${x.T}`))).toEqual([]);
 });
 
-test.skip("a plan of k `conflict` steps (k < 3) then `none` runs `fn` k + 1 times; statements on `tx` take no step", async () => {
+test("a plan of k `conflict` steps (k < 3) then `none` runs `fn` k + 1 times; statements on `tx` take no step", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 0, max: 2 }), fc.integer({ min: 1, max: 4 }), async (k, stmts) => {
       const x = await setup([...Array.from({ length: k }, () => C), N, ...none(5)]);

@@ -10,7 +10,7 @@ import { dbFile, found, project } from "./rules-fixtures.ts";
 const SEED = 1337;
 const P = "modules/kitchen/kitchenDb.server.ts";
 
-test.skip("E2458 fires on `database('db')`, `database('other.db')`, `database('kitchen.Db')` and `database(name)`, not on `database('kitchen.db')`", () => {
+test("E2458 fires on `database('db')`, `database('other.db')`, `database('kitchen.Db')` and `database(name)`, not on `database('kitchen.db')`", () => {
   expect(found(project(P, dbFile('"kitchen.db"')), "E2458").length).toBe(0);
   for (const bad of ['"db"', '"other.db"', '"kitchen.Db"', '"kitchen.a.b"']) {
     expect(found(project(P, dbFile(bad)), "E2458").length).toBe(1);
@@ -18,7 +18,7 @@ test.skip("E2458 fires on `database('db')`, `database('other.db')`, `database('k
   expect(found(project(P, dbFile("name", 'const name = "kitchen.db"\n')), "E2458").length).toBe(1);
 });
 
-test.skip("E2458 does not fire for any literal `kitchen.<lowerCamel>`", () => {
+test("E2458 does not fire for any literal `kitchen.<lowerCamel>`", () => {
   fc.assert(
     fc.property(fc.stringMatching(/^[a-z][a-zA-Z0-9]{0,9}$/), (n) => {
       expect(found(project(P, dbFile(`"kitchen.${n}"`)), "E2458").length).toBe(0);

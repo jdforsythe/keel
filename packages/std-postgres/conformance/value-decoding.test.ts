@@ -16,7 +16,7 @@ const SAFE = Number.MAX_SAFE_INTEGER;
 
 for (const m of MODES) {
   describe(m.name, () => {
-    test.skip("`int8` within 2^53 - 1 arrives as a number; past it as its text", async () => {
+    test("`int8` within 2^53 - 1 arrives as a number; past it as its text", async () => {
       const { cap } = fresh();
       const mode = m.make();
       try {
@@ -40,7 +40,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("`jsonb` and `json` arrive parsed", async () => {
+    test("`jsonb` and `json` arrive parsed", async () => {
       const { cap } = fresh();
       const mode = m.make();
       try {
@@ -61,7 +61,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("a `date` column arrives as Postgres's text form, `2026-11-21`", async () => {
+    test("a `date` column arrives as Postgres's text form, `2026-11-21`", async () => {
       const { cap } = fresh();
       const mode = m.make();
       try {
@@ -73,7 +73,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("a `text[]` column arrives as an array of strings", async () => {
+    test("a `text[]` column arrives as an array of strings", async () => {
       const { cap } = fresh();
       const mode = m.make();
       try {
@@ -90,7 +90,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("`bool` arrives as a boolean, `int2`, `int4`, `float4` and `float8` as numbers, `json` stored in a table column parsed", async () => {
+    test("`bool` arrives as a boolean, `int2`, `int4`, `float4` and `float8` as numbers, `json` stored in a table column parsed", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {

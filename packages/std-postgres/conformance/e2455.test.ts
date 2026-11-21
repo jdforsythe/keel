@@ -28,12 +28,12 @@ async function firstQuery(url: string | undefined): Promise<unknown> {
   }
 }
 
-test.skip("a missing `KEEL_POSTGRES_URL` is E2455", async () => {
+test("a missing `KEEL_POSTGRES_URL` is E2455", async () => {
   const e = await firstQuery(undefined);
   expect(String(Reflect.get(Object(e), "code")) === "E2455" || String(e).includes("E2455")).toBe(true);
 });
 
-test.skip("another scheme is E2455 naming no part of the value", async () => {
+test("another scheme is E2455 naming no part of the value", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.constantFrom("mysql", "sqlite", "http", "file"),

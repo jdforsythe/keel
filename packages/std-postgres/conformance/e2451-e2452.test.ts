@@ -10,7 +10,7 @@ import { dbFile, found, project } from "./rules-fixtures.ts";
 const SEED = 1337;
 const word = fc.stringMatching(/^[a-z]{3,10}$/);
 
-test.skip("E2451 fires on a static import of `@keel/std-postgres/server` outside a `*.server.ts` file, not on its `*.server.ts` twin", () => {
+test("E2451 fires on a static import of `@keel/std-postgres/server` outside a `*.server.ts` file, not on its `*.server.ts` twin", () => {
   fc.assert(
     fc.property(word, (name) => {
       expect(found(project(`modules/kitchen/${name}.ts`, dbFile('"kitchen.db"')), "E2451").length).toBe(1);
@@ -20,19 +20,19 @@ test.skip("E2451 fires on a static import of `@keel/std-postgres/server` outside
   );
 });
 
-test.skip("E2451 fires on `import()` of `@keel/std-postgres/server` outside a `*.server.ts` file, not on its twin", () => {
+test("E2451 fires on `import()` of `@keel/std-postgres/server` outside a `*.server.ts` file, not on its twin", () => {
   const src = `export const load = () => import("@keel/std-postgres/server")\n`;
   expect(found(project("modules/kitchen/load.ts", src), "E2451").length).toBe(1);
   expect(found(project("modules/kitchen/load.server.ts", src), "E2451").length).toBe(0);
 });
 
-test.skip("E2451 does not fire on a type-only import or in a test file", () => {
+test("E2451 does not fire on a type-only import or in a test file", () => {
   const typeOnly = `import type { database } from "@keel/std-postgres/server"\nexport type D = typeof database\n`;
   expect(found(project("modules/kitchen/types.ts", typeOnly), "E2451").length).toBe(0);
   expect(found(project("modules/kitchen/db.test.ts", dbFile('"kitchen.db"')), "E2451").length).toBe(0);
 });
 
-test.skip("E2452 fires on that import in a module a `client` deployable serves, not in the same module served by `node`", () => {
+test("E2452 fires on that import in a module a `client` deployable serves, not in the same module served by `node`", () => {
   const files = (adapter: string) => project("modules/kitchen/kitchenDb.server.ts", dbFile('"kitchen.db"'), adapter);
   expect(found(files("client"), "E2452").length).toBe(1);
   expect(found(files("node"), "E2452").length).toBe(0);

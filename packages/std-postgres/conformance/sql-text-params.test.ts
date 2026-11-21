@@ -11,7 +11,7 @@ import { expect, test } from "vitest";
 const S = s.object({ x: s.string() });
 const SEED = 1337;
 
-test.skip('`sql(S)`select ${"x\'; drop table t"}` has `text` `select $1` and `params` `["x\'; drop table t"]`; `sql(S)`a ${1} ${fragment`b ${2}`} ${3}` has `text` `a $1 b $2 $3`.', () => {
+test('`sql(S)`select ${"x\'; drop table t"}` has `text` `select $1` and `params` `["x\'; drop table t"]`; `sql(S)`a ${1} ${fragment`b ${2}`} ${3}` has `text` `a $1 b $2 $3`.', () => {
   const q = sql(S)`select ${"x'; drop table t"}`;
   expect(q.text).toBe("select $1");
   expect(q.params).toEqual(["x'; drop table t"]);
@@ -20,7 +20,7 @@ test.skip('`sql(S)`select ${"x\'; drop table t"}` has `text` `select $1` and `pa
   expect(f.params).toEqual([1, 2, 3]);
 });
 
-test.skip("a string parameter is never text: any string gives `select $1` and itself as the one param", () => {
+test("a string parameter is never text: any string gives `select $1` and itself as the one param", () => {
   fc.assert(
     fc.property(fc.string(), (v) => {
       const q = sql(S)`select ${v}`;
@@ -31,7 +31,7 @@ test.skip("a string parameter is never text: any string gives `select $1` and it
   );
 });
 
-test.skip("parameters are numbered in template order, a fragment's own parameters numbered in place", () => {
+test("parameters are numbered in template order, a fragment's own parameters numbered in place", () => {
   fc.assert(
     fc.property(
       fc.integer({ min: -1000, max: 1000 }),
