@@ -13,7 +13,8 @@ export function copyPgliteFiles(out: string, distOf: () => string | undefined): 
   const server = path.join(out, "server.mjs");
   if (!fs.existsSync(server) || !fs.readFileSync(server, "utf8").includes("./pglite.wasm")) return [];
   const dist = distOf();
-  if (dist === undefined) throw new Error("keel: server.mjs reads PGlite's files and @electric-sql/pglite is not found");
+  if (dist === undefined)
+    throw new Error("keel: server.mjs reads PGlite's files and @electric-sql/pglite is not found");
   const copied: string[] = [];
   for (const f of FILES) {
     const from = path.join(dist, f);
