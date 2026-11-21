@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.user, Caller lifetime "A std.sessions recording keeps no `tx` `meta`, so no `meta.caller`, whatever the lifetime."
-// Spec: k.user, Conformance "With or without it, a std.sessions recording of a `tx` with `meta: { caller }` holds neither `meta` nor the hash."
+// Spec: k.user, Conformance "With or without `caller`, a std.sessions recording of a `tx` with `meta: { caller }` holds neither `meta` nor the hash."
 // Seed 1337 (fc.assert below). Under a sim ctx with a document, `record`, a `tx` with `meta: { caller: <64-hex hash> }`, `stop()`.
 // The caller lifetime (`caller: { days }`, topology.ts) is a server setting no recording can read, so the same assertions stand for every lifetime: the run is repeated with and without a `std` binding for sessions.
 // The CLI half is packages/cli/conformance/evidence-caller.test.ts.
