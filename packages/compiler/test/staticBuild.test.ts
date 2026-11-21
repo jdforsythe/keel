@@ -30,7 +30,7 @@ describe("the own build of a static-only topology", () => {
     Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
     const p = keel();
     p.configResolved({ root: project(STATIC), command: "build" });
-    expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "production"));
+    expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "production", "virtual:keel.css"));
   });
 
   it("writes a default index.html scripting the entry when the project has none, and keeps one it has", async () => {
