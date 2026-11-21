@@ -72,7 +72,7 @@ describe("carriesReveal", () => {
         const e1112 = check(files, { types: false }).diagnostics.some((d) => d.code === "E1112");
         expect(got).toBe(e1112);
       }),
-      { seed: SEED, numRuns: 60 },
+      { seed: SEED, numRuns: 100 },
     );
   });
 });
@@ -119,7 +119,7 @@ describe("schemaHolds", () => {
           }
         },
       ),
-      { seed: SEED, numRuns: 30 },
+      { seed: SEED, numRuns: 100 },
     );
   });
 });
@@ -138,7 +138,7 @@ describe("outputSchemas", () => {
         const want = withOutput.flatMap((o, i) => (o ? [4 + i] : []));
         expect(got).toEqual(want);
       }),
-      { seed: SEED, numRuns: 30 },
+      { seed: SEED, numRuns: 100 },
     );
   });
 });
@@ -155,7 +155,7 @@ describe("W1114", () => {
         );
         expect(ds.map((d) => d.line)).toEqual(secret ? [] : [5]);
       }),
-      { seed: SEED, numRuns: 30 },
+      { seed: SEED, numRuns: 100 },
     );
   });
 });

@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1430,
-    "probabilistic": 335,
+    "example": 1435,
+    "probabilistic": 338,
     "exhaustive": 15,
     "proven": 72,
     "monitored": 8
@@ -12,7 +12,7 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 74.26,
+        "score": 73.66,
         "threshold": 70
       },
       "cli": {
@@ -12138,6 +12138,12 @@
     },
     {
       "pkg": "check",
+      "name": "carriesReveal",
+      "file": "packages/check/src/carriesReveal.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "check",
       "name": "check",
       "file": "packages/check/src/check.ts",
       "rung": "probabilistic"
@@ -12162,6 +12168,12 @@
     },
     {
       "pkg": "check",
+      "name": "outputSchemas",
+      "file": "packages/check/src/outputSchemas.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "check",
       "name": "reportedCodes",
       "file": "packages/check/src/reportedCodes.ts",
       "rung": "example"
@@ -12171,6 +12183,12 @@
       "name": "rules",
       "file": "packages/check/src/rules.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "check",
+      "name": "schemaHolds",
+      "file": "packages/check/src/schemaHolds.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "cli",
@@ -15113,6 +15131,22 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.privacy-reads#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.privacy-reads#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.privacy-reads#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.privacy-reads#4",
+      "rung": "none"
+    },
+    {
       "item": "k.privacy#1",
       "rung": "proven"
     },
@@ -15151,22 +15185,6 @@
     {
       "item": "k.privacy#10",
       "rung": "example"
-    },
-    {
-      "item": "k.privacy-reads#1",
-      "rung": "none"
-    },
-    {
-      "item": "k.privacy-reads#2",
-      "rung": "none"
-    },
-    {
-      "item": "k.privacy-reads#3",
-      "rung": "none"
-    },
-    {
-      "item": "k.privacy-reads#4",
-      "rung": "none"
     },
     {
       "item": "k.prove#1",
@@ -16662,7 +16680,7 @@
     },
     {
       "item": "std.jobs#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.lists#1",
@@ -17502,7 +17520,7 @@
     },
     {
       "item": "std.tokens#16",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.workflows#1",

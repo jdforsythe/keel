@@ -31,7 +31,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
 | std.timings | Timings | conformance-covered | inspector hooks: `timings.recent` section |
 | std.report | Tally report | conformance-covered | formatter registry: `report.tally`; `keel report` |
-| std.jobs | Background jobs | implemented | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2506 |
+| std.jobs | Background jobs | conformance-covered | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2506 |
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
 | std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, E2601-E2602 |
 | std.live | Live views | conformance-covered | composes std.channels: a client store re-read on every push |
@@ -52,4 +52,4 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
 | std.capacitor | Capacitor shell target | implemented | shell target: Android and iOS files, tools, build, CI jobs |
 | std.tauri | Tauri shell target | implemented | shell target: desktop files, tools, build, CI job |
-| std.tokens | Opaque tokens | implemented | capability, schema type and check rule registries: `mint` with a ttl, `check`, `idOf`, `Digested`, E2201-E2203 |
+| std.tokens | Opaque tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `idOf`, `Digested`, E2201-E2203 |

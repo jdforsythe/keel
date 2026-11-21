@@ -37,6 +37,6 @@ test("E2203 is one finding per output holding Digested, at the output line", () 
         expect(got).toEqual(where === "none" ? [] : ["modules/a/a.server.ts:6"]);
       },
     ),
-    { seed: 1337, numRuns: 40 },
+    { seed: 1337, numRuns: 100 },
   );
 });

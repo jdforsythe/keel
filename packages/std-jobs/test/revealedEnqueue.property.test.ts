@@ -28,6 +28,6 @@ test("E2506 is one finding per enqueue call carrying a revealed value, at its li
       const want = calls.flatMap((c, i) => (c.revealed && !c.hashed ? [5 + i] : []));
       expect(got).toEqual(want);
     }),
-    { seed: 1337, numRuns: 40 },
+    { seed: 1337, numRuns: 100 },
   );
 });

@@ -1,6 +1,6 @@
 # RFC 0170: k.privacy-reads: the checker's privacy readers for stdlib rules, and three rules on them
 
-Status: proposed (ADR-0193), for the orchestrator to accept. For backlog 0616, 0617 and 0638 (work package check-privacy-rules, `tasks/p1/weaknesses-triage.md`).
+Status: implemented (ADR-0193). For backlog 0616, 0617 and 0638 (work package check-privacy-rules, `tasks/p1/weaknesses-triage.md`).
 
 ## Decisions
 - D1: `@keel/check` exports three readers it already runs for its own rules: `carriesReveal` (E1112's value walk, k.reveal Flow), `schemaHolds` (E1111's schema walk, asked about named exports instead of `.pii()` and `s.secret`) and `outputSchemas` (where a file declares `output` schemas). A stdlib `./tools` rule builds on them instead of a copy. They are public, so a library's rules can use them too (k.parity, RFC 0169).
