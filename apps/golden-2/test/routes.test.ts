@@ -87,7 +87,7 @@ describe("recipes.show", () => {
       params: { locale: "de-DE", recipeId: missing },
       ctx: api.ctx,
     });
-    expect(r.find("recipes.error").text).toBe(`Kein Rezept ${missing}`);
+    expect(r.find("recipes.error").text).toBe("Kein solches Rezept");
     r.dispose();
   });
 });

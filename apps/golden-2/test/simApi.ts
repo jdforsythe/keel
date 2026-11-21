@@ -1,5 +1,5 @@
 import { type SimCtx, createCtx } from "@keel/ctx";
-import { createApp } from "@keel/server";
+import { createApp, identity } from "@keel/server";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
 
@@ -13,8 +13,12 @@ export const apiCtx = (seed = 7): SimCtx => {
   return ctx;
 };
 
-/** Serve the real `api` deployable over `server`'s sim ctx (its storage is the box's persistence). */
-export const apiApp = (server: SimCtx) => createApp({ topology, routes: apiRoutes, ctx: server, deployable: "api" });
+/** An identity source that names `user` for every request (`''` for no one). */
+export const asUser = (user: string) => identity({ identify: async () => user });
+
+/** Serve the real `api` deployable over `server`'s sim ctx (its storage is the box's persistence), every request made by `user` (`''` for no one). */
+export const apiApp = (server: SimCtx, user = "tester") =>
+  createApp({ topology, routes: apiRoutes, ctx: server, deployable: "api", identity: asUser(user) });
 
 /** A JSON request as a services client sends it. */
 export const asJson = (method: string, path: string, body?: unknown): Request =>
