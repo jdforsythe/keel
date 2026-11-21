@@ -20,6 +20,7 @@ export function inert(ctx: Ctx): Live {
       },
     },
     peek: () => null,
+    note: () => {},
   };
   return live;
 }
