@@ -1218,12 +1218,6 @@ describe("E1805 noIntrinsicElement", () => {
       +export const A = () => <Box as="section" id="x">hi</Box>
       # nav
       1:25 <nav> in app code; use <Box> from @keel/ui
-      --- a/src/a.tsx
-      +++ b/src/a.tsx
-      @@ -1 +1,2 @@
-      -export const A = () => <nav id="x">hi</nav>
-      +import { Box } from "@keel/ui";
-      +export const A = () => <Box as="nav" id="x">hi</Box>
       # main
       1:25 <main> in app code; use <Box> from @keel/ui
       --- a/src/a.tsx
@@ -1250,12 +1244,6 @@ describe("E1805 noIntrinsicElement", () => {
       +export const A = () => <Box as="footer" id="x">hi</Box>
       # aside
       1:25 <aside> in app code; use <Box> from @keel/ui
-      --- a/src/a.tsx
-      +++ b/src/a.tsx
-      @@ -1 +1,2 @@
-      -export const A = () => <aside id="x">hi</aside>
-      +import { Box } from "@keel/ui";
-      +export const A = () => <Box as="aside" id="x">hi</Box>
       # article
       1:25 <article> in app code; use <Box> from @keel/ui
       --- a/src/a.tsx

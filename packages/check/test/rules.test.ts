@@ -195,6 +195,15 @@ describe("kernel rules", () => {
     ).toEqual(["E1403", "E1805", "E1805"]);
   });
 
+  it("E1805: nav and aside get no fix, since Box requires a label there", () => {
+    for (const tag of ["nav", "aside"]) {
+      const src = `export default function C() { return <${tag}>x</${tag}> }\n`;
+      const d = check([f("C.tsx", src)], {}).diagnostics.filter((x) => x.code === "E1805");
+      expect(d.length).toBe(1);
+      expect(d[0]?.fix).toBeUndefined();
+    }
+  });
+
   it("E1757: suppression comments are removed by the fix; as const is not a cast", () => {
     const src = `// @ts-${"ignore"}\nexport const x: number = 'a' // @ts-${"expect-error"}\n`;
     const d = check([f("src/x.ts", src)], { types: false }).diagnostics.filter((x) => x.code === "E1757");
