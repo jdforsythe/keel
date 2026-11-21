@@ -10,6 +10,7 @@ import { opFailed } from "../internal/opFailed.ts";
 import type { PgClient } from "./PgClient.ts";
 import type { PgPool } from "./PgPool.ts";
 import type { PostgresOptions } from "./PostgresOptions.ts";
+import { verifiedSslmode } from "./verifiedSslmode.ts";
 
 const SELECT = "select key, value from keel_kv where key = any($1::text[])";
 const UPSERT =
@@ -110,7 +111,7 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
  * in flight or the next one, which reports it, and never throws from an event the process cannot catch.
  */
 function quietPool(url: URL): PgPool {
-  const pool = new pg.Pool({ connectionString: url.href, max: 10, connectionTimeoutMillis: 10_000 });
+  const pool = new pg.Pool({ connectionString: verifiedSslmode(url.href), max: 10, connectionTimeoutMillis: 10_000 });
   pool.on("error", () => undefined);
   pool.on("connect", (client) => {
     client.on("error", () => undefined);
