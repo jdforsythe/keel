@@ -17,7 +17,7 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 
 **Caller cookie.** The cookie (`HttpOnly; SameSite=Lax; Path=/`) is `__Host-keel-caller`, `Secure` on https (`createApp({ secure })`; default the URL's or `x-forwarded-proto`, W1557 in production), else `keel-caller`.
 
-**Other deployables.** `client` and `static` documents are served by their host. `keel build` writes their policy to `dist/<name>/csp.txt`: the one above with `script-src 'self'`, no nonce and no report directives, and `connect-src` adding each `keel-peer` origin (k.hosting). A `client` `index.html` a `node` deployable serves as its `host` carries that policy.
+**Other deployables.** `client` and `static` documents are served by their host. `keel build` writes their policy to `dist/<name>/csp.txt`: the one above with `script-src 'self'`, no nonce and no report directives, and `connect-src` adding each `keel-peer` origin (k.hosting). A `client` `index.html` a `node` deployable serves (`servedBy`) carries that policy.
 
 **Rules.** E1570 a literal absolute `http(s)` URL in `src`, `poster`, `data`, `srcset`, `action`, `formaction` or `Image src`: the policy blocks an undeclared origin (k.origins; fix: none) · E1571 a literal absolute `http(s)` URL given to `ctx.net.fetch` or `service({ base })` in client-reachable code (E1004's reach) · E1576 a `@keel/*` internal entry (a specifier with an `internal` path segment) named by an import, re-export, or literal `import()` or `require` in a file outside `packages/`, `node_modules/` and `.keel/`, tests included: internal entries are kernel and stdlib seams such as the server state runner (fix: none). So is any `#` specifier (no `package.json` is read).
 

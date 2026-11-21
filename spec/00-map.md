@@ -75,7 +75,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.shell | Native shells | proposed | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
-| k.hosting | Client hosting | conformance-covered | host |
+| k.hosting | Client hosting | conformance-covered | servedBy |
 | k.head | Document head | conformance-covered | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |

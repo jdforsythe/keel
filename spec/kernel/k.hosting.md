@@ -14,9 +14,9 @@ With a list set, every API route response carries `vary: origin`. Pages, assets 
 
 **Caller.** The caller cookie (k.server) is unchanged, so it reaches the API only when the two origins are same-site. A request from an allowed origin with `sec-fetch-site: cross-site` is one W1567 `diag` per origin. Such a request can name its sender with a `bearer` (k.api) instead.
 
-**Host.** `host: '<name>'` on a `client` deployable names the `node` deployable that serves it. `keel build` also copies the client artifact into `dist/<host>/`, and the host's `createApp` answers a GET or HEAD document request matching none of its routes and no peer's with `index.html` (200, `no-cache`); an unmatched runtime or event-stream request, or a path under `/assets/`, stays 404.
+**Served by.** `servedBy: '<name>'` on a `client` deployable names the `node` deployable that serves it. `keel build` also copies the client artifact into `dist/<name>/`, and that deployable's `createApp` answers a GET or HEAD document request matching none of its routes and no peer's with `index.html` (200, `no-cache`); an unmatched runtime or event-stream request, or a path under `/assets/`, stays 404.
 
-**Rules.** E1565 `KEEL_PEER_<NAME>` at build is not an http(s) origin; names the key, never the value · E1566 `host` that is not a string literal, on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one host · W1567 an allowed origin that is cross-site to the server: the caller cookie cannot reach it; use one registrable domain or one origin.
+**Rules.** E1565 `KEEL_PEER_<NAME>` at build is not an http(s) origin; names the key, never the value · E1566 `servedBy` that is not a string literal, on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one · W1567 an allowed origin that is cross-site to the server: the caller cookie cannot reach it; use one registrable domain or one origin.
 
 **Conformance.**
 - `keel build` of a fixture with a `client` deployable `web` writes `dist/web/index.html` and hashed files under `dist/web/assets/`; no file in it holds a URL that is neither root-absolute nor absolute.
@@ -24,4 +24,5 @@ With a list set, every API route response carries `vary: origin`. Pages, assets 
 - With `allow: ['https://app.test']`: a preflight from that origin to an API route is 204 with the six headers; a POST from it runs the action and carries the two response headers; the same requests from `https://other.test` are 405 and 403; a preflight to a page is 405.
 - `KEEL_ALLOW_ORIGINS=*` exits 1 with one E1560 naming the key.
 - A request from an allowed origin with `sec-fetch-site: cross-site` logs W1567 once for that origin.
-- With `host: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `host` naming a `client` deployable is E1566.
+- With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566.
+- A deployable with `host: 'api'` is one E1552 naming `host` (k.topology); `topology()` throws E1552 for it.
