@@ -1,5 +1,6 @@
 ---
 "@keel/compiler": patch
+"@keel/check": patch
 ---
 
-The client entry binds `service({ contract })` targets only for the `node` deployables' modules the client's browser code imports (and placed stdlib modules), so the names of other server modules are not in the browser build; `docs/THREAT-MODEL.md` states it.
+The client entry binds `service({ contract })` targets only for the modules the client's browser code imports by relative path (and placed stdlib modules), so the names of other server modules are not in the browser build. A client build whose graph holds a file of an app module that map leaves out (an alias, a package name, a template `import()`) fails with E1011, naming the module and the importing file; `docs/THREAT-MODEL.md` states it.

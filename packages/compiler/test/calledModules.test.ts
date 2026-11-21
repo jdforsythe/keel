@@ -33,3 +33,30 @@ describe("calledModules", () => {
     );
   });
 });
+
+describe("calledModules, what the scan reads", () => {
+  const web = (text: string, extra: Record<string, string> = {}): string[] =>
+    calledModules(["web"], fake({ "modules/web/a.ts": text, "modules/api/api.contract.ts": "", ...extra }));
+
+  it("skips a type-only import and export, a specifier in a line or block comment", () => {
+    expect(web(`import type { T } from "../api/api.contract.ts";`)).toEqual([]);
+    expect(web(`export type { T } from "../api/api.contract.ts";`)).toEqual([]);
+    expect(web(`// import { c } from "../api/api.contract.ts";`)).toEqual([]);
+    expect(web(`/* import { c } from "../api/api.contract.ts";\n */ export const x = 1;`)).toEqual([]);
+  });
+
+  it("reads a multi-line import and a value import that follows a type import", () => {
+    expect(web(`import {\n  a,\n  b,\n} from\n  "../api/api.contract.ts";`)).toEqual(["api"]);
+    expect(
+      web(`import type { T } from "./t.ts";\nimport { c } from "../api/api.contract.ts";`, { "modules/web/t.ts": "" }),
+    ).toEqual(["api"]);
+  });
+
+  it("does not follow an alias or a package name: the build's graph check reports those (E1011)", () => {
+    expect(web(`import { c } from "@/api/api.contract.ts";\nimport "pkg/api.contract.ts";`)).toEqual([]);
+  });
+
+  it("does not follow a computed dynamic import: the bundler's glob of it reaches the graph check (E1011)", () => {
+    expect(web("const f = (n: string) => import(`../api/${n}.ts`); const g = (m: string) => import(m);")).toEqual([]);
+  });
+});

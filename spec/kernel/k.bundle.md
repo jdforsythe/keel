@@ -14,7 +14,7 @@ Which bundles, file names and handler uses k.boundary's stubs, Assertion and Rea
 - A file uses one when it calls it or reads it as a value (passes, assigns, destructures or re-exports it); a namespace object of the package read other than by a literal member uses all three. A type-only use is none.
 - E1551, E1009 and E1007's reason `handler` use this one definition.
 
-**Node built-ins.** The Assertion's Node built-ins are every `node:` specifier and every bare name a supported Node version (22 and later) lists, from a list Keel ships, not the running Node's; so `node:sqlite` fails a browser build on every supported version. A browser build maps no built-in to a module; `node:sqlite`'s mapping is the server build's.
+**Node built-ins.** The Assertion's Node built-ins are every `node:` specifier and every bare name a supported Node version (22 and later) lists, from a list Keel ships, not the running Node's; so `node:sqlite` fails a browser build on every supported version, which maps no built-in.
 
 **Environment.** No value of a variable set for a build is in a browser asset, whatever the project's Vite config says (`envPrefix` as a string or an array, `define`, a plugin), but k.boundary's public origins and `NODE_ENV`.
 - A project config that sets `envPrefix` or `define` fails each browser build before bundling with E1007 reason `environment config`, chain `vite.config.<ext>`. A value a browser reads comes through `clientStd` (k.leave).
@@ -24,7 +24,7 @@ Which bundles, file names and handler uses k.boundary's stubs, Assertion and Rea
 
 **Limits.** A script a project plugin bundles in a pass of its own, or a file copied from `public/`, is not walked; it is the project's. So is a project plugin that writes the value of a variable not named `KEEL_*`.
 
-**Rules.** E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's.
+**Rules.** E1011 a client bundle holds a module its service map omits · E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's.
 
 **Conformance.**
 - In a `node` fixture whose `lib/notes.server.ts` holds a canary and `lib/w.ts` imports it: a page starting `new Worker(new URL('../../lib/w.ts', import.meta.url), { type: 'module' })`, and one importing `../../lib/w.ts?worker`, ship no canary under `dist/<name>/`; `keel check` reports E1004 at `lib/w.ts` naming the chain; a worker importing `notes.server.ts?raw` fails `vite build` with one E1007 whose chain runs through the worker.
