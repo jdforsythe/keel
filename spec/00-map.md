@@ -60,7 +60,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Schedules, simulation | conformance-covered | faults |
-| k.ledger | Ledger, evidence | conformance-covered | rungs |
+| k.ledger | Ledger, evidence | proposed | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | Request user, caller | conformance-covered | user |
