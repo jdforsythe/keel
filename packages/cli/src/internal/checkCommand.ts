@@ -7,6 +7,7 @@ import { agentDrift } from "./agentDrift.ts";
 import { baseInput } from "./baseInput.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployFreshness } from "./deployFreshness.ts";
+import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
@@ -20,7 +21,8 @@ import { summary } from "./summary.ts";
  * `--base <surface.json>` hands the deployed surface to the k.compat pass (E1562); no usable surface there is W1568.
  * E1559 (one path in two deployables) and E1558 (server-only route work a `client` or `static` deployable serves) come
  * from `pathCollisions` and `serverOnlyCalls`, the functions `keel build` calls; E1579 for a route under the identity
- * source's `handle.path`, from `identityDiags`. W1356 for a stale agent file, where `AGENTS.md` holds the Keel block.
+ * source's `handle.path`, from `identityDiags`. Each declared shell's target loads first (`shellTargets`: E1159, E1585).
+ * W1356 for a stale agent file, where `AGENTS.md` holds the Keel block.
  */
 export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
   const files = codeFiles(io, input.paths, true);
@@ -28,6 +30,8 @@ export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
   const project = projectFiles(io);
   const checked = await runCheck(io.cwd, files, project, base.value);
   const topology = projectTopology(project);
+  const policy = await shellPolicy(io.cwd, project);
+  const loaded = await loadShells(io.cwd, project, policy);
   const paths = [
     ...identityDiags(project, io.cwd),
     ...(topology === undefined
@@ -38,7 +42,8 @@ export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
     ...(base.warn === undefined ? [] : [base.warn]),
     ...checked,
     ...paths,
-    ...deployFreshness(project, await shellPolicy(io.cwd, project)),
+    ...loaded.diags,
+    ...deployFreshness(project, policy, loaded.shells),
     ...(await agentDrift(project)),
   ];
   const errors = diags.filter((d) => d.code.startsWith("E")).length;

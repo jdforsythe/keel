@@ -2,7 +2,7 @@
 // only; an `https:` origin or a release build allows none and takes out a rule an earlier build added.
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { androidNetworkSecurity } from "../src/shell/androidNetworkSecurity.ts";
+import { androidNetworkSecurity } from "../src/tools/androidNetworkSecurity.ts";
 
 const MANIFEST = `<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">

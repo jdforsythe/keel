@@ -11,6 +11,7 @@ export { fieldsError } from "./fieldsError.ts";
 export { formHandle } from "./formHandle.ts";
 export { guardLoop } from "./guardLoop.ts";
 export { guardNext } from "./guardNext.ts";
+export { identityMounts } from "./identityMounts.ts";
 export { matchUrl } from "./matchUrl.ts";
 export { mountRequests } from "./mountRequests.ts";
 export { needsBare } from "./needsBare.ts";

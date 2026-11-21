@@ -1,6 +1,6 @@
 import { createCtx } from "@keel/ctx";
 import type { Manifest, RouteDef, RouteState, Router } from "@keel/router";
-import { createRouterWith, mountRequests } from "@keel/router/internal";
+import { createRouterWith, identityMounts, mountRequests } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
 import { serverState } from "@keel/store/internal";
 import { fail } from "./internal/fail.ts";
@@ -64,7 +64,11 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
   const documents: DocumentNavigation[] = [];
   const open = (to: string): void => void documents.push({ method: "GET", url: to, body: null });
   const { shell } = options;
-  const intake = shell ? mountRequests(ctx, { id: shell === true ? "dev.keel.golden2" : shell.id, open }) : null;
+  // The options name no mount: a shell run takes every identity mount the test's modules made.
+  const mounts = [...identityMounts];
+  const intake = shell
+    ? mountRequests(ctx, { id: shell === true ? "dev.keel.golden2" : shell.id, open, mounts })
+    : null;
   if (options.launch === undefined) void intake?.launch([]);
   try {
     router = createRouterWith(

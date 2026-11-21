@@ -64,7 +64,7 @@ export const operations: readonly Operation[] = [
     description: "Compile the project, write .keel artifacts, vite build.",
     input: s.object({
       target: s.enum(["capacitor", "tauri"]).optional(),
-      platform: s.enum(["android", "ios"]).optional(),
+      platform: s.string().optional(),
       release: s.boolean().optional(),
       ...diagnostic,
     }),

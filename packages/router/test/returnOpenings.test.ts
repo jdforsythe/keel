@@ -9,7 +9,7 @@ import { identityMount } from "../src/identityMount.ts";
 import { mountRequests } from "../src/internal/mountRequests.ts";
 import { returnOpenings } from "../src/internal/returnOpenings.ts";
 
-identityMount("/ret");
+const ret = identityMount("/ret");
 const KEY = "keel.return";
 const ID = "dev.keel.ret";
 const settle = async (): Promise<void> => {
@@ -32,6 +32,7 @@ function intake(ctx: SimCtx) {
     close: () => {
       closed += 1;
     },
+    mounts: [ret],
   });
   return { sent, opened, link, closed: () => closed };
 }
@@ -220,7 +221,7 @@ describe("returnOpenings", () => {
       if (u.pathname === "/ret/x") return new Response(null, { status: 302, headers: { location: `${ID}:/ret/y` } });
       throw new TypeError("offline");
     });
-    const { link } = mountRequests(ctx, { id: ID, open: () => undefined });
+    const { link } = mountRequests(ctx, { id: ID, open: () => undefined, mounts: [ret] });
     await link(`${ID}:/ret/x`);
     await settle();
     expect(sent).toEqual(["/ret/x", "/ret/y"]);

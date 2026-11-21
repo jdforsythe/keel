@@ -12,14 +12,10 @@
       "types": "./src/shellMount.ts",
       "default": "./src/shellMount.ts"
     },
-    "./package.json": "./package.json"
-  },
-  "bin": {
-    "keel-capacitor-scheme": "./src/schemeBin.ts"
-  },
-  "publishConfig": {
-    "bin": {
-      "keel-capacitor-scheme": "./dist/src/schemeBin.js"
+    "./package.json": "./package.json",
+    "./tools": {
+      "types": "./src/tools.ts",
+      "default": "./src/tools.ts"
     }
   },
   "files": ["dist", "android/src/main/", "android/build.gradle", "ios/Sources", "Package.swift", "docs"],
@@ -44,10 +40,12 @@
     "@capacitor/browser": "8.0.5",
     "@capacitor/core": "8.6.0",
     "@capacitor/preferences": "8.0.1",
+    "@keel/cli": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/router": "workspace:*"
   },
   "devDependencies": {
+    "@keel/scaffold": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",

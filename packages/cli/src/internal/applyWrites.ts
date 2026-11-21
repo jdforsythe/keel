@@ -1,7 +1,6 @@
 import {
   chmodSync,
   existsSync,
-  lstatSync,
   mkdirSync,
   readdirSync,
   realpathSync,
@@ -13,32 +12,12 @@ import {
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import type { Write } from "../types/Write.ts";
 import { WriteRefused } from "./WriteRefused.ts";
+import { linkEscapes } from "./linkEscapes.ts";
 
 const outside = (root: string, abs: string): boolean => {
   const rel = relative(root, abs);
   return rel === "" || rel.split(/[\\/]/)[0] === ".." || isAbsolute(rel);
 };
-const lexists = (abs: string): boolean => {
-  try {
-    lstatSync(abs);
-    return true;
-  } catch {
-    return false;
-  }
-};
-/** Whether a write to `abs` would follow a symlink out of `real` (the root's real path), or through a linked target. */
-const escapes = (real: string, abs: string): boolean => {
-  if (lexists(abs) && lstatSync(abs).isSymbolicLink()) return true;
-  let dir = abs;
-  while (!lexists(dir)) dir = dirname(dir);
-  try {
-    const at = realpathSync(dir);
-    return at !== real && outside(real, at);
-  } catch {
-    return true;
-  }
-};
-
 /**
  * Binary only: apply an edit set under `cwd`, all or nothing on paths: any write that resolves outside `cwd`
  * (absolute, `..`, or `cwd` itself) rejects the whole set before anything is written. So does, with `WriteRefused`,
@@ -53,7 +32,7 @@ export function applyWrites(cwd: string, writes: readonly Write[]): void {
   const out = targets.find(({ abs }) => outside(root, abs));
   if (out !== undefined) throw new Error(`refusing to write outside ${root}: ${out.w.path}`);
   const real = realpathSync(root);
-  const linked = targets.filter(({ abs }) => escapes(real, abs)).map(({ w }) => w.path);
+  const linked = targets.filter(({ abs }) => linkEscapes(real, abs)).map(({ w }) => w.path);
   if (linked.length > 0) throw new WriteRefused(linked);
   for (const { w, abs } of targets) {
     const mode = existsSync(abs) ? statSync(abs).mode & 0o777 : undefined;

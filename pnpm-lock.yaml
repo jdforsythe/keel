@@ -757,6 +757,9 @@ importers:
       '@capacitor/preferences':
         specifier: 8.0.1
         version: 8.0.1(@capacitor/core@8.6.0)
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
@@ -764,6 +767,9 @@ importers:
         specifier: workspace:*
         version: link:../router
     devDependencies:
+      '@keel/scaffold':
+        specifier: workspace:*
+        version: link:../scaffold
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -1444,6 +1450,9 @@ importers:
 
   packages/std-tauri:
     dependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
@@ -1466,6 +1475,9 @@ importers:
         specifier: 2.5.1
         version: 2.5.1
     devDependencies:
+      '@keel/scaffold':
+        specifier: workspace:*
+        version: link:../scaffold
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema

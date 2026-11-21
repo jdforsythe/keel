@@ -49,7 +49,7 @@ function shell(answer: (sent: Sent, i: number) => Response | Promise<Response>, 
   });
   const opened: string[] = [];
   const left: string[] = [];
-  const { link, launch } = mountRequests(ctx, { id: ID, open: (url) => void opened.push(url), origin });
+  const { link, launch } = mountRequests(ctx, { id: ID, open: (url) => void opened.push(url), origin, mounts: [auth] });
   // An ordinary launch: the shell reports no launch link (k.links Launch).
   void launch([]);
   const home = (): Node => {

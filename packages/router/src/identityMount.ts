@@ -1,6 +1,5 @@
 import { codedError } from "./internal/codedError.ts";
-import { mountLinks } from "./internal/mountLinks.ts";
-import { mountPaths } from "./internal/mountPaths.ts";
+import { identityMounts } from "./internal/identityMounts.ts";
 import type { IdentityMount } from "./types/IdentityMount.ts";
 import type { MountHref } from "./types/MountHref.ts";
 
@@ -15,7 +14,7 @@ const SUBPATH = /^(\/(?!\.\.?(\/|$))[\w.~-]+)*$/;
  * and values `encodeURIComponent`-encoded (no `?` when empty). `subpath` is `''` or `/`-led segments of
  * `[A-Za-z0-9._~-]`, none `.` or `..`; anything else throws E1582. `options.links` (default `[]`) are subpaths of that
  * form, none `''` and none repeated, else E1584: a shell takes a return link to `path` plus one of them at any time
- * (k.links). A shell's router reads mount requests by `path` (k.return).
+ * (k.links). A shell's router reads mount requests by `path` (k.return): the mount its entry passes to `shellMount`.
  */
 export function identityMount<P extends string>(
   path: P,
@@ -27,9 +26,7 @@ export function identityMount<P extends string>(
     if (sub === "" || !SUBPATH.test(sub) || links.indexOf(sub) < i)
       throw codedError("E1584", `links ${JSON.stringify(sub)}`);
   });
-  mountPaths.add(path);
-  for (const sub of links) mountLinks.add(path + sub);
-  return {
+  const mount: IdentityMount<P> = {
     path,
     links,
     href(sub = "", search = {}) {
@@ -43,4 +40,6 @@ export function identityMount<P extends string>(
       throw codedError("E1582", `href subpath ${JSON.stringify(sub)}`);
     },
   };
+  identityMounts.add(mount);
+  return mount;
 }

@@ -3,8 +3,6 @@ import { absoluteUrl } from "./absoluteUrl.ts";
 import { findRouter } from "./findRouter.ts";
 import { formSeams } from "./formSeams.ts";
 import { isHref } from "./isHref.ts";
-import { mountLinks } from "./mountLinks.ts";
-import { mountPaths } from "./mountPaths.ts";
 import { personActs } from "./personActs.ts";
 import { returnOpenings } from "./returnOpenings.ts";
 import { shells } from "./shells.ts";
@@ -19,6 +17,8 @@ type Shell = {
   readonly close?: (() => void) | undefined;
   /** The build's `KEEL_ORIGIN`, so a redirect that names it in full is read as one to its path. */
   readonly origin?: string | undefined;
+  /** The identity mounts (k.mount) whose requests and declared links this shell takes: `path` and `links` each. */
+  readonly mounts: readonly { readonly path: string; readonly links: readonly string[] }[];
 };
 
 /**
@@ -41,10 +41,12 @@ const reported = new WeakSet<Ctx>();
 const held = new WeakMap<Ctx, number>();
 let listening = false;
 
-const under = (pathname: string): boolean => {
-  for (const p of mountPaths) if (pathname === p || pathname.startsWith(`${p}/`)) return true;
-  return false;
-};
+/** Whether `pathname` is a mount's path or under it. */
+const under = (shell: Shell, pathname: string): boolean =>
+  shell.mounts.some(({ path: p }) => pathname === p || pathname.startsWith(`${p}/`));
+/** Whether `pathname` is a mount's path plus one of its declared `links` (k.mount Declaration). */
+const declared = (shell: Shell, pathname: string): boolean =>
+  shell.mounts.some(({ path: p, links }) => links.some((l) => pathname === p + l));
 /** The router rendering on `ctx`, when it is the one mounted. */
 const routerOf = (ctx: Ctx) => {
   const core = findRouter();
@@ -89,7 +91,7 @@ async function arrive(
   const { pathname, href } = at;
   const to = page(ctx, href);
   if (to !== null) return to;
-  if (!under(pathname)) return elsewhere();
+  if (!under(shell, pathname)) return elsewhere();
   if (chain.redirects <= MAX_REDIRECTS) await request(ctx, shell, href, chain);
 }
 
@@ -171,7 +173,7 @@ function returnPath(shell: Shell, url: string): ReturnType<typeof split> {
 /**
  * The intake of return links (k.links Return links), every one the platform delivers, at launch or while running,
  * sorted by its path. A page the router matches: a client-side navigation there. The mount's path plus a declared
- * link (`mountLinks`), exactly: a mount request GET. Any other path under the mount first takes the pending opening
+ * link (`declared`), exactly: a mount request GET. Any other path under the mount first takes the pending opening
  * (`returnOpenings.take`, one `commit`), then closes the external browser and is a mount request GET; with none taken
  * it is ignored. Any other URL or path is ignored. A link taken any of these ways makes the ctx link-started
  * (`personActs`) before anything else happens, and its GET starts a chain that records no opening.
@@ -185,9 +187,9 @@ async function link(ctx: Ctx, shell: Shell, url: string): Promise<void> {
   acts.linked = true;
   const to = page(ctx, href);
   if (to !== null) return to;
-  if (!mountLinks.has(pathname)) {
+  if (!declared(shell, pathname)) {
     acts.linked = was;
-    if (!under(pathname) || !(await returnOpenings.take(ctx))) return;
+    if (!under(shell, pathname) || !(await returnOpenings.take(ctx))) return;
     acts.linked = true;
     shell.close?.();
   }
@@ -217,7 +219,7 @@ function taking(e: Event, url: string): { ctx: Ctx; shell: Shell; href: string }
   const shell = ctx === undefined ? undefined : agents.get(ctx);
   const u = parsed(url, document.baseURI);
   if (e.defaultPrevented || ctx === undefined || shell === undefined || u === null) return null;
-  if (u.origin !== new URL(document.baseURI).origin || !under(u.pathname)) return null;
+  if (u.origin !== new URL(document.baseURI).origin || !under(shell, u.pathname)) return null;
   return { ctx, shell, href: `${u.pathname}${u.search}` };
 }
 
@@ -253,7 +255,7 @@ function listen(): void {
 
 /**
  * Makes `ctx` a shell's for the identity mount (k.return): from then on, on a router of that ctx, each document
- * navigation to a path under an `identityMount` (a `Link` click, `navigate`, an action's `ok(href)`, a `Form` the
+ * navigation to a path under one of `shell.mounts` (a `Link` click, `navigate`, an action's `ok(href)`, a `Form` the
  * browser would post) is a mount request through `ctx.net` (`request`) and nothing leaves the page. Returns the
  * shell's inputs: `link`, the intake of return links (k.links), and `launch`, the launch report, each resolving when
  * its work is done; and `fired`, a test harness's `fire` (`personActs.fired`). Each opening of the external browser
@@ -273,7 +275,7 @@ export function mountRequests(
   personActs.watch(ctx);
   shells.set(ctx, (url) => {
     const u = parsed(url, BASE);
-    if (u === null || !under(u.pathname)) return false;
+    if (u === null || !under(shell, u.pathname)) return false;
     void request(ctx, shell, `${u.pathname}${u.search}`, PAGE);
     return true;
   });

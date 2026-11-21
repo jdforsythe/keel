@@ -103,8 +103,8 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1053",
-    "formatter kind or std command registered twice",
-    "Each record kind has one formatter, and each reserved command (`session`, `report`) one operation.",
+    "formatter kind, std command or shell target registered twice",
+    "Each record kind has one formatter, each reserved command (`session`, `report`) one operation, each shell one target.",
     "remove the second registration or use a new kind",
     "k.cli",
   ],
@@ -780,6 +780,13 @@ const ROWS: readonly Row[] = [
     "A shell sends a link to a declared path at any time, from any app or page, with the user's cookies.",
     "links: ['verify'] -> links: ['/verify']",
     "k.mount",
+  ],
+  [
+    "E1585",
+    "a shell package registering no target, or a shell file path outside its folder",
+    "The kernel writes a shell's files under deploy/<name>/<shell>/ only, from the target its ./tools entry registers.",
+    "files: { '../a.json': t } -> files: { 'a.json': t }",
+    "k.shell",
   ],
   [
     "E1590",

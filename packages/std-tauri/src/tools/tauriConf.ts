@@ -1,4 +1,4 @@
-import { jsonText } from "../internal/jsonText.ts";
+import { jsonText } from "./jsonText.ts";
 
 /** The source Tauri's IPC is served from; `connect-src` must allow it or the plugins cannot reach the shell. */
 const IPC = "ipc: http://ipc.localhost";

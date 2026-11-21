@@ -4,7 +4,7 @@ import path from "node:path";
 import { crc32, inflateSync } from "node:zlib";
 import { repoRoot } from "@keel/tooling/repo-root";
 import { describe, expect, test } from "vitest";
-import { defaultIcon } from "../src/shell/defaultIcon.ts";
+import { defaultIcon } from "../src/tools/defaultIcon.ts";
 
 const repo = repoRoot(import.meta.dirname);
 const mark = readFileSync(path.join(repo, "docs", "brand", "keel-mark.svg"), "utf8");

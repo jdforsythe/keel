@@ -60,7 +60,7 @@ vi.mock("@capacitor/browser", () => ({
   },
 }));
 
-identityMount("/api/auth");
+const MOUNT = identityMount("/api/auth");
 const ORIGIN = new URL("https://golden.example");
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 100; i++) await Promise.resolve();
@@ -78,7 +78,7 @@ async function start(opts: { launch?: string; pending?: boolean; ends?: boolean 
     if (opts.ends !== true) throw new TypeError("offline");
     return new Response("");
   });
-  shellMount(ctx, { id: "dev.keel.app", origin: ORIGIN });
+  shellMount(ctx, { id: "dev.keel.app", origin: ORIGIN, mount: MOUNT });
   return { sent, link: (url: string) => native.listeners.at(-1)?.({ url }) };
 }
 

@@ -6,7 +6,7 @@
     "spec.map": 1250,
     "explain": 300,
     "mcp.tools-list": 1750,
-    "docs.map": 1300,
+    "docs.map": 1310,
     "docs.section": 1500,
     "docs.skill": 2000,
     "docs.for": 400,
@@ -22,7 +22,7 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "26kb",
+      "max": "26.05kb",
       "platform": "node"
     },
     "@keel/cli/docs": {

@@ -1,4 +1,4 @@
-import { jsonText } from "../internal/jsonText.ts";
+import { jsonText } from "./jsonText.ts";
 
 /**
  * `capabilities/http.json` of a Tauri shell build (k.shell Build): the http plugin may reach `origin`, the build's

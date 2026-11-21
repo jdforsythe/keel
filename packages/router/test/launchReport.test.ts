@@ -10,8 +10,7 @@ import { mountRequests } from "../src/internal/mountRequests.ts";
 import { personActs } from "../src/internal/personActs.ts";
 import { shells } from "../src/internal/shells.ts";
 
-identityMount("/la", { links: ["/verify", "/v/two"] });
-identityMount("/lb", { links: ["/x"] });
+const MOUNTS = [identityMount("/la", { links: ["/verify", "/v/two"] }), identityMount("/lb", { links: ["/x"] })];
 const KEY = "keel.return";
 const ID = "dev.keel.la";
 const PROVIDER = "https://provider.example/a";
@@ -31,7 +30,7 @@ function shell() {
       ? new Response(null, { status: 302, headers: { location: PROVIDER } })
       : new Response(null, { status: 404 });
   });
-  const { link, launch } = mountRequests(ctx, { id: ID, open: (u) => void opened.push(u) });
+  const { link, launch } = mountRequests(ctx, { id: ID, open: (u) => void opened.push(u), mounts: MOUNTS });
   const start = async (): Promise<void> => {
     shells.get(ctx)?.("/la/start");
     await settle();
@@ -137,7 +136,7 @@ describe("the launch report (k.links Launch)", () => {
         return new Response(null, { status: 302, headers: { location: PROVIDER } });
       });
       const opened: string[] = [];
-      const intake = mountRequests(slow, { id: ID, open: (u) => void opened.push(u) });
+      const intake = mountRequests(slow, { id: ID, open: (u) => void opened.push(u), mounts: MOUNTS });
       shells.get(slow)?.("/la/start");
       await settle();
       await intake.launch(report);
@@ -236,5 +235,24 @@ describe("declared paths (k.links Return links)", () => {
     await t.start();
     await t.callback();
     expect(t.callbacks()).toBe(1);
+  });
+});
+
+describe("the mounts a shell is given", () => {
+  it("only the mounts passed to it route: another mount made in this process sends nothing", async () => {
+    const ctx: SimCtx = createCtx({ mode: "sim", seed: 1337 });
+    const sent: string[] = [];
+    ctx.net.route("*", async (req) => {
+      sent.push(new URL(req.url).pathname);
+      return new Response(null, { status: 404 });
+    });
+    const only = MOUNTS.slice(0, 1);
+    const { link, launch } = mountRequests(ctx, { id: ID, open: () => undefined, mounts: only });
+    await launch([]);
+    expect(shells.get(ctx)?.("/lb/start")).toBe(false);
+    await link(`${ID}:/lb/x`);
+    await link(`${ID}:/la/verify`);
+    await settle();
+    expect(sent).toEqual(["/la/verify"]);
   });
 });

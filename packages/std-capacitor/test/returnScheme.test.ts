@@ -1,10 +1,4 @@
-// k.return: `returnScheme` registers the shell's id as a URI scheme in a Capacitor platform file, once, and the
-// `keel-capacitor-scheme` tool applies it in a shell build's folder. Seed 1337 for the property.
-import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+// k.return: `returnScheme` registers the shell's id as a URI scheme in a Capacitor platform file, once. Seed 1337 for the property.
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { returnScheme } from "../src/returnScheme.ts";
@@ -69,32 +63,4 @@ test("the plist gains CFBundleURLTypes with the id as its one scheme before the 
     }),
     { seed: 1337, numRuns: 30 },
   );
-});
-
-test("keel-capacitor-scheme writes the scheme of capacitor.config.json's appId into the platform file, and fails without an appId or a known platform", () => {
-  const bin = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "schemeBin.ts");
-  const dir = mkdtempSync(join(tmpdir(), "keel-scheme-"));
-  const run = (platform: string) => spawnSync(process.execPath, [bin, platform], { cwd: dir, encoding: "utf8" });
-  try {
-    expect(run("android").status).toBe(1);
-    writeFileSync(join(dir, "capacitor.config.json"), JSON.stringify({ appId: "dev.keel.app", webDir: "www" }));
-    expect(run("windows").stderr).toMatch(/^error: /);
-    // A platform project without the file is left as it is.
-    expect([run("ios").status, run("ios").stderr]).toEqual([0, ""]);
-    mkdirSync(join(dir, "android/app/src/main"), { recursive: true });
-    mkdirSync(join(dir, "ios/App/App"), { recursive: true });
-    writeFileSync(join(dir, "android/app/src/main/AndroidManifest.xml"), MANIFEST);
-    writeFileSync(join(dir, "ios/App/App/Info.plist"), PLIST);
-    for (const platform of ["android", "ios", "android"]) {
-      const r = run(platform);
-      expect([r.status, r.stdout, r.stderr]).toEqual([0, "", ""]);
-    }
-    expect(readFileSync(join(dir, "android/app/src/main/AndroidManifest.xml"), "utf8")).toBe(
-      returnScheme(MANIFEST, "dev.keel.app"),
-    );
-    expect(readFileSync(join(dir, "ios/App/App/Info.plist"), "utf8")).toBe(returnScheme(PLIST, "dev.keel.app"));
-    expect(run("windows").status).toBe(1);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
 });

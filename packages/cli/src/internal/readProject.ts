@@ -11,16 +11,18 @@ const BUILD_CONFIG = /(?:^|\/)(?:vite|vitest|stryker)\.config\.[cm]?[jt]s$/;
 /** A compiler artifact, `<dir>/.keel/<name>.json` at any depth: each project of a workspace has its own (rfc:0055). */
 const ARTIFACT = /(?:^|\/)\.keel\/[^/]+\.json$/;
 /**
- * Generated deploy and shell files and what decides which exist and what they hold (k.deploy Deploy files, k.shell
- * Files): `keel check` compares them (E1005). A `package.json` beside a `topology.ts` gives a shell its version.
+ * Generated deploy files and what decides which exist and what they hold (k.deploy Deploy files): `keel check`
+ * compares them (E1005). A `package.json` beside a `topology.ts` gives a shell its version.
  */
-const DEPLOY =
-  /(?:^|\/)(?:deploy\/(?:[^/]+\/(?:Dockerfile|capacitor\/capacitor\.config\.json|tauri\/(?:tauri\.conf\.json|Cargo\.toml|build\.rs|src\/(?:main|lib)\.rs|capabilities\/default\.json))|compose\.yaml)|\.github\/workflows\/ci\.yml|turbo\.json)$/;
+const DEPLOY = /(?:^|\/)(?:deploy\/(?:[^/]+\/Dockerfile|compose\.yaml)|\.github\/workflows\/ci\.yml|turbo\.json)$/;
+/** A text file in a shell's folder (k.shell Files): its target decides which are generated. */
+const SHELL_FILE = /(?:^|\/)deploy\/[^/]+\/(?:capacitor|tauri)\//;
 const QUERY = (rel: string): boolean =>
   (CODE_FILE.test(rel) && !BUILD_CONFIG.test(rel)) ||
   (rel.startsWith("spec/") && rel.endsWith(".md")) ||
   ARTIFACT.test(rel) ||
   DEPLOY.test(rel) ||
+  (SHELL_FILE.test(rel) && TEXT.test(rel)) ||
   rel === "tooling/ledger/ledger.json";
 /** Stryker reports, read by `ledger` only: the walk enters `reports` only on the path to them. */
 const MUTATION_REPORT = /^packages\/[^/]+\/reports\/mutation\/mutation\.json$/;

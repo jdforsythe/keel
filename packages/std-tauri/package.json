@@ -11,6 +11,10 @@
     "./shellMount": {
       "types": "./src/shellMount.ts",
       "default": "./src/shellMount.ts"
+    },
+    "./tools": {
+      "types": "./src/tools/index.ts",
+      "default": "./src/tools/index.ts"
     }
   },
   "files": ["dist", "docs"],
@@ -23,6 +27,7 @@
     "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
+    "@keel/cli": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/router": "workspace:*",
     "@tauri-apps/api": "2.12.4",
@@ -32,6 +37,7 @@
     "@tauri-apps/plugin-store": "2.5.1"
   },
   "devDependencies": {
+    "@keel/scaffold": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",

@@ -4,6 +4,7 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
+import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { openapiInput } from "./openapiInput.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -70,10 +71,11 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
     op === "rename" && input.kind === undefined
       ? (RENAME_KINDS[/^[A-Z]/.test(from) ? "pascal" : "dotted"] ?? [])
       : [undefined];
-  let result = scaffold(op, kinds[0] === undefined ? base : { ...base, kind: kinds[0] }, files);
+  const { shells } = await loadShells(io.cwd, projectFiles(io), undefined);
+  let result = scaffold(op, kinds[0] === undefined ? base : { ...base, kind: kinds[0] }, files, shells);
   for (const k of kinds.slice(1)) {
     if (result.ok || result.error.data.code !== "E1052") break;
-    result = scaffold(op, { ...base, kind: k }, files);
+    result = scaffold(op, { ...base, kind: k }, files, shells);
   }
   const label = `${name} ${op}`;
   if (!result.ok) {

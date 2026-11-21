@@ -1,4 +1,4 @@
-import { jsonText } from "../internal/jsonText.ts";
+import { jsonText } from "./jsonText.ts";
 
 /**
  * `deploy/<name>/tauri/capabilities/default.json` (k.shell Files): the main window may use Tauri's core and the store

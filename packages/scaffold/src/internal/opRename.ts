@@ -1,4 +1,5 @@
 import type { Result } from "@keel/schema";
+import type { DeployShells } from "../types/DeployShells.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { RenameSpec } from "./RenameSpec.ts";
@@ -49,12 +50,16 @@ const spec = (
  * `codemod rename <from> <to>` for a component, store, route or schema: the declaration, its files, every
  * import, identifier reference, `href()`/`uses:`/element-id string, test, and manifest entry.
  */
-export function opRename(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
+export function opRename(
+  input: unknown,
+  files: ReadonlyMap<string, string>,
+  shells: DeployShells = {},
+): Result<Edit, ScaffoldError> {
   const r = inputs.rename.parse(input);
   if (!r.ok) return badInput("rename", r.error);
   const { kind, from, to } = r.value;
   if (from === to) return fail("E1351", to, `${to} already exists`);
-  if (kind === "module") return renameModule(from, to, files);
+  if (kind === "module") return renameModule(from, to, files, shells);
   if (kind === "component" || kind === "schema") {
     if (!isPascal(to)) return fail("E1352", to, `${kind} name ${to} must be PascalCase`);
     const decls = kind === "component" ? basenames(files, `${from}.tsx`, true) : findSchema(files, from);

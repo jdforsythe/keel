@@ -59,7 +59,7 @@ function shell(opts: { hold?: boolean } = {}) {
     return to(303, "/");
   });
   const opened: string[] = [];
-  const { link } = mountRequests(ctx, { id: ID, open: (url) => void opened.push(url) });
+  const { link } = mountRequests(ctx, { id: ID, open: (url) => void opened.push(url), mounts: [auth] });
   const home = (): Node => {
     const box = document.createElement("div");
     const field = document.createElement("input");
@@ -223,10 +223,10 @@ describe("the act's lifetime (k.opening Link-started)", () => {
   it("listeners are attached once per ctx, however often mountRequests runs for it", () => {
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     const add = vi.spyOn(window, "addEventListener");
-    mountRequests(ctx, { id: ID, open: () => undefined });
+    mountRequests(ctx, { id: ID, open: () => undefined, mounts: [auth] });
     const first = add.mock.calls.length;
-    mountRequests(ctx, { id: ID, open: () => undefined });
-    mountRequests(ctx, { id: ID, open: () => undefined });
+    mountRequests(ctx, { id: ID, open: () => undefined, mounts: [auth] });
+    mountRequests(ctx, { id: ID, open: () => undefined, mounts: [auth] });
     const types = add.mock.calls.map((c) => c[0]);
     const total = add.mock.calls.length;
     add.mockRestore();

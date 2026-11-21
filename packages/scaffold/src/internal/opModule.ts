@@ -1,6 +1,7 @@
 import type { Result } from "@keel/schema";
 import { moduleTs } from "../templates/moduleTs.ts";
 import { routesTs } from "../templates/routesTs.ts";
+import type { DeployShells } from "../types/DeployShells.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { Writes } from "./Writes.ts";
@@ -22,7 +23,11 @@ function addToTopology(src: string, id: string): string | null {
 }
 
 /** `scaffold module <id>`: manifest and routes, the module added to `topology.ts`, turbo, CI and deploy files regenerated. */
-export function opModule(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
+export function opModule(
+  input: unknown,
+  files: ReadonlyMap<string, string>,
+  shells: DeployShells = {},
+): Result<Edit, ScaffoldError> {
   const r = inputs.module.parse(input);
   if (!r.ok) return badInput("module", r.error);
   const { id } = r.value;
@@ -40,6 +45,6 @@ export function opModule(input: unknown, files: ReadonlyMap<string, string>): Re
     [`modules/${id}/routes.ts`, routesTs()],
     ["topology.ts", nextTopo],
   ]);
-  const gen = regenerated(withWrites(files, writes));
+  const gen = regenerated(withWrites(files, writes), shells);
   return commit(files, new Map([...writes, ...gen]), [...gen.keys()]);
 }

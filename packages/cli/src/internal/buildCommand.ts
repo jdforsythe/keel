@@ -14,6 +14,7 @@ import { deployBuildWrites } from "./deployBuildWrites.ts";
 import { hostingDiags } from "./hostingDiags.ts";
 import { inWorkspace } from "./inWorkspace.ts";
 import { isError } from "./isError.ts";
+import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
@@ -30,17 +31,19 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
  * stdlib `deps` are imported (E1159; its E1158 too; E1559 from `pathCollisions`; E1579 from `identityDiags`; E1558 from `serverOnlyCalls`; E1552, E1565 and E1566 from `hostingDiags`), and the deploy files of `topology.ts` (k.deploy; the CI workflow unless the project is an app inside a workspace).
  * With no error and a host `Io.build`, the writes are applied and the disk half runs (`routes.json`, `surface.json`,
  * the Vite builds), its diagnostics, stderr and exit code joining the result: `keel build` and MCP `build` run one path.
- * `--target` (k.shell Build) first runs `shellPlan`'s checks, and any diagnostic there ends the build with nothing
+ * The declared shells' targets load first (`shellTargets`). `--target` (k.shell Build) then runs `shellPlan`'s checks, and any diagnostic there ends the build with nothing
  * written; after a clean disk half the host (`Io.shell`) builds the shell, and the trailer names each artifact.
  */
 export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> {
   const project = projectFiles(io);
+  const policy = await shellPolicy(io.cwd, project);
+  const targets = await loadShells(io.cwd, project, policy);
   // Behind its own entry, loaded only for `--target` (`@keel/cli` size budget).
   const host = input.target === undefined ? undefined : await io.shell?.();
   const pre =
     input.target === undefined
       ? { diags: [], plan: undefined }
-      : (await import("@keel/cli/shell")).shellPlan(input, project, io.env ?? {}, io.cwd, host?.probe);
+      : (await import("@keel/cli/shell")).shellPlan(input, io.env ?? {}, io.cwd, targets, host?.probe);
   if (pre.diags.length > 0)
     return { records: [...pre.diags, summary("build", pre.diags, { errors: pre.diags.length })], writes: [] };
   // `keel check` first (k.boundary Build gate): an error stops the build with its records and nothing written. E1005,
@@ -72,7 +75,7 @@ export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> 
       : hostingDiags(topology, io.env ?? {}, project.find((f) => f.path === "topology.ts")?.source)),
   ];
   const failed = diags.some(isError);
-  const deploy = failed ? [] : deployBuildWrites(project, !inWorkspace(io), await shellPolicy(io.cwd, project));
+  const deploy = failed ? [] : deployBuildWrites(project, !inWorkspace(io), policy, targets.shells);
   const writes: Write[] = failed
     ? []
     : [
@@ -84,7 +87,7 @@ export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> 
       ];
   const artifacts = failed
     ? 0
-    : ARTIFACTS.length + 1 + (topology === undefined ? 0 : deployArtifactCount(project, deploy));
+    : ARTIFACTS.length + 1 + (topology === undefined ? 0 : deployArtifactCount(project, deploy, targets.paths));
   // One trailer, after every step has settled; a step that exits non-zero without a diagnostic still counts one error.
   const done = (all: readonly OutRecord[], code = 0): OutRecord[] => [
     ...all,
@@ -113,7 +116,7 @@ export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> 
       ? [
           ...all,
           summary(
-            ["build", ...plan.deployables.flatMap((n, i) => [n, plan.target, sh.artifacts[i] ?? ""])].join(" "),
+            ["build", ...plan.apps.flatMap((a, i) => [a.deployable, plan.target, sh.artifacts[i] ?? ""])].join(" "),
             all,
             {},
           ),

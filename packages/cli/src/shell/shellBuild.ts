@@ -1,164 +1,53 @@
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { delimiter, dirname, join } from "node:path";
-import { tauriHttpCapability } from "@keel/scaffold";
+import { cpSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { toolCommand } from "../internal/toolCommand.ts";
 import type { ShellPlan } from "../types/ShellPlan.ts";
-import { androidNetworkSecurity } from "./androidNetworkSecurity.ts";
-import { defaultIcon } from "./defaultIcon.ts";
-import { metaPolicy } from "./metaPolicy.ts";
 import { toolError } from "./toolError.ts";
 
-type Step = {
-  readonly cmd: string;
-  readonly args: readonly string[];
-  readonly cwd: string;
-  /** Runs before the tool starts. */
-  readonly before?: () => void;
-};
 type Done = { code: number; notes: string[]; stderr: string; artifacts: string[] };
 
-/** Run one tool to its end; undefined when it exits 0, else its error lines (`toolError`; the spawn failure when it never ran). */
-function run(s: Step, env: NodeJS.ProcessEnv, root: string): string | undefined {
-  const r = spawnSync(s.cmd, s.args, { cwd: s.cwd, env, encoding: "utf8", stdio: "pipe", maxBuffer: 2 ** 28 });
-  return r.status === 0 ? undefined : toolError(`${r.stdout}\n${r.stderr}\n${r.error?.message ?? ""}`, root);
-}
-
-/** Writes `androidNetworkSecurity`'s manifest and config into the Android project at `android` when it has a manifest. */
-function cleartext(android: string, plan: ShellPlan): void {
-  const main = join(android, "app", "src", "main");
-  const manifestFile = join(main, "AndroidManifest.xml");
-  if (!existsSync(manifestFile)) return;
-  const { manifest, config } = androidNetworkSecurity(readFileSync(manifestFile, "utf8"), plan.origin, plan.release);
-  writeFileSync(manifestFile, manifest);
-  const file = join(main, "res", "xml", "keel_network_security.xml");
-  if (config === undefined) rmSync(file, { force: true });
-  else {
-    mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, config);
-  }
-}
-
-/** The tools of one deployable's shell build and the artifact they leave, relative to the project (k.shell Build 4). */
-function stepsOf(plan: ShellPlan, name: string, at: string): { steps: Step[]; artifact: string } {
-  const rel = `dist/${name}/${plan.target}`;
-  if (plan.target === "tauri") {
-    const mode = plan.release ? "release" : "debug";
-    const args = ["build", ...(plan.release ? [] : ["--debug"]), "--no-bundle"];
-    return {
-      steps: [{ ...toolCommand(at, "@tauri-apps/cli", "tauri", args), cwd: at }],
-      artifact: `${rel}/target/${mode}/${plan.crate}`,
-    };
-  }
-  const platform = plan.platform ?? "android";
-  const add: Step[] = existsSync(join(at, platform))
-    ? []
-    : [{ ...toolCommand(at, "@capacitor/cli", "cap", ["add", platform]), cwd: at }];
-  const sync: Step = { ...toolCommand(at, "@capacitor/cli", "cap", ["sync", platform]), cwd: at };
-  // The shell's `id` as a URI scheme in the platform project (k.return), by the shell package's own tool.
-  const scheme: Step = { ...toolCommand(at, "@keel/std-capacitor", "keel-capacitor-scheme", [platform]), cwd: at };
-  if (platform === "android") {
-    const task = plan.release ? "assembleRelease" : "assembleDebug";
-    const mode = plan.release ? "release/app-release-unsigned.apk" : "debug/app-debug.apk";
-    return {
-      steps: [
-        ...add,
-        sync,
-        scheme,
-        {
-          cmd: "./gradlew",
-          args: [task],
-          cwd: join(at, "android"),
-          before: () => cleartext(join(at, "android"), plan),
-        },
-      ],
-      artifact: `${rel}/android/app/build/outputs/apk/${mode}`,
-    };
-  }
-  const config = plan.release ? "Release" : "Debug";
-  const build: Step = {
-    cmd: "xcodebuild",
-    args: [
-      "-project",
-      "App/App.xcodeproj",
-      "-scheme",
-      "App",
-      "-configuration",
-      config,
-      "-sdk",
-      "iphonesimulator",
-      "-derivedDataPath",
-      "build",
-      "CODE_SIGNING_ALLOWED=NO",
-      "build",
-    ],
-    cwd: join(at, "ios"),
-  };
-  return {
-    steps: [...add, sync, scheme, build],
-    artifact: `${rel}/ios/build/Build/Products/${config}-iphonesimulator/App.app`,
-  };
-}
-
 /**
- * Binary only: the disk half of `keel build --target` after the web build (k.shell Build 3-4), per deployable of
- * `plan`: the shell entry's Vite build (`KEEL_DEPLOYABLE`, `KEEL_SHELL`, `KEEL_ORIGIN`, and `NODE_ENV=production` whatever
- * the shell or a project `.env` sets, k.deploy Build), which the Vite plugin writes to
- * `dist/<name>/<shell>/www/`; the shell files of `deploy/<name>/<shell>/` beside it (with Cargo's `Cargo.lock` when
- * committed, and the app's `icons/icon.png` when it has one); for Tauri `capabilities/http.json` allowing `KEEL_ORIGIN`
- * (to the default browser too when the project has `identity.ts`) and, when the app has no `icons/icon.png`,
- * `defaultIcon`; for Capacitor the deployable's `csp.txt` policy as a meta tag in `www/index.html` and, on Android
- * before Gradle, `androidNetworkSecurity`'s cleartext rule; then the shell's tools, for Capacitor `cap add` (once),
- * `cap sync`, `@keel/std-capacitor`'s `keel-capacitor-scheme` (the shell's `id` as a URI scheme, k.return) and the
- * platform's build. A Tauri build's new `Cargo.lock` is copied back to
- * `deploy/<name>/tauri/`. The tools run with Cargo's `bin` folder first on `PATH`. Stops at the first failing step: its
- * error lines (`toolError`) are `stderr`.
+ * Binary only: the disk half of `keel build --target` after the web build (k.shell Build 4-5), per app of `plan`: the
+ * shell entry's Vite build (`KEEL_DEPLOYABLE`, `KEEL_SHELL`, `KEEL_ORIGIN`, and `NODE_ENV=production` whatever the
+ * shell or a project `.env` sets, k.deploy Build), which the Vite plugin writes to `dist/<name>/<shell>/www/`; the
+ * shell files of `deploy/<name>/<shell>/` copied beside it; then the target's `build`. Stops at the first failure: a
+ * tool's output trimmed by `toolError` is `stderr`; each `artifact` is kept, in order.
  */
 export function shellBuild(cwd: string, plan: ShellPlan): Done {
   const done: Done = { code: 0, notes: [], stderr: "", artifacts: [] };
-  // The cargo the toolchain check accepts (`toolchain`) may be under `CARGO_HOME` only: the tools find it first on `PATH`.
-  const cargo = join(process.env.CARGO_HOME ?? join(process.env.HOME ?? "", ".cargo"), "bin");
-  const PATH = `${cargo}${delimiter}${process.env.PATH ?? ""}`;
-  const env = { ...process.env, PATH, KEEL_ORIGIN: plan.origin, KEEL_SHELL: plan.target };
-  for (const name of plan.deployables) {
+  const env = { ...process.env, KEEL_ORIGIN: plan.origin, KEEL_SHELL: plan.target };
+  for (const app of plan.apps) {
+    const name = app.deployable;
     const rel = `dist/${name}/${plan.target}`;
     const at = join(cwd, rel);
-    const vite = run(
-      { ...toolCommand(cwd, "vite", "vite", ["build"]), cwd },
-      { ...env, KEEL_DEPLOYABLE: name, NODE_ENV: "production" },
+    const vite = toolCommand(cwd, "vite", "vite", ["build"]);
+    const r = spawnSync(vite.cmd, vite.args, {
       cwd,
-    );
-    if (vite !== undefined) return { ...done, code: 1, stderr: vite };
-    const index = join(at, "www", "index.html");
-    if (!existsSync(index)) {
+      env: { ...env, KEEL_DEPLOYABLE: name, NODE_ENV: "production" },
+      encoding: "utf8",
+      stdio: "pipe",
+      maxBuffer: 2 ** 28,
+    });
+    if (r.status !== 0)
+      return { ...done, code: 1, stderr: toolError(`${r.stdout}\n${r.stderr}\n${r.error?.message ?? ""}`, cwd) };
+    if (!existsSync(join(at, "www", "index.html"))) {
       done.notes.push(`E1049 shell entry not built: the Vite plugin wrote no ${rel}/www/index.html\n`);
       return { ...done, code: 1 };
     }
     const from = join(cwd, "deploy", name, plan.target);
-    cpSync(from, at, { recursive: true });
-    if (plan.target === "tauri") {
-      const identity = existsSync(join(cwd, "identity.ts"));
-      writeFileSync(join(at, "capabilities", "http.json"), tauriHttpCapability(plan.origin, identity));
-      if (!existsSync(join(from, "icons", "icon.png"))) {
-        mkdirSync(join(at, "icons"), { recursive: true });
-        writeFileSync(join(at, "icons", "icon.png"), defaultIcon());
-      }
-    } else {
-      // The Capacitor CLI runs only at the root of an npm package and reads the app's plugins from its dependencies.
-      cpSync(join(cwd, "package.json"), join(at, "package.json"));
-      const csp = join(cwd, "dist", name, "csp.txt");
-      if (existsSync(csp)) writeFileSync(index, metaPolicy(readFileSync(index, "utf8"), readFileSync(csp, "utf8")));
-    }
-    const { steps, artifact } = stepsOf(plan, name, at);
-    for (const s of steps) {
-      s.before?.();
-      const failed = run(s, env, cwd);
-      if (failed !== undefined) return { ...done, code: 1, stderr: failed };
-    }
-    const lock = join(from, "Cargo.lock");
-    if (plan.target === "tauri" && !existsSync(lock) && existsSync(join(at, "Cargo.lock")))
-      cpSync(join(at, "Cargo.lock"), lock);
-    done.artifacts.push(artifact);
+    if (existsSync(from)) cpSync(from, at, { recursive: true });
+    const out = plan.shell.build({
+      ...app,
+      root: cwd,
+      dir: at,
+      origin: plan.origin,
+      platform: plan.platform,
+      release: plan.release,
+      env,
+    });
+    if ("error" in out) return { ...done, code: 1, stderr: toolError(out.error, cwd) };
+    done.artifacts.push(out.artifact);
   }
   return done;
 }

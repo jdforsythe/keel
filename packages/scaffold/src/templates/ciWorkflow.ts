@@ -1,4 +1,8 @@
+import type { ShellProject } from "../internal/ShellProject.ts";
+import { shellApps } from "../internal/shellApps.ts";
+import type { DeployShells } from "../types/DeployShells.ts";
 import type { DeployTopology } from "../types/DeployTopology.ts";
+import type { ShellJob } from "../types/ShellJob.ts";
 
 /** Actions pinned by commit SHA, the version in a trailing comment (the Keel repository's own pattern). */
 const CHECKOUT = "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0";
@@ -54,7 +58,7 @@ function job(name: string, adapter: string): string[] {
   return out;
 }
 
-/** The steps every shell job starts with: checkout, pnpm, Node 22 and the install. */
+/** The steps every shell job starts with: checkout, pnpm and Node 22. */
 const SETUP = [
   `      - uses: ${CHECKOUT}`,
   `      - uses: ${PNPM}`,
@@ -63,72 +67,51 @@ const SETUP = [
   "          node-version: 22",
   "          cache: pnpm",
 ];
-/** Debian packages a Tauri Linux build needs (k.shell Build: WebKitGTK 4.1). */
-const TAURI_APT =
-  "libwebkit2gtk-4.1-dev build-essential libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev";
 
-/** The shell jobs of `client` deployable `name` (k.shell CI), on its paths; `crate` names the Tauri binary. */
-function shellJobs(name: string, shells: DeployTopology[string]["shells"], crate: string): string[] {
-  const head = (id: string, os: string, extra: string): string[] => [
+/**
+ * One shell target's CI job for `client` deployable `name` (k.shell CI), on its paths: `<name>-<job>` with
+ * `KEEL_ORIGIN` from `vars`, the setup, the job's `steps`, the install, `keel build --target <shell>` with its
+ * `platform` and `env`, and the upload of its `artifact`; a `manual` job's `if` also needs `workflow_dispatch`.
+ */
+function shellJob(name: string, shell: string, j: ShellJob): string[] {
+  const id = `${name}-${j.job}`;
+  const env = Object.entries(j.env);
+  return [
     `  ${id}:`,
     `    needs: ${PATHS}`,
-    `    if: needs['${PATHS}'].outputs.${name} == 'true'${extra}`,
-    `    runs-on: ${os}`,
+    `    if: needs['${PATHS}'].outputs.${name} == 'true'${j.manual ? " && github.event_name == 'workflow_dispatch'" : ""}`,
+    `    runs-on: ${j.runsOn}`,
     "    env:",
     `      KEEL_ORIGIN: ${GITHUB_EXPR("vars.KEEL_ORIGIN")}`,
     "    steps:",
+    ...SETUP,
+    ...j.steps.map((s) => `      - run: ${s}`),
+    "      - run: pnpm install --frozen-lockfile",
+    `      - run: pnpm exec keel build --target ${shell}${j.platform === undefined ? "" : ` --platform ${j.platform}`}`,
+    ...(env.length === 0 ? [] : ["        env:", ...env.map(([k, v]) => `          ${k}: ${v}`)]),
+    ...(j.artifact === undefined
+      ? []
+      : [`      - uses: ${UPLOAD}`, "        with:", `          name: ${id}`, `          path: ${j.artifact}`]),
   ];
-  const upload = (id: string, path: string): string[] => [
-    `      - uses: ${UPLOAD}`,
-    "        with:",
-    `          name: ${id}`,
-    `          path: ${path}`,
-  ];
-  const out: string[] = [];
-  if (shells?.tauri !== undefined) {
-    const id = `${name}-tauri`;
-    out.push(
-      ...head(id, "ubuntu-24.04", ""),
-      ...SETUP,
-      `      - run: sudo apt-get update && sudo apt-get install -y ${TAURI_APT}`,
-      "      - run: pnpm install --frozen-lockfile",
-      "      - run: pnpm exec keel build --target tauri",
-      ...upload(id, `dist/${name}/tauri/target/debug/${crate}`),
-    );
-  }
-  if (shells?.capacitor !== undefined) {
-    const id = `${name}-android`;
-    out.push(
-      ...head(id, "ubuntu-24.04", ""),
-      ...SETUP,
-      "      - run: pnpm install --frozen-lockfile",
-      "      - run: pnpm exec keel build --target capacitor --platform android",
-      "        env:",
-      `          JAVA_HOME: ${GITHUB_EXPR("env.JAVA_HOME_21_X64")}`,
-      ...upload(id, `dist/${name}/capacitor/android/app/build/outputs/apk/debug/app-debug.apk`),
-      ...head(`${name}-ios`, "macos-15", " && github.event_name == 'workflow_dispatch'"),
-      ...SETUP,
-      "      - run: pnpm install --frozen-lockfile",
-      "      - run: pnpm exec keel build --target capacitor --platform ios",
-      "        env:",
-      "          DEVELOPER_DIR: /Applications/Xcode_26.app/Contents/Developer",
-    );
-  }
-  return out;
 }
 
 /**
  * `.github/workflows/ci.yml` of a project outside the Keel monorepo (k.deploy Deploy files): a job per deployable
  * (sorted), run when its modules (a host's: and those of the clients it hosts) or the shared config change (every job on a push), that checks against the base
  * branch's surface (none there: W1568), tests, builds, and builds an image it never pushes (`node`) or uploads `dist/<name>`.
- * A `client` deployable's shells add jobs on its paths (k.shell CI): Tauri on Ubuntu, Capacitor Android on Ubuntu with
- * JDK 21, each uploading its artifact, and Capacitor iOS on macOS on manual dispatch only (`workflow_dispatch` is then a
- * trigger). `crate` names the Tauri binary.
+ * A `client` deployable's shells add the CI jobs of their targets in `shells` (`ShellApp` from `project`), on its paths
+ * (k.shell CI); a `manual` one makes `workflow_dispatch` a trigger.
  */
-export function ciWorkflow(topology: DeployTopology, crate = "app"): string {
+export function ciWorkflow(
+  topology: DeployTopology,
+  shells: DeployShells = {},
+  project: ShellProject = { version: "0.0.0", pkg: "", policy: undefined, identity: false },
+): string {
   const names = Object.keys(topology).sort();
-  const shelled = names.filter((n) => topology[n]?.adapter === "client" && topology[n]?.shells !== undefined);
-  const manual = shelled.some((n) => topology[n]?.shells?.capacitor !== undefined);
+  const given = shellApps(topology, project).flatMap(({ shell, app }) =>
+    (shells[shell]?.ci(app) ?? []).map((j) => ({ shell, name: app.deployable, j })),
+  );
+  const manual = given.some((g) => g.j.manual);
   const lines = [
     "# _generated: keel writes this from topology.ts (k.topology). Do not edit by hand.",
     "name: ci",
@@ -163,7 +146,7 @@ export function ciWorkflow(topology: DeployTopology, crate = "app"): string {
     }),
   ];
   for (const n of names) lines.push(...job(n, topology[n]?.adapter ?? "client"));
-  for (const n of shelled) lines.push(...shellJobs(n, topology[n]?.shells, crate));
+  for (const g of given) lines.push(...shellJob(g.name, g.shell, g.j));
   lines.push("");
   return lines.join("\n");
 }

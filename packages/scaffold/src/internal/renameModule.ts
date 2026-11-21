@@ -1,6 +1,7 @@
 import type { Result } from "@keel/schema";
 import MagicString from "magic-string";
 import { Visitor } from "oxc-parser";
+import type { DeployShells } from "../types/DeployShells.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { RenameSpec } from "./RenameSpec.ts";
@@ -47,6 +48,7 @@ export function renameModule(
   from: string,
   to: string,
   files: ReadonlyMap<string, string>,
+  shells: DeployShells = {},
 ): Result<Edit, ScaffoldError> {
   if (!isLowerCamel(to)) return fail("E1352", to, `module id ${to} must be lowerCamel`);
   if (!files.has(`modules/${from}/module.ts`)) return fail("E1052", from, `no module ${from}`);
@@ -82,6 +84,6 @@ export function renameModule(
       writes.set(next, out);
     } else if (out !== src) writes.set(path, out);
   }
-  const gen = regenerated(withWrites(files, writes));
+  const gen = regenerated(withWrites(files, writes), shells);
   return commit(files, new Map([...writes, ...gen]), [...gen.keys()]);
 }
