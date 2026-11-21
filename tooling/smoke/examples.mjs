@@ -117,6 +117,33 @@ const proofs = {
     }
   },
 
+  /** The built server's page shows what a stub of the OpenAPI document's server answered to the generated client. */
+  async "openapi-import"(dir) {
+    const seen = [];
+    const stub = createServer((req, res) => {
+      seen.push(`${req.method} ${req.url}`);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ id: "q1", text: "Served by the stub.", author: "smoke" }));
+    });
+    const listening = await new Promise((r) => {
+      stub.once("error", () => r(false));
+      stub.listen(4417, "127.0.0.1", () => r(true));
+    });
+    if (!listening) return [false, "port 4417, the document's server, is in use"];
+    const server = await serveNode(dir, "web");
+    try {
+      const res = await answer(server.base, "/");
+      const html = res === null ? "" : await res.text();
+      return [
+        res?.status === 200 && html.includes("Served by the stub.") && seen.join() === "GET /quotes/q1",
+        `stub saw ${seen.join(",") || "nothing"}`,
+      ];
+    } finally {
+      await server.stop();
+      await new Promise((r) => stub.close(r));
+    }
+  },
+
   /** A plain file server sends `dist/web` with its `csp.txt` as the policy; Chromium renders the page, no errors. */
   async "static-client"(dir) {
     const folder = join(dir, "dist", "web");
