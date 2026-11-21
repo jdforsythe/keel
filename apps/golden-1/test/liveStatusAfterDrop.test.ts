@@ -1,7 +1,6 @@
-// Known failing: after the board stream drops while online, `subscribe` waits 1 s (doubling to 30 s) to reopen, and in
-// that gap its `status()` stays `open` and `live`'s stays `live`, so the header says Live while the page follows
-// nothing and misses the other user's writes. std.live: `status()` is `live` while the stream is open, `connecting` while
-// the stream opens; std.channels: `status()` passes through `connecting` and `open` as those happen.
+// After the board stream drops while online, `subscribe` waits 1 s (doubling to 30 s) to reopen. In that gap nothing is
+// followed, so std.channels' `status()` is `connecting` and std.live's is `connecting` (the header leaves Live); the
+// reopened stream's `reset` makes the page re-read, which brings in what the other user wrote during the gap.
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { subscribe } from "@keel/std-channels";
@@ -25,7 +24,7 @@ afterEach(() => {
   expect(boardOutbox.restore(queued).ok).toBe(true);
 });
 
-test.fails("the header leaves Live once the board stream drops, until it reopens", async () => {
+test("the header leaves Live once the board stream drops, and the reopen catches up on the gap", async () => {
   await seedBoard(shared);
   const app = await apiApp();
   const a = browser(createCtx({ mode: "sim", seed: 1 }), app);
@@ -40,9 +39,14 @@ test.fails("the header leaves Live once the board stream drops, until it reopens
   // The page missed B's write and has no stream: it is not live.
   expect(r.find("todos.toggle.t2").state.checked).toBe(false);
   expect(r.find("todos.live").text).toBe("Connecting");
+  // The reopen 1 s later starts with `reset`; the re-read holds B's write.
+  await a.ctx.clock.advance(1000);
+  await r.settle();
+  expect(r.find("todos.toggle.t2").state.checked).toBe(true);
+  expect(r.find("todos.live").text).toBe("Live");
 });
 
-test.fails("subscribe's status is connecting, not open, while it waits to reopen after a drop", async () => {
+test("subscribe's status is connecting, not open, while it waits to reopen after a drop", async () => {
   await seedBoard(shared);
   const app = await apiApp();
   const a = browser(createCtx({ mode: "sim", seed: 1 }), app);
