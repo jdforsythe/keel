@@ -28,4 +28,3 @@ What `@keel/std-offline` (std.offline) does when a `ctx.storage` write rejects o
 - Online, with a ctx whose `storage.set` throws synchronously on its second call (the flush's `sending` write), `send` resolves `failed` with `offline.storage`.
 - Offline, with `send`'s storage `set` held past 10 s and then released, `keel.outbox.<id>` holds the entry `failed` once that write settles, and `drain` on a new ctx over that storage, online, posts nothing.
 - Online, with the flush's `sending` `set` for owner `a`'s entry held, `drain` with owner `b` and then the write released, the entry is not posted and `a`'s `send` resolves `failed` with `offline.owner`.
-- `outbox` throws E2652 (an Error with `code`) for an api with an `events: true` endpoint.

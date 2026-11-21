@@ -10,6 +10,8 @@ The text `keel explain` prints (k.check **explain and docs**) lives in an entry 
 
 **Budgets.** `tooling/budgets.json` has a size line for each entry, `@keel/check` and `@keel/check/explain`, each measured as that entry bundled alone (minified esm, dependencies external, gzip). Explanation text counts against the explain line, and the checker's code against the main line.
 
+**Agent files** (k.scaffold generator `project`), from the running `@keel/cli`: `AGENTS.md` with the Keel block (`<!-- keel:start -->` to `<!-- keel:end -->`, <= 600 tokens: `keel docs`, `keel explain`, commands, rules, skill paths), `CLAUDE.md` holding `@AGENTS.md` when nothing exists there (an existing one is never written, a dangling symlink is E1357), and a copy of each skill `keel docs` lists at `.claude/skills/<name>/SKILL.md`. `keel docs --sync` writes them all or none, replacing or appending the block. Where `AGENTS.md` has the block, `keel check` reports W1356 for it or any copy `--sync` would change.
+
 **Rules.** None.
 
 **Conformance.**

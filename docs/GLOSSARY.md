@@ -5,6 +5,8 @@ Canonical names. Changing one requires an RFC.
 - **kernel**: the provisionally frozen core: schema, reactive, store, runtime-dom, compiler, router, forms, ui, check, scaffold, testing, server (thin), services (thin), cli, ctx.
 - **stdlib**: modules built on kernel extension points, versioned separately, frozen individually; packages `@keel/std-<x>`, after the kernel in dependency order (no kernel package imports one).
 - **module**: a vertical slice (schemas, routes, components, handlers) with a manifest declaring its public surface.
+- **contract**: `modules/<id>/<id>.contract.ts`, the client-safe file declaring each route of a module once (pages, layouts, API entries); `routes.ts` binds views and handlers to it, and links, clients and the module's public routes derive from it (k.contract).
+- **route table**: the routes one deployable serves, `routeTable(...)` over its modules' manifests; a manifest is the route table of its one module (k.routes).
 - **deployable**: a composition of modules declared in `topology.ts` that builds to one artifact.
 - **schema**: the single declaration of a data shape; source of types, validators, codecs, generators.
 - **transaction**: a named, typed, pure state change `(state, payload) -> state'`; the only way to mutate a store.

@@ -9,13 +9,13 @@ type Tally = { v: 1; from: number; to: number; tx: { [name: string]: number } }
 ```
 `from` is the clock time of the first merge and `to` of the latest. A store folded past the entries not yet counted (more than `logLimit` commits between two saves) is counted from its kept log; the gap is not estimated.
 
-**Read.** `monitorRoutes` holds the API route (k.api) `sessions.tally` (`GET /sessions/tally`), listed by the serving module: guard `sessions.reader` (a `caller` in `readers`, else 403 `keel.denied`), loader output `Tally` from `ctx.storage`, `{ v: 1, from: 0, to: 0, tx: {} }` when none.
+**Read.** `sessions.tally` (`GET /sessions/tally`) is an API entry (k.api) of `@keel/std-sessions/contract`, bound in its `./routes`, so a deployable placing module `sessions` serves it, `monitor` running or not: guard `sessions.reader` (a `caller` in `readers`, else 403 `keel.denied`), loader output `Tally` from `ctx.storage`, `{ v: 1, from: 0, to: 0, tx: {} }` when none.
 
 **Command** (k.cli `session`). `monitor <url> [--out f]` fetches `<url>/sessions/tally` with cookie `KEEL_SESSIONS_TOKEN`, as `ingest` does, and writes `.keel/monitored.json` (default `--out`): `{ v: 1, origin, from, to, tx }`, `origin` the URL's origin, keys sorted. It prints one `session.monitor` record `{ kind, origin, transactions, runs, file }`; compact `ok session monitor 7 transactions, 312 runs -> .keel/monitored.json`. A non-2xx answer is E2010 and writes nothing.
 
 **Privacy.** Only transaction names, which are declared in source, and counts leave the server: no payload, caller, state, entry time or request detail is read into the tally. `sessions.tally` is behind the reader guard, and the file holds what the route returned.
 
-**Rules.** E2009 `monitor` in the runners, or `monitorRoutes` in the routes, of a non-`node` deployable · E2010 `session monitor`: the tally URL is unreachable, not 2xx, or not a `Tally`.
+**Rules.** E2009 `monitor` in the runners of a non-`node` deployable · E2010 `session monitor`: the tally URL is unreachable, not 2xx, or not a `Tally`.
 
 **Conformance.**
 - Under sim, after three saves of a store whose actions committed `api.addTodo` twice and `api.toggleTodo` once, and one clock advance of 60,000 ms, `sessions.tally` holds `tx` `{ 'api.addTodo': 2, 'api.toggleTodo': 1 }`.

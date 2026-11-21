@@ -22,6 +22,7 @@
   "@keel/reactive": ["k.reactive"],
   "@keel/router": [
     "k.api",
+    "k.contract",
     "k.guards",
     "k.head",
     "k.links",
@@ -30,7 +31,8 @@
     "k.opening",
     "k.prefix",
     "k.return",
-    "k.router"
+    "k.router",
+    "k.routes"
   ],
   "@keel/runtime-dom": ["k.component", "k.defaults", "k.runtime"],
   "@keel/scaffold": ["k.scaffold"],
@@ -49,7 +51,7 @@
   "@keel/services": ["k.openapi", "k.services"],
   "@keel/std-brands": ["std.brands"],
   "@keel/std-capacitor": ["std.capacitor", "std.shells"],
-  "@keel/std-channels": ["std.channels"],
+  "@keel/std-channels": ["std.channels", "std.contracts"],
   "@keel/std-conflicts": ["std.conflicts"],
   "@keel/std-db": ["std.db"],
   "@keel/std-geo": ["std.geo"],

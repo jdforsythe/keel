@@ -17,7 +17,7 @@ The stdlib holds no power a library lacks: a `@keel/std-*` package reaches the k
 **Conformance.**
 - `secretPath(s.secret(s.string()))` is `""`; over `{ a: int, b: { c: secret(int) } }` it is `b.c`; over `{ x: secret, y: secret }` `x`; over `array(record({ k: secret(int).nullable() }))` `k`; over `union([int, { m: secret(int).optional() }])` `m`; over `{ a: json, b: array(enum) }` null.
 - for a fixture format with `gen: { from: s.int(), map: (n) => n * 2 }` and an even `check`, `sampleFormat(node, () => 3)` is 6; with a `check` refusing every value, and for a non-format node, it is undefined.
-- `TableSearch` rendered with no `ctx` never navigates; rendered in one of two mounted routers, it navigates that one, through the public `navigate`.
+- `TableSearch` rendered in one of two mounted routers navigates that one, through the public `navigate`.
 - a replay whose third input cannot apply records one E2003 `error` (`data.at` `sessions.replay`), and its `reproduced` is false.
 - with `deps.json` as shipped: `import { mountRequests } from '@keel/router/internal'` in `packages/std-tauri/src/a.ts` passes; `@keel/store/internal` there, and `@keel/schema/internal` in `packages/std-x/src/a.ts`, are each one S0012; `@keel/std-jobs/tools/internal` in `packages/std-x/src/a.ts` passes.
 - `"@keel/std-x"` in an unlisted kernel `src/` file is one S0013; in a comment it is not.

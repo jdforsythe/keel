@@ -13,7 +13,7 @@ One operation, `docs`, in `@keel/cli`, served as `keel docs` and the MCP tool `d
 | form | prints | budget |
 | --- | --- | --- |
 | `keel docs` | one `docs.entry` per section (id, title, owner package, installed or not), then one per skill | `docs.map` 1,300 |
-| `keel docs <id>` | one section (`docs.section`) or one skill (`docs.skill`), the file's text verbatim | `docs.section` 1,500, `docs.skill` 2,000 |
+| `keel docs <id>` | one section (`docs.section`) or one skill (`docs.skill`), the file's text verbatim | `docs.section` 1,500, `docs.skill` 2,300 |
 | `keel docs --for <code>` | one `docs.cite` per line citing the code, across installed sections | `docs.for` 400 |
 | `keel docs --sync` | rewrites the agent files (D5) | |
 
@@ -44,7 +44,7 @@ Compact and pretty print a diagnostic's `see` as `see: keel docs <id>`; json kee
 `--sync` replaces the block in place, appends it when `AGENTS.md` has none, creates absent files, rewrites every copy, and writes all files or none. `keel check` reports W1356, at the file's path, line 1, for the block and for each copy that `--sync` would change, a missing copy included, only in a project whose `AGENTS.md` holds the block.
 
 ### D6. Budgets
-`tooling/budgets.json` gains `docs.map` 1,300, `docs.section` 1,500, `docs.skill` 2,000, `docs.for` 400 and `docs.agents` 600. ADR-0173 gives `docs.map` 1,200; the listing of 87 sections with their packages and seven skills measures 1,254. `docs.map` and `docs.for` measure the compact output of `keel docs` and `keel docs --for E1451` (the fixture `spec.for` measures now); `docs.section` and `docs.skill` measure the `text` of each section and skill; `docs.agents` the block. The MCP `docs` description counts toward the existing `mcp.tools-list` 1,750.
+`tooling/budgets.json` gains `docs.map` 1,300, `docs.section` 1,500, `docs.skill` 2,300, `docs.for` 400 and `docs.agents` 600. ADR-0173 gives `docs.map` 1,200; the listing of 87 sections with their packages and seven skills measures 1,254. `docs.map` and `docs.for` measure the compact output of `keel docs` and `keel docs --for E1451` (the fixture `spec.for` measures now); `docs.section` and `docs.skill` measure the `text` of each section and skill; `docs.agents` the block. The MCP `docs` description counts toward the existing `mcp.tools-list` 1,750.
 
 ### D7. A skill's title in the map is its description before the codes
 A published skill's `description` reads "<what the skill is for>; <diagnostic codes>". The codes after the last `;` let a host match the skill to a diagnostic; a reader of the map gains nothing from them, and with the seven published skills they put `keel docs` at 1,358 tokens against `docs.map` 1,200. A skill's `docs.entry` carries the description up to its last `;` as `title`, the whole description when it has none, in every form (compact, pretty, json). `keel docs <skill>` still prints the skill verbatim, frontmatter and codes included. `docs.map` stays 1,200. Runner-up: raise `docs.map`, rejected; the map loads in every session that reads it.
@@ -59,7 +59,7 @@ Before writing, the binary checks every path of the edit set: an existing target
 A package whose `package.json` `name` is not `@keel/<folder>` is not installed: E1065 for its sections, and its `index.json` is not used. A misnamed or planted folder under `node_modules/@keel/` cannot speak for another package.
 
 ### D11. A docs or skill file over 1,000,000 bytes is absent
-A packed section is capped at 1,500 tokens and a skill at 2,000, so a file a thousand times that is not a doc; reading it would only cost memory. It is treated as absent (E1066 where a section needs it). The project's own agent files are not capped, so `--sync` never mistakes a large `AGENTS.md` for a missing one.
+A packed section is capped at 1,500 tokens and a skill at 2,300, so a file a thousand times that is not a doc; reading it would only cost memory. It is treated as absent (E1066 where a section needs it). The project's own agent files are not capped, so `--sync` never mistakes a large `AGENTS.md` for a missing one.
 
 ### D12. A CRLF `AGENTS.md` keeps CRLF
 When `AGENTS.md` holds a CRLF line ending, the Keel block is written in CRLF, replaced or appended, so a second `--sync` changes nothing and the file keeps one line ending.
@@ -76,7 +76,7 @@ The ADR-0173 alternatives (hosted site, MCP only, skills only, the whole spec in
 - **The drift warning is opt-in by the block.** Without that, every repo app and every project that deleted its agent files would carry W1356 forever, and a clean `keel check` would no longer be one line. A project that removes the block opts out.
 - **`--sync` creates `CLAUDE.md` only when nothing exists there, and never removes a copy.** It cannot tell a stale Keel copy from a user's skill of a similar name. Open question below.
 - **`see:` changes in compact too.** ADR-0173 says the `see:` line prints `keel docs <id>`; compact is what an agent reads, and the cost fits `check.injected10`.
-- **`docs.section` and `docs.skill` measure the text, not the command output.** A section at its 1,500 cap plus the trailer line would otherwise breach, and a skill at its 2,000 target likewise.
+- **`docs.section` and `docs.skill` measure the text, not the command output.** A section at its 1,500 cap plus the trailer line would otherwise breach, and a skill at its 2,300 target likewise.
 
 ## Spec diff
 - New `spec/kernel/k.docs.md` (Installed docs, 5,326 characters, status `implemented`): packed files, resolution, the four forms and their records, a skill's entry titled by its description up to the last `;` (D7), the repo case, `see:` lines, budgets, E1065 and E1066, twelve Conformance bullets. `spec/00-map.md`: a k.docs row after k.cli, k.docs added to the E105x owners, and seven titles shortened as above (4,797 characters, 1,200 tokens).

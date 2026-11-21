@@ -17,20 +17,18 @@ keel codemod place digest --to jobs --adapter node
 ```
 
 **Generators.** Each emits spec-conformant files only:
-- `project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.deploy), agent files; `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo, CI, agent files. `keel scaffold project <name>` writes under `<name>/`.
-- `module`: `modules/<id>/module.ts` and `routes.ts`; adds the module to `topology.ts`.
-- `route`: manifest entry, `*.server.ts` loader, page component, route test; with `--api` an API entry (k.api), its loader and a JSON request test, no component.
+- `project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain); `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo, CI, agent files. `keel scaffold project <name>` writes under `<name>/`.
+- `module`: `modules/<id>/module.ts`, `<id>.contract.ts` and `routes.ts`; adds the module to `topology.ts`.
+- `route`: contract entry and binding (k.contract), `*.server.ts` loader, page component, route test; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component. Input `{ id, path, file?, api?, method? }`; `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`, and without `api` it is E1052.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
 - `store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test.
 - `service`: endpoint schemas from OpenAPI and the service file (k.openapi): `modules/<id>/<Id>Api.schema.ts` and `api.server.ts`; schemas are generated, read-only.
 
 **Codemods.**
-- `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a manifest's `routes.href()`), `uses:` list, element-id prefix, test, and manifest entry.
+- `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a contract's), `uses:` list, element-id prefix, test, contract entry and binding.
 - `move` relocates a file to another module, updating imports and both manifests.
 - `place` moves a module to a deployable in `topology.ts` (a new deployable needs `--adapter`; an emptied one is removed) and regenerates the deploy files; nothing else changes.
 - `add-field` adds a field to a schema and to every initial state, fixture, and form `initial` that constructs it. Optional fields need no data; required fields take `--default`.
-
-**Agent files**, from the running `@keel/cli`: `AGENTS.md` with the Keel block (`<!-- keel:start -->` to `<!-- keel:end -->`, <= 600 tokens: `keel docs`, `keel explain`, commands, rules, skill paths), `CLAUDE.md` holding `@AGENTS.md` when nothing exists there (an existing one is never written, a dangling symlink is E1357), and a copy of each skill `keel docs` lists at `.claude/skills/<name>/SKILL.md`. `keel docs --sync` writes them all or none, replacing or appending the block. Where `AGENTS.md` has the block, `keel check` reports W1356 for it or any copy `--sync` would change.
 
 **Turbo emission.** Any operation adding or removing a module or package regenerates `turbo.json`, CI workflows and deploy files (k.deploy) from the task graph and topology (ADR-0009). Generated files are read-only (E1005).
 
@@ -49,6 +47,7 @@ keel codemod place digest --to jobs --adapter node
 - `keel scaffold project <name>`, with or without `--workspace`, writes only under `<name>/`.
 - `place b --to y --adapter node` then `place b --to x` restores a byte-identical tree; neither writes outside `topology.ts`, `deploy/`, CI workflows.
 - With `node` deployables `api` and `my-api`, `deploy/compose.yaml` sets `KEEL_PEER_MY_API` for `api`; `place b --to apiEdge --adapter node` is E1352 and writes nothing.
+- `scaffold route` with `method` and no `api` is E1052 and writes nothing; with `api` and `method: 'POST'` it adds an API write entry, its binding and its handler.
 - `scaffold project` writes a <= 600-token block naming `keel docs`, `keel explain`, skill paths, without `pnpm spec`, `spec/` or `--workspace`; `CLAUDE.md` `@AGENTS.md\n`; copies equal to `keel docs <name>`; with `--workspace`, none.
 - `--sync` restores an edited block and copy, keeps text outside the block, reruns as no-op; creates absent files; keeps a `CLAUDE.md`, linked or not.
 - `keel check`: fresh, no W1356; an edited or removed copy or edited block, one W1356 there; no block, none. Unclosed block: `--sync` E1355, exit 1, writes nothing.

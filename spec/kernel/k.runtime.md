@@ -2,7 +2,7 @@
 status: conformance-covered
 
 **API.** App code uses only `mount` and the intrinsics `If`, `For`, `Match`, `Case`, `Boundary` from `@keel/runtime-dom`.
-`mount(Component, el, { ctx?, onError?, mode? })` (generated entry only; the root takes no props) renders a client-only tree into `el`, passing `ctx` as the root component's third argument, and returns `dispose`. `onError` also gets each error the default root Boundary renders. Server-rendered apps' entries call `resume` (`@keel/runtime-dom/ops`), which passes `ctx` to every island root. Both take `mode` (k.errors): `'dev'` only under `keel dev`, else `'production'` (k.deploy).
+`mount(Component, el, { ctx, onError?, mode? })` (generated entry only; the root takes no props) renders a client-only tree into `el`, passing `ctx` as the root component's second argument, and returns `dispose`. `onError` also gets each error the default root Boundary renders. Server-rendered apps' entries call `resume` (`@keel/runtime-dom/ops`), which passes `ctx` to every island root. Both take `mode` (k.errors): `'dev'` only under `keel dev`, else `'production'` (k.deploy).
 
 **Ops.** Compiler-only (k.compiler): `template(html)`, `clone(t)`, `text(node, fn)`, `attr(el, name, fn)`, `prop(el, name, fn)`, `on(target, type, handler)` (`target`: element id or `Element`), `cond`, `list`, `match`, `boundary`, `slot`; `element(tag, fill)` (also k.ui). Each binding is an `effect` in the owning component's scope that writes exactly one DOM location; disposing the scope removes it. `attr` with `null` or `false` removes the attribute; `true` sets it empty. `attr` and `prop` apply the URL policy (k.compiler); `attr` binds nothing for an `on*` name, a `<base>` `href` or a `<meta>` `http-equiv`.
 
@@ -22,7 +22,7 @@ Resume restores stores, finds bound nodes by `data-k`, attaches bindings and del
 
 **Conformance.**
 - `mount` then `dispose` leaves no event listener or reactive subscription.
-- A tree using N distinct bubbling event types attaches exactly N listeners to its root.
+- A tree using N bubbling event types has exactly N bubble listeners on its root.
 - After resume, every server-rendered node keeps its identity, `state()` equals the serialized snapshot, and firing an event by id yields the same state and DOM as a client-only render.
 - A page with no islands loads no runtime JS: its document has no `<script type="module">`, `data-k`, or `data-k-island`; a page with an event handler has all three, and `resume` attaches the handler to server nodes.
 - An event fired before its island resumes is applied exactly once after resume.

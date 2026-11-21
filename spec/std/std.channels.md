@@ -1,28 +1,28 @@
 # std.channels: Channels
 status: conformance-covered
 
-**Extension points.** Module manifest: stdlib module `channels` (capabilities `clock`, `net`, `observe`), whose route an app lists in a `node` deployable's manifest. Check rule registry: E2601 and E2602 through `@keel/std-channels/tools`.
+**Extension points.** Module manifest: stdlib module `channels` (capabilities `clock`, `net`, `observe`), served from a `node` module's contract (std.contracts). Check rule registry: E2601 and E2602 through `@keel/std-channels/tools`.
 
-**Declare.** In a shared file whose name is the export:
+**Declare.** In a `*.schema.ts` file whose name is the export:
 ```ts
-export const boardChannel = channel('todos.board', { path: '/api/board/events', params: s.object({}), message: BoardMessage })
+export const boardChannel = channel('todos.board', { path: '/api/board/events', params: BoardParams, message: BoardMessage })
 ```
-`channel(name, { path, params, message? })`: `name` is prefixed by the declaring module, as E1155 asks of route ids. `params` is parsed from the stream URL's search (fail: 404) and picks an instance. `message` (optional) is the schema of what members publish; without it nothing can be published. `channel` throws E2602 when `message` holds an `s.secret`.
+`channel(name, { path, params, message? })`: `name` is prefixed by the declaring module, as E1155 asks of route ids. `params` is parsed from the stream URL's search (fail: 422 `keel.fields`) and picks an instance. `message` (optional) is the schema of what members publish; without it nothing can be published (E2602: no `s.secret`). Its `events` and `body` are its entries' schemas (std.contracts).
 
 **Serve.** In a `*.server.ts` file (else E2601):
 ```ts
-export const boardEvents = channelRoute(boardChannel, { id: 'api.boardEvents', stores: boardStores, member: ({ caller, user, params, stores }) => true })
+export const boardEvents = channelRoute(api, boardChannel, { id: 'api.boardEvents', publish: 'api.boardPublish', stores: boardStores, member: ({ caller, user, params, stores }) => true })
 ```
-returns the API route (k.api) `{ id, path, loader, actions: { POST } }` for the serving module's manifest (`id` prefixed by that module, E1155; `path` the channel's). `loader` is a live loader (k.server) yielding `ChannelEvent<M>`:
+returns `{ loader, action }`, bound at `api`'s entries `id` and `publish` (std.contracts): a live loader (k.server) yielding `ChannelEvent<M>` and the publish action:
 - `{ kind: 'reset' }`, first on every open: the client re-reads; nothing missed while closed is resent.
 - `{ kind: 'saved', store, head }` after each save of a store `stores` creates (k.sync `save`), in save order, to every open member stream.
 - `{ kind: 'message', message }` for each publish to the same channel and params, the publisher's stream included.
 - `{ kind: 'closed', reason }`, then the end: `denied` when `member` is or turns false, `full` when the open is past a cap.
 
-`member` is a pure predicate over the request's `caller` and `user` (k.user), the parsed `params` and `stores` opened read-only. It runs at open (false: `closed` `denied` is the only event), at each publish (false: 403, nothing delivered) and, for each open stream, after each save of its stores. An event-stream GET reads the caller cookie and never sets one (k.server). The POST takes `{ message }` as an action: the k.server same-site proof, `maxBodyBytes` and 422 `keel.fields` apply, and it answers `ok(null)` once delivered. Delivery reaches the streams open in the serving process. A module's config `std['@keel/std-channels']: { perCaller?, perAnonymous?, maxStreams? }` (server-only; defaults 8, 64 and 1,000) bounds its channel routes' streams open in the process: of one caller, of all cookieless opens (caller `""`, counted against `perAnonymous`, never `perCaller`), and in all. A route whose `member` refuses `""` holds no cookieless stream.
+`member` is a pure predicate over the request's `caller` and `user` (k.user), the parsed `params` and `stores` opened read-only. It runs at open (false: `closed` `denied` is the only event), at each publish (false: 403, nothing delivered) and, for each open stream, after each save of its stores. An event-stream GET reads the caller cookie and never sets one (k.server). The POST takes `{ message }` as an action: the k.server same-site proof, `maxBodyBytes` and 422 `keel.fields` apply, and it answers `ok({})` once delivered. Delivery reaches the streams open in the serving process. A module's config `std['@keel/std-channels']: { perCaller?, perAnonymous?, maxStreams? }` (server-only; defaults 8, 64 and 1,000) bounds its channel routes' streams open in the process: of one caller, of all cookieless opens (caller `""`, counted against `perAnonymous`, never `perCaller`), and in all. A route whose `member` refuses `""` holds no cookieless stream.
 
 **Client.**
-- `subscribe(ctx, origin, channel, params, on)`, inside a scope: reads the live loader through a k.services `events: true` endpoint built from the channel and `origin`, and calls `on(event)` for each `ok` event. After the iteration ends (a drop, `api.network`, `closed` `full`) it reopens 1 s later, doubling to 30 s on `ctx.clock`; it makes no request while `ctx.net.online()` is false and reconnects on `{ kind: 'net', online: true }`. Returns `{ status, close }`: `status()` reads a signal, `'connecting' | 'open' | 'offline' | 'denied'`; after `closed` `denied` it stops. Disposing the scope closes the stream.
+- `subscribe(ctx, origin, channel, params, on)`, inside a scope: reads the live loader through a k.services `events: true` endpoint of the channel at `origin` and calls `on(event)` for each `ok` event. After the iteration ends (a drop, `api.network`, `closed` `full`) it reopens 1 s later, doubling to 30 s on `ctx.clock`; it makes no request while `ctx.net.online()` is false and reconnects on `{ kind: 'net', online: true }`. Returns `{ status, close }`: `status()` reads a signal, `'connecting' | 'open' | 'offline' | 'denied'`; after `closed` `denied` it stops. Disposing the scope closes the stream.
 - `publish(ctx, origin, channel, params, message)`: `Promise<Result<null, ApiError>>`, through `@keel/services` (k.services errors and timeout).
 
 **Privacy.** Events carry no caller, cookie or store state: `saved` names the store and its head, and each member re-reads through its own loader. A message reaches every member's browser as published, with no publisher identity unless its schema holds one; it is never stored, logged or resent. `stores` and `member` stay on the server.

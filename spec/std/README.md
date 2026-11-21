@@ -35,7 +35,8 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
 | std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, E2601-E2602 |
 | std.live | Live views | conformance-covered | composes std.channels: a client store re-read on every push |
-| std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651-E2652 |
+| std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
+| std.contracts | Stdlib contracts | proposed | std-health, std-sessions, std-channels and std-offline over k.contract |
 | std.outbox | Outbox storage faults | conformance-covered | `@keel/std-offline`: storage writes that reject or never settle, other throws in a flush |
 | std.outbox-owner | Outbox owner check | conformance-covered | `@keel/std-offline`: `writeFor` refuses a write of another owner than the caller's, `offline.owner` |
 | std.conflicts | Races | conformance-covered | formatter registry: order-dependent rebased entries, E2701 |
