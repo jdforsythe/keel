@@ -69,3 +69,24 @@ test("live outside a scope throws E1203", () => {
   expect(() => live(ctx, ORIGIN, ch, {}, { read: async () => ok(1), hydrate })).toThrow(/^E1203/);
   sc.dispose();
 });
+
+test("status leaves live at a drop, stays connecting while the stream waits to reopen, and the reopen re-reads", async () => {
+  const { ctx, drop } = server();
+  const at: number[] = [];
+  const m = mount(ctx, async (c) => {
+    at.push(c.clock.now());
+    return ok(at.length);
+  });
+  await settle();
+  expect([at, m.status()]).toEqual([[0], "live"]);
+  drop();
+  await settle();
+  expect(m.status()).toBe("connecting");
+  await ctx.clock.advance(999);
+  await settle();
+  expect([at, m.status()]).toEqual([[0], "connecting"]);
+  await ctx.clock.advance(1);
+  await settle();
+  expect([at, m.status(), m.view.log().at(-1)?.payload]).toEqual([[0, 1000], "live", 2]);
+  m.dispose();
+});

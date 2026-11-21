@@ -13,7 +13,8 @@ const MAX_MS = 30_000;
 /**
  * Follow `channel` with `params` at `origin` (std.channels Client), inside a scope: reads its event stream through a
  * k.services `events` endpoint and calls `on` for each `ok` event. When a stream ends (a drop, `api.network`,
- * `closed` `full`) it reopens 1 s later, doubling to 30 s on `ctx.clock`; a `reset` starts the doubling over. While
+ * `closed` `full`) it reopens 1 s later, doubling to 30 s on `ctx.clock`; a `reset` starts the doubling over. `status()`
+ * is `open` from a stream's `reset` until that stream ends, and `connecting` from then until the next `reset`. While
  * `ctx.net.online()` is false it sends nothing, aborts an open stream, and reconnects at once on
  * `{ kind: 'net', online: true }`. After `closed` `denied` it stops. Disposing the scope, or `close()`, aborts the
  * request; `on` gets no later event. The stream starts after the current tick, so subscribing while rendering inside
@@ -85,6 +86,8 @@ export function subscribe<P, M>(
       }
       req.abort();
       if (life.signal.aborted || !ctx.net.online()) continue;
+      // The stream ended: nothing is open while it waits to reopen.
+      status.set("connecting");
       await pause(delay);
       delay = Math.min(MAX_MS, delay * 2);
     }
