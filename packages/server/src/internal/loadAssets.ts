@@ -1,4 +1,6 @@
+import type { Topology } from "@keel/compiler";
 import { CLIENT_MANIFEST } from "@keel/compiler/internal/entry/CLIENT_MANIFEST";
+import { cspPolicy } from "../csp/cspPolicy.ts";
 import type { BuiltClient } from "./BuiltClient.ts";
 import { codedError } from "./codedError.ts";
 import { peersOfIndex } from "./peersOfIndex.ts";
@@ -36,11 +38,12 @@ const namedBy = (chunk: unknown): unknown[] =>
  * `etag` from its bytes. The walk descends real directories only; a file (or symlink) under `assets/` is read only
  * when its real path is inside the real `assets/`, and none is when that real path is unknown, so no symlink and no
  * `..` in the manifest reaches outside. `css` lists the stylesheets the manifest's entry chunk names that are served
- * `.css` files, as URL paths; the mark is the only served file outside `/assets/`, so each is under it. With `hosted` (a `client` deployable names this one its host, k.hosting) it
- * also reads the top-level `index.html` and its `keel-peer` origins. Throws E1555 when the manifest is missing or unreadable, has no entry
+ * `.css` files, as URL paths; the mark is the only served file outside `/assets/`, so each is under it. With `hosted` (the `client` deployable that names this one its host,
+ * k.hosting) it also reads the top-level `index.html` and builds its policy from its `keel-peer` origins and the
+ * `client` deployable's declared origins (k.origins). Throws E1555 when the manifest is missing or unreadable, has no entry
  * chunk, or its entry file is not under `assets/`, or when `hosted` and `index.html` is missing.
  */
-export async function loadAssets(dir: string, hosted = false): Promise<BuiltClient> {
+export async function loadAssets(dir: string, hosted?: Topology[string]): Promise<BuiltClient> {
   const fs = await import("node:fs/promises");
   const { join, sep } = await import("node:path");
   const { createHash } = await import("node:crypto");
@@ -79,14 +82,16 @@ export async function loadAssets(dir: string, hosted = false): Promise<BuiltClie
   if (!files.has(`/${entry}`)) throw fail(`entry ${entry} is missing`);
   if ((await fs.lstat(join(dir, MARK)).catch(() => undefined))?.isFile()) await add(MARK);
   const css = (isRecord(chunk) && Array.isArray(chunk.css) ? chunk.css : []).map((f: unknown) => `/${f}`);
-  const index = hosted ? await fs.readFile(join(dir, "index.html")).catch(() => undefined) : undefined;
-  if (hosted && index === undefined)
+  const index = hosted && (await fs.readFile(join(dir, "index.html")).catch(() => undefined));
+  if (hosted && !index)
     throw codedError("E1555", "assets: index.html of the hosted client is missing; run `keel build`");
   return {
     entry: `/${entry}`,
     css: css.filter((f) => f.endsWith(".css") && files.has(f)),
     files,
-    index: index && new Uint8Array(index),
-    peers: index === undefined ? [] : peersOfIndex(index.toString("utf8")),
+    index: index && {
+      body: new Uint8Array(index),
+      policy: cspPolicy({ peers: peersOfIndex(index.toString("utf8")), origins: hosted?.origins }),
+    },
   };
 }

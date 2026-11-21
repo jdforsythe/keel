@@ -21,7 +21,7 @@ describe("shell files", () => {
           web: { modules: ["c"], adapter: "client", shells: { capacitor: cap, tauri: tau } },
           api: { modules: ["a"], adapter: "node" },
         };
-        const files = deployFiles(topology, { ci: false, version: "2.3.4", crate: "golden-1", policy: POLICY });
+        const files = deployFiles(topology, { ci: false, version: "2.3.4", crate: "golden-1", policy: () => POLICY });
         expect(JSON.parse(files.get("deploy/web/capacitor/capacitor.config.json") ?? "")).toEqual({
           appId: cap.id,
           appName: cap.name,
@@ -65,8 +65,8 @@ describe("shell files", () => {
       web: { modules: ["c"], adapter: "client", shells: { tauri: { id: "dev.keel.golden", name: "Golden" } } },
     };
     const at = "deploy/web/tauri/";
-    const plain = deployFiles(topology, { ci: false, policy: POLICY });
-    const signed = deployFiles(topology, { ci: false, policy: POLICY, identity: true });
+    const plain = deployFiles(topology, { ci: false, policy: () => POLICY });
+    const signed = deployFiles(topology, { ci: false, policy: () => POLICY, identity: true });
     const extra = [
       'tauri-plugin-deep-link = "=2.6.3"',
       'tauri-plugin-opener = "=2.7.3"',

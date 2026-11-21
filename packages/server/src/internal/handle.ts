@@ -2,7 +2,6 @@ import { matchUrl, needsBare, pageHead } from "@keel/router/internal";
 import { publicError } from "@keel/router/internal";
 import { err } from "@keel/schema";
 import type { Context } from "hono";
-import { cspPolicy } from "../csp/cspPolicy.ts";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { RequestScope } from "./RequestScope.ts";
@@ -82,11 +81,11 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
       !path.startsWith("/assets/")
     )
       return {
-        response: new Response(method === "HEAD" ? null : doc, {
+        response: new Response(method === "HEAD" ? null : doc.body, {
           headers: {
             "content-type": "text/html; charset=utf-8",
             "cache-control": "no-cache",
-            "content-security-policy": cspPolicy({ peers: sv.built?.peers ?? [] }),
+            "content-security-policy": doc.policy,
           },
         }),
         route,

@@ -1,3 +1,4 @@
+import type { Origins } from "@keel/compiler";
 import { crateName } from "../crateName.ts";
 import { deployFiles } from "../deployFiles.ts";
 import type { Writes } from "./Writes.ts";
@@ -26,11 +27,16 @@ function versionOf(text: string | undefined): string | undefined {
  * a deploy file no deployable needs. The CI workflow is kept when the tree has one; `deploy/` files when `always`,
  * when the tree has `turbo.json` (a project outside the Keel monorepo) or when it already holds a `deploy/` file.
  * A deployable's CI job runs on its modules and those they dep on, transitively (`modules/<id>/module.ts` `deps`).
- * `tauri.conf.json` is written and removed only with `policy`, the content security policy of a `client` document.
+ * `tauri.conf.json` is written and removed only with `policy`, which gives the content security policy of a `client`
+ * document for a deployable's declared origins (k.origins).
  * A tree with `identity.ts` gets the Tauri files with the plugins of k.return.
  * Empty without a readable `topology.ts`.
  */
-export function deployWrites(files: ReadonlyMap<string, string>, always = false, policy?: string): Writes {
+export function deployWrites(
+  files: ReadonlyMap<string, string>,
+  always = false,
+  policy?: (origins?: Origins) => string,
+): Writes {
   const out: Writes = new Map();
   const topology = topologyOf(files);
   if (topology === null) return out;

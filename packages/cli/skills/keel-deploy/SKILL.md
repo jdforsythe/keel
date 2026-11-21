@@ -1,6 +1,6 @@
 ---
 name: keel-deploy
-description: "Build and deploy Keel deployables: keel build, server.mjs, PORT/KEEL_SECRET/KEEL_ORIGIN/KEEL_PEER_<NAME>/KEEL_ALLOW_ORIGINS, keel dev, host, static client hosting, keel codemod place, native shells and keel build --target; E1560, E1565, E1566, E1573, E1574, E1575, E1578"
+description: "Build and deploy Keel deployables: keel build, server.mjs, PORT/KEEL_SECRET/KEEL_ORIGIN/KEEL_PEER_<NAME>/KEEL_ALLOW_ORIGINS, keel dev, host, static client hosting, keel codemod place, native shells and keel build --target; E1560, E1565, E1566, E1573, E1574, E1575, E1578, E1590, E1591"
 ---
 
 # Build and deploy
@@ -27,6 +27,8 @@ export default topology({
   },
 });
 ```
+
+**Origins.** A deployable may set `origins: { img?, media?, font?, connect?, frame? }`, each an origin-to-reason map (exact https origin, at most 16 per directive; E1590, E1591). The declared origins reach the document policy, `csp.txt`, a hosted client's `index.html` and the shells' policies.
 
 **Build.** `keel build` runs `keel check` first and stops on an error. It writes `dist/<name>/` per deployable: `server.mjs` and `server.mjs.map` for a `node` one, `index.html`, hashed `assets/` and `keel-mark.svg` for a `client` one. It always builds for production (`NODE_ENV=production`, whatever the shell or `.env` says). It also writes the read-only `deploy/<name>/Dockerfile`, `deploy/compose.yaml` and the CI workflow; edit `topology.ts` instead (E1005).
 

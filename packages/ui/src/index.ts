@@ -6,6 +6,7 @@ export { Box } from "./elements/Box.ts";
 export { Button } from "./elements/Button.ts";
 export { Checkbox } from "./elements/Checkbox.ts";
 export { Heading } from "./elements/Heading.ts";
+export { Frame } from "./elements/Frame.ts";
 export { Image } from "./elements/Image.ts";
 export { Input } from "./elements/Input.ts";
 export { Link } from "./elements/Link.ts";

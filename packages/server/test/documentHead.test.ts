@@ -45,7 +45,6 @@ const build = (): Record<string, string> => ({
 const built = (css: readonly string[], mark: boolean): BuiltClient => ({
   entry: "/assets/e.js",
   css,
-  peers: [],
   files: new Map(mark ? [["/keel-mark.svg", { body: new Uint8Array(0), type: "", immutable: false, etag: "" }]] : []),
 });
 /** The head of a document as text, cut at `</head>` so nothing in it is parsed or loaded. */

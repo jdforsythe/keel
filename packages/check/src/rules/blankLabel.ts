@@ -6,8 +6,9 @@ import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
-/** Base elements whose `label` names the landmark or control. */
-const ELEMENTS: readonly string[] = ["Box", "Input", "TextArea", "Select", "Checkbox"];
+/** Base elements whose `label` names the landmark or control, and `Frame`, whose `title` names the frame. */
+const ELEMENTS: readonly string[] = ["Box", "Input", "TextArea", "Select", "Checkbox", "Frame"];
+const nameProp = (element: string): string => (element === "Frame" ? "title" : "label");
 
 /** `node` without enclosing parentheses, `as`, `satisfies` and `!`, which change no value. */
 function unwrap(node: Expression): Expression {
@@ -46,7 +47,7 @@ const decode = (text: string): string =>
     return code > 0x10ffff ? all : String.fromCodePoint(code);
   });
 
-/** The value of a `label` JSX attribute as a literal text, else null. */
+/** The value of a naming JSX attribute as a literal text, else null. */
 function attributeText(a: JSXAttribute): string | null {
   const v = a.value;
   if (v === null || v === undefined) return null;
@@ -57,16 +58,16 @@ function attributeText(a: JSXAttribute): string | null {
   return null;
 }
 
-/** Calls `at` with the start of each blank `label` property of an object literal, its object-literal spreads read too. */
-function objectLabels(node: Expression, at: (start: number) => void): void {
+/** Calls `at` with the start of each blank `prop` property of an object literal, its object-literal spreads read too. */
+function objectLabels(node: Expression, prop: string, at: (start: number) => void): void {
   const o = unwrap(node);
   if (o.type !== "ObjectExpression") return;
   for (const p of o.properties) {
-    if (p.type === "SpreadElement") objectLabels(p.argument, at);
+    if (p.type === "SpreadElement") objectLabels(p.argument, prop, at);
     else if (
       !p.computed &&
       p.kind === "init" &&
-      (p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" && p.key.value) === "label" &&
+      (p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" && p.key.value) === prop &&
       blank(literalText(p.value))
     )
       at(p.start);
@@ -77,12 +78,14 @@ function objectLabels(node: Expression, at: (start: number) => void): void {
  * E1802 (k.a11y): a blank literal `label` (no visible character, `blank`; a string, a template without substitutions, in a
  * JSX attribute, an object-literal spread into one, or the object passed to a call, through parentheses, `as`,
  * `satisfies` and `!`) on `Box`, `Input`, `TextArea`, `Select` or `Checkbox` from
- * `@keel/ui`, aliases and a namespace import followed. A computed `label` is unchecked. No fix: the name is the author's.
+ * `@keel/ui`, aliases and a namespace import followed; the same for `Frame`'s `title` (k.origins), and a JSX `Frame`
+ * with no `title` and no spread, so the type pass need not run. A computed one is unchecked. No fix: the name is the author's.
  */
 export const blankLabel: RuleDef = {
   code: "E1802",
   message: (f) => {
     const name = str(f.data, "name");
+    if (name === "Frame") return "<Frame> title is missing or blank; it must name the frame";
     return `<${name}> label is blank; it must name the ${name === "Box" ? "landmark" : "control"}`;
   },
   see: "k.a11y",
@@ -109,9 +112,14 @@ export const blankLabel: RuleDef = {
               ? member(n.object.name, n.property.name)
               : undefined;
         if (name === undefined) return;
+        const prop = nameProp(name);
+        const named = o.attributes.some(
+          (a) => a.type === "JSXSpreadAttribute" || (a.name.type === "JSXIdentifier" && a.name.name === prop),
+        );
+        if (name === "Frame" && !named) at(name)(o.name.start);
         for (const a of o.attributes) {
-          if (a.type === "JSXSpreadAttribute") objectLabels(a.argument, at(name));
-          if (a.type !== "JSXAttribute" || a.name.type !== "JSXIdentifier" || a.name.name !== "label") continue;
+          if (a.type === "JSXSpreadAttribute") objectLabels(a.argument, prop, at(name));
+          if (a.type !== "JSXAttribute" || a.name.type !== "JSXIdentifier" || a.name.name !== prop) continue;
           if (blank(attributeText(a))) at(name)(a.start);
         }
       },
@@ -128,7 +136,7 @@ export const blankLabel: RuleDef = {
               : undefined;
         const arg = n.arguments[0];
         if (name === undefined || arg === undefined || arg.type === "SpreadElement") return;
-        objectLabels(arg, at(name));
+        objectLabels(arg, nameProp(name), at(name));
       },
     }).visit(ast);
     return out;

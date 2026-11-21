@@ -1,3 +1,4 @@
+import type { Origins } from "@keel/compiler";
 import { deployDrift } from "@keel/scaffold";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Diag } from "./Diag.ts";
@@ -16,9 +17,9 @@ const message = (have: string | null, want: string | null): string =>
 /**
  * E1005 for each generated deploy file (Dockerfiles, compose, shell files, the CI workflow) of each project in `project` that
  * differs from what `deployFiles` derives from its `topology.ts` (k.deploy Deploy files), with the regenerated
- * file as the fix. `policy` (`shellPolicy`) is what a Tauri shell's `tauri.conf.json` holds.
+ * file as the fix. `policy` (`shellPolicy`) gives what a Tauri shell's `tauri.conf.json` holds.
  */
-export function deployFreshness(project: readonly SourceFile[], policy?: string): Diag[] {
+export function deployFreshness(project: readonly SourceFile[], policy?: (origins?: Origins) => string): Diag[] {
   const dirs: string[] = [];
   for (const f of project) {
     const dir = TOPOLOGY.exec(f.path)?.[1];

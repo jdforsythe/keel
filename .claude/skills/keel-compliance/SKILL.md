@@ -1,6 +1,6 @@
 ---
 name: keel-compliance
-description: "Keel personal data and compliance: .pii(class), clientPii, s.secret and reveal, autocomplete on pii controls, what leaves the browser or lands in a log, the content security policy's limits on app code, the caller lifetime, sessions redaction, pii canary tests, keel evidence and --verify; E1105, E1107, E1111, E1112, E1113, E1570, E1571, E1821, E1578, E2201, E2202, E1061, E1062, E1063"
+description: "Keel personal data and compliance: .pii(class), clientPii, s.secret and reveal, autocomplete on pii controls, what leaves the browser or lands in a log, the content security policy's limits on app code, the caller lifetime, sessions redaction, pii canary tests, keel evidence and --verify; E1105, E1107, E1111, E1112, E1113, E1570, E1571, E1590, E1591, E1821, E1578, E2201, E2202, E1061, E1062, E1063"
 ---
 
 # Personal data, secrets, policy, evidence
@@ -71,7 +71,7 @@ Store `id` and `digest` (type `Digested` from `@keel/std-tokens`) in a store; `t
 
 ## Content security policy
 
-Every `node` document carries a fixed policy with a per-response nonce; no app option widens it. App code must not use an inline script, a `<style>` element, a `style` attribute or an `on*` attribute, and loads nothing from another origin. A literal absolute `http(s)` URL in `src`, `action`, `srcset` or `Image src` is E1570; one given to `ctx.net.fetch` or `service({ base })` in client-reachable code is E1571 (fine in `*.server.ts`). Use same-origin paths, or read the base URL from configuration in a server file. A `client` or `static` deployable's policy is written to `csp.txt` by `keel build`. Violations reported by browsers appear as `csp` log records with no path or query.
+Every `node` document carries a fixed policy with a per-response nonce. App code uses no inline script, `<style>` element, `style` attribute or `on*` attribute, and loads nothing from an undeclared origin. A literal absolute `http(s)` URL in `src`, `action`, `srcset` or `Image src` is E1570; one given to `ctx.net.fetch` or `service({ base })` in client-reachable code is E1571 (fine in `*.server.ts`). Use same-origin paths, a configured base URL in a server file, or declare the origin: `origins: { img: { 'https://cdn.example': 'photos' } }` on the deployable in `topology.ts`. Directives are `img`, `media`, `font`, `connect`, `frame` (exact https origin, or http on localhost, with a one-line reason; E1590 malformed, E1591 repeated); a declared origin's URL is not E1570 or E1571. Scripts and styles take no declaration. `keel build` writes a `client` or `static` deployable's policy to `csp.txt`. Browser violation reports log as `csp` records with no path or query.
 
 ## Canary test
 
@@ -79,4 +79,4 @@ Fill a schema with generated values and assert none reaches a sink: `piiPaths(S)
 
 ## Evidence
 
-`keel evidence [--out <dir>] [--audit audit.json]` runs check, test and ledger and writes a signed bundle (default `evidence/<date>`). The key is `KEEL_EVIDENCE_KEY`, an Ed25519 PKCS#8 PEM, from the environment only (E1061 otherwise). `keel evidence --verify <dir> --key <keyId>` re-checks signature and hashes (E1062 a file changed, E1063 a key or signature mismatch). A failing check or test still writes the bundle and exits 1 with E1060. `pii.json` lists every marked path, each sink and its ledger rung.
+`keel evidence [--out <dir>] [--audit audit.json]` runs check, test and ledger and writes a signed bundle (default `evidence/<date>`). The key is `KEEL_EVIDENCE_KEY`, an Ed25519 PKCS#8 PEM, from the environment only (E1061 otherwise). `keel evidence --verify <dir> --key <keyId>` re-checks signature and hashes (E1062 a file changed, E1063 a key or signature mismatch). A failing check or test still writes the bundle and exits 1 with E1060. `pii.json` lists every marked path, each sink and its ledger rung; `security.json` each deployable's declared origins and reasons.

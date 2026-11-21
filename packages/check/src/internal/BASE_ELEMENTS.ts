@@ -6,6 +6,7 @@ export const BASE_ELEMENTS: ReadonlySet<string> = new Set([
   "Button",
   "Link",
   "Image",
+  "Frame",
   "Input",
   "TextArea",
   "Select",

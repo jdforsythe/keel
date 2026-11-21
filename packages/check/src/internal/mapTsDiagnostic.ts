@@ -115,6 +115,8 @@ export function mapTsDiagnostic(
     return null;
   // JSX `<Boundary>` without `fallback` compiles with a default one (k.compiler).
   if (d.code === 2741 && /'fallback'/.test(text) && jsxTagOf(node) === "Boundary") return null;
+  // A JSX `Frame` without `title` is E1802 from the rule pass (`blankLabel`), which runs without types.
+  if (d.code === 2741 && /'title'/.test(text) && jsxTagOf(node) === "Frame") return null;
   const { line, col } = lineCol(file.source, pos);
   const diag = (code: string, message: string, see: string): Diagnostic => ({
     kind: "diag",

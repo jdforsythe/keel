@@ -19,8 +19,8 @@ import { snapshotStores } from "./snapshotStores.ts";
  * (`Served.entry`) loads only when an island was rendered; then `std` carries the
  * client-readable part (`clientStdData`: `clientStd` packages, the served deployable's modules) of the `std.json` data
  * `createApp({ std })` bound, which the resume entry binds in the browser (k.module); absent when that part
- * is empty. HEAD has no body. Each document draws a fresh nonce (`nonceOf`) and carries the k.security policy with it
- * (report-only in dev) and `Reporting-Endpoints`; `cache-control: private, no-store`, since no cache may replay its nonce.
+ * is empty. HEAD has no body. Each document draws a fresh nonce (`nonceOf`) and carries the k.security policy with it,
+ * widened by the served deployable's declared origins (k.origins; report-only in dev) and `Reporting-Endpoints`; `cache-control: private, no-store`, since no cache may replay its nonce.
  */
 export function documentResponse(
   r: Req,
@@ -55,7 +55,7 @@ export function documentResponse(
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "private, no-store",
-      [policyHeader(r.sv.mode)]: cspPolicy({ nonce, dev: r.sv.mode === "dev" }),
+      [policyHeader(r.sv.mode)]: cspPolicy({ nonce, dev: r.sv.mode === "dev", origins: r.sv.origins }),
       "reporting-endpoints": `keel-csp="${CSP_PATH}"`,
     },
   });

@@ -174,7 +174,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
   // Every route of the table, not only the served ones: a path this server forwards to a peer is marked too.
   const marks = secretSegments(table);
   const name = opts.deployable ?? Object.keys(opts.topology)[0] ?? "";
-  const hosted = Object.values(opts.topology).some((d) => d.adapter === "client" && d.host === name);
+  const hosted = Object.values(opts.topology).find((d) => d.adapter === "client" && d.host === name);
   const built = mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets, hosted) : undefined;
   const sv: Served = {
     table: served,
@@ -210,6 +210,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     ...(log === undefined ? {} : { log }),
     identity: opts.identity,
     days: opts.topology[name]?.caller?.days,
+    origins: opts.topology[name]?.origins,
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
