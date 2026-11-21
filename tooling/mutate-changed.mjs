@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
 import { stopFile } from "./mutate.mjs";
+import { mutatedRule, mutationUnits, unitDir } from "./mutate-units.mjs";
 import { acquire, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
 
@@ -24,24 +25,26 @@ const has = (ref) => {
 };
 
 const SHARED =
-  /^tooling\/(stryker|stryker-reporter|mutate|mutateLock|quick-first|mutate-cache|vitest\.mutate\.config)\.(mjs|ts)$/;
-const IGNORED = /^packages\/[^/]+\/(reports|\.stryker-tmp|node_modules)\//;
-const MUTATED = /^src\/(?!index\.ts$)(?!types\/).+\.ts$/;
+  /^tooling\/(stryker|stryker-reporter|mutate|mutate-units|mutateLock|quick-first|mutate-cache|vitest\.mutate\.config)\.(mjs|ts)$/;
+const IGNORED = /^(reports|\.stryker-tmp|node_modules)\//;
+const UNIT_FILE = /^((?:packages|apps)\/[^/]+)\/(.+)$/;
 
 /**
- * What to run for `files` (repo-relative changed paths): one entry per package in `all` order.
+ * What to run for `files` (repo-relative changed paths): one entry per unit in `all` order. A unit is a package name or
+ * `apps/<name>`; `pkg` in the result is that same string.
  * `mutate` lists the package-relative `src` files to scope the run to; absent means the whole package.
  */
 export function changedScope(files, all) {
   if (files.some((f) => SHARED.test(f))) return all.map((pkg) => ({ pkg }));
   const by = new Map();
   for (const f of files) {
-    const m = /^packages\/([^/]+)\/(.+)$/.exec(f);
-    if (!m || !all.includes(m[1]) || IGNORED.test(f)) continue;
-    const e = by.get(m[1]) ?? { src: [], whole: false };
-    if (MUTATED.test(m[2])) e.src.push(m[2]);
+    const m = UNIT_FILE.exec(f);
+    const unit = m && all.find((u) => unitDir(u) === m[1]);
+    if (!m || unit === undefined || IGNORED.test(m[2])) continue;
+    const e = by.get(unit) ?? { src: [], whole: false };
+    if (mutatedRule(unit).test(m[2])) e.src.push(m[2]);
     else if (!/\.md$/.test(m[2])) e.whole = true;
-    by.set(m[1], e);
+    by.set(unit, e);
   }
   return all
     .filter((p) => by.get(p)?.whole || by.get(p)?.src.length)
@@ -68,10 +71,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
   const at = argv.indexOf("--base");
   const base = at >= 0 ? argv[at + 1] : has("origin/master") ? "origin/master" : "HEAD~50";
   await run("mutate-changed", async () => {
-    const all = fs
-      .readdirSync(path.join(root, "packages"))
-      .sort()
-      .filter((p) => fs.existsSync(path.join(root, "packages", p, "stryker.config.mjs")));
+    const all = mutationUnits(root);
     // A file deleted in the range has no mutants left to run.
     const changed = git("diff", "--name-only", "--diff-filter=d", `${base}...HEAD`).split("\n").filter(Boolean);
     const scope = changedScope(changed, all);
@@ -98,7 +98,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
       child = spawn(
         "node",
         [path.join(root, "tooling", "mutate.mjs"), ...(s.mutate ? ["--mutate", s.mutate.join(",")] : [])],
-        { cwd: path.join(root, "packages", s.pkg), stdio: ["ignore", "pipe", "inherit"] },
+        { cwd: path.join(root, unitDir(s.pkg)), stdio: ["ignore", "pipe", "inherit"] },
       );
       const out = [];
       child.stdout.on("data", (b) => out.push(b));

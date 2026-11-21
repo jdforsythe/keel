@@ -1,5 +1,9 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { mutationUnits, unitDir } from "../mutate-units.mjs";
 import { chunkPlan, endLine, leftLine, listLine, positive, staleFiles } from "../mutate-stale-plan.mjs";
 
 const shas = new Map([
@@ -28,6 +32,38 @@ describe("staleFiles", () => {
   });
   it("ignores claims of files no longer on disk", () => {
     expect(staleFiles([{ file: "packages/a/src/gone.ts", sha: "1" }], new Map(), ["a"])).toEqual([]);
+  });
+});
+
+describe("staleFiles for an app", () => {
+  const appShas = new Map([
+    ["apps/g/modules/todos/a.ts", "1"],
+    ["apps/g/modules/index.ts", "9"],
+    ["apps/g/modules/types/t.ts", "9"],
+    ["apps/g/src/b.ts", "2"],
+    ["packages/a/src/x.ts", "3"],
+  ]);
+  it("reads an app's modules folder under `apps/`, and a package's src beside it", () => {
+    expect(staleFiles([{ file: "apps/g/modules/todos/a.ts", sha: "old" }], appShas, ["a", "apps/g"])).toEqual([
+      { pkg: "a", stale: [], missing: ["src/x.ts"] },
+      { pkg: "apps/g", stale: ["modules/todos/a.ts"], missing: [] },
+    ]);
+  });
+});
+
+describe("mutationUnits", () => {
+  it("lists packages by name and apps as apps/<name>, those with a Stryker config", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-units-"));
+    try {
+      for (const d of ["packages/p", "packages/q", "apps/g", "apps/h"])
+        fs.mkdirSync(path.join(dir, d), { recursive: true });
+      for (const d of ["packages/p", "apps/g"]) fs.writeFileSync(path.join(dir, d, "stryker.config.mjs"), "");
+      expect(mutationUnits(dir)).toEqual(["p", "apps/g"]);
+      expect(unitDir("p")).toBe("packages/p");
+      expect(unitDir("apps/g")).toBe("apps/g");
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
