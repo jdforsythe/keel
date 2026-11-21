@@ -1,7 +1,7 @@
 # k.topology: Deployables
 status: conformance-covered
 
-**Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter, host?, storage?, shells? } })` (`@keel/server`), read statically; `storage`: k.deploy, `shells`: k.shell. Adapters: `node` (serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module, app or stdlib, is in one deployable; its routes, actions, live loaders and runners run there and no other file names a deployable, so moving one edits `topology.ts` alone.
+**Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter, host?, storage?, shells?, origins? } })` (`@keel/server`), read statically; `storage`: k.deploy, `shells`: k.shell, `origins`: k.origins. Adapters: `node` (serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module, app or stdlib, is in one deployable; its routes, actions, live loaders and runners run there and no other file names a deployable, so moving one edits `topology.ts` alone.
 
 **Route table.** The generated entries merge each module's `routes` into `createApp({ routes })`: an app module's `modules/<id>/routes.ts`, a stdlib module's package `./routes` export (none: no routes).
 

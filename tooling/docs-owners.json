@@ -10,6 +10,7 @@
     "k.evidence",
     "k.ledger",
     "k.module",
+    "k.origins",
     "k.security",
     "k.shell",
     "k.topology"

@@ -11,7 +11,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component, k.place | E145x | k.errors |
-| E150x | k.router, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.leave, k.user, k.mount |
+| E150x | k.router, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist | E165x | k.services |
 | E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
@@ -83,6 +83,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.security | Headers, CSP | conformance-covered | CSP |
+| k.origins | Declared origins | proposed | CSP |
 | k.privacy | Secrets, personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | bundle |

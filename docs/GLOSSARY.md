@@ -24,6 +24,7 @@ Canonical names. Changing one requires an RFC.
 - **workflow**: `workflow(id, spec)` from `@keel/std-workflows`: a state chart run per instance in one server store, its steps run as jobs.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 - **identity source**: `identity.server.ts` beside `topology.ts`, default-exporting `identity({ identify, handle? })`: the app's `identify` and optional `handle` mount, through which an auth library or platform tells Keel who the user is (k.user), and `identity.ts`, its `identityMount(path, { links }?)` half that pages import (k.mount).
+- **declared origin**: an exact third-party origin with a reason, listed under one directive (`img`, `media`, `font`, `connect`, `frame`) of a deployable's `origins` in `topology.ts`; the one way the content security policy widens (k.origins).
 - **user**: the id `identify` answers for a request, `""` for no one; distinct from the anonymous `caller`, which grants nothing (k.user).
 
 verified: 64a0931dd19bcaa72dec3dd1666dd5fbdafd1b82
