@@ -62,7 +62,6 @@ await byId("receipts.save").click();
 await page.waitForLoadState("networkidle");
 const invalid = await byId("receipts.new:amount").getAttribute("aria-invalid");
 const error = await byId("receipts.new:amount:error").textContent();
-// FINDINGS L3-1: the server's keel.fields answer reaches neither the field nor its error text.
 check("form shows the server's amount error", invalid === "true" && error !== "", JSON.stringify({ invalid, error }));
 check("no page errors", errors.length === 0, errors.join(" | ").slice(0, 300));
 await browser.close();
