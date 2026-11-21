@@ -151,3 +151,35 @@ export async function served(p: Proc, port: number): Promise<boolean> {
   }
   return false;
 }
+
+const SERVER_SECRET = "s".repeat(32);
+/** Runs `node dist/<name>/server.mjs` (k.hosting) on a free port with `PORT` and `KEEL_SECRET`, polls `GET /` (bounded), calls `fn(port)`, then kills the group. */
+export async function withServer(dir: string, name: string, fn: (port: number) => Promise<void>): Promise<void> {
+  const port = await freePort();
+  const env = childEnv();
+  env.PORT = String(port);
+  env.KEEL_SECRET = SERVER_SECRET;
+  const child = spawn(process.execPath, [join(dir, "dist", name, "server.mjs")], {
+    cwd: dir,
+    env,
+    stdio: "ignore",
+    detached: true,
+  });
+  const p: Proc = { child, out: () => "", exited: new Promise((res) => child.on("close", (c) => res(c))) };
+  started.add(p);
+  try {
+    if (!(await served(p, port))) throw new Error("server.mjs did not answer");
+    await fn(port);
+  } finally {
+    await stop(p);
+  }
+}
+
+/** The `href` of each `<link rel="stylesheet">` in `html`. */
+export const stylesheetsOf = (html: string): string[] =>
+  [...html.matchAll(/<link\b[^>]*>/g)].flatMap((m) => {
+    const tag = m[0];
+    if (!/rel="stylesheet"/.test(tag)) return [];
+    const href = /href="([^"]+)"/.exec(tag)?.[1];
+    return href === undefined ? [] : [href];
+  });
