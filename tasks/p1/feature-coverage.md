@@ -215,6 +215,8 @@ One app, one lane, built in order; each layer is a tagged commit range with its 
 
 Offline writes, conflicts and the native shells stay out of the walkthrough's layers. The outbox and the shell are covered by golden-1 today (sections 2 and 4 below); a tenth layer may add the outbox once layers 5 to 9 are built, and the walkthrough takes it only if it reads naturally in the ledger (a household member adds a receipt on a train).
 
+The walkthrough is also the demo app (`tasks/p1/PLAN.md` W10 and its Feature moments table): a visitor runs it and tries each feature on their own use of it. Layer 9 is built for that: the person signed in sees their own recorded session, replays it, steps back through it (undo), and turns it into a test, from a page in the app, not only from the CLI. Each earlier layer names one such moment a visitor can try in under a minute (kill the server and find the data kept; open two windows and watch a live update; read the evidence bundle), and the README lists them in order.
+
 Closes: findings a.1, a.9 (`std.multi`), b (`k.guards`, `std.tokens`, `std.schedules`, `std.channels`, `k.privacy` use), c.5 (sessions from a signed-in user), c.8 (schedules with workflows with Postgres).
 
 ### 2. Scenario tests
