@@ -4,6 +4,7 @@ import type { Conn } from "./Conn.ts";
 import type { Engine } from "./Engine.ts";
 import type { Raw } from "./Raw.ts";
 import { TypeCache } from "./TypeCache.ts";
+import { verifiedSslmode } from "./verifiedSslmode.ts";
 
 /** Every column arrives as Postgres's text form; `decodeValue` gives the JSON value, as for PGlite. */
 const asText = {
@@ -26,7 +27,12 @@ const run = async (q: Queryable, text: string, params: readonly (string | null)[
  * statement in flight or the next one and never throws from an event.
  */
 export function pgEngine(url: string): Engine {
-  const pool = new pg.Pool({ connectionString: url, max: 10, allowExitOnIdle: true, connectionTimeoutMillis: 10_000 });
+  const pool = new pg.Pool({
+    connectionString: verifiedSslmode(url),
+    max: 10,
+    allowExitOnIdle: true,
+    connectionTimeoutMillis: 10_000,
+  });
   pool.on("error", () => undefined);
   pool.on("connect", (client) => {
     client.on("error", () => undefined);
