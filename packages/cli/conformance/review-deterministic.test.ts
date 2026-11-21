@@ -4,7 +4,7 @@
 import { expect, test } from "vitest";
 import { PROJECT, fixture, keelRun, range, review, withRepo } from "./review-support.ts";
 
-test.skip("Two runs on one fixture print byte-equal output, and a run with no network succeeds.", () => {
+test("Two runs on one fixture print byte-equal output, and a run with no network succeeds.", () => {
   withRepo(
     [PROJECT, { "modules/m/c.test.ts": fixture("cast.ts"), "modules/m/i.ts": fixture("import-computed.ts") }],
     (repo) => {

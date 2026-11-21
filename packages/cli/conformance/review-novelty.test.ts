@@ -11,7 +11,7 @@ const U = (reason: string): string =>
   `import { unsafe } from "@keel/ctx";\nexport const v = unsafe("${reason}", () => 1);\n`;
 const ID = /^[0-9a-f]{12}$/;
 
-test.skip("A finding at `<head>` only is `new`; with only its line moved, `standing`; with its `unsafe` reason edited, `changed`.", () => {
+test("A finding at `<head>` only is `new`; with only its line moved, `standing`; with its `unsafe` reason edited, `changed`.", () => {
   const cast = fixture("cast.ts");
   withRepo([PROJECT, { "modules/m/c.test.ts": cast }, { "modules/m/c.test.ts": `// moved\n${cast}` }], (repo) => {
     const added = ofCode(review(repo, [range(repo, 0, 1)]), "R1050");

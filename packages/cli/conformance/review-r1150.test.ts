@@ -3,7 +3,7 @@
 import { expect, test } from "vitest";
 import { PROJECT, fixture, ofCode, range, review, withRepo } from "./review-support.ts";
 
-test.skip("A tracked `.ts` file that does not parse is one R1150, and the other findings still print.", () => {
+test("A tracked `.ts` file that does not parse is one R1150, and the other findings still print.", () => {
   withRepo(
     [PROJECT, { "modules/m/bad.ts": "export const = ;\n", "modules/m/c.test.ts": fixture("cast.ts") }],
     (repo) => {

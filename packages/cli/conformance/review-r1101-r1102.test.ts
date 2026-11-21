@@ -11,7 +11,7 @@ const REGISTRY =
   "{integrity: sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==}";
 const MOVED = ["{tarball: git+https://example.invalid/left-pad.git}", "{tarball: file:../left-pad.tgz}"];
 
-test.skip("A lockfile entry moved to a `git+https:` or `file:` resolution is R1101; a `postinstall` in any tracked `package.json` is R1102.", () => {
+test("A lockfile entry moved to a `git+https:` or `file:` resolution is R1101; a `postinstall` in any tracked `package.json` is R1102.", () => {
   for (const moved of MOVED) {
     withRepo([{ ...PROJECT, "pnpm-lock.yaml": lock(REGISTRY) }, { "pnpm-lock.yaml": lock(moved) }], (repo) => {
       const hits = ofCode(review(repo, [range(repo, 0, 1)]), "R1101");

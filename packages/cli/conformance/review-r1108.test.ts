@@ -6,7 +6,7 @@ import { PROJECT, ofCode, range, review, withRepo } from "./review-support.ts";
 const file = (n: number): string =>
   `export const f = [${Array.from({ length: n }, (_, i) => `s.string().pii("k${i}")`).join(", ")}];\n`;
 
-test.skip("A file kept by the range with one `.pii(` call fewer is one R1108.", () => {
+test("A file kept by the range with one `.pii(` call fewer is one R1108.", () => {
   withRepo([{ ...PROJECT, "modules/m/s.ts": file(3) }, { "modules/m/s.ts": file(2) }], (repo) => {
     const hits = ofCode(review(repo, [range(repo, 0, 1)]), "R1108");
     expect(hits).toHaveLength(1);

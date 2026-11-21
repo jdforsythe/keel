@@ -10,7 +10,7 @@ const BASE = {
   "apps/x/modules/m/a.ts": "export const a = 1;\n",
 };
 
-test.skip("A range changing `packages/compiler/src/a.ts` and `apps/x/modules/m/a.ts` is one R1100; one changing only the first is none.", () => {
+test("A range changing `packages/compiler/src/a.ts` and `apps/x/modules/m/a.ts` is one R1100; one changing only the first is none.", () => {
   withRepo(
     [
       BASE,

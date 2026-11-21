@@ -11,7 +11,7 @@ const app = (name: string, files: Record<string, string>): Record<string, string
     Object.entries({ "topology.ts": PROJECT["topology.ts"] ?? "", ...files }).map(([p, t]) => [`apps/${name}/${p}`, t]),
   );
 
-test.skip("A review at a monorepo root and one of `apps/x` report the same findings for `apps/x`.", () => {
+test("A review at a monorepo root and one of `apps/x` report the same findings for `apps/x`.", () => {
   const base = {
     "package.json": PROJECT["package.json"] ?? "",
     ...app("x", { "modules/m/a.ts": "export const a = 1;\n" }),

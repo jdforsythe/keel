@@ -110,7 +110,7 @@ function cell(repo: Repo, from: number, to: number, row: Row): string | undefine
   return hits[0]?.loud;
 }
 
-test.skip("Each cell of Loudness, and the opt-in step, holds on a fixture; the exit is 1 exactly when a finding is `fail`, and under `--fail-on warn` also when one is `warn`.", () => {
+test("Each cell of Loudness, and the opt-in step, holds on a fixture; the exit is 1 exactly when a finding is `fail`, and under `--fail-on warn` also when one is `warn`.", () => {
   for (const row of rows) {
     const put = (text: string): Tree => ({ [row.path]: text });
     withRepo([PROJECT, put(row.text), put(row.edit(row.text))], (repo) => {

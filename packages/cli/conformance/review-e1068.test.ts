@@ -4,7 +4,7 @@
 import { expect, test } from "vitest";
 import { PROJECT, range, review, withRepo } from "./review-support.ts";
 
-test.skip("E1068 a range with `--all`", () => {
+test("E1068 a range with `--all`", () => {
   withRepo([PROJECT, { "modules/m/a.ts": "export const a = 2;\n" }], (repo) => {
     const r = range(repo, 0, 1);
     for (const args of [

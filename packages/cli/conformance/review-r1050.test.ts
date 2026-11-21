@@ -5,7 +5,7 @@ import { PROJECT, fixture, ofCode, range, review, withRepo } from "./review-supp
 
 const PATHS = ["modules/m/c.test.ts", "modules/m/types.d.ts", "vite.config.ts", "modules/m/unsafe/a.ts"];
 
-test.skip("R1050 fires for `x as T` in a test file, a `.d.ts`, `vite.config.ts` and `modules/m/unsafe/a.ts`; in `modules/m/a.ts`, where E1757 reports, it does not.", () => {
+test("R1050 fires for `x as T` in a test file, a `.d.ts`, `vite.config.ts` and `modules/m/unsafe/a.ts`; in `modules/m/a.ts`, where E1757 reports, it does not.", () => {
   const cast = fixture("cast.ts");
   withRepo([PROJECT, Object.fromEntries(PATHS.map((p) => [p, cast]))], (repo) => {
     const hits = ofCode(review(repo, [range(repo, 0, 1), "--list"]), "R1050");

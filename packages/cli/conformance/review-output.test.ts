@@ -24,7 +24,7 @@ const HEAD = {
   "modules/m/u.ts": 'import { unsafe } from "@keel/ctx";\nexport const v = unsafe("a reason long enough", () => 1);\n',
 };
 
-test.skip("Compact prints no `list` finding without `--list`; json holds every `fail`, `warn` and `list` finding, and `count` ones with `--list`; the trailer counts all four.", () => {
+test("Compact prints no `list` finding without `--list`; json holds every `fail`, `warn` and `list` finding, and `count` ones with `--list`; the trailer counts all four.", () => {
   const id = withRepo([PROJECT, ACC], (repo) => ofCode(review(repo, [range(repo, 0, 1)]), "R1050")[0]?.id ?? "");
   const entry = [{ id, code: "R1050", path: "modules/m/acc.test.ts", reason: "accepted for the fixture" }];
   withRepo([{ ...PROJECT, ...ACC, "keel-review.json": baselineText(entry) }, HEAD], (repo) => {

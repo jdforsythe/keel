@@ -3,7 +3,7 @@
 import { expect, test } from "vitest";
 import { PROJECT, fixture, lineOf, ofCode, range, review, withRepo } from "./review-support.ts";
 
-test.skip("R1052 is one finding each for `` `@ts-${'ignore'}` ``, `'@ts' + '-ignore'`, `['@ts', '-ignore'].join('')` and `` String.raw`@ts-ignore` ``; none for `'@types/node'` or `'x @ts-ignore'`.", () => {
+test("R1052 is one finding each for `` `@ts-${'ignore'}` ``, `'@ts' + '-ignore'`, `['@ts', '-ignore'].join('')` and `` String.raw`@ts-ignore` ``; none for `'@types/node'` or `'x @ts-ignore'`.", () => {
   const folded = fixture("folded-directives.ts");
   withRepo([PROJECT, { "modules/m/f.ts": folded }], (repo) => {
     const hits = ofCode(review(repo, [range(repo, 0, 1)]), "R1052");

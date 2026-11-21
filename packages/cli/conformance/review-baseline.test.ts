@@ -8,7 +8,7 @@ import { PROJECT, baselineText, counts, fixture, ofCode, range, review, withRepo
 const CAST = { "modules/m/c.test.ts": fixture("cast.ts") };
 const REASON = "accepted for the fixture";
 
-test.skip("With its `id` in `keel-review.json` at `<base>` a finding is `accepted` and counted only; the same entry added only at `<head>` leaves it `new` and adds one R1105.", () => {
+test("With its `id` in `keel-review.json` at `<base>` a finding is `accepted` and counted only; the same entry added only at `<head>` leaves it `new` and adds one R1105.", () => {
   // The id is read off a run where the finding is new.
   const id = withRepo([PROJECT, CAST], (repo) => ofCode(review(repo, [range(repo, 0, 1)]), "R1050")[0]?.id ?? "");
   expect(id).toMatch(/^[0-9a-f]{12}$/);

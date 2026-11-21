@@ -3,7 +3,7 @@
 import { expect, test } from "vitest";
 import { PROJECT, fixture, ofCode, range, review, withRepo } from "./review-support.ts";
 
-test.skip("A test file losing one `expect` call between `<base>` and `<head>` is one R1060; a test file renamed unchanged is none.", () => {
+test("A test file losing one `expect` call between `<base>` and `<head>` is one R1060; a test file renamed unchanged is none.", () => {
   const two = fixture("test-two-expects.ts");
   withRepo(
     [{ ...PROJECT, "modules/m/t.test.ts": two }, { "modules/m/t.test.ts": fixture("test-plain.ts") }],

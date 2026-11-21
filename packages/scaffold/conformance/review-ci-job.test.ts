@@ -5,7 +5,7 @@
 import { expect, test } from "vitest";
 import { apply, read } from "./fixtures.ts";
 
-test.skip("The generated CI workflow holds a `review` job that runs `keel review` over the pull request's range.", () => {
+test("The generated CI workflow holds a `review` job that runs `keel review` over the pull request's range.", () => {
   const yml = read(apply("project", { name: "shop" }, new Map()).files, ".github/workflows/ci.yml");
   const lines = yml.split("\n");
   expect(lines.filter((l) => l === "  review:")).toHaveLength(1);

@@ -3,7 +3,7 @@
 import { expect, test } from "vitest";
 import { PROJECT, fixture, lineOf, ofCode, range, review, withRepo } from "./review-support.ts";
 
-test.skip("R1053 is one finding each for `import(name)`, `require(a + b)` and `import(['vi', 'test'].join(''))`; `import('./a.ts')` and `` import(`./a.ts`) `` are none.", () => {
+test("R1053 is one finding each for `import(name)`, `require(a + b)` and `import(['vi', 'test'].join(''))`; `import('./a.ts')` and `` import(`./a.ts`) `` are none.", () => {
   const computed = fixture("computed-specifiers.ts");
   withRepo([PROJECT, { "modules/m/i.ts": computed }], (repo) => {
     const hits = ofCode(review(repo, [range(repo, 0, 1)]), "R1053");

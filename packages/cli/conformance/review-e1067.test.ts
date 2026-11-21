@@ -7,7 +7,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { PROJECT, SEED, fixture, ofCode, review, withRepo } from "./review-support.ts";
 
-test.skip("E1067 `--accept` without `--reason`, a reason out of range, or an `id` with no finding", () => {
+test("E1067 `--accept` without `--reason`, a reason out of range, or an `id` with no finding", () => {
   withRepo([{ ...PROJECT, "modules/m/c.test.ts": fixture("cast.ts") }], (repo) => {
     const id = ofCode(review(repo, ["--all"]), "R1050")[0]?.id ?? "";
     const file = join(repo.dir, "keel-review.json");
