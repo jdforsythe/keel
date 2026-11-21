@@ -4,10 +4,14 @@
 // served as CSS and a styled element has a non-default computed style; the setup action writes the household name;
 // the shopping menu adds through the API and the list survives a reload; an API write and the loader agree; a
 // cross-site write answers 403; a receipt form answered with a server error shows the typed values, `aria-invalid`
-// and the error text, with scripts running and with scripts off; no page error or console error.
+// and the error text, with scripts running and with scripts off; no page error or console error. The app data lives
+// in PGlite in the same temporary folder: the server is killed with SIGKILL with a write in flight and restarted, and
+// the list, the receipts and the household name are all there. When docker answers, the same kill and restart runs
+// against a throwaway `postgres:17` container through `KEEL_POSTGRES_URL`; the container is removed after.
 // Usage: node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs. The app is not built here and nothing
-// is written inside the repo; the server child is killed on every path, and a crash prints the steps it had.
-import { spawn } from "node:child_process";
+// is written inside the repo; the server child and the container are removed on every path, and a crash prints the
+// steps it had. No database URL is printed.
+import { execFile, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -22,6 +26,13 @@ const { step, finish } = recorder();
 let server;
 let browser;
 let tmp;
+let container;
+
+/** Run `docker` with `args`; resolves its trimmed stdout, or null when it fails. */
+const docker = (args) =>
+  new Promise((resolve) =>
+    execFile("docker", args, { timeout: 60_000 }, (e, out) => resolve(e === null ? String(out).trim() : null)),
+  );
 
 /** SIGKILL the server child; true once signalled or when there was none. */
 const killServer = () => {
@@ -29,7 +40,10 @@ const killServer = () => {
     server.child.kill("SIGKILL");
   }
 };
-process.on("exit", killServer);
+process.on("exit", () => {
+  killServer();
+  if (container !== undefined) execFile("docker", ["rm", "-f", container], () => undefined);
+});
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
     killServer();
@@ -43,8 +57,11 @@ const limit = setTimeout(() => {
   process.exit(1);
 }, LIMIT_MS);
 
-/** Start the built `web` deployable of the app on `port` with web storage in `file`; its output is kept in `log`. */
-function serve(port, file) {
+/**
+ * Start the built `web` deployable of the app on `port` with web storage in `file` and app data at `data`
+ * (`KEEL_POSTGRES_URL`); its output is kept in `log`.
+ */
+function serve(port, file, data) {
   const child = spawn(
     process.execPath,
     [
@@ -55,7 +72,7 @@ function serve(port, file) {
     ],
     {
       cwd: app,
-      env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET },
+      env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, KEEL_POSTGRES_URL: data },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -63,6 +80,15 @@ function serve(port, file) {
   for (const out of [child.stdout, child.stderr]) out.on("data", (d) => log.push(...String(d).trim().split("\n")));
   child.once("error", (e) => log.push(String(e)));
   return { child, log };
+}
+
+/** SIGKILL the server and resolve once it has exited. */
+async function killed() {
+  const child = server.child;
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  const gone = new Promise((r) => child.once("exit", r));
+  child.kill("SIGKILL");
+  await gone;
 }
 
 /** Poll `url` for a 200 page, at most `ms`; false when the server exits first. */
@@ -81,6 +107,83 @@ async function up(url, ms = 20_000) {
 const byId = (page, id) => page.locator(`[id='${id}']`);
 const settled = (page) => page.waitForLoadState("networkidle");
 const clip = (v) => String(v).slice(0, 200);
+
+const asJson = { accept: "application/json", "content-type": "application/json", "x-keel": "1" };
+const sameSite = { "sec-fetch-site": "same-origin", "content-type": "application/x-www-form-urlencoded" };
+
+/** The list as `GET /api/items` answers it, or null. */
+async function itemsAt(origin) {
+  const r = await fetch(`${origin}/api/items`, { headers: { accept: "application/json" } }).catch(() => null);
+  if (r === null || r.status !== 200) return null;
+  return (await r.json()).results["shopping.items"].value.items;
+}
+
+/** The list's three rules: at most 50 items, unique ids, one open item per name. */
+function holds(items) {
+  const open = items.filter((i) => !i.bought).map((i) => i.name);
+  return (
+    items.length <= 50 && new Set(items.map((i) => i.id)).size === items.length && new Set(open).size === open.length
+  );
+}
+
+/** A native form post to `path` as a same-origin page sends it; resolves the status. */
+const formPost = (origin, path, fields) =>
+  fetch(`${origin}${path}`, {
+    method: "POST",
+    headers: sameSite,
+    body: new URLSearchParams(fields).toString(),
+    redirect: "manual",
+  }).then(
+    (r) => r.status,
+    () => 0,
+  );
+
+/** The household name `GET /api/household` answers, or null. */
+async function householdAt(origin) {
+  const r = await fetch(`${origin}/api/household`, { headers: { accept: "application/json" } }).catch(() => null);
+  return r === null ? null : (await r.json()).results["setup.household"].value.name;
+}
+
+/** The totals the receipts page lists, from its served HTML. */
+async function totalsAt(origin) {
+  const html = await fetch(`${origin}/receipts`, { headers: { accept: "text/html" } }).then(
+    (r) => r.text(),
+    () => "",
+  );
+  return [...html.matchAll(/id="receipts\.total\.[^"]+"[^>]*>([^<]+)</g)].map((m) => m[1]);
+}
+
+/** Start the server again on `port` after a SIGKILL, over the same storage and data; true once it answers. */
+async function restart(port, file, data) {
+  await killed();
+  server = serve(port, file, data);
+  return up(`http://127.0.0.1:${port}/`);
+}
+
+/** A throwaway `postgres:17` container; resolves its `postgres:` URL once it takes connections, or null. */
+async function postgres17() {
+  const id = await docker([
+    "run",
+    "-d",
+    "--rm",
+    "-e",
+    "POSTGRES_PASSWORD=smoke",
+    "-p",
+    "127.0.0.1::5432",
+    "postgres:17",
+  ]);
+  if (id === null) return null;
+  container = id;
+  const mapped = await docker(["port", id, "5432/tcp"]);
+  const port = mapped?.split("\n")[0]?.split(":").at(-1);
+  if (port === undefined) return null;
+  // The image's init runs a server on the socket only; a TCP answer inside the container is the final server.
+  for (const end = Date.now() + 60_000; Date.now() < end; await wait(250)) {
+    if ((await docker(["exec", id, "pg_isready", "-q", "-h", "127.0.0.1", "-U", "postgres"])) !== null)
+      return `postgres://postgres:smoke@127.0.0.1:${port}/postgres`;
+  }
+  return null;
+}
 
 /** Fill the setup form on `page` and wait for its done mark. */
 async function setUp(page, origin, name) {
@@ -114,7 +217,9 @@ try {
   if (!built) throw new Error("apps/household/dist/web/server.mjs is missing");
   const port = await freePort();
   const origin = `http://127.0.0.1:${port}`;
-  server = serve(port, join(tmp, "storage"));
+  const storage = join(tmp, "storage");
+  const pglite = `pglite:${join(tmp, "postgres")}`;
+  server = serve(port, storage, pglite);
   const ready = await up(`${origin}/`);
   step("serve web", ready, ready ? "" : server.log.slice(-3).join(" | "));
   if (!ready) throw new Error("the server did not answer");
@@ -176,8 +281,7 @@ try {
   await byId(page, "shopping.help.button").click();
   step("disclosure opens", (await byId(page, "shopping.help.button").getAttribute("aria-expanded")) === "true");
 
-  const json = { accept: "application/json", "content-type": "application/json", "x-keel": "1" };
-  const write = await page.request.post(`${origin}/api/items`, { headers: json, data: { name: "Eggs" } });
+  const write = await page.request.post(`${origin}/api/items`, { headers: asJson, data: { name: "Eggs" } });
   const read = await page.request.get(`${origin}/api/items`, { headers: { accept: "application/json" } });
   const apiItems = await read.text();
   step(
@@ -248,12 +352,72 @@ try {
     JSON.stringify(off),
   );
   await plain.close();
+
+  const rice = await fetch(`${origin}/api/items`, { method: "POST", headers: asJson, body: '{"name":"Rice"}' });
+  const inFlight = fetch(`${origin}/api/items`, { method: "POST", headers: asJson, body: '{"name":"Flour"}' }).catch(
+    () => null,
+  );
+  const back = await restart(port, storage, pglite);
+  await inFlight;
+  step("restart after SIGKILL with a write in flight", rice.status === 200 && back, server.log.slice(-2).join(" | "));
+  const after = (await itemsAt(origin)) ?? [];
+  const names = after.map((i) => i.name);
+  step(
+    "PGlite keeps the list through the kill, rules intact",
+    ["Milk", "Eggs", "Rice"].every((n) => names.includes(n)) && holds(after),
+    clip(names.join(",")),
+  );
+  const keptTotals = await totalsAt(origin);
+  const keptName = await householdAt(origin);
+  step(
+    "PGlite keeps the receipts and the store keeps the name",
+    keptTotals.includes("€3.50") && keptName === "Oak Road",
+    `${keptTotals.join(",")} ${keptName}`,
+  );
+
+  if ((await docker(["info", "--format", "{{.ServerVersion}}"])) === null) {
+    step("postgres 17 skipped: docker is not running", true);
+  } else {
+    const url = await postgres17();
+    step("postgres 17 container takes connections", url !== null);
+    if (url !== null) {
+      await killed();
+      const pgPort = await freePort();
+      const pgOrigin = `http://127.0.0.1:${pgPort}`;
+      const pgStorage = join(tmp, "storage-17");
+      server = serve(pgPort, pgStorage, url);
+      const served17 = await up(`${pgOrigin}/`);
+      const named = await formPost(pgOrigin, "/setup", { name: "Birch Lane" });
+      const added = await fetch(`${pgOrigin}/api/items`, { method: "POST", headers: asJson, body: '{"name":"Tea"}' });
+      const paid = await formPost(pgOrigin, "/receipts", {
+        shop: "Bakery",
+        amount: "4.20",
+        currency: "EUR",
+        paidBy: "sam",
+      });
+      step(
+        "postgres 17 serves the app and takes writes",
+        served17 && named === 303 && added.status === 200 && paid === 303,
+        `setup ${named}, item ${added.status}, receipt ${paid}`,
+      );
+      const again = await restart(pgPort, pgStorage, url);
+      const tea = ((await itemsAt(pgOrigin)) ?? []).map((i) => i.name);
+      const pgTotals = await totalsAt(pgOrigin);
+      step(
+        "postgres 17 keeps the list and the receipts through a SIGKILL and restart",
+        again && tea.includes("Tea") && pgTotals.includes("€4.20"),
+        `${tea.join(",")} ${pgTotals.join(",")}`,
+      );
+    }
+  }
 } catch (e) {
   step("flow", false, clip(String(e).split("\n")[0]));
 } finally {
   clearTimeout(limit);
   await browser?.close().catch(() => undefined);
   killServer();
+  if (container !== undefined) await docker(["rm", "-f", container]);
+  container = undefined;
   if (tmp !== undefined) await rm(tmp, { recursive: true, force: true });
 }
 finish("household");

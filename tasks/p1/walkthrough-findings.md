@@ -156,3 +156,17 @@ Each finding: what I tried, where, the command and its output, what I expected, 
 
 ### W-1 rough (repo tooling): `pnpm ledger` in a fresh worktree rewrites more than the new app
 - `pnpm ledger` after adding the app changed 1,286 lines of `tooling/ledger/ledger.json`: the household's 52 exports, and also seven golden-1 and golden-2 export rungs, the `mutation` section and 180 `a11y` items, because this worktree holds no `reports/` from earlier runs. The committed file keeps the master entries and adds only the household's exports; `node tooling/ledger-fresh.mjs` passes on it.
+
+## Layers 5 and 6
+
+### L5-1 docs: a database `transaction`'s error type is fixed by its first `return`
+- Tried: in `apps/household/modules/receipts/recordReceipt.server.ts`, `receiptsDb(ctx).transaction(async (t) => { const count = await t.one(...); if (!count.ok) return count; if (count.value.n >= 200) return err({ code: "keel.fields", ... }); return t.run(...) })`.
+- `tsc --noEmit`: `error TS2345: Argument of type '(t: Tx) => Promise<... | { readonly ok: false; readonly error: { code: string; message: string; data: { shop: string; }; }; }>' is not assignable to parameter of type '(tx: Tx) => Promise<Result<number, NotFound | StatementError>>'`, followed by a 15-line `TS2769` on the `action` call. The transaction now answers `ok(false)` for a full book and the action maps that to `keel.fields` outside it.
+- Expected: `keel docs std.postgres` to say `fn`'s `err` is limited to the statement errors, or `transaction` to take the union of what `fn` returns (the docs say "`err` ... rolls back", which reads as any `err`).
+
+### L5-2 rough: `std.db` Postgres storage takes no `pglite:` URL
+- k.data says a setting is a server store and the list is app data, so the household name stays a store while the list and the book move to `@keel/std-postgres`. `keel docs std.db` says `storage: 'postgres'` requires a `postgres:` URL in `KEEL_DATABASE_URL`, while `KEEL_POSTGRES_URL` takes `pglite:<folder>`. A deployable run on a PGlite folder therefore keeps its stores in a second place (`storage: 'file'`, the `--localstorage-file` flags), and the walkthrough cannot show `std.db` on Postgres and a PGlite data folder in one build.
+- Expected: one database for both, or the deploy skill naming the split and the reason.
+
+### L5-3 rough: a one-off row schema for a `count(*)` needs its own file
+- `const Count = s.object({ n: s.int() })` beside the `sql(Count)` query in `recordReceipt.server.ts` is `E1104 modules/receipts/recordReceipt.server.ts:13:7 schema Count declared outside a *.schema.ts file; move it there`. It is now `ReceiptCount.schema.ts`. Every statement needs a row schema (std.postgres), so each aggregate an action reads costs a file.

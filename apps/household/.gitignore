@@ -6,3 +6,4 @@ reports
 .stryker-tmp
 .keel-dev/
 .keel/sessions/
+data/

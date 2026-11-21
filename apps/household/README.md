@@ -10,7 +10,7 @@ Run every command from `apps/household`.
 | `pnpm test` | the app's tests under a simulated ctx |
 | `pnpm check` | `tsc`, Biome and `keel check` |
 | `pnpm build` | `keel build` into `dist/web/server.mjs` |
-| `PORT=5211 KEEL_SECRET=<32+ bytes> node dist/web/server.mjs` | the built app |
+| `PORT=5211 KEEL_SECRET=<32+ bytes> KEEL_POSTGRES_URL=pglite:data/postgres node --experimental-webstorage --localstorage-file=data/storage dist/web/server.mjs` | the built app, its data in `data/` |
 
 ## Layer 1: scaffold, dev server, docs
 
@@ -74,4 +74,16 @@ curl -s -H 'accept: application/json' -H 'x-keel: 1' -H 'content-type: applicati
 curl -s localhost:5211/api/items
 ```
 
-The pages that come next, storage that survives a restart, sign-in and personal data, live updates and offline writes, attach to these modules: `savedStores.ts`, `bookStores.ts` and `householdStores.ts` are the stores a durable storage keeps, and `setUp.guard.ts` is where a signed-in user replaces the household check.
+## Layer 5: Postgres app data and a restart
+
+The list and the receipts are records that grow as the household uses the app, so they are app data (`keel docs k.data`) and live in Postgres through `@keel/std-postgres`. The household's name is one setting, so it stays a server store.
+
+- `shoppingDb.server.ts` is `database("shopping.db")` and `receiptsDb.server.ts` is `database("receipts.db")`. Each module lists `@keel/std-postgres` in `deps` and its database in `capabilities`.
+- `modules/shopping/migrations/0001-items.sql` makes the `items` table, with a unique index on the names still to buy; `modules/receipts/migrations/0001-receipts.sql` makes `receipts`. They run at the first query, in order, once.
+- `listOf.server.ts` reads the list. `changeList.server.ts` reads it, applies one rule from `addTo.ts` or `toggleIn.ts` (or a removal) and writes the rows that changed, in one serializable transaction, so two members changing the list at once both apply. The API actions and the page loader call these two.
+- `bookOf.server.ts` reads the book newest first; `recordReceipt.server.ts` counts and inserts in one transaction and refuses a 201st receipt with `keel.fields`.
+- `keel build` copies each module's `migrations/` into `dist/web/modules/`, and `server.mjs` reads them from there. `KEEL_POSTGRES_URL` picks the database: `pglite:<folder>` for PGlite on disk, `postgres://...` for a server. `keel dev` keeps PGlite in `.keel-dev/postgres`.
+
+Tests: `test/setup.ts` awaits `ready()`, so every sim ctx gets its own migrated, empty databases in memory. `test/items.test.ts` drives the list API: quantities, the merge of a bought item put back, the 50-item limit, and 80 seeded changes that keep the list's three rules. The smoke kills the built server with SIGKILL while a write is in flight, starts it again over the same folder, and finds the list, the receipts and the name; with docker running it does the same on a throwaway `postgres:17`.
+
+Try it: start the built app with the command in the table, open `localhost:5211/list`, name the household and add Milk. Stop the server with `kill -9 <pid>` and start it again: Milk is still on the list, kept in `data/postgres`.

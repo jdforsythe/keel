@@ -6,5 +6,6 @@ export default keelConfig({
   test: {
     include: ["test/**/*.test.{ts,tsx}", "modules/*/test/**/*.test.{ts,tsx}", ".keel/sessions/*.test.ts"],
     environment: "happy-dom",
+    setupFiles: ["test/setup.ts"],
   },
 });
