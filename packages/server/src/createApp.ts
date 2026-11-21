@@ -108,7 +108,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * not an integer of at least 1 rejects with E1560.
  * `identity` is the project's identity source (k.user): a request at its `handle.path` or under it goes to `handle.fn`
  * (`handle`), and every routed one gets the `user` `userOf` answers; a `handle.path` not of lowercase `/` segments, or
- * with a route at or under it, rejects with E1579. A caller cookie a deployable with `caller: { days }` mints carries
+ * with a route whose literal path is at or under it, rejects with E1579; no page matches at or under it (a `:param`
+ * route that would fit there is not matched). A caller cookie a deployable with `caller: { days }` mints carries
  * `Max-Age`; `service({ module })` calls made on `ctx` sign their `user` as `x-keel-user` under `secret`.
  * Every response carries the k.security headers (`secured`); every document its own nonce policy (report-only in dev),
  * any other response `default-src 'none'; frame-ancestors 'none'`. `POST /__keel/csp` takes policy reports before any
@@ -150,7 +151,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     mountPath !== undefined &&
     (!/^(\/[a-z0-9-]+)+$/.test(mountPath) || table.some((r) => `${r.def.path}/`.startsWith(`${mountPath}/`)))
   )
-    throw codedError("E1579", "identity handle.path: lowercase / segments with no route at or under it");
+    throw codedError("E1579", "identity handle.path: lowercase / segments, no route under it");
   if (opts.std !== undefined) bindStd(opts.ctx, await loadStd(opts.std));
   const log = opts.log;
   if (deployed && opts.secret === undefined)
@@ -235,7 +236,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     const path = new URL(raw.url).pathname;
     const inspecting = sv.mode === "dev" && path === INSPECT_PATH;
     const peer = inspecting || raw.headers.has("x-keel-forwarded") ? undefined : peerOf(forwards, path);
-    const matched = inspecting ? null : matchUrl(served, path).route;
+    const matched = inspecting ? null : matchUrl(served, path, mountPath).route;
     if (matched !== null) routeOf.set(raw, matched.id);
     const at = peer === undefined || matched !== null ? undefined : peers[peer];
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;

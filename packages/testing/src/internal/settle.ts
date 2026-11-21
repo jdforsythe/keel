@@ -41,7 +41,7 @@ const logSizes = (live: ReadonlyMap<string, Store<unknown>>): string =>
  * length, while `busy()` is null (it names a router navigation's route while one is in flight). A round while busy
  * with nothing moving waits one macrotask turn and does not count toward the 50 quiet-bound rounds; more than 50
  * moving rounds, or `MAX_BUSY_TURNS` busy turns, throws `keel.unexpected` "fire did not settle" (with the pending
- * route id). Without `root` only store logs count. `registry` lists the live stores (default `stores()`; a fresh module
+ * route id; after the busy turns, naming their count and unit). Without `root` only store logs count. `registry` lists the live stores (default `stores()`; a fresh module
  * graph's own for `resumeDocument`). Deterministic: no clock, no timers.
  */
 export async function settle(
@@ -80,10 +80,14 @@ export async function settle(
       if (pending !== null && !moved) {
         // Waiting on I/O (a module load): one macrotask turn, counted apart from the quiet-bound rounds.
         if (++turns > MAX_BUSY_TURNS)
-          throw fail("keel.unexpected", `fire did not settle: ${pending} still loading`, {
-            rounds: round,
-            route: pending,
-          });
+          throw fail(
+            "keel.unexpected",
+            `fire did not settle: ${pending} still loading after ${MAX_BUSY_TURNS} macrotask turns`,
+            {
+              rounds: round,
+              route: pending,
+            },
+          );
         await drained();
         quiet = 0;
         continue;

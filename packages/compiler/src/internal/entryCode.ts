@@ -12,7 +12,7 @@ const SECTIONS = "@keel/compiler/inspect/inspectorSections";
 const BIND_STD = "@keel/compiler/std/bindStd";
 
 const q = (s: string): string => JSON.stringify(s);
-/** What a shell build's entry imports so its runtime knows the identity mount's path (k.return). */
+/** What the entry imports so its router (k.mount) and a shell's runtime (k.return) know the identity mount's path. */
 const IDENTITY = "/identity.ts";
 /** The std.shells package and drivers factory of each shell (k.shell Shell ctx). */
 const SHELLS = {
@@ -34,7 +34,9 @@ const SHELLS = {
  * Shell ctx) the ctx is `createCtx({ mode: 'shell', drivers })`, the drivers of that shell's std.shells package for
  * the build's `origin` (`KEEL_ORIGIN`); with `shell.id` (the project has `identity.ts`, k.return) the entry also
  * imports `identity.ts` and, before the router starts, calls that package's `shellMount` with the shell's `id` and the
- * origin. Under `"production"` the reporter is dead code a build drops.
+ * origin. With `identity` (the project has `identity.ts`) the entry imports its default export and starts the router
+ * with `mount` its `path`, so no page matches at or under it (k.mount). Under `"production"` the reporter is dead code
+ * a build drops.
  */
 export function entryCode(
   routesFiles: readonly string[],
@@ -43,6 +45,7 @@ export function entryCode(
   deployables: Readonly<Record<string, readonly string[]>> = {},
   shell?: { readonly kind: keyof typeof SHELLS; readonly origin: string; readonly id?: string | undefined },
   mode: "dev" | "production" = "production",
+  identity = false,
 ): string {
   const native = shell === undefined ? undefined : SHELLS[shell.kind];
   const origin = `new URL(${q(shell?.origin ?? "")})`;
@@ -65,7 +68,11 @@ export function entryCode(
     ...(native === undefined ? [] : [`import { ${native[1]} as __keelDrivers } from ${q(native[0])};`]),
     ...(native === undefined || id === undefined
       ? []
-      : [`import { shellMount as __keelMount } from ${q(`${native[0]}/shellMount`)};`, `import ${q(IDENTITY)};`]),
+      : [
+          `import { shellMount as __keelMount } from ${q(`${native[0]}/shellMount`)};`,
+          ...(identity ? [] : [`import ${q(IDENTITY)};`]),
+        ]),
+    ...(identity ? [`import __keelIdentity from ${q(IDENTITY)};`] : []),
     ...imports,
     native === undefined
       ? `const ctx = createCtx({ mode: "real" });`
@@ -82,7 +89,7 @@ export function entryCode(
         ]
       : []),
     `const mode = ${q(mode)};`,
-    `const router = createRouter(${table}, { ctx, history: browserHistory(), mode });`,
+    `const router = createRouter(${table}, { ctx, history: browserHistory(), mode${identity ? ", mount: __keelIdentity.path" : ""} });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,
     "mount(router.App, el, { ctx, mode });",

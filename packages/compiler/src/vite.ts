@@ -777,6 +777,7 @@ export default function (): {
         served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},
         shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
         mode,
+        exists("identity.ts"),
       );
     },
     transformIndexHtml() {

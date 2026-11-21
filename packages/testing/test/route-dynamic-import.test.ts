@@ -40,7 +40,7 @@ describe("renderRoute with a loader that loads a module", () => {
 
   it("a loader that never resolves rejects with keel.unexpected naming the route", async () => {
     await expect(renderRoute("dyn.never", { routes, ctx: createCtx({ mode: "sim", seed: 1337 }) })).rejects.toThrow(
-      /^keel\.unexpected fire did not settle: dyn\.never still loading/,
+      /^keel\.unexpected fire did not settle: dyn\.never still loading after 200000 macrotask turns/,
     );
   }, 30_000);
 });

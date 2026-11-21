@@ -74,7 +74,8 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * becomes `keel.conflict`), and the request ends before the router revalidates or navigates. Without `state` such a
  * loader or action is `keel.unexpected`. Unless `mode` is `dev` (the default is `production`), every error the
  * default alert, an `errorElement` or a `Form` gets is its `publicError`; observers get the full error. A link click,
- * `navigate` or `ok(href)` to a path no page of the table matches is a document navigation (`leave`, k.mount); an
+ * `navigate` or `ok(href)` to a path no page of the table matches (none matches at or under `mount`, nor a path
+ * holding a `\`) is a document navigation (`leave`, k.mount); an
  * initial load or a history pop of one renders the 404. On a shell's ctx (`mountRequests`, k.return) a navigation
  * under the identity mount is a mount request and nothing leaves.
  */
@@ -88,6 +89,8 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     readonly mode?: "dev" | "production";
     /** A document navigation (k.mount): `location.assign`, or `location.replace` with `replace`; the harness records it. */
     readonly leave?: (url: string, replace: boolean) => void;
+    /** The identity mount's `path` (k.mount): no page matches at or under it. */
+    readonly mount?: string | undefined;
   },
   state?: ServerState,
 ): Router<RouteState<M>> {
@@ -99,6 +102,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   const own = tables.get(routes) ?? compileRoutes(routes.routes);
   // The client matches no API route (k.api): a link to one is a document request.
   const table = compileTable(own, routes.routes).filter((r) => !r.def.api);
+  const match = (url: string): Match => matchUrl(table, url, opts.mount);
   const root = rooted(() => {
     const view = signal<View | null>(null);
     const place = signal<Place>(MISSING);
@@ -234,7 +238,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
 
   const go = (url: string, mode: Nav, visited: readonly string[]): Promise<void> => {
     if (disposed) return done;
-    const m = matchUrl(table, url);
+    const m = match(url);
     // A path no page of the table matches is the server's: a link, `navigate` or `ok` there loads a document.
     if (m.route === null && (mode === "push" || mode === "replace")) {
       pending.set(false);
@@ -270,7 +274,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
 
   const revalidate = async (): Promise<void> => {
     const v = view.get();
-    const m = v === null ? null : matchUrl(table, v.url);
+    const m = v === null ? null : match(v.url);
     if (v === null || m === null || m.kind !== "route") return;
     const t = token;
     pending.set(true);
@@ -290,7 +294,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
 
   // A Form's `action` is an Href: its route and params come from matching it in this router's table.
   const actionAt = (href: Href, method: Verb) => {
-    const m = matchUrl(table, href);
+    const m = match(href);
     const act = m.kind === "route" ? routeActions.get(m.route.def)?.[method] : undefined;
     // The client router posts to pages only, whose actions declare no `output` (k.api).
     return m.kind === "route" && act !== undefined && act.output === undefined ? { act, params: m.params } : null;
@@ -300,7 +304,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   const core: RouterCore = {
     ctx,
     navigate,
-    accepts: (href, method) => (matchUrl(table, href).route === null ? null : actionAt(href, method) !== null),
+    accepts: (href, method) => (match(href).route === null ? null : actionAt(href, method) !== null),
     async submit(req) {
       const handle = req.handle?.[formHandle];
       if (handle !== undefined && !handle.validate().ok) return null;
@@ -374,7 +378,7 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
             if ((t !== null && t !== "" && t !== "_self") || a.hasAttribute("download")) return;
             const u = new URL(a.href, document.baseURI);
             // A path the table has no page for (an API route, the identity mount) is the browser's to follow.
-            if (u.origin !== new URL(document.baseURI).origin || matchUrl(table, u.pathname).route === null) return;
+            if (u.origin !== new URL(document.baseURI).origin || match(u.pathname).route === null) return;
             e.preventDefault();
             void go(`${u.pathname}${u.search}${u.hash}`, "push", []);
           };

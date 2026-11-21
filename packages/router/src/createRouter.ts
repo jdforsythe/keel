@@ -16,7 +16,8 @@ import type { RouterHistory } from "./types/RouterHistory.ts";
  * or action naming `stores` (server state, k.server) is `keel.unexpected`: it runs on a `node` deployable only.
  * `mode` is `mount`'s (k.errors), default `production`: unless it is `dev`, a `keel.unexpected` the default alert,
  * an `errorElement` or a `Form` gets has message `unexpected` and data `{}`, as from the server; observers and
- * `mount`'s `onError` get the full error.
+ * `mount`'s `onError` get the full error. `opts.mount` is the identity mount's `path` (k.mount): no page matches at or
+ * under it, so a link, `navigate` or `ok` there is a document navigation; a path holding a `\` matches no page either.
  */
 export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
   routes: Manifest<M>,
@@ -25,6 +26,7 @@ export function createRouter<M extends Readonly<Record<string, RouteDef>>>(
     readonly history: RouterHistory;
     readonly caller?: string;
     readonly mode?: "dev" | "production";
+    readonly mount?: string;
   },
 ): Router<RouteState<M>> {
   return createRouterWith(routes, opts);

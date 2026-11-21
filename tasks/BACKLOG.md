@@ -992,8 +992,8 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0890 red-team, medium: a project `envPrefix` array survives the plugin's `"\0"` lock (mergeConfig concatenates); `import.meta.env.KEEL_*` is inlined · compiler · k.boundary · repro: red-team-9.md M2
 - [x] 0891 red-team, medium: `x-keel-user` is not bound to body or origin and the receiver has no expiry ceiling; a captured header replays any write for 60 s · server, services · k.user · repro: red-team-9.md M3
 - [x] 0892 red-team, medium: no gate catches a committed ledger or evidence file that differs from what the tree produces; `pnpm ledger --diff` does not write · tooling · principle 11 · repro: red-team-9.md M4
-- [ ] 0893 red-team, low: E1579 misses a param route matching `handle.path`; the client router swallows mount links · compiler, server · k.user, k.mount · repro: red-team-9.md L1
-- [ ] 0894 red-team, low: `identityMount` does not validate `path` at runtime (`/\evil.example` resolves off-origin) · router · k.mount · repro: red-team-9.md L2
+- [x] 0893 red-team, low: E1579 misses a param route matching `handle.path`; the client router swallows mount links · compiler, server · k.user, k.mount · repro: red-team-9.md L1
+- [x] 0894 red-team, low: `identityMount` does not validate `path` at runtime (`/\evil.example` resolves off-origin) · router · k.mount · repro: red-team-9.md L2
 - [ ] 0895 red-team, low: `handle.path` `/assets` shadows built assets; E1579 allows it · server, compiler · k.user · repro: red-team-9.md L3
 - [x] 0896 red-team, low: `tokens.check` throws on a non-Secret token and answers `malformed` for an async `find` · std-tokens · std.tokens · repro: red-team-9.md L4
 - [x] 0897 red-team, low: `tokens.check` accepts an expired token when the clock reads `NaN` · std-tokens · std.tokens · repro: red-team-9.md L5

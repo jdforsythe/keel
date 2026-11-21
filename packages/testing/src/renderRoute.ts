@@ -75,6 +75,7 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
         caller: options.caller ?? "",
         user: options.user ?? "",
         leave: open,
+        mount: options.mount,
       },
       serverState(ctx),
     );

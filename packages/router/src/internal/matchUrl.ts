@@ -15,9 +15,10 @@ const rank = (segments: readonly Segment[]): string => segments.map((s) => (s.ki
  * URL-decoded then parsed by the route's params schema; failure is `notFound`. With a prefix param (k.prefix Parse):
  * a first segment that is a non-default value matches prefixed routes only; the default value matches the rest of the
  * path, and the canonical `url` leaves it out (the server answers 308 to it); any other path matches unprefixed
- * routes and prefixed routes with the default.
+ * routes and prefixed routes with the default. A path at or under `mount` (the router's identity mount path, k.mount)
+ * matches nothing, nor does one holding a `\`, which a URL parser reads as `/` (so `/\x` would name the host `x`).
  */
-export function matchUrl(table: readonly Located[], url: string): Match {
+export function matchUrl(table: readonly Located[], url: string, mount?: string): Match {
   const { path, query, hash } = splitUrl(url);
   const trimmed = path.length > 1 ? path.replace(/\/+$/, "") : path;
   const tail = `${query === "" ? "" : `?${query}`}${hash === "" ? "" : `#${hash}`}`;
@@ -25,7 +26,8 @@ export function matchUrl(table: readonly Located[], url: string): Match {
   const decoded = attempt(() =>
     trimmed === "/" || trimmed === "" ? [] : trimmed.slice(1).split("/").map(decodeURIComponent),
   );
-  if (!decoded.ok) return { kind: "notFound", url: canonical, route: null };
+  if (!decoded.ok || (mount !== undefined && `${trimmed}/`.startsWith(`${mount}/`)) || trimmed.includes("\\"))
+    return { kind: "notFound", url: canonical, route: null };
   const parts = decoded.value;
   const first = parts[0];
   const prefixes = table.map((r) => prefixOf(r.def, r.segments));
