@@ -41,7 +41,7 @@ const page = (out: string): Files => [
   },
 ];
 
-test.skip("A page `loader` `output` holding `digest: Digested` is one E2203", () => {
+test("A page `loader` `output` holding `digest: Digested` is one E2203", () => {
   fc.assert(
     fc.property(field, (f) => {
       const ds = found(page(`s.object({ ${f}: s.string(), digest: Digested })`));
@@ -54,7 +54,7 @@ test.skip("A page `loader` `output` holding `digest: Digested` is one E2203", ()
   );
 });
 
-test.skip("An API entry `output` holding `digest: Digested` is one E2203", () => {
+test("An API entry `output` holding `digest: Digested` is one E2203", () => {
   fc.assert(
     fc.property(field, (f) => {
       const ds = found(api(`s.object({ ${f}: s.string(), digest: Digested })`));
@@ -67,7 +67,7 @@ test.skip("An API entry `output` holding `digest: Digested` is one E2203", () =>
   );
 });
 
-test.skip("A store schema holding `Digested` is no E2203, and an `output` without it is none", () => {
+test("A store schema holding `Digested` is no E2203, and an `output` without it is none", () => {
   const store: Files = [
     MANIFEST,
     {
@@ -80,7 +80,7 @@ test.skip("A store schema holding `Digested` is no E2203, and an `output` withou
   expect(found(page("s.object({ id: s.string() })"))).toHaveLength(0);
 });
 
-test.skip("E2203 does not report an `output` whose `Digested` the reader cannot see: a factory call, a loader given `decl()`", () => {
+test("E2203 does not report an `output` whose `Digested` the reader cannot see: a factory call, a loader given `decl()`", () => {
   expect(found(api("s.object({ digest: make() })"))).toHaveLength(0);
   const viaDecl: Files = [
     MANIFEST,
@@ -92,7 +92,7 @@ test.skip("E2203 does not report an `output` whose `Digested` the reader cannot 
   expect(found(viaDecl)).toHaveLength(0);
 });
 
-test.skip("E2203 reports an `output` reaching `Digested` through a `const` of an imported `*.schema.ts`", () => {
+test("E2203 reports an `output` reaching `Digested` through a `const` of an imported `*.schema.ts`", () => {
   const files: Files = [
     MANIFEST,
     {

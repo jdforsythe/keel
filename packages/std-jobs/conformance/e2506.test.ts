@@ -38,7 +38,7 @@ function fixture(imports: string[], body: string[]): { files: Files; line: (i: n
 }
 const NAMED = [`import { jobs } from "./jobs.server.ts"`];
 
-test.skip("`jobs.enqueue(ctx, 'orders.mail', { t: reveal(p.k) })`, with `jobs` imported from `./jobs.server.ts`, is one E2506", () => {
+test("`jobs.enqueue(ctx, 'orders.mail', { t: reveal(p.k) })`, with `jobs` imported from `./jobs.server.ts`, is one E2506", () => {
   fc.assert(
     fc.property(key, fc.integer({ min: 0, max: 3 }), (k, pad) => {
       const body = [
@@ -56,7 +56,7 @@ test.skip("`jobs.enqueue(ctx, 'orders.mail', { t: reveal(p.k) })`, with `jobs` i
   );
 });
 
-test.skip("the same through a `const` of the file bound to `queue(...)` is one E2506", () => {
+test("the same through a `const` of the file bound to `queue(...)` is one E2506", () => {
   const f = fixture(
     [`import { queue } from "@keel/std-jobs"`, `import { mail } from "./mail.server.ts"`],
     [`const q = queue({ "orders.mail": mail })`, `await q.enqueue(ctx, 'orders.mail', { t: reveal(p.k) })`],
@@ -66,14 +66,14 @@ test.skip("the same through a `const` of the file bound to `queue(...)` is one E
   expect(ds[0]?.line).toBe(f.line(1));
 });
 
-test.skip("`{ key: reveal(p.k) }` as the fourth argument is one E2506", () => {
+test("`{ key: reveal(p.k) }` as the fourth argument is one E2506", () => {
   const f = fixture(NAMED, [`await jobs.enqueue(ctx, 'orders.mail', { t: 1 }, { key: reveal(p.k) })`]);
   const ds = found(f.files);
   expect(ds).toHaveLength(1);
   expect(ds[0]?.line).toBe(f.line(0));
 });
 
-test.skip("`<q>` as a name imported from a path ending `jobs.server` with `.ts`, `.js` or no extension, or `<ns>.<name>` of a namespace import, is one E2506", () => {
+test("`<q>` as a name imported from a path ending `jobs.server` with `.ts`, `.js` or no extension, or `<ns>.<name>` of a namespace import, is one E2506", () => {
   const call = `await jobs.enqueue(ctx, 'orders.mail', { t: reveal(p.k) })`;
   for (const spec of ["./jobs.server.ts", "./jobs.server.js", "./jobs.server", "../orders/jobs.server.ts"]) {
     expect(found(fixture([`import { jobs } from "${spec}"`], [call]).files), spec).toHaveLength(1);
@@ -85,7 +85,7 @@ test.skip("`<q>` as a name imported from a path ending `jobs.server` with `.ts`,
   expect(found(ns.files)).toHaveLength(1);
 });
 
-test.skip("`{ t: hash(reveal(p.k)) }` is no E2506", () => {
+test("`{ t: hash(reveal(p.k)) }` is no E2506", () => {
   fc.assert(
     fc.property(key, (k) => {
       const f = fixture(NAMED, [`await jobs.enqueue(ctx, 'orders.mail', { t: hash(reveal(p.${k})) })`]);
@@ -95,7 +95,7 @@ test.skip("`{ t: hash(reveal(p.k)) }` is no E2506", () => {
   );
 });
 
-test.skip("`enqueue` on a name imported from `./mail.ts` is no E2506", () => {
+test("`enqueue` on a name imported from `./mail.ts` is no E2506", () => {
   const f = fixture(
     [`import { jobs } from "./mail.ts"`],
     [`await jobs.enqueue(ctx, 'orders.mail', { t: reveal(p.k) })`],
@@ -103,7 +103,7 @@ test.skip("`enqueue` on a name imported from `./mail.ts` is no E2506", () => {
   expect(found(f.files)).toHaveLength(0);
 });
 
-test.skip("E2506 does not see `enqueue` taken off the queue into a local, its `.call` or `.apply`, or a helper that enqueues", () => {
+test("E2506 does not see `enqueue` taken off the queue into a local, its `.call` or `.apply`, or a helper that enqueues", () => {
   const cases = [
     [`const e = jobs.enqueue`, `await e(ctx, 'orders.mail', { t: reveal(p.k) })`],
     [`await jobs.enqueue.call(jobs, ctx, 'orders.mail', { t: reveal(p.k) })`],
@@ -113,7 +113,7 @@ test.skip("E2506 does not see `enqueue` taken off the queue into a local, its `.
   for (const body of cases) expect(found(fixture(NAMED, body).files), body.join(" ")).toHaveLength(0);
 });
 
-test.skip("an argument that is a parameter, not a revealed value, is no E2506", () => {
+test("an argument that is a parameter, not a revealed value, is no E2506", () => {
   const f = fixture(NAMED, [`await jobs.enqueue(ctx, 'orders.mail', { t: p.k }, { key: p.id })`]);
   expect(found(f.files)).toHaveLength(0);
 });
