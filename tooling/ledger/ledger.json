@@ -2,24 +2,24 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1320,
+    "example": 1331,
     "probabilistic": 330,
     "exhaustive": 15,
-    "proven": 63,
+    "proven": 64,
     "monitored": 4
   },
   "mutation": {
     "packages": {
       "check": {
-        "score": 75.1,
+        "score": 74.58,
         "threshold": 70
       },
       "cli": {
-        "score": 76.69,
+        "score": 78.48,
         "threshold": 70
       },
       "compiler": {
-        "score": 79.19,
+        "score": 79.2,
         "threshold": 70
       },
       "ctx": {
@@ -43,7 +43,7 @@
         "threshold": 70
       },
       "scaffold": {
-        "score": 79.61,
+        "score": 79.5,
         "threshold": 70
       },
       "schema": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 77.65,
+        "score": 77.96,
         "threshold": 70
       },
       "services": {
@@ -14977,6 +14977,50 @@
     },
     {
       "item": "k.opening#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#10",
+      "rung": "proven"
+    },
+    {
+      "item": "k.origins#11",
       "rung": "example"
     },
     {
