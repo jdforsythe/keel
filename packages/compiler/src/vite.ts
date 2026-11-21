@@ -15,10 +15,10 @@ import { SERVER_ONLY_NAME } from "./internal/SERVER_ONLY_NAME.ts";
 import { STUB_NAME } from "./internal/STUB_NAME.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
+import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
-import { calledModules } from "./internal/calledModules.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { exportNames } from "./internal/exportNames.ts";
@@ -377,10 +377,7 @@ export default function (): {
    * client's browser code imports (`calledModules`), plus every module that has no folder under `modules/` (a placed
    * stdlib module, whose contract comes by package), so no other app module's name is in the browser build.
    */
-  const calledByClient = (
-    all: Topology,
-    own: readonly string[],
-  ): Record<string, readonly string[]> => {
+  const calledByClient = (all: Topology, own: readonly string[]): Record<string, readonly string[]> => {
     const called = new Set(
       calledModules(own, {
         read: (f) => {

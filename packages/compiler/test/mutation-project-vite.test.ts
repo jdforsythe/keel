@@ -386,14 +386,7 @@ describe("vite: project inputs", () => {
     await p.buildStart.call(undefined);
     expect(Object.keys(artifact("routes.json").data)).toEqual(["a.index", "b.index"]);
     expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(
-        ["/modules/a/routes.ts", "/modules/b/routes.ts"],
-        "virtual:keel.css",
-        {},
-        {},
-        undefined,
-        "dev",
-      ),
+      entryCode(["/modules/a/routes.ts", "/modules/b/routes.ts"], "virtual:keel.css", {}, {}, undefined, "dev"),
     );
   });
 
