@@ -36,7 +36,7 @@ function mintOne(ctx: Ctx, ttl: number | null = null): { text: string; id: strin
 const secretPart = (text: string): string => text.split("_")[2] ?? "";
 const mismatchOfHunter2 = (ctx: Ctx): unknown => errorOf(tokens(ctx).check(secretOf("hunter2"), () => undefined)).error;
 
-test.skip("Under real and sim, `idOf` is `ok` with `id` for a minted token.", () => {
+test("Under real and sim, `idOf` is `ok` with `id` for a minted token.", () => {
   fc.assert(
     fc.property(fc.constantFrom("real", "sim"), fc.integer({ min: 1, max: 5 }), (mode, n) => {
       const ctx = mode === "real" ? realCtx() : simCtx();
@@ -52,7 +52,7 @@ test.skip("Under real and sim, `idOf` is `ok` with `id` for a minted token.", ()
   );
 });
 
-test.skip("Under real and sim, `idOf` is `ok` with `id` for a minted token with one `secret` character changed.", () => {
+test("Under real and sim, `idOf` is `ok` with `id` for a minted token with one `secret` character changed.", () => {
   fc.assert(
     fc.property(
       fc.constantFrom("real", "sim"),
@@ -74,7 +74,7 @@ test.skip("Under real and sim, `idOf` is `ok` with `id` for a minted token with 
   );
 });
 
-test.skip("Under sim, `idOf` is `ok` with `id` for a minted token after expiry.", async () => {
+test("Under sim, `idOf` is `ok` with `id` for a minted token after expiry.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 0, max: 1_000_000_000 }), async (extra) => {
       const ctx = simCtx();
@@ -89,7 +89,7 @@ test.skip("Under sim, `idOf` is `ok` with `id` for a minted token after expiry."
   );
 });
 
-test.skip("`idOf` of `hunter2` equals `check`'s `credentials.mismatch` for `hunter2`.", () => {
+test("`idOf` of `hunter2` equals `check`'s `credentials.mismatch` for `hunter2`.", () => {
   for (const ctx of [realCtx(), shellCtx(), simCtx()]) {
     const r = idOf(ctx, secretOf("hunter2"));
     expect(errorOf(r).code).toBe("credentials.mismatch");
@@ -97,7 +97,7 @@ test.skip("`idOf` of `hunter2` equals `check`'s `credentials.mismatch` for `hunt
   }
 });
 
-test.skip("`idOf` of `''` equals `check`'s `credentials.mismatch` for `hunter2`.", () => {
+test("`idOf` of `''` equals `check`'s `credentials.mismatch` for `hunter2`.", () => {
   for (const ctx of [realCtx(), shellCtx(), simCtx()]) {
     const r = idOf(ctx, secretOf(""));
     expect(errorOf(r).code).toBe("credentials.mismatch");
@@ -105,7 +105,7 @@ test.skip("`idOf` of `''` equals `check`'s `credentials.mismatch` for `hunter2`.
   }
 });
 
-test.skip("`idOf` of a minted token with one hex letter upper-cased equals `check`'s `credentials.mismatch` for `hunter2`.", () => {
+test("`idOf` of a minted token with one hex letter upper-cased equals `check`'s `credentials.mismatch` for `hunter2`.", () => {
   fc.assert(
     fc.property(fc.constantFrom("real", "sim"), fc.nat(), (mode, pick) => {
       const ctx = mode === "real" ? realCtx() : simCtx();
@@ -125,7 +125,7 @@ test.skip("`idOf` of a minted token with one hex letter upper-cased equals `chec
   );
 });
 
-test.skip("Under real and shell, `idOf` of a sim token equals `check`'s `credentials.mismatch` for `hunter2`.", () => {
+test("Under real and shell, `idOf` of a sim token equals `check`'s `credentials.mismatch` for `hunter2`.", () => {
   fc.assert(
     fc.property(fc.integer({ min: 0, max: 2 ** 31 - 1 }), (seed) => {
       const m = mintOne(simCtx(seed));
@@ -140,7 +140,7 @@ test.skip("Under real and shell, `idOf` of a sim token equals `check`'s `credent
   );
 });
 
-test.skip("`JSON.stringify` and `util.inspect` of `idOf` of a minted token hold no `secret`.", () => {
+test("`JSON.stringify` and `util.inspect` of `idOf` of a minted token hold no `secret`.", () => {
   fc.assert(
     fc.property(fc.constantFrom("real", "sim"), (mode) => {
       const ctx = mode === "real" ? realCtx() : simCtx();
@@ -158,7 +158,7 @@ test.skip("`JSON.stringify` and `util.inspect` of `idOf` of a minted token hold 
   );
 });
 
-test.skip("`idOf` calls no `console` method.", () => {
+test("`idOf` calls no `console` method.", () => {
   const calls: string[] = [];
   const saved: [string, unknown][] = [];
   for (const key of Object.getOwnPropertyNames(console)) {
