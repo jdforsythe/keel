@@ -1,26 +1,26 @@
 {
   "version": 1,
-  "unsafe": 18,
+  "unsafe": 19,
   "hostElements": 0,
   "rungs": {
-    "example": 1349,
+    "example": 1383,
     "probabilistic": 333,
     "exhaustive": 15,
-    "proven": 64,
+    "proven": 72,
     "monitored": 4
   },
   "mutation": {
     "packages": {
       "check": {
-        "score": 74.58,
+        "score": 74.52,
         "threshold": 70
       },
       "cli": {
-        "score": 79.53,
+        "score": 78.31,
         "threshold": 70
       },
       "compiler": {
-        "score": 79.18,
+        "score": 79.1,
         "threshold": 70
       },
       "ctx": {
@@ -40,7 +40,7 @@
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 74.98,
+        "score": 75.11,
         "threshold": 70
       },
       "scaffold": {
@@ -84,7 +84,7 @@
         "threshold": 70
       },
       "std-headless": {
-        "score": 78.17,
+        "score": 80.77,
         "threshold": 70
       },
       "std-health": {
@@ -160,11 +160,11 @@
         "threshold": 80
       },
       "testing": {
-        "score": 88.12,
+        "score": 87.98,
         "threshold": 70
       },
       "ui": {
-        "score": 71.54,
+        "score": 71.15,
         "threshold": 70
       }
     },
@@ -928,14 +928,6 @@
         "survived": 2,
         "noCoverage": 0,
         "score": 84.62
-      },
-      {
-        "file": "packages/check/src/rules/ariaImport.ts",
-        "sha": "83021648e218a223441b6f3a7dab4b49ec0e6e805a0caf532103ca56d442865c",
-        "killed": 29,
-        "survived": 2,
-        "noCoverage": 0,
-        "score": 93.55
       },
       {
         "file": "packages/check/src/rules/bodyOnGetEndpoint.ts",
@@ -4674,14 +4666,6 @@
         "score": 100
       },
       {
-        "file": "packages/runtime-dom/src/internal/toUnexpected.ts",
-        "sha": "b6bfad741d62bdaf52746ba1002e057e2b89d0adf6521bf4db2095293e039779",
-        "killed": 4,
-        "survived": 4,
-        "noCoverage": 1,
-        "score": 44.44
-      },
-      {
         "file": "packages/runtime-dom/src/internal/trustedHtml.ts",
         "sha": "164273b838c7e0256a6154174e06cf3f22b98a244dcfad7b158083a79ce789a7",
         "killed": 52,
@@ -7922,28 +7906,12 @@
         "score": 25
       },
       {
-        "file": "packages/std-headless/src/internal/listChart.ts",
-        "sha": "4e3ae01e9184422fcbb5cbffcd250fc48a089d31a36d0534fedc8ca1eb46e046",
-        "killed": 101,
-        "survived": 32,
-        "noCoverage": 0,
-        "score": 75.94
-      },
-      {
         "file": "packages/std-headless/src/internal/nameOf.ts",
         "sha": "4473d10d6edab19952b2593ea63a1910a21808201e9bcb4463f88adbcbdfda96",
         "killed": 10,
         "survived": 0,
         "noCoverage": 2,
         "score": 83.33
-      },
-      {
-        "file": "packages/std-headless/src/internal/stableRows.ts",
-        "sha": "d70e4c7d000127c21ac062860fae3e5b49c2093cd23d27c1568ae160fa186966",
-        "killed": 6,
-        "survived": 0,
-        "noCoverage": 0,
-        "score": 100
       },
       {
         "file": "packages/std-headless/src/internal/toastKey.ts",
@@ -12800,6 +12768,12 @@
     },
     {
       "pkg": "std-headless",
+      "name": "listChart",
+      "file": "packages/std-headless/src/listChart.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
       "name": "openChart",
       "file": "packages/std-headless/src/openChart.ts",
       "rung": "proven"
@@ -12809,6 +12783,12 @@
       "name": "optionsChart",
       "file": "packages/std-headless/src/optionsChart.ts",
       "rung": "exhaustive"
+    },
+    {
+      "pkg": "std-headless",
+      "name": "stableRows",
+      "file": "packages/std-headless/src/stableRows.ts",
+      "rung": "example"
     },
     {
       "pkg": "std-headless",
@@ -13492,7 +13472,7 @@
       "pkg": "testing",
       "name": "render",
       "file": "packages/testing/src/render.ts",
-      "rung": "probabilistic"
+      "rung": "proven"
     },
     {
       "pkg": "testing",
@@ -13532,9 +13512,21 @@
     },
     {
       "pkg": "ui",
+      "name": "customElement",
+      "file": "packages/ui/src/customElement.ts",
+      "rung": "proven"
+    },
+    {
+      "pkg": "ui",
       "name": "defineTokens",
       "file": "packages/ui/src/defineTokens.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "ui",
+      "name": "hostCode",
+      "file": "packages/ui/src/hostCode.ts",
+      "rung": "proven"
     },
     {
       "pkg": "sessions",
@@ -14521,6 +14513,74 @@
       "rung": "example"
     },
     {
+      "item": "k.host-code#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#11",
+      "rung": "example"
+    },
+    {
       "item": "k.host#1",
       "rung": "example"
     },
@@ -15327,6 +15387,38 @@
     {
       "item": "k.reveal#9",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.roles#1",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#2",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#3",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#4",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#5",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.roles#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.roles#8",
+      "rung": "example"
     },
     {
       "item": "k.router#1",
@@ -16486,6 +16578,30 @@
     },
     {
       "item": "std.jobs#11",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#6",
       "rung": "example"
     },
     {
