@@ -87,6 +87,8 @@ function tools(withJava = true): { env: Record<string, string>; log: string } {
   const bin = join(root, "bin");
   const log = join(root, "log");
   mkdirSync(log, { recursive: true });
+  mkdirSync(bin, { recursive: true });
+  symlinkSync(process.execPath, join(bin, "node"));
   if (withJava) exe(join(bin, "java"), "echo 'openjdk version \"21.0.1\" 2030-01-01' >&2\n");
   exe(
     join(bin, "npx"),
@@ -117,8 +119,9 @@ exec "${realNpx}" "$@"
     env[k] = v;
   }
   Object.assign(env, {
-    // macOS keeps a `java` shim in /usr/bin: without a JDK the PATH leaves it out.
-    PATH: [bin, dirname(process.execPath), ...(withJava ? ["/usr/bin"] : []), "/bin"].join(delimiter),
+    // With a JDK: the stand-ins, Node's directory and the system directories.
+    // Without one: `bin` alone (holding a link to this Node and the stand-ins), so no system directory can supply a `java`.
+    PATH: withJava ? [bin, dirname(process.execPath), "/usr/bin", "/bin"].join(delimiter) : bin,
     KEEL_ORIGIN: ORIGIN,
     ...(withJava ? { JAVA_HOME: jdk } : {}),
     ANDROID_HOME: sdk,
