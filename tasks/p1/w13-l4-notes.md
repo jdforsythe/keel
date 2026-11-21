@@ -1,9 +1,9 @@
 # W13 L4 (compiler, module schema): what it leaves for others
 
-Branch `w13-l4`, built; merges into `lane-r157` after L3's merge there. A follow-up runs on the branch: a module's `public` refuses a `routes` key (the conformance `module-manifest` expects it; a stale key must not pass silently).
+Branch `w13-l4`, built; merges into `lane-r157` after L3's merge there. Its follow-up is in (4a550990): `public` is a closed object holding only `exports`, as k.module lists it, so a stale `routes` key is refused.
 
 ## Red list
-compiler 6 failing files, 4 type errors to 3 files, 6 errors (the 6 are in conformance and were there before: child-gets-parent-ctx 3, intrinsic-call-import 2, render-purity 1); unit and conformance 1,140 passed, 3 failed. cli 56 failing files to 58: `test/golden.test.ts` and `check-budget-injected10` are newly red from old-shape golden-1 and clear when golden-1 is rewritten (stage 4).
+compiler 6 failing files, 4 type errors to 3 files, 6 errors (the 6 are in conformance and were there before: child-gets-parent-ctx 3, intrinsic-call-import 2, render-purity 1); unit and conformance 1,140 passed, 3 failed. cli 56 failing files to 61, with churn: 19 newly red and 14 newly green. The new reds sampled come from old-shape fixtures meeting the new router types, from check's E1111 not reading `manifest(contract, binding)` yet (L6), and from old-shape golden-1 (`test/golden.test.ts`, `check-budget-injected10`; stage 4). `cli/test/buildTrailer.test.ts` stays red on its old-shape `routes.ts`.
 
 ## For the conformance-writer
 - compiler `module-manifest`: line 16 generates `public.routes` in valid modules; drop it there. Line 58 (it is refused) is right.
