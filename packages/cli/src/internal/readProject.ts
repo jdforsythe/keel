@@ -17,8 +17,11 @@ const ARTIFACT = /(?:^|\/)\.keel\/[^/]+\.json$/;
 const DEPLOY = /(?:^|\/)(?:deploy\/(?:[^/]+\/Dockerfile|compose\.yaml)|\.github\/workflows\/ci\.yml|turbo\.json)$/;
 /** A text file in a shell's folder (k.shell Files): its target decides which are generated. */
 const SHELL_FILE = /(?:^|\/)deploy\/[^/]+\/(?:capacitor|tauri)\//;
+/** A module's migration (std.postgres): rules with a `sql` reader check it (k.check Registry). */
+const MIGRATION = /(?:^|\/)modules\/[^/]+\/migrations\/[^/]+\.sql$/;
 const QUERY = (rel: string): boolean =>
   (CODE_FILE.test(rel) && !BUILD_CONFIG.test(rel)) ||
+  MIGRATION.test(rel) ||
   (rel.startsWith("spec/") && rel.endsWith(".md")) ||
   ARTIFACT.test(rel) ||
   DEPLOY.test(rel) ||
@@ -32,8 +35,8 @@ const A11Y_REPORT = /(?:^|\/)reports\/a11y\.json$/;
 const TO_A11Y = /(?:^|\/)reports$/;
 
 /**
- * Binary only: read the project under `cwd` into engine files. `query` (check, spec, test): code, spec
- * markdown, `.keel` artifacts, generated deploy files and the `package.json` beside each `topology.ts` of every project under `cwd`, and the ledger. `ledger`: `query` plus `packages/<pkg>/reports/mutation/mutation.json` and each project's `reports/a11y.json`.
+ * Binary only: read the project under `cwd` into engine files. `query` (check, spec, test): code, each module's
+ * `migrations/*.sql`, spec markdown, `.keel` artifacts, generated deploy files and the `package.json` beside each `topology.ts` of every project under `cwd`, and the ledger. `ledger`: `query` plus `packages/<pkg>/reports/mutation/mutation.json` and each project's `reports/a11y.json`.
  * `tree` (scaffold, codemod, build): every text file under 1 MB,
  * since structural operations read manifests, `package.json`, `turbo.json` and CI files too.
  */

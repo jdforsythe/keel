@@ -21,6 +21,7 @@ Status: proposed (ADR-0180), for the operator to read (W14 step 1, decision D43)
 - D16: k.data states the accessor's per-ctx behaviour apps rely on (made at the first call on a ctx, the same object after), which `@keel/ctx` already has; a sim side "starts empty for each sim ctx" because of it.
 - D17: E1607 runs at `keel check` over calls of `@keel/ctx`'s `register` in files under `modules/<id>/`; `<name>` is one lowerCamel segment, as an API entry's (E1513); a name two files register is reported once, in the file whose path sorts later.
 - D18: `Query<T>` exposes `{ text, params }`, so the splice rule is testable without a database. Under sim each top-level `query`, `one`, `run` and each run of a transaction's `fn` takes one plan step and statements on `tx` take none, so a plan of `conflict` steps drives the rerun rule.
+- D19: W2456 reads migrations through the rule registry: a rule may carry `sql: (file) => findings`, which `check()` calls on each `modules/<id>/migrations/*.sql` entry it is given (path and text, no fix), and `keel check` reads those files with the code; `check` stays code-only, so no TypeScript rule sees SQL. k.check's Registry gains that sentence.
 
 ## Problem
 Every record golden-2 keeps lives in a server store: `kitchen.box` (every recipe), `accounts.tokens` (every API token) and `accounts.profiles` (every signed-in user's id and email). A request restores each store whole from `ctx.storage` (`keel.store.<id>`, k.persist), and an action saves its snapshot whole, log included. That is sound for bounded state and wrong for records: each request reads and writes every row, any two writes to one store conflict (409), and the storage holds one value per store, so no index, query or join exists. `docs/ARCHITECTURE.md` says "no query layer"; std.db's Postgres driver writes snapshots into `keel_kv` and "App schemas never become columns".
@@ -307,6 +308,7 @@ The module's manifest lists `capabilities: ['clock', 'random', 'notes.mongo']`. 
 - New `spec/kernel/k.data.md` (App data, `proposed`): Stance, The seam, Handlers, Keel's own state, Simulation and evidence, Dev, Rules (E1607), Conformance (6 clauses).
 - `spec/kernel/k.persist.md` Storage, first sentence: "`ctx.storage` keeps Keel's own state (k.data): stores' snapshots and what stdlib packages version through it, never app data. It holds string values by string key, ..."
 - New `spec/std/std.postgres.md` (Postgres app data, `proposed`).
+- `spec/kernel/k.check.md` Registry: "An optional `sql: (file) => findings` reads each module migration, `modules/<id>/migrations/*.sql` (path and text, no fix); `check` sees code files only."
 - `spec/00-map.md`: row `| k.data | App data | proposed | seam |`; code ranges `E160x` adds k.data, `E245x` std.postgres. `spec/std/README.md`: the std.postgres row.
 - `docs/GLOSSARY.md`: **app data**.
 

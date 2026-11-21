@@ -14,12 +14,14 @@ import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
 import { generatedEdits } from "./internal/generatedEdits.ts";
 import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
 import { isCodePath } from "./internal/isCodePath.ts";
+import { isSqlPath } from "./internal/isSqlPath.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { parseFile } from "./internal/parseFile.ts";
 import { registerNames } from "./internal/registerNames.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { runRules } from "./internal/runRules.ts";
+import { runSqlRules } from "./internal/runSqlRules.ts";
 import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
 import { topologyNeeds } from "./internal/topologyNeeds.ts";
@@ -80,7 +82,7 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
 /**
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
- * `topology.ts`; rfc:0059), (3) the rule registry on each file plus project passes (E1005
+ * `topology.ts`; rfc:0059), (3) the rule registry on each code file, rules' `sql` readers on each migration, plus project passes (E1005
  * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1508, E1511, E1566, E1580-E1582, E1584, E1753, E1755, the k.module pass
  * E1151-E1158, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
  * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
@@ -149,6 +151,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     const input = { file, ast: parsed.program, artifacts, project };
     out.push(...runRules(registered, dates === undefined ? input : { ...input, dates }));
   }
+  for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
   out.push(
     ...duplicateErrorCodes(checked),
     ...registerNames(checked, dirs),

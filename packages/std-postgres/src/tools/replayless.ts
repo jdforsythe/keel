@@ -7,8 +7,8 @@ import { walk } from "./internal/walk.ts";
 
 /**
  * W2456 (std.postgres, k.check registry): `now()`, `current_timestamp`, `clock_timestamp()`, `random()` or
- * `gen_random_uuid()` in the text of a `sql(...)` or `fragment` template: a sim run does not replay its answer. One
- * finding per occurrence. No fix.
+ * `gen_random_uuid()` in the text of a `sql(...)` or `fragment` template, or in a migration outside a `--` comment: a sim
+ * run does not replay its answer. One finding per occurrence. No fix.
  */
 export const replayless: RuleDef = defineRule({
   code: "W2456",
@@ -42,5 +42,9 @@ export const replayless: RuleDef = defineRule({
       }
     });
     return out;
+  },
+  sql: (file): Finding[] => {
+    const text = file.source.replace(/--[^\n]*/g, (c) => " ".repeat(c.length));
+    return callsIn(text, 0).map((at) => ({ path: file.path, ...lineCol(file.source, at) }));
   },
 });
