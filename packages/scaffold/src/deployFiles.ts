@@ -6,9 +6,13 @@ import { dockerfile } from "./templates/dockerfile.ts";
 import type { DeployShells } from "./types/DeployShells.ts";
 import type { DeployTopology } from "./types/DeployTopology.ts";
 
+/** The app-data package a served module lists in `deps` when its deployable needs `KEEL_POSTGRES_URL`. */
+const POSTGRES = "@keel/std-postgres";
+
 /**
  * The generated deploy files of a project (k.deploy Deploy files, k.shell Files), path -> text:
- * `deploy/<name>/Dockerfile` per `node` deployable (per its `storage`) and `deploy/compose.yaml` when there is one;
+ * `deploy/<name>/Dockerfile` per `node` deployable (per its `storage`) and `deploy/compose.yaml` when there is one
+ * (`KEEL_POSTGRES_URL` for one whose `modules`, deps included, list `@keel/std-postgres`);
  * per `client` deployable declaring a shell whose target is in `project.shells`, that target's `files` under
  * `deploy/<name>/<shell>/`; plus `.github/workflows/ci.yml` when `project.ci` (a project outside the Keel monorepo),
  * with each target's CI jobs. `project.version` is the app's `package.json` version (default `0.0.0`), `project.pkg`
@@ -39,7 +43,9 @@ export function deployFiles(
   };
   const files: [string, string][] = [];
   if (project.ci) files.push([".github/workflows/ci.yml", ciWorkflow(topology, shells, shared)]);
-  if (nodes.length > 0) files.push(["deploy/compose.yaml", composeYaml(nodes, (n) => topology[n]?.storage ?? "file")]);
+  const appData = (n: string): boolean => topology[n]?.modules.includes(POSTGRES) === true;
+  if (nodes.length > 0)
+    files.push(["deploy/compose.yaml", composeYaml(nodes, (n) => topology[n]?.storage ?? "file", appData)]);
   for (const n of nodes) files.push([`deploy/${n}/Dockerfile`, dockerfile(n, topology[n]?.storage ?? "file")]);
   for (const { shell, app } of shellApps(topology, shared)) {
     const given = shells[shell]?.files(app) ?? {};
