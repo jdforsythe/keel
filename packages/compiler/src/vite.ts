@@ -17,6 +17,7 @@ import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
+import { copyPgliteFiles } from "./internal/copyPgliteFiles.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
@@ -70,6 +71,15 @@ const CSS_IMPORT = "virtual:keel.css";
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
 const PG_BANNER =
   "import { createRequire as keelCreateRequire } from 'node:module'; const require = keelCreateRequire(import.meta.url);";
+/** The folder of the PGlite package `@keel/std-postgres` resolves from the project at `at`, if it resolves. */
+function pgliteDist(at: string): string | undefined {
+  try {
+    const server = createRequire(path.join(at, "package.json")).resolve("@keel/std-postgres/server");
+    return path.dirname(createRequire(server).resolve("@electric-sql/pglite"));
+  } catch {
+    return undefined;
+  }
+}
 /**
  * `node:sqlite` in a build: read when the driver first runs, not linked at load, so `server.mjs` starts on a Node
  * without it and `start` reports the version (k.deploy Rules E1560).
@@ -722,6 +732,7 @@ export default function (): {
           buildApp: async (b) => {
             await b.build(b.environments.client);
             await b.build(b.environments.ssr);
+            copyPgliteFiles(path.join(at, out), () => pgliteDist(at));
             // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
             // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
             const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
