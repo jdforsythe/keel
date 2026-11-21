@@ -75,7 +75,7 @@ describe("k.topology: E1586", () => {
     );
   });
 
-  test.skip("one E1586 at the id when `./routes` is in `exports` but names a file the package does not hold", () => {
+  test("one E1586 at the id when `./routes` is in `exports` but names a file the package does not hold", () => {
     fc.assert(
       fc.property(ID, (id) => {
         const d = project(id, "routes-missing-file");

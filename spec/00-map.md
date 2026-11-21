@@ -72,7 +72,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
-| k.topology | Deployables | proposed | peers |
+| k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
 | k.shell | Native shells | conformance-covered | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |

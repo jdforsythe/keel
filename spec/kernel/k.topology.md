@@ -1,9 +1,9 @@
 # k.topology: Deployables
-status: proposed
+status: conformance-covered
 
-**Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter, servedBy?, storage?, shells?, caller?, origins? } })` (`@keel/server`), read statically; `storage`, `shells`, `origins`: k.deploy, k.shell, k.origins. Adapters: `node` (serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module is in one deployable, where its routes, actions, live loaders and runners run; moving one edits `topology.ts` alone.
+**Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter, servedBy?, storage?, shells?, caller?, origins? } })` (`@keel/server`), read statically; Adapters: `node` (serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module is in one deployable, where its routes, actions, live loaders and runners run.
 
-**Route table.** Generated entries merge each module's `routes` into `createApp({ routes })`: an app module's `modules/<id>/routes.ts`, a stdlib module's package `./routes` export (none: no routes).
+**Route table.** Generated entries merge each module's `routes` into `createApp({ routes })`: an app module's `modules/<id>/routes.ts`, a stdlib module's `./routes` export (none: no routes) from the `@keel/std-*` package in an app manifest's `deps` whose root manifest has that `id`.
 
 **Runners.** A module's background work is the `runners` export of `modules/<id>/runners.server.ts`: `Runner`s `{ run(ctx, signal): Promise<void> }`. `createApp({ runners: { [moduleId]: Runner[] } })` calls each `run` of the served deployable's modules once after startup, with the app `ctx`. A `run` that rejects before `signal` aborts is a `keel.unexpected` `diag` and runs again 1,000 ms later on `ctx.clock`. `app.close()` aborts each runner's `signal` and open event stream and resolves when every `run` has settled.
 

@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1422,
+    "example": 1423,
     "probabilistic": 332,
     "exhaustive": 15,
     "proven": 72,
@@ -16190,7 +16190,7 @@
     },
     {
       "item": "k.topology#10",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.ui#1",

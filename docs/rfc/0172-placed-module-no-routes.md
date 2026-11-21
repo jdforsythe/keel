@@ -1,6 +1,6 @@
 # RFC 0172: k.topology: a placed stdlib module with a contract and no routes is E1586
 
-Status: draft, for the orchestrator to accept under the RFC defaults (1: the spec is the contract); the ADR is written on acceptance. For backlog 0926.
+Status: implemented (ADR-0195). For backlog 0926.
 
 ## Decisions
 - D1: E1586 (error, `keel check`, so `keel build` too) at a module id in `topology.ts` when that id is a stdlib module whose package's `./contract` export resolves and whose `./routes` export does not. "Resolves" is what the static readers already use (`stdExport` in `@keel/compiler`): the package is found from an app manifest's `deps`, the export is in its `exports` map, and the file it names exists inside the package.

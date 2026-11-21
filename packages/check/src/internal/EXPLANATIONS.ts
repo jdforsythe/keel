@@ -823,6 +823,13 @@ const ROWS: readonly Row[] = [
     "k.shell",
   ],
   [
+    "E1586",
+    "a placed stdlib module whose ./contract resolves and ./routes does not (at its id)",
+    "Its contract's routes would type-check and links to them build, while the app serves none; the package is broken.",
+    "install a version of the package whose exports holds ./routes, or unplace the module",
+    "k.topology",
+  ],
+  [
     "E1590",
     "origins in topology.ts out of form: not a literal, a key outside img media font connect frame, an inexact origin",
     "Also a reason not 1 to 200 characters on one line, or over 16 origins in a directive. Only these widen the policy.",
