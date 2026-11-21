@@ -3,9 +3,9 @@
 import type { JsonValue } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
+import type { ArrayItem } from "../src/server/internal/ArrayItem.ts";
 import { TypeCache } from "../src/server/internal/TypeCache.ts";
 import { decodeValue } from "../src/server/internal/decodeValue.ts";
-import type { ArrayItem } from "../src/server/internal/parseArray.ts";
 import { parseArray } from "../src/server/internal/parseArray.ts";
 import { toText } from "../src/server/internal/toText.ts";
 

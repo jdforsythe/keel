@@ -15,10 +15,12 @@ import type { Conn } from "./Conn.ts";
 import type { Engine } from "./Engine.ts";
 import type { Raw } from "./Raw.ts";
 import type { Step } from "./Step.ts";
-import { classify, isSerial, unexpected } from "./classify.ts";
+import { classify } from "./classify.ts";
 import { errors } from "./errors.ts";
+import { isSerial } from "./isSerial.ts";
 import { rowsOf } from "./rowsOf.ts";
 import { toText } from "./toText.ts";
+import { unexpected } from "./unexpected.ts";
 
 const ISOLATIONS: readonly Isolation[] = ["read committed", "repeatable read", "serializable"];
 const RUNS = 3;

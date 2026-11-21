@@ -1,5 +1,4 @@
-/** An element of a Postgres array literal: its text, `null` for `NULL`, or a nested array. */
-export type ArrayItem = string | null | readonly ArrayItem[];
+import type { ArrayItem } from "./ArrayItem.ts";
 
 /**
  * The Postgres array literal `src` (`{a,"b c",NULL,{1,2}}`, with an optional `[1:2]=` bounds prefix) as nested arrays

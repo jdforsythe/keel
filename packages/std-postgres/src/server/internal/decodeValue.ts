@@ -1,6 +1,6 @@
 import type { JsonValue } from "@keel/schema";
+import type { ArrayItem } from "./ArrayItem.ts";
 import type { TypeCache } from "./TypeCache.ts";
-import type { ArrayItem } from "./parseArray.ts";
 import { parseArray } from "./parseArray.ts";
 
 const BOOL = 16;

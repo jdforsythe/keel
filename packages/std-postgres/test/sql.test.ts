@@ -43,7 +43,7 @@ test("a value that is not JSON at any depth throws E2457 naming its 1-based posi
     Number.NaN,
     Number.NEGATIVE_INFINITY,
     1n,
-    new Date(0),
+    new (class Instant {})(),
     () => 0,
     new Set(),
   );
