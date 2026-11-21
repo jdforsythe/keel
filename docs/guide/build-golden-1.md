@@ -217,14 +217,14 @@ Components never write CSS. They take style props whose values are token names (
 import { topology } from "@keel/server";
 
 export default topology({
-  web: { modules: ["todos"], adapter: "client", host: "api" },
+  web: { modules: ["todos"], adapter: "client", servedBy: "api" },
   api: { modules: ["api", "digest"], adapter: "node" },
 });
 ```
 
 A deployable is a set of modules that builds to one artifact. The adapter decides how it runs:
 
-- `client`: a browser app. Loaders and actions run in the browser with a real `ctx`; the entry mounts the router into `#app`. `keel build` writes it to `dist/<name>/`. With `host: "api"`, the `api` deployable also serves it, so one process answers `GET /`.
+- `client`: a browser app. Loaders and actions run in the browser with a real `ctx`; the entry mounts the router into `#app`. `keel build` writes it to `dist/<name>/`. With `servedBy: "api"`, the `api` deployable also serves it, so one process answers `GET /`.
 - `node`: a server (Hono). It renders pages to HTML, answers JSON and event streams, runs runners, and ships a small resume entry for pages that have interactive parts. `keel build` writes `dist/<name>/server.mjs`.
 - `static`: prerendered HTML. golden-1 does not use it.
 
@@ -257,7 +257,7 @@ You write sources; the plugin and `keel build` derive everything below. Nothing 
 | `.keel/std.json` | Vite plugin and `keel build` | `std` entries in `module.ts` | stdlib config per package and module; `{}` in golden-1 |
 | `.keel/surface.json` | `keel build` only | every module's routes and `service({ module })` calls | the HTTP surface; `keel check --base` compares it against a deployed one |
 | `dist/web/` | `keel build` (Vite) | `index.html`, the mount entry | the `web` client: static files |
-| `dist/api/` | `keel build` (Vite, `KEEL_DEPLOYABLE=api`) | the `api` and `digest` modules, and the `web` client (`host: "api"`) | `server.mjs` with every dependency bundled, the resume entry and the client's `index.html` and files in `assets/`, `routes.json` (all modules' routes, for forwarding), `std.json` |
+| `dist/api/` | `keel build` (Vite, `KEEL_DEPLOYABLE=api`) | the `api` and `digest` modules, and the `web` client (`servedBy: "api"`) | `server.mjs` with every dependency bundled, the resume entry and the client's `index.html` and files in `assets/`, `routes.json` (all modules' routes, for forwarding), `std.json` |
 | `deploy/api/Dockerfile`, `deploy/compose.yaml` | `keel build` | `topology.ts` | one Dockerfile per `node` deployable, one compose service each |
 
 Every `.keel/` file is `{ data, hash }` JSON with sorted keys, written read-only (mode 0444). `keel check` recomputes them from your sources, and a file that differs is E1005. A project with no `.keel/` yet checks clean; once a build or test run has written it, editing a source makes `keel check` report E1005 for each stale artifact before your real error. Run `keel build` before `keel check` after edits.
@@ -2619,7 +2619,7 @@ curl -s -X POST -H 'accept: application/json' -H 'content-type: application/json
 curl -s localhost:8080/api/lists          # JSON too: an API route has no document view
 ```
 
-`server.mjs` serves the `api` deployable's routes, its own `dist/api/assets/` and, because `topology.ts` gives `web` the `host: "api"`, the `web` client: `GET /` returns `index.html`, and so does any other page request that no route matches. A request to an unmatched API or event-stream path stays 404. `dist/web/` holds the same client as static files for a static host; `docs/guide/deploy-client.md` shows the three ways to ship it.
+`server.mjs` serves the `api` deployable's routes, its own `dist/api/assets/` and, because `topology.ts` gives `web` the `servedBy: "api"`, the `web` client: `GET /` returns `index.html`, and so does any other page request that no route matches. A request to an unmatched API or event-stream path stays 404. `dist/web/` holds the same client as static files for a static host; `docs/guide/deploy-client.md` shows the three ways to ship it.
 
 In a second terminal, `curl -s localhost:8080/ | head -c 15` prints `<!doctype html>`, and the browser at `http://localhost:8080/` shows the app on the same origin as its API. Open it in two browsers: a todo added in one appears in the other, and the header of each reads Live. The board's server state lives in one process, so every user of a board must reach the same `api` server.
 

@@ -2,7 +2,7 @@ import { type Expression, parseSync } from "oxc-parser";
 import { declaredOrigins } from "../hosting/declaredOrigins.ts";
 import { deployableNameProblem } from "../hosting/deployableNameProblem.ts";
 import type { Topology } from "../types/Topology.ts";
-import { HOST_NOT_LITERAL } from "./HOST_NOT_LITERAL.ts";
+import { SERVED_BY_NOT_LITERAL } from "./SERVED_BY_NOT_LITERAL.ts";
 
 type Deployable = Topology[string];
 const ADAPTERS: readonly Deployable["adapter"][] = ["node", "static", "client"];
@@ -23,6 +23,7 @@ const isAdapter = (v: string): v is Deployable["adapter"] => ADAPTERS.some((x) =
 type Storage = NonNullable<Deployable["storage"]>;
 const STORAGES: readonly Storage[] = ["file", "sqlite", "postgres"];
 const isStorage = (v: unknown): v is Storage => STORAGES.some((x) => x === v);
+const KEYS: ReadonlySet<string> = new Set(["modules", "adapter", "servedBy", "storage", "shells", "caller", "origins"]);
 type Shell = { readonly id: string; readonly name: string };
 
 /** A shell's `{ id, name }` when both are string literals, else undefined. */
@@ -40,10 +41,10 @@ function shellOf(e: Expression): Shell | undefined {
 
 /**
  * Read `topology.ts` statically (k.topology Declaration): `export default topology({ name: { modules: [...],
- * adapter, host?, storage?, shells? } })` (or a bare object); a `storage` that is not one of its literals, or a
+ * adapter, servedBy?, storage?, shells?, caller?, origins? } })` (or a bare object); a `storage` that is not one of its literals, or a
  * `shells` entry that is not `capacitor` or `tauri` with literal `id` and `name`, is a problem. Only literal deployable names (in the form `deployableNameProblem` takes),
- * module ids, adapters and hosts count; anything else is a problem, `[deployable, message]` (`deployable` is the key,
- * `""` for the whole file; the message is one short line), and the deployable is skipped, except a `host` that is not a
+ * module ids, adapters and `servedBy` count; anything else is a problem, `[deployable, message]` (`deployable` is the key,
+ * `""` for the whole file; the message is one short line), and the deployable is skipped (one with a key it does not list, `host` too, as well), except a `servedBy` that is not a
  * string literal, which is dropped from the kept deployable. A spread, a computed key or a key written twice in a
  * deployable's declaration, or a deployable name written twice, is a problem too: what it holds is known only when it
  * runs. Each kept deployable carries the `origins` the static read accepts (`declaredOrigins`), the one declaration
@@ -93,10 +94,11 @@ export function parseTopology(source: string): { topology: Topology; problems: [
     }
     let modules: string[] | undefined;
     let adapter: Deployable["adapter"] | undefined;
-    let host: string | undefined;
+    let servedBy: string | undefined;
     let storage: Storage | undefined;
     let shells: { capacitor?: Shell; tauri?: Shell } | undefined;
     const fields = new Set<string>();
+    let unlisted = false;
     for (const f of v.properties) {
       if (f.type !== "Property" || f.computed) {
         problems.push([name, `${name}: a spread or a computed key; write each field out`]);
@@ -108,6 +110,11 @@ export function parseTopology(source: string): { topology: Topology; problems: [
         problems.push([name, `${name}: ${k} is written twice`]);
         continue;
       }
+      if (!KEYS.has(k)) {
+        problems.push([name, `${name}: ${k} is not a deployable key; one of ${[...KEYS].join(", ")}`]);
+        unlisted = true;
+        continue;
+      }
       fields.add(k);
       const fv = unwrap(f.value);
       if (k === "modules" && fv.type === "ArrayExpression") {
@@ -117,9 +124,9 @@ export function parseTopology(source: string): { topology: Topology; problems: [
           else problems.push([name, `${name}: module id is not a string literal`]);
       } else if (k === "adapter" && fv.type === "Literal" && typeof fv.value === "string" && isAdapter(fv.value))
         adapter = fv.value;
-      else if (k === "host") {
-        if (fv.type === "Literal" && typeof fv.value === "string") host = fv.value;
-        else problems.push([name, `${name}: ${HOST_NOT_LITERAL}`]);
+      else if (k === "servedBy") {
+        if (fv.type === "Literal" && typeof fv.value === "string") servedBy = fv.value;
+        else problems.push([name, `${name}: ${SERVED_BY_NOT_LITERAL}`]);
       } else if (k === "storage") {
         if (fv.type === "Literal" && isStorage(fv.value)) storage = fv.value;
         else problems.push([name, `${name}: storage is not 'file', 'sqlite' or 'postgres'`]);
@@ -134,6 +141,7 @@ export function parseTopology(source: string): { topology: Topology; problems: [
         if (fv.type !== "ObjectExpression") problems.push([name, `${name}: shells is not an object literal`]);
       }
     }
+    if (unlisted) continue;
     if (modules === undefined || adapter === undefined) {
       problems.push([name, `${name}: needs modules: [...] and adapter: 'node' | 'static' | 'client'`]);
       continue;
@@ -141,7 +149,7 @@ export function parseTopology(source: string): { topology: Topology; problems: [
     out[name] = {
       modules,
       adapter,
-      ...(host === undefined ? {} : { host }),
+      ...(servedBy === undefined ? {} : { servedBy }),
       ...(storage === undefined ? {} : { storage }),
       ...(shells === undefined ? {} : { shells }),
       ...(declared[name] === undefined ? {} : { origins: declared[name] }),

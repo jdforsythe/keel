@@ -1,5 +1,5 @@
 // The static read of `topology.ts` (k.topology): a deployable name has one form (`deployableNameProblem`), and every
-// part the read cannot take is a problem (`topologyReadProblems`): E1552, or E1566 for a non-literal `host`. Seed 1337.
+// part the read cannot take is a problem (`topologyReadProblems`): E1552, or E1566 for a non-literal `servedBy`. Seed 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { deployableNameProblem } from "../src/hosting/deployableNameProblem.ts";
@@ -43,7 +43,7 @@ describe("topologyReadProblems", () => {
   it("is empty for a literal topology", () => {
     expect(
       topologyReadProblems(
-        top(`web: { modules: ["a"], adapter: "client", host: "api" }, api: { modules: ["b"], adapter: "node" }`),
+        top(`web: { modules: ["a"], adapter: "client", servedBy: "api" }, api: { modules: ["b"], adapter: "node" }`),
       ),
     ).toEqual([]);
   });
@@ -63,11 +63,11 @@ describe("topologyReadProblems", () => {
   it("reports a name out of form as E1552 and a host that is not a literal as E1566", () => {
     expect(
       topologyReadProblems(
-        top(`Web: { modules: ["a"], adapter: "node" }, w: { modules: ["b"], adapter: "client", host: H }`),
+        top(`Web: { modules: ["a"], adapter: "node" }, w: { modules: ["b"], adapter: "client", servedBy: H }`),
       ),
     ).toEqual([
       ["E1552", "Web", "Web: name must be lowercase letters, digits and -, starting with a letter"],
-      ["E1566", "w", "w: host must be a string literal"],
+      ["E1566", "w", "w: servedBy must be a string literal"],
     ]);
     expect(parseTopology(top(`"../x": { modules: ["a"], adapter: "node" }`)).topology).toEqual({});
   });

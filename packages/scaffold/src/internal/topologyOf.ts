@@ -12,7 +12,7 @@ export function topologyOf(files: ReadonlyMap<string, string>): DeployTopology |
   if (ast === null) return null;
   const { origins } = declaredOrigins(src);
   const out: Record<string, DeployTopology[string]> = {};
-  for (const { name, modules, adapter, host, storage, shells } of ast.deployables)
-    out[name] = { modules, adapter, host, storage, shells, origins: origins[name] };
+  for (const { name, modules, adapter, servedBy, storage, shells } of ast.deployables)
+    out[name] = { modules, adapter, servedBy, storage, shells, origins: origins[name] };
   return out;
 }

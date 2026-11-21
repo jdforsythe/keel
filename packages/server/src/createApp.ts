@@ -177,7 +177,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
   // Every route of the table, not only the served ones: a path this server forwards to a peer is marked too.
   const marks = secretSegments(table);
   const name = opts.deployable ?? Object.keys(top)[0] ?? "";
-  const hostedName = Object.keys(top).find((n) => top[n]?.adapter === "client" && top[n]?.host === name);
+  const hostedName = Object.keys(top).find((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name);
   const hosted = hostedName === undefined ? undefined : top[hostedName];
   // The app's own origins known here: the public origin and each URL peer's (k.origins Frame).
   const ownOrigins = new Set<string>(origin === undefined ? [] : [origin]);

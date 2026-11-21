@@ -4,7 +4,7 @@ import type { Origins } from "@keel/compiler";
 type Shell = { readonly id: string; readonly name: string };
 
 /**
- * The deployables of `topology.ts` (k.topology Declaration): name -> its modules, adapter, a `client`'s `host`
+ * The deployables of `topology.ts` (k.topology Declaration): name -> its modules, adapter, a `client`'s `servedBy`
  * (k.hosting), a `node` deployable's `storage` (k.deploy), a `client`'s `shells` (k.shell) and any one's `origins`
  * (k.origins), as `topology.ts` declares them. `@keel/compiler`'s `Topology` passes as is.
  */
@@ -14,7 +14,7 @@ export type DeployTopology = Readonly<
     {
       readonly modules: readonly string[];
       readonly adapter: "node" | "static" | "client";
-      readonly host?: string | undefined;
+      readonly servedBy?: string | undefined;
       readonly storage?: "file" | "sqlite" | "postgres" | undefined;
       readonly shells?: { readonly capacitor?: Shell | undefined; readonly tauri?: Shell | undefined } | undefined;
       readonly origins?: Origins | undefined;

@@ -142,7 +142,7 @@ describe("a frame of the app's own origin", () => {
   it("rejects with E1590 when the `client` it hosts frames the host's `origin`", async () => {
     const hosted = topology({
       api: { modules: ["a"], adapter: "node" },
-      web: { modules: ["w"], adapter: "client", host: "api", origins: { frame: { "https://shop.example": "r" } } },
+      web: { modules: ["w"], adapter: "client", servedBy: "api", origins: { frame: { "https://shop.example": "r" } } },
     });
     await expect(
       createApp({

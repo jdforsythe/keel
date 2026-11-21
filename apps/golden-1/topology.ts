@@ -4,7 +4,7 @@ export default topology({
   web: {
     modules: ["todos"],
     adapter: "client",
-    host: "api",
+    servedBy: "api",
     shells: {
       capacitor: { id: "dev.keel.golden1", name: "Golden 1" },
       tauri: { id: "dev.keel.golden1", name: "Golden 1" },

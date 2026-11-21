@@ -12,9 +12,9 @@ const filesUnder = (dir: string, base: string): string[] =>
     : [];
 
 /**
- * Copy the built `client` deployable `name` (`from`, its `dist/<name>/`) into its host's build `to` (k.hosting Host):
+ * Copy the built `client` deployable `name` (`from`, its `dist/<name>/`) into its host's build `to` (k.hosting Served by):
  * every file the host's own build has not written, and the copied `assets/*` recorded in the host's
- * `CLIENT_MANIFEST` under the key `keel:host`, so the host serves them `immutable` as it does its own hashed files.
+ * `CLIENT_MANIFEST` under the key `keel:servedBy`, so the host serves them `immutable` as it does its own hashed files.
  * Throws when the client has not been built.
  */
 export function hostClient(from: string, to: string, name: string): void {
@@ -24,5 +24,8 @@ export function hostClient(from: string, to: string, name: string): void {
   const at = path.join(to, CLIENT_MANIFEST);
   const manifest: unknown = JSON.parse(fs.readFileSync(at, "utf8"));
   const assets = filesUnder(path.join(from, "assets"), from).sort();
-  fs.writeFileSync(at, JSON.stringify({ ...Object(manifest), "keel:host": { file: "index.html", assets } }, null, 2));
+  fs.writeFileSync(
+    at,
+    JSON.stringify({ ...Object(manifest), "keel:servedBy": { file: "index.html", assets } }, null, 2),
+  );
 }

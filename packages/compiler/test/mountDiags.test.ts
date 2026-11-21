@@ -61,7 +61,7 @@ describe("mountSource and mountDiags", () => {
     expect(codes([...base, top("node"), page])).toEqual([]);
   });
 
-  it("E1581 for a client deployable without a host; none with a host, with or without shells", () => {
+  it("E1581 for a client deployable without servedBy; none with servedBy, with or without shells", () => {
     const top = (client: string) => ({
       path: "topology.ts",
       source: `import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['b'], adapter: 'node' }, w: { modules: ['a'], adapter: 'client'${client} } })\n`,
@@ -70,8 +70,8 @@ describe("mountSource and mountDiags", () => {
     const shells = ", shells: [{ kind: 'tauri', id: 'dev.keel.app', name: 'App' }]";
     expect(codes([...base, top(""), page])).toEqual(["E1581"]);
     expect(codes([...base, top(shells), page])).toEqual(["E1581"]);
-    expect(codes([...base, top(", host: 'api'"), page])).toEqual([]);
-    expect(codes([...base, top(`, host: 'api'${shells}`), page])).toEqual([]);
+    expect(codes([...base, top(", servedBy: 'api'"), page])).toEqual([]);
+    expect(codes([...base, top(`, servedBy: 'api'${shells}`), page])).toEqual([]);
   });
 
   it("E1582 for every literal subpath with a refused character, none for accepted ones", () => {

@@ -1,5 +1,5 @@
 // A hosted client in the deploy files (k.hosting Host): no deploy file for the client, and the host's CI job runs on
-// the hosted client's modules too, since its image carries the client build; `topology.ts`'s `host` is read.
+// the hosted client's modules too, since its image carries the client build; `topology.ts`'s `servedBy` is read.
 import { describe, expect, it } from "vitest";
 import { deployDrift, deployFiles } from "../src/index.ts";
 
@@ -8,7 +8,7 @@ const pathsOf = (ci: string, job: string): string => ci.split("\n").find((l) => 
 describe("deploy files of a hosted client", () => {
   it("writes no Dockerfile for the client; the host's job paths include its modules", () => {
     const files = deployFiles(
-      { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "api" } },
+      { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", servedBy: "api" } },
       { ci: true },
     );
     expect([...files.keys()]).toEqual([".github/workflows/ci.yml", "deploy/compose.yaml", "deploy/api/Dockerfile"]);
@@ -18,12 +18,12 @@ describe("deploy files of a hosted client", () => {
     expect(ci).toContain("path: dist/web");
   });
 
-  it("deployDrift reads host from topology.ts", () => {
+  it("deployDrift reads servedBy from topology.ts", () => {
     const top = [
       'import { topology } from "@keel/server";',
       "export default topology({",
       '  api: { modules: ["a"], adapter: "node" },',
-      '  web: { modules: ["w"], adapter: "client", host: "api" },',
+      '  web: { modules: ["w"], adapter: "client", servedBy: "api" },',
       "});",
       "",
     ].join("\n");

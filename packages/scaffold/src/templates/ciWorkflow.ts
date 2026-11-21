@@ -139,8 +139,8 @@ export function ciWorkflow(
     '          if [ -n "$BASE_REF" ]; then changed=$(git diff --name-only "origin/$BASE_REF...HEAD"); else changed="*"; fi',
     `          hit() { [ "$changed" = "*" ] || printf '%s\\n' "$changed" | grep -Eq "$1"; }`,
     ...names.map((n) => {
-      // A host's image carries the client builds it hosts (k.hosting Host).
-      const hosted = names.filter((c) => topology[c]?.adapter === "client" && topology[c]?.host === n);
+      // A host's image carries the client builds it hosts (k.hosting Served by).
+      const hosted = names.filter((c) => topology[c]?.adapter === "client" && topology[c]?.servedBy === n);
       const modules = [n, ...hosted].flatMap((d) => topology[d]?.modules ?? []);
       return `          if hit '${pattern(modules)}'; then echo "${n}=true" >> "$GITHUB_OUTPUT"; fi`;
     }),

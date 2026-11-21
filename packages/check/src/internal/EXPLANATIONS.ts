@@ -592,7 +592,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1552",
-    "topology.ts is not statically readable, a deployable name is not [a-z][a-z0-9-]*, or a module is unknown or in two deployables",
+    "topology.ts is not statically readable, a deployable name is not [a-z][a-z0-9-]*, or a module is unknown or in two deployables, or a deployable has a key it does not list",
     "",
     "write literal names, modules and adapters; list each existing module in exactly one deployable",
     "k.topology",
@@ -648,9 +648,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1566",
-    "host on a deployable that is not client, naming an unknown or non-node deployable, or two clients naming one host",
-    "A host is the one node deployable that serves a client build's index.html and assets.",
-    "web: { modules, adapter: 'client', host: 'web' } -> host: 'api' (a node deployable)",
+    "servedBy on a deployable that is not client, naming an unknown or non-node deployable, or two clients naming one",
+    "The node deployable named is the one that serves a client build's index.html and assets.",
+    "web: { modules, adapter: 'client', servedBy: 'web' } -> servedBy: 'api' (a node deployable)",
     "k.hosting",
   ],
   [
@@ -767,9 +767,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1581",
-    "identity.ts imported by a module a static or hostless client deployable serves",
+    "identity.ts imported by a module a static or servedBy-less client deployable serves",
     "",
-    "adapter: 'client' -> adapter: 'client', host: 'api'",
+    "adapter: 'client' -> adapter: 'client', servedBy: 'api'",
     "k.mount",
   ],
   ["E1582", "a subpath mount.href refuses", "", "mount.href('/a/../x') -> mount.href('/x')", "k.mount"],

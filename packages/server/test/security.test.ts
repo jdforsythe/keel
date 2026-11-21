@@ -92,7 +92,7 @@ describe("cspPolicy and securityHeaders", () => {
     const app = await createApp({
       topology: topology({
         api: { modules: ["a"], adapter: "node" },
-        web: { modules: ["w"], adapter: "client", host: "api" },
+        web: { modules: ["w"], adapter: "client", servedBy: "api" },
       }),
       deployable: "api",
       routes: manifest({ "a.home": { path: "/", component: () => document.createElement("main") } }),

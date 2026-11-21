@@ -69,7 +69,7 @@ k.server
 - page action({ input, params?, stores? }, fn): fn(input, { params, url, caller, user, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`; an API route's action also takes output (API action)
 - both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
 - stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
-- topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['recipes'], adapter: 'client', host: 'api' }, api: { modules: ['kitchen'], adapter: 'node' } }); a module is in one deployable (E1552)
+- topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['recipes'], adapter: 'client', servedBy: 'api' }, api: { modules: ['kitchen'], adapter: 'node' } }); a module is in one deployable (E1552)
 - createApp({ topology, routes, ctx, deployable: 'api' }) from '@keel/server' -> Promise<{ fetch(req) }>
 - writes pass the same-site check: send accept: application/json with x-keel: 1 (a services client does)
 - JSON body (content-type application/json) decodes with the action input schema, an empty body as {}; fail: 422 keel.fields naming each bad or missing field, action not called
@@ -123,7 +123,7 @@ k.check
 - a module's deps naming '@keel/std-i18n' or '@keel/std-messages' run their rules (E2301, E2401-E2406)
 
 k.hosting
-- k.hosting: `host: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<host>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes (the preflight allows accept, authorization, content-type, x-keel); E1565 bad peer value, E1566 bad host
+- k.hosting: `servedBy: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<servedBy>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes (the preflight allows accept, authorization, content-type, x-keel); E1565 bad peer value, E1566 bad host
 
 std.i18n
 - import { formatNumber, plural, localeName, type Locale } from '@keel/std-i18n'; Locale is an s.enum of 11 tags (de-DE, en-US, ja-JP, ...)

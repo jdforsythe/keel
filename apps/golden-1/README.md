@@ -2,7 +2,7 @@
 
 The todo app. `topology.ts` defines two deployables:
 
-- `web` (`client`, `host: 'api'`): the browser app, built to `dist/web/` and copied into `dist/api/`, so `api` serves it. It reads and writes the board over HTTP.
+- `web` (`client`, `servedBy: 'api'`): the browser app, built to `dist/web/` and copied into `dist/api/`, so `api` serves it. It reads and writes the board over HTTP.
 - `api` (`node`, `storage: 'sqlite'`): the `api` module, which owns the board (`api.board`); the `digest` module, which counts open and done todos; and the `sessions` module of `@keel/std-sessions`, which answers the production tally (Production tallies below).
 
 ## Several users

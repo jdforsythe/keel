@@ -12,7 +12,7 @@ Name the `node` deployable that serves the client:
 
 ```ts title="topology.ts"
 export default topology({
-  web: { modules: ["todos"], adapter: "client", host: "api" },
+  web: { modules: ["todos"], adapter: "client", servedBy: "api" },
   api: { modules: ["api", "digest"], adapter: "node" },
 });
 ```
@@ -102,4 +102,4 @@ TLS comes from your host or a proxy in front of it. This nginx file is a sketch 
 - One `client` deployable per host.
 - A CDN in front of a `node` deployable as a cache has not been tried.
 - `keel dev` runs one process on one origin, so none of this applies to it.
-- `host` names a `node` deployable; naming a `client` deployable, an unknown name, or one host for two clients is E1566.
+- `servedBy` names a `node` deployable; naming a `client` deployable, an unknown name, or one `node` deployable for two clients is E1566.
