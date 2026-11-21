@@ -49,3 +49,13 @@ it("answers the household API with null before setup and the name after", async 
     value: { name: "Elm Street" },
   });
 });
+
+it("names the household on the setup page once a member is signed in", async () => {
+  const { ctx, user } = await served(4);
+  const page = await renderRoute("setup.form", { routes: webRoutes, params: {}, ctx, user });
+  expect(page.route().id).toBe("setup.form");
+  await page.fire("setup.form:name", { type: "input", value: "Elm Street" });
+  await page.fire("setup.save", { type: "click" });
+  expect(page.find("setup.done").text).toContain("set up");
+  page.dispose();
+});
