@@ -118,7 +118,7 @@ jobs:
         run: "set -e\nmkdir \"$RUNNER_TEMP/pg-tls\"\nopenssl req -new -x509 -nodes -days 1 -subj /CN=localhost -newkey rsa:2048 -keyout \"$RUNNER_TEMP/pg-tls/server.key\" -out \"$RUNNER_TEMP/pg-tls/server.crt\"\nchmod 644 \"$RUNNER_TEMP/pg-tls/server.crt\" \"$RUNNER_TEMP/pg-tls/server.key\"\ndocker run -d --name pg-tls -e POSTGRES_PASSWORD=keel-ci-throwaway -p 5433:5432 -v \"$RUNNER_TEMP/pg-tls:/certs:ro\" postgres:17 sh -c 'cp /certs/server.* /var/lib/postgresql/ && chown postgres:postgres /var/lib/postgresql/server.* && chmod 600 /var/lib/postgresql/server.key && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key'\nfor i in $(seq 1 30); do docker exec pg-tls pg_isready -h 127.0.0.1 -U postgres && break; sleep 2; done"
       - name: "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database"
         working-directory: packages/std-db
-        run: "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts; do pnpm exec vitest run \"$f\"; done"
+        run: "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/racing-writes.test.ts; do pnpm exec vitest run \"$f\"; done"
       - name: "std-db Postgres driver cases, TLS ones included, on the ssl server"
         working-directory: packages/std-db
         env:
@@ -127,6 +127,9 @@ jobs:
       - name: "std-postgres on Postgres 17, its files one at a time on one database"
         working-directory: packages/std-postgres
         run: pnpm exec vitest run
+      - name: "golden-2 on Postgres 17: two users add one recipe title at once"
+        working-directory: apps/golden-2
+        run: pnpm exec vitest run test/racing-recipes.test.ts
       - name: "turbo cache: the builds the check job ran"
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
